@@ -361,6 +361,49 @@ const clientPages = [
 ] as const;
 const clientRecord = clientPages[2];
 
+function scopesPage(name: 'ScopesPage' | 'NewScopePage') {
+  return lazyFeatureRoute(
+    () => import('#/features/scopes').then((feature) => feature[name]),
+    'Loading scopes',
+  );
+}
+
+const Scopes = scopesPage('ScopesPage');
+const NewScope = scopesPage('NewScopePage');
+const ScopeRecord = lazyFeatureRoute(
+  () => import('#/features/scopes').then((feature) => feature.ScopeRecordPage),
+  'Loading the scope',
+);
+
+const scopePages = [
+  createRoute({
+    getParentRoute: () => tenant,
+    path: 'scopes',
+    component: function ScopeList() {
+      const { tenant: name } = tenant.useParams();
+      return <Scopes key={name} tenant={name} />;
+    },
+  }),
+  createRoute({
+    getParentRoute: () => tenant,
+    path: 'scopes/new',
+    component: function ScopeCreation() {
+      const { tenant: name } = tenant.useParams();
+      return <NewScope key={name} tenant={name} />;
+    },
+  }),
+  createRoute({
+    getParentRoute: () => tenant,
+    path: 'scopes/$id',
+    component: function ScopeAtId() {
+      const { tenant: name } = tenant.useParams();
+      const { id } = scopeRecord.useParams();
+      return <ScopeRecord key={`${name}/${id}`} tenant={name} id={id} />;
+    },
+  }),
+] as const;
+const scopeRecord = scopePages[2];
+
 // Every feature chunk the routes load, for a caller that wants them all in
 // hand before the first render.
 export function preloadFeatures(): Promise<void> {
@@ -385,6 +428,9 @@ export function preloadFeatures(): Promise<void> {
     Clients,
     NewClient,
     ClientRecord,
+    Scopes,
+    NewScope,
+    ScopeRecord,
   ];
   return Promise.all(features.map((feature) => feature.preload())).then(() => undefined);
 }
@@ -397,6 +443,7 @@ const TAKEN = new Set([
   'groups',
   'roles',
   'clients',
+  'scopes',
 ]);
 
 const areas = EVERY_AREA.filter((area) => area !== OVERVIEW && !TAKEN.has(area.path)).map((area) =>
@@ -421,6 +468,7 @@ const routeTree = root.addChildren([
     ...groupPages,
     ...rolePages,
     ...clientPages,
+    ...scopePages,
     ...areas,
   ]),
 ]);

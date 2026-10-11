@@ -1,0 +1,234 @@
+import type { ClientScope } from '@odudu/contracts/admin';
+import { useId } from 'react';
+import {
+  ACCESS_TOKEN_LABEL,
+  ID_TOKEN_LABEL,
+  NAME_FIXED,
+  NEW_CLIENT_LABEL,
+} from '#/features/scopes/service';
+import {
+  useScopeGeneral,
+  type Deletion,
+  type ScopeGeneral,
+} from '#/features/scopes/usecase/useScopeGeneral.ts';
+import { Button } from '#/shared/view/Button';
+import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
+import { SelectField, TextAreaField, TextField, ToggleField } from '#/shared/view/Field';
+import { Section } from '#/shared/view/Section';
+import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
+import { Timestamp } from '#/shared/view/Timestamp';
+import styles from '#/features/scopes/view/ScopeRecordPage/Tab.module.css';
+
+function Fixed({ scope }: { scope: ClientScope }) {
+  const heading = useId();
+  return (
+    <section aria-labelledby={heading} className={styles.panel}>
+      <h2 id={heading} className={styles.heading}>
+        Name
+      </h2>
+      <dl className={styles.fixed}>
+        <div>
+          <dt>Name</dt>
+          <dd>
+            <code>{scope.name}</code>
+          </dd>
+        </div>
+        <div>
+          <dt>Created</dt>
+          <dd>
+            <Timestamp value={scope.created_at} />
+          </dd>
+        </div>
+      </dl>
+      <p className={styles.rule}>{NAME_FIXED}</p>
+    </section>
+  );
+}
+
+function Description({ general }: { general: ScopeGeneral }) {
+  const s = general.description;
+  return (
+    <Section
+      title="Description"
+      description="What the scope is for, shown wherever it is chosen."
+      dirty={s.dirty}
+      saving={s.saving}
+      onSave={s.submit}
+      onDiscard={s.discard}
+      restored={s.restored}
+      blocked={s.blocked}
+      notice={<SectionNoticeOf title="Description" save={s} />}
+    >
+      <TextAreaField
+        label="Description"
+        description={general.descriptionRule}
+        value={s.values.description}
+        error={s.fieldErrors.description}
+        changed={s.changed.includes('description')}
+        onChange={(value) => {
+          s.edit('description', value);
+        }}
+      />
+    </Section>
+  );
+}
+
+function Tokens({ general }: { general: ScopeGeneral }) {
+  const s = general.tokens;
+  return (
+    <Section
+      title="Tokens"
+      description="Where the scope's claims are carried once it is granted."
+      dirty={s.dirty}
+      saving={s.saving}
+      onSave={s.submit}
+      onDiscard={s.discard}
+      restored={s.restored}
+      blocked={s.blocked}
+      notice={<SectionNoticeOf title="Tokens" save={s} />}
+    >
+      <ToggleField
+        label={ID_TOKEN_LABEL}
+        value={s.values.include_in_id_token}
+        error={s.fieldErrors.include_in_id_token}
+        changed={s.changed.includes('include_in_id_token')}
+        onChange={(value) => {
+          s.edit('include_in_id_token', value);
+        }}
+      />
+      <ToggleField
+        label={ACCESS_TOKEN_LABEL}
+        value={s.values.include_in_access_token}
+        error={s.fieldErrors.include_in_access_token}
+        changed={s.changed.includes('include_in_access_token')}
+        onChange={(value) => {
+          s.edit('include_in_access_token', value);
+        }}
+      />
+    </Section>
+  );
+}
+
+function NewClients({ general }: { general: ScopeGeneral }) {
+  const s = general.assignment;
+  return (
+    <Section
+      title="New clients"
+      description="Whether a client made from now on is given this scope. Clients that already exist are not changed."
+      dirty={s.dirty}
+      saving={s.saving}
+      onSave={s.submit}
+      onDiscard={s.discard}
+      restored={s.restored}
+      blocked={s.blocked}
+      notice={<SectionNoticeOf title="New clients" save={s} />}
+    >
+      <SelectField
+        label={NEW_CLIENT_LABEL}
+        options={general.assignmentChoices}
+        value={s.values.default_client_assignment}
+        error={s.fieldErrors.default_client_assignment}
+        changed={s.changed.includes('default_client_assignment')}
+        onChange={(value) => {
+          s.edit('default_client_assignment', value);
+        }}
+      />
+    </Section>
+  );
+}
+
+function Consent({ general }: { general: ScopeGeneral }) {
+  const s = general.consent;
+  return (
+    <Section
+      title="Consent"
+      description="How the consent screen lists the scope: its text, and its place among the others, lowest first."
+      dirty={s.dirty}
+      saving={s.saving}
+      onSave={s.submit}
+      onDiscard={s.discard}
+      restored={s.restored}
+      blocked={s.blocked}
+      notice={<SectionNoticeOf title="Consent" save={s} />}
+    >
+      <TextAreaField
+        label="Consent text"
+        description={general.consentRule}
+        value={s.values.consent_text}
+        error={s.fieldErrors.consent_text}
+        changed={s.changed.includes('consent_text')}
+        onChange={(value) => {
+          s.edit('consent_text', value);
+        }}
+      />
+      <TextField
+        label="Display order"
+        value={s.values.display_order}
+        error={s.fieldErrors.display_order}
+        changed={s.changed.includes('display_order')}
+        onChange={(value) => {
+          s.edit('display_order', value);
+        }}
+      />
+    </Section>
+  );
+}
+
+function Danger({ name, deletion }: { name: string; deletion: Deletion }) {
+  const heading = useId();
+  return (
+    <section aria-labelledby={heading} className={styles.panel}>
+      <h2 id={heading} className={styles.heading}>
+        Delete
+      </h2>
+      {deletion.fixed === null ? (
+        <>
+          <p className={styles.text}>{deletion.consequence}</p>
+          <div className={styles.actions}>
+            <Button variant="danger" onPress={deletion.ask}>
+              {`Delete ${name}`}
+            </Button>
+          </div>
+        </>
+      ) : (
+        <p className={styles.text}>{deletion.fixed}</p>
+      )}
+      <ConfirmDialog
+        isOpen={deletion.confirming}
+        title={`Delete ${name}?`}
+        consequence={deletion.consequence}
+        confirmLabel={`Delete ${name}`}
+        tone="danger"
+        typed={name}
+        busy={deletion.busy}
+        problem={deletion.problem}
+        onConfirm={deletion.confirm}
+        onCancel={deletion.cancel}
+      />
+    </section>
+  );
+}
+
+export function GeneralTab({
+  tenant,
+  scope,
+  etag,
+  gone,
+}: {
+  tenant: string;
+  scope: ClientScope;
+  etag: string;
+  gone: boolean;
+}) {
+  const general = useScopeGeneral({ tenant, scope, etag, gone });
+  return (
+    <div className={styles.tab}>
+      <Fixed scope={scope} />
+      <Description general={general} />
+      <Tokens general={general} />
+      <NewClients general={general} />
+      <Consent general={general} />
+      <Danger name={scope.name} deletion={general.deletion} />
+    </div>
+  );
+}
