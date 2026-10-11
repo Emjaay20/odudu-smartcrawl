@@ -17,12 +17,16 @@ async function open() {
   return screen.findByRole('region', { name: 'Claim mappers' });
 }
 
-it('offers every registered mapper, and says an empty binding falls back to the declared ones', async () => {
+it('offers every registered mapper, and names the declared ones an empty binding falls back to', async () => {
   renderConsoleAt(AT, scopeRoutes());
   const section = await open();
   expect(within(section).getByRole('checkbox', { name: 'email' })).not.toBeChecked();
   expect(within(section).getByRole('checkbox', { name: 'groups' })).not.toBeChecked();
-  expect(within(section).getByText(/falls back to the scope's declared mappers/u)).toBeVisible();
+  expect(
+    within(section).getByText(
+      'No mapper is bound, so this scope uses the mappers that declare it: email.',
+    ),
+  ).toBeVisible();
 });
 
 it('shows the bound mappers checked', async () => {
@@ -30,7 +34,7 @@ it('shows the bound mappers checked', async () => {
     AT,
     scopeRoutes(undefined, {
       [`GET ${SC}/s-bill/mappers`]: json(
-        { available: ['email', 'groups'], bound: ['groups'] },
+        { available: ['email', 'groups'], bound: ['groups'], declared: ['email'] },
         200,
         {
           etag: '"s-bill-m1"',
@@ -49,7 +53,7 @@ it('saves the chosen set on the ETag it was read with, in the registry order', a
     AT,
     scopeRoutes(undefined, {
       [`PUT ${SC}/s-bill/mappers`]: json(
-        { available: ['email', 'groups'], bound: ['email', 'groups'] },
+        { available: ['email', 'groups'], bound: ['email', 'groups'], declared: ['email'] },
         200,
         {
           etag: '"s-bill-m2"',
@@ -75,14 +79,24 @@ it('saves a second time on the ETag the first save answered', async () => {
     AT,
     scopeRoutes(undefined, {
       [`GET ${SC}/s-bill/mappers`]: inTurn(
-        json({ available: ['email', 'groups'], bound: [] }, 200, { etag: '"s-bill-m1"' }),
-        json({ available: ['email', 'groups'], bound: ['email'] }, 200, { etag: '"s-bill-m2"' }),
+        json({ available: ['email', 'groups'], bound: [], declared: ['email'] }, 200, {
+          etag: '"s-bill-m1"',
+        }),
+        json({ available: ['email', 'groups'], bound: ['email'], declared: ['email'] }, 200, {
+          etag: '"s-bill-m2"',
+        }),
       ),
       [`PUT ${SC}/s-bill/mappers`]: inTurn(
-        json({ available: ['email', 'groups'], bound: ['email'] }, 200, { etag: '"s-bill-m2"' }),
-        json({ available: ['email', 'groups'], bound: ['email', 'groups'] }, 200, {
-          etag: '"s-bill-m3"',
+        json({ available: ['email', 'groups'], bound: ['email'], declared: ['email'] }, 200, {
+          etag: '"s-bill-m2"',
         }),
+        json(
+          { available: ['email', 'groups'], bound: ['email', 'groups'], declared: ['email'] },
+          200,
+          {
+            etag: '"s-bill-m3"',
+          },
+        ),
       ),
     }),
   );

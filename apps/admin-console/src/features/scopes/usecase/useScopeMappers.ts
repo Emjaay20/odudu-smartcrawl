@@ -72,7 +72,7 @@ export function useScopeMapperSet({
   return {
     save,
     options: mapperOptions(data.available),
-    summary: mappersSummary(data.bound),
+    summary: mappersSummary(data.bound, data.declared),
     choose: (names) => {
       save.edit('mapper_names', inOrderOf(data.available, names));
     },

@@ -1,8 +1,8 @@
 import type { GatewayFailure } from '#/shared/service/result.ts';
 import { andList } from '#/shared/service/format.ts';
 
-export const FALLBACK_TEXT =
-  "No mapper is bound, so this scope falls back to the scope's declared mappers.";
+export const NONE_TEXT =
+  'No mapper is bound and none declares it, so a token granted this scope gets no claim from it.';
 
 export function mapperOptions(
   available: readonly string[],
@@ -10,8 +10,11 @@ export function mapperOptions(
   return available.map((name) => ({ id: name, label: name }));
 }
 
-export function mappersSummary(bound: readonly string[]): string {
-  return bound.length === 0 ? FALLBACK_TEXT : `Bound: ${andList(bound)}.`;
+// While nothing is bound, issuance runs the mappers that declare the scope.
+export function mappersSummary(bound: readonly string[], declared: readonly string[]): string {
+  if (bound.length > 0) return `Bound: ${andList(bound)}.`;
+  if (declared.length === 0) return NONE_TEXT;
+  return `No mapper is bound, so this scope uses the mappers that declare it: ${andList(declared)}.`;
 }
 
 const UNKNOWN = /^unknown mapper name\(s\): (.+); known: (.+)$/u;

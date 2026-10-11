@@ -294,6 +294,17 @@ through `POST /scopes`. The scopes the sections add to reach the limit were
 written by `psql`, which no route does, and say so. It was torn down with
 `docker compose down -v` when the capture finished.
 
+**The eighteenth stack.** The transcripts under `GET`/`PUT /scopes/:id/roles` and
+`GET`/`PUT /scopes/:id/mappers`, once a scope's roles carried `admin_reach` and its
+mappers `declared`, ran against one more stack: compose project `odudu-tx` on
+port 3082, its Postgres on 5464, built from this branch at `95941669` from an
+empty volume, with `ODUDU_THROTTLE_LIMIT=1000`. Against it: `seed admin
+--username ada`, whose token, got the way "Getting the token" shows, is
+`$ADMIN_TOKEN`; a tenant `scope-reach-demo` made through `POST /admin/tenants`; in
+it a scope `billing`, made through `POST /scopes`, and a role `billing-viewer`,
+made through `POST /roles`. It was torn down with `docker compose down -v` when
+the capture finished.
+
 **The seventeenth stack.** "Getting the token" and the three sections after it
 (the admin client itself, converting a public one, rotating the console's key)
 ran against one more stack: compose project `odudu-docs-12b` on port 3082, its
@@ -8026,47 +8037,63 @@ with `412`. The list is read under the same lock the replacement runs
 under, so two callers sent at once are serialised — the second sees what
 the first wrote rather than matching the same pre-write state.
 
-Captured against the sixth stack, on a `billing` scope created in its
-`demo` and the same role — the empty list's tag is the one the two sections above answered,
-for the reason `PUT /subjects/:id/roles` states:
+Each role carries `admin_reach`, what it reaches of the admin vocabulary
+however deep it nests it, as a group's roles do: it is derived on every read
+and outside the `ETag`, so the tag over the stored fields is the same before
+and after a role's nesting changes. The console judges a role already mapped by
+it.
+
+Captured against the eighteenth stack, in `scope-reach-demo`, on a scope
+`billing` (`01a12d29-72a6-77f6-9e8b-c2fcbb928cd2`) and two roles: the tenant role
+`billing-viewer` (`01a12d29-72f8-74a0-a73a-0fa6dd6d4d76`) and the built-in
+admin client's `view-audit` (`01a12d29-71bb-7e4c-91c8-845063e60e93`). The read
+of the empty list, the write under its tag, and the read back, whose `etag`
+is the write's:
 
 ```bash
 curl -sS -D - \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
-  http://localhost:3080/admin/tenants/demo/scopes/01a0ea5d-c42a-723c-8bb2-b45950186b42/roles
+  http://localhost:3082/admin/tenants/scope-reach-demo/scopes/01a12d29-72a6-77f6-9e8b-c2fcbb928cd2/roles
 
 curl -sS -D - -X PUT \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -H 'If-Match: "eef46741adfc3a9f76294d3b78f37a45f113092ac9d44ee77c7a038a88ff09a1"' \
-  -d '{"role_ids": ["01a0ea58-0e45-76eb-be5f-bd76e03e4b6e"]}' \
-  http://localhost:3080/admin/tenants/demo/scopes/01a0ea5d-c42a-723c-8bb2-b45950186b42/roles
+  -d '{"role_ids": ["01a12d29-72f8-74a0-a73a-0fa6dd6d4d76", "01a12d29-71bb-7e4c-91c8-845063e60e93"]}' \
+  http://localhost:3082/admin/tenants/scope-reach-demo/scopes/01a12d29-72a6-77f6-9e8b-c2fcbb928cd2/roles
+
+curl -sS -D - \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  http://localhost:3082/admin/tenants/scope-reach-demo/scopes/01a12d29-72a6-77f6-9e8b-c2fcbb928cd2/roles
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a0ea5d-c436-7bd3-810b-49123e655d9b
+x-request-id: 01a12d29-87a0-797a-8a23-e93b9d603bb1
 cache-control: no-store
 etag: "eef46741adfc3a9f76294d3b78f37a45f113092ac9d44ee77c7a038a88ff09a1"
 content-type: application/json; charset=utf-8
 content-length: 12
-Date: Mon, 28 Sep 2026 23:33:28 GMT
-Connection: keep-alive
-Keep-Alive: timeout=72
 
 {"items":[]}
 
 HTTP/1.1 200 OK
-x-request-id: 01a0ea5d-c44b-7d6c-b929-16982d3824dd
+x-request-id: 01a12d29-87fd-7315-8c85-41228d438cda
 cache-control: no-store
-etag: "da18ee68fe8192f473f7a652ecf0a6643b7a07b68bd4bc028673d434328f8572"
+etag: "164913dddef8ca9524b83eb1a02276e669aad0ce89edef3f05c68f1cd24dbcc9"
 content-type: application/json; charset=utf-8
-content-length: 116
-Date: Mon, 28 Sep 2026 23:33:28 GMT
-Connection: keep-alive
-Keep-Alive: timeout=72
+content-length: 306
 
-{"items":[{"id":"01a0ea58-0e45-76eb-be5f-bd76e03e4b6e","name":"billing-viewer","client_id":null,"client_key":null}]}
+{"items":[{"id":"01a12d29-71bb-7e4c-91c8-845063e60e93","name":"view-audit","client_id":"01a12d29-713b-7852-a836-47dc3d851563","client_key":"odudu-admin","admin_reach":["view-audit"]},{"id":"01a12d29-72f8-74a0-a73a-0fa6dd6d4d76","name":"billing-viewer","client_id":null,"client_key":null,"admin_reach":[]}]}
+
+HTTP/1.1 200 OK
+x-request-id: 01a12d29-8836-759c-a401-4f31b886a3d9
+cache-control: no-store
+etag: "164913dddef8ca9524b83eb1a02276e669aad0ce89edef3f05c68f1cd24dbcc9"
+content-type: application/json; charset=utf-8
+content-length: 306
+
+{"items":[{"id":"01a12d29-71bb-7e4c-91c8-845063e60e93","name":"view-audit","client_id":"01a12d29-713b-7852-a836-47dc3d851563","client_key":"odudu-admin","admin_reach":["view-audit"]},{"id":"01a12d29-72f8-74a0-a73a-0fa6dd6d4d76","name":"billing-viewer","client_id":null,"client_key":null,"admin_reach":[]}]}
 ```
 
 ## `GET /scopes/:id/clients`
@@ -8417,8 +8444,8 @@ Both require `manage-tenant`. `GET` returns `available` — every mapper name
 the process's `ClaimMapperRegistry` carries, the same registry ID token and
 `/userinfo` issuance assemble claims from — and `bound`, the names this
 tenant bound to this scope, empty when the scope has no binding rows and
-falls back to whichever mappers declare it. `PUT` replaces the whole binding
-set; binding a name the registry does not carry answers `400`, listing the
+falls back to whichever mappers declare it, which `declared` names. `PUT`
+replaces the whole binding set and answers the same shape; binding a name the registry does not carry answers `400`, listing the
 known names.
 
 **`If-Match` is mandatory here, not optional.** This route replaces an
@@ -8434,49 +8461,85 @@ A scope with no bindings is unaffected by another scope's: binding `sub`
 to one scope narrows only that scope's own claims, never `email`'s or any
 other scope's in the same tenant.
 
-Captured against the second stack, on its `billing` scope. The read, then
-the same write twice — without the header, then with it:
+`declared` names the mappers that declare the scope, the ones issuance runs for it
+while `bound` is empty. It comes from code, so a write never changes it and the
+`ETag` does not cover it, as it does not cover `available`.
+
+Captured against the eighteenth stack, in `scope-reach-demo`. The scope `email`
+(`01a12d29-70d3-7b41-8b8f-2b3bcf07e79d`) is one every tenant starts with, and the
+`email` mapper declares it; `billing` (`01a12d29-72a6-77f6-9e8b-c2fcbb928cd2`) is
+declared by none. The read, then the write under its tag, then the read back:
 
 ```bash
 curl -sS -D - \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
-  http://localhost:3000/admin/tenants/demo/scopes/01a0d7ef-2ca0-724f-9815-81273d5ce936/mappers
-
-curl -sS -X PUT \
-  -H "Authorization: Bearer $ADMIN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"mapper_names": ["sub"]}' \
-  http://localhost:3000/admin/tenants/demo/scopes/01a0d7ef-2ca0-724f-9815-81273d5ce936/mappers
+  http://localhost:3082/admin/tenants/scope-reach-demo/scopes/01a12d29-70d3-7b41-8b8f-2b3bcf07e79d/mappers
 
 curl -sS -D - -X PUT \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -H 'If-Match: "59c1141bb2da82132d257ffa8b417c0a7c4e9985057f06388c4d62534ecb2183"' \
   -d '{"mapper_names": ["sub"]}' \
-  http://localhost:3000/admin/tenants/demo/scopes/01a0d7ef-2ca0-724f-9815-81273d5ce936/mappers
+  http://localhost:3082/admin/tenants/scope-reach-demo/scopes/01a12d29-70d3-7b41-8b8f-2b3bcf07e79d/mappers
+
+curl -sS -D - \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  http://localhost:3082/admin/tenants/scope-reach-demo/scopes/01a12d29-70d3-7b41-8b8f-2b3bcf07e79d/mappers
 ```
 
-The empty `bound` on the read is the fallback case, not an error. The
-`ETag` covers `bound` alone — `available` is the registry's, and no part
-of what a caller is replacing:
+The empty `bound` on the first read is the fallback case, not an error: `email`
+runs for this scope until something is bound. Binding `sub` replaces it, and
+`declared` still names `email`:
 
 ```
+HTTP/1.1 200 OK
+x-request-id: 01a12d29-9b02-721b-93cd-cb20e533372b
+cache-control: no-store
 etag: "59c1141bb2da82132d257ffa8b417c0a7c4e9985057f06388c4d62534ecb2183"
-{"available":["sub","profile","email","roles","groups","address","phone"],"bound":[]}
+content-type: application/json; charset=utf-8
+content-length: 106
 
-{"type":"about:blank","title":"Precondition Required","status":428,"detail":"If-Match is required to replace a scope’s claim mapper bindings","instance":"01a0d7ef-b3c3-72dc-ac54-75e8a608dd7c"}
+{"available":["sub","profile","email","roles","groups","address","phone"],"bound":[],"declared":["email"]}
 
 HTTP/1.1 200 OK
-x-request-id: 01a0d7ef-b3de-760a-9640-23ffa5bde2a4
+x-request-id: 01a12d29-9b36-777e-8b19-641e3f840103
+cache-control: no-store
 etag: "e853268082f466e074aba6be62bd16b45ac4a0037e40335ae4eaf476c9defcb4"
 content-type: application/json; charset=utf-8
-content-length: 90
+content-length: 111
 
-{"available":["sub","profile","email","roles","groups","address","phone"],"bound":["sub"]}
+{"available":["sub","profile","email","roles","groups","address","phone"],"bound":["sub"],"declared":["email"]}
+
+HTTP/1.1 200 OK
+x-request-id: 01a12d29-9b55-74f9-a386-3516a179a75a
+cache-control: no-store
+etag: "e853268082f466e074aba6be62bd16b45ac4a0037e40335ae4eaf476c9defcb4"
+content-type: application/json; charset=utf-8
+content-length: 111
+
+{"available":["sub","profile","email","roles","groups","address","phone"],"bound":["sub"],"declared":["email"]}
 ```
 
-_(Not re-run for the `cache-control: no-store` pass: this `billing` scope,
-and the second stack it lived on, are gone.)_
+On `billing`, which no mapper declares, `declared` is empty and so is the
+fallback; the same write without the header is refused:
+
+```bash
+curl -sS \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  http://localhost:3082/admin/tenants/scope-reach-demo/scopes/01a12d29-72a6-77f6-9e8b-c2fcbb928cd2/mappers
+
+curl -sS -X PUT \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"mapper_names": ["sub"]}' \
+  http://localhost:3082/admin/tenants/scope-reach-demo/scopes/01a12d29-72a6-77f6-9e8b-c2fcbb928cd2/mappers
+```
+
+```
+{"available":["sub","profile","email","roles","groups","address","phone"],"bound":[],"declared":[]}
+
+{"type":"about:blank","title":"Precondition Required","status":428,"detail":"If-Match is required to replace a scope’s claim mapper bindings","instance":"01a12d29-b389-725f-abd1-4064b5d48e63"}
+```
 
 A name the registry does not carry, refused with the names it does —
 captured against the sixth stack, on the `billing` scope in its `demo`,

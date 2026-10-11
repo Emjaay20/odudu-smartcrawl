@@ -21,10 +21,10 @@ export function scopeRoleUnavailable(
   return roleReachUnavailable(role, caller, tenant);
 }
 
-type Known = ScopeRole & { admin_reach: readonly string[] | null };
+type Known = ScopeRole & { admin_reach: readonly string[] };
 
-// The mapped roles, which carry no description and no reach, and then the
-// picker's roles, which carry both and so win.
+// The mapped roles, which carry no description, and then the picker's roles,
+// which do and so win.
 export function roleIndex(
   items: readonly MappedItem[],
   options: readonly Role[],
@@ -37,7 +37,7 @@ export function roleIndex(
       client_id: role.client_id,
       client_key: role.client_key,
       description: 'description' in role ? role.description : null,
-      admin_reach: 'admin_reach' in role ? role.admin_reach : null,
+      admin_reach: role.admin_reach,
     },
   ];
   return new Map([...items.map(entry), ...options.map(entry)]);
@@ -61,9 +61,7 @@ export function scopeRoleRows(
   });
 }
 
-// A mapped role the caller could not give is one it cannot take. What a
-// mapped role reaches is known only once the picker has loaded it, so a role
-// not yet loaded is left to the server's own refusal.
+// A mapped role the caller could not give is one it cannot take.
 export function keptRoles(
   mapped: readonly string[],
   index: ReadonlyMap<string, Known>,
@@ -72,10 +70,7 @@ export function keptRoles(
 ): string[] {
   return mapped.filter((id) => {
     const found = index.get(id);
-    return (
-      found?.admin_reach != null &&
-      scopeRoleUnavailable({ ...found, admin_reach: found.admin_reach }, caller, tenant) !== null
-    );
+    return found !== undefined && scopeRoleUnavailable(found, caller, tenant) !== null;
   });
 }
 

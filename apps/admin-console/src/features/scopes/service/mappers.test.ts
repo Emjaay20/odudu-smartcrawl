@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import {
-  FALLBACK_TEXT,
+  NONE_TEXT,
   mapperOptions,
   mappersFailure,
   mappersFailureText,
@@ -14,10 +14,16 @@ it('offers every available mapper, in the order the registry names them', () => 
   ]);
 });
 
-it('says a scope with no binding falls back to its declared mappers', () => {
-  expect(mappersSummary([])).toBe(FALLBACK_TEXT);
-  expect(FALLBACK_TEXT).toMatch(/falls back to the scope's declared mappers/u);
-  expect(mappersSummary(['email'])).toBe('Bound: email.');
+it('names the declared mappers a scope with no binding falls back to', () => {
+  expect(mappersSummary([], ['email', 'groups'])).toBe(
+    'No mapper is bound, so this scope uses the mappers that declare it: email and groups.',
+  );
+  expect(mappersSummary(['email'], ['groups'])).toBe('Bound: email.');
+});
+
+it('says so when nothing is bound and nothing declares the scope', () => {
+  expect(mappersSummary([], [])).toBe(NONE_TEXT);
+  expect(NONE_TEXT).toMatch(/none declares it/u);
 });
 
 it('names the registry in a 400 for an unknown mapper', () => {

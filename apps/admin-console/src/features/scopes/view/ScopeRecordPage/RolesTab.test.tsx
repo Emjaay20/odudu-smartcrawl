@@ -38,7 +38,12 @@ it('searches the roles on the server, and saves the set on the ETag it was read 
     AT,
     scopeRoutes(undefined, {
       [`PUT ${SC}/s-bill/roles`]: json(
-        { items: [MAPPED, { id: 'r-read', name: 'reader', client_id: null, client_key: null }] },
+        {
+          items: [
+            MAPPED,
+            { id: 'r-read', name: 'reader', client_id: null, client_key: null, admin_reach: [] },
+          ],
+        },
         200,
         {
           etag: '"s-bill-r2"',
@@ -132,7 +137,10 @@ it('shows a role added elsewhere beside yours on a 412, and sends nothing more',
         json({ items: [MAPPED] }, 200, { etag: '"s-bill-r1"' }),
         json(
           {
-            items: [MAPPED, { id: 'r-read', name: 'reader', client_id: null, client_key: null }],
+            items: [
+              MAPPED,
+              { id: 'r-read', name: 'reader', client_id: null, client_key: null, admin_reach: [] },
+            ],
           },
           200,
           { etag: '"s-bill-r2"' },
@@ -147,6 +155,41 @@ it('shows a role added elsewhere beside yours on a 412, and sends nothing more',
   await user.click(within(section).getByRole('button', { name: 'Save Roles' }));
   expect(await within(section).findByRole('button', { name: 'Keep mine in Roles' })).toBeVisible();
   expect(sent.filter((s) => s.method === 'PUT')).toHaveLength(1);
+});
+
+it('keeps a mapped role the caller could not give, though the picker never loaded it', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    scopeRoutes(['manage-tenant'], {
+      [`GET ${SC}/s-bill/roles`]: json(
+        {
+          items: [
+            MAPPED,
+            {
+              id: 'r-far',
+              name: 'zz-keeper',
+              client_id: null,
+              client_key: null,
+              admin_reach: ['manage-keys'],
+            },
+          ],
+        },
+        200,
+        { etag: '"s-bill-r1"' },
+      ),
+      [`PUT ${SC}/s-bill/roles`]: json({ items: [] }, 200, { etag: '"s-bill-r2"' }),
+    }),
+  );
+  const section = await open();
+  expect(await within(section).findByText(/cannot take away either/u)).toBeVisible();
+  await user.click(
+    await within(section).findByRole('option', { name: /^auditor, a tenant role/u }),
+  );
+  await user.click(within(section).getByRole('button', { name: 'Save Roles' }));
+  await waitFor(() => {
+    expect(sent.find((s) => s.method === 'PUT')?.body).toEqual({ role_ids: ['r-far'] });
+  });
 });
 
 it('passes axe in both themes', async () => {

@@ -20,7 +20,7 @@ export {
   scopeDeleteFailureText,
 } from '#/features/scopes/service/guard.ts';
 export {
-  FALLBACK_TEXT,
+  NONE_TEXT,
   mapperOptions,
   mappersFailure,
   mappersFailureText,

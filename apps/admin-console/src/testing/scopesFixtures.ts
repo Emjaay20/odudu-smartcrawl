@@ -39,8 +39,14 @@ export const BILLING_SCOPE = scope('s-bill', 'billing', { description: 'Invoices
 export const REPORTS = scope('s-rep', 'reports:read');
 export const SCOPES = [OPENID, BILLING_SCOPE, REPORTS];
 
-// The roles a scope maps, as its own read answers them: no reach, no description.
-export const MAPPED = { id: 'r-aud', name: 'auditor', client_id: null, client_key: null };
+// The roles a scope maps, as its own read answers them: with what each reaches, no description.
+export const MAPPED = {
+  id: 'r-aud',
+  name: 'auditor',
+  client_id: null,
+  client_key: null,
+  admin_reach: [],
+};
 
 function listed(request: Sent) {
   const name = request.search.get('name');
@@ -82,7 +88,9 @@ export function scopeRoutes(
         [`GET ${SC}/${each.id}/roles`, json({ items: [] }, 200, { etag: `"${each.id}-r1"` })],
         [
           `GET ${SC}/${each.id}/mappers`,
-          json({ available: ['email', 'groups'], bound: [] }, 200, { etag: `"${each.id}-m1"` }),
+          json({ available: ['email', 'groups'], bound: [], declared: ['email'] }, 200, {
+            etag: `"${each.id}-m1"`,
+          }),
         ],
         [`GET ${SC}/${each.id}/clients`, json({ items: [] })],
       ]),
