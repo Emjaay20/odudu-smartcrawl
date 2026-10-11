@@ -141,6 +141,15 @@ const seededSchema = z.object({
     // A member of /eng.
     member: z.string(),
   }),
+  // A tenant of its own for the Scopes tests.
+  scopes: z.object({
+    // Holds tenant-admin there.
+    admin: account,
+    // Holds manage-tenant alone: the scopes, but no search over the clients.
+    tenantOnly: account,
+    // Holds manage-clients alone: no scopes at all.
+    clientsOnly: account,
+  }),
 });
 
 export type Account = z.infer<typeof account>;

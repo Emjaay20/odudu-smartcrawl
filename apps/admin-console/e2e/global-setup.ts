@@ -151,6 +151,62 @@ function seedClients(tenant: string): void {
   );
 }
 
+// The scopes the Scopes tests change, each changed by one test alone, a
+// public and a confidential client to carry them, and a role reaching a
+// capability the operator holding manage-tenant alone lacks.
+function seedScopes(tenant: string): void {
+  seed(['tenant', '--name', tenant]);
+  seed([
+    'client',
+    '--tenant',
+    tenant,
+    '--client-id',
+    'portal',
+    '--public',
+    '--redirect-uri',
+    'https://portal.example/callback',
+  ]);
+  seed([
+    'client',
+    '--tenant',
+    tenant,
+    '--client-id',
+    'billing',
+    `--client-secret=${password()}`,
+    '--redirect-uri',
+    'https://billing.example/callback',
+  ]);
+  for (const name of ['auditor', 'helper']) seed(['role', '--tenant', tenant, '--name', name]);
+  nest(tenant, 'helper', 'odudu-admin:view-users');
+  const scopes = ['invoices', 'carried', 'raced', 'keyed', 'doomed', 'staffed', 'mapped', UNBROKEN];
+  for (const name of scopes) {
+    seed(['scope', '--tenant', tenant, '--name', name, '--description', `The ${name} scope`]);
+  }
+  seed([
+    'assign-scope',
+    '--tenant',
+    tenant,
+    '--client-id',
+    'billing',
+    '--scope',
+    'carried',
+    '--assignment',
+    'default',
+  ]);
+  seed([
+    'assign-scope',
+    '--tenant',
+    tenant,
+    '--client-id',
+    'portal',
+    '--scope',
+    'carried',
+    '--assignment',
+    'optional',
+  ]);
+  seed(['map-role', '--tenant', tenant, '--scope', 'staffed', '--role', 'auditor']);
+}
+
 // No seed command nests a role, so the edge goes in as the database owner.
 // A child named `client:role` is that client's role; any other a tenant role.
 function nest(tenant: string, parent: string, child: string): void {
@@ -226,6 +282,11 @@ export default function globalSetup(): void {
       { tenant: `${run}-k`, username: 'tao', password: password() },
       { tenant: `${run}-k`, username: 'ramanujan', password: password() },
     ],
+  };
+  const scopes = {
+    admin: { tenant: `${run}-p`, username: 'cantor', password: password() },
+    tenantOnly: { tenant: `${run}-p`, username: 'dedekind', password: password() },
+    clientsOnly: { tenant: `${run}-p`, username: 'hilbert', password: password() },
   };
   const tenants = {
     general: `${run}-d`,
@@ -309,6 +370,12 @@ export default function globalSetup(): void {
   grant(clients.sessions, 'odudu-admin:manage-clients');
   grant(clients.sessions, 'odudu-admin:manage-sessions');
   for (const walker of clients.walkers) subject(walker);
+  seedScopes(scopes.admin.tenant);
+  administrator(scopes.admin);
+  subject(scopes.tenantOnly);
+  grant(scopes.tenantOnly, 'odudu-admin:manage-tenant');
+  subject(scopes.clientsOnly);
+  grant(scopes.clientsOnly, 'odudu-admin:manage-clients');
   seedGroupsRoles(groupsRoles.admin.tenant);
   administrator(groupsRoles.admin);
   subject(groupsRoles.limited);
@@ -351,5 +418,6 @@ export default function globalSetup(): void {
     subjects,
     clients,
     groupsRoles,
+    scopes,
   });
 }

@@ -1869,6 +1869,50 @@ the gateway's assertion. A rotate-secret route that answered
 `200` with a secret no `private_key_jwt` client could present now answers `409`,
 and the client page says why instead of offering a rotation.
 
+## Part 4 — Scopes: list, create, General, Roles, Claim mappers, Clients and Activity
+
+**The scope's page carries what `PATCH` takes, not only what the brief named.**
+Beside the description and the two token flags, General has the default
+assignment for a client made from now on, the consent text and the display
+order, since `amendScopeRequestSchema` amends all six. Creation sends the name
+and a description alone: the server's defaults for the flags are not restated
+here, and General sets them once the scope exists.
+
+**`openid` offers no delete.** The server refuses it with a 409 whose detail is
+prose (no problem type tells it apart), so the console keys on the name and
+shows that refusal as fixed text in place of the button.
+
+**Assignment changes the client's ETag, and the client's page is not open.**
+Assigning or unassigning from a scope drops what the console holds of that
+client's records, rather than marking them stale: a stale record is shown while
+it is read again, and a section saved in that gap sent the old ETag and got a 412. The browser test that drives this failed on exactly that before the fix.
+
+**The clients picker is a bounded server search over `GET /clients`**, which
+needs `manage-clients`. A caller holding `manage-tenant` alone sees the carrying
+clients (the new `GET /scopes/:id/clients`, a cursor of the row id) and a note
+saying what choosing one needs; nothing is requested for it.
+
+**Scale.** The scopes list, its count, a scope's clients and every picker are
+cursor-bounded by the server's `MAX_LIMIT`; nothing renders an unbounded
+collection. At 10,000 clients the scope's clients list reads one page per
+"Load more", and the picker reads a prefix of the name, never the set.
+
+**Gaps the API leaves, recorded where they are fixed.**
+
+- A scope with no binding falls back to "its declared mappers", and the mappers
+  response does not name them, so the tab says that and no more. Fixed by the
+  mappers response answering the effective set.
+- `GET /scopes/:id/roles` answers `{id, name, client_id, client_key}` with no
+  `admin_reach`, unlike a group's roles. A role already mapped is judged by what
+  the picker has loaded of it; one not loaded is left to the server's own 403,
+  worded where it happened. Fixed by the same field on the scope's role items.
+- Create a copy (design spec section 4.7) is not built: it is three writes that
+  are not atomic, and the assignments are not copied.
+
+**Tests were written before the services and the views.** The service and view
+files were each run and seen failing before the code existed; the route
+coverage list lost its nine scope routes.
+
 ## Performance
 
 ### The React Compiler

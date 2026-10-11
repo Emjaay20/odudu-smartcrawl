@@ -50,21 +50,21 @@ export interface ClientChange<A, R> {
   run: (arg: A) => Promise<GatewayResult<R>>;
 }
 
-// An assignment changes the client's own ETag, which covers its scopes, so
-// whatever the console holds of that client is read again once one settles.
+// An assignment changes the client's own ETag, which covers its scopes. Its
+// page is not open here, so what the console holds of the client is dropped
+// rather than marked stale: a page opened later would otherwise show the old
+// record and save on its ETag before the fresh read arrived.
 function useAfterAssignment(tenant: string, id: string) {
   const client = useQueryClient();
   return (clientDbId: string): void => {
     client.invalidateQueries({ queryKey: ['scope-clients', tenant, id] }).catch(() => undefined);
-    client
-      .invalidateQueries({
-        predicate: ({ queryKey: [kind, at, which] }) =>
-          at === tenant &&
-          kind === 'record' &&
-          typeof which === 'string' &&
-          (which === `clients/${clientDbId}` || which.startsWith(`clients/${clientDbId}/`)),
-      })
-      .catch(() => undefined);
+    client.removeQueries({
+      predicate: ({ queryKey: [kind, at, which] }) =>
+        at === tenant &&
+        kind === 'record' &&
+        typeof which === 'string' &&
+        (which === `clients/${clientDbId}` || which.startsWith(`clients/${clientDbId}/`)),
+    });
   };
 }
 

@@ -51,7 +51,8 @@ export function useScopeMappersRecord(tenant: string, id: string): RecordState<S
 // What a scope maps and hands out is read by lists, pickers and every client
 // that carries it, so each is read again, but for a deleted scope's own
 // reads, which would only find it gone. A deleted scope also leaves every
-// client it was assigned to, so their records are stale too.
+// client it was assigned to; those clients' pages are not open here, so what
+// the console holds of them is dropped, not marked stale.
 function useAfterScopeChange(tenant: string, deleted: string | null = null) {
   const client = useQueryClient();
   return <R>(result: GatewayResult<R>): GatewayResult<R> => {
@@ -63,10 +64,19 @@ function useAfterScopeChange(tenant: string, deleted: string | null = null) {
             at === tenant &&
             kind === 'record' &&
             typeof which === 'string' &&
-            ((which.startsWith('scopes/') && (gone === null || !which.startsWith(gone))) ||
-              (deleted !== null && which.startsWith('clients/'))),
+            which.startsWith('scopes/') &&
+            (gone === null || !which.startsWith(gone)),
         })
         .catch(() => undefined);
+      if (deleted !== null) {
+        client.removeQueries({
+          predicate: ({ queryKey: [kind, at, which] }) =>
+            at === tenant &&
+            kind === 'record' &&
+            typeof which === 'string' &&
+            which.startsWith('clients/'),
+        });
+      }
       for (const key of [
         ['list', tenant, 'scopes'],
         ['count', tenant, 'scopes'],
