@@ -50,6 +50,7 @@ import { Rail } from '#/shared/view/Rail';
 import { RecordPage } from '#/shared/view/RecordPage';
 import { ResourceListPage } from '#/shared/view/ResourceListPage';
 import { RoleOwner } from '#/shared/view/RoleOwner';
+import { ClientPicker } from '#/shared/view/ClientPicker';
 import { RolePicker } from '#/shared/view/RolePicker';
 import { SaveBar } from '#/shared/view/SaveBar';
 import { SecretDialog } from '#/shared/view/SecretDialog';
@@ -421,8 +422,14 @@ function pickerOf<T>(options: readonly T[], more: boolean): PickerState<T> {
   };
 }
 
+const CLIENT_OPTIONS = [
+  { id: 'c1', name: 'Billing', client_id: 'billing', type: 'confidential' as const },
+  { id: 'c2', name: 'Portal', client_id: 'portal', type: 'public' as const },
+];
+
 function Pickers() {
   const [roles, setRoles] = useState<readonly string[]>(['r2']);
+  const [clients, setClients] = useState<readonly string[]>([]);
   const [groups, setGroups] = useState<readonly string[]>([]);
   return (
     <div className={styles.grid}>
@@ -437,6 +444,13 @@ function Pickers() {
         picker={pickerOf(GROUPS, false)}
         selected={groups}
         onChange={setGroups}
+      />
+      <ClientPicker
+        label="Clients"
+        picker={pickerOf(CLIENT_OPTIONS, false)}
+        selected={clients}
+        onChange={setClients}
+        selectionMode="single"
       />
     </div>
   );
@@ -906,7 +920,7 @@ export function Gallery({
               error="The only required step of the flow cannot be disabled."
             />
           </Specimen>
-          <Specimen label="RolePicker and GroupPicker: searched, paged, each role's owner named">
+          <Specimen label="RolePicker, GroupPicker and ClientPicker: searched, paged, each role's owner named">
             <Pickers />
           </Specimen>
           <Specimen label="ChecklistField: a set from a short list, each held back with its reason">
