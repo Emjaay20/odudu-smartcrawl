@@ -29,6 +29,14 @@ it('heads the scope by its name with the five tabs, and breadcrumbs back to the 
   );
 });
 
+it('offers a copy of the scope, which is a new scope under another name', async () => {
+  renderConsoleAt(AT, scopeRoutes());
+  expect(await screen.findByRole('link', { name: 'Create a copy' })).toHaveAttribute(
+    'href',
+    '/console/acme/scopes/new?copy=s-bill',
+  );
+});
+
 it("reads the scope's own activity", async () => {
   const user = userEvent.setup();
   const { sent } = renderConsoleAt(AT, scopeRoutes());

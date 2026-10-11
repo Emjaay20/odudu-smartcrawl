@@ -38,15 +38,27 @@ export function readScopeCount(
   });
 }
 
+// A new scope is its name and description; a copy carries the source's other fields too.
+export interface CreateScopeInput {
+  name: string;
+  description: string;
+  include_in_id_token?: boolean;
+  include_in_access_token?: boolean;
+  default_client_assignment?: 'default' | 'optional';
+  consent_text?: string;
+  display_order?: number;
+}
+
 export function createScope(
   gateway: Gateway,
   tenant: string,
-  input: { name: string; description: string },
+  input: CreateScopeInput,
 ): Promise<GatewayResult<ClientScope>> {
+  const { description, ...rest } = input;
   return gateway.request('POST', `admin/tenants/${path(tenant)}/scopes`, {
     body: {
-      name: input.name,
-      ...(input.description === '' ? {} : { description: input.description }),
+      ...rest,
+      ...(description === '' ? {} : { description }),
     },
     schema: clientScopeSchema,
   });

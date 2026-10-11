@@ -224,6 +224,24 @@ test('a description changed behind an open page is shown beside yours, and nothi
   await expect.poll(() => scopeField('raced', 'description')).toBe('Theirs');
 });
 
+test('a scope is copied under a new name, with its roles and mappers, and not its clients', async ({
+  page,
+}) => {
+  await signIn(page, admin);
+  await openScope(page, 'staffed');
+  await page.getByRole('link', { name: 'Create a copy' }).click();
+  await expect(
+    page.getByText('A copy of staffed, mapping auditor and binding no mapper.'),
+  ).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Description' })).toHaveValue('The staffed scope');
+  await expectAccessible(page);
+  await page.getByRole('textbox', { name: 'Name' }).fill('staffed-copy');
+  await page.getByRole('button', { name: 'Create scope' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'staffed-copy' })).toBeVisible();
+  await expect.poll(() => mappedRoles('staffed-copy')).toBe('auditor');
+  expect(carriers('staffed-copy')).toBe('');
+});
+
 test('openid is shown with its refusal as fixed text and no delete to press', async ({ page }) => {
   await signIn(page, admin);
   await openScope(page, 'openid');

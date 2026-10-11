@@ -1897,21 +1897,28 @@ cursor-bounded by the server's `MAX_LIMIT`; nothing renders an unbounded
 collection. At 10,000 clients the scope's clients list reads one page per
 "Load more", and the picker reads a prefix of the name, never the set.
 
-**Gaps the API leaves, recorded where they are fixed.**
+**Gaps the API left, fixed in this task (`95941669`, the console in `144c7f56`).**
 
-- A scope with no binding falls back to "its declared mappers", and the mappers
-  response does not name them, so the tab says that and no more. Fixed by the
-  mappers response answering the effective set.
-- `GET /scopes/:id/roles` answers `{id, name, client_id, client_key}` with no
-  `admin_reach`, unlike a group's roles. A role already mapped is judged by what
-  the picker has loaded of it; one not loaded is left to the server's own 403,
-  worded where it happened. Fixed by the same field on the scope's role items.
-- Create a copy (design spec section 4.7) is not built: it is three writes that
-  are not atomic, and the assignments are not copied.
+- `GET`/`PUT /scopes/:id/mappers` answered no declared mappers, so the console
+  could say only that a scope "falls back". They now carry `declared`, the
+  mappers that declare the scope (`ClaimMapperRegistry.declaredFor`), outside the
+  `ETag`, and the tab names them.
+- `GET`/`PUT /scopes/:id/roles` carried no `admin_reach`, unlike a group's roles.
+  Each item now does, outside the `ETag`, and the console judges a role already
+  mapped by it, whether or not the picker has loaded it.
+- "Create a copy" (design spec section 4.7, offered for roles and scopes) is
+  built as Roles built it: a new scope with the source's flags, consent text,
+  default assignment and display order, then its roles (those the caller could
+  give; the rest are listed with why) and its mappers, each on the tag its own
+  read answers. Not atomic, so a part that fails leaves the copy and says which.
+  The clients that carry the source are not copied.
 
-**Tests were written before the services and the views.** The service and view
-files were each run and seen failing before the code existed; the route
-coverage list lost its nine scope routes.
+**What the tests did and did not do first.** The service tests and the view tests
+were run failing before the code they cover, in the pass that built the area.
+The repository and usecase hooks were written before the view tests, which then
+drove their wiring, so those layers were not red first on their own. The
+assignment's ETag handling and the second-save tests were written first and
+mutation-checked in the fix round.
 
 ## Performance
 

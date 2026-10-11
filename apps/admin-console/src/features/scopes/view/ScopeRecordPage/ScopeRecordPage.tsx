@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useAuditReadable } from '#/features/session';
 import { AreaGate, areaAt } from '#/features/shell';
 import {
+  copyHrefOf,
   SCOPE_TAB_LABELS,
   SCOPE_TABS,
   scopesTrail,
@@ -15,6 +16,7 @@ import { GeneralTab } from '#/features/scopes/view/ScopeRecordPage/GeneralTab.ts
 import { MappersTab } from '#/features/scopes/view/ScopeRecordPage/MappersTab.tsx';
 import { RolesTab } from '#/features/scopes/view/ScopeRecordPage/RolesTab.tsx';
 import { ActivityTab } from '#/shared/view/ActivityTab';
+import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { RecordPage } from '#/shared/view/RecordPage';
 import styles from '#/features/scopes/view/ScopeRecordPage/Tab.module.css';
@@ -69,6 +71,15 @@ function Record({ tenant, id }: { tenant: string; id: string }) {
       breadcrumb={scopesTrail(tenant, title)}
       title={title}
       {...(scope?.description == null ? {} : { description: scope.description })}
+      {...(scope === undefined
+        ? {}
+        : {
+            actions: (
+              <ButtonLink href={copyHrefOf(tenant, scope.id)} size="small">
+                Create a copy
+              </ButtonLink>
+            ),
+          })}
       noun="scope"
       readOnly={false}
       label="Scope sections"

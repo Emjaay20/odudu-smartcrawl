@@ -11,6 +11,29 @@
   gap: var(--space-3);
 }
 
+.rule,
+.error {
+  margin: 0;
+  max-inline-size: 72ch;
+}
+
+.rule {
+  color: var(--ink-muted);
+}
+
+.place {
+  color: var(--ink-primary);
+}
+
+.error {
+  color: var(--signal-danger-ink);
+}
+
+.left {
+  margin: var(--space-2) 0 0;
+  padding-inline-start: var(--space-6);
+}
+
 .message {
   margin: 0;
   max-inline-size: 72ch;

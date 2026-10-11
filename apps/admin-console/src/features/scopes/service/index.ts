@@ -63,3 +63,17 @@ export {
   scopeRoleUnavailable,
   withKept,
 } from '#/features/scopes/service/roles.ts';
+export {
+  type Copying,
+  type CopyPlan,
+  type CopyRead,
+  copiedDescription,
+  copyBody,
+  createBodyOf,
+  copyHrefOf,
+  copyingOf,
+  copyingText,
+  copyPlan,
+  type PartialCopy,
+  partialCopy,
+} from '#/features/scopes/service/copy.ts';

@@ -4,7 +4,7 @@ import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
 import { json, offline, problem } from '#/testing/fakeTransport.ts';
 import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole.tsx';
-import { SC, scope, scopeRoutes } from '#/testing/scopesFixtures.ts';
+import { MAPPED, SC, scope, scopeRoutes } from '#/testing/scopesFixtures.ts';
 
 afterEach(() => {
   resetConsole();
@@ -30,6 +30,108 @@ it('creates a scope and lands on it', async () => {
     name: 'invoices',
     description: 'Reads invoices',
   });
+});
+
+const BILLING_PARTS = {
+  [`GET ${SC}/s-bill/roles`]: json(
+    {
+      items: [
+        MAPPED,
+        {
+          id: 'r-far',
+          name: 'keeper',
+          client_id: null,
+          client_key: null,
+          admin_reach: ['manage-keys'],
+        },
+      ],
+    },
+    200,
+    { etag: '"s-bill-r1"' },
+  ),
+  [`GET ${SC}/s-bill/mappers`]: json(
+    { available: ['email', 'groups'], bound: ['email'], declared: [] },
+    200,
+    { etag: '"s-bill-m1"' },
+  ),
+};
+
+it('copies a scope under a new name, with what it maps and binds, but the roles the caller could give', async () => {
+  const user = userEvent.setup();
+  const { sent, router } = renderConsoleAt(`${AT}?copy=s-bill`, {
+    ...scopeRoutes(['manage-tenant'], {
+      ...BILLING_PARTS,
+      [`POST ${SC}`]: json(MADE, 201),
+      [`GET ${SC}/s-new/roles`]: json({ items: [] }, 200, { etag: '"s-new-r1"' }),
+      [`PUT ${SC}/s-new/roles`]: json({ items: [MAPPED] }, 200, { etag: '"s-new-r2"' }),
+      [`GET ${SC}/s-new/mappers`]: json(
+        { available: ['email', 'groups'], bound: [], declared: [] },
+        200,
+        { etag: '"s-new-m1"' },
+      ),
+      [`PUT ${SC}/s-new/mappers`]: json(
+        { available: ['email', 'groups'], bound: ['email'], declared: [] },
+        200,
+        { etag: '"s-new-m2"' },
+      ),
+    }),
+  });
+  expect(
+    await screen.findByText('A copy of billing, mapping auditor and binding email.'),
+  ).toBeVisible();
+  expect(screen.getByText(/Not copied, since you could not give it/u)).toBeVisible();
+  expect(screen.getByRole('textbox', { name: 'Description' })).toHaveValue('Invoices');
+  await user.type(screen.getByRole('textbox', { name: 'Name' }), 'invoices{Enter}');
+  await waitFor(() => {
+    expect(router.state.location.pathname).toBe('/acme/scopes/s-new');
+  });
+  expect(sent.find((s) => s.method === 'POST')?.body).toMatchObject({
+    name: 'invoices',
+    description: 'Invoices',
+  });
+  expect(sent.find((s) => s.path === `${SC}/s-new/roles` && s.method === 'PUT')).toMatchObject({
+    ifMatch: '"s-new-r1"',
+    body: { role_ids: ['r-aud'] },
+  });
+  expect(sent.find((s) => s.path === `${SC}/s-new/mappers` && s.method === 'PUT')).toMatchObject({
+    ifMatch: '"s-new-m1"',
+    body: { mapper_names: ['email'] },
+  });
+});
+
+it('stays to say which parts a copy could not take', async () => {
+  const user = userEvent.setup();
+  const { router } = renderConsoleAt(`${AT}?copy=s-bill`, {
+    ...scopeRoutes(undefined, {
+      ...BILLING_PARTS,
+      [`POST ${SC}`]: json(MADE, 201),
+      [`GET ${SC}/s-new/roles`]: json({ items: [] }, 200, { etag: '"s-new-r1"' }),
+      [`PUT ${SC}/s-new/roles`]: problem(500),
+      [`GET ${SC}/s-new/mappers`]: json(
+        { available: ['email', 'groups'], bound: [], declared: [] },
+        200,
+        { etag: '"s-new-m1"' },
+      ),
+      [`PUT ${SC}/s-new/mappers`]: json(
+        { available: ['email', 'groups'], bound: ['email'], declared: [] },
+        200,
+        { etag: '"s-new-m2"' },
+      ),
+    }),
+  });
+  await screen.findByText(/A copy of billing/u);
+  await user.type(screen.getByRole('textbox', { name: 'Name' }), 'invoices{Enter}');
+  expect(await screen.findByText(/its roles could not be copied/u)).toBeVisible();
+  expect(screen.getByRole('link', { name: 'Open invoices' })).toHaveAttribute(
+    'href',
+    '/console/acme/scopes/s-new',
+  );
+  expect(router.state.location.pathname).toBe('/acme/scopes/new');
+});
+
+it('says the scope to copy could not be read, and makes a plain one', async () => {
+  renderConsoleAt(`${AT}?copy=s-gone`, scopeRoutes());
+  expect(await screen.findByText(/The scope to copy could not be read/u)).toBeVisible();
 });
 
 it('asks for a name before sending anything', async () => {

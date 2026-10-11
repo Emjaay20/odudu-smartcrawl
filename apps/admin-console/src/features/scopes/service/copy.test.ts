@@ -1,0 +1,117 @@
+import type { AdminCapability } from '#/shared/service/principal.ts';
+import { describe, expect, it } from 'vitest';
+import {
+  type CopyRead,
+  copiedDescription,
+  copyBody,
+  createBodyOf,
+  copyHrefOf,
+  copyingOf,
+  copyingText,
+  copyPlan,
+  partialCopy,
+} from '#/features/scopes/service/copy.ts';
+
+function role(id: string, name: string, reach: AdminCapability[] = []) {
+  return { id, name, client_id: null, client_key: null, admin_reach: reach };
+}
+
+const AUDITOR = role('r1', 'auditor');
+const KEEPER = role('r2', 'keeper', ['manage-keys']);
+
+const SCOPE = {
+  id: 's1',
+  name: 'billing',
+  description: 'Invoices',
+  include_in_id_token: true,
+  include_in_access_token: false,
+  default_client_assignment: 'optional' as const,
+  consent_text: 'Read invoices',
+  display_order: 4,
+  created_at: '2026-09-28T08:41:53.858Z',
+};
+
+describe('copying a scope', () => {
+  it('maps each role the caller could give, and says why it leaves the rest', () => {
+    const plan = copyPlan([AUDITOR, KEEPER], ['view-users'], 'acme');
+    expect(plan.mapped).toEqual([AUDITOR]);
+    expect(plan.left).toEqual([
+      {
+        name: 'keeper',
+        why: 'It reaches manage-keys, which you do not hold, so you cannot give or take it.',
+      },
+    ]);
+  });
+
+  it('maps everything until the caller is known', () => {
+    expect(copyPlan([AUDITOR, KEEPER], undefined, 'acme')).toEqual({
+      mapped: [AUDITOR, KEEPER],
+      left: [],
+    });
+  });
+
+  it('copies the scope as it is set, but for its name, and not the clients', () => {
+    expect(copyBody(SCOPE, 'Edited')).toEqual({
+      description: 'Edited',
+      include_in_id_token: true,
+      include_in_access_token: false,
+      default_client_assignment: 'optional',
+      consent_text: 'Read invoices',
+      display_order: 4,
+    });
+    expect(copyBody({ ...SCOPE, description: null, consent_text: null }, '')).toEqual({
+      description: '',
+      include_in_id_token: true,
+      include_in_access_token: false,
+      default_client_assignment: 'optional',
+      display_order: 4,
+    });
+  });
+
+  it('sends a plain scope as its name and description, a copy as the source with them', () => {
+    expect(createBodyOf('n', 'd', { status: 'none' })).toEqual({ name: 'n', description: 'd' });
+    const source: CopyRead = { status: 'ready', scope: SCOPE, roles: [], bound: [] };
+    expect(createBodyOf('n', 'd', source)).toMatchObject({
+      name: 'n',
+      description: 'd',
+      display_order: 4,
+    });
+  });
+
+  it('shows the description edited, else the source one', () => {
+    const source: CopyRead = { status: 'ready', scope: SCOPE, roles: [], bound: [] };
+    expect(copiedDescription(null, source)).toBe('Invoices');
+    expect(copiedDescription('Mine', source)).toBe('Mine');
+    expect(copiedDescription(null, { status: 'none' })).toBe('');
+  });
+
+  it('says what the copy will carry', () => {
+    const source: CopyRead = {
+      status: 'ready',
+      scope: SCOPE,
+      roles: [AUDITOR, KEEPER],
+      bound: ['email', 'groups'],
+    };
+    const copying = copyingOf(source, copyPlan([AUDITOR, KEEPER], ['view-users'], 'acme'));
+    expect(copying).toMatchObject({ status: 'ready', name: 'billing', roles: ['auditor'] });
+    expect(copyingText(copying as Extract<typeof copying, { status: 'ready' }>)).toBe(
+      'A copy of billing, mapping auditor and binding email and groups.',
+    );
+    expect(copyingOf({ status: 'loading' }, { mapped: [], left: [] })).toEqual({
+      status: 'loading',
+    });
+  });
+
+  it('says what a copy could not take, and where to set it', () => {
+    expect(partialCopy('acme', { id: 'n1', name: 'billing-2' }, [])).toBeNull();
+    expect(partialCopy('acme', { id: 'n1', name: 'billing-2' }, ['roles', 'mappers'])).toEqual({
+      text: 'billing-2 was created, but its roles and claim mappers could not be copied. Set them from its Roles and Claim mappers tabs.',
+      href: '/console/acme/scopes/n1',
+      name: 'billing-2',
+    });
+  });
+
+  it('offers a copy from the scope, never for another tenant', () => {
+    expect(copyHrefOf('acme', 's1')).toBe('/console/acme/scopes/new?copy=s1');
+  });
+});
