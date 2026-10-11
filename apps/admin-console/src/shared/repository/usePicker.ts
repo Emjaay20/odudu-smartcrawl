@@ -9,12 +9,15 @@ export function usePicker<T>({
   resource,
   field = 'name',
   fixed = {},
+  enabled = true,
   read,
 }: {
   tenant: string;
   resource: string;
   field?: string;
   fixed?: Readonly<Record<string, string>>;
+  // Left unread until the caller may read it, so no refusal is asked for.
+  enabled?: boolean;
   read: ReadPage<T>;
 }): PickerState<T> {
   const [query, setQuery] = useState('');
@@ -26,6 +29,7 @@ export function usePicker<T>({
     query: params,
     cursor: undefined,
     read,
+    enabled,
   });
   return {
     status: pages.status,

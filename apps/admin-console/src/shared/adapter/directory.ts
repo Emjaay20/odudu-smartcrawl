@@ -1,10 +1,12 @@
 import {
   countResponseSchema,
+  listClientsResponseSchema,
   listGroupsResponseSchema,
   listRolesResponseSchema,
   listScopesResponseSchema,
   roleSchema,
   type CountResponse,
+  type ListClientsResponse,
   type ListGroupsResponse,
   type ListRolesResponse,
   type ListScopesResponse,
@@ -78,5 +80,18 @@ export function readScopePage(
     'GET',
     `admin/tenants/${encodeURIComponent(tenant)}/scopes?${query.toString()}`,
     { schema: listScopesResponseSchema },
+  );
+}
+
+// The clients a picker chooses from, searched by name on the server.
+export function readClientPage(
+  gateway: Gateway,
+  tenant: string,
+  query: URLSearchParams,
+): Promise<GatewayResult<ListClientsResponse>> {
+  return gateway.request(
+    'GET',
+    `admin/tenants/${encodeURIComponent(tenant)}/clients?${query.toString()}`,
+    { schema: listClientsResponseSchema },
   );
 }
