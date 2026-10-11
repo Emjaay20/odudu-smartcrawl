@@ -16,6 +16,7 @@ import {
   scopeRolesRecord,
   type GeneralValues,
 } from '#/features/scopes/service';
+import { uniqueIds } from '#/shared/service/ids.ts';
 import { useRecord, type RecordState } from '#/shared/repository/useRecord.ts';
 import type { SaveInput } from '#/shared/repository/useSectionSave.ts';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway.ts';
@@ -48,9 +49,9 @@ export function useScopeMappersRecord(tenant: string, id: string): RecordState<S
   });
 }
 
-// What a scope maps and hands out is read by lists, pickers and every client
-// that carries it, so each is read again, but for a deleted scope's own
-// reads, which would only find it gone. A deleted scope also leaves every
+// A scope's change is read again by the lists and pickers that show it, and
+// by its own records, except those of a deleted scope, which would only find
+// it gone. A deleted scope also leaves every
 // client it was assigned to; those clients' pages are not open here, so what
 // the console holds of them is dropped, not marked stale.
 function useAfterScopeChange(tenant: string, deleted: string | null = null) {
@@ -123,7 +124,7 @@ export function useScopeSaves(tenant: string, id: string) {
       { changes, ifMatch }: { changes: GeneralValues; ifMatch: string },
     ) => after(await amendScope(gateway, tenant, id, generalPatch(changes), ifMatch)),
     roles: async (gateway: Gateway, { values, ifMatch }: SaveInput<RoleValues>) =>
-      after(await setScopeRoles(gateway, tenant, id, [...new Set(values.role_ids)], ifMatch)),
+      after(await setScopeRoles(gateway, tenant, id, uniqueIds(values.role_ids), ifMatch)),
     mappers: async (gateway: Gateway, { values, ifMatch }: SaveInput<MapperValues>) =>
       after(await setScopeMappers(gateway, tenant, id, values.mapper_names, ifMatch)),
   };

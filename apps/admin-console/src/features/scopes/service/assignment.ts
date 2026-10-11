@@ -43,3 +43,30 @@ export function clientAssignmentFailure(
     refused: (problem) => writeRefusal(problem),
   });
 }
+
+// A client as the console holds it after an assignment changed its scopes.
+export function withScopes<S, C extends { scopes: readonly S[] }>(
+  client: C,
+  scopes: readonly S[],
+): C {
+  return { ...client, scopes };
+}
+
+export function withoutScope<C extends { scopes: readonly { id: string }[] }>(
+  client: C,
+  scopeId: string,
+): C {
+  return { ...client, scopes: client.scopes.filter((scope) => scope.id !== scopeId) };
+}
+
+// Whoami has answered and names no capability missing for the client search.
+export function clientsOffered(known: boolean, needs: readonly string[]): boolean {
+  return known && needs.length === 0;
+}
+
+export function chosenClient<C extends { id: string }>(
+  options: readonly C[],
+  id: string | null,
+): C | null {
+  return options.find((option) => option.id === id) ?? null;
+}

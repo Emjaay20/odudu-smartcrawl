@@ -31,6 +31,25 @@ export function displayOrderProblem(text: string): string | null {
   return Number(text) > DISPLAY_ORDER_MAX ? `Enter at most ${String(DISPLAY_ORDER_MAX)}.` : null;
 }
 
+// The consent section's guard: a display order that is not a number holds Save
+// and is said under its field once it has been edited, beside what the server
+// said of any field and any reason Save was already held.
+export function consentGuard(
+  order: string,
+  changed: readonly string[],
+  fieldErrors: Readonly<Partial<Record<string, string>>>,
+  blocked: string | undefined,
+): { fieldErrors: Readonly<Partial<Record<string, string>>>; blocked: string | undefined } {
+  const problem = displayOrderProblem(order);
+  return {
+    fieldErrors: {
+      ...(problem !== null && changed.includes('display_order') ? { display_order: problem } : {}),
+      ...fieldErrors,
+    },
+    blocked: problem ?? blocked,
+  };
+}
+
 export interface GeneralValues {
   description?: string;
   include_in_id_token?: boolean;

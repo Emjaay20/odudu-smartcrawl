@@ -14,7 +14,7 @@ import {
   assignmentName,
   CONSENT_RULE,
   DESCRIPTION_RULE,
-  displayOrderProblem,
+  consentGuard,
   GUARDED_TEXT,
   ID_TOKEN_LABEL,
   isGuarded,
@@ -142,7 +142,12 @@ export function useScopeGeneral({
     },
     save: saves.general,
   });
-  const orderProblem = displayOrderProblem(consent.values.display_order);
+  const guarded = consentGuard(
+    consent.values.display_order,
+    consent.changed,
+    consent.fieldErrors,
+    consent.blocked,
+  );
 
   return {
     description,
@@ -150,16 +155,7 @@ export function useScopeGeneral({
     tokens,
     assignment,
     assignmentChoices: NEW_CLIENT_CHOICES,
-    consent: {
-      ...consent,
-      fieldErrors: {
-        ...(orderProblem !== null && consent.changed.includes('display_order')
-          ? { display_order: orderProblem }
-          : {}),
-        ...consent.fieldErrors,
-      },
-      blocked: orderProblem ?? consent.blocked,
-    },
+    consent: { ...consent, ...guarded },
     consentRule: CONSENT_RULE,
     deletion: {
       fixed: isGuarded(scope.name) ? GUARDED_TEXT : null,

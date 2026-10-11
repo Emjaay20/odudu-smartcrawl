@@ -9,8 +9,10 @@ import {
 import {
   assignedText,
   assignmentOf,
+  chosenClient,
   clientAssignmentFailure,
   clientsCount,
+  clientsOffered,
   unassignedText,
 } from '#/features/scopes/service';
 import { useClientPicker } from '#/shared/repository/useClientPicker.ts';
@@ -54,7 +56,7 @@ export function useScopeClientsTab({
   const changes = useClientAssignment(tenant, scope.id);
   const authority = useAuthority(tenant);
   const needs = lacking(authority, ['manage-clients']);
-  const offered = authority !== undefined && needs.length === 0;
+  const offered = clientsOffered(authority !== undefined, needs);
   const picker = useClientPicker(tenant, offered);
   const [chosenId, setChosenId] = useState<string | null>(null);
   const [assignment, setAssignment] = useState('default');
@@ -106,7 +108,7 @@ export function useScopeClientsTab({
       assignedText(scope.name, client.name, assignmentOf(chosenAssignment)),
     );
 
-  const chosen = picker.options.find((client) => client.id === chosenId) ?? null;
+  const chosen = chosenClient(picker.options, chosenId);
   return {
     list,
     count: clientsCount(list.rows.length, list.more),

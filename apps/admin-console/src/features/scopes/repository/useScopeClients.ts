@@ -1,14 +1,21 @@
-import type { ScopeClient } from '@odudu/contracts/admin';
+import type { AssignScopeToClientResponse, ScopeClient } from '@odudu/contracts/admin';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   assignClient,
   readScopeClients,
   unassignClient,
 } from '#/features/scopes/adapter/scopes.ts';
+import { withoutScope, withScopes } from '#/features/scopes/service';
+import { recordKey, type RecordEntry } from '#/shared/repository/useRecord.ts';
 import { useListPages } from '#/shared/repository/useResourceList.ts';
 import type { ListStatus } from '#/shared/service/resourceList.ts';
 import type { GatewayResult } from '#/shared/transport/gateway.ts';
 import { useTransport } from '#/shared/transport/useTransport.ts';
+
+// What the console holds of a client that a scope's assignment changes.
+interface ClientRecord {
+  scopes: AssignScopeToClientResponse['scopes'];
+}
 
 export interface ScopeClients {
   status: ListStatus;
@@ -50,21 +57,29 @@ export interface ClientChange<A, R> {
   run: (arg: A) => Promise<GatewayResult<R>>;
 }
 
-// An assignment changes the client's own ETag, which covers its scopes. Its
-// page is not open here, so what the console holds of the client is dropped
-// rather than marked stale: a page opened later would otherwise show the old
-// record and save on its ETag before the fresh read arrived.
+// An assignment changes the client's own ETag, which covers its scopes, and
+// the answer carries the new one. A client the console already holds is
+// rebased on it, so its page saves on that ETag even before it has read the
+// client again. Without an ETag in the answer, or a record to rebase, what is
+// held is dropped instead, and the page waits for a fresh read.
 function useAfterAssignment(tenant: string, id: string) {
   const client = useQueryClient();
-  return (clientDbId: string): void => {
+  return (
+    clientDbId: string,
+    answered: GatewayResult<unknown> | undefined,
+    rebase: (held: ClientRecord) => ClientRecord,
+  ): void => {
     client.invalidateQueries({ queryKey: ['scope-clients', tenant, id] }).catch(() => undefined);
-    client.removeQueries({
-      predicate: ({ queryKey: [kind, at, which] }) =>
-        at === tenant &&
-        kind === 'record' &&
-        typeof which === 'string' &&
-        (which === `clients/${clientDbId}` || which.startsWith(`clients/${clientDbId}/`)),
-    });
+    const key = recordKey(tenant, `clients/${clientDbId}`);
+    const held = client.getQueryData<RecordEntry<ClientRecord>>(key);
+    if (answered?.ok === true && answered.etag !== null && held !== undefined) {
+      client.setQueryData<RecordEntry<ClientRecord>>(key, {
+        by: 'save',
+        result: { ...held.result, etag: answered.etag, data: rebase(held.result.data) },
+      });
+    } else {
+      client.removeQueries({ queryKey: key, exact: true });
+    }
   };
 }
 
@@ -74,15 +89,17 @@ export function useClientAssignment(tenant: string, id: string) {
   const assign = useMutation({
     mutationFn: ({ clientId, assignment }: AssignInput) =>
       assignClient(gateway, tenant, id, clientId, assignment),
-    onSettled: (_result, _error, { clientId }) => {
-      settled(clientId);
+    onSettled: (result, _error, { clientId }) => {
+      settled(clientId, result, (held) =>
+        result?.ok === true ? withScopes(held, result.data.scopes) : held,
+      );
     },
   });
   const unassign = useMutation({
     mutationFn: ({ clientId }: { clientId: string }) =>
       unassignClient(gateway, tenant, id, clientId),
-    onSettled: (_result, _error, { clientId }) => {
-      settled(clientId);
+    onSettled: (result, _error, { clientId }) => {
+      settled(clientId, result, (held) => withoutScope(held, id));
     },
   });
   return {

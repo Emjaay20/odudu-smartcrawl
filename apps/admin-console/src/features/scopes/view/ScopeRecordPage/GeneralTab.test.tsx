@@ -37,6 +37,40 @@ it('shows the name and creation as fixed, and saves a description on the ETag', 
   });
 });
 
+it('saves a second time on the ETag the first save answered', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    scopeRoutes(undefined, {
+      [`GET ${SC}/s-bill`]: inTurn(
+        json(BILLING_SCOPE, 200, { etag: '"s-bill-1"' }),
+        json({ ...BILLING_SCOPE, description: 'One' }, 200, { etag: '"s-bill-2"' }),
+      ),
+      [`PATCH ${SC}/s-bill`]: inTurn(
+        json({ ...BILLING_SCOPE, description: 'One' }, 200, { etag: '"s-bill-2"' }),
+        json({ ...BILLING_SCOPE, description: 'Two' }, 200, { etag: '"s-bill-3"' }),
+      ),
+    }),
+  );
+  const section = await screen.findByRole('region', { name: 'Description' });
+  const field = within(section).getByRole('textbox', { name: 'Description' });
+  await user.clear(field);
+  await user.type(field, 'One');
+  await user.click(within(section).getByRole('button', { name: 'Save Description' }));
+  await waitFor(() => {
+    expect(within(section).queryByRole('button', { name: 'Save Description' })).toBeNull();
+  });
+  await user.clear(field);
+  await user.type(field, 'Two');
+  await user.click(within(section).getByRole('button', { name: 'Save Description' }));
+  await waitFor(() => {
+    expect(sent.filter((s) => s.method === 'PATCH').map((s) => s.ifMatch)).toEqual([
+      '"s-bill-1"',
+      '"s-bill-2"',
+    ]);
+  });
+});
+
 it('sends an emptied description as null', async () => {
   const user = userEvent.setup();
   const { sent } = renderConsoleAt(

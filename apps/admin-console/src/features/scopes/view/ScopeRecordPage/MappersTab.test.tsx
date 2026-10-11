@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
-import { json, problem } from '#/testing/fakeTransport.ts';
+import { inTurn, json, problem } from '#/testing/fakeTransport.ts';
 import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole.tsx';
 import { SC, scopeRoutes } from '#/testing/scopesFixtures.ts';
 
@@ -66,6 +66,37 @@ it('saves the chosen set on the ETag it was read with, in the registry order', a
       ifMatch: '"s-bill-m1"',
       body: { mapper_names: ['email', 'groups'] },
     });
+  });
+});
+
+it('saves a second time on the ETag the first save answered', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    scopeRoutes(undefined, {
+      [`GET ${SC}/s-bill/mappers`]: inTurn(
+        json({ available: ['email', 'groups'], bound: [] }, 200, { etag: '"s-bill-m1"' }),
+        json({ available: ['email', 'groups'], bound: ['email'] }, 200, { etag: '"s-bill-m2"' }),
+      ),
+      [`PUT ${SC}/s-bill/mappers`]: inTurn(
+        json({ available: ['email', 'groups'], bound: ['email'] }, 200, { etag: '"s-bill-m2"' }),
+        json({ available: ['email', 'groups'], bound: ['email', 'groups'] }, 200, {
+          etag: '"s-bill-m3"',
+        }),
+      ),
+    }),
+  );
+  const section = await open();
+  await user.click(within(section).getByRole('checkbox', { name: 'email' }));
+  await user.click(within(section).getByRole('button', { name: 'Save Claim mappers' }));
+  await within(section).findByText('Bound: email.');
+  await user.click(within(section).getByRole('checkbox', { name: 'groups' }));
+  await user.click(within(section).getByRole('button', { name: 'Save Claim mappers' }));
+  await waitFor(() => {
+    expect(sent.filter((s) => s.method === 'PUT').map((s) => s.ifMatch)).toEqual([
+      '"s-bill-m1"',
+      '"s-bill-m2"',
+    ]);
   });
 });
 

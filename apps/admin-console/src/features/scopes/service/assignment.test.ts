@@ -2,9 +2,13 @@ import { expect, it } from 'vitest';
 import {
   ASSIGNMENTS,
   assignedText,
+  chosenClient,
   clientAssignmentFailure,
+  clientsOffered,
   clientsCount,
   unassignedText,
+  withoutScope,
+  withScopes,
 } from '#/features/scopes/service';
 
 it('offers default and optional', () => {
@@ -40,4 +44,30 @@ it('names the bound a client holds when the server refuses over it', () => {
       'assigned',
     ),
   ).toMatch(/a client carries at most 200 scopes/u);
+});
+
+it('rebases a cached client on what an assignment answered', () => {
+  interface Held {
+    id: string;
+    name: string;
+    assignment: 'default' | 'optional';
+  }
+  const client = { id: 'c1', scopes: [{ id: 's1', name: 'a', assignment: 'default' } as Held] };
+  const answered: Held[] = [{ id: 's2', name: 'b', assignment: 'optional' }];
+  expect(withScopes(client, answered)).toEqual({ id: 'c1', scopes: answered });
+  expect(withoutScope(client, 's1')).toEqual({ id: 'c1', scopes: [] });
+  expect(withoutScope(client, 'nope')).toEqual(client);
+});
+
+it('offers the client search once whoami has answered and names nothing missing', () => {
+  expect(clientsOffered(false, [])).toBe(false);
+  expect(clientsOffered(true, ['manage-clients'])).toBe(false);
+  expect(clientsOffered(true, [])).toBe(true);
+});
+
+it('finds the chosen client among the options, and none for no choice', () => {
+  const options = [{ id: 'a' }, { id: 'b' }];
+  expect(chosenClient(options, 'b')).toEqual({ id: 'b' });
+  expect(chosenClient(options, 'z')).toBeNull();
+  expect(chosenClient(options, null)).toBeNull();
 });

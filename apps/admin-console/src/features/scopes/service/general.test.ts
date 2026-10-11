@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
 import {
   CONSENT_RULE,
+  consentGuard,
   displayOrderProblem,
   generalPatch,
   scopeFailureFields,
@@ -44,4 +45,21 @@ it('places a refusal under the fields the form has', () => {
     'consent_text',
     'display_order',
   ]);
+});
+
+it('holds the consent save, and says why under the field, once the order is edited to a bad one', () => {
+  expect(consentGuard('3', ['display_order'], {}, undefined)).toEqual({
+    fieldErrors: {},
+    blocked: undefined,
+  });
+  const bad = consentGuard('x', ['display_order'], { consent_text: 'long' }, undefined);
+  expect(bad.blocked).toBe('Enter a whole number, zero or more.');
+  expect(bad.fieldErrors).toEqual({
+    display_order: 'Enter a whole number, zero or more.',
+    consent_text: 'long',
+  });
+  expect(consentGuard('x', [], {}, undefined).fieldErrors).toEqual({});
+  expect(consentGuard('3', [], {}, 'Keep yours or take theirs.').blocked).toBe(
+    'Keep yours or take theirs.',
+  );
 });
