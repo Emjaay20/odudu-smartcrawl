@@ -120,4 +120,17 @@ describe('ClaimMapperRegistry', () => {
       expect(names).toEqual(['a']);
     });
   });
+
+  describe('declaredFor', () => {
+    it('names every mapper that declares the scope, in registration order', () => {
+      const registry = new ClaimMapperRegistry<TestContext>()
+        .register(mapper('a', ['scope-a', 'scope-c'], { a: 1 }))
+        .register(mapper('b', ['scope-b'], { b: 2 }))
+        .register(mapper('c', ['scope-c'], { c: 3 }));
+
+      expect(registry.declaredFor('scope-c')).toEqual(['a', 'c']);
+      expect(registry.declaredFor('scope-b')).toEqual(['b']);
+      expect(registry.declaredFor('scope-none')).toEqual([]);
+    });
+  });
 });

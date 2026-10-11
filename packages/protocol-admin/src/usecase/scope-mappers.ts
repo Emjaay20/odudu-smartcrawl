@@ -15,6 +15,7 @@ import { etagOf, requiredPrecondition } from '#/service/etag';
 // instance, unchanged, as this.
 export interface MapperCatalogue {
   mapperNames(): readonly string[];
+  declaredFor(scopeName: string): readonly string[];
 }
 
 export interface ScopeMapperAuditEvent {
@@ -36,8 +37,8 @@ export type ReadScopeMappersOutcome =
 
 // Sorted before it is hashed, never as it is sent: `namesForScope` imposes
 // no order, so two reads of an unchanged binding set would otherwise
-// disagree about the `ETag` they answer. `available` is the registry's
-// own list and no part of what a caller is replacing.
+// disagree about the `ETag` they answer. `available` and `declared` are the
+// registry's own and no part of what a caller is replacing.
 function mappersEtag(mappers: ScopeMappers): string {
   return etagOf({ bound: [...mappers.bound].sort() });
 }
@@ -53,6 +54,7 @@ export async function readScopeMappers(
   const mappers: ScopeMappers = {
     available: [...claimMappers.mapperNames()],
     bound: [...((await clientScopeMapperRepository(tx).namesForScope(scopeId)) ?? [])],
+    declared: [...claimMappers.declaredFor(scope.name)],
   };
   return { kind: 'ok', mappers, etag: mappersEtag(mappers) };
 }

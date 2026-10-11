@@ -236,6 +236,63 @@ describe('PUT /admin/tenants/{t}/scopes/{id}/roles', () => {
     expect(second.json<{ items: { id: string }[] }>().items.map((r) => r.id)).toEqual([roleB]);
   });
 
+  it('names what each mapped role reaches, on the read and the answer, outside the ETag', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-tenant', 'view-audit']);
+    const { id } = (await createScopeHttp(token, t.name, { name: `s-${newId()}` })).json<{
+      id: string;
+    }>();
+    const plain = await plainRole(t.id);
+    const audit = await capabilityRoleId(t.id, 'view-audit');
+    const url = `/admin/tenants/${t.name}/scopes/${id}/roles`;
+
+    const put = await fixture.http.inject({
+      method: 'PUT',
+      url,
+      headers: {
+        'if-match': '*',
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+      },
+      payload: { role_ids: [plain, audit] },
+    });
+    expect(put.statusCode).toBe(200);
+    const reach = (response: typeof put) =>
+      Object.fromEntries(
+        response
+          .json<{ items: { id: string; admin_reach: string[] }[] }>()
+          .items.map((item) => [item.id, item.admin_reach]),
+      );
+    expect(reach(put)).toEqual({ [plain]: [], [audit]: ['view-audit'] });
+
+    const read = await fixture.http.inject({
+      method: 'GET',
+      url,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(reach(read)).toEqual({ [plain]: [], [audit]: ['view-audit'] });
+    expect(read.headers.etag).toBe(put.headers.etag);
+    expect(read.headers.etag).toBe(
+      etagOf({
+        items: read
+          .json<{
+            items: {
+              id: string;
+              name: string;
+              client_id: string | null;
+              client_key: string | null;
+            }[];
+          }>()
+          .items.map(({ id: roleId, name, client_id, client_key }) => ({
+            id: roleId,
+            name,
+            client_id,
+            client_key,
+          })),
+      }),
+    );
+  });
+
   it('400s an unknown role id', async () => {
     const t = await fixture.createTenant(`acme-${newId()}`);
     const token = await fixture.adminToken(t.name, ['manage-tenant']);

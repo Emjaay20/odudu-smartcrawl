@@ -1109,6 +1109,8 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     pattern: '/admin/tenants/:tenant/scopes/:id/roles',
     capability: 'manage-tenant',
     responseSchema: setScopeRolesResponseSchema,
+    description:
+      'Each role carries `admin_reach`, what it reaches of the admin vocabulary however deep it nests it. Derived on every read and outside the `ETag`.',
   },
   {
     method: 'PUT',
@@ -1118,6 +1120,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     bodySchema: setScopeRolesRequestSchema,
     description:
       'More than 200 entries is refused with `400`. ' +
+      'The answer carries each role’s `admin_reach`, as the `GET` does. ' +
       'Replaces the whole list. `If-Match` is mandatory: the matching `GET` answers an `ETag`, an absent header is refused with `428`, and a stale one with `412` — a last-write-wins here would silently reinstate what another administrator has just removed.' +
       DELTA_CEILING,
   },
@@ -1128,6 +1131,8 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     pattern: '/admin/tenants/:tenant/scopes/:id/mappers',
     capability: 'manage-tenant',
     responseSchema: scopeMappersSchema,
+    description:
+      '`declared` names the mappers that declare the scope: what issuance runs for it while `bound` is empty. The `ETag` covers `bound` alone.',
   },
   {
     method: 'PUT',
@@ -1138,6 +1143,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     description:
       'Replaces the whole binding set for the scope. Binding an unregistered mapper name is ' +
       'refused with 400, listing the registry’s own known names. ' +
+      'The answer carries `declared` as the `GET` does. ' +
       'Replaces the whole list. `If-Match` is mandatory: the matching `GET` answers an `ETag`, an absent header is refused with `428`, and a stale one with `412` — a last-write-wins here would silently reinstate what another administrator has just removed.',
   },
   {

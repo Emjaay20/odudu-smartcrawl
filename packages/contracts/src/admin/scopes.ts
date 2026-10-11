@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { adminReachSchema } from '#/admin/roles';
 import { roleAssignmentSchema } from '#/admin/subjects';
 import {
   ASSIGNMENT_LIMIT,
@@ -68,8 +69,12 @@ export const setScopeRolesRequestSchema = z.object({
 });
 export type SetScopeRolesRequest = z.infer<typeof setScopeRolesRequestSchema>;
 
+// What each mapped role reaches of the admin vocabulary, as a group's roles
+// carry it: derived on every read, never stored, outside the `ETag`.
+export const scopeRoleSchema = roleAssignmentSchema.extend({ admin_reach: adminReachSchema });
+
 export const setScopeRolesResponseSchema = z.object({
-  items: z.array(roleAssignmentSchema),
+  items: z.array(scopeRoleSchema),
 });
 export type SetScopeRolesResponse = z.infer<typeof setScopeRolesResponseSchema>;
 

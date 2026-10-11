@@ -6,7 +6,6 @@ import {
   listScopesQuerySchema,
   setScopeRolesRequestSchema,
   type ClientScope,
-  type SetScopeRolesResponse,
 } from '@odudu/contracts/admin';
 import { isUniqueViolation, type Database } from '@odudu/db';
 import { type FastifyReply } from 'fastify';
@@ -28,6 +27,7 @@ import {
   type AmendScopeOutcome,
   type Audit,
 } from '#/usecase/scopes';
+import { withRoleReach } from '#/usecase/admin-reach';
 import {
   ceilingProblem,
   cursorProblem,
@@ -275,16 +275,16 @@ export function readScopeRolesHandler(deps: ScopesRouteDeps): AdminRouteHandler 
       throw new Error('protocol-admin: GET scope roles route received no :id');
     }
 
-    const outcome = await adminTx(deps.database, request, targetTenantId, (tx) =>
-      readScopeRoles(tx, id),
-    );
+    const outcome = await adminTx(deps.database, request, targetTenantId, async (tx) => {
+      const read = await readScopeRoles(tx, id);
+      return read.kind === 'ok' ? { ...read, roles: await withRoleReach(tx, read.roles) } : read;
+    });
     if (outcome.kind === 'not_found') {
       return sendProblem(reply, request, problem(404, 'about:blank', 'Not Found'));
     }
 
     reply.header('etag', outcome.etag);
-    const wire: SetScopeRolesResponse = { items: [...outcome.roles] };
-    return reply.code(200).send(wire);
+    return reply.code(200).send({ items: outcome.roles });
   };
 }
 
@@ -300,8 +300,8 @@ export function setScopeRolesHandler(deps: ScopesRouteDeps): AdminRouteHandler {
       principal.subjectId,
     );
 
-    const outcome = await adminTx(deps.database, request, targetTenantId, (tx) =>
-      setScopeRoles(
+    const outcome = await adminTx(deps.database, request, targetTenantId, async (tx) => {
+      const set = await setScopeRoles(
         tx,
         { audit: deps.audit },
         {
@@ -313,8 +313,9 @@ export function setScopeRolesHandler(deps: ScopesRouteDeps): AdminRouteHandler {
           actorTenantId: principal.issuerTenantId,
           actorClientId: principal.clientDbId,
         },
-      ),
-    );
+      );
+      return set.kind === 'ok' ? { ...set, roles: await withRoleReach(tx, set.roles) } : set;
+    });
 
     switch (outcome.kind) {
       case 'not_found':
@@ -336,8 +337,7 @@ export function setScopeRolesHandler(deps: ScopesRouteDeps): AdminRouteHandler {
         return sendProblem(reply, request, ifMatchStale());
       case 'ok': {
         reply.header('etag', outcome.etag);
-        const wire: SetScopeRolesResponse = { items: [...outcome.roles] };
-        return reply.code(200).send(wire);
+        return reply.code(200).send({ items: outcome.roles });
       }
     }
   };
