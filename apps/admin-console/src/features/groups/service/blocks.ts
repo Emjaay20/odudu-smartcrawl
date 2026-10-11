@@ -1,11 +1,5 @@
 import type { Group, GroupRecord } from '@odudu/contracts/admin';
-import {
-  beyondCaller,
-  ceilingOf,
-  isAdminRole,
-  isHolding,
-  writeRefusal,
-} from '#/shared/service/capabilities';
+import { beyondCaller, roleReachUnavailable, writeRefusal } from '#/shared/service/capabilities';
 import { andList } from '#/shared/service/format.ts';
 import type { AdminCapability } from '#/shared/service/principal.ts';
 
@@ -113,9 +107,5 @@ export function roleUnavailable(
   if (defaulting === 'beneath' && role.admin_reach.length > 0) {
     return 'Every new subject joins a group beneath this one and so receives what this one hands out, so it may hand out no admin capability.';
   }
-  if (isAdminRole(role) && isHolding(role.name)) return ceilingOf(tenant, role.name, caller);
-  const beyond = beyondCaller(role.admin_reach, caller);
-  return beyond.length === 0
-    ? null
-    : `It reaches ${andList(beyond)}, which you do not hold, so you cannot give or take it.`;
+  return roleReachUnavailable(role, caller, tenant);
 }

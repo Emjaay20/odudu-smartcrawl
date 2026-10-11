@@ -5,6 +5,7 @@ import {
   holdingNote,
   holdingOptions,
   beyondCaller,
+  roleReachUnavailable,
   ceilingOf,
   heldCapabilities,
   provenanceText,
@@ -142,5 +143,27 @@ describe('holdingOptions', () => {
     expect(audit?.unavailable).toBe('The last one.');
     const beforeWhoami = holdingOptions('acme', [], undefined, { guard: () => 'Guarded.' });
     expect(beforeWhoami[0]?.unavailable).toBe('Guarded.');
+  });
+});
+
+describe('roleReachUnavailable', () => {
+  const plain = { name: 'auditor', client_key: null, admin_reach: [] };
+
+  it('lets a role that reaches nothing be given or taken', () => {
+    expect(roleReachUnavailable(plain, [], 'acme')).toBeNull();
+  });
+
+  it('refuses a role that reaches what the caller does not hold', () => {
+    expect(
+      roleReachUnavailable({ ...plain, admin_reach: ['manage-keys'] }, ['view-users'], 'acme'),
+    ).toBe('It reaches manage-keys, which you do not hold, so you cannot give or take it.');
+  });
+
+  it('judges a capability of the admin client by the capability itself', () => {
+    const capability = { name: 'manage-keys', client_key: ADMIN_CLIENT_KEY, admin_reach: [] };
+    expect(roleReachUnavailable(capability, ['manage-keys'], 'acme')).toBeNull();
+    expect(roleReachUnavailable(capability, ['view-users'], 'acme')).toBe(
+      'You do not hold manage-keys, so you cannot give or take it.',
+    );
   });
 });

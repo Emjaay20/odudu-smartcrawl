@@ -18,6 +18,7 @@ export {
   heldCapabilities,
   ceilingOf,
   beyondCaller,
+  roleReachUnavailable,
   TENANT_ROLE_TEXT,
   roleOwnerText,
   holdingNote,

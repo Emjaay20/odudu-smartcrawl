@@ -1,4 +1,5 @@
 import { type EffectiveRoleAssignment, type RoleProvenance } from '@odudu/contracts/admin';
+import { andList } from '#/shared/service/format.ts';
 import { TENANT_ADMIN } from '#/shared/service/administrators.ts';
 import type { AdminCapability } from '#/shared/service/principal.ts';
 import {
@@ -70,6 +71,20 @@ export function beyondCaller(
   caller: readonly AdminCapability[],
 ): AdminCapability[] {
   return held.filter((name) => isCapability(name)).filter((name) => !caller.includes(name));
+}
+
+// Why a caller cannot give or take a role: it is, or reaches, authority the
+// caller does not hold (ADR 0040). Null when it can.
+export function roleReachUnavailable(
+  role: { name: string; client_key: string | null; admin_reach: readonly string[] },
+  caller: readonly AdminCapability[],
+  tenant: string,
+): string | null {
+  if (isAdminRole(role) && isHolding(role.name)) return ceilingOf(tenant, role.name, caller);
+  const beyond = beyondCaller(role.admin_reach, caller);
+  return beyond.length === 0
+    ? null
+    : `It reaches ${andList(beyond)}, which you do not hold, so you cannot give or take it.`;
 }
 
 export const TENANT_ROLE_TEXT = 'tenant role';
