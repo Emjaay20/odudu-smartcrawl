@@ -1,13 +1,15 @@
 import type { ReactNode } from 'react';
-import type { Area } from '#/features/shell/service';
+import { checkingText, type Area } from '#/features/shell/service';
 import { useArea } from '#/features/shell/usecase/useArea';
 import { PageNotFound } from '#/features/shell/view/PageNotFound';
 import type { Crumb } from '#/shared/view/Breadcrumb';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { PageHeader } from '#/shared/view/PageHeader';
+import { Skeleton } from '#/shared/view/Skeleton';
 
 // whoami is advice: a principal it says cannot read the area is told what
-// that needs, rather than offered reads the server would refuse.
+// that needs, rather than offered reads the server would refuse, and the
+// page is not drawn, so makes none of its reads, until whoami has answered.
 export function AreaGate({
   tenant,
   area,
@@ -37,6 +39,15 @@ export function AreaGate({
         </>
       );
     case 'checking':
+      return (
+        <>
+          <PageHeader
+            {...(breadcrumb === undefined ? { kicker: tenant } : { breadcrumb })}
+            title={title}
+          />
+          <Skeleton label={checkingText(area)} />
+        </>
+      );
     case 'open':
       return children;
   }

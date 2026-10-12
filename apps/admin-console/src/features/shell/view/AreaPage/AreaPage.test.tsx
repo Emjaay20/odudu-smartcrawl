@@ -18,7 +18,7 @@ function areaWith(capabilities: readonly string[]) {
 it('heads the page with the area, under the tenant', async () => {
   renderConsoleAt('/console/acme/email', areaWith(['manage-tenant']));
   expect(await screen.findByRole('heading', { level: 1, name: 'Email' })).toBeVisible();
-  expect(screen.getByText('Email is not in this build of the console yet.')).toBeVisible();
+  expect(await screen.findByText('Email is not in this build of the console yet.')).toBeVisible();
 });
 
 it('says which capability the area needs when whoami says it is missing', async () => {

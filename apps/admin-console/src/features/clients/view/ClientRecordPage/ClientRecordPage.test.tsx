@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { A, BILLING, C, clientRoutes } from '#/testing/clientsFixtures';
-import { json, pending, problem } from '#/testing/fakeTransport';
+import { json, problem } from '#/testing/fakeTransport';
 import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
 
 afterEach(() => {
@@ -69,7 +69,7 @@ it('says there is no such client for an id that is not one', async () => {
 it('offers nothing to change until the caller capabilities are known', async () => {
   renderConsoleAt(
     AT,
-    clientRoutes(undefined, { [`GET ${A}/whoami`]: pending(), ...reaching('view-users') }),
+    clientRoutes(undefined, { [`GET ${A}/whoami`]: problem(500), ...reaching('view-users') }),
   );
   await screen.findByRole('heading', { level: 1, name: 'Billing' });
   await screen.findByRole('region', { name: 'Identity' });

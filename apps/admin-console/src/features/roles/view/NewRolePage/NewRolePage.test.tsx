@@ -21,7 +21,7 @@ it('creates a tenant role and lands on it', async () => {
     roleRoutes(undefined, { [`POST ${R}`]: json(MADE, 201) }),
   );
   expect(await screen.findByRole('heading', { level: 1, name: 'Create a role' })).toBeVisible();
-  await user.type(screen.getByRole('textbox', { name: 'Name' }), 'billing');
+  await user.type(await screen.findByRole('textbox', { name: 'Name' }), 'billing');
   await user.click(screen.getByRole('button', { name: 'Create role' }));
   await waitFor(() => {
     expect(router.state.location.pathname).toBe('/acme/roles/r-new');

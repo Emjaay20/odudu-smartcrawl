@@ -20,7 +20,7 @@ it('creates a scope and lands on it', async () => {
     scopeRoutes(undefined, { [`POST ${SC}`]: json(MADE, 201) }),
   );
   expect(await screen.findByRole('heading', { level: 1, name: 'Create a scope' })).toBeVisible();
-  await user.type(screen.getByRole('textbox', { name: 'Name' }), 'invoices');
+  await user.type(await screen.findByRole('textbox', { name: 'Name' }), 'invoices');
   await user.type(screen.getByRole('textbox', { name: 'Description' }), 'Reads invoices');
   await user.click(screen.getByRole('button', { name: 'Create scope' }));
   await waitFor(() => {

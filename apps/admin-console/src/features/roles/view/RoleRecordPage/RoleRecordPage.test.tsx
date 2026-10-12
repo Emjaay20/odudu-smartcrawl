@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { json, pending } from '#/testing/fakeTransport';
+import { json, problem } from '#/testing/fakeTransport';
 import { A, roleRoutes } from '#/testing/rolesFixtures';
 import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
 import { ADA, S } from '#/testing/subjectsFixtures';
@@ -51,7 +51,7 @@ it("reads the role's own activity", async () => {
 });
 
 it('offers no delete until whoami says what the caller holds', async () => {
-  renderConsoleAt(AT, roleRoutes(undefined, { [`GET ${A}/whoami`]: pending() }));
+  renderConsoleAt(AT, roleRoutes(undefined, { [`GET ${A}/whoami`]: problem(500) }));
   expect(await screen.findByRole('heading', { level: 1, name: 'reader' })).toBeVisible();
   expect((await screen.findAllByText('Checking what it nests…')).length).toBeGreaterThan(0);
   expect(screen.queryByRole('button', { name: 'Delete reader' })).toBeNull();

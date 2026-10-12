@@ -334,19 +334,13 @@ test('an operator holding manage-tenant alone chooses no role it lacks, and is t
   await expectAccessible(page);
 });
 
-test('an operator holding manage-clients alone is told what the scopes need', async ({
-  page,
-  problems,
-}) => {
+test('an operator holding manage-clients alone is told what the scopes need', async ({ page }) => {
   await signIn(page, clientsOnly);
   await page.goto(`/console/${TENANT}/scopes`);
   await expect(page.getByRole('note').filter({ hasText: 'Scopes needs the' })).toHaveText(
     'Scopes needs the manage-tenant capability.',
   );
   await expectAccessible(page);
-  // The list is asked for while whoami is still answering, and refused.
-  forgive(problems, `/tenants/${TENANT}/scopes`);
-  forgive(problems, `/tenants/${TENANT}/scopes/count`);
 });
 
 test('the scopes pages fit a phone, with a scope whose name is wider than the screen', async ({

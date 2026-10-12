@@ -50,19 +50,22 @@ export type AreaAccess =
   | { kind: 'open' };
 
 // whoami is advice: an area whose capability it says is missing explains
-// what it needs instead of offering reads the server would refuse.
+// what it needs instead of offering reads the server would refuse, and no
+// read is made while it is still being asked.
 export function areaAccess(
   principal: Principal,
   tenant: string,
   authority: Authority | undefined,
   area: Area,
+  // Whether whoami has answered at all, a failure included.
+  answered = authority !== undefined,
 ): AreaAccess {
   const system = SYSTEM_AREAS.areas.includes(area);
   if (system && (principal.tenant !== SYSTEM_TENANT || tenant !== SYSTEM_TENANT)) {
     return { kind: 'hidden' };
   }
   if (area.capability === null) return { kind: 'open' };
-  if (authority === undefined) return system ? { kind: 'checking' } : { kind: 'open' };
+  if (authority === undefined) return system || !answered ? { kind: 'checking' } : { kind: 'open' };
   if (system && !showsSystemArea(principal, tenant, authority)) return { kind: 'hidden' };
   return holds(authority, area.capability)
     ? { kind: 'open' }

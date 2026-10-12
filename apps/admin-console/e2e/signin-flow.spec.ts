@@ -165,7 +165,6 @@ test('an operator holding manage-tenant alone edits the flow', async ({ page }) 
 
 test('an operator holding manage-clients alone is told what the flow needs, and has no link to it', async ({
   page,
-  problems,
 }) => {
   await signIn(page, flows.fixedClientsOnly);
   await page.goto(`/console/${flows.fixed.tenant}/flow`);
@@ -174,9 +173,6 @@ test('an operator holding manage-clients alone is told what the flow needs, and 
   );
   await expect(page.getByRole('link', { name: 'Sign-in flow' })).toHaveCount(0);
   await expectAccessible(page);
-  // Both reads are asked for while whoami is still answering, and refused.
-  forgive(problems, `/tenants/${flows.fixed.tenant}/flow/executions`);
-  forgive(problems, `/tenants/${flows.fixed.tenant}/settings`);
 });
 
 test('the sign-in flow page fits a phone', async ({ page }) => {

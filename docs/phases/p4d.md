@@ -1948,11 +1948,18 @@ so it is held as the record `settings`, which the Settings area will read too.
 The read and the amend are in `shared/adapter/tenantSettings.ts` for that
 reason.
 
-**The 400s are worded from the start of their detail.** The server's flow
-refusals carry no problem type, and only two carry `errors[]`, so the console
-keys on the prefix of each `detail` and shows the wording under the steps, beside
-Save. `flow.int.test.ts` now pins each prefix, so a change to one goes red on the
-server's side, not in a user's browser.
+**The 400s are told apart by problem type.** The flow's five refusals each carry
+their own (`about:blank#flow-empty` and four more), added for this page with the
+`detail` and `errors[]` unchanged; the console words each from its type, and
+names the step at fault from the path in `errors[]` against the list it sent.
+`flow.int.test.ts` pins the types, and `docs/admin-paths.md` shows them captured.
+
+**A page is not drawn until whoami has answered.** `AreaGate` held its children
+while whoami was pending only by showing them, so every page read before it knew
+the caller lacked the capability and the refusals were logged as console errors,
+which several browser tests then forgave one by one and others tripped on under
+load. The gate now draws a skeleton until whoami has answered (a failure counts
+as an answer, since whoami is advice), so no read is made that it may refuse.
 
 **Scale.** The token list is cursor-bounded and "Load more" reads one page at a
 time; at 10,000 tokens the page holds only what has been asked for. The flow is

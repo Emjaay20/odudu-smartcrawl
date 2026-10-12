@@ -70,12 +70,18 @@ describe('what an area shows its caller', () => {
   const viewer = { capabilities: ['view-users'] as const, crossTenant: false };
 
   it('is open for an area that needs no capability', () => {
-    expect(areaAccess(ACME_ADMIN, 'acme', undefined, OVERVIEW)).toEqual({ kind: 'open' });
-    expect(areaAccess(ACME_ADMIN, 'acme', nothing, OVERVIEW)).toEqual({ kind: 'open' });
+    expect(areaAccess(ACME_ADMIN, 'acme', undefined, OVERVIEW, false)).toEqual({ kind: 'open' });
+    expect(areaAccess(ACME_ADMIN, 'acme', nothing, OVERVIEW, true)).toEqual({ kind: 'open' });
   });
 
-  it('is open while whoami is unanswered, so no area shows a refusal before it is told', () => {
-    expect(areaAccess(ACME_ADMIN, 'acme', undefined, areaAt('subjects'))).toEqual({
+  it('is checking while whoami is unanswered, so no read is made that it may refuse', () => {
+    expect(areaAccess(ACME_ADMIN, 'acme', undefined, areaAt('subjects'), false)).toEqual({
+      kind: 'checking',
+    });
+  });
+
+  it('is open once whoami has failed to answer, since it is advice and the server decides', () => {
+    expect(areaAccess(ACME_ADMIN, 'acme', undefined, areaAt('subjects'), true)).toEqual({
       kind: 'open',
     });
   });

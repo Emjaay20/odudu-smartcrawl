@@ -183,7 +183,6 @@ test('a token is minted and another revoked by keyboard alone', async ({ page })
 
 test('an operator holding manage-tenant alone is told what the tokens need, and has no link to them', async ({
   page,
-  problems,
 }) => {
   await signIn(page, tenantOnly);
   await expect(page.getByRole('link', { name: 'Registration tokens' })).toHaveCount(0);
@@ -193,7 +192,6 @@ test('an operator holding manage-tenant alone is told what the tokens need, and 
   );
   await expect(page.getByRole('button', { name: 'Mint token' })).toHaveCount(0);
   await expectAccessible(page);
-  forgive(problems, `/tenants/${TENANT}/registration-tokens`);
 });
 
 test('an operator holding manage-clients alone mints and sees the list', async ({ page }) => {
