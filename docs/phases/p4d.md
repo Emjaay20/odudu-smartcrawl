@@ -2039,6 +2039,10 @@ name`, so clearing it left a blank. A display name is now trimmed, and a blank o
 `@odudu/domain-tenant` that `PATCH /settings`, `PATCH /admin/tenants/{t}`,
 `POST /admin/tenants` and tenant import all call.
 
+**The page has an "On this page" list** of buttons that send the focus to a
+section's heading, so ten sections are reachable by keyboard without tabbing through
+every field.
+
 **Disabling the tenant asks first.** The General section's Enabled switch saves
 through the settings record like any other, but turning it off opens a typed
 confirmation that says it locks out the person doing it. The system tenant's
@@ -2052,6 +2056,10 @@ a stored password only while host, port and username are unchanged, and answers 
 the refusal under the field. The password never enters a draft (`kind: 'secret'`).
 `effective` is shown as a sentence and a tag, and its three values are worded:
 own relay, the deployment's sender, or mail only written to the log.
+
+**The test send is audited.** Each one writes `tenant.smtp_test` naming the actor
+and the result (`allowed`, `refused` or `failed`, with `detail.result`), never the
+recipient or the password: it is an administrator-triggered outbound connection.
 
 **The test send is honest about what it knows.** It sends through the saved relay,
 not the edits on the page, and says so while there are edits. A 400 or 502 shows the
