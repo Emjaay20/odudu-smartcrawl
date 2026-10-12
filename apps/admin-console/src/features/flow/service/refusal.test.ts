@@ -73,6 +73,15 @@ describe('flowOutcome', () => {
     expect(text).toBe('“password” is a step twice. An authenticator is one step.');
   });
 
+  it('words a refusal whose path names no step without inventing a step', () => {
+    expect(said(outcome(bad('about:blank#flow-unknown-authenticator')))).toBe(
+      'A step names an authenticator this server does not have. It has password, passkey, otp and recovery-code.',
+    );
+    expect(said(outcome(bad('about:blank#flow-duplicate-authenticator')))).toBe(
+      'An authenticator is a step twice. An authenticator is one step.',
+    );
+  });
+
   it('keeps the title for a 400 of a type it does not know, and says nothing of the detail', () => {
     expect(said(outcome(bad('about:blank')))).toBe('Bad Request');
   });

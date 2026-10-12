@@ -58,7 +58,7 @@ export function areaAccess(
   authority: Authority | undefined,
   area: Area,
   // Whether whoami has answered at all, a failure included.
-  answered = authority !== undefined,
+  answered: boolean,
 ): AreaAccess {
   const system = SYSTEM_AREAS.areas.includes(area);
   if (system && (principal.tenant !== SYSTEM_TENANT || tenant !== SYSTEM_TENANT)) {

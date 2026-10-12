@@ -6,9 +6,9 @@ const STEP_AT = /^\[(\d+)\]/u;
 
 // The authenticator of the step a refusal's `errors[0].path` points at, in
 // the list that was sent.
-function stepNamed(path: string | undefined, sent: readonly Step[]): string {
+function stepNamed(path: string | undefined, sent: readonly Step[]): string | undefined {
   const at = STEP_AT.exec(path ?? '')?.[1];
-  return (at === undefined ? undefined : sent[Number(at)]?.authenticator) ?? 'A step';
+  return at === undefined ? undefined : sent[Number(at)]?.authenticator;
 }
 
 function refusalText(
@@ -18,6 +18,7 @@ function refusalText(
   sent: readonly Step[],
   available: readonly string[],
 ): string {
+  const named = stepNamed(path, sent);
   switch (type) {
     case 'about:blank#flow-empty':
       return 'The flow has no step. Add one: nobody could sign in to a tenant with no flow.';
@@ -26,9 +27,13 @@ function refusalText(
     case 'about:blank#flow-no-first-challenge':
       return 'Nothing in this order can start a sign-in. When it begins nobody is identified yet, so only the password step can run: the first step that cannot be skipped has to be password, or an alternative next to it, and it has to be enabled.';
     case 'about:blank#flow-unknown-authenticator':
-      return `“${stepNamed(path, sent)}” is not an authenticator this server has. It has ${andList(available)}.`;
+      return `${
+        named === undefined
+          ? 'A step names an authenticator this server does not have.'
+          : `“${named}” is not an authenticator this server has.`
+      } It has ${andList(available)}.`;
     case 'about:blank#flow-duplicate-authenticator':
-      return `“${stepNamed(path, sent)}” is a step twice. An authenticator is one step.`;
+      return `${named === undefined ? 'An authenticator' : `“${named}”`} is a step twice. An authenticator is one step.`;
     default:
       return title;
   }

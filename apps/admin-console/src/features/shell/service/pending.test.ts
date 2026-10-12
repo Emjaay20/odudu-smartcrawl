@@ -87,31 +87,33 @@ describe('what an area shows its caller', () => {
   });
 
   it('is refused, naming the capability, when whoami says it is not held', () => {
-    expect(areaAccess(ACME_ADMIN, 'acme', nothing, areaAt('subjects'))).toEqual({
+    expect(areaAccess(ACME_ADMIN, 'acme', nothing, areaAt('subjects'), true)).toEqual({
       kind: 'refused',
       capability: 'view-users',
     });
-    expect(areaAccess(ACME_ADMIN, 'acme', viewer, areaAt('subjects'))).toEqual({ kind: 'open' });
+    expect(areaAccess(ACME_ADMIN, 'acme', viewer, areaAt('subjects'), true)).toEqual({
+      kind: 'open',
+    });
   });
 
   it('is hidden for a System area anywhere but the system tenant, to a system administrator', () => {
     const tenants = areaAt('tenants');
-    expect(areaAccess(SYSTEM_ADMIN, 'acme', everything, tenants)).toEqual({ kind: 'hidden' });
-    expect(areaAccess(ACME_ADMIN, 'system', everything, tenants)).toEqual({ kind: 'hidden' });
-    expect(areaAccess(ACME_ADMIN, 'acme', everything, tenants)).toEqual({ kind: 'hidden' });
+    expect(areaAccess(SYSTEM_ADMIN, 'acme', everything, tenants, true)).toEqual({ kind: 'hidden' });
+    expect(areaAccess(ACME_ADMIN, 'system', everything, tenants, true)).toEqual({ kind: 'hidden' });
+    expect(areaAccess(ACME_ADMIN, 'acme', everything, tenants, true)).toEqual({ kind: 'hidden' });
   });
 
   it('is checking for a System area until whoami answers', () => {
-    expect(areaAccess(SYSTEM_ADMIN, 'system', undefined, areaAt('tenants'))).toEqual({
+    expect(areaAccess(SYSTEM_ADMIN, 'system', undefined, areaAt('tenants'), false)).toEqual({
       kind: 'checking',
     });
   });
 
   it('is open for a System area when manage-tenants is held, and hidden when whoami says not', () => {
-    expect(areaAccess(SYSTEM_ADMIN, 'system', everything, areaAt('tenants'))).toEqual({
+    expect(areaAccess(SYSTEM_ADMIN, 'system', everything, areaAt('tenants'), true)).toEqual({
       kind: 'open',
     });
-    expect(areaAccess(SYSTEM_ADMIN, 'system', viewer, areaAt('tenants'))).toEqual({
+    expect(areaAccess(SYSTEM_ADMIN, 'system', viewer, areaAt('tenants'), true)).toEqual({
       kind: 'hidden',
     });
   });
