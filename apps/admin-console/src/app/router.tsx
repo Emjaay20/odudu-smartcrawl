@@ -418,6 +418,20 @@ const registrationTokens = createRoute({
   },
 });
 
+const Flow = lazyFeatureRoute(
+  () => import('#/features/flow').then((feature) => feature.FlowPage),
+  'Loading the sign-in flow',
+);
+
+const flow = createRoute({
+  getParentRoute: () => tenant,
+  path: 'flow',
+  component: function SignInFlow() {
+    const { tenant: name } = tenant.useParams();
+    return <Flow key={name} tenant={name} />;
+  },
+});
+
 // Every feature chunk the routes load, for a caller that wants them all in
 // hand before the first render.
 export function preloadFeatures(): Promise<void> {
@@ -446,6 +460,7 @@ export function preloadFeatures(): Promise<void> {
     NewScope,
     ScopeRecord,
     RegistrationTokens,
+    Flow,
   ];
   return Promise.all(features.map((feature) => feature.preload())).then(() => undefined);
 }
@@ -460,6 +475,7 @@ const TAKEN = new Set([
   'clients',
   'scopes',
   'registration-tokens',
+  'flow',
 ]);
 
 const areas = EVERY_AREA.filter((area) => area !== OVERVIEW && !TAKEN.has(area.path)).map((area) =>
@@ -486,6 +502,7 @@ const routeTree = root.addChildren([
     ...clientPages,
     ...scopePages,
     registrationTokens,
+    flow,
     ...areas,
   ]),
 ]);
