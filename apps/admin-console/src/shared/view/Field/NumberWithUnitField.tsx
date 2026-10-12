@@ -34,7 +34,10 @@ export function NumberWithUnitField({
   minValue?: number;
   maxValue?: number;
 }) {
-  const reading = unit === 'seconds' ? formatDuration(value) : `${String(value)} ${unit}`;
+  const reading =
+    unit === 'seconds' || !Number.isFinite(value)
+      ? formatDuration(value)
+      : `${String(value)} ${unit}`;
   if (use(FieldsReadOnly)) {
     return <ReadOnlyValue label={label} value={reading} mono changed={changed} />;
   }

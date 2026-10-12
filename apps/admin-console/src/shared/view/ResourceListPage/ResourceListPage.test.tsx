@@ -207,6 +207,23 @@ it('carries the page’s view-only line under its header, above the search', () 
   expect(note.compareDocumentPosition(search) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
 
+it('draws a lead the page gives it between its header and the list', () => {
+  render(
+    <ResourceListPage
+      list={state()}
+      title="Tokens"
+      noun={{ one: 'token', other: 'tokens' }}
+      columns={COLUMNS}
+      rowKey={(row) => row.id}
+      capability="manage-clients"
+      lead={<form aria-label="Mint">Mint a token</form>}
+    />,
+  );
+  const lead = screen.getByRole('form', { name: 'Mint' });
+  const grid = screen.getByRole('grid', { name: 'Tokens' });
+  expect(lead.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
 it('draws the rows its own way where a table would not do, keeping the pager', () => {
   render(
     <ResourceListPage

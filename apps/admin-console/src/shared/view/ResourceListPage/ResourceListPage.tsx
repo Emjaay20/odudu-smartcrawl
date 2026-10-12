@@ -18,6 +18,7 @@ export function ResourceListPage<T>({
   kicker,
   description,
   actions,
+  lead,
   noun,
   searchFields = [],
   filters,
@@ -36,6 +37,8 @@ export function ResourceListPage<T>({
   kicker?: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
+  // Drawn under the header and above the search, as a form that adds a row is.
+  lead?: ReactNode;
   noun: { one: string; other: string };
   searchFields?: readonly SelectOption[];
   // Exact filters, drawn beside the search.
@@ -68,6 +71,7 @@ export function ResourceListPage<T>({
         {...(actions === undefined || refused ? {} : { actions })}
       />
       <div className={styles.page}>
+        {refused ? null : lead}
         {refused ? null : viewOnly}
         {refused ? null : (
           <Narrowing list={list} noun={noun} searchFields={searchFields} filters={filters}>

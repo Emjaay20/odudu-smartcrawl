@@ -29,6 +29,13 @@ describe('NumberWithUnitField', () => {
     expect(screen.getByText('s', { selector: '[data-unit]' })).toBeInTheDocument();
   });
 
+  it('reads a cleared field as a dash, not as NaN', () => {
+    render(<NumberWithUnitField label="Uses" unit="uses" value={Number.NaN} onChange={vi.fn()} />);
+    const input = screen.getByRole('textbox', { name: 'Uses' });
+    expect(describedBy(input)).not.toContain('NaN');
+    expect(describedBy(input)).toContain('—');
+  });
+
   it('reports a typed number and reads it back', async () => {
     const user = userEvent.setup();
     function Controlled() {
