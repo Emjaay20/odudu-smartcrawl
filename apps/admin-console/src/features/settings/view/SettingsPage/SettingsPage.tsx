@@ -3,7 +3,6 @@ import { AreaGate, areaAt } from '#/features/shell';
 import {
   booleanOf,
   disableConsequence,
-  enteredNumber,
   fieldDescription,
   GENERAL_SECTION,
   listOf,
@@ -19,6 +18,7 @@ import {
   useSettingsSection,
   type SettingsSave,
 } from '#/features/settings/usecase/useSettingsSection';
+import { numberKept } from '#/shared/service/numbers';
 import { disableFixed } from '#/shared/service/tenantEnabled';
 import { Button } from '#/shared/view/Button';
 import { ChecklistField } from '#/shared/view/ChecklistField';
@@ -82,7 +82,7 @@ function Control({
           unit={field.control === 'seconds' ? 'seconds' : (field.unit ?? '')}
           value={numberOf(value)}
           onChange={(next) => {
-            save.edit(field.name, enteredNumber(next, numberOf(value)));
+            save.edit(field.name, numberKept(next, numberOf(value)));
           }}
         />
       );

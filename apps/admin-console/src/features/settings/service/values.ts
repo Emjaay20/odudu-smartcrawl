@@ -73,11 +73,6 @@ export function settingEntries(
   }));
 }
 
-// A number field that has been cleared reads NaN; the setting then stays as it was.
-export function enteredNumber(entered: number, was: number): number {
-  return Number.isNaN(entered) ? was : entered;
-}
-
 export function settingsRequest(
   changes: Readonly<Partial<Record<string, SettingValue>>>,
 ): Record<string, boolean | number | string | string[]> {

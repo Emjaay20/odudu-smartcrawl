@@ -84,7 +84,6 @@ export {
   lifetimeBounds,
   lifetimeText,
   maxAgeText,
-  numberKept,
   REQUIRE_AUTH_TIME_NOTE,
   lifetimeRule,
   MAX_AGE_LABEL,

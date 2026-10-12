@@ -3,7 +3,6 @@ import type { SettingField } from '#/features/settings/service/sections';
 import {
   booleanOf,
   describeSetting,
-  enteredNumber,
   listOf,
   numberOf,
   textOf,
@@ -92,13 +91,6 @@ describe('describeSetting', () => {
       'Changes by administrators, Tokens',
     );
     expect(describeSetting(set)([])).toBe('none');
-  });
-});
-
-describe('enteredNumber', () => {
-  it('keeps what a number was when its field is cleared', () => {
-    expect(enteredNumber(Number.NaN, 60)).toBe(60);
-    expect(enteredNumber(120, 60)).toBe(120);
   });
 });
 

@@ -11,7 +11,6 @@ export {
 export {
   booleanOf,
   describeSetting,
-  enteredNumber,
   listOf,
   numberOf,
   settingEntries,

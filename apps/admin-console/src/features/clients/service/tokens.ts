@@ -8,6 +8,7 @@ import {
 } from '@odudu/contracts/admin';
 import { AUTO, type Choice } from '#/features/clients/service/choices';
 import { formatDuration } from '#/shared/service/format';
+import { rangeSentence } from '#/shared/service/numbers';
 
 export interface Lifetime {
   field: ClientTokenTtlField;
@@ -56,9 +57,7 @@ export function lifetimeBounds(field: ClientTokenTtlField): {
 // The range the server holds the lifetime to, with its human reading.
 export function lifetimeRule(field: ClientTokenTtlField): string {
   const { min, max } = lifetimeBounds(field);
-  return max === undefined
-    ? `At least ${formatDuration(min)}.`
-    : `Between ${formatDuration(min)} and ${formatDuration(max)}.`;
+  return rangeSentence(min, max, formatDuration);
 }
 
 // Each toggle says which lifetime it hands back, so three are told apart.
@@ -155,11 +154,6 @@ export function lifetimeText(value: unknown): string {
 
 export function maxAgeText(value: unknown): string {
   return typeof value === 'number' ? formatDuration(value) : MAX_AGE_OFF.toLowerCase();
-}
-
-// A number field cleared reads NaN; the lifetime then stays as it was.
-export function numberKept(entered: number, was: number): number {
-  return Number.isNaN(entered) ? was : entered;
 }
 
 export const ID_TOKEN_ALG_LABEL = 'ID token signing algorithm';

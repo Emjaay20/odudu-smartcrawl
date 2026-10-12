@@ -7,7 +7,7 @@ import {
   ToggleField,
 } from '#/shared/view/Field';
 import { formatDuration } from '#/shared/service/format';
-import { numberKept } from '#/features/clients/service';
+import { numberKept } from '#/shared/service/numbers';
 import styles from '#/features/clients/view/OptionalSecondsField/OptionalSecondsField.module.css';
 
 // A duration a client may leave to a default: off, it takes the default and
