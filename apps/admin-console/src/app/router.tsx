@@ -404,6 +404,20 @@ const scopePages = [
 ] as const;
 const scopeRecord = scopePages[2];
 
+const RegistrationTokens = lazyFeatureRoute(
+  () => import('#/features/registration-tokens').then((feature) => feature.RegistrationTokensPage),
+  'Loading registration tokens',
+);
+
+const registrationTokens = createRoute({
+  getParentRoute: () => tenant,
+  path: 'registration-tokens',
+  component: function RegistrationTokenList() {
+    const { tenant: name } = tenant.useParams();
+    return <RegistrationTokens key={name} tenant={name} />;
+  },
+});
+
 // Every feature chunk the routes load, for a caller that wants them all in
 // hand before the first render.
 export function preloadFeatures(): Promise<void> {
@@ -431,6 +445,7 @@ export function preloadFeatures(): Promise<void> {
     Scopes,
     NewScope,
     ScopeRecord,
+    RegistrationTokens,
   ];
   return Promise.all(features.map((feature) => feature.preload())).then(() => undefined);
 }
@@ -444,6 +459,7 @@ const TAKEN = new Set([
   'roles',
   'clients',
   'scopes',
+  'registration-tokens',
 ]);
 
 const areas = EVERY_AREA.filter((area) => area !== OVERVIEW && !TAKEN.has(area.path)).map((area) =>
@@ -469,6 +485,7 @@ const routeTree = root.addChildren([
     ...rolePages,
     ...clientPages,
     ...scopePages,
+    registrationTokens,
     ...areas,
   ]),
 ]);
