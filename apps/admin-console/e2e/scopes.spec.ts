@@ -67,6 +67,8 @@ async function openScope(page: Page, name: string, tab = 'general'): Promise<voi
 test('a scope is made, described, given a role and a mapper, and read back from the database', async ({
   page,
 }) => {
+  // Seven pages checked for accessibility under four themes each: more than one test's budget.
+  test.slow();
   await signIn(page, admin);
   await page.goto(`/console/${TENANT}/scopes`);
   const table = page.getByRole('grid', { name: 'Scopes' });
@@ -332,13 +334,19 @@ test('an operator holding manage-tenant alone chooses no role it lacks, and is t
   await expectAccessible(page);
 });
 
-test('an operator holding manage-clients alone is told what the scopes need', async ({ page }) => {
+test('an operator holding manage-clients alone is told what the scopes need', async ({
+  page,
+  problems,
+}) => {
   await signIn(page, clientsOnly);
   await page.goto(`/console/${TENANT}/scopes`);
   await expect(page.getByRole('note').filter({ hasText: 'Scopes needs the' })).toHaveText(
     'Scopes needs the manage-tenant capability.',
   );
   await expectAccessible(page);
+  // The list is asked for while whoami is still answering, and refused.
+  forgive(problems, `/tenants/${TENANT}/scopes`);
+  forgive(problems, `/tenants/${TENANT}/scopes/count`);
 });
 
 test('the scopes pages fit a phone, with a scope whose name is wider than the screen', async ({
