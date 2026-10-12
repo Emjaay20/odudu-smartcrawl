@@ -154,19 +154,24 @@ function retirementProblem(
           `signing key ${id} is active; promote another key first`,
         ),
       );
-    case 'algorithm_needed':
-      return sendProblem(
-        reply,
-        request,
-        problem(
+    case 'algorithm_needed': {
+      const more = outcome.total - outcome.clientIds.length;
+      const named = outcome.clientIds.join(', ');
+      return sendProblem(reply, request, {
+        ...problem(
           409,
           'about:blank#key-algorithm-needed',
           'Conflict',
           `no remaining signing key produces ${outcome.alg}, still required by ` +
             `userinfo_signed_response_alg or id_token_signed_response_alg on client(s): ` +
-            outcome.clientIds.join(', '),
+            `${named}${more > 0 ? ` and ${String(more)} more` : ''}`,
         ),
-      );
+        errors: [
+          ...outcome.clientIds.map((id) => ({ path: 'clients', message: id })),
+          ...(more > 0 ? [{ path: 'clients.more', message: String(more) }] : []),
+        ],
+      });
+    }
   }
 }
 

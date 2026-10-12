@@ -265,7 +265,37 @@ describe('POST /admin/tenants/{t}/keys/{id}/retire', () => {
     expect(detail).toContain('userinfo_signed_response_alg');
     expect(detail).toContain(dependent.clientId);
     expect(res.json<{ type: string }>().type).toBe('about:blank#key-algorithm-needed');
+    expect(res.json<{ errors: unknown }>().errors).toEqual([
+      { path: 'clients', message: dependent.clientId },
+    ]);
   });
+
+  it('names at most twenty clients, and counts the rest, however many need the algorithm', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    await openRegistration(t.name);
+    const token = await fixture.adminToken(t.name, ['manage-keys']);
+    const original = await activeKeyOf(t.id);
+    const staged = await stageKey(t.name, token, 'RS256');
+    await promoteKeyHttp(t.name, token, staged.id);
+    for (let made = 0; made < 22; made += 1) {
+      await fixture.registerClientWithUserinfoAlg(t.name, original.alg);
+    }
+
+    const res = await retireKey(t.name, token, original.id);
+    expect(res.statusCode).toBe(409);
+    const body = res.json<{
+      detail: string;
+      errors: { path: string; message: string }[];
+    }>();
+    const named = body.errors.filter((error) => error.path === 'clients');
+    expect(named).toHaveLength(20);
+    expect(named.map((error) => error.message)).toEqual(named.map((error) => error.message).sort());
+    expect(body.errors.filter((error) => error.path === 'clients.more')).toEqual([
+      { path: 'clients.more', message: '2' },
+    ]);
+    expect(body.detail).toMatch(/ and 2 more$/u);
+    expect(body.detail.split(',').length).toBeLessThanOrEqual(21);
+  }, 120_000);
 
   it('retires once the last client on that algorithm has moved', async () => {
     const t = await fixture.createTenant(`acme-${newId()}`);

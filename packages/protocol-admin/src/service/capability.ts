@@ -1221,7 +1221,8 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     description:
       'Refused with 409 while the key is active (`about:blank#key-active`), or while a client ' +
       'is registered against an algorithm no remaining key would produce ' +
-      '(`#key-algorithm-needed`). `If-Match` is optional: a stale one, ' +
+      '(`#key-algorithm-needed`, naming at most 20 clients as `errors` entries of path ' +
+      '`clients`, and the number left out as one of path `clients.more`). `If-Match` is optional: a stale one, ' +
       'taken over the key, is refused with `412`.',
   },
   {

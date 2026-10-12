@@ -9,11 +9,14 @@ import { type TenantScopedDatabase } from '@odudu/db';
 import { clients } from '@odudu/domain-tenant';
 import { clientOidcConfig } from '@odudu/protocol-oidc';
 import { newId } from '@odudu/kernel';
-import { and, asc, eq, gt, ne, or } from 'drizzle-orm';
+import { and, asc, count, eq, gt, ne, or } from 'drizzle-orm';
 import { decodeCursor, encodeCursor, filterDigest } from '#/service/cursor';
 import { etagOf, matches } from '#/service/etag';
 
 const COLLECTION = 'keys';
+
+/** The most clients a refusal names; the rest are counted. */
+export const NAMED_CLIENTS_MAX = 20;
 
 export interface KeyAuditEvent {
   readonly action: 'key.create' | 'key.promote' | 'key.retire' | 'key.delete';
@@ -241,7 +244,7 @@ export type RetireKeyOutcome =
   | { kind: 'not_found' }
   | { kind: 'precondition_failed' }
   | { kind: 'active' }
-  | { kind: 'algorithm_needed'; alg: string; clientIds: readonly string[] }
+  | { kind: 'algorithm_needed'; alg: string; clientIds: readonly string[]; total: number }
   | { kind: 'ok'; key: SigningKey };
 
 // Every non-retired key of the target's algorithm, not just the target:
@@ -311,21 +314,24 @@ export async function retireKey(
   const stillProduced = new Set(survivors.map((row) => row.alg));
 
   if (!stillProduced.has(locked.alg)) {
+    const needs = or(
+      eq(clientOidcConfig.userinfoSignedResponseAlg, locked.alg),
+      eq(clientOidcConfig.idTokenSignedResponseAlg, locked.alg),
+    );
     const offending = await tx
       .select({ oauthClientId: clients.clientId })
       .from(clientOidcConfig)
       .innerJoin(clients, eq(clients.id, clientOidcConfig.clientId))
-      .where(
-        or(
-          eq(clientOidcConfig.userinfoSignedResponseAlg, locked.alg),
-          eq(clientOidcConfig.idTokenSignedResponseAlg, locked.alg),
-        ),
-      );
+      .where(needs)
+      .orderBy(asc(clients.clientId))
+      .limit(NAMED_CLIENTS_MAX);
     if (offending.length > 0) {
+      const [counted] = await tx.select({ total: count() }).from(clientOidcConfig).where(needs);
       return {
         kind: 'algorithm_needed',
         alg: locked.alg,
         clientIds: offending.map((row) => row.oauthClientId),
+        total: counted?.total ?? offending.length,
       };
     }
   }
