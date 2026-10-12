@@ -25,11 +25,12 @@ export interface ScopeClients {
 
 // The clients that carry the scope, a page at a time: the server answers in
 // the order of its index, so "Load more" is the only way through.
-export function useScopeClients(tenant: string, id: string): ScopeClients {
+export function useScopeClients(tenant: string, id: string, enabled = true): ScopeClients {
   const pages = useListPages({
     key: ['scope-clients', tenant, id],
     query: new URLSearchParams(),
     cursor: undefined,
+    enabled,
     read: (gateway, query) => readScopeClients(gateway, tenant, id, query),
   });
   return {

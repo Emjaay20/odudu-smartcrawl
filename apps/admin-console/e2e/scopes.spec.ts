@@ -253,6 +253,21 @@ test('openid is shown with its refusal as fixed text and no delete to press', as
   expect(scopeField('openid', 'name')).toBe('openid');
 });
 
+test('the delete says how many clients carry the scope, and still needs the typed name', async ({
+  page,
+}) => {
+  await signIn(page, admin);
+  await openScope(page, 'carried');
+  await page.getByRole('button', { name: 'Delete carried' }).click();
+  const dialog = page.getByRole('alertdialog', { name: 'Delete carried?' });
+  await expect(dialog).toContainText('2 clients carry carried and will stop receiving its claims');
+  await expectAccessible(page);
+  await expect(dialog.getByRole('button', { name: 'Delete carried' })).toBeDisabled();
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(scopeField('carried', 'name')).toBe('carried');
+});
+
 test('a scope is deleted once its name is typed, and goes from the list', async ({ page }) => {
   await signIn(page, admin);
   await openScope(page, 'doomed');

@@ -42,17 +42,21 @@ export function useRecord<R>({
   tenant,
   record,
   read,
+  enabled = true,
 }: {
   tenant: string;
   // The record's path within the tenant, e.g. `clients/<id>`.
   record: string;
   read: (gateway: Gateway) => Promise<GatewayResult<R>>;
+  // False holds the read back, as for a record only a dialog needs.
+  enabled?: boolean;
 }): RecordState<R> {
   const { gateway } = useTransport();
   const client = useQueryClient();
   const key = recordKey(tenant, record);
   const query = useQuery({
     queryKey: key,
+    enabled,
     queryFn: async (): Promise<RecordEntry<R>> => {
       const result = await read(gateway);
       if (!result.ok) throw new RecordReadFailure(result);

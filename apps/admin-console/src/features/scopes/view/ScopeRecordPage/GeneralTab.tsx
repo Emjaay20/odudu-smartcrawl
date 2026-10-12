@@ -196,7 +196,7 @@ function Danger({ name, deletion }: { name: string; deletion: Deletion }) {
       <ConfirmDialog
         isOpen={deletion.confirming}
         title={`Delete ${name}?`}
-        consequence={deletion.consequence}
+        consequence={deletion.warning}
         confirmLabel={`Delete ${name}`}
         tone="danger"
         typed={name}

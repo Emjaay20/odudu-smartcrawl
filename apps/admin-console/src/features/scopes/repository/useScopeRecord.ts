@@ -41,9 +41,14 @@ export function useScopeRolesRecord(
   });
 }
 
-export function useScopeMappersRecord(tenant: string, id: string): RecordState<ScopeMappers> {
+export function useScopeMappersRecord(
+  tenant: string,
+  id: string,
+  enabled = true,
+): RecordState<ScopeMappers> {
   return useRecord({
     tenant,
+    enabled,
     record: scopeMappersRecord(id),
     read: (gateway) => readScopeMappers(gateway, tenant, id),
   });

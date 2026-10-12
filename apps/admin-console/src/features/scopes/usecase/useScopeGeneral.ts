@@ -1,8 +1,10 @@
 import type { ClientScope } from '@odudu/contracts/admin';
 import { useState } from 'react';
 import { useRefusal } from '#/features/session';
+import { useScopeClients } from '#/features/scopes/repository/useScopeClients';
 import {
   useScopeDeletion,
+  useScopeMappersRecord,
   useScopeSaves,
   type AssignmentValues,
   type ConsentValues,
@@ -12,6 +14,8 @@ import {
 import {
   ACCESS_TOKEN_LABEL,
   assignmentName,
+  carryingOf,
+  claimMappersOf,
   CONSENT_RULE,
   DESCRIPTION_RULE,
   consentGuard,
@@ -21,6 +25,7 @@ import {
   NEW_CLIENT_CHOICES,
   NEW_CLIENT_LABEL,
   scopeDeleteConsequence,
+  scopeDeleteDialogText,
   scopeDeleteFailureText,
   scopeRecord,
   scopesHref,
@@ -38,6 +43,8 @@ export interface Deletion {
   fixed: string | null;
   confirming: boolean;
   consequence: string;
+  // What the dialog says: how many clients lose the scope, then the consequence.
+  warning: string;
   busy: boolean;
   problem: string | null;
   ask: () => void;
@@ -74,6 +81,8 @@ export function useScopeGeneral({
   const go = useGo();
   const [deleting, setDeleting] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  const carriers = useScopeClients(tenant, scope.id, deleting);
+  const mappers = useScopeMappersRecord(tenant, scope.id, deleting);
   const common = {
     tenant,
     record: scopeRecord(scope.id),
@@ -161,6 +170,11 @@ export function useScopeGeneral({
       fixed: isGuarded(scope.name) ? GUARDED_TEXT : null,
       confirming: deleting,
       consequence: scopeDeleteConsequence(scope.name),
+      warning: scopeDeleteDialogText(
+        scope.name,
+        carryingOf(carriers.status, carriers.rows.length, carriers.more),
+        claimMappersOf(mappers.data),
+      ),
       busy: deletion.busy,
       problem,
       ask: () => {

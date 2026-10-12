@@ -20,6 +20,13 @@ export {
   scopeDeleteFailureText,
 } from '#/features/scopes/service/guard';
 export {
+  type Carrying,
+  carryingOf,
+  claimMappersOf,
+  scopeDeleteDialogText,
+  scopeDeleteWarning,
+} from '#/features/scopes/service/deleteWarning';
+export {
   NONE_TEXT,
   mapperOptions,
   mappersFailure,

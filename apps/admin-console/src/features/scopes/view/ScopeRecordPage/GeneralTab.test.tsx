@@ -4,7 +4,7 @@ import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { inTurn, json, problem } from '#/testing/fakeTransport';
 import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
-import { BILLING_SCOPE, SC, scopeRoutes } from '#/testing/scopesFixtures';
+import { BILLING_CARRIES, BILLING_SCOPE, SC, scopeRoutes } from '#/testing/scopesFixtures';
 
 afterEach(() => {
   resetConsole();
@@ -198,6 +198,91 @@ it('deletes a scope behind its typed name, and goes back to the list', async () 
   expect(confirm).toBeDisabled();
   await user.type(within(dialog).getByRole('textbox'), 'billing');
   await user.click(confirm);
+  await waitFor(() => {
+    expect(router.state.location.pathname).toBe('/acme/scopes');
+  });
+});
+
+async function openDeletion() {
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole('button', { name: 'Delete billing' }));
+  const dialog = await screen.findByRole('alertdialog', { name: 'Delete billing?' });
+  return { user, dialog };
+}
+
+it('warns, before the name is typed, how many clients carry the scope', async () => {
+  renderConsoleAt(AT, scopeRoutes());
+  const { dialog } = await openDeletion();
+  expect(
+    await within(dialog).findByText(/1 client carries billing and will stop receiving its claims/u),
+  ).toBeVisible();
+  expect(within(dialog).getByRole('button', { name: 'Delete billing' })).toBeDisabled();
+});
+
+it('says no client carries a scope none is assigned', async () => {
+  renderConsoleAt(
+    AT,
+    scopeRoutes(undefined, { [`GET ${SC}/s-bill/clients`]: json({ items: [] }) }),
+  );
+  const { dialog } = await openDeletion();
+  expect(await within(dialog).findByText(/No client carries billing/u)).toBeVisible();
+});
+
+it('reads one page only, and says "or more" when another is there', async () => {
+  const { sent } = renderConsoleAt(
+    AT,
+    scopeRoutes(undefined, {
+      [`GET ${SC}/s-bill/clients`]: json({ items: [BILLING_CARRIES], next: 'cursor-2' }),
+    }),
+  );
+  const { dialog } = await openDeletion();
+  expect(await within(dialog).findByText(/1 or more clients carry billing/u)).toBeVisible();
+  expect(sent.filter((s) => s.method === 'GET' && s.path.endsWith('/s-bill/clients'))).toHaveLength(
+    1,
+  );
+});
+
+it('never says none when the clients cannot be read', async () => {
+  renderConsoleAt(
+    AT,
+    scopeRoutes(undefined, {
+      [`GET ${SC}/s-bill/clients`]: problem(403, 'about:blank', 'Forbidden', {
+        detail: 'requires manage-clients',
+      }),
+    }),
+  );
+  const { dialog } = await openDeletion();
+  expect(
+    await within(dialog).findByText(/How many clients carry billing could not be read/u),
+  ).toBeVisible();
+  expect(dialog).not.toHaveTextContent('No client carries');
+  expect(within(dialog).getByRole('button', { name: 'Delete billing' })).toBeDisabled();
+});
+
+it('names the mappers behind its claims', async () => {
+  renderConsoleAt(
+    AT,
+    scopeRoutes(undefined, {
+      [`GET ${SC}/s-bill/mappers`]: json(
+        { available: ['email', 'groups'], bound: ['groups'], declared: ['email'] },
+        200,
+        { etag: '"s-bill-m1"' },
+      ),
+    }),
+  );
+  const { dialog } = await openDeletion();
+  expect(await within(dialog).findByText(/Its claims come from the groups mapper/u)).toBeVisible();
+});
+
+it('still deletes only once the name is typed, after the warning', async () => {
+  const { router } = renderConsoleAt(
+    AT,
+    scopeRoutes(undefined, { [`DELETE ${SC}/s-bill`]: () => new Response(null, { status: 204 }) }),
+  );
+  const { user, dialog } = await openDeletion();
+  await within(dialog).findByText(/1 client carries billing/u);
+  await user.type(within(dialog).getByRole('textbox'), 'billing');
+  await user.click(within(dialog).getByRole('button', { name: 'Delete billing' }));
   await waitFor(() => {
     expect(router.state.location.pathname).toBe('/acme/scopes');
   });
