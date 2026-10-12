@@ -1,8 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
-import { recordKey, type RecordEntry } from '#/shared/repository/useRecord';
-import { TENANT_SETTINGS_RECORD } from '#/shared/service/tenantSettings';
+import { cachedSettingsEtag } from '#/testing/consoleState';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { inTurn, json, problem } from '#/testing/fakeTransport';
 import {
@@ -264,10 +263,7 @@ it('saves the one-time password under the record the Settings page reads, so a s
   await user.click(within(otp).getByRole('switch', { name: /Ask every subject/u }));
   await user.click(within(otp).getByRole('button', { name: 'Save One-time password' }));
   await waitFor(() => {
-    const entry = queryClient.getQueryData<RecordEntry<unknown>>(
-      recordKey('acme', TENANT_SETTINGS_RECORD),
-    );
-    expect(entry).toMatchObject({ by: 'save', result: { etag: '"s2"' } });
+    expect(cachedSettingsEtag(queryClient, 'acme')).toBe('"s2"');
   });
 });
 

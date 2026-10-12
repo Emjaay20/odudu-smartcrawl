@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
-import { useDrafts } from '#/shared/repository/useDrafts';
+import { draftsKept } from '#/testing/consoleState';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { inTurn, json, offline, problem } from '#/testing/fakeTransport';
 import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
@@ -102,8 +102,8 @@ it('keeps an edit as a draft but never the password typed beside it', async () =
   await user.type(host, 'draft.example');
   await user.type(within(form).getByLabelText('New password'), 'typed-secret');
   // What a session ending mid-edit keeps.
-  expect(useDrafts.getState().keepDirty('s1')).toBe(1);
-  const kept = sessionStorage.getItem('odudu.console.drafts') ?? '';
+  const { sections, stored: kept } = draftsKept('s1');
+  expect(sections).toBe(1);
   expect(kept).toContain('draft.example');
   expect(kept).not.toContain('typed-secret');
 });
