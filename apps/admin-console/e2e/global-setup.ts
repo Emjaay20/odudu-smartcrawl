@@ -262,6 +262,24 @@ function seedAccess(access: Seeded['access']): void {
   grant(keys.fixedTenantOnly, 'odudu-admin:manage-tenant');
 }
 
+// A tenant per test that saves its settings or its relay, since one ETag
+// covers all of a tenant's settings and two tests would meet in a 412.
+function seedConfig(config: Seeded['config']): void {
+  const { settings, email } = config;
+  const own = [
+    ...Object.values(settings).filter((account) => account.username !== 'tesla'),
+    ...Object.values(email).filter((account) => account.username !== 'edison'),
+  ];
+  for (const account of own) {
+    seed(['tenant', '--name', account.tenant]);
+    administrator(account);
+  }
+  subject(settings.fixedClientsOnly);
+  grant(settings.fixedClientsOnly, 'odudu-admin:manage-clients');
+  subject(email.fixedClientsOnly);
+  grant(email.fixedClientsOnly, 'odudu-admin:manage-clients');
+}
+
 // Names are fresh each run, so a stack kept up between runs seeds again.
 export default function globalSetup(): void {
   const run = `e2e-${Date.now().toString(36)}`;
@@ -349,6 +367,26 @@ export default function globalSetup(): void {
       fixed: { tenant: `${run}-y5`, username: 'rivest', password: password() },
       fixedKeysOnly: { tenant: `${run}-y5`, username: 'shamir', password: password() },
       fixedTenantOnly: { tenant: `${run}-y5`, username: 'adleman', password: password() },
+    },
+  };
+  const config = {
+    settings: {
+      main: { tenant: `${run}-s1`, username: 'maxwell', password: password() },
+      rebase: { tenant: `${run}-s2`, username: 'faraday', password: password() },
+      behind: { tenant: `${run}-s3`, username: 'kelvin', password: password() },
+      keyed: { tenant: `${run}-s4`, username: 'joule', password: password() },
+      general: { tenant: `${run}-s5`, username: 'ohm', password: password() },
+      disable: { tenant: `${run}-s6`, username: 'volta', password: password() },
+      fixed: { tenant: `${run}-s7`, username: 'ampere', password: password() },
+      fixedClientsOnly: { tenant: `${run}-s7`, username: 'tesla', password: password() },
+    },
+    email: {
+      main: { tenant: `${run}-m1`, username: 'morse', password: password() },
+      keyed: { tenant: `${run}-m2`, username: 'bell', password: password() },
+      removal: { tenant: `${run}-m3`, username: 'marconi', password: password() },
+      refused: { tenant: `${run}-m4`, username: 'baird', password: password() },
+      fixed: { tenant: `${run}-m5`, username: 'hertz', password: password() },
+      fixedClientsOnly: { tenant: `${run}-m5`, username: 'edison', password: password() },
     },
   };
   const tenants = {
@@ -440,6 +478,7 @@ export default function globalSetup(): void {
   subject(scopes.clientsOnly);
   grant(scopes.clientsOnly, 'odudu-admin:manage-clients');
   seedAccess(access);
+  seedConfig(config);
   seedGroupsRoles(groupsRoles.admin.tenant);
   administrator(groupsRoles.admin);
   subject(groupsRoles.limited);
@@ -484,5 +523,6 @@ export default function globalSetup(): void {
     groupsRoles,
     scopes,
     access,
+    config,
   });
 }

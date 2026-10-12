@@ -168,6 +168,30 @@ const seededSchema = z.object({
       fixedTenantOnly: account,
     }),
   }),
+  // Tenants of their own for the Settings and Email tests.
+  config: z.object({
+    // One settings tenant per test that changes its settings, each with its administrator.
+    settings: z.object({
+      main: account,
+      rebase: account,
+      behind: account,
+      keyed: account,
+      general: account,
+      disable: account,
+      // Read only: a phone's pages, and an operator holding manage-clients alone.
+      fixed: account,
+      fixedClientsOnly: account,
+    }),
+    // One email tenant per test that changes its relay, each with its administrator.
+    email: z.object({
+      main: account,
+      keyed: account,
+      removal: account,
+      refused: account,
+      fixed: account,
+      fixedClientsOnly: account,
+    }),
+  }),
   // A tenant of its own for the Scopes tests.
   scopes: z.object({
     // Holds tenant-admin there.

@@ -2009,6 +2009,55 @@ none, so there is no 412 or 428 to show here.
 was lost says the write was not sent again and asks for a look at the lanes. Every
 answer, a refusal included, reads the lanes and the overview again.
 
+## Part 4 — Settings and Email
+
+**There are 38 tenant settings, not 29.** The plan counted 29 from a listing that
+predates the token and link lifetimes, `login_with_email` and `audit_event_types`.
+The page places all of them, and `features/settings/service/sections.test.ts`
+fails when a setting named by the contracts (`tenantSettingsDocumentSchema` and
+`REGISTRATION_POLICY_SETTINGS`, held to the server's own map by a parity test)
+is placed in no section or placed twice. `otp_required` is named as living on the
+Sign-in flow page, which saves it on the same record.
+
+**One record, one ETag, ten sections.** Every section reads and writes the record
+key `settings` through `useTenantSettings`, the same as the Sign-in flow's
+one-time password section, so a save in either rebases the others. A section
+sends only the settings it changed. A cleared number field keeps its old value
+rather than sending nothing, as the Clients tab does.
+
+**Ranges are the server's, and the refusal is the server's words.** The ranges and
+the three idle/maximum orderings moved from `@odudu/domain-tenant` to
+`@odudu/contracts/admin` (`TENANT_SETTING_RANGES`, `TENANT_SETTING_ORDERINGS`), so
+a field says "Between 60 s and 1 day" from the table the server enforces. The
+console does not clamp a number: a value outside its range is sent, and the
+refusal's `errors[]` places it under its field. An ordering is placed under the
+lower of the two, in the same section as the upper.
+
+**An empty display name was stored as an empty string.** The setting is nullable
+but `PATCH /settings` cannot carry `null`, and readers show `display_name ??
+name`, so clearing it left a blank. The route now stores a blank name as none.
+
+**Disabling the tenant asks first.** The General section's Enabled switch saves
+through the settings record like any other, but turning it off opens a typed
+confirmation that says it locks out the person doing it. The system tenant's
+switch is fixed, with the reason, since the server refuses it with a 409.
+
+**Email keeps, replaces or clears the password.** The form never receives the
+stored password, only `password_set`. A save leaves `password` out to keep it,
+sends the typed one to replace it, and sends `null` to clear it. The server keeps
+a stored password only while host, port and username are unchanged, and answers a
+400 under `password` otherwise; the form says so as soon as one is edited and puts
+the refusal under the field. The password never enters a draft (`kind: 'secret'`).
+`effective` is shown as a sentence and a tag, and its three values are worded:
+own relay, the deployment's sender, or mail only written to the log.
+
+**The test send is honest about what it knows.** It sends through the saved relay,
+not the edits on the page, and says so while there are edits. A 400 or 502 shows the
+server's `detail` (a refused destination, or the transport's own text); a
+success says the relay accepted the message, and that acceptance is not delivery. A
+lost answer is not sent again. The browser tests cover the refusal only: loopback
+is always refused, and the e2e stack has no public SMTP sink to accept one.
+
 ## Performance
 
 ### The React Compiler
