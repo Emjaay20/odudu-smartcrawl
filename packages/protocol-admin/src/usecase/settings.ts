@@ -97,7 +97,7 @@ export class AmendSettingsRefusedError extends Error {
 interface CoercedSetting {
   readonly name: string;
   readonly column: string;
-  readonly value: TenantSettingValue;
+  readonly value: TenantSettingValue | null;
 }
 
 type CoerceAllResult = { kind: 'ok'; settings: readonly CoercedSetting[] } | AmendSettingsOutcome;
@@ -126,7 +126,10 @@ function coerceAll(values: Readonly<Record<string, TenantSettingValue>>): Coerce
         ...(outcome.values === undefined ? {} : { values: outcome.values }),
       };
     }
-    settings.push({ name, column: outcome.column, value: outcome.value });
+    // The one nullable text setting: an empty name is none, which readers
+    // replace with the tenant's name, rather than a blank to show.
+    const empty = outcome.column === 'displayName' && String(outcome.value).trim() === '';
+    settings.push({ name, column: outcome.column, value: empty ? null : outcome.value });
   }
   return { kind: 'ok', settings };
 }

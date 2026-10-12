@@ -81,7 +81,7 @@ export function tenantSettingsRepository(tx: TenantScopedDatabase) {
 
     async amend(
       tenantId: string,
-      columns: Readonly<Record<string, TenantSettingValue>>,
+      columns: Readonly<Record<string, TenantSettingValue | null>>,
     ): Promise<TenantSettingsRecord> {
       let rows: (typeof tenants.$inferSelect)[];
       try {

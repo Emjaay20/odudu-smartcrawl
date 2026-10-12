@@ -33,6 +33,26 @@ describe('PATCH /admin/tenants/{t}/settings', () => {
     });
   });
 
+  it('stores an empty display name as none, so the tenant name stands in for it', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-tenant']);
+    const patch = (display_name: string) =>
+      fixture.http.inject({
+        method: 'PATCH',
+        url: `/admin/tenants/${t.name}/settings`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { display_name },
+      });
+    expect((await patch('Acme Inc')).json()).toMatchObject({ display_name: 'Acme Inc' });
+    const cleared = await patch('  ');
+    expect(cleared.statusCode).toBe(200);
+    expect(cleared.json()).toMatchObject({ display_name: null });
+    await withTenant(fixture.app.db, t.id, async (tx) => {
+      const row = await tenantSettingsRepository(tx).byId(t.id);
+      expect(row?.display_name).toBeNull();
+    });
+  });
+
   it('applies the numbers 0 and 1 as numbers, not as booleans', async () => {
     const t = await fixture.createTenant(`acme-${newId()}`);
     const token = await fixture.adminToken(t.name, ['manage-tenant']);
