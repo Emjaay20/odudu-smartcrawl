@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { psql, publish, seed, type Account } from './stack.ts';
+import { psql, publish, seed, type Account } from './stack';
 
 const TENANT_ADMIN = 'odudu-admin:tenant-admin';
 

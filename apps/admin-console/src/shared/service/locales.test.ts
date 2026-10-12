@@ -1,11 +1,6 @@
 import { isValidLocale } from '@odudu/contracts';
 import { describe, expect, it } from 'vitest';
-import {
-  localeName,
-  localeOptions,
-  localeProblem,
-  typingLocale,
-} from '#/shared/service/locales.ts';
+import { localeName, localeOptions, localeProblem, typingLocale } from '#/shared/service/locales';
 
 describe('locales', () => {
   it('names a tag in the reader’s language', () => {

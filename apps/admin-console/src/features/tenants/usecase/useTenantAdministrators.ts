@@ -1,12 +1,12 @@
 import { useAuthority } from '#/features/session';
 import { systemAdminsHrefOf } from '#/features/tenants/service';
-import { administratorCapability, administratorNeeds } from '#/shared/service/administrators.ts';
-import { lacking, notLacking } from '#/shared/service/access.ts';
-import { SYSTEM_TENANT } from '#/shared/service/principal.ts';
+import { administratorCapability, administratorNeeds } from '#/shared/service/administrators';
+import { lacking, notLacking } from '#/shared/service/access';
+import { SYSTEM_TENANT } from '#/shared/service/principal';
 import {
   useBeginAdministrator,
   type BeginAdministrator,
-} from '#/features/tenants/usecase/useBeginAdministrator.ts';
+} from '#/features/tenants/usecase/useBeginAdministrator';
 
 export interface TenantAdministrators {
   // The capability or role the guard counts, and for `system` where its

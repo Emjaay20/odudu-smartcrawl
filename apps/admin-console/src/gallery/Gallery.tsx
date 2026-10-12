@@ -1,9 +1,9 @@
 import { useState, type ReactNode } from 'react';
-import { advance, type CursorTrail } from '#/shared/service/cursorTrail.ts';
-import type { PickerState } from '#/shared/service/picker.ts';
-import type { ListSearch, ResourceListState } from '#/shared/service/resourceList.ts';
-import { current, dirtyFields, discard, edit, startDraft } from '#/shared/service/dirty.ts';
-import type { Toast } from '#/shared/service/toast.ts';
+import { advance, type CursorTrail } from '#/shared/service/cursorTrail';
+import type { PickerState } from '#/shared/service/picker';
+import type { ListSearch, ResourceListState } from '#/shared/service/resourceList';
+import { current, dirtyFields, discard, edit, startDraft } from '#/shared/service/dirty';
+import type { Toast } from '#/shared/service/toast';
 import { ActivityTab } from '#/shared/view/ActivityTab';
 import { ChecklistField } from '#/shared/view/ChecklistField';
 import { AuditActor } from '#/shared/view/AuditActor';
@@ -88,7 +88,7 @@ import {
   SUBJECT_FIELDS,
   TENANT,
   type ClientRow,
-} from '#/gallery/samples.ts';
+} from '#/gallery/samples';
 
 export type GalleryDialog = 'plain' | 'typed' | 'secret' | 'unsaved';
 export type GalleryTheme = 'light' | 'dark';

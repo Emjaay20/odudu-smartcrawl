@@ -19,7 +19,7 @@ import {
   SECTIONS_TOKENS,
   tenantLifetimeLabel,
 } from '#/features/clients/service';
-import { useClientTokens } from '#/features/clients/usecase/useClientTokens.ts';
+import { useClientTokens } from '#/features/clients/usecase/useClientTokens';
 import { OptionalSecondsField } from '#/features/clients/view/OptionalSecondsField';
 import { SaveSection } from '#/features/clients/view/SaveSection';
 import { ChecklistField } from '#/shared/view/ChecklistField';

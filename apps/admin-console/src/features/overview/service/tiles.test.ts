@@ -1,8 +1,8 @@
 import type { Settings } from '@odudu/contracts/admin';
 import { describe, expect, it } from 'vitest';
-import type { AdminCapability, Authority } from '#/shared/service/principal.ts';
-import { countTiles, type AreaOf } from '#/features/overview/service/tiles.ts';
-import { type OverviewReads, type Read } from '#/features/overview/service/reads.ts';
+import type { AdminCapability, Authority } from '#/shared/service/principal';
+import { countTiles, type AreaOf } from '#/features/overview/service/tiles';
+import { type OverviewReads, type Read } from '#/features/overview/service/reads';
 
 const retry = (): void => undefined;
 

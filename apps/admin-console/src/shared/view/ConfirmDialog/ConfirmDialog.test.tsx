@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { Button } from '#/shared/view/Button';
-import { ConfirmDialog } from '#/shared/view/ConfirmDialog/ConfirmDialog.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { ConfirmDialog } from '#/shared/view/ConfirmDialog/ConfirmDialog';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 function Harness({ typed, onConfirm = vi.fn() }: { typed?: string; onConfirm?: () => void }) {
   const [open, setOpen] = useState(false);

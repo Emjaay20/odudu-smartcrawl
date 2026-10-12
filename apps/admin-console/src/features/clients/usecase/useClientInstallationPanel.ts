@@ -1,4 +1,4 @@
-import { useClientInstallation } from '#/features/clients/repository/useClientInstallation.ts';
+import { useClientInstallation } from '#/features/clients/repository/useClientInstallation';
 import { installationRows, type InstallationRow } from '#/features/clients/service';
 
 export type InstallationPanel =

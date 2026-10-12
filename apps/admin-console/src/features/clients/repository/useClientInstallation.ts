@@ -1,7 +1,7 @@
 import type { ClientInstallation } from '@odudu/contracts/admin';
-import { readInstallation } from '#/features/clients/adapter/operations.ts';
-import { useRead, type Read } from '#/shared/repository/useRead.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { readInstallation } from '#/features/clients/adapter/operations';
+import { useRead, type Read } from '#/shared/repository/useRead';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export function useClientInstallation(
   tenant: string,

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuthority, useRefusal } from '#/features/session';
-import { useExport } from '#/features/tenants/repository/useExport.ts';
+import { useExport } from '#/features/tenants/repository/useExport';
 import {
   exportBlame,
   exportFailureText,
@@ -10,8 +10,8 @@ import {
   savedText,
   type Exported,
 } from '#/features/tenants/service';
-import { useToasts } from '#/shared/repository/useToasts.ts';
-import type { AdminCapability } from '#/shared/service/principal.ts';
+import { useToasts } from '#/shared/repository/useToasts';
+import type { AdminCapability } from '#/shared/service/principal';
 
 export interface TenantExportState {
   // The capabilities whoami says are missing, each named rather than refused.

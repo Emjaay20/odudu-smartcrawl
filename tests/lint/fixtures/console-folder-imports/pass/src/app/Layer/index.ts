@@ -1,1 +1,1 @@
-export * from '#/app/Layer/Layer.tsx';
+export * from '#/app/Layer/Layer';

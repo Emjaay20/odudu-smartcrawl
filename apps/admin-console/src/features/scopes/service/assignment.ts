@@ -1,7 +1,7 @@
 import { writeRefusal } from '#/shared/service/capabilities';
-import { writeFailureText } from '#/shared/service/failure.ts';
-import { counted } from '#/shared/service/format.ts';
-import type { GatewayFailure } from '#/shared/service/result.ts';
+import { writeFailureText } from '#/shared/service/failure';
+import { counted } from '#/shared/service/format';
+import type { GatewayFailure } from '#/shared/service/result';
 
 export const ASSIGNMENTS: readonly { id: string; label: string }[] = [
   { id: 'default', label: 'Default' },

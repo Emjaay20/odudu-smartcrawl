@@ -13,8 +13,8 @@ import {
   type SetScopeRolesResponse,
 } from '@odudu/contracts/admin';
 import { z } from 'zod';
-import { readScopePage } from '#/shared/adapter/directory.ts';
-import type { Gateway, GatewayResult } from '#/shared/transport/gateway.ts';
+import { readScopePage } from '#/shared/adapter/directory';
+import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 
 export { readScopePage };
 

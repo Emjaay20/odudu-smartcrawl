@@ -1,7 +1,7 @@
 import { writeRefusal } from '#/shared/service/capabilities';
-import { fieldErrorsOf } from '#/shared/service/fieldErrors.ts';
-import { sentence } from '#/shared/service/format.ts';
-import type { GatewayFailure, GatewayResult, Problem } from '#/shared/service/result.ts';
+import { fieldErrorsOf } from '#/shared/service/fieldErrors';
+import { sentence } from '#/shared/service/format';
+import type { GatewayFailure, GatewayResult, Problem } from '#/shared/service/result';
 
 function hasStatus(result: GatewayResult<unknown>, status: number): boolean {
   return !result.ok && result.kind === 'problem' && result.problem.status === status;

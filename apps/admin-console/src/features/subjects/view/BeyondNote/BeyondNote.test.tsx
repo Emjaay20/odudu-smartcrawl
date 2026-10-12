@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
-import { BeyondNote, ReachFailed } from '#/features/subjects/view/BeyondNote/BeyondNote.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { BeyondNote, ReachFailed } from '#/features/subjects/view/BeyondNote/BeyondNote';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 it('names what the subject holds beyond the caller', () => {
   render(<BeyondNote name="ada" beyond={['manage-keys', 'view-audit']} />);

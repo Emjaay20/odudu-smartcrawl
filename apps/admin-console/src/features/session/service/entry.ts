@@ -1,4 +1,4 @@
-import { SYSTEM_TENANT, type Principal } from '#/shared/service/principal.ts';
+import { SYSTEM_TENANT, type Principal } from '#/shared/service/principal';
 
 // A tenant administrator opening another tenant's console is asked first:
 // signing in there replaces this session. A system administrator enters.

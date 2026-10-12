@@ -9,8 +9,8 @@ import {
   readTenant,
   readTenantCount,
   readTenantPage,
-} from '#/features/tenants/adapter/tenants.ts';
-import { fakeTransport, json } from '#/testing/fakeTransport.ts';
+} from '#/features/tenants/adapter/tenants';
+import { fakeTransport, json } from '#/testing/fakeTransport';
 
 const ACME = {
   id: '01a0e72d-7fc7-7950-a1e7-1d079588f8b4',

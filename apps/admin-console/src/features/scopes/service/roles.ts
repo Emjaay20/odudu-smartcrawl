@@ -1,7 +1,7 @@
 import type { Role, SetScopeRolesResponse } from '@odudu/contracts/admin';
 import { roleReachUnavailable } from '#/shared/service/capabilities';
-import { sortedIds } from '#/shared/service/ids.ts';
-import type { AdminCapability } from '#/shared/service/principal.ts';
+import { sortedIds } from '#/shared/service/ids';
+import type { AdminCapability } from '#/shared/service/principal';
 
 type MappedItem = SetScopeRolesResponse['items'][number];
 

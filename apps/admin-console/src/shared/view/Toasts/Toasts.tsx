@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FocusEvent } from 'react';
-import type { Toast } from '#/shared/service/toast.ts';
+import type { Toast } from '#/shared/service/toast';
 import { Button } from '#/shared/view/Button';
 import styles from '#/shared/view/Toasts/Toasts.module.css';
 

@@ -1,16 +1,12 @@
 import type { AssignScopeToClientResponse, ScopeClient } from '@odudu/contracts/admin';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  assignClient,
-  readScopeClients,
-  unassignClient,
-} from '#/features/scopes/adapter/scopes.ts';
+import { assignClient, readScopeClients, unassignClient } from '#/features/scopes/adapter/scopes';
 import { withoutScope, withScopes } from '#/features/scopes/service';
-import { recordKey, type RecordEntry } from '#/shared/repository/useRecord.ts';
-import { useListPages } from '#/shared/repository/useResourceList.ts';
-import type { ListStatus } from '#/shared/service/resourceList.ts';
-import type { GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { recordKey, type RecordEntry } from '#/shared/repository/useRecord';
+import { useListPages } from '#/shared/repository/useResourceList';
+import type { ListStatus } from '#/shared/service/resourceList';
+import type { GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 // What the console holds of a client that a scope's assignment changes.
 interface ClientRecord {

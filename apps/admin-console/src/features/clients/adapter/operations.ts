@@ -12,7 +12,7 @@ import {
   type ListTenantSessionsResponse,
   type RevokeClientGrantsResponse,
 } from '@odudu/contracts/admin';
-import type { Gateway, GatewayResult } from '#/shared/transport/gateway.ts';
+import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 
 export function readClientSessions(
   gateway: Gateway,

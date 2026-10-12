@@ -1,5 +1,5 @@
 import type { Group } from '@odudu/contracts/admin';
-import type { PickerState } from '#/shared/service/picker.ts';
+import type { PickerState } from '#/shared/service/picker';
 import { Picker } from '#/shared/view/Picker';
 
 export function GroupPicker({

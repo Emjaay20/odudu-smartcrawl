@@ -14,9 +14,9 @@ import {
   ToggleField,
   UrlListField,
   type KeyValuePair,
-} from '#/shared/view/Field/Field.tsx';
-import { NumberWithUnitField } from '#/shared/view/Field/NumberWithUnitField.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+} from '#/shared/view/Field/Field';
+import { NumberWithUnitField } from '#/shared/view/Field/NumberWithUnitField';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 function describedBy(element: HTMLElement): string {
   return (element.getAttribute('aria-describedby') ?? '')

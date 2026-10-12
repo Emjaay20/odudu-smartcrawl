@@ -1,1 +1,1 @@
-export { ImportTenantPage } from '#/features/tenants/view/ImportTenantPage/ImportTenantPage.tsx';
+export { ImportTenantPage } from '#/features/tenants/view/ImportTenantPage/ImportTenantPage';

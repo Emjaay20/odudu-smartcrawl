@@ -4,7 +4,7 @@ import {
   groupRecord,
   groupRolesRecord,
   TAB_RECORDS,
-} from '#/features/groups/service/tabs.ts';
+} from '#/features/groups/service/tabs';
 
 describe('addresses', () => {
   it('gives each tab the records its sections edit', () => {

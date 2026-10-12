@@ -1,10 +1,10 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, it } from 'vitest';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
-import { inTurn, json, offline, problem, type Sent } from '#/testing/fakeTransport.ts';
-import { consoleAt, renderConsoleAt, resetConsole, whoami } from '#/testing/renderConsole.tsx';
-import { ADMIN, administratorRoutes, systemRoutes, tenant } from '#/testing/tenantsFixtures.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
+import { inTurn, json, offline, problem, type Sent } from '#/testing/fakeTransport';
+import { consoleAt, renderConsoleAt, resetConsole, whoami } from '#/testing/renderConsole';
+import { ADMIN, administratorRoutes, systemRoutes, tenant } from '#/testing/tenantsFixtures';
 
 const AT = '/console/system/new-tenant';
 const SUBJECT_ID = '01a0e72d-7fc7-7950-a1e7-1d079588f8b4';

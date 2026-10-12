@@ -3,7 +3,7 @@ export {
   scopeHref,
   scopesHref,
   scopesTrail,
-} from '#/features/scopes/service/address.ts';
+} from '#/features/scopes/service/address';
 export {
   SCOPE_TAB_LABELS,
   SCOPE_TABS,
@@ -12,20 +12,20 @@ export {
   scopeMappersRecord,
   scopeRecord,
   scopeRolesRecord,
-} from '#/features/scopes/service/tabs.ts';
+} from '#/features/scopes/service/tabs';
 export {
   GUARDED_TEXT,
   isGuarded,
   scopeDeleteConsequence,
   scopeDeleteFailureText,
-} from '#/features/scopes/service/guard.ts';
+} from '#/features/scopes/service/guard';
 export {
   NONE_TEXT,
   mapperOptions,
   mappersFailure,
   mappersFailureText,
   mappersSummary,
-} from '#/features/scopes/service/mappers.ts';
+} from '#/features/scopes/service/mappers';
 export {
   ASSIGNMENT_RULE,
   ASSIGNMENTS,
@@ -38,7 +38,7 @@ export {
   unassignedText,
   withoutScope,
   withScopes,
-} from '#/features/scopes/service/assignment.ts';
+} from '#/features/scopes/service/assignment';
 export {
   ACCESS_TOKEN_LABEL,
   assignmentName,
@@ -54,7 +54,7 @@ export {
   NAME_TAKEN,
   NEW_CLIENT_CHOICES,
   scopeFailureFields,
-} from '#/features/scopes/service/general.ts';
+} from '#/features/scopes/service/general';
 export {
   keptRoles,
   roleIndex,
@@ -62,7 +62,7 @@ export {
   scopeRoleRows,
   scopeRoleUnavailable,
   withKept,
-} from '#/features/scopes/service/roles.ts';
+} from '#/features/scopes/service/roles';
 export {
   type Copying,
   type CopyPlan,
@@ -76,4 +76,4 @@ export {
   copyPlan,
   type PartialCopy,
   partialCopy,
-} from '#/features/scopes/service/copy.ts';
+} from '#/features/scopes/service/copy';

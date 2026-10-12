@@ -1,6 +1,6 @@
-import { sessionEvents, type SessionEvents } from '#/shared/service/sessionEvents.ts';
-import { createAuth, type Auth } from '#/shared/transport/auth.ts';
-import { createGateway, type Gateway } from '#/shared/transport/gateway.ts';
+import { sessionEvents, type SessionEvents } from '#/shared/service/sessionEvents';
+import { createAuth, type Auth } from '#/shared/transport/auth';
+import { createGateway, type Gateway } from '#/shared/transport/gateway';
 
 // Everything that leaves the page: the gateway, the logout beside it, the
 // event a refused session raises, and a navigation of the window itself

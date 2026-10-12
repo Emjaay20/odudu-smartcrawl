@@ -1,7 +1,7 @@
 import type { Group, GroupRecord } from '@odudu/contracts/admin';
 import { beyondCaller, roleReachUnavailable, writeRefusal } from '#/shared/service/capabilities';
-import { andList } from '#/shared/service/format.ts';
-import type { AdminCapability } from '#/shared/service/principal.ts';
+import { andList } from '#/shared/service/format';
+import type { AdminCapability } from '#/shared/service/principal';
 
 export function within(path: string, above: string): boolean {
   return path === above || path.startsWith(`${above}/`);

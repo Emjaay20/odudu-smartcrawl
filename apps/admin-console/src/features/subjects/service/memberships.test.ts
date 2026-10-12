@@ -5,7 +5,7 @@ import {
   leftGroups,
   membershipsOf,
   takesTenants,
-} from '#/features/subjects/service/memberships.ts';
+} from '#/features/subjects/service/memberships';
 
 describe('whether leaving groups takes manage-tenants', () => {
   const full = (via: unknown[]) => ({

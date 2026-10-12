@@ -3,7 +3,7 @@ import {
   type AssignScopeToClientResponse,
 } from '@odudu/contracts/admin';
 import { z } from 'zod';
-import type { Gateway, GatewayResult } from '#/shared/transport/gateway.ts';
+import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 
 const nothing = z.undefined();
 

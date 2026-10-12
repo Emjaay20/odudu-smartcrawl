@@ -2,8 +2,8 @@ import type { Consent, Subject } from '@odudu/contracts/admin';
 import {
   useSubjectConsents,
   type SubjectConsents,
-} from '#/features/subjects/usecase/useSubjectSessions.ts';
-import { PagedList, Panel } from '#/features/subjects/view/SubjectRecordPage/SessionsTab.tsx';
+} from '#/features/subjects/usecase/useSubjectSessions';
+import { PagedList, Panel } from '#/features/subjects/view/SubjectRecordPage/SessionsTab';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import type { Column } from '#/shared/view/DataTable';

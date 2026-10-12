@@ -1,10 +1,10 @@
 import {
   ADMINISTRATOR_REQUEST_NEEDS,
   type AdministratorRequest,
-} from '#/shared/service/administrators.ts';
-import { writeFailureText } from '#/shared/service/failure.ts';
+} from '#/shared/service/administrators';
+import { writeFailureText } from '#/shared/service/failure';
 import { holdingLabel, isHolding } from '#/shared/service/capabilities';
-import type { GatewayFailure } from '#/shared/service/result.ts';
+import type { GatewayFailure } from '#/shared/service/result';
 
 export function grantFailureText(
   name: string,

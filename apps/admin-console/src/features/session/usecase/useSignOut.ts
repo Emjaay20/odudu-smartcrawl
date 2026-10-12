@@ -1,7 +1,7 @@
-import { useGatewaySignOut } from '#/features/session/repository/useGatewaySignOut.ts';
+import { useGatewaySignOut } from '#/features/session/repository/useGatewaySignOut';
 import { SIGN_OUT_FAILED } from '#/features/session/service';
-import { useToasts } from '#/shared/repository/useToasts.ts';
-import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard.ts';
+import { useToasts } from '#/shared/repository/useToasts';
+import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 
 export function useSignOut(): () => void {
   const signOut = useGatewaySignOut();

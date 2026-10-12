@@ -1,5 +1,5 @@
 import { type EffectiveRoleAssignment, type HeldAdminCapability } from '@odudu/contracts/admin';
-import { holds } from '#/shared/service/access.ts';
+import { holds } from '#/shared/service/access';
 import {
   holdingLabel,
   TENANT_ROLE_TEXT,
@@ -8,8 +8,8 @@ import {
   isHolding,
   type Holding,
 } from '#/shared/service/capabilities';
-import { type Authority } from '#/shared/service/principal.ts';
-import { type Loaded } from '#/features/subjects/service/create.ts';
+import { type Authority } from '#/shared/service/principal';
+import { type Loaded } from '#/features/subjects/service/create';
 
 interface Assigned {
   id: string;

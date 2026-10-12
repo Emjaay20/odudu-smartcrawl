@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { loadThemeChoice } from '#/shared/adapter/themeChoice.ts';
-import { applyRememberedTheme, rememberThemeChoice } from '#/shared/repository/themeChoice.ts';
+import { loadThemeChoice } from '#/shared/adapter/themeChoice';
+import { applyRememberedTheme, rememberThemeChoice } from '#/shared/repository/themeChoice';
 
 const root = document.documentElement;
 

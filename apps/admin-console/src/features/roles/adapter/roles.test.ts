@@ -11,8 +11,8 @@ import {
   readRolePage,
   removeComposite,
   setRoleDefault,
-} from '#/features/roles/adapter/roles.ts';
-import { fakeTransport, json } from '#/testing/fakeTransport.ts';
+} from '#/features/roles/adapter/roles';
+import { fakeTransport, json } from '#/testing/fakeTransport';
 
 const R = '/console/api/admin/tenants/acme/roles';
 

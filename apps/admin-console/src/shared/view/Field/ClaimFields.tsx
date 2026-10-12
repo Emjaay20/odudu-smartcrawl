@@ -1,25 +1,16 @@
 import { use, useState } from 'react';
 import { useLocale } from 'react-aria-components';
-import {
-  localeName,
-  localeOptions,
-  localeProblem,
-  typingLocale,
-} from '#/shared/service/locales.ts';
-import {
-  countryOptions,
-  englishCountryName,
-  regionOfCountryName,
-} from '#/shared/service/regions.ts';
-import { offsetOf, timeZoneOptions, zoneProblem } from '#/shared/service/zones.ts';
-import { ComboBoxField } from '#/shared/view/Field/ComboBoxField.tsx';
+import { localeName, localeOptions, localeProblem, typingLocale } from '#/shared/service/locales';
+import { countryOptions, englishCountryName, regionOfCountryName } from '#/shared/service/regions';
+import { offsetOf, timeZoneOptions, zoneProblem } from '#/shared/service/zones';
+import { ComboBoxField } from '#/shared/view/Field/ComboBoxField';
 import {
   FieldsReadOnly,
   ReadOnlyValue,
   SelectField,
   TextField,
   type Chrome,
-} from '#/shared/view/Field/Field.tsx';
+} from '#/shared/view/Field/Field';
 import styles from '#/shared/view/Field/Field.module.css';
 
 type ClaimFieldProps = Chrome & { value: string; onChange: (value: string) => void };

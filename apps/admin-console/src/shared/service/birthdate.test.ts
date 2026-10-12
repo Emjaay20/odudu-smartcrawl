@@ -4,7 +4,7 @@ import {
   composeBirthdate,
   daysIn,
   readBirthdate,
-} from '#/shared/service/birthdate.ts';
+} from '#/shared/service/birthdate';
 
 describe('readBirthdate', () => {
   it('reads a full date', () => {

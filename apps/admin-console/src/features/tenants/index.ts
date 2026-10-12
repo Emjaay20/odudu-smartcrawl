@@ -11,4 +11,4 @@ export { SystemGate } from '#/features/tenants/view/SystemGate';
 export {
   useBeginAdministrator,
   type BeginAdministrator,
-} from '#/features/tenants/usecase/useBeginAdministrator.ts';
+} from '#/features/tenants/usecase/useBeginAdministrator';

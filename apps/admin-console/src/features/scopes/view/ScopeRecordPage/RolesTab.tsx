@@ -3,7 +3,7 @@ import {
   useScopeRoles,
   useScopeRolesRead,
   type ScopeRoles,
-} from '#/features/scopes/usecase/useScopeRoles.ts';
+} from '#/features/scopes/usecase/useScopeRoles';
 import type { ScopeRole } from '#/features/scopes/service';
 import { Button } from '#/shared/view/Button';
 import { EmptyState } from '#/shared/view/EmptyState';

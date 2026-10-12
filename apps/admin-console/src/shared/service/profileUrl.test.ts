@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { previewable, typingScheme, urlProblem } from '#/shared/service/profileUrl.ts';
+import { previewable, typingScheme, urlProblem } from '#/shared/service/profileUrl';
 
 describe('urlProblem', () => {
   it('accepts nothing, and an http or https address', () => {

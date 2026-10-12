@@ -1,6 +1,6 @@
 import { type ImportError, type Tenant } from '@odudu/contracts/admin';
-import type { GatewayFailure, Problem } from '#/shared/service/result.ts';
-import { tenantHref } from '#/features/tenants/service/address.ts';
+import type { GatewayFailure, Problem } from '#/shared/service/result';
+import { tenantHref } from '#/features/tenants/service/address';
 
 export interface ImportedSecret {
   clientId: string;

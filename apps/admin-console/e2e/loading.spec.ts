@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
-import { expect, expectAccessible, signIn, test } from './fixtures.ts';
-import { seeded } from './stack.ts';
+import { expect, expectAccessible, signIn, test } from './fixtures';
+import { seeded } from './stack';
 
 const { admin } = seeded().subjects;
 const TENANT = admin.tenant;

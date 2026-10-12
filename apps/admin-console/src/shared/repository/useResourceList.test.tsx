@@ -14,12 +14,12 @@ import {
   type Subject,
 } from '@odudu/contracts/admin';
 import { expect, it } from 'vitest';
-import { createQueryClient } from '#/shared/repository/queryClient.ts';
-import { useResourceList } from '#/shared/repository/useResourceList.ts';
-import { parseSearch, stringifySearch } from '#/shared/service/search.ts';
-import type { Gateway } from '#/shared/transport/gateway.ts';
-import { TransportContext } from '#/shared/transport/useTransport.ts';
-import { fakeTransport, json, problem, type Answer } from '#/testing/fakeTransport.ts';
+import { createQueryClient } from '#/shared/repository/queryClient';
+import { useResourceList } from '#/shared/repository/useResourceList';
+import { parseSearch, stringifySearch } from '#/shared/service/search';
+import type { Gateway } from '#/shared/transport/gateway';
+import { TransportContext } from '#/shared/transport/useTransport';
+import { fakeTransport, json, problem, type Answer } from '#/testing/fakeTransport';
 
 const LIST = 'GET /console/api/admin/tenants/acme/subjects';
 const COUNT = 'GET /console/api/admin/tenants/acme/subjects/count';

@@ -1,1 +1,1 @@
-export * from '#/shared/view/CopyValue/CopyValue.tsx';
+export * from '#/shared/view/CopyValue/CopyValue';

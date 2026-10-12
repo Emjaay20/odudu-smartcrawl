@@ -1,1 +1,1 @@
-export { OptionalSecondsField } from '#/features/clients/view/OptionalSecondsField/OptionalSecondsField.tsx';
+export { OptionalSecondsField } from '#/features/clients/view/OptionalSecondsField/OptionalSecondsField';

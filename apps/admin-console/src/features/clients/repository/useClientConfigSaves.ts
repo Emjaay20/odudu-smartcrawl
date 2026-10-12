@@ -1,7 +1,7 @@
-import { useAmendClient } from '#/features/clients/repository/useClientRecord.ts';
+import { useAmendClient } from '#/features/clients/repository/useClientRecord';
 import { authPayload, keysPayload, sentOf, userinfoPayload } from '#/features/clients/service';
-import type { SaveInput } from '#/shared/repository/useSectionSave.ts';
-import type { Gateway } from '#/shared/transport/gateway.ts';
+import type { SaveInput } from '#/shared/repository/useSectionSave';
+import type { Gateway } from '#/shared/transport/gateway';
 
 type Values = Readonly<Record<string, unknown>>;
 

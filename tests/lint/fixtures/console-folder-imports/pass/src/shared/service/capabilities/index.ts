@@ -1,1 +1,1 @@
-export { heldCapabilities } from '#/shared/service/capabilities/held.ts';
+export { heldCapabilities } from '#/shared/service/capabilities/held';

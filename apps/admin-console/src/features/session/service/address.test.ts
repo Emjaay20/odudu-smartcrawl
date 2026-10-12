@@ -4,7 +4,7 @@ import {
   returnPath,
   CONSOLE_ROOT,
   signOutDestination,
-} from '#/features/session/service/address.ts';
+} from '#/features/session/service/address';
 
 describe('the return path a sign-in comes back to', () => {
   it('is the console page the administrator was on, query kept and fragment dropped', () => {

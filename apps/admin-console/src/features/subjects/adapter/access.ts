@@ -9,14 +9,14 @@ import {
   type SetRequiredActionsResponse,
   type SetSubjectGroupsResponse,
 } from '@odudu/contracts/admin';
-import { readRolePage } from '#/shared/adapter/directory.ts';
+import { readRolePage } from '#/shared/adapter/directory';
 import {
   ADMIN_CLIENT_KEY,
   adminClientOfRoles,
   holdingRoleIds,
   type Holding,
 } from '#/shared/service/capabilities';
-import type { Gateway, GatewayResult } from '#/shared/transport/gateway.ts';
+import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 
 export function readSubjectGroups(
   gateway: Gateway,

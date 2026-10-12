@@ -1,5 +1,5 @@
-import { loadThemeChoice, storeThemeChoice } from '#/shared/adapter/themeChoice.ts';
-import type { ThemeChoice } from '#/shared/service/theme.ts';
+import { loadThemeChoice, storeThemeChoice } from '#/shared/adapter/themeChoice';
+import type { ThemeChoice } from '#/shared/service/theme';
 
 // The choice is named on <html> first, so it holds for this page even when
 // the browser refuses to remember it.

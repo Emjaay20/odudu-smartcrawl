@@ -1,1 +1,1 @@
-export { SessionGate } from '#/features/session/view/SessionGate/SessionGate.tsx';
+export { SessionGate } from '#/features/session/view/SessionGate/SessionGate';

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { useSession } from '#/features/session/usecase/useSession.ts';
-import { usePlaceholderDue } from '#/features/session/usecase/usePlaceholderDue.ts';
-import { SignedInContext } from '#/features/session/usecase/useSignedIn.ts';
+import { useSession } from '#/features/session/usecase/useSession';
+import { usePlaceholderDue } from '#/features/session/usecase/usePlaceholderDue';
+import { SignedInContext } from '#/features/session/usecase/useSignedIn';
 import { PrincipalChanged } from '#/features/session/view/PrincipalChanged';
 import { SessionStatus } from '#/features/session/view/SessionStatus';
 import { Button } from '#/shared/view/Button';

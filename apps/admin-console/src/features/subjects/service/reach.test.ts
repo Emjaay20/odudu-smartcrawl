@@ -5,7 +5,7 @@ import {
   canManageSubject,
   subjectBeyond,
   beyondText,
-} from '#/features/subjects/service/reach.ts';
+} from '#/features/subjects/service/reach';
 
 describe('small model reads', () => {
   it('holds what the roles give once read, and nothing before', () => {

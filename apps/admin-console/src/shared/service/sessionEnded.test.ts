@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isSessionEnded } from '#/shared/service/sessionEnded.ts';
+import { isSessionEnded } from '#/shared/service/sessionEnded';
 
 describe('isSessionEnded', () => {
   it('is true for the gateway session-ended type', () => {

@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { ACTIVITY_NOTE, registeredText, TYPE_TEXT } from '#/features/clients/service/labels.ts';
+import { ACTIVITY_NOTE, registeredText, TYPE_TEXT } from '#/features/clients/service/labels';
 
 it('says how a client came to be, in a phrase a person reads', () => {
   expect(registeredText('operator')).toBe('Created by an administrator');

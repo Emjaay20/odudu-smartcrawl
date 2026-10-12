@@ -1,4 +1,4 @@
-import type { ThemeChoice } from '#/shared/service/theme.ts';
+import type { ThemeChoice } from '#/shared/service/theme';
 
 export const THEME_CHOICES: readonly { id: ThemeChoice; label: string }[] = [
   { id: 'system', label: 'System' },

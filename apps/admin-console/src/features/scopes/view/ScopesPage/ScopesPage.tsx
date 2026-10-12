@@ -1,6 +1,6 @@
 import type { ClientScope } from '@odudu/contracts/admin';
 import { AreaGate, areaAt } from '#/features/shell';
-import { useScopesList } from '#/features/scopes/usecase/useScopesList.ts';
+import { useScopesList } from '#/features/scopes/usecase/useScopesList';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import type { Column } from '#/shared/view/DataTable';
 import { ResourceListPage } from '#/shared/view/ResourceListPage';

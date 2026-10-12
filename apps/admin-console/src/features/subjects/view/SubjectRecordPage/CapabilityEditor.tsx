@@ -3,7 +3,7 @@ import {
   useCapabilityEditor,
   useSubjectRolesRead,
   type CapabilityEditing,
-} from '#/features/subjects/usecase/useCapabilities.ts';
+} from '#/features/subjects/usecase/useCapabilities';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { Link } from 'react-aria-components';
 import { Button } from '#/shared/view/Button';

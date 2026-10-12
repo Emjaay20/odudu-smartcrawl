@@ -1,5 +1,5 @@
-import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard.ts';
-import { recordsWithEdits } from '#/shared/service/record.ts';
+import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
+import { recordsWithEdits } from '#/shared/service/record';
 
 // Which of these records has a section holding unsaved edits.
 export function useDirtyRecords(tenant: string, records: readonly string[]): ReadonlySet<string> {

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { StatusTag } from '#/shared/view/StatusTag/StatusTag.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { StatusTag } from '#/shared/view/StatusTag/StatusTag';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 it('carries its status in words, never in colour alone', () => {
   render(<StatusTag tone="danger">Disabled</StatusTag>);

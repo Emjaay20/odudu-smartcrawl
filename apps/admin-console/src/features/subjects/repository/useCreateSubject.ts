@@ -1,10 +1,10 @@
 import type { Subject } from '@odudu/contracts/admin';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useFreshRead } from '#/shared/repository/useFreshRead.ts';
-import { createSubject } from '#/features/subjects/adapter/subjects.ts';
-import { findSubject } from '#/shared/adapter/administrators.ts';
-import type { GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { useFreshRead } from '#/shared/repository/useFreshRead';
+import { createSubject } from '#/features/subjects/adapter/subjects';
+import { findSubject } from '#/shared/adapter/administrators';
+import type { GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export interface CreateSubject {
   busy: boolean;

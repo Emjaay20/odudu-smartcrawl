@@ -1,11 +1,11 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
+import type { ResourceListState } from '#/shared/service/resourceList';
 import { Button } from '#/shared/view/Button';
 import type { Column } from '#/shared/view/DataTable';
-import { ResourceListPage } from '#/shared/view/ResourceListPage/ResourceListPage.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { ResourceListPage } from '#/shared/view/ResourceListPage/ResourceListPage';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 interface Row {
   id: string;

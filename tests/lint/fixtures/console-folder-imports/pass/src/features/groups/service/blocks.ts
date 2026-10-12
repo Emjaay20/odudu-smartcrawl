@@ -1,3 +1,3 @@
-import { moveRefusal } from '#/features/groups/service/refusal.ts';
+import { moveRefusal } from '#/features/groups/service/refusal';
 
 export const refusal = moveRefusal;

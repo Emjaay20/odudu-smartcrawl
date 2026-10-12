@@ -1,6 +1,6 @@
 import type { GroupRecord } from '@odudu/contracts/admin';
 import { useAuthority } from '#/features/session';
-import { useGroupNamed, useGroupRecord } from '#/features/groups/repository/useGroupRecord.ts';
+import { useGroupNamed, useGroupRecord } from '#/features/groups/repository/useGroupRecord';
 import {
   type Ceiling,
   createUnderHref,
@@ -9,9 +9,9 @@ import {
   type GroupTab,
   TAB_RECORDS,
 } from '#/features/groups/service';
-import { useDirtyRecords } from '#/shared/repository/useDirtyRecords.ts';
-import { useRecordTab } from '#/shared/repository/useRecordTab.ts';
-import { dirtyTabs, tabNamed, type RecordView } from '#/shared/service/record.ts';
+import { useDirtyRecords } from '#/shared/repository/useDirtyRecords';
+import { useRecordTab } from '#/shared/repository/useRecordTab';
+import { dirtyTabs, tabNamed, type RecordView } from '#/shared/service/record';
 
 export type { Ceiling };
 

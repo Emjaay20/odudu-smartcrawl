@@ -1,5 +1,5 @@
 import { ADMIN_CAPABILITIES } from '@odudu/contracts/admin';
-import { SYSTEM_TENANT, type AdminCapability } from '#/shared/service/principal.ts';
+import { SYSTEM_TENANT, type AdminCapability } from '#/shared/service/principal';
 
 export const TENANT_ADMIN = 'tenant-admin';
 export const MANAGE_TENANTS = 'manage-tenants';

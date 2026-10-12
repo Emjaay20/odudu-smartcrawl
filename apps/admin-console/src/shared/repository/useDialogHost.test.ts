@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { useDialogHost } from '#/shared/repository/useDialogHost.ts';
+import { useDialogHost } from '#/shared/repository/useDialogHost';
 
 it('counts each open dialog once, however often it reports closing', () => {
   const first = useDialogHost.getState().opened();

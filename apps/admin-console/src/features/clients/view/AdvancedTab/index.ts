@@ -1,1 +1,1 @@
-export { AdvancedTab } from '#/features/clients/view/AdvancedTab/AdvancedTab.tsx';
+export { AdvancedTab } from '#/features/clients/view/AdvancedTab/AdvancedTab';

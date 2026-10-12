@@ -1,1 +1,1 @@
-export * from '#/shared/view/ButtonLink/ButtonLink.tsx';
+export * from '#/shared/view/ButtonLink/ButtonLink';

@@ -1,6 +1,6 @@
 import { useBlocker } from '@tanstack/react-router';
 import { useEffect } from 'react';
-import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard.ts';
+import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 
 function askTheGuard(): Promise<boolean> {
   return new Promise((resolve) => {

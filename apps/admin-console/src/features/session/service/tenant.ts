@@ -1,5 +1,5 @@
 import { TENANT_NAME_RULE } from '@odudu/contracts';
-import { isTenantName, SYSTEM_TENANT, type Principal } from '#/shared/service/principal.ts';
+import { isTenantName, SYSTEM_TENANT, type Principal } from '#/shared/service/principal';
 
 // The words a refused tenant name is answered with, as a sentence.
 export const TENANT_NAME_PROBLEM = `${TENANT_NAME_RULE.charAt(0).toUpperCase()}${TENANT_NAME_RULE.slice(1)}.`;

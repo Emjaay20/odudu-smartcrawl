@@ -1,12 +1,12 @@
 import type { Tenant } from '@odudu/contracts/admin';
 import { useMutation } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
-import { readFileText } from '#/features/tenants/adapter/files.ts';
-import { findTenant, importTenant } from '#/features/tenants/adapter/tenants.ts';
+import { readFileText } from '#/features/tenants/adapter/files';
+import { findTenant, importTenant } from '#/features/tenants/adapter/tenants';
 import { parseDocument, type ImportedSecret, type ImportOutcome } from '#/features/tenants/service';
-import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway.ts';
-import { useFreshRead } from '#/shared/repository/useFreshRead.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
+import { useFreshRead } from '#/shared/repository/useFreshRead';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export interface ImportInput {
   name: string;

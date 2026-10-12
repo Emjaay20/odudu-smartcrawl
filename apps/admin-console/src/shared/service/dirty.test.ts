@@ -7,7 +7,7 @@ import {
   isDirty,
   rebase,
   startDraft,
-} from '#/shared/service/dirty.ts';
+} from '#/shared/service/dirty';
 
 const LOADED: {
   name: string;

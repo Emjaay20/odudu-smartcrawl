@@ -12,7 +12,7 @@ import {
   type ListScopesResponse,
   type Role,
 } from '@odudu/contracts/admin';
-import type { Gateway, GatewayResult } from '#/shared/transport/gateway.ts';
+import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 
 // The role and group lists every picker chooses from, whichever record it
 // sits on.

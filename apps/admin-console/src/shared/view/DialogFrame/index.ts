@@ -1,1 +1,1 @@
-export * from '#/shared/view/DialogFrame/DialogFrame.tsx';
+export * from '#/shared/view/DialogFrame/DialogFrame';

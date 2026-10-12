@@ -6,7 +6,7 @@ import {
   useGroupRolesRecord,
   useGroupSaves,
   type RoleValues,
-} from '#/features/groups/repository/useGroupRecord.ts';
+} from '#/features/groups/repository/useGroupRecord';
 import {
   type Asked,
   type Ceiling,
@@ -22,13 +22,13 @@ import {
   roleUnavailable,
   withKept,
 } from '#/features/groups/service';
-import type { RecordState } from '#/shared/repository/useRecord.ts';
-import { useRolePicker } from '#/shared/repository/useRolePicker.ts';
-import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave.ts';
+import type { RecordState } from '#/shared/repository/useRecord';
+import { useRolePicker } from '#/shared/repository/useRolePicker';
+import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { asksFirst, lossBlocked, writeRefusal } from '#/shared/service/capabilities';
-import { describeIds } from '#/shared/service/format.ts';
-import { removedFrom, sortedIds } from '#/shared/service/ids.ts';
-import type { PickerState } from '#/shared/service/picker.ts';
+import { describeIds } from '#/shared/service/format';
+import { removedFrom, sortedIds } from '#/shared/service/ids';
+import type { PickerState } from '#/shared/service/picker';
 
 export function useGroupRolesRead(tenant: string, id: string): RecordState<SetGroupRolesResponse> {
   return useGroupRolesRecord(tenant, id);

@@ -2,7 +2,7 @@ import { enterHref, tenantsTrail, type TenantRecordAccess } from '#/features/ten
 import {
   useTenantRecordAccess,
   useTenantRecordPage,
-} from '#/features/tenants/usecase/useTenantRecordPage.ts';
+} from '#/features/tenants/usecase/useTenantRecordPage';
 import { AdministratorsTab } from '#/features/tenants/view/AdministratorsTab';
 import { ExportPanel } from '#/features/tenants/view/ExportPanel';
 import { GeneralTab } from '#/features/tenants/view/GeneralTab';

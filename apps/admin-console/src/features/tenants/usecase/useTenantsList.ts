@@ -1,11 +1,11 @@
 import type { Tenant } from '@odudu/contracts/admin';
 import { useAuthority } from '#/features/session';
-import { useGo } from '#/shared/repository/useGo.ts';
-import { useTenantList } from '#/features/tenants/repository/useTenantList.ts';
+import { useGo } from '#/shared/repository/useGo';
+import { useTenantList } from '#/features/tenants/repository/useTenantList';
 import { tenantHref } from '#/features/tenants/service';
-import { lacking } from '#/shared/service/access.ts';
-import { SYSTEM_TENANT, type AdminCapability } from '#/shared/service/principal.ts';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
+import { lacking } from '#/shared/service/access';
+import { SYSTEM_TENANT, type AdminCapability } from '#/shared/service/principal';
+import type { ResourceListState } from '#/shared/service/resourceList';
 
 export interface TenantsList {
   list: ResourceListState<Tenant>;

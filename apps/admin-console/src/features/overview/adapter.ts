@@ -11,8 +11,8 @@ import {
 } from '@odudu/contracts/admin';
 import { z } from 'zod';
 import type { Collection, Discovery, Jwks } from '#/features/overview/service';
-import { readAuditPage } from '#/shared/adapter/audit.ts';
-import type { Gateway, GatewayResult } from '#/shared/transport/gateway.ts';
+import { readAuditPage } from '#/shared/adapter/audit';
+import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 
 // The gateway's mirrors of the tenant's public documents have no contract
 // in @odudu/contracts, so these hold them only to what the page reads and

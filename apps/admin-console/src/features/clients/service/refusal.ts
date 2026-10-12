@@ -1,5 +1,5 @@
 import { writeRefusal } from '#/shared/service/capabilities';
-import type { GatewayFailure, Problem } from '#/shared/service/result.ts';
+import type { GatewayFailure, Problem } from '#/shared/service/result';
 
 export const CLIENT_CAPABILITY = 'manage-clients';
 

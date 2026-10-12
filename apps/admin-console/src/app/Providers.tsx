@@ -1,15 +1,15 @@
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
 import { StrictMode, useState, type ReactNode } from 'react';
 import { I18nProvider } from 'react-aria-components';
-import { createQueryClient } from '#/shared/repository/queryClient.ts';
-import { loadThemeChoice } from '#/shared/adapter/themeChoice.ts';
-import { rememberThemeChoice } from '#/shared/repository/themeChoice.ts';
-import { useDialogHost } from '#/shared/repository/useDialogHost.ts';
-import { ThemeContext } from '#/shared/repository/useTheme.ts';
-import { createBrowserTransport, type Transport } from '#/shared/transport/transport.ts';
-import { TransportContext } from '#/shared/transport/useTransport.ts';
-import type { ThemeChoice } from '#/shared/service/theme.ts';
-import { DialogPresence } from '#/shared/view/dialogPresence.ts';
+import { createQueryClient } from '#/shared/repository/queryClient';
+import { loadThemeChoice } from '#/shared/adapter/themeChoice';
+import { rememberThemeChoice } from '#/shared/repository/themeChoice';
+import { useDialogHost } from '#/shared/repository/useDialogHost';
+import { ThemeContext } from '#/shared/repository/useTheme';
+import { createBrowserTransport, type Transport } from '#/shared/transport/transport';
+import { TransportContext } from '#/shared/transport/useTransport';
+import type { ThemeChoice } from '#/shared/service/theme';
+import { DialogPresence } from '#/shared/view/dialogPresence';
 
 // What the console keeps in Context rather than a store: the transport, the
 // theme, and the query client the repositories read through. Dates, names

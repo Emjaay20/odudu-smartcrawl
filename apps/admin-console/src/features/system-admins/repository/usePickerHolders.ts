@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { readAdministratorPage } from '#/shared/adapter/administrators.ts';
-import { SYSTEM_TENANT } from '#/shared/service/principal.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { readAdministratorPage } from '#/shared/adapter/administrators';
+import { SYSTEM_TENANT } from '#/shared/service/principal';
+import { useTransport } from '#/shared/transport/useTransport';
 
 // System administrators are few; more pages of them than this is a fault
 // somewhere else, said rather than followed without end.

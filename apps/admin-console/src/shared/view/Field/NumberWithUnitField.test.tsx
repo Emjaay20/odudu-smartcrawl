@@ -2,9 +2,9 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { ReadOnlyFields } from '#/shared/view/Field/Field.tsx';
-import { NumberWithUnitField } from '#/shared/view/Field/NumberWithUnitField.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { ReadOnlyFields } from '#/shared/view/Field/Field';
+import { NumberWithUnitField } from '#/shared/view/Field/NumberWithUnitField';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 function describedBy(element: HTMLElement): string {
   return (element.getAttribute('aria-describedby') ?? '')

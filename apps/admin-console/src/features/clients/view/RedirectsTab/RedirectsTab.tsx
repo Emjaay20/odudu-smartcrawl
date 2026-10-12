@@ -1,7 +1,7 @@
 import type { Client } from '@odudu/contracts/admin';
 import { Link } from 'react-aria-components';
 import { ORIGINS_RULE, POST_LOGOUT_NOTE, REDIRECTS_RULE } from '#/features/clients/service';
-import { useClientRedirects } from '#/features/clients/usecase/useClientRedirects.ts';
+import { useClientRedirects } from '#/features/clients/usecase/useClientRedirects';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { ReadOnlyFields, UrlListField } from '#/shared/view/Field';
 import { Section } from '#/shared/view/Section';

@@ -1,6 +1,6 @@
-import { json, type Answer, type Sent } from '#/testing/fakeTransport.ts';
-import { GRACE, whoami } from '#/testing/renderConsole.tsx';
-import { EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures.ts';
+import { json, type Answer, type Sent } from '#/testing/fakeTransport';
+import { GRACE, whoami } from '#/testing/renderConsole';
+import { EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures';
 
 export const A = '/console/api/admin/tenants/acme';
 export const C = `${A}/clients`;

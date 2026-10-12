@@ -1,5 +1,5 @@
-import { useUrlSearch } from '#/shared/repository/useUrlSearch.ts';
-import { tabNamed } from '#/shared/service/record.ts';
+import { useUrlSearch } from '#/shared/repository/useUrlSearch';
+import { tabNamed } from '#/shared/service/record';
 
 const PARAM = 'tab';
 

@@ -1,1 +1,1 @@
-export * from '#/shared/view/CapabilityNote/CapabilityNote.tsx';
+export * from '#/shared/view/CapabilityNote/CapabilityNote';

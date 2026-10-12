@@ -1,10 +1,10 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
-import { json, problem, type Answer } from '#/testing/fakeTransport.ts';
-import { consoleAt, renderConsoleAt, resetConsole, whoami } from '#/testing/renderConsole.tsx';
-import { ADMIN, EVERY_CAPABILITY, systemRoutes, tenant } from '#/testing/tenantsFixtures.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
+import { json, problem, type Answer } from '#/testing/fakeTransport';
+import { consoleAt, renderConsoleAt, resetConsole, whoami } from '#/testing/renderConsole';
+import { ADMIN, EVERY_CAPABILITY, systemRoutes, tenant } from '#/testing/tenantsFixtures';
 
 const saved: string[] = [];
 

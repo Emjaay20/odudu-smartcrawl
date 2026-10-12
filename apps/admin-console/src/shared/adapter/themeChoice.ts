@@ -1,4 +1,4 @@
-import type { ThemeChoice } from '#/shared/service/theme.ts';
+import type { ThemeChoice } from '#/shared/service/theme';
 
 const KEY = 'odudu.console.theme';
 

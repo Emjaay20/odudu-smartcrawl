@@ -1,4 +1,4 @@
-import type { GatewayFailure } from '#/shared/service/result.ts';
+import type { GatewayFailure } from '#/shared/service/result';
 
 export function tenantChangeFailure(name: string, failure: GatewayFailure): string {
   switch (failure.kind) {

@@ -1,8 +1,8 @@
 import type { Group } from '@odudu/contracts/admin';
-import { readGroupCount, readGroupPage } from '#/features/groups/adapter/groups.ts';
-import { useListPages, useResourceList } from '#/shared/repository/useResourceList.ts';
-import { useUrlSearch } from '#/shared/repository/useUrlSearch.ts';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
+import { readGroupCount, readGroupPage } from '#/features/groups/adapter/groups';
+import { useListPages, useResourceList } from '#/shared/repository/useResourceList';
+import { useUrlSearch } from '#/shared/repository/useUrlSearch';
+import type { ResourceListState } from '#/shared/service/resourceList';
 
 export interface GroupList {
   list: ResourceListState<Group>;

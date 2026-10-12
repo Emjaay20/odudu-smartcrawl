@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
-import { sendMail, type MailRequest } from '#/features/subjects/adapter/mail.ts';
-import type { GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { sendMail, type MailRequest } from '#/features/subjects/adapter/mail';
+import type { GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export type { MailRequest };
 

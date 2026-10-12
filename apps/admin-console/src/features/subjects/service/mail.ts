@@ -1,6 +1,6 @@
-import { fieldErrorsOf, type FieldErrors } from '#/shared/service/fieldErrors.ts';
-import { counted } from '#/shared/service/format.ts';
-import type { GatewayFailure } from '#/shared/service/result.ts';
+import { fieldErrorsOf, type FieldErrors } from '#/shared/service/fieldErrors';
+import { counted } from '#/shared/service/format';
+import type { GatewayFailure } from '#/shared/service/result';
 
 export interface MailRefusal {
   text: string;

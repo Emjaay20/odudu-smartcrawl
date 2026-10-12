@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 import { z } from 'zod';
-import { expect, expectAccessible, expectFitsViewport, forgive, signIn, test } from './fixtures.ts';
-import { psql, seeded } from './stack.ts';
+import { expect, expectAccessible, expectFitsViewport, forgive, signIn, test } from './fixtures';
+import { psql, seeded } from './stack';
 
 const { admin, limited, overview, system } = seeded();
 const PHONE = { width: 390, height: 844 };

@@ -9,10 +9,10 @@ import {
   groupsTrail,
   type GroupTab,
 } from '#/features/groups/service';
-import { useGroupActivity } from '#/features/groups/usecase/useGroupActivity.ts';
-import { useGroupRecordPage, type Ceiling } from '#/features/groups/usecase/useGroupRecordPage.ts';
-import { GeneralTab } from '#/features/groups/view/GroupRecordPage/GeneralTab.tsx';
-import { RolesTab } from '#/features/groups/view/GroupRecordPage/RolesTab.tsx';
+import { useGroupActivity } from '#/features/groups/usecase/useGroupActivity';
+import { useGroupRecordPage, type Ceiling } from '#/features/groups/usecase/useGroupRecordPage';
+import { GeneralTab } from '#/features/groups/view/GroupRecordPage/GeneralTab';
+import { RolesTab } from '#/features/groups/view/GroupRecordPage/RolesTab';
 import { ActivityTab } from '#/shared/view/ActivityTab';
 import { Button } from '#/shared/view/Button';
 import { ButtonLink } from '#/shared/view/ButtonLink';

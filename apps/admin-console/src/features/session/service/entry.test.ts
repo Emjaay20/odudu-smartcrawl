@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHOOSE_TENANT, SWITCH_HREF, type Principal } from '#/features/session/service/address.ts';
+import { CHOOSE_TENANT, SWITCH_HREF, type Principal } from '#/features/session/service/address';
 import {
   entersDirectly,
   homeTarget,
@@ -7,7 +7,7 @@ import {
   replacedSession,
   signInHome,
   tenantEntry,
-} from '#/features/session/service/entry.ts';
+} from '#/features/session/service/entry';
 
 const grace: Principal = { tenant: 'acme', subjectId: 's1', username: 'grace' };
 

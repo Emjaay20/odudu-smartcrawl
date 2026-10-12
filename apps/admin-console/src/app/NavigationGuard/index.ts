@@ -1,1 +1,1 @@
-export * from '#/app/NavigationGuard/NavigationGuard.tsx';
+export * from '#/app/NavigationGuard/NavigationGuard';

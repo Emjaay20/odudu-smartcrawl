@@ -5,7 +5,7 @@ import {
   roleHref,
   rolesHref,
   rolesTrail,
-} from '#/features/roles/service/address.ts';
+} from '#/features/roles/service/address';
 
 describe('addresses', () => {
   it('puts a role under its tenant, and a copy beside a new one', () => {

@@ -1,9 +1,9 @@
 import type { SigningKey } from '@odudu/contracts/admin';
 import { describe, expect, it } from 'vitest';
-import type { Authority } from '#/shared/service/principal.ts';
-import { keysView, publishedKeys } from '#/features/overview/service/keys.ts';
-import { rawJson } from '#/features/overview/service/discovery.ts';
-import { type OverviewReads, type Read } from '#/features/overview/service/reads.ts';
+import type { Authority } from '#/shared/service/principal';
+import { keysView, publishedKeys } from '#/features/overview/service/keys';
+import { rawJson } from '#/features/overview/service/discovery';
+import { type OverviewReads, type Read } from '#/features/overview/service/reads';
 
 const KEYS: readonly SigningKey[] = [
   {

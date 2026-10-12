@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
 import { SessionStatus } from '#/features/session/view/SessionStatus';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 it('is a main landmark with the title as its heading', () => {
   render(

@@ -1,1 +1,1 @@
-export * from '#/shared/view/EmptyState/EmptyState.tsx';
+export * from '#/shared/view/EmptyState/EmptyState';

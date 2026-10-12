@@ -1,5 +1,5 @@
 import { afterEach, expect, it } from 'vitest';
-import { useToasts } from '#/shared/repository/useToasts.ts';
+import { useToasts } from '#/shared/repository/useToasts';
 
 afterEach(() => {
   useToasts.setState({ toasts: [] });

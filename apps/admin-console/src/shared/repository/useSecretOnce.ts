@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
-import type { Gateway, GatewayFailure, GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import type { Gateway, GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export interface SecretOnce<A, Rest> {
   // Never sent twice for one press: the write is a POST, whose repeat would

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AUTO } from '#/features/clients/service/choices.ts';
+import { AUTO } from '#/features/clients/service/choices';
 import {
   authOptions,
   authPayload,
@@ -14,7 +14,7 @@ import {
   userinfoEncryptionOptions,
   userinfoPayload,
   userinfoSigningOptions,
-} from '#/features/clients/service/advanced.ts';
+} from '#/features/clients/service/advanced';
 
 describe('authOptions', () => {
   it('offers a confidential client every method but none', () => {

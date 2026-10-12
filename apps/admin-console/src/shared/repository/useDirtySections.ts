@@ -1,5 +1,5 @@
-import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard.ts';
-import { sectionsOf } from '#/shared/service/record.ts';
+import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
+import { sectionsOf } from '#/shared/service/record';
 
 const NONE: ReadonlySet<string> = new Set();
 

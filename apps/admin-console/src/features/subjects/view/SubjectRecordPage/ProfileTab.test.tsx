@@ -1,9 +1,9 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
-import { inTurn, json, problem } from '#/testing/fakeTransport.ts';
-import { consoleAt, GRACE, renderConsoleAt, resetConsole } from '#/testing/renderConsole.tsx';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
+import { inTurn, json, problem } from '#/testing/fakeTransport';
+import { consoleAt, GRACE, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
 import {
   ADA,
   ADA_AT,
@@ -14,7 +14,7 @@ import {
   POLICY,
   subject,
   subjectRoutes,
-} from '#/testing/subjectsFixtures.ts';
+} from '#/testing/subjectsFixtures';
 
 afterEach(() => {
   resetConsole();

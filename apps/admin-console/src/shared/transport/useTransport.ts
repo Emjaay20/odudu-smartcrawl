@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { Transport } from '#/shared/transport/transport.ts';
+import type { Transport } from '#/shared/transport/transport';
 
 export const TransportContext = createContext<Transport | null>(null);
 

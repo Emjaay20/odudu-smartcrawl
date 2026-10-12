@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
-import { useRailCollapsed } from '#/shared/repository/useRailCollapsed.ts';
+import { useRailCollapsed } from '#/shared/repository/useRailCollapsed';
 
 afterEach(() => {
   localStorage.clear();

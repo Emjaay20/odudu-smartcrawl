@@ -10,8 +10,8 @@ import {
   signIn,
   signInAtTenant,
   test,
-} from './fixtures.ts';
-import { psql, seed, seeded, sendLogouts, type Account } from './stack.ts';
+} from './fixtures';
+import { psql, seed, seeded, sendLogouts, type Account } from './stack';
 
 const { clients } = seeded();
 const { admin, limited } = clients;

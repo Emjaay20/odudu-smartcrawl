@@ -1,5 +1,5 @@
-import type { Crumb } from '#/shared/service/breadcrumb.ts';
-import { SYSTEM_TENANT } from '#/shared/service/principal.ts';
+import type { Crumb } from '#/shared/service/breadcrumb';
+import { SYSTEM_TENANT } from '#/shared/service/principal';
 
 export function systemAdminsHrefOf(tenant: string): string | null {
   return tenant === SYSTEM_TENANT ? SYSTEM_ADMINS_HREF : null;

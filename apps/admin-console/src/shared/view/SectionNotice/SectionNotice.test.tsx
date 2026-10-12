@@ -1,9 +1,9 @@
 import { render, screen, within } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
-import type { Conflict } from '#/shared/service/conflict.ts';
+import type { Conflict } from '#/shared/service/conflict';
 import type { SaveStatus } from '#/shared/service/sectionSave';
-import { SectionNotice } from '#/shared/view/SectionNotice/SectionNotice.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { SectionNotice } from '#/shared/view/SectionNotice/SectionNotice';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 const CONFLICTS: readonly Conflict[] = [
   { field: 'name', label: 'Name', theirs: 'Payments', yours: 'Billing', secret: false },

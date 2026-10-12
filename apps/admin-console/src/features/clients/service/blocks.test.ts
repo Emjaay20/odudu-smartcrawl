@@ -4,7 +4,7 @@ import {
   enabledFixed,
   listsReadOnly,
   redirectsFixed,
-} from '#/features/clients/service/blocks.ts';
+} from '#/features/clients/service/blocks';
 
 const ADMIN = { builtin_admin: true, client_id: 'odudu-admin' };
 const OTHER = { builtin_admin: false, client_id: 'billing' };

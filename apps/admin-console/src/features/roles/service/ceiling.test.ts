@@ -1,25 +1,25 @@
 import type { EffectiveRoleAssignment } from '@odudu/contracts/admin';
 import { describe, expect, it } from 'vitest';
-import type { AdminCapability } from '#/shared/service/principal.ts';
+import type { AdminCapability } from '#/shared/service/principal';
 import {
   compositeRemovalConfirmation,
   compositeRemovalFailureText,
   unnestedText,
-} from '#/features/roles/service/removal.ts';
+} from '#/features/roles/service/removal';
 import {
   compositesOffered,
   defaultsChecking,
   isDeleteHeld,
   roleCeiling,
   roleSelfLoss,
-} from '#/features/roles/service/ceiling.ts';
+} from '#/features/roles/service/ceiling';
 import {
   childUnavailable,
   compositeRefusal,
   defaultBlock,
   deleteBlock,
   removalBlock,
-} from '#/features/roles/service/blocks.ts';
+} from '#/features/roles/service/blocks';
 
 function role(
   id: string,

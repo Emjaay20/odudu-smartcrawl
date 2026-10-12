@@ -1,4 +1,4 @@
-import { type Principal } from '#/shared/service/principal.ts';
+import { type Principal } from '#/shared/service/principal';
 
 export function signInLabel(enters: boolean, tenant: string): string {
   if (!enters) return 'Continue to sign-in';

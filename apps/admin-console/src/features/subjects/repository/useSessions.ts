@@ -8,11 +8,11 @@ import {
   readSessions,
   revokeConsent,
   revokeGrants,
-} from '#/features/subjects/adapter/sessions.ts';
-import { useResourceList } from '#/shared/repository/useResourceList.ts';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
-import type { Gateway, GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+} from '#/features/subjects/adapter/sessions';
+import { useResourceList } from '#/shared/repository/useResourceList';
+import type { ResourceListState } from '#/shared/service/resourceList';
+import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 function sessionsResource(id: string): string {
   return `subjects/${id}/sessions`;

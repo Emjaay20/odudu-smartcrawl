@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { grantedText, grantFailureText } from '#/features/system-admins/service/grant.ts';
+import { grantedText, grantFailureText } from '#/features/system-admins/service/grant';
 
 describe('a grant', () => {
   const problem = (status: number, extra: object = {}) =>

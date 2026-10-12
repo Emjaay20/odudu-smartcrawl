@@ -1,6 +1,6 @@
 import { ADMIN_CAPABILITIES } from '@odudu/contracts/admin';
-import { tenantAdminCarries, TENANT_ADMIN } from '#/shared/service/administrators.ts';
-import type { AdminCapability } from '#/shared/service/principal.ts';
+import { tenantAdminCarries, TENANT_ADMIN } from '#/shared/service/administrators';
+import type { AdminCapability } from '#/shared/service/principal';
 
 // The built-in client every capability role hangs off; its client_id is
 // fixed, so a tenant role of the same name is never mistaken for one.

@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { TextField } from '#/shared/view/Field';
-import { FieldGrid, GridCell } from '#/shared/view/FieldGrid/FieldGrid.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { FieldGrid, GridCell } from '#/shared/view/FieldGrid/FieldGrid';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 describe('FieldGrid', () => {
   it('lays each field in a cell that says how wide it runs', () => {

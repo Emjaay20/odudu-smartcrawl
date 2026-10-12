@@ -1,4 +1,4 @@
-import type { Conflict } from '#/shared/service/conflict.ts';
+import type { Conflict } from '#/shared/service/conflict';
 import type { ConflictSource, SaveStatus } from '#/shared/service/sectionSave';
 import { SectionNotice } from '#/shared/view/SectionNotice';
 

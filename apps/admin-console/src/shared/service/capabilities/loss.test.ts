@@ -1,7 +1,7 @@
 import type { EffectiveRoleAssignment } from '@odudu/contracts/admin';
 import { describe, expect, it } from 'vitest';
-import { ADMIN_CLIENT_KEY } from '#/shared/service/capabilities/holdings.ts';
-import { asksFirst, lossBlocked, adminLoss } from '#/shared/service/capabilities/loss.ts';
+import { ADMIN_CLIENT_KEY } from '#/shared/service/capabilities/holdings';
+import { asksFirst, lossBlocked, adminLoss } from '#/shared/service/capabilities/loss';
 
 function role(
   name: string,

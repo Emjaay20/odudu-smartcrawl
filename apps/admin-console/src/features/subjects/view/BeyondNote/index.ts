@@ -1,1 +1,1 @@
-export { BeyondNote, ReachFailed } from '#/features/subjects/view/BeyondNote/BeyondNote.tsx';
+export { BeyondNote, ReachFailed } from '#/features/subjects/view/BeyondNote/BeyondNote';

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useDrafts, type DraftField, type DraftFields } from '#/shared/repository/useDrafts.ts';
+import { useDrafts, type DraftField, type DraftFields } from '#/shared/repository/useDrafts';
 
 const KEY = 'odudu.console.drafts';
 const drafts = () => useDrafts.getState();

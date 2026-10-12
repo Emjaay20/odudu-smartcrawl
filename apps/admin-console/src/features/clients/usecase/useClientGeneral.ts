@@ -1,7 +1,7 @@
 import type { Client } from '@odudu/contracts/admin';
 import { useState } from 'react';
 import { useRefusal } from '#/features/session';
-import { useGo } from '#/shared/repository/useGo.ts';
+import { useGo } from '#/shared/repository/useGo';
 import {
   useClientDeletion,
   useClientSaves,
@@ -10,7 +10,7 @@ import {
   type DetailValues,
   type EnabledValues,
   type PageValues,
-} from '#/features/clients/repository/useClientRecord.ts';
+} from '#/features/clients/repository/useClientRecord';
 import {
   ceilingRefused,
   CLIENT_CAPABILITY,
@@ -26,11 +26,11 @@ import {
   FIELD,
   SECTION,
 } from '#/features/clients/service';
-import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave.ts';
-import { useToasts } from '#/shared/repository/useToasts.ts';
-import { writeFailureText } from '#/shared/service/failure.ts';
-import { flagText } from '#/shared/service/format.ts';
-import type { GatewayFailure } from '#/shared/transport/gateway.ts';
+import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
+import { useToasts } from '#/shared/repository/useToasts';
+import { writeFailureText } from '#/shared/service/failure';
+import { flagText } from '#/shared/service/format';
+import type { GatewayFailure } from '#/shared/transport/gateway';
 
 export type { SectionSave };
 

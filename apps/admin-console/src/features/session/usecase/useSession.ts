@@ -1,8 +1,8 @@
-import { useSessionEvent, useSessionQuery } from '#/features/session/repository/useSessionQuery.ts';
+import { useSessionEvent, useSessionQuery } from '#/features/session/repository/useSessionQuery';
 import { bootOf, draftOwner, shownPrincipal, type Principal } from '#/features/session/service';
-import { useSignIn } from '#/features/session/usecase/useSignIn.ts';
-import { useDrafts } from '#/shared/repository/useDrafts.ts';
-import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard.ts';
+import { useSignIn } from '#/features/session/usecase/useSignIn';
+import { useDrafts } from '#/shared/repository/useDrafts';
+import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 
 export type Boot =
   | { kind: 'loading' }

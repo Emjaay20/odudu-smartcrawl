@@ -1,8 +1,8 @@
 import { render, screen, within } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { Breadcrumb } from '#/shared/view/Breadcrumb/Breadcrumb.tsx';
+import { Breadcrumb } from '#/shared/view/Breadcrumb/Breadcrumb';
 import css from '#/shared/view/Breadcrumb/Breadcrumb.module.css?raw';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 const TRAIL = [
   { label: 'System' },

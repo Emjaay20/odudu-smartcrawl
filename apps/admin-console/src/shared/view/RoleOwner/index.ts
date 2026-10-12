@@ -1,1 +1,1 @@
-export * from '#/shared/view/RoleOwner/RoleOwner.tsx';
+export * from '#/shared/view/RoleOwner/RoleOwner';

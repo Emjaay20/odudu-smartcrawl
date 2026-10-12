@@ -4,7 +4,7 @@ import {
   attemptsText,
   deliveryTone,
   statusFilter,
-} from '#/features/clients/service/deliveries.ts';
+} from '#/features/clients/service/deliveries';
 
 it('sends no filter for any status, and the status itself otherwise', () => {
   expect(statusFilter(ANY_STATUS)).toBeNull();

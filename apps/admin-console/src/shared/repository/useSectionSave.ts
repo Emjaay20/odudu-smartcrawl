@@ -1,11 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
-import { recordKey, type RecordEntry } from '#/shared/repository/useRecord.ts';
-import { useSectionDraft } from '#/shared/repository/useSectionDraft.ts';
-import { useToasts } from '#/shared/repository/useToasts.ts';
-import type { Conflict } from '#/shared/service/conflict.ts';
-import type { Values } from '#/shared/service/dirty.ts';
-import { draftFieldsOf } from '#/shared/service/drafts.ts';
+import { recordKey, type RecordEntry } from '#/shared/repository/useRecord';
+import { useSectionDraft } from '#/shared/repository/useSectionDraft';
+import { useToasts } from '#/shared/repository/useToasts';
+import type { Conflict } from '#/shared/service/conflict';
+import type { Values } from '#/shared/service/dirty';
+import { draftFieldsOf } from '#/shared/service/drafts';
 import {
   afterSave,
   conflictsOf,
@@ -28,9 +28,9 @@ import {
   type SectionFields,
   type SectionState,
 } from '#/shared/service/sectionSave';
-import type { Gateway, GatewayFailure, GatewayResult } from '#/shared/transport/gateway.ts';
-import type { Problem } from '#/shared/transport/problem.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import type { Gateway, GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
+import type { Problem } from '#/shared/transport/problem';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export type { SectionField, SectionFields };
 

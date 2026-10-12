@@ -1,6 +1,6 @@
 import type { SigningKey, SmtpConfig } from '@odudu/contracts/admin';
 import { describe, expect, it } from 'vitest';
-import { needsAttention, type AttentionInputs } from '#/features/overview/service/attention.ts';
+import { needsAttention, type AttentionInputs } from '#/features/overview/service/attention';
 
 const KEYS: readonly SigningKey[] = [
   {

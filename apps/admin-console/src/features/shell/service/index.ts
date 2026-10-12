@@ -7,7 +7,7 @@ export {
   SYSTEM_AREAS,
   EVERY_AREA,
   areaAt,
-} from '#/features/shell/service/areas.ts';
+} from '#/features/shell/service/areas';
 export {
   holds,
   showsSystemArea,
@@ -16,14 +16,14 @@ export {
   systemRecordHref,
   railGroups,
   currentHref,
-} from '#/features/shell/service/rail.ts';
+} from '#/features/shell/service/rail';
 export {
   type PendingShape,
   type PendingPage,
   pendingPage,
   type AreaAccess,
   areaAccess,
-} from '#/features/shell/service/pending.ts';
+} from '#/features/shell/service/pending';
 export {
   brandText,
   areasLabel,
@@ -33,5 +33,5 @@ export {
   tenantNotFoundText,
   dialogOpen,
   pathnameOf,
-} from '#/features/shell/service/frame.ts';
-export { THEME_CHOICES, themeChoice } from '#/features/shell/service/theme.ts';
+} from '#/features/shell/service/frame';
+export { THEME_CHOICES, themeChoice } from '#/features/shell/service/theme';

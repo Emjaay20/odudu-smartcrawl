@@ -4,7 +4,7 @@ import {
   pickerUnavailable,
   subjectName,
   type Subject,
-} from '#/features/system-admins/service/picker.ts';
+} from '#/features/system-admins/service/picker';
 
 const subject = (id: string): Subject => ({ id, username: id }) as Subject;
 

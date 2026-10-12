@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
-import { MAX_PAGES } from '#/shared/service/cursorTrail.ts';
-import { Pager } from '#/shared/view/Pager/Pager.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { MAX_PAGES } from '#/shared/service/cursorTrail';
+import { Pager } from '#/shared/view/Pager/Pager';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 it('is a named navigation that says which page it is on', () => {
   render(<Pager label="Subjects" trail={['c-2']} next="c-3" onTrailChange={vi.fn()} />);

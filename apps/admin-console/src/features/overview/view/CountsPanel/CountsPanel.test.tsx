@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
 import type { CountTile } from '#/features/overview/service';
 import { CountsPanel } from '#/features/overview/view/CountsPanel';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 const retry = vi.fn();
 

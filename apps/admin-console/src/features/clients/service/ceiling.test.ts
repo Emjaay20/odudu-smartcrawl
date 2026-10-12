@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { canChange, clientReach, reachLine } from '#/features/clients/service/ceiling.ts';
+import { canChange, clientReach, reachLine } from '#/features/clients/service/ceiling';
 
 const SERVICE: NonNullable<Parameters<typeof clientReach>[0]> = {
   service_subject_id: '00000000-0000-4000-8000-000000000001',

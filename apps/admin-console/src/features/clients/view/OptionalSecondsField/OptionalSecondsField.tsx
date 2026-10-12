@@ -6,7 +6,7 @@ import {
   ReadOnlyValue,
   ToggleField,
 } from '#/shared/view/Field';
-import { formatDuration } from '#/shared/service/format.ts';
+import { formatDuration } from '#/shared/service/format';
 import { numberKept } from '#/features/clients/service';
 import styles from '#/features/clients/view/OptionalSecondsField/OptionalSecondsField.module.css';
 

@@ -2,10 +2,10 @@ import {
   ADMINISTRATOR_REQUEST_NEEDS,
   type AdministratorCall,
   type AdministratorRequest,
-} from '#/shared/service/administrators.ts';
-import { type AdminCapability } from '#/shared/service/principal.ts';
-import { fieldErrorsOf } from '#/shared/service/fieldErrors.ts';
-import type { GatewayFailure } from '#/shared/service/result.ts';
+} from '#/shared/service/administrators';
+import { type AdminCapability } from '#/shared/service/principal';
+import { fieldErrorsOf } from '#/shared/service/fieldErrors';
+import type { GatewayFailure } from '#/shared/service/result';
 
 // A request of a step: what it names when it fails, which fields a refusal
 // is placed under, and the capability a 403 says is missing.

@@ -1,3 +1,3 @@
-import { buttonClass } from '#/shared/view/Button/Button.tsx';
+import { buttonClass } from '#/shared/view/Button/Button';
 
 export const shown = buttonClass;

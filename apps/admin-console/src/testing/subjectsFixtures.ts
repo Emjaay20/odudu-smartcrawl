@@ -1,5 +1,5 @@
-import { json, type Answer } from '#/testing/fakeTransport.ts';
-import { GRACE, whoami } from '#/testing/renderConsole.tsx';
+import { json, type Answer } from '#/testing/fakeTransport';
+import { GRACE, whoami } from '#/testing/renderConsole';
 
 export const A = '/console/api/admin/tenants/acme';
 export const S = `${A}/subjects`;

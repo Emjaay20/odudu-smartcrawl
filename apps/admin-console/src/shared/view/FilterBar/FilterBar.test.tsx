@@ -4,10 +4,10 @@ import { expect, it, vi } from 'vitest';
 import buttonCss from '#/shared/view/Button/Button.module.css?raw';
 import fieldCss from '#/shared/view/Field/Field.module.css?raw';
 import { SelectField } from '#/shared/view/Field';
-import { FilterBar } from '#/shared/view/FilterBar/FilterBar.tsx';
+import { FilterBar } from '#/shared/view/FilterBar/FilterBar';
 import filterCss from '#/shared/view/FilterBar/FilterBar.module.css?raw';
 import tokens from '#/shared/view/tokens.css?raw';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 const FIELDS = [
   { id: 'username', label: 'username' },

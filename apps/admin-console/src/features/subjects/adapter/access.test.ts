@@ -7,8 +7,8 @@ import {
   readSubjectGroups,
   setRequiredActions,
   setSubjectGroups,
-} from '#/features/subjects/adapter/access.ts';
-import { fakeTransport, json } from '#/testing/fakeTransport.ts';
+} from '#/features/subjects/adapter/access';
+import { fakeTransport, json } from '#/testing/fakeTransport';
 
 const R = '/console/api/admin/tenants/acme';
 const S = `${R}/subjects/s1`;

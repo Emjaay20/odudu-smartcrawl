@@ -1,9 +1,9 @@
 import type { Subject } from '@odudu/contracts/admin';
 import { useState } from 'react';
 import { useAuthority, useRefusal } from '#/features/session';
-import { useAdministratorGrant } from '#/features/system-admins/repository/useAdministratorChange.ts';
-import { usePickerHolders } from '#/features/system-admins/repository/usePickerHolders.ts';
-import { useSubjectPicker } from '#/features/system-admins/repository/useSubjectPicker.ts';
+import { useAdministratorGrant } from '#/features/system-admins/repository/useAdministratorChange';
+import { usePickerHolders } from '#/features/system-admins/repository/usePickerHolders';
+import { useSubjectPicker } from '#/features/system-admins/repository/useSubjectPicker';
 import {
   administratorsAccess,
   choosable,
@@ -13,17 +13,17 @@ import {
   subjectName,
 } from '#/features/system-admins/service';
 import { useBeginAdministrator, type BeginAdministrator } from '#/features/tenants';
-import { useToasts } from '#/shared/repository/useToasts.ts';
-import type { Change } from '#/shared/service/access.ts';
+import { useToasts } from '#/shared/repository/useToasts';
+import type { Change } from '#/shared/service/access';
 import {
   ADMINISTRATOR_REQUEST_NEEDS,
   holdingsProblem,
   TENANT_ADMIN,
-} from '#/shared/service/administrators.ts';
+} from '#/shared/service/administrators';
 import { holdingOptions, holdingsIn, type HoldingOption } from '#/shared/service/capabilities';
-import { inOrderOf } from '#/shared/service/ids.ts';
-import type { PickerState } from '#/shared/service/picker.ts';
-import { SYSTEM_TENANT, type AdminCapability } from '#/shared/service/principal.ts';
+import { inOrderOf } from '#/shared/service/ids';
+import type { PickerState } from '#/shared/service/picker';
+import { SYSTEM_TENANT, type AdminCapability } from '#/shared/service/principal';
 
 export interface SystemAdministrators {
   createNeeds: readonly AdminCapability[];

@@ -1,8 +1,8 @@
 import type { Client } from '@odudu/contracts/admin';
 import { useState } from 'react';
 import { useRefusal } from '#/features/session';
-import { useCreateClient } from '#/features/clients/repository/useCreateClient.ts';
-import { useGo } from '#/shared/repository/useGo.ts';
+import { useCreateClient } from '#/features/clients/repository/useCreateClient';
+import { useGo } from '#/shared/repository/useGo';
 import {
   CLIENT_CAPABILITY,
   CLIENT_ID_TAKEN,
@@ -22,10 +22,10 @@ import {
   type NewClientField,
   type NewClientKind,
 } from '#/features/clients/service';
-import { useToasts } from '#/shared/repository/useToasts.ts';
-import { withoutField } from '#/shared/service/fieldErrors.ts';
-import { createdText, createFailure, lookupText } from '#/shared/service/failure.ts';
-import type { GatewayFailure } from '#/shared/transport/gateway.ts';
+import { useToasts } from '#/shared/repository/useToasts';
+import { withoutField } from '#/shared/service/fieldErrors';
+import { createdText, createFailure, lookupText } from '#/shared/service/failure';
+import type { GatewayFailure } from '#/shared/transport/gateway';
 
 type Errors = Partial<Record<NewClientField, string>>;
 

@@ -1,1 +1,1 @@
-export { TenantShell } from '#/features/shell/view/TenantShell/TenantShell.tsx';
+export { TenantShell } from '#/features/shell/view/TenantShell/TenantShell';

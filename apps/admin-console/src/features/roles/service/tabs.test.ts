@@ -4,7 +4,7 @@ import {
   roleRecord,
   TAB_RECORDS,
   compositesRecord,
-} from '#/features/roles/service/tabs.ts';
+} from '#/features/roles/service/tabs';
 
 describe('addresses', () => {
   it('gives each tab the records its sections edit', () => {

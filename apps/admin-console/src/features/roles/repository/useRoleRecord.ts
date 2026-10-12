@@ -8,13 +8,13 @@ import {
   readRole,
   removeComposite,
   setRoleDefault,
-} from '#/features/roles/adapter/roles.ts';
+} from '#/features/roles/adapter/roles';
 import { compositesRecord, roleRecord } from '#/features/roles/service';
-import { isStale } from '#/shared/service/failure.ts';
-import { recordKey, useRecord, type RecordState } from '#/shared/repository/useRecord.ts';
-import type { SaveInput } from '#/shared/repository/useSectionSave.ts';
-import type { Gateway, GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { isStale } from '#/shared/service/failure';
+import { recordKey, useRecord, type RecordState } from '#/shared/repository/useRecord';
+import type { SaveInput } from '#/shared/repository/useSectionSave';
+import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export function useRoleRecord(tenant: string, id: string): RecordState<Role> {
   return useRecord({

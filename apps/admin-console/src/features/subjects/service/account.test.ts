@@ -1,13 +1,13 @@
 import { USERNAME_RULE } from '@odudu/contracts/admin';
 import { describe, expect, it } from 'vitest';
-import type { GatewayFailure } from '#/shared/service/result.ts';
+import type { GatewayFailure } from '#/shared/service/result';
 import {
   enabledVerb,
   subjectWriteFailure,
   usernameMode,
   USERNAME_RULE_TEXT,
   usernameProblem,
-} from '#/features/subjects/service/account.ts';
+} from '#/features/subjects/service/account';
 
 const failure = (kind: 'network' | 'schema' | 'defect'): GatewayFailure => ({ ok: false, kind });
 

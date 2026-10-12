@@ -7,7 +7,7 @@ import {
   subjectName,
   subjectsHref,
   subjectsTrail,
-} from '#/features/subjects/service/address.ts';
+} from '#/features/subjects/service/address';
 
 describe('addresses', () => {
   it('puts a subject under its tenant, each part escaped', () => {

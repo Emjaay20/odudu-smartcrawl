@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
+import type { ResourceListState } from '#/shared/service/resourceList';
 import { Button } from '#/shared/view/Button';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { Count } from '#/shared/view/Count';

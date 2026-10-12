@@ -16,19 +16,19 @@ import {
   readSubjectGroups,
   setRequiredActions,
   setSubjectGroups,
-} from '#/features/subjects/adapter/access.ts';
-import { readSubjectCount } from '#/features/subjects/adapter/subjects.ts';
-import { useRead, type Read } from '#/shared/repository/useRead.ts';
+} from '#/features/subjects/adapter/access';
+import { readSubjectCount } from '#/features/subjects/adapter/subjects';
+import { useRead, type Read } from '#/shared/repository/useRead';
 import { actionsRecord, groupsRecord, rolesRecord } from '#/features/subjects/service';
-import { readSubjectRoles, setSubjectRoles } from '#/shared/adapter/administrators.ts';
-import { useRecord, type RecordState } from '#/shared/repository/useRecord.ts';
-import { useResourceList } from '#/shared/repository/useResourceList.ts';
-import type { SaveInput } from '#/shared/repository/useSectionSave.ts';
+import { readSubjectRoles, setSubjectRoles } from '#/shared/adapter/administrators';
+import { useRecord, type RecordState } from '#/shared/repository/useRecord';
+import { useResourceList } from '#/shared/repository/useResourceList';
+import type { SaveInput } from '#/shared/repository/useSectionSave';
 import type { Holding } from '#/shared/service/capabilities';
-import { uniqueIds } from '#/shared/service/ids.ts';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
-import type { Gateway, GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { uniqueIds } from '#/shared/service/ids';
+import type { ResourceListState } from '#/shared/service/resourceList';
+import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export function useGroupsRecord(tenant: string, id: string): RecordState<SetSubjectGroupsResponse> {
   return useRecord({

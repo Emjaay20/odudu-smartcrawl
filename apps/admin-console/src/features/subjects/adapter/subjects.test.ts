@@ -15,8 +15,8 @@ import {
   readSubjectPage,
   readUsernameEditable,
   revokeRecoveryCodes,
-} from '#/features/subjects/adapter/subjects.ts';
-import { fakeTransport, json, problem } from '#/testing/fakeTransport.ts';
+} from '#/features/subjects/adapter/subjects';
+import { fakeTransport, json, problem } from '#/testing/fakeTransport';
 
 const T = '/console/api/admin/tenants/acme/subjects';
 const ID = '01a0e72d-7fc7-7950-a1e7-1d079588f8b4';

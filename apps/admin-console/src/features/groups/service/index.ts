@@ -10,7 +10,7 @@ export {
   groupHref,
   groupsTrail,
   type Asked,
-} from '#/features/groups/service/address.ts';
+} from '#/features/groups/service/address';
 export {
   GROUP_TABS,
   type GroupTab,
@@ -18,7 +18,7 @@ export {
   groupRecord,
   groupRolesRecord,
   TAB_RECORDS,
-} from '#/features/groups/service/tabs.ts';
+} from '#/features/groups/service/tabs';
 export {
   NAME_FIXED,
   DESCRIPTION_MAX,
@@ -26,7 +26,7 @@ export {
   PLACE_LABEL,
   DEFAULT_LABEL,
   NAME_TAKEN,
-} from '#/features/groups/service/labels.ts';
+} from '#/features/groups/service/labels';
 export {
   moveUnavailable,
   moveRefusal,
@@ -37,8 +37,8 @@ export {
   type Defaulting,
   defaultingOf,
   roleUnavailable,
-} from '#/features/groups/service/blocks.ts';
-export { type Change, selfLoss, lossOf, type Readiness } from '#/features/groups/service/loss.ts';
+} from '#/features/groups/service/blocks';
+export { type Change, selfLoss, lossOf, type Readiness } from '#/features/groups/service/loss';
 export {
   type GroupRead,
   type Ceiling,
@@ -53,13 +53,13 @@ export {
   ceilingCaller,
   ceilingParentReach,
   ceilingLines,
-} from '#/features/groups/service/ceiling.ts';
+} from '#/features/groups/service/ceiling';
 export {
   moveConfirmation,
   deleteConsequence,
   subtreeDeletedText,
   rolesConfirmation,
-} from '#/features/groups/service/confirm.ts';
+} from '#/features/groups/service/confirm';
 export {
   type Mapped,
   roleIndex,
@@ -67,4 +67,4 @@ export {
   keptRoles,
   reachOfRoles,
   withKept,
-} from '#/features/groups/service/mapped.ts';
+} from '#/features/groups/service/mapped';

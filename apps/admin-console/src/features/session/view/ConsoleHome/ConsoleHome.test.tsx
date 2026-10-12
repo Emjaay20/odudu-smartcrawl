@@ -1,14 +1,8 @@
 import { screen } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it } from 'vitest';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
-import { json, SESSION_ENDED } from '#/testing/fakeTransport.ts';
-import {
-  consoleAt,
-  GRACE,
-  renderConsoleAt,
-  whoami,
-  resetConsole,
-} from '#/testing/renderConsole.tsx';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
+import { json, SESSION_ENDED } from '#/testing/fakeTransport';
+import { consoleAt, GRACE, renderConsoleAt, whoami, resetConsole } from '#/testing/renderConsole';
 
 beforeEach(() => {
   localStorage.clear();

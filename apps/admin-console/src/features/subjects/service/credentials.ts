@@ -1,6 +1,6 @@
 import { type Credential, type Lockout } from '@odudu/contracts/admin';
-import { counted, formatAbsolute } from '#/shared/service/format.ts';
-import type { GatewayFailure } from '#/shared/service/result.ts';
+import { counted, formatAbsolute } from '#/shared/service/format';
+import type { GatewayFailure } from '#/shared/service/result';
 
 export interface Credentials {
   password: Credential | null;

@@ -11,7 +11,7 @@ import {
 import {
   useClientDeliveries,
   type ClientDeliveries,
-} from '#/features/clients/usecase/useClientDeliveries.ts';
+} from '#/features/clients/usecase/useClientDeliveries';
 import { Button } from '#/shared/view/Button';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';

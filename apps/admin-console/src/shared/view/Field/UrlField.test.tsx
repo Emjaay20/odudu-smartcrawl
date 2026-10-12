@@ -2,9 +2,9 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { OwnDataFields, ReadOnlyFields } from '#/shared/view/Field/Field.tsx';
-import { PictureField, UrlField } from '#/shared/view/Field/UrlField.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { OwnDataFields, ReadOnlyFields } from '#/shared/view/Field/Field';
+import { PictureField, UrlField } from '#/shared/view/Field/UrlField';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 function Controlled() {
   const [value, setValue] = useState('');

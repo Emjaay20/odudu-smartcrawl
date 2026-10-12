@@ -1,1 +1,1 @@
-export * from '#/shared/view/Rail/Rail.tsx';
+export * from '#/shared/view/Rail/Rail';

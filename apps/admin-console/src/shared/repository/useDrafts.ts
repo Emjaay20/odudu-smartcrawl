@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { loadDrafts, storeDrafts } from '#/shared/adapter/draftStorage.ts';
+import { loadDrafts, storeDrafts } from '#/shared/adapter/draftStorage';
 import {
   keepableValues,
   withoutDraft,
@@ -7,7 +7,7 @@ import {
   type DraftFields,
   type DraftValues,
   type KeptDraft,
-} from '#/shared/service/drafts.ts';
+} from '#/shared/service/drafts';
 
 export type { DraftField, DraftFields, DraftValues, KeptDraft };
 

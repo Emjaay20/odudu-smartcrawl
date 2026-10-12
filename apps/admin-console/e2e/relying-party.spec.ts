@@ -2,8 +2,8 @@ import { createHash, createHmac, randomBytes } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
 import { type AddressInfo } from 'node:net';
 import { type Page } from '@playwright/test';
-import { expect, test } from './fixtures.ts';
-import { psql, seed } from './stack.ts';
+import { expect, test } from './fixtures';
+import { psql, seed } from './stack';
 
 // A relying party on an origin of its own, which the console never is.
 // Chromium holds the redirect a form submission follows to the page's

@@ -5,7 +5,7 @@ import {
   useClientAssignment,
   useScopeClients,
   type ScopeClients,
-} from '#/features/scopes/repository/useScopeClients.ts';
+} from '#/features/scopes/repository/useScopeClients';
 import {
   assignedText,
   assignmentOf,
@@ -15,12 +15,12 @@ import {
   clientsOffered,
   unassignedText,
 } from '#/features/scopes/service';
-import { useClientPicker } from '#/shared/repository/useClientPicker.ts';
-import { useToasts } from '#/shared/repository/useToasts.ts';
-import { lacking } from '#/shared/service/access.ts';
-import { lastChosen, type PickerState } from '#/shared/service/picker.ts';
-import type { AdminCapability } from '#/shared/service/principal.ts';
-import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway.ts';
+import { useClientPicker } from '#/shared/repository/useClientPicker';
+import { useToasts } from '#/shared/repository/useToasts';
+import { lacking } from '#/shared/service/access';
+import { lastChosen, type PickerState } from '#/shared/service/picker';
+import type { AdminCapability } from '#/shared/service/principal';
+import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
 
 export interface ScopeClientsTab {
   list: ScopeClients;

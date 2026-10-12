@@ -1,8 +1,8 @@
 import type { ClientScope } from '@odudu/contracts/admin';
-import { useScopeList } from '#/features/scopes/repository/useScopeList.ts';
+import { useScopeList } from '#/features/scopes/repository/useScopeList';
 import { newScopeHref, scopeHref } from '#/features/scopes/service';
-import { useGo } from '#/shared/repository/useGo.ts';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
+import { useGo } from '#/shared/repository/useGo';
+import type { ResourceListState } from '#/shared/service/resourceList';
 
 export interface ScopesList {
   list: ResourceListState<ClientScope>;

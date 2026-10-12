@@ -1,8 +1,8 @@
 import type { Role, SetRolesResponse } from '@odudu/contracts/admin';
-import { lacking } from '#/shared/service/access.ts';
+import { lacking } from '#/shared/service/access';
 import { beyondCaller, isAdminRole } from '#/shared/service/capabilities';
-import { andList } from '#/shared/service/format.ts';
-import type { AdminCapability, Authority } from '#/shared/service/principal.ts';
+import { andList } from '#/shared/service/format';
+import type { AdminCapability, Authority } from '#/shared/service/principal';
 
 export const SERVICE_CAPABILITY = 'manage-users';
 

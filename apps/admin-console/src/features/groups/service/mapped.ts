@@ -1,7 +1,7 @@
 import type { Role, SetGroupRolesResponse } from '@odudu/contracts/admin';
-import { sortedIds } from '#/shared/service/ids.ts';
-import type { AdminCapability } from '#/shared/service/principal.ts';
-import { roleUnavailable } from '#/features/groups/service/blocks.ts';
+import { sortedIds } from '#/shared/service/ids';
+import type { AdminCapability } from '#/shared/service/principal';
+import { roleUnavailable } from '#/features/groups/service/blocks';
 
 export interface Mapped {
   id: string;

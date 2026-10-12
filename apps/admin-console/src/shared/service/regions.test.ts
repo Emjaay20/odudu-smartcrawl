@@ -5,7 +5,7 @@ import {
   englishCountryName,
   REGIONS,
   regionOfCountryName,
-} from '#/shared/service/regions.ts';
+} from '#/shared/service/regions';
 
 describe('regions', () => {
   it('lists each ISO 3166 region once', () => {

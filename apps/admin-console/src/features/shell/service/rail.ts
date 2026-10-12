@@ -1,5 +1,5 @@
-import { holds, readable } from '#/shared/service/access.ts';
-import { SYSTEM_TENANT, type Authority, type Principal } from '#/shared/service/principal.ts';
+import { holds, readable } from '#/shared/service/access';
+import { SYSTEM_TENANT, type Authority, type Principal } from '#/shared/service/principal';
 import {
   type Area,
   OVERVIEW,
@@ -7,7 +7,7 @@ import {
   SYSTEM_AREAS,
   TENANT_AREAS,
   areaAt,
-} from '#/features/shell/service/areas.ts';
+} from '#/features/shell/service/areas';
 
 export { holds };
 

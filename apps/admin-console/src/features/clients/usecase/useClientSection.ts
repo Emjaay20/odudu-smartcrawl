@@ -1,13 +1,13 @@
 import type { Client } from '@odudu/contracts/admin';
 import { useRefusal } from '#/features/session';
-import { useRereadClient } from '#/features/clients/repository/useClientRecord.ts';
+import { useRereadClient } from '#/features/clients/repository/useClientRecord';
 import {
   ceilingRefused,
   CLIENT_CAPABILITY,
   clientRecord,
   clientRefusal,
 } from '#/features/clients/service';
-import type { GatewayFailure } from '#/shared/transport/gateway.ts';
+import type { GatewayFailure } from '#/shared/transport/gateway';
 
 // What every section of the client's record saves with: the record, the
 // ETag it was read with, what a refusal needs, and what to do about it.

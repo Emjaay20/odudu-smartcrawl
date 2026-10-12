@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { installationRows } from '#/features/clients/service/installation.ts';
+import { installationRows } from '#/features/clients/service/installation';
 
 it('lists what an application is configured with, the issuer and the client ID to be copied', () => {
   const rows = installationRows({

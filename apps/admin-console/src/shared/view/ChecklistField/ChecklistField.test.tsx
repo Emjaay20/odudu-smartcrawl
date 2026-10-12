@@ -1,12 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
-import {
-  ChecklistField,
-  type ChecklistOption,
-} from '#/shared/view/ChecklistField/ChecklistField.tsx';
+import { ChecklistField, type ChecklistOption } from '#/shared/view/ChecklistField/ChecklistField';
 import { ReadOnlyFields } from '#/shared/view/Field';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 const OPTIONS: readonly ChecklistOption[] = [
   { id: 'a', label: 'Alpha', description: 'The first.' },

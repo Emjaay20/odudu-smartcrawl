@@ -9,7 +9,7 @@ import {
 } from '@odudu/contracts/admin';
 import { z } from 'zod';
 import type { ImportedSecret } from '#/features/tenants/service';
-import type { Gateway, GatewayResult, RawBody } from '#/shared/transport/gateway.ts';
+import type { Gateway, GatewayResult, RawBody } from '#/shared/transport/gateway';
 
 function tenantPath(name: string): string {
   return encodeURIComponent(name);

@@ -10,8 +10,8 @@ import {
   readGroupRoles,
   setGroupDefault,
   setGroupRoles,
-} from '#/features/groups/adapter/groups.ts';
-import { fakeTransport, json } from '#/testing/fakeTransport.ts';
+} from '#/features/groups/adapter/groups';
+import { fakeTransport, json } from '#/testing/fakeTransport';
 
 const A = '/console/api/admin/tenants/acme';
 const G = `${A}/groups`;

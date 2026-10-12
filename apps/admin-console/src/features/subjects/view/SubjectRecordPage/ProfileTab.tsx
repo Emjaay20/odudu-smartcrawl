@@ -4,14 +4,14 @@ import { signsInAsItself, type Profile, type Subject } from '#/features/subjects
 import {
   useSubjectAccount,
   type SubjectAccount,
-} from '#/features/subjects/usecase/useSubjectAccount.ts';
+} from '#/features/subjects/usecase/useSubjectAccount';
 import type { ClaimField } from '#/features/subjects/service';
 import {
   useSubjectClaims,
   useSubjectProfileRead,
   type ClaimSection,
   type SectionSave,
-} from '#/features/subjects/usecase/useSubjectProfile.ts';
+} from '#/features/subjects/usecase/useSubjectProfile';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { EmptyState } from '#/shared/view/EmptyState';

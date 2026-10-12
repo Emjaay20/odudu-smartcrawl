@@ -1,4 +1,4 @@
-import { subjectHref } from '#/features/subjects/service/address.ts';
+import { subjectHref } from '#/features/subjects/service/address';
 
 // A subject's record, a tab per concern, in the order the page shows them.
 export const SUBJECT_TABS = [

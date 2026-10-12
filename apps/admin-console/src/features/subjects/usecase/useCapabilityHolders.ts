@@ -1,7 +1,7 @@
 import type { ListedSubject } from '@odudu/contracts/admin';
 import { useState } from 'react';
 import { usePrincipal } from '#/features/session';
-import { useHolderList } from '#/features/subjects/repository/useHolders.ts';
+import { useHolderList } from '#/features/subjects/repository/useHolders';
 import {
   heldLines,
   reachesEveryTenant,
@@ -9,9 +9,9 @@ import {
   subjectName,
   type HeldLine,
 } from '#/features/subjects/service';
-import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard.ts';
-import { isSelf } from '#/shared/service/principal.ts';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
+import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
+import { isSelf } from '#/shared/service/principal';
+import type { ResourceListState } from '#/shared/service/resourceList';
 
 export interface Holder {
   subject: ListedSubject;

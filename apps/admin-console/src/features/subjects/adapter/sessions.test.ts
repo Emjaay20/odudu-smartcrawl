@@ -7,9 +7,9 @@ import {
   readSessions,
   revokeConsent,
   revokeGrants,
-} from '#/features/subjects/adapter/sessions.ts';
-import { noContent } from '#/testing/subjectsFixtures.ts';
-import { fakeTransport, json } from '#/testing/fakeTransport.ts';
+} from '#/features/subjects/adapter/sessions';
+import { noContent } from '#/testing/subjectsFixtures';
+import { fakeTransport, json } from '#/testing/fakeTransport';
 
 const S = '/console/api/admin/tenants/acme/subjects/s1';
 const SESSION = {

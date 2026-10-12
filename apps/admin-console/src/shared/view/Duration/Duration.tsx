@@ -1,4 +1,4 @@
-import { formatDuration } from '#/shared/service/format.ts';
+import { formatDuration } from '#/shared/service/format';
 import styles from '#/shared/view/Duration/Duration.module.css';
 
 export function Duration({ seconds }: { seconds: number }) {

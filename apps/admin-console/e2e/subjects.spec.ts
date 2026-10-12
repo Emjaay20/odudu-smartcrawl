@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
-import { expect, expectAccessible, forgive, signIn, signInAtTenant, test } from './fixtures.ts';
-import { psql, seeded } from './stack.ts';
+import { expect, expectAccessible, forgive, signIn, signInAtTenant, test } from './fixtures';
+import { psql, seeded } from './stack';
 
 const { subjects } = seeded();
 const { admin, viewer } = subjects;

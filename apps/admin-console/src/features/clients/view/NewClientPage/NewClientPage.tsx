@@ -6,7 +6,7 @@ import {
   KIND_CHOICES,
   REDIRECTS_RULE,
 } from '#/features/clients/service';
-import { useNewClient } from '#/features/clients/usecase/useNewClient.ts';
+import { useNewClient } from '#/features/clients/usecase/useNewClient';
 import { Button } from '#/shared/view/Button';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { SelectField, TextAreaField, TextField, UrlListField } from '#/shared/view/Field';

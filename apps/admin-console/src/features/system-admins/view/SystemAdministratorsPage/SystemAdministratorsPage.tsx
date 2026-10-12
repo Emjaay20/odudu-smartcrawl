@@ -3,10 +3,10 @@ import { CapabilityHolders } from '#/features/subjects';
 import {
   useSystemAdministratorsPage,
   type SystemAdministrators,
-} from '#/features/system-admins/usecase/useSystemAdministratorsPage.ts';
+} from '#/features/system-admins/usecase/useSystemAdministratorsPage';
 import { subjectName } from '#/features/system-admins/service';
 import { SystemGate } from '#/features/tenants';
-import { SYSTEM_TENANT } from '#/shared/service/principal.ts';
+import { SYSTEM_TENANT } from '#/shared/service/principal';
 import { Button } from '#/shared/view/Button';
 import { ChecklistField } from '#/shared/view/ChecklistField';
 import { PageHeader } from '#/shared/view/PageHeader';

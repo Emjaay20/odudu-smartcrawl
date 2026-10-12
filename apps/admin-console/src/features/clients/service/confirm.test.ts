@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { deleteConsequence } from '#/features/clients/service/confirm.ts';
+import { deleteConsequence } from '#/features/clients/service/confirm';
 
 it('says what a delete takes with it, and that it stays deleted', () => {
   const text = deleteConsequence('Billing');

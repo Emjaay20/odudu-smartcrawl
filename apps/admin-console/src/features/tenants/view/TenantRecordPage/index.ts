@@ -1,1 +1,1 @@
-export { TenantRecordPage } from '#/features/tenants/view/TenantRecordPage/TenantRecordPage.tsx';
+export { TenantRecordPage } from '#/features/tenants/view/TenantRecordPage/TenantRecordPage';

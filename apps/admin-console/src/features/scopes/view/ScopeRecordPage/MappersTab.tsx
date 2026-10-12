@@ -3,7 +3,7 @@ import {
   useScopeMapperSet,
   useScopeMappersRead,
   type ScopeMapperSet,
-} from '#/features/scopes/usecase/useScopeMappers.ts';
+} from '#/features/scopes/usecase/useScopeMappers';
 import { Button } from '#/shared/view/Button';
 import { ChecklistField } from '#/shared/view/ChecklistField';
 import { EmptyState } from '#/shared/view/EmptyState';

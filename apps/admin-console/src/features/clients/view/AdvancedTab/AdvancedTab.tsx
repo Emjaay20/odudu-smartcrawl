@@ -20,8 +20,8 @@ import {
   SUBJECT_DN_RULE,
   USERINFO_RULE,
 } from '#/features/clients/service';
-import { useClientAdvanced } from '#/features/clients/usecase/useClientAdvanced.ts';
-import { useClientSecret, type ClientSecret } from '#/features/clients/usecase/useClientSecret.ts';
+import { useClientAdvanced } from '#/features/clients/usecase/useClientAdvanced';
+import { useClientSecret, type ClientSecret } from '#/features/clients/usecase/useClientSecret';
 import { Installation } from '#/features/clients/view/Installation';
 import { SaveSection } from '#/features/clients/view/SaveSection';
 import { Button } from '#/shared/view/Button';

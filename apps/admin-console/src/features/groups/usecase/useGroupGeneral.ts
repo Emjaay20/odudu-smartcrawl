@@ -2,14 +2,14 @@ import type { Group, GroupRecord } from '@odudu/contracts/admin';
 import { useState } from 'react';
 import { useRefusal, useRereadAuthority } from '#/features/session';
 import { useOwnRoles } from '#/features/subjects';
-import { useGo } from '#/shared/repository/useGo.ts';
+import { useGo } from '#/shared/repository/useGo';
 import {
   useGroupDeletion,
   useGroupSaves,
   type DefaultValues,
   type DescriptionValues,
   type ParentValues,
-} from '#/features/groups/repository/useGroupRecord.ts';
+} from '#/features/groups/repository/useGroupRecord';
 import {
   type Asked,
   type Ceiling,
@@ -36,14 +36,14 @@ import {
   type Readiness,
   subtreeDeletedText,
 } from '#/features/groups/service';
-import { useGroupPicker } from '#/shared/repository/useGroupPicker.ts';
-import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave.ts';
-import { useToasts } from '#/shared/repository/useToasts.ts';
+import { useGroupPicker } from '#/shared/repository/useGroupPicker';
+import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
+import { useToasts } from '#/shared/repository/useToasts';
 import { asksFirst, writeRefusal } from '#/shared/service/capabilities';
-import { writeFailureText } from '#/shared/service/failure.ts';
-import { flagText } from '#/shared/service/format.ts';
-import type { PickerState } from '#/shared/service/picker.ts';
-import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway.ts';
+import { writeFailureText } from '#/shared/service/failure';
+import { flagText } from '#/shared/service/format';
+import type { PickerState } from '#/shared/service/picker';
+import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
 
 export type { SectionSave };
 

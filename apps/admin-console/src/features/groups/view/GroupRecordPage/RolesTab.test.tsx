@@ -1,8 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
-import { json } from '#/testing/fakeTransport.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
+import { json } from '#/testing/fakeTransport';
 import {
   adminRole,
   AUDITOR,
@@ -12,9 +12,9 @@ import {
   mapped,
   record,
   PORTAL_READER,
-} from '#/testing/groupsFixtures.ts';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole.tsx';
-import { assigned, S } from '#/testing/subjectsFixtures.ts';
+} from '#/testing/groupsFixtures';
+import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { assigned, S } from '#/testing/subjectsFixtures';
 
 afterEach(() => {
   resetConsole();

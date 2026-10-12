@@ -3,7 +3,7 @@ export {
   NAME_RULE,
   nameProblem,
   issuerPreview,
-} from '#/features/tenants/service/name.ts';
+} from '#/features/tenants/service/name';
 export {
   exportFileName,
   EXPORT_MEDIA_TYPE,
@@ -14,7 +14,7 @@ export {
   exportBlame,
   exportFailureText,
   savedText,
-} from '#/features/tenants/service/export.ts';
+} from '#/features/tenants/service/export';
 export {
   omittedOf,
   fileSize,
@@ -25,7 +25,7 @@ export {
   chosenFileOf,
   fileChosenProblem,
   fileRequiredProblem,
-} from '#/features/tenants/service/document.ts';
+} from '#/features/tenants/service/document';
 export {
   type ImportedSecret,
   type ImportOutcome,
@@ -39,7 +39,7 @@ export {
   importMessage,
   secretPlace,
   importedLink,
-} from '#/features/tenants/service/import.ts';
+} from '#/features/tenants/service/import';
 export {
   type Creation,
   FRESH_CREATION,
@@ -57,7 +57,7 @@ export {
   againOf,
   resumesAdministrator,
   titleOrigin,
-} from '#/features/tenants/service/creation.ts';
+} from '#/features/tenants/service/creation';
 export {
   type StepCall,
   createTenantCall,
@@ -70,7 +70,7 @@ export {
   administratorFailure,
   tenantNotCreatedText,
   administratorLookupText,
-} from '#/features/tenants/service/steps.ts';
+} from '#/features/tenants/service/steps';
 export {
   systemAdminsHrefOf,
   TENANTS_HREF,
@@ -85,7 +85,7 @@ export {
   systemAdminsTrail,
   tenantHref,
   enterHref,
-} from '#/features/tenants/service/address.ts';
+} from '#/features/tenants/service/address';
 export {
   CREATE_TENANT_TITLE,
   ADD_SYSTEM_ADMIN_TITLE,
@@ -93,11 +93,11 @@ export {
   firstAdministratorNote,
   type CreationPage,
   creationHeading,
-} from '#/features/tenants/service/heading.ts';
-export { TENANT_TABS, type TenantTab, tenantRecord } from '#/features/tenants/service/tabs.ts';
+} from '#/features/tenants/service/heading';
+export { TENANT_TABS, type TenantTab, tenantRecord } from '#/features/tenants/service/tabs';
 export {
   type TenantRecordAccess,
   tenantRecordAccess,
   disableFixed,
-} from '#/features/tenants/service/access.ts';
-export { tenantChangeFailure } from '#/features/tenants/service/failure.ts';
+} from '#/features/tenants/service/access';
+export { tenantChangeFailure } from '#/features/tenants/service/failure';

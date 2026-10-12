@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
 import { discoveryView, type KeysView, type Read } from '#/features/overview/service';
 import { DiscoveryPanel } from '#/features/overview/view/DiscoveryPanel';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 const ISSUER = 'https://id.example/tenants/acme';
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AdminCapability, Authority } from '#/shared/service/principal.ts';
+import type { AdminCapability, Authority } from '#/shared/service/principal';
 import {
   exportBlame,
   exportedOf,
@@ -8,7 +8,7 @@ import {
   exportsSubjects,
   savedText,
   exportFileName,
-} from '#/features/tenants/service/export.ts';
+} from '#/features/tenants/service/export';
 
 describe('the export file', () => {
   it('is named after the tenant and the day it was taken', () => {

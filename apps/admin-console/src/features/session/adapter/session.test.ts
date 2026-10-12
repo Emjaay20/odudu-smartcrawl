@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
-import { readAuthority, readSession } from '#/features/session/adapter/session.ts';
-import { createSessionEvents } from '#/shared/service/sessionEvents.ts';
-import { createGateway, type Fetch } from '#/shared/transport/gateway.ts';
+import { readAuthority, readSession } from '#/features/session/adapter/session';
+import { createSessionEvents } from '#/shared/service/sessionEvents';
+import { createGateway, type Fetch } from '#/shared/transport/gateway';
 
 function gatewayAnswering(body: unknown, urls: string[] = []) {
   const answer: Fetch = (url) => {

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuthority, useRefusal } from '#/features/session';
-import { useCreateSubject } from '#/features/subjects/repository/useCreateSubject.ts';
-import { useGo } from '#/shared/repository/useGo.ts';
+import { useCreateSubject } from '#/features/subjects/repository/useCreateSubject';
+import { useGo } from '#/shared/repository/useGo';
 import {
   manageUsersRefusal,
   newSubjectSpec,
@@ -11,10 +11,10 @@ import {
   USERNAME_RULE_TEXT,
   usernameProblem,
 } from '#/features/subjects/service';
-import { useToasts } from '#/shared/repository/useToasts.ts';
-import { createFailure, lookupText } from '#/shared/service/failure.ts';
-import { withoutField } from '#/shared/service/fieldErrors.ts';
-import type { GatewayFailure } from '#/shared/transport/gateway.ts';
+import { useToasts } from '#/shared/repository/useToasts';
+import { createFailure, lookupText } from '#/shared/service/failure';
+import { withoutField } from '#/shared/service/fieldErrors';
+import type { GatewayFailure } from '#/shared/transport/gateway';
 
 export interface NewSubject {
   // Why creating would be refused, named before anything is sent.

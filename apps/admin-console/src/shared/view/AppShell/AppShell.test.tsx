@@ -2,10 +2,10 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
-import { AppShell } from '#/shared/view/AppShell/AppShell.tsx';
+import { AppShell } from '#/shared/view/AppShell/AppShell';
 import { ContextBar } from '#/shared/view/ContextBar';
 import { Rail } from '#/shared/view/Rail';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import shellCss from '#/shared/view/AppShell/AppShell.module.css?raw';
 
 const rail = <Rail label="acme" groups={[{ items: [{ href: '#overview', label: 'Overview' }] }]} />;

@@ -1,5 +1,5 @@
 import { brandText, type PendingPage } from '#/features/shell/service';
-import { usePendingFrame } from '#/features/shell/usecase/usePendingFrame.ts';
+import { usePendingFrame } from '#/features/shell/usecase/usePendingFrame';
 import styles from '#/features/shell/view/PendingFrame/PendingFrame.module.css';
 import { AppShell } from '#/shared/view/AppShell';
 import { PageHeader } from '#/shared/view/PageHeader';

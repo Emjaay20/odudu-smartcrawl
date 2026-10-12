@@ -1,1 +1,1 @@
-export * from '#/app/UnsavedGuardLayer/UnsavedGuardLayer.tsx';
+export * from '#/app/UnsavedGuardLayer/UnsavedGuardLayer';

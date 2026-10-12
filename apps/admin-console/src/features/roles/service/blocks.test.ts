@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AdminCapability } from '#/shared/service/principal.ts';
+import type { AdminCapability } from '#/shared/service/principal';
 import {
   addRefusal,
   compositesFixed,
@@ -7,7 +7,7 @@ import {
   defaultBlock,
   deleteBlock,
   isBuiltin,
-} from '#/features/roles/service/blocks.ts';
+} from '#/features/roles/service/blocks';
 
 function role(
   id: string,

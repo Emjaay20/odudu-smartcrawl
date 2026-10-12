@@ -6,7 +6,7 @@ import {
   previousSecretLine,
   rotationFailureText,
   rotateConsequence,
-} from '#/features/clients/service/secret.ts';
+} from '#/features/clients/service/secret';
 
 it('holds the grace to the week the server allows', () => {
   expect(GRACE_MAX).toBe(604_800);

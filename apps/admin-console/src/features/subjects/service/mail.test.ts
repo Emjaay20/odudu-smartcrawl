@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import type { GatewayFailure } from '#/shared/service/result.ts';
-import { actionsMailProblem } from '#/features/subjects/service/actions.ts';
+import type { GatewayFailure } from '#/shared/service/result';
+import { actionsMailProblem } from '#/features/subjects/service/actions';
 import {
   mailFailure,
   mailFieldErrors,
   mailOutcome,
   mailSentText,
   mailRefusal,
-} from '#/features/subjects/service/mail.ts';
+} from '#/features/subjects/service/mail';
 
 const failure = (kind: 'network' | 'schema' | 'defect'): GatewayFailure => ({ ok: false, kind });
 

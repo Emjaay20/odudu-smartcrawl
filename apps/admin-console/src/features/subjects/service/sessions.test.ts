@@ -5,7 +5,7 @@ import {
   consentRevokedText,
   sessionEndedText,
   sessionsEndedText,
-} from '#/features/subjects/service/sessions.ts';
+} from '#/features/subjects/service/sessions';
 
 describe('the toasts and groupings of sessions and grants', () => {
   it('says what ended or was revoked, counted', () => {

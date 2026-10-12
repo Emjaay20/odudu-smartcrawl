@@ -1,6 +1,6 @@
 import type { Client } from '@odudu/contracts/admin';
 import { useAuthority } from '#/features/session';
-import { useClientRecord } from '#/features/clients/repository/useClientRecord.ts';
+import { useClientRecord } from '#/features/clients/repository/useClientRecord';
 import {
   canChange,
   CLIENT_TABS,
@@ -13,11 +13,11 @@ import {
   type ClientTab,
   type Reach,
 } from '#/features/clients/service';
-import { useDirtySections } from '#/shared/repository/useDirtySections.ts';
-import { useRecordTab } from '#/shared/repository/useRecordTab.ts';
-import { lacking } from '#/shared/service/access.ts';
-import type { AdminCapability } from '#/shared/service/principal.ts';
-import type { RecordView } from '#/shared/service/record.ts';
+import { useDirtySections } from '#/shared/repository/useDirtySections';
+import { useRecordTab } from '#/shared/repository/useRecordTab';
+import { lacking } from '#/shared/service/access';
+import type { AdminCapability } from '#/shared/service/principal';
+import type { RecordView } from '#/shared/service/record';
 
 export interface ClientRecordPage {
   record: RecordView;

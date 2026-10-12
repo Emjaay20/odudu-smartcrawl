@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { writeRefusal } from '#/shared/service/capabilities/refusal.ts';
+import { writeRefusal } from '#/shared/service/capabilities/refusal';
 
 describe('writeRefusal', () => {
   const refused = (status: number, detail?: string, type = 'about:blank') => ({

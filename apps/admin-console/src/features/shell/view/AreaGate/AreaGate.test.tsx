@@ -1,8 +1,8 @@
 import { screen } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
-import { groupRoutes } from '#/testing/groupsFixtures.ts';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole.tsx';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
+import { groupRoutes } from '#/testing/groupsFixtures';
+import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
 
 afterEach(() => {
   resetConsole();

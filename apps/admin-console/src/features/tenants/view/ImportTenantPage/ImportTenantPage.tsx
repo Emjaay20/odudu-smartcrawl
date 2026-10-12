@@ -4,7 +4,7 @@ import { tenantsTrail } from '#/features/tenants/service';
 import {
   useImportTenantPage,
   type ImportTenantPage as ImportState,
-} from '#/features/tenants/usecase/useImportTenantPage.ts';
+} from '#/features/tenants/usecase/useImportTenantPage';
 import { SystemGate } from '#/features/tenants/view/SystemGate';
 import { Button } from '#/shared/view/Button';
 import { ButtonLink } from '#/shared/view/ButtonLink';

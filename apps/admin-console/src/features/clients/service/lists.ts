@@ -1,6 +1,6 @@
 export { CLIENT_LIST_LIMIT } from '@odudu/contracts/admin';
 
-import { andList } from '#/shared/service/format.ts';
+import { andList } from '#/shared/service/format';
 
 const COUNT = new Intl.NumberFormat('en');
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { useDirtySection } from '#/shared/repository/useDirtySection.ts';
-import { sectionKey } from '#/shared/service/record.ts';
-import { currentDrafts, type DraftFields, type KeptDraft } from '#/shared/repository/useDrafts.ts';
+import { useDirtySection } from '#/shared/repository/useDirtySection';
+import { sectionKey } from '#/shared/service/record';
+import { currentDrafts, type DraftFields, type KeptDraft } from '#/shared/repository/useDrafts';
 
 export interface SectionDraft {
   // Edits kept when a session ended, handed back once; the section applies

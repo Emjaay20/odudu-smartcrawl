@@ -6,8 +6,8 @@ import {
   type Client,
   type ClientTokenTtlField,
 } from '@odudu/contracts/admin';
-import { AUTO, type Choice } from '#/features/clients/service/choices.ts';
-import { formatDuration } from '#/shared/service/format.ts';
+import { AUTO, type Choice } from '#/features/clients/service/choices';
+import { formatDuration } from '#/shared/service/format';
 
 export interface Lifetime {
   field: ClientTokenTtlField;

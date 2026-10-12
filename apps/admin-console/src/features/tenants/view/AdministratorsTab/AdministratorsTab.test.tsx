@@ -1,10 +1,10 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
-import { json } from '#/testing/fakeTransport.ts';
-import { consoleAt, renderConsoleAt, resetConsole, whoami } from '#/testing/renderConsole.tsx';
-import { ADMIN, systemRoutes, tenant } from '#/testing/tenantsFixtures.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
+import { json } from '#/testing/fakeTransport';
+import { consoleAt, renderConsoleAt, resetConsole, whoami } from '#/testing/renderConsole';
+import { ADMIN, systemRoutes, tenant } from '#/testing/tenantsFixtures';
 
 afterEach(() => {
   resetConsole();

@@ -1,1 +1,1 @@
-export { Installation } from '#/features/clients/view/Installation/Installation.tsx';
+export { Installation } from '#/features/clients/view/Installation/Installation';

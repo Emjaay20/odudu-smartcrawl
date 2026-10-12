@@ -1,4 +1,4 @@
-import type { AdminCapability } from '#/shared/service/principal.ts';
+import type { AdminCapability } from '#/shared/service/principal';
 import { describe, expect, it } from 'vitest';
 import {
   keptRoles,
@@ -6,7 +6,7 @@ import {
   reachOfRoles,
   roleIndex,
   withKept,
-} from '#/features/groups/service/mapped.ts';
+} from '#/features/groups/service/mapped';
 
 function reach(...capabilities: AdminCapability[]): AdminCapability[] {
   return capabilities;

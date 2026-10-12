@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
-import { DialogFrame } from '#/shared/view/DialogFrame/DialogFrame.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { DialogFrame } from '#/shared/view/DialogFrame/DialogFrame';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 it('never closes on a press outside it', async () => {
   const user = userEvent.setup();

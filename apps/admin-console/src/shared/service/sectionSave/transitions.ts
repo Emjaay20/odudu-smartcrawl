@@ -1,6 +1,6 @@
-import type { Conflict } from '#/shared/service/conflict.ts';
-import { edit as editDraft, rebase, sameValue, type Values } from '#/shared/service/dirty.ts';
-import type { KeptDraft } from '#/shared/service/drafts.ts';
+import type { Conflict } from '#/shared/service/conflict';
+import { edit as editDraft, rebase, sameValue, type Values } from '#/shared/service/dirty';
+import type { KeptDraft } from '#/shared/service/drafts';
 import {
   BLOCKED_BY_CONFLICT,
   BLOCKED_GONE,
@@ -11,7 +11,7 @@ import {
   changedFrom,
   keysOf,
   withoutFields,
-} from '#/shared/service/sectionSave/state.ts';
+} from '#/shared/service/sectionSave/state';
 
 // A kept draft made against an older version cannot be rebased, since the
 // values it was made against are gone: every edit is then shown beside what

@@ -1,7 +1,7 @@
 import type { EffectiveRoleAssignment, Role } from '@odudu/contracts/admin';
 import { adminLoss, type Asked, type OwnAccessRead } from '#/shared/service/capabilities';
-import type { AdminCapability, Authority } from '#/shared/service/principal.ts';
-import { deleteBlock, isBuiltin } from '#/features/roles/service/blocks.ts';
+import type { AdminCapability, Authority } from '#/shared/service/principal';
+import { deleteBlock, isBuiltin } from '#/features/roles/service/blocks';
 
 export type RoleChange =
   { kind: 'delete'; id: string } | { kind: 'remove'; id: string; child: string };

@@ -13,7 +13,7 @@ import {
   useClientRolesTab,
   useRolesReadable,
   type ClientRoles,
-} from '#/features/clients/usecase/useClientRolesTab.ts';
+} from '#/features/clients/usecase/useClientRolesTab';
 import { Button } from '#/shared/view/Button';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';

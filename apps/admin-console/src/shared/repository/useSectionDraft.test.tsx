@@ -2,9 +2,9 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { useDrafts, type DraftFields } from '#/shared/repository/useDrafts.ts';
-import { useSectionDraft } from '#/shared/repository/useSectionDraft.ts';
-import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard.ts';
+import { useDrafts, type DraftFields } from '#/shared/repository/useDrafts';
+import { useSectionDraft } from '#/shared/repository/useSectionDraft';
+import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 import { TextField } from '#/shared/view/Field';
 import { Section } from '#/shared/view/Section';
 

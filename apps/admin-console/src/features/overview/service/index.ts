@@ -5,19 +5,19 @@ export {
   type DiscoveryView,
   rawJson,
   discoveryView,
-} from '#/features/overview/service/discovery.ts';
+} from '#/features/overview/service/discovery';
 export {
   type KeyLane,
   type PublishedKey,
   publishedKeys,
   type KeysView,
   keysView,
-} from '#/features/overview/service/keys.ts';
+} from '#/features/overview/service/keys';
 export {
   type AttentionItem,
   type AttentionInputs,
   needsAttention,
-} from '#/features/overview/service/attention.ts';
+} from '#/features/overview/service/attention';
 export {
   type Read,
   type Gated,
@@ -32,20 +32,20 @@ export {
   readCapability,
   overviewAsks,
   auditView,
-} from '#/features/overview/service/reads.ts';
+} from '#/features/overview/service/reads';
 export {
   type CountTile,
   type Place,
   type AreaOf,
   countTiles,
-} from '#/features/overview/service/tiles.ts';
+} from '#/features/overview/service/tiles';
 export {
   type AttentionLink,
   type AttentionState,
   type AttentionData,
   attentionState,
   isClear,
-} from '#/features/overview/service/state.ts';
+} from '#/features/overview/service/state';
 export {
   laneText,
   unreadableTitle,
@@ -53,4 +53,4 @@ export {
   countAgainLabel,
   openPlaceLabel,
   UNCHECKED_LEAD,
-} from '#/features/overview/service/panelText.ts';
+} from '#/features/overview/service/panelText';

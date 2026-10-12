@@ -14,12 +14,12 @@ import {
 import {
   useSubjectCredentials,
   type SubjectCredentials,
-} from '#/features/subjects/usecase/useSubjectCredentials.ts';
+} from '#/features/subjects/usecase/useSubjectCredentials';
 import {
   useSubjectMail,
   type MailOutcome,
   type SubjectMail,
-} from '#/features/subjects/usecase/useSubjectMail.ts';
+} from '#/features/subjects/usecase/useSubjectMail';
 import { Button } from '#/shared/view/Button';
 import { ChecklistField } from '#/shared/view/ChecklistField';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';

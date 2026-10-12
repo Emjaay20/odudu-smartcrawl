@@ -1,6 +1,6 @@
 import type { Role } from '@odudu/contracts/admin';
 import { AreaGate, areaAt } from '#/features/shell';
-import { useRolesList } from '#/features/roles/usecase/useRolesList.ts';
+import { useRolesList } from '#/features/roles/usecase/useRolesList';
 import { RoleOwner } from '#/shared/view/RoleOwner';
 import { Button } from '#/shared/view/Button';
 import { ButtonLink } from '#/shared/view/ButtonLink';

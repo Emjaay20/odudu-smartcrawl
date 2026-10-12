@@ -13,7 +13,7 @@ import {
   useServiceRoles,
   useServiceRolesRead,
   type ServiceRoles,
-} from '#/features/clients/usecase/useServiceAccount.ts';
+} from '#/features/clients/usecase/useServiceAccount';
 import { SaveSection } from '#/features/clients/view/SaveSection';
 import { Button } from '#/shared/view/Button';
 import { ButtonLink } from '#/shared/view/ButtonLink';

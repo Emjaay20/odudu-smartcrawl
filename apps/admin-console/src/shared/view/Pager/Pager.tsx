@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import { advance, canAdvance, retreat, type CursorTrail } from '#/shared/service/cursorTrail.ts';
+import { advance, canAdvance, retreat, type CursorTrail } from '#/shared/service/cursorTrail';
 import { Button } from '#/shared/view/Button';
 import styles from '#/shared/view/Pager/Pager.module.css';
 

@@ -1,1 +1,1 @@
-export { RailFooter } from '#/features/shell/view/RailFooter/RailFooter.tsx';
+export { RailFooter } from '#/features/shell/view/RailFooter/RailFooter';

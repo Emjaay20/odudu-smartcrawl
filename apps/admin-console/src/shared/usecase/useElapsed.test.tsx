@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { useElapsed } from '#/shared/usecase/useElapsed.ts';
+import { useElapsed } from '#/shared/usecase/useElapsed';
 
 beforeEach(() => {
   vi.useFakeTimers();

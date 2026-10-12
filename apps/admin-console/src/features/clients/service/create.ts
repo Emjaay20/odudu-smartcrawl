@@ -1,4 +1,4 @@
-import { requiredProblem } from '#/shared/service/fieldErrors.ts';
+import { requiredProblem } from '#/shared/service/fieldErrors';
 
 export type NewClientKind = 'confidential' | 'service' | 'public';
 

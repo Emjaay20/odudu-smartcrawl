@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useListPages, type ReadPage } from '#/shared/repository/useResourceList.ts';
-import type { PickerState } from '#/shared/service/picker.ts';
+import { useListPages, type ReadPage } from '#/shared/repository/useResourceList';
+import type { PickerState } from '#/shared/service/picker';
 
 // A picker's search is a prefix of one field, kept in its own state: the
 // page it sits on already owns the address.

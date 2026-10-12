@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
 import { SectionNoticeOf, type NoticeSave } from '#/shared/view/SectionNoticeOf';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 function save(over: Partial<NoticeSave>): NoticeSave {
   return {

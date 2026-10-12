@@ -9,12 +9,12 @@ import {
   scopesTrail,
   type ScopeTab,
 } from '#/features/scopes/service';
-import { useScopeActivity } from '#/features/scopes/usecase/useScopeActivity.ts';
-import { useScopeRecordPage } from '#/features/scopes/usecase/useScopeRecordPage.ts';
-import { ClientsTab } from '#/features/scopes/view/ScopeRecordPage/ClientsTab.tsx';
-import { GeneralTab } from '#/features/scopes/view/ScopeRecordPage/GeneralTab.tsx';
-import { MappersTab } from '#/features/scopes/view/ScopeRecordPage/MappersTab.tsx';
-import { RolesTab } from '#/features/scopes/view/ScopeRecordPage/RolesTab.tsx';
+import { useScopeActivity } from '#/features/scopes/usecase/useScopeActivity';
+import { useScopeRecordPage } from '#/features/scopes/usecase/useScopeRecordPage';
+import { ClientsTab } from '#/features/scopes/view/ScopeRecordPage/ClientsTab';
+import { GeneralTab } from '#/features/scopes/view/ScopeRecordPage/GeneralTab';
+import { MappersTab } from '#/features/scopes/view/ScopeRecordPage/MappersTab';
+import { RolesTab } from '#/features/scopes/view/ScopeRecordPage/RolesTab';
 import { ActivityTab } from '#/shared/view/ActivityTab';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';

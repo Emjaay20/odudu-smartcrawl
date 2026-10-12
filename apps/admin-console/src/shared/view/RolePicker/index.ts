@@ -1,1 +1,1 @@
-export * from '#/shared/view/RolePicker/RolePicker.tsx';
+export * from '#/shared/view/RolePicker/RolePicker';

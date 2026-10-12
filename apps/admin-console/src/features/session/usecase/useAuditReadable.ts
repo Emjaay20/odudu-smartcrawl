@@ -1,5 +1,5 @@
-import { useAuthority } from '#/features/session/usecase/useAuthority.ts';
-import { notLacking } from '#/shared/service/access.ts';
+import { useAuthority } from '#/features/session/usecase/useAuthority';
+import { notLacking } from '#/shared/service/access';
 
 // whoami is advice: a caller it says cannot read the audit trail is told so,
 // rather than sent a read the server would refuse.

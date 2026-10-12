@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { Platform } from '#/shared/service/platform.ts';
+import type { Platform } from '#/shared/service/platform';
 import css from '#/shared/view/KeyHint/KeyHint.module.css?raw';
-import { KeyHint, PlatformContext } from '#/shared/view/KeyHint/KeyHint.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { KeyHint, PlatformContext } from '#/shared/view/KeyHint/KeyHint';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 function on(platform: Platform, hint: React.ReactElement) {
   return <PlatformContext value={platform}>{hint}</PlatformContext>;

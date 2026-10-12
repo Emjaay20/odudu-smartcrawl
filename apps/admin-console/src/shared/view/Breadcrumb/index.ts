@@ -1,1 +1,1 @@
-export * from '#/shared/view/Breadcrumb/Breadcrumb.tsx';
+export * from '#/shared/view/Breadcrumb/Breadcrumb';

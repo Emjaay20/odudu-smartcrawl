@@ -8,7 +8,7 @@ import {
   roleUnavailableHere,
   heldLines,
   splitRoles,
-} from '#/features/subjects/service/roles.ts';
+} from '#/features/subjects/service/roles';
 
 describe('roles', () => {
   const assigned = (id: string, name: string, key: string | null) => ({

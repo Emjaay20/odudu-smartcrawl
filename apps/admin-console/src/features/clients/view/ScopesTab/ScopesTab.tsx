@@ -13,7 +13,7 @@ import {
 import {
   useClientScopeAssignment,
   type ClientScopes,
-} from '#/features/clients/usecase/useClientScopeAssignment.ts';
+} from '#/features/clients/usecase/useClientScopeAssignment';
 import { Evaluate } from '#/features/clients/view/Evaluate';
 import { Button } from '#/shared/view/Button';
 import { InlineFields, SelectField } from '#/shared/view/Field';

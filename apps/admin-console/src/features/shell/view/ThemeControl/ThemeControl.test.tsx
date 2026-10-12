@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
 import { ThemeControl } from '#/features/shell/view/ThemeControl';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 it('offers system, light and dark, with the current choice checked', async () => {
   const onChoose = vi.fn();

@@ -1,13 +1,13 @@
 import { use, useId } from 'react';
 import { Link } from 'react-aria-components';
-import { previewable, typingScheme, urlProblem } from '#/shared/service/profileUrl.ts';
+import { previewable, typingScheme, urlProblem } from '#/shared/service/profileUrl';
 import {
   FieldGroupIds,
   FieldsReadOnly,
   ReadOnlyValue,
   TextField,
   type Chrome,
-} from '#/shared/view/Field/Field.tsx';
+} from '#/shared/view/Field/Field';
 import styles from '#/shared/view/Field/Field.module.css';
 
 type UrlFieldProps = Chrome & {

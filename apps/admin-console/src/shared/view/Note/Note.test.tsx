@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
-import { Note, NoteCode } from '#/shared/view/Note/Note.tsx';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
+import { Note, NoteCode } from '#/shared/view/Note/Note';
 
 const note = (
   <main>

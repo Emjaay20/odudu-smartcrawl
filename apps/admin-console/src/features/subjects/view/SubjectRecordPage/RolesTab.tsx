@@ -4,11 +4,11 @@ import { roleOwnerOf } from '#/features/subjects/service';
 import {
   useCapabilityEditor,
   useSubjectRolesRead,
-} from '#/features/subjects/usecase/useCapabilities.ts';
-import { useSubjectRoles, type SubjectRoles } from '#/features/subjects/usecase/useSubjectRoles.ts';
-import { CapabilitySection } from '#/features/subjects/view/SubjectRecordPage/CapabilityEditor.tsx';
+} from '#/features/subjects/usecase/useCapabilities';
+import { useSubjectRoles, type SubjectRoles } from '#/features/subjects/usecase/useSubjectRoles';
+import { CapabilitySection } from '#/features/subjects/view/SubjectRecordPage/CapabilityEditor';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
-import { PagedList } from '#/features/subjects/view/SubjectRecordPage/SessionsTab.tsx';
+import { PagedList } from '#/features/subjects/view/SubjectRecordPage/SessionsTab';
 import { provenanceText } from '#/shared/service/capabilities';
 import { Button } from '#/shared/view/Button';
 import type { Column } from '#/shared/view/DataTable';

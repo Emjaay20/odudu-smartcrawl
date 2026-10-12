@@ -1,6 +1,6 @@
 import type { Locator, Page, Route } from '@playwright/test';
-import { expect, expectAccessible, signIn, test } from './fixtures.ts';
-import { psql, seeded } from './stack.ts';
+import { expect, expectAccessible, signIn, test } from './fixtures';
+import { psql, seeded } from './stack';
 
 const { subjects } = seeded();
 const { admin } = subjects;

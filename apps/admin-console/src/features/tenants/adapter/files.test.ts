@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { readFileText, saveFile } from '#/features/tenants/adapter/files.ts';
+import { readFileText, saveFile } from '#/features/tenants/adapter/files';
 
 afterEach(() => {
   vi.restoreAllMocks();

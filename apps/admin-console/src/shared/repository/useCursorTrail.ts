@@ -1,5 +1,5 @@
-import { useUrlSearch } from '#/shared/repository/useUrlSearch.ts';
-import { trailFromSearch, trailToSearch, type CursorTrail } from '#/shared/service/cursorTrail.ts';
+import { useUrlSearch } from '#/shared/repository/useUrlSearch';
+import { trailFromSearch, trailToSearch, type CursorTrail } from '#/shared/service/cursorTrail';
 
 export function useCursorTrail(): {
   trail: CursorTrail;

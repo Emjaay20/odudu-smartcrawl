@@ -1,5 +1,5 @@
 import type { Group, GroupRecord } from '@odudu/contracts/admin';
-import type { Crumb } from '#/shared/service/breadcrumb.ts';
+import type { Crumb } from '#/shared/service/breadcrumb';
 import { type Loss, type OwnAccess, type Asked } from '#/shared/service/capabilities';
 
 export type { Group, GroupRecord };

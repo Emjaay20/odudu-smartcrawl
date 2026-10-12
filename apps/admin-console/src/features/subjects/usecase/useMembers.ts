@@ -1,10 +1,10 @@
 import type { Subject } from '@odudu/contracts/admin';
 import { useAuthority } from '#/features/session';
-import { useGo } from '#/shared/repository/useGo.ts';
-import { useMemberList } from '#/features/subjects/repository/useMemberList.ts';
+import { useGo } from '#/shared/repository/useGo';
+import { useMemberList } from '#/features/subjects/repository/useMemberList';
 import { membersListHref, subjectHref } from '#/features/subjects/service';
-import { notLacking } from '#/shared/service/access.ts';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
+import { notLacking } from '#/shared/service/access';
+import type { ResourceListState } from '#/shared/service/resourceList';
 
 // whoami is advice: a caller it says cannot read subjects is told so, rather
 // than sent a read the server would refuse.

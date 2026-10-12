@@ -10,12 +10,12 @@ import {
   systemRecordHref,
   type RailSection,
 } from '#/features/shell/service';
-import { useDialogHost } from '#/shared/repository/useDialogHost.ts';
-import { useRailCollapsed } from '#/shared/repository/useRailCollapsed.ts';
-import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard.ts';
-import type { Principal } from '#/shared/service/principal.ts';
-import type { ThemeChoice } from '#/shared/service/theme.ts';
-import { useTheme } from '#/shared/repository/useTheme.ts';
+import { useDialogHost } from '#/shared/repository/useDialogHost';
+import { useRailCollapsed } from '#/shared/repository/useRailCollapsed';
+import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
+import type { Principal } from '#/shared/service/principal';
+import type { ThemeChoice } from '#/shared/service/theme';
+import { useTheme } from '#/shared/repository/useTheme';
 
 export interface Shell {
   groups: readonly RailSection[];

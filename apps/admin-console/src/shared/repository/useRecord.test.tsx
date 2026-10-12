@@ -3,10 +3,10 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { expect, it } from 'vitest';
 import { z } from 'zod';
-import { createQueryClient } from '#/shared/repository/queryClient.ts';
-import { recordKey, useRecord, type RecordEntry } from '#/shared/repository/useRecord.ts';
-import type { Gateway } from '#/shared/transport/gateway.ts';
-import { TransportContext } from '#/shared/transport/useTransport.ts';
+import { createQueryClient } from '#/shared/repository/queryClient';
+import { recordKey, useRecord, type RecordEntry } from '#/shared/repository/useRecord';
+import type { Gateway } from '#/shared/transport/gateway';
+import { TransportContext } from '#/shared/transport/useTransport';
 import {
   fakeTransport,
   inTurn,
@@ -14,7 +14,7 @@ import {
   offline,
   problem,
   type Answer,
-} from '#/testing/fakeTransport.ts';
+} from '#/testing/fakeTransport';
 
 const GET = 'GET /console/api/admin/tenants/acme/clients/c1';
 const schema = z.object({ name: z.string() });

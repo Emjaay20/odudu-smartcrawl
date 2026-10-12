@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
-import type { PickerState } from '#/shared/service/picker.ts';
+import type { PickerState } from '#/shared/service/picker';
 import pickerCss from '#/shared/view/Picker/Picker.module.css?raw';
-import { Picker } from '#/shared/view/Picker/Picker.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { Picker } from '#/shared/view/Picker/Picker';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 interface Scope {
   id: string;

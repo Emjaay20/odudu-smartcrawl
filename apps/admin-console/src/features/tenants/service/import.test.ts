@@ -4,7 +4,7 @@ import {
   chosenFileOf,
   fileChosenProblem,
   fileRequiredProblem,
-} from '#/features/tenants/service/document.ts';
+} from '#/features/tenants/service/document';
 import {
   foundOf,
   importedLink,
@@ -16,7 +16,7 @@ import {
   importUnconfirmed,
   secretPlace,
   type ImportOutcome,
-} from '#/features/tenants/service/import.ts';
+} from '#/features/tenants/service/import';
 
 describe('the import page', () => {
   const TENANT = { name: 'acme' } as never;

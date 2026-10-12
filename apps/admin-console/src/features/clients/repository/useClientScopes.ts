@@ -1,12 +1,12 @@
 import type { AssignScopeToClientResponse, ClientScope } from '@odudu/contracts/admin';
 import { useMutation } from '@tanstack/react-query';
-import { assignScope, unassignScope } from '#/features/clients/adapter/scopes.ts';
-import { useRereadClient } from '#/features/clients/repository/useClientRecord.ts';
-import { readScopePage } from '#/shared/adapter/directory.ts';
-import { usePicker } from '#/shared/repository/usePicker.ts';
-import type { PickerState } from '#/shared/service/picker.ts';
-import type { GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { assignScope, unassignScope } from '#/features/clients/adapter/scopes';
+import { useRereadClient } from '#/features/clients/repository/useClientRecord';
+import { readScopePage } from '#/shared/adapter/directory';
+import { usePicker } from '#/shared/repository/usePicker';
+import type { PickerState } from '#/shared/service/picker';
+import type { GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 // The tenant's scopes, searched by name on the server a page at a time.
 export function useScopePicker(tenant: string): PickerState<ClientScope> {

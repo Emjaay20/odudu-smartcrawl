@@ -11,7 +11,7 @@ export {
   holdingRoleIds,
   isAdminRole,
   includedBy,
-} from '#/shared/service/capabilities/holdings.ts';
+} from '#/shared/service/capabilities/holdings';
 export {
   provenanceText,
   type Held,
@@ -24,8 +24,8 @@ export {
   holdingNote,
   type HoldingOption,
   holdingOptions,
-} from '#/shared/service/capabilities/held.ts';
-export { writeRefusal } from '#/shared/service/capabilities/refusal.ts';
+} from '#/shared/service/capabilities/held';
+export { writeRefusal } from '#/shared/service/capabilities/refusal';
 export {
   adminLoss,
   type OwnAccess,
@@ -37,4 +37,4 @@ export {
   lossText,
   asksFirst,
   lossBlocked,
-} from '#/shared/service/capabilities/loss.ts';
+} from '#/shared/service/capabilities/loss';

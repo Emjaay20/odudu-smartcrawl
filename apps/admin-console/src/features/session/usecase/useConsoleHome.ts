@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
-import { rememberedTenant } from '#/features/session/repository/useSessionQuery.ts';
+import { rememberedTenant } from '#/features/session/repository/useSessionQuery';
 import {
   CHOOSE_TENANT,
   entersDirectly,
@@ -15,10 +15,10 @@ import {
   tenantProblem,
   type Principal,
 } from '#/features/session/service';
-import { useSignedIn } from '#/features/session/usecase/useSignedIn.ts';
-import { useSignIn } from '#/features/session/usecase/useSignIn.ts';
-import { useToasts } from '#/shared/repository/useToasts.ts';
-import { useUrlSearch } from '#/shared/repository/useUrlSearch.ts';
+import { useSignedIn } from '#/features/session/usecase/useSignedIn';
+import { useSignIn } from '#/features/session/usecase/useSignIn';
+import { useToasts } from '#/shared/repository/useToasts';
+import { useUrlSearch } from '#/shared/repository/useUrlSearch';
 
 export type Home =
   | { kind: 'leaving'; tenant: string | null }

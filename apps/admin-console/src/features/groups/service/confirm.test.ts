@@ -4,7 +4,7 @@ import {
   moveConfirmation,
   rolesConfirmation,
   subtreeDeletedText,
-} from '#/features/groups/service/confirm.ts';
+} from '#/features/groups/service/confirm';
 
 describe('what a group write asks first', () => {
   const certain = { kind: 'certain', lost: ['view-audit'] } as const;

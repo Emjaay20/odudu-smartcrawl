@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseSearch, stringifySearch } from '#/shared/service/search.ts';
+import { parseSearch, stringifySearch } from '#/shared/service/search';
 
 describe('the URL search the console writes', () => {
   it('reads a repeated parameter as a list, and a single one as a string', () => {

@@ -1,6 +1,6 @@
-import { useDialogHost } from '#/shared/repository/useDialogHost.ts';
-import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard.ts';
-import { DialogPresence } from '#/shared/view/dialogPresence.ts';
+import { useDialogHost } from '#/shared/repository/useDialogHost';
+import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
+import { DialogPresence } from '#/shared/view/dialogPresence';
 import { UnsavedChangesDialog } from '#/shared/view/UnsavedChangesDialog';
 
 const UNCOUNTED = () => () => undefined;

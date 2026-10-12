@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
-import { readSession } from '#/features/session/adapter/session.ts';
-import { loadLastTenant, storeLastTenant } from '#/features/session/adapter/lastTenant.ts';
+import { readSession } from '#/features/session/adapter/session';
+import { loadLastTenant, storeLastTenant } from '#/features/session/adapter/lastTenant';
 import {
   draftOwner,
   isReplacement,
@@ -11,11 +11,11 @@ import {
   type Principal,
   type SessionRead,
 } from '#/features/session/service';
-import { useDrafts } from '#/shared/repository/useDrafts.ts';
-import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard.ts';
-import type { Gateway } from '#/shared/transport/gateway.ts';
-import type { SessionEvents } from '#/shared/service/sessionEvents.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { useDrafts } from '#/shared/repository/useDrafts';
+import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
+import type { Gateway } from '#/shared/transport/gateway';
+import type { SessionEvents } from '#/shared/service/sessionEvents';
+import { useTransport } from '#/shared/transport/useTransport';
 
 const KEY = ['session'] as const;
 

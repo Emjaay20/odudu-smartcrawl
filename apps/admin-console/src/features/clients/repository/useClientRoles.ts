@@ -1,11 +1,11 @@
 import type { Role } from '@odudu/contracts/admin';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createClientRole } from '#/features/clients/adapter/clients.ts';
-import { readRoleCount, readRolePage } from '#/shared/adapter/directory.ts';
-import { useResourceList } from '#/shared/repository/useResourceList.ts';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
-import type { GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { createClientRole } from '#/features/clients/adapter/clients';
+import { readRoleCount, readRolePage } from '#/shared/adapter/directory';
+import { useResourceList } from '#/shared/repository/useResourceList';
+import type { ResourceListState } from '#/shared/service/resourceList';
+import type { GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 // The roles the client owns, a page at a time and counted, whatever the tenant holds.
 export function useClientRoleList(tenant: string, clientDbId: string): ResourceListState<Role> {

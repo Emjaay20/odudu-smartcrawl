@@ -1,8 +1,8 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
-import { DataTable, type Column } from '#/shared/view/DataTable/DataTable.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { DataTable, type Column } from '#/shared/view/DataTable/DataTable';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 interface Client {
   id: string;

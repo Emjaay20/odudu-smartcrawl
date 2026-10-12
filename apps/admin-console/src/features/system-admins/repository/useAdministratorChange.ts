@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { grantHoldings, type Refused } from '#/shared/repository/administratorRoles.ts';
-import { SYSTEM_TENANT } from '#/shared/service/principal.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { grantHoldings, type Refused } from '#/shared/repository/administratorRoles';
+import { SYSTEM_TENANT } from '#/shared/service/principal';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export interface AdministratorGrant {
   busy: boolean;

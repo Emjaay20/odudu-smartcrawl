@@ -1,1 +1,1 @@
-export * from '#/shared/view/UnsavedChangesDialog/UnsavedChangesDialog.tsx';
+export * from '#/shared/view/UnsavedChangesDialog/UnsavedChangesDialog';

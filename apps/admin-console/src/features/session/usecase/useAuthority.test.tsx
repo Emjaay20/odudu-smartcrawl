@@ -3,12 +3,12 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { useRefusal } from '#/features/session/usecase/useAuthority.ts';
-import { SignedInContext } from '#/features/session/usecase/useSignedIn.ts';
-import { createQueryClient } from '#/shared/repository/queryClient.ts';
-import { useTransport, TransportContext } from '#/shared/transport/useTransport.ts';
+import { useRefusal } from '#/features/session/usecase/useAuthority';
+import { SignedInContext } from '#/features/session/usecase/useSignedIn';
+import { createQueryClient } from '#/shared/repository/queryClient';
+import { useTransport, TransportContext } from '#/shared/transport/useTransport';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
-import { fakeTransport, json, problem } from '#/testing/fakeTransport.ts';
+import { fakeTransport, json, problem } from '#/testing/fakeTransport';
 
 const WHOAMI = 'GET /console/api/admin/tenants/acme/whoami';
 const GRACE = { tenant: 'acme', subjectId: 's1', username: 'grace' };

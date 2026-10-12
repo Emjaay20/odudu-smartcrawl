@@ -1,4 +1,4 @@
-import { type AdminCapability } from '#/shared/service/principal.ts';
+import { type AdminCapability } from '#/shared/service/principal';
 
 export interface Area {
   path: string;

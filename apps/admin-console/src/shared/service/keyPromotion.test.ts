@@ -4,7 +4,7 @@ import {
   LONGEST_TOKEN_LIFETIME_SECONDS,
   promotableAt,
   readyToPromote,
-} from '#/shared/service/keyPromotion.ts';
+} from '#/shared/service/keyPromotion';
 
 const NOW = new Date('2026-09-29T12:00:00Z');
 

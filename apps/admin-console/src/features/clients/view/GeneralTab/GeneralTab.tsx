@@ -11,7 +11,7 @@ import {
   useClientGeneral,
   type ClientGeneral,
   type Deletion,
-} from '#/features/clients/usecase/useClientGeneral.ts';
+} from '#/features/clients/usecase/useClientGeneral';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';

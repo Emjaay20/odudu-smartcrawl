@@ -1,1 +1,1 @@
-export * from '#/shared/view/ResourceListPage/ResourceListPage.tsx';
+export * from '#/shared/view/ResourceListPage/ResourceListPage';

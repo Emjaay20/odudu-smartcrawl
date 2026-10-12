@@ -4,8 +4,8 @@ import {
   useGroupRolesRead,
   type GroupRoles,
   type Mapped,
-} from '#/features/groups/usecase/useGroupRoles.ts';
-import type { Ceiling } from '#/features/groups/usecase/useGroupRecordPage.ts';
+} from '#/features/groups/usecase/useGroupRoles';
+import type { Ceiling } from '#/features/groups/usecase/useGroupRecordPage';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';

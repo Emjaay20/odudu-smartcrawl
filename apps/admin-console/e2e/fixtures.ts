@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test as base, type Page } from '@playwright/test';
-import type { Account } from './stack.ts';
+import type { Account } from './stack';
 
 // Reported by the browser for the one request the console expects to be
 // refused: it reads its session to learn that it has none. The console only

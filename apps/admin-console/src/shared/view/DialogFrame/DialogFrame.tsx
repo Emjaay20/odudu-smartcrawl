@@ -1,6 +1,6 @@
 import { useContext, useEffect, useId, type ReactNode } from 'react';
 import { Dialog, Heading, Modal, ModalOverlay } from 'react-aria-components';
-import { DialogPresence } from '#/shared/view/dialogPresence.ts';
+import { DialogPresence } from '#/shared/view/dialogPresence';
 import styles from '#/shared/view/DialogFrame/DialogFrame.module.css';
 
 // The one dialog layer: a dialog only stops you, so it never closes on an

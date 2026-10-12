@@ -1,11 +1,11 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
-import { json, offline, problem } from '#/testing/fakeTransport.ts';
-import { AUDITOR, R, READER, roleRoutes } from '#/testing/rolesFixtures.ts';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole.tsx';
-import { role } from '#/testing/subjectsFixtures.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
+import { json, offline, problem } from '#/testing/fakeTransport';
+import { AUDITOR, R, READER, roleRoutes } from '#/testing/rolesFixtures';
+import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { role } from '#/testing/subjectsFixtures';
 
 afterEach(() => {
   resetConsole();

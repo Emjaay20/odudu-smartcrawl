@@ -1,11 +1,11 @@
 import type { Client } from '@odudu/contracts/admin';
-import { createClient, findClient, type NewClient } from '#/features/clients/adapter/clients.ts';
-import { useAfterClientChange } from '#/features/clients/repository/useClientRecord.ts';
+import { createClient, findClient, type NewClient } from '#/features/clients/adapter/clients';
+import { useAfterClientChange } from '#/features/clients/repository/useClientRecord';
 import { splitSecret } from '#/features/clients/service';
-import { useFreshRead } from '#/shared/repository/useFreshRead.ts';
-import { useSecretOnce, type SecretOnce } from '#/shared/repository/useSecretOnce.ts';
-import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { useFreshRead } from '#/shared/repository/useFreshRead';
+import { useSecretOnce, type SecretOnce } from '#/shared/repository/useSecretOnce';
+import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export interface CreateClient {
   // Creating, or looking for a client whose creation was not confirmed.

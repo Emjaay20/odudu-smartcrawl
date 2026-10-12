@@ -1,6 +1,6 @@
-import { type Principal } from '#/shared/service/principal.ts';
-import type { GatewayResult, Problem } from '#/shared/service/result.ts';
-import { SESSION_ENDED_TYPE, isSessionEnded } from '#/shared/service/sessionEnded.ts';
+import { type Principal } from '#/shared/service/principal';
+import type { GatewayResult, Problem } from '#/shared/service/result';
+import { SESSION_ENDED_TYPE, isSessionEnded } from '#/shared/service/sessionEnded';
 
 export function draftOwner(principal: Principal): string {
   return `${principal.tenant}/${principal.subjectId}`;

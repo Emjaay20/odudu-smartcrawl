@@ -3,9 +3,9 @@ export {
   subjectName,
   pickerUnavailable,
   choosable,
-} from '#/features/system-admins/service/picker.ts';
+} from '#/features/system-admins/service/picker';
 export {
   type AdministratorsAccess,
   administratorsAccess,
-} from '#/features/system-admins/service/access.ts';
-export { grantFailureText, grantedText } from '#/features/system-admins/service/grant.ts';
+} from '#/features/system-admins/service/access';
+export { grantFailureText, grantedText } from '#/features/system-admins/service/grant';

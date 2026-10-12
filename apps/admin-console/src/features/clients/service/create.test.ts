@@ -8,7 +8,7 @@ import {
   newClientKind,
   secretTitle,
   splitSecret,
-} from '#/features/clients/service/create.ts';
+} from '#/features/clients/service/create';
 
 it('offers a web application, a service and a public client, saying which holds a secret', () => {
   expect(KIND_CHOICES.map((choice) => choice.id)).toEqual(['confidential', 'service', 'public']);

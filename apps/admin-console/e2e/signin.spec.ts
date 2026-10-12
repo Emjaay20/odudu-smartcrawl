@@ -7,8 +7,8 @@ import {
   signIn,
   signInAtTenant,
   test,
-} from './fixtures.ts';
-import { psql, seeded, type Account } from './stack.ts';
+} from './fixtures';
+import { psql, seeded, type Account } from './stack';
 
 const { admin, expiring, forced, other, system } = seeded();
 

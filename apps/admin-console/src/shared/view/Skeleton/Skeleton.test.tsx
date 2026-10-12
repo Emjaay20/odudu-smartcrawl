@@ -9,9 +9,9 @@ import {
   SkeletonBar,
   TableSkeleton,
   TermsSkeleton,
-} from '#/shared/view/Skeleton/Skeleton.tsx';
+} from '#/shared/view/Skeleton/Skeleton';
 import css from '#/shared/view/Skeleton/Skeleton.module.css?raw';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 const COLUMNS = [
   { header: 'Name' },

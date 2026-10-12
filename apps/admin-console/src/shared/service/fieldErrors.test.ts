@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { fieldErrorsOf, requiredProblem, withoutField } from '#/shared/service/fieldErrors.ts';
+import { fieldErrorsOf, requiredProblem, withoutField } from '#/shared/service/fieldErrors';
 
 const FIELDS = ['name', 'redirect_uris', 'access_token_ttl'] as const;
 

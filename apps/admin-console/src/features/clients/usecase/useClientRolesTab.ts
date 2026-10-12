@@ -5,7 +5,7 @@ import { useAuthority, useRefusal } from '#/features/session';
 import {
   useClientRoleList,
   useCreateClientRole,
-} from '#/features/clients/repository/useClientRoles.ts';
+} from '#/features/clients/repository/useClientRoles';
 import {
   clientRolesListHref,
   DESCRIPTION_MAX,
@@ -15,14 +15,14 @@ import {
   ROLES_CAPABILITY,
   rolesReadable,
 } from '#/features/clients/service';
-import { useGo } from '#/shared/repository/useGo.ts';
-import { useToasts } from '#/shared/repository/useToasts.ts';
-import { lacking } from '#/shared/service/access.ts';
-import { createdText, createFailure } from '#/shared/service/failure.ts';
-import { requiredProblem, withoutField } from '#/shared/service/fieldErrors.ts';
-import type { AdminCapability } from '#/shared/service/principal.ts';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
-import type { GatewayFailure } from '#/shared/transport/gateway.ts';
+import { useGo } from '#/shared/repository/useGo';
+import { useToasts } from '#/shared/repository/useToasts';
+import { lacking } from '#/shared/service/access';
+import { createdText, createFailure } from '#/shared/service/failure';
+import { requiredProblem, withoutField } from '#/shared/service/fieldErrors';
+import type { AdminCapability } from '#/shared/service/principal';
+import type { ResourceListState } from '#/shared/service/resourceList';
+import type { GatewayFailure } from '#/shared/transport/gateway';
 
 type Field = 'name' | 'description';
 type Errors = Partial<Record<Field, string>>;

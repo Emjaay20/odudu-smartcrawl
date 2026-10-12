@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Area } from '#/features/shell/service';
-import { useArea } from '#/features/shell/usecase/useArea.ts';
+import { useArea } from '#/features/shell/usecase/useArea';
 import { PageNotFound } from '#/features/shell/view/PageNotFound';
 import type { Crumb } from '#/shared/view/Breadcrumb';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';

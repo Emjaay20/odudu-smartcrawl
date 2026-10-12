@@ -1,1 +1,1 @@
-export * from '#/shared/view/AppShell/AppShell.tsx';
+export * from '#/shared/view/AppShell/AppShell';

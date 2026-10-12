@@ -10,7 +10,7 @@ export {
   subjectName,
   createSubjectHref,
   membersListHref,
-} from '#/features/subjects/service/address.ts';
+} from '#/features/subjects/service/address';
 export {
   USERNAME_RULE_TEXT,
   usernameProblem,
@@ -19,7 +19,7 @@ export {
   subjectWriteFailure,
   type UsernameMode,
   usernameMode,
-} from '#/features/subjects/service/account.ts';
+} from '#/features/subjects/service/account';
 export {
   type ClaimInput,
   type ClaimField,
@@ -30,7 +30,7 @@ export {
   type ProfileSection,
   claimFields,
   verificationFields,
-} from '#/features/subjects/service/claims.ts';
+} from '#/features/subjects/service/claims';
 export {
   type Credentials,
   credentialsOf,
@@ -47,7 +47,7 @@ export {
   credentialDialog,
   credentialDialogOf,
   recoveryCodesText,
-} from '#/features/subjects/service/credentials.ts';
+} from '#/features/subjects/service/credentials';
 export {
   SUBJECT_TABS,
   type SubjectTab,
@@ -59,13 +59,13 @@ export {
   rolesRecord,
   actionsRecord,
   TAB_RECORDS,
-} from '#/features/subjects/service/tabs.ts';
+} from '#/features/subjects/service/tabs';
 export {
   REQUIRED_ACTIONS,
   requiredActionsInOrder,
   describeActions,
   actionsMailProblem,
-} from '#/features/subjects/service/actions.ts';
+} from '#/features/subjects/service/actions';
 export {
   type SplitRoles,
   splitRoles,
@@ -79,7 +79,7 @@ export {
   roleUnavailableHere,
   roleOwnerOf,
   roleIdsOf,
-} from '#/features/subjects/service/roles.ts';
+} from '#/features/subjects/service/roles';
 export {
   type MailRefusal,
   mailRefusal,
@@ -89,14 +89,14 @@ export {
   mailFieldErrors,
   mailFailure,
   mailSentText,
-} from '#/features/subjects/service/mail.ts';
+} from '#/features/subjects/service/mail';
 export {
   accessRefusal,
   type Confirmation,
   removalConfirmation,
   onlyHolderText,
   changeFailureText,
-} from '#/features/subjects/service/access.ts';
+} from '#/features/subjects/service/access';
 export {
   takesTenants,
   type Membership,
@@ -104,13 +104,13 @@ export {
   leftGroups,
   leaveConfirmation,
   groupsRemoveTenants,
-} from '#/features/subjects/service/memberships.ts';
+} from '#/features/subjects/service/memberships';
 export {
   type Loaded,
   subjectCreatedText,
   newSubjectSpec,
   manageUsersRefusal,
-} from '#/features/subjects/service/create.ts';
+} from '#/features/subjects/service/create';
 export {
   sessionEndedText,
   sessionsEndedText,
@@ -118,14 +118,14 @@ export {
   grantsRevokedText,
   type GrantClient,
   grantClients,
-} from '#/features/subjects/service/sessions.ts';
+} from '#/features/subjects/service/sessions';
 export {
   heldOf,
   subjectBeyond,
   canManageSubject,
   reachOf,
   beyondText,
-} from '#/features/subjects/service/reach.ts';
+} from '#/features/subjects/service/reach';
 export {
   keptOtherwise,
   capabilitiesRemoveTenants,
@@ -138,4 +138,4 @@ export {
   adminRolesBlocked,
   reachesEveryTenant,
   holderFilterOptions,
-} from '#/features/subjects/service/holdings.ts';
+} from '#/features/subjects/service/holdings';

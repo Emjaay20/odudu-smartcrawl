@@ -9,7 +9,7 @@ import {
   formatDuration,
   formatRelative,
   sentence,
-} from '#/shared/service/format.ts';
+} from '#/shared/service/format';
 
 describe('formatDuration', () => {
   it.each([

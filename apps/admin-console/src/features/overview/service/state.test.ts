@@ -1,10 +1,10 @@
 import type { Settings, SigningKey, SmtpConfig } from '@odudu/contracts/admin';
 import { describe, expect, it } from 'vitest';
-import type { AdminCapability, Authority } from '#/shared/service/principal.ts';
-import { attentionState, isClear } from '#/features/overview/service/state.ts';
-import { type AttentionInputs } from '#/features/overview/service/attention.ts';
-import { type AreaOf } from '#/features/overview/service/tiles.ts';
-import { type OverviewReads, type Read } from '#/features/overview/service/reads.ts';
+import type { AdminCapability, Authority } from '#/shared/service/principal';
+import { attentionState, isClear } from '#/features/overview/service/state';
+import { type AttentionInputs } from '#/features/overview/service/attention';
+import { type AreaOf } from '#/features/overview/service/tiles';
+import { type OverviewReads, type Read } from '#/features/overview/service/reads';
 
 const KEYS: readonly SigningKey[] = [
   {

@@ -1,8 +1,8 @@
 import { render, screen, within } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { ContextBar } from '#/shared/view/ContextBar/ContextBar.tsx';
+import { ContextBar } from '#/shared/view/ContextBar/ContextBar';
 import css from '#/shared/view/ContextBar/ContextBar.module.css?raw';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 const BACK = '/console/system/tenants/acme';
 

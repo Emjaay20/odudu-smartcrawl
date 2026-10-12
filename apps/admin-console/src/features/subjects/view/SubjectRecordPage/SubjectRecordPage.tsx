@@ -7,16 +7,16 @@ import {
   type Subject,
   type SubjectTab,
 } from '#/features/subjects/service';
-import { useSubjectRecordPage } from '#/features/subjects/usecase/useSubjectRecordPage.ts';
-import { ActivityPanel } from '#/features/subjects/view/SubjectRecordPage/ActivityPanel.tsx';
-import { ConsentsTab } from '#/features/subjects/view/SubjectRecordPage/ConsentsTab.tsx';
-import { GrantsTab } from '#/features/subjects/view/SubjectRecordPage/GrantsTab.tsx';
-import { SessionsTab } from '#/features/subjects/view/SubjectRecordPage/SessionsTab.tsx';
-import { CredentialsTab } from '#/features/subjects/view/SubjectRecordPage/CredentialsTab.tsx';
-import { GroupsTab } from '#/features/subjects/view/SubjectRecordPage/GroupsTab.tsx';
-import { RequiredActionsTab } from '#/features/subjects/view/SubjectRecordPage/RequiredActionsTab.tsx';
-import { RolesTab } from '#/features/subjects/view/SubjectRecordPage/RolesTab.tsx';
-import { ProfileTab } from '#/features/subjects/view/SubjectRecordPage/ProfileTab.tsx';
+import { useSubjectRecordPage } from '#/features/subjects/usecase/useSubjectRecordPage';
+import { ActivityPanel } from '#/features/subjects/view/SubjectRecordPage/ActivityPanel';
+import { ConsentsTab } from '#/features/subjects/view/SubjectRecordPage/ConsentsTab';
+import { GrantsTab } from '#/features/subjects/view/SubjectRecordPage/GrantsTab';
+import { SessionsTab } from '#/features/subjects/view/SubjectRecordPage/SessionsTab';
+import { CredentialsTab } from '#/features/subjects/view/SubjectRecordPage/CredentialsTab';
+import { GroupsTab } from '#/features/subjects/view/SubjectRecordPage/GroupsTab';
+import { RequiredActionsTab } from '#/features/subjects/view/SubjectRecordPage/RequiredActionsTab';
+import { RolesTab } from '#/features/subjects/view/SubjectRecordPage/RolesTab';
+import { ProfileTab } from '#/features/subjects/view/SubjectRecordPage/ProfileTab';
 import { SubjectsGate } from '#/features/subjects/view/SubjectsGate';
 import { RecordPage } from '#/shared/view/RecordPage';
 import { StatusTag } from '#/shared/view/StatusTag';

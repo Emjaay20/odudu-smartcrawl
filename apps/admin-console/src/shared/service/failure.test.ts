@@ -12,8 +12,8 @@ import {
   writeFailureText,
   type CreateSpec,
   type WriteCopy,
-} from '#/shared/service/failure.ts';
-import type { GatewayFailure, GatewayResult } from '#/shared/service/result.ts';
+} from '#/shared/service/failure';
+import type { GatewayFailure, GatewayResult } from '#/shared/service/result';
 
 function problem(status: number, extra: { detail?: string; type?: string } = {}): GatewayFailure {
   return {

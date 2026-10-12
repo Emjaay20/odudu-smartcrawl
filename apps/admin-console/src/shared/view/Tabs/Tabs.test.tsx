@@ -2,8 +2,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
 import tabsCss from '#/shared/view/Tabs/Tabs.module.css?raw';
-import { Tabs } from '#/shared/view/Tabs/Tabs.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { Tabs } from '#/shared/view/Tabs/Tabs';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 const TABS = [
   { id: 'general', label: 'General', panel: <p>General settings</p> },

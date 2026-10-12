@@ -1,1 +1,1 @@
-export { refusal } from '#/features/groups/service/blocks.ts';
+export { refusal } from '#/features/groups/service/blocks';

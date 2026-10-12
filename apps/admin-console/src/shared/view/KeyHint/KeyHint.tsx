@@ -6,7 +6,7 @@ import {
   type Key,
   type KeyLabel,
   type Platform,
-} from '#/shared/service/platform.ts';
+} from '#/shared/service/platform';
 import styles from '#/shared/view/KeyHint/KeyHint.module.css';
 
 // Set once for the page; a test names the platform it draws for.

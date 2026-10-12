@@ -5,7 +5,7 @@ import {
   type AdministratorStep,
   type DoneStep,
   type TenantStep,
-} from '#/features/tenants/usecase/useNewTenant.ts';
+} from '#/features/tenants/usecase/useNewTenant';
 import {
   ADD_SYSTEM_ADMIN_TITLE,
   CREATE_TENANT_TITLE,
@@ -18,7 +18,7 @@ import {
   tenantsTrail,
   type CreationFlow,
 } from '#/features/tenants/service';
-import { useAdministratorTitle } from '#/features/tenants/usecase/useAdministratorTitle.ts';
+import { useAdministratorTitle } from '#/features/tenants/usecase/useAdministratorTitle';
 import { ReplaceUnfinished } from '#/features/tenants/view/ReplaceUnfinished';
 import { SystemGate } from '#/features/tenants/view/SystemGate';
 import { Button } from '#/shared/view/Button';

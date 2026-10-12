@@ -1,5 +1,5 @@
 import type { Role } from '@odudu/contracts/admin';
-import type { Crumb } from '#/shared/service/breadcrumb.ts';
+import type { Crumb } from '#/shared/service/breadcrumb';
 
 export type { Role };
 

@@ -2,13 +2,13 @@ import type { Role } from '@odudu/contracts/admin';
 import { useState } from 'react';
 import { useRefusal, useRereadAuthority } from '#/features/session';
 import { useOwnRoles } from '#/features/subjects';
-import { useGo } from '#/shared/repository/useGo.ts';
+import { useGo } from '#/shared/repository/useGo';
 import {
   useRoleDeletion,
   useRoleSaves,
   type DefaultValues,
   type DescriptionValues,
-} from '#/features/roles/repository/useRoleRecord.ts';
+} from '#/features/roles/repository/useRoleRecord';
 import {
   type Ceiling,
   defaultBlock,
@@ -25,12 +25,12 @@ import {
   roleSelfLoss,
   rolesHref,
 } from '#/features/roles/service';
-import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave.ts';
-import { useToasts } from '#/shared/repository/useToasts.ts';
+import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
+import { useToasts } from '#/shared/repository/useToasts';
 import { asksFirst, judgedLoss, writeRefusal } from '#/shared/service/capabilities';
-import { deletedText } from '#/shared/service/failure.ts';
-import { flagText } from '#/shared/service/format.ts';
-import type { GatewayFailure } from '#/shared/transport/gateway.ts';
+import { deletedText } from '#/shared/service/failure';
+import { flagText } from '#/shared/service/format';
+import type { GatewayFailure } from '#/shared/transport/gateway';
 
 export type { SectionSave };
 

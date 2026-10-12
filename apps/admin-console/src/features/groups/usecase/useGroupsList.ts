@@ -1,9 +1,9 @@
 import type { Group } from '@odudu/contracts/admin';
 import { useState } from 'react';
-import { useGo } from '#/shared/repository/useGo.ts';
-import { useGroupChildren, useGroupList } from '#/features/groups/repository/useGroupList.ts';
+import { useGo } from '#/shared/repository/useGo';
+import { useGroupChildren, useGroupList } from '#/features/groups/repository/useGroupList';
 import { groupHref, newGroupHref } from '#/features/groups/service';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
+import type { ResourceListState } from '#/shared/service/resourceList';
 
 export interface GroupsList {
   list: ResourceListState<Group>;

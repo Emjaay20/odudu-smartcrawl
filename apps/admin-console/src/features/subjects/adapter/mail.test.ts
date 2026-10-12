@@ -4,8 +4,8 @@ import {
   sendMail,
   sendPasswordReset,
   sendVerification,
-} from '#/features/subjects/adapter/mail.ts';
-import { fakeTransport } from '#/testing/fakeTransport.ts';
+} from '#/features/subjects/adapter/mail';
+import { fakeTransport } from '#/testing/fakeTransport';
 
 const S = '/console/api/admin/tenants/acme/subjects/s1';
 const accepted = () => () => new Response(null, { status: 202 });

@@ -1,1 +1,1 @@
-export { AdministratorsTab } from '#/features/tenants/view/AdministratorsTab/AdministratorsTab.tsx';
+export { AdministratorsTab } from '#/features/tenants/view/AdministratorsTab/AdministratorsTab';

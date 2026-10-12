@@ -1,8 +1,8 @@
 import type { ClientScope, SetScopeRolesResponse } from '@odudu/contracts/admin';
-import { andList } from '#/shared/service/format.ts';
-import type { AdminCapability } from '#/shared/service/principal.ts';
-import { scopeHref, scopesHref } from '#/features/scopes/service/address.ts';
-import { scopeRoleUnavailable } from '#/features/scopes/service/roles.ts';
+import { andList } from '#/shared/service/format';
+import type { AdminCapability } from '#/shared/service/principal';
+import { scopeHref, scopesHref } from '#/features/scopes/service/address';
+import { scopeRoleUnavailable } from '#/features/scopes/service/roles';
 
 type MappedRole = SetScopeRolesResponse['items'][number];
 

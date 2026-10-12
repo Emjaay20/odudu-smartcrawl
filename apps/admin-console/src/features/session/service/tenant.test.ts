@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { isTenantName, type Principal } from '#/features/session/service/address.ts';
+import { isTenantName, type Principal } from '#/features/session/service/address';
 import {
   namedTenant,
   remembers,
   tenantMissing,
   tenantProblem,
   TENANT_NAME_PROBLEM,
-} from '#/features/session/service/tenant.ts';
+} from '#/features/session/service/tenant';
 
 const grace: Principal = { tenant: 'acme', subjectId: 's1', username: 'grace' };
 

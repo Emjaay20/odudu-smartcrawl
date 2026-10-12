@@ -1,4 +1,4 @@
-import type { AdminCapability, Authority } from '#/shared/service/principal.ts';
+import type { AdminCapability, Authority } from '#/shared/service/principal';
 
 // whoami is advice for what to draw, never authority: every request is
 // still authorised by the server, and a 403 re-reads whoami, so all of this

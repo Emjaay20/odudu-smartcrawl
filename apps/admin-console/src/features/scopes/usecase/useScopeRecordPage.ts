@@ -1,9 +1,9 @@
 import type { ClientScope } from '@odudu/contracts/admin';
-import { useScopeRecord } from '#/features/scopes/repository/useScopeRecord.ts';
+import { useScopeRecord } from '#/features/scopes/repository/useScopeRecord';
 import { SCOPE_TABS, type ScopeTab, TAB_RECORDS } from '#/features/scopes/service';
-import { useDirtyRecords } from '#/shared/repository/useDirtyRecords.ts';
-import { useRecordTab } from '#/shared/repository/useRecordTab.ts';
-import { dirtyTabs, tabNamed, type RecordView } from '#/shared/service/record.ts';
+import { useDirtyRecords } from '#/shared/repository/useDirtyRecords';
+import { useRecordTab } from '#/shared/repository/useRecordTab';
+import { dirtyTabs, tabNamed, type RecordView } from '#/shared/service/record';
 
 export interface ScopeRecordPage {
   record: RecordView;

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { CapabilityNote } from '#/shared/view/CapabilityNote/CapabilityNote.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { CapabilityNote } from '#/shared/view/CapabilityNote/CapabilityNote';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 it('names the capability that is missing', () => {
   render(<CapabilityNote capability="manage-clients" />);

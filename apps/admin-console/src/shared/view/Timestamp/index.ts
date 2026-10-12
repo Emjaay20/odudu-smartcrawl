@@ -1,1 +1,1 @@
-export * from '#/shared/view/Timestamp/Timestamp.tsx';
+export * from '#/shared/view/Timestamp/Timestamp';

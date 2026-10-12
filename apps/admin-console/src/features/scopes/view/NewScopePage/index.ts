@@ -1,1 +1,1 @@
-export * from '#/features/scopes/view/NewScopePage/NewScopePage.tsx';
+export * from '#/features/scopes/view/NewScopePage/NewScopePage';

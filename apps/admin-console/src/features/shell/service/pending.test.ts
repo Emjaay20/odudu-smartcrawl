@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { areaAccess, pendingPage } from '#/features/shell/service/pending.ts';
-import { areaAt, OVERVIEW } from '#/features/shell/service/areas.ts';
+import { areaAccess, pendingPage } from '#/features/shell/service/pending';
+import { areaAt, OVERVIEW } from '#/features/shell/service/areas';
 
 const SYSTEM_ADMIN = { tenant: 'system', subjectId: 's0', username: 'root' };
 

@@ -6,7 +6,7 @@ import {
   type ExchangeValues,
   type KeyValues,
   type UserinfoValues,
-} from '#/features/clients/repository/useClientConfigSaves.ts';
+} from '#/features/clients/repository/useClientConfigSaves';
 import {
   authOptions,
   choiceOf,
@@ -25,9 +25,9 @@ import {
   encryptsUserinfo,
   type KeysProblem,
 } from '#/features/clients/service';
-import { useClientSection } from '#/features/clients/usecase/useClientSection.ts';
-import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave.ts';
-import { flagText } from '#/shared/service/format.ts';
+import { useClientSection } from '#/features/clients/usecase/useClientSection';
+import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
+import { flagText } from '#/shared/service/format';
 import type { SelectOption } from '#/shared/view/Field';
 
 export interface ClientAdvanced {

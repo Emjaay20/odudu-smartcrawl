@@ -1,6 +1,6 @@
 import type { Tenant } from '@odudu/contracts/admin';
 import { useAuthority } from '#/features/session';
-import { useTenantRecord } from '#/features/tenants/repository/useTenantRecord.ts';
+import { useTenantRecord } from '#/features/tenants/repository/useTenantRecord';
 import {
   tenantRecord,
   tenantRecordAccess,
@@ -8,10 +8,10 @@ import {
   type TenantRecordAccess,
   type TenantTab,
 } from '#/features/tenants/service';
-import { useDirtySections } from '#/shared/repository/useDirtySections.ts';
-import { useRecordTab } from '#/shared/repository/useRecordTab.ts';
-import { SYSTEM_TENANT } from '#/shared/service/principal.ts';
-import { tabNamed, type RecordView } from '#/shared/service/record.ts';
+import { useDirtySections } from '#/shared/repository/useDirtySections';
+import { useRecordTab } from '#/shared/repository/useRecordTab';
+import { SYSTEM_TENANT } from '#/shared/service/principal';
+import { tabNamed, type RecordView } from '#/shared/service/record';
 
 export interface TenantRecordPage {
   record: RecordView;

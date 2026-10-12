@@ -1,5 +1,5 @@
 import { listAuditResponseSchema, type ListAuditResponse } from '@odudu/contracts/admin';
-import type { Gateway, GatewayResult } from '#/shared/transport/gateway.ts';
+import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 
 // Shared by the Audit trail and every record's Activity tab, which is the
 // same list narrowed to one resource.

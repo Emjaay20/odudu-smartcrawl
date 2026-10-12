@@ -8,7 +8,7 @@ import {
   type ConsentValues,
   type DescriptionValues,
   type TokenValues,
-} from '#/features/scopes/repository/useScopeRecord.ts';
+} from '#/features/scopes/repository/useScopeRecord';
 import {
   ACCESS_TOKEN_LABEL,
   assignmentName,
@@ -25,13 +25,13 @@ import {
   scopeRecord,
   scopesHref,
 } from '#/features/scopes/service';
-import { useGo } from '#/shared/repository/useGo.ts';
-import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave.ts';
-import { useToasts } from '#/shared/repository/useToasts.ts';
+import { useGo } from '#/shared/repository/useGo';
+import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
+import { useToasts } from '#/shared/repository/useToasts';
 import { writeRefusal } from '#/shared/service/capabilities';
-import { deletedText } from '#/shared/service/failure.ts';
-import { flagText } from '#/shared/service/format.ts';
-import type { GatewayFailure } from '#/shared/transport/gateway.ts';
+import { deletedText } from '#/shared/service/failure';
+import { flagText } from '#/shared/service/format';
+import type { GatewayFailure } from '#/shared/transport/gateway';
 
 export interface Deletion {
   // Why it is never offered, said in place of the button.

@@ -1,4 +1,4 @@
-import type { Crumb } from '#/shared/service/breadcrumb.ts';
+import type { Crumb } from '#/shared/service/breadcrumb';
 
 export function clientsHref(tenant: string): string {
   return `/console/${encodeURIComponent(tenant)}/clients`;

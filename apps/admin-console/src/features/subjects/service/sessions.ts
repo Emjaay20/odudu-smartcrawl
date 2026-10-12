@@ -1,4 +1,4 @@
-import { counted } from '#/shared/service/format.ts';
+import { counted } from '#/shared/service/format';
 
 export function sessionEndedText(name: string): string {
   return `The session of ${name} ended.`;

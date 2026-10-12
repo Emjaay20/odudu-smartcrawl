@@ -1,5 +1,5 @@
 import { type HeldAdminCapability } from '@odudu/contracts/admin';
-import { MANAGE_TENANTS, TENANT_ADMIN } from '#/shared/service/administrators.ts';
+import { MANAGE_TENANTS, TENANT_ADMIN } from '#/shared/service/administrators';
 import {
   holdingLabel,
   holdingOptions,
@@ -10,10 +10,10 @@ import {
   type Holding,
   type HoldingOption,
 } from '#/shared/service/capabilities';
-import { andList } from '#/shared/service/format.ts';
-import { SYSTEM_TENANT, type AdminCapability } from '#/shared/service/principal.ts';
-import { type Loaded } from '#/features/subjects/service/create.ts';
-import { onlyHolderText } from '#/features/subjects/service/access.ts';
+import { andList } from '#/shared/service/format';
+import { SYSTEM_TENANT, type AdminCapability } from '#/shared/service/principal';
+import { type Loaded } from '#/features/subjects/service/create';
+import { onlyHolderText } from '#/features/subjects/service/access';
 
 // What else, beyond the boxes, keeps the counted capability with them. Full
 // counts too when a group or another role carries it, since the box only

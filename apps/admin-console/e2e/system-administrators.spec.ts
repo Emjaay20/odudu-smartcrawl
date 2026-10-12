@@ -7,8 +7,8 @@ import {
   signIn,
   signInAtTenant,
   test,
-} from './fixtures.ts';
-import { psql, seeded } from './stack.ts';
+} from './fixtures';
+import { psql, seeded } from './stack';
 
 const { system, systemAdmins } = seeded();
 const AT = '/console/system/system-admins';

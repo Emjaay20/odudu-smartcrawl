@@ -6,7 +6,7 @@ import {
   useProfileRecord,
   type ClaimValues,
   type VerificationValues,
-} from '#/features/subjects/repository/useSubjectRecord.ts';
+} from '#/features/subjects/repository/useSubjectRecord';
 import {
   claimFields,
   PROFILE_SECTIONS,
@@ -15,8 +15,8 @@ import {
   verificationFields,
   type ProfileSection,
 } from '#/features/subjects/service';
-import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave.ts';
-import type { RecordState } from '#/shared/repository/useRecord.ts';
+import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
+import type { RecordState } from '#/shared/repository/useRecord';
 
 export type { SectionSave };
 

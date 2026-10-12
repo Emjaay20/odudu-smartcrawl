@@ -1,1 +1,1 @@
-export * from '#/shared/view/ChunkBoundary/ChunkBoundary.tsx';
+export * from '#/shared/view/ChunkBoundary/ChunkBoundary';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { tenantChangeFailure } from '#/features/tenants/service/failure.ts';
+import { tenantChangeFailure } from '#/features/tenants/service/failure';
 
 describe('enabling and disabling a tenant', () => {
   it('words each way the change fails', () => {

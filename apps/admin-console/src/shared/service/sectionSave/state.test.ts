@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { changedFrom, fieldValues, withoutFields } from '#/shared/service/sectionSave/state.ts';
+import { changedFrom, fieldValues, withoutFields } from '#/shared/service/sectionSave/state';
 
 const BASE = { name: 'a', tags: ['x'] };
 

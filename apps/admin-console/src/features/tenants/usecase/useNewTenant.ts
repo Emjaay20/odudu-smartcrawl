@@ -5,8 +5,8 @@ import {
   useFindSubject,
   useFirstAdministrator,
   useTenantCreate,
-} from '#/features/tenants/repository/useCreation.ts';
-import { useSystemIssuer } from '#/features/tenants/repository/useSystemIssuer.ts';
+} from '#/features/tenants/repository/useCreation';
+import { useSystemIssuer } from '#/features/tenants/repository/useSystemIssuer';
 import {
   administratorFailure,
   administratorLookupText,
@@ -34,13 +34,13 @@ import {
   type StepCall,
   type Unfinished,
 } from '#/features/tenants/service';
-import { lacking } from '#/shared/service/access.ts';
-import { administratorNeeds } from '#/shared/service/administrators.ts';
+import { lacking } from '#/shared/service/access';
+import { administratorNeeds } from '#/shared/service/administrators';
 import { holdingOptions, holdingsIn, type HoldingOption } from '#/shared/service/capabilities';
-import { withoutField } from '#/shared/service/fieldErrors.ts';
-import { inOrderOf } from '#/shared/service/ids.ts';
-import { SYSTEM_TENANT, type AdminCapability } from '#/shared/service/principal.ts';
-import type { GatewayFailure } from '#/shared/transport/gateway.ts';
+import { withoutField } from '#/shared/service/fieldErrors';
+import { inOrderOf } from '#/shared/service/ids';
+import { SYSTEM_TENANT, type AdminCapability } from '#/shared/service/principal';
+import type { GatewayFailure } from '#/shared/transport/gateway';
 
 type Step<S extends Creation['step']> = Extract<Creation, { step: S }>;
 

@@ -1,5 +1,5 @@
 import { UNSAFE_RETURN_TO } from '@odudu/contracts';
-import { type SignOutAnswer } from '#/features/session/service/boot.ts';
+import { type SignOutAnswer } from '#/features/session/service/boot';
 
 export {
   isTenantName,
@@ -7,7 +7,7 @@ export {
   type AdminCapability,
   type Authority,
   type Principal,
-} from '#/shared/service/principal.ts';
+} from '#/shared/service/principal';
 
 export const CONSOLE_ROOT = '/console/';
 

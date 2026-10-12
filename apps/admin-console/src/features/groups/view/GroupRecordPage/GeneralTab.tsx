@@ -7,8 +7,8 @@ import {
   type Deletion,
   type GroupGeneral,
   type Place,
-} from '#/features/groups/usecase/useGroupGeneral.ts';
-import type { Ceiling } from '#/features/groups/usecase/useGroupRecordPage.ts';
+} from '#/features/groups/usecase/useGroupGeneral';
+import type { Ceiling } from '#/features/groups/usecase/useGroupRecordPage';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';

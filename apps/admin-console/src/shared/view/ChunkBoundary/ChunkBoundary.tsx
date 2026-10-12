@@ -1,5 +1,5 @@
 import { Component, type ReactNode } from 'react';
-import { ChunkLoadError } from '#/shared/service/chunkLoad.ts';
+import { ChunkLoadError } from '#/shared/service/chunkLoad';
 import { Button } from '#/shared/view/Button';
 import { EmptyState } from '#/shared/view/EmptyState';
 

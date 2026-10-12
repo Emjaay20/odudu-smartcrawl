@@ -1,5 +1,5 @@
-import type { GatewayFailure } from '#/shared/service/result.ts';
-import { andList } from '#/shared/service/format.ts';
+import type { GatewayFailure } from '#/shared/service/result';
+import { andList } from '#/shared/service/format';
 
 export const NONE_TEXT =
   'No mapper is bound and none declares it, so a token granted this scope gets no claim from it.';

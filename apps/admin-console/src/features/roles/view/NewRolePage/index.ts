@@ -1,1 +1,1 @@
-export * from '#/features/roles/view/NewRolePage/NewRolePage.tsx';
+export * from '#/features/roles/view/NewRolePage/NewRolePage';

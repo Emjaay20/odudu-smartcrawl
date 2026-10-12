@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { PageHeader } from '#/shared/view/PageHeader/PageHeader.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { PageHeader } from '#/shared/view/PageHeader/PageHeader';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 it('titles the page and carries its kind, description and actions', () => {
   render(

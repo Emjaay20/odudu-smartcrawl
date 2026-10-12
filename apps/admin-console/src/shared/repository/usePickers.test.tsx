@@ -2,11 +2,11 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { expect, it } from 'vitest';
-import { createQueryClient } from '#/shared/repository/queryClient.ts';
-import { useGroupPicker } from '#/shared/repository/useGroupPicker.ts';
-import { useRolePicker } from '#/shared/repository/useRolePicker.ts';
-import { TransportContext } from '#/shared/transport/useTransport.ts';
-import { fakeTransport, json, problem, type Answer } from '#/testing/fakeTransport.ts';
+import { createQueryClient } from '#/shared/repository/queryClient';
+import { useGroupPicker } from '#/shared/repository/useGroupPicker';
+import { useRolePicker } from '#/shared/repository/useRolePicker';
+import { TransportContext } from '#/shared/transport/useTransport';
+import { fakeTransport, json, problem, type Answer } from '#/testing/fakeTransport';
 
 const ROLES = 'GET /console/api/admin/tenants/acme/roles';
 const GROUPS = 'GET /console/api/admin/tenants/acme/groups';

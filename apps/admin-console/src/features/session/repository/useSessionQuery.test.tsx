@@ -2,13 +2,10 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, expect, it } from 'vitest';
-import {
-  rememberedTenant,
-  useSessionQuery,
-} from '#/features/session/repository/useSessionQuery.ts';
-import { createQueryClient } from '#/shared/repository/queryClient.ts';
-import { TransportContext } from '#/shared/transport/useTransport.ts';
-import { fakeTransport, json } from '#/testing/fakeTransport.ts';
+import { rememberedTenant, useSessionQuery } from '#/features/session/repository/useSessionQuery';
+import { createQueryClient } from '#/shared/repository/queryClient';
+import { TransportContext } from '#/shared/transport/useTransport';
+import { fakeTransport, json } from '#/testing/fakeTransport';
 
 it('drops every other cached read when the session is marked ended', async () => {
   const { transport } = fakeTransport({

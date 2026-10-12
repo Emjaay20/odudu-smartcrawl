@@ -1,1 +1,1 @@
-export * from '#/shared/view/Duration/Duration.tsx';
+export * from '#/shared/view/Duration/Duration';

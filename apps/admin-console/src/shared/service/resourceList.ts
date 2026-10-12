@@ -1,7 +1,7 @@
 import type { CountResponse } from '@odudu/contracts/admin';
-import type { CursorTrail } from '#/shared/service/cursorTrail.ts';
-import { isRefused } from '#/shared/service/failure.ts';
-import type { GatewayFailure } from '#/shared/service/result.ts';
+import type { CursorTrail } from '#/shared/service/cursorTrail';
+import { isRefused } from '#/shared/service/failure';
+import type { GatewayFailure } from '#/shared/service/result';
 
 // A prefix of one named field, as the admin API searches.
 export interface ListSearch {

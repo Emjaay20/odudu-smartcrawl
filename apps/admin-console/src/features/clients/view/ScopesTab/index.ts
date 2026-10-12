@@ -1,1 +1,1 @@
-export { ScopesTab } from '#/features/clients/view/ScopesTab/ScopesTab.tsx';
+export { ScopesTab } from '#/features/clients/view/ScopesTab/ScopesTab';

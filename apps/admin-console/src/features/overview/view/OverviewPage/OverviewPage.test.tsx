@@ -2,15 +2,9 @@ import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
 import gridCss from '#/features/overview/view/OverviewPage/OverviewPage.module.css?raw';
 import discoveryCss from '#/features/overview/view/DiscoveryPanel/DiscoveryPanel.module.css?raw';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
-import { json, problem, type Answer } from '#/testing/fakeTransport.ts';
-import {
-  consoleAt,
-  GRACE,
-  renderConsoleAt,
-  resetConsole,
-  whoami,
-} from '#/testing/renderConsole.tsx';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
+import { json, problem, type Answer } from '#/testing/fakeTransport';
+import { consoleAt, GRACE, renderConsoleAt, resetConsole, whoami } from '#/testing/renderConsole';
 
 afterEach(() => {
   resetConsole();

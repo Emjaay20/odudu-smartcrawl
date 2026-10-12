@@ -1,10 +1,10 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
-import { Providers } from '#/app/Providers.tsx';
-import type { ConsoleRouter } from '#/app/router.tsx';
+import { Providers } from '#/app/Providers';
+import type { ConsoleRouter } from '#/app/router';
 import { ToastLayer } from '#/app/ToastLayer';
 import { UnsavedGuardLayer } from '#/app/UnsavedGuardLayer';
-import type { Transport } from '#/shared/transport/transport.ts';
+import type { Transport } from '#/shared/transport/transport';
 
 export function App({
   router,

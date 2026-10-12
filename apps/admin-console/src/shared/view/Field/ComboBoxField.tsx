@@ -26,7 +26,7 @@ import {
   type Chrome,
   type GroupPart,
   type PartLabel,
-} from '#/shared/view/Field/Field.tsx';
+} from '#/shared/view/Field/Field';
 import styles from '#/shared/view/Field/Field.module.css';
 
 export interface ComboOption {

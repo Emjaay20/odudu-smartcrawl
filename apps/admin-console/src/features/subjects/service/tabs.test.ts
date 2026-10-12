@@ -9,7 +9,7 @@ import {
   subjectTabHref,
   subjectRecord,
   TAB_RECORDS,
-} from '#/features/subjects/service/tabs.ts';
+} from '#/features/subjects/service/tabs';
 
 describe('the record tabs', () => {
   it('names, for every tab, the records whose sections it edits', () => {

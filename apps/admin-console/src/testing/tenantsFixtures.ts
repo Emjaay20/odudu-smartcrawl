@@ -1,5 +1,5 @@
-import { json, type Answer } from '#/testing/fakeTransport.ts';
-import { ROOT, whoami } from '#/testing/renderConsole.tsx';
+import { json, type Answer } from '#/testing/fakeTransport';
+import { ROOT, whoami } from '#/testing/renderConsole';
 
 export const ADMIN = '/console/api/admin/tenants';
 export const ISSUER = 'https://id.example/tenants/system';

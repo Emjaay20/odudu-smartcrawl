@@ -4,7 +4,7 @@ import {
   useScopeRolesRecord,
   useScopeSaves,
   type RoleValues,
-} from '#/features/scopes/repository/useScopeRecord.ts';
+} from '#/features/scopes/repository/useScopeRecord';
 import {
   keptRoles,
   roleIndex,
@@ -14,13 +14,13 @@ import {
   scopeRolesRecord,
   withKept,
 } from '#/features/scopes/service';
-import type { RecordState } from '#/shared/repository/useRecord.ts';
-import { useRolePicker } from '#/shared/repository/useRolePicker.ts';
-import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave.ts';
+import type { RecordState } from '#/shared/repository/useRecord';
+import { useRolePicker } from '#/shared/repository/useRolePicker';
+import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { writeRefusal } from '#/shared/service/capabilities';
-import { describeIds } from '#/shared/service/format.ts';
-import { sortedIds } from '#/shared/service/ids.ts';
-import type { PickerState } from '#/shared/service/picker.ts';
+import { describeIds } from '#/shared/service/format';
+import { sortedIds } from '#/shared/service/ids';
+import type { PickerState } from '#/shared/service/picker';
 
 export function useScopeRolesRead(tenant: string, id: string): RecordState<SetScopeRolesResponse> {
   return useScopeRolesRecord(tenant, id);

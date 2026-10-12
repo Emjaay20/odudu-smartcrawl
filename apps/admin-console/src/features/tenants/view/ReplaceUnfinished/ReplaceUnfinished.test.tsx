@@ -1,8 +1,8 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
-import { ReplaceUnfinished } from '#/features/tenants/view/ReplaceUnfinished/ReplaceUnfinished.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { ReplaceUnfinished } from '#/features/tenants/view/ReplaceUnfinished/ReplaceUnfinished';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { render } from '@testing-library/react';
 
 function confirming(unfinished: { tenant: string; username: string; granted: boolean } | null) {

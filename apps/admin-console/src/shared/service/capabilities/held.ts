@@ -1,7 +1,7 @@
 import { type EffectiveRoleAssignment, type RoleProvenance } from '@odudu/contracts/admin';
-import { andList } from '#/shared/service/format.ts';
-import { TENANT_ADMIN } from '#/shared/service/administrators.ts';
-import type { AdminCapability } from '#/shared/service/principal.ts';
+import { andList } from '#/shared/service/format';
+import { TENANT_ADMIN } from '#/shared/service/administrators';
+import type { AdminCapability } from '#/shared/service/principal';
 import {
   ADMIN_CLIENT_KEY,
   CAPABILITY_TEXT,
@@ -14,7 +14,7 @@ import {
   isAdminRole,
   isCapability,
   isHolding,
-} from '#/shared/service/capabilities/holdings.ts';
+} from '#/shared/service/capabilities/holdings';
 
 export function provenanceText(via: RoleProvenance): string {
   switch (via.kind) {

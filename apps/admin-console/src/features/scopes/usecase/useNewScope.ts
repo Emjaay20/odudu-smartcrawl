@@ -1,7 +1,7 @@
 import type { ClientScope } from '@odudu/contracts/admin';
 import { useState } from 'react';
 import { useAuthority, useRefusal } from '#/features/session';
-import { useCopySource, useCreateScope } from '#/features/scopes/repository/useCreateScope.ts';
+import { useCopySource, useCreateScope } from '#/features/scopes/repository/useCreateScope';
 import {
   copiedDescription,
   createBodyOf,
@@ -15,12 +15,12 @@ import {
   scopeHref,
   scopesHref,
 } from '#/features/scopes/service';
-import { useGo } from '#/shared/repository/useGo.ts';
-import { useToasts } from '#/shared/repository/useToasts.ts';
-import { useUrlSearch } from '#/shared/repository/useUrlSearch.ts';
-import { requiredProblem, withoutField } from '#/shared/service/fieldErrors.ts';
-import { createdText, createFailure, lookupText } from '#/shared/service/failure.ts';
-import type { GatewayFailure } from '#/shared/transport/gateway.ts';
+import { useGo } from '#/shared/repository/useGo';
+import { useToasts } from '#/shared/repository/useToasts';
+import { useUrlSearch } from '#/shared/repository/useUrlSearch';
+import { requiredProblem, withoutField } from '#/shared/service/fieldErrors';
+import { createdText, createFailure, lookupText } from '#/shared/service/failure';
+import type { GatewayFailure } from '#/shared/transport/gateway';
 
 type Field = 'name' | 'description';
 type Errors = Partial<Record<Field, string>>;

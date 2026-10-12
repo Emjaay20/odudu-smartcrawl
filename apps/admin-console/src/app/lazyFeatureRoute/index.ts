@@ -1,1 +1,1 @@
-export * from '#/app/lazyFeatureRoute/lazyFeatureRoute.tsx';
+export * from '#/app/lazyFeatureRoute/lazyFeatureRoute';

@@ -1,9 +1,9 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
-import type { PickerState } from '#/shared/service/picker.ts';
-import { ClientPicker } from '#/shared/view/ClientPicker/ClientPicker.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import type { PickerState } from '#/shared/service/picker';
+import { ClientPicker } from '#/shared/view/ClientPicker/ClientPicker';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 const CLIENTS = [
   { id: 'c1', name: 'Billing', client_id: 'billing', type: 'confidential' as const },

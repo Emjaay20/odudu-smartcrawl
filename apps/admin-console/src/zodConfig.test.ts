@@ -1,4 +1,4 @@
-import '#/zodConfig.ts';
+import '#/zodConfig';
 import { z } from 'zod';
 import { expect, it } from 'vitest';
 

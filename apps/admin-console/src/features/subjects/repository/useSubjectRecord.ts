@@ -7,18 +7,18 @@ import {
   readProfile,
   readSubject,
   readUsernameEditable,
-} from '#/features/subjects/adapter/subjects.ts';
+} from '#/features/subjects/adapter/subjects';
 import {
   recordKey,
   useRecord,
   type RecordEntry,
   type RecordState,
-} from '#/shared/repository/useRecord.ts';
-import type { SaveInput } from '#/shared/repository/useSectionSave.ts';
+} from '#/shared/repository/useRecord';
+import type { SaveInput } from '#/shared/repository/useSectionSave';
 import { profileRecord, subjectRecord } from '#/features/subjects/service';
-import { isStale } from '#/shared/service/failure.ts';
-import type { Gateway, GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { isStale } from '#/shared/service/failure';
+import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export function useSubjectRecord(tenant: string, id: string): RecordState<Subject> {
   return useRecord({

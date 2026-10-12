@@ -1,4 +1,4 @@
-import { useRailCollapsed } from '#/shared/repository/useRailCollapsed.ts';
+import { useRailCollapsed } from '#/shared/repository/useRailCollapsed';
 
 // The collapse the rail will have when the session is read, so the page
 // column sits where it will stay.

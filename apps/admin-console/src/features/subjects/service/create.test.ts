@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { createFailure } from '#/shared/service/failure.ts';
-import type { GatewayFailure } from '#/shared/service/result.ts';
+import { createFailure } from '#/shared/service/failure';
+import type { GatewayFailure } from '#/shared/service/result';
 import {
   manageUsersRefusal,
   newSubjectSpec,
   subjectCreatedText,
-} from '#/features/subjects/service/create.ts';
+} from '#/features/subjects/service/create';
 
 const failure = (kind: 'network' | 'schema' | 'defect'): GatewayFailure => ({ ok: false, kind });
 

@@ -5,12 +5,12 @@ import {
   deleteClient,
   readClient,
   type ClientChanges,
-} from '#/features/clients/adapter/clients.ts';
+} from '#/features/clients/adapter/clients';
 import { clientRecord } from '#/features/clients/service';
-import { recordKey, useRecord, type RecordState } from '#/shared/repository/useRecord.ts';
-import type { SaveInput } from '#/shared/repository/useSectionSave.ts';
-import type { Gateway, GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { recordKey, useRecord, type RecordState } from '#/shared/repository/useRecord';
+import type { SaveInput } from '#/shared/repository/useSectionSave';
+import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export function useClientRecord(tenant: string, id: string): RecordState<Client> {
   return useRecord({

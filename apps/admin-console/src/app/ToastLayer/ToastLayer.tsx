@@ -1,4 +1,4 @@
-import { useToasts } from '#/shared/repository/useToasts.ts';
+import { useToasts } from '#/shared/repository/useToasts';
 import { Toasts } from '#/shared/view/Toasts';
 
 // The one reader of the toast queue: the view renders what it is given, so it

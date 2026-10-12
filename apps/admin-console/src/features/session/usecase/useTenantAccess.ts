@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { signInHome, tenantEntry, type Principal } from '#/features/session/service';
-import { useSignedIn } from '#/features/session/usecase/useSignedIn.ts';
-import { useSignIn } from '#/features/session/usecase/useSignIn.ts';
+import { useSignedIn } from '#/features/session/usecase/useSignedIn';
+import { useSignIn } from '#/features/session/usecase/useSignIn';
 
 export type TenantAccess =
   | { kind: 'allowed'; principal: Principal }

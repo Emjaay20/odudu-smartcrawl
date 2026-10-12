@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { GatewayResult, Problem } from '#/shared/service/result.ts';
+import type { GatewayResult, Problem } from '#/shared/service/result';
 import {
   bootOf,
   draftOwner,
@@ -8,8 +8,8 @@ import {
   shownPrincipal,
   sessionEndedRead,
   type SessionRead,
-} from '#/features/session/service/boot.ts';
-import { type Principal } from '#/features/session/service/address.ts';
+} from '#/features/session/service/boot';
+import { type Principal } from '#/features/session/service/address';
 
 const grace: Principal = { tenant: 'acme', subjectId: 's1', username: 'grace' };
 

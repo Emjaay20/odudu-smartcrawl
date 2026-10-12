@@ -1,1 +1,1 @@
-export { VisuallyHidden } from '#/shared/view/VisuallyHidden/VisuallyHidden.tsx';
+export { VisuallyHidden } from '#/shared/view/VisuallyHidden/VisuallyHidden';

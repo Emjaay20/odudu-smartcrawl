@@ -2,11 +2,11 @@ import type { Client, TenantSession } from '@odudu/contracts/admin';
 import { useState } from 'react';
 import { subjectHref } from '#/features/subjects';
 import { useAuthority, useRefusal } from '#/features/session';
-import { useRereadClient } from '#/features/clients/repository/useClientRecord.ts';
+import { useRereadClient } from '#/features/clients/repository/useClientRecord';
 import {
   useClientSessionList,
   useGrantRevocation,
-} from '#/features/clients/repository/useClientSessions.ts';
+} from '#/features/clients/repository/useClientSessions';
 import {
   canChange,
   ceilingRefused,
@@ -17,10 +17,10 @@ import {
   sessionsReadable,
   type Reach,
 } from '#/features/clients/service';
-import { useGo } from '#/shared/repository/useGo.ts';
-import { lacking } from '#/shared/service/access.ts';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
-import type { GatewayFailure } from '#/shared/transport/gateway.ts';
+import { useGo } from '#/shared/repository/useGo';
+import { lacking } from '#/shared/service/access';
+import type { ResourceListState } from '#/shared/service/resourceList';
+import type { GatewayFailure } from '#/shared/transport/gateway';
 
 // Whether the caller may read them: whoami says manage-sessions is held,
 // or has not yet answered.

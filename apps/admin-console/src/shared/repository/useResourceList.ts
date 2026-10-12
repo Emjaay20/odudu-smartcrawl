@@ -1,7 +1,7 @@
 import type { CountResponse } from '@odudu/contracts/admin';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useUrlSearch } from '#/shared/repository/useUrlSearch.ts';
-import { currentCursor, trailFromSearch, trailToSearch } from '#/shared/service/cursorTrail.ts';
+import { useUrlSearch } from '#/shared/repository/useUrlSearch';
+import { currentCursor, trailFromSearch, trailToSearch } from '#/shared/service/cursorTrail';
 import {
   apiQuery,
   isNarrowed,
@@ -12,9 +12,9 @@ import {
   type ListPage,
   type ResourceListState,
   withFilter,
-} from '#/shared/service/resourceList.ts';
-import type { Gateway, GatewayFailure, GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+} from '#/shared/service/resourceList';
+import type { Gateway, GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export type ReadPage<T> = (
   gateway: Gateway,

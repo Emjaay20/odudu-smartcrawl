@@ -4,13 +4,13 @@ import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { expect, it } from 'vitest';
 import { z } from 'zod';
-import { createQueryClient } from '#/shared/repository/queryClient.ts';
-import { useSecretOnce } from '#/shared/repository/useSecretOnce.ts';
-import type { Gateway } from '#/shared/transport/gateway.ts';
-import { TransportContext } from '#/shared/transport/useTransport.ts';
+import { createQueryClient } from '#/shared/repository/queryClient';
+import { useSecretOnce } from '#/shared/repository/useSecretOnce';
+import type { Gateway } from '#/shared/transport/gateway';
+import { TransportContext } from '#/shared/transport/useTransport';
 import { Button } from '#/shared/view/Button';
 import { SecretDialog } from '#/shared/view/SecretDialog';
-import { fakeTransport, json, pending, problem, type Answer } from '#/testing/fakeTransport.ts';
+import { fakeTransport, json, pending, problem, type Answer } from '#/testing/fakeTransport';
 
 const SECRET = 's3cr3t-shown-once-Qm9vYmFy';
 const ROTATE = 'POST /console/api/admin/tenants/acme/clients/c1/secret';

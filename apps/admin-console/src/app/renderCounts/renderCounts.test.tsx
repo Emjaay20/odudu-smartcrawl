@@ -1,11 +1,11 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
-import { json, type Answer, type Sent } from '#/testing/fakeTransport.ts';
-import { renderCount, resetRenderCount } from '#/testing/renderCounter.ts';
-import { renderConsoleAt, resetConsole } from '#/testing/renderConsole.tsx';
-import { ADMIN, administratorRoutes, systemRoutes, tenant } from '#/testing/tenantsFixtures.ts';
-import { ADA, ADA_AT, ADA_ID, S, subject, subjectRoutes } from '#/testing/subjectsFixtures.ts';
+import { json, type Answer, type Sent } from '#/testing/fakeTransport';
+import { renderCount, resetRenderCount } from '#/testing/renderCounter';
+import { renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { ADMIN, administratorRoutes, systemRoutes, tenant } from '#/testing/tenantsFixtures';
+import { ADA, ADA_AT, ADA_ID, S, subject, subjectRoutes } from '#/testing/subjectsFixtures';
 
 afterEach(() => {
   resetConsole();

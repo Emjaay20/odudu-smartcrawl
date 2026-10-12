@@ -1,7 +1,7 @@
-import { useGatewaySessionEnd } from '#/features/session/repository/useGatewaySessionEnd.ts';
+import { useGatewaySessionEnd } from '#/features/session/repository/useGatewaySessionEnd';
 import { CONSOLE_ROOT } from '#/features/session/service';
-import { useDrafts } from '#/shared/repository/useDrafts.ts';
-import { useLeaveConsole } from '#/shared/repository/useLeaveConsole.ts';
+import { useDrafts } from '#/shared/repository/useDrafts';
+import { useLeaveConsole } from '#/shared/repository/useLeaveConsole';
 
 // After the signed-in subject deleted itself: its sessions went with it, so
 // the gateway's session is ended and the console starts again signed out,

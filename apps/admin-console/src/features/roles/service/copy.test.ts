@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AdminCapability } from '#/shared/service/principal.ts';
+import type { AdminCapability } from '#/shared/service/principal';
 import {
   type CopyRead,
   copiedDescription,
@@ -7,8 +7,8 @@ import {
   copyingText,
   copyPlan,
   partialCopy,
-} from '#/features/roles/service/copy.ts';
-import { copyHrefOf } from '#/features/roles/service/address.ts';
+} from '#/features/roles/service/copy';
+import { copyHrefOf } from '#/features/roles/service/address';
 
 function role(
   id: string,

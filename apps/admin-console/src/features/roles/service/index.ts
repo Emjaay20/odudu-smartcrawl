@@ -6,7 +6,7 @@ export {
   roleHref,
   rolesTrail,
   copyHrefOf,
-} from '#/features/roles/service/address.ts';
+} from '#/features/roles/service/address';
 export {
   ROLE_TABS,
   type RoleTab,
@@ -14,7 +14,7 @@ export {
   roleRecord,
   compositesRecord,
   TAB_RECORDS,
-} from '#/features/roles/service/tabs.ts';
+} from '#/features/roles/service/tabs';
 export {
   NAME_FIXED,
   DESCRIPTION_MAX,
@@ -23,7 +23,7 @@ export {
   DEFAULT_LABEL,
   ADD_LABEL,
   NEST_LABEL,
-} from '#/features/roles/service/labels.ts';
+} from '#/features/roles/service/labels';
 export {
   isBuiltin,
   deleteBlock,
@@ -34,7 +34,7 @@ export {
   addRefusal,
   compositesFixed,
   deletionFixed,
-} from '#/features/roles/service/blocks.ts';
+} from '#/features/roles/service/blocks';
 export {
   type RoleChange,
   roleSelfLoss,
@@ -44,7 +44,7 @@ export {
   isDeleteHeld,
   defaultsChecking,
   compositesOffered,
-} from '#/features/roles/service/ceiling.ts';
+} from '#/features/roles/service/ceiling';
 export {
   compositeRemovalConfirmation,
   unnestedText,
@@ -54,7 +54,7 @@ export {
   deleteChecking,
   roleDeleteConsequence,
   roleDeleteFailureText,
-} from '#/features/roles/service/removal.ts';
+} from '#/features/roles/service/removal';
 export {
   type CopyRead,
   type Copying,
@@ -65,4 +65,4 @@ export {
   copyingText,
   copiedDescription,
   partialCopy,
-} from '#/features/roles/service/copy.ts';
+} from '#/features/roles/service/copy';

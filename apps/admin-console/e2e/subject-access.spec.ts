@@ -8,8 +8,8 @@ import {
   signInAtTenant,
   test,
   type Problem,
-} from './fixtures.ts';
-import { psql, seed, seeded } from './stack.ts';
+} from './fixtures';
+import { psql, seed, seeded } from './stack';
 
 const { subjects, system } = seeded();
 const { admin, viewer } = subjects;

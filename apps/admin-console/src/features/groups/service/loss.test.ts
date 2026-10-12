@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { lossOf, selfLoss } from '#/features/groups/service/loss.ts';
-import { lossText, possibleLoss } from '#/features/groups/service/address.ts';
+import { lossOf, selfLoss } from '#/features/groups/service/loss';
+import { lossText, possibleLoss } from '#/features/groups/service/address';
 
 describe('what a write here takes from yourself', () => {
   const via = (path: string) => ({

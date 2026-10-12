@@ -10,8 +10,8 @@ import {
   type ClientTab,
   type Reach,
 } from '#/features/clients/service';
-import { useClientActivity } from '#/features/clients/usecase/useClientActivity.ts';
-import { useClientRecordPage } from '#/features/clients/usecase/useClientRecordPage.ts';
+import { useClientActivity } from '#/features/clients/usecase/useClientActivity';
+import { useClientRecordPage } from '#/features/clients/usecase/useClientRecordPage';
 import { AdvancedTab } from '#/features/clients/view/AdvancedTab';
 import { GeneralTab } from '#/features/clients/view/GeneralTab';
 import { LogoutTab } from '#/features/clients/view/LogoutTab';

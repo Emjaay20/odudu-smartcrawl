@@ -1,1 +1,1 @@
-export { Deliveries } from '#/features/clients/view/Deliveries/Deliveries.tsx';
+export { Deliveries } from '#/features/clients/view/Deliveries/Deliveries';

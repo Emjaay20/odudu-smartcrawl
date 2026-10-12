@@ -1,1 +1,1 @@
-export * from '#/shared/view/SecretDialog/SecretDialog.tsx';
+export * from '#/shared/view/SecretDialog/SecretDialog';

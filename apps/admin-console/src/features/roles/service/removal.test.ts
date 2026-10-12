@@ -4,7 +4,7 @@ import {
   removalAction,
   roleDeleteConsequence,
   roleDeleteFailureText,
-} from '#/features/roles/service/removal.ts';
+} from '#/features/roles/service/removal';
 
 const certain = { kind: 'certain', lost: ['view-audit'] } as const;
 

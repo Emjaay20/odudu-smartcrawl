@@ -1,5 +1,5 @@
-import { isMissing } from '#/shared/service/failure.ts';
-import type { GatewayFailure } from '#/shared/service/result.ts';
+import { isMissing } from '#/shared/service/failure';
+import type { GatewayFailure } from '#/shared/service/result';
 
 export type RecordStatus = 'loading' | 'ready' | 'missing' | 'failed';
 

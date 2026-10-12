@@ -9,7 +9,7 @@ import {
   SCOPES_PAGE,
   shownScopes,
   unassignedText,
-} from '#/features/clients/service/scopes.ts';
+} from '#/features/clients/service/scopes';
 
 const SCOPES = [
   { id: 's2', name: 'profile', assignment: 'default' as const },

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { EmptyState } from '#/shared/view/EmptyState/EmptyState.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { EmptyState } from '#/shared/view/EmptyState/EmptyState';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 it('tells nothing yet, nothing matches and failed to load apart in words', () => {
   render(

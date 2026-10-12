@@ -1,4 +1,4 @@
-import { useOverview } from '#/features/overview/usecase/useOverview.ts';
+import { useOverview } from '#/features/overview/usecase/useOverview';
 import { AttentionPanel } from '#/features/overview/view/AttentionPanel';
 import { CountsPanel } from '#/features/overview/view/CountsPanel';
 import { DiscoveryPanel } from '#/features/overview/view/DiscoveryPanel';

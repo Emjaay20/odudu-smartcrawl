@@ -1,1 +1,1 @@
-export { PrincipalChanged } from '#/features/session/view/PrincipalChanged/PrincipalChanged.tsx';
+export { PrincipalChanged } from '#/features/session/view/PrincipalChanged/PrincipalChanged';

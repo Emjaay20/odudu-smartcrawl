@@ -7,7 +7,7 @@ import {
   readLatestAudit,
   readSettings,
   readSmtp,
-} from '#/features/overview/adapter.ts';
+} from '#/features/overview/adapter';
 import {
   readOutcome,
   type Collection,
@@ -16,8 +16,8 @@ import {
   type Read,
   type ReadName,
 } from '#/features/overview/service';
-import type { Gateway, GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 // Told of every answer as it arrives, so a refusal can be reported once per
 // answer rather than once per render.

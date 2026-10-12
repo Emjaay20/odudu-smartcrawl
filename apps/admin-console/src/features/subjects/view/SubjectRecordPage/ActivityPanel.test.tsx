@@ -1,9 +1,9 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
-import { json, problem } from '#/testing/fakeTransport.ts';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole.tsx';
-import { A, ADA_AT, ADA_ID, subjectRoutes } from '#/testing/subjectsFixtures.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
+import { json, problem } from '#/testing/fakeTransport';
+import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { A, ADA_AT, ADA_ID, subjectRoutes } from '#/testing/subjectsFixtures';
 
 afterEach(() => {
   resetConsole();

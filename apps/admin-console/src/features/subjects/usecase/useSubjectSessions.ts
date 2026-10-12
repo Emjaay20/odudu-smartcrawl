@@ -15,7 +15,7 @@ import {
   useRevokeConsent,
   useRevokeGrants,
   useSessionList,
-} from '#/features/subjects/repository/useSessions.ts';
+} from '#/features/subjects/repository/useSessions';
 import {
   consentRevokedText,
   grantClients,
@@ -28,9 +28,9 @@ import {
 import {
   useConfirmedChange,
   type Confirming,
-} from '#/features/subjects/usecase/useConfirmedChange.ts';
-import { notLacking } from '#/shared/service/access.ts';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
+} from '#/features/subjects/usecase/useConfirmedChange';
+import { notLacking } from '#/shared/service/access';
+import type { ResourceListState } from '#/shared/service/resourceList';
 
 // Sessions and grants are read and changed with manage-sessions alone:
 // there is no view-sessions.

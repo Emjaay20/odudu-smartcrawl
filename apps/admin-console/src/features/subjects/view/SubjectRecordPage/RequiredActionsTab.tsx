@@ -3,7 +3,7 @@ import { REQUIRED_ACTIONS, signsInAsItself } from '#/features/subjects/service';
 import {
   useRequiredActions,
   useRequiredActionsRead,
-} from '#/features/subjects/usecase/useRequiredActions.ts';
+} from '#/features/subjects/usecase/useRequiredActions';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { Button } from '#/shared/view/Button';
 import { ChecklistField } from '#/shared/view/ChecklistField';

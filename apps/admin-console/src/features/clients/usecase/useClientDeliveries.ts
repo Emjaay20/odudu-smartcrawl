@@ -1,8 +1,8 @@
 import type { Client, LogoutDelivery } from '@odudu/contracts/admin';
 import { useState } from 'react';
-import { useLogoutDeliveries } from '#/features/clients/repository/useLogoutDeliveries.ts';
+import { useLogoutDeliveries } from '#/features/clients/repository/useLogoutDeliveries';
 import { ANY_STATUS, statusFilter } from '#/features/clients/service';
-import type { ListStatus } from '#/shared/service/resourceList.ts';
+import type { ListStatus } from '#/shared/service/resourceList';
 
 export interface ClientDeliveries {
   status: string;

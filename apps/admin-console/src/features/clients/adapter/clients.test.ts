@@ -7,9 +7,9 @@ import {
   readClient,
   readClientCount,
   readClientPage,
-} from '#/features/clients/adapter/clients.ts';
-import { fakeTransport, json } from '#/testing/fakeTransport.ts';
-import { BILLING, C } from '#/testing/clientsFixtures.ts';
+} from '#/features/clients/adapter/clients';
+import { fakeTransport, json } from '#/testing/fakeTransport';
+import { BILLING, C } from '#/testing/clientsFixtures';
 
 it('pages the clients, searched and filtered by the server, and counts them', async () => {
   const fake = fakeTransport({

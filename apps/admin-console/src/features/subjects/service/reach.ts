@@ -5,9 +5,9 @@ import {
   type Held,
   type Holding,
 } from '#/shared/service/capabilities';
-import { andList } from '#/shared/service/format.ts';
-import { type AdminCapability } from '#/shared/service/principal.ts';
-import { type Loaded } from '#/features/subjects/service/create.ts';
+import { andList } from '#/shared/service/format';
+import { type AdminCapability } from '#/shared/service/principal';
+import { type Loaded } from '#/features/subjects/service/create';
 
 export function heldOf(
   effective: Loaded<{ items: readonly EffectiveRoleAssignment[] }>,

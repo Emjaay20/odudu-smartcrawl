@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { Rail, type RailGroup } from '#/shared/view/Rail/Rail.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { Rail, type RailGroup } from '#/shared/view/Rail/Rail';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import shellCss from '#/shared/view/AppShell/AppShell.module.css?raw';
 import railCss from '#/shared/view/Rail/Rail.module.css?raw';
 

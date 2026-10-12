@@ -3,16 +3,16 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { z } from 'zod';
-import { storeDrafts } from '#/shared/adapter/draftStorage.ts';
-import { createQueryClient } from '#/shared/repository/queryClient.ts';
-import { useDrafts } from '#/shared/repository/useDrafts.ts';
-import { recordKey, useRecord } from '#/shared/repository/useRecord.ts';
-import { useSectionSave } from '#/shared/repository/useSectionSave.ts';
-import { useToasts } from '#/shared/repository/useToasts.ts';
-import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard.ts';
-import type { Gateway, GatewayFailure } from '#/shared/transport/gateway.ts';
-import type { Problem } from '#/shared/transport/problem.ts';
-import { TransportContext } from '#/shared/transport/useTransport.ts';
+import { storeDrafts } from '#/shared/adapter/draftStorage';
+import { createQueryClient } from '#/shared/repository/queryClient';
+import { useDrafts } from '#/shared/repository/useDrafts';
+import { recordKey, useRecord } from '#/shared/repository/useRecord';
+import { useSectionSave } from '#/shared/repository/useSectionSave';
+import { useToasts } from '#/shared/repository/useToasts';
+import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
+import type { Gateway, GatewayFailure } from '#/shared/transport/gateway';
+import type { Problem } from '#/shared/transport/problem';
+import { TransportContext } from '#/shared/transport/useTransport';
 import { NumberWithUnitField, TextField } from '#/shared/view/Field';
 import { Section } from '#/shared/view/Section';
 import { SectionNotice } from '#/shared/view/SectionNotice';
@@ -23,7 +23,7 @@ import {
   pending,
   problem,
   type Answer,
-} from '#/testing/fakeTransport.ts';
+} from '#/testing/fakeTransport';
 
 const PATH = '/console/api/admin/tenants/acme/clients/c1';
 const GET = `GET ${PATH}`;

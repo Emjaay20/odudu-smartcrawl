@@ -6,7 +6,7 @@ import {
   useGroupsRecord,
   useSaveGroups,
   type GroupValues,
-} from '#/features/subjects/repository/useAccess.ts';
+} from '#/features/subjects/repository/useAccess';
 import {
   accessRefusal,
   groupsRecord,
@@ -19,12 +19,12 @@ import {
   type Confirmation,
   type Membership,
 } from '#/features/subjects/service';
-import { useGroupPicker } from '#/shared/repository/useGroupPicker.ts';
-import type { RecordState } from '#/shared/repository/useRecord.ts';
-import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave.ts';
-import { describeIds } from '#/shared/service/format.ts';
-import { sortedIds } from '#/shared/service/ids.ts';
-import type { PickerState } from '#/shared/service/picker.ts';
+import { useGroupPicker } from '#/shared/repository/useGroupPicker';
+import type { RecordState } from '#/shared/repository/useRecord';
+import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
+import { describeIds } from '#/shared/service/format';
+import { sortedIds } from '#/shared/service/ids';
+import type { PickerState } from '#/shared/service/picker';
 
 export function useSubjectGroupsRead(
   tenant: string,

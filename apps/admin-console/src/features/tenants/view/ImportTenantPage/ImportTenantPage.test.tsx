@@ -2,10 +2,10 @@ import { TENANT_IMPORT_BODY_LIMIT } from '@odudu/contracts/admin';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
-import { json, offline, problem, type Answer } from '#/testing/fakeTransport.ts';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole.tsx';
-import { systemRoutes, tenant } from '#/testing/tenantsFixtures.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
+import { json, offline, problem, type Answer } from '#/testing/fakeTransport';
+import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { systemRoutes, tenant } from '#/testing/tenantsFixtures';
 
 const AT = '/console/system/import-tenant';
 const IMPORT = 'POST /console/api/admin/tenant-imports';

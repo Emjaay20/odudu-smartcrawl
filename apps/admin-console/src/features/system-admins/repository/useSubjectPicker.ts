@@ -1,8 +1,8 @@
 import type { Subject } from '@odudu/contracts/admin';
-import { readAdministratorPage } from '#/shared/adapter/administrators.ts';
-import { usePicker } from '#/shared/repository/usePicker.ts';
-import type { PickerState } from '#/shared/service/picker.ts';
-import { SYSTEM_TENANT } from '#/shared/service/principal.ts';
+import { readAdministratorPage } from '#/shared/adapter/administrators';
+import { usePicker } from '#/shared/repository/usePicker';
+import type { PickerState } from '#/shared/service/picker';
+import { SYSTEM_TENANT } from '#/shared/service/principal';
 
 export function useSubjectPicker(): PickerState<Subject> {
   return usePicker({

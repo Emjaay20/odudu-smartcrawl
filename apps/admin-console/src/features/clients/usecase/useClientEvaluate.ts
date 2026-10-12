@@ -1,10 +1,7 @@
 import type { Client, Subject } from '@odudu/contracts/admin';
 import { useState } from 'react';
 import { useAuthority } from '#/features/session';
-import {
-  useEvaluation,
-  useSubjectPicker,
-} from '#/features/clients/repository/useClientEvaluation.ts';
+import { useEvaluation, useSubjectPicker } from '#/features/clients/repository/useClientEvaluation';
 import {
   artefactsOf,
   evaluateAllowed,
@@ -12,7 +9,7 @@ import {
   evaluateFailureText,
   type Artefact,
 } from '#/features/clients/service';
-import { lastChosen, type PickerState } from '#/shared/service/picker.ts';
+import { lastChosen, type PickerState } from '#/shared/service/picker';
 
 // Whether the caller may look at a subject's claims: whoami says view-users
 // is held, or has not yet answered.

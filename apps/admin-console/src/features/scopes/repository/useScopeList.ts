@@ -1,7 +1,7 @@
 import type { ClientScope } from '@odudu/contracts/admin';
-import { readScopeCount, readScopePage } from '#/features/scopes/adapter/scopes.ts';
-import { useResourceList } from '#/shared/repository/useResourceList.ts';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
+import { readScopeCount, readScopePage } from '#/features/scopes/adapter/scopes';
+import { useResourceList } from '#/shared/repository/useResourceList';
+import type { ResourceListState } from '#/shared/service/resourceList';
 
 export function useScopeList(tenant: string): ResourceListState<ClientScope> {
   return useResourceList({

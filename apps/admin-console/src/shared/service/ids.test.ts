@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { inOrderOf, removedFrom, sortedIds, uniqueIds } from '#/shared/service/ids.ts';
+import { inOrderOf, removedFrom, sortedIds, uniqueIds } from '#/shared/service/ids';
 
 describe('sortedIds', () => {
   it('sorts a copy and leaves the input alone', () => {

@@ -1,5 +1,5 @@
-import { holds } from '#/shared/service/access.ts';
-import type { Authority } from '#/shared/service/principal.ts';
+import { holds } from '#/shared/service/access';
+import type { Authority } from '#/shared/service/principal';
 
 export const ROLES_CAPABILITY = 'manage-tenant';
 

@@ -1,11 +1,11 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
-import type { RecordView } from '#/shared/service/record.ts';
+import type { RecordView } from '#/shared/service/record';
 import { Button } from '#/shared/view/Button';
 import { TextField } from '#/shared/view/Field';
-import { RecordPage } from '#/shared/view/RecordPage/RecordPage.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { RecordPage } from '#/shared/view/RecordPage/RecordPage';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 function view(overrides: Partial<RecordView> = {}): RecordView {
   return {

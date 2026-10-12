@@ -1,1 +1,1 @@
-export { LatestAudit } from '#/features/overview/view/LatestAudit/LatestAudit.tsx';
+export { LatestAudit } from '#/features/overview/view/LatestAudit/LatestAudit';

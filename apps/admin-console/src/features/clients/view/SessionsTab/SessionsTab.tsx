@@ -13,7 +13,7 @@ import {
   useClientSessionsTab,
   useSessionsReadable,
   type ClientSessions,
-} from '#/features/clients/usecase/useClientSessionsTab.ts';
+} from '#/features/clients/usecase/useClientSessionsTab';
 import { Button } from '#/shared/view/Button';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';

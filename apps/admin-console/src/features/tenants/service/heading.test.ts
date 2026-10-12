@@ -3,14 +3,14 @@ import {
   systemAdminsTrail,
   tenantAdministratorTrail,
   tenantsTrail,
-} from '#/features/tenants/service/address.ts';
+} from '#/features/tenants/service/address';
 import {
   creationHeading,
   ADD_SYSTEM_ADMIN_TITLE,
   CREATE_TENANT_TITLE,
   firstAdministratorNote,
   originText,
-} from '#/features/tenants/service/heading.ts';
+} from '#/features/tenants/service/heading';
 
 describe('the heading of the creation page', () => {
   it('is the tenant step, first under Tenants', () => {

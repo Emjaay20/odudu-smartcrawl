@@ -1,1 +1,1 @@
-export * from '#/features/groups/view/NewGroupPage/NewGroupPage.tsx';
+export * from '#/features/groups/view/NewGroupPage/NewGroupPage';

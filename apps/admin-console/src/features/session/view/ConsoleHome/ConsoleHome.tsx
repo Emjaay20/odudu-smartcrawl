@@ -1,4 +1,4 @@
-import { useConsoleHome } from '#/features/session/usecase/useConsoleHome.ts';
+import { useConsoleHome } from '#/features/session/usecase/useConsoleHome';
 import { SignedInElsewhere } from '#/features/session/view/SignedInElsewhere';
 import { SignIn } from '#/features/session/view/SignIn';
 import { SigningIn } from '#/features/session/view/SigningIn';

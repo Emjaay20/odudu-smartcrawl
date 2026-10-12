@@ -1,7 +1,7 @@
 import { Link } from 'react-aria-components';
 import { CapabilityHolders } from '#/features/subjects';
-import { useTenantAdministrators } from '#/features/tenants/usecase/useTenantAdministrators.ts';
-import { SYSTEM_TENANT } from '#/shared/service/principal.ts';
+import { useTenantAdministrators } from '#/features/tenants/usecase/useTenantAdministrators';
+import { SYSTEM_TENANT } from '#/shared/service/principal';
 import { Button } from '#/shared/view/Button';
 import styles from '#/features/tenants/view/AdministratorsTab/AdministratorsTab.module.css';
 

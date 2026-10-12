@@ -10,7 +10,7 @@ import {
   useScopeGeneral,
   type Deletion,
   type ScopeGeneral,
-} from '#/features/scopes/usecase/useScopeGeneral.ts';
+} from '#/features/scopes/usecase/useScopeGeneral';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { SelectField, TextAreaField, TextField, ToggleField } from '#/shared/view/Field';

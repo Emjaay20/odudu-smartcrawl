@@ -1,8 +1,8 @@
-import { json, type Answer, type Sent } from '#/testing/fakeTransport.ts';
-import { CLIENTS } from '#/testing/clientsFixtures.ts';
-import { GRACE, whoami } from '#/testing/renderConsole.tsx';
-import { ROLES } from '#/testing/rolesFixtures.ts';
-import { EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures.ts';
+import { json, type Answer, type Sent } from '#/testing/fakeTransport';
+import { CLIENTS } from '#/testing/clientsFixtures';
+import { GRACE, whoami } from '#/testing/renderConsole';
+import { ROLES } from '#/testing/rolesFixtures';
+import { EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures';
 
 export const A = '/console/api/admin/tenants/acme';
 export const SC = `${A}/scopes`;

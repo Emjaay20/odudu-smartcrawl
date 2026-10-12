@@ -1,6 +1,6 @@
 import { use } from 'react';
 import { Group, Input, NumberField as AriaNumberField, Text } from 'react-aria-components';
-import { formatDuration } from '#/shared/service/format.ts';
+import { formatDuration } from '#/shared/service/format';
 import {
   FieldsReadOnly,
   Header,
@@ -9,7 +9,7 @@ import {
   VALIDATION,
   invalid,
   type Chrome,
-} from '#/shared/view/Field/Field.tsx';
+} from '#/shared/view/Field/Field';
 import styles from '#/shared/view/Field/Field.module.css';
 
 const UNIT_SYMBOL: Readonly<Record<string, string>> = { seconds: 's' };

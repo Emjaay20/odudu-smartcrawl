@@ -1,10 +1,10 @@
 import type { Group, GroupRecord } from '@odudu/contracts/admin';
 import { beyondCaller, type Loss } from '#/shared/service/capabilities';
-import { andList } from '#/shared/service/format.ts';
-import type { AdminCapability, Authority } from '#/shared/service/principal.ts';
-import { type ReachLines, reachLines } from '#/features/groups/service/blocks.ts';
-import { newGroupHref } from '#/features/groups/service/address.ts';
-import { type Readiness } from '#/features/groups/service/loss.ts';
+import { andList } from '#/shared/service/format';
+import type { AdminCapability, Authority } from '#/shared/service/principal';
+import { type ReachLines, reachLines } from '#/features/groups/service/blocks';
+import { newGroupHref } from '#/features/groups/service/address';
+import { type Readiness } from '#/features/groups/service/loss';
 
 export type GroupRead =
   | { status: 'none' }

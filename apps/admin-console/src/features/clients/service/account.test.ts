@@ -9,7 +9,7 @@ import {
   serviceRolesRecord,
   serviceRolesRecordOf,
   splitAssigned,
-} from '#/features/clients/service/account.ts';
+} from '#/features/clients/service/account';
 
 const ADMIN = { id: 'a1', name: 'manage-users', client_id: 'ac', client_key: 'odudu-admin' };
 const TENANT = { id: 't1', name: 'reader', client_id: null, client_key: null };

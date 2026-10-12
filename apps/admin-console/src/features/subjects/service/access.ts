@@ -1,7 +1,7 @@
 import { holdingLabel, type Holding } from '#/shared/service/capabilities';
-import { andList } from '#/shared/service/format.ts';
-import { type AdminCapability } from '#/shared/service/principal.ts';
-import type { GatewayFailure } from '#/shared/service/result.ts';
+import { andList } from '#/shared/service/format';
+import { type AdminCapability } from '#/shared/service/principal';
+import type { GatewayFailure } from '#/shared/service/result';
 
 // What a 403 or the last-administrator 409 means for a change to what a
 // subject holds: a caller gives only what it holds itself, and reaches no

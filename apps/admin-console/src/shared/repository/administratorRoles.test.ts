@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
-import { grantHoldings, grantTenantAdmin } from '#/shared/repository/administratorRoles.ts';
-import { fakeTransport, json, problem, type Answer } from '#/testing/fakeTransport.ts';
-import { administratorRoutes } from '#/testing/tenantsFixtures.ts';
+import { grantHoldings, grantTenantAdmin } from '#/shared/repository/administratorRoles';
+import { fakeTransport, json, problem, type Answer } from '#/testing/fakeTransport';
+import { administratorRoutes } from '#/testing/tenantsFixtures';
 
 const S = '/console/api/admin/tenants/system';
 const ID = '01a0e72d-7fc7-7950-a1e7-1d079588f8b4';

@@ -5,7 +5,7 @@ import {
   NONE,
   type InstallationRow,
 } from '#/features/clients/service';
-import { useInstallationPanel } from '#/features/clients/usecase/useClientInstallationPanel.ts';
+import { useInstallationPanel } from '#/features/clients/usecase/useClientInstallationPanel';
 import { Button } from '#/shared/view/Button';
 import { CopyValue } from '#/shared/view/CopyValue';
 import { FormSkeleton } from '#/shared/view/Skeleton';

@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import type { Tenant } from '#/features/tenants/service';
-import { useTenantGeneral } from '#/features/tenants/usecase/useTenantGeneral.ts';
+import { useTenantGeneral } from '#/features/tenants/usecase/useTenantGeneral';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { TextField } from '#/shared/view/Field';

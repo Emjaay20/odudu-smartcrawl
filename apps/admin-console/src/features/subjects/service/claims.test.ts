@@ -6,7 +6,7 @@ import {
   ADDRESS_CLAIMS,
   DETAIL_CLAIMS,
   NAME_CLAIMS,
-} from '#/features/subjects/service/claims.ts';
+} from '#/features/subjects/service/claims';
 
 describe('the claims', () => {
   it('names every claim the profile carries exactly once', () => {

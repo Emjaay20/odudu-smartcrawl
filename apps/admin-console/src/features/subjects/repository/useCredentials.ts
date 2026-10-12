@@ -4,17 +4,17 @@ import type {
   Lockout,
 } from '@odudu/contracts/admin';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRead, type Read } from '#/shared/repository/useRead.ts';
+import { useRead, type Read } from '#/shared/repository/useRead';
 import {
   changeCredential,
   readCredentials,
   readLockout,
-} from '#/features/subjects/adapter/subjects.ts';
+} from '#/features/subjects/adapter/subjects';
 import type { CredentialChange } from '#/features/subjects/service';
-import { issuePassword } from '#/shared/adapter/administrators.ts';
-import { useSecretOnce, type SecretOnce } from '#/shared/repository/useSecretOnce.ts';
-import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { issuePassword } from '#/shared/adapter/administrators';
+import { useSecretOnce, type SecretOnce } from '#/shared/repository/useSecretOnce';
+import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export type { Read };
 

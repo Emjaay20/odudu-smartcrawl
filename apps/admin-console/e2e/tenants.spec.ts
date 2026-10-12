@@ -9,8 +9,8 @@ import {
   signIn,
   signInAtTenant,
   test,
-} from './fixtures.ts';
-import { psql, seeded, type Account } from './stack.ts';
+} from './fixtures';
+import { psql, seeded, type Account } from './stack';
 
 const { admin, limited, resumer, system, systemAdmins, tenants } = seeded();
 const PHONE = { width: 390, height: 844 };

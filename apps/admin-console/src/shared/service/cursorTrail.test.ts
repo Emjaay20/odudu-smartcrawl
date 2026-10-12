@@ -8,7 +8,7 @@ import {
   trailFromSearch,
   trailToSearch,
   type CursorTrail,
-} from '#/shared/service/cursorTrail.ts';
+} from '#/shared/service/cursorTrail';
 
 it('starts on the first page, which has no cursor', () => {
   expect(currentCursor([])).toBeUndefined();

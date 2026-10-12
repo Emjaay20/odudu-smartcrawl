@@ -9,11 +9,11 @@ import {
   setScopeMappers,
   setScopeRoles,
   type CreateScopeInput,
-} from '#/features/scopes/adapter/scopes.ts';
+} from '#/features/scopes/adapter/scopes';
 import type { CopyRead } from '#/features/scopes/service';
-import { useFreshRead } from '#/shared/repository/useFreshRead.ts';
-import type { GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { useFreshRead } from '#/shared/repository/useFreshRead';
+import type { GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export type ScopeInput = CreateScopeInput;
 

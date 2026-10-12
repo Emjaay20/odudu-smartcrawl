@@ -1,7 +1,7 @@
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { Timestamp } from '#/shared/view/Timestamp/Timestamp.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { Timestamp } from '#/shared/view/Timestamp/Timestamp';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 afterEach(() => {
   vi.useRealTimers();

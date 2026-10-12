@@ -1,15 +1,9 @@
 import { screen } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
-import { json } from '#/testing/fakeTransport.ts';
-import {
-  consoleAt,
-  GRACE,
-  renderConsoleAt,
-  resetConsole,
-  whoami,
-} from '#/testing/renderConsole.tsx';
-import { ADMIN } from '#/testing/tenantsFixtures.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
+import { json } from '#/testing/fakeTransport';
+import { consoleAt, GRACE, renderConsoleAt, resetConsole, whoami } from '#/testing/renderConsole';
+import { ADMIN } from '#/testing/tenantsFixtures';
 
 afterEach(() => {
   resetConsole();

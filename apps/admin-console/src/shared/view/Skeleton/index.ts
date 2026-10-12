@@ -1,1 +1,1 @@
-export * from '#/shared/view/Skeleton/Skeleton.tsx';
+export * from '#/shared/view/Skeleton/Skeleton';

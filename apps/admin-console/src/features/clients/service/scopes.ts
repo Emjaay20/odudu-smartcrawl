@@ -1,8 +1,8 @@
 import type { Client, ClientScope } from '@odudu/contracts/admin';
 import { writeRefusal } from '#/shared/service/capabilities';
-import { writeFailureText } from '#/shared/service/failure.ts';
-import type { GatewayFailure, Problem } from '#/shared/service/result.ts';
-import type { Choice } from '#/features/clients/service/choices.ts';
+import { writeFailureText } from '#/shared/service/failure';
+import type { GatewayFailure, Problem } from '#/shared/service/result';
+import type { Choice } from '#/features/clients/service/choices';
 
 export const SCOPES_CAPABILITY = 'manage-tenant';
 

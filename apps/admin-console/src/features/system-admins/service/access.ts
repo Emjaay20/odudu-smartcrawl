@@ -1,6 +1,6 @@
-import { blockedChanges, lacking, type Change } from '#/shared/service/access.ts';
-import { administratorNeeds, GRANT_NEEDS } from '#/shared/service/administrators.ts';
-import { SYSTEM_TENANT, type AdminCapability, type Authority } from '#/shared/service/principal.ts';
+import { blockedChanges, lacking, type Change } from '#/shared/service/access';
+import { administratorNeeds, GRANT_NEEDS } from '#/shared/service/administrators';
+import { SYSTEM_TENANT, type AdminCapability, type Authority } from '#/shared/service/principal';
 
 const CREATING = administratorNeeds(SYSTEM_TENANT, { subjectId: null, granted: false });
 

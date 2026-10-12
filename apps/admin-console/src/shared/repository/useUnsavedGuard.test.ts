@@ -1,5 +1,5 @@
 import { beforeEach, expect, it, vi } from 'vitest';
-import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard.ts';
+import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 
 beforeEach(() => {
   useUnsavedGuard.getState().reset();

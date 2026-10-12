@@ -1,6 +1,6 @@
 import { MutationObserver } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
-import { createQueryClient } from '#/shared/repository/queryClient.ts';
+import { createQueryClient } from '#/shared/repository/queryClient';
 
 describe('createQueryClient', () => {
   const defaults = createQueryClient().getDefaultOptions();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { GatewayFailure } from '#/shared/service/result.ts';
+import type { GatewayFailure } from '#/shared/service/result';
 import {
   credentialDialogOf,
   credentialChangeOf,
@@ -9,7 +9,7 @@ import {
   recoveryCodesText,
   credentialsOf,
   lockoutSummary,
-} from '#/features/subjects/service/credentials.ts';
+} from '#/features/subjects/service/credentials';
 
 const failure = (kind: 'network' | 'schema' | 'defect'): GatewayFailure => ({ ok: false, kind });
 

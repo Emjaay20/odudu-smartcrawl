@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { draftFieldsOf, keepableValues, withoutDraft } from '#/shared/service/drafts.ts';
+import { draftFieldsOf, keepableValues, withoutDraft } from '#/shared/service/drafts';
 
 describe('keepableValues', () => {
   it('keeps what is plain and never a secret', () => {

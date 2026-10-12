@@ -4,8 +4,8 @@ import {
   useCompositesRead,
   useRoleComposites,
   type RoleComposites,
-} from '#/features/roles/usecase/useRoleComposites.ts';
-import type { Ceiling } from '#/features/roles/usecase/useRoleRecordPage.ts';
+} from '#/features/roles/usecase/useRoleComposites';
+import type { Ceiling } from '#/features/roles/usecase/useRoleRecordPage';
 import { RoleOwner } from '#/shared/view/RoleOwner';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { Button } from '#/shared/view/Button';

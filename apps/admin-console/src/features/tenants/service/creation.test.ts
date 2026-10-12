@@ -14,7 +14,7 @@ import {
   holdsText,
   systemHoldsText,
   unfinishedOf,
-} from '#/features/tenants/service/creation.ts';
+} from '#/features/tenants/service/creation';
 
 describe('the three guided flows', () => {
   it("keeps system's own administrators, and each tenant's, apart from tenant creation", () => {

@@ -1,5 +1,5 @@
 import { type RequiredAction } from '@odudu/contracts/admin';
-import { inOrderOf } from '#/shared/service/ids.ts';
+import { inOrderOf } from '#/shared/service/ids';
 
 // In the order the next sign-in asks for them.
 export const REQUIRED_ACTIONS: readonly {

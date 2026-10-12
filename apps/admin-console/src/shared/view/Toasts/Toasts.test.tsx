@@ -2,9 +2,9 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import type { Toast } from '#/shared/service/toast.ts';
-import { Toasts } from '#/shared/view/Toasts/Toasts.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import type { Toast } from '#/shared/service/toast';
+import { Toasts } from '#/shared/view/Toasts/Toasts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 const SAVED: Toast = { id: 't1', tone: 'success', message: 'Client saved' };
 const FAILED: Toast = { id: 't2', tone: 'error', message: 'The server could not be reached' };

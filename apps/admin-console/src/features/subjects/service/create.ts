@@ -1,6 +1,6 @@
-import { lacking } from '#/shared/service/access.ts';
-import { createdText, type CreateSpec } from '#/shared/service/failure.ts';
-import { type Authority } from '#/shared/service/principal.ts';
+import { lacking } from '#/shared/service/access';
+import { createdText, type CreateSpec } from '#/shared/service/failure';
+import { type Authority } from '#/shared/service/principal';
 
 // A read as the hooks hand it to a service: the services judge what it says
 // without knowing which hook made it.

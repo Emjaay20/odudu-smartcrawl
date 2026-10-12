@@ -7,7 +7,7 @@ import {
   useEnabledHolderCount,
   useRolesRecord,
   useSaveRoles,
-} from '#/features/subjects/repository/useAccess.ts';
+} from '#/features/subjects/repository/useAccess';
 import {
   accessRefusal,
   adminRolesBlocked,
@@ -30,13 +30,13 @@ import {
   type Confirmation,
   type HeldElsewhere,
 } from '#/features/subjects/service';
-import { administratorCapability } from '#/shared/service/administrators.ts';
-import type { RecordState } from '#/shared/repository/useRecord.ts';
-import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave.ts';
-import { notLacking } from '#/shared/service/access.ts';
+import { administratorCapability } from '#/shared/service/administrators';
+import type { RecordState } from '#/shared/repository/useRecord';
+import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
+import { notLacking } from '#/shared/service/access';
 import { holdingsIn, type Holding, type HoldingOption } from '#/shared/service/capabilities';
-import { inOrderOf, removedFrom } from '#/shared/service/ids.ts';
-import type { AdminCapability } from '#/shared/service/principal.ts';
+import { inOrderOf, removedFrom } from '#/shared/service/ids';
+import type { AdminCapability } from '#/shared/service/principal';
 
 export function useSubjectRolesRead(tenant: string, id: string): RecordState<SetRolesResponse> {
   return useRolesRecord(tenant, id);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { tenantAdminCarries } from '#/shared/service/administrators.ts';
-import type { AdminCapability, Authority } from '#/shared/service/principal.ts';
-import { disableFixed, tenantRecordAccess } from '#/features/tenants/service/access.ts';
+import { tenantAdminCarries } from '#/shared/service/administrators';
+import type { AdminCapability, Authority } from '#/shared/service/principal';
+import { disableFixed, tenantRecordAccess } from '#/features/tenants/service/access';
 
 describe('the tenant record page', () => {
   const caller = (...capabilities: AdminCapability[]): Authority => ({

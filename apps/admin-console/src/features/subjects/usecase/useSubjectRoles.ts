@@ -5,7 +5,7 @@ import type {
   Subject,
 } from '@odudu/contracts/admin';
 import { useRefusal } from '#/features/session';
-import { useEffectiveRoleList, useSaveRoles } from '#/features/subjects/repository/useAccess.ts';
+import { useEffectiveRoleList, useSaveRoles } from '#/features/subjects/repository/useAccess';
 import {
   accessRefusal,
   assignmentsOf,
@@ -16,12 +16,12 @@ import {
   subjectName,
   type Assignment,
 } from '#/features/subjects/service';
-import { useRolePicker } from '#/shared/repository/useRolePicker.ts';
-import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave.ts';
-import { describeIds } from '#/shared/service/format.ts';
-import { sortedIds } from '#/shared/service/ids.ts';
-import type { PickerState } from '#/shared/service/picker.ts';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
+import { useRolePicker } from '#/shared/repository/useRolePicker';
+import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
+import { describeIds } from '#/shared/service/format';
+import { sortedIds } from '#/shared/service/ids';
+import type { PickerState } from '#/shared/service/picker';
+import type { ResourceListState } from '#/shared/service/resourceList';
 
 export interface RoleValues extends Readonly<Record<string, unknown>> {
   role_ids: readonly string[];

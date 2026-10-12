@@ -1,18 +1,18 @@
 import type { Tenant } from '@odudu/contracts/admin';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { amendTenant, readTenant } from '#/features/tenants/adapter/tenants.ts';
+import { amendTenant, readTenant } from '#/features/tenants/adapter/tenants';
 import { tenantRecord } from '#/features/tenants/service';
 import {
   recordKey,
   useRecord,
   type RecordEntry,
   type RecordState,
-} from '#/shared/repository/useRecord.ts';
-import type { SaveInput } from '#/shared/repository/useSectionSave.ts';
-import { isStale } from '#/shared/service/failure.ts';
-import { SYSTEM_TENANT } from '#/shared/service/principal.ts';
-import type { Gateway, GatewayFailure, GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+} from '#/shared/repository/useRecord';
+import type { SaveInput } from '#/shared/repository/useSectionSave';
+import { isStale } from '#/shared/service/failure';
+import { SYSTEM_TENANT } from '#/shared/service/principal';
+import type { Gateway, GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export function useTenantRecord(name: string): RecordState<Tenant> {
   return useRecord({

@@ -1,8 +1,8 @@
 import type { AuditEvent } from '@odudu/contracts/admin';
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { AuditActor } from '#/shared/view/AuditActor/AuditActor.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { AuditActor } from '#/shared/view/AuditActor/AuditActor';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 const ID = '0192f7a4-5c1e-7b3a-9d2e-6f8a1b2c3d4e';
 

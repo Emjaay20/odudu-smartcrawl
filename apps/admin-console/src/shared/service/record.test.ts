@@ -7,7 +7,7 @@ import {
   sectionKey,
   sectionsOf,
   tabNamed,
-} from '#/shared/service/record.ts';
+} from '#/shared/service/record';
 
 const TABS = ['general', 'roles', 'activity'] as const;
 

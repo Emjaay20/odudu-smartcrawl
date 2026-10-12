@@ -1,1 +1,1 @@
-export { ServiceAccountTab } from '#/features/clients/view/ServiceAccountTab/ServiceAccountTab.tsx';
+export { ServiceAccountTab } from '#/features/clients/view/ServiceAccountTab/ServiceAccountTab';

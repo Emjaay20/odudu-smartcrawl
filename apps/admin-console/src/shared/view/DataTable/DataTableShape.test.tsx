@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
-import { DataTableShape } from '#/shared/view/DataTable/DataTableShape.tsx';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
+import { DataTableShape } from '#/shared/view/DataTable/DataTableShape';
 
 const shape = (
   <main>

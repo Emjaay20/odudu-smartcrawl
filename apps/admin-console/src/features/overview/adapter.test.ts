@@ -7,8 +7,8 @@ import {
   readLatestAudit,
   readSettings,
   readSmtp,
-} from '#/features/overview/adapter.ts';
-import { fakeTransport, inTurn, json } from '#/testing/fakeTransport.ts';
+} from '#/features/overview/adapter';
+import { fakeTransport, inTurn, json } from '#/testing/fakeTransport';
 
 const DISCOVERY = {
   issuer: 'https://id.example/tenants/acme',

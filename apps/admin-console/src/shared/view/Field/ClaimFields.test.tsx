@@ -8,9 +8,9 @@ import {
   GenderField,
   LocaleField,
   TimeZoneField,
-} from '#/shared/view/Field/ClaimFields.tsx';
-import { OwnDataFields, ReadOnlyFields } from '#/shared/view/Field/Field.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+} from '#/shared/view/Field/ClaimFields';
+import { OwnDataFields, ReadOnlyFields } from '#/shared/view/Field/Field';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 interface FieldProps {
   label: string;

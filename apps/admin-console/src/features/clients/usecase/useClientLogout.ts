@@ -4,7 +4,7 @@ import {
   type BackchannelValues,
   type FrontchannelValues,
   type PostLogoutValues,
-} from '#/features/clients/repository/useClientConfigSaves.ts';
+} from '#/features/clients/repository/useClientConfigSaves';
 import {
   BACKCHANNEL_SESSION_LABEL,
   CLIENT_LIST_LIMIT,
@@ -14,9 +14,9 @@ import {
   POST_LOGOUT_NOUN,
   SECTIONS_LOGOUT,
 } from '#/features/clients/service';
-import { useClientSection } from '#/features/clients/usecase/useClientSection.ts';
-import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave.ts';
-import { flagText } from '#/shared/service/format.ts';
+import { useClientSection } from '#/features/clients/usecase/useClientSection';
+import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
+import { flagText } from '#/shared/service/format';
 
 export interface ClientLogout {
   postLogout: SectionSave<PostLogoutValues>;

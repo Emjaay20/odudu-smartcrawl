@@ -9,8 +9,8 @@ import {
   readClientRoles,
   readSubjectRoles,
   setSubjectRoles,
-} from '#/shared/adapter/administrators.ts';
-import { fakeTransport, json } from '#/testing/fakeTransport.ts';
+} from '#/shared/adapter/administrators';
+import { fakeTransport, json } from '#/testing/fakeTransport';
 
 const T = '/console/api/admin/tenants/acme';
 const SUBJECT = {

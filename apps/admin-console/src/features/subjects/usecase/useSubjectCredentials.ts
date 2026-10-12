@@ -7,7 +7,7 @@ import {
   useIssuePassword,
   useLockout,
   type Read,
-} from '#/features/subjects/repository/useCredentials.ts';
+} from '#/features/subjects/repository/useCredentials';
 import {
   credentialChangeOf,
   credentialDialogOf,
@@ -18,7 +18,7 @@ import {
   type Asking,
   type CredentialDialog,
 } from '#/features/subjects/service';
-import { useToasts } from '#/shared/repository/useToasts.ts';
+import { useToasts } from '#/shared/repository/useToasts';
 
 export type { Asking };
 

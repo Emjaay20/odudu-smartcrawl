@@ -1,6 +1,6 @@
 import type { SendActionsEmailRequest } from '@odudu/contracts/admin';
 import { z } from 'zod';
-import type { Gateway, GatewayResult } from '#/shared/transport/gateway.ts';
+import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 
 export type MailRequest =
   { kind: 'reset' } | { kind: 'verification' } | { kind: 'actions'; body: SendActionsEmailRequest };

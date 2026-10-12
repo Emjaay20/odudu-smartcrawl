@@ -3,15 +3,15 @@ import {
   readClientRoles,
   readSubjectRoles,
   setSubjectRoles,
-} from '#/shared/adapter/administrators.ts';
+} from '#/shared/adapter/administrators';
 import {
   builtinAdminClient,
   TENANT_ADMIN,
   clientRole,
   withRole,
   type AdministratorRequest,
-} from '#/shared/service/administrators.ts';
-import type { Gateway, GatewayFailure } from '#/shared/transport/gateway.ts';
+} from '#/shared/service/administrators';
+import type { Gateway, GatewayFailure } from '#/shared/transport/gateway';
 
 export function defect(message: string): GatewayFailure {
   console.error(message);

@@ -1,1 +1,1 @@
-export * from '#/shared/view/Pager/Pager.tsx';
+export * from '#/shared/view/Pager/Pager';

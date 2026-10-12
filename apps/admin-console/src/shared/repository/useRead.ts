@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { isRefused } from '#/shared/service/failure.ts';
-import type { GatewayResult } from '#/shared/transport/gateway.ts';
+import { isRefused } from '#/shared/service/failure';
+import type { GatewayResult } from '#/shared/transport/gateway';
 
 // `refused` is a 403: the read needs a capability the caller lacks.
 export type Read<T> =

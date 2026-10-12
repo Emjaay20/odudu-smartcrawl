@@ -18,7 +18,7 @@ import {
   readBirthdate,
   type Birthdate,
   type BirthdateForm,
-} from '#/shared/service/birthdate.ts';
+} from '#/shared/service/birthdate';
 import {
   FieldGroup,
   FieldGroupIds,
@@ -30,7 +30,7 @@ import {
   SelectField,
   TextField,
   type Chrome,
-} from '#/shared/view/Field/Field.tsx';
+} from '#/shared/view/Field/Field';
 import styles from '#/shared/view/Field/Field.module.css';
 
 const FORMS: readonly { id: BirthdateForm; label: string }[] = [

@@ -1,9 +1,9 @@
-import { type Values } from '#/shared/service/dirty.ts';
-import { fieldErrorsOf } from '#/shared/service/fieldErrors.ts';
-import { writeFailureText } from '#/shared/service/failure.ts';
-import type { GatewayFailure, GatewayResult, Problem } from '#/shared/service/result.ts';
-import { type SavePhase, type SectionState } from '#/shared/service/sectionSave/state.ts';
-import { unsavedAfter } from '#/shared/service/sectionSave/transitions.ts';
+import { type Values } from '#/shared/service/dirty';
+import { fieldErrorsOf } from '#/shared/service/fieldErrors';
+import { writeFailureText } from '#/shared/service/failure';
+import type { GatewayFailure, GatewayResult, Problem } from '#/shared/service/result';
+import { type SavePhase, type SectionState } from '#/shared/service/sectionSave/state';
+import { unsavedAfter } from '#/shared/service/sectionSave/transitions';
 
 export function saveFailureText(label: string, failure: GatewayFailure): string {
   switch (failure.kind) {

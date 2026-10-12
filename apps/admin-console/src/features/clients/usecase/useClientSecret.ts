@@ -1,7 +1,7 @@
 import type { Client } from '@odudu/contracts/admin';
 import { useState } from 'react';
-import { useNow } from '#/shared/usecase/useNow.ts';
-import { useRotateSecret } from '#/features/clients/repository/useRotateSecret.ts';
+import { useNow } from '#/shared/usecase/useNow';
+import { useRotateSecret } from '#/features/clients/repository/useRotateSecret';
 import {
   previousSecretLine,
   type PreviousSecret,

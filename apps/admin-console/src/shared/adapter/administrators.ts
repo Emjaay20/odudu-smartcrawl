@@ -13,8 +13,8 @@ import {
   type SetRolesResponse,
   type Subject,
 } from '@odudu/contracts/admin';
-import { readRolePage } from '#/shared/adapter/directory.ts';
-import type { Gateway, GatewayResult } from '#/shared/transport/gateway.ts';
+import { readRolePage } from '#/shared/adapter/directory';
+import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 
 function tenantPath(tenant: string): string {
   return encodeURIComponent(tenant);

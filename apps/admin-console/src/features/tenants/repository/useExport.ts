@@ -1,14 +1,14 @@
-import { saveFile } from '#/features/tenants/adapter/files.ts';
-import { readExport } from '#/features/tenants/adapter/tenants.ts';
+import { saveFile } from '#/features/tenants/adapter/files';
+import { readExport } from '#/features/tenants/adapter/tenants';
 import {
   EXPORT_MEDIA_TYPE,
   exportedOf,
   exportFileName,
   type Exported,
 } from '#/features/tenants/service';
-import { useFreshRead } from '#/shared/repository/useFreshRead.ts';
-import type { GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { useFreshRead } from '#/shared/repository/useFreshRead';
+import type { GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export interface TenantExport {
   busy: boolean;

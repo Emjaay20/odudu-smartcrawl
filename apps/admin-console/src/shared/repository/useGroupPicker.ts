@@ -1,7 +1,7 @@
 import type { Group } from '@odudu/contracts/admin';
-import { readGroupPage } from '#/shared/adapter/directory.ts';
-import { usePicker } from '#/shared/repository/usePicker.ts';
-import type { PickerState } from '#/shared/service/picker.ts';
+import { readGroupPage } from '#/shared/adapter/directory';
+import { usePicker } from '#/shared/repository/usePicker';
+import type { PickerState } from '#/shared/service/picker';
 
 export function useGroupPicker(tenant: string): PickerState<Group> {
   return usePicker({

@@ -1,6 +1,6 @@
 import type { Subject } from '@odudu/contracts/admin';
 import { subjectName } from '#/features/subjects/service';
-import { useMembers, useMembersReadable } from '#/features/subjects/usecase/useMembers.ts';
+import { useMembers, useMembersReadable } from '#/features/subjects/usecase/useMembers';
 import { Button } from '#/shared/view/Button';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';

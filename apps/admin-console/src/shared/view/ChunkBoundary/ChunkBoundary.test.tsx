@@ -2,9 +2,9 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Component, type ReactNode } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { ChunkLoadError } from '#/shared/service/chunkLoad.ts';
-import { ChunkBoundary, ChunkFailed } from '#/shared/view/ChunkBoundary/ChunkBoundary.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { ChunkLoadError } from '#/shared/service/chunkLoad';
+import { ChunkBoundary, ChunkFailed } from '#/shared/view/ChunkBoundary/ChunkBoundary';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 afterEach(() => {
   vi.restoreAllMocks();

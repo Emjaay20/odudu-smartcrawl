@@ -9,7 +9,7 @@ import {
   POST_LOGOUT_RULE,
   SECTIONS_LOGOUT,
 } from '#/features/clients/service';
-import { useClientLogout } from '#/features/clients/usecase/useClientLogout.ts';
+import { useClientLogout } from '#/features/clients/usecase/useClientLogout';
 import { Deliveries } from '#/features/clients/view/Deliveries';
 import { SaveSection } from '#/features/clients/view/SaveSection';
 import { ReadOnlyFields, ToggleField, UrlField, UrlListField } from '#/shared/view/Field';

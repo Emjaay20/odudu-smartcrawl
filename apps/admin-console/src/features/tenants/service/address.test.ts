@@ -10,7 +10,7 @@ import {
   administratorStepHref,
   administratorTitle,
   systemAdminsHrefOf,
-} from '#/features/tenants/service/address.ts';
+} from '#/features/tenants/service/address';
 
 describe('the addresses', () => {
   it('puts creation and import beside the list, so no tenant name shadows them', () => {

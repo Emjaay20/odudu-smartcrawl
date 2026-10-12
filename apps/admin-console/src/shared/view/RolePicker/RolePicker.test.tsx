@@ -2,9 +2,9 @@ import type { Role } from '@odudu/contracts/admin';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
-import type { PickerState } from '#/shared/service/picker.ts';
-import { RolePicker } from '#/shared/view/RolePicker/RolePicker.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import type { PickerState } from '#/shared/service/picker';
+import { RolePicker } from '#/shared/view/RolePicker/RolePicker';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 function role(id: string, name: string, clientKey: string | null = null): Role {
   return {

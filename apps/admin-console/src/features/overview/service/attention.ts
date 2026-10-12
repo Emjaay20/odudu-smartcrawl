@@ -1,5 +1,5 @@
 import type { CountResponse, Settings, SigningKey, SmtpConfig } from '@odudu/contracts/admin';
-import { readyToPromote } from '#/shared/service/keyPromotion.ts';
+import { readyToPromote } from '#/shared/service/keyPromotion';
 
 export interface AttentionItem {
   id: string;

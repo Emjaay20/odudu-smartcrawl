@@ -5,10 +5,10 @@ import {
   type Loss,
   writeRefusal,
 } from '#/shared/service/capabilities';
-import { writeFailureText } from '#/shared/service/failure.ts';
-import type { GatewayFailure } from '#/shared/service/result.ts';
-import { compositeRefusal } from '#/features/roles/service/blocks.ts';
-import { type Ceiling } from '#/features/roles/service/ceiling.ts';
+import { writeFailureText } from '#/shared/service/failure';
+import type { GatewayFailure } from '#/shared/service/result';
+import { compositeRefusal } from '#/features/roles/service/blocks';
+import { type Ceiling } from '#/features/roles/service/ceiling';
 
 export function compositeRemovalConfirmation(role: string, child: string, loss: Loss): Asked {
   return {

@@ -4,7 +4,7 @@ import {
   revokeConsequence,
   revokeFailureText,
   sessionsReadable,
-} from '#/features/clients/service/sessions.ts';
+} from '#/features/clients/service/sessions';
 
 describe('revokedText', () => {
   it('says how many grants went, and nothing more when that is all', () => {

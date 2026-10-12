@@ -1,16 +1,10 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, it } from 'vitest';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
-import { json, problem, type Answer } from '#/testing/fakeTransport.ts';
-import {
-  consoleAt,
-  GRACE,
-  renderConsoleAt,
-  resetConsole,
-  whoami,
-} from '#/testing/renderConsole.tsx';
-import { ADMIN, administratorRoutes, systemRoutes } from '#/testing/tenantsFixtures.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
+import { json, problem, type Answer } from '#/testing/fakeTransport';
+import { consoleAt, GRACE, renderConsoleAt, resetConsole, whoami } from '#/testing/renderConsole';
+import { ADMIN, administratorRoutes, systemRoutes } from '#/testing/tenantsFixtures';
 
 const AT = '/console/system/system-admins';
 const S = `${ADMIN}/system`;

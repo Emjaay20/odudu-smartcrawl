@@ -6,7 +6,7 @@ import {
   listStatusOf,
   listToSearch,
   withFilter,
-} from '#/shared/service/resourceList.ts';
+} from '#/shared/service/resourceList';
 
 const SPEC = { fields: ['username', 'email'], filters: ['enabled', 'role'] } as const;
 

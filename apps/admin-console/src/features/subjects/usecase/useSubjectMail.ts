@@ -2,7 +2,7 @@ import type { RequiredAction, Subject } from '@odudu/contracts/admin';
 import { useState } from 'react';
 import { useRefusal } from '#/features/session';
 import { areaAt, areaHref } from '#/features/shell';
-import { useMailSend, type MailRequest } from '#/features/subjects/repository/useMail.ts';
+import { useMailSend, type MailRequest } from '#/features/subjects/repository/useMail';
 import {
   actionsMailProblem,
   mailFailure,
@@ -13,7 +13,7 @@ import {
   subjectTabHref,
   type MailOutcome,
 } from '#/features/subjects/service';
-import { withoutField } from '#/shared/service/fieldErrors.ts';
+import { withoutField } from '#/shared/service/fieldErrors';
 
 export type { MailOutcome };
 

@@ -7,12 +7,12 @@ import {
   readGroupRoles,
   setGroupDefault,
   setGroupRoles,
-} from '#/features/groups/adapter/groups.ts';
+} from '#/features/groups/adapter/groups';
 import { groupRecord, groupRolesRecord, type GroupRead } from '#/features/groups/service';
-import { useRecord, type RecordState } from '#/shared/repository/useRecord.ts';
-import type { SaveInput } from '#/shared/repository/useSectionSave.ts';
-import type { Gateway, GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { useRecord, type RecordState } from '#/shared/repository/useRecord';
+import type { SaveInput } from '#/shared/repository/useSectionSave';
+import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export function useGroupRecord(tenant: string, id: string): RecordState<GroupRecord> {
   return useRecord({

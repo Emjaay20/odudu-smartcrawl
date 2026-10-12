@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { readSystemIssuer } from '#/features/tenants/adapter/tenants.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { readSystemIssuer } from '#/features/tenants/adapter/tenants';
+import { useTransport } from '#/shared/transport/useTransport';
 
 // The system tenant's issuer as relying parties see it, the public base's.
 export function useSystemIssuer(): string | undefined {

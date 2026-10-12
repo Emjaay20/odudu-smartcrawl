@@ -4,7 +4,7 @@ import {
   groupsHref,
   groupsTrail,
   newGroupHref,
-} from '#/features/groups/service/address.ts';
+} from '#/features/groups/service/address';
 
 describe('addresses', () => {
   it('puts a group under its tenant, and a new one under the parent it was asked from', () => {

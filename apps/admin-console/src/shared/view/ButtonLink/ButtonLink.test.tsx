@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { ButtonLink } from '#/shared/view/ButtonLink/ButtonLink.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { ButtonLink } from '#/shared/view/ButtonLink/ButtonLink';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 it('is a link with its href, named by its text', () => {
   render(<ButtonLink href="/console/system/new-tenant">Create a tenant</ButtonLink>);

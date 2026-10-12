@@ -1,8 +1,8 @@
 import type { EvaluateClaimsResponse } from '@odudu/contracts/admin';
-import { holds } from '#/shared/service/access.ts';
-import { writeFailureText } from '#/shared/service/failure.ts';
-import type { Authority } from '#/shared/service/principal.ts';
-import type { GatewayFailure } from '#/shared/service/result.ts';
+import { holds } from '#/shared/service/access';
+import { writeFailureText } from '#/shared/service/failure';
+import type { Authority } from '#/shared/service/principal';
+import type { GatewayFailure } from '#/shared/service/result';
 
 export const EVALUATE_HEADING = 'Evaluate';
 export const EVALUATE_RULE =

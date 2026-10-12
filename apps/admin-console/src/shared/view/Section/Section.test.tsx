@@ -3,8 +3,8 @@ import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
 import { ReadOnlyFields } from '#/shared/view/Field';
-import { Section } from '#/shared/view/Section/Section.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { Section } from '#/shared/view/Section/Section';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 function General(props: {
   dirty: boolean;

@@ -4,7 +4,7 @@ import {
   evaluateAllowed,
   evaluateFailureText,
   evaluatedScope,
-} from '#/features/clients/service/evaluate.ts';
+} from '#/features/clients/service/evaluate';
 
 const RESULT = {
   scope: 'openid profile',

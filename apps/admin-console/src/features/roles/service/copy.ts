@@ -1,8 +1,8 @@
 import type { ListRoleCompositesResponse, Role } from '@odudu/contracts/admin';
-import { andList } from '#/shared/service/format.ts';
-import type { AdminCapability } from '#/shared/service/principal.ts';
-import { childUnavailable } from '#/features/roles/service/blocks.ts';
-import { roleHref } from '#/features/roles/service/address.ts';
+import { andList } from '#/shared/service/format';
+import type { AdminCapability } from '#/shared/service/principal';
+import { childUnavailable } from '#/features/roles/service/blocks';
+import { roleHref } from '#/features/roles/service/address';
 
 export type CopyRead =
   | { status: 'none' }

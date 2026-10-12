@@ -4,7 +4,7 @@ import { holderFilterOptions } from '#/features/subjects/service';
 import {
   useCapabilityHolders,
   type Holder,
-} from '#/features/subjects/usecase/useCapabilityHolders.ts';
+} from '#/features/subjects/usecase/useCapabilityHolders';
 import { SubjectCapabilities } from '#/features/subjects/view/SubjectRecordPage';
 import { Button } from '#/shared/view/Button';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';

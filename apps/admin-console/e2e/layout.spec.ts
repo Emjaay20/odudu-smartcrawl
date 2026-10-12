@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
-import { expect, expectAccessible, expectFitsViewport, signIn, test } from './fixtures.ts';
-import { psql, seeded } from './stack.ts';
+import { expect, expectAccessible, expectFitsViewport, signIn, test } from './fixtures';
+import { psql, seeded } from './stack';
 
 const { admin, subjects, system, tenants } = seeded();
 const PHONE = { width: 390, height: 844 };

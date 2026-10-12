@@ -2,10 +2,10 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Component, useState, type ReactNode } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { lazyFeatureRoute } from '#/app/lazyFeatureRoute/lazyFeatureRoute.tsx';
-import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard.ts';
-import { TransportContext } from '#/shared/transport/useTransport.ts';
-import { fakeTransport } from '#/testing/fakeTransport.ts';
+import { lazyFeatureRoute } from '#/app/lazyFeatureRoute/lazyFeatureRoute';
+import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
+import { TransportContext } from '#/shared/transport/useTransport';
+import { fakeTransport } from '#/testing/fakeTransport';
 
 afterEach(() => {
   useUnsavedGuard.getState().reset();

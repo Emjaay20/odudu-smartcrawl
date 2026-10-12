@@ -11,7 +11,7 @@ export {
   fieldValues,
   changedFrom,
   withoutFields,
-} from '#/shared/service/sectionSave/state.ts';
+} from '#/shared/service/sectionSave/state';
 export {
   initialSection,
   rebasedSection,
@@ -24,11 +24,11 @@ export {
   startable,
   sectionBlocked,
   conflictsOf,
-} from '#/shared/service/sectionSave/transitions.ts';
+} from '#/shared/service/sectionSave/transitions';
 export {
   saveFailureText,
   type SaveOutcome,
   rereadPhase,
   saveOutcome,
   afterSave,
-} from '#/shared/service/sectionSave/outcome.ts';
+} from '#/shared/service/sectionSave/outcome';

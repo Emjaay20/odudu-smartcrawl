@@ -1,4 +1,4 @@
-import { clientHref } from '#/features/clients/service/address.ts';
+import { clientHref } from '#/features/clients/service/address';
 
 // A client's record, a tab per concern, in the order the page shows them.
 export const CLIENT_TABS = [

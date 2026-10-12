@@ -1,1 +1,1 @@
-export const later = () => import('#/shared/view/Button/index.ts');
+export const later = () => import('#/shared/view/Button/index');

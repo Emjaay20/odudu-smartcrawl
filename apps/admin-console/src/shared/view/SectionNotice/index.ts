@@ -1,1 +1,1 @@
-export * from '#/shared/view/SectionNotice/SectionNotice.tsx';
+export * from '#/shared/view/SectionNotice/SectionNotice';

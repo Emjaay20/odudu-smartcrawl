@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard.ts';
+import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 
 // Keeps the guard's record of one section true for as long as it is mounted,
 // including after a leave that forgot it while it stayed on screen.

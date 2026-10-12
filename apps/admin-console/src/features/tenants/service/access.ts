@@ -1,6 +1,6 @@
-import { blockedChanges, lacking, type Change } from '#/shared/service/access.ts';
-import { administratorNeeds } from '#/shared/service/administrators.ts';
-import { SYSTEM_TENANT, type AdminCapability, type Authority } from '#/shared/service/principal.ts';
+import { blockedChanges, lacking, type Change } from '#/shared/service/access';
+import { administratorNeeds } from '#/shared/service/administrators';
+import { SYSTEM_TENANT, type AdminCapability, type Authority } from '#/shared/service/principal';
 
 export interface TenantRecordAccess {
   // What reading the record needs that whoami says is missing.

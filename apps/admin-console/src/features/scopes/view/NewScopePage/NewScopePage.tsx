@@ -1,7 +1,7 @@
 import type { SubmitEvent } from 'react';
 import { AreaGate, areaAt } from '#/features/shell';
 import { copyingText, scopesTrail } from '#/features/scopes/service';
-import { useNewScope, type Copying } from '#/features/scopes/usecase/useNewScope.ts';
+import { useNewScope, type Copying } from '#/features/scopes/usecase/useNewScope';
 import { Button } from '#/shared/view/Button';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { TextAreaField, TextField } from '#/shared/view/Field';

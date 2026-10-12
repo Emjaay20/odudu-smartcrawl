@@ -1,6 +1,6 @@
 import type { Grant, Subject } from '@odudu/contracts/admin';
-import { useHolds, useSubjectGrants } from '#/features/subjects/usecase/useSubjectSessions.ts';
-import { PagedList, Panel } from '#/features/subjects/view/SubjectRecordPage/SessionsTab.tsx';
+import { useHolds, useSubjectGrants } from '#/features/subjects/usecase/useSubjectSessions';
+import { PagedList, Panel } from '#/features/subjects/view/SubjectRecordPage/SessionsTab';
 import { Button } from '#/shared/view/Button';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';

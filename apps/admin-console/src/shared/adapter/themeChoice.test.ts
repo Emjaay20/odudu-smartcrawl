@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { loadThemeChoice, storeThemeChoice } from '#/shared/adapter/themeChoice.ts';
+import { loadThemeChoice, storeThemeChoice } from '#/shared/adapter/themeChoice';
 
 afterEach(() => {
   vi.restoreAllMocks();

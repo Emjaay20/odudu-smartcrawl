@@ -5,12 +5,12 @@ import {
   saveGeneral,
   useTenantEnabled,
   type GeneralValues,
-} from '#/features/tenants/repository/useTenantRecord.ts';
+} from '#/features/tenants/repository/useTenantRecord';
 import { disableFixed, tenantChangeFailure, tenantRecord } from '#/features/tenants/service';
-import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave.ts';
-import { useToasts } from '#/shared/repository/useToasts.ts';
-import { enabledText } from '#/shared/service/failure.ts';
-import { SYSTEM_TENANT } from '#/shared/service/principal.ts';
+import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
+import { useToasts } from '#/shared/repository/useToasts';
+import { enabledText } from '#/shared/service/failure';
+import { SYSTEM_TENANT } from '#/shared/service/principal';
 
 export interface EnabledControl {
   // Why it cannot be changed, shown as fixed text instead of a control.

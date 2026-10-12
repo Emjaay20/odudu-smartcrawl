@@ -6,7 +6,7 @@ import {
   type GrantValues,
   type IdTokenValues,
   type LifetimeValues,
-} from '#/features/clients/repository/useClientConfigSaves.ts';
+} from '#/features/clients/repository/useClientConfigSaves';
 import {
   AUTH_TIME_LABEL,
   choiceOf,
@@ -26,9 +26,9 @@ import {
   SECTIONS_TOKENS,
   TOKEN_FIELD,
 } from '#/features/clients/service';
-import { useClientSection } from '#/features/clients/usecase/useClientSection.ts';
-import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave.ts';
-import { describeIds, flagText } from '#/shared/service/format.ts';
+import { useClientSection } from '#/features/clients/usecase/useClientSection';
+import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
+import { describeIds, flagText } from '#/shared/service/format';
 import type { ChecklistOption } from '#/shared/view/ChecklistField';
 import type { SelectOption } from '#/shared/view/Field';
 

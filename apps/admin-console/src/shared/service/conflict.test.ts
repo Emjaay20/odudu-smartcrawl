@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { describeValue } from '#/shared/service/conflict.ts';
+import { describeValue } from '#/shared/service/conflict';
 
 it('reads a value the way a person would type it', () => {
   expect(describeValue('Billing portal')).toBe('Billing portal');

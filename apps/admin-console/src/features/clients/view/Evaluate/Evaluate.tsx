@@ -14,7 +14,7 @@ import {
   useClientEvaluate,
   useEvaluateAllowed,
   type ClientEvaluate,
-} from '#/features/clients/usecase/useClientEvaluate.ts';
+} from '#/features/clients/usecase/useClientEvaluate';
 import { Button } from '#/shared/view/Button';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { CopyValue } from '#/shared/view/CopyValue';

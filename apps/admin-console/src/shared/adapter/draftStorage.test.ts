@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { loadDrafts, storeDrafts } from '#/shared/adapter/draftStorage.ts';
+import { loadDrafts, storeDrafts } from '#/shared/adapter/draftStorage';
 
 const KEY = 'odudu.console.drafts';
 const KEPT = {

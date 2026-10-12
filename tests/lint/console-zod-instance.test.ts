@@ -33,7 +33,7 @@ function firstImportsZodConfig(source: string): boolean {
     first !== undefined &&
     ts.isImportDeclaration(first) &&
     first.importClause === undefined &&
-    first.moduleSpecifier.getText().slice(1, -1) === '#/zodConfig.ts'
+    first.moduleSpecifier.getText().slice(1, -1) === '#/zodConfig'
   );
 }
 
@@ -43,9 +43,9 @@ describe("the console's zod", () => {
   });
 
   it.each([
-    ["export { App } from '#/app/App';\nimport '#/zodConfig.ts';\n"],
-    ["import { App } from '#/app/App';\nimport '#/zodConfig.ts';\n"],
-    ["import { z } from '#/zodConfig.ts';\n"],
+    ["export { App } from '#/app/App';\nimport '#/zodConfig';\n"],
+    ["import { App } from '#/app/App';\nimport '#/zodConfig';\n"],
+    ["import { z } from '#/zodConfig';\n"],
   ])('refuses an entry that evaluates another module first: %j', (source) => {
     expect(firstImportsZodConfig(source)).toBe(false);
   });

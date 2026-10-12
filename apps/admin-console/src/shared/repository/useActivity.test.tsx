@@ -8,11 +8,11 @@ import {
 } from '@tanstack/react-router';
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { createQueryClient } from '#/shared/repository/queryClient.ts';
-import { useActivity } from '#/shared/repository/useActivity.ts';
-import { parseSearch, stringifySearch } from '#/shared/service/search.ts';
-import { TransportContext } from '#/shared/transport/useTransport.ts';
-import { fakeTransport, json } from '#/testing/fakeTransport.ts';
+import { createQueryClient } from '#/shared/repository/queryClient';
+import { useActivity } from '#/shared/repository/useActivity';
+import { parseSearch, stringifySearch } from '#/shared/service/search';
+import { TransportContext } from '#/shared/transport/useTransport';
+import { fakeTransport, json } from '#/testing/fakeTransport';
 
 const AUDIT = 'GET /console/api/admin/tenants/acme/audit';
 

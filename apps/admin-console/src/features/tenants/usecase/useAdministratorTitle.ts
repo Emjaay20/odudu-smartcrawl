@@ -1,5 +1,5 @@
 import { draftOwner, usePrincipal } from '#/features/session';
-import { storedCreation } from '#/features/tenants/repository/useCreation.ts';
+import { storedCreation } from '#/features/tenants/repository/useCreation';
 import { administratorTitle, titleOrigin } from '#/features/tenants/service';
 
 // Read before access is checked, so the header matches the page it becomes.

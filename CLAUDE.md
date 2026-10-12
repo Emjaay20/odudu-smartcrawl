@@ -396,6 +396,10 @@ Permitted imports:
 Features expose one `index.ts`. No feature reaches into another's
 internals.
 
+In the consoles an import never carries a `.ts` or `.tsx` extension:
+`'#/shared/service/chunkLoad'`, not `'…/chunkLoad.ts'`.
+`tests/lint/console-imports-no-extension.test.ts` fails the build on one.
+
 **"No business logic" in a usecase or repository means none, however small
 it looks.** A usecase wires hooks, state and calls together; a repository
 holds queries, mutations and cache keys. Neither decides anything, and

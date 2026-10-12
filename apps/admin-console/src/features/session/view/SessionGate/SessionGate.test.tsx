@@ -1,14 +1,8 @@
 import { act, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
-import { json, offline, pending } from '#/testing/fakeTransport.ts';
-import {
-  consoleAt,
-  GRACE,
-  renderConsoleAt,
-  whoami,
-  resetConsole,
-} from '#/testing/renderConsole.tsx';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
+import { json, offline, pending } from '#/testing/fakeTransport';
+import { consoleAt, GRACE, renderConsoleAt, whoami, resetConsole } from '#/testing/renderConsole';
 
 afterEach(() => {
   vi.useRealTimers();

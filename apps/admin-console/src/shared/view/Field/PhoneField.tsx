@@ -9,16 +9,16 @@ import {
   readTypedNumber,
   splitPhone,
   typingInternational,
-} from '#/shared/service/phone.ts';
-import { countryOptions } from '#/shared/service/regions.ts';
-import { ComboBoxField, type ComboOption } from '#/shared/view/Field/ComboBoxField.tsx';
+} from '#/shared/service/phone';
+import { countryOptions } from '#/shared/service/regions';
+import { ComboBoxField, type ComboOption } from '#/shared/view/Field/ComboBoxField';
 import {
   FieldGroup,
   FieldsReadOnly,
   ReadOnlyValue,
   TextField,
   type Chrome,
-} from '#/shared/view/Field/Field.tsx';
+} from '#/shared/view/Field/Field';
 import styles from '#/shared/view/Field/Field.module.css';
 
 interface Typed {

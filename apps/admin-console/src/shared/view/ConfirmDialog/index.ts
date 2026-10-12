@@ -1,1 +1,1 @@
-export * from '#/shared/view/ConfirmDialog/ConfirmDialog.tsx';
+export * from '#/shared/view/ConfirmDialog/ConfirmDialog';

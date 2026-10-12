@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { PageNotFound } from '#/features/shell';
-import { useSubjectsArea } from '#/features/subjects/usecase/useSubjectsArea.ts';
+import { useSubjectsArea } from '#/features/subjects/usecase/useSubjectsArea';
 import type { Crumb } from '#/shared/view/Breadcrumb';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { PageHeader } from '#/shared/view/PageHeader';

@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { useTenantExport } from '#/features/tenants/usecase/useTenantExport.ts';
+import { useTenantExport } from '#/features/tenants/usecase/useTenantExport';
 import { Button } from '#/shared/view/Button';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { ToggleField } from '#/shared/view/Field';

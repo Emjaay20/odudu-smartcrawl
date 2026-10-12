@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
 import { TenantNotFound } from '#/features/shell/view/TenantNotFound';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 it('names the tenant nobody has, and offers the tenant chooser', () => {
   render(<TenantNotFound tenant="no-such" chooseHref="/console/?choose" />);

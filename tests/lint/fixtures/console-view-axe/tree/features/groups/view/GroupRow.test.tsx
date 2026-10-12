@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 it('renders a label', () => {
   render(<span>hello</span>);

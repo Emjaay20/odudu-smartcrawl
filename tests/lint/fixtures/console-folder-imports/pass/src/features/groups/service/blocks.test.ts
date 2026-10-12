@@ -1,3 +1,3 @@
-import { refusal } from '#/features/groups/service/blocks.ts';
+import { refusal } from '#/features/groups/service/blocks';
 
 export const tested = refusal;

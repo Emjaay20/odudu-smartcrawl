@@ -1,12 +1,12 @@
-import { holds } from '#/shared/service/access.ts';
+import { holds } from '#/shared/service/access';
 import {
   isTenantName,
   SYSTEM_TENANT,
   type Authority,
   type Principal,
-} from '#/shared/service/principal.ts';
-import { type Area, EVERY_AREA, OVERVIEW, SYSTEM_AREAS } from '#/features/shell/service/areas.ts';
-import { showsSystemArea } from '#/features/shell/service/rail.ts';
+} from '#/shared/service/principal';
+import { type Area, EVERY_AREA, OVERVIEW, SYSTEM_AREAS } from '#/features/shell/service/areas';
+import { showsSystemArea } from '#/features/shell/service/rail';
 
 export type PendingShape = 'overview' | 'list' | 'record' | 'form' | 'page';
 

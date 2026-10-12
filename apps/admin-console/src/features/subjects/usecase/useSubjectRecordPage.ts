@@ -1,8 +1,8 @@
 import type { Subject } from '@odudu/contracts/admin';
 import { useAuthority, usePrincipal } from '#/features/session';
-import { useHeldCapabilities } from '#/features/subjects/repository/useAccess.ts';
-import { useDirtyRecords } from '#/shared/repository/useDirtyRecords.ts';
-import { useSubjectRecord } from '#/features/subjects/repository/useSubjectRecord.ts';
+import { useHeldCapabilities } from '#/features/subjects/repository/useAccess';
+import { useDirtyRecords } from '#/shared/repository/useDirtyRecords';
+import { useSubjectRecord } from '#/features/subjects/repository/useSubjectRecord';
 import {
   canManageSubject,
   reachOf,
@@ -11,10 +11,10 @@ import {
   TAB_RECORDS,
   type SubjectTab,
 } from '#/features/subjects/service';
-import { useRecordTab } from '#/shared/repository/useRecordTab.ts';
-import { lacking } from '#/shared/service/access.ts';
-import { isSelf, type AdminCapability } from '#/shared/service/principal.ts';
-import { dirtyTabs, tabNamed, type RecordView } from '#/shared/service/record.ts';
+import { useRecordTab } from '#/shared/repository/useRecordTab';
+import { lacking } from '#/shared/service/access';
+import { isSelf, type AdminCapability } from '#/shared/service/principal';
+import { dirtyTabs, tabNamed, type RecordView } from '#/shared/service/record';
 
 export interface SubjectRecordPage {
   record: RecordView;

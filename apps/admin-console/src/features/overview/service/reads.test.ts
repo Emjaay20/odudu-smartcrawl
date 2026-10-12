@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Authority } from '#/shared/service/principal.ts';
-import type { GatewayResult } from '#/shared/service/result.ts';
+import type { Authority } from '#/shared/service/principal';
+import type { GatewayResult } from '#/shared/service/result';
 import {
   auditView,
   gate,
@@ -8,7 +8,7 @@ import {
   readCapability,
   readOutcome,
   type Read,
-} from '#/features/overview/service/reads.ts';
+} from '#/features/overview/service/reads';
 
 const retry = (): void => undefined;
 

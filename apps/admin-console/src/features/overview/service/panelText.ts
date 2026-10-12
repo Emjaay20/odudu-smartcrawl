@@ -1,4 +1,4 @@
-import { type KeyLane } from '#/features/overview/service/keys.ts';
+import { type KeyLane } from '#/features/overview/service/keys';
 
 export function laneText(lane: KeyLane): string {
   return lane === 'unlisted' ? 'not in the key list' : lane;

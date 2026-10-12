@@ -1,6 +1,6 @@
 import { writeRefusal } from '#/shared/service/capabilities';
-import { writeFailureText } from '#/shared/service/failure.ts';
-import type { GatewayFailure } from '#/shared/service/result.ts';
+import { writeFailureText } from '#/shared/service/failure';
+import type { GatewayFailure } from '#/shared/service/result';
 
 const GUARDED = 'openid';
 

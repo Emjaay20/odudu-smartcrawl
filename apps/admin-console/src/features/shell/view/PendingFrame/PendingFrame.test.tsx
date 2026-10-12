@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
 import { PendingFrame } from '#/features/shell/view/PendingFrame';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 it('holds the rail and the page, and says once that it is reading', () => {
   render(<PendingFrame tenant="acme" shape="list" title="Subjects" />);

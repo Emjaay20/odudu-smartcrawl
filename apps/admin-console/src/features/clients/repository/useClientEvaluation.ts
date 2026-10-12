@@ -1,11 +1,11 @@
 import type { EvaluateClaimsResponse } from '@odudu/contracts/admin';
 import { useQuery } from '@tanstack/react-query';
-import { evaluateClaims } from '#/features/clients/adapter/operations.ts';
-import { readAdministratorPage } from '#/shared/adapter/administrators.ts';
-import { usePicker } from '#/shared/repository/usePicker.ts';
-import type { PickerState } from '#/shared/service/picker.ts';
-import type { GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { evaluateClaims } from '#/features/clients/adapter/operations';
+import { readAdministratorPage } from '#/shared/adapter/administrators';
+import { usePicker } from '#/shared/repository/usePicker';
+import type { PickerState } from '#/shared/service/picker';
+import type { GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export type { PickerState };
 

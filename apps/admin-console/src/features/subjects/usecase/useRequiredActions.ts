@@ -4,7 +4,7 @@ import {
   saveActions,
   useActionsRecord,
   type ActionValues,
-} from '#/features/subjects/repository/useAccess.ts';
+} from '#/features/subjects/repository/useAccess';
 import {
   accessRefusal,
   actionsRecord,
@@ -12,8 +12,8 @@ import {
   requiredActionsInOrder,
   subjectName,
 } from '#/features/subjects/service';
-import type { RecordState } from '#/shared/repository/useRecord.ts';
-import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave.ts';
+import type { RecordState } from '#/shared/repository/useRecord';
+import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 
 export function useRequiredActionsRead(
   tenant: string,

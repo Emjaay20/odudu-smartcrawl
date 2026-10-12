@@ -1,5 +1,5 @@
 import type { Client } from '@odudu/contracts/admin';
-import { BUILTIN_FIXED } from '#/features/clients/service/labels.ts';
+import { BUILTIN_FIXED } from '#/features/clients/service/labels';
 
 export type Fixable = Pick<Client, 'builtin_admin' | 'client_id'>;
 

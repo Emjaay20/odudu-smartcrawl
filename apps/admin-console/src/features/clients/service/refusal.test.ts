@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { ceilingRefused, clientRefusal } from '#/features/clients/service/refusal.ts';
+import { ceilingRefused, clientRefusal } from '#/features/clients/service/refusal';
 
 const refused = (detail: string | undefined) => ({
   type: 'about:blank',

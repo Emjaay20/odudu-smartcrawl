@@ -9,8 +9,8 @@ import {
   signInToLabel,
   signingInText,
   signingInTitle,
-} from '#/features/session/service/labels.ts';
-import { type Principal } from '#/features/session/service/address.ts';
+} from '#/features/session/service/labels';
+import { type Principal } from '#/features/session/service/address';
 
 const grace: Principal = { tenant: 'acme', subjectId: 's1', username: 'grace' };
 

@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { Button } from '#/shared/view/Button';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
-import { UnsavedChangesDialog } from '#/shared/view/UnsavedChangesDialog/UnsavedChangesDialog.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { UnsavedChangesDialog } from '#/shared/view/UnsavedChangesDialog/UnsavedChangesDialog';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 it('names the sections that would be lost and offers to stay or to leave', async () => {
   const user = userEvent.setup();

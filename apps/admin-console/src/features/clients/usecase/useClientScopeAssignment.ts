@@ -1,8 +1,8 @@
 import type { Client, ClientScope } from '@odudu/contracts/admin';
 import { useState } from 'react';
 import { useAuthority, useRefusal } from '#/features/session';
-import { useRereadClient } from '#/features/clients/repository/useClientRecord.ts';
-import { useScopeChanges, useScopePicker } from '#/features/clients/repository/useClientScopes.ts';
+import { useRereadClient } from '#/features/clients/repository/useClientRecord';
+import { useScopeChanges, useScopePicker } from '#/features/clients/repository/useClientScopes';
 import {
   alreadyAssigned,
   assignedText,
@@ -19,11 +19,11 @@ import {
   unassignedText,
   type Reach,
 } from '#/features/clients/service';
-import { useToasts } from '#/shared/repository/useToasts.ts';
-import { lacking } from '#/shared/service/access.ts';
-import type { AdminCapability } from '#/shared/service/principal.ts';
-import { lastChosen, type PickerState } from '#/shared/service/picker.ts';
-import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway.ts';
+import { useToasts } from '#/shared/repository/useToasts';
+import { lacking } from '#/shared/service/access';
+import type { AdminCapability } from '#/shared/service/principal';
+import { lastChosen, type PickerState } from '#/shared/service/picker';
+import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
 
 type Assigned = Client['scopes'][number];
 

@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { loadLastTenant, storeLastTenant } from '#/features/session/adapter/lastTenant.ts';
+import { loadLastTenant, storeLastTenant } from '#/features/session/adapter/lastTenant';
 
 afterEach(() => {
   vi.restoreAllMocks();

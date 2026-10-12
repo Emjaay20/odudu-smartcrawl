@@ -1,4 +1,4 @@
-import type { ListStatus } from '#/shared/service/resourceList.ts';
+import type { ListStatus } from '#/shared/service/resourceList';
 
 // A list to choose from inside a form: searched by name and paged by "Load
 // more", its state kept here rather than in the address the page owns.

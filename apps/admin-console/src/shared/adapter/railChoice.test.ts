@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { loadRailCollapsed, storeRailCollapsed } from '#/shared/adapter/railChoice.ts';
+import { loadRailCollapsed, storeRailCollapsed } from '#/shared/adapter/railChoice';
 
 afterEach(() => {
   vi.restoreAllMocks();

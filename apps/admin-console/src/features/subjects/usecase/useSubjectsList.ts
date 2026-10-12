@@ -1,11 +1,11 @@
 import type { Subject } from '@odudu/contracts/admin';
 import { useAuthority } from '#/features/session';
-import { useGo } from '#/shared/repository/useGo.ts';
-import { useSubjectList } from '#/features/subjects/repository/useSubjectList.ts';
+import { useGo } from '#/shared/repository/useGo';
+import { useSubjectList } from '#/features/subjects/repository/useSubjectList';
 import { createSubjectHref, subjectHref } from '#/features/subjects/service';
-import { lacking } from '#/shared/service/access.ts';
-import type { AdminCapability } from '#/shared/service/principal.ts';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
+import { lacking } from '#/shared/service/access';
+import type { AdminCapability } from '#/shared/service/principal';
+import type { ResourceListState } from '#/shared/service/resourceList';
 
 export interface SubjectsList {
   list: ResourceListState<Subject>;

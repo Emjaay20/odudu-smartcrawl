@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, expect, it } from 'vitest';
-import { useDirtySection } from '#/shared/repository/useDirtySection.ts';
-import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard.ts';
+import { useDirtySection } from '#/shared/repository/useDirtySection';
+import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 
 beforeEach(() => {
   useUnsavedGuard.getState().reset();

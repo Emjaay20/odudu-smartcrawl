@@ -1,7 +1,7 @@
-import { holdingsProblem } from '#/shared/service/administrators.ts';
-import { andList } from '#/shared/service/format.ts';
-import { SYSTEM_TENANT } from '#/shared/service/principal.ts';
-import { requiredProblem } from '#/shared/service/fieldErrors.ts';
+import { holdingsProblem } from '#/shared/service/administrators';
+import { andList } from '#/shared/service/format';
+import { SYSTEM_TENANT } from '#/shared/service/principal';
+import { requiredProblem } from '#/shared/service/fieldErrors';
 
 // A tenant's guided creation, as far as it has gone. The typed values are
 // kept so a reload resumes it; the one-time password never is.

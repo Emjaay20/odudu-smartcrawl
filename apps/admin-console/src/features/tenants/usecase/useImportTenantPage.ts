@@ -1,7 +1,7 @@
 import type { ImportError } from '@odudu/contracts/admin';
 import { useState } from 'react';
 import { useRefusal } from '#/features/session';
-import { useImport } from '#/features/tenants/repository/useImport.ts';
+import { useImport } from '#/features/tenants/repository/useImport';
 import {
   chosenFileOf,
   fileChosenProblem,
@@ -24,8 +24,8 @@ import {
 import {
   useBeginAdministrator,
   type BeginAdministrator,
-} from '#/features/tenants/usecase/useBeginAdministrator.ts';
-import { SYSTEM_TENANT } from '#/shared/service/principal.ts';
+} from '#/features/tenants/usecase/useBeginAdministrator';
+import { SYSTEM_TENANT } from '#/shared/service/principal';
 
 export interface ImportTenantPage {
   name: string;

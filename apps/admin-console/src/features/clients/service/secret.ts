@@ -1,8 +1,8 @@
 import { CLIENT_SECRET_GRACE_MAX_SECONDS } from '@odudu/contracts/admin';
-import { clientRefusal } from '#/features/clients/service/refusal.ts';
-import { writeFailureText } from '#/shared/service/failure.ts';
-import { formatDuration } from '#/shared/service/format.ts';
-import type { GatewayFailure } from '#/shared/service/result.ts';
+import { clientRefusal } from '#/features/clients/service/refusal';
+import { writeFailureText } from '#/shared/service/failure';
+import { formatDuration } from '#/shared/service/format';
+import type { GatewayFailure } from '#/shared/service/result';
 
 export const GRACE_LABEL = 'Grace period';
 export const GRACE_MAX = CLIENT_SECRET_GRACE_MAX_SECONDS;

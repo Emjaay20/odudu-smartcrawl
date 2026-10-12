@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
-import { expect, expectAccessible, forgive, sessionTenant, signIn, test } from './fixtures.ts';
-import { seeded } from './stack.ts';
+import { expect, expectAccessible, forgive, sessionTenant, signIn, test } from './fixtures';
+import { seeded } from './stack';
 
 const { admin, system } = seeded();
 const PHONE = { width: 390, height: 844 };

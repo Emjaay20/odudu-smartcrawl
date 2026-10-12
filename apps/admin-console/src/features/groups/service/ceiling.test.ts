@@ -1,4 +1,4 @@
-import type { AdminCapability } from '#/shared/service/principal.ts';
+import type { AdminCapability } from '#/shared/service/principal';
 import { describe, expect, it } from 'vitest';
 import {
   createHeld,
@@ -12,7 +12,7 @@ import {
   ceilingLines,
   ceilingParentReach,
   placeText,
-} from '#/features/groups/service/ceiling.ts';
+} from '#/features/groups/service/ceiling';
 
 function reach(...capabilities: AdminCapability[]): AdminCapability[] {
   return capabilities;

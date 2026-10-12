@@ -2,14 +2,14 @@ import type { Subject } from '@odudu/contracts/admin';
 import { useState } from 'react';
 import { useEndOwnSession, useRefusal } from '#/features/session';
 import { areaAt, areaHref } from '#/features/shell';
-import { useGo } from '#/shared/repository/useGo.ts';
+import { useGo } from '#/shared/repository/useGo';
 import {
   saveAccount,
   useSubjectDeletion,
   useSubjectEnabled,
   useUsernamePolicy,
   type AccountValues,
-} from '#/features/subjects/repository/useSubjectRecord.ts';
+} from '#/features/subjects/repository/useSubjectRecord';
 import {
   enabledVerb,
   subjectName,
@@ -19,9 +19,9 @@ import {
   usernameMode,
   type UsernameMode,
 } from '#/features/subjects/service';
-import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave.ts';
-import { useToasts } from '#/shared/repository/useToasts.ts';
-import { deletedText, enabledText } from '#/shared/service/failure.ts';
+import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
+import { useToasts } from '#/shared/repository/useToasts';
+import { deletedText, enabledText } from '#/shared/service/failure';
 
 export type { UsernameMode };
 

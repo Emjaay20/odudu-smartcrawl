@@ -1,5 +1,5 @@
 import type { Role } from '@odudu/contracts/admin';
-import type { PickerState } from '#/shared/service/picker.ts';
+import type { PickerState } from '#/shared/service/picker';
 import { Picker } from '#/shared/view/Picker';
 
 // A client role is carried in a token under its client's name, so two roles

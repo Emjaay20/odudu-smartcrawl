@@ -1,1 +1,1 @@
-export * from '#/shared/view/FieldGrid/FieldGrid.tsx';
+export * from '#/shared/view/FieldGrid/FieldGrid';

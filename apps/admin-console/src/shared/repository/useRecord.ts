@@ -1,13 +1,13 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { recordView, seenAfter, type RecordView } from '#/shared/service/record.ts';
+import { recordView, seenAfter, type RecordView } from '#/shared/service/record';
 import type {
   Gateway,
   GatewayFailure,
   GatewayResult,
   GatewaySuccess,
-} from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+} from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 // `by` tells a read apart from what a section's save wrote in its place, so
 // that only somebody else's change counts as an update.

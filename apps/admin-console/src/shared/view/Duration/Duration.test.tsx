@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { Duration } from '#/shared/view/Duration/Duration.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { Duration } from '#/shared/view/Duration/Duration';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 it.each([
   [0, '0 s'],

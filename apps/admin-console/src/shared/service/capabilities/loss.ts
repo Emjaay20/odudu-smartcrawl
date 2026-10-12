@@ -1,7 +1,7 @@
 import { type EffectiveRoleAssignment, type RoleProvenance } from '@odudu/contracts/admin';
-import { andList } from '#/shared/service/format.ts';
-import type { AdminCapability } from '#/shared/service/principal.ts';
-import { type Holding, isAdminRole, isHolding } from '#/shared/service/capabilities/holdings.ts';
+import { andList } from '#/shared/service/format';
+import type { AdminCapability } from '#/shared/service/principal';
+import { type Holding, isAdminRole, isHolding } from '#/shared/service/capabilities/holdings';
 
 // The admin capabilities a principal stops holding once every way `gone`
 // names is taken away; a role nested in one that goes, goes with it.

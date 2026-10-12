@@ -1,8 +1,8 @@
 import type { Role } from '@odudu/contracts/admin';
-import { useGo } from '#/shared/repository/useGo.ts';
-import { useRoleList } from '#/features/roles/repository/useRoleList.ts';
+import { useGo } from '#/shared/repository/useGo';
+import { useRoleList } from '#/features/roles/repository/useRoleList';
 import { newRoleHref, roleHref } from '#/features/roles/service';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
+import type { ResourceListState } from '#/shared/service/resourceList';
 
 export interface RolesList {
   list: ResourceListState<Role>;

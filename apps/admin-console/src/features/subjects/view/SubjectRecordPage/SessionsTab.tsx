@@ -4,9 +4,9 @@ import {
   useHolds,
   useSubjectSessions,
   type SubjectSessions,
-} from '#/features/subjects/usecase/useSubjectSessions.ts';
-import { formatAbsolute } from '#/shared/service/format.ts';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
+} from '#/features/subjects/usecase/useSubjectSessions';
+import { formatAbsolute } from '#/shared/service/format';
+import type { ResourceListState } from '#/shared/service/resourceList';
 import { Button } from '#/shared/view/Button';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';

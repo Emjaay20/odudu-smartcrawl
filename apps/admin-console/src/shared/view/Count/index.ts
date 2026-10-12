@@ -1,1 +1,1 @@
-export * from '#/shared/view/Count/Count.tsx';
+export * from '#/shared/view/Count/Count';

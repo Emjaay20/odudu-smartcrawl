@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { themeChoice, THEME_CHOICES } from '#/features/shell/service/theme.ts';
+import { themeChoice, THEME_CHOICES } from '#/features/shell/service/theme';
 
 describe('the theme choices', () => {
   it('are system, light and dark, in that order', () => {

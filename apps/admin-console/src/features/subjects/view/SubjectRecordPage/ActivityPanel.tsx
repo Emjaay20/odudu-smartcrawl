@@ -1,4 +1,4 @@
-import { useSubjectActivity } from '#/features/subjects/usecase/useSubjectActivity.ts';
+import { useSubjectActivity } from '#/features/subjects/usecase/useSubjectActivity';
 import { ActivityTab } from '#/shared/view/ActivityTab';
 import styles from '#/features/subjects/view/SubjectRecordPage/Tab.module.css';
 

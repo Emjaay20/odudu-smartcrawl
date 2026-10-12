@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it, vi } from 'vitest';
-import { CopyValue } from '#/shared/view/CopyValue/CopyValue.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { CopyValue } from '#/shared/view/CopyValue/CopyValue';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 const ISSUER = 'https://id.example.com/acme';
 

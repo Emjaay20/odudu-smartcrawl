@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import type { Fetch } from '#/shared/transport/gateway.ts';
-import { readProblem, type Problem } from '#/shared/transport/problem.ts';
+import type { Fetch } from '#/shared/transport/gateway';
+import { readProblem, type Problem } from '#/shared/transport/problem';
 
 const LOGOUT = '/console/auth/logout';
 const DEFAULT_TIMEOUT_MS = 30_000;

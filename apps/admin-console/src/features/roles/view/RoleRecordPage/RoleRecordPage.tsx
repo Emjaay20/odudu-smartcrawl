@@ -9,10 +9,10 @@ import {
   type Role,
   type RoleTab,
 } from '#/features/roles/service';
-import { useRoleActivity } from '#/features/roles/usecase/useRoleActivity.ts';
-import { useRoleRecordPage, type Ceiling } from '#/features/roles/usecase/useRoleRecordPage.ts';
-import { CompositesTab } from '#/features/roles/view/RoleRecordPage/CompositesTab.tsx';
-import { GeneralTab } from '#/features/roles/view/RoleRecordPage/GeneralTab.tsx';
+import { useRoleActivity } from '#/features/roles/usecase/useRoleActivity';
+import { useRoleRecordPage, type Ceiling } from '#/features/roles/usecase/useRoleRecordPage';
+import { CompositesTab } from '#/features/roles/view/RoleRecordPage/CompositesTab';
+import { GeneralTab } from '#/features/roles/view/RoleRecordPage/GeneralTab';
 import { RoleOwner } from '#/shared/view/RoleOwner';
 import { ActivityTab } from '#/shared/view/ActivityTab';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';

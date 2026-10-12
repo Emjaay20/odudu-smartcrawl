@@ -4,7 +4,7 @@ import {
   loginNotice,
   SIGN_OUT_FAILED,
   switchFailedText,
-} from '#/features/session/service/loginError.ts';
+} from '#/features/session/service/loginError';
 
 describe('loginErrorMessage', () => {
   it('says in words why a tenant sign-in came back without a session', () => {

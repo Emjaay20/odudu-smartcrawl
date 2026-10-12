@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
 import { SigningIn } from '#/features/session/view/SigningIn';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 it('names the tenant whose sign-in the window is leaving for', () => {
   render(<SigningIn tenant="acme" ended={false} />);

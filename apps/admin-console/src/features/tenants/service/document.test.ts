@@ -5,7 +5,7 @@ import {
   importFileProblem,
   omittedOf,
   parseDocument,
-} from '#/features/tenants/service/document.ts';
+} from '#/features/tenants/service/document';
 
 describe('the export file', () => {
   it('lists what the document says it left out, and nothing for a body that is not one', () => {

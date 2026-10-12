@@ -1,1 +1,1 @@
-export { AttentionPanel } from '#/features/overview/view/AttentionPanel/AttentionPanel.tsx';
+export { AttentionPanel } from '#/features/overview/view/AttentionPanel/AttentionPanel';

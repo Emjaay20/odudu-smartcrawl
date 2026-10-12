@@ -8,8 +8,8 @@ import {
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it } from 'vitest';
-import { useRecordTab } from '#/shared/repository/useRecordTab.ts';
-import { parseSearch, stringifySearch } from '#/shared/service/search.ts';
+import { useRecordTab } from '#/shared/repository/useRecordTab';
+import { parseSearch, stringifySearch } from '#/shared/service/search';
 import { Tabs } from '#/shared/view/Tabs';
 
 function Client() {

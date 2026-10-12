@@ -2,9 +2,9 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { ComboBoxField, type ComboOption } from '#/shared/view/Field/ComboBoxField.tsx';
-import { OwnDataFields, ReadOnlyFields } from '#/shared/view/Field/Field.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { ComboBoxField, type ComboOption } from '#/shared/view/Field/ComboBoxField';
+import { OwnDataFields, ReadOnlyFields } from '#/shared/view/Field/Field';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 const ZONES: readonly ComboOption[] = [
   { id: 'Africa/Lagos', label: 'Africa/Lagos', detail: 'UTC+01:00' },

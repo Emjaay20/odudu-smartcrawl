@@ -1,8 +1,8 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import type { z } from 'zod';
-import type { Problem } from '#/shared/service/result.ts';
-import type { problemSchema } from '#/shared/transport/problem.ts';
-import { readProblem } from '#/shared/transport/problem.ts';
+import type { Problem } from '#/shared/service/result';
+import type { problemSchema } from '#/shared/transport/problem';
+import { readProblem } from '#/shared/transport/problem';
 
 const PROBLEM_JSON = 'application/problem+json; charset=utf-8';
 

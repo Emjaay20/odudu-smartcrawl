@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
 import { SignedInElsewhere } from '#/features/session/view/SignedInElsewhere';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 const GRACE = { tenant: 'acme', subjectId: 's1', username: 'grace' };
 

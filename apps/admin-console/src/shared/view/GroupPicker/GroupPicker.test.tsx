@@ -2,9 +2,9 @@ import type { Group } from '@odudu/contracts/admin';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
-import type { PickerState } from '#/shared/service/picker.ts';
-import { GroupPicker } from '#/shared/view/GroupPicker/GroupPicker.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import type { PickerState } from '#/shared/service/picker';
+import { GroupPicker } from '#/shared/view/GroupPicker/GroupPicker';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 function picker<T>(options: readonly T[], overrides: Partial<PickerState<T>> = {}): PickerState<T> {
   return {

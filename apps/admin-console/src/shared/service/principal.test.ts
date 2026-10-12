@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { isSelf } from '#/shared/service/principal.ts';
+import { isSelf } from '#/shared/service/principal';
 
 const ME = { tenant: 'system', subjectId: 's1', username: 'ada' };
 

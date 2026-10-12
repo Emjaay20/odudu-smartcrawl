@@ -1,1 +1,1 @@
-export * from '#/shared/view/Picker/Picker.tsx';
+export * from '#/shared/view/Picker/Picker';

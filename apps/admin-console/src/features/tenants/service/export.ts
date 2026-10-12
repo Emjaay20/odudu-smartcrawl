@@ -1,7 +1,7 @@
-import { lacking } from '#/shared/service/access.ts';
-import { type AdminCapability, type Authority } from '#/shared/service/principal.ts';
-import type { GatewayFailure } from '#/shared/service/result.ts';
-import { omittedOf } from '#/features/tenants/service/document.ts';
+import { lacking } from '#/shared/service/access';
+import { type AdminCapability, type Authority } from '#/shared/service/principal';
+import type { GatewayFailure } from '#/shared/service/result';
+import { omittedOf } from '#/features/tenants/service/document';
 
 // The UTC day, so one export taken twice in an evening is named the same
 // wherever the person is.

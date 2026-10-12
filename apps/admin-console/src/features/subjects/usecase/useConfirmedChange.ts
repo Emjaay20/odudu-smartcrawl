@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useRefusal } from '#/features/session';
 import { changeFailureText } from '#/features/subjects/service';
-import { useToasts } from '#/shared/repository/useToasts.ts';
-import type { AdminCapability } from '#/shared/service/principal.ts';
-import type { GatewayResult } from '#/shared/transport/gateway.ts';
+import { useToasts } from '#/shared/repository/useToasts';
+import type { AdminCapability } from '#/shared/service/principal';
+import type { GatewayResult } from '#/shared/transport/gateway';
 
 export interface Confirming<A> {
   asking: A | null;

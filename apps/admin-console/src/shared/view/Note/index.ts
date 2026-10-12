@@ -1,1 +1,1 @@
-export * from '#/shared/view/Note/Note.tsx';
+export * from '#/shared/view/Note/Note';

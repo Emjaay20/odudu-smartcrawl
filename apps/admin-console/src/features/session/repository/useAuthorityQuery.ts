@@ -1,8 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { readAuthority } from '#/features/session/adapter/session.ts';
+import { readAuthority } from '#/features/session/adapter/session';
 import type { Authority } from '#/features/session/service';
-import { isUnknownTenant } from '#/shared/service/failure.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { isUnknownTenant } from '#/shared/service/failure';
+import { useTransport } from '#/shared/transport/useTransport';
 
 // Keyed by the principal as well as the tenant, so what whoami told one
 // administrator is never offered to another signed in after them.

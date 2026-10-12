@@ -4,11 +4,11 @@ import {
   readClientSessionCount,
   readClientSessions,
   revokeClientGrants,
-} from '#/features/clients/adapter/operations.ts';
-import { useResourceList } from '#/shared/repository/useResourceList.ts';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
-import type { GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+} from '#/features/clients/adapter/operations';
+import { useResourceList } from '#/shared/repository/useResourceList';
+import type { ResourceListState } from '#/shared/service/resourceList';
+import type { GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 // Who is signed in through the client, a page at a time and counted.
 export function useClientSessionList(

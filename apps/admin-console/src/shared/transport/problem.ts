@@ -1,6 +1,6 @@
 import { importErrorSchema, problemDetailsSchema } from '@odudu/contracts/admin';
 import { z } from 'zod';
-import type { Problem } from '#/shared/service/result.ts';
+import type { Problem } from '#/shared/service/result';
 
 export const problemSchema = problemDetailsSchema.extend({
   instance: z.string().optional(),

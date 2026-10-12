@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { Count } from '#/shared/view/Count/Count.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { Count } from '#/shared/view/Count/Count';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 const SUBJECTS = { one: 'subject', other: 'subjects' };
 

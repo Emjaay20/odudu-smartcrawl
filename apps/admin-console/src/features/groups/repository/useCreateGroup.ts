@@ -1,9 +1,9 @@
 import type { Group } from '@odudu/contracts/admin';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createGroup, findGroup } from '#/features/groups/adapter/groups.ts';
-import { useFreshRead } from '#/shared/repository/useFreshRead.ts';
-import type { GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { createGroup, findGroup } from '#/features/groups/adapter/groups';
+import { useFreshRead } from '#/shared/repository/useFreshRead';
+import type { GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export interface GroupInput {
   name: string;

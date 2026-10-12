@@ -6,11 +6,11 @@ import {
   findRole,
   readComposites,
   readRole,
-} from '#/features/roles/adapter/roles.ts';
+} from '#/features/roles/adapter/roles';
 import type { CopyRead } from '#/features/roles/service';
-import { useFreshRead } from '#/shared/repository/useFreshRead.ts';
-import type { GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { useFreshRead } from '#/shared/repository/useFreshRead';
+import type { GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export interface RoleInput {
   name: string;

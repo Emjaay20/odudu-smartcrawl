@@ -1,4 +1,4 @@
-import type { AdminCapability } from '#/shared/service/principal.ts';
+import type { AdminCapability } from '#/shared/service/principal';
 import { describe, expect, it } from 'vitest';
 import {
   defaultBlock,
@@ -8,7 +8,7 @@ import {
   reachLines,
   parentUnavailable,
   roleUnavailable,
-} from '#/features/groups/service/blocks.ts';
+} from '#/features/groups/service/blocks';
 
 function reach(...capabilities: AdminCapability[]): AdminCapability[] {
   return capabilities;

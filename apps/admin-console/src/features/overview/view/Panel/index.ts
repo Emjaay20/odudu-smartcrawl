@@ -1,1 +1,1 @@
-export { Panel } from '#/features/overview/view/Panel/Panel.tsx';
+export { Panel } from '#/features/overview/view/Panel/Panel';

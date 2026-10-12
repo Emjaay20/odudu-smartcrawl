@@ -1,6 +1,6 @@
 import { type Credential, type Lockout, type Profile, type Subject } from '@odudu/contracts/admin';
-import type { Crumb } from '#/shared/service/breadcrumb.ts';
-import { type AdminCapability } from '#/shared/service/principal.ts';
+import type { Crumb } from '#/shared/service/breadcrumb';
+import { type AdminCapability } from '#/shared/service/principal';
 
 export type { Credential, Lockout, Profile, Subject };
 

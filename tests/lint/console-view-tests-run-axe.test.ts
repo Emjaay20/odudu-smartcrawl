@@ -19,7 +19,7 @@ const VIEW_TESTS = [
 const VIEWS = ['shared/view/**/*.tsx', 'features/*/view/**/*.tsx', 'features/*/view.tsx'];
 const COMPONENT = /^(?:[A-Z][A-Za-z0-9]*|view)\.tsx$/u;
 const FIXTURES = 'tests/lint/fixtures/console-view-axe';
-const AXE_MODULE = '#/testing/axeInBothThemes.ts';
+const AXE_MODULE = '#/testing/axeInBothThemes';
 const AXE_NAME = 'axeInBothThemes';
 
 function importsAxeHelper(file: ts.SourceFile): boolean {

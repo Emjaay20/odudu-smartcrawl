@@ -1,6 +1,6 @@
 import type { Role } from '@odudu/contracts/admin';
 import { useAuthority } from '#/features/session';
-import { useRoleRecord } from '#/features/roles/repository/useRoleRecord.ts';
+import { useRoleRecord } from '#/features/roles/repository/useRoleRecord';
 import {
   type Ceiling,
   copyHrefOf,
@@ -9,9 +9,9 @@ import {
   type RoleTab,
   TAB_RECORDS,
 } from '#/features/roles/service';
-import { useDirtyRecords } from '#/shared/repository/useDirtyRecords.ts';
-import { useRecordTab } from '#/shared/repository/useRecordTab.ts';
-import { dirtyTabs, tabNamed, type RecordView } from '#/shared/service/record.ts';
+import { useDirtyRecords } from '#/shared/repository/useDirtyRecords';
+import { useRecordTab } from '#/shared/repository/useRecordTab';
+import { dirtyTabs, tabNamed, type RecordView } from '#/shared/service/record';
 
 export type { Ceiling };
 

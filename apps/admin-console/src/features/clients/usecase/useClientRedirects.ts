@@ -5,7 +5,7 @@ import {
   useRereadClient,
   type OriginValues,
   type RedirectValues,
-} from '#/features/clients/repository/useClientRecord.ts';
+} from '#/features/clients/repository/useClientRecord';
 import {
   ceilingRefused,
   CLIENT_CAPABILITY,
@@ -19,8 +19,8 @@ import {
   redirectsFixed,
   SECTION,
 } from '#/features/clients/service';
-import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave.ts';
-import type { GatewayFailure } from '#/shared/transport/gateway.ts';
+import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
+import type { GatewayFailure } from '#/shared/transport/gateway';
 
 export interface ClientRedirects {
   redirects: SectionSave<RedirectValues>;

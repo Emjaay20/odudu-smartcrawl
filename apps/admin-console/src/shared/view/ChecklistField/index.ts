@@ -1,1 +1,1 @@
-export * from '#/shared/view/ChecklistField/ChecklistField.tsx';
+export * from '#/shared/view/ChecklistField/ChecklistField';

@@ -1,4 +1,4 @@
-import { andList } from '#/shared/service/format.ts';
+import { andList } from '#/shared/service/format';
 
 // The capabilities one part of a ceiling refusal's detail names after `lead`.
 function namedAfter(parts: readonly string[], lead: string): string[] {

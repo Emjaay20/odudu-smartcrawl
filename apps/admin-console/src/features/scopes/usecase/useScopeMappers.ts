@@ -4,18 +4,18 @@ import {
   useScopeMappersRecord,
   useScopeSaves,
   type MapperValues,
-} from '#/features/scopes/repository/useScopeRecord.ts';
+} from '#/features/scopes/repository/useScopeRecord';
 import {
   mapperOptions,
   mappersFailure,
   mappersSummary,
   scopeMappersRecord,
 } from '#/features/scopes/service';
-import type { RecordState } from '#/shared/repository/useRecord.ts';
-import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave.ts';
+import type { RecordState } from '#/shared/repository/useRecord';
+import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { writeRefusal } from '#/shared/service/capabilities';
-import { andList } from '#/shared/service/format.ts';
-import { inOrderOf } from '#/shared/service/ids.ts';
+import { andList } from '#/shared/service/format';
+import { inOrderOf } from '#/shared/service/ids';
 
 export function useScopeMappersRead(tenant: string, id: string): RecordState<ScopeMappers> {
   return useScopeMappersRecord(tenant, id);

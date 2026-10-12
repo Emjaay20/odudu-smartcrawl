@@ -1,4 +1,4 @@
-import type { AdminCapability } from '#/shared/service/principal.ts';
+import type { AdminCapability } from '#/shared/service/principal';
 import { describe, expect, it } from 'vitest';
 import {
   type CopyRead,
@@ -10,7 +10,7 @@ import {
   copyingText,
   copyPlan,
   partialCopy,
-} from '#/features/scopes/service/copy.ts';
+} from '#/features/scopes/service/copy';
 
 function role(id: string, name: string, reach: AdminCapability[] = []) {
   return { id, name, client_id: null, client_key: null, admin_reach: reach };

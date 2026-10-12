@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Toast } from '#/shared/service/toast.ts';
+import type { Toast } from '#/shared/service/toast';
 
 interface ToastQueue {
   toasts: readonly Toast[];

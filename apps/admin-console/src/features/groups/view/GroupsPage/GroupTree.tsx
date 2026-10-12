@@ -1,7 +1,7 @@
 import type { Group } from '@odudu/contracts/admin';
 import { useId } from 'react';
 import { Link } from 'react-aria-components';
-import { useGroupNode, type GroupNode } from '#/features/groups/usecase/useGroupsList.ts';
+import { useGroupNode, type GroupNode } from '#/features/groups/usecase/useGroupsList';
 import { Button } from '#/shared/view/Button';
 import { ListSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { keyLabel, platformOf } from '#/shared/service/platform.ts';
+import { keyLabel, platformOf } from '#/shared/service/platform';
 
 describe('the platform', () => {
   it('prefers the user-agent data, and falls back to navigator.platform', () => {

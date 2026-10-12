@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { discoveryView } from '#/features/overview/service/discovery.ts';
+import { discoveryView } from '#/features/overview/service/discovery';
 
 describe('the discovery document, as the page lays it out', () => {
   const view = discoveryView({

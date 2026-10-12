@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createAuth } from '#/shared/transport/auth.ts';
-import type { Fetch } from '#/shared/transport/gateway.ts';
+import { createAuth } from '#/shared/transport/auth';
+import type { Fetch } from '#/shared/transport/gateway';
 
 const REDIRECT = `${location.origin}/tenants/acme/protocol/openid-connect/logout?id_token_hint=h&client_id=odudu-admin`;
 

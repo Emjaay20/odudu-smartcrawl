@@ -4,7 +4,7 @@ import { ASSIGNMENT_RULE, ASSIGNMENTS } from '#/features/scopes/service';
 import {
   useScopeClientsTab,
   type ScopeClientsTab,
-} from '#/features/scopes/usecase/useScopeClientsTab.ts';
+} from '#/features/scopes/usecase/useScopeClientsTab';
 import { Button } from '#/shared/view/Button';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { ClientPicker } from '#/shared/view/ClientPicker';

@@ -2,9 +2,9 @@ import type { AuditEvent } from '@odudu/contracts/admin';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
-import { ActivityTab } from '#/shared/view/ActivityTab/ActivityTab.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import type { ResourceListState } from '#/shared/service/resourceList';
+import { ActivityTab } from '#/shared/view/ActivityTab/ActivityTab';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 const NOW = new Date('2026-09-28T14:03:22Z');
 

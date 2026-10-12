@@ -1,4 +1,4 @@
-import { type Area } from '#/features/shell/service/areas.ts';
+import { type Area } from '#/features/shell/service/areas';
 
 export function brandText(tenant: string): string {
   return `odudu · ${tenant}`;

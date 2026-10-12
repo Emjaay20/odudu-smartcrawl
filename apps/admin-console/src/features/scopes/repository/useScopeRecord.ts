@@ -8,7 +8,7 @@ import {
   readScopeRoles,
   setScopeMappers,
   setScopeRoles,
-} from '#/features/scopes/adapter/scopes.ts';
+} from '#/features/scopes/adapter/scopes';
 import {
   generalPatch,
   scopeMappersRecord,
@@ -16,11 +16,11 @@ import {
   scopeRolesRecord,
   type GeneralValues,
 } from '#/features/scopes/service';
-import { uniqueIds } from '#/shared/service/ids.ts';
-import { useRecord, type RecordState } from '#/shared/repository/useRecord.ts';
-import type { SaveInput } from '#/shared/repository/useSectionSave.ts';
-import type { Gateway, GatewayResult } from '#/shared/transport/gateway.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { uniqueIds } from '#/shared/service/ids';
+import { useRecord, type RecordState } from '#/shared/repository/useRecord';
+import type { SaveInput } from '#/shared/repository/useSectionSave';
+import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export function useScopeRecord(tenant: string, id: string): RecordState<ClientScope> {
   return useRecord({

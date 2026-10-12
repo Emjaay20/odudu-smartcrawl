@@ -1,8 +1,8 @@
 import type { Subject, Tenant } from '@odudu/contracts/admin';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { loadCreation, storeCreation } from '#/features/tenants/adapter/creationStorage.ts';
-import { createTenant, findTenant } from '#/features/tenants/adapter/tenants.ts';
+import { loadCreation, storeCreation } from '#/features/tenants/adapter/creationStorage';
+import { createTenant, findTenant } from '#/features/tenants/adapter/tenants';
 import {
   administratorOf,
   belongsTo,
@@ -11,22 +11,22 @@ import {
   type Creation,
   type CreationFlow,
 } from '#/features/tenants/service';
-import { createSubject, findSubject, issuePassword } from '#/shared/adapter/administrators.ts';
+import { createSubject, findSubject, issuePassword } from '#/shared/adapter/administrators';
 import {
   defect,
   grantHoldings,
   refusedAt,
   type Refused,
-} from '#/shared/repository/administratorRoles.ts';
+} from '#/shared/repository/administratorRoles';
 import {
   administratorCalls,
   type AdministratorCall,
   type AdministratorRequest,
-} from '#/shared/service/administrators.ts';
-import { useSecretOnce, type SecretOnce } from '#/shared/repository/useSecretOnce.ts';
-import type { Gateway, GatewayFailure, GatewayResult } from '#/shared/transport/gateway.ts';
-import { useFreshRead } from '#/shared/repository/useFreshRead.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+} from '#/shared/service/administrators';
+import { useSecretOnce, type SecretOnce } from '#/shared/repository/useSecretOnce';
+import type { Gateway, GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
+import { useFreshRead } from '#/shared/repository/useFreshRead';
+import { useTransport } from '#/shared/transport/useTransport';
 
 export interface CreationProgress {
   creation: Creation;

@@ -3,7 +3,7 @@ import {
   actsWithSystemAuthority,
   showsSystemArea,
   systemRecordHref,
-} from '#/features/shell/service/rail.ts';
+} from '#/features/shell/service/rail';
 
 const SYSTEM_ADMIN = { tenant: 'system', subjectId: 's0', username: 'root' };
 

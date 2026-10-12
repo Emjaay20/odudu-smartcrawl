@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { nextCursor } from '#/shared/transport/cursor.ts';
+import { nextCursor } from '#/shared/transport/cursor';
 
 const CURSOR = 'eyJhZnRlciI6IjAxYTBlNzJkIn0.wxCYgMzM9KahHxwDlrS6SAK5sacypLuVFOf9quYa9S8';
 

@@ -1,8 +1,8 @@
-import { holds } from '#/shared/service/access.ts';
-import type { AdminCapability, Authority } from '#/shared/service/principal.ts';
-import { type AttentionItem, needsAttention } from '#/features/overview/service/attention.ts';
-import { type OverviewReads, readyData } from '#/features/overview/service/reads.ts';
-import { type AreaOf } from '#/features/overview/service/tiles.ts';
+import { holds } from '#/shared/service/access';
+import type { AdminCapability, Authority } from '#/shared/service/principal';
+import { type AttentionItem, needsAttention } from '#/features/overview/service/attention';
+import { type OverviewReads, readyData } from '#/features/overview/service/reads';
+import { type AreaOf } from '#/features/overview/service/tiles';
 
 export interface AttentionLink extends AttentionItem {
   href: string;

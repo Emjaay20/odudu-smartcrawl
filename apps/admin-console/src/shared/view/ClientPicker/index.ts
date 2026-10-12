@@ -1,1 +1,1 @@
-export * from '#/shared/view/ClientPicker/ClientPicker.tsx';
+export * from '#/shared/view/ClientPicker/ClientPicker';

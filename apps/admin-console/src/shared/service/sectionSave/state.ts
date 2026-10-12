@@ -1,4 +1,4 @@
-import { sameValue, type Values } from '#/shared/service/dirty.ts';
+import { sameValue, type Values } from '#/shared/service/dirty';
 
 // `conflict`, `stale` and `unread` all follow a 412: `conflict` while a
 // field edited here was changed there too, `stale` when the edits sit on

@@ -8,8 +8,8 @@ import {
   type SetGroupRolesResponse,
 } from '@odudu/contracts/admin';
 import { z } from 'zod';
-import { readGroupPage } from '#/shared/adapter/directory.ts';
-import type { Gateway, GatewayResult } from '#/shared/transport/gateway.ts';
+import { readGroupPage } from '#/shared/adapter/directory';
+import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 
 export { readGroupPage };
 

@@ -1,1 +1,1 @@
-export { SubjectsGate } from '#/features/subjects/view/SubjectsGate/SubjectsGate.tsx';
+export { SubjectsGate } from '#/features/subjects/view/SubjectsGate/SubjectsGate';

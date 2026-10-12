@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
-import { SaveBar } from '#/shared/view/SaveBar/SaveBar.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { SaveBar } from '#/shared/view/SaveBar/SaveBar';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 it('names the section on both actions and says the changes are unsaved', async () => {
   const onDiscard = vi.fn();

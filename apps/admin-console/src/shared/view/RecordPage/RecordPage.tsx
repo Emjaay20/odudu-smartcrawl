@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { RecordView } from '#/shared/service/record.ts';
+import type { RecordView } from '#/shared/service/record';
 import type { Crumb } from '#/shared/view/Breadcrumb';
 import { Button } from '#/shared/view/Button';
 import { EmptyState } from '#/shared/view/EmptyState';

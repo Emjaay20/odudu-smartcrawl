@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
 import type { AttentionState } from '#/features/overview/service';
 import { AttentionPanel } from '#/features/overview/view/AttentionPanel';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 function state(overrides: Partial<AttentionState> = {}): AttentionState {
   return {

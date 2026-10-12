@@ -1,5 +1,5 @@
-import { logOut } from '#/features/session/adapter/logout.ts';
-import { useTransport } from '#/shared/transport/useTransport.ts';
+import { logOut } from '#/features/session/adapter/logout';
+import { useTransport } from '#/shared/transport/useTransport';
 
 // Ends the gateway's session whatever it answers: the caller leaves the
 // console next in any case.

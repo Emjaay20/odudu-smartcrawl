@@ -1,1 +1,1 @@
-export * from '#/shared/view/ActivityTab/ActivityTab.tsx';
+export * from '#/shared/view/ActivityTab/ActivityTab';

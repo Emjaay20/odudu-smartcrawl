@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import type { GatewayFailure } from '#/shared/service/result.ts';
+import type { GatewayFailure } from '#/shared/service/result';
 import {
   afterSave,
   rereadPhase,
   saveFailureText,
   saveOutcome,
-} from '#/shared/service/sectionSave/outcome.ts';
-import { type SectionState } from '#/shared/service/sectionSave/state.ts';
+} from '#/shared/service/sectionSave/outcome';
+import { type SectionState } from '#/shared/service/sectionSave/state';
 
 const BASE = { name: 'a', tags: ['x'] };
 

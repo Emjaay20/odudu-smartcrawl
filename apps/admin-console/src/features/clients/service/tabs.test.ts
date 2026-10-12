@@ -6,7 +6,7 @@ import {
   clientTabHref,
   TAB_SECTIONS,
   tabsWithEdits,
-} from '#/features/clients/service/tabs.ts';
+} from '#/features/clients/service/tabs';
 
 it('keeps the tabs in the order the record page shows them', () => {
   expect(CLIENT_TABS).toEqual([

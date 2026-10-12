@@ -7,8 +7,8 @@ import {
   isHolding,
   writeRefusal,
 } from '#/shared/service/capabilities';
-import { andList } from '#/shared/service/format.ts';
-import type { AdminCapability } from '#/shared/service/principal.ts';
+import { andList } from '#/shared/service/format';
+import type { AdminCapability } from '#/shared/service/principal';
 
 // Every role of the built-in admin client, which the server guards by the
 // client rather than by the role's name.

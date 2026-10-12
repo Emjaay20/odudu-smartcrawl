@@ -1,1 +1,1 @@
-export * from '#/shared/view/GroupPicker/GroupPicker.tsx';
+export * from '#/shared/view/GroupPicker/GroupPicker';

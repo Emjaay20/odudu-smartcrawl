@@ -1,1 +1,1 @@
-export * from '#/shared/view/AuditActor/AuditActor.tsx';
+export * from '#/shared/view/AuditActor/AuditActor';

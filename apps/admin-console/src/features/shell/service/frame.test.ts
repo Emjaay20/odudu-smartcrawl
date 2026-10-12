@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { areaAt } from '#/features/shell/service/areas.ts';
+import { areaAt } from '#/features/shell/service/areas';
 import {
   areasLabel,
   brandText,
@@ -9,7 +9,7 @@ import {
   pathnameOf,
   signedInFrom,
   tenantNotFoundText,
-} from '#/features/shell/service/frame.ts';
+} from '#/features/shell/service/frame';
 
 describe('the frame text', () => {
   it('names the tenant in the brand and the rail', () => {

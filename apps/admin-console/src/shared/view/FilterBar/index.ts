@@ -1,1 +1,1 @@
-export * from '#/shared/view/FilterBar/FilterBar.tsx';
+export * from '#/shared/view/FilterBar/FilterBar';

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
-import { VisuallyHidden } from '#/shared/view/VisuallyHidden/VisuallyHidden.tsx';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
+import { VisuallyHidden } from '#/shared/view/VisuallyHidden/VisuallyHidden';
 
 it('keeps its text in the accessibility tree, as a live region when asked', () => {
   render(<VisuallyHidden role="status">Reading your session</VisuallyHidden>);

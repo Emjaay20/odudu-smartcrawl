@@ -11,7 +11,7 @@ import {
   reachesEveryTenant,
   elsewhereText,
   holderFilterOptions,
-} from '#/features/subjects/service/holdings.ts';
+} from '#/features/subjects/service/holdings';
 
 describe('the admin capabilities a subject is given', () => {
   const held = new Map([

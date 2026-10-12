@@ -1,1 +1,1 @@
-export * from '#/app/ToastLayer/ToastLayer.tsx';
+export * from '#/app/ToastLayer/ToastLayer';

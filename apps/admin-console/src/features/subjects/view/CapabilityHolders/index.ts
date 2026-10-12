@@ -1,1 +1,1 @@
-export { CapabilityHolders } from '#/features/subjects/view/CapabilityHolders/CapabilityHolders.tsx';
+export { CapabilityHolders } from '#/features/subjects/view/CapabilityHolders/CapabilityHolders';

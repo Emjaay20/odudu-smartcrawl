@@ -1,4 +1,4 @@
-import { Button } from '#/shared/view/Button/index.ts';
-import { session } from '#/features/session/index.ts';
+import { Button } from '#/shared/view/Button/index';
+import { session } from '#/features/session/index';
 
 export const shown = [Button, session];

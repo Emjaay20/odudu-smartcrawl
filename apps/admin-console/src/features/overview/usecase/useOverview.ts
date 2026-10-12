@@ -1,7 +1,7 @@
 import type { AuditEvent } from '@odudu/contracts/admin';
 import { useAuthority, useRefusal, useTenantMissing } from '#/features/session';
 import { areaAt, areaHref, useArea } from '#/features/shell';
-import { useOverviewReads } from '#/features/overview/repository/useOverviewReads.ts';
+import { useOverviewReads } from '#/features/overview/repository/useOverviewReads';
 import {
   attentionState,
   auditView,

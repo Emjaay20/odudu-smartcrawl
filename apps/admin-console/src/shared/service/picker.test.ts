@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { lastChosen } from '#/shared/service/picker.ts';
+import { lastChosen } from '#/shared/service/picker';
 
 it('keeps the last of the ids a picker reports, or none', () => {
   expect(lastChosen(['a', 'b'])).toBe('b');

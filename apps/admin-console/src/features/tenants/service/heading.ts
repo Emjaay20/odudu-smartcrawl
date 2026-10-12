@@ -1,11 +1,11 @@
-import type { Crumb } from '#/shared/service/breadcrumb.ts';
-import { type CreationFlow } from '#/features/tenants/service/creation.ts';
+import type { Crumb } from '#/shared/service/breadcrumb';
+import { type CreationFlow } from '#/features/tenants/service/creation';
 import {
   administratorTitle,
   systemAdminsTrail,
   tenantAdministratorTrail,
   tenantsTrail,
-} from '#/features/tenants/service/address.ts';
+} from '#/features/tenants/service/address';
 
 export const CREATE_TENANT_TITLE = 'Create a tenant';
 

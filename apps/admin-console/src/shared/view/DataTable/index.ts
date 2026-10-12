@@ -1,2 +1,2 @@
-export * from '#/shared/view/DataTable/DataTable.tsx';
-export * from '#/shared/view/DataTable/DataTableShape.tsx';
+export * from '#/shared/view/DataTable/DataTable';
+export * from '#/shared/view/DataTable/DataTableShape';

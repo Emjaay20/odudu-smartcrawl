@@ -1,5 +1,5 @@
 import type { AuditEvent } from '@odudu/contracts/admin';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
+import type { ResourceListState } from '#/shared/service/resourceList';
 import { AuditActor } from '#/shared/view/AuditActor';
 import { Button } from '#/shared/view/Button';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';

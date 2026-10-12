@@ -1,9 +1,9 @@
 import type { Group } from '@odudu/contracts/admin';
 import { useState } from 'react';
 import { useAuthority, useRefusal } from '#/features/session';
-import { useCreateGroup } from '#/features/groups/repository/useCreateGroup.ts';
-import { useGo } from '#/shared/repository/useGo.ts';
-import { useGroupNamed } from '#/features/groups/repository/useGroupRecord.ts';
+import { useCreateGroup } from '#/features/groups/repository/useCreateGroup';
+import { useGo } from '#/shared/repository/useGo';
+import { useGroupNamed } from '#/features/groups/repository/useGroupRecord';
 import {
   createHeld,
   DESCRIPTION_MAX,
@@ -14,13 +14,13 @@ import {
   NAME_TAKEN,
   newGroupPlace,
 } from '#/features/groups/service';
-import { useGroupPicker } from '#/shared/repository/useGroupPicker.ts';
-import { useToasts } from '#/shared/repository/useToasts.ts';
-import { useUrlSearch } from '#/shared/repository/useUrlSearch.ts';
-import { requiredProblem, withoutField } from '#/shared/service/fieldErrors.ts';
-import { createdText, createFailure, lookupText } from '#/shared/service/failure.ts';
-import type { PickerState } from '#/shared/service/picker.ts';
-import type { GatewayFailure } from '#/shared/transport/gateway.ts';
+import { useGroupPicker } from '#/shared/repository/useGroupPicker';
+import { useToasts } from '#/shared/repository/useToasts';
+import { useUrlSearch } from '#/shared/repository/useUrlSearch';
+import { requiredProblem, withoutField } from '#/shared/service/fieldErrors';
+import { createdText, createFailure, lookupText } from '#/shared/service/failure';
+import type { PickerState } from '#/shared/service/picker';
+import type { GatewayFailure } from '#/shared/transport/gateway';
 
 type Field = 'name' | 'description' | 'parent_id';
 type Errors = Partial<Record<Field, string>>;

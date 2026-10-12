@@ -1,8 +1,8 @@
 import type { Tenant } from '@odudu/contracts/admin';
-import { readTenantCount, readTenantPage } from '#/features/tenants/adapter/tenants.ts';
-import { useResourceList } from '#/shared/repository/useResourceList.ts';
-import type { ResourceListState } from '#/shared/service/resourceList.ts';
-import { SYSTEM_TENANT } from '#/shared/service/principal.ts';
+import { readTenantCount, readTenantPage } from '#/features/tenants/adapter/tenants';
+import { useResourceList } from '#/shared/repository/useResourceList';
+import type { ResourceListState } from '#/shared/service/resourceList';
+import { SYSTEM_TENANT } from '#/shared/service/principal';
 
 export function useTenantList(): ResourceListState<Tenant> {
   return useResourceList({

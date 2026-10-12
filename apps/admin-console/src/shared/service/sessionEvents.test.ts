@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createSessionEvents } from '#/shared/service/sessionEvents.ts';
+import { createSessionEvents } from '#/shared/service/sessionEvents';
 
 describe('sessionEvents', () => {
   it('calls every subscriber to sessionEnded when it is emitted', () => {

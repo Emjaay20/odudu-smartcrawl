@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AUTO } from '#/features/clients/service/choices.ts';
+import { AUTO } from '#/features/clients/service/choices';
 import {
   grantOptions,
   grantsBlock,
@@ -9,7 +9,7 @@ import {
   lifetimeRule,
   numberKept,
   tenantLifetimeLabel,
-} from '#/features/clients/service/tokens.ts';
+} from '#/features/clients/service/tokens';
 
 describe('the lifetimes a client may be given', () => {
   it('names the three the server holds, each with the range it holds them to', () => {

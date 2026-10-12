@@ -1,1 +1,1 @@
-export { GeneralTab } from '#/features/clients/view/GeneralTab/GeneralTab.tsx';
+export { GeneralTab } from '#/features/clients/view/GeneralTab/GeneralTab';

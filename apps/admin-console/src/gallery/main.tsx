@@ -3,7 +3,7 @@ import '#/shared/view/tokens.css';
 import '#/shared/view/global.css';
 import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Gallery, type GalleryDialog, type GalleryTheme } from '#/gallery/Gallery.tsx';
+import { Gallery, type GalleryDialog, type GalleryTheme } from '#/gallery/Gallery';
 
 // ?theme=dark, ?dialog=typed and ?rail=collapsed make every state the
 // screenshots need reachable from a URL alone.

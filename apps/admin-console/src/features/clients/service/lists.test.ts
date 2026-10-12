@@ -4,7 +4,7 @@ import {
   entriesOf,
   listCount,
   namesText,
-} from '#/features/clients/service/lists.ts';
+} from '#/features/clients/service/lists';
 
 const rows = (count: number): string[] =>
   Array.from({ length: count }, (_, i) => `row ${String(i)}`);

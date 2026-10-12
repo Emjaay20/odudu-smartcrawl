@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { expect, it } from 'vitest';
-import { Gallery } from '#/gallery/Gallery.tsx';
+import { Gallery } from '#/gallery/Gallery';
 import gallerySource from '#/gallery/Gallery.tsx?raw';
 
 // Drawn by other components rather than used on their own: every dialog,

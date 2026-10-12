@@ -1,7 +1,7 @@
 import type { Client } from '@odudu/contracts/admin';
 import { beyondCaller } from '#/shared/service/capabilities';
-import { andList } from '#/shared/service/format.ts';
-import type { AdminCapability } from '#/shared/service/principal.ts';
+import { andList } from '#/shared/service/format';
+import type { AdminCapability } from '#/shared/service/principal';
 
 // Every write on a client takes the client's service account over, so each is
 // held to the ceiling on that subject (ADR 0040): refused when it holds an

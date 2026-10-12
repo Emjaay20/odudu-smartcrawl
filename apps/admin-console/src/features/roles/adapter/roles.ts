@@ -5,8 +5,8 @@ import {
   type Role,
 } from '@odudu/contracts/admin';
 import { z } from 'zod';
-import { readRoleCount, readRolePage } from '#/shared/adapter/directory.ts';
-import type { Gateway, GatewayResult } from '#/shared/transport/gateway.ts';
+import { readRoleCount, readRolePage } from '#/shared/adapter/directory';
+import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 
 export { readRoleCount, readRolePage };
 

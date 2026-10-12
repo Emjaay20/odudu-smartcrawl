@@ -1,11 +1,11 @@
 import type { Client, Role, SetRolesResponse } from '@odudu/contracts/admin';
 import { subjectHref } from '#/features/subjects';
 import { useAuthority, useRefusal } from '#/features/session';
-import { useRereadClient } from '#/features/clients/repository/useClientRecord.ts';
+import { useRereadClient } from '#/features/clients/repository/useClientRecord';
 import {
   useSaveServiceRoles,
   useServiceRolesRecord,
-} from '#/features/clients/repository/useServiceAccount.ts';
+} from '#/features/clients/repository/useServiceAccount';
 import {
   assignedRoles,
   canChange,
@@ -23,15 +23,15 @@ import {
   type Reach,
   type ServiceAccess,
 } from '#/features/clients/service';
-import type { RecordState } from '#/shared/repository/useRecord.ts';
-import { useRolePicker } from '#/shared/repository/useRolePicker.ts';
-import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave.ts';
-import { lacking } from '#/shared/service/access.ts';
+import type { RecordState } from '#/shared/repository/useRecord';
+import { useRolePicker } from '#/shared/repository/useRolePicker';
+import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
+import { lacking } from '#/shared/service/access';
 import { writeRefusal } from '#/shared/service/capabilities';
-import { describeIds } from '#/shared/service/format.ts';
-import { sortedIds } from '#/shared/service/ids.ts';
-import type { PickerState } from '#/shared/service/picker.ts';
-import type { AdminCapability } from '#/shared/service/principal.ts';
+import { describeIds } from '#/shared/service/format';
+import { sortedIds } from '#/shared/service/ids';
+import type { PickerState } from '#/shared/service/picker';
+import type { AdminCapability } from '#/shared/service/principal';
 
 export function useServiceAccess(tenant: string, client: Client): ServiceAccess {
   return serviceAccess(client, useAuthority(tenant));

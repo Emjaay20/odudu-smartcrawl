@@ -5,11 +5,11 @@ import type {
   SigningKey,
   SmtpConfig,
 } from '@odudu/contracts/admin';
-import { holds } from '#/shared/service/access.ts';
-import { isRefused } from '#/shared/service/failure.ts';
-import type { AdminCapability, Authority } from '#/shared/service/principal.ts';
-import type { GatewayResult } from '#/shared/service/result.ts';
-import { type Discovery, type Jwks } from '#/features/overview/service/discovery.ts';
+import { holds } from '#/shared/service/access';
+import { isRefused } from '#/shared/service/failure';
+import type { AdminCapability, Authority } from '#/shared/service/principal';
+import type { GatewayResult } from '#/shared/service/result';
+import { type Discovery, type Jwks } from '#/features/overview/service/discovery';
 
 // One of the page's reads: `off` is one it did not make, because whoami has
 // not answered or says the capability it needs is not held.

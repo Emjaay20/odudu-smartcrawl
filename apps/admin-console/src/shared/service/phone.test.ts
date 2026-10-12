@@ -10,7 +10,7 @@ import {
   readTypedNumber,
   splitPhone,
   typingInternational,
-} from '#/shared/service/phone.ts';
+} from '#/shared/service/phone';
 
 describe('splitPhone', () => {
   it('finds the country a stored number belongs to', () => {

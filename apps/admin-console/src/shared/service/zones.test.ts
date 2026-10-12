@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isValidZoneinfo } from '@odudu/contracts';
-import { offsetOf, timeZoneOptions, zoneProblem } from '#/shared/service/zones.ts';
+import { offsetOf, timeZoneOptions, zoneProblem } from '#/shared/service/zones';
 
 const JANUARY = new Date('2026-01-15T12:00:00Z');
 const JULY = new Date('2026-07-15T12:00:00Z');

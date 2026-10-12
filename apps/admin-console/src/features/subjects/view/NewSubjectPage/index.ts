@@ -1,1 +1,1 @@
-export { NewSubjectPage } from '#/features/subjects/view/NewSubjectPage/NewSubjectPage.tsx';
+export { NewSubjectPage } from '#/features/subjects/view/NewSubjectPage/NewSubjectPage';

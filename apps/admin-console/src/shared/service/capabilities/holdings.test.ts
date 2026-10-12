@@ -6,7 +6,7 @@ import {
   holdingRoleIds,
   includedBy,
   isAdminRole,
-} from '#/shared/service/capabilities/holdings.ts';
+} from '#/shared/service/capabilities/holdings';
 
 describe('grantableIn', () => {
   it('offers manage-tenants in system alone', () => {

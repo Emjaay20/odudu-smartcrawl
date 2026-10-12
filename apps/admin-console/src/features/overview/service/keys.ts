@@ -1,7 +1,7 @@
 import type { SigningKey } from '@odudu/contracts/admin';
-import type { Authority } from '#/shared/service/principal.ts';
-import { type Jwks, rawJson } from '#/features/overview/service/discovery.ts';
-import { type OverviewReads, type Read, gate, mapRead } from '#/features/overview/service/reads.ts';
+import type { Authority } from '#/shared/service/principal';
+import { type Jwks, rawJson } from '#/features/overview/service/discovery';
+import { type OverviewReads, type Read, gate, mapRead } from '#/features/overview/service/reads';
 
 // `unlisted` is published but absent from the key list; `unknown` is a list
 // that could not be read.

@@ -11,21 +11,21 @@ export {
   CHOOSE_TENANT,
   SWITCH_HREF,
   signOutDestination,
-} from '#/features/session/service/address.ts';
+} from '#/features/session/service/address';
 export {
   TENANT_NAME_PROBLEM,
   remembers,
   tenantMissing,
   namedTenant,
   tenantProblem,
-} from '#/features/session/service/tenant.ts';
+} from '#/features/session/service/tenant';
 export {
   LOGIN_ERROR,
   loginErrorMessage,
   loginNotice,
   switchFailedText,
   SIGN_OUT_FAILED,
-} from '#/features/session/service/loginError.ts';
+} from '#/features/session/service/loginError';
 export {
   draftOwner,
   PLACEHOLDER_DELAY_MS,
@@ -37,7 +37,7 @@ export {
   type SignOutAnswer,
   sessionGone,
   sessionEndedRead,
-} from '#/features/session/service/boot.ts';
+} from '#/features/session/service/boot';
 export {
   signedInElsewhere,
   isSystemPrincipal,
@@ -48,7 +48,7 @@ export {
   signInHome,
   type TenantEntry,
   tenantEntry,
-} from '#/features/session/service/entry.ts';
+} from '#/features/session/service/entry';
 export {
   signInLabel,
   signingInTitle,
@@ -59,4 +59,4 @@ export {
   backToLabel,
   signInToLabel,
   enteredTenant,
-} from '#/features/session/service/labels.ts';
+} from '#/features/session/service/labels';

@@ -3,7 +3,7 @@ export {
   newClientHref,
   clientHref,
   clientsTrail,
-} from '#/features/clients/service/address.ts';
+} from '#/features/clients/service/address';
 export {
   CLIENT_TABS,
   type ClientTab,
@@ -13,7 +13,7 @@ export {
   clientRecord,
   SERVICE_SECTION,
   tabsWithEdits,
-} from '#/features/clients/service/tabs.ts';
+} from '#/features/clients/service/tabs';
 export {
   DESCRIPTION_MAX,
   DESCRIPTION_RULE,
@@ -29,13 +29,8 @@ export {
   SECTION,
   FIELD,
   ACTIVITY_NOTE,
-} from '#/features/clients/service/labels.ts';
-export {
-  type Reach,
-  clientReach,
-  canChange,
-  reachLine,
-} from '#/features/clients/service/ceiling.ts';
+} from '#/features/clients/service/labels';
+export { type Reach, clientReach, canChange, reachLine } from '#/features/clients/service/ceiling';
 export {
   type Fixable,
   enabledFixed,
@@ -43,8 +38,8 @@ export {
   listsReadOnly,
   deleteFixed,
   scopesFixed,
-} from '#/features/clients/service/blocks.ts';
-export { deleteConsequence, deletedText } from '#/features/clients/service/confirm.ts';
+} from '#/features/clients/service/blocks';
+export { deleteConsequence, deletedText } from '#/features/clients/service/confirm';
 export {
   type NewClientKind,
   type NewClientField,
@@ -59,18 +54,18 @@ export {
   SECRET_LABEL,
   secretTitle,
   secretNote,
-} from '#/features/clients/service/create.ts';
+} from '#/features/clients/service/create';
 export {
   CLIENT_LIST_LIMIT,
   entriesOf,
   listCount,
   namesText,
-} from '#/features/clients/service/lists.ts';
+} from '#/features/clients/service/lists';
 export {
   CLIENT_CAPABILITY,
   ceilingRefused,
   clientRefusal,
-} from '#/features/clients/service/refusal.ts';
+} from '#/features/clients/service/refusal';
 export {
   AUTH_TIME_LABEL,
   AUTH_TIME_RULE,
@@ -101,8 +96,8 @@ export {
   TOKEN_FIELD,
   tenantLifetimeLabel,
   type Lifetime,
-} from '#/features/clients/service/tokens.ts';
-export { AUTO, choiceOf, sentOf } from '#/features/clients/service/choices.ts';
+} from '#/features/clients/service/tokens';
+export { AUTO, choiceOf, sentOf } from '#/features/clients/service/choices';
 export {
   authNote,
   authOptions,
@@ -134,7 +129,7 @@ export {
   userinfoSigningOptions,
   USERINFO_RULE,
   type KeySource,
-} from '#/features/clients/service/advanced.ts';
+} from '#/features/clients/service/advanced';
 export {
   BACKCHANNEL_RULE,
   BACKCHANNEL_SESSION_LABEL,
@@ -146,7 +141,7 @@ export {
   LOGOUT_FIELD,
   POST_LOGOUT_NOUN,
   SECTIONS_LOGOUT,
-} from '#/features/clients/service/logout.ts';
+} from '#/features/clients/service/logout';
 export {
   GRACE_LABEL,
   GRACE_MAX,
@@ -157,7 +152,7 @@ export {
   rotatedNote,
   rotatedTitle,
   rotateConsequence,
-} from '#/features/clients/service/secret.ts';
+} from '#/features/clients/service/secret';
 export {
   alreadyAssigned,
   ASSIGN_HEADING,
@@ -177,7 +172,7 @@ export {
   SCOPES_PAGE,
   shownScopes,
   unassignedText,
-} from '#/features/clients/service/scopes.ts';
+} from '#/features/clients/service/scopes';
 export {
   assignedCount,
   assignedRoles,
@@ -196,7 +191,7 @@ export {
   SERVICE_CAPABILITY,
   SERVICE_RULE,
   splitAssigned,
-} from '#/features/clients/service/account.ts';
+} from '#/features/clients/service/account';
 export {
   CLIENT_ROLES_RULE,
   clientRolesListHref,
@@ -210,7 +205,7 @@ export {
   ROLE_NAME_TAKEN,
   ROLES_CAPABILITY,
   roleOwnerLine,
-} from '#/features/clients/service/roles.ts';
+} from '#/features/clients/service/roles';
 export {
   NO_SESSIONS,
   REVOKE_HEADING,
@@ -222,7 +217,7 @@ export {
   SESSIONS_NOUN,
   SESSIONS_RULE,
   sessionsReadable,
-} from '#/features/clients/service/sessions.ts';
+} from '#/features/clients/service/sessions';
 export {
   ANY_STATUS,
   attemptsText,
@@ -232,14 +227,14 @@ export {
   NO_DELIVERIES,
   STATUS_OPTIONS,
   statusFilter,
-} from '#/features/clients/service/deliveries.ts';
+} from '#/features/clients/service/deliveries';
 export {
   INSTALLATION_HEADING,
   INSTALLATION_RULE,
   installationRows,
   NONE,
   type InstallationRow,
-} from '#/features/clients/service/installation.ts';
+} from '#/features/clients/service/installation';
 export {
   artefactsOf,
   evaluateAllowed,
@@ -254,4 +249,4 @@ export {
   SCOPE_RULE,
   SUBJECT_PICKER_LABEL,
   type Artefact,
-} from '#/features/clients/service/evaluate.ts';
+} from '#/features/clients/service/evaluate';

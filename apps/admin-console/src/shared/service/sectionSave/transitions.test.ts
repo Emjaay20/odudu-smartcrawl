@@ -11,13 +11,13 @@ import {
   startable,
   theirsTaken,
   unsavedAfter,
-} from '#/shared/service/sectionSave/transitions.ts';
+} from '#/shared/service/sectionSave/transitions';
 import {
   BLOCKED_BY_CONFLICT,
   BLOCKED_GONE,
   BLOCKED_UNREAD,
   type SectionState,
-} from '#/shared/service/sectionSave/state.ts';
+} from '#/shared/service/sectionSave/state';
 
 const BASE = { name: 'a', tags: ['x'] };
 

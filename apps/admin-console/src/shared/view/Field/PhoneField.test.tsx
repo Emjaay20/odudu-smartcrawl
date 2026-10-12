@@ -3,9 +3,9 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { I18nProvider } from 'react-aria-components';
 import { describe, expect, it, vi } from 'vitest';
-import { OwnDataFields, ReadOnlyFields } from '#/shared/view/Field/Field.tsx';
-import { PhoneField } from '#/shared/view/Field/PhoneField.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { OwnDataFields, ReadOnlyFields } from '#/shared/view/Field/Field';
+import { PhoneField } from '#/shared/view/Field/PhoneField';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 function Controlled({ start = '' }: { start?: string }) {
   const [value, setValue] = useState(start);

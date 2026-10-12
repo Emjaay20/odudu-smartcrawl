@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { RoleOwner } from '#/shared/view/RoleOwner/RoleOwner.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { RoleOwner } from '#/shared/view/RoleOwner/RoleOwner';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 const TENANT = { client_id: null, client_key: null };
 const CLIENT = { client_id: 'c-portal', client_key: 'portal' };

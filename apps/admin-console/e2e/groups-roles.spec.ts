@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
-import { expect, expectAccessible, expectFitsViewport, forgive, signIn, test } from './fixtures.ts';
-import { psql, seeded } from './stack.ts';
+import { expect, expectAccessible, expectFitsViewport, forgive, signIn, test } from './fixtures';
+import { psql, seeded } from './stack';
 
 const { groupsRoles } = seeded();
 const { admin, limited, member } = groupsRoles;

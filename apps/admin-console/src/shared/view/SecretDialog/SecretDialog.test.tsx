@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { Button } from '#/shared/view/Button';
-import { SecretDialog } from '#/shared/view/SecretDialog/SecretDialog.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { SecretDialog } from '#/shared/view/SecretDialog/SecretDialog';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 const SECRET = 'Qm9vay1vZi1zZWNyZXRzLTdmM2E5YzFlLWQyYjQ';
 

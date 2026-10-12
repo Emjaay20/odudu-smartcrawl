@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { ViewOnlyNote } from '#/shared/view/ViewOnlyNote/ViewOnlyNote.tsx';
-import { axeInBothThemes } from '#/testing/axeInBothThemes.ts';
+import { ViewOnlyNote } from '#/shared/view/ViewOnlyNote/ViewOnlyNote';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 describe('ViewOnlyNote', () => {
   it('says in one line what may be looked at, and what changing it needs', () => {

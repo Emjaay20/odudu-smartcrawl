@@ -1,1 +1,1 @@
-export { SigningIn } from '#/features/session/view/SigningIn/SigningIn.tsx';
+export { SigningIn } from '#/features/session/view/SigningIn/SigningIn';

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { loadRailCollapsed, storeRailCollapsed } from '#/shared/adapter/railChoice.ts';
+import { loadRailCollapsed, storeRailCollapsed } from '#/shared/adapter/railChoice';
 
 // Whether the rail is collapsed, starting from this browser's last choice
 // and remembering every new one.

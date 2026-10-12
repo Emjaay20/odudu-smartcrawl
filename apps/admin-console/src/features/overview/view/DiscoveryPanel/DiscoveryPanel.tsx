@@ -1,5 +1,5 @@
 import { Fragment, useId, type ReactNode } from 'react';
-import { flagText } from '#/shared/service/format.ts';
+import { flagText } from '#/shared/service/format';
 import {
   laneText,
   unreadableTitle,

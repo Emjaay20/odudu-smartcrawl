@@ -7,7 +7,7 @@ import {
   useCompositeRemoval,
   useCompositesRecord,
   type AddValues,
-} from '#/features/roles/repository/useRoleRecord.ts';
+} from '#/features/roles/repository/useRoleRecord';
 import {
   ADD_LABEL,
   addRefusal,
@@ -25,13 +25,13 @@ import {
   roleSelfLoss,
   unnestedText,
 } from '#/features/roles/service';
-import type { RecordState } from '#/shared/repository/useRecord.ts';
-import { useRolePicker } from '#/shared/repository/useRolePicker.ts';
-import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave.ts';
-import { useToasts } from '#/shared/repository/useToasts.ts';
+import type { RecordState } from '#/shared/repository/useRecord';
+import { useRolePicker } from '#/shared/repository/useRolePicker';
+import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
+import { useToasts } from '#/shared/repository/useToasts';
 import { judgedLoss, type Loss } from '#/shared/service/capabilities';
-import { describeId } from '#/shared/service/format.ts';
-import type { PickerState } from '#/shared/service/picker.ts';
+import { describeId } from '#/shared/service/format';
+import type { PickerState } from '#/shared/service/picker';
 
 export function useCompositesRead(
   tenant: string,

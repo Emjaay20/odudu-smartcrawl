@@ -3,13 +3,13 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { App } from '#/app/App/App.tsx';
-import { createConsoleRouter } from '#/app/router.tsx';
-import { createQueryClient } from '#/shared/repository/queryClient.ts';
-import { useDialogHost } from '#/shared/repository/useDialogHost.ts';
-import { useDrafts } from '#/shared/repository/useDrafts.ts';
-import { useToasts } from '#/shared/repository/useToasts.ts';
-import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard.ts';
+import { App } from '#/app/App/App';
+import { createConsoleRouter } from '#/app/router';
+import { createQueryClient } from '#/shared/repository/queryClient';
+import { useDialogHost } from '#/shared/repository/useDialogHost';
+import { useDrafts } from '#/shared/repository/useDrafts';
+import { useToasts } from '#/shared/repository/useToasts';
+import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 import {
   fakeTransport,
   json,
@@ -18,7 +18,7 @@ import {
   problem,
   SESSION_ENDED,
   type Answer,
-} from '#/testing/fakeTransport.ts';
+} from '#/testing/fakeTransport';
 
 const GRACE = { tenant: 'acme', subject_id: 's1', username: 'grace' };
 const ROOT = { tenant: 'system', subject_id: 's0', username: 'root' };
