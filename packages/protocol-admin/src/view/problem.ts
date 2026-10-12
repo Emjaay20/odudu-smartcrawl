@@ -21,9 +21,13 @@ export function problem(status: number, type: string, title: string, detail?: st
  * `errors` places each message under its field, and `detail` stays the prose
  * a person reads — given, or else each field and its message in turn.
  */
-export function fieldProblem(errors: readonly FieldError[], detail?: string): Problem {
+export function fieldProblem(
+  errors: readonly FieldError[],
+  detail?: string,
+  type = 'about:blank',
+): Problem {
   const prose = detail ?? errors.map((error) => `${error.path}: ${error.message}`).join('; ');
-  return { ...problem(400, 'about:blank', 'Bad Request', prose), errors };
+  return { ...problem(400, type, 'Bad Request', prose), errors };
 }
 
 /** A query a Zod schema refused, its first message as the detail. */

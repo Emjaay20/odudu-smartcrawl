@@ -317,6 +317,15 @@ token, got the way "Getting the token" shows, is `$ADMIN_TOKEN`; and a tenant
 what else it holds. It was torn down with `docker compose down -v` when the
 capture finished.
 
+**The nineteenth stack.** The five typed refusals of `PUT /flow/executions` ran
+against one more stack: compose project `odudu-docs-14` on port 3082, its Postgres on
+5464, built from this branch with the typed refusals from an empty volume, with
+`ODUDU_THROTTLE_LIMIT=10000` and a console key made for it by
+`infra/docker/console-key.sh`. Against it: `seed admin --username ada`, whose token,
+got the way "Getting the token" shows, is `$ADMIN_TOKEN`, and a tenant `flow-demo` made
+through `POST /admin/tenants`. It was torn down with `docker compose down -v` when the
+capture finished.
+
 ## The shape of it
 
 Most of the admin endpoint lives under `/admin/tenants/{tenant}/`, mirroring
@@ -579,7 +588,7 @@ curl -sS -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: applic
 
 ```
 {"type":"about:blank","title":"Bad Request","status":400,"detail":"unknown role id(s): 0199aa00-0000-7000-8000-0000000000ff","errors":[{"path":"role_ids","message":"names no role 0199aa00-0000-7000-8000-0000000000ff"}],"instance":"01a0e9e0-b564-7765-81f0-d8ddb655a845"}
-{"type":"about:blank","title":"Bad Request","status":400,"detail":"authenticator \"password\" appears more than once; a step is addressed by its authenticator, so a repeat has no unambiguous meaning","errors":[{"path":"[1].authenticator","message":"repeats an earlier step"}],"instance":"01a0e9e0-b598-7331-95af-09ef6837a5c3"}
+{"type":"about:blank#flow-duplicate-authenticator","title":"Bad Request","status":400,"detail":"authenticator \"password\" appears more than once; a step is addressed by its authenticator, so a repeat has no unambiguous meaning","errors":[{"path":"[1].authenticator","message":"repeats an earlier step"}],"instance":"01a13029-15ad-7ad4-9099-2d491b806386"}
 ```
 
 ### A create answers its `ETag`
@@ -8807,7 +8816,38 @@ answers `400` rather than `428` even with no `If-Match` sent — the shape of
 the request is wrong whatever generation it is against:
 
 ```
-{"type":"about:blank","title":"Bad Request","status":400,"detail":"a flow needs at least one step; a tenant with no flow cannot be logged into","instance":"01a0ea5f-7df7-7ed3-9b4f-aa651cc2bd29"}
+{"type":"about:blank#flow-empty","title":"Bad Request","status":400,"detail":"a flow needs at least one step; a tenant with no flow cannot be logged into","instance":"01a13029-154d-7c38-902a-842ee08e96a4"}
+```
+
+Each of the five `400`s a `PUT` can answer has a type of its own, so a
+caller tells them apart without reading `detail`: `about:blank#flow-empty`,
+`#flow-no-enabled-step`, `#flow-no-first-challenge` (no step could run when a
+login starts, since only `password` is applicable before a subject is bound),
+`#flow-unknown-authenticator` and `#flow-duplicate-authenticator`. The last
+two carry `errors` with the path of the step at fault, as `[1].authenticator`;
+the others name no step. `detail` is unchanged. Captured against the nineteenth
+stack, in `flow-demo`, under the `ETag` of the flow the tenant starts with,
+one request each:
+
+```bash
+curl -sS -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
+  -H 'If-Match: "2e028692eeb04a65ef6a06be482c11d71247d243b5929007716ee0f4eb2324db"' \
+  -d '[]' http://localhost:3082/admin/tenants/flow-demo/flow/executions
+```
+
+The same request with, in turn, these bodies in place of `[]`:
+`[{"authenticator":"password","requirement":"disabled"},{"authenticator":"otp","requirement":"disabled"}]`,
+`[{"authenticator":"passkey","requirement":"required"},{"authenticator":"password","requirement":"alternative"}]`,
+`[{"authenticator":"sms","requirement":"required"}]` and
+`[{"authenticator":"password","requirement":"required"},{"authenticator":"password","requirement":"alternative"}]`.
+The answers, the empty list's first:
+
+```
+{"type":"about:blank#flow-empty","title":"Bad Request","status":400,"detail":"a flow needs at least one step; a tenant with no flow cannot be logged into","instance":"01a13029-154d-7c38-902a-842ee08e96a4"}
+{"type":"about:blank#flow-no-enabled-step","title":"Bad Request","status":400,"detail":"every step is disabled; a tenant with no enabled step cannot be logged into","instance":"01a13029-1569-7afa-a88d-9b3dbb364822"}
+{"type":"about:blank#flow-no-first-challenge","title":"Bad Request","status":400,"detail":"no step would run at the start of a login, when no subject is bound yet; a tenant whose flow begins this way cannot be logged into","instance":"01a13029-1581-7d00-84dd-e73411899398"}
+{"type":"about:blank#flow-unknown-authenticator","title":"Bad Request","status":400,"detail":"unknown authenticator \"sms\"; expected one of password, passkey, otp, recovery-code","errors":[{"path":"[0].authenticator","message":"is not a registered authenticator"}],"instance":"01a13029-1598-7077-855d-9dc837930987"}
+{"type":"about:blank#flow-duplicate-authenticator","title":"Bad Request","status":400,"detail":"authenticator \"password\" appears more than once; a step is addressed by its authenticator, so a repeat has no unambiguous meaning","errors":[{"path":"[1].authenticator","message":"repeats an earlier step"}],"instance":"01a13029-15ad-7ad4-9099-2d491b806386"}
 ```
 
 The write reaches the executor immediately, not only the table: the very

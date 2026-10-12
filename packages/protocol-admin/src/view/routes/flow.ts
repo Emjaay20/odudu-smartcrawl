@@ -51,7 +51,7 @@ function replaceFlowProblem(
     case 'empty':
       return problem(
         400,
-        'about:blank',
+        'about:blank#flow-empty',
         'Bad Request',
         'a flow needs at least one step; a tenant with no flow cannot be logged into',
       );
@@ -59,23 +59,25 @@ function replaceFlowProblem(
       return fieldProblem(
         [{ path: stepPath(steps, outcome.name, 0), message: 'is not a registered authenticator' }],
         `unknown authenticator ${JSON.stringify(outcome.name)}; expected one of ${outcome.known.join(', ')}`,
+        'about:blank#flow-unknown-authenticator',
       );
     case 'duplicate_authenticator':
       return fieldProblem(
         [{ path: stepPath(steps, outcome.name, 1), message: 'repeats an earlier step' }],
         `authenticator ${JSON.stringify(outcome.name)} appears more than once; a step is addressed by its authenticator, so a repeat has no unambiguous meaning`,
+        'about:blank#flow-duplicate-authenticator',
       );
     case 'no_enabled_step':
       return problem(
         400,
-        'about:blank',
+        'about:blank#flow-no-enabled-step',
         'Bad Request',
         'every step is disabled; a tenant with no enabled step cannot be logged into',
       );
     case 'no_step_runnable_at_start':
       return problem(
         400,
-        'about:blank',
+        'about:blank#flow-no-first-challenge',
         'Bad Request',
         'no step would run at the start of a login, when no subject is bound yet; ' +
           'a tenant whose flow begins this way cannot be logged into',

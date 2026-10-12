@@ -41,6 +41,11 @@ const EMITTABLE_PROBLEM_TYPES = new Set([
   'about:blank#logout-deliveries-pending',
   'about:blank#sessions-live',
   'about:blank#sessions-not-ended',
+  'about:blank#flow-empty',
+  'about:blank#flow-no-enabled-step',
+  'about:blank#flow-no-first-challenge',
+  'about:blank#flow-unknown-authenticator',
+  'about:blank#flow-duplicate-authenticator',
 ]);
 
 const CAPABILITY_SHAPED = /^(?:view|manage)-[a-z]+(?:-[a-z]+)*$/u;
