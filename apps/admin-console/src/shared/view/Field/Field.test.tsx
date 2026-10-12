@@ -34,6 +34,21 @@ describe('TextField', () => {
     expect(onChange).toHaveBeenCalledWith('A');
   });
 
+  it('masks a password, offers the browser nothing to fill, and never shows it read-only', () => {
+    const { rerender } = render(
+      <TextField label="Password" type="password" value="hunter2" onChange={vi.fn()} />,
+    );
+    const input = screen.getByLabelText('Password');
+    expect(input).toHaveAttribute('type', 'password');
+    expect(input).toHaveAttribute('autocomplete', 'off');
+    rerender(
+      <ReadOnlyFields when>
+        <TextField label="Password" type="password" value="hunter2" onChange={vi.fn()} />
+      </ReadOnlyFields>,
+    );
+    expect(screen.queryByText('hunter2')).toBeNull();
+  });
+
   it('puts the error under the field and ties it to the input', () => {
     render(
       <TextField

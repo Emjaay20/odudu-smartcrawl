@@ -460,6 +460,20 @@ const settings = createRoute({
   },
 });
 
+const Email = lazyFeatureRoute(
+  () => import('#/features/email').then((feature) => feature.EmailPage),
+  'Loading email',
+);
+
+const email = createRoute({
+  getParentRoute: () => tenant,
+  path: 'email',
+  component: function TenantEmail() {
+    const { tenant: name } = tenant.useParams();
+    return <Email key={name} tenant={name} />;
+  },
+});
+
 // Every feature chunk the routes load, for a caller that wants them all in
 // hand before the first render.
 export function preloadFeatures(): Promise<void> {
@@ -491,6 +505,7 @@ export function preloadFeatures(): Promise<void> {
     Flow,
     SigningKeys,
     Settings,
+    Email,
   ];
   return Promise.all(features.map((feature) => feature.preload())).then(() => undefined);
 }
@@ -508,6 +523,7 @@ const TAKEN = new Set([
   'flow',
   'keys',
   'settings',
+  'email',
 ]);
 
 const areas = EVERY_AREA.filter((area) => area !== OVERVIEW && !TAKEN.has(area.path)).map((area) =>
@@ -537,6 +553,7 @@ const routeTree = root.addChildren([
     flow,
     signingKeys,
     settings,
+    email,
     ...areas,
   ]),
 ]);

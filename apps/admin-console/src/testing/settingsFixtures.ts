@@ -71,3 +71,42 @@ export function settingsRoutes(
     ...extra,
   };
 }
+
+export const NO_SMTP = {
+  configured: false,
+  host: null,
+  port: null,
+  from_address: null,
+  username: null,
+  password_set: false,
+  starttls: null,
+  effective: 'none',
+};
+
+export const OWN_SMTP = {
+  configured: true,
+  host: 'smtp.example',
+  port: 587,
+  from_address: 'noreply@example',
+  username: 'mailer',
+  password_set: true,
+  starttls: true,
+  effective: 'tenant',
+};
+
+export function smtpAnswer(config: Record<string, unknown> = OWN_SMTP, etag = '"m1"'): Answer {
+  return json(config, 200, { etag });
+}
+
+// grace of acme holding the capabilities given, with a relay of its own.
+export function emailRoutes(
+  capabilities: readonly string[] = EVERY_TENANT_CAPABILITY,
+  extra: Record<string, Answer> = {},
+): Record<string, Answer> {
+  return {
+    'GET /console/api/session': json(GRACE),
+    [`GET ${A}/whoami`]: whoami(capabilities),
+    [`GET ${SM}`]: smtpAnswer(),
+    ...extra,
+  };
+}

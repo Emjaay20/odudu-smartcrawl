@@ -212,15 +212,23 @@ export function TextField({
     onChange: (value: string) => void;
     onBlur?: () => void;
     inputMode?: 'numeric' | 'tel';
-    type?: 'text' | 'url' | 'email' | 'tel';
+    type?: 'text' | 'url' | 'email' | 'tel' | 'password';
     mono?: boolean;
     autoComplete?: string;
     autoFocus?: boolean;
   }) {
   const group = use(FieldGroupIds);
   const own = use(OwnData);
-  if (use(FieldsReadOnly))
-    return <ReadOnlyValue label={label} value={value} mono={mono} changed={changed} />;
+  if (use(FieldsReadOnly)) {
+    return (
+      <ReadOnlyValue
+        label={label}
+        value={type === 'password' ? '' : value}
+        mono={mono}
+        changed={changed}
+      />
+    );
+  }
   return (
     <AriaTextField
       {...VALIDATION}
