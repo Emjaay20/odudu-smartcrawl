@@ -1920,6 +1920,45 @@ drove their wiring, so those layers were not red first on their own. The
 assignment's ETag handling and the second-save tests were written first and
 mutation-checked in the fix round.
 
+## Part 4 — Registration tokens and the Sign-in flow
+
+**Registration tokens is one page.** The mint form (uses, lifetime) sits above
+the list in a new `lead` slot of `ResourceListPage`, the token goes to a
+`SecretDialog` through `useSecretOnce` and to nothing else (not the toast, the
+URL, a draft or the query cache), and the list is read again after every mint
+and every revoke. The list holds live tokens only; the page says a spent or
+expired one disappears and the Audit trail holds the history. A revoke that
+answers 404 is shown as already gone, since the server answers a used-up or
+expired token as it answers a revoked one. No route here has an ETag, so there
+is no 412 to show; `NumberWithUnitField` now reads a cleared field as a dash
+instead of `NaN`.
+
+**The flow is one section, saved whole.** `PUT /flow/executions` replaces the
+list on a mandatory `If-Match`; the Steps section sends the array in order, with
+no index, on the ETag it was read with, and a 412 is the shared "changed
+elsewhere" notice. A step is added only from the `available` the server
+answers, at the end; there is no remove, since a disabled step is the way to
+take one out of play and a mistaken addition is discarded. Moving a step keeps
+the focus on it, or on the way back once it cannot go further.
+
+**`otp_required` is a tenant setting, so it is its own section.** It sits under
+Steps, with the one-time password step's row saying whom it asks now. It is
+saved by `PATCH /settings` on the settings ETag, which covers all 29 settings,
+so it is held as the record `settings`, which the Settings area will read too.
+The read and the amend are in `shared/adapter/tenantSettings.ts` for that
+reason.
+
+**The 400s are worded from the start of their detail.** The server's flow
+refusals carry no problem type, and only two carry `errors[]`, so the console
+keys on the prefix of each `detail` and shows the wording under the steps, beside
+Save. `flow.int.test.ts` now pins each prefix, so a change to one goes red on the
+server's side, not in a user's browser.
+
+**Scale.** The token list is cursor-bounded and "Load more" reads one page at a
+time; at 10,000 tokens the page holds only what has been asked for. The flow is
+four rows by construction (`available` is the registry). Neither adds a server
+read.
+
 ## Performance
 
 ### The React Compiler
