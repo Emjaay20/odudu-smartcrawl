@@ -65,6 +65,7 @@ async function arrowTo(page: Page, grid: Locator, target: Locator): Promise<void
 
 test('a key is staged, promoted, retired and deleted, and the lanes follow the database', async ({
   page,
+  problems,
 }) => {
   test.slow();
   const { main } = keys;
@@ -112,6 +113,10 @@ test('a key is staged, promoted, retired and deleted, and the lanes follow the d
   await confirm.click();
   await expect(row(page, 'Retired', original)).toBeVisible();
   await expect.poll(() => keysOf(main.tenant)).toBe('active,retired');
+  // The console's own token was signed by the key just retired, so the first read after it is refused.
+  for (const status of ['rotating', 'active', 'retired']) {
+    forgive(problems, `/keys?status=${status}`);
+  }
 
   await page.getByRole('button', { name: `Delete ${original}` }).click();
   const remove = page.getByRole('alertdialog', { name: 'Delete this key?' });
