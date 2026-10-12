@@ -53,9 +53,9 @@ test('the flow is reordered, a step disabled and one added, and the one-time pas
   await expectAccessible(page);
   await section.getByRole('button', { name: 'Save Steps' }).click();
   await expect(section.getByRole('button', { name: 'Save Steps' })).toBeHidden();
-  expect(flowOf(main.tenant)).toBe(
-    'password:alternative,passkey:alternative,otp:disabled,recovery-code:conditional',
-  );
+  await expect
+    .poll(() => flowOf(main.tenant))
+    .toBe('password:alternative,passkey:alternative,otp:disabled,recovery-code:conditional');
 
   const otp = page.getByRole('region', { name: 'One-time password' });
   await expect(
@@ -64,7 +64,7 @@ test('the flow is reordered, a step disabled and one added, and the one-time pas
   await otp.getByText('Ask every subject for a one-time password', { exact: true }).click();
   await otp.getByRole('button', { name: 'Save One-time password' }).click();
   await expect(otp.getByRole('button', { name: 'Save One-time password' })).toBeHidden();
-  expect(otpRequired(main.tenant)).toBe('t');
+  await expect.poll(() => otpRequired(main.tenant)).toBe('t');
   await expect(section.getByText('Asked of every subject.')).toBeVisible();
   await expectAccessible(page);
 
@@ -140,7 +140,9 @@ test('a step is moved and the flow saved by keyboard alone, the focus following 
   await tabTo(page, save);
   await page.keyboard.press('Enter');
   await expect(save).toBeHidden();
-  expect(flowOf(keyed.tenant)).toBe('password:alternative,passkey:alternative,otp:conditional');
+  await expect
+    .poll(() => flowOf(keyed.tenant))
+    .toBe('password:alternative,passkey:alternative,otp:conditional');
 
   const toggle = page
     .getByRole('region', { name: 'One-time password' })
@@ -151,7 +153,7 @@ test('a step is moved and the flow saved by keyboard alone, the focus following 
   await tabTo(page, saveOtp);
   await page.keyboard.press('Enter');
   await expect(saveOtp).toBeHidden();
-  expect(otpRequired(keyed.tenant)).toBe('t');
+  await expect.poll(() => otpRequired(keyed.tenant)).toBe('t');
   await expectAccessible(page);
 });
 
