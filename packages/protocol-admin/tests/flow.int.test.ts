@@ -239,6 +239,30 @@ describe('PUT /admin/tenants/{t}/flow/executions', () => {
     for (const name of registeredAuthenticatorNames()) {
       expect(body.detail).toContain(name);
     }
+    expect(body.detail).toMatch(/^unknown authenticator "bogus"; expected one of /u);
+  });
+
+  // The refusals carry no type of their own, so the console words each from
+  // the start of its detail (apps/admin-console/src/features/flow/service/refusal.ts).
+  it('starts each refusal’s detail with the words the console recognises it by', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-tenant']);
+    const detailOf = async (steps: { authenticator: string; requirement: string }[]) =>
+      (await putFlow(token, t.name, steps)).json<{ detail: string }>().detail;
+
+    expect(await detailOf([])).toMatch(/^a flow needs at least one step/u);
+    expect(await detailOf([{ authenticator: 'password', requirement: 'disabled' }])).toMatch(
+      /^every step is disabled/u,
+    );
+    expect(
+      await detailOf([
+        { authenticator: 'password', requirement: 'required' },
+        { authenticator: 'password', requirement: 'required' },
+      ]),
+    ).toMatch(/^authenticator "password" appears more than once/u);
+    expect(await detailOf([{ authenticator: 'passkey', requirement: 'required' }])).toMatch(
+      /^no step would run at the start of a login/u,
+    );
   });
 
   it('400s an empty list, since a tenant with no flow cannot be logged into', async () => {
