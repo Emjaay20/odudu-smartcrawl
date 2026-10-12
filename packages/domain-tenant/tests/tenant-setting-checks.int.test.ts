@@ -1,3 +1,4 @@
+import { TENANT_SETTING_ORDERINGS, TENANT_SETTING_RANGES } from '@odudu/contracts/admin';
 import {
   createDatabase,
   MIGRATIONS_DIR,
@@ -15,8 +16,6 @@ import {
 } from '#/repository/tenant-settings';
 import {
   TENANT_SETTING_COLUMNS,
-  TENANT_SETTING_ORDERINGS,
-  TENANT_SETTING_RANGES,
   tenantSettingProblems,
   type TenantSettingName,
 } from '#/service/tenant-settings';
@@ -77,8 +76,8 @@ async function verdicts(
 // The partner a range case sets alongside its own field, so an ordering
 // that field belongs to cannot refuse first and mask the bound under test:
 // the upper partner at its most, or the lower partner at its least.
-function orderingPartners(name: string): Partial<Record<TenantSettingName, number>> {
-  const partners: Partial<Record<TenantSettingName, number>> = {};
+function orderingPartners(name: string): Partial<Record<string, number>> {
+  const partners: Partial<Record<string, number>> = {};
   for (const [lower, upper] of TENANT_SETTING_ORDERINGS) {
     if (name === lower) partners[upper] = TENANT_SETTING_RANGES[upper]?.max ?? INT4_MAX;
     if (name === upper) partners[lower] = TENANT_SETTING_RANGES[lower]?.min ?? 0;
@@ -87,6 +86,7 @@ function orderingPartners(name: string): Partial<Record<TenantSettingName, numbe
 }
 
 const rangeCases = Object.entries(TENANT_SETTING_RANGES).flatMap(([name, range]) => {
+  if (range === undefined) return [];
   const max = range.max ?? INT4_MAX;
   return [range.min - 1, range.min, max, ...(max < INT4_MAX ? [max + 1] : [])].map((value) => ({
     name,

@@ -55,6 +55,9 @@ export {
   type AmendSettingsRequest,
   settingsSchema,
   type Settings,
+  TENANT_SETTING_ORDERINGS,
+  TENANT_SETTING_RANGES,
+  type TenantSettingRange,
 } from '#/admin/settings';
 export {
   profileSchema,

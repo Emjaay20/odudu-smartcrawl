@@ -3,8 +3,6 @@ export {
   coerceTenantSetting,
   listSettingValues,
   tenantSettingProblems,
-  TENANT_SETTING_ORDERINGS,
-  TENANT_SETTING_RANGES,
   TENANT_SETTING_NAMES,
   TENANT_SETTING_COLUMNS,
   type CoerceOutcome,
@@ -12,8 +10,12 @@ export {
   type TenantSettingValue,
   type TenantSettingColumn,
   type TenantSettingProblem,
-  type TenantSettingRange,
 } from '#/service/tenant-settings';
+export {
+  TENANT_SETTING_ORDERINGS,
+  TENANT_SETTING_RANGES,
+  type TenantSettingRange,
+} from '@odudu/contracts/admin';
 export {
   tenantSettingsRepository,
   TenantSettingCheckViolationError,

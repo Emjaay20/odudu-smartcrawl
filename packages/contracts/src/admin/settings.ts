@@ -13,3 +13,44 @@ export type AmendSettingsRequest = z.infer<typeof amendSettingsRequestSchema>;
 // setting with no default — nothing a caller ever writes accepts it back.
 export const settingsSchema = z.record(z.string(), settingValueSchema.nullable());
 export type Settings = z.infer<typeof settingsSchema>;
+
+export interface TenantSettingRange {
+  min: number;
+  /** Omitted, the column's own integer ceiling. */
+  max?: number;
+}
+
+// The ranges the CHECK constraints on `tenants` hold each integer setting
+// to (migrations 0028, 0035, 0041, 0045, 0048, 0049, 0068 and 0082), here so
+// the console words the same limits the server enforces;
+// tests/tenant-setting-checks.int.test.ts in @odudu/domain-tenant holds the
+// two in agreement.
+export const TENANT_SETTING_RANGES: Readonly<Partial<Record<string, TenantSettingRange>>> = {
+  sso_session_idle_seconds: { min: 60, max: 2_592_000 },
+  sso_session_max_seconds: { min: 60, max: 2_592_000 },
+  password_min_length: { min: 8, max: 256 },
+  password_history_depth: { min: 0, max: 24 },
+  password_max_age_days: { min: 0, max: 3650 },
+  brute_force_max_failures: { min: 1, max: 100 },
+  brute_force_lockout_seconds: { min: 1, max: 86_400 },
+  brute_force_failure_reset_seconds: { min: 60, max: 2_592_000 },
+  max_clients: { min: 0 },
+  max_sessions_per_browser: { min: 1, max: 32 },
+  remember_me_idle_seconds: { min: 60, max: 31_536_000 },
+  remember_me_max_seconds: { min: 60, max: 31_536_000 },
+  audit_retention_days: { min: 1, max: 3650 },
+  access_token_ttl_seconds: { min: 1, max: 3600 },
+  id_token_ttl_seconds: { min: 1, max: 3600 },
+  refresh_token_ttl_seconds: { min: 1 },
+  authorization_code_ttl_seconds: { min: 1, max: 600 },
+  login_ttl_seconds: { min: 60, max: 86_400 },
+  verify_email_ttl_seconds: { min: 60, max: 604_800 },
+  reset_password_ttl_seconds: { min: 60, max: 86_400 },
+};
+
+/** Pairs `[lower, upper]` a CHECK holds `lower <= upper`. */
+export const TENANT_SETTING_ORDERINGS: readonly (readonly [string, string])[] = [
+  ['sso_session_idle_seconds', 'sso_session_max_seconds'],
+  ['remember_me_idle_seconds', 'remember_me_max_seconds'],
+  ['brute_force_lockout_seconds', 'brute_force_max_lockout_seconds'],
+];
