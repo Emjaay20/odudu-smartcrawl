@@ -536,6 +536,40 @@ describe('DELETE /admin/tenants/{t}/smtp', () => {
     expect(row).not.toBeNull();
   });
 
+  it('records each test send with its outcome, and never the recipient', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-tenant', 'view-audit']);
+    const auditRows = async () => {
+      const audit = await fixture.http.inject({
+        method: 'GET',
+        url: `/admin/tenants/${t.name}/audit`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+      return audit
+        .json<{ items: { action: string; outcome: string }[] }>()
+        .items.filter((item) => item.action === 'tenant.smtp_test');
+    };
+
+    expect((await testSmtp(token, t.name, 'nobody@example.test')).statusCode).toBe(400);
+    expect(await auditRows()).toMatchObject([{ outcome: 'refused' }]);
+
+    await putSmtp(token, t.name, {
+      host: '127.0.0.1',
+      port: 5432,
+      from_address: 'noreply@example.test',
+      username: 'mailer',
+      password: 'hunter2-secret',
+      starttls: true,
+    });
+    expect((await testSmtp(token, t.name, 'ops@example.test')).statusCode).toBe(400);
+    const rows = await auditRows();
+    expect(rows).toHaveLength(2);
+    expect(rows.map((row) => row.outcome)).toEqual(['refused', 'refused']);
+    const text = JSON.stringify(rows);
+    expect(text).not.toContain('ops@example.test');
+    expect(text).not.toContain('hunter2-secret');
+  });
+
   it('records one audit row for the removal and none for the 404', async () => {
     const t = await fixture.createTenant(`acme-${newId()}`);
     const token = await fixture.adminToken(t.name, ['manage-tenant', 'view-audit']);

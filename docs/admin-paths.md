@@ -343,6 +343,14 @@ whose token, got the way "Getting the token" shows, is `$ADMIN_TOKEN`, and a ten
 `name-demo3` and `name-demo4` made through `POST /admin/tenants`. It was torn down with
 `docker compose down -v` when the capture finished.
 
+**The twenty-second stack.** The audit row of a test send ran against one more stack:
+compose project `odudu-docs-18` on port 3082, its Postgres on 5464, built from this
+branch from an empty volume, with `ODUDU_THROTTLE_LIMIT=10000` and a console key made
+for it by `infra/docker/console-key.sh`. Against it: `seed admin --username ada`, whose
+token, got the way "Getting the token" shows, is `$ADMIN_TOKEN`, and a tenant
+`smtp-audit-demo` made through `POST /admin/tenants`. It was torn down with
+`docker compose down -v` when the capture finished.
+
 ## The shape of it
 
 Most of the admin endpoint lives under `/admin/tenants/{tenant}/`, mirroring
@@ -9160,6 +9168,27 @@ probe this endpoint would otherwise be:
 
 No `502` is shown: this stack has no mail server and no host it is willing
 to dial, so nothing here reaches a transport for one to be reported from.
+
+Every test send is recorded as `tenant.smtp_test`, whatever it came to: `allowed`
+when the relay accepted the message, `refused` for no configuration or a
+destination this server will not dial, `failed` for a transport error, with
+`detail.result` naming which. The recipient is not recorded, and the password
+never is. Captured on the twenty-second stack, in a tenant `smtp-audit-demo`
+given a relay at `127.0.0.1` with a password, then sent to `ops@demo.example`:
+
+```bash
+curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" -d '{"to":"ops@demo.example"}' \
+  http://localhost:3082/admin/tenants/smtp-audit-demo/smtp/test | jq -c '{status,detail}'
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://localhost:3082/admin/tenants/smtp-audit-demo/audit?action=tenant.smtp_test" \
+  | jq -c '.items[] | {action,outcome,resource_type,detail}'
+```
+
+```
+{"status":400,"detail":"this server will not connect to 127.0.0.1: address 127.0.0.1 is a loopback address"}
+{"action":"tenant.smtp_test","outcome":"refused","resource_type":"tenant","detail":{"result":"refused_destination"}}
+```
 
 `DELETE`, captured against the sixth stack in a tenant `smtp-delete-demo`
 created for it with no row, then after a `PUT` had stored one. `404` first,

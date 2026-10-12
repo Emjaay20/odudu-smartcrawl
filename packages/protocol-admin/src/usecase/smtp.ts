@@ -7,7 +7,7 @@ import { checkSmtpDestination, type SmtpDestinationPolicy } from '#/service/smtp
 import { tenantSmtpRepository, type TenantSmtpRecord } from '#/repository/tenant-smtp';
 
 export interface SmtpAuditEvent {
-  readonly action: 'tenant.smtp_set' | 'tenant.smtp_delete';
+  readonly action: 'tenant.smtp_set' | 'tenant.smtp_delete' | 'tenant.smtp_test';
   readonly resourceType: 'tenant';
   readonly resourceId: string;
   readonly actorSubjectId: string;
@@ -273,4 +273,35 @@ export async function sendTestMessage(
     return { kind: 'send_failed', detail };
   }
   return { kind: 'sent' };
+}
+
+export type SmtpTestResult = 'not_configured' | 'refused_destination' | 'send_failed' | 'sent';
+
+export interface SmtpTestAuditInput {
+  readonly tenantId: string;
+  readonly result: SmtpTestResult;
+  readonly actorSubjectId: string;
+  readonly actorTenantId: string;
+  readonly actorClientId: string;
+}
+
+// An administrator-triggered outbound connection and message. The recipient
+// is not recorded: it is somebody's address, and what was sent to it is the
+// same fixed text every time.
+export async function auditSmtpTest(
+  tx: TenantScopedDatabase,
+  deps: { readonly audit: Audit },
+  input: SmtpTestAuditInput,
+): Promise<void> {
+  await deps.audit(tx, {
+    action: 'tenant.smtp_test',
+    resourceType: 'tenant',
+    resourceId: input.tenantId,
+    actorSubjectId: input.actorSubjectId,
+    actorTenantId: input.actorTenantId,
+    actorClientId: input.actorClientId,
+    outcome:
+      input.result === 'sent' ? 'allowed' : input.result === 'send_failed' ? 'failed' : 'refused',
+    detail: { result: input.result },
+  });
 }

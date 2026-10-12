@@ -9,7 +9,9 @@ import {
   readSmtp,
   readSmtpForTest,
   sendTestMessage,
+  auditSmtpTest,
   type Audit,
+  type SmtpTestResult,
   type SmtpPasswordChange,
 } from '#/usecase/smtp';
 import { fieldProblem, ifMatchStale, problem, sendProblem } from '#/view/problem';
@@ -150,7 +152,21 @@ export function deleteSmtpHandler(deps: SmtpRouteDeps): AdminRouteHandler {
 }
 
 export function testSmtpHandler(deps: SmtpRouteDeps): AdminRouteHandler {
-  return async (request, reply, _principal, targetTenantId) => {
+  return async (request, reply, principal, targetTenantId) => {
+    const record = (result: SmtpTestResult): Promise<void> =>
+      adminTx(deps.database, request, targetTenantId, (tx) =>
+        auditSmtpTest(
+          tx,
+          { audit: deps.audit },
+          {
+            tenantId: targetTenantId,
+            result,
+            actorSubjectId: principal.subjectId,
+            actorTenantId: principal.issuerTenantId,
+            actorClientId: principal.clientDbId,
+          },
+        ),
+      );
     const body = testSmtpRequestSchema.parse(request.body);
 
     // Read inside the tenant transaction, then release it before sending —
@@ -160,6 +176,7 @@ export function testSmtpHandler(deps: SmtpRouteDeps): AdminRouteHandler {
       readSmtpForTest(tx, targetTenantId),
     );
     if (readOutcome.kind === 'not_configured') {
+      await record('not_configured');
       return sendProblem(
         reply,
         request,
@@ -175,18 +192,21 @@ export function testSmtpHandler(deps: SmtpRouteDeps): AdminRouteHandler {
     );
     switch (sendOutcome.kind) {
       case 'refused_destination':
+        await record('refused_destination');
         return sendProblem(
           reply,
           request,
           problem(400, 'about:blank', 'Bad Request', sendOutcome.reason),
         );
       case 'send_failed':
+        await record('send_failed');
         return sendProblem(
           reply,
           request,
           problem(502, 'about:blank', 'Bad Gateway', sendOutcome.detail),
         );
       case 'sent':
+        await record('sent');
         return reply.code(200).send({ sent: true });
     }
   };
