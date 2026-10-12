@@ -11,6 +11,7 @@ import {
   type TenantSettingProblem,
   type TenantSettingsRecord,
   type TenantSettingValue,
+  normalizeDisplayName,
 } from '@odudu/domain-tenant';
 import { etagOf, matches } from '#/service/etag';
 
@@ -126,10 +127,14 @@ function coerceAll(values: Readonly<Record<string, TenantSettingValue>>): Coerce
         ...(outcome.values === undefined ? {} : { values: outcome.values }),
       };
     }
-    // The one nullable text setting: an empty name is none, which readers
-    // replace with the tenant's name, rather than a blank to show.
-    const empty = outcome.column === 'displayName' && String(outcome.value).trim() === '';
-    settings.push({ name, column: outcome.column, value: empty ? null : outcome.value });
+    settings.push({
+      name,
+      column: outcome.column,
+      value:
+        outcome.column === 'displayName'
+          ? normalizeDisplayName(String(outcome.value))
+          : outcome.value,
+    });
   }
   return { kind: 'ok', settings };
 }

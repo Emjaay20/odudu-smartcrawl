@@ -30,6 +30,7 @@ import {
   coerceTenantSetting,
   type TenantSettingValue,
   tenantSettingsRepository,
+  normalizeDisplayName,
 } from '@odudu/domain-tenant';
 import { newId } from '@odudu/kernel';
 import {
@@ -449,7 +450,7 @@ export async function importTenant(
           {
             id,
             name: input.name,
-            displayName: input.displayName ?? document.settings.display_name,
+            displayName: normalizeDisplayName(input.displayName ?? document.settings.display_name),
           },
           { baseUrl: deps.consoleBaseUrl, clientJwks: deps.consoleClientJwks },
         );

@@ -639,6 +639,9 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     responseSchema: tenantSchema,
     successStatus: 201,
     bodySchema: createTenantRequestSchema,
+    description:
+      'A `display_name` is trimmed, and a blank one is stored as none (`null`), which the ' +
+      'tenant\u2019s pages replace with its name.',
   },
   {
     method: 'POST',
@@ -652,6 +655,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
       'A set over 200 entries, more than 1,000 scopes, more than 200 scopes marked for every new client, a client given more than 200 scopes, or more than 200 default roles or groups is refused in the same `400`, naming the limit and the count. ' +
       'Creates a new tenant from a document `GET /admin/tenants/{tenant}/export` answered, with ' +
       'its own signing key and a fresh secret for each confidential client, answered once here. ' +
+      'A blank `display_name`, in the request or the document, is stored as none. ' +
       'Every problem with the request is refused together in one `400` whose `errors` lists each ' +
       'by its JSON path; a name already in use is refused with `409`.',
   },
@@ -668,7 +672,8 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     responseSchema: tenantSchema,
     bodySchema: amendTenantRequestSchema,
     description:
-      'Amends display_name and enabled. `name` is refused with 400: it is already in the ' +
+      'Amends display_name and enabled. A `display_name` is trimmed, and a blank one is ' +
+      'stored as none (`null`). `name` is refused with 400: it is already in the ' +
       'issuer URL of every token this tenant has minted. Disabling the system tenant is ' +
       'refused with 409, since every cross-tenant administrator authenticates against it. ' +
       'Once a disable of any other has committed, every live session in it is ended in ' +
@@ -723,6 +728,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     responseSchema: settingsSchema,
     bodySchema: amendSettingsRequestSchema,
     description:
+      '`display_name` is trimmed, and a blank one is stored as none (`null`). ' +
       '`enabled: false` ends every live session in the tenant, after the change has ' +
       'committed and in batches, as `PATCH /admin/tenants/{tenant}` does.',
   },

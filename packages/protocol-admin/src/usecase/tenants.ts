@@ -14,6 +14,7 @@ import {
   isValidTenantName,
   SYSTEM_TENANT_DISABLE_REFUSED,
   SYSTEM_TENANT_NAME,
+  normalizeDisplayName,
 } from '@odudu/domain-tenant';
 import { newId } from '@odudu/kernel';
 import {
@@ -202,7 +203,7 @@ export async function createTenant(
         const created = await insertProvisionedTenant(
           tx,
           deps.kek,
-          { id, name: input.name, displayName: input.displayName ?? null },
+          { id, name: input.name, displayName: normalizeDisplayName(input.displayName) },
           { baseUrl: deps.consoleBaseUrl, clientJwks: deps.consoleClientJwks },
         );
 
@@ -450,7 +451,7 @@ export async function amendTenant(
         description: 'display_name must be a string or null',
       };
     }
-    patch.displayName = value;
+    patch.displayName = normalizeDisplayName(value);
   }
   if ('enabled' in input.values) {
     const value = input.values.enabled;

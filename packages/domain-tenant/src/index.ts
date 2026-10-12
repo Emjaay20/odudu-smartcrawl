@@ -1,4 +1,5 @@
 export { verifyClientSecret } from '#/service/client';
+export { normalizeDisplayName } from '#/service/display-name';
 export {
   coerceTenantSetting,
   listSettingValues,

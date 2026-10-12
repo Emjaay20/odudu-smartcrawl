@@ -335,12 +335,12 @@ got the way "Getting the token" shows, is `$ADMIN_TOKEN`, and a tenant `key-refu
 made through `POST /admin/tenants`, `$P` being its `/admin/tenants/key-refusals`. It
 was torn down with `docker compose down -v` when the capture finished.
 
-**The twenty-first stack.** The empty display name under `PATCH /settings` ran against
-one more stack: compose project `odudu-docs-16` on port 3082, its Postgres on 5464, built
+**The twenty-first stack.** The blank display name under every route that writes one ran
+against one more stack: compose project `odudu-docs-17` on port 3082, its Postgres on 5464, built
 from this branch from an empty volume, with `ODUDU_THROTTLE_LIMIT=10000` and a console
 key made for it by `infra/docker/console-key.sh`. Against it: `seed admin --username ada`,
 whose token, got the way "Getting the token" shows, is `$ADMIN_TOKEN`, and a tenant
-`name-demo2` made through `POST /admin/tenants`. It was torn down with
+`name-demo3` and `name-demo4` made through `POST /admin/tenants`. It was torn down with
 `docker compose down -v` when the capture finished.
 
 ## The shape of it
@@ -2411,21 +2411,34 @@ A setting's value may be sent as its JSON type
 the same `coerceTenantSetting` the CLI uses, which reads a string either
 way.
 
-`display_name` is the one nullable setting, and a request cannot carry `null`,
-so a name that is empty or only spaces is stored as none: the tenant's pages
-then use its name in its place, rather than showing a blank. Captured on the
-twenty-first stack, in a tenant `name-demo2` made through `POST /admin/tenants`
-with `display_name` "Name Demo":
+A `display_name` is trimmed wherever one is written, and a blank one is stored as
+none (`null`), which the tenant's pages replace with its name: `PATCH /settings`,
+`PATCH /admin/tenants/{tenant}`, `POST /admin/tenants` and, in the request or the
+document, `POST /admin/tenant-imports` all go through one function in
+`@odudu/domain-tenant`. (The setting is the one nullable text setting, and a request
+cannot carry `null`.) Captured on the twenty-first stack, with tenants `name-demo3`
+(created with a blank name) and `name-demo4` (created with "Name Demo"):
 
 ```bash
+curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H 'Content-Type: application/json' \
+  -d '{"name":"name-demo3","display_name":"   "}' \
+  http://localhost:3082/admin/tenants | jq -c '{name,display_name}'
+for body in '{"display_name": "  Name Demo Inc "}' '{"display_name": "   "}'; do
+  curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -H "Content-Type: application/json" -d "$body" \
+    http://localhost:3082/admin/tenants/name-demo4 | jq -c '{display_name}'
+done
 for body in '{"display_name": "Name Demo Inc"}' '{"display_name": "   "}'; do
   curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
     -H "Content-Type: application/json" -d "$body" \
-    http://localhost:3082/admin/tenants/name-demo2/settings | jq -c '{display_name}'
+    http://localhost:3082/admin/tenants/name-demo4/settings | jq -c '{display_name}'
 done
 ```
 
 ```
+{"name":"name-demo3","display_name":null}
+{"display_name":"Name Demo Inc"}
+{"display_name":null}
 {"display_name":"Name Demo Inc"}
 {"display_name":null}
 ```

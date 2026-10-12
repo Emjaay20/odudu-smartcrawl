@@ -2035,7 +2035,9 @@ lower of the two, in the same section as the upper.
 
 **An empty display name was stored as an empty string.** The setting is nullable
 but `PATCH /settings` cannot carry `null`, and readers show `display_name ??
-name`, so clearing it left a blank. The route now stores a blank name as none.
+name`, so clearing it left a blank. A display name is now trimmed, and a blank one stored as none, by one function in
+`@odudu/domain-tenant` that `PATCH /settings`, `PATCH /admin/tenants/{t}`,
+`POST /admin/tenants` and tenant import all call.
 
 **Disabling the tenant asks first.** The General section's Enabled switch saves
 through the settings record like any other, but turning it off opens a typed

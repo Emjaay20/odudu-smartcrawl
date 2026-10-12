@@ -50,6 +50,18 @@ describe('POST /admin/tenants', () => {
     });
   });
 
+  it('stores a blank display name as none', async () => {
+    const token = await fixture.systemAdminToken(['manage-tenants']);
+    const res = await fixture.http.inject({
+      method: 'POST',
+      url: '/admin/tenants',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { name: `blank-${newId()}`, display_name: '   ' },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(res.json<{ display_name: string | null }>().display_name).toBeNull();
+  });
+
   it("registers the console's redirect and post-logout URIs on the new admin client", async () => {
     const token = await fixture.systemAdminToken(['manage-tenants']);
     const res = await fixture.http.inject({
@@ -592,6 +604,24 @@ describe('GET /admin/tenants/{t} and PATCH /admin/tenants/{t}', () => {
       tx.select({ enabled: tenants.enabled }).from(tenants).where(eq(tenants.id, t.id)),
     );
     expect(rows[0]?.enabled).toBe(false);
+  });
+
+  it('stores a blank display name as none, and trims one that is not blank', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-tenant']);
+    const patch = (display_name: string) =>
+      fixture.http.inject({
+        method: 'PATCH',
+        url: `/admin/tenants/${t.name}`,
+        headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+        payload: { display_name },
+      });
+    expect((await patch('  Acme Inc ')).json<{ display_name: string }>().display_name).toBe(
+      'Acme Inc',
+    );
+    const cleared = await patch('   ');
+    expect(cleared.statusCode).toBe(200);
+    expect(cleared.json<{ display_name: string | null }>().display_name).toBeNull();
   });
 
   it('refuses a rename, naming the issuer URLs already minted as the reason', async () => {

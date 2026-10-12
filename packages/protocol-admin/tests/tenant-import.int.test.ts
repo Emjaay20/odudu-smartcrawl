@@ -228,6 +228,27 @@ function withoutRenamedFields(document: TenantDocument): unknown {
 }
 
 describe('POST /admin/tenant-imports', () => {
+  it('stores a blank display name, from the request or the document, as none', async () => {
+    const source = await fixture.createTenant(`blank-src-${newId()}`);
+    const token = await operatorToken();
+    const original = await exportOf(token, source.name);
+    const viaRequest = `blank-a-${newId()}`;
+    const first = await postImport(token, {
+      name: viaRequest,
+      display_name: '   ',
+      document: original,
+    });
+    expect(first.statusCode, first.payload).toBe(201);
+    expect((await exportOf(token, viaRequest)).settings.display_name).toBeNull();
+    const viaDocument = `blank-b-${newId()}`;
+    const second = await postImport(token, {
+      name: viaDocument,
+      document: { ...original, settings: { ...original.settings, display_name: '  ' } },
+    });
+    expect(second.statusCode, second.payload).toBe(201);
+    expect((await exportOf(token, viaDocument)).settings.display_name).toBeNull();
+  });
+
   it('re-exports what it imported, apart from the name and what cannot travel', async () => {
     const source = await seededSource();
     const token = await operatorToken();
