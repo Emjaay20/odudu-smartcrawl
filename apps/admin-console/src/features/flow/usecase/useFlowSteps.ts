@@ -9,7 +9,9 @@ import {
   chosenAddition,
   describeSteps,
   FLOW_TITLE,
-  flowFailure,
+  flowOutcome,
+  DEFAULT_ADDED,
+  requirementOf,
   moved,
   stepsOf,
   withRequirement,
@@ -24,13 +26,13 @@ export interface FlowSteps {
   steps: readonly Step[];
   canMove: (authenticator: string, direction: Direction) => boolean;
   move: (authenticator: string, direction: Direction) => void;
-  setRequirement: (authenticator: string, requirement: ExecutionRequirement) => void;
+  setRequirement: (authenticator: string, requirement: string) => void;
   // What the registry offers that is not yet a step.
   offered: readonly string[];
   adding: string;
   addingRequirement: ExecutionRequirement;
   chooseAddition: (authenticator: string) => void;
-  chooseAdditionRequirement: (requirement: ExecutionRequirement) => void;
+  chooseAdditionRequirement: (requirement: string) => void;
   add: () => void;
 }
 
@@ -48,7 +50,7 @@ export function useFlowSteps({
   const refusal = useRefusal(tenant);
   const saves = flowSaves(tenant);
   const [picked, setPicked] = useState('');
-  const [addingRequirement, setAddingRequirement] = useState<ExecutionRequirement>('conditional');
+  const [addingRequirement, setAddingRequirement] = useState<ExecutionRequirement>(DEFAULT_ADDED);
   const save = useSectionSave({
     tenant,
     record: FLOW_RECORD,
@@ -69,10 +71,8 @@ export function useFlowSteps({
         describe: describeSteps,
       },
     },
-    save: async (gateway, input) => {
-      const result = await saves.steps(gateway, input);
-      return result.ok ? result : flowFailure(result);
-    },
+    save: async (gateway, input) =>
+      flowOutcome(await saves.steps(gateway, input), input.values.steps, data.available),
   });
   const steps = save.values.steps;
   const offered = addable(data.available, steps);
@@ -85,13 +85,15 @@ export function useFlowSteps({
       save.edit('steps', moved(steps, authenticator, direction));
     },
     setRequirement: (authenticator, requirement) => {
-      save.edit('steps', withRequirement(steps, authenticator, requirement));
+      save.edit('steps', withRequirement(steps, authenticator, requirementOf(requirement)));
     },
     offered,
     adding,
     addingRequirement,
     chooseAddition: setPicked,
-    chooseAdditionRequirement: setAddingRequirement,
+    chooseAdditionRequirement: (requirement) => {
+      setAddingRequirement(requirementOf(requirement));
+    },
     add: () => {
       save.edit('steps', added(steps, adding, addingRequirement));
     },

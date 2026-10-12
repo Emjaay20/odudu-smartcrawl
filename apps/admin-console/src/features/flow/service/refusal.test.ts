@@ -1,84 +1,102 @@
 import { describe, expect, it } from 'vitest';
-import { flowFailure, flowRefusalText } from '#/features/flow/service/refusal';
+import type { Step } from '#/features/flow/service/steps';
+import { flowOutcome } from '#/features/flow/service/refusal';
 
-const bad = (detail: string, errors?: { path: string; message: string }[]) => ({
-  ok: false as const,
-  kind: 'problem' as const,
-  problem: {
-    type: 'about:blank',
-    title: 'Bad Request',
-    status: 400,
-    detail,
-    ...(errors === undefined ? {} : { errors }),
-  },
-});
+const AVAILABLE = ['password', 'passkey', 'otp', 'recovery-code'];
+const SENT: readonly Step[] = [
+  { authenticator: 'sms', requirement: 'required' },
+  { authenticator: 'password', requirement: 'required' },
+  { authenticator: 'password', requirement: 'alternative' },
+];
 
-describe('flowRefusalText', () => {
+function bad(type: string, errors?: { path: string; message: string }[]) {
+  return {
+    ok: false as const,
+    kind: 'problem' as const,
+    problem: {
+      type,
+      title: 'Bad Request',
+      status: 400,
+      detail: 'prose the console does not read',
+      ...(errors === undefined ? {} : { errors }),
+    },
+  };
+}
+
+function said(result: ReturnType<typeof flowOutcome>): string | undefined {
+  if (result.ok || result.kind !== 'problem') return undefined;
+  return result.problem.errors?.[0]?.message;
+}
+
+function outcome(failure: ReturnType<typeof bad>) {
+  return flowOutcome(failure, SENT, AVAILABLE);
+}
+
+describe('flowOutcome', () => {
   it('words a flow with no step', () => {
-    expect(
-      flowRefusalText(
-        'a flow needs at least one step; a tenant with no flow cannot be logged into',
-      ),
-    ).toMatch(/^The flow has no step\./u);
+    expect(said(outcome(bad('about:blank#flow-empty')))).toMatch(/^The flow has no step\./u);
   });
 
   it('words a flow whose every step is disabled', () => {
-    expect(
-      flowRefusalText(
-        'every step is disabled; a tenant with no enabled step cannot be logged into',
-      ),
-    ).toMatch(/^Every step is disabled/u);
+    expect(said(outcome(bad('about:blank#flow-no-enabled-step')))).toMatch(
+      /^Every step is disabled/u,
+    );
   });
 
   it('words a flow with no first challenge, naming what can start a sign-in', () => {
-    const text = flowRefusalText(
-      'no step would run at the start of a login, when no subject is bound yet; a tenant whose flow begins this way cannot be logged into',
-    );
+    const text = said(outcome(bad('about:blank#flow-no-first-challenge')));
     expect(text).toContain('only the password step can run');
     expect(text).toContain('cannot be skipped');
   });
 
-  it('names the authenticators an unknown one was not among', () => {
-    expect(
-      flowRefusalText(
-        'unknown authenticator "sms"; expected one of password, passkey, otp, recovery-code',
+  it('names the step an unknown authenticator is, from its path in what was sent', () => {
+    const text = said(
+      outcome(
+        bad('about:blank#flow-unknown-authenticator', [
+          { path: '[0].authenticator', message: 'is not a registered authenticator' },
+        ]),
       ),
-    ).toBe(
+    );
+    expect(text).toBe(
       '“sms” is not an authenticator this server has. It has password, passkey, otp and recovery-code.',
     );
   });
 
-  it('words a repeated authenticator', () => {
-    expect(
-      flowRefusalText(
-        'authenticator "otp" appears more than once; a step is addressed by its authenticator, so a repeat has no unambiguous meaning',
+  it('names the step a repeat is, from its path in what was sent', () => {
+    const text = said(
+      outcome(
+        bad('about:blank#flow-duplicate-authenticator', [
+          { path: '[2].authenticator', message: 'repeats an earlier step' },
+        ]),
       ),
-    ).toBe('“otp” is a step twice. An authenticator is one step.');
-  });
-
-  it('keeps the server’s own words for a refusal it does not know', () => {
-    expect(flowRefusalText('something new')).toBe('something new');
-  });
-});
-
-describe('flowFailure', () => {
-  it('puts a 400 under the steps, worded, in place of the paths the server named', () => {
-    const failure = flowFailure(
-      bad('every step is disabled; x', [{ path: '[0].authenticator', message: 'm' }]),
     );
-    const errors = failure.problem.errors ?? [];
-    expect(errors.map((error) => error.path)).toEqual(['steps']);
-    expect(errors[0]?.message).toMatch(/^Every step/u);
+    expect(text).toBe('“password” is a step twice. An authenticator is one step.');
   });
 
-  it('leaves anything else as it came', () => {
+  it('keeps the title for a 400 of a type it does not know, and says nothing of the detail', () => {
+    expect(said(outcome(bad('about:blank')))).toBe('Bad Request');
+  });
+
+  it('puts the wording under the steps in place of the paths the server named', () => {
+    const result = outcome(
+      bad('about:blank#flow-duplicate-authenticator', [
+        { path: '[2].authenticator', message: 'm' },
+      ]),
+    );
+    const paths = result.ok || result.kind !== 'problem' ? [] : (result.problem.errors ?? []);
+    expect(paths.map((error) => error.path)).toEqual(['steps']);
+  });
+
+  it('leaves a success, a lost answer and any other status as it came', () => {
     const lost = { ok: false as const, kind: 'network' as const };
-    expect(flowFailure(lost)).toBe(lost);
+    expect(flowOutcome(lost, SENT, AVAILABLE)).toBe(lost);
     const stale = {
       ok: false as const,
       kind: 'problem' as const,
       problem: { type: 'about:blank', title: 'x', status: 412 },
     };
-    expect(flowFailure(stale)).toBe(stale);
+    expect(flowOutcome(stale, SENT, AVAILABLE)).toBe(stale);
+    const saved = { ok: true as const, status: 200, data: 1, etag: null, next: null };
+    expect(flowOutcome(saved, SENT, AVAILABLE)).toBe(saved);
   });
 });

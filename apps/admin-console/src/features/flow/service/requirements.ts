@@ -37,3 +37,10 @@ export const FLOW_RULE =
   'The steps run in this order at every sign-in. Alternatives that sit next to each other are one run: passing any of them is enough. The whole list is replaced when you save.';
 
 export const FLOW_TITLE = 'Sign-in flow';
+
+// What a step added to the flow starts as.
+export const DEFAULT_ADDED: ExecutionRequirement = 'conditional';
+
+export function requirementOf(id: string): ExecutionRequirement {
+  return REQUIREMENT_OPTIONS.find((option) => option.id === id)?.id ?? DEFAULT_ADDED;
+}

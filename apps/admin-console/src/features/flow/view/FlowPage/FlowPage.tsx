@@ -11,6 +11,7 @@ import {
   OTP_LABEL,
   OTP_RULE,
   OTP_TITLE,
+  OTP_UNREAD,
   otpReading,
   otpRequired,
   REQUIREMENT_OPTIONS,
@@ -45,11 +46,7 @@ function Add({ flow }: { flow: FlowSteps }) {
         label="Requirement of the new step"
         options={REQUIREMENT_OPTIONS}
         value={flow.addingRequirement}
-        onChange={(value) => {
-          flow.chooseAdditionRequirement(
-            REQUIREMENT_OPTIONS.find((option) => option.id === value)?.id ?? 'conditional',
-          );
-        }}
+        onChange={flow.chooseAdditionRequirement}
       />
       <Button onPress={flow.add}>Add step</Button>
     </div>
@@ -115,8 +112,7 @@ function Steps({ flow, reading }: { flow: FlowSteps; reading: string | null }) {
                 options={REQUIREMENT_OPTIONS}
                 value={step.requirement}
                 onChange={(value) => {
-                  const chosen = REQUIREMENT_OPTIONS.find((option) => option.id === value);
-                  if (chosen !== undefined) flow.setRequirement(step.authenticator, chosen.id);
+                  flow.setRequirement(step.authenticator, value);
                 }}
               />
             </InlineFields>
@@ -244,6 +240,7 @@ function Flow({ tenant }: { tenant: string }) {
         gone={flow.gone}
         reading={reading}
       />
+      {settings.status === 'failed' ? <p className={styles.rule}>{OTP_UNREAD}</p> : null}
       {settings.data === undefined || settings.etag === null ? null : (
         <OtpReady
           tenant={tenant}

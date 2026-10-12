@@ -1,5 +1,7 @@
 export {
   authenticatorText,
+  DEFAULT_ADDED,
+  requirementOf,
   FLOW_RULE,
   FLOW_TITLE,
   OTP,
@@ -18,7 +20,7 @@ export {
   type Direction,
   type Step,
 } from '#/features/flow/service/steps';
-export { flowFailure, flowRefusalText } from '#/features/flow/service/refusal';
+export { flowOutcome } from '#/features/flow/service/refusal';
 export {
   describeOtp,
   hasOtpStep,
@@ -26,6 +28,7 @@ export {
   OTP_FIELD_LABEL,
   OTP_LABEL,
   OTP_RECORD,
+  OTP_UNREAD,
   OTP_RULE,
   OTP_TITLE,
   otpReading,

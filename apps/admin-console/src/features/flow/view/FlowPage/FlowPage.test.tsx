@@ -194,9 +194,7 @@ it('says beside Save that no step is enabled, in the console’s words', async (
   renderConsoleAt(
     AT,
     flowRoutes(undefined, {
-      [`PUT ${FL}`]: problem(400, 'about:blank', 'Bad Request', {
-        detail: 'every step is disabled; a tenant with no enabled step cannot be logged into',
-      }),
+      [`PUT ${FL}`]: problem(400, 'about:blank#flow-no-enabled-step', 'Bad Request'),
     }),
   );
   const section = await steps();
@@ -212,10 +210,7 @@ it('says beside Save that nothing can start a sign-in', async () => {
   renderConsoleAt(
     AT,
     flowRoutes(undefined, {
-      [`PUT ${FL}`]: problem(400, 'about:blank', 'Bad Request', {
-        detail:
-          'no step would run at the start of a login, when no subject is bound yet; a tenant whose flow begins this way cannot be logged into',
-      }),
+      [`PUT ${FL}`]: problem(400, 'about:blank#flow-no-first-challenge', 'Bad Request'),
     }),
   );
   const section = await steps();
@@ -281,6 +276,19 @@ it('says the flow could not be loaded and offers to try again', async () => {
   expect(await screen.findByRole('button', { name: 'Try again' })).toBeVisible();
 });
 
+it('says the one-time password setting could not be read, leaving the steps to edit', async () => {
+  renderConsoleAt(
+    AT,
+    flowRoutes(undefined, {
+      [`GET ${ST}`]: json({ type: 'about:blank', title: 'x', status: 500 }, 500),
+    }),
+  );
+  const section = await steps();
+  expect(within(section).getByRole('button', { name: 'Move password up' })).toBeVisible();
+  expect(await screen.findByText(/one-time password setting could not be loaded/u)).toBeVisible();
+  expect(screen.queryByRole('region', { name: 'One-time password' })).toBeNull();
+});
+
 it('passes axe in both themes, edited, refused and conflicted', async () => {
   const user = userEvent.setup();
   expect(
@@ -301,9 +309,7 @@ it('passes axe in both themes, edited, refused and conflicted', async () => {
         consoleAt(
           AT,
           flowRoutes(undefined, {
-            [`PUT ${FL}`]: problem(400, 'about:blank', 'Bad Request', {
-              detail: 'every step is disabled; x',
-            }),
+            [`PUT ${FL}`]: problem(400, 'about:blank#flow-no-enabled-step', 'Bad Request'),
           }),
         ).element,
       async () => {

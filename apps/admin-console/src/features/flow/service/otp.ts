@@ -32,3 +32,6 @@ export function hasOtpStep(steps: readonly Step[]): boolean {
 
 export const NO_OTP_STEP =
   'The flow has no one-time password step, so this has no effect until one is added.';
+
+export const OTP_UNREAD =
+  'The one-time password setting could not be loaded, so it is not offered here. The steps above can still be saved.';
