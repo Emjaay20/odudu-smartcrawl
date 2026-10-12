@@ -98,7 +98,7 @@ export function GeneralTab({
       <ConfirmDialog
         isOpen={enabled.confirming}
         title={`Disable ${name}?`}
-        consequence={`Nobody can sign in to ${name} while it is disabled, and its discovery document, tokens and endpoints answer as for a tenant that does not exist. Enabling it again undoes this.`}
+        consequence={enabled.consequence}
         confirmLabel={`Disable ${name}`}
         tone="danger"
         typed={name}

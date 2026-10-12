@@ -2,7 +2,6 @@ import type { Settings } from '@odudu/contracts/admin';
 import { AreaGate, areaAt } from '#/features/shell';
 import {
   booleanOf,
-  disableConsequence,
   fieldDescription,
   GENERAL_SECTION,
   listOf,
@@ -197,7 +196,7 @@ function General({ tenant, data, etag, gone, section }: Props & { section: Setti
       <ConfirmDialog
         isOpen={general.confirming}
         title={`Disable ${tenant}?`}
-        consequence={disableConsequence(tenant)}
+        consequence={general.consequence}
         confirmLabel={`Disable ${tenant}`}
         tone="danger"
         typed={tenant}

@@ -1,6 +1,6 @@
 import type { Tenant } from '@odudu/contracts/admin';
 import { useState } from 'react';
-import { useRefusal } from '#/features/session';
+import { usePrincipal, useRefusal } from '#/features/session';
 import {
   saveGeneral,
   useTenantEnabled,
@@ -10,7 +10,7 @@ import { tenantChangeFailure, tenantRecord } from '#/features/tenants/service';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { useToasts } from '#/shared/repository/useToasts';
 import { enabledText } from '#/shared/service/failure';
-import { disableFixed } from '#/shared/service/tenantEnabled';
+import { disableConsequence, disableFixed } from '#/shared/service/tenantEnabled';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
 
 export interface EnabledControl {
@@ -19,6 +19,7 @@ export interface EnabledControl {
   enabled: boolean;
   busy: boolean;
   confirming: boolean;
+  consequence: string;
   message: string | null;
   ask: () => void;
   cancel: () => void;
@@ -38,6 +39,7 @@ export function useTenantGeneral(
   gone: boolean,
 ): TenantGeneral {
   const refusal = useRefusal(SYSTEM_TENANT);
+  const principal = usePrincipal();
   const push = useToasts((queue) => queue.push);
   const general = useSectionSave({
     tenant: SYSTEM_TENANT,
@@ -84,6 +86,7 @@ export function useTenantGeneral(
       enabled: tenant.enabled,
       busy: change.busy,
       confirming,
+      consequence: disableConsequence(name, principal.tenant === name),
       message,
       ask: () => {
         setMessage(null);

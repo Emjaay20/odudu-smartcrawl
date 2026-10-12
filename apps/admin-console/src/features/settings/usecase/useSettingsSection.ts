@@ -1,6 +1,6 @@
 import type { Settings } from '@odudu/contracts/admin';
 import { useState } from 'react';
-import { useRefusal } from '#/features/session';
+import { usePrincipal, useRefusal } from '#/features/session';
 import { settingsSave, type SectionValues } from '#/features/settings/repository/settingsSave';
 import { disablesTenant, settingEntries, type SettingsSection } from '#/features/settings/service';
 import {
@@ -9,6 +9,7 @@ import {
   type SectionSave,
 } from '#/shared/repository/useSectionSave';
 import { writeRefusal } from '#/shared/service/capabilities';
+import { disableConsequence } from '#/shared/service/tenantEnabled';
 import { TENANT_SETTINGS_RECORD } from '#/shared/service/tenantSettings';
 
 export type SettingsSave = SectionSave<SectionValues>;
@@ -56,6 +57,7 @@ export interface GeneralSection {
   save: SettingsSave;
   // Switching the tenant off is asked about before it is saved.
   confirming: boolean;
+  consequence: string;
   submit: () => boolean;
   confirm: () => void;
   cancel: () => void;
@@ -63,12 +65,14 @@ export interface GeneralSection {
 
 export function useGeneralSection(input: SectionInput): GeneralSection {
   const save = useSettingsSection(input);
+  const principal = usePrincipal();
   const [confirming, setConfirming] = useState(false);
   return {
     save,
     confirming,
+    consequence: disableConsequence(input.tenant, principal.tenant === input.tenant),
     submit: () => {
-      if (disablesTenant(input.data.enabled === true, save.values.enabled === true)) {
+      if (disablesTenant(input.data.enabled, save.values.enabled)) {
         setConfirming(true);
         return false;
       }

@@ -7,3 +7,10 @@ const SYSTEM_FIXED =
 export function disableFixed(name: string): string | null {
   return name === SYSTEM_TENANT ? SYSTEM_FIXED : null;
 }
+
+// `signedInHere`: the operator's own console session is in this tenant, so
+// disabling it ends theirs too.
+export function disableConsequence(tenant: string, signedInHere: boolean): string {
+  const own = signedInHere ? ` Your own console session in ${tenant} ends too.` : '';
+  return `Nobody can sign in to ${tenant} while it is disabled, and its discovery document, tokens and endpoints answer as for a tenant that does not exist. Only a system administrator can enable it again.${own}`;
+}

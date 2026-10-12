@@ -177,7 +177,7 @@ test('disabling the tenant asks first, says who it locks out, and then does it',
   await section.getByText('Enabled', { exact: true }).click();
   await section.getByRole('button', { name: 'Save General' }).click();
   const dialog = page.getByRole('alertdialog', { name: `Disable ${disable.tenant}?` });
-  await expect(dialog).toContainText('including you');
+  await expect(dialog).toContainText('Your own console session in');
   await expectAccessible(page);
   expect(column(disable.tenant, 'enabled')).toBe('t');
   await dialog.getByRole('button', { name: 'Cancel' }).click();

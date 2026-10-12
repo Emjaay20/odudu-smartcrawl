@@ -1,7 +1,4 @@
-export function disablesTenant(was: boolean, now: boolean): boolean {
-  return was && !now;
-}
-
-export function disableConsequence(tenant: string): string {
-  return `Nobody can sign in to ${tenant} while it is disabled, including you: the console session ends and the tenant answers as one that does not exist. Only a system administrator can enable it again.`;
+// Whether a save switches an enabled tenant off, from the values as read.
+export function disablesTenant(was: unknown, now: unknown): boolean {
+  return was === true && now !== true;
 }

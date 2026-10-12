@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { disableConsequence, disablesTenant } from '#/features/settings/service/general';
+import { disablesTenant } from '#/features/settings/service/general';
 
 describe('disablesTenant', () => {
   it('is true only when an enabled tenant is being switched off', () => {
@@ -10,11 +10,10 @@ describe('disablesTenant', () => {
   });
 });
 
-describe('disableConsequence', () => {
-  it('says what the administrator doing it loses, and how to undo it', () => {
-    const text = disableConsequence('acme');
-    expect(text).toMatch(/Nobody can sign in to acme/u);
-    expect(text).toMatch(/including you/u);
-    expect(text).toMatch(/system administrator/u);
+describe('disablesTenant from raw values', () => {
+  it('reads a value that is not a boolean as not enabled', () => {
+    expect(disablesTenant(undefined, false)).toBe(false);
+    expect(disablesTenant('true', false)).toBe(false);
+    expect(disablesTenant(true, undefined)).toBe(true);
   });
 });

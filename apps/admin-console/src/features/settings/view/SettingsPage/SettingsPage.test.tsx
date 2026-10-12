@@ -229,7 +229,7 @@ it('asks before disabling the tenant, and says whom that locks out', async () =>
   await user.click(within(general).getByRole('switch', { name: 'Enabled' }));
   await user.click(within(general).getByRole('button', { name: 'Save General' }));
   const dialog = await screen.findByRole('alertdialog');
-  expect(dialog).toHaveTextContent('including you');
+  expect(dialog).toHaveTextContent('Your own console session in acme ends');
   expect(sent.some((s) => s.method === 'PATCH')).toBe(false);
   await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
   expect(sent.some((s) => s.method === 'PATCH')).toBe(false);
