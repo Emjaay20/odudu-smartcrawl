@@ -24,9 +24,6 @@ const METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
 // Routes no console adapter calls yet. Each feature takes its own out as it
 // lands, and the list is empty when the console is complete.
 const TODO: readonly string[] = [
-  'POST /admin/tenants/:tenant/keys',
-  'POST /admin/tenants/:tenant/keys/:id/promote',
-  'POST /admin/tenants/:tenant/keys/:id/retire',
   'PUT /admin/tenants/:tenant/smtp',
   'DELETE /admin/tenants/:tenant/smtp',
   'POST /admin/tenants/:tenant/smtp/test',
@@ -34,7 +31,6 @@ const TODO: readonly string[] = [
   'GET /admin/tenants/:tenant/sessions',
   'DELETE /admin/tenants/:tenant/sessions',
   'DELETE /admin/tenants/:tenant/lockouts',
-  'DELETE /admin/tenants/:tenant/keys/:id',
   'GET /admin/tenants/:tenant/mail',
   'GET /admin/tenants/:tenant/audit/count',
   'GET /admin/tenants/:tenant/audit/export',
