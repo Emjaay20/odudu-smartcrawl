@@ -1966,6 +1966,39 @@ time; at 10,000 tokens the page holds only what has been asked for. The flow is
 four rows by construction (`available` is the registry). Neither adds a server
 read.
 
+## Part 4 — Signing keys
+
+**One page, three lanes by stored status.** Rotating, active and retired each
+read their own `GET /keys?status=` a page at a time with "Load more", so no lane
+holds more than the pages asked for however many retired keys pile up. A tenant
+holds a handful of live keys; the retired lane is the one that grows, and
+deleting a retired key is on the page (`DELETE /keys/:id`, a plain confirmation
+that says it is for good).
+
+**Ready is the shared rule, and it advises.** A rotating key shows Ready or Not
+ready from `shared/service/keyPromotion` against the active key's own row, and
+not at all until the active lane has been read. The server refuses no promote on
+age, so a key that is not ready is still offered, and the dialog says why (when
+it is ready from, that its algorithm differs from the active key's, or that it is
+older than the active key and so probably the one a promotion replaced).
+
+**The refusals have problem types.** Retire of an active key, retire that would
+leave a client's algorithm with no key, and delete of a key that is not retired
+all answered a bare `about:blank` and told apart only by their words. They are
+now `about:blank#key-active`, `#key-algorithm-needed` and `#key-not-retired`, the
+console words each from its type, and `docs/admin-paths.md` shows each captured.
+The active lane offers no Retire at all, since the status is known to the console
+and the server always refuses it; the refusal is shown when a page is stale.
+
+**No `If-Match`.** A key's `ETag` comes only with the answer to create, promote
+and retire, and the list carries none, so the console has nothing to send on a
+write it has not just made. The server honours one when it is sent and demands
+none, so there is no 412 or 428 to show here.
+
+**A write never repeats.** Each write is one press, sent once, and an answer that
+was lost says the write was not sent again and asks for a look at the lanes. Every
+answer, a refusal included, reads the lanes and the overview again.
+
 ## Performance
 
 ### The React Compiler

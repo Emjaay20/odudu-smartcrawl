@@ -326,6 +326,15 @@ got the way "Getting the token" shows, is `$ADMIN_TOKEN`, and a tenant `flow-dem
 through `POST /admin/tenants`. It was torn down with `docker compose down -v` when the
 capture finished.
 
+**The twentieth stack.** The three typed refusals of the signing-key routes ran against
+one more stack: compose project `odudu-docs-15` on port 3082, its Postgres on 5464,
+built from this branch with the typed refusals from an empty volume, with
+`ODUDU_THROTTLE_LIMIT=10000` and a console key made for it by
+`infra/docker/console-key.sh`. Against it: `seed admin --username ada`, whose token,
+got the way "Getting the token" shows, is `$ADMIN_TOKEN`, and a tenant `key-refusals`
+made through `POST /admin/tenants`, `$P` being its `/admin/tenants/key-refusals`. It
+was torn down with `docker compose down -v` when the capture finished.
+
 ## The shape of it
 
 Most of the admin endpoint lives under `/admin/tenants/{tenant}/`, mirroring
@@ -8618,18 +8627,47 @@ again:
 ```
 
 The promotion demoted the old key in the same transaction, so the second
-listing has exactly one `active`. Retiring the newly promoted key is the
-first of the two `409`s; retiring the one it demoted succeeds:
+listing has exactly one `active`. Retiring the one it demoted succeeds;
+retiring the newly promoted one is refused, as the typed refusals below show:
 
 ```
-{"type":"about:blank","title":"Conflict","status":409,"detail":"signing key 01a0d6fe-e527-77e6-b71d-57ed1a903cc3 is active; promote another key first","instance":"01a0d6fe-e576-778e-90bd-92480ca40cd3"}
 {"id":"01a0d6fc-3654-7f93-817b-bd7f1bb2ff55","status":"retired","kid":"01a0d6fc-3654-7f93-817b-bd7eb6490305","alg":"ES256","created_at":"2026-09-25T05:14:08.294Z","not_after":null}
 ```
 
-The second `409` — a client registered with a
-`userinfo_signed_response_alg` no remaining key produces — was not
-captured: `demo` held no such client, and creating one to provoke it would
-have needed a key of an algorithm this tenant was then to lose.
+### The refusals have types
+
+Retire answers `409` in two cases and delete in one, each of a type of its own, so a
+caller tells them apart without reading `detail`: `about:blank#key-active` (the key's
+own status is `active`), `#key-algorithm-needed` (a client's
+`userinfo_signed_response_alg` or `id_token_signed_response_alg` is one no remaining
+non-retired key produces; `detail` names the clients) and, for `DELETE`,
+`#key-not-retired`. Captured against the twentieth stack, in `key-refusals`, which
+starts with one `ES256` key that is `active`: that key retired, an `RS256` key staged,
+that key deleted, a client `billing` registered with `userinfo_signed_response_alg`
+`RS256` (which the staged key makes producible), and the staged key retired:
+
+```bash
+ACTIVE=$(curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/keys" | python3 -c 'import json,sys;print(json.load(sys.stdin)["items"][0]["id"])')
+curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$P/keys/$ACTIVE/retire"; echo
+STAGED=$(curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
+  -d '{"alg":"RS256"}' "$P/keys" | tee /dev/stderr | python3 -c 'import json,sys;print(json.load(sys.stdin)["id"])')
+curl -sS -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$P/keys/$STAGED"; echo
+curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
+  -d '{"client_id":"billing","redirect_uris":["https://billing.example/callback"],"userinfo_signed_response_alg":"RS256"}' \
+  "$P/clients" -o /dev/null -w '%{http_code}\n'
+curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$P/keys/$STAGED/retire"; echo
+```
+
+```
+{"type":"about:blank#key-active","title":"Conflict","status":409,"detail":"signing key 01a13164-85c8-76aa-8895-44df92007364 is active; promote another key first","instance":"01a13164-860b-7499-ba69-ed3207e15aa7"}
+{"id":"01a13164-8653-7ba9-8dc9-3953e9ca7c8e","status":"rotating","kid":"01a13164-8653-7ba9-8dc9-395212b7109d","alg":"RS256","created_at":"2026-10-12T18:33:53.961Z","not_after":null}
+{"type":"about:blank#key-not-retired","title":"Conflict","status":409,"detail":"the key is rotating: only a retired key can be deleted; retire it first","instance":"01a13164-8663-7af4-957f-cafd0d78ea8c"}
+201
+{"type":"about:blank#key-algorithm-needed","title":"Conflict","status":409,"detail":"no remaining signing key produces RS256, still required by userinfo_signed_response_alg or id_token_signed_response_alg on client(s): billing","instance":"01a13164-86c6-7610-8722-22b35ce19e07"}
+```
+
+The second line is the staged key, printed by the `tee`. Whether a key may be promoted before relying parties have fetched it is not
+refused: the console shows when it is ready and leaves the choice to the operator.
 
 **Filters.** `?status=active|rotating|retired` and `?alg=RS256|ES256` are
 exact, `AND`ed with each other, and bound into the cursor like every other
@@ -8693,18 +8731,18 @@ etag: "590baab1ba6f8492799c2636f440bfbe33c9354dff4143bb4021ed47a015305e"
 
 Requires `manage-keys`. Deletes a retired key, which is published nowhere and
 signs nothing, so nothing a relying party holds can still need it. An active
-or rotating key is refused with `409`: `POST /keys/:id/retire` is the door
+or rotating key is refused with `409` (`about:blank#key-not-retired`): `POST /keys/:id/retire` is the door
 that checks what still depends on one. `If-Match` is optional; a stale one is
 refused with `412`. Writes `key.delete`, naming the `kid`. An unknown key
 answers `404`.
 
 Against the tenth stack, a key staged with `POST /keys`
-(`01a0ee8c-6b4e-7479-a229-78e90920c309`), deleted before and after it was
-retired, then the keys left and the key's own trail:
+(`01a0ee8c-6b4e-7479-a229-78e90920c309`), retired and then deleted, then the keys
+left and the key's own trail (the refusal of deleting it before it was retired is
+shown with the typed refusals above):
 
 ```bash
 K=01a0ee8c-6b4e-7479-a229-78e90920c309
-curl -sS -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$P/keys/$K"; echo
 curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$P/keys/$K/retire"; echo
 curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$P/keys/$K"
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/keys"; echo
@@ -8713,7 +8751,6 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/audit?resource_type=signing
 ```
 
 ```
-{"type":"about:blank","title":"Conflict","status":409,"detail":"the key is rotating: only a retired key can be deleted; retire it first","instance":"01a0ee8c-6c2d-7cdf-a62c-6bec497d8f65"}
 {"id":"01a0ee8c-6b4e-7479-a229-78e90920c309","status":"retired","kid":"01a0ee8c-6b4e-7479-a229-78e820c93668","alg":"RS256","created_at":"2026-09-29T19:02:55.023Z","not_after":null}
 HTTP/1.1 204 No Content
 x-request-id: 01a0ee8c-6c76-7042-bd64-41005d2f2b33
