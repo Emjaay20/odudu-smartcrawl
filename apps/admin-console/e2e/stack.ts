@@ -141,6 +141,22 @@ const seededSchema = z.object({
     // A member of /eng.
     member: z.string(),
   }),
+  // Tenants of their own for the Registration tokens and Sign-in flow tests.
+  access: z.object({
+    // The tokens tenant: tenant-admin, manage-tenant alone, manage-clients alone.
+    tokens: z.object({ admin: account, tenantOnly: account, clientsOnly: account }),
+    // One flow tenant per test that changes its flow, each with its administrator.
+    flows: z.object({
+      main: account,
+      keyed: account,
+      conflict: account,
+      refused: account,
+      // Read only: a phone's pages, and an operator holding manage-tenant alone or manage-clients alone.
+      fixed: account,
+      fixedTenantOnly: account,
+      fixedClientsOnly: account,
+    }),
+  }),
   // A tenant of its own for the Scopes tests.
   scopes: z.object({
     // Holds tenant-admin there.

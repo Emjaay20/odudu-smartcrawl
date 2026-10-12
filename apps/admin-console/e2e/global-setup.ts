@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { psql, publish, seed, type Account } from './stack';
+import { psql, publish, seed, type Account, type Seeded } from './stack';
 
 const TENANT_ADMIN = 'odudu-admin:tenant-admin';
 
@@ -224,6 +224,35 @@ function nest(tenant: string, parent: string, child: string): void {
   );
 }
 
+// The tokens tenant holds five live tokens, of one to five uses, which the
+// tests revoke and mint among; the flow tenants hold the flow a tenant starts
+// with, less the recovery codes where a test adds them.
+function seedAccess(access: Seeded['access']): void {
+  const { tokens, flows } = access;
+  seed(['tenant', '--name', tokens.admin.tenant]);
+  administrator(tokens.admin);
+  subject(tokens.tenantOnly);
+  grant(tokens.tenantOnly, 'odudu-admin:manage-tenant');
+  subject(tokens.clientsOnly);
+  grant(tokens.clientsOnly, 'odudu-admin:manage-clients');
+  for (const uses of ['1', '2', '3', '4', '5']) {
+    seed(['registration-token', '--tenant', tokens.admin.tenant, '--uses', uses, '--ttl', '86400']);
+  }
+  for (const account of [flows.main, flows.keyed, flows.conflict, flows.refused, flows.fixed]) {
+    seed(['tenant', '--name', account.tenant]);
+    administrator(account);
+  }
+  subject(flows.fixedTenantOnly);
+  grant(flows.fixedTenantOnly, 'odudu-admin:manage-tenant');
+  subject(flows.fixedClientsOnly);
+  grant(flows.fixedClientsOnly, 'odudu-admin:manage-clients');
+  for (const account of [flows.main, flows.keyed]) {
+    psql(
+      `delete from authentication_executions where authenticator = 'recovery-code' and tenant_id = (select id from tenants where name = '${account.tenant}')`,
+    );
+  }
+}
+
 // Names are fresh each run, so a stack kept up between runs seeds again.
 export default function globalSetup(): void {
   const run = `e2e-${Date.now().toString(36)}`;
@@ -287,6 +316,22 @@ export default function globalSetup(): void {
     admin: { tenant: `${run}-p`, username: 'cantor', password: password() },
     tenantOnly: { tenant: `${run}-p`, username: 'dedekind', password: password() },
     clientsOnly: { tenant: `${run}-p`, username: 'hilbert', password: password() },
+  };
+  const access = {
+    tokens: {
+      admin: { tenant: `${run}-q`, username: 'rutherford', password: password() },
+      tenantOnly: { tenant: `${run}-q`, username: 'bohr', password: password() },
+      clientsOnly: { tenant: `${run}-q`, username: 'curie', password: password() },
+    },
+    flows: {
+      main: { tenant: `${run}-w1`, username: 'fermi', password: password() },
+      keyed: { tenant: `${run}-w2`, username: 'dirac', password: password() },
+      conflict: { tenant: `${run}-w3`, username: 'planck', password: password() },
+      refused: { tenant: `${run}-w4`, username: 'heisenberg', password: password() },
+      fixed: { tenant: `${run}-w5`, username: 'pauli', password: password() },
+      fixedTenantOnly: { tenant: `${run}-w5`, username: 'born', password: password() },
+      fixedClientsOnly: { tenant: `${run}-w5`, username: 'schrodinger', password: password() },
+    },
   };
   const tenants = {
     general: `${run}-d`,
@@ -376,6 +421,7 @@ export default function globalSetup(): void {
   grant(scopes.tenantOnly, 'odudu-admin:manage-tenant');
   subject(scopes.clientsOnly);
   grant(scopes.clientsOnly, 'odudu-admin:manage-clients');
+  seedAccess(access);
   seedGroupsRoles(groupsRoles.admin.tenant);
   administrator(groupsRoles.admin);
   subject(groupsRoles.limited);
@@ -419,5 +465,6 @@ export default function globalSetup(): void {
     clients,
     groupsRoles,
     scopes,
+    access,
   });
 }
