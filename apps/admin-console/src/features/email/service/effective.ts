@@ -1,5 +1,4 @@
 import type { SmtpConfig } from '@odudu/contracts/admin';
-import type { StatusTone } from '#/shared/view/StatusTag';
 
 type Effective = SmtpConfig['effective'];
 
@@ -25,7 +24,9 @@ export function effectiveLabel(effective: Effective): string {
   }
 }
 
-export function effectiveTone(effective: Effective): StatusTone {
+export type EffectiveTone = 'neutral' | 'active' | 'warning';
+
+export function effectiveTone(effective: Effective): EffectiveTone {
   switch (effective) {
     case 'tenant':
       return 'active';

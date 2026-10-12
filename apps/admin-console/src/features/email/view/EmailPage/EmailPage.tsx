@@ -1,7 +1,7 @@
 import type { SmtpConfig } from '@odudu/contracts/admin';
 import { useId } from 'react';
 import { AreaGate, areaAt } from '#/features/shell';
-import { useSmtpRecord } from '#/features/email/repository/useSmtpRecord';
+import { useEmailPage } from '#/features/email/usecase/useEmailPage';
 import {
   effectiveLabel,
   effectiveReading,
@@ -215,7 +215,7 @@ function RelayAndTest({
 }
 
 function Email({ tenant }: { tenant: string }) {
-  const record = useSmtpRecord(tenant);
+  const record = useEmailPage(tenant);
   if (record.status === 'loading')
     return <FormSkeleton label="Loading the mail relay" fields={4} />;
   if (record.data === undefined || record.etag === null) {

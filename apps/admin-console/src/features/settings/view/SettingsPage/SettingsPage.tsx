@@ -1,6 +1,5 @@
 import type { Settings } from '@odudu/contracts/admin';
 import { AreaGate, areaAt } from '#/features/shell';
-import type { SectionValues } from '#/features/settings/repository/settingsSave';
 import {
   booleanOf,
   disableConsequence,
@@ -15,9 +14,11 @@ import {
   type SettingField,
   type SettingsSection,
 } from '#/features/settings/service';
+import { useSettingsPage } from '#/features/settings/usecase/useSettingsPage';
 import {
   useGeneralSection,
   useSettingsSection,
+  type SettingsSave,
 } from '#/features/settings/usecase/useSettingsSection';
 import { Button } from '#/shared/view/Button';
 import { ChecklistField } from '#/shared/view/ChecklistField';
@@ -29,8 +30,6 @@ import { PageHeader } from '#/shared/view/PageHeader';
 import { Section } from '#/shared/view/Section';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { FormSkeleton } from '#/shared/view/Skeleton';
-import { useTenantSettings } from '#/shared/repository/useTenantSettings';
-import type { SectionSave } from '#/shared/repository/useSectionSave';
 import styles from '#/features/settings/view/SettingsPage/SettingsPage.module.css';
 
 const TITLE = 'Settings';
@@ -42,7 +41,7 @@ function Control({
   isDisabled,
 }: {
   field: SettingField;
-  save: SectionSave<SectionValues>;
+  save: SettingsSave;
   description?: string | undefined;
   isDisabled?: boolean;
 }) {
@@ -122,7 +121,7 @@ function Fields({
   fixed,
 }: {
   section: SettingsSection;
-  save: SectionSave<SectionValues>;
+  save: SettingsSave;
   fixed?: Readonly<Record<string, string>>;
 }) {
   return (
@@ -211,7 +210,7 @@ function General({ tenant, data, etag, gone, section }: Props & { section: Setti
 }
 
 function Sections({ tenant }: { tenant: string }) {
-  const settings = useTenantSettings(tenant);
+  const settings = useSettingsPage(tenant);
   if (settings.status === 'loading')
     return <FormSkeleton label="Loading the settings" fields={4} />;
   if (settings.data === undefined || settings.etag === null) {

@@ -11,6 +11,8 @@ import {
 import { writeRefusal } from '#/shared/service/capabilities';
 import { TENANT_SETTINGS_RECORD } from '#/shared/service/tenantSettings';
 
+export type SettingsSave = SectionSave<SectionValues>;
+
 interface SectionInput {
   tenant: string;
   section: SettingsSection;
@@ -25,7 +27,7 @@ export function useSettingsSection({
   data,
   etag,
   gone,
-}: SectionInput): SectionSave<SectionValues> {
+}: SectionInput): SettingsSave {
   const refusal = useRefusal(tenant);
   const fields: SectionFields<SectionValues> = Object.fromEntries(
     settingEntries(section.fields, data).map((entry) => [
@@ -51,7 +53,7 @@ export function useSettingsSection({
 }
 
 export interface GeneralSection {
-  save: SectionSave<SectionValues>;
+  save: SettingsSave;
   // Switching the tenant off is asked about before it is saved.
   confirming: boolean;
   submit: () => boolean;
