@@ -224,11 +224,12 @@ function nest(tenant: string, parent: string, child: string): void {
   );
 }
 
+// The keys tenants each hold the one active key a tenant starts with.
 // The tokens tenant holds five live tokens, of one to five uses, which the
 // tests revoke and mint among; the flow tenants hold the flow a tenant starts
 // with, less the recovery codes where a test adds them.
 function seedAccess(access: Seeded['access']): void {
-  const { tokens, flows } = access;
+  const { tokens, flows, keys } = access;
   seed(['tenant', '--name', tokens.admin.tenant]);
   administrator(tokens.admin);
   subject(tokens.tenantOnly);
@@ -251,6 +252,14 @@ function seedAccess(access: Seeded['access']): void {
       `delete from authentication_executions where authenticator = 'recovery-code' and tenant_id = (select id from tenants where name = '${account.tenant}')`,
     );
   }
+  for (const account of [keys.main, keys.young, keys.raced, keys.keyed, keys.fixed]) {
+    seed(['tenant', '--name', account.tenant]);
+    administrator(account);
+  }
+  subject(keys.fixedKeysOnly);
+  grant(keys.fixedKeysOnly, 'odudu-admin:manage-keys');
+  subject(keys.fixedTenantOnly);
+  grant(keys.fixedTenantOnly, 'odudu-admin:manage-tenant');
 }
 
 // Names are fresh each run, so a stack kept up between runs seeds again.
@@ -331,6 +340,15 @@ export default function globalSetup(): void {
       fixed: { tenant: `${run}-w5`, username: 'pauli', password: password() },
       fixedTenantOnly: { tenant: `${run}-w5`, username: 'born', password: password() },
       fixedClientsOnly: { tenant: `${run}-w5`, username: 'schrodinger', password: password() },
+    },
+    keys: {
+      main: { tenant: `${run}-y1`, username: 'shannon', password: password() },
+      young: { tenant: `${run}-y2`, username: 'turing', password: password() },
+      raced: { tenant: `${run}-y3`, username: 'diffie', password: password() },
+      keyed: { tenant: `${run}-y4`, username: 'hellman', password: password() },
+      fixed: { tenant: `${run}-y5`, username: 'rivest', password: password() },
+      fixedKeysOnly: { tenant: `${run}-y5`, username: 'shamir', password: password() },
+      fixedTenantOnly: { tenant: `${run}-y5`, username: 'adleman', password: password() },
     },
   };
   const tenants = {

@@ -24,7 +24,7 @@ export {
 export {
   ALG_OPTIONS,
   algOf,
-  DEFAULT_ALG,
+  defaultAlg,
   STAGE_RULE,
   stageFailure,
   stagedText,

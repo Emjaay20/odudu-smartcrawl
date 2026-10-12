@@ -93,6 +93,12 @@ it('stages a key of the algorithm chosen and reads the lanes again', async () =>
   expect(await within(toasts).findByText(/RS256 key, kid-k-new, was staged/u)).toBeVisible();
 });
 
+it('starts the algorithm from the active key’s', async () => {
+  const rs = signingKey('k-rs', 'active', { alg: 'RS256' });
+  renderConsoleAt(AT, keyRoutes(undefined, {}, [rs]));
+  expect(await screen.findByRole('button', { name: /RS256 \(RSA\)/u })).toBeVisible();
+});
+
 it('says beside the button that a lost stage was not sent again', async () => {
   const user = userEvent.setup();
   const { sent } = renderConsoleAt(AT, keyRoutes(undefined, { [`POST ${KEYS}`]: offline() }));

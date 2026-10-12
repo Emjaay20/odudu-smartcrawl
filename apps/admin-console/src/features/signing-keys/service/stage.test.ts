@@ -3,11 +3,18 @@ import {
   ALG_OPTIONS,
   algOf,
   DEFAULT_ALG,
+  defaultAlg,
   stageFailure,
   stagedText,
 } from '#/features/signing-keys/service/stage';
 
 describe('stage', () => {
+  it('starts from the active key’s algorithm, since a rotation usually keeps it', () => {
+    const active = { alg: 'RS256' as const };
+    expect(defaultAlg(active)).toBe('RS256');
+    expect(defaultAlg(undefined)).toBe('ES256');
+  });
+
   it('offers both algorithms the server has, ES256 first', () => {
     expect(ALG_OPTIONS.map((option) => option.id)).toEqual(['ES256', 'RS256']);
     expect(DEFAULT_ALG).toBe('ES256');

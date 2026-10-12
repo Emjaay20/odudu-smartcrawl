@@ -156,6 +156,17 @@ const seededSchema = z.object({
       fixedTenantOnly: account,
       fixedClientsOnly: account,
     }),
+    // One keys tenant per test that changes its keys, each with its administrator.
+    keys: z.object({
+      main: account,
+      young: account,
+      raced: account,
+      keyed: account,
+      // Read only: a phone's pages, and operators holding manage-keys alone or manage-tenant alone.
+      fixed: account,
+      fixedKeysOnly: account,
+      fixedTenantOnly: account,
+    }),
   }),
   // A tenant of its own for the Scopes tests.
   scopes: z.object({

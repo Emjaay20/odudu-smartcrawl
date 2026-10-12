@@ -17,7 +17,7 @@ import {
   type PromotionReading,
   stageFailure,
   stagedText,
-  DEFAULT_ALG,
+  defaultAlg,
   type KeyAction,
   type KeyDialog,
 } from '#/features/signing-keys/service';
@@ -75,13 +75,14 @@ export function useSigningKeysPage(tenant: string): SigningKeysPage {
   const promote = usePromoteKey(tenant);
   const retire = useRetireKey(tenant);
   const remove = useDeleteKey(tenant);
-  const [alg, setAlg] = useState<SigningKeyAlg>(DEFAULT_ALG);
+  const [chosen, setChosen] = useState<SigningKeyAlg | null>(null);
   const [stageMessage, setStageMessage] = useState<string | null>(null);
   const [asked, setAsked] = useState<{ action: KeyAction; key: SigningKey } | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [acted, setActed] = useState(0);
   const current = active.rows[0];
+  const alg = chosen ?? defaultAlg(current);
   const activeKnown = active.status === 'ready';
   const readiness = (key: SigningKey): PromotionReading =>
     promotionReading(promotionOf(key, active.rows, now, activeKnown));
@@ -96,7 +97,7 @@ export function useSigningKeysPage(tenant: string): SigningKeysPage {
     retired: laneOf(retired, false),
     alg,
     chooseAlg: (value) => {
-      setAlg(algOf(value));
+      setChosen(algOf(value));
     },
     staging: staging.busy,
     stage: () => {

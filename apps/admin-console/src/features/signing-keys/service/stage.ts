@@ -12,6 +12,10 @@ export const ALG_OPTIONS: readonly { id: SigningKeyAlg; label: string }[] = [
 export const STAGE_RULE =
   'A staged key is published in the key set at once and signs nothing until you promote it, which gives relying parties time to fetch it first.';
 
+export function defaultAlg(active: { alg: SigningKeyAlg } | undefined): SigningKeyAlg {
+  return active?.alg ?? DEFAULT_ALG;
+}
+
 export function algOf(value: string): SigningKeyAlg {
   const parsed = signingKeyAlgSchema.safeParse(value);
   return parsed.success ? parsed.data : DEFAULT_ALG;
