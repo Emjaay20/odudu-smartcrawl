@@ -1990,6 +1990,16 @@ console words each from its type, and `docs/admin-paths.md` shows each captured.
 The active lane offers no Retire at all, since the status is known to the console
 and the server always refuses it; the refusal is shown when a page is stale.
 
+**Retiring the key that signed the operator's own token ends the console
+session.** The gateway sees the admin API refuse the token at home too, ends the
+session, and the console signs in again through the tenant's SSO session; the
+success notice may not survive that. The retire dialog says so, and the browser
+test asserts the `console-session-ended` answer and the re-login.
+
+**The algorithm refusal is capped.** It names at most 20 clients (`errors` entries
+of path `clients`, the rest counted in `clients.more`), so 10,000 clients on one
+algorithm cannot make the 409 or the dialog that long.
+
 **No `If-Match`.** A key's `ETag` comes only with the answer to create, promote
 and retire, and the list carries none, so the console has nothing to send on a
 write it has not just made. The server honours one when it is sent and demands

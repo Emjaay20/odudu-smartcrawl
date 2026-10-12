@@ -328,8 +328,8 @@ capture finished.
 
 **The twentieth stack.** The three typed refusals of the signing-key routes ran against
 one more stack: compose project `odudu-docs-15` on port 3082, its Postgres on 5464,
-built from this branch with the typed refusals from an empty volume, with
-`ODUDU_THROTTLE_LIMIT=10000` and a console key made for it by
+built from this branch with the typed refusals and the cut client list from an empty
+volume, with `ODUDU_THROTTLE_LIMIT=10000` and a console key made for it by
 `infra/docker/console-key.sh`. Against it: `seed admin --username ada`, whose token,
 got the way "Getting the token" shows, is `$ADMIN_TOKEN`, and a tenant `key-refusals`
 made through `POST /admin/tenants`, `$P` being its `/admin/tenants/key-refusals`. It
@@ -8640,11 +8640,16 @@ Retire answers `409` in two cases and delete in one, each of a type of its own, 
 caller tells them apart without reading `detail`: `about:blank#key-active` (the key's
 own status is `active`), `#key-algorithm-needed` (a client's
 `userinfo_signed_response_alg` or `id_token_signed_response_alg` is one no remaining
-non-retired key produces; `detail` names the clients) and, for `DELETE`,
-`#key-not-retired`. Captured against the twentieth stack, in `key-refusals`, which
-starts with one `ES256` key that is `active`: that key retired, an `RS256` key staged,
-that key deleted, a client `billing` registered with `userinfo_signed_response_alg`
-`RS256` (which the staged key makes producible), and the staged key retired:
+non-retired key produces) and, for `DELETE`, `#key-not-retired`.
+
+The algorithm refusal names at most 20 clients, in `client_id` order, as `errors`
+entries of path `clients` (the id is the `message`), and the number it left out as one
+entry of path `clients.more`; `detail` carries the same cut list ending `and N more`.
+Captured against the twentieth stack, in `key-refusals`, which starts with one `ES256`
+key that is `active`: that key retired, an `RS256` key staged, that key deleted, a
+client `billing` registered with `userinfo_signed_response_alg` `RS256` (which the
+staged key makes producible), the keys listed to show the staged key is the only
+non-retired `RS256` one, and the staged key retired:
 
 ```bash
 ACTIVE=$(curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/keys" | python3 -c 'import json,sys;print(json.load(sys.stdin)["items"][0]["id"])')
@@ -8655,19 +8660,37 @@ curl -sS -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$P/keys/$STAGED"; ec
 curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
   -d '{"client_id":"billing","redirect_uris":["https://billing.example/callback"],"userinfo_signed_response_alg":"RS256"}' \
   "$P/clients" -o /dev/null -w '%{http_code}\n'
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/keys"; echo
 curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$P/keys/$STAGED/retire"; echo
 ```
 
 ```
-{"type":"about:blank#key-active","title":"Conflict","status":409,"detail":"signing key 01a13164-85c8-76aa-8895-44df92007364 is active; promote another key first","instance":"01a13164-860b-7499-ba69-ed3207e15aa7"}
-{"id":"01a13164-8653-7ba9-8dc9-3953e9ca7c8e","status":"rotating","kid":"01a13164-8653-7ba9-8dc9-395212b7109d","alg":"RS256","created_at":"2026-10-12T18:33:53.961Z","not_after":null}
-{"type":"about:blank#key-not-retired","title":"Conflict","status":409,"detail":"the key is rotating: only a retired key can be deleted; retire it first","instance":"01a13164-8663-7af4-957f-cafd0d78ea8c"}
+{"type":"about:blank#key-active","title":"Conflict","status":409,"detail":"signing key 01a131b5-eea5-775d-9b0e-bab28d5b9921 is active; promote another key first","instance":"01a131b5-ef3d-75f6-93c9-570682878f50"}
+{"id":"01a131b5-ef84-763d-859a-edc844a3b3e7","status":"rotating","kid":"01a131b5-ef84-763d-859a-edc7e41d53c0","alg":"RS256","created_at":"2026-10-12T20:02:49.324Z","not_after":null}
+{"type":"about:blank#key-not-retired","title":"Conflict","status":409,"detail":"the key is rotating: only a retired key can be deleted; retire it first","instance":"01a131b5-ef98-70b5-a0eb-e927830634d1"}
 201
-{"type":"about:blank#key-algorithm-needed","title":"Conflict","status":409,"detail":"no remaining signing key produces RS256, still required by userinfo_signed_response_alg or id_token_signed_response_alg on client(s): billing","instance":"01a13164-86c6-7610-8722-22b35ce19e07"}
+{"items":[{"id":"01a131b5-eea5-775d-9b0e-bab28d5b9921","status":"active","kid":"01a131b5-eea4-7b5e-9076-2036575802e8","alg":"ES256","created_at":"2026-10-12T20:02:48.877Z","not_after":null},{"id":"01a131b5-ef84-763d-859a-edc844a3b3e7","status":"rotating","kid":"01a131b5-ef84-763d-859a-edc7e41d53c0","alg":"RS256","created_at":"2026-10-12T20:02:49.324Z","not_after":null}]}
+{"type":"about:blank#key-algorithm-needed","title":"Conflict","status":409,"detail":"no remaining signing key produces RS256, still required by userinfo_signed_response_alg or id_token_signed_response_alg on client(s): billing","errors":[{"path":"clients","message":"billing"}],"instance":"01a131b5-f09d-75f0-bcf0-a0d3ff17d97c"}
 ```
 
-The second line is the staged key, printed by the `tee`. Whether a key may be promoted before relying parties have fetched it is not
-refused: the console shows when it is ready and leaves the choice to the operator.
+The second line is the staged key, printed by the `tee`.
+
+With twenty-one more clients on `RS256` (`app-01` to `app-21`, registered the same way,
+their answers discarded), the same retire names the first twenty and counts the
+rest, `billing` among them:
+
+```bash
+for i in $(seq -w 1 21); do curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
+  -d "{\"client_id\":\"app-$i\",\"redirect_uris\":[\"https://app-$i.example/callback\"],\"userinfo_signed_response_alg\":\"RS256\"}" "$P/clients" -o /dev/null; done
+curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$P/keys/$STAGED/retire"; echo
+```
+
+```
+{"type":"about:blank#key-algorithm-needed","title":"Conflict","status":409,"detail":"no remaining signing key produces RS256, still required by userinfo_signed_response_alg or id_token_signed_response_alg on client(s): app-01, app-02, app-03, app-04, app-05, app-06, app-07, app-08, app-09, app-10, app-11, app-12, app-13, app-14, app-15, app-16, app-17, app-18, app-19, app-20 and 2 more","errors":[{"path":"clients","message":"app-01"},{"path":"clients","message":"app-02"},{"path":"clients","message":"app-03"},{"path":"clients","message":"app-04"},{"path":"clients","message":"app-05"},{"path":"clients","message":"app-06"},{"path":"clients","message":"app-07"},{"path":"clients","message":"app-08"},{"path":"clients","message":"app-09"},{"path":"clients","message":"app-10"},{"path":"clients","message":"app-11"},{"path":"clients","message":"app-12"},{"path":"clients","message":"app-13"},{"path":"clients","message":"app-14"},{"path":"clients","message":"app-15"},{"path":"clients","message":"app-16"},{"path":"clients","message":"app-17"},{"path":"clients","message":"app-18"},{"path":"clients","message":"app-19"},{"path":"clients","message":"app-20"},{"path":"clients.more","message":"2"}],"instance":"01a131b5-f89a-75bf-926a-a54fab601fd2"}
+```
+
+Whether a key may be promoted before relying parties have fetched it is not refused:
+the console shows when it is ready and leaves the choice to the operator.
 
 **Filters.** `?status=active|rotating|retired` and `?alg=RS256|ES256` are
 exact, `AND`ed with each other, and bound into the cursor like every other
