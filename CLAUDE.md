@@ -400,6 +400,15 @@ In the consoles an import never carries a `.ts` or `.tsx` extension:
 `'#/shared/service/chunkLoad'`, not `'…/chunkLoad.ts'`.
 `tests/lint/console-imports-no-extension.test.ts` fails the build on one.
 
+**Reuse before writing.** Before adding a function, hook, adapter, view or
+wording constant to a console feature, search `shared/` and the sibling
+features for an equivalent by behaviour, not only by name. If one exists,
+import it; a feature reaches another only through its `index.ts`. If two
+features need the same thing, move it to `shared/` (any layer) in its own
+commit and repoint both. A task's report says what was searched and what was
+reused or moved. Do not merge things that merely look alike and change for
+different reasons: feature-specific wording stays in its feature.
+
 **"No business logic" in a usecase or repository means none, however small
 it looks.** A usecase wires hooks, state and calls together; a repository
 holds queries, mutations and cache keys. Neither decides anything, and
