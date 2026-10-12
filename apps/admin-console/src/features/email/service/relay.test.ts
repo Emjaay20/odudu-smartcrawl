@@ -101,6 +101,9 @@ describe('relayBlocked', () => {
     expect(relayBlocked(values({ port: '65536' }))).toMatch(/65535/u);
     expect(relayBlocked(values({ port: '58x' }))).toMatch(/port/u);
     expect(relayBlocked(values({ port: '' }))).toMatch(/port/u);
+    expect(relayBlocked(values({ port: '1e3' }))).toMatch(/port/u);
+    expect(relayBlocked(values({ port: '0x10' }))).toMatch(/port/u);
+    expect(relayBlocked(values({ port: ' 587' }))).toMatch(/port/u);
   });
 });
 

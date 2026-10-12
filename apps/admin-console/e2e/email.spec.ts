@@ -19,6 +19,13 @@ async function tabTo(page: Page, target: Locator): Promise<void> {
   await expect(target).toBeFocused();
 }
 
+// Everything the page keeps in the browser, as text.
+function browserStorage(page: Page): Promise<string> {
+  return page.evaluate(() =>
+    JSON.stringify([...Object.entries(sessionStorage), ...Object.entries(localStorage)]),
+  );
+}
+
 async function openEmail(page: Page, tenant: string): Promise<Locator> {
   await page.goto(`/console/${tenant}/email`);
   await expect(page.getByRole('heading', { level: 1, name: 'Email' })).toBeVisible();
@@ -56,7 +63,7 @@ test('a relay is set, its password kept, replaced and cleared, and never shown',
   await expect(page.getByText(/sends its mail through its own relay/u)).toBeVisible();
   await expect(form.getByLabel('New password')).toHaveValue('');
   await expect(form.getByText(/A password is stored and never shown/u)).toBeVisible();
-  expect(await page.content()).not.toContain('first-secret');
+  expect(await browserStorage(page)).not.toContain('first-secret');
   await expectAccessible(page);
   const stored = relayOf(main.tenant, 'password_encrypted');
 
@@ -81,7 +88,7 @@ test('a relay is set, its password kept, replaced and cleared, and never shown',
   await expect.poll(() => relayOf(main.tenant, 'host')).toBe('other.example.test');
   expect(relayOf(main.tenant, 'password_encrypted')).not.toBe(stored);
   await expect(form.getByLabel('New password')).toHaveValue('');
-  expect(await page.content()).not.toContain('second-secret');
+  expect(await browserStorage(page)).not.toContain('second-secret');
 
   await form.getByText('Remove the stored password', { exact: true }).click();
   await expect(form.getByLabel('New password')).toBeDisabled();

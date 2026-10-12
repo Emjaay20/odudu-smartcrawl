@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { effectiveReading, effectiveTone } from '#/features/email/service/effective';
+import {
+  effectiveLabel,
+  effectiveReading,
+  effectiveTone,
+} from '#/features/email/service/effective';
 
 describe('effectiveReading', () => {
   it('says whose relay the tenant’s mail goes through', () => {
@@ -14,5 +18,13 @@ describe('effectiveTone', () => {
     expect(effectiveTone('tenant')).toBe('active');
     expect(effectiveTone('deployment')).toBe('neutral');
     expect(effectiveTone('none')).toBe('warning');
+  });
+});
+
+describe('effectiveLabel', () => {
+  it('names each source in a word or two', () => {
+    expect(effectiveLabel('tenant')).toBe('own relay');
+    expect(effectiveLabel('deployment')).toBe('deployment sender');
+    expect(effectiveLabel('none')).toBe('not sent');
   });
 });

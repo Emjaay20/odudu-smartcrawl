@@ -1,6 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
+import { recordKey, type RecordEntry } from '#/shared/repository/useRecord';
+import { TENANT_SETTINGS_RECORD } from '#/shared/service/tenantSettings';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { inTurn, json, problem } from '#/testing/fakeTransport';
 import {
@@ -250,6 +252,23 @@ it('saves the one-time password setting on the settings ETag, and nothing else',
     });
   });
   expect(sent.some((s) => s.method === 'PUT')).toBe(false);
+});
+
+it('saves the one-time password under the record the Settings page reads, so a save rebases it', async () => {
+  const user = userEvent.setup();
+  const { queryClient } = renderConsoleAt(
+    AT,
+    flowRoutes(undefined, { [`PATCH ${ST}`]: settingsAnswer(true, '"s2"') }),
+  );
+  const otp = await screen.findByRole('region', { name: 'One-time password' });
+  await user.click(within(otp).getByRole('switch', { name: /Ask every subject/u }));
+  await user.click(within(otp).getByRole('button', { name: 'Save One-time password' }));
+  await waitFor(() => {
+    const entry = queryClient.getQueryData<RecordEntry<unknown>>(
+      recordKey('acme', TENANT_SETTINGS_RECORD),
+    );
+    expect(entry).toMatchObject({ by: 'save', result: { etag: '"s2"' } });
+  });
 });
 
 it('says the flow has no one-time password step when it has none', async () => {

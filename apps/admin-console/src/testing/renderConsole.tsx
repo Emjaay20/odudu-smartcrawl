@@ -29,10 +29,9 @@ export function whoami(capabilities: readonly string[], crossTenant = false): An
 export function consoleAt(path: string, routes: Record<string, Answer>) {
   const fake = fakeTransport(routes);
   const router = createConsoleRouter(createMemoryHistory({ initialEntries: [path] }));
-  const element = (
-    <App router={router} transport={fake.transport} queryClient={createQueryClient()} />
-  );
-  return { ...fake, router, element };
+  const queryClient = createQueryClient();
+  const element = <App router={router} transport={fake.transport} queryClient={queryClient} />;
+  return { ...fake, router, queryClient, element };
 }
 
 export function renderConsoleAt(path: string, routes: Record<string, Answer>) {
