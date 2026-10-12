@@ -1,7 +1,7 @@
 import type { SigningKey } from '@odudu/contracts/admin';
 import { writeRefusal } from '#/shared/service/capabilities';
 import { writeFailureText } from '#/shared/service/failure';
-import { sentence } from '#/shared/service/format';
+import { andList } from '#/shared/service/format';
 import type { GatewayResult, Problem } from '#/shared/service/result';
 
 export type KeyAction = 'promote' | 'retire' | 'delete';
@@ -37,6 +37,19 @@ function successText(action: KeyAction, key: SigningKey): string {
   }
 }
 
+const CLIENTS = 'clients';
+const MORE = 'clients.more';
+
+// The clients the server named, and how many it left out.
+function clientsText(problem: Problem): string {
+  const errors = problem.errors ?? [];
+  const named = errors.filter((error) => error.path === CLIENTS).map((error) => error.message);
+  const more = Number(errors.find((error) => error.path === MORE)?.message ?? 0);
+  if (named.length === 0) return 'the server named none';
+  if (more === 0) return andList(named);
+  return `${named.join(', ')} and ${more.toLocaleString('en')} more`;
+}
+
 function refusalText(action: KeyAction, key: SigningKey, problem: Problem): string | null {
   switch (problem.type) {
     case 'about:blank#key-active':
@@ -44,7 +57,7 @@ function refusalText(action: KeyAction, key: SigningKey, problem: Problem): stri
     case 'about:blank#key-not-retired':
       return NOT_RETIRED_TEXT;
     case 'about:blank#key-algorithm-needed':
-      return `Refused: ${sentence(problem.detail ?? `a client still needs ${key.alg}`)} Stage another ${key.alg} key, or move those clients to another algorithm, then retire this one.`;
+      return `Refused: no other key would produce ${key.alg}, and these clients still ask for it: ${clientsText(problem)}. Stage another ${key.alg} key, or move those clients to another algorithm, then retire this one.`;
     default:
       return action === 'promote' && problem.status === 404
         ? CANNOT_PROMOTE_TEXT

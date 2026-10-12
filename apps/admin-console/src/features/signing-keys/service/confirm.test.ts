@@ -53,8 +53,8 @@ describe('retire and delete', () => {
     expect(retireConsequence(key({}))).toMatch(/stops verifying/u);
   });
 
-  it('says the token this console holds may be one the key signed', () => {
-    expect(retireConsequence(key({}))).toMatch(/this console holds for you/u);
+  it('says the console session ends if the token it holds was signed by the key', () => {
+    expect(retireConsequence(key({}))).toMatch(/console session ends/u);
   });
 
   it('says deleting a retired key is for good', () => {

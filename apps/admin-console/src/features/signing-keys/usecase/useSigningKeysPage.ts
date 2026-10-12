@@ -140,7 +140,7 @@ export function useSigningKeysPage(tenant: string): SigningKeysPage {
       setAsked(null);
     },
     confirm: async () => {
-      if (asked === null) return false;
+      if (asked === null || promote.busy || retire.busy || remove.busy) return false;
       const result = await writes[asked.action](asked.key.id);
       const outcome = keyActionOutcome(asked.action, asked.key, result);
       if (!outcome.done) {

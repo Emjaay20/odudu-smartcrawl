@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { inTurn, json, offline, problem } from '#/testing/fakeTransport';
+import { inTurn, json, offline, pending, problem } from '#/testing/fakeTransport';
 import {
   ACTIVE_KEY,
   KEYS,
@@ -145,6 +145,34 @@ it('says why a young key is not ready in the promote dialog, and still lets it t
   expect(await screen.findByText(/kid-k-young is now the active key/u)).toBeVisible();
 });
 
+it('presses once while a write is in flight and shows no failure for a second press', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    keyRoutes(undefined, { [`POST ${KEYS}/k-ready/promote`]: pending() }),
+  );
+  await user.click(await screen.findByRole('button', { name: 'Promote kid-k-ready' }));
+  const dialog = await screen.findByRole('alertdialog');
+  await user.click(within(dialog).getByRole('button', { name: 'Promote key' }));
+  const working = await within(dialog).findByRole('button', { name: 'Working…' });
+  expect(working).toBeDisabled();
+  await user.click(working);
+  await user.keyboard('{Enter}');
+  expect(within(dialog).queryByRole('alert')).toBeNull();
+  expect(sent.filter((s) => s.path.endsWith('/promote'))).toHaveLength(1);
+});
+
+it('says an other-algorithm key changes the algorithm instead of calling it not ready', async () => {
+  const rs = signingKey('k-rs', 'rotating', {
+    alg: 'RS256',
+    created_at: '2026-10-05T00:00:00.000Z',
+  });
+  renderConsoleAt(AT, keyRoutes(undefined, {}, [rs, ACTIVE_KEY]));
+  const row = await within(await lane('Rotating keys')).findByRole('row', { name: /kid-k-rs/u });
+  expect(row).toHaveTextContent('Changes algorithm');
+  expect(row).not.toHaveTextContent('Not ready');
+});
+
 it('keeps the promote dialog and says so when the key can no longer be promoted', async () => {
   const user = userEvent.setup();
   renderConsoleAt(
@@ -208,8 +236,8 @@ it('shows which clients still need the algorithm when a retire is refused for it
         'about:blank#key-algorithm-needed',
         'Conflict',
         {
-          detail:
-            'no remaining signing key produces ES256, still required by userinfo_signed_response_alg on client(s): billing',
+          detail: 'prose',
+          errors: [{ path: 'clients', message: 'billing' }],
         },
       ),
     }),

@@ -71,6 +71,12 @@ describe('what a promotion reading says', () => {
     );
   });
 
+  it('reads a key of another algorithm as a migration, not as unready', () => {
+    const reading = promotionReading({ kind: 'algorithm', active: 'ES256' });
+    expect(reading).toMatchObject({ ready: false, label: 'Changes algorithm', tone: 'neutral' });
+    expect(reading.text).toContain('migrate');
+  });
+
   it('names both algorithms', () => {
     expect(promotionText({ kind: 'algorithm', active: 'ES256' })).toContain('ES256');
   });
@@ -86,6 +92,7 @@ describe('what a promotion reading says', () => {
 it('reads a promotion as whether it is ready, a label and a sentence', () => {
   expect(promotionReading({ kind: 'ready' })).toEqual({
     ready: true,
+    tone: 'active',
     label: 'Ready',
     text: 'Ready to promote.',
   });

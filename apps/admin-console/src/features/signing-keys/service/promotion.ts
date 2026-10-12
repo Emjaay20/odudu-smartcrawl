@@ -35,6 +35,8 @@ export function promotionLabel(promotion: Promotion): string {
       return 'Ready';
     case 'unknown':
       return 'Unknown';
+    case 'algorithm':
+      return 'Changes algorithm';
     default:
       return 'Not ready';
   }
@@ -47,7 +49,7 @@ export function promotionText(promotion: Promotion): string {
     case 'young':
       return `Ready from ${formatAbsolute(promotion.at)}: until then a relying party may not have fetched its public key.`;
     case 'algorithm':
-      return `Not offered as ready: its algorithm differs from the active key’s (${promotion.active}), and promoting it would change the algorithm every new token is signed with.`;
+      return `Its algorithm differs from the active key’s (${promotion.active}). Promoting it changes the algorithm every new token is signed with: that is how a tenant migrates, once its clients are ready for it.`;
     case 'replaced':
       return 'Not offered as ready: it is older than the active key, so it is probably the key a promotion replaced. That one is for retiring.';
     case 'unknown':
@@ -60,8 +62,20 @@ export function promoteWarning(promotion: Promotion): string | null {
   return `${promotionText(promotion)} Promoting it now is your call: the server does not refuse it.`;
 }
 
+function promotionTone(promotion: Promotion): PromotionReading['tone'] {
+  switch (promotion.kind) {
+    case 'ready':
+      return 'active';
+    case 'algorithm':
+      return 'neutral';
+    default:
+      return 'warning';
+  }
+}
+
 export interface PromotionReading {
   ready: boolean;
+  tone: 'active' | 'warning' | 'neutral';
   label: string;
   text: string;
 }
@@ -69,6 +83,7 @@ export interface PromotionReading {
 export function promotionReading(promotion: Promotion): PromotionReading {
   return {
     ready: promotion.kind === 'ready',
+    tone: promotionTone(promotion),
     label: promotionLabel(promotion),
     text: promotionText(promotion),
   };

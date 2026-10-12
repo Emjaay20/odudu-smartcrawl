@@ -21,7 +21,7 @@ export function retireTyped(key: SigningKey): string {
 }
 
 export function retireConsequence(key: SigningKey): string {
-  return `The ${key.alg} key ${key.kid} is no longer published, so a token it signed stops verifying at once. Retire it only when no token it signed can still be in use. The token this console holds for you may be one of them: a read is then refused once, and the console carries on with a new token.`;
+  return `The ${key.alg} key ${key.kid} is no longer published, so a token it signed stops verifying at once. Retire it only when no token it signed can still be in use. The token this console holds for you may be one of them. If it is, this console session ends and you are signed in again, or asked to sign in; the confirmation of this retire may then not be shown.`;
 }
 
 export function deleteConsequence(key: SigningKey): string {

@@ -109,14 +109,28 @@ test('a key is staged, promoted, retired and deleted, and the lanes follow the d
   const confirm = retire.getByRole('button', { name: 'Retire key' });
   await expect(confirm).toBeDisabled();
   await expectAccessible(page);
+  await expect(retire).toContainText('this console session ends');
   await retire.getByRole('textbox').fill(original);
+  // The console's own token was signed by the key being retired, so the
+  // gateway ends the console session and the console signs in again.
+  const ended = page.waitForResponse(
+    (response) => response.url().includes('/keys?status=') && response.status() === 401,
+  );
+  const resumed = page.waitForResponse(
+    (response) => response.url().endsWith('/console/api/session') && response.status() === 200,
+  );
   await confirm.click();
-  await expect(row(page, 'Retired', original)).toBeVisible();
-  await expect.poll(() => keysOf(main.tenant)).toBe('active,retired');
-  // The console's own token was signed by the key just retired, so the first read after it is refused.
+  expect(((await (await ended).json()) as { type: string }).type).toBe(
+    'about:blank#console-session-ended',
+  );
+  await resumed;
   for (const status of ['rotating', 'active', 'retired']) {
     forgive(problems, `/keys?status=${status}`);
   }
+  await expect(page.getByRole('heading', { level: 1, name: 'Signing keys' })).toBeVisible();
+  await expect(row(page, 'Retired', original)).toBeVisible();
+  await expect(row(page, 'Active', staged)).toBeVisible();
+  await expect.poll(() => keysOf(main.tenant)).toBe('active,retired');
 
   await page.getByRole('button', { name: `Delete ${original}` }).click();
   const remove = page.getByRole('alertdialog', { name: 'Delete this key?' });

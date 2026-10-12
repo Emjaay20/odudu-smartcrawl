@@ -46,7 +46,7 @@ function columns(spec: LaneSpec, page: Page): readonly Column<KeyRow>[] {
     cell: ({ readiness: reading }) =>
       reading === null ? null : (
         <div className={styles.cell}>
-          <StatusTag tone={reading.ready ? 'active' : 'warning'}>{reading.label}</StatusTag>
+          <StatusTag tone={reading.tone}>{reading.label}</StatusTag>
           <p className={styles.reading}>{reading.text}</p>
         </div>
       ),

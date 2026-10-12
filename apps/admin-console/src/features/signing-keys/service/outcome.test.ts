@@ -42,19 +42,43 @@ describe('keyActionOutcome', () => {
     expect(outcome.text).not.toContain('prose that is not read');
   });
 
-  it('shows the clients still needing the algorithm, from the server’s own detail', () => {
-    const outcome = keyActionOutcome(
-      'retire',
-      KEY,
-      refused(
-        409,
-        'about:blank#key-algorithm-needed',
-        'no remaining signing key produces RS256, still required by userinfo_signed_response_alg on client(s): billing',
-      ),
-    );
+  it('names the clients still needing the algorithm from the structured list', () => {
+    const outcome = keyActionOutcome('retire', KEY, {
+      ok: false,
+      kind: 'problem',
+      problem: {
+        type: 'about:blank#key-algorithm-needed',
+        title: 'Conflict',
+        status: 409,
+        detail: 'prose that is not read',
+        errors: [
+          { path: 'clients', message: 'billing' },
+          { path: 'clients', message: 'ledger' },
+        ],
+      },
+    });
     expect(outcome.done).toBe(false);
-    expect(outcome.text).toContain('billing');
+    expect(outcome.text).toContain('billing and ledger');
     expect(outcome.text).toContain('RS256');
+    expect(outcome.text).not.toContain('prose that is not read');
+  });
+
+  it('says how many more clients there are when the list was cut', () => {
+    const outcome = keyActionOutcome('retire', KEY, {
+      ok: false,
+      kind: 'problem',
+      problem: {
+        type: 'about:blank#key-algorithm-needed',
+        title: 'Conflict',
+        status: 409,
+        errors: [
+          { path: 'clients', message: 'a' },
+          { path: 'clients', message: 'b' },
+          { path: 'clients.more', message: '9998' },
+        ],
+      },
+    });
+    expect(outcome.text).toContain('a, b and 9,998 more');
   });
 
   it('refuses to delete a key that is not retired, by type', () => {
