@@ -446,6 +446,20 @@ const signingKeys = createRoute({
   },
 });
 
+const Settings = lazyFeatureRoute(
+  () => import('#/features/settings').then((feature) => feature.SettingsPage),
+  'Loading the settings',
+);
+
+const settings = createRoute({
+  getParentRoute: () => tenant,
+  path: 'settings',
+  component: function TenantSettings() {
+    const { tenant: name } = tenant.useParams();
+    return <Settings key={name} tenant={name} />;
+  },
+});
+
 // Every feature chunk the routes load, for a caller that wants them all in
 // hand before the first render.
 export function preloadFeatures(): Promise<void> {
@@ -476,6 +490,7 @@ export function preloadFeatures(): Promise<void> {
     RegistrationTokens,
     Flow,
     SigningKeys,
+    Settings,
   ];
   return Promise.all(features.map((feature) => feature.preload())).then(() => undefined);
 }
@@ -492,6 +507,7 @@ const TAKEN = new Set([
   'registration-tokens',
   'flow',
   'keys',
+  'settings',
 ]);
 
 const areas = EVERY_AREA.filter((area) => area !== OVERVIEW && !TAKEN.has(area.path)).map((area) =>
@@ -520,6 +536,7 @@ const routeTree = root.addChildren([
     registrationTokens,
     flow,
     signingKeys,
+    settings,
     ...areas,
   ]),
 ]);

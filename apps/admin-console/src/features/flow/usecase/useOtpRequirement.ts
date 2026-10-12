@@ -4,13 +4,13 @@ import { flowSaves, type OtpValues } from '#/features/flow/repository/useFlowRec
 import {
   describeOtp,
   OTP_FIELD_LABEL,
-  OTP_RECORD,
   OTP_TITLE,
   otpReading,
   otpRequired,
 } from '#/features/flow/service';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { writeRefusal } from '#/shared/service/capabilities';
+import { TENANT_SETTINGS_RECORD } from '#/shared/service/tenantSettings';
 
 export interface OtpRequirement {
   save: SectionSave<OtpValues>;
@@ -33,7 +33,7 @@ export function useOtpRequirement({
   const saves = flowSaves(tenant);
   const save = useSectionSave({
     tenant,
-    record: OTP_RECORD,
+    record: TENANT_SETTINGS_RECORD,
     section: 'otp',
     label: OTP_TITLE,
     etag,

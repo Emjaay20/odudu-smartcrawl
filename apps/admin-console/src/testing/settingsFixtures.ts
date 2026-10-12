@@ -1,0 +1,73 @@
+import { json, type Answer } from '#/testing/fakeTransport';
+import { GRACE, whoami } from '#/testing/renderConsole';
+import { EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures';
+
+export const A = '/console/api/admin/tenants/acme';
+export const ST = `${A}/settings`;
+export const SM = `${A}/smtp`;
+
+// What a tenant starts with: the migrations' own defaults.
+export const SETTINGS = {
+  display_name: 'Acme',
+  enabled: true,
+  registration_allowed: false,
+  verify_email: false,
+  reset_password_allowed: false,
+  sso_session_idle_seconds: 1800,
+  sso_session_max_seconds: 36000,
+  password_min_length: 8,
+  password_require_digit: false,
+  password_require_uppercase: false,
+  password_require_lowercase: false,
+  password_require_special: false,
+  password_not_username: true,
+  password_not_email: true,
+  password_history_depth: 0,
+  password_max_age_days: 0,
+  otp_required: false,
+  brute_force_max_failures: 5,
+  brute_force_lockout_seconds: 60,
+  brute_force_max_lockout_seconds: 900,
+  brute_force_failure_reset_seconds: 43200,
+  client_registration_policy: 'disabled',
+  max_clients: 200,
+  max_sessions_per_browser: 25,
+  remember_me_allowed: false,
+  remember_me_idle_seconds: 604800,
+  remember_me_max_seconds: 2592000,
+  audit_retention_days: 90,
+  username_editable: false,
+  access_token_ttl_seconds: 300,
+  id_token_ttl_seconds: 300,
+  refresh_token_ttl_seconds: 1209600,
+  authorization_code_ttl_seconds: 60,
+  login_ttl_seconds: 1800,
+  verify_email_ttl_seconds: 43200,
+  reset_password_ttl_seconds: 300,
+  login_with_email: false,
+  audit_event_types: [
+    'admin_mutation',
+    'admin_access',
+    'authentication',
+    'session',
+    'token',
+    'credential',
+  ],
+};
+
+export function settingsAnswer(changes: Record<string, unknown> = {}, etag = '"s1"'): Answer {
+  return json({ ...SETTINGS, ...changes }, 200, { etag });
+}
+
+// grace of acme holding the capabilities given, with the settings above.
+export function settingsRoutes(
+  capabilities: readonly string[] = EVERY_TENANT_CAPABILITY,
+  extra: Record<string, Answer> = {},
+): Record<string, Answer> {
+  return {
+    'GET /console/api/session': json(GRACE),
+    [`GET ${A}/whoami`]: whoami(capabilities),
+    [`GET ${ST}`]: settingsAnswer(),
+    ...extra,
+  };
+}

@@ -1,4 +1,4 @@
-import { settingsSchema, type Settings } from '@odudu/contracts/admin';
+import { settingsSchema, type AmendSettingsRequest, type Settings } from '@odudu/contracts/admin';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 
 function path(tenant: string): string {
@@ -18,7 +18,7 @@ export function readTenantSettings(
 export function amendTenantSettings(
   gateway: Gateway,
   tenant: string,
-  changes: Readonly<Record<string, boolean | number | string>>,
+  changes: AmendSettingsRequest,
   ifMatch: string,
 ): Promise<GatewayResult<Settings>> {
   return gateway.request('PATCH', `admin/tenants/${path(tenant)}/settings`, {

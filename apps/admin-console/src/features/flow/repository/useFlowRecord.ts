@@ -1,7 +1,7 @@
-import type { ListExecutionsResponse, Settings } from '@odudu/contracts/admin';
+import type { ListExecutionsResponse } from '@odudu/contracts/admin';
 import { replaceFlow, readFlow } from '#/features/flow/adapter/flow';
-import { OTP_RECORD, type Step } from '#/features/flow/service';
-import { amendTenantSettings, readTenantSettings } from '#/shared/adapter/tenantSettings';
+import type { Step } from '#/features/flow/service';
+import { amendTenantSettings } from '#/shared/adapter/tenantSettings';
 import { useRecord, type RecordState } from '#/shared/repository/useRecord';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
 import type { Gateway } from '#/shared/transport/gateway';
@@ -21,14 +21,6 @@ export function useFlowRecord(tenant: string): RecordState<ListExecutionsRespons
     tenant,
     record: FLOW_RECORD,
     read: (gateway) => readFlow(gateway, tenant),
-  });
-}
-
-export function useSettingsRecord(tenant: string): RecordState<Settings> {
-  return useRecord({
-    tenant,
-    record: OTP_RECORD,
-    read: (gateway) => readTenantSettings(gateway, tenant),
   });
 }
 
