@@ -37,6 +37,23 @@ it('is a region named by its heading', () => {
   expect(within(region).getByRole('heading', { level: 2, name: 'General' })).toBeInTheDocument();
 });
 
+it('puts the id it is given on its heading, so a page can send the focus there', () => {
+  render(
+    <Section
+      title="General"
+      headingId="section-general"
+      dirty={false}
+      saving={false}
+      onSave={vi.fn()}
+      onDiscard={vi.fn()}
+    >
+      <p>Body</p>
+    </Section>,
+  );
+  expect(screen.getByRole('heading', { name: 'General' })).toHaveAttribute('id', 'section-general');
+  expect(screen.getByRole('region', { name: 'General' })).toBeInTheDocument();
+});
+
 it('shows its save bar only while it has changes', () => {
   const { rerender } = render(<General dirty={false} />);
   expect(screen.queryByRole('button', { name: /save/i })).toBeNull();

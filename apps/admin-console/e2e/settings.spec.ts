@@ -215,11 +215,25 @@ test('an operator holding manage-clients alone is told what Settings needs, and 
   await expectAccessible(page);
 });
 
+test('a section is reached from the list at the top by keyboard alone, the focus landing on its heading', async ({
+  page,
+}) => {
+  await signIn(page, settings.fixed);
+  await openSettings(page, settings.fixed.tenant);
+  const nav = page.getByRole('navigation', { name: 'On this page' });
+  const target = nav.getByRole('button', { name: 'Brute force' });
+  await tabTo(page, target);
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { level: 2, name: 'Brute force' })).toBeFocused();
+  await expectAccessible(page);
+});
+
 test('the settings page fits a phone', async ({ page }) => {
   test.slow();
   await page.setViewportSize(PHONE);
   await signIn(page, settings.fixed);
   await openSettings(page, settings.fixed.tenant);
+  await expect(page.getByRole('navigation', { name: 'On this page' })).toBeVisible();
   await expectFitsViewport(page, 'settings');
   await expectAccessible(page);
 });

@@ -26,6 +26,7 @@ export function Section({
   notice,
   blocked,
   saveLabel,
+  headingId,
   children,
 }: {
   title: string;
@@ -44,9 +45,12 @@ export function Section({
   notice?: ReactNode;
   // Holds Save with this reason until it is resolved.
   blocked?: string | undefined;
+  // The heading's id, for a page that sends the focus to it.
+  headingId?: string;
   children: ReactNode;
 }) {
-  const heading = useId();
+  const generated = useId();
+  const heading = headingId ?? generated;
   // On a page the caller cannot change there is no save; an edit held from
   // before whoami said so stays, marked, until it is discarded.
   const readOnly = use(FieldsReadOnly);

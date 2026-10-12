@@ -5,7 +5,11 @@ import {
   TENANT_SETTING_RANGES,
 } from '@odudu/contracts/admin';
 import { describe, expect, it } from 'vitest';
-import { PLACED_ELSEWHERE, SETTINGS_SECTIONS } from '#/features/settings/service/sections';
+import {
+  PLACED_ELSEWHERE,
+  sectionHeadingId,
+  SETTINGS_SECTIONS,
+} from '#/features/settings/service/sections';
 
 const EVERY_SETTING = [
   ...Object.keys(tenantSettingsDocumentSchema.shape),
@@ -59,5 +63,12 @@ describe('SETTINGS_SECTIONS', () => {
       )?.control;
       expect(['seconds', 'count']).toContain(control);
     }
+  });
+});
+
+describe('sectionHeadingId', () => {
+  it('is distinct for every section', () => {
+    const ids = SETTINGS_SECTIONS.map((section) => sectionHeadingId(section.id));
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });

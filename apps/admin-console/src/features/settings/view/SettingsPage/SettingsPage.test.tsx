@@ -40,6 +40,20 @@ it('has a section for each concern, each with its own save', async () => {
   }
 });
 
+it('lists the sections, each a button that sends the focus to its heading', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, settingsRoutes());
+  await section('General');
+  const nav = screen.getByRole('navigation', { name: 'On this page' });
+  expect(within(nav).getAllByRole('button')).toHaveLength(10);
+  await user.click(within(nav).getByRole('button', { name: 'Password policy' }));
+  expect(screen.getByRole('heading', { level: 2, name: 'Password policy' })).toHaveFocus();
+  await user.tab();
+  await user.keyboard('{Shift>}{Tab}{/Shift}');
+  await user.click(within(nav).getByRole('button', { name: 'Audit retention' }));
+  expect(screen.getByRole('heading', { level: 2, name: 'Audit retention' })).toHaveFocus();
+});
+
 it('shows a duration with its reading, and a count in its unit', async () => {
   renderConsoleAt(AT, settingsRoutes());
   const sessions = await section('Sessions');

@@ -3,6 +3,7 @@ export { fieldDescription, rangeRule } from '#/features/settings/service/notes';
 export {
   GENERAL_SECTION,
   PLACED_ELSEWHERE,
+  sectionHeadingId,
   SETTINGS_SECTIONS,
   type SettingField,
   type SettingOption,

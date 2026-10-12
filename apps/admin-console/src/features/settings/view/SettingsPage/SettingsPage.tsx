@@ -6,6 +6,7 @@ import {
   GENERAL_SECTION,
   listOf,
   numberOf,
+  sectionHeadingId,
   SETTINGS_SECTIONS,
   textOf,
   type SettingField,
@@ -160,6 +161,7 @@ function Plain({ tenant, data, etag, gone, section }: Props & { section: Setting
   return (
     <Section
       title={section.title}
+      headingId={sectionHeadingId(section.id)}
       description={section.description}
       dirty={save.dirty}
       saving={save.saving}
@@ -182,6 +184,7 @@ function General({ tenant, data, etag, gone, section }: Props & { section: Setti
     <>
       <Section
         title={section.title}
+        headingId={sectionHeadingId(section.id)}
         description={section.description}
         dirty={s.dirty}
         saving={s.saving}
@@ -226,6 +229,23 @@ function Sections({ tenant }: { tenant: string }) {
   const shared = { tenant, data: settings.data, etag: settings.etag, gone: settings.gone };
   return (
     <div className={styles.page}>
+      <nav aria-label="On this page" className={styles.nav}>
+        <ul className={styles.sections}>
+          {SETTINGS_SECTIONS.map((section) => (
+            <li key={section.id}>
+              <Button
+                size="small"
+                variant="quiet"
+                onPress={() => {
+                  document.getElementById(sectionHeadingId(section.id))?.focus();
+                }}
+              >
+                {section.title}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      </nav>
       {SETTINGS_SECTIONS.map((section) =>
         section.id === GENERAL_SECTION ? (
           <General key={section.id} {...shared} section={section} />

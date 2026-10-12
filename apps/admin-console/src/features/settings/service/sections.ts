@@ -19,3 +19,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
 export const PLACED_ELSEWHERE: Readonly<Record<string, string>> = {
   otp_required: 'Sign-in flow',
 };
+
+export function sectionHeadingId(id: string): string {
+  return `settings-${id}`;
+}
