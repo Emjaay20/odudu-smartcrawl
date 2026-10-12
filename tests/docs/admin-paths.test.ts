@@ -46,6 +46,9 @@ const EMITTABLE_PROBLEM_TYPES = new Set([
   'about:blank#flow-no-first-challenge',
   'about:blank#flow-unknown-authenticator',
   'about:blank#flow-duplicate-authenticator',
+  'about:blank#key-active',
+  'about:blank#key-algorithm-needed',
+  'about:blank#key-not-retired',
 ]);
 
 const CAPABILITY_SHAPED = /^(?:view|manage)-[a-z]+(?:-[a-z]+)*$/u;

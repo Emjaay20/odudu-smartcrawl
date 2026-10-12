@@ -1219,8 +1219,9 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     capability: 'manage-keys',
     responseSchema: signingKeySchema,
     description:
-      'Refused with 409 while the key is active, or while a client is registered against ' +
-      'an algorithm no remaining key would produce. `If-Match` is optional: a stale one, ' +
+      'Refused with 409 while the key is active (`about:blank#key-active`), or while a client ' +
+      'is registered against an algorithm no remaining key would produce ' +
+      '(`#key-algorithm-needed`). `If-Match` is optional: a stale one, ' +
       'taken over the key, is refused with `412`.',
   },
   {
@@ -1243,7 +1244,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     successStatus: 204,
     description:
       'Deletes a retired key, which is published nowhere and signs nothing. Refused with `409` ' +
-      'for an active or rotating one, which `POST …/retire` retires first. `If-Match` is ' +
+      '(`about:blank#key-not-retired`) for an active or rotating one, which `POST …/retire` retires first. `If-Match` is ' +
       'optional: a stale one is refused with `412`.',
   },
   // A tenant's own SMTP credential: manage-tenant, the same capability

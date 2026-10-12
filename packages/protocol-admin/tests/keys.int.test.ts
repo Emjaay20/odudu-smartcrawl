@@ -238,6 +238,7 @@ describe('POST /admin/tenants/{t}/keys/{id}/retire', () => {
     const res = await retireKey(t.name, token, active.id);
     expect(res.statusCode).toBe(409);
     expect(res.json<{ detail: string }>().detail).toMatch(/active/u);
+    expect(res.json<{ type: string }>().type).toBe('about:blank#key-active');
   });
 
   it("refuses to retire a key whose algorithm a client's userinfo_signed_response_alg still needs", async () => {
@@ -263,6 +264,7 @@ describe('POST /admin/tenants/{t}/keys/{id}/retire', () => {
     const detail = res.json<{ detail: string }>().detail;
     expect(detail).toContain('userinfo_signed_response_alg');
     expect(detail).toContain(dependent.clientId);
+    expect(res.json<{ type: string }>().type).toBe('about:blank#key-algorithm-needed');
   });
 
   it('retires once the last client on that algorithm has moved', async () => {
@@ -286,6 +288,20 @@ describe('POST /admin/tenants/{t}/keys/{id}/retire', () => {
     const res = await retireKey(t.name, token, original.id);
     expect(res.statusCode).toBe(200);
     expect(res.json<{ status: string }>().status).toBe('retired');
+  });
+
+  it('answers a delete of a key that is not retired with a type of its own', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-keys']);
+    const staged = await stageKey(t.name, token, 'RS256');
+
+    const res = await fixture.http.inject({
+      method: 'DELETE',
+      url: `${keysUrl(t.name)}/${staged.id}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(res.statusCode).toBe(409);
+    expect(res.json<{ type: string }>().type).toBe('about:blank#key-not-retired');
   });
 
   it('answers 404 for an unknown key id', async () => {

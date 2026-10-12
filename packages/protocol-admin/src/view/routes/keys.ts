@@ -149,7 +149,7 @@ function retirementProblem(
         request,
         problem(
           409,
-          'about:blank',
+          'about:blank#key-active',
           'Conflict',
           `signing key ${id} is active; promote another key first`,
         ),
@@ -160,7 +160,7 @@ function retirementProblem(
         request,
         problem(
           409,
-          'about:blank',
+          'about:blank#key-algorithm-needed',
           'Conflict',
           `no remaining signing key produces ${outcome.alg}, still required by ` +
             `userinfo_signed_response_alg or id_token_signed_response_alg on client(s): ` +
@@ -235,7 +235,7 @@ export function deleteKeyHandler(deps: KeysRouteDeps): AdminRouteHandler {
           request,
           problem(
             409,
-            'about:blank',
+            'about:blank#key-not-retired',
             'Conflict',
             `the key is ${outcome.status}: only a retired key can be deleted; retire it first`,
           ),
