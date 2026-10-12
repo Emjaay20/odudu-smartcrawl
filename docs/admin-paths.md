@@ -335,6 +335,14 @@ got the way "Getting the token" shows, is `$ADMIN_TOKEN`, and a tenant `key-refu
 made through `POST /admin/tenants`, `$P` being its `/admin/tenants/key-refusals`. It
 was torn down with `docker compose down -v` when the capture finished.
 
+**The twenty-first stack.** The empty display name under `PATCH /settings` ran against
+one more stack: compose project `odudu-docs-16` on port 3082, its Postgres on 5464, built
+from this branch from an empty volume, with `ODUDU_THROTTLE_LIMIT=10000` and a console
+key made for it by `infra/docker/console-key.sh`. Against it: `seed admin --username ada`,
+whose token, got the way "Getting the token" shows, is `$ADMIN_TOKEN`, and a tenant
+`name-demo2` made through `POST /admin/tenants`. It was torn down with
+`docker compose down -v` when the capture finished.
+
 ## The shape of it
 
 Most of the admin endpoint lives under `/admin/tenants/{tenant}/`, mirroring
@@ -2402,6 +2410,25 @@ A setting's value may be sent as its JSON type
 (`true`, `14`) or as the equivalent string (`"true"`, `"14"`) — both reach
 the same `coerceTenantSetting` the CLI uses, which reads a string either
 way.
+
+`display_name` is the one nullable setting, and a request cannot carry `null`,
+so a name that is empty or only spaces is stored as none: the tenant's pages
+then use its name in its place, rather than showing a blank. Captured on the
+twenty-first stack, in a tenant `name-demo2` made through `POST /admin/tenants`
+with `display_name` "Name Demo":
+
+```bash
+for body in '{"display_name": "Name Demo Inc"}' '{"display_name": "   "}'; do
+  curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -H "Content-Type: application/json" -d "$body" \
+    http://localhost:3082/admin/tenants/name-demo2/settings | jq -c '{display_name}'
+done
+```
+
+```
+{"display_name":"Name Demo Inc"}
+{"display_name":null}
+```
 
 `seed tenant --set` runs the same check before it writes anything, over the
 tenant's stored settings with the new values laid on them — or, for a
