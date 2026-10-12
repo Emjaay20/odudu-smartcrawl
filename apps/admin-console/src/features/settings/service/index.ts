@@ -1,8 +1,4 @@
-export {
-  disableConsequence,
-  disableFixed,
-  disablesTenant,
-} from '#/features/settings/service/general';
+export { disableConsequence, disablesTenant } from '#/features/settings/service/general';
 export { fieldDescription, rangeRule } from '#/features/settings/service/notes';
 export {
   GENERAL_SECTION,

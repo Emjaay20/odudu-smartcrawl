@@ -6,10 +6,11 @@ import {
   useTenantEnabled,
   type GeneralValues,
 } from '#/features/tenants/repository/useTenantRecord';
-import { disableFixed, tenantChangeFailure, tenantRecord } from '#/features/tenants/service';
+import { tenantChangeFailure, tenantRecord } from '#/features/tenants/service';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { useToasts } from '#/shared/repository/useToasts';
 import { enabledText } from '#/shared/service/failure';
+import { disableFixed } from '#/shared/service/tenantEnabled';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
 
 export interface EnabledControl {

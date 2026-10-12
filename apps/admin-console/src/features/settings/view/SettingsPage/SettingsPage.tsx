@@ -3,7 +3,6 @@ import { AreaGate, areaAt } from '#/features/shell';
 import {
   booleanOf,
   disableConsequence,
-  disableFixed,
   enteredNumber,
   fieldDescription,
   GENERAL_SECTION,
@@ -20,6 +19,7 @@ import {
   useSettingsSection,
   type SettingsSave,
 } from '#/features/settings/usecase/useSettingsSection';
+import { disableFixed } from '#/shared/service/tenantEnabled';
 import { Button } from '#/shared/view/Button';
 import { ChecklistField } from '#/shared/view/ChecklistField';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';

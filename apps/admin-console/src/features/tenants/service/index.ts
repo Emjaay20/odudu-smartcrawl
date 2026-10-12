@@ -95,9 +95,5 @@ export {
   creationHeading,
 } from '#/features/tenants/service/heading';
 export { TENANT_TABS, type TenantTab, tenantRecord } from '#/features/tenants/service/tabs';
-export {
-  type TenantRecordAccess,
-  tenantRecordAccess,
-  disableFixed,
-} from '#/features/tenants/service/access';
+export { type TenantRecordAccess, tenantRecordAccess } from '#/features/tenants/service/access';
 export { tenantChangeFailure } from '#/features/tenants/service/failure';

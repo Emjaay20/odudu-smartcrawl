@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { tenantAdminCarries } from '#/shared/service/administrators';
 import type { AdminCapability, Authority } from '#/shared/service/principal';
-import { disableFixed, tenantRecordAccess } from '#/features/tenants/service/access';
+import { tenantRecordAccess } from '#/features/tenants/service/access';
 
 describe('the tenant record page', () => {
   const caller = (...capabilities: AdminCapability[]): Authority => ({
@@ -24,12 +24,5 @@ describe('the tenant record page', () => {
     expect(access.blocked?.change).toBe('add their administrators');
     const full = tenantRecordAccess(caller(...tenantAdminCarries('acme')), 'acme');
     expect(full).toEqual({ readNeeds: [], addNeeds: [], blocked: null });
-  });
-});
-
-describe('enabling and disabling a tenant', () => {
-  it('fixes system as enabled, and says why', () => {
-    expect(disableFixed('system')).toMatch(/^system cannot be disabled/);
-    expect(disableFixed('acme')).toBeNull();
   });
 });
