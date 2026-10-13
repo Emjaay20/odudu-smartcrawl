@@ -8,23 +8,24 @@ import { useRefusal } from '#/features/session';
 import { useEffectiveRoleList, useSaveRoles } from '#/features/subjects/repository/useAccess';
 import {
   accessRefusal,
-  assignmentsOf,
-  knownAssignments,
   roleUnavailableHere,
   rolesRecord,
   splitRoles,
   subjectName,
-  type Assignment,
 } from '#/features/subjects/service';
 import { useRolePicker } from '#/shared/repository/useRolePicker';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { describeIds } from '#/shared/service/format';
 import { sortedIds } from '#/shared/service/ids';
+import {
+  assignmentsOf,
+  knownAssignments,
+  roleNameOf,
+  type AssignedRole,
+} from '#/shared/service/mappedRoles';
 import type { PickerState } from '#/shared/service/picker';
 import type { ResourceListState } from '#/shared/service/resourceList';
 import type { RoleValues } from '#/shared/service/sectionValues';
-
-export type { Assignment };
 
 export interface SubjectRoles {
   name: string;
@@ -34,7 +35,7 @@ export interface SubjectRoles {
   picker: PickerState<Role>;
   // Why a role is not chosen here: an admin capability has its own section.
   unavailableOf: (role: Role) => string | null;
-  assigned: readonly Assignment[];
+  assigned: readonly AssignedRole[];
   effective: ResourceListState<EffectiveRoleAssignment>;
 }
 
@@ -68,7 +69,7 @@ export function useSubjectRoles(
         value: sortedIds(split.roleIds),
         label: 'Roles',
         kind: 'plain',
-        describe: (value) => describeIds(value, (id) => known.get(id)?.name ?? id),
+        describe: (value) => describeIds(value, roleNameOf(known)),
       },
     },
     save: (gateway, { values, ifMatch }) =>

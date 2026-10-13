@@ -154,6 +154,8 @@ it('shows a role added elsewhere beside yours on a 412, and sends nothing more',
   );
   await user.click(within(section).getByRole('button', { name: 'Save Roles' }));
   expect(await within(section).findByRole('button', { name: 'Keep mine in Roles' })).toBeVisible();
+  expect(section).toHaveTextContent(/reader/u);
+  expect(section).not.toHaveTextContent(/r-read/u);
   expect(sent.filter((s) => s.method === 'PUT')).toHaveLength(1);
 });
 

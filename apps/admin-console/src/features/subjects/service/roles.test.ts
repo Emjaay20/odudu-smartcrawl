@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  assignmentsOf,
-  knownAssignments,
   ownRolesOf,
   roleIdsOf,
   roleOwnerOf,
@@ -106,18 +104,6 @@ describe('the roles the caller holds', () => {
 });
 
 describe('role assignments', () => {
-  it('is known by name and client from the held list and the picker alike', () => {
-    const known = knownAssignments(
-      [{ id: 'r1', name: 'editor', client_key: null }],
-      [{ id: 'r2', name: 'reader', client_key: 'web' }],
-    );
-    expect(assignmentsOf(['r1', 'r2', 'r3'], known)).toEqual([
-      { id: 'r1', name: 'editor', client: null },
-      { id: 'r2', name: 'reader', client: 'web' },
-      { id: 'r3', name: 'r3', client: null },
-    ]);
-  });
-
   it('keeps an admin capability out of the plain role picker, and says where it is set', () => {
     expect(roleUnavailableHere({ name: 'manage-keys', client_key: 'odudu-admin' })).toBe(
       'an admin capability: set it under Admin capabilities',

@@ -10,7 +10,13 @@ import { describeIds } from '#/shared/service/format';
 import { sortedIds } from '#/shared/service/ids';
 import type { PickerState } from '#/shared/service/picker';
 import type { RoleValues } from '#/shared/service/sectionValues';
-import { type MappedRole, mappedRoles, roleIndex, withKept } from '#/shared/service/mappedRoles';
+import {
+  type MappedRole,
+  mappedRoles,
+  roleIndex,
+  roleNameOf,
+  withKept,
+} from '#/shared/service/mappedRoles';
 
 export function useScopeRolesRead(tenant: string, id: string): RecordState<SetScopeRolesResponse> {
   return useScopeRolesRecord(tenant, id);
@@ -68,7 +74,7 @@ export function useScopeRoles({
         value: sortedIds(data.items.map((role) => role.id)),
         label: 'Roles',
         kind: 'plain',
-        describe: (value) => describeIds(value, (id) => known.get(id)?.name ?? id),
+        describe: (value) => describeIds(value, roleNameOf(known)),
       },
     },
     save: saves.roles,

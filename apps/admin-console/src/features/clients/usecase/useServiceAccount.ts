@@ -11,15 +11,12 @@ import {
   canChange,
   ceilingRefused,
   heldCapabilitiesText,
-  nameIndex,
-  roleNameOf,
   roleUnavailable,
   serviceAccess,
   serviceRolesRecord,
   SERVICE_CAPABILITY,
   SERVICE_SECTION,
   splitAssigned,
-  type AssignedRole,
   type Reach,
   type ServiceAccess,
 } from '#/features/clients/service';
@@ -28,6 +25,7 @@ import { useRolePicker } from '#/shared/repository/useRolePicker';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { lacking } from '#/shared/service/access';
 import { writeRefusal } from '#/shared/service/capabilities';
+import { knownAssignments, roleNameOf, type AssignedRole } from '#/shared/service/mappedRoles';
 import { describeIds } from '#/shared/service/format';
 import { sortedIds } from '#/shared/service/ids';
 import type { PickerState } from '#/shared/service/picker';
@@ -85,7 +83,7 @@ export function useServiceRoles({
   const caller = authority?.capabilities ?? [];
   const needs = lacking(authority, [SERVICE_CAPABILITY]);
   const split = splitAssigned(data.items);
-  const known = nameIndex(data.items, picker.options);
+  const known = knownAssignments(data.items, picker.options);
   const save = useSectionSave({
     tenant,
     record: serviceRolesRecord(subjectId),

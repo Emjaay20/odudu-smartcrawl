@@ -2,6 +2,7 @@ import type { Role, SetRolesResponse } from '@odudu/contracts/admin';
 import { lacking } from '#/shared/service/access';
 import { beyondCaller, isAdminRole } from '#/shared/service/capabilities';
 import { andList, counted } from '#/shared/service/format';
+import { assignmentsOf, byNameThenClient, type AssignedRole } from '#/shared/service/mappedRoles';
 import type { AdminCapability, Authority } from '#/shared/service/principal';
 
 export const SERVICE_CAPABILITY: AdminCapability = 'manage-users';
@@ -65,38 +66,11 @@ export function assignedCount(count: number): string {
 
 export const NO_ROLES = 'The service account holds no role other than its admin capabilities.';
 
-interface Named {
-  id: string;
-  name: string;
-  client_key: string | null;
-}
-
-// Every role seen, by id, whichever list showed it.
-export function nameIndex(...lists: (readonly Named[])[]): ReadonlyMap<string, Named> {
-  return new Map(lists.flat().map((role) => [role.id, role]));
-}
-
-export interface AssignedRole {
-  id: string;
-  name: string;
-  // The client whose role it is, or null for a tenant role.
-  client: string | null;
-}
-
 export function assignedRoles(
   ids: readonly string[],
-  known: ReadonlyMap<string, Named>,
+  known: ReadonlyMap<string, AssignedRole>,
 ): AssignedRole[] {
-  return ids
-    .map((id) => {
-      const role = known.get(id);
-      return { id, name: role?.name ?? id, client: role?.client_key ?? null };
-    })
-    .sort((a, b) => a.name.localeCompare(b.name) || (a.client ?? '').localeCompare(b.client ?? ''));
-}
-
-export function roleNameOf(known: ReadonlyMap<string, Named>): (id: string) => string {
-  return (id) => known.get(id)?.name ?? id;
+  return byNameThenClient(assignmentsOf(ids, known));
 }
 
 // Whether the tab can say anything of the account: there is one, and the

@@ -63,3 +63,39 @@ export function mappedRoles(
 export function withKept(ids: readonly string[], kept: readonly string[]): string[] {
   return sortedIds([...new Set([...ids, ...kept])]);
 }
+
+// A role as an assignment shows it: its name, and the client whose role it
+// is by that client's key, or null for a tenant role.
+export interface AssignedRole {
+  id: string;
+  name: string;
+  client: string | null;
+}
+
+export function knownAssignments(
+  ...lists: (readonly { id: string; name: string; client_key: string | null }[])[]
+): ReadonlyMap<string, AssignedRole> {
+  return new Map(
+    lists
+      .flat()
+      .map((role) => [role.id, { id: role.id, name: role.name, client: role.client_key }]),
+  );
+}
+
+// A role not known is named by its id.
+export function assignmentsOf(
+  ids: readonly string[],
+  known: ReadonlyMap<string, AssignedRole>,
+): AssignedRole[] {
+  return ids.map((id) => known.get(id) ?? { id, name: id, client: null });
+}
+
+export function byNameThenClient(roles: readonly AssignedRole[]): AssignedRole[] {
+  return [...roles].sort(
+    (a, b) => a.name.localeCompare(b.name) || (a.client ?? '').localeCompare(b.client ?? ''),
+  );
+}
+
+export function roleNameOf(known: ReadonlyMap<string, { name: string }>): (id: string) => string {
+  return (id) => known.get(id)?.name ?? id;
+}

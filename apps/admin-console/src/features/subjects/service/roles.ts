@@ -92,30 +92,6 @@ export function ownRolesOf({
   };
 }
 
-export interface Assignment {
-  id: string;
-  name: string;
-  // The client it belongs to, by its client_id, or null for a tenant role.
-  client: string | null;
-}
-
-export function knownAssignments(
-  ...lists: (readonly { id: string; name: string; client_key: string | null }[])[]
-): ReadonlyMap<string, Assignment> {
-  return new Map(
-    lists
-      .flat()
-      .map((role) => [role.id, { id: role.id, name: role.name, client: role.client_key }]),
-  );
-}
-
-export function assignmentsOf(
-  ids: readonly string[],
-  known: ReadonlyMap<string, Assignment>,
-): Assignment[] {
-  return ids.map((id) => known.get(id) ?? { id, name: id, client: null });
-}
-
 export function roleUnavailableHere(role: {
   name: string;
   client_key: string | null;

@@ -22,7 +22,13 @@ import { describeIds } from '#/shared/service/format';
 import { removedFrom, sortedIds } from '#/shared/service/ids';
 import type { PickerState } from '#/shared/service/picker';
 import type { RoleValues } from '#/shared/service/sectionValues';
-import { type MappedRole, mappedRoles, roleIndex, withKept } from '#/shared/service/mappedRoles';
+import {
+  type MappedRole,
+  mappedRoles,
+  roleIndex,
+  roleNameOf,
+  withKept,
+} from '#/shared/service/mappedRoles';
 
 export function useGroupRolesRead(tenant: string, id: string): RecordState<SetGroupRolesResponse> {
   return useGroupRolesRecord(tenant, id);
@@ -87,7 +93,7 @@ export function useGroupRoles({
         value: sortedIds(data.items.map((role) => role.id)),
         label: 'Roles',
         kind: 'plain',
-        describe: (value) => describeIds(value, (id) => known.get(id)?.name ?? id),
+        describe: (value) => describeIds(value, roleNameOf(known)),
       },
     },
     save: async (gateway, input) => {

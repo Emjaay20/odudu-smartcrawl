@@ -168,9 +168,6 @@ export {
 export {
   assignedCount,
   assignedRoles,
-  nameIndex,
-  roleNameOf,
-  type AssignedRole,
   heldCapabilitiesText,
   NO_ACCOUNT,
   NO_ROLES,

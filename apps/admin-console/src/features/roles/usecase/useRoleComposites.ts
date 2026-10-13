@@ -30,6 +30,7 @@ import { useSectionSave, type SectionSave } from '#/shared/repository/useSection
 import { useToasts } from '#/shared/repository/useToasts';
 import { judgedLoss, roleReachUnavailable, type Loss } from '#/shared/service/capabilities';
 import { describeId } from '#/shared/service/format';
+import { roleNameOf } from '#/shared/service/mappedRoles';
 import type { PickerState } from '#/shared/service/picker';
 
 export function useCompositesRead(
@@ -112,7 +113,7 @@ export function useRoleComposites({
         value: null,
         label: NEST_LABEL,
         kind: 'plain',
-        describe: (value) => describeId(value, (id) => known.get(id)?.name ?? id),
+        describe: (value) => describeId(value, roleNameOf(known)),
       },
     },
     save,
