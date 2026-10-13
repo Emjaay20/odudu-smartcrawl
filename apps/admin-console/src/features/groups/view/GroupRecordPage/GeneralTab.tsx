@@ -8,8 +8,8 @@ import {
   type Place,
 } from '#/features/groups/usecase/useGroupGeneral';
 import type { Ceiling } from '#/features/groups/usecase/useGroupRecordPage';
+import { DeleteZone } from '#/shared/view/DeleteZone';
 import { Panel } from '#/shared/view/Panel';
-import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { TextAreaField, ToggleField } from '#/shared/view/Field';
 import { GroupPicker } from '#/shared/view/GroupPicker';
@@ -139,32 +139,23 @@ function DefaultSection({ defaults }: { defaults: Defaults }) {
 function Danger({ path, deletion }: { path: string; deletion: Deletion }) {
   if (deletion.held !== null || deletion.state === 'failed') return null;
   return (
-    <Panel title="Delete">
-      <p className={recordTab.text}>
-        A delete takes the whole subtree: no group beneath it survives as a new top-level group.
-      </p>
-      {deletion.state === 'checking' ? (
-        <p className={recordTab.rule}>Checking what its members hold through it…</p>
-      ) : (
-        <div className={recordTab.actions}>
-          <Button variant="danger" onPress={deletion.ask}>
-            {`Delete ${path} and every group beneath it`}
-          </Button>
-        </div>
-      )}
-      <ConfirmDialog
-        isOpen={deletion.confirming}
-        title={`Delete ${path}?`}
-        consequence={deletion.consequence}
-        confirmLabel={`Delete ${path}`}
-        tone="danger"
-        typed={path}
-        busy={deletion.busy}
-        problem={deletion.problem}
-        onConfirm={deletion.confirm}
-        onCancel={deletion.cancel}
-      />
-    </Panel>
+    <DeleteZone
+      name={path}
+      deletion={deletion}
+      consequence={deletion.consequence}
+      typed={path}
+      label={`Delete ${path} and every group beneath it`}
+      lead={
+        <p className={recordTab.text}>
+          A delete takes the whole subtree: no group beneath it survives as a new top-level group.
+        </p>
+      }
+      note={
+        deletion.state === 'checking' ? (
+          <p className={recordTab.rule}>Checking what its members hold through it…</p>
+        ) : undefined
+      }
+    />
   );
 }
 

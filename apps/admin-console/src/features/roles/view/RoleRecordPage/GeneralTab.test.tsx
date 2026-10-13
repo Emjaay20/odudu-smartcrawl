@@ -186,6 +186,29 @@ it('drops a refusal from the dialog when the delete is pressed again', async () 
   });
 });
 
+it('keeps the role when the delete dialog is cancelled, and sends no delete', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(AT, roleRoutes());
+  const zone = await screen.findByRole('region', { name: 'Delete' });
+  await user.click(await within(zone).findByRole('button', { name: 'Delete auditor' }));
+  const dialog = await screen.findByRole('alertdialog', { name: 'Delete auditor?' });
+  await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+  await waitFor(() => {
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+  expect(sent.filter((s) => s.method === 'DELETE')).toEqual([]);
+});
+
+it('shows the delete working, with Cancel held, until the server answers', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, roleRoutes(undefined, { [`DELETE ${R}/r-aud`]: pending() }));
+  await user.click(await screen.findByRole('button', { name: 'Delete auditor' }));
+  const dialog = await screen.findByRole('alertdialog', { name: 'Delete auditor?' });
+  await user.click(within(dialog).getByRole('button', { name: 'Delete auditor' }));
+  expect(await within(dialog).findByRole('button', { name: 'Working…' })).toBeDisabled();
+  expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeDisabled();
+});
+
 it('offers no delete a limited operator could not make, and says why in one line', async () => {
   renderConsoleAt(
     AT,

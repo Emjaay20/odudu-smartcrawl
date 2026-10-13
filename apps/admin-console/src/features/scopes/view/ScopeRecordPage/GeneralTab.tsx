@@ -10,8 +10,7 @@ import {
   type Deletion,
   type ScopeGeneral,
 } from '#/features/scopes/usecase/useScopeGeneral';
-import { Button } from '#/shared/view/Button';
-import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
+import { DeleteZone } from '#/shared/view/DeleteZone';
 import { SelectField, TextAreaField, TextField, ToggleField } from '#/shared/view/Field';
 import { Panel } from '#/shared/view/Panel';
 import { SaveSection } from '#/shared/view/SaveSection';
@@ -147,32 +146,20 @@ function Consent({ general }: { general: ScopeGeneral }) {
 
 function Danger({ name, deletion }: { name: string; deletion: Deletion }) {
   return (
-    <Panel title="Delete">
-      {deletion.fixed === null ? (
-        <>
+    <DeleteZone
+      name={name}
+      deletion={deletion}
+      consequence={deletion.warning}
+      typed={name}
+      lead={
+        deletion.fixed === null ? (
           <p className={recordTab.text}>{deletion.consequence}</p>
-          <div className={recordTab.actions}>
-            <Button variant="danger" onPress={deletion.ask}>
-              {`Delete ${name}`}
-            </Button>
-          </div>
-        </>
-      ) : (
-        <p className={recordTab.text}>{deletion.fixed}</p>
-      )}
-      <ConfirmDialog
-        isOpen={deletion.confirming}
-        title={`Delete ${name}?`}
-        consequence={deletion.warning}
-        confirmLabel={`Delete ${name}`}
-        tone="danger"
-        typed={name}
-        busy={deletion.busy}
-        problem={deletion.problem}
-        onConfirm={deletion.confirm}
-        onCancel={deletion.cancel}
-      />
-    </Panel>
+        ) : undefined
+      }
+      note={
+        deletion.fixed === null ? undefined : <p className={recordTab.text}>{deletion.fixed}</p>
+      }
+    />
   );
 }
 

@@ -7,10 +7,9 @@ import {
   type RoleGeneral,
 } from '#/features/roles/usecase/useRoleGeneral';
 import type { Ceiling } from '#/features/roles/usecase/useRoleRecordPage';
+import { DeleteZone } from '#/shared/view/DeleteZone';
 import { Panel } from '#/shared/view/Panel';
 import { RoleOwner } from '#/shared/view/RoleOwner';
-import { Button } from '#/shared/view/Button';
-import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { TextAreaField, ToggleField } from '#/shared/view/Field';
 import { SaveSection } from '#/shared/view/SaveSection';
 import { Timestamp } from '#/shared/view/Timestamp';
@@ -97,35 +96,11 @@ function DefaultSection({ defaults }: { defaults: Defaults }) {
 // Left out where the ceiling rules it out, which the page's one line says.
 function Danger({ name, deletion }: { name: string; deletion: Deletion }) {
   if (deletion.held) return null;
-  let action;
-  if (deletion.fixed !== null) {
-    action = <p className={recordTab.rule}>{deletion.fixed}</p>;
-  } else if (deletion.checking) {
-    action = <p className={recordTab.rule}>Checking what it nests…</p>;
-  } else {
-    action = (
-      <div className={recordTab.actions}>
-        <Button variant="danger" onPress={deletion.ask}>
-          {`Delete ${name}`}
-        </Button>
-      </div>
-    );
-  }
+  let note;
+  if (deletion.fixed !== null) note = <p className={recordTab.rule}>{deletion.fixed}</p>;
+  else if (deletion.checking) note = <p className={recordTab.rule}>Checking what it nests…</p>;
   return (
-    <Panel title="Delete">
-      {action}
-      <ConfirmDialog
-        isOpen={deletion.confirming}
-        title={`Delete ${name}?`}
-        consequence={deletion.consequence}
-        confirmLabel={`Delete ${name}`}
-        tone="danger"
-        busy={deletion.busy}
-        problem={deletion.problem}
-        onConfirm={deletion.confirm}
-        onCancel={deletion.cancel}
-      />
-    </Panel>
+    <DeleteZone name={name} deletion={deletion} consequence={deletion.consequence} note={note} />
   );
 }
 

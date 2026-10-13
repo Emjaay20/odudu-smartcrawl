@@ -11,9 +11,8 @@ import {
   type ClientGeneral,
   type Deletion,
 } from '#/features/clients/usecase/useClientGeneral';
+import { DeleteZone } from '#/shared/view/DeleteZone';
 import { Panel } from '#/shared/view/Panel';
-import { Button } from '#/shared/view/Button';
-import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { CopyValue } from '#/shared/view/CopyValue';
 import { TextAreaField, TextField, ToggleField, UrlField } from '#/shared/view/Field';
 import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
@@ -180,35 +179,21 @@ function Danger({
   deletion: Deletion;
 }) {
   return (
-    <Panel title="Delete">
-      {fixed === null ? (
-        <>
+    <DeleteZone
+      name={name}
+      deletion={deletion}
+      consequence={deletion.consequence}
+      typed={clientId}
+      lead={
+        fixed === null ? (
           <p className={recordTab.text}>
             A deleted client is gone with the roles scoped to it, and no application can sign in
             through it again. Its ID is typed to confirm, since two clients may share a name.
           </p>
-          <div className={recordTab.actions}>
-            <Button variant="danger" onPress={deletion.ask}>
-              {`Delete ${name}`}
-            </Button>
-          </div>
-        </>
-      ) : (
-        <p className={recordTab.rule}>{fixed}</p>
-      )}
-      <ConfirmDialog
-        isOpen={deletion.confirming}
-        title={`Delete ${name}?`}
-        consequence={deletion.consequence}
-        confirmLabel={`Delete ${name}`}
-        tone="danger"
-        typed={clientId}
-        busy={deletion.busy}
-        problem={deletion.problem}
-        onConfirm={deletion.confirm}
-        onCancel={deletion.cancel}
-      />
-    </Panel>
+        ) : undefined
+      }
+      note={fixed === null ? undefined : <p className={recordTab.rule}>{fixed}</p>}
+    />
   );
 }
 

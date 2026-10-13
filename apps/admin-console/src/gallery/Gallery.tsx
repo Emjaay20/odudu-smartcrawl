@@ -10,6 +10,7 @@ import { AuditActor } from '#/shared/view/AuditActor';
 import { AppShell } from '#/shared/view/AppShell';
 import { Breadcrumb } from '#/shared/view/Breadcrumb';
 import { Button } from '#/shared/view/Button';
+import { DeleteZone } from '#/shared/view/DeleteZone';
 import { KeyHint, PlatformContext } from '#/shared/view/KeyHint';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
@@ -723,6 +724,15 @@ const NO_SAVE = {
   submit: () => true,
 };
 
+const NO_DELETION = {
+  confirming: false,
+  busy: false,
+  problem: null,
+  ask: NOTHING,
+  cancel: NOTHING,
+  confirm: NOTHING,
+};
+
 function RecordPieces() {
   return (
     <div className={styles.stack}>
@@ -741,6 +751,17 @@ function RecordPieces() {
         <SaveSection title="Description" description="What the client is for." save={NO_SAVE}>
           <p>Its fields</p>
         </SaveSection>
+      </Specimen>
+      <Specimen label="DeleteZone: what a delete takes, the danger button and its confirmation">
+        <DeleteZone
+          name="billing-portal"
+          deletion={NO_DELETION}
+          consequence="Its roles go with it."
+          typed="billing-portal"
+          lead={
+            <p className={recordTab.text}>A deleted client is gone with the roles scoped to it.</p>
+          }
+        />
       </Specimen>
       <Specimen label="PageNotFound: an address that is no page">
         <PageNotFound />
