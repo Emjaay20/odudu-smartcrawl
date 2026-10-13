@@ -53,6 +53,34 @@ it("shows a group's name as fixed, and saves its description on the ETag it read
   });
 });
 
+it("states the description's rule and limit, and marks what was typed as changed", async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, groupRoutes());
+  const section = await screen.findByRole('region', { name: 'Description' });
+  expect(within(section).getByText('Leave it empty for none.')).toBeVisible();
+  expect(within(section).getByText(/^\d+ of [\d,]+ characters\.$/u)).toBeVisible();
+  expect(within(section).queryByText('Changed')).toBeNull();
+  await user.type(within(section).getByRole('textbox', { name: 'Description' }), 'Runs it');
+  expect(within(section).getByText('Changed')).toBeVisible();
+});
+
+it('puts a refused description under its field', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(
+    AT,
+    groupRoutes(undefined, {
+      [`PATCH ${G}/g-plat`]: problem(400, 'about:blank', 'Bad Request', {
+        detail: 'Too long for a description',
+        errors: [{ path: 'description', message: 'Too long for a description' }],
+      }),
+    }),
+  );
+  const section = await screen.findByRole('region', { name: 'Description' });
+  await user.type(within(section).getByRole('textbox', { name: 'Description' }), 'Runs it');
+  await user.click(within(section).getByRole('button', { name: 'Save Description' }));
+  expect(await within(section).findByText('Too long for a description')).toBeVisible();
+});
+
 it('puts back a description kept across a sign-in, and marks it for review', async () => {
   sessionStorage.setItem(
     'odudu.console.drafts',

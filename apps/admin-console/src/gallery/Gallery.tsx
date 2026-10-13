@@ -13,6 +13,7 @@ import { Breadcrumb } from '#/shared/view/Breadcrumb';
 import { Button } from '#/shared/view/Button';
 import { CreationActions, CreationForm } from '#/shared/view/CreationForm';
 import { DeleteZone } from '#/shared/view/DeleteZone';
+import { DescriptionField } from '#/shared/view/DescriptionField';
 import { KeyHint, PlatformContext } from '#/shared/view/KeyHint';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
@@ -757,6 +758,18 @@ function RecordPieces() {
             </div>
           </Panel>
         </div>
+      </Specimen>
+      <Specimen label="DescriptionField: a record's description, one section's field">
+        <DescriptionField
+          rule="Leave it empty for none."
+          limit={200}
+          save={{
+            values: { description: 'Keeps the books' },
+            fieldErrors: {},
+            changed: [],
+            edit: NOTHING,
+          }}
+        />
       </Specimen>
       <Specimen label="SaveSection: a section wired to one save">
         <SaveSection title="Description" description="What the client is for." save={NO_SAVE}>

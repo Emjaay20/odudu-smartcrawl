@@ -9,9 +9,10 @@ import {
 } from '#/features/groups/usecase/useGroupGeneral';
 import type { Ceiling } from '#/features/groups/usecase/useGroupRecordPage';
 import { DeleteZone } from '#/shared/view/DeleteZone';
+import { DescriptionField } from '#/shared/view/DescriptionField';
 import { Panel } from '#/shared/view/Panel';
 import { AskedDialog } from '#/shared/view/ConfirmDialog';
-import { TextAreaField, ToggleField } from '#/shared/view/Field';
+import { ToggleField } from '#/shared/view/Field';
 import { GroupPicker } from '#/shared/view/GroupPicker';
 import { SaveSection } from '#/shared/view/SaveSection';
 import { Timestamp } from '#/shared/view/Timestamp';
@@ -53,17 +54,7 @@ function Description({ general }: { general: GroupGeneral }) {
       description="What the group is for, shown wherever it is chosen."
       save={s}
     >
-      <TextAreaField
-        label="Description"
-        description={general.descriptionRule}
-        limit={general.descriptionLimit}
-        value={s.values.description}
-        error={s.fieldErrors.description}
-        changed={s.changed.includes('description')}
-        onChange={(value) => {
-          s.edit('description', value);
-        }}
-      />
+      <DescriptionField save={s} rule={general.descriptionRule} limit={general.descriptionLimit} />
     </SaveSection>
   );
 }

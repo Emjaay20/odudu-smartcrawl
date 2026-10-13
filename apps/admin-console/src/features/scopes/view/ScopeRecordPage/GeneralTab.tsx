@@ -11,6 +11,7 @@ import {
   type ScopeGeneral,
 } from '#/features/scopes/usecase/useScopeGeneral';
 import { DeleteZone } from '#/shared/view/DeleteZone';
+import { DescriptionField } from '#/shared/view/DescriptionField';
 import { SelectField, TextAreaField, TextField, ToggleField } from '#/shared/view/Field';
 import { Panel } from '#/shared/view/Panel';
 import { SaveSection } from '#/shared/view/SaveSection';
@@ -47,16 +48,7 @@ function Description({ general }: { general: ScopeGeneral }) {
       description="What the scope is for, shown wherever it is chosen."
       save={s}
     >
-      <TextAreaField
-        label="Description"
-        description={general.descriptionRule}
-        value={s.values.description}
-        error={s.fieldErrors.description}
-        changed={s.changed.includes('description')}
-        onChange={(value) => {
-          s.edit('description', value);
-        }}
-      />
+      <DescriptionField save={s} rule={general.descriptionRule} />
     </SaveSection>
   );
 }

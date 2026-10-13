@@ -8,9 +8,10 @@ import {
 } from '#/features/roles/usecase/useRoleGeneral';
 import type { Ceiling } from '#/features/roles/usecase/useRoleRecordPage';
 import { DeleteZone } from '#/shared/view/DeleteZone';
+import { DescriptionField } from '#/shared/view/DescriptionField';
 import { Panel } from '#/shared/view/Panel';
 import { RoleOwner } from '#/shared/view/RoleOwner';
-import { TextAreaField, ToggleField } from '#/shared/view/Field';
+import { ToggleField } from '#/shared/view/Field';
 import { SaveSection } from '#/shared/view/SaveSection';
 import { Timestamp } from '#/shared/view/Timestamp';
 import { recordTab } from '#/shared/view/RecordTab';
@@ -51,17 +52,7 @@ function Description({ general }: { general: RoleGeneral }) {
       description="What the role is for, shown wherever it is chosen."
       save={s}
     >
-      <TextAreaField
-        label="Description"
-        description={general.descriptionRule}
-        limit={general.descriptionLimit}
-        value={s.values.description}
-        error={s.fieldErrors.description}
-        changed={s.changed.includes('description')}
-        onChange={(value) => {
-          s.edit('description', value);
-        }}
-      />
+      <DescriptionField save={s} rule={general.descriptionRule} limit={general.descriptionLimit} />
     </SaveSection>
   );
 }

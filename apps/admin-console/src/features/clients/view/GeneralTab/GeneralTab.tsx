@@ -13,9 +13,10 @@ import {
 } from '#/features/clients/usecase/useClientGeneral';
 import type { ClientTabProps } from '#/features/clients/view/ClientTabProps';
 import { DeleteZone } from '#/shared/view/DeleteZone';
+import { DescriptionField } from '#/shared/view/DescriptionField';
 import { Panel } from '#/shared/view/Panel';
 import { CopyValue } from '#/shared/view/CopyValue';
-import { TextAreaField, TextField, ToggleField, UrlField } from '#/shared/view/Field';
+import { TextField, ToggleField, UrlField } from '#/shared/view/Field';
 import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
 import { SaveSection } from '#/shared/view/SaveSection';
 import { Timestamp } from '#/shared/view/Timestamp';
@@ -69,17 +70,7 @@ function Details({ general }: { general: ClientGeneral }) {
           s.edit('name', value);
         }}
       />
-      <TextAreaField
-        label="Description"
-        description={general.descriptionRule}
-        limit={general.descriptionLimit}
-        value={s.values.description}
-        error={s.fieldErrors.description}
-        changed={s.changed.includes('description')}
-        onChange={(value) => {
-          s.edit('description', value);
-        }}
-      />
+      <DescriptionField save={s} rule={general.descriptionRule} limit={general.descriptionLimit} />
     </SaveSection>
   );
 }
