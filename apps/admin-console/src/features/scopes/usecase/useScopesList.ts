@@ -1,23 +1,10 @@
 import type { ClientScope } from '@odudu/contracts/admin';
 import { useScopeList } from '#/features/scopes/repository/useScopeList';
 import { newScopeHref, scopeHref } from '#/features/scopes/service';
-import { useGo } from '#/shared/repository/useGo';
-import type { ResourceListState } from '#/shared/service/resourceList';
+import { useListPage, type ListPageState } from '#/shared/usecase/useListPage';
 
-export interface ScopesList {
-  list: ResourceListState<ClientScope>;
-  createHref: string;
-  open: (id: string) => void;
-}
+export type ScopesList = ListPageState<ClientScope>;
 
 export function useScopesList(tenant: string): ScopesList {
-  const list = useScopeList(tenant);
-  const go = useGo();
-  return {
-    list,
-    createHref: newScopeHref(tenant),
-    open: (id) => {
-      go(scopeHref(tenant, id));
-    },
-  };
+  return useListPage(useScopeList(tenant), newScopeHref(tenant), (id) => scopeHref(tenant, id));
 }

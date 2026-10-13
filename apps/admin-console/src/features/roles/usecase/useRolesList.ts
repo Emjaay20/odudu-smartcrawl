@@ -1,23 +1,10 @@
 import type { Role } from '@odudu/contracts/admin';
-import { useGo } from '#/shared/repository/useGo';
 import { useRoleList } from '#/features/roles/repository/useRoleList';
 import { newRoleHref, roleHref } from '#/features/roles/service';
-import type { ResourceListState } from '#/shared/service/resourceList';
+import { useListPage, type ListPageState } from '#/shared/usecase/useListPage';
 
-export interface RolesList {
-  list: ResourceListState<Role>;
-  createHref: string;
-  open: (id: string) => void;
-}
+export type RolesList = ListPageState<Role>;
 
 export function useRolesList(tenant: string): RolesList {
-  const list = useRoleList(tenant);
-  const go = useGo();
-  return {
-    list,
-    createHref: newRoleHref(tenant),
-    open: (id) => {
-      go(roleHref(tenant, id));
-    },
-  };
+  return useListPage(useRoleList(tenant), newRoleHref(tenant), (id) => roleHref(tenant, id));
 }

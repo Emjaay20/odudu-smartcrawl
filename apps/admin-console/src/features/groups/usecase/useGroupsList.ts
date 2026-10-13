@@ -1,27 +1,18 @@
 import type { Group } from '@odudu/contracts/admin';
 import { useState } from 'react';
-import { useGo } from '#/shared/repository/useGo';
 import { useGroupChildren, useGroupList } from '#/features/groups/repository/useGroupList';
 import { groupHref, newGroupHref } from '#/features/groups/service';
-import type { ResourceListState } from '#/shared/service/resourceList';
+import { useListPage, type ListPageState } from '#/shared/usecase/useListPage';
 
-export interface GroupsList {
-  list: ResourceListState<Group>;
+export interface GroupsList extends ListPageState<Group> {
   searching: boolean;
-  createHref: string;
-  open: (id: string) => void;
 }
 
 export function useGroupsList(tenant: string): GroupsList {
   const { list, searching } = useGroupList(tenant);
-  const go = useGo();
   return {
-    list,
+    ...useListPage(list, newGroupHref(tenant), (id) => groupHref(tenant, id)),
     searching,
-    createHref: newGroupHref(tenant),
-    open: (id) => {
-      go(groupHref(tenant, id));
-    },
   };
 }
 

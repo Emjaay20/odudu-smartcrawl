@@ -1,23 +1,10 @@
 import type { Client } from '@odudu/contracts/admin';
 import { useClientList } from '#/features/clients/repository/useClientList';
-import { useGo } from '#/shared/repository/useGo';
 import { clientHref, newClientHref } from '#/features/clients/service';
-import type { ResourceListState } from '#/shared/service/resourceList';
+import { useListPage, type ListPageState } from '#/shared/usecase/useListPage';
 
-export interface ClientsList {
-  list: ResourceListState<Client>;
-  createHref: string;
-  open: (id: string) => void;
-}
+export type ClientsList = ListPageState<Client>;
 
 export function useClientsList(tenant: string): ClientsList {
-  const list = useClientList(tenant);
-  const go = useGo();
-  return {
-    list,
-    createHref: newClientHref(tenant),
-    open: (id) => {
-      go(clientHref(tenant, id));
-    },
-  };
+  return useListPage(useClientList(tenant), newClientHref(tenant), (id) => clientHref(tenant, id));
 }
