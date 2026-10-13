@@ -15,7 +15,7 @@ export function formatDuration(seconds: number): string {
   for (const [unit, size] of UNITS) {
     const count = Math.floor(rest / size);
     rest -= count * size;
-    if (count > 0) parts.push(`${String(count)} ${unit}${count === 1 ? '' : 's'}`);
+    if (count > 0) parts.push(counted(count, unit, `${unit}s`));
   }
   return `${raw} · ${parts.join(' ')}`;
 }
