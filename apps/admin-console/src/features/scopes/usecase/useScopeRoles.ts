@@ -1,10 +1,6 @@
 import type { ClientScope, Role, SetScopeRolesResponse } from '@odudu/contracts/admin';
 import { useAuthority, useRefusal } from '#/features/session';
-import {
-  useScopeRolesRecord,
-  useScopeSaves,
-  type RoleValues,
-} from '#/features/scopes/repository/useScopeRecord';
+import { useScopeRolesRecord, useScopeSaves } from '#/features/scopes/repository/useScopeRecord';
 import {
   keptRoles,
   roleIndex,
@@ -21,6 +17,7 @@ import { writeRefusal } from '#/shared/service/capabilities';
 import { describeIds } from '#/shared/service/format';
 import { sortedIds } from '#/shared/service/ids';
 import type { PickerState } from '#/shared/service/picker';
+import type { RoleValues } from '#/shared/service/sectionValues';
 
 export function useScopeRolesRead(tenant: string, id: string): RecordState<SetScopeRolesResponse> {
   return useScopeRolesRecord(tenant, id);

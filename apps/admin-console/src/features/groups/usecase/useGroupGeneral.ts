@@ -6,8 +6,6 @@ import { useGo } from '#/shared/repository/useGo';
 import {
   useGroupDeletion,
   useGroupSaves,
-  type DefaultValues,
-  type DescriptionValues,
   type ParentValues,
 } from '#/features/groups/repository/useGroupRecord';
 import {
@@ -43,6 +41,7 @@ import { flagText } from '#/shared/service/format';
 import type { PickerState } from '#/shared/service/picker';
 import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
+import type { DefaultValues, DescriptionValues } from '#/shared/service/sectionValues';
 
 export type { SectionSave };
 

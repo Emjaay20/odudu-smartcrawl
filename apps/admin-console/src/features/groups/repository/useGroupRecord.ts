@@ -13,6 +13,7 @@ import { useRecord, type RecordState } from '#/shared/repository/useRecord';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 import { useTransport } from '#/shared/transport/useTransport';
+import type { DescriptionValues, DefaultValues, RoleValues } from '#/shared/service/sectionValues';
 
 export function useGroupRecord(tenant: string, id: string): RecordState<GroupRecord> {
   return useRecord({
@@ -94,20 +95,8 @@ function useAfterGroupChange(tenant: string, deleted: string | null = null) {
   };
 }
 
-export interface DescriptionValues extends Readonly<Record<string, unknown>> {
-  description: string;
-}
-
 export interface ParentValues extends Readonly<Record<string, unknown>> {
   parent_id: string | null;
-}
-
-export interface DefaultValues extends Readonly<Record<string, unknown>> {
-  default_for_new_subjects: boolean;
-}
-
-export interface RoleValues extends Readonly<Record<string, unknown>> {
-  role_ids: readonly string[];
 }
 
 export function useGroupSaves(tenant: string, id: string) {

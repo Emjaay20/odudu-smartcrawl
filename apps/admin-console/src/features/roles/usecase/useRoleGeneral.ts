@@ -3,12 +3,7 @@ import { useState } from 'react';
 import { useRefusal, useRereadAuthority } from '#/features/session';
 import { useOwnRoles } from '#/features/subjects';
 import { useGo } from '#/shared/repository/useGo';
-import {
-  useRoleDeletion,
-  useRoleSaves,
-  type DefaultValues,
-  type DescriptionValues,
-} from '#/features/roles/repository/useRoleRecord';
+import { useRoleDeletion, useRoleSaves } from '#/features/roles/repository/useRoleRecord';
 import {
   type Ceiling,
   defaultBlock,
@@ -30,6 +25,7 @@ import { deletedText } from '#/shared/service/failure';
 import { flagText } from '#/shared/service/format';
 import type { GatewayFailure } from '#/shared/transport/gateway';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
+import type { DefaultValues, DescriptionValues } from '#/shared/service/sectionValues';
 
 export type { SectionSave };
 

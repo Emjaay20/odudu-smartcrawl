@@ -22,10 +22,7 @@ import { describeIds } from '#/shared/service/format';
 import { sortedIds } from '#/shared/service/ids';
 import type { PickerState } from '#/shared/service/picker';
 import type { ResourceListState } from '#/shared/service/resourceList';
-
-export interface RoleValues extends Readonly<Record<string, unknown>> {
-  role_ids: readonly string[];
-}
+import type { RoleValues } from '#/shared/service/sectionValues';
 
 export type { Assignment };
 

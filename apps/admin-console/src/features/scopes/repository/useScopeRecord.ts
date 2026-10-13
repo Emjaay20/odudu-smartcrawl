@@ -21,6 +21,7 @@ import { useRecord, type RecordState } from '#/shared/repository/useRecord';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 import { useTransport } from '#/shared/transport/useTransport';
+import type { RoleValues } from '#/shared/service/sectionValues';
 
 export function useScopeRecord(tenant: string, id: string): RecordState<ClientScope> {
   return useRecord({
@@ -95,10 +96,6 @@ function useAfterScopeChange(tenant: string, deleted: string | null = null) {
   };
 }
 
-export interface DescriptionValues extends Readonly<Record<string, unknown>> {
-  description: string;
-}
-
 export interface TokenValues extends Readonly<Record<string, unknown>> {
   include_in_id_token: boolean;
   include_in_access_token: boolean;
@@ -111,10 +108,6 @@ export interface AssignmentValues extends Readonly<Record<string, unknown>> {
 export interface ConsentValues extends Readonly<Record<string, unknown>> {
   consent_text: string;
   display_order: string;
-}
-
-export interface RoleValues extends Readonly<Record<string, unknown>> {
-  role_ids: readonly string[];
 }
 
 export interface MapperValues extends Readonly<Record<string, unknown>> {

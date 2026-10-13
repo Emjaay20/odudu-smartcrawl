@@ -2,11 +2,7 @@ import type { GroupRecord, Role, SetGroupRolesResponse } from '@odudu/contracts/
 import { useState } from 'react';
 import { useRefusal, useRereadAuthority } from '#/features/session';
 import { useOwnRoles } from '#/features/subjects';
-import {
-  useGroupRolesRecord,
-  useGroupSaves,
-  type RoleValues,
-} from '#/features/groups/repository/useGroupRecord';
+import { useGroupRolesRecord, useGroupSaves } from '#/features/groups/repository/useGroupRecord';
 import {
   type Asked,
   type Ceiling,
@@ -29,6 +25,7 @@ import { asksFirst, lossBlocked, writeRefusal } from '#/shared/service/capabilit
 import { describeIds } from '#/shared/service/format';
 import { removedFrom, sortedIds } from '#/shared/service/ids';
 import type { PickerState } from '#/shared/service/picker';
+import type { RoleValues } from '#/shared/service/sectionValues';
 
 export function useGroupRolesRead(tenant: string, id: string): RecordState<SetGroupRolesResponse> {
   return useGroupRolesRecord(tenant, id);

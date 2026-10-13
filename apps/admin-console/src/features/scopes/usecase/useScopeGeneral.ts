@@ -8,7 +8,6 @@ import {
   useScopeSaves,
   type AssignmentValues,
   type ConsentValues,
-  type DescriptionValues,
   type TokenValues,
 } from '#/features/scopes/repository/useScopeRecord';
 import {
@@ -37,6 +36,7 @@ import { deletedText } from '#/shared/service/failure';
 import { flagText } from '#/shared/service/format';
 import type { GatewayFailure } from '#/shared/transport/gateway';
 import { DESCRIPTION_RULE } from '#/shared/service/labels';
+import type { DescriptionValues } from '#/shared/service/sectionValues';
 
 export interface Deletion {
   // Why it is never offered, said in place of the button.

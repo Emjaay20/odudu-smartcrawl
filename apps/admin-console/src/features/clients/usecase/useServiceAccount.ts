@@ -32,6 +32,7 @@ import { describeIds } from '#/shared/service/format';
 import { sortedIds } from '#/shared/service/ids';
 import type { PickerState } from '#/shared/service/picker';
 import type { AdminCapability } from '#/shared/service/principal';
+import type { RoleValues } from '#/shared/service/sectionValues';
 
 export function useServiceAccess(tenant: string, client: Client): ServiceAccess {
   return serviceAccess(client, useAuthority(tenant));
@@ -42,10 +43,6 @@ export function useServiceRolesRead(
   subjectId: string,
 ): RecordState<SetRolesResponse> {
   return useServiceRolesRecord(tenant, subjectId);
-}
-
-export interface RoleValues extends Readonly<Record<string, unknown>> {
-  role_ids: readonly string[];
 }
 
 export interface ServiceRoles {

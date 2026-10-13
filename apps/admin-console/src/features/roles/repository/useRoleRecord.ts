@@ -15,6 +15,7 @@ import { recordKey, useRecord, type RecordState } from '#/shared/repository/useR
 import type { SaveInput } from '#/shared/repository/useSectionSave';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 import { useTransport } from '#/shared/transport/useTransport';
+import type { DescriptionValues, DefaultValues } from '#/shared/service/sectionValues';
 
 export function useRoleRecord(tenant: string, id: string): RecordState<Role> {
   return useRecord({
@@ -65,14 +66,6 @@ function useAfterRoleChange(tenant: string, deleted: string | null = null) {
     }
     return result;
   };
-}
-
-export interface DescriptionValues extends Readonly<Record<string, unknown>> {
-  description: string;
-}
-
-export interface DefaultValues extends Readonly<Record<string, unknown>> {
-  default_for_new_subjects: boolean;
 }
 
 export function useRoleSaves(tenant: string, id: string) {
