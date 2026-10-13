@@ -1,15 +1,10 @@
 import type { ReactNode } from 'react';
 import { checkingText, type Area } from '#/features/shell/service';
 import { useArea } from '#/features/shell/usecase/useArea';
+import { AccessGate } from '#/shared/view/AccessGate';
 import type { Crumb } from '#/shared/view/Breadcrumb';
-import { CapabilityNote } from '#/shared/view/CapabilityNote';
-import { PageHeader } from '#/shared/view/PageHeader';
-import { PageNotFound } from '#/shared/view/PageNotFound';
-import { Skeleton } from '#/shared/view/Skeleton';
 
-// whoami is advice: a principal it says cannot read the area is told what
-// that needs, rather than offered reads the server would refuse, and the
-// page is not drawn, so makes none of its reads, until whoami has answered.
+// The page is not drawn, so makes none of its reads, until whoami has answered.
 export function AreaGate({
   tenant,
   area,
@@ -20,35 +15,18 @@ export function AreaGate({
   tenant: string;
   area: Area;
   title: string;
-  // A page below the list keeps its way back while it is refused.
   breadcrumb?: readonly Crumb[];
   children: ReactNode;
 }) {
-  const access = useArea(tenant, area);
-  switch (access.kind) {
-    case 'hidden':
-      return <PageNotFound />;
-    case 'refused':
-      return (
-        <>
-          <PageHeader
-            {...(breadcrumb === undefined ? { kicker: tenant } : { breadcrumb })}
-            title={title}
-          />
-          <CapabilityNote capability={access.capability}>{title}</CapabilityNote>
-        </>
-      );
-    case 'checking':
-      return (
-        <>
-          <PageHeader
-            {...(breadcrumb === undefined ? { kicker: tenant } : { breadcrumb })}
-            title={title}
-          />
-          <Skeleton label={checkingText(area)} />
-        </>
-      );
-    case 'open':
-      return children;
-  }
+  return (
+    <AccessGate
+      access={useArea(tenant, area)}
+      title={title}
+      kicker={tenant}
+      {...(breadcrumb === undefined ? {} : { breadcrumb })}
+      checking={checkingText(area)}
+    >
+      {children}
+    </AccessGate>
+  );
 }

@@ -1,13 +1,10 @@
 import type { ReactNode } from 'react';
 import { useTenantsArea } from '#/features/tenants/usecase/useTenantsArea';
+import { AccessGate } from '#/shared/view/AccessGate';
 import type { Crumb } from '#/shared/view/Breadcrumb';
-import { CapabilityNote } from '#/shared/view/CapabilityNote';
-import { PageHeader } from '#/shared/view/PageHeader';
-import { PageNotFound } from '#/shared/view/PageNotFound';
-import { Skeleton } from '#/shared/view/Skeleton';
 
 // The page is drawn, and its reads made, only once whoami says the System
-// area is this principal's; anywhere else its address is simply not a page.
+// area is this principal's.
 export function SystemGate({
   tenant,
   title,
@@ -16,35 +13,18 @@ export function SystemGate({
 }: {
   tenant: string;
   title: string;
-  // A page below a list keeps its way back while access is checked or refused.
   breadcrumb?: readonly Crumb[];
   children: ReactNode;
 }) {
-  const access = useTenantsArea(tenant);
-  const head = (
-    <PageHeader
-      {...(breadcrumb === undefined ? { kicker: 'System' } : { breadcrumb })}
+  return (
+    <AccessGate
+      access={useTenantsArea(tenant)}
       title={title}
-    />
+      kicker="System"
+      {...(breadcrumb === undefined ? {} : { breadcrumb })}
+      checking={`Checking access to ${title}`}
+    >
+      {children}
+    </AccessGate>
   );
-  switch (access.kind) {
-    case 'hidden':
-      return <PageNotFound />;
-    case 'checking':
-      return (
-        <>
-          {head}
-          <Skeleton label={`Checking access to ${title}`} />
-        </>
-      );
-    case 'refused':
-      return (
-        <>
-          {head}
-          <CapabilityNote capability={access.capability}>{title}</CapabilityNote>
-        </>
-      );
-    case 'open':
-      return children;
-  }
 }

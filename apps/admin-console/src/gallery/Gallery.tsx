@@ -4,6 +4,7 @@ import type { PickerState } from '#/shared/service/picker';
 import type { ListSearch, ResourceListState } from '#/shared/service/resourceList';
 import { current, dirtyFields, discard, edit, startDraft } from '#/shared/service/dirty';
 import type { Toast } from '#/shared/service/toast';
+import { AccessGate } from '#/shared/view/AccessGate';
 import { ActivityTab } from '#/shared/view/ActivityTab';
 import { ChecklistField } from '#/shared/view/ChecklistField';
 import { AuditActor } from '#/shared/view/AuditActor';
@@ -795,6 +796,15 @@ function RecordPieces() {
           </div>
         </Specimen>
       </div>
+      <Specimen label="AccessGate: a principal whoami says cannot read the area">
+        <AccessGate
+          access={{ kind: 'refused', capability: 'view-users' }}
+          title="Subjects"
+          kicker={TENANT}
+        >
+          <p>The page</p>
+        </AccessGate>
+      </Specimen>
       <Specimen label="PageNotFound: an address that is no page">
         <PageNotFound />
       </Specimen>
