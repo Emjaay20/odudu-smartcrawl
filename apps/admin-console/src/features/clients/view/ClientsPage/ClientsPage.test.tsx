@@ -47,6 +47,8 @@ it('searches by the server, by name or by ID, and filters by type and status', a
     ).toBe('false');
   });
   expect(await screen.findByText(/No clients match/u)).toBeVisible();
+  await user.click(screen.getByRole('button', { name: /Disabled/u }));
+  expect(await screen.findByRole('option', { name: 'Enabled' })).toBeVisible();
 });
 
 it('asks the server for the next page rather than holding every client', async () => {

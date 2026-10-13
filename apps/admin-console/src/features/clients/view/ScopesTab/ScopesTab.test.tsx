@@ -88,6 +88,7 @@ it('searches the tenant scopes on the server, and assigns the one chosen', async
       body: { assignment: 'optional' },
     });
   });
+  expect(await screen.findByText('reports:read is assigned to Billing as optional.')).toBeVisible();
 });
 
 it('reads the client again after an assignment, so the next save carries its new ETag', async () => {
@@ -154,6 +155,7 @@ it('unassigns a scope, and moves focus to the list heading it leaves', async () 
   await waitFor(() => {
     expect(screen.getByRole('heading', { name: 'Assigned scopes' })).toHaveFocus();
   });
+  expect(await screen.findByText('billing is no longer assigned to Billing.')).toBeVisible();
 });
 
 it("says in the server's words why a scope was not assigned", async () => {

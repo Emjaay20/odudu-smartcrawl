@@ -80,6 +80,7 @@ it('searches clients on the server, never in the browser, and assigns the one ch
       body: { assignment: 'default' },
     });
   });
+  expect(await screen.findByText(/^billing is assigned to .+ as default\.$/u)).toBeVisible();
 });
 
 it("reads the scope's own client list again after an assignment", async () => {
@@ -200,6 +201,7 @@ it('changes an assignment and unassigns, each at once', async () => {
   await waitFor(() => {
     expect(sent.some((s) => s.method === 'DELETE')).toBe(true);
   });
+  expect(await screen.findByText('billing is no longer assigned to Billing.')).toBeVisible();
 });
 
 it("words a 403 over the client's service account, naming the capability", async () => {

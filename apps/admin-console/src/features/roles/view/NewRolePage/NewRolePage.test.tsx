@@ -54,6 +54,22 @@ it('copies a role under a new name, with its description and what it nests', asy
   });
 });
 
+it("keeps an emptied description empty rather than the source's", async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(
+    `${AT}?copy=r-aud`,
+    roleRoutes(undefined, {
+      [`GET ${R}/r-aud/composites`]: json({ items: [] }, 200, { etag: '"c"' }),
+    }),
+  );
+  const description = await screen.findByRole('textbox', { name: 'Description' });
+  await waitFor(() => {
+    expect(description).toHaveValue('Reads the books');
+  });
+  await user.clear(description);
+  expect(description).toHaveValue('');
+});
+
 it('stays to say which composites a copy could not take', async () => {
   const user = userEvent.setup();
   renderConsoleAt(
