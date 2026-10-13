@@ -17,7 +17,7 @@ export function Panel({
         <h2 id={heading} className={styles.title}>
           {title}
         </h2>
-        {action === undefined ? null : <div className={styles.action}>{action}</div>}
+        {action === undefined ? null : <div>{action}</div>}
       </header>
       <div className={styles.body}>{children}</div>
     </section>

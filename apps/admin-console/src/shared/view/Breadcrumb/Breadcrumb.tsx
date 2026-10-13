@@ -29,17 +29,13 @@ export function Breadcrumb({
                 {item.label}
               </span>
             ) : item.href === undefined ? (
-              <span className={styles.group}>{item.label}</span>
+              <span>{item.label}</span>
             ) : (
               <Link href={item.href} className={styles.link ?? ''}>
                 {item.label}
               </Link>
             )}
-            {index === last ? null : (
-              <span aria-hidden="true" className={styles.separator}>
-                ›
-              </span>
-            )}
+            {index === last ? null : <span aria-hidden="true">›</span>}
           </li>
         ))}
       </ol>

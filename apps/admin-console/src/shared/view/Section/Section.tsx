@@ -103,7 +103,7 @@ export function Section({
           </p>
         ) : null}
       </header>
-      <form noValidate onSubmit={submit} className={styles.form} aria-busy={saving || undefined}>
+      <form noValidate onSubmit={submit} aria-busy={saving || undefined}>
         <div className={styles.fields}>{children}</div>
         {notice === undefined || readOnly ? null : <div className={styles.notice}>{notice}</div>}
         {readOnly && dirty ? (
