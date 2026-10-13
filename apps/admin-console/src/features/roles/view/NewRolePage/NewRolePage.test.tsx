@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { json, offline, problem } from '#/testing/fakeTransport';
+import { inTurn, json, offline, pending, problem } from '#/testing/fakeTransport';
 import { A, AUDITOR, R, READER, roleRoutes } from '#/testing/rolesFixtures';
 import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
 import { role } from '#/testing/subjectsFixtures';
@@ -163,6 +163,23 @@ it('holds Create after a lost answer until a look finds nothing, then lets it go
   await waitFor(() => {
     expect(sent.filter((s) => s.method === 'POST')).toHaveLength(2);
   });
+});
+
+it('drops what the last send said while the next one is in flight', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    roleRoutes(undefined, {
+      [`POST ${R}`]: inTurn(problem(403, 'about:blank', 'Forbidden'), pending()),
+    }),
+  );
+  await user.type(await screen.findByRole('textbox', { name: 'Name' }), 'billing{Enter}');
+  expect(await screen.findByText(/it needs the manage-tenant capability/u)).toBeVisible();
+  await user.type(screen.getByRole('textbox', { name: 'Name' }), '{Enter}');
+  await waitFor(() => {
+    expect(sent.filter((s) => s.method === 'POST')).toHaveLength(2);
+  });
+  expect(screen.queryByText(/it needs the manage-tenant capability/u)).toBeNull();
 });
 
 it('says when a look for a lost creation could not be made', async () => {
