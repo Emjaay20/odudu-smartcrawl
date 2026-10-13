@@ -9,7 +9,9 @@ import {
 } from '@odudu/contracts/admin';
 import type { ImportedSecret } from '#/features/tenants/service';
 import type { Gateway, GatewayResult, RawBody } from '#/shared/transport/gateway';
-import { discoverySchema, tenantPath } from '#/shared/adapter/route';
+import { readDiscovery } from '#/shared/adapter/discovery';
+import { segment } from '#/shared/adapter/route';
+import { SYSTEM_TENANT } from '#/shared/service/principal';
 
 export function readTenantPage(
   gateway: Gateway,
@@ -56,7 +58,7 @@ export async function findTenant(
 }
 
 export function readTenant(gateway: Gateway, name: string): Promise<GatewayResult<Tenant>> {
-  return gateway.request('GET', `admin/tenants/${tenantPath(name)}`, { schema: tenantSchema });
+  return gateway.request('GET', `admin/tenants/${segment(name)}`, { schema: tenantSchema });
 }
 
 // An emptied display name is cleared, as the server keeps no empty one.
@@ -66,7 +68,7 @@ export function amendTenant(
   changes: { display_name?: string | null; enabled?: boolean },
   ifMatch: string,
 ): Promise<GatewayResult<Tenant>> {
-  return gateway.request('PATCH', `admin/tenants/${tenantPath(name)}`, {
+  return gateway.request('PATCH', `admin/tenants/${segment(name)}`, {
     body: changes.display_name === '' ? { ...changes, display_name: null } : changes,
     ifMatch,
     schema: tenantSchema,
@@ -97,15 +99,13 @@ export function readExport(
   name: string,
   includeSubjects: boolean,
 ): Promise<GatewayResult<RawBody>> {
-  const t = tenantPath(name);
+  const t = segment(name);
   return includeSubjects
     ? gateway.download('GET', `admin/tenants/${t}/export?include=subjects`)
     : gateway.download('GET', `admin/tenants/${t}/export`);
 }
 
 export async function readSystemIssuer(gateway: Gateway): Promise<GatewayResult<string>> {
-  const result = await gateway.request('GET', 'tenants/system/discovery', {
-    schema: discoverySchema,
-  });
+  const result = await readDiscovery(gateway, SYSTEM_TENANT);
   return result.ok ? { ...result, data: result.data.issuer } : result;
 }

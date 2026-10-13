@@ -1,37 +1,6 @@
 import { expect, it } from 'vitest';
-import {
-  readCount,
-  readDiscovery,
-  readJwks,
-  readKeys,
-  readLatestAudit,
-} from '#/features/overview/adapter';
+import { readCount, readJwks, readKeys, readLatestAudit } from '#/features/overview/adapter';
 import { fakeTransport, inTurn, json } from '#/testing/fakeTransport';
-
-const DISCOVERY = {
-  issuer: 'https://id.example/tenants/acme',
-  token_endpoint: 'https://id.example/tenants/acme/protocol/openid-connect/token',
-  grant_types_supported: ['authorization_code'],
-  something_new: { kept: true },
-};
-
-it("reads the tenant's discovery document through the gateway, keeping what it does not know", async () => {
-  const fake = fakeTransport({
-    'GET /console/api/tenants/acme/discovery': json(DISCOVERY),
-  });
-  const result = await readDiscovery(fake.transport.gateway, 'acme');
-  expect(result).toMatchObject({ ok: true, data: DISCOVERY });
-});
-
-it('refuses a discovery document with no issuer', async () => {
-  const fake = fakeTransport({
-    'GET /console/api/tenants/acme/discovery': json({ token_endpoint: 'x' }),
-  });
-  expect(await readDiscovery(fake.transport.gateway, 'acme')).toEqual({
-    ok: false,
-    kind: 'schema',
-  });
-});
 
 it("reads the tenant's JWKS through the gateway", async () => {
   const jwks = { keys: [{ kty: 'EC', kid: 'k1', alg: 'ES256', use: 'sig', crv: 'P-256' }] };

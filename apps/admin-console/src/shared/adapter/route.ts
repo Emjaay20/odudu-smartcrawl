@@ -4,14 +4,6 @@ import type { Gateway, GatewayResult, Method, RequestOptions } from '#/shared/tr
 
 export const nothing = z.undefined();
 
-// The gateway's mirror of a tenant's discovery document has no contract in
-// @odudu/contracts, so it is held only to what the pages read.
-export const discoverySchema = z.looseObject({ issuer: z.string() });
-
-export function tenantPath(tenant: string): string {
-  return encodeURIComponent(tenant);
-}
-
 export function segment(id: string): string {
   return encodeURIComponent(id);
 }
@@ -35,7 +27,7 @@ export function adminCall<T>(
   parts: readonly string[],
   { query, ...options }: CallOptions<T>,
 ): Promise<GatewayResult<T>> {
-  const path = [tenantPath(tenant), ...parts.map(segment)].join('/');
+  const path = [segment(tenant), ...parts.map(segment)].join('/');
   const search = query === undefined ? '' : `?${query.toString()}`;
   return gateway.request(method, `admin/tenants/${path}${search}`, options);
 }

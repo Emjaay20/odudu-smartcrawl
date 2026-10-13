@@ -1,11 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  readCount,
-  readDiscovery,
-  readJwks,
-  readKeys,
-  readLatestAudit,
-} from '#/features/overview/adapter';
+import { readCount, readJwks, readKeys, readLatestAudit } from '#/features/overview/adapter';
+import { readDiscovery } from '#/shared/adapter/discovery';
 import { readSmtp } from '#/shared/adapter/smtp';
 import { readTenantSettings } from '#/shared/adapter/tenantSettings';
 import {

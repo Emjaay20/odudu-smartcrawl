@@ -5,11 +5,11 @@ import {
   type SigningKey,
 } from '@odudu/contracts/admin';
 import { z } from 'zod';
-import type { Collection, Discovery, Jwks } from '#/features/overview/service';
+import type { Collection, Jwks } from '#/features/overview/service';
 import { readAuditPage } from '#/shared/adapter/audit';
 import { readKeyPage } from '#/shared/adapter/directory';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { adminCall, discoverySchema, tenantPath } from '#/shared/adapter/route';
+import { adminCall, segment } from '#/shared/adapter/route';
 
 // The gateway's mirrors of the tenant's public documents have no contract
 // in @odudu/contracts, so these hold them only to what the page reads and
@@ -30,14 +30,8 @@ const KEY_PAGE = 200;
 const MAX_KEY_PAGES = 10;
 const LATEST_AUDIT = 5;
 
-export function readDiscovery(gateway: Gateway, tenant: string): Promise<GatewayResult<Discovery>> {
-  return gateway.request('GET', `tenants/${tenantPath(tenant)}/discovery`, {
-    schema: discoverySchema,
-  });
-}
-
 export function readJwks(gateway: Gateway, tenant: string): Promise<GatewayResult<Jwks>> {
-  return gateway.request('GET', `tenants/${tenantPath(tenant)}/jwks`, { schema: jwksSchema });
+  return gateway.request('GET', `tenants/${segment(tenant)}/jwks`, { schema: jwksSchema });
 }
 
 // One literal path per collection, so each route is named where it is called.
