@@ -1,5 +1,4 @@
 import type { Client, ClientScope, ScopeClient } from '@odudu/contracts/admin';
-import { useState } from 'react';
 import { useAuthority, useRefusal } from '#/features/session';
 import {
   useClientAssignment,
@@ -13,11 +12,10 @@ import {
   clientsOffered,
 } from '#/features/scopes/service';
 import { useClientPicker } from '#/features/scopes/repository/useClientPicker';
-import { useToasts } from '#/shared/repository/useToasts';
 import { lacking } from '#/shared/service/access';
-import { lastChosen, type PickerState } from '#/shared/service/picker';
+import type { PickerState } from '#/shared/service/picker';
 import type { AdminCapability } from '#/shared/service/principal';
-import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
+import { useAssignmentFlow, type Counterpart } from '#/shared/usecase/useAssignmentFlow';
 import { assignedText, assignmentOf, unassignedText } from '#/shared/service/assignment';
 
 export interface ScopeClientsTab {
@@ -49,64 +47,28 @@ export function useScopeClientsTab({
   scope: ClientScope;
 }): ScopeClientsTab {
   const refusal = useRefusal(tenant);
-  const push = useToasts((queue) => queue.push);
   const list = useScopeClients(tenant, scope.id);
   const changes = useClientAssignment(tenant, scope.id);
   const authority = useAuthority(tenant);
   const needs = lacking(authority, ['manage-clients']);
   const offered = clientsOffered(authority !== undefined, needs);
   const picker = useClientPicker(tenant, offered);
-  const [chosenId, setChosenId] = useState<string | null>(null);
-  const [assignment, setAssignment] = useState('default');
-  const [working, setWorking] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const flow = useAssignmentFlow({
+    refusal,
+    capability: 'manage-tenant',
+    failureText: (failure, client, verb) =>
+      clientAssignmentFailure(failure, scope.name, client, verb),
+  });
 
-  const failed = (
-    failure: GatewayFailure,
-    client: string,
-    verb: 'assigned' | 'unassigned',
-  ): void => {
-    refusal.report(failure, 'manage-tenant');
-    setMessage(clientAssignmentFailure(failure, scope.name, client, verb));
-  };
-
-  // One change at a time: what it said is shown, and whether it went is answered.
-  const perform = (
-    client: { id: string; name: string },
-    verb: 'assigned' | 'unassigned',
-    run: () => Promise<GatewayResult<unknown>>,
-    done: string,
-  ): Promise<boolean> => {
-    if (working !== null) return Promise.resolve(false);
-    setWorking(client.id);
-    setMessage(null);
-    return run()
-      .then((result): boolean => {
-        if (!result.ok) {
-          failed(result, client.name, verb);
-          return false;
-        }
-        push({ tone: 'success', message: done });
-        return true;
-      })
-      .catch((): boolean => {
-        failed({ ok: false, kind: 'defect' }, client.name, verb);
-        return false;
-      })
-      .finally(() => {
-        setWorking(null);
-      });
-  };
-
-  const assignTo = (client: { id: string; name: string }, chosenAssignment: string) =>
-    perform(
+  const assignTo = (client: Counterpart, chosenAssignment: string) =>
+    flow.perform(
       client,
       'assigned',
       () => changes.assign.run({ clientId: client.id, assignment: assignmentOf(chosenAssignment) }),
       assignedText(scope.name, client.name, assignmentOf(chosenAssignment)),
     );
 
-  const chosen = chosenClient(picker.options, chosenId);
+  const chosen = chosenClient(picker.options, flow.chosenId);
   return {
     list,
     count: clientsCount(list.rows.length, list.more),
@@ -114,22 +76,15 @@ export function useScopeClientsTab({
     offered,
     picker,
     chosen,
-    choose: (ids) => {
-      setChosenId(lastChosen(ids));
-    },
-    assignment,
-    setAssignment,
-    working,
-    message,
-    assign: async () => {
-      if (chosen === null) return false;
-      const went = await assignTo(chosen, assignment);
-      if (went) setChosenId(null);
-      return went;
-    },
+    choose: flow.choose,
+    assignment: flow.assignment,
+    setAssignment: flow.setAssignment,
+    working: flow.working,
+    message: flow.message,
+    assign: () => flow.assignChosen(chosen, (client) => assignTo(client, flow.assignment)),
     change: (row, next) => assignTo({ id: row.id, name: row.name }, next),
     remove: (row) =>
-      perform(
+      flow.perform(
         { id: row.id, name: row.name },
         'unassigned',
         () => changes.unassign.run({ clientId: row.id }),

@@ -81,6 +81,9 @@ it('searches clients on the server, never in the browser, and assigns the one ch
     });
   });
   expect(await screen.findByText(/^billing is assigned to .+ as default\.$/u)).toBeVisible();
+  await waitFor(() => {
+    expect(within(assign).queryByRole('button', { name: 'Assign to portal' })).toBeNull();
+  });
 });
 
 it("reads the scope's own client list again after an assignment", async () => {
@@ -206,7 +209,7 @@ it('changes an assignment and unassigns, each at once', async () => {
 
 it("words a 403 over the client's service account, naming the capability", async () => {
   const user = userEvent.setup();
-  renderConsoleAt(
+  const { sent } = renderConsoleAt(
     AT,
     scopeRoutes(undefined, {
       [`PUT ${SC}/s-bill/clients/c-portal`]: problem(403, 'about:blank', 'Forbidden', {
@@ -218,6 +221,7 @@ it("words a 403 over the client's service account, naming the capability", async
   await user.click(await within(assign).findByRole('option', { name: /portal/u }));
   await user.click(within(assign).getByRole('button', { name: 'Assign to portal' }));
   expect(await screen.findByText(/Refused: it would hand out manage-keys/u)).toBeVisible();
+  expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
 });
 
 it('lists the carriers but offers no client search to a caller without manage-clients', async () => {

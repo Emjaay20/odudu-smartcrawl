@@ -16,11 +16,10 @@ import {
   shownScopes,
   type Reach,
 } from '#/features/clients/service';
-import { useToasts } from '#/shared/repository/useToasts';
 import { lacking } from '#/shared/service/access';
 import type { AdminCapability } from '#/shared/service/principal';
-import { lastChosen, type PickerState } from '#/shared/service/picker';
-import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
+import type { PickerState } from '#/shared/service/picker';
+import { useAssignmentFlow, type Counterpart } from '#/shared/usecase/useAssignmentFlow';
 import { assignedText, assignmentOf, unassignedText } from '#/shared/service/assignment';
 
 type Assigned = Client['scopes'][number];
@@ -63,59 +62,28 @@ export function useClientScopeAssignment({
 }): ClientScopes {
   const refusal = useRefusal(tenant);
   const reread = useRereadClient(tenant, client.id);
-  const push = useToasts((queue) => queue.push);
   const changes = useScopeChanges(tenant, client.id);
   const picker = useScopePicker(tenant);
   const needs = lacking(useAuthority(tenant), [SCOPES_CAPABILITY]);
   const [page, setPage] = useState(SCOPES_PAGE);
-  const [chosenId, setChosenId] = useState<string | null>(null);
-  const [assignment, setAssignment] = useState('default');
-  const [working, setWorking] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const flow = useAssignmentFlow({
+    refusal,
+    capability: SCOPES_CAPABILITY,
+    failureText: scopeFailureText,
+    onRefused: (failure) => {
+      if (ceilingRefused(failure)) reread();
+    },
+  });
 
-  const failed = (failure: GatewayFailure, scope: string, verb: 'assigned' | 'unassigned') => {
-    refusal.report(failure, SCOPES_CAPABILITY);
-    if (ceilingRefused(failure)) reread();
-    setMessage(scopeFailureText(failure, scope, verb));
-  };
-
-  // One change at a time: what it said is shown, and whether it went is answered.
-  const perform = (
-    scope: { id: string; name: string },
-    verb: 'assigned' | 'unassigned',
-    run: () => Promise<GatewayResult<unknown>>,
-    done: string,
-  ): Promise<boolean> => {
-    if (working !== null) return Promise.resolve(false);
-    setWorking(scope.id);
-    setMessage(null);
-    return run()
-      .then((result): boolean => {
-        if (!result.ok) {
-          failed(result, scope.name, verb);
-          return false;
-        }
-        push({ tone: 'success', message: done });
-        return true;
-      })
-      .catch((): boolean => {
-        failed({ ok: false, kind: 'defect' }, scope.name, verb);
-        return false;
-      })
-      .finally(() => {
-        setWorking(null);
-      });
-  };
-
-  const assignScope = (scope: { id: string; name: string }, chosenAssignment: string) =>
-    perform(
+  const assignScope = (scope: Counterpart, chosenAssignment: string) =>
+    flow.perform(
       scope,
       'assigned',
       () => changes.assign.run({ scopeId: scope.id, assignment: assignmentOf(chosenAssignment) }),
       assignedText(scope.name, client.name, assignmentOf(chosenAssignment)),
     );
 
-  const chosen = picker.options.find((scope) => scope.id === chosenId) ?? null;
+  const chosen = picker.options.find((scope) => scope.id === flow.chosenId) ?? null;
   return {
     offered: canChange(reach, needs),
     needs,
@@ -129,22 +97,15 @@ export function useClientScopeAssignment({
     picker,
     unavailableOf: (scope) => alreadyAssigned(scope, client.scopes),
     chosen,
-    choose: (ids) => {
-      setChosenId(lastChosen(ids));
-    },
-    assignment,
-    setAssignment,
-    working,
-    message,
-    assign: async () => {
-      if (chosen === null) return false;
-      const done = await assignScope(chosen, assignment);
-      if (done) setChosenId(null);
-      return done;
-    },
+    choose: flow.choose,
+    assignment: flow.assignment,
+    setAssignment: flow.setAssignment,
+    working: flow.working,
+    message: flow.message,
+    assign: () => flow.assignChosen(chosen, (scope) => assignScope(scope, flow.assignment)),
     change: (scope, next) => assignScope(scope, next),
     remove: (scope) =>
-      perform(
+      flow.perform(
         scope,
         'unassigned',
         () => changes.unassign.run({ scopeId: scope.id }),

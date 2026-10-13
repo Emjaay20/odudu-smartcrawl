@@ -89,6 +89,9 @@ it('searches the tenant scopes on the server, and assigns the one chosen', async
     });
   });
   expect(await screen.findByText('reports:read is assigned to Billing as optional.')).toBeVisible();
+  await waitFor(() => {
+    expect(within(assign).queryByRole('button', { name: 'Assign scope reports:read' })).toBeNull();
+  });
 });
 
 it('reads the client again after an assignment, so the next save carries its new ETag', async () => {
@@ -173,6 +176,25 @@ it("says in the server's words why a scope was not assigned", async () => {
   expect(await screen.findByRole('alert')).toHaveTextContent(
     'billing was not unassigned: billing cannot be unassigned from this client',
   );
+});
+
+it('reads whoami again when the ceiling refuses an assignment', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    scopesRoutes([OPENID], {
+      [`PUT ${SCOPES}/s-bill/clients/c-bill`]: problem(403, 'about:blank', 'Forbidden', {
+        detail: "the client's service account holds what the caller does not: manage-users",
+      }),
+    }),
+  );
+  await open();
+  const assign = await screen.findByRole('region', { name: 'Assign a scope' });
+  await user.click(await within(assign).findByRole('option', { name: /billing/u }));
+  await user.click(within(assign).getByRole('button', { name: 'Assign scope billing' }));
+  await waitFor(() => {
+    expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
+  });
 });
 
 it("says in the server's words that a client carries no more scopes", async () => {
