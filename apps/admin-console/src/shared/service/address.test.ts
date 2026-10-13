@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resourceAddress, tenantPage, withSearch } from '#/shared/service/address';
+import { recordAddress, resourceAddress, tenantPage, withSearch } from '#/shared/service/address';
 
 describe('addresses', () => {
   it('addresses a tenant, its name encoded', () => {
@@ -23,9 +23,18 @@ describe('addresses', () => {
     ]);
   });
 
+  it('addresses a record under its list, the id encoded', () => {
+    expect(recordAddress('/console/system/tenants', 'a b/c')).toBe(
+      '/console/system/tenants/a%20b%2Fc',
+    );
+  });
+
   it('adds query parameters to an address, leaving out one left undefined', () => {
     expect(withSearch('/console/acme/roles', { client: 'c 1' })).toBe(
       '/console/acme/roles?client=c+1',
+    );
+    expect(withSearch('/console/acme/roles', { client: 'a b+c' })).toBe(
+      '/console/acme/roles?client=a+b%2Bc',
     );
     expect(withSearch('/console/acme/groups/new', { parent: undefined })).toBe(
       '/console/acme/groups/new',

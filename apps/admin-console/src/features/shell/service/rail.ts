@@ -1,5 +1,5 @@
 import { holds, readable } from '#/shared/service/access';
-import { tenantPage } from '#/shared/service/address';
+import { recordAddress, tenantPage } from '#/shared/service/address';
 import { SYSTEM_TENANT, type Authority, type Principal } from '#/shared/service/principal';
 import {
   type Area,
@@ -43,7 +43,7 @@ export function areaHref(tenant: string, area: Area): string {
 
 // Where a system administrator entered this tenant from.
 export function systemRecordHref(tenant: string): string {
-  return `${areaHref(SYSTEM_TENANT, areaAt('tenants'))}/${encodeURIComponent(tenant)}`;
+  return recordAddress(areaHref(SYSTEM_TENANT, areaAt('tenants')), tenant);
 }
 
 // The rail lists only what the caller can read; an address to any other

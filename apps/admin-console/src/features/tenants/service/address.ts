@@ -1,3 +1,4 @@
+import { recordAddress } from '#/shared/service/address';
 import type { Crumb } from '#/shared/service/breadcrumb';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
 
@@ -62,5 +63,5 @@ export function systemAdminsTrail(current: string): readonly Crumb[] {
 }
 
 export function tenantHref(name: string): string {
-  return `${TENANTS_HREF}/${encodeURIComponent(name)}`;
+  return recordAddress(TENANTS_HREF, name);
 }

@@ -5,7 +5,13 @@ export function tenantPage(tenant: string): string {
   return `/console/${encodeURIComponent(tenant)}`;
 }
 
+// A record under its list, its id encoded.
+export function recordAddress(listHref: string, id: string): string {
+  return `${listHref}/${encodeURIComponent(id)}`;
+}
+
 // A page's address with its query parameters; a parameter left undefined is left out.
+// Encoded as a query (a space is `+`), so it takes values, never path parts.
 export function withSearch(href: string, search: Record<string, string | undefined>): string {
   return `${href}${stringifySearch(search)}`;
 }
@@ -33,7 +39,7 @@ export function resourceAddress({ segment, group, label }: ResourceNames): Resou
   return {
     listHref,
     newHref: (tenant) => `${listHref(tenant)}/new`,
-    recordHref: (tenant, id) => `${listHref(tenant)}/${encodeURIComponent(id)}`,
+    recordHref: (tenant, id) => recordAddress(listHref(tenant), id),
     trail: (tenant, current) => [
       { label: group },
       { label, href: listHref(tenant) },
