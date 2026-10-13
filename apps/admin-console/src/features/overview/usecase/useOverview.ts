@@ -8,7 +8,7 @@ import {
   countTiles,
   discoveryView,
   keysView,
-  mapRead,
+  mapOverviewRead,
   overviewAsks,
   readCapability,
   type AreaOf,
@@ -17,12 +17,12 @@ import {
   type DiscoveryView,
   type Gated,
   type KeysView,
-  type Read,
+  type OverviewRead,
 } from '#/features/overview/service';
 
 export interface Overview {
-  discovery: Read<DiscoveryView>;
-  keys: Read<KeysView>;
+  discovery: OverviewRead<DiscoveryView>;
+  keys: OverviewRead<KeysView>;
   tiles: readonly CountTile[];
   attention: AttentionState;
   // Null when whoami says the audit trail is not the operator's to read.
@@ -46,7 +46,7 @@ export function useOverview(tenant: string): Overview {
   });
   const { retries, ...attention } = attentionState(reads, authority, areaOf, new Date());
   return {
-    discovery: mapRead(reads.discovery, discoveryView),
+    discovery: mapOverviewRead(reads.discovery, discoveryView),
     keys: keysView(reads, authority),
     tiles: countTiles(reads, authority, areaOf),
     attention: {

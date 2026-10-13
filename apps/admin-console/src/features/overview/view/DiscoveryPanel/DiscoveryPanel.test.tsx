@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
-import { discoveryView, type KeysView, type Read } from '#/features/overview/service';
+import { discoveryView, type KeysView, type OverviewRead } from '#/features/overview/service';
 import { DiscoveryPanel } from '#/features/overview/view/DiscoveryPanel';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
@@ -18,7 +18,7 @@ const DISCOVERY = {
   }),
 } as const;
 
-const KEYS: Read<KeysView> = {
+const KEYS: OverviewRead<KeysView> = {
   status: 'ready',
   data: {
     rows: [
@@ -67,7 +67,7 @@ it('lists each published key with its lane', () => {
 });
 
 it('names the capability a lane needs when the key list could not be read', () => {
-  const unread: Read<KeysView> = {
+  const unread: OverviewRead<KeysView> = {
     status: 'ready',
     data: {
       rows: [{ row: '0', kid: 'k', kty: 'EC', alg: null, use: null, lane: 'unknown' }],

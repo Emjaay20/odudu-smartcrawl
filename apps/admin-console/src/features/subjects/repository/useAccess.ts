@@ -18,7 +18,8 @@ import {
   setSubjectGroups,
 } from '#/features/subjects/adapter/access';
 import { readSubjectCount } from '#/features/subjects/adapter/subjects';
-import { useRead, type Read } from '#/shared/repository/useRead';
+import { useRead } from '#/shared/repository/useRead';
+import type { Read } from '#/shared/service/read';
 import { actionsRecord, groupsRecord, rolesRecord } from '#/features/subjects/service';
 import { readSubjectRoles, setSubjectRoles } from '#/shared/adapter/administrators';
 import { useRecord, type RecordState } from '#/shared/repository/useRecord';

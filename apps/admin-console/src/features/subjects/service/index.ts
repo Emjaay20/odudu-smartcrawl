@@ -106,7 +106,6 @@ export {
   groupsRemoveTenants,
 } from '#/features/subjects/service/memberships';
 export {
-  type Loaded,
   subjectCreatedText,
   newSubjectSpec,
   manageUsersRefusal,

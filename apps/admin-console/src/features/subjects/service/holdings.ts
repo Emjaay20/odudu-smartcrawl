@@ -12,7 +12,7 @@ import {
 } from '#/shared/service/capabilities';
 import { andList } from '#/shared/service/format';
 import { SYSTEM_TENANT, type AdminCapability } from '#/shared/service/principal';
-import { type Loaded } from '#/features/subjects/service/create';
+import { type Loaded } from '#/shared/service/read';
 import { onlyHolderText } from '#/features/subjects/service/access';
 import type { Choice } from '#/shared/service/choice';
 

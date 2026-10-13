@@ -7,7 +7,7 @@ import {
   type KeyLane,
   type KeysView,
   type PublishedKey,
-  type Read,
+  type OverviewRead,
 } from '#/features/overview/service';
 import { Panel } from '#/features/overview/view/Panel';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
@@ -89,7 +89,7 @@ function Name({ name }: { name: string }) {
   );
 }
 
-function Keys({ keys }: { keys: Read<KeysView> }) {
+function Keys({ keys }: { keys: OverviewRead<KeysView> }) {
   switch (keys.status) {
     case 'off':
     case 'loading':
@@ -117,7 +117,7 @@ function Keys({ keys }: { keys: Read<KeysView> }) {
   }
 }
 
-function Document({ view, keys }: { view: DiscoveryView; keys: Read<KeysView> }) {
+function Document({ view, keys }: { view: DiscoveryView; keys: OverviewRead<KeysView> }) {
   return (
     <>
       <dl className={styles.facts}>
@@ -195,8 +195,8 @@ export function DiscoveryPanel({
   discovery,
   keys,
 }: {
-  discovery: Read<DiscoveryView>;
-  keys: Read<KeysView>;
+  discovery: OverviewRead<DiscoveryView>;
+  keys: OverviewRead<KeysView>;
 }) {
   let body: ReactNode;
   switch (discovery.status) {

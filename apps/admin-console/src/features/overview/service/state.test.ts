@@ -4,7 +4,7 @@ import type { AdminCapability, Authority } from '#/shared/service/principal';
 import { attentionState, isClear } from '#/features/overview/service/state';
 import { type AttentionInputs } from '#/features/overview/service/attention';
 import { type AreaOf } from '#/features/overview/service/tiles';
-import { type OverviewReads, type Read } from '#/features/overview/service/reads';
+import { type OverviewReads, type OverviewRead } from '#/features/overview/service/reads';
 
 const KEYS: readonly SigningKey[] = [
   {
@@ -50,11 +50,11 @@ const QUIET: AttentionInputs = {
   now: new Date('2026-09-02T00:30:00Z'),
 };
 
-const OFF: Read<never> = { status: 'off' };
+const OFF: OverviewRead<never> = { status: 'off' };
 
-const LOADING: Read<never> = { status: 'loading' };
+const LOADING: OverviewRead<never> = { status: 'loading' };
 
-function ready<T>(data: T): Read<T> {
+function ready<T>(data: T): OverviewRead<T> {
   return { status: 'ready', data };
 }
 

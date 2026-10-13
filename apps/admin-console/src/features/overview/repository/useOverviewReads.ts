@@ -4,11 +4,11 @@ import { readDiscovery } from '#/shared/adapter/discovery';
 import { readSmtp } from '#/shared/adapter/smtp';
 import { readTenantSettings } from '#/shared/adapter/tenantSettings';
 import {
-  readOutcome,
+  overviewOutcome,
   type Collection,
   type OverviewAsks,
   type OverviewReads,
-  type Read,
+  type OverviewRead,
   type ReadName,
 } from '#/features/overview/service';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
@@ -24,7 +24,7 @@ function useTenantRead<T>(
   asked: boolean,
   read: (gateway: Gateway) => Promise<GatewayResult<T>>,
   onAnswer: OnAnswer,
-): Read<T> {
+): OverviewRead<T> {
   const { gateway } = useTransport();
   const client = useQueryClient();
   const key = ['overview', tenant, name] as const;
@@ -37,7 +37,7 @@ function useTenantRead<T>(
     },
     enabled: asked,
   });
-  return readOutcome(asked, query.data, () => {
+  return overviewOutcome(asked, query.data, () => {
     client.invalidateQueries({ queryKey: key, exact: true }).catch(() => undefined);
   });
 }

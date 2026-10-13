@@ -19,14 +19,14 @@ export {
   needsAttention,
 } from '#/features/overview/service/attention';
 export {
-  type Read,
+  type OverviewRead,
   type Gated,
   type Collection,
   type OverviewAsks,
   type ReadName,
   type OverviewReads,
-  readOutcome,
-  mapRead,
+  overviewOutcome,
+  mapOverviewRead,
   readyData,
   gate,
   readCapability,

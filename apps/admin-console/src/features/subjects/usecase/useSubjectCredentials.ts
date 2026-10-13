@@ -6,7 +6,6 @@ import {
   useCredentials,
   useIssuePassword,
   useLockout,
-  type Read,
 } from '#/features/subjects/repository/useCredentials';
 import {
   credentialChangeOf,
@@ -19,6 +18,7 @@ import {
   type CredentialDialog,
 } from '#/features/subjects/service';
 import { useToasts } from '#/shared/repository/useToasts';
+import type { Read } from '#/shared/service/read';
 
 export type { Asking };
 

@@ -7,7 +7,7 @@ import {
 } from '#/shared/service/capabilities';
 import { andList } from '#/shared/service/format';
 import { type AdminCapability } from '#/shared/service/principal';
-import { type Loaded } from '#/features/subjects/service/create';
+import { type Loaded } from '#/shared/service/read';
 
 export function heldOf(
   effective: Loaded<{ items: readonly EffectiveRoleAssignment[] }>,

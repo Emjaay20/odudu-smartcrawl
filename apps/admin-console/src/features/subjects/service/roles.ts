@@ -9,7 +9,7 @@ import {
   type Holding,
 } from '#/shared/service/capabilities';
 import { type Authority } from '#/shared/service/principal';
-import { type Loaded } from '#/features/subjects/service/create';
+import { type Loaded } from '#/shared/service/read';
 
 interface Assigned {
   id: string;

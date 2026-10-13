@@ -2,17 +2,17 @@ import type { Settings } from '@odudu/contracts/admin';
 import { describe, expect, it } from 'vitest';
 import type { AdminCapability, Authority } from '#/shared/service/principal';
 import { countTiles, type AreaOf } from '#/features/overview/service/tiles';
-import { type OverviewReads, type Read } from '#/features/overview/service/reads';
+import { type OverviewReads, type OverviewRead } from '#/features/overview/service/reads';
 
 const retry = (): void => undefined;
 
-const OFF: Read<never> = { status: 'off' };
+const OFF: OverviewRead<never> = { status: 'off' };
 
-const LOADING: Read<never> = { status: 'loading' };
+const LOADING: OverviewRead<never> = { status: 'loading' };
 
-const REFUSED: Read<never> = { status: 'failed', refused: true, retry };
+const REFUSED: OverviewRead<never> = { status: 'failed', refused: true, retry };
 
-function ready<T>(data: T): Read<T> {
+function ready<T>(data: T): OverviewRead<T> {
   return { status: 'ready', data };
 }
 

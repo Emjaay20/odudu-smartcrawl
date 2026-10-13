@@ -1,7 +1,12 @@
 import type { SigningKey } from '@odudu/contracts/admin';
 import type { Authority } from '#/shared/service/principal';
 import { type Jwks, rawJson } from '#/features/overview/service/discovery';
-import { type OverviewReads, type Read, gate, mapRead } from '#/features/overview/service/reads';
+import {
+  type OverviewReads,
+  type OverviewRead,
+  gate,
+  mapOverviewRead,
+} from '#/features/overview/service/reads';
 
 // `unlisted` is published but absent from the key list; `unknown` is a list
 // that could not be read.
@@ -44,10 +49,13 @@ export interface KeysView {
   lanesNeed: string | null;
 }
 
-export function keysView(reads: OverviewReads, authority: Authority | undefined): Read<KeysView> {
+export function keysView(
+  reads: OverviewReads,
+  authority: Authority | undefined,
+): OverviewRead<KeysView> {
   const keys = gate(reads.keys, authority, 'manage-keys');
   const listed = keys.status === 'ready' ? keys.data : undefined;
-  return mapRead(reads.jwks, (jwks) => ({
+  return mapOverviewRead(reads.jwks, (jwks) => ({
     rows: publishedKeys(jwks, listed),
     raw: rawJson(jwks),
     lanesNeed: keys.status === 'needs' ? keys.capability : null,

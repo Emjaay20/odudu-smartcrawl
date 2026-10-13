@@ -2,7 +2,7 @@ import { type EffectiveRoleAssignment } from '@odudu/contracts/admin';
 import { isAdminRole } from '#/shared/service/capabilities';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
 import { type Confirmation } from '#/features/subjects/service/access';
-import { type Loaded } from '#/features/subjects/service/create';
+import { type Loaded } from '#/shared/service/read';
 
 function under(path: string, mapped: string): boolean {
   return path === mapped || path.startsWith(`${mapped}/`);

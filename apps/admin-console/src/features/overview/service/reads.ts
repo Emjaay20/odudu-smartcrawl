@@ -6,22 +6,18 @@ import type {
   SmtpConfig,
 } from '@odudu/contracts/admin';
 import { holds } from '#/shared/service/access';
-import { isRefused } from '#/shared/service/failure';
 import type { AdminCapability, Authority } from '#/shared/service/principal';
+import { mapRead, readOutcome, type Read } from '#/shared/service/read';
 import type { GatewayResult } from '#/shared/service/result';
 import { type Discovery, type Jwks } from '#/features/overview/service/discovery';
 
 // One of the page's reads: `off` is one it did not make, because whoami has
 // not answered or says the capability it needs is not held.
-export type Read<T> =
-  | { status: 'off' }
-  | { status: 'loading' }
-  | { status: 'ready'; data: T }
-  | { status: 'failed'; refused: boolean; retry: () => void };
+export type OverviewRead<T> = { status: 'off' } | Read<T>;
 
 // A read the page may not make at all, because whoami says the capability
 // it needs is not held.
-export type Gated<T> = Read<T> | { status: 'needs'; capability: string };
+export type Gated<T> = OverviewRead<T> | { status: 'needs'; capability: string };
 
 export type Collection = 'subjects' | 'clients' | 'groups' | 'roles' | 'scopes';
 
@@ -41,38 +37,35 @@ export interface OverviewAsks {
 export type ReadName = keyof OverviewAsks | 'jwks';
 
 export interface OverviewReads {
-  discovery: Read<Discovery>;
-  jwks: Read<Jwks>;
-  counts: Readonly<Record<Collection, Read<CountResponse>>>;
-  settings: Read<Settings>;
-  smtp: Read<SmtpConfig>;
-  keys: Read<readonly SigningKey[]>;
-  audit: Read<readonly AuditEvent[]>;
+  discovery: OverviewRead<Discovery>;
+  jwks: OverviewRead<Jwks>;
+  counts: Readonly<Record<Collection, OverviewRead<CountResponse>>>;
+  settings: OverviewRead<Settings>;
+  smtp: OverviewRead<SmtpConfig>;
+  keys: OverviewRead<readonly SigningKey[]>;
+  audit: OverviewRead<readonly AuditEvent[]>;
 }
 
-export function readOutcome<T>(
+export function overviewOutcome<T>(
   asked: boolean,
   result: GatewayResult<T> | undefined,
   retry: () => void,
-): Read<T> {
-  if (!asked) return { status: 'off' };
-  if (result === undefined) return { status: 'loading' };
-  if (result.ok) return { status: 'ready', data: result.data };
-  return { status: 'failed', refused: isRefused(result), retry };
+): OverviewRead<T> {
+  return asked ? readOutcome(result, retry) : { status: 'off' };
 }
 
-export function mapRead<T, U>(read: Read<T>, map: (data: T) => U): Read<U> {
-  return read.status === 'ready' ? { status: 'ready', data: map(read.data) } : read;
+export function mapOverviewRead<T, U>(read: OverviewRead<T>, map: (data: T) => U): OverviewRead<U> {
+  return read.status === 'off' ? read : mapRead(read, map);
 }
 
-export function readyData<T>(read: Read<T>): T | undefined {
+export function readyData<T>(read: OverviewRead<T>): T | undefined {
   return read.status === 'ready' ? read.data : undefined;
 }
 
 // Before whoami answers a read is `off` and shows as loading; after, one
 // whose capability is not held, or that the server refused, names it.
 export function gate<T>(
-  read: Read<T>,
+  read: OverviewRead<T>,
   authority: Authority | undefined,
   capability: AdminCapability | null,
 ): Gated<T> {
@@ -131,7 +124,7 @@ export function overviewAsks(
 // caller's to read.
 export function auditView(
   access: { kind: 'hidden' | 'checking' | 'refused' | 'open' },
-  audit: Read<readonly AuditEvent[]>,
+  audit: OverviewRead<readonly AuditEvent[]>,
   authority: Authority | undefined,
 ): Gated<readonly AuditEvent[]> | null {
   return access.kind === 'refused' ? null : gate(audit, authority, 'view-audit');

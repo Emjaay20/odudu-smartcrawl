@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { Authority } from '#/shared/service/principal';
 import { keysView, publishedKeys } from '#/features/overview/service/keys';
 import { rawJson } from '#/features/overview/service/discovery';
-import { type OverviewReads, type Read } from '#/features/overview/service/reads';
+import { type OverviewReads, type OverviewRead } from '#/features/overview/service/reads';
 
 const KEYS: readonly SigningKey[] = [
   {
@@ -24,11 +24,11 @@ const KEYS: readonly SigningKey[] = [
   },
 ];
 
-const OFF: Read<never> = { status: 'off' };
+const OFF: OverviewRead<never> = { status: 'off' };
 
-const LOADING: Read<never> = { status: 'loading' };
+const LOADING: OverviewRead<never> = { status: 'loading' };
 
-function ready<T>(data: T): Read<T> {
+function ready<T>(data: T): OverviewRead<T> {
   return { status: 'ready', data };
 }
 

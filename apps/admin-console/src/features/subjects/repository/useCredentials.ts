@@ -4,7 +4,8 @@ import type {
   Lockout,
 } from '@odudu/contracts/admin';
 import { useQueryClient } from '@tanstack/react-query';
-import { useRead, type Read } from '#/shared/repository/useRead';
+import { useRead } from '#/shared/repository/useRead';
+import type { Read } from '#/shared/service/read';
 import {
   changeCredential,
   readCredentials,
@@ -16,8 +17,6 @@ import { useSecretOnce, type SecretOnce } from '#/shared/repository/useSecretOnc
 import { useWrite, type Write } from '#/shared/repository/useWrite';
 import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
 import { useTransport } from '#/shared/transport/useTransport';
-
-export type { Read };
 
 function credentialsKey(tenant: string, id: string) {
   return ['credentials', tenant, id] as const;

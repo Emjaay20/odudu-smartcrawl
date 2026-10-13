@@ -6,19 +6,20 @@ import {
   gate,
   overviewAsks,
   readCapability,
-  readOutcome,
-  type Read,
+  mapOverviewRead,
+  overviewOutcome,
+  type OverviewRead,
 } from '#/features/overview/service/reads';
 
 const retry = (): void => undefined;
 
-const LOADING: Read<never> = { status: 'loading' };
+const LOADING: OverviewRead<never> = { status: 'loading' };
 
-const FAILED: Read<never> = { status: 'failed', refused: false, retry };
+const FAILED: OverviewRead<never> = { status: 'failed', refused: false, retry };
 
-const REFUSED: Read<never> = { status: 'failed', refused: true, retry };
+const REFUSED: OverviewRead<never> = { status: 'failed', refused: true, retry };
 
-function ready<T>(data: T): Read<T> {
+function ready<T>(data: T): OverviewRead<T> {
   return { status: 'ready', data };
 }
 
@@ -54,7 +55,7 @@ describe('a read gated by a capability', () => {
   });
 });
 
-describe('a read as a gateway answer reads', () => {
+describe('a read as a gateway answer reads, for the overview', () => {
   const answered = (data: number): GatewayResult<number> => ({
     ok: true,
     status: 200,
@@ -64,33 +65,19 @@ describe('a read as a gateway answer reads', () => {
   });
 
   it('is off when it was not asked, however it was answered', () => {
-    expect(readOutcome(false, answered(1), retry)).toEqual({ status: 'off' });
+    expect(overviewOutcome(false, answered(1), retry)).toEqual({ status: 'off' });
   });
 
-  it('is loading until it answers', () => {
-    expect(readOutcome(true, undefined, retry)).toEqual({ status: 'loading' });
+  it('is what the read says once it was asked', () => {
+    expect(overviewOutcome(true, undefined, retry)).toEqual({ status: 'loading' });
+    expect(overviewOutcome(true, answered(7), retry)).toEqual({ status: 'ready', data: 7 });
   });
 
-  it('is ready with the data', () => {
-    expect(readOutcome(true, answered(7), retry)).toEqual({ status: 'ready', data: 7 });
-  });
-
-  it('is failed, refused only for a 403, with the way to ask again', () => {
-    const problem = (status: number): GatewayResult<number> => ({
-      ok: false,
-      kind: 'problem',
-      problem: { type: 'about:blank', title: 'Problem', status },
-    });
-    expect(readOutcome(true, problem(403), retry)).toEqual({
-      status: 'failed',
-      refused: true,
-      retry,
-    });
-    expect(readOutcome(true, problem(500), retry)).toMatchObject({ refused: false });
-    expect(readOutcome(true, { ok: false, kind: 'network' }, retry)).toMatchObject({
-      status: 'failed',
-      refused: false,
-    });
+  it('maps what is ready and passes every other state through', () => {
+    expect(mapOverviewRead(ready(2), (n) => n * 2)).toEqual({ status: 'ready', data: 4 });
+    const off: OverviewRead<number> = { status: 'off' };
+    expect(mapOverviewRead<number, number>(off, (n) => n * 2)).toBe(off);
+    expect(mapOverviewRead(FAILED, (n: number) => n * 2)).toBe(FAILED);
   });
 });
 

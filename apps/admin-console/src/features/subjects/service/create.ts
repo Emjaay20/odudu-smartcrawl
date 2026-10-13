@@ -2,11 +2,6 @@ import { lacking } from '#/shared/service/access';
 import { createdText, type CreateSpec } from '#/shared/service/failure';
 import { type Authority } from '#/shared/service/principal';
 
-// A read as the hooks hand it to a service: the services judge what it says
-// without knowing which hook made it.
-export type Loaded<T> =
-  { status: 'loading' } | { status: 'ready'; data: T } | { status: 'failed'; retry: () => void };
-
 export function subjectCreatedText(name: string): string {
   return `${createdText(name)} It has no password yet: issue a one-time password from its Credentials tab.`;
 }
