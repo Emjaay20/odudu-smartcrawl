@@ -1,3 +1,5 @@
+import { scriptNonce } from '#/ids';
+
 // What a rendered page needs allowed, when it needs anything beyond
 // markup. Returned by the renderer rather than decided by the caller, so
 // the page and the policy sent with it cannot disagree — a Content
@@ -123,4 +125,29 @@ export function pageHeaders(page: RenderedPage): readonly (readonly [string, str
     ['referrer-policy', 'no-referrer'],
     ['cache-control', PAGE_CACHE_CONTROL],
   ];
+}
+
+// A page restored from the back/forward cache is the DOM it was left with,
+// so a form bound to an authentication session that has since expired comes
+// back looking alive. `pageshow` with `persisted` is the one signal a
+// restore gives; reloading re-requests the GET that started the attempt.
+// The restored form shows for a moment first, which is acceptable for a
+// form and would not be for a secret (ADR 0029's amendment). Apply it only
+// to a page that answered a GET: a reload re-sends a POST.
+const RELOAD_ON_RESTORE =
+  "window.addEventListener('pageshow', function (event) { if (event.persisted) location.reload(); });";
+
+export function reloadOnRestore(page: RenderedPage): RenderedPage {
+  const nonce = page.script?.nonce ?? scriptNonce();
+  const element = `<script nonce="${nonce}">${RELOAD_ON_RESTORE}</script>`;
+  const end = page.html.lastIndexOf('</body>');
+  return {
+    ...page,
+    html:
+      end === -1
+        ? `${page.html}\n${element}`
+        : `${page.html.slice(0, end)}${element}\n${page.html.slice(end)}`,
+    body: `${page.body}\n${element}`,
+    script: page.script ?? { nonce, fetchesSameOrigin: false },
+  };
 }

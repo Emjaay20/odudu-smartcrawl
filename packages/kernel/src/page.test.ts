@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pageHeaders } from '#/page';
+import { pageHeaders, reloadOnRestore } from '#/page';
 
 const headerMap = (page: Parameters<typeof pageHeaders>[0]): Record<string, string> =>
   Object.fromEntries(pageHeaders(page).map(([name, value]) => [name, value]));
@@ -128,5 +128,62 @@ describe('form-action on a page whose form may redirect to a client', () => {
       expect(formAction(value)).toBe("form-action 'self'");
     }
     expect(formAction("https://rp.example/'none'")).toBe("form-action 'self' https://rp.example");
+  });
+});
+
+// A page restored from the back/forward cache is the DOM it was left with,
+// whatever its headers said, so a form bound to a session that has since
+// expired comes back alive-looking. `pageshow` with `persisted` is the one
+// signal a restore gives.
+describe('reloading a form restored from the back/forward cache', () => {
+  const PAGE = {
+    html: '<!doctype html>\n<html><body>\n<form></form>\n</body></html>',
+    body: '<form></form>',
+    title: 'Sign in',
+    script: null,
+    frames: [],
+  };
+  const SCRIPT_ELEMENT =
+    /<script nonce="([^"]+)">[^<]*pageshow[^<]*persisted[^<]*reload\(\)[^<]*<\/script>/u;
+
+  it('adds one script, in the document and in the body a theme is handed', () => {
+    const page = reloadOnRestore(PAGE);
+    expect(page.script).not.toBeNull();
+    for (const markup of [page.html, page.body]) {
+      expect(markup.match(/<script/gu)).toHaveLength(1);
+      expect(SCRIPT_ELEMENT.exec(markup)?.[1]).toBe(page.script?.nonce);
+    }
+    expect(page.html.indexOf('<script')).toBeLessThan(page.html.indexOf('</body>'));
+  });
+
+  it('licenses exactly that nonce in the policy, and no request', () => {
+    const page = reloadOnRestore(PAGE);
+    const csp = headerMap(page)['content-security-policy'];
+    expect(csp).toContain(`script-src 'nonce-${page.script?.nonce}'`);
+    expect(csp).not.toContain('connect-src');
+  });
+
+  it('shares the nonce of a script the page already carries', () => {
+    const page = reloadOnRestore({
+      ...PAGE,
+      html: PAGE.html.replace('<form></form>', '<form></form><script nonce="abc">1</script>'),
+      body: '<form></form><script nonce="abc">1</script>',
+      script: { nonce: 'abc', fetchesSameOrigin: true },
+    });
+    expect(page.script).toEqual({ nonce: 'abc', fetchesSameOrigin: true });
+    expect(page.body.match(/nonce="abc"/gu)).toHaveLength(2);
+    expect(page.body.match(/nonce="/gu)).toHaveLength(2);
+    expect(headerMap(page)['content-security-policy']).toContain("connect-src 'self'");
+  });
+
+  it('mints a different nonce for each page', () => {
+    expect(reloadOnRestore(PAGE).script?.nonce).not.toBe(reloadOnRestore(PAGE).script?.nonce);
+  });
+
+  it('leaves the rest of the page as it was', () => {
+    const page = reloadOnRestore(PAGE);
+    expect(page.title).toBe('Sign in');
+    expect(page.html.startsWith('<!doctype html>\n<html><body>\n<form></form>')).toBe(true);
+    expect(page.html.endsWith('\n</body></html>')).toBe(true);
   });
 });
