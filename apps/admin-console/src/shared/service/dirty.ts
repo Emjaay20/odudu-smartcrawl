@@ -1,4 +1,5 @@
 import { isRecord } from '#/shared/service/json';
+
 export type Values = Readonly<Record<string, unknown>>;
 
 export interface Draft<T extends Values> {

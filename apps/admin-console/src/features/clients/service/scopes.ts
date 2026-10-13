@@ -8,6 +8,7 @@ export const SCOPES_CAPABILITY = 'manage-tenant';
 
 type Assignment = Client['scopes'][number];
 
+// How many assigned scopes the tab draws at once from a list it already holds; no request is made.
 export const SCOPES_PAGE = 50;
 
 export function assignedScopes(scopes: readonly Assignment[]): readonly Assignment[] {
