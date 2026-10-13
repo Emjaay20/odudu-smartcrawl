@@ -231,7 +231,7 @@ it('shows a 412 as a change elsewhere, keeping the edit', async () => {
   const section = await steps();
   await user.click(within(section).getByRole('button', { name: 'Move password up' }));
   await user.click(within(section).getByRole('button', { name: 'Save Steps' }));
-  expect(await within(section).findByText(/changed elsewhere/u)).toBeVisible();
+  expect(await within(section).findByText(/Sign-in flow changed elsewhere/u)).toBeVisible();
   expect(names(within(section).getByRole('list', { name: 'Sign-in steps' }))[0]).toBe('password');
 });
 
