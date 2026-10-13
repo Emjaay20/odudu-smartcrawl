@@ -1268,32 +1268,38 @@ cleared, `Max-Age=0` — ticking a box the login page never even offered
 #### A login posted after its authentication session expired
 
 The parked request lives for the tenant's `login_ttl_seconds`, 30 minutes
-by default. A login form left open longer and then
-submitted is refused with nothing issued: no code and no redirect back to
-the client, whose own `state` may by then have expired too. A reload of
-`/authorize`, which parks the request afresh, is what starts again; the page
-itself offers no way back, which is placed below under
-[What is not implemented](#what-is-not-implemented).
+by default. A login form left open longer and then submitted is refused with
+nothing issued: no code and no redirect back to the client. The refusal page
+offers **Start sign-in again** when it can rebuild the request, and says only
+"Go back and start again" when it cannot.
 
-Captured on its own stack, not the one above: the `infra/docker` compose
-file as the project `odudu-signin` on `http://localhost:3082`, built from
-commit `0824c4e7`, with the tenant `signin-restart` and its administrator
-`grace` that [Console paths](console-paths.md#get-consoleauthcallback-restarted)
-seeds. Its console's `login` led to the authorization endpoint, which parked
-the request as `01a108bd-bce1-7c7b-879d-775af4983269`. Its lifetime, then the same row expired with `psql`
-(header spaces trimmed):
+Every sign-in page is also sent `cache-control: no-store`, so Back to the form
+that preceded the refusal asks the server for it again rather than showing the
+form with its dead `auth_session_id`. A page restored from a browser's
+back/forward cache is the one case headers do not reach, so a form served to a
+GET carries a small script that reloads it on `pageshow` when
+`event.persisted` is true; a page that answers a POST carries none, because a
+reload would send the POST again. ADR 0029's amendment has the reasoning.
+
+Captured on its own stack, not the one above: the `infra/docker` compose file
+as the project `odudu-e2e` on `http://localhost:3080`, built from commit
+`0fdcca36`, with the tenant `t17a` and its administrator `ada`, seeded with
+`odudu seed tenant`, `seed user` and `seed grant-role`. A form fetched from
+the authorization endpoint parked the request as
+`01a13789-3a08-7d56-a6d6-ca2a71cc343e`. Its lifetime, then the same row
+expired with `psql`:
 
 ```sql
 select expires_at - created_at as lifetime from authentication_sessions
-  where id = '01a108bd-bce1-7c7b-879d-775af4983269';
+  where id = '01a13789-3a08-7d56-a6d6-ca2a71cc343e';
 update authentication_sessions set expires_at = now() - interval '1 second'
-  where id = '01a108bd-bce1-7c7b-879d-775af4983269';
+  where id = '01a13789-3a08-7d56-a6d6-ca2a71cc343e';
 ```
 
 ```
     lifetime
------------------
- 00:30:00.000333
+----------------
+ 00:30:00.00042
 (1 row)
 
 UPDATE 1
@@ -1302,22 +1308,99 @@ UPDATE 1
 The right password, posted against it:
 
 ```bash
-curl -sS -D - -c jar3 -b jar3 -X POST \
-  --data-urlencode auth_session_id=01a108bd-bce1-7c7b-879d-775af4983269 \
-  --data-urlencode username=grace \
-  --data-urlencode password=signin-restart-throwaway \
-  http://localhost:3082/tenants/signin-restart/login-actions/authenticate
+curl -sS -D - -X POST \
+  --data-urlencode auth_session_id=01a13789-3a08-7d56-a6d6-ca2a71cc343e \
+  --data-urlencode username=ada \
+  --data-urlencode password=Tr17a-manual-only-pw \
+  http://localhost:3080/tenants/t17a/login-actions/authenticate
 ```
 
 ```
 HTTP/1.1 400 Bad Request
-x-request-id: 01a108bd-bddc-7832-b4ed-c41c3275a54b
+x-request-id: 01a13789-3b76-7e92-a2a3-d0c247466e9a
 content-type: text/html
 content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
+cache-control: no-store
+content-length: 636
+Date: Tue, 13 Oct 2026 23:11:42 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Sign-in error</title></head>
+<body>
+<h1>Can't continue</h1>
+<p>This sign-in attempt is no longer valid. Go back and start again.</p>
+<p><a href="/tenants/t17a/protocol/openid-connect/auth?response_type=code&amp;client_id=odudu-admin&amp;redirect_uri=http%3A%2F%2Flocalhost%3A3080%2Fconsole%2Fauth%2Fcallback&amp;scope=openid&amp;code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&amp;code_challenge_method=S256&amp;state=demo-state&amp;resource=urn%3Aodudu%3Aparams%3Aadmin-api">Start sign-in again</a></p>
+<p><small>invalid_request</small></p>
+</body>
+</html>
+```
+
+The link is this server's own authorization endpoint, rebuilt from the request
+`/authorize` parked and validated; `/authorize` validates it again from
+scratch when it is followed. The row authenticated nothing: it was read only
+for those parameters, and the row is there because the reaper keeps an
+expired one for `ODUDU_RETENTION_AUTHENTICATION_SESSION_SECONDS` (an hour by
+default) after it expires. The `resource` is the audience the client's
+registration resolved the original request to. A request that carried an
+`id_token_hint`, or a `claims` `sub`, is not rebuilt, since the hint token
+itself is not stored and a request without it would no longer be tied to one
+subject.
+
+Following it, with its `&amp;` read as `&`:
+
+```bash
+curl -sS -D - 'http://localhost:3080/tenants/t17a/protocol/openid-connect/auth?response_type=code&client_id=odudu-admin&redirect_uri=http%3A%2F%2Flocalhost%3A3080%2Fconsole%2Fauth%2Fcallback&scope=openid&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&state=demo-state&resource=urn%3Aodudu%3Aparams%3Aadmin-api'
+```
+
+The response is `200` with the login form under a new `auth_session_id`
+(`01a13789-5280-700c-8da0-b5f5b3e4c5f9`), these headers, and, after the form, the
+reload script on the same nonce the policy names:
+
+```
+HTTP/1.1 200 OK
+x-request-id: 01a13789-526a-7479-8d60-446ac2b4c2b9
+content-type: text/html
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:3080; base-uri 'none'; script-src 'nonce-ZyS8r4BN/oexBWSSziIg0g=='; connect-src 'self'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+content-length: 2521
+Date: Tue, 13 Oct 2026 23:11:48 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+```
+
+```
+<script nonce="ZyS8r4BN/oexBWSSziIg0g==">window.addEventListener('pageshow', function (event) { if (event.persisted) location.reload(); });</script>
+```
+
+The same post once the reaper has deleted the row, which is also what an
+`auth_session_id` that names nothing gets. The page has no link, since there
+is no request left to rebuild:
+
+```sql
+delete from authentication_sessions where id = '01a13789-3a08-7d56-a6d6-ca2a71cc343e';
+```
+
+```
+DELETE 1
+```
+
+```
+HTTP/1.1 400 Bad Request
+x-request-id: 01a13789-3c0b-732d-962b-253f0dbc7436
+content-type: text/html
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
 content-length: 254
-Date: Sun, 04 Oct 2026 21:06:55 GMT
+Date: Tue, 13 Oct 2026 23:11:43 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -1332,23 +1415,21 @@ Keep-Alive: timeout=72
 </html>
 ```
 
-The tenant still held the two codes the restarted console sign-in had left,
-and no third:
+No code was issued by any of it:
 
 ```sql
-select count(*) as codes from authorization_codes where tenant_id = '01a108bd-b4b2-756b-b09e-6dbd32fbdf4d';
+select count(*) as codes from authorization_codes
+  where tenant_id = (select id from tenants where name = 't17a');
 ```
 
 ```
  codes
 -------
-     2
+     0
 (1 row)
 ```
 
-The same answer as an `auth_session_id` that names nothing, since the hidden
-field is the form's CSRF defence and an expired one proves no more than a
-forged one. The 30 minutes are the tenant's `login_ttl_seconds`, which
+The 30 minutes are the tenant's `login_ttl_seconds`, which
 `PATCH /admin/tenants/{tenant}/settings` amends between `60` and `86400`
 ([Admin paths](admin-paths.md#get-settings-and-patch-settings)).
 
@@ -3308,6 +3389,7 @@ content-type: text/html
 content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
+cache-control: no-store
 content-length: 1078
 Date: Mon, 05 Oct 2026 11:51:00 GMT
 Connection: keep-alive
@@ -3788,6 +3870,7 @@ content-type: text/html
 content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
+cache-control: no-store
 content-length: 1166
 Date: Mon, 05 Oct 2026 09:37:42 GMT
 Connection: keep-alive
@@ -4530,6 +4613,7 @@ content-type: text/html
 content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
+cache-control: no-store
 content-length: 595
 Date: Mon, 05 Oct 2026 11:58:35 GMT
 Connection: keep-alive
@@ -4567,6 +4651,7 @@ content-type: text/html
 content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
+cache-control: no-store
 content-length: 247
 Date: Mon, 05 Oct 2026 11:58:35 GMT
 Connection: keep-alive
@@ -7223,6 +7308,7 @@ content-type: text/html
 content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' https://rp.example; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
+cache-control: no-store
 content-length: 664
 Date: Mon, 05 Oct 2026 09:37:06 GMT
 Connection: keep-alive
@@ -7369,6 +7455,7 @@ content-type: text/html
 content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' https://rp.example; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
+cache-control: no-store
 content-length: 664
 Date: Mon, 05 Oct 2026 09:37:06 GMT
 Connection: keep-alive
@@ -10461,11 +10548,6 @@ here.
 - **per-step authenticator configuration**: P4f.
 - **a password blocklist and breach check**: P4f.
 - **translated pages and mail**: P4b.
-- **a way back from the sign-in page's "no longer valid" answer**: a login
-  posted after its authentication session ends on a page that says
-  "Go back and start again" and links nowhere, where a mature provider
-  restarts the parked request. That page's work is **P4b**'s, whose criterion
-  names it ([A login posted after its authentication session expired](#a-login-posted-after-its-authentication-session-expired)).
 - **custom subject attributes and a declarative user profile**: P7.
 - **fine-grained admin permissions**: P9.
 - **per-client dedicated mappers**: P10.

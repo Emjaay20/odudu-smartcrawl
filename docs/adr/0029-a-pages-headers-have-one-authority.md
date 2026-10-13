@@ -75,6 +75,65 @@ page. The two-wrapper rule above covers server-rendered pages; design spec
 §5.4 (`docs/superpowers/specs/2026-09-26-p4d-admin-console-design.md`)
 gives the shell's policy.
 
+## Amendment — 2026-10-14 — a form left open, and Back
+
+A login form was restored by the browser's Back button with its typed
+username and a dead `auth_session_id`, and every resubmit failed the same
+way. No page carried a `Cache-Control` header, so the browser showed its own
+copy rather than asking `/authorize` for a fresh session.
+
+**What the standards say** (checked 2026-10-13, cited by title because
+numbering differs by version). No OAuth or OIDC specification requires a
+cache header on the interactive login page; RFC 9700 gives no such rule
+either, and this ADR does not claim one. `no-store` is normative on token
+responses (RFC 6749 §5.1, OIDC Core §3.1.3.3) and a SHOULD on the logout
+endpoints (OIDC Back-Channel Logout §2.8, Front-Channel Logout §2). The
+recommendation for pages carrying session-bound state is anti-caching headers:
+OWASP ASVS's anti-caching requirement (V8.2.1 in 4.0.x, V9.4 in 5.0) and the
+OWASP Session Management and Web Cache Security cheat sheets. Mature
+providers restart an expired sign-in instead of dead-ending (Keycloak's
+timeout page links back to the start); that is practice, not a specification.
+Chrome (developer.chrome.com/docs/web-platform/bfcache-ccns, 2025-09) now
+restores `no-store` pages from the back/forward cache for up to three minutes
+unless cookies change, so the header alone does not stop a restored dead form;
+its advice is to reload on `pageshow` with `event.persisted`.
+
+**Three layers, each needed.**
+
+1. `pageHeaders` adds `cache-control: no-store` to every page it covers. One
+   directive, not OWASP's cross-browser set: `Pragma` is deprecated
+   (RFC 9111 §5.4), and `no-cache` and `Expires: 0` add nothing to a
+   `no-store` that every current browser honours. Verified in Chromium:
+   `apps/admin-console/e2e/restart-sign-in.spec.ts` goes Back from the refusal
+   and gets a form under a new `auth_session_id`.
+2. `reloadOnRestore` (`@odudu/kernel`) adds one `pageshow` script, on the
+   page's own nonce so `script-src` is derived from the return value as
+   above, reloading when `event.persisted`. Verified in Chrome: a form was
+   restored from the cache with `persisted` true and its stale id, then
+   reloaded under a new one. It is applied to the login form, account chooser
+   and consent page when `/authorize` answers a GET, and nowhere else: a page
+   that answers a POST would be re-sent by a reload, and the required-action
+   pages issue secrets when rendered. The restored form shows for a moment
+   before the reload, acceptable for a form and not for a secret. Playwright's
+   Chromium has no back/forward cache, so this layer is covered by markup and
+   policy tests and by the manual run above.
+3. A submission whose authentication session is expired, consumed or unknown
+   answers with the same refusal as before; when the row still exists (the
+   reaper keeps it `ODUDU_RETENTION_AUTHENTICATION_SESSION_SECONDS`, an hour
+   by default, past expiry) the page adds "Start sign-in again", a path on this
+   server rebuilt from the parked request, which `/authorize` validates
+   afresh. The row authenticates nothing. A request that carried an
+   `id_token_hint` or a `claims` `sub` is not rebuilt, since the hint token
+   is not stored and the rebuilt request would no longer be tied to a subject.
+
+**What `no-store` costs.** Back to a sign-in page is a request, not a cache
+hit: a person who goes Back sees a form fetched again and a new authentication
+session row. Rows are reaped, so the cost is a write per visit on a path that
+already writes one. Nothing hashed is affected: the console's assets under
+`/console/assets/` stay cacheable. The console shell's `index.html` already
+sent `no-store` and keeps setting it in `spa.ts` beside its own policy; that
+file does not spread `pageHeaders`, so nothing changed there.
+
 ## Alternatives rejected
 
 - **Move `sendHtml` itself into `kernel`.** Would add `fastify` as a

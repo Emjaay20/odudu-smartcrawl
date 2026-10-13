@@ -216,6 +216,7 @@ content-type: text/html
 content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'; script-src 'nonce-tyfof1AM/8wyexzftgesTg=='; connect-src 'self'
 x-frame-options: DENY
 referrer-policy: no-referrer
+cache-control: no-store
 content-length: 2399
 Date: Mon, 28 Sep 2026 08:42:29 GMT
 Connection: keep-alive
