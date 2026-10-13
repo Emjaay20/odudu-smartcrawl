@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, offline, problem } from '#/testing/fakeTransport';
-import { AUDITOR, R, READER, roleRoutes } from '#/testing/rolesFixtures';
+import { A, AUDITOR, R, READER, roleRoutes } from '#/testing/rolesFixtures';
 import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
 import { role } from '#/testing/subjectsFixtures';
 
@@ -119,6 +119,58 @@ it('never sends a creation twice whose answer was lost', async () => {
     expect(router.state.location.pathname).toBe('/acme/roles/r-aud');
   });
   expect(sent.filter((s) => s.method === 'POST')).toHaveLength(1);
+});
+
+it('asks for a name before sending anything, and drops the ask once one is typed', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(AT, roleRoutes());
+  const name = await screen.findByRole('textbox', { name: 'Name' });
+  await user.click(screen.getByRole('button', { name: 'Create role' }));
+  expect(await screen.findByText('Enter a name.')).toBeVisible();
+  expect(sent.filter((s) => s.method === 'POST')).toEqual([]);
+  await user.type(name, 'a');
+  expect(screen.queryByText('Enter a name.')).toBeNull();
+});
+
+it('reads whoami again when the creation is refused, and says why on the page', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    roleRoutes(undefined, { [`POST ${R}`]: problem(403, 'about:blank', 'Forbidden') }),
+  );
+  await user.type(await screen.findByRole('textbox', { name: 'Name' }), 'billing{Enter}');
+  expect(await screen.findByText(/it needs the manage-tenant capability/u)).toBeVisible();
+  expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
+});
+
+it('holds Create after a lost answer until a look finds nothing, then lets it go again', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    roleRoutes(undefined, {
+      [`POST ${R}`]: offline(),
+      [`GET ${R}`]: json({ items: [] }),
+    }),
+  );
+  const name = await screen.findByRole('textbox', { name: 'Name' });
+  await user.type(name, 'billing{Enter}');
+  await screen.findByText(/Could not confirm whether billing was created/u);
+  await user.type(name, '{Enter}');
+  expect(sent.filter((s) => s.method === 'POST')).toHaveLength(1);
+  await user.click(screen.getByRole('button', { name: 'Look for billing' }));
+  expect(await screen.findByText(/No role named billing was found/u)).toBeVisible();
+  await user.type(name, '{Enter}');
+  await waitFor(() => {
+    expect(sent.filter((s) => s.method === 'POST')).toHaveLength(2);
+  });
+});
+
+it('says when a look for a lost creation could not be made', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, roleRoutes(undefined, { [`POST ${R}`]: offline(), [`GET ${R}`]: offline() }));
+  await user.type(await screen.findByRole('textbox', { name: 'Name' }), 'billing{Enter}');
+  await user.click(await screen.findByRole('button', { name: 'Look for billing' }));
+  expect(await screen.findByText('Could not look for billing. Try again.')).toBeVisible();
 });
 
 it('passes axe in both themes, copying', async () => {
