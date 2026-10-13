@@ -12,8 +12,8 @@ import {
 import { requestContextFrom, type RequestContext } from '@odudu/domain-audit';
 import { type RenderedPage } from '@odudu/kernel';
 import { type FastifyReply } from 'fastify';
-import { renderAuthorizeErrorPage } from '#/view/authorize-html';
 import { sendHtml } from '#/view/html-response';
+import { sendSignInExpired } from '#/view/routes/expired-sign-in';
 import { continuing, type ContinuationDeps } from '#/view/routes/continuation';
 
 // What every route that can produce a 'required_action' outcome needs to
@@ -69,14 +69,7 @@ export async function sendRequiredActionPage(
       // The page replaces the subject's codes as it renders, so a session
       // the flow does not yet count as finished must not reach it.
       if ((await deps.authenticatedSubject(tenant.id, authSessionId)) !== subjectId) {
-        return sendHtml(
-          reply,
-          400,
-          renderAuthorizeErrorPage(
-            'invalid_request',
-            'This sign-in attempt is no longer valid. Go back and start again.',
-          ),
-        );
+        return sendSignInExpired(reply, deps, tenantName, authSessionId);
       }
       const offer = await deps.beginRecoveryCodes(
         tenant.id,

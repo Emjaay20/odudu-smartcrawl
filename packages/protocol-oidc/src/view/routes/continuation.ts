@@ -4,6 +4,10 @@ import { type RenderedPage } from '@odudu/kernel';
 export interface ContinuationDeps {
   findTenant(name: string): Promise<{ id: string } | null>;
   loadPendingRequest(tenantId: string, authSessionId: string): Promise<PendingRequest | null>;
+  // The parked request whatever the session's state: expired, consumed or
+  // live. Not a liveness check, so never a reason to act on the session;
+  // sendSignInExpired reads it only to rebuild a link to /authorize.
+  recoverPendingRequest(tenantId: string, authSessionId: string): Promise<PendingRequest | null>;
 }
 
 // A page whose form continues a parked authorization request can be answered

@@ -20,6 +20,29 @@ describe('renderAuthorizeErrorPage', () => {
   });
 });
 
+describe('renderAuthorizeErrorPage with a way to start again', () => {
+  it('offers a link to the given location, and carries no script', () => {
+    const page = renderAuthorizeErrorPage('invalid_request', 'expired', '/tenants/acme/auth?a=1');
+    expect(page.body).toContain('<a href="/tenants/acme/auth?a=1">Start sign-in again</a>');
+    expect(page.script).toBeNull();
+    expect(page.body).not.toContain('<script');
+  });
+
+  it('escapes the location it was given', () => {
+    const page = renderAuthorizeErrorPage(
+      'invalid_request',
+      'x',
+      '/auth?a=1&b="><script>x</script>',
+    );
+    expect(page.body).toContain('href="/auth?a=1&amp;b=&quot;&gt;&lt;script&gt;x&lt;/script&gt;"');
+    expect(page.body).not.toContain('<script');
+  });
+
+  it('offers no link when there is nothing to restart', () => {
+    expect(renderAuthorizeErrorPage('invalid_request', 'x').body).not.toContain('<a ');
+  });
+});
+
 describe('renderEmailUnverifiedPage', () => {
   it('returns a body fragment and a title beside the document', () => {
     const page = renderEmailUnverifiedPage(true);

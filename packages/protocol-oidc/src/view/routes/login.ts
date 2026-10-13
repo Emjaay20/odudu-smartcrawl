@@ -127,6 +127,6 @@ export function registerLoginRoute(app: FastifyInstance, deps: LoginRouteDeps): 
       rememberMe,
     );
 
-    return sendLoginOutcome(reply, deps, request.params.tenant, outcome);
+    return sendLoginOutcome(reply, deps, request.params.tenant, outcome, authSessionId);
   });
 }

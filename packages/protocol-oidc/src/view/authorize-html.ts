@@ -1,11 +1,21 @@
 import { scriptNonce, type RenderedPage } from '@odudu/kernel';
 import { escapeHtml, page } from '#/view/document';
 
-export function renderAuthorizeErrorPage(error: string, description: string): RenderedPage {
+// `restartHref` is only ever this server's own authorize path, rebuilt by
+// restartAuthorizeLocation from a request /authorize already validated.
+export function renderAuthorizeErrorPage(
+  error: string,
+  description: string,
+  restartHref?: string,
+): RenderedPage {
+  const restart =
+    restartHref === undefined
+      ? ''
+      : `\n<p><a href="${escapeHtml(restartHref)}">Start sign-in again</a></p>`;
   return page(
     'Sign-in error',
     `<h1>Can't continue</h1>
-<p>${escapeHtml(description)}</p>
+<p>${escapeHtml(description)}</p>${restart}
 <p><small>${escapeHtml(error)}</small></p>`,
   );
 }

@@ -1,14 +1,11 @@
 import { sessionCookies, type AuthenticatorResult } from '@odudu/authn-flows';
 import { type FastifyReply } from 'fastify';
 import { type LoginSubmissionOutcome } from '#/usecase/login-submission';
-import {
-  renderAuthorizeErrorPage,
-  renderEmailUnverifiedPage,
-  renderLoginForm,
-} from '#/view/authorize-html';
+import { renderEmailUnverifiedPage, renderLoginForm } from '#/view/authorize-html';
 import { renderConsentPage } from '#/view/consent-html';
 import { sendHtml } from '#/view/html-response';
 import { continuing } from '#/view/routes/continuation';
+import { sendSignInExpired } from '#/view/routes/expired-sign-in';
 import {
   sendRequiredActionPage,
   type RequiredActionResponseDeps,
@@ -43,16 +40,10 @@ export async function sendLoginOutcome(
   deps: LoginResponseDeps,
   tenantName: string,
   outcome: LoginSubmissionOutcome,
+  authSessionId: string | undefined,
 ): Promise<FastifyReply> {
   if (outcome.kind === 'unauthenticated') {
-    return sendHtml(
-      reply,
-      400,
-      renderAuthorizeErrorPage(
-        'invalid_request',
-        'This sign-in attempt is no longer valid. Go back and start again.',
-      ),
-    );
+    return sendSignInExpired(reply, deps, tenantName, authSessionId);
   }
 
   // No set-cookie: nothing was established to carry in one.

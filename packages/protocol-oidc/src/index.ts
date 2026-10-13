@@ -623,8 +623,12 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
         requiredActionRepository(tx).pendingFor(subjectId),
       );
 
+    const recoverPendingRequest = (tenantId: string, authSessionId: string) =>
+      withTenant(deps.database.db, tenantId, (tx) => loadPendingRequest(tx, authSessionId));
+
     registerAuthorizeRoute(app, {
       findTenant,
+      recoverPendingRequest,
       tls,
       ...passkeyLogin,
       listPublishableKeys,
@@ -760,6 +764,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
         ),
       loadPendingRequest: (tenantId: string, authSessionId: string) =>
         withTenant(deps.database.db, tenantId, (tx) => loadPendingRequest(tx, authSessionId)),
+      recoverPendingRequest,
       pendingChallenge: pendingChallengeFor,
       checkEmailVerification,
       pendingActions,
@@ -793,6 +798,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
     registerLoginRoute(app, { ...loginSubmission, ...passkeyAssertion });
     registerConsentRoute(app, {
       findTenant,
+      recoverPendingRequest,
       tls,
       authenticatedSubject: authenticatedSubjectOf,
       authenticatedSession: (tenantId, authSessionId) =>

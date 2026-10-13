@@ -14,6 +14,7 @@ import {
   type RequiredActionSubmissionDeps,
 } from '#/usecase/required-action-submission';
 import { renderAuthorizeErrorPage } from '#/view/authorize-html';
+import { sendSignInExpired } from '#/view/routes/expired-sign-in';
 import { sendHtml } from '#/view/html-response';
 import { issuerBaseFor } from '#/view/issuer';
 import { continuing } from '#/view/routes/continuation';
@@ -87,14 +88,7 @@ export function registerRequiredActionRoute(
     );
 
     if (outcome.kind === 'unauthenticated') {
-      return sendHtml(
-        reply,
-        400,
-        renderAuthorizeErrorPage(
-          'invalid_request',
-          'This sign-in attempt is no longer valid. Go back and start again.',
-        ),
-      );
+      return sendSignInExpired(reply, deps, tenantName, authSessionId);
     }
 
     if (outcome.kind === 'not_owed') {
@@ -155,7 +149,7 @@ export function registerRequiredActionRoute(
         request.headers.cookie,
         pending?.rememberMe ?? false,
       );
-      return sendLoginOutcome(reply, deps, tenantName, resumed);
+      return sendLoginOutcome(reply, deps, tenantName, resumed, authSessionId);
     }
 
     if (outcome.action === 'generate-recovery-codes') {

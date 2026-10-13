@@ -79,11 +79,7 @@ async function respondToOutcome(
   }
 
   if (outcome.kind === 'render') {
-    return sendHtml(
-      reply,
-      400,
-      renderLogoutRedirectRefusedPage(outcome.frontChannelLogoutUrls),
-    );
+    return sendHtml(reply, 400, renderLogoutRedirectRefusedPage(outcome.frontChannelLogoutUrls));
   }
 
   // RP-Initiated Logout §3's redirect, carrying state the same way RFC
