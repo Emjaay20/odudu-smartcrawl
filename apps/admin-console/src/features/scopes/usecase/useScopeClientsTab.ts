@@ -12,7 +12,7 @@ import {
   clientsCount,
   clientsOffered,
 } from '#/features/scopes/service';
-import { useClientPicker } from '#/shared/repository/useClientPicker';
+import { useClientPicker } from '#/features/scopes/repository/useClientPicker';
 import { useToasts } from '#/shared/repository/useToasts';
 import { lacking } from '#/shared/service/access';
 import { lastChosen, type PickerState } from '#/shared/service/picker';

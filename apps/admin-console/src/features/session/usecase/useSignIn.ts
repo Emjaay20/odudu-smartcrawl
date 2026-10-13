@@ -1,6 +1,6 @@
 import { useLocation } from '@tanstack/react-router';
 import { loginUrl } from '#/features/session/service';
-import { useLeaveConsole } from '#/shared/repository/useLeaveConsole';
+import { useLeaveConsole } from '#/features/session/repository/useLeaveConsole';
 import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 
 // Sign-in is the tenant's own login page, so it leaves the console; it comes

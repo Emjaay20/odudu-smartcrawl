@@ -1,4 +1,4 @@
-import { useLeaveConsole } from '#/shared/repository/useLeaveConsole';
+import { useLeaveConsole } from '#/features/session/repository/useLeaveConsole';
 import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 
 // Reloads the page once the unsaved-changes guard lets it go, asking in the

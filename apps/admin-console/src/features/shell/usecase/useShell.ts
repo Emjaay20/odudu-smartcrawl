@@ -11,7 +11,7 @@ import {
   type RailSection,
 } from '#/features/shell/service';
 import { useDialogHost } from '#/shared/repository/useDialogHost';
-import { useRailCollapsed } from '#/shared/repository/useRailCollapsed';
+import { useRailCollapsed } from '#/features/shell/repository/useRailCollapsed';
 import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 import type { Principal } from '#/shared/service/principal';
 import type { ThemeChoice } from '#/shared/service/theme';

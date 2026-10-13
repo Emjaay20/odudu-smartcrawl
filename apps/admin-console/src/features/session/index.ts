@@ -17,3 +17,4 @@ export {
 } from '#/features/session/usecase/useAuthority';
 export { draftOwner } from '#/features/session/service';
 export { useAuditReadable } from '#/features/session/usecase/useAuditReadable';
+export { useReloadConsole } from '#/features/session/usecase/useReloadConsole';
