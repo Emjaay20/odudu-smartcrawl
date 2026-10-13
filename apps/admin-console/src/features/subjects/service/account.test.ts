@@ -68,11 +68,11 @@ describe('the username in the account section', () => {
   });
 
   it('offers a rename where the policy allows it, and otherwise says why not', () => {
-    expect(usernameMode({ status: 'ready', editable: true }, '/s')).toEqual({
+    expect(usernameMode({ status: 'ready', data: true }, '/s')).toEqual({
       kind: 'editable',
       description: USERNAME_RULE_TEXT,
     });
-    expect(usernameMode({ status: 'ready', editable: false }, '/s')).toMatchObject({
+    expect(usernameMode({ status: 'ready', data: false }, '/s')).toMatchObject({
       kind: 'fixed',
       settingsHref: '/s',
       reason: expect.stringMatching(/username_editable setting is off/u) as string,

@@ -2,15 +2,12 @@ import type { Group, GroupRecord } from '@odudu/contracts/admin';
 import { beyondCaller, type Loss } from '#/shared/service/capabilities';
 import { andList, capitalise } from '#/shared/service/format';
 import type { AdminCapability, Authority } from '#/shared/service/principal';
+import type { Loaded } from '#/shared/service/read';
 import { type ReachLines, reachLines } from '#/features/groups/service/blocks';
 import { newGroupHref } from '#/features/groups/service/address';
 import { type Readiness } from '#/features/groups/service/loss';
 
-export type GroupRead =
-  | { status: 'none' }
-  | { status: 'loading' }
-  | { status: 'ready'; group: GroupRecord }
-  | { status: 'failed'; retry: () => void };
+export type GroupRead = { status: 'none' } | Loaded<GroupRecord>;
 
 // What its parent hands down beside what the group itself carries, and the
 // caller's own capabilities: every ceiling on its writes is judged by them,
@@ -32,7 +29,7 @@ export function groupCeiling(
 ): Ceiling {
   if (parent.status === 'failed') return { status: 'failed', retry: parent.retry };
   const parentReach =
-    parent.status === 'none' ? [] : parent.status === 'ready' ? parent.group.admin_reach : null;
+    parent.status === 'none' ? [] : parent.status === 'ready' ? parent.data.admin_reach : null;
   if (parentReach === null || authority === undefined || group === undefined) {
     return { status: 'checking' };
   }

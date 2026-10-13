@@ -1,5 +1,4 @@
 import type { GroupRecord, SetGroupRolesResponse } from '@odudu/contracts/admin';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   amendGroup,
   deleteGroup,
@@ -10,6 +9,7 @@ import {
 } from '#/features/groups/adapter/groups';
 import { groupRecord, groupRolesRecord, type GroupRead } from '#/features/groups/service';
 import { useAfterChange } from '#/shared/repository/useAfterChange';
+import { useRead } from '#/shared/repository/useRead';
 import { useRecord, type RecordState } from '#/shared/repository/useRecord';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
@@ -46,24 +46,10 @@ function groupKey(tenant: string, id: string | null) {
 // creation was asked from; nothing is read for none.
 export function useGroupNamed(tenant: string, id: string | null): GroupRead {
   const { gateway } = useTransport();
-  const client = useQueryClient();
-  const query = useQuery({
-    queryKey: groupKey(tenant, id),
-    enabled: id !== null,
-    queryFn: () => (id === null ? Promise.resolve(null) : readGroup(gateway, tenant, id)),
-  });
-  if (id === null) return { status: 'none' };
-  const result = query.data;
-  if (result === undefined || result === null) return { status: 'loading' };
-  if (result.ok) return { status: 'ready', group: result.data };
-  return {
-    status: 'failed',
-    retry: () => {
-      client
-        .invalidateQueries({ queryKey: groupKey(tenant, id), exact: true })
-        .catch(() => undefined);
-    },
-  };
+  const read = useRead(groupKey(tenant, id), id !== null, () =>
+    readGroup(gateway, tenant, id ?? ''),
+  );
+  return id === null ? { status: 'none' } : read;
 }
 
 // What a group hands out follows from its roles and its place, so every

@@ -1,5 +1,5 @@
 import type { Profile, Subject } from '@odudu/contracts/admin';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   amendProfile,
   amendSubject,
@@ -15,9 +15,11 @@ import {
   type RecordState,
 } from '#/shared/repository/useRecord';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
+import { useRead } from '#/shared/repository/useRead';
 import { useWrite, type Write } from '#/shared/repository/useWrite';
 import { profileRecord, subjectRecord } from '#/features/subjects/service';
 import { isStale } from '#/shared/service/failure';
+import type { Read } from '#/shared/service/read';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 import { useTransport } from '#/shared/transport/useTransport';
 
@@ -101,24 +103,8 @@ export function useSubjectDeletion(
   });
 }
 
-export type UsernamePolicyRead =
-  | { status: 'loading' }
-  | { status: 'ready'; editable: boolean }
-  | { status: 'failed'; retry: () => void };
-
 // Whether a rename would be accepted, as the tenant's policy says.
-export function useUsernamePolicy(tenant: string): UsernamePolicyRead {
+export function useUsernamePolicy(tenant: string): Read<boolean> {
   const { gateway } = useTransport();
-  const client = useQueryClient();
-  const key = ['username-policy', tenant] as const;
-  const query = useQuery({ queryKey: key, queryFn: () => readUsernameEditable(gateway, tenant) });
-  const result = query.data;
-  if (result === undefined) return { status: 'loading' };
-  if (result.ok) return { status: 'ready', editable: result.data };
-  return {
-    status: 'failed',
-    retry: () => {
-      client.invalidateQueries({ queryKey: key, exact: true }).catch(() => undefined);
-    },
-  };
+  return useRead(['username-policy', tenant], true, () => readUsernameEditable(gateway, tenant));
 }

@@ -65,7 +65,7 @@ export function useNewGroup(tenant: string): NewGroup {
   const asked = useGroupNamed(tenant, parentId);
   const parent =
     picker.options.find((group) => group.id === parentId) ??
-    (asked.status === 'ready' ? asked.group : undefined);
+    (asked.status === 'ready' ? asked.data : undefined);
   const caller = useAuthority(tenant)?.capabilities;
   const held = createHeld(parentId, parent, caller);
 

@@ -50,7 +50,7 @@ export function Installation({ tenant, clientDbId }: { tenant: string; clientDbI
       ) : null}
       {panel.status === 'ready' ? (
         <dl className={recordTab.fixed}>
-          {panel.rows.map((row) => (
+          {panel.data.map((row) => (
             <div key={row.label}>
               <dt>{row.label}</dt>
               <dd>

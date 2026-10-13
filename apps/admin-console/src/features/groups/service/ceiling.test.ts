@@ -110,7 +110,7 @@ describe('the ceiling of a group record', () => {
     const top = groupCeiling({ status: 'none' }, authority, record);
     expect(top).toMatchObject({ status: 'ready', parentReach: [], caller: authority.capabilities });
     const parent = { ...record, id: 'g-p', admin_reach: reach('manage-users') };
-    expect(groupCeiling({ status: 'ready', group: parent }, authority, record)).toMatchObject({
+    expect(groupCeiling({ status: 'ready', data: parent }, authority, record)).toMatchObject({
       status: 'ready',
       parentReach: ['manage-users'],
     });

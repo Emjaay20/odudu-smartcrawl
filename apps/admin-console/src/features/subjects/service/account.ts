@@ -1,6 +1,7 @@
 import { USERNAME_RULE, type Subject } from '@odudu/contracts/admin';
 import { writeFailureText } from '#/shared/service/failure';
 import { sentence } from '#/shared/service/format';
+import type { Loaded } from '#/shared/service/read';
 import type { GatewayFailure } from '#/shared/service/result';
 
 export const USERNAME_RULE_TEXT = sentence(USERNAME_RULE);
@@ -40,20 +41,14 @@ export type UsernameMode =
   | { kind: 'failed'; retry: () => void }
   | { kind: 'checking' };
 
-export function usernameMode(
-  policy:
-    | { status: 'loading' }
-    | { status: 'ready'; editable: boolean }
-    | { status: 'failed'; retry: () => void },
-  settingsHref: string,
-): UsernameMode {
+export function usernameMode(policy: Loaded<boolean>, settingsHref: string): UsernameMode {
   switch (policy.status) {
     case 'loading':
       return { kind: 'checking' };
     case 'failed':
       return { kind: 'failed', retry: policy.retry };
     case 'ready':
-      return policy.editable
+      return policy.data
         ? { kind: 'editable', description: USERNAME_RULE_TEXT }
         : {
             kind: 'fixed',
