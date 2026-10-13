@@ -7,28 +7,18 @@ import {
   type GroupRecord,
   type SetGroupRolesResponse,
 } from '@odudu/contracts/admin';
-import { z } from 'zod';
 import { readGroupPage } from '#/shared/adapter/directory';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
+import { nothing, segment, tenantPath } from '#/shared/adapter/route';
 
 export { readGroupPage };
-
-const nothing = z.undefined();
-
-function path(tenant: string): string {
-  return encodeURIComponent(tenant);
-}
-
-function segment(id: string): string {
-  return encodeURIComponent(id);
-}
 
 export function readGroupCount(
   gateway: Gateway,
   tenant: string,
   query: URLSearchParams,
 ): Promise<GatewayResult<CountResponse>> {
-  const t = path(tenant);
+  const t = tenantPath(tenant);
   return gateway.request('GET', `admin/tenants/${t}/groups/count?${query.toString()}`, {
     schema: countResponseSchema,
   });
@@ -39,7 +29,7 @@ export function createGroup(
   tenant: string,
   input: { name: string; description: string; parentId: string | null },
 ): Promise<GatewayResult<GroupRecord>> {
-  const t = path(tenant);
+  const t = tenantPath(tenant);
   return gateway.request('POST', `admin/tenants/${t}/groups`, {
     body: {
       name: input.name,
@@ -55,7 +45,7 @@ export function readGroup(
   tenant: string,
   groupId: string,
 ): Promise<GatewayResult<GroupRecord>> {
-  const t = path(tenant);
+  const t = tenantPath(tenant);
   const id = segment(groupId);
   return gateway.request('GET', `admin/tenants/${t}/groups/${id}`, { schema: groupRecordSchema });
 }
@@ -67,7 +57,7 @@ export function amendGroup(
   changes: { description?: string | null; parent_id?: string | null },
   ifMatch: string,
 ): Promise<GatewayResult<GroupRecord>> {
-  const t = path(tenant);
+  const t = tenantPath(tenant);
   const id = segment(groupId);
   const { description, ...rest } = changes;
   return gateway.request('PATCH', `admin/tenants/${t}/groups/${id}`, {
@@ -88,7 +78,7 @@ export function setGroupDefault(
   value: boolean,
   ifMatch: string,
 ): Promise<GatewayResult<GroupRecord>> {
-  const t = path(tenant);
+  const t = tenantPath(tenant);
   const id = segment(groupId);
   return gateway.request('PUT', `admin/tenants/${t}/groups/${id}/default`, {
     body: { default: value },
@@ -102,7 +92,7 @@ export function deleteGroup(
   tenant: string,
   groupId: string,
 ): Promise<GatewayResult<undefined>> {
-  const t = path(tenant);
+  const t = tenantPath(tenant);
   const id = segment(groupId);
   return gateway.request('DELETE', `admin/tenants/${t}/groups/${id}`, { schema: nothing });
 }
@@ -112,7 +102,7 @@ export function readGroupRoles(
   tenant: string,
   groupId: string,
 ): Promise<GatewayResult<SetGroupRolesResponse>> {
-  const t = path(tenant);
+  const t = tenantPath(tenant);
   const id = segment(groupId);
   return gateway.request('GET', `admin/tenants/${t}/groups/${id}/roles`, {
     schema: setGroupRolesResponseSchema,
@@ -126,7 +116,7 @@ export function setGroupRoles(
   roleIds: readonly string[],
   ifMatch: string,
 ): Promise<GatewayResult<SetGroupRolesResponse>> {
-  const t = path(tenant);
+  const t = tenantPath(tenant);
   const id = segment(groupId);
   return gateway.request('PUT', `admin/tenants/${t}/groups/${id}/roles`, {
     body: { role_ids: roleIds },

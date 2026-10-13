@@ -4,21 +4,11 @@ import {
   type ListRoleCompositesResponse,
   type Role,
 } from '@odudu/contracts/admin';
-import { z } from 'zod';
 import { readRoleCount, readRolePage } from '#/shared/adapter/directory';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
+import { nothing, segment, tenantPath } from '#/shared/adapter/route';
 
 export { readRoleCount, readRolePage };
-
-const nothing = z.undefined();
-
-function path(tenant: string): string {
-  return encodeURIComponent(tenant);
-}
-
-function segment(id: string): string {
-  return encodeURIComponent(id);
-}
 
 // A tenant role: a client's own roles are made from that client's page.
 export function createRole(
@@ -26,7 +16,7 @@ export function createRole(
   tenant: string,
   input: { name: string; description: string },
 ): Promise<GatewayResult<Role>> {
-  const t = path(tenant);
+  const t = tenantPath(tenant);
   return gateway.request('POST', `admin/tenants/${t}/roles`, {
     body: {
       name: input.name,
@@ -41,7 +31,7 @@ export function readRole(
   tenant: string,
   roleId: string,
 ): Promise<GatewayResult<Role>> {
-  const t = path(tenant);
+  const t = tenantPath(tenant);
   const id = segment(roleId);
   return gateway.request('GET', `admin/tenants/${t}/roles/${id}`, { schema: roleSchema });
 }
@@ -53,7 +43,7 @@ export function amendRole(
   changes: { description: string | null },
   ifMatch: string,
 ): Promise<GatewayResult<Role>> {
-  const t = path(tenant);
+  const t = tenantPath(tenant);
   const id = segment(roleId);
   return gateway.request('PATCH', `admin/tenants/${t}/roles/${id}`, {
     // The server keeps no empty description, so an emptied one is cleared.
@@ -70,7 +60,7 @@ export function setRoleDefault(
   value: boolean,
   ifMatch: string,
 ): Promise<GatewayResult<Role>> {
-  const t = path(tenant);
+  const t = tenantPath(tenant);
   const id = segment(roleId);
   return gateway.request('PUT', `admin/tenants/${t}/roles/${id}/default`, {
     body: { default: value },
@@ -84,7 +74,7 @@ export function deleteRole(
   tenant: string,
   roleId: string,
 ): Promise<GatewayResult<undefined>> {
-  const t = path(tenant);
+  const t = tenantPath(tenant);
   const id = segment(roleId);
   return gateway.request('DELETE', `admin/tenants/${t}/roles/${id}`, { schema: nothing });
 }
@@ -94,7 +84,7 @@ export function readComposites(
   tenant: string,
   roleId: string,
 ): Promise<GatewayResult<ListRoleCompositesResponse>> {
-  const t = path(tenant);
+  const t = tenantPath(tenant);
   const id = segment(roleId);
   return gateway.request('GET', `admin/tenants/${t}/roles/${id}/composites`, {
     schema: listRoleCompositesResponseSchema,
@@ -110,7 +100,7 @@ export function addComposite(
   childId: string,
   ifMatch: string | null,
 ): Promise<GatewayResult<undefined>> {
-  const t = path(tenant);
+  const t = tenantPath(tenant);
   const id = segment(roleId);
   return gateway.request('POST', `admin/tenants/${t}/roles/${id}/composites`, {
     body: { child_role_id: childId },
@@ -126,7 +116,7 @@ export function removeComposite(
   childId: string,
   ifMatch: string,
 ): Promise<GatewayResult<undefined>> {
-  const t = path(tenant);
+  const t = tenantPath(tenant);
   const id = segment(roleId);
   const child = segment(childId);
   return gateway.request('DELETE', `admin/tenants/${t}/roles/${id}/composites/${child}`, {

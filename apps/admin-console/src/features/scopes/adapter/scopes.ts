@@ -12,30 +12,24 @@ import {
   type ScopeMappers,
   type SetScopeRolesResponse,
 } from '@odudu/contracts/admin';
-import { z } from 'zod';
 import { readScopePage } from '#/shared/adapter/directory';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
+import { nothing, segment, tenantPath } from '#/shared/adapter/route';
 
 export { readScopePage };
-
-const nothing = z.undefined();
-
-function path(tenant: string): string {
-  return encodeURIComponent(tenant);
-}
-
-function segment(id: string): string {
-  return encodeURIComponent(id);
-}
 
 export function readScopeCount(
   gateway: Gateway,
   tenant: string,
   query: URLSearchParams,
 ): Promise<GatewayResult<CountResponse>> {
-  return gateway.request('GET', `admin/tenants/${path(tenant)}/scopes/count?${query.toString()}`, {
-    schema: countResponseSchema,
-  });
+  return gateway.request(
+    'GET',
+    `admin/tenants/${tenantPath(tenant)}/scopes/count?${query.toString()}`,
+    {
+      schema: countResponseSchema,
+    },
+  );
 }
 
 // A new scope is its name and description; a copy carries the source's other fields too.
@@ -55,7 +49,7 @@ export function createScope(
   input: CreateScopeInput,
 ): Promise<GatewayResult<ClientScope>> {
   const { description, ...rest } = input;
-  return gateway.request('POST', `admin/tenants/${path(tenant)}/scopes`, {
+  return gateway.request('POST', `admin/tenants/${tenantPath(tenant)}/scopes`, {
     body: {
       ...rest,
       ...(description === '' ? {} : { description }),
@@ -69,7 +63,7 @@ export function readScope(
   tenant: string,
   scopeId: string,
 ): Promise<GatewayResult<ClientScope>> {
-  return gateway.request('GET', `admin/tenants/${path(tenant)}/scopes/${segment(scopeId)}`, {
+  return gateway.request('GET', `admin/tenants/${tenantPath(tenant)}/scopes/${segment(scopeId)}`, {
     schema: clientScopeSchema,
   });
 }
@@ -81,11 +75,15 @@ export function amendScope(
   changes: object,
   ifMatch: string,
 ): Promise<GatewayResult<ClientScope>> {
-  return gateway.request('PATCH', `admin/tenants/${path(tenant)}/scopes/${segment(scopeId)}`, {
-    body: changes,
-    ifMatch,
-    schema: clientScopeSchema,
-  });
+  return gateway.request(
+    'PATCH',
+    `admin/tenants/${tenantPath(tenant)}/scopes/${segment(scopeId)}`,
+    {
+      body: changes,
+      ifMatch,
+      schema: clientScopeSchema,
+    },
+  );
 }
 
 export function deleteScope(
@@ -93,9 +91,13 @@ export function deleteScope(
   tenant: string,
   scopeId: string,
 ): Promise<GatewayResult<undefined>> {
-  return gateway.request('DELETE', `admin/tenants/${path(tenant)}/scopes/${segment(scopeId)}`, {
-    schema: nothing,
-  });
+  return gateway.request(
+    'DELETE',
+    `admin/tenants/${tenantPath(tenant)}/scopes/${segment(scopeId)}`,
+    {
+      schema: nothing,
+    },
+  );
 }
 
 export function readScopeRoles(
@@ -103,9 +105,13 @@ export function readScopeRoles(
   tenant: string,
   scopeId: string,
 ): Promise<GatewayResult<SetScopeRolesResponse>> {
-  return gateway.request('GET', `admin/tenants/${path(tenant)}/scopes/${segment(scopeId)}/roles`, {
-    schema: setScopeRolesResponseSchema,
-  });
+  return gateway.request(
+    'GET',
+    `admin/tenants/${tenantPath(tenant)}/scopes/${segment(scopeId)}/roles`,
+    {
+      schema: setScopeRolesResponseSchema,
+    },
+  );
 }
 
 export function setScopeRoles(
@@ -115,11 +121,15 @@ export function setScopeRoles(
   roleIds: readonly string[],
   ifMatch: string,
 ): Promise<GatewayResult<SetScopeRolesResponse>> {
-  return gateway.request('PUT', `admin/tenants/${path(tenant)}/scopes/${segment(scopeId)}/roles`, {
-    body: { role_ids: roleIds },
-    ifMatch,
-    schema: setScopeRolesResponseSchema,
-  });
+  return gateway.request(
+    'PUT',
+    `admin/tenants/${tenantPath(tenant)}/scopes/${segment(scopeId)}/roles`,
+    {
+      body: { role_ids: roleIds },
+      ifMatch,
+      schema: setScopeRolesResponseSchema,
+    },
+  );
 }
 
 export function readScopeMappers(
@@ -129,7 +139,7 @@ export function readScopeMappers(
 ): Promise<GatewayResult<ScopeMappers>> {
   return gateway.request(
     'GET',
-    `admin/tenants/${path(tenant)}/scopes/${segment(scopeId)}/mappers`,
+    `admin/tenants/${tenantPath(tenant)}/scopes/${segment(scopeId)}/mappers`,
     { schema: scopeMappersSchema },
   );
 }
@@ -143,7 +153,7 @@ export function setScopeMappers(
 ): Promise<GatewayResult<ScopeMappers>> {
   return gateway.request(
     'PUT',
-    `admin/tenants/${path(tenant)}/scopes/${segment(scopeId)}/mappers`,
+    `admin/tenants/${tenantPath(tenant)}/scopes/${segment(scopeId)}/mappers`,
     { body: { mapper_names: names }, ifMatch, schema: scopeMappersSchema },
   );
 }
@@ -156,7 +166,7 @@ export function readScopeClients(
 ): Promise<GatewayResult<ListScopeClientsResponse>> {
   return gateway.request(
     'GET',
-    `admin/tenants/${path(tenant)}/scopes/${segment(scopeId)}/clients?${query.toString()}`,
+    `admin/tenants/${tenantPath(tenant)}/scopes/${segment(scopeId)}/clients?${query.toString()}`,
     { schema: listScopeClientsResponseSchema },
   );
 }
@@ -171,7 +181,7 @@ export function assignClient(
 ): Promise<GatewayResult<AssignScopeToClientResponse>> {
   return gateway.request(
     'PUT',
-    `admin/tenants/${path(tenant)}/scopes/${segment(scopeId)}/clients/${segment(clientDbId)}`,
+    `admin/tenants/${tenantPath(tenant)}/scopes/${segment(scopeId)}/clients/${segment(clientDbId)}`,
     { body: { assignment }, schema: assignScopeToClientResponseSchema },
   );
 }
@@ -184,7 +194,7 @@ export function unassignClient(
 ): Promise<GatewayResult<undefined>> {
   return gateway.request(
     'DELETE',
-    `admin/tenants/${path(tenant)}/scopes/${segment(scopeId)}/clients/${segment(clientDbId)}`,
+    `admin/tenants/${tenantPath(tenant)}/scopes/${segment(scopeId)}/clients/${segment(clientDbId)}`,
     { schema: nothing },
   );
 }

@@ -13,11 +13,11 @@ import { z } from 'zod';
 import type { Collection, Discovery, Jwks } from '#/features/overview/service';
 import { readAuditPage } from '#/shared/adapter/audit';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
+import { discoverySchema, tenantPath } from '#/shared/adapter/route';
 
 // The gateway's mirrors of the tenant's public documents have no contract
 // in @odudu/contracts, so these hold them only to what the page reads and
 // keep every other member for the raw view.
-const discoverySchema = z.looseObject({ issuer: z.string() });
 const jwksSchema = z.looseObject({
   keys: z.array(
     z.looseObject({
@@ -33,10 +33,6 @@ const KEY_PAGE = 200;
 // A tenant holds a handful of keys; this bounds a cursor that never ends.
 const MAX_KEY_PAGES = 10;
 const LATEST_AUDIT = 5;
-
-function tenantPath(tenant: string): string {
-  return encodeURIComponent(tenant);
-}
 
 export function readDiscovery(gateway: Gateway, tenant: string): Promise<GatewayResult<Discovery>> {
   return gateway.request('GET', `tenants/${tenantPath(tenant)}/discovery`, {

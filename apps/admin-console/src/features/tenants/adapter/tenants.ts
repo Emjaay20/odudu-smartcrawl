@@ -7,13 +7,9 @@ import {
   type ListTenantsResponse,
   type Tenant,
 } from '@odudu/contracts/admin';
-import { z } from 'zod';
 import type { ImportedSecret } from '#/features/tenants/service';
 import type { Gateway, GatewayResult, RawBody } from '#/shared/transport/gateway';
-
-function tenantPath(name: string): string {
-  return encodeURIComponent(name);
-}
+import { discoverySchema, tenantPath } from '#/shared/adapter/route';
 
 export function readTenantPage(
   gateway: Gateway,
@@ -106,8 +102,6 @@ export function readExport(
     ? gateway.download('GET', `admin/tenants/${t}/export?include=subjects`)
     : gateway.download('GET', `admin/tenants/${t}/export`);
 }
-
-const discoverySchema = z.looseObject({ issuer: z.string() });
 
 export async function readSystemIssuer(gateway: Gateway): Promise<GatewayResult<string>> {
   const result = await gateway.request('GET', 'tenants/system/discovery', {

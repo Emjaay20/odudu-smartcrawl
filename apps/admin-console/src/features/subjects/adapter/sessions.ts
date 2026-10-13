@@ -10,10 +10,8 @@ import {
   type ListSessionsResponse,
   type RevokeGrantsResponse,
 } from '@odudu/contracts/admin';
-import { z } from 'zod';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-
-const nothing = z.undefined();
+import { nothing } from '#/shared/adapter/route';
 
 export function readSessions(
   gateway: Gateway,

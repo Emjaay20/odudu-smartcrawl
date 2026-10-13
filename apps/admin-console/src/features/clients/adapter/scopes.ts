@@ -2,10 +2,8 @@ import {
   assignScopeToClientResponseSchema,
   type AssignScopeToClientResponse,
 } from '@odudu/contracts/admin';
-import { z } from 'zod';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-
-const nothing = z.undefined();
+import { nothing } from '#/shared/adapter/route';
 
 // Answers the client's scopes alone, which is all `manage-tenant` may be told of it.
 export function assignScope(

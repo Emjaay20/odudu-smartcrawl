@@ -15,10 +15,7 @@ import {
 } from '@odudu/contracts/admin';
 import { readRolePage } from '#/shared/adapter/directory';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-
-function tenantPath(tenant: string): string {
-  return encodeURIComponent(tenant);
-}
+import { tenantPath } from '#/shared/adapter/route';
 
 export function readAdministratorPage(
   gateway: Gateway,

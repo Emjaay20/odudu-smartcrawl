@@ -1,15 +1,12 @@
 import { settingsSchema, type AmendSettingsRequest, type Settings } from '@odudu/contracts/admin';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-
-function path(tenant: string): string {
-  return encodeURIComponent(tenant);
-}
+import { tenantPath } from '#/shared/adapter/route';
 
 export function readTenantSettings(
   gateway: Gateway,
   tenant: string,
 ): Promise<GatewayResult<Settings>> {
-  return gateway.request('GET', `admin/tenants/${path(tenant)}/settings`, {
+  return gateway.request('GET', `admin/tenants/${tenantPath(tenant)}/settings`, {
     schema: settingsSchema,
   });
 }
@@ -21,7 +18,7 @@ export function amendTenantSettings(
   changes: AmendSettingsRequest,
   ifMatch: string,
 ): Promise<GatewayResult<Settings>> {
-  return gateway.request('PATCH', `admin/tenants/${path(tenant)}/settings`, {
+  return gateway.request('PATCH', `admin/tenants/${tenantPath(tenant)}/settings`, {
     body: changes,
     ifMatch,
     schema: settingsSchema,

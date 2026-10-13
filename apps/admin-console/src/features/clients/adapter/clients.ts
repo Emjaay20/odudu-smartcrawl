@@ -12,26 +12,16 @@ import {
   type Role,
   type RotateClientSecretResponse,
 } from '@odudu/contracts/admin';
-import { z } from 'zod';
 import { entriesOf, type NewClientKind } from '#/features/clients/service';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-
-const nothing = z.undefined();
-
-function path(tenant: string): string {
-  return encodeURIComponent(tenant);
-}
-
-function segment(id: string): string {
-  return encodeURIComponent(id);
-}
+import { nothing, segment, tenantPath } from '#/shared/adapter/route';
 
 export function readClientPage(
   gateway: Gateway,
   tenant: string,
   query: URLSearchParams,
 ): Promise<GatewayResult<ListClientsResponse>> {
-  return gateway.request('GET', `admin/tenants/${path(tenant)}/clients?${query.toString()}`, {
+  return gateway.request('GET', `admin/tenants/${tenantPath(tenant)}/clients?${query.toString()}`, {
     schema: listClientsResponseSchema,
   });
 }
@@ -41,9 +31,13 @@ export function readClientCount(
   tenant: string,
   query: URLSearchParams,
 ): Promise<GatewayResult<CountResponse>> {
-  return gateway.request('GET', `admin/tenants/${path(tenant)}/clients/count?${query.toString()}`, {
-    schema: countResponseSchema,
-  });
+  return gateway.request(
+    'GET',
+    `admin/tenants/${tenantPath(tenant)}/clients/count?${query.toString()}`,
+    {
+      schema: countResponseSchema,
+    },
+  );
 }
 
 export interface NewClient {
@@ -80,7 +74,7 @@ export function createClient(
   tenant: string,
   input: NewClient,
 ): Promise<GatewayResult<CreateClientResponse>> {
-  return gateway.request('POST', `admin/tenants/${path(tenant)}/clients`, {
+  return gateway.request('POST', `admin/tenants/${tenantPath(tenant)}/clients`, {
     body: {
       client_id: input.clientId,
       ...(input.name === '' ? {} : { name: input.name }),
@@ -96,7 +90,7 @@ export function readClient(
   tenant: string,
   id: string,
 ): Promise<GatewayResult<Client>> {
-  return gateway.request('GET', `admin/tenants/${path(tenant)}/clients/${segment(id)}`, {
+  return gateway.request('GET', `admin/tenants/${tenantPath(tenant)}/clients/${segment(id)}`, {
     schema: clientSchema,
   });
 }
@@ -176,7 +170,7 @@ export function amendClient(
   changes: ClientChanges,
   ifMatch: string,
 ): Promise<GatewayResult<Client>> {
-  return gateway.request('PATCH', `admin/tenants/${path(tenant)}/clients/${segment(id)}`, {
+  return gateway.request('PATCH', `admin/tenants/${tenantPath(tenant)}/clients/${segment(id)}`, {
     body: wireChanges(changes),
     ifMatch,
     schema: clientSchema,
@@ -188,7 +182,7 @@ export function deleteClient(
   tenant: string,
   id: string,
 ): Promise<GatewayResult<undefined>> {
-  return gateway.request('DELETE', `admin/tenants/${path(tenant)}/clients/${segment(id)}`, {
+  return gateway.request('DELETE', `admin/tenants/${tenantPath(tenant)}/clients/${segment(id)}`, {
     schema: nothing,
   });
 }
@@ -215,7 +209,7 @@ export function rotateClientSecret(
   const query = new URLSearchParams({ grace_seconds: String(graceSeconds) });
   return gateway.request(
     'POST',
-    `admin/tenants/${path(tenant)}/clients/${segment(id)}/secret?${query.toString()}`,
+    `admin/tenants/${tenantPath(tenant)}/clients/${segment(id)}/secret?${query.toString()}`,
     { schema: rotateClientSecretResponseSchema },
   );
 }
@@ -227,7 +221,7 @@ export function createClientRole(
   clientDbId: string,
   input: { name: string; description: string },
 ): Promise<GatewayResult<Role>> {
-  return gateway.request('POST', `admin/tenants/${path(tenant)}/roles`, {
+  return gateway.request('POST', `admin/tenants/${tenantPath(tenant)}/roles`, {
     body: {
       name: input.name,
       client_id: clientDbId,

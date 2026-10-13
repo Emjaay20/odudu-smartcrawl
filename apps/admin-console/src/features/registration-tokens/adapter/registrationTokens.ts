@@ -4,14 +4,8 @@ import {
   type ListRegistrationTokensResponse,
   type MintRegistrationTokenResponse,
 } from '@odudu/contracts/admin';
-import { z } from 'zod';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-
-const nothing = z.undefined();
-
-function path(tenant: string): string {
-  return encodeURIComponent(tenant);
-}
+import { nothing, tenantPath } from '#/shared/adapter/route';
 
 export function readTokenPage(
   gateway: Gateway,
@@ -20,7 +14,7 @@ export function readTokenPage(
 ): Promise<GatewayResult<ListRegistrationTokensResponse>> {
   return gateway.request(
     'GET',
-    `admin/tenants/${path(tenant)}/registration-tokens?${query.toString()}`,
+    `admin/tenants/${tenantPath(tenant)}/registration-tokens?${query.toString()}`,
     {
       schema: listRegistrationTokensResponseSchema,
     },
@@ -32,7 +26,7 @@ export function mintToken(
   tenant: string,
   input: { uses: number; ttl_seconds: number },
 ): Promise<GatewayResult<MintRegistrationTokenResponse>> {
-  return gateway.request('POST', `admin/tenants/${path(tenant)}/registration-tokens`, {
+  return gateway.request('POST', `admin/tenants/${tenantPath(tenant)}/registration-tokens`, {
     body: input,
     schema: mintRegistrationTokenResponseSchema,
   });
@@ -45,7 +39,7 @@ export function revokeToken(
 ): Promise<GatewayResult<undefined>> {
   return gateway.request(
     'DELETE',
-    `admin/tenants/${path(tenant)}/registration-tokens/${encodeURIComponent(id)}`,
+    `admin/tenants/${tenantPath(tenant)}/registration-tokens/${encodeURIComponent(id)}`,
     {
       schema: nothing,
     },
