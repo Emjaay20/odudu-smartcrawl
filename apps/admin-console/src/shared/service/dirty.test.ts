@@ -6,6 +6,7 @@ import {
   edit,
   isDirty,
   rebase,
+  sameValue,
   startDraft,
 } from '#/shared/service/dirty';
 
@@ -20,6 +21,14 @@ const LOADED: {
   redirect_uris: ['https://billing.example.com/cb'],
   claims: { tier: 'gold' },
 };
+
+describe('comparing values', () => {
+  it('never takes a list for a record, or the reverse', () => {
+    expect(sameValue([], {})).toBe(false);
+    expect(sameValue({}, [])).toBe(false);
+    expect(sameValue({ a: [1] }, { a: [1] })).toBe(true);
+  });
+});
 
 describe('a draft', () => {
   it('starts clean, showing what was loaded', () => {

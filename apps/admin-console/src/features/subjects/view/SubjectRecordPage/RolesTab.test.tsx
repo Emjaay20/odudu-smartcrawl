@@ -67,6 +67,25 @@ it('shows every role the subject holds, and how', async () => {
   );
 });
 
+it('says whose each assigned role is, a client by its key and a tenant role as such', async () => {
+  renderConsoleAt(
+    AT,
+    subjectRoutes(undefined, {
+      [`GET ${R}`]: json(
+        { items: [assigned(AUDITOR), assigned(role('r-web', 'editor', 'web'))] },
+        200,
+        {
+          etag: '"r1"',
+        },
+      ),
+    }),
+  );
+  const list = await screen.findByRole('list', { name: 'Assigned to ada' });
+  const [tenantRole, clientRole] = within(list).getAllByRole('listitem');
+  expect(tenantRole).toHaveTextContent('billing-auditor · tenant role');
+  expect(clientRole).toHaveTextContent('editor · client web');
+});
+
 it('pages the roles held: Load more asks for the next page from the cursor', async () => {
   const user = userEvent.setup();
   const { sent } = renderConsoleAt(

@@ -22,6 +22,16 @@ function fileInput(): HTMLInputElement {
   return input;
 }
 
+it('offers JSON and the tenant document type to the file chooser', async () => {
+  renderConsoleAt(AT, systemRoutes());
+  await screen.findByRole('textbox', { name: 'Name' });
+  expect(fileInput().accept.split(',')).toEqual([
+    'application/json',
+    'application/vnd.odudu.tenant+json',
+    '.json',
+  ]);
+});
+
 function document_(text = '{"version":1}'): File {
   return new File([text], 'acme-2026-09-29.odudu-tenant.json', {
     type: 'application/vnd.odudu.tenant+json',

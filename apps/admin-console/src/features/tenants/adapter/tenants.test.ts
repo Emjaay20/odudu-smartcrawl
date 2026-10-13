@@ -121,6 +121,17 @@ it('reads an export as the text the server sent, with or without subjects', asyn
   expect(fake.sent.map((sent) => sent.search.toString())).toEqual(['', 'include=subjects']);
 });
 
+it('encodes a tenant name that needs it, to read and to amend', async () => {
+  const fake = fakeTransport({
+    'GET /console/api/admin/tenants/a%20b%2Fc': json(ACME),
+    'PATCH /console/api/admin/tenants/a%20b%2Fc': json(ACME),
+  });
+  expect(await readTenant(fake.transport.gateway, 'a b/c')).toMatchObject({ ok: true });
+  expect(
+    await amendTenant(fake.transport.gateway, 'a b/c', { enabled: false }, '"t1"'),
+  ).toMatchObject({ ok: true });
+});
+
 it("reads the system tenant's issuer from its discovery document", async () => {
   const fake = fakeTransport({
     'GET /console/api/tenants/system/discovery': json({
