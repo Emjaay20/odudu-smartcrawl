@@ -1,5 +1,5 @@
 import { type Credential, type Lockout } from '@odudu/contracts/admin';
-import { counted, formatAbsolute } from '#/shared/service/format';
+import { counted, formatAbsolute, lowerFirst } from '#/shared/service/format';
 import type { GatewayFailure } from '#/shared/service/result';
 
 export interface Credentials {
@@ -129,7 +129,7 @@ export function credentialDialog(asking: Asking, name: string, self: boolean): C
       };
     case 'factor': {
       const label = factorLabel(asking.credential.type);
-      const lowered = `${label.charAt(0).toLowerCase()}${label.slice(1)}`;
+      const lowered = lowerFirst(label);
       return {
         title: `Remove ${name}’s ${lowered}?`,
         consequence: `${name}'s next sign-in no longer offers or asks for this ${lowered}. Signing in with it again needs a new enrolment.`,

@@ -1,8 +1,5 @@
-import { TENANT_NAME_RULE } from '@odudu/contracts';
+import { TENANT_NAME_RULE_TEXT } from '#/shared/service/labels';
 import { isTenantName, SYSTEM_TENANT, type Principal } from '#/shared/service/principal';
-
-// The words a refused tenant name is answered with, as a sentence.
-export const TENANT_NAME_PROBLEM = `${TENANT_NAME_RULE.charAt(0).toUpperCase()}${TENANT_NAME_RULE.slice(1)}.`;
 
 // The tenant this browser last signed in to is only a fallback: a tenant
 // the URL names, or a live session, always comes first.
@@ -29,5 +26,5 @@ export function namedTenant(asked: string | null): string | null {
 }
 
 export function tenantProblem(tenant: string): string | undefined {
-  return isTenantName(tenant) ? undefined : TENANT_NAME_PROBLEM;
+  return isTenantName(tenant) ? undefined : TENANT_NAME_RULE_TEXT;
 }

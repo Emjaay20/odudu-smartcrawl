@@ -20,7 +20,6 @@ import {
   freshCreation,
   holdsText,
   issuerPreview,
-  NAME_RULE,
   nameProblem,
   stepRefusal,
   systemAdminsHrefOf,
@@ -38,6 +37,7 @@ import { administratorNeeds } from '#/shared/service/administrators';
 import { holdingOptions, holdingsIn, type HoldingOption } from '#/shared/service/capabilities';
 import { withoutField } from '#/shared/service/fieldErrors';
 import { inOrderOf } from '#/shared/service/ids';
+import { TENANT_NAME_RULE_TEXT } from '#/shared/service/labels';
 import { SYSTEM_TENANT, type AdminCapability } from '#/shared/service/principal';
 import type { GatewayFailure } from '#/shared/transport/gateway';
 import { tenantPage } from '#/shared/service/address';
@@ -180,7 +180,7 @@ export function useNewTenant(flow: CreationFlow): NewTenant {
         step: 'tenant',
         name,
         displayName,
-        rule: NAME_RULE,
+        rule: TENANT_NAME_RULE_TEXT,
         issuer: issuerPreview(systemIssuer, name),
         nameError: errors.name,
         displayNameError: errors.display_name,

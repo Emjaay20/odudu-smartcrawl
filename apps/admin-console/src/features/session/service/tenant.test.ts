@@ -5,8 +5,8 @@ import {
   remembers,
   tenantMissing,
   tenantProblem,
-  TENANT_NAME_PROBLEM,
 } from '#/features/session/service/tenant';
+import { TENANT_NAME_RULE_TEXT } from '#/shared/service/labels';
 
 const grace: Principal = { tenant: 'acme', subjectId: 's1', username: 'grace' };
 
@@ -58,7 +58,7 @@ describe('the tenant a URL names', () => {
 
   it('is checked with the words a refused name is answered with', () => {
     expect(tenantProblem('acme')).toBeUndefined();
-    expect(tenantProblem('Acme')).toBe(TENANT_NAME_PROBLEM);
-    expect(tenantProblem('')).toBe(TENANT_NAME_PROBLEM);
+    expect(tenantProblem('Acme')).toBe(TENANT_NAME_RULE_TEXT);
+    expect(tenantProblem('')).toBe(TENANT_NAME_RULE_TEXT);
   });
 });

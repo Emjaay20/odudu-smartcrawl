@@ -51,8 +51,16 @@ export function andList(items: readonly string[]): string {
   return AND.format(items);
 }
 
+export function capitalise(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+export function lowerFirst(text: string): string {
+  return text.charAt(0).toLowerCase() + text.slice(1);
+}
+
 export function sentence(text: string): string {
-  const said = text.charAt(0).toUpperCase() + text.slice(1);
+  const said = capitalise(text);
   return said.endsWith('.') ? said : `${said}.`;
 }
 

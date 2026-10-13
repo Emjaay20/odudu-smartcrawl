@@ -1,9 +1,4 @@
-export {
-  type Tenant,
-  NAME_RULE,
-  nameProblem,
-  issuerPreview,
-} from '#/features/tenants/service/name';
+export { type Tenant, nameProblem, issuerPreview } from '#/features/tenants/service/name';
 export {
   exportFileName,
   EXPORT_MEDIA_TYPE,

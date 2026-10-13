@@ -29,6 +29,7 @@ import {
 import { Button } from '#/shared/view/Button';
 import styles from '#/shared/view/Field/Field.module.css';
 import type { Choice } from '#/shared/service/choice';
+import { lowerFirst } from '#/shared/service/format';
 
 export interface Chrome {
   label: string;
@@ -695,7 +696,7 @@ function ListField({
   const focus = useRowFocus(value.length);
   const rows = useRowIds(value.length);
   const readOnly = use(FieldsReadOnly);
-  const noun = itemLabel.charAt(0).toLowerCase() + itemLabel.slice(1);
+  const noun = lowerFirst(itemLabel);
   if (readOnly) {
     return (
       <ReadOnlyValue

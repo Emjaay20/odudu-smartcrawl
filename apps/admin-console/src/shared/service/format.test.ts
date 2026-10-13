@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   andList,
+  capitalise,
   counted,
   describeId,
   describeIds,
@@ -8,6 +9,7 @@ import {
   formatAbsolute,
   formatDuration,
   formatRelative,
+  lowerFirst,
   sentence,
 } from '#/shared/service/format';
 
@@ -74,6 +76,15 @@ describe('sentence', () => {
     expect(sentence('that name is taken')).toBe('That name is taken.');
     expect(sentence('Already there.')).toBe('Already there.');
     expect(sentence('')).toBe('.');
+  });
+});
+
+describe('capitalise and lowerFirst', () => {
+  it('change only the first letter', () => {
+    expect(capitalise('a tenant name')).toBe('A tenant name');
+    expect(capitalise('')).toBe('');
+    expect(lowerFirst('Passkey')).toBe('passkey');
+    expect(lowerFirst('TOTP code')).toBe('tOTP code');
   });
 });
 

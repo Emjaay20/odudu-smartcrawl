@@ -12,7 +12,6 @@ export {
   signOutDestination,
 } from '#/features/session/service/address';
 export {
-  TENANT_NAME_PROBLEM,
   remembers,
   tenantMissing,
   namedTenant,

@@ -14,7 +14,6 @@ import {
   importMessage,
   importNameError,
   importUnconfirmed,
-  NAME_RULE,
   nameProblem,
   secretPlace,
   type ChosenFile,
@@ -25,6 +24,7 @@ import {
   useBeginAdministrator,
   type BeginAdministrator,
 } from '#/features/tenants/usecase/useBeginAdministrator';
+import { TENANT_NAME_RULE_TEXT } from '#/shared/service/labels';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
 
 export interface ImportTenantPage {
@@ -71,7 +71,7 @@ export function useImportTenantPage(): ImportTenantPage {
   return {
     name,
     displayName,
-    rule: NAME_RULE,
+    rule: TENANT_NAME_RULE_TEXT,
     file: chosenFileOf(file),
     nameError: nameError ?? importNameError(outcome),
     fileError: fileError ?? importFileRefusal(outcome),

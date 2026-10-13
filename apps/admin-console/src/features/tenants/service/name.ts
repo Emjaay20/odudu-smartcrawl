@@ -1,13 +1,12 @@
-import { isTenantName, TENANT_NAME_RULE } from '@odudu/contracts';
+import { isTenantName } from '@odudu/contracts';
 import { type Tenant } from '@odudu/contracts/admin';
+import { TENANT_NAME_RULE_TEXT } from '#/shared/service/labels';
 
 export type { Tenant };
 
-export const NAME_RULE = `${TENANT_NAME_RULE.charAt(0).toUpperCase()}${TENANT_NAME_RULE.slice(1)}.`;
-
 export function nameProblem(name: string): string | null {
   if (name === '') return 'Enter a name for the tenant.';
-  return isTenantName(name) ? null : NAME_RULE;
+  return isTenantName(name) ? null : TENANT_NAME_RULE_TEXT;
 }
 
 const SYSTEM_ISSUER_TAIL = '/tenants/system';

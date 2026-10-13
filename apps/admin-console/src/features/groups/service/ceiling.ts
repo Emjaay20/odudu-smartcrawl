@@ -1,6 +1,6 @@
 import type { Group, GroupRecord } from '@odudu/contracts/admin';
 import { beyondCaller, type Loss } from '#/shared/service/capabilities';
-import { andList } from '#/shared/service/format';
+import { andList, capitalise } from '#/shared/service/format';
 import type { AdminCapability, Authority } from '#/shared/service/principal';
 import { type ReachLines, reachLines } from '#/features/groups/service/blocks';
 import { newGroupHref } from '#/features/groups/service/address';
@@ -84,7 +84,7 @@ export function createHeld(
 export function placeText(path: string | null, tense: 'will' | 'is'): string {
   const where = path === null ? 'at the top level' : `under ${path}`;
   const said = tense === 'will' ? `It will sit ${where}` : where;
-  return `${said.charAt(0).toUpperCase()}${said.slice(1)}.`;
+  return `${capitalise(said)}.`;
 }
 
 // Null until the parent chosen has been read.

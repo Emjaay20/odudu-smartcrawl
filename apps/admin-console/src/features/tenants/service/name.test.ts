@@ -1,17 +1,12 @@
-import { TENANT_NAME_RULE } from '@odudu/contracts';
 import { describe, expect, it } from 'vitest';
-import { issuerPreview, NAME_RULE, nameProblem } from '#/features/tenants/service/name';
+import { issuerPreview, nameProblem } from '#/features/tenants/service/name';
+import { TENANT_NAME_RULE_TEXT } from '#/shared/service/labels';
 
 describe('the tenant name', () => {
-  it("states the contract's own rule, as a sentence", () => {
-    expect(NAME_RULE.toLowerCase()).toBe(`${TENANT_NAME_RULE}.`);
-    expect(NAME_RULE.startsWith('A tenant name')).toBe(true);
-  });
-
   it('asks for a name, refuses one the rule refuses, and passes a good one', () => {
     expect(nameProblem('')).toBe('Enter a name for the tenant.');
-    expect(nameProblem('Acme')).toBe(NAME_RULE);
-    expect(nameProblem('-acme')).toBe(NAME_RULE);
+    expect(nameProblem('Acme')).toBe(TENANT_NAME_RULE_TEXT);
+    expect(nameProblem('-acme')).toBe(TENANT_NAME_RULE_TEXT);
     expect(nameProblem('acme-eu')).toBeNull();
   });
 });

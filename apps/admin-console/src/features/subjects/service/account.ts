@@ -1,8 +1,9 @@
 import { USERNAME_RULE, type Subject } from '@odudu/contracts/admin';
 import { writeFailureText } from '#/shared/service/failure';
+import { sentence } from '#/shared/service/format';
 import type { GatewayFailure } from '#/shared/service/result';
 
-export const USERNAME_RULE_TEXT = `${USERNAME_RULE.charAt(0).toUpperCase()}${USERNAME_RULE.slice(1)}.`;
+export const USERNAME_RULE_TEXT = sentence(USERNAME_RULE);
 
 export function usernameProblem(username: string): string | null {
   return username === '' ? 'Enter a username.' : null;
