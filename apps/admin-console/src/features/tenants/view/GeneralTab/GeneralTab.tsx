@@ -8,6 +8,7 @@ import { Section } from '#/shared/view/Section';
 import { SectionNotice } from '#/shared/view/SectionNotice';
 import { StatusTag } from '#/shared/view/StatusTag';
 import styles from '#/features/tenants/view/GeneralTab/GeneralTab.module.css';
+import { DESCRIPTION_RULE } from '#/shared/service/labels';
 
 export function GeneralTab({
   name,
@@ -55,7 +56,7 @@ export function GeneralTab({
         </dl>
         <TextField
           label="Display name"
-          description="Leave it empty for none."
+          description={DESCRIPTION_RULE}
           value={s.values.display_name}
           error={s.fieldErrors.display_name}
           changed={s.changed.includes('display_name')}

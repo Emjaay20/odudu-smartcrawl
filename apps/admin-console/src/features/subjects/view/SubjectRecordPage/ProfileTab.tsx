@@ -27,6 +27,7 @@ import { FormSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
 import styles from '#/features/subjects/view/SubjectRecordPage/Tab.module.css';
+import { DESCRIPTION_RULE } from '#/shared/service/labels';
 
 interface TabProps {
   tenant: string;
@@ -112,7 +113,7 @@ function Account({ account }: { account: SubjectAccount }) {
       <Username account={account} />
       <TextField
         label="Email"
-        description="Leave it empty for none."
+        description={DESCRIPTION_RULE}
         type="email"
         value={s.values.email}
         error={s.fieldErrors.email}
