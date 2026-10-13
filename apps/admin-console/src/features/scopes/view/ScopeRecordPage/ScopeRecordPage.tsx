@@ -21,13 +21,14 @@ import { RecordPage, type RecordPanelProps } from '#/shared/view/RecordPage';
 type PanelProps = RecordPanelProps<'scope', ClientScope>;
 
 function Activity({ tenant, id }: { tenant: string; id: string }) {
+  const readable = useAuditReadable(tenant);
   return (
     <RecordActivity
       resource="scope"
       tenant={tenant}
       id={id}
       lead="Every change made to this scope, and every change refused. A client being given or losing it is filed under that client."
-      readable={useAuditReadable(tenant)}
+      readable={readable}
     />
   );
 }

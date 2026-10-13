@@ -3,14 +3,9 @@ import { expect, it } from 'vitest';
 import { AccessGate, type Access } from '#/shared/view/AccessGate';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
-function gate(access: Access, checking?: string) {
+function gate(access: Access, checking: string | null = null) {
   return (
-    <AccessGate
-      access={access}
-      title="Groups"
-      kicker="acme"
-      {...(checking === undefined ? {} : { checking })}
-    >
+    <AccessGate access={access} title="Groups" kicker="acme" checking={checking}>
       <p>The page</p>
     </AccessGate>
   );

@@ -14,11 +14,13 @@ export function SubjectsGate({
   breadcrumb?: readonly Crumb[];
   children: ReactNode;
 }) {
+  const access = useSubjectsArea(tenant);
   return (
     <AccessGate
-      access={useSubjectsArea(tenant)}
+      access={access}
       title={title}
       kicker={tenant}
+      checking={null}
       {...(breadcrumb === undefined ? {} : { breadcrumb })}
     >
       {children}

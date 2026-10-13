@@ -18,9 +18,10 @@ export function AreaGate({
   breadcrumb?: readonly Crumb[];
   children: ReactNode;
 }) {
+  const access = useArea(tenant, area);
   return (
     <AccessGate
-      access={useArea(tenant, area)}
+      access={access}
       title={title}
       kicker={tenant}
       {...(breadcrumb === undefined ? {} : { breadcrumb })}

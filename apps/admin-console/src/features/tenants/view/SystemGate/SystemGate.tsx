@@ -16,9 +16,10 @@ export function SystemGate({
   breadcrumb?: readonly Crumb[];
   children: ReactNode;
 }) {
+  const access = useTenantsArea(tenant);
   return (
     <AccessGate
-      access={useTenantsArea(tenant)}
+      access={access}
       title={title}
       kicker="System"
       {...(breadcrumb === undefined ? {} : { breadcrumb })}

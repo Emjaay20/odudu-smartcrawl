@@ -24,13 +24,14 @@ type PanelProps = RecordPanelProps<'role', Role> & {
 };
 
 function Activity({ tenant, id }: { tenant: string; id: string }) {
+  const readable = useAuditReadable(tenant);
   return (
     <RecordActivity
       resource="role"
       tenant={tenant}
       id={id}
       lead="Every change made to this role, and every change refused. Its being given to a subject, a group or a scope is filed under that subject, group or scope."
-      readable={useAuditReadable(tenant)}
+      readable={readable}
     />
   );
 }

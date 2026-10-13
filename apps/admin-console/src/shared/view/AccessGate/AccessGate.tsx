@@ -25,9 +25,9 @@ export function AccessGate({
   kicker: string;
   // A page below the list keeps its way back while it is refused.
   breadcrumb?: readonly Crumb[];
-  // What the placeholder says until whoami has answered. With none, the page
-  // is drawn meanwhile.
-  checking?: string;
+  // What the placeholder says until whoami has answered; null draws the page
+  // meanwhile.
+  checking: string | null;
   children: ReactNode;
 }) {
   const head = (
@@ -44,7 +44,7 @@ export function AccessGate({
         </>
       );
     case 'checking':
-      if (checking === undefined) return children;
+      if (checking === null) return children;
       return (
         <>
           {head}

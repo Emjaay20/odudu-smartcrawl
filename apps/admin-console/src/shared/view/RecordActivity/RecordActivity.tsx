@@ -4,25 +4,27 @@ import { ActivityTab } from '#/shared/view/ActivityTab';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { recordTab } from '#/shared/view/RecordTab';
 
-function Trail({ resource, tenant, id }: { resource: string; tenant: string; id: string }) {
+type Resource = 'client' | 'group' | 'role' | 'scope' | 'subject';
+
+function Trail({ resource, tenant, id }: { resource: Resource; tenant: string; id: string }) {
   return <ActivityTab list={useRecordActivity(resource, tenant, id)} noun={resource} />;
 }
 
-// A record's Activity tab: what the trail holds, and the trail itself. Where
-// `readable` is false nothing is read, since the audit would refuse it.
+// A record's Activity tab: what the trail holds, and the trail itself.
 export function RecordActivity({
   resource,
   tenant,
   id,
   lead,
-  readable = true,
+  readable,
 }: {
   // The audit log's name for the record, and what the empty trail calls it.
-  resource: string;
+  resource: Resource;
   tenant: string;
   id: string;
   lead: ReactNode;
-  readable?: boolean;
+  // False where the audit would refuse the read: nothing is asked of it.
+  readable: boolean;
 }) {
   return (
     <div className={recordTab.tab}>

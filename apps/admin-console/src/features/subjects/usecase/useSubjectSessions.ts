@@ -6,6 +6,7 @@ import type {
   Session,
   Subject,
 } from '@odudu/contracts/admin';
+import type { AdminCapability } from '#/shared/service/principal';
 import { useAuthority } from '#/features/session';
 import {
   useConsentList,
@@ -32,7 +33,7 @@ import type { Confirming } from '#/shared/usecase/useConfirmedChange';
 
 // Sessions and grants are read and changed with manage-sessions alone:
 // there is no view-sessions.
-export function useHolds(tenant: string, capability: 'manage-sessions' | 'manage-users'): boolean {
+export function useHolds(tenant: string, capability: AdminCapability): boolean {
   return notLacking(useAuthority(tenant), [capability]);
 }
 

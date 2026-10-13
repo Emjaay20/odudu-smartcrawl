@@ -849,6 +849,7 @@ function RecordPieces() {
           access={{ kind: 'refused', capability: 'view-users' }}
           title="Subjects"
           kicker={TENANT}
+          checking={null}
         >
           <p>The page</p>
         </AccessGate>

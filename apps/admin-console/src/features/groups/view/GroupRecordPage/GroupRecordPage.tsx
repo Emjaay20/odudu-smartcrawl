@@ -24,13 +24,14 @@ type PanelProps = RecordPanelProps<'group', GroupRecord> & {
 };
 
 function Activity({ tenant, id }: { tenant: string; id: string }) {
+  const readable = useAuditReadable(tenant);
   return (
     <RecordActivity
       resource="group"
       tenant={tenant}
       id={id}
       lead="Every change made to this group, and every change refused. A subject joining or leaving it is filed under that subject."
-      readable={useAuditReadable(tenant)}
+      readable={readable}
     />
   );
 }

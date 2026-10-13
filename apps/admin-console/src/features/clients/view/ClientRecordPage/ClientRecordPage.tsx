@@ -31,13 +31,14 @@ interface PanelProps extends ClientTabProps {
 }
 
 function Activity({ tenant, id }: { tenant: string; id: string }) {
+  const readable = useAuditReadable(tenant);
   return (
     <RecordActivity
       resource="client"
       tenant={tenant}
       id={id}
       lead={ACTIVITY_NOTE}
-      readable={useAuditReadable(tenant)}
+      readable={readable}
     />
   );
 }

@@ -5,6 +5,7 @@ import {
   useSubjectSessions,
   type SubjectSessions,
 } from '#/features/subjects/usecase/useSubjectSessions';
+import type { AdminCapability } from '#/shared/service/principal';
 import { formatAbsolute } from '#/shared/service/format';
 import type { ResourceListState } from '#/shared/service/resourceList';
 import { Button } from '#/shared/view/Button';
@@ -194,18 +195,15 @@ export function HeldTab({
   children,
 }: {
   tenant: string;
-  capability: 'manage-sessions' | 'manage-users';
+  capability: AdminCapability;
   // What the tab is called, in "Grants needs the manage-sessions capability."
   label: string;
   children: ReactNode;
 }) {
+  const held = useHolds(tenant, capability);
   return (
     <div className={recordTab.tab}>
-      {useHolds(tenant, capability) ? (
-        children
-      ) : (
-        <CapabilityNote capability={capability}>{label}</CapabilityNote>
-      )}
+      {held ? children : <CapabilityNote capability={capability}>{label}</CapabilityNote>}
     </div>
   );
 }
