@@ -5,8 +5,10 @@ import { expect, it } from 'vitest';
 import { createQueryClient } from '#/shared/repository/queryClient';
 import { useGroupPicker } from '#/shared/repository/useGroupPicker';
 import { useRolePicker } from '#/shared/repository/useRolePicker';
+import { useSubjectPicker } from '#/shared/repository/useSubjectPicker';
 import { TransportContext } from '#/shared/transport/useTransport';
 import { fakeTransport, json, problem, type Answer } from '#/testing/fakeTransport';
+import { ADA, ADA_ID } from '#/testing/subjectsFixtures';
 
 const ROLES = 'GET /console/api/admin/tenants/acme/roles';
 const GROUPS = 'GET /console/api/admin/tenants/acme/groups';
@@ -78,5 +80,21 @@ it('reads groups, and says when the list is refused', async () => {
   const { result } = renderHook(() => useGroupPicker('acme'), { wrapper });
   await waitFor(() => {
     expect(result.current.status).toBe('refused');
+  });
+});
+
+it("searches the given tenant's subjects by username", async () => {
+  const { wrapper, asked } = wrapperFor({
+    'GET /console/api/admin/tenants/system/subjects': json({ items: [ADA] }),
+  });
+  const { result } = renderHook(() => useSubjectPicker('system'), { wrapper });
+  await waitFor(() => {
+    expect(result.current.options.map((s) => s.id)).toEqual([ADA_ID]);
+  });
+  act(() => {
+    result.current.search('ad');
+  });
+  await waitFor(() => {
+    expect(asked()).toContain('/console/api/admin/tenants/system/subjects?username=ad');
   });
 });

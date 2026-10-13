@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useAuthority, useRefusal } from '#/features/session';
 import { useAdministratorGrant } from '#/features/system-admins/repository/useAdministratorChange';
 import { usePickerHolders } from '#/features/system-admins/repository/usePickerHolders';
-import { useSubjectPicker } from '#/features/system-admins/repository/useSubjectPicker';
+import { useSubjectPicker } from '#/shared/repository/useSubjectPicker';
 import {
   administratorsAccess,
   choosable,
@@ -50,7 +50,7 @@ export interface SystemAdministrators {
 export function useSystemAdministratorsPage(): SystemAdministrators {
   const authority = useAuthority(SYSTEM_TENANT);
   const refusal = useRefusal(SYSTEM_TENANT);
-  const picker = useSubjectPicker();
+  const picker = useSubjectPicker(SYSTEM_TENANT);
   const change = useAdministratorGrant();
   const begin = useBeginAdministrator(SYSTEM_TENANT, 'existing');
   const toast = useToasts((queue) => queue.push);

@@ -1,7 +1,8 @@
 import type { Client, Subject } from '@odudu/contracts/admin';
 import { useState } from 'react';
 import { useAuthority } from '#/features/session';
-import { useEvaluation, useSubjectPicker } from '#/features/clients/repository/useClientEvaluation';
+import { useEvaluation } from '#/features/clients/repository/useClientEvaluation';
+import { useSubjectPicker } from '#/shared/repository/useSubjectPicker';
 import {
   artefactsOf,
   evaluateAllowed,

@@ -1,23 +1,8 @@
 import type { EvaluateClaimsResponse } from '@odudu/contracts/admin';
 import { useQuery } from '@tanstack/react-query';
 import { evaluateClaims } from '#/features/clients/adapter/operations';
-import { readSubjectPage } from '#/shared/adapter/directory';
-import { usePicker } from '#/shared/repository/usePicker';
-import type { PickerState } from '#/shared/service/picker';
 import type { GatewayResult } from '#/shared/transport/gateway';
 import { useTransport } from '#/shared/transport/useTransport';
-
-export type { PickerState };
-
-// The subjects to choose from, searched by username on the server.
-export function useSubjectPicker(tenant: string) {
-  return usePicker({
-    tenant,
-    resource: 'subjects',
-    field: 'username',
-    read: (gateway, query) => readSubjectPage(gateway, tenant, query),
-  });
-}
 
 export interface Evaluation {
   // Nothing was asked, the answer is awaited, or it came.
