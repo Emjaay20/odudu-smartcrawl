@@ -14,7 +14,7 @@ import {
 import type { CredentialChange } from '#/features/subjects/service';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 import { readSubjectCount, readSubjectPage } from '#/shared/adapter/directory';
-import { nothing, segment, tenantPath } from '#/shared/adapter/route';
+import { adminCall, nothing } from '#/shared/adapter/route';
 
 export { readSubjectCount, readSubjectPage };
 
@@ -23,8 +23,7 @@ export function createSubject(
   tenant: string,
   input: { username: string; email: string },
 ): Promise<GatewayResult<Subject>> {
-  const t = tenantPath(tenant);
-  return gateway.request('POST', `admin/tenants/${t}/subjects`, {
+  return adminCall(gateway, 'POST', tenant, ['subjects'], {
     body: { username: input.username, ...(input.email === '' ? {} : { email: input.email }) },
     schema: subjectSchema,
   });
@@ -35,9 +34,7 @@ export function readSubject(
   tenant: string,
   subjectId: string,
 ): Promise<GatewayResult<Subject>> {
-  const t = tenantPath(tenant);
-  const id = segment(subjectId);
-  return gateway.request('GET', `admin/tenants/${t}/subjects/${id}`, { schema: subjectSchema });
+  return adminCall(gateway, 'GET', tenant, ['subjects', subjectId], { schema: subjectSchema });
 }
 
 export function amendSubject(
@@ -47,9 +44,7 @@ export function amendSubject(
   changes: AmendSubjectRequest,
   ifMatch: string,
 ): Promise<GatewayResult<Subject>> {
-  const t = tenantPath(tenant);
-  const id = segment(subjectId);
-  return gateway.request('PATCH', `admin/tenants/${t}/subjects/${id}`, {
+  return adminCall(gateway, 'PATCH', tenant, ['subjects', subjectId], {
     // The server keeps no empty email, so an emptied one is cleared.
     body: changes.email === '' ? { ...changes, email: null } : changes,
     ifMatch,
@@ -62,9 +57,7 @@ export function deleteSubject(
   tenant: string,
   subjectId: string,
 ): Promise<GatewayResult<undefined>> {
-  const t = tenantPath(tenant);
-  const id = segment(subjectId);
-  return gateway.request('DELETE', `admin/tenants/${t}/subjects/${id}`, { schema: nothing });
+  return adminCall(gateway, 'DELETE', tenant, ['subjects', subjectId], { schema: nothing });
 }
 
 export function readProfile(
@@ -72,9 +65,7 @@ export function readProfile(
   tenant: string,
   subjectId: string,
 ): Promise<GatewayResult<Profile>> {
-  const t = tenantPath(tenant);
-  const id = segment(subjectId);
-  return gateway.request('GET', `admin/tenants/${t}/subjects/${id}/profile`, {
+  return adminCall(gateway, 'GET', tenant, ['subjects', subjectId, 'profile'], {
     schema: profileSchema,
   });
 }
@@ -86,9 +77,7 @@ export function amendProfile(
   changes: AmendProfileRequest,
   ifMatch: string,
 ): Promise<GatewayResult<Profile>> {
-  const t = tenantPath(tenant);
-  const id = segment(subjectId);
-  return gateway.request('PATCH', `admin/tenants/${t}/subjects/${id}/profile`, {
+  return adminCall(gateway, 'PATCH', tenant, ['subjects', subjectId, 'profile'], {
     // A claim the form holds as '' is one the subject does not have.
     body: Object.fromEntries(
       Object.entries(changes).map(([claim, value]) => [claim, value === '' ? null : value]),
@@ -103,9 +92,7 @@ export function readCredentials(
   tenant: string,
   subjectId: string,
 ): Promise<GatewayResult<ListCredentialsResponse>> {
-  const t = tenantPath(tenant);
-  const id = segment(subjectId);
-  return gateway.request('GET', `admin/tenants/${t}/subjects/${id}/credentials`, {
+  return adminCall(gateway, 'GET', tenant, ['subjects', subjectId, 'credentials'], {
     schema: listCredentialsResponseSchema,
   });
 }
@@ -116,12 +103,15 @@ export function deleteCredential(
   subjectId: string,
   credentialId: string,
 ): Promise<GatewayResult<undefined>> {
-  const t = tenantPath(tenant);
-  const id = segment(subjectId);
-  const credential = segment(credentialId);
-  return gateway.request('DELETE', `admin/tenants/${t}/subjects/${id}/credentials/${credential}`, {
-    schema: nothing,
-  });
+  return adminCall(
+    gateway,
+    'DELETE',
+    tenant,
+    ['subjects', subjectId, 'credentials', credentialId],
+    {
+      schema: nothing,
+    },
+  );
 }
 
 export function revokeRecoveryCodes(
@@ -129,9 +119,7 @@ export function revokeRecoveryCodes(
   tenant: string,
   subjectId: string,
 ): Promise<GatewayResult<undefined>> {
-  const t = tenantPath(tenant);
-  const id = segment(subjectId);
-  return gateway.request('DELETE', `admin/tenants/${t}/subjects/${id}/recovery-codes`, {
+  return adminCall(gateway, 'DELETE', tenant, ['subjects', subjectId, 'recovery-codes'], {
     schema: nothing,
   });
 }
@@ -141,9 +129,7 @@ export function readLockout(
   tenant: string,
   subjectId: string,
 ): Promise<GatewayResult<Lockout>> {
-  const t = tenantPath(tenant);
-  const id = segment(subjectId);
-  return gateway.request('GET', `admin/tenants/${t}/subjects/${id}/lockout`, {
+  return adminCall(gateway, 'GET', tenant, ['subjects', subjectId, 'lockout'], {
     schema: lockoutSchema,
   });
 }
@@ -153,9 +139,7 @@ export function clearLockout(
   tenant: string,
   subjectId: string,
 ): Promise<GatewayResult<undefined>> {
-  const t = tenantPath(tenant);
-  const id = segment(subjectId);
-  return gateway.request('DELETE', `admin/tenants/${t}/subjects/${id}/lockout`, {
+  return adminCall(gateway, 'DELETE', tenant, ['subjects', subjectId, 'lockout'], {
     schema: nothing,
   });
 }
@@ -164,8 +148,7 @@ export async function readUsernameEditable(
   gateway: Gateway,
   tenant: string,
 ): Promise<GatewayResult<boolean>> {
-  const t = tenantPath(tenant);
-  const result = await gateway.request('GET', `admin/tenants/${t}/subjects/username-policy`, {
+  const result = await adminCall(gateway, 'GET', tenant, ['subjects', 'username-policy'], {
     schema: usernamePolicySchema,
   });
   return result.ok ? { ...result, data: result.data.username_editable } : result;

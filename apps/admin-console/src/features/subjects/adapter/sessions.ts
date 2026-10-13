@@ -11,7 +11,7 @@ import {
   type RevokeGrantsResponse,
 } from '@odudu/contracts/admin';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { nothing } from '#/shared/adapter/route';
+import { adminCall, nothing } from '#/shared/adapter/route';
 
 export function readSessions(
   gateway: Gateway,
@@ -19,9 +19,8 @@ export function readSessions(
   subjectId: string,
   query: URLSearchParams,
 ): Promise<GatewayResult<ListSessionsResponse>> {
-  const t = encodeURIComponent(tenant);
-  const id = encodeURIComponent(subjectId);
-  return gateway.request('GET', `admin/tenants/${t}/subjects/${id}/sessions?${query.toString()}`, {
+  return adminCall(gateway, 'GET', tenant, ['subjects', subjectId, 'sessions'], {
+    query,
     schema: listSessionsResponseSchema,
   });
 }
@@ -32,10 +31,7 @@ export function endSession(
   subjectId: string,
   sessionId: string,
 ): Promise<GatewayResult<undefined>> {
-  const t = encodeURIComponent(tenant);
-  const id = encodeURIComponent(subjectId);
-  const sid = encodeURIComponent(sessionId);
-  return gateway.request('DELETE', `admin/tenants/${t}/subjects/${id}/sessions/${sid}`, {
+  return adminCall(gateway, 'DELETE', tenant, ['subjects', subjectId, 'sessions', sessionId], {
     schema: nothing,
   });
 }
@@ -45,9 +41,7 @@ export function endAllSessions(
   tenant: string,
   subjectId: string,
 ): Promise<GatewayResult<EndSessionsResponse>> {
-  const t = encodeURIComponent(tenant);
-  const id = encodeURIComponent(subjectId);
-  return gateway.request('DELETE', `admin/tenants/${t}/subjects/${id}/sessions`, {
+  return adminCall(gateway, 'DELETE', tenant, ['subjects', subjectId, 'sessions'], {
     schema: endSessionsResponseSchema,
   });
 }
@@ -58,9 +52,8 @@ export function readConsents(
   subjectId: string,
   query: URLSearchParams,
 ): Promise<GatewayResult<ListConsentsResponse>> {
-  const t = encodeURIComponent(tenant);
-  const id = encodeURIComponent(subjectId);
-  return gateway.request('GET', `admin/tenants/${t}/subjects/${id}/consents?${query.toString()}`, {
+  return adminCall(gateway, 'GET', tenant, ['subjects', subjectId, 'consents'], {
+    query,
     schema: listConsentsResponseSchema,
   });
 }
@@ -71,10 +64,7 @@ export function revokeConsent(
   subjectId: string,
   clientId: string,
 ): Promise<GatewayResult<undefined>> {
-  const t = encodeURIComponent(tenant);
-  const id = encodeURIComponent(subjectId);
-  const client = encodeURIComponent(clientId);
-  return gateway.request('DELETE', `admin/tenants/${t}/subjects/${id}/consents/${client}`, {
+  return adminCall(gateway, 'DELETE', tenant, ['subjects', subjectId, 'consents', clientId], {
     schema: nothing,
   });
 }
@@ -85,9 +75,8 @@ export function readGrants(
   subjectId: string,
   query: URLSearchParams,
 ): Promise<GatewayResult<ListGrantsResponse>> {
-  const t = encodeURIComponent(tenant);
-  const id = encodeURIComponent(subjectId);
-  return gateway.request('GET', `admin/tenants/${t}/subjects/${id}/grants?${query.toString()}`, {
+  return adminCall(gateway, 'GET', tenant, ['subjects', subjectId, 'grants'], {
+    query,
     schema: listGrantsResponseSchema,
   });
 }
@@ -98,10 +87,7 @@ export function revokeGrants(
   subjectId: string,
   clientId: string,
 ): Promise<GatewayResult<RevokeGrantsResponse>> {
-  const t = encodeURIComponent(tenant);
-  const id = encodeURIComponent(subjectId);
-  const client = encodeURIComponent(clientId);
-  return gateway.request('DELETE', `admin/tenants/${t}/subjects/${id}/grants/${client}`, {
+  return adminCall(gateway, 'DELETE', tenant, ['subjects', subjectId, 'grants', clientId], {
     schema: revokeGrantsResponseSchema,
   });
 }

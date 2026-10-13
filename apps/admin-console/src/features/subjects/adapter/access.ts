@@ -17,15 +17,14 @@ import {
   type Holding,
 } from '#/shared/service/capabilities';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
+import { adminCall } from '#/shared/adapter/route';
 
 export function readSubjectGroups(
   gateway: Gateway,
   tenant: string,
   subjectId: string,
 ): Promise<GatewayResult<SetSubjectGroupsResponse>> {
-  const t = encodeURIComponent(tenant);
-  const id = encodeURIComponent(subjectId);
-  return gateway.request('GET', `admin/tenants/${t}/subjects/${id}/groups`, {
+  return adminCall(gateway, 'GET', tenant, ['subjects', subjectId, 'groups'], {
     schema: setSubjectGroupsResponseSchema,
   });
 }
@@ -37,9 +36,7 @@ export function setSubjectGroups(
   groupIds: readonly string[],
   ifMatch: string,
 ): Promise<GatewayResult<SetSubjectGroupsResponse>> {
-  const t = encodeURIComponent(tenant);
-  const id = encodeURIComponent(subjectId);
-  return gateway.request('PUT', `admin/tenants/${t}/subjects/${id}/groups`, {
+  return adminCall(gateway, 'PUT', tenant, ['subjects', subjectId, 'groups'], {
     body: { group_ids: groupIds },
     ifMatch,
     schema: setSubjectGroupsResponseSchema,
@@ -51,9 +48,7 @@ export function readRequiredActions(
   tenant: string,
   subjectId: string,
 ): Promise<GatewayResult<SetRequiredActionsResponse>> {
-  const t = encodeURIComponent(tenant);
-  const id = encodeURIComponent(subjectId);
-  return gateway.request('GET', `admin/tenants/${t}/subjects/${id}/required-actions`, {
+  return adminCall(gateway, 'GET', tenant, ['subjects', subjectId, 'required-actions'], {
     schema: setRequiredActionsResponseSchema,
   });
 }
@@ -65,9 +60,7 @@ export function setRequiredActions(
   actions: readonly RequiredAction[],
   ifMatch: string,
 ): Promise<GatewayResult<SetRequiredActionsResponse>> {
-  const t = encodeURIComponent(tenant);
-  const id = encodeURIComponent(subjectId);
-  return gateway.request('PUT', `admin/tenants/${t}/subjects/${id}/required-actions`, {
+  return adminCall(gateway, 'PUT', tenant, ['subjects', subjectId, 'required-actions'], {
     body: { actions },
     ifMatch,
     schema: setRequiredActionsResponseSchema,
@@ -80,13 +73,10 @@ export function readEffectiveRoles(
   subjectId: string,
   query: URLSearchParams,
 ): Promise<GatewayResult<ListEffectiveRolesResponse>> {
-  const t = encodeURIComponent(tenant);
-  const id = encodeURIComponent(subjectId);
-  return gateway.request(
-    'GET',
-    `admin/tenants/${t}/subjects/${id}/effective-roles?${query.toString()}`,
-    { schema: listEffectiveRolesResponseSchema },
-  );
+  return adminCall(gateway, 'GET', tenant, ['subjects', subjectId, 'effective-roles'], {
+    query,
+    schema: listEffectiveRolesResponseSchema,
+  });
 }
 
 // The admin capabilities a subject holds, whole: what every judgement of its
@@ -96,11 +86,11 @@ export async function readAdminCapabilities(
   tenant: string,
   subjectId: string,
 ): Promise<GatewayResult<AdminCapabilitiesResponse>> {
-  const t = encodeURIComponent(tenant);
-  const id = encodeURIComponent(subjectId);
-  const read = await gateway.request(
+  const read = await adminCall(
+    gateway,
     'GET',
-    `admin/tenants/${t}/subjects/${id}/admin-capabilities`,
+    tenant,
+    ['subjects', subjectId, 'admin-capabilities'],
     { schema: adminCapabilitiesResponseSchema },
   );
   // More carriers than the server returns: nothing may be judged from part of them.

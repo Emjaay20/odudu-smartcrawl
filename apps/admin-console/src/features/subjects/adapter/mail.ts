@@ -1,6 +1,7 @@
 import type { SendActionsEmailRequest } from '@odudu/contracts/admin';
 import { z } from 'zod';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
+import { adminCall } from '#/shared/adapter/route';
 
 export type MailRequest =
   { kind: 'reset' } | { kind: 'verification' } | { kind: 'actions'; body: SendActionsEmailRequest };
@@ -13,9 +14,7 @@ export function sendPasswordReset(
   tenant: string,
   subjectId: string,
 ): Promise<GatewayResult<undefined>> {
-  const t = encodeURIComponent(tenant);
-  const id = encodeURIComponent(subjectId);
-  return gateway.request('POST', `admin/tenants/${t}/subjects/${id}/password-reset`, {
+  return adminCall(gateway, 'POST', tenant, ['subjects', subjectId, 'password-reset'], {
     schema: accepted,
   });
 }
@@ -25,9 +24,7 @@ export function sendVerification(
   tenant: string,
   subjectId: string,
 ): Promise<GatewayResult<undefined>> {
-  const t = encodeURIComponent(tenant);
-  const id = encodeURIComponent(subjectId);
-  return gateway.request('POST', `admin/tenants/${t}/subjects/${id}/verification`, {
+  return adminCall(gateway, 'POST', tenant, ['subjects', subjectId, 'verification'], {
     schema: accepted,
   });
 }
@@ -38,9 +35,7 @@ export function sendActionsEmail(
   subjectId: string,
   body: SendActionsEmailRequest,
 ): Promise<GatewayResult<undefined>> {
-  const t = encodeURIComponent(tenant);
-  const id = encodeURIComponent(subjectId);
-  return gateway.request('POST', `admin/tenants/${t}/subjects/${id}/actions-email`, {
+  return adminCall(gateway, 'POST', tenant, ['subjects', subjectId, 'actions-email'], {
     body,
     schema: accepted,
   });
