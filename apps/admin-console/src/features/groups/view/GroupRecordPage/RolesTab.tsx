@@ -6,12 +6,11 @@ import {
   type MappedRole,
 } from '#/features/groups/usecase/useGroupRoles';
 import type { Ceiling } from '#/features/groups/usecase/useGroupRecordPage';
-import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { RolePicker } from '#/shared/view/RolePicker';
-import { Section } from '#/shared/view/Section';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { FormSkeleton } from '#/shared/view/Skeleton';
 import { RoleOwner } from '#/shared/view/RoleOwner';
 import { recordTab } from '#/shared/view/RecordTab';
@@ -35,16 +34,10 @@ function Listed({ path, mapped }: { path: string; mapped: readonly MappedRole[] 
 function Roles({ path, roles }: { path: string; roles: GroupRoles }) {
   const s = roles.save;
   return (
-    <Section
+    <SaveSection
       title="Roles"
       description={`Every role here is held by each member of ${path} and of every group beneath it.`}
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title="Roles" save={s} />}
+      save={s}
     >
       <Listed path={path} mapped={roles.mapped} />
       {roles.offered ? (
@@ -73,7 +66,7 @@ function Roles({ path, roles }: { path: string; roles: GroupRoles }) {
         onConfirm={roles.confirm}
         onCancel={roles.cancel}
       />
-    </Section>
+    </SaveSection>
   );
 }
 

@@ -14,8 +14,10 @@ afterEach(() => {
 
 // Function-component renders over one journey, after the page is up. These
 // are ceilings: a change that makes a keystroke or a click render more of the
-// page than this fails here.
-const CEILING = { typing: 365, paging: 360, capability: 130 } as const;
+// page than this fails here. A shared view component costs one render each
+// time its parent does: typing allows for the Account tab's panels, sections
+// and read gate.
+const CEILING = { typing: 375, paging: 360, capability: 130 } as const;
 
 function report(journey: string, ceiling: number): void {
   const count = renderCount();

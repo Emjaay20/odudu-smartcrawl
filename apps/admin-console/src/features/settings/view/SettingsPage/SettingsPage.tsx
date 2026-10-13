@@ -27,6 +27,7 @@ import { NumberWithUnitField, SelectField, TextField, ToggleField } from '#/shar
 import { useTenantSettingsRead } from '#/shared/usecase/useTenantSettingsRead';
 import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
 import { PageHeader } from '#/shared/view/PageHeader';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { Section } from '#/shared/view/Section';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { FormSkeleton } from '#/shared/view/Skeleton';
@@ -159,20 +160,14 @@ interface Props {
 function Plain({ tenant, data, etag, gone, section }: Props & { section: SettingsSection }) {
   const save = useSettingsSection({ tenant, section, data, etag, gone });
   return (
-    <Section
+    <SaveSection
       title={section.title}
       headingId={sectionHeadingId(section.id)}
       description={section.description}
-      dirty={save.dirty}
-      saving={save.saving}
-      onSave={save.submit}
-      onDiscard={save.discard}
-      restored={save.restored}
-      blocked={save.blocked}
-      notice={<SectionNoticeOf title={section.title} save={save} />}
+      save={save}
     >
       <Fields section={section} save={save} />
-    </Section>
+    </SaveSection>
   );
 }
 

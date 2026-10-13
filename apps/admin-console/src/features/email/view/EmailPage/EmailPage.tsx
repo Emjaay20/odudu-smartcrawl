@@ -23,8 +23,7 @@ import { EmptyState } from '#/shared/view/EmptyState';
 import { TextField, ToggleField } from '#/shared/view/Field';
 import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
 import { PageHeader } from '#/shared/view/PageHeader';
-import { Section } from '#/shared/view/Section';
-import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { FormSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
 import styles from '#/features/email/view/EmailPage/EmailPage.module.css';
@@ -42,16 +41,11 @@ function RelayForm({ relay, config }: { relay: RelaySection; config: SmtpConfig 
     },
   });
   return (
-    <Section
+    <SaveSection
       title={RELAY_TITLE}
       description="The server this tenant's verification and reset mail is sent through. Saving replaces the whole relay."
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
       blocked={relay.blocked}
-      notice={<SectionNoticeOf title={RELAY_TITLE} save={s} />}
+      save={s}
     >
       <FieldGrid>
         <GridCell span="wide">
@@ -117,7 +111,7 @@ function RelayForm({ relay, config }: { relay: RelaySection; config: SmtpConfig 
           />
         </GridCell>
       </FieldGrid>
-    </Section>
+    </SaveSection>
   );
 }
 

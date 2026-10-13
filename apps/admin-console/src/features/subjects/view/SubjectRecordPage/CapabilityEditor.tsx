@@ -4,14 +4,13 @@ import {
   useSubjectRolesRead,
   type CapabilityEditing,
 } from '#/features/subjects/usecase/useCapabilities';
-import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { Link } from 'react-aria-components';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { ChecklistField } from '#/shared/view/ChecklistField';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { ReadOnlyFields } from '#/shared/view/Field';
-import { Section } from '#/shared/view/Section';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { FormSkeleton } from '#/shared/view/Skeleton';
 import { recordTab } from '#/shared/view/RecordTab';
 
@@ -19,16 +18,10 @@ export function CapabilitySection({ editing }: { editing: CapabilityEditing }) {
   const s = editing.save;
   const locked = editing.canManage && editing.beyond.length > 0;
   return (
-    <Section
+    <SaveSection
       title="Admin capabilities"
       description="What this subject may do through the admin API and this console, assigned to the subject itself. Holdings through a group or another role are named beside each, and change where they come from."
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title="Admin capabilities" save={s} />}
+      save={s}
     >
       {locked ? <p className={recordTab.rule}>{editing.beyondText}</p> : null}
       {editing.rolesFailed === null ? null : (
@@ -68,7 +61,7 @@ export function CapabilitySection({ editing }: { editing: CapabilityEditing }) {
         onConfirm={editing.confirm}
         onCancel={editing.cancel}
       />
-    </Section>
+    </SaveSection>
   );
 }
 

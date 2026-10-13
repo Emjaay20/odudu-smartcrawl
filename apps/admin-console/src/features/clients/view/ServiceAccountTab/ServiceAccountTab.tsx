@@ -14,7 +14,7 @@ import {
   useServiceRolesRead,
   type ServiceRoles,
 } from '#/features/clients/usecase/useServiceAccount';
-import { SaveSection } from '#/features/clients/view/SaveSection';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { Button } from '#/shared/view/Button';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';

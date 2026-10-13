@@ -26,6 +26,7 @@ import { Button } from '#/shared/view/Button';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { InlineFields, SelectField, ToggleField } from '#/shared/view/Field';
 import { PageHeader } from '#/shared/view/PageHeader';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { Section } from '#/shared/view/Section';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { FormSkeleton } from '#/shared/view/Skeleton';
@@ -157,17 +158,7 @@ function Steps({ flow, reading }: { flow: FlowSteps; reading: string | null }) {
 function Otp({ otp, hasStep }: { otp: OtpRequirement; hasStep: boolean }) {
   const s = otp.save;
   return (
-    <Section
-      title={OTP_TITLE}
-      description={OTP_RULE}
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title={OTP_TITLE} save={s} />}
-    >
+    <SaveSection title={OTP_TITLE} description={OTP_RULE} save={s}>
       <ToggleField
         label={OTP_LABEL}
         value={s.values.otp_required}
@@ -178,7 +169,7 @@ function Otp({ otp, hasStep }: { otp: OtpRequirement; hasStep: boolean }) {
         }}
       />
       {hasStep ? null : <p className={styles.rule}>{NO_OTP_STEP}</p>}
-    </Section>
+    </SaveSection>
   );
 }
 

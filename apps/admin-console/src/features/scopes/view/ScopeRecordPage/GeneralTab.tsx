@@ -14,8 +14,7 @@ import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { SelectField, TextAreaField, TextField, ToggleField } from '#/shared/view/Field';
 import { Panel } from '#/shared/view/Panel';
-import { Section } from '#/shared/view/Section';
-import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { Timestamp } from '#/shared/view/Timestamp';
 import { recordTab } from '#/shared/view/RecordTab';
 
@@ -44,16 +43,10 @@ function Fixed({ scope }: { scope: ClientScope }) {
 function Description({ general }: { general: ScopeGeneral }) {
   const s = general.description;
   return (
-    <Section
+    <SaveSection
       title="Description"
       description="What the scope is for, shown wherever it is chosen."
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title="Description" save={s} />}
+      save={s}
     >
       <TextAreaField
         label="Description"
@@ -65,23 +58,17 @@ function Description({ general }: { general: ScopeGeneral }) {
           s.edit('description', value);
         }}
       />
-    </Section>
+    </SaveSection>
   );
 }
 
 function Tokens({ general }: { general: ScopeGeneral }) {
   const s = general.tokens;
   return (
-    <Section
+    <SaveSection
       title="Tokens"
       description="Where the scope's claims are carried once it is granted."
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title="Tokens" save={s} />}
+      save={s}
     >
       <ToggleField
         label={ID_TOKEN_LABEL}
@@ -101,23 +88,17 @@ function Tokens({ general }: { general: ScopeGeneral }) {
           s.edit('include_in_access_token', value);
         }}
       />
-    </Section>
+    </SaveSection>
   );
 }
 
 function NewClients({ general }: { general: ScopeGeneral }) {
   const s = general.assignment;
   return (
-    <Section
+    <SaveSection
       title="New clients"
       description="Whether a client made from now on is given this scope. Clients that already exist are not changed."
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title="New clients" save={s} />}
+      save={s}
     >
       <SelectField
         label={NEW_CLIENT_LABEL}
@@ -129,23 +110,17 @@ function NewClients({ general }: { general: ScopeGeneral }) {
           s.edit('default_client_assignment', value);
         }}
       />
-    </Section>
+    </SaveSection>
   );
 }
 
 function Consent({ general }: { general: ScopeGeneral }) {
   const s = general.consent;
   return (
-    <Section
+    <SaveSection
       title="Consent"
       description="How the consent screen lists the scope: its text, and its place among the others, lowest first."
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title="Consent" save={s} />}
+      save={s}
     >
       <TextAreaField
         label="Consent text"
@@ -166,7 +141,7 @@ function Consent({ general }: { general: ScopeGeneral }) {
           s.edit('display_order', value);
         }}
       />
-    </Section>
+    </SaveSection>
   );
 }
 

@@ -21,7 +21,7 @@ import {
 } from '#/features/clients/service';
 import { useClientTokens } from '#/features/clients/usecase/useClientTokens';
 import { OptionalSecondsField } from '#/features/clients/view/OptionalSecondsField';
-import { SaveSection } from '#/features/clients/view/SaveSection';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { ChecklistField } from '#/shared/view/ChecklistField';
 import { ReadOnlyFields, SelectField, TextListField, ToggleField } from '#/shared/view/Field';
 import { recordTab } from '#/shared/view/RecordTab';

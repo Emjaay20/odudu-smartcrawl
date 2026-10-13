@@ -9,7 +9,6 @@ import {
   useSubjectClaims,
   useSubjectProfileRead,
   type ClaimSection,
-  type SectionSave,
 } from '#/features/subjects/usecase/useSubjectProfile';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
@@ -21,8 +20,7 @@ import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
 import { PhoneField } from '#/shared/view/Field';
 import { PictureField, UrlField } from '#/shared/view/Field';
 import { Panel } from '#/shared/view/Panel';
-import { Section } from '#/shared/view/Section';
-import { SectionNotice } from '#/shared/view/SectionNotice';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { FormSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
@@ -36,22 +34,6 @@ interface TabProps {
   gone: boolean;
   canManage: boolean;
   self: boolean;
-}
-
-function notice<T extends Readonly<Record<string, unknown>>>(title: string, s: SectionSave<T>) {
-  return (
-    <SectionNotice
-      section={title}
-      status={s.status}
-      conflicts={s.conflicts}
-      conflictSource={s.conflictSource}
-      message={s.message}
-      busy={s.saving}
-      onKeepMine={s.keepMine}
-      onTakeTheirs={s.takeTheirs}
-      onReread={s.reread}
-    />
-  );
 }
 
 function Username({ account }: { account: SubjectAccount }) {
@@ -99,16 +81,10 @@ function Username({ account }: { account: SubjectAccount }) {
 function Account({ account }: { account: SubjectAccount }) {
   const s = account.section;
   return (
-    <Section
+    <SaveSection
       title="Account"
       description="How the subject signs in and is written to. A changed email is unverified until it is proved or marked verified below."
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={notice('Account', s)}
+      save={s}
     >
       <Username account={account} />
       <TextField
@@ -123,7 +99,7 @@ function Account({ account }: { account: SubjectAccount }) {
           s.edit('email', value);
         }}
       />
-    </Section>
+    </SaveSection>
   );
 }
 
@@ -241,16 +217,7 @@ function ClaimInput({ claim, ...props }: ClaimProps & { claim: ClaimField }) {
 function Claims({ section }: { section: ClaimSection }) {
   const s = section.save;
   return (
-    <Section
-      title={section.title}
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={notice(section.title, s)}
-    >
+    <SaveSection title={section.title} save={s}>
       <FieldGrid>
         {section.claims.map((claim) => (
           <GridCell key={claim.id} {...(claim.span === undefined ? {} : { span: claim.span })}>
@@ -267,7 +234,7 @@ function Claims({ section }: { section: ClaimSection }) {
           </GridCell>
         ))}
       </FieldGrid>
-    </Section>
+    </SaveSection>
   );
 }
 
@@ -294,16 +261,10 @@ function ProfileSections({
       {sections.map((section) => (
         <Claims key={section.id} section={section} />
       ))}
-      <Section
+      <SaveSection
         title="Verification"
         description="Whether the email and the phone number are proved to be the subject's. A relying party reads these as email_verified and phone_number_verified."
-        dirty={v.dirty}
-        saving={v.saving}
-        onSave={v.submit}
-        onDiscard={v.discard}
-        restored={v.restored}
-        blocked={v.blocked}
-        notice={notice('Verification', v)}
+        save={v}
       >
         <ToggleField
           label="Email verified"
@@ -324,7 +285,7 @@ function ProfileSections({
             v.edit('phone_number_verified', value);
           }}
         />
-      </Section>
+      </SaveSection>
       <dl className={recordTab.fixed}>
         <dt>Profile last updated</dt>
         <dd>{updatedAt === null ? 'Never' : <Timestamp value={updatedAt} />}</dd>

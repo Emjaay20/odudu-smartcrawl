@@ -5,12 +5,11 @@ import {
   type Membership,
   type SubjectGroups,
 } from '#/features/subjects/usecase/useSubjectGroups';
-import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { GroupPicker } from '#/shared/view/GroupPicker';
-import { Section } from '#/shared/view/Section';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { FormSkeleton } from '#/shared/view/Skeleton';
 import { recordTab } from '#/shared/view/RecordTab';
 
@@ -34,16 +33,10 @@ export function Memberships({ name, members }: { name: string; members: readonly
 function Groups({ groups }: { groups: SubjectGroups }) {
   const s = groups.save;
   return (
-    <Section
+    <SaveSection
       title="Groups"
       description="Direct memberships, which the groups claim of the next token carries. Joining a group grants its roles, and its ancestors' roles too."
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title="Groups" save={s} />}
+      save={s}
     >
       <Memberships name={groups.name} members={groups.members} />
       {groups.canManage ? (
@@ -66,7 +59,7 @@ function Groups({ groups }: { groups: SubjectGroups }) {
         onConfirm={groups.confirm}
         onCancel={groups.cancel}
       />
-    </Section>
+    </SaveSection>
   );
 }
 

@@ -9,12 +9,11 @@ import {
 } from '#/features/groups/usecase/useGroupGeneral';
 import type { Ceiling } from '#/features/groups/usecase/useGroupRecordPage';
 import { Panel } from '#/shared/view/Panel';
-import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { TextAreaField, ToggleField } from '#/shared/view/Field';
 import { GroupPicker } from '#/shared/view/GroupPicker';
-import { Section } from '#/shared/view/Section';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { Timestamp } from '#/shared/view/Timestamp';
 import { recordTab } from '#/shared/view/RecordTab';
 
@@ -49,16 +48,10 @@ function Fixed({ group }: { group: GroupRecord }) {
 function Description({ general }: { general: GroupGeneral }) {
   const s = general.description;
   return (
-    <Section
+    <SaveSection
       title="Description"
       description="What the group is for, shown wherever it is chosen."
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title="Description" save={s} />}
+      save={s}
     >
       <TextAreaField
         label="Description"
@@ -71,23 +64,17 @@ function Description({ general }: { general: GroupGeneral }) {
           s.edit('description', value);
         }}
       />
-    </Section>
+    </SaveSection>
   );
 }
 
 function PlaceSection({ place }: { place: Place }) {
   const s = place.save;
   return (
-    <Section
+    <SaveSection
       title="Place in the tree"
       description="Its members receive the roles of every group above it, so a move changes what they hold."
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title="Place in the tree" save={s} />}
+      save={s}
     >
       <p className={recordTab.text}>{place.current}</p>
       {place.state === 'checking' ? (
@@ -115,7 +102,7 @@ function PlaceSection({ place }: { place: Place }) {
         onConfirm={place.confirm}
         onCancel={place.cancel}
       />
-    </Section>
+    </SaveSection>
   );
 }
 
@@ -142,18 +129,9 @@ function DefaultSection({ defaults }: { defaults: Defaults }) {
     body = <p className={recordTab.rule}>{defaults.fixed}</p>;
   }
   return (
-    <Section
-      title="New subjects"
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title="New subjects" save={s} />}
-    >
+    <SaveSection title="New subjects" save={s}>
       {body}
-    </Section>
+    </SaveSection>
   );
 }
 

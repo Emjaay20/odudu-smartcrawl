@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
-import { SaveSection } from '#/features/clients/view/SaveSection';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 function save(overrides: Partial<Parameters<typeof SaveSection>[0]['save']> = {}) {
@@ -58,6 +58,38 @@ it("holds Save with the reason it is given, ahead of the save's own", () => {
   expect(screen.getByRole('button', { name: 'Save Grant types' })).toBeDisabled();
   expect(screen.getByText('Needs a redirect URI first.')).toBeVisible();
   expect(screen.queryByText('Its own reason.')).toBeNull();
+});
+
+it('names the save for what it does, and the heading by the id it is given', () => {
+  render(
+    <SaveSection
+      title="Grant types"
+      saveLabel="Apply grant types"
+      headingId="grants-heading"
+      save={save({ dirty: true })}
+    >
+      <p>Its fields</p>
+    </SaveSection>,
+  );
+  expect(screen.getByRole('button', { name: 'Apply grant types' })).toBeVisible();
+  expect(screen.getByRole('heading', { name: 'Grant types' })).toHaveAttribute(
+    'id',
+    'grants-heading',
+  );
+});
+
+it('says what the last save said, under the section it belongs to', () => {
+  render(
+    <SaveSection
+      title="Grant types"
+      save={save({ status: 'refused', message: 'The gateway refused it.' })}
+    >
+      <p>Its fields</p>
+    </SaveSection>,
+  );
+  expect(screen.getByRole('region', { name: 'Grant types' })).toHaveTextContent(
+    'The gateway refused it.',
+  );
 });
 
 it('passes axe in both themes', async () => {

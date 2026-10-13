@@ -9,8 +9,7 @@ import { Button } from '#/shared/view/Button';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { RoleOwner } from '#/shared/view/RoleOwner';
 import { RolePicker } from '#/shared/view/RolePicker';
-import { Section } from '#/shared/view/Section';
-import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { FormSkeleton } from '#/shared/view/Skeleton';
 import { recordTab } from '#/shared/view/RecordTab';
 
@@ -33,16 +32,10 @@ function Listed({ name, mapped }: { name: string; mapped: readonly MappedRole[] 
 function Roles({ name, roles }: { name: string; roles: ScopeRoles }) {
   const s = roles.save;
   return (
-    <Section
+    <SaveSection
       title="Roles"
       description={`A token granted ${name} carries these roles' claims.`}
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title="Roles" save={s} />}
+      save={s}
     >
       <Listed name={name} mapped={roles.mapped} />
       {roles.offered ? (
@@ -62,7 +55,7 @@ function Roles({ name, roles }: { name: string; roles: ScopeRoles }) {
           saved.
         </p>
       )}
-    </Section>
+    </SaveSection>
   );
 }
 

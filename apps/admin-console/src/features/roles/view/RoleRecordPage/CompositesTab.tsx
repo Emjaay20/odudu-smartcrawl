@@ -8,12 +8,11 @@ import {
 import type { Ceiling } from '#/features/roles/usecase/useRoleRecordPage';
 import { Panel } from '#/shared/view/Panel';
 import { RoleOwner } from '#/shared/view/RoleOwner';
-import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { RolePicker } from '#/shared/view/RolePicker';
-import { Section } from '#/shared/view/Section';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { FormSkeleton } from '#/shared/view/Skeleton';
 import { recordTab } from '#/shared/view/RecordTab';
 import styles from '#/features/roles/view/RoleRecordPage/Tab.module.css';
@@ -81,17 +80,11 @@ function Nested({ role, composites }: { role: Role; composites: RoleComposites }
 function Add({ role, composites }: { role: Role; composites: RoleComposites }) {
   const s = composites.add;
   return (
-    <Section
+    <SaveSection
       title="Add a composite"
       saveLabel={`Nest it in ${role.name}`}
       description={`Nests one more role in ${role.name}; whoever holds ${role.name} holds it from their next token.`}
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title="Add a composite" save={s} />}
+      save={s}
     >
       {composites.offered ? (
         <RolePicker
@@ -105,7 +98,7 @@ function Add({ role, composites }: { role: Role; composites: RoleComposites }) {
       ) : (
         <p className={recordTab.rule}>Checking what you may nest here…</p>
       )}
-    </Section>
+    </SaveSection>
   );
 }
 

@@ -53,6 +53,24 @@ it("shows a group's name as fixed, and saves its description on the ETag it read
   });
 });
 
+it('puts back a description kept across a sign-in, and marks it for review', async () => {
+  sessionStorage.setItem(
+    'odudu.console.drafts',
+    JSON.stringify({
+      owner: 'acme/s1',
+      drafts: {
+        'acme/groups/g-plat': { description: { etag: null, values: { description: 'Kept' } } },
+      },
+    }),
+  );
+  renderConsoleAt(AT, groupRoutes());
+  const section = await screen.findByRole('region', { name: 'Description' });
+  await waitFor(() => {
+    expect(within(section).getByRole('textbox', { name: 'Description' })).toHaveValue('Kept');
+  });
+  expect(within(section).getByText('Restored — review before saving')).toBeVisible();
+});
+
 it('reads whoami again when a description save is refused, and says what it needed', async () => {
   const user = userEvent.setup();
   const { sent } = renderConsoleAt(

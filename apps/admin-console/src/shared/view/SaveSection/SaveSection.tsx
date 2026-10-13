@@ -11,17 +11,23 @@ interface Controls extends NoticeSave {
   submit: () => boolean;
 }
 
-// A section of the client's record: its title, its save bar and its notice,
-// wired to one section's save.
+// A section of a record: its title, its save bar and its notice, wired to
+// one section's save.
 export function SaveSection({
   title,
   description,
+  saveLabel,
+  headingId,
   save,
   blocked,
   children,
 }: {
   title: string;
   description?: ReactNode;
+  // What Save does, where "Save" and the title would read oddly.
+  saveLabel?: string;
+  // The heading's id, for a page that sends the focus to it.
+  headingId?: string;
   save: Controls;
   // Holds Save with this reason, ahead of the save's own.
   blocked?: string | undefined;
@@ -31,6 +37,8 @@ export function SaveSection({
     <Section
       title={title}
       {...(description === undefined ? {} : { description })}
+      {...(saveLabel === undefined ? {} : { saveLabel })}
+      {...(headingId === undefined ? {} : { headingId })}
       dirty={save.dirty}
       saving={save.saving}
       onSave={save.submit}

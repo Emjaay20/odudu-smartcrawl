@@ -7,14 +7,13 @@ import {
 import { useSubjectRoles, type SubjectRoles } from '#/features/subjects/usecase/useSubjectRoles';
 import { CapabilitySection } from '#/features/subjects/view/SubjectRecordPage/CapabilityEditor';
 import { Panel } from '#/shared/view/Panel';
-import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { PagedList } from '#/features/subjects/view/SubjectRecordPage/SessionsTab';
 import { provenanceText } from '#/shared/service/capabilities';
 import { Button } from '#/shared/view/Button';
 import type { Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { RolePicker } from '#/shared/view/RolePicker';
-import { Section } from '#/shared/view/Section';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { FormSkeleton } from '#/shared/view/Skeleton';
 import { recordTab } from '#/shared/view/RecordTab';
 
@@ -49,16 +48,10 @@ function Effective({ roles }: { roles: SubjectRoles }) {
 function Roles({ roles }: { roles: SubjectRoles }) {
   const s = roles.save;
   return (
-    <Section
+    <SaveSection
       title="Roles"
       description="The roles assigned to the subject itself, other than its admin capabilities."
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title="Roles" save={s} />}
+      save={s}
     >
       {roles.assigned.length === 0 ? (
         <p className={recordTab.rule}>{`${roles.name} is assigned no role here.`}</p>
@@ -81,7 +74,7 @@ function Roles({ roles }: { roles: SubjectRoles }) {
           onChange={roles.choose}
         />
       ) : null}
-    </Section>
+    </SaveSection>
   );
 }
 

@@ -9,11 +9,10 @@ import {
 import type { Ceiling } from '#/features/roles/usecase/useRoleRecordPage';
 import { Panel } from '#/shared/view/Panel';
 import { RoleOwner } from '#/shared/view/RoleOwner';
-import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { TextAreaField, ToggleField } from '#/shared/view/Field';
-import { Section } from '#/shared/view/Section';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { Timestamp } from '#/shared/view/Timestamp';
 import { recordTab } from '#/shared/view/RecordTab';
 
@@ -48,16 +47,10 @@ function Fixed({ role }: { role: Role }) {
 function Description({ general }: { general: RoleGeneral }) {
   const s = general.description;
   return (
-    <Section
+    <SaveSection
       title="Description"
       description="What the role is for, shown wherever it is chosen."
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title="Description" save={s} />}
+      save={s}
     >
       <TextAreaField
         label="Description"
@@ -70,7 +63,7 @@ function Description({ general }: { general: RoleGeneral }) {
           s.edit('description', value);
         }}
       />
-    </Section>
+    </SaveSection>
   );
 }
 
@@ -95,18 +88,9 @@ function DefaultSection({ defaults }: { defaults: Defaults }) {
     );
   }
   return (
-    <Section
-      title="New subjects"
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title="New subjects" save={s} />}
-    >
+    <SaveSection title="New subjects" save={s}>
       {body}
-    </Section>
+    </SaveSection>
   );
 }
 

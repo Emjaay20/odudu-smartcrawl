@@ -12,13 +12,12 @@ import {
   type Deletion,
 } from '#/features/clients/usecase/useClientGeneral';
 import { Panel } from '#/shared/view/Panel';
-import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { CopyValue } from '#/shared/view/CopyValue';
 import { TextAreaField, TextField, ToggleField, UrlField } from '#/shared/view/Field';
 import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
-import { Section } from '#/shared/view/Section';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { Timestamp } from '#/shared/view/Timestamp';
 import { recordTab } from '#/shared/view/RecordTab';
 
@@ -55,16 +54,10 @@ function Fixed({ client }: { client: Client }) {
 function Details({ general }: { general: ClientGeneral }) {
   const s = general.details;
   return (
-    <Section
+    <SaveSection
       title="Details"
       description="How the client is named wherever a person meets it."
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title="Details" save={s} />}
+      save={s}
     >
       <TextField
         label="Name"
@@ -87,24 +80,14 @@ function Details({ general }: { general: ClientGeneral }) {
           s.edit('description', value);
         }}
       />
-    </Section>
+    </SaveSection>
   );
 }
 
 function Pages({ general }: { general: ClientGeneral }) {
   const s = general.pages;
   return (
-    <Section
-      title="Consent screen links"
-      description={PAGES_RULE}
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title="Consent screen links" save={s} />}
-    >
+    <SaveSection title="Consent screen links" description={PAGES_RULE} save={s}>
       <FieldGrid>
         <GridCell span="full">
           <UrlField
@@ -143,23 +126,14 @@ function Pages({ general }: { general: ClientGeneral }) {
           />
         </GridCell>
       </FieldGrid>
-    </Section>
+    </SaveSection>
   );
 }
 
 function Availability({ general }: { general: ClientGeneral }) {
   const s = general.availability;
   return (
-    <Section
-      title="Availability"
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title="Availability" save={s} />}
-    >
+    <SaveSection title="Availability" save={s}>
       {general.enabledFixed === null ? (
         <ToggleField
           label="Enabled"
@@ -173,23 +147,14 @@ function Availability({ general }: { general: ClientGeneral }) {
       ) : (
         <p className={recordTab.rule}>{general.enabledFixed}</p>
       )}
-    </Section>
+    </SaveSection>
   );
 }
 
 function Consent({ general }: { general: ClientGeneral }) {
   const s = general.consent;
   return (
-    <Section
-      title="Consent"
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title="Consent" save={s} />}
-    >
+    <SaveSection title="Consent" save={s}>
       <ToggleField
         label="Consent required"
         description="Each person is asked to approve what the client receives before it is given, once, and the approval is kept."
@@ -199,7 +164,7 @@ function Consent({ general }: { general: ClientGeneral }) {
           s.edit('consent_required', value);
         }}
       />
-    </Section>
+    </SaveSection>
   );
 }
 

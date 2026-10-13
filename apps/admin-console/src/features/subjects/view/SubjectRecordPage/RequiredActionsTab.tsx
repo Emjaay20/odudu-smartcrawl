@@ -4,12 +4,11 @@ import {
   useRequiredActions,
   useRequiredActionsRead,
 } from '#/features/subjects/usecase/useRequiredActions';
-import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { Button } from '#/shared/view/Button';
 import { ChecklistField } from '#/shared/view/ChecklistField';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { ReadOnlyFields } from '#/shared/view/Field';
-import { Section } from '#/shared/view/Section';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { FormSkeleton } from '#/shared/view/Skeleton';
 import { recordTab } from '#/shared/view/RecordTab';
 
@@ -39,16 +38,10 @@ function Ready({
     choose,
   } = useRequiredActions(tenant, subject, read.data, read.etag, read.gone, allowed);
   return (
-    <Section
+    <SaveSection
       title="Required actions"
       description={`What ${name}'s next sign-in asks for, in this order, before it lets them in. Each is cleared once done.`}
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title="Required actions" save={s} />}
+      save={s}
     >
       <ReadOnlyFields when={!canManage}>
         <ChecklistField
@@ -59,7 +52,7 @@ function Ready({
           onChange={choose}
         />
       </ReadOnlyFields>
-    </Section>
+    </SaveSection>
   );
 }
 

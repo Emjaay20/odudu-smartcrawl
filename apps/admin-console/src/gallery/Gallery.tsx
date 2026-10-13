@@ -56,6 +56,7 @@ import { RoleOwner } from '#/shared/view/RoleOwner';
 import { ClientPicker } from '#/shared/view/ClientPicker';
 import { RolePicker } from '#/shared/view/RolePicker';
 import { SaveBar } from '#/shared/view/SaveBar';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { SecretDialog } from '#/shared/view/SecretDialog';
 import { Section } from '#/shared/view/Section';
 import { SectionNotice } from '#/shared/view/SectionNotice';
@@ -706,6 +707,22 @@ function Dialogs({ initial }: { initial: GalleryDialog | null }) {
   );
 }
 
+const NO_SAVE = {
+  status: 'idle' as const,
+  conflicts: [],
+  conflictSource: 'changed' as const,
+  message: null,
+  saving: false,
+  keepMine: NOTHING,
+  takeTheirs: NOTHING,
+  reread: NOTHING,
+  dirty: true,
+  restored: false,
+  blocked: undefined,
+  discard: NOTHING,
+  submit: () => true,
+};
+
 function RecordPieces() {
   return (
     <div className={styles.stack}>
@@ -719,6 +736,11 @@ function RecordPieces() {
             </div>
           </Panel>
         </div>
+      </Specimen>
+      <Specimen label="SaveSection: a section wired to one save">
+        <SaveSection title="Description" description="What the client is for." save={NO_SAVE}>
+          <p>Its fields</p>
+        </SaveSection>
       </Specimen>
       <Specimen label="PageNotFound: an address that is no page">
         <PageNotFound />

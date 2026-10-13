@@ -4,8 +4,7 @@ import { useTenantGeneral } from '#/features/tenants/usecase/useTenantGeneral';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { TextField } from '#/shared/view/Field';
-import { Section } from '#/shared/view/Section';
-import { SectionNotice } from '#/shared/view/SectionNotice';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { StatusTag } from '#/shared/view/StatusTag';
 import styles from '#/features/tenants/view/GeneralTab/GeneralTab.module.css';
 import { DESCRIPTION_RULE } from '#/shared/service/labels';
@@ -25,28 +24,10 @@ export function GeneralTab({
   const status = useId();
   return (
     <div className={styles.tab}>
-      <Section
+      <SaveSection
         title="General"
         description="What the console and the tenant's own pages call it. The name is fixed: it is in the issuer of every token the tenant has minted."
-        dirty={s.dirty}
-        saving={s.saving}
-        onSave={s.submit}
-        onDiscard={s.discard}
-        restored={s.restored}
-        blocked={s.blocked}
-        notice={
-          <SectionNotice
-            section="General"
-            status={s.status}
-            conflicts={s.conflicts}
-            conflictSource={s.conflictSource}
-            message={s.message}
-            busy={s.saving}
-            onKeepMine={s.keepMine}
-            onTakeTheirs={s.takeTheirs}
-            onReread={s.reread}
-          />
-        }
+        save={s}
       >
         <dl className={styles.fixed}>
           <dt>Name</dt>
@@ -64,7 +45,7 @@ export function GeneralTab({
             s.edit('display_name', value);
           }}
         />
-      </Section>
+      </SaveSection>
       <section aria-labelledby={status} className={styles.status}>
         <h2 id={status} className={styles.heading}>
           Status

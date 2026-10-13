@@ -7,24 +7,17 @@ import {
 import { Button } from '#/shared/view/Button';
 import { ChecklistField } from '#/shared/view/ChecklistField';
 import { EmptyState } from '#/shared/view/EmptyState';
-import { Section } from '#/shared/view/Section';
-import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { FormSkeleton } from '#/shared/view/Skeleton';
 import { recordTab } from '#/shared/view/RecordTab';
 
 function Mappers({ name, set }: { name: string; set: ScopeMapperSet }) {
   const s = set.save;
   return (
-    <Section
+    <SaveSection
       title="Claim mappers"
       description={`The mappers that build the claims a token granted ${name} carries.`}
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title="Claim mappers" save={s} />}
+      save={s}
     >
       <p className={recordTab.rule}>{set.summary}</p>
       <ChecklistField
@@ -35,7 +28,7 @@ function Mappers({ name, set }: { name: string; set: ScopeMapperSet }) {
         changed={s.changed.includes('mapper_names')}
         onChange={set.choose}
       />
-    </Section>
+    </SaveSection>
   );
 }
 

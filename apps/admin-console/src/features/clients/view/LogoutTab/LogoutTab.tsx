@@ -11,7 +11,7 @@ import {
 } from '#/features/clients/service';
 import { useClientLogout } from '#/features/clients/usecase/useClientLogout';
 import { Deliveries } from '#/features/clients/view/Deliveries';
-import { SaveSection } from '#/features/clients/view/SaveSection';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { ReadOnlyFields, ToggleField, UrlField, UrlListField } from '#/shared/view/Field';
 import { recordTab } from '#/shared/view/RecordTab';
 

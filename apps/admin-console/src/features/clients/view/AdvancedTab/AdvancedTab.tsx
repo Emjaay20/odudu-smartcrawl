@@ -22,7 +22,7 @@ import {
 import { useClientAdvanced } from '#/features/clients/usecase/useClientAdvanced';
 import { useClientSecret, type ClientSecret } from '#/features/clients/usecase/useClientSecret';
 import { Installation } from '#/features/clients/view/Installation';
-import { SaveSection } from '#/features/clients/view/SaveSection';
+import { SaveSection } from '#/shared/view/SaveSection';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import {
