@@ -4,16 +4,6 @@
   gap: var(--space-5);
 }
 
-.panel {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border: var(--hairline);
-  border-radius: var(--radius-m);
-  background: var(--surface-panel);
-}
-
 .heading {
   margin: 0;
   font-size: var(--type-15);

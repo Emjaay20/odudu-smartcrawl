@@ -19,6 +19,7 @@ import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { SelectField } from '#/shared/view/Field';
 import { PageHeader } from '#/shared/view/PageHeader';
+import { Panel } from '#/shared/view/Panel';
 import { TableSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
@@ -164,12 +165,8 @@ function LaneSection({ spec, page }: { spec: LaneSpec; page: Page }) {
 }
 
 function Stage({ page }: { page: Page }) {
-  const heading = useId();
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        Stage a key
-      </h2>
+    <Panel title="Stage a key">
       <p className={styles.rule}>{STAGE_RULE}</p>
       <div className={styles.stage}>
         <SelectField
@@ -185,7 +182,7 @@ function Stage({ page }: { page: Page }) {
       <p role="status" aria-label="Last stage" className={styles.message}>
         {page.stageMessage}
       </p>
-    </section>
+    </Panel>
   );
 }
 

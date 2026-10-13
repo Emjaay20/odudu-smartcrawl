@@ -10,7 +10,7 @@ import { EmptyState } from '#/shared/view/EmptyState';
 import { Pager } from '#/shared/view/Pager';
 import { TableSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
-import styles from '#/features/subjects/view/SubjectMembers/SubjectMembers.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 const COLUMNS: readonly Column<Subject>[] = [
   {
@@ -82,7 +82,7 @@ function List({
     case 'ready':
       body =
         list.rows.length === 0 ? (
-          <p className={styles.rule}>{NOBODY[by](name)}</p>
+          <p className={recordTab.rule}>{NOBODY[by](name)}</p>
         ) : (
           <>
             <DataTable
@@ -106,7 +106,7 @@ function List({
   return (
     <>
       {list.status === 'refused' ? null : (
-        <div className={styles.actions}>
+        <div className={recordTab.actions}>
           {list.count === null ? null : (
             <Count count={list.count.count} capped={list.count.capped} noun={NOUN} />
           )}
@@ -135,8 +135,8 @@ export function SubjectMembers({
 }) {
   const readable = useMembersReadable(tenant);
   return (
-    <div className={styles.tab}>
-      <p className={styles.rule}>{SCOPE[by](name)}</p>
+    <div className={recordTab.tab}>
+      <p className={recordTab.rule}>{SCOPE[by](name)}</p>
       {readable ? (
         <List tenant={tenant} by={by} id={id} name={name} />
       ) : (

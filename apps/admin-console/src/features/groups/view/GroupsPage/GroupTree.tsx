@@ -5,6 +5,7 @@ import { useGroupNode, type GroupNode } from '#/features/groups/usecase/useGroup
 import { Button } from '#/shared/view/Button';
 import { ListSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
+import { recordTab } from '#/shared/view/RecordTab';
 import styles from '#/features/groups/view/GroupsPage/GroupTree.module.css';
 
 function Children({
@@ -74,7 +75,7 @@ function Node({ tenant, group }: { tenant: string; group: Group }) {
           <span className={styles.description}>{group.description}</span>
         )}
       </div>
-      <div className={styles.actions}>
+      <div className={recordTab.actions}>
         <Button
           size="small"
           variant="quiet"
