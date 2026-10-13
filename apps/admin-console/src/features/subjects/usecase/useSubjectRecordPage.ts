@@ -1,7 +1,6 @@
 import type { Subject } from '@odudu/contracts/admin';
 import { useAuthority, usePrincipal } from '#/features/session';
 import { useHeldCapabilities } from '#/features/subjects/repository/useAccess';
-import { useDirtyRecords } from '#/shared/repository/useDirtyRecords';
 import { useSubjectRecord } from '#/features/subjects/repository/useSubjectRecord';
 import {
   canManageSubject,
@@ -11,10 +10,10 @@ import {
   TAB_RECORDS,
   type SubjectTab,
 } from '#/features/subjects/service';
-import { useRecordTab } from '#/shared/repository/useRecordTab';
 import { lacking } from '#/shared/service/access';
 import { isSelf, type AdminCapability } from '#/shared/service/principal';
-import { dirtyTabs, tabNamed, type RecordView } from '#/shared/service/record';
+import type { RecordView } from '#/shared/service/record';
+import { useRecordTabs } from '#/shared/usecase/useRecordTabs';
 
 export interface SubjectRecordPage {
   record: RecordView;
@@ -42,22 +41,15 @@ export function useSubjectRecordPage(tenant: string, id: string): SubjectRecordP
   const record = useSubjectRecord(tenant, id);
   const principal = usePrincipal();
   const authority = useAuthority(tenant);
-  const { tab, selectTab } = useRecordTab(SUBJECT_TABS);
+  const tabs = useRecordTabs(SUBJECT_TABS, TAB_RECORDS, tenant, id);
   const changeNeeds = lacking(authority, ['manage-users']);
   const effective = useHeldCapabilities(tenant, id);
   const beyond = subjectBeyond(effective, authority?.capabilities);
-  const recordsOf = (each: SubjectTab): readonly string[] => TAB_RECORDS[each](id);
-  const edited = useDirtyRecords(tenant, SUBJECT_TABS.flatMap(recordsOf));
   return {
     record,
     subject: record.data,
     etag: record.etag,
-    tab,
-    selectTab: (next) => {
-      const chosen = tabNamed(SUBJECT_TABS, next);
-      if (chosen !== undefined) selectTab(chosen);
-    },
-    dirty: dirtyTabs(SUBJECT_TABS, recordsOf, edited),
+    ...tabs,
     canManage: canManageSubject(changeNeeds, effective.status, beyond),
     changeNeeds,
     beyond,

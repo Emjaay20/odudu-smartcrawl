@@ -9,9 +9,8 @@ import {
   type GroupTab,
   TAB_RECORDS,
 } from '#/features/groups/service';
-import { useDirtyRecords } from '#/shared/repository/useDirtyRecords';
-import { useRecordTab } from '#/shared/repository/useRecordTab';
-import { dirtyTabs, tabNamed, type RecordView } from '#/shared/service/record';
+import type { RecordView } from '#/shared/service/record';
+import { useRecordTabs } from '#/shared/usecase/useRecordTabs';
 
 export type { Ceiling };
 
@@ -33,9 +32,7 @@ export function useGroupRecordPage(tenant: string, id: string): GroupRecordPage 
   const record = useGroupRecord(tenant, id);
   const authority = useAuthority(tenant);
   const parent = useGroupNamed(tenant, record.data?.parent_id ?? null);
-  const { tab, selectTab } = useRecordTab(GROUP_TABS);
-  const recordsOf = (each: GroupTab): readonly string[] => TAB_RECORDS[each](id);
-  const edited = useDirtyRecords(tenant, GROUP_TABS.flatMap(recordsOf));
+  const tabs = useRecordTabs(GROUP_TABS, TAB_RECORDS, tenant, id);
   const ceiling = groupCeiling(parent, authority, record.data);
 
   return {
@@ -43,12 +40,7 @@ export function useGroupRecordPage(tenant: string, id: string): GroupRecordPage 
     group: record.data,
     createUnderHref: createUnderHref(tenant, record.data, ceiling),
     etag: record.etag,
-    tab,
-    selectTab: (next) => {
-      const chosen = tabNamed(GROUP_TABS, next);
-      if (chosen !== undefined) selectTab(chosen);
-    },
-    dirty: dirtyTabs(GROUP_TABS, recordsOf, edited),
+    ...tabs,
     ceiling,
   };
 }

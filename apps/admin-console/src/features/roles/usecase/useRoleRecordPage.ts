@@ -9,9 +9,8 @@ import {
   type RoleTab,
   TAB_RECORDS,
 } from '#/features/roles/service';
-import { useDirtyRecords } from '#/shared/repository/useDirtyRecords';
-import { useRecordTab } from '#/shared/repository/useRecordTab';
-import { dirtyTabs, tabNamed, type RecordView } from '#/shared/service/record';
+import type { RecordView } from '#/shared/service/record';
+import { useRecordTabs } from '#/shared/usecase/useRecordTabs';
 
 export type { Ceiling };
 
@@ -30,9 +29,7 @@ export interface RoleRecordPage {
 export function useRoleRecordPage(tenant: string, id: string): RoleRecordPage {
   const record = useRoleRecord(tenant, id);
   const authority = useAuthority(tenant);
-  const { tab, selectTab } = useRecordTab(ROLE_TABS);
-  const recordsOf = (each: RoleTab): readonly string[] => TAB_RECORDS[each](id);
-  const edited = useDirtyRecords(tenant, ROLE_TABS.flatMap(recordsOf));
+  const tabs = useRecordTabs(ROLE_TABS, TAB_RECORDS, tenant, id);
   const role = record.data;
 
   return {
@@ -40,12 +37,7 @@ export function useRoleRecordPage(tenant: string, id: string): RoleRecordPage {
     role,
     etag: record.etag,
     copyHref: copyHrefOf(tenant, role),
-    tab,
-    selectTab: (next) => {
-      const chosen = tabNamed(ROLE_TABS, next);
-      if (chosen !== undefined) selectTab(chosen);
-    },
-    dirty: dirtyTabs(ROLE_TABS, recordsOf, edited),
+    ...tabs,
     ceiling: roleCeiling(role, authority),
   };
 }
