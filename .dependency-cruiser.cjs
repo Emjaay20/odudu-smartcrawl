@@ -259,6 +259,14 @@ module.exports = {
       to: { path: '/src/(?:repository|.*/repository)(?:/|\\.tsx?$)' },
     },
     {
+      name: 'no-repository-to-usecase-or-view',
+      severity: 'error',
+      comment:
+        'repository holds state and refetch decisions; it depends on adapter and service only.',
+      from: { path: '/src/(?:repository|.*/repository)(?:/|\\.tsx?$)', pathNot: '\\.test\\.tsx?$' },
+      to: { path: '/src/(?:usecase|view|.*/(?:usecase|view))(?:/|\\.tsx?$)' },
+    },
+    {
       name: 'no-view-to-adapter',
       severity: 'error',
       from: { path: '/src/(?:view|.*/view)(?:/|\\.tsx?$)' },

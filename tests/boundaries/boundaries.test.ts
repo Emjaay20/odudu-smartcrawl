@@ -130,6 +130,14 @@ describe('boundary rules', { timeout: 60_000 }, () => {
     expect((await violations('no-view-to-repository')).length).toBeGreaterThan(0);
   });
 
+  it('rejects a repository importing a usecase or a view', async () => {
+    const found = await violations('no-repository-to-usecase-or-view');
+    const from = found.map((v) => v.from);
+    expect(from.some((f) => f.endsWith('repository/bad-repository-usecase.ts'))).toBe(true);
+    expect(from.some((f) => f.endsWith('repository/bad-repository-view.ts'))).toBe(true);
+    expect(from.some((f) => f.endsWith('repository/some-repository.ts'))).toBe(false);
+  });
+
   it('rejects a usecase importing an adapter', async () => {
     expect((await violations('no-usecase-to-adapter')).length).toBeGreaterThan(0);
   });
