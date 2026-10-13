@@ -1,0 +1,30 @@
+# Extra containers for trying the console by hand, layered over compose.yaml:
+#   docker compose -f compose.yaml -f compose.try.yaml up -d --build
+# Nothing here runs in any other stack. Each service is reachable from the
+# server on a private address, which ODUDU_ALLOW_PRIVATE_* admits below.
+services:
+  odudu:
+    environment:
+      ODUDU_ALLOW_PRIVATE_SMTP_HOSTS: 'true'
+      ODUDU_ALLOW_PRIVATE_CLIENT_URLS: 'true'
+      # The deployment's own sender: verification and reset mail lands in
+      # Mailpit. A tenant's relay (Email page) can name the same host.
+      ODUDU_SMTP_HOST: mailpit
+      ODUDU_SMTP_PORT: '1025'
+      ODUDU_SMTP_FROM: odudu@try.local
+      ODUDU_SMTP_STARTTLS: 'false'
+
+  # Catches every message sent to it; read them at http://localhost:8090.
+  mailpit:
+    image: axllent/mailpit:v1.31.5
+    ports:
+      - '127.0.0.1:8090:8025'
+
+  # Prints every request it receives, as JSON, in its logs: a target for a
+  # client's back-channel logout URI (http://logout-sink:8080/).
+  logout-sink:
+    image: mendhak/http-https-echo@sha256:a265f55c86cb3baead76fdf379dc8e9e6440ed121874e101e60b833e05bce8d4
+    environment:
+      HTTP_PORT: '8080'
+    ports:
+      - '127.0.0.1:8091:8080'

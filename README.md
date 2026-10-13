@@ -931,9 +931,17 @@ running:
 cd infra/docker
 ./ensure-console-key.sh   # the stack refuses to start without the console's key
 export COMPOSE_PROJECT_NAME=odudu-try ODUDU_HOST_PORT=3090 POSTGRES_HOST_PORT=5472
-docker compose up -d --build
+docker compose -f compose.yaml -f compose.try.yaml up -d --build
 until curl -fsS http://localhost:3090/health/ready; do sleep 2; done
 ```
+
+`compose.try.yaml` adds two containers for trying what needs another server.
+Mailpit catches every message the stack sends and shows it at
+http://localhost:8090; on the console's Email page point a tenant's relay at
+host `mailpit`, port `1025`, STARTTLS off, no credentials, and press the test
+send. A request sink at `http://logout-sink:8080/` prints whatever it is sent
+(its logs: `docker compose logs logout-sink`), for a client's back-channel
+logout URI.
 
 Bootstrap the first administrator, whose one-time password is printed
 once:
@@ -961,7 +969,7 @@ password first. Tear the stack down,
 volumes included, when you're done:
 
 ```bash
-docker compose down -v
+docker compose -f compose.yaml -f compose.try.yaml down -v
 ```
 
 **Sign somebody in yourself.** The first tenant, client, user and signing
