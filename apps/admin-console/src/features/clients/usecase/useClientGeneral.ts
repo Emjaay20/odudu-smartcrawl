@@ -1,6 +1,7 @@
 import type { Client } from '@odudu/contracts/admin';
 import { useState } from 'react';
 import { useRefusal } from '#/features/session';
+import { useClientSection } from '#/features/clients/usecase/useClientSection';
 import { useGo } from '#/shared/repository/useGo';
 import {
   useClientDeletion,
@@ -14,7 +15,6 @@ import {
 import {
   ceilingRefused,
   CLIENT_CAPABILITY,
-  clientRecord,
   clientRefusal,
   clientsHref,
   deleteConsequence,
@@ -27,7 +27,6 @@ import { useSectionSave, type SectionSave } from '#/shared/repository/useSection
 import { useToasts } from '#/shared/repository/useToasts';
 import { deletedText, writeFailureText } from '#/shared/service/failure';
 import { flagText } from '#/shared/service/format';
-import type { GatewayFailure } from '#/shared/transport/gateway';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
 
 export type { SectionSave };
@@ -75,19 +74,7 @@ export function useClientGeneral({
   const go = useGo();
   const [deleting, setDeleting] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
-  const record = clientRecord(client.id);
-  const shared = {
-    tenant,
-    record,
-    etag,
-    capability: CLIENT_CAPABILITY,
-    gone,
-    onRefused: (failure: GatewayFailure) => {
-      refusal.report(failure, CLIENT_CAPABILITY);
-      if (ceilingRefused(failure)) reread();
-    },
-    explain: clientRefusal,
-  };
+  const shared = useClientSection({ tenant, client, etag, gone });
 
   const details = useSectionSave({
     ...shared,

@@ -106,9 +106,7 @@ export function useRoleComposites({
     etag,
     capability: 'manage-tenant',
     gone,
-    onRefused: (failure) => {
-      refusal.report(failure, 'manage-tenant');
-    },
+    refusal,
     explain: addRefusal,
     fields: {
       child_role_id: {

@@ -94,8 +94,8 @@ export function useServiceRoles({
     etag,
     capability: SERVICE_CAPABILITY,
     gone,
+    refusal,
     onRefused: (failure) => {
-      refusal.report(failure, SERVICE_CAPABILITY);
       if (ceilingRefused(failure)) reread();
     },
     explain: (problem) => writeRefusal(problem, SERVICE_CAPABILITY),

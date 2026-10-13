@@ -52,9 +52,7 @@ export function useScopeMapperSet({
     etag,
     capability: 'manage-tenant',
     gone,
-    onRefused: (failure) => {
-      refusal.report(failure, 'manage-tenant');
-    },
+    refusal,
     explain: writeRefusal,
     fields: {
       mapper_names: {

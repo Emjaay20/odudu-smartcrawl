@@ -124,9 +124,7 @@ export function useCapabilityEditor({
     etag,
     capability: 'manage-users',
     gone,
-    onRefused: (failure) => {
-      refusal.report(failure, 'manage-users');
-    },
+    refusal,
     explain: accessRefusal(name, 'roles', self),
     fields: {
       capabilities: {

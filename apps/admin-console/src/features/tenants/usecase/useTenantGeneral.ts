@@ -49,9 +49,7 @@ export function useTenantGeneral(
     etag,
     capability: 'manage-tenant',
     gone,
-    onRefused: (failure) => {
-      refusal.report(failure, 'manage-tenant');
-    },
+    refusal,
     fields: {
       display_name: { value: tenant.display_name ?? '', label: 'Display name', kind: 'plain' },
     },

@@ -1,7 +1,8 @@
 import { writeRefusal } from '#/shared/service/capabilities';
+import type { AdminCapability } from '#/shared/service/principal';
 import type { GatewayFailure, Problem } from '#/shared/service/result';
 
-export const CLIENT_CAPABILITY = 'manage-clients';
+export const CLIENT_CAPABILITY: AdminCapability = 'manage-clients';
 
 // What a write on a client refused by the ceiling, or the last-administrator
 // guard, means; null for anything the section says in the server's own words.

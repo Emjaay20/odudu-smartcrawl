@@ -30,8 +30,8 @@ export function useClientSection({
     etag,
     capability: CLIENT_CAPABILITY,
     gone,
+    refusal,
     onRefused: (failure: GatewayFailure) => {
-      refusal.report(failure, CLIENT_CAPABILITY);
       if (ceilingRefused(failure)) reread();
     },
     explain: clientRefusal,

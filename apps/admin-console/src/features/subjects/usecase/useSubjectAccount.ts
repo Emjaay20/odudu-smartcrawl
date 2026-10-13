@@ -68,9 +68,7 @@ export function useSubjectAccount(
     etag,
     capability: 'manage-users',
     gone,
-    onRefused: (failure) => {
-      refusal.report(failure, 'manage-users');
-    },
+    refusal,
     fields: {
       username: { value: subject.username ?? '', label: 'Username', kind: 'plain' },
       email: { value: subject.email ?? '', label: 'Email', kind: 'plain' },

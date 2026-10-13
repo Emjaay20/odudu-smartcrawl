@@ -39,7 +39,7 @@ import { asksFirst, writeRefusal } from '#/shared/service/capabilities';
 import { writeFailureText } from '#/shared/service/failure';
 import { flagText } from '#/shared/service/format';
 import type { PickerState } from '#/shared/service/picker';
-import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
+import type { GatewayResult } from '#/shared/transport/gateway';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
 import type { DefaultValues, DescriptionValues } from '#/shared/service/sectionValues';
 
@@ -117,9 +117,6 @@ export function useGroupGeneral({
   const [deleting, setDeleting] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const record = groupRecord(group.id);
-  const onRefused = (failure: GatewayFailure): void => {
-    refusal.report(failure, 'manage-tenant');
-  };
   // A write that may take something from yourself is followed by whoami.
   const reading = <R>(result: GatewayResult<R>): GatewayResult<R> => {
     if (result.ok) reread();
@@ -134,7 +131,7 @@ export function useGroupGeneral({
     etag,
     capability: 'manage-tenant',
     gone,
-    onRefused,
+    refusal,
     explain: writeRefusal,
     fields: {
       description: { value: group.description ?? '', label: 'Description', kind: 'plain' },
@@ -152,7 +149,7 @@ export function useGroupGeneral({
     etag,
     capability: 'manage-tenant',
     gone,
-    onRefused,
+    refusal,
     explain: moveRefusal,
     fields: {
       parent_id: {
@@ -174,7 +171,7 @@ export function useGroupGeneral({
     etag,
     capability: 'manage-tenant',
     gone,
-    onRefused,
+    refusal,
     explain: writeRefusal,
     fields: {
       default_for_new_subjects: {

@@ -77,9 +77,7 @@ export function useSubjectGroups(
     etag,
     capability: 'manage-users',
     gone,
-    onRefused: (failure) => {
-      refusal.report(failure, 'manage-users');
-    },
+    refusal,
     explain: accessRefusal(name, 'groups', self),
     fields: {
       group_ids: {

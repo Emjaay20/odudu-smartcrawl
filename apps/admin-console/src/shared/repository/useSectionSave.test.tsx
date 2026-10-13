@@ -7,7 +7,7 @@ import { storeDrafts } from '#/shared/adapter/draftStorage';
 import { createQueryClient } from '#/shared/repository/queryClient';
 import { useDrafts } from '#/shared/repository/useDrafts';
 import { recordKey, useRecord } from '#/shared/repository/useRecord';
-import { useSectionSave } from '#/shared/repository/useSectionSave';
+import { useSectionSave, type SectionRefusal } from '#/shared/repository/useSectionSave';
 import { useToasts } from '#/shared/repository/useToasts';
 import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 import type { Gateway, GatewayFailure } from '#/shared/transport/gateway';
@@ -54,12 +54,14 @@ function General({
   etag,
   gone = false,
   onRefused,
+  refusal,
   explain,
 }: {
   data: Client;
   etag: string;
   gone?: boolean;
   onRefused?: (failure: GatewayFailure) => void;
+  refusal?: SectionRefusal;
   explain?: (problem: Problem) => string | null;
 }) {
   const save = useSectionSave({
@@ -71,6 +73,7 @@ function General({
     capability: 'manage-clients',
     gone,
     ...(onRefused === undefined ? {} : { onRefused }),
+    ...(refusal === undefined ? {} : { refusal }),
     ...(explain === undefined ? {} : { explain }),
     fields: { name: { value: data.name, label: 'Name', kind: 'plain' } },
     save: (gateway, { changes, ifMatch }) => amend(gateway, changes, ifMatch),
@@ -158,9 +161,11 @@ function Tokens({ data, etag }: { data: Client; etag: string }) {
 
 function ClientRecord({
   onRefused,
+  refusal,
   explain,
 }: {
   onRefused?: (failure: GatewayFailure) => void;
+  refusal?: SectionRefusal;
   explain?: (problem: Problem) => string | null;
 }) {
   const record = useRecord({ tenant: 'acme', record: 'clients/c1', read });
@@ -172,6 +177,7 @@ function ClientRecord({
         etag={record.etag}
         gone={record.gone}
         {...(onRefused === undefined ? {} : { onRefused })}
+        {...(refusal === undefined ? {} : { refusal })}
         {...(explain === undefined ? {} : { explain })}
       />
       <Tokens data={record.data} etag={record.etag} />
@@ -183,6 +189,7 @@ function mount(
   routes: Record<string, Answer>,
   onRefused?: (failure: GatewayFailure) => void,
   explain?: (problem: Problem) => string | null,
+  refusal?: SectionRefusal,
 ) {
   const fake = fakeTransport(routes);
   const queryClient = createQueryClient();
@@ -191,6 +198,7 @@ function mount(
       <QueryClientProvider client={queryClient}>
         <ClientRecord
           {...(onRefused === undefined ? {} : { onRefused })}
+          {...(refusal === undefined ? {} : { refusal })}
           {...(explain === undefined ? {} : { explain })}
         />
       </QueryClientProvider>
@@ -647,6 +655,51 @@ it('names the capability a 403 needed, hands the refusal on, and toasts nothing'
   });
   expect(refusals).toEqual([expect.objectContaining({ kind: 'problem' })]);
   expect(useToasts.getState().toasts).toEqual([]);
+});
+
+it('tells the refusal reporter what a 403 needed, then the caller', async () => {
+  const user = userEvent.setup();
+  const told: string[] = [];
+  mount(
+    { [GET]: client(LOADED, '"e1"'), [PATCH]: problem(403, 'about:blank', 'Forbidden') },
+    () => {
+      told.push('onRefused');
+    },
+    undefined,
+    {
+      report: (_failure, needed) => {
+        told.push(`report ${needed}`);
+        return true;
+      },
+    },
+  );
+  await rename(user, 'Billing');
+  await user.click(within(general()).getByRole('button', { name: 'Save General' }));
+  await waitFor(() => {
+    expect(told).toEqual(['report manage-clients', 'onRefused']);
+  });
+});
+
+it('does not tell the refusal reporter of a failure that was no refusal', async () => {
+  const user = userEvent.setup();
+  const told: string[] = [];
+  mount(
+    { [GET]: client(LOADED, '"e1"'), [PATCH]: problem(500, 'about:blank', 'Server Error') },
+    undefined,
+    undefined,
+    {
+      report: (_failure, needed) => {
+        told.push(needed);
+        return true;
+      },
+    },
+  );
+  await rename(user, 'Billing');
+  await user.click(within(general()).getByRole('button', { name: 'Save General' }));
+  await waitFor(() => {
+    expect(useToasts.getState().toasts).not.toEqual([]);
+  });
+  expect(told).toEqual([]);
 });
 
 it('reports a 428 as a fault in the console, not a refusal of the person', async () => {

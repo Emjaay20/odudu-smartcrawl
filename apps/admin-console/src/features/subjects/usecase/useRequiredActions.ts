@@ -47,9 +47,7 @@ export function useRequiredActions(
     etag,
     capability: 'manage-users',
     gone,
-    onRefused: (failure) => {
-      refusal.report(failure, 'manage-users');
-    },
+    refusal,
     explain: accessRefusal(name, 'actions'),
     fields: {
       actions: {

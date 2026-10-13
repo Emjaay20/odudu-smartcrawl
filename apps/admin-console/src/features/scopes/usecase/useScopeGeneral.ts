@@ -34,10 +34,12 @@ import { useToasts } from '#/shared/repository/useToasts';
 import { writeRefusal } from '#/shared/service/capabilities';
 import { deletedText } from '#/shared/service/failure';
 import { flagText } from '#/shared/service/format';
-import type { GatewayFailure } from '#/shared/transport/gateway';
 import { DESCRIPTION_RULE } from '#/shared/service/labels';
 import type { DescriptionValues } from '#/shared/service/sectionValues';
 import type { Choice } from '#/shared/service/choice';
+import type { AdminCapability } from '#/shared/service/principal';
+
+const MANAGE: AdminCapability = 'manage-tenant';
 
 export interface Deletion {
   // Why it is never offered, said in place of the button.
@@ -88,11 +90,9 @@ export function useScopeGeneral({
     tenant,
     record: scopeRecord(scope.id),
     etag,
-    capability: 'manage-tenant',
+    capability: MANAGE,
     gone,
-    onRefused: (failure: GatewayFailure) => {
-      refusal.report(failure, 'manage-tenant');
-    },
+    refusal,
     explain: writeRefusal,
   };
   const description = useSectionSave({
@@ -198,7 +198,7 @@ export function useScopeGeneral({
               go(scopesHref(tenant), { replace: true });
               return;
             }
-            refusal.report(result, 'manage-tenant');
+            refusal.report(result, MANAGE);
             setProblem(scopeDeleteFailureText(scope.name, result));
           })
           .catch(() => {

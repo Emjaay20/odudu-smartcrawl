@@ -80,9 +80,7 @@ export function useGroupRoles({
     etag,
     capability: 'manage-tenant',
     gone,
-    onRefused: (failure) => {
-      refusal.report(failure, 'manage-tenant');
-    },
+    refusal,
     explain: writeRefusal,
     fields: {
       role_ids: {

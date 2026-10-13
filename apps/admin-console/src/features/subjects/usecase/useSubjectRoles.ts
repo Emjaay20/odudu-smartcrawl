@@ -61,9 +61,7 @@ export function useSubjectRoles(
     etag,
     capability: 'manage-users',
     gone,
-    onRefused: (failure) => {
-      refusal.report(failure, 'manage-users');
-    },
+    refusal,
     explain: accessRefusal(name, 'roles'),
     fields: {
       role_ids: {

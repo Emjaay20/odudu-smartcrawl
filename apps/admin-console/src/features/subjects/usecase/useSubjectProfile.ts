@@ -54,9 +54,7 @@ function useClaimSection(
     etag,
     capability: 'manage-users',
     gone,
-    onRefused: (failure) => {
-      refusal.report(failure, 'manage-users');
-    },
+    refusal,
     fields: claimFields(profile, section.claims),
     save: saveClaims(tenant, id),
   });
@@ -87,9 +85,7 @@ export function useSubjectClaims(
     etag,
     capability: 'manage-users',
     gone,
-    onRefused: (failure) => {
-      refusal.report(failure, 'manage-users');
-    },
+    refusal,
     fields: verificationFields(profile),
     save: saveVerification(tenant, id),
   });

@@ -23,7 +23,6 @@ import { useToasts } from '#/shared/repository/useToasts';
 import { asksFirst, judgedLoss, writeRefusal } from '#/shared/service/capabilities';
 import { deletedText } from '#/shared/service/failure';
 import { flagText } from '#/shared/service/format';
-import type { GatewayFailure } from '#/shared/transport/gateway';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
 import type { DefaultValues, DescriptionValues } from '#/shared/service/sectionValues';
 
@@ -82,9 +81,6 @@ export function useRoleGeneral({
   const [deleting, setDeleting] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const record = roleRecord(role.id);
-  const onRefused = (failure: GatewayFailure): void => {
-    refusal.report(failure, 'manage-tenant');
-  };
   const description = useSectionSave({
     tenant,
     record,
@@ -93,7 +89,7 @@ export function useRoleGeneral({
     etag,
     capability: 'manage-tenant',
     gone,
-    onRefused,
+    refusal,
     explain: writeRefusal,
     fields: {
       description: { value: role.description ?? '', label: 'Description', kind: 'plain' },
@@ -108,7 +104,7 @@ export function useRoleGeneral({
     etag,
     capability: 'manage-tenant',
     gone,
-    onRefused,
+    refusal,
     explain: writeRefusal,
     fields: {
       default_for_new_subjects: {

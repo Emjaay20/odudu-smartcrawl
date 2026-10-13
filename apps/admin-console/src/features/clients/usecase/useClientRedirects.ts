@@ -1,17 +1,12 @@
 import type { Client } from '@odudu/contracts/admin';
-import { useRefusal } from '#/features/session';
+import { useClientSection } from '#/features/clients/usecase/useClientSection';
 import {
   useClientSaves,
-  useRereadClient,
   type OriginValues,
   type RedirectValues,
 } from '#/features/clients/repository/useClientRecord';
 import {
-  ceilingRefused,
-  CLIENT_CAPABILITY,
   CLIENT_LIST_LIMIT,
-  clientRecord,
-  clientRefusal,
   FIELD,
   clientTabHref,
   listCount,
@@ -20,7 +15,6 @@ import {
   SECTION,
 } from '#/features/clients/service';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
-import type { GatewayFailure } from '#/shared/transport/gateway';
 
 export interface ClientRedirects {
   redirects: SectionSave<RedirectValues>;
@@ -47,21 +41,8 @@ export function useClientRedirects({
   gone: boolean;
   writable: boolean;
 }): ClientRedirects {
-  const refusal = useRefusal(tenant);
   const saves = useClientSaves(tenant, client.id);
-  const reread = useRereadClient(tenant, client.id);
-  const shared = {
-    tenant,
-    record: clientRecord(client.id),
-    etag,
-    capability: CLIENT_CAPABILITY,
-    gone,
-    onRefused: (failure: GatewayFailure) => {
-      refusal.report(failure, CLIENT_CAPABILITY);
-      if (ceilingRefused(failure)) reread();
-    },
-    explain: clientRefusal,
-  };
+  const shared = useClientSection({ tenant, client, etag, gone });
 
   const redirects = useSectionSave({
     ...shared,

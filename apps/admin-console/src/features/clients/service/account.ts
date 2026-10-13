@@ -4,7 +4,7 @@ import { beyondCaller, isAdminRole } from '#/shared/service/capabilities';
 import { andList } from '#/shared/service/format';
 import type { AdminCapability, Authority } from '#/shared/service/principal';
 
-export const SERVICE_CAPABILITY = 'manage-users';
+export const SERVICE_CAPABILITY: AdminCapability = 'manage-users';
 
 // The record the service account's own page reads, so the two stay in step.
 export function serviceRolesRecord(subjectId: string): string {

@@ -6,6 +6,7 @@ import { useToasts } from '#/shared/repository/useToasts';
 import type { Conflict } from '#/shared/service/conflict';
 import type { Values } from '#/shared/service/dirty';
 import { draftFieldsOf } from '#/shared/service/drafts';
+import type { AdminCapability } from '#/shared/service/principal';
 import {
   afterSave,
   conflictsOf,
@@ -41,6 +42,11 @@ export interface SaveInput<T extends Values> {
 }
 
 export type { ConflictSource, SaveStatus };
+
+// What `useRefusal.report` answers to: a 403 names the capability it needed.
+export interface SectionRefusal {
+  report: (failure: GatewayFailure, needed: AdminCapability) => boolean;
+}
 
 export interface SectionSave<T extends Values> {
   status: SaveStatus;
@@ -82,6 +88,7 @@ export function useSectionSave<T extends Values, R>({
   etag,
   capability,
   gone = false,
+  refusal,
   onRefused,
   explain,
   fields,
@@ -94,10 +101,12 @@ export function useSectionSave<T extends Values, R>({
   // The ETag the record was read with: a section mounts once it is read.
   etag: string;
   // What the save needs, named when a 403 refuses it.
-  capability: string;
+  capability: AdminCapability;
   // The record was found deleted since it was read (`useRecord`'s `gone`).
   gone?: boolean;
-  // Told of a 403, so the caller can re-read whoami (`useRefusal.report`).
+  // Told of a refusal with the capability it needed (`useRefusal`).
+  refusal?: SectionRefusal;
+  // Told of a refusal after `refusal`, for whatever else it should set going.
   onRefused?: (failure: GatewayFailure) => void;
   // Says what a 403 or 409 means for this section, in place of the default.
   explain?: (problem: Problem) => string | null;
@@ -166,7 +175,10 @@ export function useSectionSave<T extends Values, R>({
     }
     update((was) => afterSave(was, { ...outcome, phase }, from.edits));
     toast(outcome);
-    if (outcome.refused) onRefused?.(result);
+    if (outcome.refused) {
+      refusal?.report(result, capability);
+      onRefused?.(result);
+    }
   };
 
   const run = async (from: SectionState<T>): Promise<void> => {

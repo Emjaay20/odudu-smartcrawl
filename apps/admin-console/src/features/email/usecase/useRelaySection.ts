@@ -44,9 +44,7 @@ export function useRelaySection({
     etag,
     capability: 'manage-tenant',
     gone,
-    onRefused: (failure) => {
-      refusal.report(failure, 'manage-tenant');
-    },
+    refusal,
     explain: writeRefusal,
     fields: {
       host: { value: now.host, label: RELAY_LABELS.host, kind: 'plain' },
