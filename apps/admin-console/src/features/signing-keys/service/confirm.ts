@@ -1,4 +1,5 @@
 import type { SigningKey } from '@odudu/contracts/admin';
+import type { NamedDialog } from '#/shared/service/dialog';
 import type { KeyAction } from '#/features/signing-keys/service/outcome';
 import { promoteWarning, type Promotion } from '#/features/signing-keys/service/promotion';
 
@@ -28,20 +29,12 @@ export function deleteConsequence(key: SigningKey): string {
   return `The record of the ${key.alg} key ${key.kid} is removed for good. It is published nowhere and signs nothing, so no token depends on it. This cannot be undone.`;
 }
 
-export interface KeyDialog {
-  title: string;
-  consequence: string;
-  confirmLabel: string;
-  tone: 'primary' | 'danger';
-  typed?: string;
-}
-
 export function dialogOf(
   action: KeyAction,
   key: SigningKey,
   active: SigningKey | undefined,
   promotion: Promotion,
-): KeyDialog {
+): NamedDialog {
   switch (action) {
     case 'promote':
       return {

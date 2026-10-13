@@ -15,9 +15,9 @@ import {
   signsInAsItself,
   subjectName,
   type Asking,
-  type CredentialDialog,
 } from '#/features/subjects/service';
 import { useToasts } from '#/shared/repository/useToasts';
+import type { NamedDialog } from '#/shared/service/dialog';
 import type { Read } from '#/shared/service/read';
 
 export type { Asking };
@@ -30,7 +30,7 @@ export interface SubjectCredentials {
   lockout: Read<Lockout>;
   asking: Asking | null;
   // What the confirmation says for the change being asked.
-  dialog: CredentialDialog | null;
+  dialog: NamedDialog | null;
   busy: boolean;
   problem: string | null;
   ask: (asking: Asking) => void;

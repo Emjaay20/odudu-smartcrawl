@@ -1,4 +1,5 @@
 import { holdingLabel, type Holding } from '#/shared/service/capabilities';
+import type { AskedDialog } from '#/shared/service/dialog';
 import { andList } from '#/shared/service/format';
 import { type AdminCapability } from '#/shared/service/principal';
 import type { GatewayFailure } from '#/shared/service/result';
@@ -43,9 +44,7 @@ const LOSS: Readonly<Record<Holding, string>> = {
   'manage-tenants': 'reaching every other tenant',
 };
 
-export interface Confirmation {
-  title: string;
-  consequence: string;
+export interface Confirmation extends AskedDialog {
   // Typed before it is confirmed, where the change reaches every tenant.
   typed: string | null;
 }

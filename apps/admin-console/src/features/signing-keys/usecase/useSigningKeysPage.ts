@@ -19,9 +19,9 @@ import {
   stagedText,
   defaultAlg,
   type KeyAction,
-  type KeyDialog,
 } from '#/features/signing-keys/service';
 import { useToasts } from '#/shared/repository/useToasts';
+import type { NamedDialog } from '#/shared/service/dialog';
 import { useNow } from '#/shared/usecase/useNow';
 
 // Finer than the minutes a key's readiness is measured in.
@@ -40,7 +40,7 @@ export interface Lane extends Omit<KeyLane, 'rows'> {
 export interface Asking {
   action: KeyAction;
   key: SigningKey;
-  dialog: KeyDialog;
+  dialog: NamedDialog;
 }
 
 export interface SigningKeysPage {

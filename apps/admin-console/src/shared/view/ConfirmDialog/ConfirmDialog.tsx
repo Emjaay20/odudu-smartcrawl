@@ -1,4 +1,5 @@
 import { useId, useState, type SubmitEvent, type ReactNode } from 'react';
+import type { AskedDialog } from '#/shared/service/dialog';
 import { Button } from '#/shared/view/Button';
 import { KeyHint } from '#/shared/view/KeyHint';
 import { DialogFrame } from '#/shared/view/DialogFrame';
@@ -35,13 +36,7 @@ export function AskedDialog({
   onConfirm,
   onCancel,
 }: {
-  asked: {
-    title: string;
-    consequence: string;
-    confirmLabel?: string;
-    tone?: 'primary' | 'danger';
-    typed?: string | null;
-  } | null;
+  asked: AskedDialog | null;
   // Where the action is named by the page, not by what was asked.
   confirmLabel?: string;
   busy?: boolean;

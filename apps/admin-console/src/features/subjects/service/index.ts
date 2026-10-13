@@ -43,7 +43,6 @@ export {
   credentialChangeOf,
   credentialDoneText,
   credentialFailureText,
-  type CredentialDialog,
   credentialDialog,
   credentialDialogOf,
   recoveryCodesText,

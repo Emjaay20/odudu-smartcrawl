@@ -1,4 +1,5 @@
 import { type Credential, type Lockout } from '@odudu/contracts/admin';
+import type { NamedDialog } from '#/shared/service/dialog';
 import { counted, formatAbsolute, lowerFirst } from '#/shared/service/format';
 import type { GatewayFailure } from '#/shared/service/result';
 
@@ -109,14 +110,7 @@ export function credentialFailureText(what: string, failure: GatewayFailure): st
   }
 }
 
-export interface CredentialDialog {
-  title: string;
-  consequence: string;
-  confirmLabel: string;
-  tone: 'primary' | 'danger';
-}
-
-export function credentialDialog(asking: Asking, name: string, self: boolean): CredentialDialog {
+export function credentialDialog(asking: Asking, name: string, self: boolean): NamedDialog {
   switch (asking.kind) {
     case 'password':
       return {
@@ -158,7 +152,7 @@ export function credentialDialogOf(
   asking: Asking | null,
   name: string,
   self: boolean,
-): CredentialDialog | null {
+): NamedDialog | null {
   return asking === null ? null : credentialDialog(asking, name, self);
 }
 
