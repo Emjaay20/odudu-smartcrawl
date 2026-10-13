@@ -105,7 +105,7 @@ export function useSectionSave<T extends Values, R>({
   // The record was found deleted since it was read (`useRecord`'s `gone`).
   gone?: boolean;
   // Told of a refusal with the capability it needed (`useRefusal`).
-  refusal?: RefusalReporter;
+  refusal: RefusalReporter;
   // Told of a refusal after `refusal`, for whatever else it should set going.
   onRefused?: (failure: GatewayFailure) => void;
   // Says what a 403 or 409 means for this section, in place of the default.
@@ -176,7 +176,7 @@ export function useSectionSave<T extends Values, R>({
     update((was) => afterSave(was, { ...outcome, phase }, from.edits));
     toast(outcome);
     if (outcome.refused) {
-      refusal?.report(result, capability);
+      refusal.report(result, capability);
       onRefused?.(result);
     }
   };

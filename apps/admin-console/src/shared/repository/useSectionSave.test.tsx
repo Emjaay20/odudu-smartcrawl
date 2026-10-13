@@ -49,6 +49,8 @@ function amend(gateway: Gateway, body: unknown, ifMatch: string) {
   });
 }
 
+const NO_REFUSAL: RefusalReporter = { report: () => false };
+
 function General({
   data,
   etag,
@@ -73,7 +75,7 @@ function General({
     capability: 'manage-clients',
     gone,
     ...(onRefused === undefined ? {} : { onRefused }),
-    ...(refusal === undefined ? {} : { refusal }),
+    refusal: refusal ?? NO_REFUSAL,
     ...(explain === undefined ? {} : { explain }),
     fields: { name: { value: data.name, label: 'Name', kind: 'plain' } },
     save: (gateway, { changes, ifMatch }) => amend(gateway, changes, ifMatch),
@@ -123,6 +125,7 @@ function Tokens({ data, etag }: { data: Client; etag: string }) {
     label: 'Tokens',
     etag,
     capability: 'manage-clients',
+    refusal: NO_REFUSAL,
     fields: {
       access_token_ttl: {
         value: data.access_token_ttl,
@@ -529,6 +532,7 @@ function Fragile({ data, etag, fail }: { data: Client; etag: string; fail: () =>
     label: 'General',
     etag,
     capability: 'manage-clients',
+    refusal: NO_REFUSAL,
     fields: { name: { value: data.name, label: 'Name', kind: 'plain' } },
     // Breaks after a round trip, as an adapter defect found in its answer would.
     save: async (gateway, { changes, ifMatch }) => {
@@ -743,6 +747,7 @@ function Both({ data, etag }: { data: Client; etag: string }) {
     label: 'Both',
     etag,
     capability: 'manage-clients',
+    refusal: NO_REFUSAL,
     fields: {
       name: { value: data.name, label: 'Name', kind: 'plain' },
       access_token_ttl: { value: data.access_token_ttl, label: 'Lifetime', kind: 'plain' },

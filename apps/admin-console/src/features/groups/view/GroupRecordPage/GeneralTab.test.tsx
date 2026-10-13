@@ -53,6 +53,21 @@ it("shows a group's name as fixed, and saves its description on the ETag it read
   });
 });
 
+it('reads whoami again when a description save is refused, and says what it needed', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    groupRoutes(undefined, {
+      [`PATCH ${G}/g-plat`]: problem(403, 'about:blank', 'Forbidden'),
+    }),
+  );
+  const section = await screen.findByRole('region', { name: 'Description' });
+  await user.type(within(section).getByRole('textbox', { name: 'Description' }), 'Runs it');
+  await user.click(within(section).getByRole('button', { name: 'Save Description' }));
+  expect(await screen.findByText(/it needs the manage-tenant capability/u)).toBeVisible();
+  expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
+});
+
 it('shows a description changed elsewhere beside yours, and sends nothing more', async () => {
   const user = userEvent.setup();
   const { sent } = renderConsoleAt(
