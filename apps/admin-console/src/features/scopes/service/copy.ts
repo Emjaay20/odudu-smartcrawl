@@ -1,4 +1,5 @@
 import type { ClientScope, SetScopeRolesResponse } from '@odudu/contracts/admin';
+import type { LeftOut, PartialCopy } from '#/shared/service/copy';
 import { andList } from '#/shared/service/format';
 import type { AdminCapability } from '#/shared/service/principal';
 import { scopeHref, scopesHref } from '#/features/scopes/service/address';
@@ -23,18 +24,12 @@ export type Copying =
       roles: readonly string[];
       mappers: readonly string[];
       // What it will not map, since the caller could not give it, and why.
-      left: readonly { name: string; why: string }[];
+      left: readonly LeftOut[];
     };
 
 export interface CopyPlan {
   mapped: MappedRole[];
-  left: { name: string; why: string }[];
-}
-
-export interface PartialCopy {
-  text: string;
-  href: string;
-  name: string;
+  left: LeftOut[];
 }
 
 export function copyHrefOf(tenant: string, id: string): string {
@@ -80,8 +75,8 @@ export function copyingText(copying: {
   return `A copy of ${copying.name}, mapping ${roles} and binding ${mappers}.`;
 }
 
-export function copiedDescription(edited: string | null, source: CopyRead): string {
-  return edited ?? (source.status === 'ready' ? (source.scope.description ?? '') : '');
+export function sourceDescription(source: CopyRead): string | null {
+  return source.status === 'ready' ? source.scope.description : null;
 }
 
 // The fields a copy is made with, the name aside: a null text is left out.

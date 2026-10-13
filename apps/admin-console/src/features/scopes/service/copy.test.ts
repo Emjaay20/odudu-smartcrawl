@@ -2,7 +2,7 @@ import type { AdminCapability } from '#/shared/service/principal';
 import { describe, expect, it } from 'vitest';
 import {
   type CopyRead,
-  copiedDescription,
+  sourceDescription,
   copyBody,
   createBodyOf,
   copyHrefOf,
@@ -78,11 +78,10 @@ describe('copying a scope', () => {
     });
   });
 
-  it('shows the description edited, else the source one', () => {
+  it("reads the source's description, none until it is ready", () => {
     const source: CopyRead = { status: 'ready', scope: SCOPE, roles: [], bound: [] };
-    expect(copiedDescription(null, source)).toBe('Invoices');
-    expect(copiedDescription('Mine', source)).toBe('Mine');
-    expect(copiedDescription(null, { status: 'none' })).toBe('');
+    expect(sourceDescription(source)).toBe('Invoices');
+    expect(sourceDescription({ status: 'none' })).toBeNull();
   });
 
   it('says what the copy will carry', () => {

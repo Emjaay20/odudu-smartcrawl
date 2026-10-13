@@ -1,4 +1,5 @@
 import type { ListRoleCompositesResponse, Role } from '@odudu/contracts/admin';
+import type { LeftOut, PartialCopy } from '#/shared/service/copy';
 import { andList } from '#/shared/service/format';
 import type { AdminCapability } from '#/shared/service/principal';
 import { childUnavailable } from '#/features/roles/service/blocks';
@@ -20,18 +21,12 @@ export type Copying =
       // What the copy will nest.
       children: readonly string[];
       // What it will not, since the caller could not nest it, and why.
-      left: readonly { name: string; why: string }[];
+      left: readonly LeftOut[];
     };
-
-export interface PartialCopy {
-  text: string;
-  href: string;
-  name: string;
-}
 
 export interface CopyPlan {
   nested: Role[];
-  left: { name: string; why: string }[];
+  left: LeftOut[];
 }
 
 // A copy is a new tenant role, nested in nothing and handed to nobody yet,
@@ -69,8 +64,8 @@ export function copyingText(copying: { name: string; children: readonly string[]
   return `A copy of ${copying.name}, nesting ${nests}.`;
 }
 
-export function copiedDescription(edited: string | null, source: CopyRead): string {
-  return edited ?? (source.status === 'ready' ? (source.role.description ?? '') : '');
+export function sourceDescription(source: CopyRead): string | null {
+  return source.status === 'ready' ? source.role.description : null;
 }
 
 // A copy missing some of its composites stays on the page, saying so, since

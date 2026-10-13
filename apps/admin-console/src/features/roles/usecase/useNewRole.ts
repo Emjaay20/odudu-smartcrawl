@@ -4,11 +4,10 @@ import { useAuthority, useRefusal } from '#/features/session';
 import { useCopySource, useCreateRole } from '#/features/roles/repository/useCreateRole';
 import { useGo } from '#/shared/repository/useGo';
 import {
-  copiedDescription,
+  sourceDescription,
   type Copying,
   copyingOf,
   copyPlan,
-  type PartialCopy,
   partialCopy,
   roleHref,
   rolesHref,
@@ -19,6 +18,7 @@ import { requiredProblem, withoutField } from '#/shared/service/fieldErrors';
 import { createdText, createFailure, lookupText } from '#/shared/service/failure';
 import type { GatewayFailure } from '#/shared/transport/gateway';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE, NAME_TAKEN } from '#/shared/service/labels';
+import { copiedDescription, type PartialCopy } from '#/shared/service/copy';
 
 type Field = 'name' | 'description';
 type Errors = Partial<Record<Field, string>>;
@@ -58,7 +58,7 @@ export function useNewRole(tenant: string): NewRole {
   const [message, setMessage] = useState<string | null>(null);
   const [unconfirmed, setUnconfirmed] = useState(false);
   const [partial, setPartial] = useState<PartialCopy | null>(null);
-  const shown = copiedDescription(description, source);
+  const shown = copiedDescription(description, sourceDescription(source));
   const caller = useAuthority(tenant)?.capabilities;
   const plan = copyPlan(source.status === 'ready' ? source.children : [], caller, tenant);
   const children = plan.nested;

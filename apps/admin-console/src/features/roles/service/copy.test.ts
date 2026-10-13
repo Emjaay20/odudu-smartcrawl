@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { AdminCapability } from '#/shared/service/principal';
 import {
   type CopyRead,
-  copiedDescription,
+  sourceDescription,
   copyingOf,
   copyingText,
   copyPlan,
@@ -53,17 +53,15 @@ describe('copying a role', () => {
     });
   });
 
-  it('shows the description edited, else the source one', () => {
-    const source: CopyRead = {
+  it("reads the source's description, none until it is ready", () => {
+    const ready: CopyRead = {
       status: 'ready',
       role: { ...AUDITOR, description: 'Reads' },
       children: [],
     };
-    expect(copiedDescription('mine', source)).toBe('mine');
-    expect(copiedDescription('', source)).toBe('');
-    expect(copiedDescription(null, source)).toBe('Reads');
-    expect(copiedDescription(null, { status: 'ready', role: AUDITOR, children: [] })).toBe('');
-    expect(copiedDescription(null, { status: 'loading' })).toBe('');
+    expect(sourceDescription(ready)).toBe('Reads');
+    expect(sourceDescription({ status: 'ready', role: AUDITOR, children: [] })).toBeNull();
+    expect(sourceDescription({ status: 'loading' })).toBeNull();
   });
 
   it('maps the source read to what the page shows', () => {

@@ -50,11 +50,10 @@ export {
 export {
   type CopyRead,
   type Copying,
-  type PartialCopy,
   type CopyPlan,
   copyPlan,
   copyingOf,
   copyingText,
-  copiedDescription,
+  sourceDescription,
   partialCopy,
 } from '#/features/roles/service/copy';

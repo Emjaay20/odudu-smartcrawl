@@ -3,12 +3,11 @@ import { useState } from 'react';
 import { useAuthority, useRefusal } from '#/features/session';
 import { useCopySource, useCreateScope } from '#/features/scopes/repository/useCreateScope';
 import {
-  copiedDescription,
+  sourceDescription,
   createBodyOf,
   type Copying,
   copyingOf,
   copyPlan,
-  type PartialCopy,
   partialCopy,
   scopeHref,
   scopesHref,
@@ -20,6 +19,7 @@ import { requiredProblem, withoutField } from '#/shared/service/fieldErrors';
 import { createdText, createFailure, lookupText } from '#/shared/service/failure';
 import type { GatewayFailure } from '#/shared/transport/gateway';
 import { DESCRIPTION_RULE, NAME_TAKEN } from '#/shared/service/labels';
+import { copiedDescription, type PartialCopy } from '#/shared/service/copy';
 
 type Field = 'name' | 'description';
 type Errors = Partial<Record<Field, string>>;
@@ -59,7 +59,7 @@ export function useNewScope(tenant: string): NewScope {
   const [message, setMessage] = useState<string | null>(null);
   const [unconfirmed, setUnconfirmed] = useState(false);
   const [partial, setPartial] = useState<PartialCopy | null>(null);
-  const shown = copiedDescription(description, source);
+  const shown = copiedDescription(description, sourceDescription(source));
   const plan = copyPlan(source.status === 'ready' ? source.roles : [], caller, tenant);
   const mappers = source.status === 'ready' ? source.bound : [];
   const looked = lookupText('scope', name);
