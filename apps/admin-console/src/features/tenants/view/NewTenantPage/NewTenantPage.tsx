@@ -28,6 +28,7 @@ import { TextField } from '#/shared/view/Field';
 import { CreationForm, creationForm } from '#/shared/view/CreationForm';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { SecretDialog } from '#/shared/view/SecretDialog';
+import { recordTab } from '#/shared/view/RecordTab';
 import styles from '#/features/tenants/view/NewTenantPage/NewTenantPage.module.css';
 
 const STEPS = ['The tenant', 'Its first administrator', 'Done'] as const;
@@ -122,7 +123,7 @@ function Administrator({ step }: { step: AdministratorStep }) {
       </p>
       <CreationForm submit={step.submit}>
         {step.created ? (
-          <dl className={styles.fixed}>
+          <dl className={recordTab.fixed}>
             <dt>Username</dt>
             <dd>
               <code>{step.username}</code>, created. What is left is what they hold and the one-time

@@ -1,5 +1,5 @@
 import type { RegistrationToken } from '@odudu/contracts/admin';
-import { useEffect, useId, useRef, type SubmitEvent } from 'react';
+import { useEffect, useRef } from 'react';
 import { AreaGate, areaAt } from '#/features/shell';
 import { NOTHING_YET, NOUN, TITLE, TOKENS_RULE } from '#/features/registration-tokens/service';
 import {
@@ -14,6 +14,9 @@ import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
 import { ResourceListPage } from '#/shared/view/ResourceListPage';
 import { SecretDialog } from '#/shared/view/SecretDialog';
 import { Timestamp } from '#/shared/view/Timestamp';
+import { CreationForm } from '#/shared/view/CreationForm';
+import { Panel } from '#/shared/view/Panel';
+import { recordTab } from '#/shared/view/RecordTab';
 import styles from '#/features/registration-tokens/view/RegistrationTokensPage/RegistrationTokensPage.module.css';
 
 function columns(page: Page): readonly Column<RegistrationToken>[] {
@@ -56,18 +59,10 @@ function columns(page: Page): readonly Column<RegistrationToken>[] {
 }
 
 function Mint({ page }: { page: Page }) {
-  const heading = useId();
-  const submit = (event: SubmitEvent<HTMLFormElement>): void => {
-    event.preventDefault();
-    page.mint();
-  };
   return (
-    <section aria-labelledby={heading} className={styles.mint}>
-      <h2 id={heading} className={styles.heading}>
-        Mint a registration token
-      </h2>
-      <p className={styles.rule}>{TOKENS_RULE}</p>
-      <form noValidate onSubmit={submit} className={styles.mint}>
+    <Panel title="Mint a registration token">
+      <p className={recordTab.rule}>{TOKENS_RULE}</p>
+      <CreationForm submit={page.mint}>
         <FieldGrid>
           <GridCell>
             <NumberWithUnitField
@@ -98,8 +93,8 @@ function Mint({ page }: { page: Page }) {
         <p role="status" aria-label="Last mint" className={styles.message}>
           {page.message}
         </p>
-      </form>
-    </section>
+      </CreationForm>
+    </Panel>
   );
 }
 

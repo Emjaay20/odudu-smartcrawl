@@ -59,22 +59,6 @@
   overflow-wrap: anywhere;
 }
 
-.fixed {
-  display: grid;
-  gap: var(--space-1);
-  margin: 0;
-}
-
-.fixed dt {
-  font-family: var(--font-mono);
-  font-size: var(--type-12);
-  color: var(--ink-muted);
-}
-
-.fixed dd {
-  margin: 0;
-}
-
 .message {
   margin: 0;
 }

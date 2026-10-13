@@ -1,4 +1,3 @@
-import { useId } from 'react';
 import type { Tenant } from '#/features/tenants/service';
 import { useTenantGeneral } from '#/features/tenants/usecase/useTenantGeneral';
 import { Button } from '#/shared/view/Button';
@@ -6,6 +5,8 @@ import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { TextField } from '#/shared/view/Field';
 import { SaveSection } from '#/shared/view/SaveSection';
 import { EnabledTag } from '#/shared/view/StatusTag';
+import { Panel } from '#/shared/view/Panel';
+import { recordTab } from '#/shared/view/RecordTab';
 import styles from '#/features/tenants/view/GeneralTab/GeneralTab.module.css';
 import { DESCRIPTION_RULE } from '#/shared/service/labels';
 
@@ -21,15 +22,14 @@ export function GeneralTab({
   gone: boolean;
 }) {
   const { general: s, enabled } = useTenantGeneral(name, tenant, etag, gone);
-  const status = useId();
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       <SaveSection
         title="General"
         description="What the console and the tenant's own pages call it. The name is fixed: it is in the issuer of every token the tenant has minted."
         save={s}
       >
-        <dl className={styles.fixed}>
+        <dl className={recordTab.fixed}>
           <dt>Name</dt>
           <dd>
             <code>{name}</code>
@@ -46,20 +46,17 @@ export function GeneralTab({
           }}
         />
       </SaveSection>
-      <section aria-labelledby={status} className={styles.status}>
-        <h2 id={status} className={styles.heading}>
-          Status
-        </h2>
-        <p className={styles.state}>
+      <Panel title="Status">
+        <p className={recordTab.text}>
           <EnabledTag enabled={enabled.enabled} />{' '}
           {enabled.enabled
             ? `${name} is in service.`
             : `${name} answers as a tenant that does not exist until it is enabled again.`}
         </p>
         {enabled.fixed !== null ? (
-          <p className={styles.fixedRule}>{enabled.fixed}</p>
+          <p className={recordTab.rule}>{enabled.fixed}</p>
         ) : (
-          <div className={styles.actions}>
+          <div className={recordTab.actions}>
             {/* One button whose label turns, so focus stays on it across the change. */}
             <Button
               variant={enabled.enabled ? 'danger' : 'secondary'}
@@ -72,7 +69,7 @@ export function GeneralTab({
         <p role="status" className={styles.message}>
           {enabled.message}
         </p>
-      </section>
+      </Panel>
       <ConfirmDialog
         isOpen={enabled.confirming}
         title={`Disable ${name}?`}

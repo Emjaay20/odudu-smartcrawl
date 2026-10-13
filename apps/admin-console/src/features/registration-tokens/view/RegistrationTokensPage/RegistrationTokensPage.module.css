@@ -1,28 +1,8 @@
-.mint {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border: var(--hairline);
-  border-radius: var(--radius-m);
-  background: var(--surface-panel);
-}
-
-.heading {
-  margin: 0;
-  font-size: var(--type-15);
-}
-
-.rule,
 .message,
 .notice {
   margin: 0;
   max-inline-size: 72ch;
   overflow-wrap: anywhere;
-}
-
-.rule {
-  color: var(--ink-muted);
 }
 
 .message:empty,

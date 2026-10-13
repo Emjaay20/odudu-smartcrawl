@@ -1,5 +1,4 @@
 import type { SmtpConfig } from '@odudu/contracts/admin';
-import { useId } from 'react';
 import { AreaGate, areaAt } from '#/features/shell';
 import { useEmailPage } from '#/features/email/usecase/useEmailPage';
 import {
@@ -22,9 +21,11 @@ import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { TextField, ToggleField } from '#/shared/view/Field';
 import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
 import { PageHeader } from '#/shared/view/PageHeader';
+import { Panel } from '#/shared/view/Panel';
 import { ReadGate } from '#/shared/view/ReadGate';
 import { SaveSection } from '#/shared/view/SaveSection';
 import { StatusTag } from '#/shared/view/StatusTag';
+import { recordTab } from '#/shared/view/RecordTab';
 import styles from '#/features/email/view/EmailPage/EmailPage.module.css';
 
 const TITLE = 'Email';
@@ -124,13 +125,9 @@ function TestMessage({
   unsaved: boolean;
 }) {
   const test = useTestSend(tenant, configured);
-  const heading = useId();
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        Test message
-      </h2>
-      <p className={styles.rule}>
+    <Panel title="Test message">
+      <p className={recordTab.rule}>
         Sends one message through the saved relay and tells what the server answered.
         {unsaved ? ' The test uses the saved relay, not the changes above.' : ''}
       </p>
@@ -147,24 +144,20 @@ function TestMessage({
           {test.busy ? 'Sending…' : 'Send test message'}
         </Button>
       </form>
-      {test.blocked === undefined ? null : <p className={styles.rule}>{test.blocked}</p>}
+      {test.blocked === undefined ? null : <p className={recordTab.rule}>{test.blocked}</p>}
       <p role="status" className={styles.outcome} data-tone={test.outcome?.tone}>
         {test.outcome?.text}
       </p>
-    </section>
+    </Panel>
   );
 }
 
 function Removal({ tenant, reread }: { tenant: string; reread: () => void }) {
   const removal = useRelayRemoval(tenant, reread);
-  const heading = useId();
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        Remove the relay
-      </h2>
-      <p className={styles.rule}>Goes back to the deployment’s sender, if it has one.</p>
-      <div className={styles.actions}>
+    <Panel title="Remove the relay">
+      <p className={recordTab.rule}>Goes back to the deployment’s sender, if it has one.</p>
+      <div className={recordTab.actions}>
         <Button variant="danger" onPress={removal.ask}>
           Remove the relay
         </Button>
@@ -182,7 +175,7 @@ function Removal({ tenant, reread }: { tenant: string; reread: () => void }) {
         onConfirm={removal.confirm}
         onCancel={removal.cancel}
       />
-    </section>
+    </Panel>
   );
 }
 
