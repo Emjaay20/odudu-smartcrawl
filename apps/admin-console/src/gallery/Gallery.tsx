@@ -16,6 +16,7 @@ import { KeyHint, PlatformContext } from '#/shared/view/KeyHint';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { LoadFailed } from '#/shared/view/LoadFailed';
+import { MappedRoles } from '#/shared/view/MappedRoles';
 import { Note, NoteCode } from '#/shared/view/Note';
 import { ChunkFailed } from '#/shared/view/ChunkBoundary';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
@@ -769,6 +770,9 @@ function RecordPieces() {
             <p className={recordTab.text}>A deleted client is gone with the roles scoped to it.</p>
           }
         />
+      </Specimen>
+      <Specimen label="MappedRoles: what a group or a scope hands on">
+        <MappedRoles name="billing" mapped={ROLES} />
       </Specimen>
       <div className={styles.grid}>
         <Specimen label="LoadFailed">

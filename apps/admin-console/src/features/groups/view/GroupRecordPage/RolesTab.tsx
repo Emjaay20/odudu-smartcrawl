@@ -3,31 +3,14 @@ import {
   useGroupRoles,
   useGroupRolesRead,
   type GroupRoles,
-  type MappedRole,
 } from '#/features/groups/usecase/useGroupRoles';
 import type { Ceiling } from '#/features/groups/usecase/useGroupRecordPage';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
+import { MappedRoles } from '#/shared/view/MappedRoles';
 import { ReadGate } from '#/shared/view/ReadGate';
 import { RolePicker } from '#/shared/view/RolePicker';
 import { SaveSection } from '#/shared/view/SaveSection';
-import { RoleOwner } from '#/shared/view/RoleOwner';
 import { recordTab } from '#/shared/view/RecordTab';
-
-function Listed({ path, mapped }: { path: string; mapped: readonly MappedRole[] }) {
-  if (mapped.length === 0) return <p className={recordTab.rule}>{`${path} carries no role.`}</p>;
-  return (
-    <ul aria-label={`Carried by ${path}`} className={recordTab.items}>
-      {mapped.map((role) => (
-        <li key={role.id}>
-          <code>{role.name}</code> <RoleOwner role={role} />
-          {role.description === null || role.description === '' ? null : (
-            <span className={recordTab.rule}>{` ${role.description}`}</span>
-          )}
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 function Roles({ path, roles }: { path: string; roles: GroupRoles }) {
   const s = roles.save;
@@ -37,7 +20,7 @@ function Roles({ path, roles }: { path: string; roles: GroupRoles }) {
       description={`Every role here is held by each member of ${path} and of every group beneath it.`}
       save={s}
     >
-      <Listed path={path} mapped={roles.mapped} />
+      <MappedRoles name={path} mapped={roles.mapped} />
       {roles.offered ? (
         <RolePicker
           label={`Roles ${path} carries`}
