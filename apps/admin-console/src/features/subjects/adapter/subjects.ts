@@ -18,17 +18,6 @@ import { adminCall, nothing } from '#/shared/adapter/route';
 
 export { readSubjectCount, readSubjectPage };
 
-export function createSubject(
-  gateway: Gateway,
-  tenant: string,
-  input: { username: string; email: string },
-): Promise<GatewayResult<Subject>> {
-  return adminCall(gateway, 'POST', tenant, ['subjects'], {
-    body: { username: input.username, ...(input.email === '' ? {} : { email: input.email }) },
-    schema: subjectSchema,
-  });
-}
-
 export function readSubject(
   gateway: Gateway,
   tenant: string,

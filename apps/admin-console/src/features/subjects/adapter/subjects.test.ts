@@ -4,7 +4,6 @@ import {
   amendSubject,
   changeCredential,
   clearLockout,
-  createSubject,
   deleteCredential,
   deleteSubject,
   readCredentials,
@@ -46,16 +45,6 @@ it('lists and counts subjects with the query it is given', async () => {
   expect(fake.sent.map((sent) => sent.search.toString())).toEqual([
     'username=a&capability=manage-users',
     'username=a&capability=manage-users',
-  ]);
-});
-
-it('creates a subject, sending the email only when there is one', async () => {
-  const fake = fakeTransport({ [`POST ${T}`]: json(ADA, 201) });
-  await createSubject(fake.transport.gateway, 'acme', { username: 'ada', email: 'ada@x.test' });
-  await createSubject(fake.transport.gateway, 'acme', { username: 'ada', email: '' });
-  expect(fake.sent.map((sent) => sent.body)).toEqual([
-    { username: 'ada', email: 'ada@x.test' },
-    { username: 'ada' },
   ]);
 });
 

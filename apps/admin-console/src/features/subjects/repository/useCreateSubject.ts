@@ -1,8 +1,7 @@
 import type { Subject } from '@odudu/contracts/admin';
 import { useQueryClient } from '@tanstack/react-query';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
-import { createSubject } from '#/features/subjects/adapter/subjects';
-import { findSubject } from '#/shared/adapter/administrators';
+import { createSubject, findSubject } from '#/shared/adapter/administrators';
 import type { GatewayResult } from '#/shared/transport/gateway';
 import { useWrite } from '#/shared/repository/useWrite';
 import { useTransport } from '#/shared/transport/useTransport';
