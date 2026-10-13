@@ -30,7 +30,7 @@ import { useClientSection } from '#/features/clients/usecase/useClientSection';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { describeIds, flagText } from '#/shared/service/format';
 import type { ChecklistOption } from '#/shared/view/ChecklistField';
-import type { SelectOption } from '#/shared/view/Field';
+import type { Choice } from '#/shared/service/choice';
 
 export interface ClientTokens {
   lifetimes: SectionSave<LifetimeValues>;
@@ -42,7 +42,7 @@ export interface ClientTokens {
   credentialCount: string;
   fullScope: SectionSave<FullScopeValues>;
   idToken: SectionSave<IdTokenValues>;
-  idTokenAlgs: SelectOption[];
+  idTokenAlgs: Choice[];
 }
 
 export function useClientTokens(args: {

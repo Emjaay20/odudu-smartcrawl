@@ -1,4 +1,6 @@
-export const ASSIGNMENTS: readonly { id: string; label: string }[] = [
+import type { Choice } from '#/shared/service/choice';
+
+export const ASSIGNMENTS: readonly Choice[] = [
   { id: 'default', label: 'Default' },
   { id: 'optional', label: 'Optional' },
 ];

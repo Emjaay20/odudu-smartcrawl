@@ -11,9 +11,10 @@ import {
   type Key,
 } from 'react-aria-components';
 import { Button } from '#/shared/view/Button';
-import { InlineFields, type SelectOption } from '#/shared/view/Field';
+import { InlineFields } from '#/shared/view/Field';
 import { KeyHint } from '#/shared/view/KeyHint';
 import styles from '#/shared/view/FilterBar/FilterBar.module.css';
+import type { Choice } from '#/shared/service/choice';
 
 export interface Search {
   field: string;
@@ -34,7 +35,7 @@ export function FilterBar({
   children,
 }: {
   label: string;
-  fields: readonly SelectOption[];
+  fields: readonly Choice[];
   field: string;
   query: string;
   onSearch: (search: Search) => void;

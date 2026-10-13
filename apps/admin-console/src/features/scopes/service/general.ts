@@ -1,4 +1,5 @@
 import { CONSENT_TEXT_MAX } from '@odudu/contracts/admin';
+import type { Choice } from '#/shared/service/choice';
 
 export const CONSENT_RULE = `What the consent screen says in place of the scope's name. At most ${String(CONSENT_TEXT_MAX)} characters; leave it empty for none.`;
 
@@ -9,7 +10,7 @@ export const ID_TOKEN_LABEL = 'In the ID token';
 export const ACCESS_TOKEN_LABEL = 'In the access token';
 export const NEW_CLIENT_LABEL = 'For a client made from now on';
 
-export const NEW_CLIENT_CHOICES: readonly { id: string; label: string }[] = [
+export const NEW_CLIENT_CHOICES: readonly Choice[] = [
   { id: 'none', label: 'Not assigned' },
   { id: 'default', label: 'Assigned as default' },
   { id: 'optional', label: 'Assigned as optional' },

@@ -28,6 +28,7 @@ import {
 } from 'react-aria-components';
 import { Button } from '#/shared/view/Button';
 import styles from '#/shared/view/Field/Field.module.css';
+import type { Choice } from '#/shared/service/choice';
 
 export interface Chrome {
   label: string;
@@ -338,11 +339,6 @@ export function InlineFields({ children }: { children: ReactNode }) {
   return <Inline value>{children}</Inline>;
 }
 
-export interface SelectOption {
-  id: string;
-  label: string;
-}
-
 export function SelectField({
   label,
   description,
@@ -359,7 +355,7 @@ export function SelectField({
 }: Chrome &
   GroupPart &
   PartLabel & {
-    options: readonly SelectOption[];
+    options: readonly Choice[];
     value: string;
     onChange: (value: string) => void;
     autoComplete?: string;

@@ -6,7 +6,8 @@ import {
   USERINFO_SIGNING_ALGS,
   type Client,
 } from '@odudu/contracts/admin';
-import { AUTO, sentOf, type Choice } from '#/features/clients/service/choices';
+import { AUTO, sentOf } from '#/features/clients/service/choices';
+import type { Choice } from '#/shared/service/choice';
 
 export const SECTIONS_ADVANCED = {
   auth: 'Client authentication',

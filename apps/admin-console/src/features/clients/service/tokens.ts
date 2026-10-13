@@ -6,9 +6,10 @@ import {
   type Client,
   type ClientTokenTtlField,
 } from '@odudu/contracts/admin';
-import { AUTO, type Choice } from '#/features/clients/service/choices';
+import { AUTO } from '#/features/clients/service/choices';
 import { formatDuration } from '#/shared/service/format';
 import { rangeSentence } from '#/shared/service/numbers';
+import type { Choice } from '#/shared/service/choice';
 
 export interface Lifetime {
   field: ClientTokenTtlField;

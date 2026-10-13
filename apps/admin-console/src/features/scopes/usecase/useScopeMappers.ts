@@ -16,6 +16,7 @@ import { useSectionSave, type SectionSave } from '#/shared/repository/useSection
 import { writeRefusal } from '#/shared/service/capabilities';
 import { andList } from '#/shared/service/format';
 import { inOrderOf } from '#/shared/service/ids';
+import type { Choice } from '#/shared/service/choice';
 
 export function useScopeMappersRead(tenant: string, id: string): RecordState<ScopeMappers> {
   return useScopeMappersRecord(tenant, id);
@@ -23,7 +24,7 @@ export function useScopeMappersRead(tenant: string, id: string): RecordState<Sco
 
 export interface ScopeMapperSet {
   save: SectionSave<MapperValues>;
-  options: readonly { id: string; label: string }[];
+  options: readonly Choice[];
   summary: string;
   choose: (names: readonly string[]) => void;
 }

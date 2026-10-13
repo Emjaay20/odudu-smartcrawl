@@ -1,5 +1,5 @@
 import type { LogoutDelivery } from '@odudu/contracts/admin';
-import type { Choice } from '#/features/clients/service/choices';
+import type { Choice } from '#/shared/service/choice';
 
 export const DELIVERIES_HEADING = 'Back-channel deliveries';
 export const DELIVERIES_RULE =

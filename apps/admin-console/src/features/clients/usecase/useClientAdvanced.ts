@@ -28,20 +28,20 @@ import {
 import { useClientSection } from '#/features/clients/usecase/useClientSection';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { flagText } from '#/shared/service/format';
-import type { SelectOption } from '#/shared/view/Field';
+import type { Choice } from '#/shared/service/choice';
 
 export interface ClientAdvanced {
   auth: SectionSave<AuthValues>;
-  authMethods: SelectOption[];
+  authMethods: Choice[];
   // Whether the method chosen reads a certificate subject.
   asksSubject: boolean;
   keys: SectionSave<KeyValues>;
   // What the chosen source lacks, held against the field it belongs to.
   keysProblem: KeysProblem | undefined;
   userinfo: SectionSave<UserinfoValues>;
-  signingOptions: SelectOption[];
-  encryptionOptions: SelectOption[];
-  contentOptions: SelectOption[];
+  signingOptions: Choice[];
+  encryptionOptions: Choice[];
+  contentOptions: Choice[];
   // Whether an encryption algorithm is chosen, which the content encryption goes with.
   encrypted: boolean;
   audiences: SectionSave<AudienceValues>;

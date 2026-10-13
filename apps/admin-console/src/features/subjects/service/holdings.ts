@@ -14,6 +14,7 @@ import { andList } from '#/shared/service/format';
 import { SYSTEM_TENANT, type AdminCapability } from '#/shared/service/principal';
 import { type Loaded } from '#/features/subjects/service/create';
 import { onlyHolderText } from '#/features/subjects/service/access';
+import type { Choice } from '#/shared/service/choice';
 
 // What else, beyond the boxes, keeps the counted capability with them. Full
 // counts too when a group or another role carries it, since the box only
@@ -139,7 +140,7 @@ export function reachesEveryTenant(
   );
 }
 
-export function holderFilterOptions(tenant: string): { id: string; label: string }[] {
+export function holderFilterOptions(tenant: string): Choice[] {
   return [
     { id: 'any', label: 'Any capability' },
     { id: 'tenant-admin', label: 'Full (tenant-admin)' },

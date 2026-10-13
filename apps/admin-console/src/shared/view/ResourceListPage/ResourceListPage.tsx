@@ -5,12 +5,13 @@ import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { Count } from '#/shared/view/Count';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
-import { InlineFields, type SelectOption } from '#/shared/view/Field';
+import { InlineFields } from '#/shared/view/Field';
 import { FilterBar } from '#/shared/view/FilterBar';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { Pager } from '#/shared/view/Pager';
 import { TableSkeleton } from '#/shared/view/Skeleton';
 import styles from '#/shared/view/ResourceListPage/ResourceListPage.module.css';
+import type { Choice } from '#/shared/service/choice';
 
 export function ResourceListPage<T>({
   list,
@@ -40,7 +41,7 @@ export function ResourceListPage<T>({
   // Drawn under the header and above the search, as a form that adds a row is.
   lead?: ReactNode;
   noun: { one: string; other: string };
-  searchFields?: readonly SelectOption[];
+  searchFields?: readonly Choice[];
   // Exact filters, drawn beside the search.
   filters?: ReactNode;
   columns: readonly Column<T>[];
@@ -105,7 +106,7 @@ function Narrowing<T>({
 }: {
   list: ResourceListState<T>;
   noun: { one: string; other: string };
-  searchFields: readonly SelectOption[];
+  searchFields: readonly Choice[];
   filters: ReactNode;
   children: ReactNode;
 }) {

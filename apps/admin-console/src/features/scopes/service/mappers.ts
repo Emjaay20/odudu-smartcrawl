@@ -1,12 +1,11 @@
 import type { GatewayFailure } from '#/shared/service/result';
 import { andList } from '#/shared/service/format';
+import type { Choice } from '#/shared/service/choice';
 
 export const NONE_TEXT =
   'No mapper is bound and none declares it, so a token granted this scope gets no claim from it.';
 
-export function mapperOptions(
-  available: readonly string[],
-): readonly { id: string; label: string }[] {
+export function mapperOptions(available: readonly string[]): readonly Choice[] {
   return available.map((name) => ({ id: name, label: name }));
 }
 

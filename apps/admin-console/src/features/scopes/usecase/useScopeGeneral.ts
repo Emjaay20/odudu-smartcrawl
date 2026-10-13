@@ -37,6 +37,7 @@ import { flagText } from '#/shared/service/format';
 import type { GatewayFailure } from '#/shared/transport/gateway';
 import { DESCRIPTION_RULE } from '#/shared/service/labels';
 import type { DescriptionValues } from '#/shared/service/sectionValues';
+import type { Choice } from '#/shared/service/choice';
 
 export interface Deletion {
   // Why it is never offered, said in place of the button.
@@ -57,7 +58,7 @@ export interface ScopeGeneral {
   descriptionRule: string;
   tokens: SectionSave<TokenValues>;
   assignment: SectionSave<AssignmentValues>;
-  assignmentChoices: readonly { id: string; label: string }[];
+  assignmentChoices: readonly Choice[];
   consent: SectionSave<ConsentValues>;
   consentRule: string;
   deletion: Deletion;
