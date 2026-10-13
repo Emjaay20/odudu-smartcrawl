@@ -30,3 +30,15 @@ it('is busy from the press until the server answers', async () => {
     expect(result.current.busy).toBe(true);
   });
 });
+
+it('drops what the console holds of the clients the scope leaves, rather than marking it stale', async () => {
+  const { wrapper, queryClient } = hookHarness({
+    [PATH]: () => new Response(null, { status: 204 }),
+  });
+  queryClient.setQueryData(['record', 'acme', 'clients/c1'], 'held');
+  const { result } = renderHook(() => useScopeDeletion('acme', 'x1'), { wrapper });
+  await act(async () => {
+    await result.current.run();
+  });
+  expect(queryClient.getQueryState(['record', 'acme', 'clients/c1'])).toBeUndefined();
+});

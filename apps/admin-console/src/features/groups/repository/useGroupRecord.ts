@@ -9,6 +9,7 @@ import {
   setGroupRoles,
 } from '#/features/groups/adapter/groups';
 import { groupRecord, groupRolesRecord, type GroupRead } from '#/features/groups/service';
+import { useAfterChange } from '#/shared/repository/useAfterChange';
 import { useRecord, type RecordState } from '#/shared/repository/useRecord';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
@@ -68,32 +69,17 @@ export function useGroupNamed(tenant: string, id: string | null): GroupRead {
 // What a group hands out follows from its roles and its place, so every
 // group read is read again but a deleted one's, which would only find it gone.
 function useAfterGroupChange(tenant: string, deleted: string | null = null) {
-  const client = useQueryClient();
-  return <R>(result: GatewayResult<R>): GatewayResult<R> => {
-    if (result.ok) {
-      const gone = deleted === null ? null : groupRecord(deleted);
-      client
-        .invalidateQueries({
-          predicate: ({ queryKey: [kind, at, which] }) =>
-            at === tenant &&
-            ((kind === 'group' && which !== deleted) ||
-              (kind === 'record' &&
-                typeof which === 'string' &&
-                which.startsWith('groups/') &&
-                (gone === null || !which.startsWith(gone)))),
-        })
-        .catch(() => undefined);
-      for (const key of [
-        ['list', tenant],
-        ['picker', tenant, 'groups'],
-        ['held-capabilities', tenant],
-        ['holders', tenant],
-      ]) {
-        client.invalidateQueries({ queryKey: key }).catch(() => undefined);
-      }
-    }
-    return result;
-  };
+  return useAfterChange(tenant, deleted, {
+    kinds: ['group'],
+    records: ['groups/'],
+    recordOf: groupRecord,
+    keys: [
+      ['list', tenant],
+      ['picker', tenant, 'groups'],
+      ['held-capabilities', tenant],
+      ['holders', tenant],
+    ],
+  });
 }
 
 export interface ParentValues extends Readonly<Record<string, unknown>> {

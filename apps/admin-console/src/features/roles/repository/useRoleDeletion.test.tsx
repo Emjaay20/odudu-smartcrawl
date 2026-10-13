@@ -30,3 +30,17 @@ it('is busy from the press until the server answers', async () => {
     expect(result.current.busy).toBe(true);
   });
 });
+
+it("leaves the deleted role's own reads to lapse and reads the others' again", async () => {
+  const { wrapper, queryClient } = hookHarness({
+    [PATH]: () => new Response(null, { status: 204 }),
+  });
+  queryClient.setQueryData(['role', 'acme', 'x1'], 'held');
+  queryClient.setQueryData(['role', 'acme', 'x2'], 'held');
+  const { result } = renderHook(() => useRoleDeletion('acme', 'x1'), { wrapper });
+  await act(async () => {
+    await result.current.run();
+  });
+  expect(queryClient.getQueryState(['role', 'acme', 'x1'])?.isInvalidated).toBe(false);
+  expect(queryClient.getQueryState(['role', 'acme', 'x2'])?.isInvalidated).toBe(true);
+});

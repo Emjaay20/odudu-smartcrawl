@@ -1,5 +1,4 @@
 import type { ClientScope, ScopeMappers, SetScopeRolesResponse } from '@odudu/contracts/admin';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   amendScope,
   deleteScope,
@@ -17,6 +16,7 @@ import {
   type GeneralValues,
 } from '#/features/scopes/service';
 import { uniqueIds } from '#/shared/service/ids';
+import { useAfterChange } from '#/shared/repository/useAfterChange';
 import { useRecord, type RecordState } from '#/shared/repository/useRecord';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
@@ -61,39 +61,17 @@ export function useScopeMappersRecord(
 // client it was assigned to; those clients' pages are not open here, so what
 // the console holds of them is dropped, not marked stale.
 function useAfterScopeChange(tenant: string, deleted: string | null = null) {
-  const client = useQueryClient();
-  return <R>(result: GatewayResult<R>): GatewayResult<R> => {
-    if (result.ok) {
-      const gone = deleted === null ? null : scopeRecord(deleted);
-      client
-        .invalidateQueries({
-          predicate: ({ queryKey: [kind, at, which] }) =>
-            at === tenant &&
-            kind === 'record' &&
-            typeof which === 'string' &&
-            which.startsWith('scopes/') &&
-            (gone === null || !which.startsWith(gone)),
-        })
-        .catch(() => undefined);
-      if (deleted !== null) {
-        client.removeQueries({
-          predicate: ({ queryKey: [kind, at, which] }) =>
-            at === tenant &&
-            kind === 'record' &&
-            typeof which === 'string' &&
-            which.startsWith('clients/'),
-        });
-      }
-      for (const key of [
-        ['list', tenant, 'scopes'],
-        ['count', tenant, 'scopes'],
-        ['picker', tenant, 'scopes'],
-      ]) {
-        client.invalidateQueries({ queryKey: key }).catch(() => undefined);
-      }
-    }
-    return result;
-  };
+  return useAfterChange(tenant, deleted, {
+    kinds: [],
+    records: ['scopes/'],
+    recordOf: scopeRecord,
+    dropped: ['clients/'],
+    keys: [
+      ['list', tenant, 'scopes'],
+      ['count', tenant, 'scopes'],
+      ['picker', tenant, 'scopes'],
+    ],
+  });
 }
 
 export interface TokenValues extends Readonly<Record<string, unknown>> {

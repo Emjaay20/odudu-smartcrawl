@@ -30,3 +30,17 @@ it('is busy from the press until the server answers', async () => {
     expect(result.current.busy).toBe(true);
   });
 });
+
+it("leaves the deleted group's own reads to lapse and reads the others' again", async () => {
+  const { wrapper, queryClient } = hookHarness({
+    [PATH]: () => new Response(null, { status: 204 }),
+  });
+  queryClient.setQueryData(['group', 'acme', 'x1'], 'held');
+  queryClient.setQueryData(['group', 'acme', 'x2'], 'held');
+  const { result } = renderHook(() => useGroupDeletion('acme', 'x1'), { wrapper });
+  await act(async () => {
+    await result.current.run();
+  });
+  expect(queryClient.getQueryState(['group', 'acme', 'x1'])?.isInvalidated).toBe(false);
+  expect(queryClient.getQueryState(['group', 'acme', 'x2'])?.isInvalidated).toBe(true);
+});

@@ -11,6 +11,7 @@ import {
 } from '#/features/roles/adapter/roles';
 import { compositesRecord, roleRecord } from '#/features/roles/service';
 import { isStale } from '#/shared/service/failure';
+import { useAfterChange } from '#/shared/repository/useAfterChange';
 import { recordKey, useRecord, type RecordState } from '#/shared/repository/useRecord';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
@@ -40,32 +41,17 @@ export function useCompositesRecord(
 // above it reaches, and what the lists show; a deleted role's own reads are
 // left to lapse, since reading them again would only find it gone.
 function useAfterRoleChange(tenant: string, deleted: string | null = null) {
-  const client = useQueryClient();
-  return <R>(result: GatewayResult<R>): GatewayResult<R> => {
-    if (result.ok) {
-      const gone = deleted === null ? null : roleRecord(deleted);
-      client
-        .invalidateQueries({
-          predicate: ({ queryKey: [kind, at, which] }) =>
-            at === tenant &&
-            (((kind === 'role' || kind === 'group') && which !== deleted) ||
-              (kind === 'record' &&
-                typeof which === 'string' &&
-                (which.startsWith('roles/') || which.startsWith('groups/')) &&
-                (gone === null || !which.startsWith(gone)))),
-        })
-        .catch(() => undefined);
-      for (const key of [
-        ['list', tenant],
-        ['picker', tenant, 'roles'],
-        ['held-capabilities', tenant],
-        ['holders', tenant],
-      ]) {
-        client.invalidateQueries({ queryKey: key }).catch(() => undefined);
-      }
-    }
-    return result;
-  };
+  return useAfterChange(tenant, deleted, {
+    kinds: ['role', 'group'],
+    records: ['roles/', 'groups/'],
+    recordOf: roleRecord,
+    keys: [
+      ['list', tenant],
+      ['picker', tenant, 'roles'],
+      ['held-capabilities', tenant],
+      ['holders', tenant],
+    ],
+  });
 }
 
 export function useRoleSaves(tenant: string, id: string) {
