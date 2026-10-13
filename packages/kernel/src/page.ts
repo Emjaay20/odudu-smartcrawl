@@ -98,6 +98,14 @@ function policyFor(page: RenderedPage): string {
   return directives.join('; ');
 }
 
+// Every page is bound to a browser's own attempt: a form carrying an
+// `auth_session_id`, a token in a query string, a session that was just
+// ended. `no-store` (RFC 9111 §5.2.2.5) is the one directive that keeps such a
+// page out of every cache. `Pragma` is not sent: RFC 9111 §5.4 deprecates it,
+// and `no-cache` and `Expires: 0` only add what `no-store` already says.
+// ADR 0029's amendment has what this does and does not stop.
+const PAGE_CACHE_CONTROL = 'no-store';
+
 // The one authority for the headers every rendered page carries, so a
 // package's reply wrapper is two lines that spread this and cannot
 // diverge from another package's. Every renderer returns a RenderedPage —
@@ -113,5 +121,6 @@ export function pageHeaders(page: RenderedPage): readonly (readonly [string, str
     // carry: default-src already stops a subresource leaking one via
     // Referer, but a link a user clicks away from is not a subresource.
     ['referrer-policy', 'no-referrer'],
+    ['cache-control', PAGE_CACHE_CONTROL],
   ];
 }

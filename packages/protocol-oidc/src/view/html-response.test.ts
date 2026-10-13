@@ -95,6 +95,12 @@ describe('[ODUDU-VIEW-HTML-01] an HTML response cannot leave without its framing
     expect(headers['x-frame-options']).toBe('DENY');
   });
 
+  it('is never stored by a cache, on a form or an error page', async () => {
+    for (const status of [200, 400]) {
+      expect((await headersOf(status))['cache-control']).toBe('no-store');
+    }
+  });
+
   it('permits no subresource, no foreign form target and no injected base', async () => {
     const policy = (await headersOf(200))['content-security-policy'] ?? '';
     expect(policy).toContain("default-src 'none'");

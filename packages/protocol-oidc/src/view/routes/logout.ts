@@ -1,6 +1,5 @@
 import { clearedSessionCookies } from '@odudu/authn-flows';
 import { requestContextFrom } from '@odudu/domain-audit';
-import { type RenderedPage } from '@odudu/kernel';
 import { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import {
   handleLogoutConfirmation,
@@ -35,14 +34,6 @@ function firstString(value: string | string[] | undefined): string | undefined {
   return typeof value === 'string' ? value : undefined;
 }
 
-// Every page this route renders carries a live session's id and its
-// anti-forgery token (the confirmation form's hidden fields) or exists only
-// because one was just ended — neither belongs in a shared or history cache.
-function sendLogoutHtml(reply: FastifyReply, status: number, page: RenderedPage): FastifyReply {
-  reply.header('cache-control', 'no-store');
-  return sendHtml(reply, status, page);
-}
-
 async function respondToOutcome(
   outcome: LogoutOutcome,
   tenant: string,
@@ -54,19 +45,19 @@ async function respondToOutcome(
   }
 
   if (outcome.kind === 'unauthenticated') {
-    return sendLogoutHtml(reply, 400, renderLogoutUnauthenticatedPage());
+    return sendHtml(reply, 400, renderLogoutUnauthenticatedPage());
   }
 
   if (outcome.kind === 'confirm') {
     if (outcome.sessionId === null || outcome.csrf === null) {
-      return sendLogoutHtml(reply, 200, renderNoActiveSessionPage());
+      return sendHtml(reply, 200, renderNoActiveSessionPage());
     }
     const page = renderLogoutConfirmationPage(tenant, outcome.sessionId, outcome.csrf, {
       clientId: outcome.clientId,
       postLogoutRedirectUri: outcome.postLogoutRedirectUri,
       state: outcome.state,
     });
-    return sendLogoutHtml(
+    return sendHtml(
       reply,
       200,
       outcome.registeredRedirect === null
@@ -88,7 +79,7 @@ async function respondToOutcome(
   }
 
   if (outcome.kind === 'render') {
-    return sendLogoutHtml(
+    return sendHtml(
       reply,
       400,
       renderLogoutRedirectRefusedPage(outcome.frontChannelLogoutUrls),
@@ -99,7 +90,7 @@ async function respondToOutcome(
   // 9207 has /authorize carry iss on every response — this is not an
   // authorization response, so no `iss` parameter of its own applies here.
   if (outcome.redirectTo === null) {
-    return sendLogoutHtml(reply, 200, renderLoggedOutPage(outcome.frontChannelLogoutUrls));
+    return sendHtml(reply, 200, renderLoggedOutPage(outcome.frontChannelLogoutUrls));
   }
   const target = new URL(outcome.redirectTo);
   if (outcome.state !== null) target.searchParams.set('state', outcome.state);

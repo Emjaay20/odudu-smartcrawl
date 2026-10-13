@@ -25,6 +25,15 @@ describe('the headers every rendered page carries', () => {
     expect(headers['referrer-policy']).toBe('no-referrer');
   });
 
+  it('forbids every cache from storing a page', () => {
+    expect(headerMap(MARKUP_ONLY_PAGE)['cache-control']).toBe('no-store');
+    expect(
+      headerMap({ ...MARKUP_ONLY_PAGE, script: { nonce: 'abc', fetchesSameOrigin: false } })[
+        'cache-control'
+      ],
+    ).toBe('no-store');
+  });
+
   // The nonce comes from the markup that used it, never from the caller:
   // a policy naming a nonce the page does not carry fails exactly as
   // silently as no policy at all (ADR 0018's amendment).
