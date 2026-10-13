@@ -92,6 +92,23 @@ it('says what the last save said, under the section it belongs to', () => {
   );
 });
 
+it('saves through the handler it is given instead of the save, and names its notice apart', async () => {
+  const user = userEvent.setup();
+  const own = save({ dirty: true, status: 'stale' });
+  const onSave = vi.fn();
+  render(
+    <SaveSection title="Steps" noticeTitle="Sign-in flow" save={own} onSave={onSave}>
+      <p>Its fields</p>
+    </SaveSection>,
+  );
+  expect(screen.getByRole('region', { name: 'Steps' })).toHaveTextContent(
+    'Sign-in flow changed elsewhere',
+  );
+  await user.click(screen.getByRole('button', { name: 'Save Steps' }));
+  expect(onSave).toHaveBeenCalled();
+  expect(own.submit).not.toHaveBeenCalled();
+});
+
 it('passes axe in both themes', async () => {
   expect(
     await axeInBothThemes(() => (

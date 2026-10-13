@@ -20,6 +20,8 @@ export function SaveSection({
   headingId,
   save,
   blocked,
+  noticeTitle,
+  onSave,
   children,
 }: {
   title: string;
@@ -31,6 +33,10 @@ export function SaveSection({
   save: Controls;
   // Holds Save with this reason, ahead of the save's own.
   blocked?: string | undefined;
+  // What the notice calls the section, where its heading is not the name.
+  noticeTitle?: string;
+  // Saves in place of the save's own submit, as where a confirmation comes first.
+  onSave?: () => unknown;
   children: ReactNode;
 }) {
   return (
@@ -41,11 +47,11 @@ export function SaveSection({
       {...(headingId === undefined ? {} : { headingId })}
       dirty={save.dirty}
       saving={save.saving}
-      onSave={save.submit}
+      onSave={onSave ?? save.submit}
       onDiscard={save.discard}
       restored={save.restored}
       blocked={blocked ?? save.blocked}
-      notice={<SectionNoticeOf title={title} save={save} />}
+      notice={<SectionNoticeOf title={noticeTitle ?? title} save={save} />}
     >
       {children}
     </Section>

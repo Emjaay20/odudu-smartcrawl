@@ -28,8 +28,6 @@ import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { ReadGate } from '#/shared/view/ReadGate';
 import { SaveSection } from '#/shared/view/SaveSection';
-import { Section } from '#/shared/view/Section';
-import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import styles from '#/features/settings/view/SettingsPage/SettingsPage.module.css';
 
 const TITLE = 'Settings';
@@ -176,20 +174,15 @@ function General({ tenant, data, etag, gone, section }: Props & { section: Setti
   const why = disableFixed(tenant);
   return (
     <>
-      <Section
+      <SaveSection
         title={section.title}
         headingId={sectionHeadingId(section.id)}
         description={section.description}
-        dirty={s.dirty}
-        saving={s.saving}
+        save={s}
         onSave={general.submit}
-        onDiscard={s.discard}
-        restored={s.restored}
-        blocked={s.blocked}
-        notice={<SectionNoticeOf title={section.title} save={s} />}
       >
         <Fields section={section} save={s} {...(why === null ? {} : { fixed: { enabled: why } })} />
-      </Section>
+      </SaveSection>
       <ConfirmDialog
         isOpen={general.confirming}
         title={`Disable ${tenant}?`}

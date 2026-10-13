@@ -27,8 +27,6 @@ import { InlineFields, SelectField, ToggleField } from '#/shared/view/Field';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { ReadGate } from '#/shared/view/ReadGate';
 import { SaveSection } from '#/shared/view/SaveSection';
-import { Section } from '#/shared/view/Section';
-import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import styles from '#/features/flow/view/FlowPage/FlowPage.module.css';
 
 function Add({ flow }: { flow: FlowSteps }) {
@@ -77,17 +75,7 @@ function Steps({ flow, reading }: { flow: FlowSteps; reading: string | null }) {
     flow.move(authenticator, direction);
   };
   return (
-    <Section
-      title="Steps"
-      description={FLOW_RULE}
-      dirty={s.dirty}
-      saving={s.saving}
-      onSave={s.submit}
-      onDiscard={s.discard}
-      restored={s.restored}
-      blocked={s.blocked}
-      notice={<SectionNoticeOf title={FLOW_TITLE} save={s} />}
-    >
+    <SaveSection title="Steps" description={FLOW_RULE} noticeTitle={FLOW_TITLE} save={s}>
       <ol ref={list} aria-label="Sign-in steps" className={styles.steps}>
         {flow.steps.map((step, at) => (
           <li
@@ -150,7 +138,7 @@ function Steps({ flow, reading }: { flow: FlowSteps; reading: string | null }) {
           {s.fieldErrors.steps}
         </p>
       )}
-    </Section>
+    </SaveSection>
   );
 }
 
