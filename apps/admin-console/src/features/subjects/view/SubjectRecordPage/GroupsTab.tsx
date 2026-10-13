@@ -12,17 +12,18 @@ import { EmptyState } from '#/shared/view/EmptyState';
 import { GroupPicker } from '#/shared/view/GroupPicker';
 import { Section } from '#/shared/view/Section';
 import { FormSkeleton } from '#/shared/view/Skeleton';
-import styles from '#/features/subjects/view/SubjectRecordPage/Tab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 export function Memberships({ name, members }: { name: string; members: readonly Membership[] }) {
-  if (members.length === 0) return <p className={styles.rule}>{`${name} belongs to no group.`}</p>;
+  if (members.length === 0)
+    return <p className={recordTab.rule}>{`${name} belongs to no group.`}</p>;
   return (
-    <ul aria-label={`${name} belongs to`} className={styles.list}>
+    <ul aria-label={`${name} belongs to`} className={recordTab.list}>
       {members.map((member) => (
         <li key={member.id}>
           <code>{member.path}</code>
           {member.description === null ? null : (
-            <span className={styles.rule}>{` · ${member.description}`}</span>
+            <span className={recordTab.rule}>{` · ${member.description}`}</span>
           )}
         </li>
       ))}
@@ -121,7 +122,7 @@ export function GroupsTab({
     );
   }
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       <Ready
         tenant={tenant}
         subject={subject}

@@ -1,4 +1,3 @@
-import { useId } from 'react';
 import { Link } from 'react-aria-components';
 import { signsInAsItself, type Profile, type Subject } from '#/features/subjects/service';
 import {
@@ -21,12 +20,13 @@ import { OwnDataFields, TextField, ToggleField, type Chrome } from '#/shared/vie
 import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
 import { PhoneField } from '#/shared/view/Field';
 import { PictureField, UrlField } from '#/shared/view/Field';
+import { Panel } from '#/shared/view/Panel';
 import { Section } from '#/shared/view/Section';
 import { SectionNotice } from '#/shared/view/SectionNotice';
 import { FormSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
-import styles from '#/features/subjects/view/SubjectRecordPage/Tab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 import { DESCRIPTION_RULE } from '#/shared/service/labels';
 
 interface TabProps {
@@ -74,18 +74,18 @@ function Username({ account }: { account: SubjectAccount }) {
     );
   }
   return (
-    <dl className={styles.fixed}>
+    <dl className={recordTab.fixed}>
       <dt>Username</dt>
       <dd>
         <code>{s.values.username}</code>
       </dd>
       {mode.kind === 'fixed' ? (
-        <dd className={styles.rule}>
+        <dd className={recordTab.rule}>
           {mode.reason} <Link href={mode.settingsHref}>Settings</Link>.
         </dd>
       ) : null}
       {mode.kind === 'failed' ? (
-        <dd className={styles.rule}>
+        <dd className={recordTab.rule}>
           Whether this username can be renamed could not be read, so it is not offered.{' '}
           <Button size="small" variant="quiet" onPress={mode.retry}>
             Check again
@@ -128,14 +128,10 @@ function Account({ account }: { account: SubjectAccount }) {
 }
 
 function Status({ account, self }: { account: SubjectAccount; self: boolean }) {
-  const heading = useId();
   const { name } = account;
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        Status
-      </h2>
-      <p className={styles.text}>
+    <Panel title="Status">
+      <p className={recordTab.text}>
         {account.enabled ? (
           <StatusTag tone="active">enabled</StatusTag>
         ) : (
@@ -143,7 +139,7 @@ function Status({ account, self }: { account: SubjectAccount; self: boolean }) {
         )}{' '}
         {account.enabled ? `${name} can sign in.` : `${name} cannot sign in until enabled again.`}
       </p>
-      <div className={styles.actions}>
+      <div className={recordTab.actions}>
         {/* One button whose label turns, so focus stays on it across the change. */}
         <Button
           variant={account.enabled ? 'danger' : 'secondary'}
@@ -157,7 +153,7 @@ function Status({ account, self }: { account: SubjectAccount; self: boolean }) {
               : `Enable ${name}`}
         </Button>
       </div>
-      <p role="status" className={styles.message}>
+      <p role="status" className={recordTab.message}>
         {account.enabledMessage}
       </p>
       <ConfirmDialog
@@ -175,23 +171,19 @@ function Status({ account, self }: { account: SubjectAccount; self: boolean }) {
         onConfirm={account.disable.confirm}
         onCancel={account.disable.cancel}
       />
-    </section>
+    </Panel>
   );
 }
 
 function Deletion({ account, self }: { account: SubjectAccount; self: boolean }) {
-  const heading = useId();
   const { name } = account;
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        Delete
-      </h2>
-      <p className={styles.text}>
+    <Panel title="Delete">
+      <p className={recordTab.text}>
         Deleting removes the subject with everything that names it: credentials, sessions, grants,
         roles and group memberships. It cannot be undone; disabling can.
       </p>
-      <div className={styles.actions}>
+      <div className={recordTab.actions}>
         <Button variant="danger" onPress={account.remove.ask}>
           {`Delete ${name}`}
         </Button>
@@ -212,7 +204,7 @@ function Deletion({ account, self }: { account: SubjectAccount; self: boolean })
         onConfirm={account.remove.confirm}
         onCancel={account.remove.cancel}
       />
-    </section>
+    </Panel>
   );
 }
 
@@ -333,7 +325,7 @@ function ProfileSections({
           }}
         />
       </Section>
-      <dl className={styles.fixed}>
+      <dl className={recordTab.fixed}>
         <dt>Profile last updated</dt>
         <dd>{updatedAt === null ? 'Never' : <Timestamp value={updatedAt} />}</dd>
       </dl>
@@ -372,9 +364,9 @@ export function ProfileTab({ tenant, subject, etag, gone, canManage, self }: Tab
   // The tokens describe the operator, so only their own record carries them.
   return (
     <OwnDataFields when={self}>
-      <div className={styles.tab}>
+      <div className={recordTab.tab}>
         {itself ? (
-          <p className={styles.text}>
+          <p className={recordTab.text}>
             {`A ${subject.type} subject has no username, email or profile: it signs in as itself, with its client's credentials.`}
           </p>
         ) : (

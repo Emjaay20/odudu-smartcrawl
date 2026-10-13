@@ -11,7 +11,7 @@ import { EmptyState } from '#/shared/view/EmptyState';
 import { ReadOnlyFields } from '#/shared/view/Field';
 import { Section } from '#/shared/view/Section';
 import { FormSkeleton } from '#/shared/view/Skeleton';
-import styles from '#/features/subjects/view/SubjectRecordPage/Tab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 const OPTIONS = REQUIRED_ACTIONS.map(({ action, label, description }) => ({
   id: action,
@@ -109,9 +109,9 @@ export function RequiredActionsTab({
   canManage: boolean;
 }) {
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       {signsInAsItself(subject) ? (
-        <p className={styles.text}>
+        <p className={recordTab.text}>
           {`A ${subject.type} subject signs in as itself, with its client's credentials, so it is asked for nothing at sign-in.`}
         </p>
       ) : (

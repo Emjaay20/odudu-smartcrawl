@@ -1,5 +1,4 @@
 import type { Role } from '@odudu/contracts/admin';
-import { useId } from 'react';
 import { NAME_FIXED } from '#/features/roles/service';
 import {
   useRoleGeneral,
@@ -8,6 +7,7 @@ import {
   type RoleGeneral,
 } from '#/features/roles/usecase/useRoleGeneral';
 import type { Ceiling } from '#/features/roles/usecase/useRoleRecordPage';
+import { Panel } from '#/shared/view/Panel';
 import { RoleOwner } from '#/shared/view/RoleOwner';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { Button } from '#/shared/view/Button';
@@ -15,16 +15,12 @@ import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { TextAreaField, ToggleField } from '#/shared/view/Field';
 import { Section } from '#/shared/view/Section';
 import { Timestamp } from '#/shared/view/Timestamp';
-import styles from '#/features/roles/view/RoleRecordPage/Tab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 function Fixed({ role }: { role: Role }) {
-  const heading = useId();
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        Name
-      </h2>
-      <dl className={styles.fixed}>
+    <Panel title="Name">
+      <dl className={recordTab.fixed}>
         <div>
           <dt>Name</dt>
           <dd>
@@ -44,8 +40,8 @@ function Fixed({ role }: { role: Role }) {
           </dd>
         </div>
       </dl>
-      <p className={styles.rule}>{NAME_FIXED}</p>
-    </section>
+      <p className={recordTab.rule}>{NAME_FIXED}</p>
+    </Panel>
   );
 }
 
@@ -82,9 +78,9 @@ function DefaultSection({ defaults }: { defaults: Defaults }) {
   const s = defaults.save;
   let body;
   if (defaults.fixed !== null) {
-    body = <p className={styles.rule}>{defaults.fixed}</p>;
+    body = <p className={recordTab.rule}>{defaults.fixed}</p>;
   } else if (defaults.checking) {
-    body = <p className={styles.rule}>Checking what it nests…</p>;
+    body = <p className={recordTab.rule}>Checking what it nests…</p>;
   } else {
     body = (
       <ToggleField
@@ -116,16 +112,15 @@ function DefaultSection({ defaults }: { defaults: Defaults }) {
 
 // Left out where the ceiling rules it out, which the page's one line says.
 function Danger({ name, deletion }: { name: string; deletion: Deletion }) {
-  const heading = useId();
   if (deletion.held) return null;
   let action;
   if (deletion.fixed !== null) {
-    action = <p className={styles.rule}>{deletion.fixed}</p>;
+    action = <p className={recordTab.rule}>{deletion.fixed}</p>;
   } else if (deletion.checking) {
-    action = <p className={styles.rule}>Checking what it nests…</p>;
+    action = <p className={recordTab.rule}>Checking what it nests…</p>;
   } else {
     action = (
-      <div className={styles.actions}>
+      <div className={recordTab.actions}>
         <Button variant="danger" onPress={deletion.ask}>
           {`Delete ${name}`}
         </Button>
@@ -133,10 +128,7 @@ function Danger({ name, deletion }: { name: string; deletion: Deletion }) {
     );
   }
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        Delete
-      </h2>
+    <Panel title="Delete">
       {action}
       <ConfirmDialog
         isOpen={deletion.confirming}
@@ -149,7 +141,7 @@ function Danger({ name, deletion }: { name: string; deletion: Deletion }) {
         onConfirm={deletion.confirm}
         onCancel={deletion.cancel}
       />
-    </section>
+    </Panel>
   );
 }
 
@@ -168,7 +160,7 @@ export function GeneralTab({
 }) {
   const general = useRoleGeneral({ tenant, role, etag, gone, ceiling });
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       <Fixed role={role} />
       <Description general={general} />
       <DefaultSection defaults={general.defaults} />

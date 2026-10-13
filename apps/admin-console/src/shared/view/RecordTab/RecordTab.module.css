@@ -22,19 +22,9 @@
   overflow-wrap: anywhere;
 }
 
-.panel {
+.fixed div {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border: var(--hairline);
-  border-radius: var(--radius-m);
-  background: var(--surface-panel);
-}
-
-.heading {
-  margin: 0;
-  font-size: var(--type-15);
+  gap: var(--space-1);
 }
 
 .text,
@@ -67,20 +57,15 @@
   padding-inline-start: var(--space-6);
 }
 
-.form {
-  display: grid;
-  gap: var(--space-4);
-  max-inline-size: 640px;
-}
-
-.fixed div {
-  display: grid;
-  gap: var(--space-1);
-}
-
-.roles {
+.items {
   display: grid;
   gap: var(--space-2);
   margin: 0;
   padding-inline-start: var(--space-6);
+}
+
+.form {
+  display: grid;
+  gap: var(--space-4);
+  max-inline-size: 640px;
 }

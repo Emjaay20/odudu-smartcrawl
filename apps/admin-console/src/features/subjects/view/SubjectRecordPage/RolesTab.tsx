@@ -1,5 +1,4 @@
 import type { EffectiveRoleAssignment, Subject } from '@odudu/contracts/admin';
-import { useId } from 'react';
 import { roleOwnerOf } from '#/features/subjects/service';
 import {
   useCapabilityEditor,
@@ -7,6 +6,7 @@ import {
 } from '#/features/subjects/usecase/useCapabilities';
 import { useSubjectRoles, type SubjectRoles } from '#/features/subjects/usecase/useSubjectRoles';
 import { CapabilitySection } from '#/features/subjects/view/SubjectRecordPage/CapabilityEditor';
+import { Panel } from '#/shared/view/Panel';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { PagedList } from '#/features/subjects/view/SubjectRecordPage/SessionsTab';
 import { provenanceText } from '#/shared/service/capabilities';
@@ -16,7 +16,7 @@ import { EmptyState } from '#/shared/view/EmptyState';
 import { RolePicker } from '#/shared/view/RolePicker';
 import { Section } from '#/shared/view/Section';
 import { FormSkeleton } from '#/shared/view/Skeleton';
-import styles from '#/features/subjects/view/SubjectRecordPage/Tab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 const EFFECTIVE: readonly Column<EffectiveRoleAssignment>[] = [
   { id: 'name', header: 'Role', isRowHeader: true, cell: (role) => <code>{role.name}</code> },
@@ -25,7 +25,6 @@ const EFFECTIVE: readonly Column<EffectiveRoleAssignment>[] = [
 ];
 
 function Effective({ roles }: { roles: SubjectRoles }) {
-  const heading = useId();
   const body = (
     <PagedList
       list={roles.effective}
@@ -37,16 +36,13 @@ function Effective({ roles }: { roles: SubjectRoles }) {
     />
   );
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        Held, every way
-      </h2>
-      <p className={styles.rule}>
+    <Panel title="Held, every way">
+      <p className={recordTab.rule}>
         What a token and every authorisation read: the roles assigned here, those of every group and
         its ancestors, and each role nested inside another.
       </p>
       {body}
-    </section>
+    </Panel>
   );
 }
 
@@ -65,13 +61,13 @@ function Roles({ roles }: { roles: SubjectRoles }) {
       notice={<SectionNoticeOf title="Roles" save={s} />}
     >
       {roles.assigned.length === 0 ? (
-        <p className={styles.rule}>{`${roles.name} is assigned no role here.`}</p>
+        <p className={recordTab.rule}>{`${roles.name} is assigned no role here.`}</p>
       ) : (
-        <ul aria-label={`Assigned to ${roles.name}`} className={styles.list}>
+        <ul aria-label={`Assigned to ${roles.name}`} className={recordTab.list}>
           {roles.assigned.map((role) => (
             <li key={role.id}>
               <code>{role.name}</code>
-              <span className={styles.rule}>{` · ${roleOwnerOf(role.client)}`}</span>
+              <span className={recordTab.rule}>{` · ${roleOwnerOf(role.client)}`}</span>
             </li>
           ))}
         </ul>
@@ -140,7 +136,7 @@ export function RolesTab({
     );
   }
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       <Ready
         tenant={tenant}
         subject={subject}

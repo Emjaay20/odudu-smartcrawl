@@ -20,7 +20,7 @@ import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { RecordPage } from '#/shared/view/RecordPage';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { Note } from '#/shared/view/Note';
-import styles from '#/features/groups/view/GroupRecordPage/Tab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 interface PanelProps {
   tenant: string;
@@ -38,8 +38,8 @@ function Trail({ tenant, id }: { tenant: string; id: string }) {
 function Activity({ tenant, id }: { tenant: string; id: string }) {
   const readable = useAuditReadable(tenant);
   return (
-    <div className={styles.tab}>
-      <p className={styles.rule}>
+    <div className={recordTab.tab}>
+      <p className={recordTab.rule}>
         Every change made to this group, and every change refused. A subject joining or leaving it
         is filed under that subject.
       </p>

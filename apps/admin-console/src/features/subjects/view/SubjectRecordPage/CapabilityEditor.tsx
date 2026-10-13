@@ -13,7 +13,7 @@ import { EmptyState } from '#/shared/view/EmptyState';
 import { ReadOnlyFields } from '#/shared/view/Field';
 import { Section } from '#/shared/view/Section';
 import { FormSkeleton } from '#/shared/view/Skeleton';
-import styles from '#/features/subjects/view/SubjectRecordPage/Tab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 export function CapabilitySection({ editing }: { editing: CapabilityEditing }) {
   const s = editing.save;
@@ -30,9 +30,9 @@ export function CapabilitySection({ editing }: { editing: CapabilityEditing }) {
       blocked={s.blocked}
       notice={<SectionNoticeOf title="Admin capabilities" save={s} />}
     >
-      {locked ? <p className={styles.rule}>{editing.beyondText}</p> : null}
+      {locked ? <p className={recordTab.rule}>{editing.beyondText}</p> : null}
       {editing.rolesFailed === null ? null : (
-        <p role="alert" className={styles.rule}>
+        <p role="alert" className={recordTab.rule}>
           The admin roles could not be read, so nothing can be saved.{' '}
           <Button size="small" variant="quiet" onPress={editing.rolesFailed.retry}>
             Read them again
@@ -50,7 +50,7 @@ export function CapabilitySection({ editing }: { editing: CapabilityEditing }) {
         />
       </ReadOnlyFields>
       {editing.elsewhere.length === 0 ? null : (
-        <p className={styles.rule}>
+        <p className={recordTab.rule}>
           {editing.elsewhereText}
           <Link href={editing.groupsHref}>Groups</Link> or{' '}
           <Link href={editing.rolesHref}>Roles</Link> tab.

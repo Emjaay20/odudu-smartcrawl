@@ -10,7 +10,7 @@ import { EmptyState } from '#/shared/view/EmptyState';
 import { Section } from '#/shared/view/Section';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { FormSkeleton } from '#/shared/view/Skeleton';
-import styles from '#/features/scopes/view/ScopeRecordPage/Tab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 function Mappers({ name, set }: { name: string; set: ScopeMapperSet }) {
   const s = set.save;
@@ -26,7 +26,7 @@ function Mappers({ name, set }: { name: string; set: ScopeMapperSet }) {
       blocked={s.blocked}
       notice={<SectionNoticeOf title="Claim mappers" save={s} />}
     >
-      <p className={styles.rule}>{set.summary}</p>
+      <p className={recordTab.rule}>{set.summary}</p>
       <ChecklistField
         label="Bound mappers"
         options={set.options}
@@ -69,7 +69,7 @@ export function MappersTab({ tenant, scope }: { tenant: string; scope: ClientSco
     );
   }
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       <Ready tenant={tenant} scope={scope} data={read.data} etag={read.etag} gone={read.gone} />
     </div>
   );

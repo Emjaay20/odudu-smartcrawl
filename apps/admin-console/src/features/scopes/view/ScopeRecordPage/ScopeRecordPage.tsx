@@ -19,7 +19,7 @@ import { ActivityTab } from '#/shared/view/ActivityTab';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { RecordPage } from '#/shared/view/RecordPage';
-import styles from '#/features/scopes/view/ScopeRecordPage/Tab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 interface PanelProps {
   tenant: string;
@@ -36,8 +36,8 @@ function Trail({ tenant, id }: { tenant: string; id: string }) {
 function Activity({ tenant, id }: { tenant: string; id: string }) {
   const readable = useAuditReadable(tenant);
   return (
-    <div className={styles.tab}>
-      <p className={styles.rule}>
+    <div className={recordTab.tab}>
+      <p className={recordTab.rule}>
         Every change made to this scope, and every change refused. A client being given or losing it
         is filed under that client.
       </p>

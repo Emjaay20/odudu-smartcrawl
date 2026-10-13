@@ -14,17 +14,17 @@ import { RolePicker } from '#/shared/view/RolePicker';
 import { Section } from '#/shared/view/Section';
 import { FormSkeleton } from '#/shared/view/Skeleton';
 import { RoleOwner } from '#/shared/view/RoleOwner';
-import styles from '#/features/groups/view/GroupRecordPage/Tab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 function Listed({ path, mapped }: { path: string; mapped: readonly MappedRole[] }) {
-  if (mapped.length === 0) return <p className={styles.rule}>{`${path} carries no role.`}</p>;
+  if (mapped.length === 0) return <p className={recordTab.rule}>{`${path} carries no role.`}</p>;
   return (
-    <ul aria-label={`Carried by ${path}`} className={styles.roles}>
+    <ul aria-label={`Carried by ${path}`} className={recordTab.items}>
       {mapped.map((role) => (
         <li key={role.id}>
           <code>{role.name}</code> <RoleOwner role={role} />
           {role.description === null || role.description === '' ? null : (
-            <span className={styles.rule}>{` ${role.description}`}</span>
+            <span className={recordTab.rule}>{` ${role.description}`}</span>
           )}
         </li>
       ))}
@@ -56,10 +56,10 @@ function Roles({ path, roles }: { path: string; roles: GroupRoles }) {
           onChange={roles.choose}
         />
       ) : (
-        <p className={styles.rule}>Checking what you may give or take here…</p>
+        <p className={recordTab.rule}>Checking what you may give or take here…</p>
       )}
       {roles.kept.length === 0 ? null : (
-        <p className={styles.rule}>
+        <p className={recordTab.rule}>
           A role you could not give is one you cannot take away either, so it stays whatever else is
           saved.
         </p>
@@ -117,7 +117,7 @@ export function RolesTab({
     );
   }
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       <Ready
         tenant={tenant}
         group={group}

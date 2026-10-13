@@ -1,11 +1,12 @@
 import type { Role } from '@odudu/contracts/admin';
-import { useId, useRef } from 'react';
+import { useRef } from 'react';
 import {
   useCompositesRead,
   useRoleComposites,
   type RoleComposites,
 } from '#/features/roles/usecase/useRoleComposites';
 import type { Ceiling } from '#/features/roles/usecase/useRoleRecordPage';
+import { Panel } from '#/shared/view/Panel';
 import { RoleOwner } from '#/shared/view/RoleOwner';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { Button } from '#/shared/view/Button';
@@ -14,30 +15,27 @@ import { EmptyState } from '#/shared/view/EmptyState';
 import { RolePicker } from '#/shared/view/RolePicker';
 import { Section } from '#/shared/view/Section';
 import { FormSkeleton } from '#/shared/view/Skeleton';
+import { recordTab } from '#/shared/view/RecordTab';
 import styles from '#/features/roles/view/RoleRecordPage/Tab.module.css';
 
 function Nested({ role, composites }: { role: Role; composites: RoleComposites }) {
-  const heading = useId();
   const named = useRef<HTMLHeadingElement>(null);
   const editable = composites.fixed === null && composites.offered;
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} ref={named} tabIndex={-1} className={styles.heading}>
-        Nested in it
-      </h2>
-      <p className={styles.rule}>
+    <Panel title="Nested in it" headingRef={named}>
+      <p className={recordTab.rule}>
         {composites.fixed ??
           `Whoever holds ${role.name} holds each of these too, and what each of them nests in turn.`}
       </p>
       {composites.children.length === 0 ? (
-        <p className={styles.rule}>{`${role.name} nests no role.`}</p>
+        <p className={recordTab.rule}>{`${role.name} nests no role.`}</p>
       ) : (
-        <ul aria-label={`Nested in ${role.name}`} className={styles.roles}>
+        <ul aria-label={`Nested in ${role.name}`} className={recordTab.items}>
           {composites.children.map(({ role: child, held }) => (
             <li key={child.id} className={styles.child}>
               <code>{child.name}</code> <RoleOwner role={child} />
               {child.description === null || child.description === '' ? null : (
-                <span className={styles.rule}>{child.description}</span>
+                <span className={recordTab.rule}>{child.description}</span>
               )}
               {!editable ? null : held === null ? (
                 <Button
@@ -58,13 +56,13 @@ function Nested({ role, composites }: { role: Role; composites: RoleComposites }
                     : `Take ${child.name} out`}
                 </Button>
               ) : (
-                <span className={styles.rule}>{held}</span>
+                <span className={recordTab.rule}>{held}</span>
               )}
             </li>
           ))}
         </ul>
       )}
-      <p role="status" className={styles.message}>
+      <p role="status" className={recordTab.message}>
         {composites.message}
       </p>
       <ConfirmDialog
@@ -76,7 +74,7 @@ function Nested({ role, composites }: { role: Role; composites: RoleComposites }
         onConfirm={composites.confirm}
         onCancel={composites.cancel}
       />
-    </section>
+    </Panel>
   );
 }
 
@@ -105,7 +103,7 @@ function Add({ role, composites }: { role: Role; composites: RoleComposites }) {
           selectionMode="single"
         />
       ) : (
-        <p className={styles.rule}>Checking what you may nest here…</p>
+        <p className={recordTab.rule}>Checking what you may nest here…</p>
       )}
     </Section>
   );
@@ -156,7 +154,7 @@ export function CompositesTab({
     );
   }
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       <Ready
         tenant={tenant}
         role={role}

@@ -3,12 +3,13 @@ import {
   useSubjectConsents,
   type SubjectConsents,
 } from '#/features/subjects/usecase/useSubjectSessions';
-import { PagedList, Panel } from '#/features/subjects/view/SubjectRecordPage/SessionsTab';
+import { PagedList } from '#/features/subjects/view/SubjectRecordPage/SessionsTab';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import type { Column } from '#/shared/view/DataTable';
+import { Panel } from '#/shared/view/Panel';
 import { Timestamp } from '#/shared/view/Timestamp';
-import styles from '#/features/subjects/view/SubjectRecordPage/Tab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 function columns(page: SubjectConsents): readonly Column<Consent>[] {
   const base: Column<Consent>[] = [
@@ -62,9 +63,9 @@ export function ConsentsTab({
   );
   const asked = revoke.asking;
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       <Panel title="Consents">
-        <p className={styles.rule}>
+        <p className={recordTab.rule}>
           What the consent screen recorded for each client that asks: the scopes allowed. Revoking
           one makes the next sign-in through that client ask again.
         </p>

@@ -1,13 +1,14 @@
 import type { Grant, Subject } from '@odudu/contracts/admin';
 import { useHolds, useSubjectGrants } from '#/features/subjects/usecase/useSubjectSessions';
-import { PagedList, Panel } from '#/features/subjects/view/SubjectRecordPage/SessionsTab';
+import { PagedList } from '#/features/subjects/view/SubjectRecordPage/SessionsTab';
 import { Button } from '#/shared/view/Button';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import type { Column } from '#/shared/view/DataTable';
+import { Panel } from '#/shared/view/Panel';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
-import styles from '#/features/subjects/view/SubjectRecordPage/Tab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 const COLUMNS: readonly Column<Grant>[] = [
   { id: 'client', header: 'Client', isRowHeader: true, cell: (g) => <code>{g.client_key}</code> },
@@ -31,7 +32,7 @@ const COLUMNS: readonly Column<Grant>[] = [
     secondary: true,
     cell: (g) =>
       g.refresh_expires_at === null ? (
-        <span className={styles.rule}>no refresh token</span>
+        <span className={recordTab.rule}>no refresh token</span>
       ) : (
         <Timestamp value={g.refresh_expires_at} />
       ),
@@ -57,7 +58,7 @@ function Grants({
   const asked = revoke.asking;
   return (
     <Panel title="Grants">
-      <p className={styles.rule}>
+      <p className={recordTab.rule}>
         What each token is presented under, never the token. An offline grant, from offline_access,
         outlives every session, so ending sessions leaves it.
       </p>
@@ -70,7 +71,7 @@ function Grants({
         empty={`${name} holds no grant that is still in force.`}
       />
       {withinReach && page.clients.length > 0 ? (
-        <div className={styles.actions}>
+        <div className={recordTab.actions}>
           {page.clients.map((client) => (
             <Button
               key={client.id}
@@ -116,7 +117,7 @@ export function GrantsTab({
 }) {
   const allowed = useHolds(tenant, 'manage-sessions');
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       {allowed ? (
         <Grants tenant={tenant} subject={subject} self={self} withinReach={withinReach} />
       ) : (

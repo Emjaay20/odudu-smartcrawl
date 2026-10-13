@@ -20,7 +20,7 @@ import { ButtonLink } from '#/shared/view/ButtonLink';
 import { RecordPage } from '#/shared/view/RecordPage';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { Note } from '#/shared/view/Note';
-import styles from '#/features/roles/view/RoleRecordPage/Tab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 interface PanelProps {
   tenant: string;
@@ -38,8 +38,8 @@ function Trail({ tenant, id }: { tenant: string; id: string }) {
 function Activity({ tenant, id }: { tenant: string; id: string }) {
   const readable = useAuditReadable(tenant);
   return (
-    <div className={styles.tab}>
-      <p className={styles.rule}>
+    <div className={recordTab.tab}>
+      <p className={recordTab.rule}>
         Every change made to this role, and every change refused. Its being given to a subject, a
         group or a scope is filed under that subject, group or scope.
       </p>

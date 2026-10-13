@@ -47,8 +47,10 @@ import { GroupPicker } from '#/shared/view/GroupPicker';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { PageNotFound } from '#/shared/view/PageNotFound';
 import { Pager } from '#/shared/view/Pager';
+import { Panel } from '#/shared/view/Panel';
 import { Rail } from '#/shared/view/Rail';
 import { RecordPage } from '#/shared/view/RecordPage';
+import { recordTab } from '#/shared/view/RecordTab';
 import { ResourceListPage } from '#/shared/view/ResourceListPage';
 import { RoleOwner } from '#/shared/view/RoleOwner';
 import { ClientPicker } from '#/shared/view/ClientPicker';
@@ -707,6 +709,17 @@ function Dialogs({ initial }: { initial: GalleryDialog | null }) {
 function RecordPieces() {
   return (
     <div className={styles.stack}>
+      <Specimen label="Panel, with the record tab's text, rule and actions">
+        <div className={recordTab.tab}>
+          <Panel title="Identifier">
+            <p className={recordTab.text}>billing-portal</p>
+            <p className={recordTab.rule}>Fixed once the client is made.</p>
+            <div className={recordTab.actions}>
+              <Button>Copy</Button>
+            </div>
+          </Panel>
+        </div>
+      </Specimen>
       <Specimen label="PageNotFound: an address that is no page">
         <PageNotFound />
       </Specimen>

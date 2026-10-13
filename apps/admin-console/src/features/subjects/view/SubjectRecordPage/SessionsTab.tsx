@@ -1,5 +1,4 @@
 import type { Session, Subject } from '@odudu/contracts/admin';
-import { useId, type ReactNode } from 'react';
 import {
   useHolds,
   useSubjectSessions,
@@ -13,9 +12,10 @@ import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { Pager } from '#/shared/view/Pager';
+import { Panel } from '#/shared/view/Panel';
 import { TableSkeleton } from '#/shared/view/Skeleton';
 import { Timestamp } from '#/shared/view/Timestamp';
-import styles from '#/features/subjects/view/SubjectRecordPage/Tab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 // A list a tab pages through: its loading, failure and emptiness said the
 // way every list in the console says them.
@@ -66,18 +66,6 @@ export function PagedList<T>({
   );
 }
 
-export function Panel({ title, children }: { title: string; children: ReactNode }) {
-  const heading = useId();
-  return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
-}
-
 function started(session: Session): string {
   return formatAbsolute(new Date(session.created_at));
 }
@@ -106,7 +94,7 @@ function columns(page: SubjectSessions, withinReach: boolean): readonly Column<S
       header: 'Clients',
       cell: (session) =>
         session.client_ids.length === 0 ? (
-          <span className={styles.rule}>none</span>
+          <span className={recordTab.rule}>none</span>
         ) : (
           session.client_ids.join(', ')
         ),
@@ -154,7 +142,7 @@ function Sessions({
   const { name } = page;
   return (
     <Panel title="Live sessions">
-      <p className={styles.rule}>
+      <p className={recordTab.rule}>
         Each browser sign-in that has neither ended nor idled out. Ending one revokes the grants it
         holds, and tells each client that registered a back-channel logout URI.
       </p>
@@ -167,7 +155,7 @@ function Sessions({
         empty={`${name} holds no live session.`}
       />
       {withinReach && page.list.rows.length > 0 ? (
-        <div className={styles.actions}>
+        <div className={recordTab.actions}>
           <Button
             variant="danger"
             onPress={() => {
@@ -217,7 +205,7 @@ export function SessionsTab({
 }) {
   const allowed = useHolds(tenant, 'manage-sessions');
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       {allowed ? (
         <Sessions tenant={tenant} subject={subject} self={self} withinReach={withinReach} />
       ) : (

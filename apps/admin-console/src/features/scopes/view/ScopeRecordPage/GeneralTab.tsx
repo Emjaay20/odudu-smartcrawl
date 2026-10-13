@@ -1,5 +1,4 @@
 import type { ClientScope } from '@odudu/contracts/admin';
-import { useId } from 'react';
 import {
   ACCESS_TOKEN_LABEL,
   ID_TOKEN_LABEL,
@@ -14,19 +13,16 @@ import {
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { SelectField, TextAreaField, TextField, ToggleField } from '#/shared/view/Field';
+import { Panel } from '#/shared/view/Panel';
 import { Section } from '#/shared/view/Section';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { Timestamp } from '#/shared/view/Timestamp';
-import styles from '#/features/scopes/view/ScopeRecordPage/Tab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 function Fixed({ scope }: { scope: ClientScope }) {
-  const heading = useId();
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        Name
-      </h2>
-      <dl className={styles.fixed}>
+    <Panel title="Name">
+      <dl className={recordTab.fixed}>
         <div>
           <dt>Name</dt>
           <dd>
@@ -40,8 +36,8 @@ function Fixed({ scope }: { scope: ClientScope }) {
           </dd>
         </div>
       </dl>
-      <p className={styles.rule}>{NAME_FIXED}</p>
-    </section>
+      <p className={recordTab.rule}>{NAME_FIXED}</p>
+    </Panel>
   );
 }
 
@@ -175,23 +171,19 @@ function Consent({ general }: { general: ScopeGeneral }) {
 }
 
 function Danger({ name, deletion }: { name: string; deletion: Deletion }) {
-  const heading = useId();
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        Delete
-      </h2>
+    <Panel title="Delete">
       {deletion.fixed === null ? (
         <>
-          <p className={styles.text}>{deletion.consequence}</p>
-          <div className={styles.actions}>
+          <p className={recordTab.text}>{deletion.consequence}</p>
+          <div className={recordTab.actions}>
             <Button variant="danger" onPress={deletion.ask}>
               {`Delete ${name}`}
             </Button>
           </div>
         </>
       ) : (
-        <p className={styles.text}>{deletion.fixed}</p>
+        <p className={recordTab.text}>{deletion.fixed}</p>
       )}
       <ConfirmDialog
         isOpen={deletion.confirming}
@@ -205,7 +197,7 @@ function Danger({ name, deletion }: { name: string; deletion: Deletion }) {
         onConfirm={deletion.confirm}
         onCancel={deletion.cancel}
       />
-    </section>
+    </Panel>
   );
 }
 
@@ -222,7 +214,7 @@ export function GeneralTab({
 }) {
   const general = useScopeGeneral({ tenant, scope, etag, gone });
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       <Fixed scope={scope} />
       <Description general={general} />
       <Tokens general={general} />

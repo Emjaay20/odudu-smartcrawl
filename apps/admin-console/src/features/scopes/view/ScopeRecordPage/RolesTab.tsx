@@ -12,17 +12,17 @@ import { RolePicker } from '#/shared/view/RolePicker';
 import { Section } from '#/shared/view/Section';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { FormSkeleton } from '#/shared/view/Skeleton';
-import styles from '#/features/scopes/view/ScopeRecordPage/Tab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 function Listed({ name, mapped }: { name: string; mapped: readonly MappedRole[] }) {
-  if (mapped.length === 0) return <p className={styles.rule}>{`${name} carries no role.`}</p>;
+  if (mapped.length === 0) return <p className={recordTab.rule}>{`${name} carries no role.`}</p>;
   return (
-    <ul aria-label={`Carried by ${name}`} className={styles.roles}>
+    <ul aria-label={`Carried by ${name}`} className={recordTab.items}>
       {mapped.map((role) => (
         <li key={role.id}>
           <code>{role.name}</code> <RoleOwner role={role} />
           {role.description === null || role.description === '' ? null : (
-            <span className={styles.rule}>{` ${role.description}`}</span>
+            <span className={recordTab.rule}>{` ${role.description}`}</span>
           )}
         </li>
       ))}
@@ -54,10 +54,10 @@ function Roles({ name, roles }: { name: string; roles: ScopeRoles }) {
           onChange={roles.choose}
         />
       ) : (
-        <p className={styles.rule}>Checking what you may give or take here…</p>
+        <p className={recordTab.rule}>Checking what you may give or take here…</p>
       )}
       {roles.kept.length === 0 ? null : (
-        <p className={styles.rule}>
+        <p className={recordTab.rule}>
           A role you could not give is one you cannot take away either, so it stays whatever else is
           saved.
         </p>
@@ -96,7 +96,7 @@ export function RolesTab({ tenant, scope }: { tenant: string; scope: ClientScope
     );
   }
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       <Ready tenant={tenant} scope={scope} data={read.data} etag={read.etag} gone={read.gone} />
     </div>
   );

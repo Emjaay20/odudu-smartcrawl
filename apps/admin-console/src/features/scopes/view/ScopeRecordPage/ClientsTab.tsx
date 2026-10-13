@@ -1,5 +1,5 @@
 import type { ClientScope } from '@odudu/contracts/admin';
-import { useId, useRef } from 'react';
+import { useRef } from 'react';
 import {
   useScopeClientsTab,
   type ScopeClientsTab,
@@ -9,12 +9,13 @@ import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { ClientPicker } from '#/shared/view/ClientPicker';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { InlineFields, SelectField } from '#/shared/view/Field';
+import { Panel } from '#/shared/view/Panel';
 import { ListSkeleton } from '#/shared/view/Skeleton';
+import { recordTab } from '#/shared/view/RecordTab';
 import styles from '#/features/scopes/view/ScopeRecordPage/Tab.module.css';
 import { ASSIGNMENTS, ASSIGNMENT_RULE } from '#/shared/service/assignment';
 
 function Carriers({ scope, page }: { scope: ClientScope; page: ScopeClientsTab }) {
-  const heading = useId();
   const title = useRef<HTMLHeadingElement>(null);
   const { list } = page;
   const label = `Clients carrying ${scope.name}`;
@@ -36,7 +37,7 @@ function Carriers({ scope, page }: { scope: ClientScope; page: ScopeClientsTab }
       </EmptyState>
     );
   } else if (list.rows.length === 0) {
-    body = <p className={styles.text}>{`No client carries ${scope.name}.`}</p>;
+    body = <p className={recordTab.text}>{`No client carries ${scope.name}.`}</p>;
   } else {
     body = (
       <ul aria-label={label} className={styles.clients}>
@@ -74,40 +75,33 @@ function Carriers({ scope, page }: { scope: ClientScope; page: ScopeClientsTab }
     );
   }
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} ref={title} tabIndex={-1} className={styles.heading}>
-        {label}
-      </h2>
-      <p className={styles.rule}>{`${ASSIGNMENT_RULE} ${page.count}`}</p>
+    <Panel title={label} headingRef={title}>
+      <p className={recordTab.rule}>{`${ASSIGNMENT_RULE} ${page.count}`}</p>
       {body}
       {list.more ? (
-        <div className={styles.actions}>
+        <div className={recordTab.actions}>
           <Button isDisabled={list.loadingMore} onPress={list.loadMore}>
             {list.loadingMore ? 'Loading more clients…' : 'Load more clients'}
           </Button>
         </div>
       ) : null}
       {list.loadMoreFailed ? (
-        <p role="alert" className={styles.message}>
+        <p role="alert" className={recordTab.message}>
           More clients could not be loaded. The ones above are still shown.
         </p>
       ) : null}
       {page.message === null ? null : (
-        <p role="alert" className={styles.message}>
+        <p role="alert" className={recordTab.message}>
           {page.message}
         </p>
       )}
-    </section>
+    </Panel>
   );
 }
 
 function Assign({ page }: { page: ScopeClientsTab }) {
-  const heading = useId();
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        Assign to a client
-      </h2>
+    <Panel title="Assign to a client">
       <ClientPicker
         label="Client to assign"
         picker={page.picker}
@@ -121,7 +115,7 @@ function Assign({ page }: { page: ScopeClientsTab }) {
         value={page.assignment}
         onChange={page.setAssignment}
       />
-      <div className={styles.actions}>
+      <div className={recordTab.actions}>
         <Button
           variant="primary"
           isDisabled={page.chosen === null || page.working !== null}
@@ -132,14 +126,14 @@ function Assign({ page }: { page: ScopeClientsTab }) {
           {page.chosen === null ? 'Assign to a client' : `Assign to ${page.chosen.name}`}
         </Button>
       </div>
-    </section>
+    </Panel>
   );
 }
 
 export function ClientsTab({ tenant, scope }: { tenant: string; scope: ClientScope }) {
   const page = useScopeClientsTab({ tenant, scope });
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       <Carriers scope={scope} page={page} />
       {page.offered ? <Assign page={page} /> : null}
       {page.needs.length > 0 ? (

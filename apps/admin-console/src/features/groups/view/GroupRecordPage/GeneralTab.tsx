@@ -1,5 +1,4 @@
 import type { GroupRecord } from '@odudu/contracts/admin';
-import { useId } from 'react';
 import { NAME_FIXED } from '#/features/groups/service';
 import {
   useGroupGeneral,
@@ -9,6 +8,7 @@ import {
   type Place,
 } from '#/features/groups/usecase/useGroupGeneral';
 import type { Ceiling } from '#/features/groups/usecase/useGroupRecordPage';
+import { Panel } from '#/shared/view/Panel';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
@@ -16,16 +16,12 @@ import { TextAreaField, ToggleField } from '#/shared/view/Field';
 import { GroupPicker } from '#/shared/view/GroupPicker';
 import { Section } from '#/shared/view/Section';
 import { Timestamp } from '#/shared/view/Timestamp';
-import styles from '#/features/groups/view/GroupRecordPage/Tab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 function Fixed({ group }: { group: GroupRecord }) {
-  const heading = useId();
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        Name
-      </h2>
-      <dl className={styles.fixed}>
+    <Panel title="Name">
+      <dl className={recordTab.fixed}>
         <div>
           <dt>Name</dt>
           <dd>
@@ -45,8 +41,8 @@ function Fixed({ group }: { group: GroupRecord }) {
           </dd>
         </div>
       </dl>
-      <p className={styles.rule}>{NAME_FIXED}</p>
-    </section>
+      <p className={recordTab.rule}>{NAME_FIXED}</p>
+    </Panel>
   );
 }
 
@@ -93,9 +89,9 @@ function PlaceSection({ place }: { place: Place }) {
       blocked={s.blocked}
       notice={<SectionNoticeOf title="Place in the tree" save={s} />}
     >
-      <p className={styles.text}>{place.current}</p>
+      <p className={recordTab.text}>{place.current}</p>
       {place.state === 'checking' ? (
-        <p className={styles.rule}>Checking what the groups above it hand down…</p>
+        <p className={recordTab.rule}>Checking what the groups above it hand down…</p>
       ) : null}
       {place.state === 'ready' && place.held === null ? (
         <>
@@ -107,7 +103,7 @@ function PlaceSection({ place }: { place: Place }) {
             selectionMode="single"
             unavailableOf={place.unavailableOf}
           />
-          <p className={styles.rule}>Choose the parent again to move it to the top level.</p>
+          <p className={recordTab.rule}>Choose the parent again to move it to the top level.</p>
         </>
       ) : null}
       <ConfirmDialog
@@ -127,7 +123,7 @@ function DefaultSection({ defaults }: { defaults: Defaults }) {
   const s = defaults.save;
   let body;
   if (defaults.state === 'checking') {
-    body = <p className={styles.rule}>Checking what it hands out…</p>;
+    body = <p className={recordTab.rule}>Checking what it hands out…</p>;
   } else if (defaults.state === 'failed') {
     body = null;
   } else if (defaults.fixed === null) {
@@ -143,7 +139,7 @@ function DefaultSection({ defaults }: { defaults: Defaults }) {
       />
     );
   } else {
-    body = <p className={styles.rule}>{defaults.fixed}</p>;
+    body = <p className={recordTab.rule}>{defaults.fixed}</p>;
   }
   return (
     <Section
@@ -163,20 +159,16 @@ function DefaultSection({ defaults }: { defaults: Defaults }) {
 
 // Left out where the ceiling rules it out; the page's one line says why.
 function Danger({ path, deletion }: { path: string; deletion: Deletion }) {
-  const heading = useId();
   if (deletion.held !== null || deletion.state === 'failed') return null;
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        Delete
-      </h2>
-      <p className={styles.text}>
+    <Panel title="Delete">
+      <p className={recordTab.text}>
         A delete takes the whole subtree: no group beneath it survives as a new top-level group.
       </p>
       {deletion.state === 'checking' ? (
-        <p className={styles.rule}>Checking what its members hold through it…</p>
+        <p className={recordTab.rule}>Checking what its members hold through it…</p>
       ) : (
-        <div className={styles.actions}>
+        <div className={recordTab.actions}>
           <Button variant="danger" onPress={deletion.ask}>
             {`Delete ${path} and every group beneath it`}
           </Button>
@@ -194,7 +186,7 @@ function Danger({ path, deletion }: { path: string; deletion: Deletion }) {
         onConfirm={deletion.confirm}
         onCancel={deletion.cancel}
       />
-    </section>
+    </Panel>
   );
 }
 
@@ -213,7 +205,7 @@ export function GeneralTab({
 }) {
   const general = useGroupGeneral({ tenant, group, etag, gone, ceiling });
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       <Fixed group={group} />
       <Description general={general} />
       <PlaceSection place={general.place} />
