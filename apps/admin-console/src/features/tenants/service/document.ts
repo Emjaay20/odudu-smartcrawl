@@ -1,22 +1,14 @@
 import { TENANT_IMPORT_BODY_LIMIT } from '@odudu/contracts/admin';
+import { parseJson } from '#/shared/service/json';
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function parsed(text: string): unknown {
-  try {
-    const value: unknown = JSON.parse(text);
-    return value;
-  } catch {
-    return undefined;
-  }
-}
-
 // What an export says it left out, by JSON path; read only to show it, since
 // the file saved is the text as the server sent it.
 export function omittedOf(text: string): readonly string[] {
-  const document = parsed(text);
+  const document = parseJson(text);
   if (!isRecord(document)) return [];
   const omitted = document.omitted;
   return Array.isArray(omitted)
@@ -38,7 +30,7 @@ export function importFileProblem(bytes: number): string | null {
 export type ParsedDocument = { ok: true; document: unknown } | { ok: false; message: string };
 
 export function parseDocument(text: string): ParsedDocument {
-  const document = parsed(text);
+  const document = parseJson(text);
   return document === undefined
     ? { ok: false, message: 'The file is not JSON, so it cannot be a tenant document.' }
     : { ok: true, document };

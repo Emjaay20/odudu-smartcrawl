@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { Fetch } from '#/shared/transport/gateway';
 import { readProblem, type Problem } from '#/shared/transport/problem';
+import { parseJson } from '#/shared/service/json';
 
 const LOGOUT = '/console/auth/logout';
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -21,15 +22,6 @@ export interface AuthDependencies {
   fetch?: Fetch;
   log?: (message: string) => void;
   timeoutMs?: number;
-}
-
-function parseJson(text: string): unknown {
-  try {
-    const value: unknown = JSON.parse(text);
-    return value;
-  } catch {
-    return undefined;
-  }
 }
 
 const CONSOLE_PATH = '/console/';

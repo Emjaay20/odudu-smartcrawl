@@ -1,6 +1,7 @@
 import { importErrorSchema, problemDetailsSchema } from '@odudu/contracts/admin';
 import { z } from 'zod';
 import type { Problem } from '#/shared/service/result';
+import { parseJson } from '#/shared/service/json';
 
 export const problemSchema = problemDetailsSchema.extend({
   instance: z.string().optional(),
@@ -23,15 +24,6 @@ const TITLES: Readonly<Record<number, string>> = {
   503: 'Service Unavailable',
   504: 'Gateway Timeout',
 };
-
-function parseJson(text: string): unknown {
-  try {
-    const value: unknown = JSON.parse(text);
-    return value;
-  } catch {
-    return undefined;
-  }
-}
 
 // A refusal that is not problem+json — a proxy's HTML page, say — still
 // becomes a Problem, stood up from its status alone.
