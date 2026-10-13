@@ -10,6 +10,7 @@ import {
   formatDuration,
   formatRelative,
   lowerFirst,
+  plural,
   sentence,
 } from '#/shared/service/format';
 
@@ -85,6 +86,14 @@ describe('capitalise and lowerFirst', () => {
     expect(capitalise('')).toBe('');
     expect(lowerFirst('Passkey')).toBe('passkey');
     expect(lowerFirst('TOTP code')).toBe('tOTP code');
+  });
+});
+
+describe('plural', () => {
+  it('picks the singular for one and the plural for every other count', () => {
+    expect(plural(1, 'tab', 'tabs')).toBe('tab');
+    expect(plural(0, 'tab', 'tabs')).toBe('tabs');
+    expect(plural(2, 'tab', 'tabs')).toBe('tabs');
   });
 });
 

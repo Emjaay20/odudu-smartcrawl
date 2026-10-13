@@ -1,7 +1,7 @@
 import type { Role, SetRolesResponse } from '@odudu/contracts/admin';
 import { lacking } from '#/shared/service/access';
 import { beyondCaller, isAdminRole } from '#/shared/service/capabilities';
-import { andList } from '#/shared/service/format';
+import { andList, counted } from '#/shared/service/format';
 import type { AdminCapability, Authority } from '#/shared/service/principal';
 
 export const SERVICE_CAPABILITY: AdminCapability = 'manage-users';
@@ -60,7 +60,7 @@ export function roleUnavailable(
 }
 
 export function assignedCount(count: number): string {
-  return count === 1 ? '1 role assigned.' : `${String(count)} roles assigned.`;
+  return `${counted(count, 'role', 'roles')} assigned.`;
 }
 
 export const NO_ROLES = 'The service account holds no role other than its admin capabilities.';

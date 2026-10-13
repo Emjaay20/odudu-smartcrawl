@@ -35,7 +35,7 @@ export interface LockoutSummary {
 }
 
 function failures(count: number): string {
-  return count === 1 ? '1 failed sign-in' : `${String(count)} failed sign-ins`;
+  return counted(count, 'failed sign-in', 'failed sign-ins');
 }
 
 // `locked` is the server's judgement, so a clock skewed here cannot say

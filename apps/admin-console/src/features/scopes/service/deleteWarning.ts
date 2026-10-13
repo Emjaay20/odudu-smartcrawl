@@ -1,5 +1,5 @@
 import { scopeDeleteConsequence } from '#/features/scopes/service/guard';
-import { andList } from '#/shared/service/format';
+import { andList, plural } from '#/shared/service/format';
 import type { ListStatus } from '#/shared/service/resourceList';
 
 export type Carrying =
@@ -45,7 +45,7 @@ export function scopeDeleteWarning(
 ): string {
   const text = carryingText(name, carrying);
   if (mappers.length === 0) return text;
-  return `${text} Its claims come from the ${andList(mappers)} ${mappers.length === 1 ? 'mapper' : 'mappers'}.`;
+  return `${text} Its claims come from the ${andList(mappers)} ${plural(mappers.length, 'mapper', 'mappers')}.`;
 }
 
 export function scopeDeleteDialogText(

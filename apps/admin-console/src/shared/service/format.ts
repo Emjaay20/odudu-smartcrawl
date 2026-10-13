@@ -64,8 +64,12 @@ export function sentence(text: string): string {
   return said.endsWith('.') ? said : `${said}.`;
 }
 
+export function plural(count: number, one: string, other: string): string {
+  return count === 1 ? one : other;
+}
+
 export function counted(count: number, one: string, other: string): string {
-  return `${String(count)} ${count === 1 ? one : other}`;
+  return `${String(count)} ${plural(count, one, other)}`;
 }
 
 export function flagText(value: unknown, on: string, off: string): string {

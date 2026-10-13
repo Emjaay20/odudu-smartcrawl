@@ -5,6 +5,7 @@ import {
   useImportTenantPage,
   type ImportTenantPage as ImportState,
 } from '#/features/tenants/usecase/useImportTenantPage';
+import { counted } from '#/shared/service/format';
 import { SystemGate } from '#/features/tenants/view/SystemGate';
 import { Button } from '#/shared/view/Button';
 import { ButtonLink } from '#/shared/view/ButtonLink';
@@ -59,7 +60,7 @@ function Problems({ state }: { state: ImportState }) {
   return (
     <section aria-labelledby={heading} className={styles.problems}>
       <h2 id={heading} className={styles.problemsHeading}>
-        {`${String(state.errors.length)} ${state.errors.length === 1 ? 'problem' : 'problems'} in the document`}
+        {`${counted(state.errors.length, 'problem', 'problems')} in the document`}
       </h2>
       <p className={styles.lead}>
         Nothing was created. Each is listed at its place in the request.

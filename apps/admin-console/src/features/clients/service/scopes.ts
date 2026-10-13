@@ -1,6 +1,7 @@
 import type { Client, ClientScope } from '@odudu/contracts/admin';
 import { writeRefusal } from '#/shared/service/capabilities';
 import { writeFailureText } from '#/shared/service/failure';
+import { counted } from '#/shared/service/format';
 import type { GatewayFailure, Problem } from '#/shared/service/result';
 
 export const SCOPES_CAPABILITY = 'manage-tenant';
@@ -22,7 +23,7 @@ export function moreScopes(scopes: readonly Assignment[], shown: number): number
 }
 
 export function scopeCount(count: number): string {
-  return count === 1 ? '1 scope assigned.' : `${String(count)} scopes assigned.`;
+  return `${counted(count, 'scope', 'scopes')} assigned.`;
 }
 
 export const NO_SCOPES = 'No scope is assigned: a request to this client can ask for none.';

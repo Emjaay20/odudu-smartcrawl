@@ -1,5 +1,6 @@
 import type { LogoutDelivery } from '@odudu/contracts/admin';
 import type { Choice } from '#/shared/service/choice';
+import { counted } from '#/shared/service/format';
 
 export const DELIVERIES_HEADING = 'Back-channel deliveries';
 export const DELIVERIES_RULE =
@@ -30,5 +31,5 @@ export function deliveryTone(status: LogoutDelivery['status']): DeliveryTone {
 }
 
 export function attemptsText(attempts: number): string {
-  return attempts === 1 ? '1 attempt' : `${String(attempts)} attempts`;
+  return counted(attempts, 'attempt', 'attempts');
 }

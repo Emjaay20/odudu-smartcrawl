@@ -1,6 +1,7 @@
 import type { RevokeClientGrantsResponse } from '@odudu/contracts/admin';
 import { holds } from '#/shared/service/access';
 import { writeFailureText } from '#/shared/service/failure';
+import { counted } from '#/shared/service/format';
 import type { AdminCapability, Authority } from '#/shared/service/principal';
 import type { GatewayFailure } from '#/shared/service/result';
 import { clientRefusal } from '#/features/clients/service/refusal';
@@ -33,9 +34,7 @@ export function revokeConsequence(name: string, builtin: boolean): string {
 
 // What one call did, and whether another is owed: one call revokes at most 10,000.
 export function revokedText(name: string, result: RevokeClientGrantsResponse): string {
-  const parts = [
-    `${String(result.revoked)} ${result.revoked === 1 ? 'grant' : 'grants'} of ${name} revoked.`,
-  ];
+  const parts = [`${counted(result.revoked, 'grant', 'grants')} of ${name} revoked.`];
   if (result.beyond_ceiling > 0) {
     parts.push(
       `${String(result.beyond_ceiling)} left alone, their subjects holding an admin capability you do not.`,

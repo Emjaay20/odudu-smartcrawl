@@ -5,7 +5,7 @@ import type { GatewayFailure } from '#/shared/service/result';
 
 export function clientsCount(shown: number, more: boolean): string {
   return more
-    ? `${String(shown)} ${shown === 1 ? 'client' : 'clients'} shown, with more to load.`
+    ? `${counted(shown, 'client', 'clients')} shown, with more to load.`
     : `${counted(shown, 'client', 'clients')}.`;
 }
 

@@ -1,6 +1,6 @@
 import type { ClientScope, SetScopeRolesResponse } from '@odudu/contracts/admin';
 import type { LeftOut, PartialCopy } from '#/shared/service/copy';
-import { andList } from '#/shared/service/format';
+import { andList, plural } from '#/shared/service/format';
 import type { AdminCapability } from '#/shared/service/principal';
 import { scopeHref, scopesHref } from '#/features/scopes/service/address';
 import { scopeRoleUnavailable } from '#/features/scopes/service/roles';
@@ -112,7 +112,7 @@ export function partialCopy(
   if (missed.length === 0) return null;
   const tabs = missed.map((part) => (part === 'roles' ? 'Roles' : 'Claim mappers'));
   return {
-    text: `${scope.name} was created, but its ${andList(missed.map((part) => PARTS[part]))} could not be copied. Set them from its ${andList(tabs)} ${tabs.length === 1 ? 'tab' : 'tabs'}.`,
+    text: `${scope.name} was created, but its ${andList(missed.map((part) => PARTS[part]))} could not be copied. Set them from its ${andList(tabs)} ${plural(tabs.length, 'tab', 'tabs')}.`,
     href: scopeHref(tenant, scope.id),
     name: scope.name,
   };
