@@ -18,15 +18,10 @@ import { RolesTab } from '#/features/scopes/view/ScopeRecordPage/RolesTab';
 import { ActivityTab } from '#/shared/view/ActivityTab';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
-import { RecordPage } from '#/shared/view/RecordPage';
+import { RecordPage, type RecordPanelProps } from '#/shared/view/RecordPage';
 import { recordTab } from '#/shared/view/RecordTab';
 
-interface PanelProps {
-  tenant: string;
-  scope: ClientScope;
-  etag: string;
-  gone: boolean;
-}
+type PanelProps = RecordPanelProps<'scope', ClientScope>;
 
 function Trail({ tenant, id }: { tenant: string; id: string }) {
   const list = useRecordActivity('scope', tenant, id);

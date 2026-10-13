@@ -17,18 +17,14 @@ import { ActivityTab } from '#/shared/view/ActivityTab';
 import { Button } from '#/shared/view/Button';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
-import { RecordPage } from '#/shared/view/RecordPage';
+import { RecordPage, type RecordPanelProps } from '#/shared/view/RecordPage';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { Note } from '#/shared/view/Note';
 import { recordTab } from '#/shared/view/RecordTab';
 
-interface PanelProps {
-  tenant: string;
-  group: GroupRecord;
-  etag: string;
-  gone: boolean;
+type PanelProps = RecordPanelProps<'group', GroupRecord> & {
   ceiling: Ceiling;
-}
+};
 
 function Trail({ tenant, id }: { tenant: string; id: string }) {
   const list = useRecordActivity('group', tenant, id);

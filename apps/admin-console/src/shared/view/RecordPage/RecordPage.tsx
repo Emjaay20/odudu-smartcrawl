@@ -10,6 +10,14 @@ import { RecordSkeleton } from '#/shared/view/Skeleton';
 import { Tabs, type TabItem } from '#/shared/view/Tabs';
 import styles from '#/shared/view/RecordPage/RecordPage.module.css';
 
+// What each tab of a record page is given: the record under its own name, the
+// ETag it was read with, and whether it has since been found deleted.
+export type RecordPanelProps<Key extends string, R> = {
+  tenant: string;
+  etag: string;
+  gone: boolean;
+} & Record<Key, R>;
+
 // A record is a page with its own address: the tab is part of it, so a tab
 // change is asked for, and the unsaved-changes guard answers first.
 export function RecordPage({

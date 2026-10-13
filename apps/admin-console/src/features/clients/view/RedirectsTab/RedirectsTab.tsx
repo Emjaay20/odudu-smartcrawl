@@ -1,24 +1,12 @@
-import type { Client } from '@odudu/contracts/admin';
 import { Link } from 'react-aria-components';
 import { ORIGINS_RULE, POST_LOGOUT_NOTE, REDIRECTS_RULE } from '#/features/clients/service';
 import { useClientRedirects } from '#/features/clients/usecase/useClientRedirects';
+import type { ClientTabProps } from '#/features/clients/view/ClientTabProps';
 import { ReadOnlyFields, UrlListField } from '#/shared/view/Field';
 import { recordTab } from '#/shared/view/RecordTab';
 import { SaveSection } from '#/shared/view/SaveSection';
 
-export function RedirectsTab({
-  tenant,
-  client,
-  etag,
-  gone,
-  writable,
-}: {
-  tenant: string;
-  client: Client;
-  etag: string;
-  gone: boolean;
-  writable: boolean;
-}) {
+export function RedirectsTab({ tenant, client, etag, gone, writable }: ClientTabProps) {
   const page = useClientRedirects({ tenant, client, etag, gone, writable });
   const redirects = page.redirects;
   const origins = page.origins;

@@ -1,4 +1,3 @@
-import type { Client } from '@odudu/contracts/admin';
 import type { ReactNode } from 'react';
 import { useAuditReadable } from '#/features/session';
 import { AreaGate, areaAt } from '#/features/shell';
@@ -12,6 +11,7 @@ import {
 } from '#/features/clients/service';
 import { useRecordActivity } from '#/shared/usecase/useRecordActivity';
 import { useClientRecordPage } from '#/features/clients/usecase/useClientRecordPage';
+import type { ClientTabProps } from '#/features/clients/view/ClientTabProps';
 import { AdvancedTab } from '#/features/clients/view/AdvancedTab';
 import { GeneralTab } from '#/features/clients/view/GeneralTab';
 import { LogoutTab } from '#/features/clients/view/LogoutTab';
@@ -29,12 +29,7 @@ import { StatusTag } from '#/shared/view/StatusTag';
 import { ViewOnlyNote } from '#/shared/view/ViewOnlyNote';
 import { recordTab } from '#/shared/view/RecordTab';
 
-interface PanelProps {
-  tenant: string;
-  client: Client;
-  etag: string;
-  gone: boolean;
-  writable: boolean;
+interface PanelProps extends ClientTabProps {
   reach: Reach;
 }
 

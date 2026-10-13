@@ -1,4 +1,3 @@
-import type { Client } from '@odudu/contracts/admin';
 import {
   useClientConfigSaves,
   type BackchannelValues,
@@ -14,7 +13,10 @@ import {
   POST_LOGOUT_NOUN,
   SECTIONS_LOGOUT,
 } from '#/features/clients/service';
-import { useClientSection } from '#/features/clients/usecase/useClientSection';
+import {
+  useClientSection,
+  type ClientRecordRead,
+} from '#/features/clients/usecase/useClientSection';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { flagText } from '#/shared/service/format';
 
@@ -25,12 +27,7 @@ export interface ClientLogout {
   frontchannel: SectionSave<FrontchannelValues>;
 }
 
-export function useClientLogout(args: {
-  tenant: string;
-  client: Client;
-  etag: string;
-  gone: boolean;
-}): ClientLogout {
+export function useClientLogout(args: ClientRecordRead): ClientLogout {
   const { client } = args;
   const shared = useClientSection(args);
   const saves = useClientConfigSaves(args.tenant, client.id);

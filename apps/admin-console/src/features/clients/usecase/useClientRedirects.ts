@@ -1,5 +1,7 @@
-import type { Client } from '@odudu/contracts/admin';
-import { useClientSection } from '#/features/clients/usecase/useClientSection';
+import {
+  useClientSection,
+  type ClientRecordRead,
+} from '#/features/clients/usecase/useClientSection';
 import {
   useClientSaves,
   type OriginValues,
@@ -34,13 +36,7 @@ export function useClientRedirects({
   etag,
   gone,
   writable,
-}: {
-  tenant: string;
-  client: Client;
-  etag: string;
-  gone: boolean;
-  writable: boolean;
-}): ClientRedirects {
+}: ClientRecordRead & { writable: boolean }): ClientRedirects {
   const saves = useClientSaves(tenant, client.id);
   const shared = useClientSection({ tenant, client, etag, gone });
 

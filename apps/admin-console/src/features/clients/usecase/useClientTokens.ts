@@ -1,4 +1,3 @@
-import type { Client } from '@odudu/contracts/admin';
 import {
   useClientConfigSaves,
   type CredentialValues,
@@ -26,7 +25,10 @@ import {
   SECTIONS_TOKENS,
   TOKEN_FIELD,
 } from '#/features/clients/service';
-import { useClientSection } from '#/features/clients/usecase/useClientSection';
+import {
+  useClientSection,
+  type ClientRecordRead,
+} from '#/features/clients/usecase/useClientSection';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { describeIds, flagText } from '#/shared/service/format';
 import type { ChecklistOption } from '#/shared/view/ChecklistField';
@@ -45,12 +47,7 @@ export interface ClientTokens {
   idTokenAlgs: Choice[];
 }
 
-export function useClientTokens(args: {
-  tenant: string;
-  client: Client;
-  etag: string;
-  gone: boolean;
-}): ClientTokens {
+export function useClientTokens(args: ClientRecordRead): ClientTokens {
   const { client } = args;
   const shared = useClientSection(args);
   const saves = useClientConfigSaves(args.tenant, client.id);

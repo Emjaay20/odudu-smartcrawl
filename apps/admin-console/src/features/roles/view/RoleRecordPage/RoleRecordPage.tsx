@@ -17,18 +17,14 @@ import { RoleOwner } from '#/shared/view/RoleOwner';
 import { ActivityTab } from '#/shared/view/ActivityTab';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { ButtonLink } from '#/shared/view/ButtonLink';
-import { RecordPage } from '#/shared/view/RecordPage';
+import { RecordPage, type RecordPanelProps } from '#/shared/view/RecordPage';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { Note } from '#/shared/view/Note';
 import { recordTab } from '#/shared/view/RecordTab';
 
-interface PanelProps {
-  tenant: string;
-  role: Role;
-  etag: string;
-  gone: boolean;
+type PanelProps = RecordPanelProps<'role', Role> & {
   ceiling: Ceiling;
-}
+};
 
 function Trail({ tenant, id }: { tenant: string; id: string }) {
   const list = useRecordActivity('role', tenant, id);

@@ -1,4 +1,3 @@
-import type { Client } from '@odudu/contracts/admin';
 import {
   useClientConfigSaves,
   type AudienceValues,
@@ -25,7 +24,10 @@ import {
   encryptsUserinfo,
   type KeysProblem,
 } from '#/features/clients/service';
-import { useClientSection } from '#/features/clients/usecase/useClientSection';
+import {
+  useClientSection,
+  type ClientRecordRead,
+} from '#/features/clients/usecase/useClientSection';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { flagText } from '#/shared/service/format';
 import type { Choice } from '#/shared/service/choice';
@@ -49,12 +51,7 @@ export interface ClientAdvanced {
   exchange: SectionSave<ExchangeValues>;
 }
 
-export function useClientAdvanced(args: {
-  tenant: string;
-  client: Client;
-  etag: string;
-  gone: boolean;
-}): ClientAdvanced {
+export function useClientAdvanced(args: ClientRecordRead): ClientAdvanced {
   const { client } = args;
   const shared = useClientSection(args);
   const saves = useClientConfigSaves(args.tenant, client.id);

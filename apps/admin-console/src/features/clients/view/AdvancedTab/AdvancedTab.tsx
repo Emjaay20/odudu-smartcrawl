@@ -22,6 +22,7 @@ import {
 import { useClientAdvanced } from '#/features/clients/usecase/useClientAdvanced';
 import { useClientSecret, type ClientSecret } from '#/features/clients/usecase/useClientSecret';
 import { Installation } from '#/features/clients/view/Installation';
+import type { ClientTabProps } from '#/features/clients/view/ClientTabProps';
 import { SaveSection } from '#/shared/view/SaveSection';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
@@ -109,19 +110,7 @@ function Fixed() {
   );
 }
 
-export function AdvancedTab({
-  tenant,
-  client,
-  etag,
-  gone,
-  writable,
-}: {
-  tenant: string;
-  client: Client;
-  etag: string;
-  gone: boolean;
-  writable: boolean;
-}) {
+export function AdvancedTab({ tenant, client, etag, gone, writable }: ClientTabProps) {
   const page = useClientAdvanced({ tenant, client, etag, gone });
   const secret = useClientSecret(tenant, client);
   const { auth, keys, userinfo, audiences, exchange } = page;

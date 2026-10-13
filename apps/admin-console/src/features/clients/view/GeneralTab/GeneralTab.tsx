@@ -11,6 +11,7 @@ import {
   type ClientGeneral,
   type Deletion,
 } from '#/features/clients/usecase/useClientGeneral';
+import type { ClientTabProps } from '#/features/clients/view/ClientTabProps';
 import { DeleteZone } from '#/shared/view/DeleteZone';
 import { Panel } from '#/shared/view/Panel';
 import { CopyValue } from '#/shared/view/CopyValue';
@@ -199,19 +200,7 @@ function Danger({
 
 // `writable` is whether the page offers any change: left out where it does
 // not, since the page's one line says why.
-export function GeneralTab({
-  tenant,
-  client,
-  etag,
-  gone,
-  writable,
-}: {
-  tenant: string;
-  client: Client;
-  etag: string;
-  gone: boolean;
-  writable: boolean;
-}) {
+export function GeneralTab({ tenant, client, etag, gone, writable }: ClientTabProps) {
   const general = useClientGeneral({ tenant, client, etag, gone });
   return (
     <div className={recordTab.tab}>

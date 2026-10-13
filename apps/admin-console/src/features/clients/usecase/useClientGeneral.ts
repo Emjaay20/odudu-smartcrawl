@@ -1,5 +1,7 @@
-import type { Client } from '@odudu/contracts/admin';
-import { useClientSection } from '#/features/clients/usecase/useClientSection';
+import {
+  useClientSection,
+  type ClientRecordRead,
+} from '#/features/clients/usecase/useClientSection';
 import { useGo } from '#/shared/repository/useGo';
 import {
   useClientDeletion,
@@ -45,17 +47,7 @@ export interface ClientGeneral {
   deletion: Deletion;
 }
 
-export function useClientGeneral({
-  tenant,
-  client,
-  etag,
-  gone,
-}: {
-  tenant: string;
-  client: Client;
-  etag: string;
-  gone: boolean;
-}): ClientGeneral {
+export function useClientGeneral({ tenant, client, etag, gone }: ClientRecordRead): ClientGeneral {
   const saves = useClientSaves(tenant, client.id);
   const push = useToasts((queue) => queue.push);
   const go = useGo();

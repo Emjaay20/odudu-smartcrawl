@@ -1,4 +1,3 @@
-import type { Client } from '@odudu/contracts/admin';
 import {
   BACKCHANNEL_RULE,
   BACKCHANNEL_SESSION_LABEL,
@@ -11,23 +10,12 @@ import {
 } from '#/features/clients/service';
 import { useClientLogout } from '#/features/clients/usecase/useClientLogout';
 import { Deliveries } from '#/features/clients/view/Deliveries';
+import type { ClientTabProps } from '#/features/clients/view/ClientTabProps';
 import { SaveSection } from '#/shared/view/SaveSection';
 import { ReadOnlyFields, ToggleField, UrlField, UrlListField } from '#/shared/view/Field';
 import { recordTab } from '#/shared/view/RecordTab';
 
-export function LogoutTab({
-  tenant,
-  client,
-  etag,
-  gone,
-  writable,
-}: {
-  tenant: string;
-  client: Client;
-  etag: string;
-  gone: boolean;
-  writable: boolean;
-}) {
+export function LogoutTab({ tenant, client, etag, gone, writable }: ClientTabProps) {
   const page = useClientLogout({ tenant, client, etag, gone });
   const { postLogout, backchannel, frontchannel } = page;
   return (

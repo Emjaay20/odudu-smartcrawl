@@ -1,4 +1,3 @@
-import type { Client } from '@odudu/contracts/admin';
 import {
   AUTH_TIME_LABEL,
   AUTH_TIME_RULE,
@@ -21,24 +20,13 @@ import {
 } from '#/features/clients/service';
 import { useClientTokens } from '#/features/clients/usecase/useClientTokens';
 import { OptionalSecondsField } from '#/features/clients/view/OptionalSecondsField';
+import type { ClientTabProps } from '#/features/clients/view/ClientTabProps';
 import { SaveSection } from '#/shared/view/SaveSection';
 import { ChecklistField } from '#/shared/view/ChecklistField';
 import { ReadOnlyFields, SelectField, TextListField, ToggleField } from '#/shared/view/Field';
 import { recordTab } from '#/shared/view/RecordTab';
 
-export function TokensTab({
-  tenant,
-  client,
-  etag,
-  gone,
-  writable,
-}: {
-  tenant: string;
-  client: Client;
-  etag: string;
-  gone: boolean;
-  writable: boolean;
-}) {
+export function TokensTab({ tenant, client, etag, gone, writable }: ClientTabProps) {
   const page = useClientTokens({ tenant, client, etag, gone });
   const { lifetimes, grants, credentials, fullScope, idToken } = page;
   return (
