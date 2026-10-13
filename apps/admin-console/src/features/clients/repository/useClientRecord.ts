@@ -6,7 +6,15 @@ import {
   type ClientChanges,
 } from '#/features/clients/adapter/clients';
 import { clientRecord } from '#/features/clients/service';
-import { countKey, listKey, recordKey } from '#/shared/repository/queryKeys';
+import {
+  countKey,
+  heldCapabilitiesKey,
+  holdersKey,
+  listKey,
+  pickerKey,
+  recordKey,
+  scopeClientsKey,
+} from '#/shared/repository/queryKeys';
 import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useRecord, type RecordState } from '#/shared/repository/useRecord';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
@@ -99,9 +107,23 @@ export function useClientDeletion(
   id: string,
 ): Write<void, GatewayResult<undefined>> {
   const after = useAfterClientChange(tenant);
+  const { invalidate } = useInvalidate();
   // The record's own entries are left to lapse: removing them while its page
   // is still mounted would read them again, and find nothing.
   return useWrite({
-    send: async (gateway) => after(await deleteClient(gateway, tenant, id)),
+    send: async (gateway) => {
+      const result = after(await deleteClient(gateway, tenant, id));
+      // Its roles, its scope assignments, its consents and its grants go with it.
+      if (result.ok) {
+        invalidate(
+          listKey(tenant),
+          pickerKey(tenant, 'roles'),
+          scopeClientsKey(tenant),
+          heldCapabilitiesKey(tenant),
+          holdersKey(tenant),
+        );
+      }
+      return result;
+    },
   });
 }

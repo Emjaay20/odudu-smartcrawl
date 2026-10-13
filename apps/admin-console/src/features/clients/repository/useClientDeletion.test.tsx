@@ -30,3 +30,24 @@ it('is busy from the press until the server answers', async () => {
     expect(result.current.busy).toBe(true);
   });
 });
+
+it("reads again the lists the client's removal changes, and leaves its own record to lapse", async () => {
+  const { wrapper, queryClient } = hookHarness({
+    [PATH]: () => new Response(null, { status: 204 }),
+  });
+  const held = [
+    ['list', 'acme', 'roles'],
+    ['picker', 'acme', 'roles'],
+    ['scope-clients', 'acme', 's1'],
+    ['list', 'acme', 'subjects/u1/consents'],
+    ['record', 'acme', 'clients/x1'],
+    ['list', 'other', 'roles'],
+  ];
+  for (const key of held) queryClient.setQueryData(key, 'held');
+  const { result } = renderHook(() => useClientDeletion('acme', 'x1'), { wrapper });
+  await act(async () => {
+    await result.current.run();
+  });
+  const stale = held.map((key) => queryClient.getQueryState(key)?.isInvalidated);
+  expect(stale).toEqual([true, true, true, true, false, false]);
+});
