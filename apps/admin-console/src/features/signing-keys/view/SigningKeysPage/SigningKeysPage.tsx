@@ -20,7 +20,7 @@ import { EmptyState } from '#/shared/view/EmptyState';
 import { SelectField } from '#/shared/view/Field';
 import { LastAction } from '#/shared/view/LastAction';
 import { ListGate } from '#/shared/view/ListGate';
-import { LoadMore } from '#/shared/view/LoadMore';
+import { LoadMore, LoadMoreFailed } from '#/shared/view/LoadMore';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { LiveMessage } from '#/shared/view/Message';
 import { Panel } from '#/shared/view/Panel';
@@ -134,11 +134,7 @@ function LaneBody({ spec, lane, page }: { spec: LaneSpec; lane: Lane; page: Page
                 />
               </div>
             )}
-            {lane.loadMoreFailed ? (
-              <p role="alert" className={styles.failed}>
-                {`More ${label.toLowerCase()} could not be loaded. Load more tries again.`}
-              </p>
-            ) : null}
+            {lane.loadMoreFailed ? <LoadMoreFailed noun={label.toLowerCase()} /> : null}
           </>
         )
       }

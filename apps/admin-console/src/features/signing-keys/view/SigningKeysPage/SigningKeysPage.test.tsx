@@ -351,6 +351,27 @@ it('says it is loading more, and holds the button, while the next page is on its
   expect(await screen.findByRole('button', { name: 'Loading more retired keys…' })).toBeDisabled();
 });
 
+it('says a later page of a lane could not be loaded, keeping the keys shown', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(
+    AT,
+    keyRoutes(undefined, {
+      [`GET ${KEYS}`]: (request) => {
+        if (request.search.get('status') !== 'retired')
+          return lanes([READY_KEY, ACTIVE_KEY])(request);
+        return request.search.get('cursor') === null
+          ? json({ items: [RETIRED_KEY], next: 'c2' })(request)
+          : problem(500, 'about:blank', 'Error')(request);
+      },
+    }),
+  );
+  await user.click(await screen.findByRole('button', { name: 'Load more retired keys' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'More retired keys could not be loaded. Load more tries again.',
+  );
+  expect(screen.getByRole('row', { name: /kid-k-retired/u })).toBeVisible();
+});
+
 it('says a lane could not be loaded and tries again', async () => {
   const user = userEvent.setup();
   renderConsoleAt(
