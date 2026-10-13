@@ -1,17 +1,13 @@
 import {
   countResponseSchema,
-  listKeysResponseSchema,
-  settingsSchema,
-  smtpConfigSchema,
   type AuditEvent,
   type CountResponse,
-  type Settings,
   type SigningKey,
-  type SmtpConfig,
 } from '@odudu/contracts/admin';
 import { z } from 'zod';
 import type { Collection, Discovery, Jwks } from '#/features/overview/service';
 import { readAuditPage } from '#/shared/adapter/audit';
+import { readKeyPage } from '#/shared/adapter/directory';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 import { discoverySchema, tenantPath } from '#/shared/adapter/route';
 
@@ -66,18 +62,6 @@ export function readCount(
   }
 }
 
-export function readSettings(gateway: Gateway, tenant: string): Promise<GatewayResult<Settings>> {
-  return gateway.request('GET', `admin/tenants/${tenantPath(tenant)}/settings`, {
-    schema: settingsSchema,
-  });
-}
-
-export function readSmtp(gateway: Gateway, tenant: string): Promise<GatewayResult<SmtpConfig>> {
-  return gateway.request('GET', `admin/tenants/${tenantPath(tenant)}/smtp`, {
-    schema: smtpConfigSchema,
-  });
-}
-
 // A defect is logged where it is found, as the gateway logs its own.
 function logDefect(message: string): void {
   console.error(message);
@@ -93,11 +77,7 @@ export async function readKeys(
   for (let page = 0; page < MAX_KEY_PAGES; page += 1) {
     const query = new URLSearchParams({ limit: String(KEY_PAGE) });
     if (cursor !== undefined) query.set('cursor', cursor);
-    const result = await gateway.request(
-      'GET',
-      `admin/tenants/${tenantPath(tenant)}/keys?${query.toString()}`,
-      { schema: listKeysResponseSchema },
-    );
+    const result = await readKeyPage(gateway, tenant, query);
     if (!result.ok) return result;
     keys.push(...result.data.items);
     cursor = result.data.next;

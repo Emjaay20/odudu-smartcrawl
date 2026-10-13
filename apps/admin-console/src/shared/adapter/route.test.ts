@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { discoverySchema, nothing, segment, tenantPath } from '#/shared/adapter/route';
+import { z } from 'zod';
+import {
+  adminCall,
+  countReader,
+  discoverySchema,
+  listReader,
+  nothing,
+  segment,
+  tenantPath,
+} from '#/shared/adapter/route';
+import { fakeTransport, json } from '#/testing/fakeTransport';
 
 describe('route helpers', () => {
   it('encodes a tenant name and an id for a path segment', () => {
@@ -18,5 +28,68 @@ describe('route helpers', () => {
       extra: 1,
     });
     expect(discoverySchema.safeParse({}).success).toBe(false);
+  });
+});
+
+describe('listReader and countReader', () => {
+  it('read a tenant collection with the query as given, the tenant encoded', async () => {
+    const fake = fakeTransport({
+      'GET /console/api/admin/tenants/acme%20corp/things': json({ items: [1], next: 'c2' }),
+      'GET /console/api/admin/tenants/acme%20corp/things/count': json({ count: 3, capped: false }),
+    });
+    const query = new URLSearchParams({ name: 'a', limit: '5' });
+    const page = listReader('things', z.object({ items: z.array(z.number()) }));
+    expect(await page(fake.transport.gateway, 'acme corp', query)).toMatchObject({
+      ok: true,
+      data: { items: [1] },
+    });
+    expect(await countReader('things')(fake.transport.gateway, 'acme corp', query)).toMatchObject({
+      ok: true,
+      data: { count: 3, capped: false },
+    });
+    expect(fake.sent.map((sent) => sent.search.toString())).toEqual([
+      'name=a&limit=5',
+      'name=a&limit=5',
+    ]);
+  });
+
+  it('reports a body its schema refuses as a schema failure', async () => {
+    const fake = fakeTransport({
+      'GET /console/api/admin/tenants/acme/things': json({ items: 'x' }),
+    });
+    const page = listReader('things', z.object({ items: z.array(z.number()) }));
+    expect(await page(fake.transport.gateway, 'acme', new URLSearchParams())).toMatchObject({
+      ok: false,
+      kind: 'schema',
+    });
+  });
+});
+
+describe('adminCall', () => {
+  it('encodes every part, sends the body and the ETag, and appends the query', async () => {
+    const fake = fakeTransport({
+      'PATCH /console/api/admin/tenants/acme/things/a%2Fb/sub': json({ ok: 1 }),
+    });
+    const result = await adminCall(
+      fake.transport.gateway,
+      'PATCH',
+      'acme',
+      ['things', 'a/b', 'sub'],
+      {
+        body: { x: 1 },
+        ifMatch: '"v1"',
+        query: new URLSearchParams({ q: 'y' }),
+        schema: z.object({ ok: z.number() }),
+      },
+    );
+    expect(result).toMatchObject({ ok: true, data: { ok: 1 } });
+    expect(fake.sent[0]).toMatchObject({ body: { x: 1 }, ifMatch: '"v1"' });
+    expect(fake.sent[0]?.search.get('q')).toBe('y');
+  });
+
+  it('sends no query string when there is none', async () => {
+    const fake = fakeTransport({ 'GET /console/api/admin/tenants/acme/things': json({}) });
+    await adminCall(fake.transport.gateway, 'GET', 'acme', ['things'], { schema: z.object({}) });
+    expect(fake.sent[0]?.search.toString()).toBe('');
   });
 });

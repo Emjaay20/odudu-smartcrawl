@@ -1,7 +1,7 @@
 import type { EvaluateClaimsResponse } from '@odudu/contracts/admin';
 import { useQuery } from '@tanstack/react-query';
 import { evaluateClaims } from '#/features/clients/adapter/operations';
-import { readAdministratorPage } from '#/shared/adapter/administrators';
+import { readSubjectPage } from '#/shared/adapter/directory';
 import { usePicker } from '#/shared/repository/usePicker';
 import type { PickerState } from '#/shared/service/picker';
 import type { GatewayResult } from '#/shared/transport/gateway';
@@ -15,7 +15,7 @@ export function useSubjectPicker(tenant: string) {
     tenant,
     resource: 'subjects',
     field: 'username',
-    read: (gateway, query) => readAdministratorPage(gateway, tenant, query),
+    read: (gateway, query) => readSubjectPage(gateway, tenant, query),
   });
 }
 

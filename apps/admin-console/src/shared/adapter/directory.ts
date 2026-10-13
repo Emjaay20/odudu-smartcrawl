@@ -1,48 +1,26 @@
 import {
-  countResponseSchema,
   listClientsResponseSchema,
   listGroupsResponseSchema,
+  listKeysResponseSchema,
   listRolesResponseSchema,
   listScopesResponseSchema,
+  listSubjectsResponseSchema,
   roleSchema,
-  type CountResponse,
-  type ListClientsResponse,
-  type ListGroupsResponse,
-  type ListRolesResponse,
-  type ListScopesResponse,
   type Role,
 } from '@odudu/contracts/admin';
+import { countReader, listReader } from '#/shared/adapter/route';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 
-// The role and group lists every picker chooses from, whichever record it
-// sits on.
-export function readRolePage(
-  gateway: Gateway,
-  tenant: string,
-  query: URLSearchParams,
-): Promise<GatewayResult<ListRolesResponse>> {
-  return gateway.request(
-    'GET',
-    `admin/tenants/${encodeURIComponent(tenant)}/roles?${query.toString()}`,
-    {
-      schema: listRolesResponseSchema,
-    },
-  );
-}
-
-export function readGroupPage(
-  gateway: Gateway,
-  tenant: string,
-  query: URLSearchParams,
-): Promise<GatewayResult<ListGroupsResponse>> {
-  return gateway.request(
-    'GET',
-    `admin/tenants/${encodeURIComponent(tenant)}/groups?${query.toString()}`,
-    {
-      schema: listGroupsResponseSchema,
-    },
-  );
-}
+// The lists and counts that more than one feature reads, whichever record
+// they sit on; a picker's own list is the same call as the page's.
+export const readRolePage = listReader('roles', listRolesResponseSchema);
+export const readRoleCount = countReader('roles');
+export const readGroupPage = listReader('groups', listGroupsResponseSchema);
+export const readScopePage = listReader('scopes', listScopesResponseSchema);
+export const readClientPage = listReader('clients', listClientsResponseSchema);
+export const readSubjectPage = listReader('subjects', listSubjectsResponseSchema);
+export const readSubjectCount = countReader('subjects');
+export const readKeyPage = listReader('keys', listKeysResponseSchema);
 
 // One role with what it reaches, for a list that names a role by id alone.
 export function readRole(
@@ -54,44 +32,5 @@ export function readRole(
     'GET',
     `admin/tenants/${encodeURIComponent(tenant)}/roles/${encodeURIComponent(roleId)}`,
     { schema: roleSchema },
-  );
-}
-
-// What a list of roles is counted by, for a count shown beside a picker's own list.
-export function readRoleCount(
-  gateway: Gateway,
-  tenant: string,
-  query: URLSearchParams,
-): Promise<GatewayResult<CountResponse>> {
-  return gateway.request(
-    'GET',
-    `admin/tenants/${encodeURIComponent(tenant)}/roles/count?${query.toString()}`,
-    { schema: countResponseSchema },
-  );
-}
-
-// The scopes a client is assigned from, searched by name on the server.
-export function readScopePage(
-  gateway: Gateway,
-  tenant: string,
-  query: URLSearchParams,
-): Promise<GatewayResult<ListScopesResponse>> {
-  return gateway.request(
-    'GET',
-    `admin/tenants/${encodeURIComponent(tenant)}/scopes?${query.toString()}`,
-    { schema: listScopesResponseSchema },
-  );
-}
-
-// The clients a picker chooses from, searched by name on the server.
-export function readClientPage(
-  gateway: Gateway,
-  tenant: string,
-  query: URLSearchParams,
-): Promise<GatewayResult<ListClientsResponse>> {
-  return gateway.request(
-    'GET',
-    `admin/tenants/${encodeURIComponent(tenant)}/clients?${query.toString()}`,
-    { schema: listClientsResponseSchema },
   );
 }

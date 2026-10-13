@@ -1,45 +1,22 @@
 import {
-  countResponseSchema,
   listCredentialsResponseSchema,
-  listSubjectsResponseSchema,
   lockoutSchema,
   profileSchema,
   subjectSchema,
   usernamePolicySchema,
   type AmendProfileRequest,
   type AmendSubjectRequest,
-  type CountResponse,
   type ListCredentialsResponse,
-  type ListSubjectsResponse,
   type Lockout,
   type Profile,
   type Subject,
 } from '@odudu/contracts/admin';
 import type { CredentialChange } from '#/features/subjects/service';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
+import { readSubjectCount, readSubjectPage } from '#/shared/adapter/directory';
 import { nothing, segment, tenantPath } from '#/shared/adapter/route';
 
-export function readSubjectPage(
-  gateway: Gateway,
-  tenant: string,
-  query: URLSearchParams,
-): Promise<GatewayResult<ListSubjectsResponse>> {
-  const t = tenantPath(tenant);
-  return gateway.request('GET', `admin/tenants/${t}/subjects?${query.toString()}`, {
-    schema: listSubjectsResponseSchema,
-  });
-}
-
-export function readSubjectCount(
-  gateway: Gateway,
-  tenant: string,
-  query: URLSearchParams,
-): Promise<GatewayResult<CountResponse>> {
-  const t = tenantPath(tenant);
-  return gateway.request('GET', `admin/tenants/${t}/subjects/count?${query.toString()}`, {
-    schema: countResponseSchema,
-  });
-}
+export { readSubjectCount, readSubjectPage };
 
 export function createSubject(
   gateway: Gateway,

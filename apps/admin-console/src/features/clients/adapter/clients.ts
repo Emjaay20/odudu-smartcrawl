@@ -1,44 +1,21 @@
 import {
   clientSchema,
-  countResponseSchema,
   createClientResponseSchema,
-  listClientsResponseSchema,
   rotateClientSecretResponseSchema,
   roleSchema,
   type Client,
-  type CountResponse,
   type CreateClientResponse,
-  type ListClientsResponse,
   type Role,
   type RotateClientSecretResponse,
 } from '@odudu/contracts/admin';
 import { entriesOf, type NewClientKind } from '#/features/clients/service';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { nothing, segment, tenantPath } from '#/shared/adapter/route';
+import { readClientPage } from '#/shared/adapter/directory';
+import { countReader, nothing, segment, tenantPath } from '#/shared/adapter/route';
 
-export function readClientPage(
-  gateway: Gateway,
-  tenant: string,
-  query: URLSearchParams,
-): Promise<GatewayResult<ListClientsResponse>> {
-  return gateway.request('GET', `admin/tenants/${tenantPath(tenant)}/clients?${query.toString()}`, {
-    schema: listClientsResponseSchema,
-  });
-}
+export { readClientPage };
 
-export function readClientCount(
-  gateway: Gateway,
-  tenant: string,
-  query: URLSearchParams,
-): Promise<GatewayResult<CountResponse>> {
-  return gateway.request(
-    'GET',
-    `admin/tenants/${tenantPath(tenant)}/clients/count?${query.toString()}`,
-    {
-      schema: countResponseSchema,
-    },
-  );
-}
+export const readClientCount = countReader('clients');
 
 export interface NewClient {
   clientId: string;

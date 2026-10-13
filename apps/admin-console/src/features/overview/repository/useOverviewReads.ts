@@ -5,9 +5,9 @@ import {
   readJwks,
   readKeys,
   readLatestAudit,
-  readSettings,
-  readSmtp,
 } from '#/features/overview/adapter';
+import { readSmtp } from '#/shared/adapter/smtp';
+import { readTenantSettings } from '#/shared/adapter/tenantSettings';
 import {
   readOutcome,
   type Collection,
@@ -78,7 +78,7 @@ export function useOverviewReads(
       tenant,
       'settings',
       asks.settings,
-      (g) => readSettings(g, tenant),
+      (g) => readTenantSettings(g, tenant),
       onAnswer,
     ),
     smtp: useTenantRead(tenant, 'smtp', asks.smtp, (g) => readSmtp(g, tenant), onAnswer),

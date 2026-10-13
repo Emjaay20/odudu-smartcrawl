@@ -1,28 +1,17 @@
 import {
-  countResponseSchema,
   groupRecordSchema,
   setGroupRolesResponseSchema,
-  type CountResponse,
   type Group,
   type GroupRecord,
   type SetGroupRolesResponse,
 } from '@odudu/contracts/admin';
 import { readGroupPage } from '#/shared/adapter/directory';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { nothing, segment, tenantPath } from '#/shared/adapter/route';
+import { countReader, nothing, segment, tenantPath } from '#/shared/adapter/route';
 
 export { readGroupPage };
 
-export function readGroupCount(
-  gateway: Gateway,
-  tenant: string,
-  query: URLSearchParams,
-): Promise<GatewayResult<CountResponse>> {
-  const t = tenantPath(tenant);
-  return gateway.request('GET', `admin/tenants/${t}/groups/count?${query.toString()}`, {
-    schema: countResponseSchema,
-  });
-}
+export const readGroupCount = countReader('groups');
 
 export function createGroup(
   gateway: Gateway,

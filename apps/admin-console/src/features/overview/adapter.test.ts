@@ -5,8 +5,6 @@ import {
   readJwks,
   readKeys,
   readLatestAudit,
-  readSettings,
-  readSmtp,
 } from '#/features/overview/adapter';
 import { fakeTransport, inTurn, json } from '#/testing/fakeTransport';
 
@@ -63,30 +61,6 @@ it('counts each collection at its own route', async () => {
     '/console/api/admin/tenants/acme/roles/count',
     '/console/api/admin/tenants/acme/scopes/count',
   ]);
-});
-
-it('reads settings and the SMTP relay', async () => {
-  const fake = fakeTransport({
-    'GET /console/api/admin/tenants/acme/settings': json({ verify_email: true, max_clients: 200 }),
-    'GET /console/api/admin/tenants/acme/smtp': json({
-      configured: false,
-      host: null,
-      port: null,
-      from_address: null,
-      username: null,
-      password_set: false,
-      starttls: null,
-      effective: 'none',
-    }),
-  });
-  expect(await readSettings(fake.transport.gateway, 'acme')).toMatchObject({
-    ok: true,
-    data: { verify_email: true, max_clients: 200 },
-  });
-  expect(await readSmtp(fake.transport.gateway, 'acme')).toMatchObject({
-    ok: true,
-    data: { effective: 'none' },
-  });
 });
 
 const KEY = {

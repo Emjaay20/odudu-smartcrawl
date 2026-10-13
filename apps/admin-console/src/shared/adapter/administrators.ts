@@ -1,47 +1,17 @@
 import {
-  countResponseSchema,
   issuePasswordResponseSchema,
   listClientsResponseSchema,
-  listSubjectsResponseSchema,
   setRolesResponseSchema,
   subjectSchema,
-  type CountResponse,
   type IssuePasswordResponse,
   type ListClientsResponse,
   type ListRolesResponse,
-  type ListSubjectsResponse,
   type SetRolesResponse,
   type Subject,
 } from '@odudu/contracts/admin';
-import { readRolePage } from '#/shared/adapter/directory';
+import { readRolePage, readSubjectPage } from '#/shared/adapter/directory';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 import { tenantPath } from '#/shared/adapter/route';
-
-export function readAdministratorPage(
-  gateway: Gateway,
-  tenant: string,
-  query: URLSearchParams,
-): Promise<GatewayResult<ListSubjectsResponse>> {
-  return gateway.request(
-    'GET',
-    `admin/tenants/${tenantPath(tenant)}/subjects?${query.toString()}`,
-    {
-      schema: listSubjectsResponseSchema,
-    },
-  );
-}
-
-export function readAdministratorCount(
-  gateway: Gateway,
-  tenant: string,
-  query: URLSearchParams,
-): Promise<GatewayResult<CountResponse>> {
-  return gateway.request(
-    'GET',
-    `admin/tenants/${tenantPath(tenant)}/subjects/count?${query.toString()}`,
-    { schema: countResponseSchema },
-  );
-}
 
 export function createSubject(
   gateway: Gateway,
@@ -60,7 +30,7 @@ export async function findSubject(
   tenant: string,
   username: string,
 ): Promise<GatewayResult<Subject | null>> {
-  const result = await readAdministratorPage(gateway, tenant, new URLSearchParams({ username }));
+  const result = await readSubjectPage(gateway, tenant, new URLSearchParams({ username }));
   if (!result.ok) return result;
   return {
     ...result,

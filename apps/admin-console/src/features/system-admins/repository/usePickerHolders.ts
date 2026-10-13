@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { readAdministratorPage } from '#/shared/adapter/administrators';
+import { readSubjectPage } from '#/shared/adapter/directory';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
 import { useTransport } from '#/shared/transport/useTransport';
 
@@ -21,7 +21,7 @@ export function usePickerHolders(query: string): ReadonlySet<string> | null {
         const params = new URLSearchParams({ capability: 'any' });
         if (query !== '') params.set('username', query);
         if (cursor !== undefined) params.set('cursor', cursor);
-        const result = await readAdministratorPage(gateway, SYSTEM_TENANT, params);
+        const result = await readSubjectPage(gateway, SYSTEM_TENANT, params);
         if (!result.ok) return null;
         ids.push(...result.data.items.map((subject) => subject.id));
         cursor = result.data.next;

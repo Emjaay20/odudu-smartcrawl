@@ -1,36 +1,22 @@
 import {
   assignScopeToClientResponseSchema,
   clientScopeSchema,
-  countResponseSchema,
   listScopeClientsResponseSchema,
   scopeMappersSchema,
   setScopeRolesResponseSchema,
   type AssignScopeToClientResponse,
   type ClientScope,
-  type CountResponse,
   type ListScopeClientsResponse,
   type ScopeMappers,
   type SetScopeRolesResponse,
 } from '@odudu/contracts/admin';
 import { readScopePage } from '#/shared/adapter/directory';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { nothing, segment, tenantPath } from '#/shared/adapter/route';
+import { countReader, nothing, segment, tenantPath } from '#/shared/adapter/route';
 
 export { readScopePage };
 
-export function readScopeCount(
-  gateway: Gateway,
-  tenant: string,
-  query: URLSearchParams,
-): Promise<GatewayResult<CountResponse>> {
-  return gateway.request(
-    'GET',
-    `admin/tenants/${tenantPath(tenant)}/scopes/count?${query.toString()}`,
-    {
-      schema: countResponseSchema,
-    },
-  );
-}
+export const readScopeCount = countReader('scopes');
 
 // A new scope is its name and description; a copy carries the source's other fields too.
 export interface CreateScopeInput {

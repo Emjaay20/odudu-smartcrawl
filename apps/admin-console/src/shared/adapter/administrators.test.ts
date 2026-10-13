@@ -4,8 +4,6 @@ import {
   findSubject,
   issuePassword,
   readAdminClients,
-  readAdministratorCount,
-  readAdministratorPage,
   readClientRoles,
   readSubjectRoles,
   setSubjectRoles,
@@ -21,25 +19,6 @@ const SUBJECT = {
   enabled: true,
   created_at: '2026-09-28T08:41:53.858Z',
 };
-
-it("lists the tenant's administrators as the subjects holding tenant-admin", async () => {
-  const fake = fakeTransport({ [`GET ${T}/subjects`]: json({ items: [SUBJECT] }) });
-  const query = new URLSearchParams({ capability: 'tenant-admin' });
-  expect(await readAdministratorPage(fake.transport.gateway, 'acme', query)).toMatchObject({
-    ok: true,
-    data: { items: [SUBJECT] },
-  });
-  expect(fake.sent[0]?.search.get('capability')).toBe('tenant-admin');
-});
-
-it('counts them with the same query', async () => {
-  const fake = fakeTransport({ [`GET ${T}/subjects/count`]: json({ count: 2, capped: false }) });
-  const query = new URLSearchParams({ capability: 'tenant-admin' });
-  expect(await readAdministratorCount(fake.transport.gateway, 'acme', query)).toMatchObject({
-    ok: true,
-    data: { count: 2, capped: false },
-  });
-});
 
 it('creates a subject, sending the email only when there is one, and finds one by username', async () => {
   const fake = fakeTransport({

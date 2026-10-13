@@ -1,5 +1,5 @@
 import type { Subject } from '@odudu/contracts/admin';
-import { readAdministratorPage } from '#/shared/adapter/administrators';
+import { readSubjectPage } from '#/shared/adapter/directory';
 import { usePicker } from '#/shared/repository/usePicker';
 import type { PickerState } from '#/shared/service/picker';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
@@ -9,6 +9,6 @@ export function useSubjectPicker(): PickerState<Subject> {
     tenant: SYSTEM_TENANT,
     resource: 'subjects',
     field: 'username',
-    read: (gateway, query) => readAdministratorPage(gateway, SYSTEM_TENANT, query),
+    read: (gateway, query) => readSubjectPage(gateway, SYSTEM_TENANT, query),
   });
 }

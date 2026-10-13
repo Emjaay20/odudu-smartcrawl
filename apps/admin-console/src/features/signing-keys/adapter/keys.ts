@@ -1,26 +1,9 @@
-import {
-  listKeysResponseSchema,
-  signingKeySchema,
-  type ListKeysResponse,
-  type SigningKey,
-  type SigningKeyAlg,
-} from '@odudu/contracts/admin';
+import { signingKeySchema, type SigningKey, type SigningKeyAlg } from '@odudu/contracts/admin';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
+import { readKeyPage } from '#/shared/adapter/directory';
 import { nothing } from '#/shared/adapter/route';
 
-export function readKeyPage(
-  gateway: Gateway,
-  tenant: string,
-  query: URLSearchParams,
-): Promise<GatewayResult<ListKeysResponse>> {
-  return gateway.request(
-    'GET',
-    `admin/tenants/${encodeURIComponent(tenant)}/keys?${query.toString()}`,
-    {
-      schema: listKeysResponseSchema,
-    },
-  );
-}
+export { readKeyPage };
 
 export function stageKey(
   gateway: Gateway,

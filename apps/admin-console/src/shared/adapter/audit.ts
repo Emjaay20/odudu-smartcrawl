@@ -1,18 +1,6 @@
-import { listAuditResponseSchema, type ListAuditResponse } from '@odudu/contracts/admin';
-import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
+import { listAuditResponseSchema } from '@odudu/contracts/admin';
+import { listReader } from '#/shared/adapter/route';
 
 // Shared by the Audit trail and every record's Activity tab, which is the
 // same list narrowed to one resource.
-export function readAuditPage(
-  gateway: Gateway,
-  tenant: string,
-  query: URLSearchParams,
-): Promise<GatewayResult<ListAuditResponse>> {
-  return gateway.request(
-    'GET',
-    `admin/tenants/${encodeURIComponent(tenant)}/audit?${query.toString()}`,
-    {
-      schema: listAuditResponseSchema,
-    },
-  );
-}
+export const readAuditPage = listReader('audit', listAuditResponseSchema);

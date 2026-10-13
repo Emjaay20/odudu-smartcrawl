@@ -1,25 +1,15 @@
 import {
   listRegistrationTokensResponseSchema,
   mintRegistrationTokenResponseSchema,
-  type ListRegistrationTokensResponse,
   type MintRegistrationTokenResponse,
 } from '@odudu/contracts/admin';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { nothing, tenantPath } from '#/shared/adapter/route';
+import { listReader, nothing, tenantPath } from '#/shared/adapter/route';
 
-export function readTokenPage(
-  gateway: Gateway,
-  tenant: string,
-  query: URLSearchParams,
-): Promise<GatewayResult<ListRegistrationTokensResponse>> {
-  return gateway.request(
-    'GET',
-    `admin/tenants/${tenantPath(tenant)}/registration-tokens?${query.toString()}`,
-    {
-      schema: listRegistrationTokensResponseSchema,
-    },
-  );
-}
+export const readTokenPage = listReader(
+  'registration-tokens',
+  listRegistrationTokensResponseSchema,
+);
 
 export function mintToken(
   gateway: Gateway,
