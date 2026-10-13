@@ -1,7 +1,8 @@
 import type { Group } from '@odudu/contracts/admin';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { createGroup, findGroup } from '#/features/groups/adapter/groups';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
+import { useWrite } from '#/shared/repository/useWrite';
 import type { GatewayResult } from '#/shared/transport/gateway';
 import { useTransport } from '#/shared/transport/useTransport';
 
@@ -21,8 +22,8 @@ export interface CreateGroup {
 export function useCreateGroup(tenant: string): CreateGroup {
   const { gateway } = useTransport();
   const client = useQueryClient();
-  const create = useMutation({
-    mutationFn: (input: GroupInput) => createGroup(gateway, tenant, input),
+  const create = useWrite({
+    send: (gateway, input: GroupInput) => createGroup(gateway, tenant, input),
     onSuccess: (result) => {
       if (!result.ok) return;
       client.invalidateQueries({ queryKey: ['list', tenant, 'groups'] }).catch(() => undefined);
@@ -31,8 +32,8 @@ export function useCreateGroup(tenant: string): CreateGroup {
   });
   const fresh = useFreshRead();
   return {
-    busy: create.isPending || fresh.pending,
-    create: (input) => create.mutateAsync(input),
+    busy: create.busy || fresh.pending,
+    create: create.run,
     find: (name, parentId) =>
       fresh.read(['find', tenant, 'groups', parentId ?? 'root', name], () =>
         findGroup(gateway, tenant, name, parentId),

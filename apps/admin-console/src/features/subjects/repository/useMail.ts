@@ -1,7 +1,6 @@
-import { useMutation } from '@tanstack/react-query';
 import { sendMail, type MailRequest } from '#/features/subjects/adapter/mail';
+import { useWrite } from '#/shared/repository/useWrite';
 import type { GatewayResult } from '#/shared/transport/gateway';
-import { useTransport } from '#/shared/transport/useTransport';
 
 export type { MailRequest };
 
@@ -12,9 +11,8 @@ export interface MailSend {
 
 // A mail is never sent twice on its own: a lost answer is said, not retried.
 export function useMailSend(tenant: string, id: string): MailSend {
-  const { gateway } = useTransport();
-  const mutation = useMutation({
-    mutationFn: (request: MailRequest) => sendMail(gateway, tenant, id, request),
+  const mutation = useWrite({
+    send: (gateway, request: MailRequest) => sendMail(gateway, tenant, id, request),
   });
-  return { busy: mutation.isPending, send: (request) => mutation.mutateAsync(request) };
+  return { busy: mutation.busy, send: mutation.run };
 }

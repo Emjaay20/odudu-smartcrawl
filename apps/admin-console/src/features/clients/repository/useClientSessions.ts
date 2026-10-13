@@ -1,5 +1,4 @@
 import type { RevokeClientGrantsResponse, TenantSession } from '@odudu/contracts/admin';
-import { useMutation } from '@tanstack/react-query';
 import {
   readClientSessionCount,
   readClientSessions,
@@ -8,7 +7,7 @@ import {
 import { useResourceList } from '#/shared/repository/useResourceList';
 import type { ResourceListState } from '#/shared/service/resourceList';
 import type { GatewayResult } from '#/shared/transport/gateway';
-import { useTransport } from '#/shared/transport/useTransport';
+import { useWrite, type Write } from '#/shared/repository/useWrite';
 
 // Who is signed in through the client, a page at a time and counted.
 export function useClientSessionList(
@@ -23,15 +22,9 @@ export function useClientSessionList(
   });
 }
 
-export interface GrantRevocation {
-  busy: boolean;
-  run: () => Promise<GatewayResult<RevokeClientGrantsResponse>>;
-}
-
-export function useGrantRevocation(tenant: string, clientDbId: string): GrantRevocation {
-  const { gateway } = useTransport();
-  const mutation = useMutation({
-    mutationFn: () => revokeClientGrants(gateway, tenant, clientDbId),
-  });
-  return { busy: mutation.isPending, run: () => mutation.mutateAsync() };
+export function useGrantRevocation(
+  tenant: string,
+  clientDbId: string,
+): Write<void, GatewayResult<RevokeClientGrantsResponse>> {
+  return useWrite({ send: (gateway) => revokeClientGrants(gateway, tenant, clientDbId) });
 }

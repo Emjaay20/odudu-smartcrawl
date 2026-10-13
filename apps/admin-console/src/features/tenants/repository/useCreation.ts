@@ -1,5 +1,4 @@
 import type { Subject, Tenant } from '@odudu/contracts/admin';
-import { useMutation } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { loadCreation, storeCreation } from '#/features/tenants/adapter/creationStorage';
 import { createTenant, findTenant } from '#/features/tenants/adapter/tenants';
@@ -26,6 +25,7 @@ import {
 import { useSecretOnce, type SecretOnce } from '#/shared/repository/useSecretOnce';
 import type { Gateway, GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
+import { useWrite } from '#/shared/repository/useWrite';
 import { useTransport } from '#/shared/transport/useTransport';
 
 export interface CreationProgress {
@@ -83,13 +83,13 @@ export interface TenantCreate {
 // for by name instead.
 export function useTenantCreate(): TenantCreate {
   const { gateway } = useTransport();
-  const create = useMutation({
-    mutationFn: (input: { name: string; displayName: string }) => createTenant(gateway, input),
+  const create = useWrite({
+    send: (gateway, input: { name: string; displayName: string }) => createTenant(gateway, input),
   });
   const fresh = useFreshRead();
   return {
-    busy: create.isPending || fresh.pending,
-    create: (input) => create.mutateAsync(input),
+    busy: create.busy || fresh.pending,
+    create: create.run,
     find: (name) => fresh.read(['find', 'tenants', name], () => findTenant(gateway, name)),
   };
 }

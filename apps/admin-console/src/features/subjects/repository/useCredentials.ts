@@ -3,7 +3,7 @@ import type {
   ListCredentialsResponse,
   Lockout,
 } from '@odudu/contracts/admin';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRead, type Read } from '#/shared/repository/useRead';
 import {
   changeCredential,
@@ -13,6 +13,7 @@ import {
 import type { CredentialChange } from '#/features/subjects/service';
 import { issuePassword } from '#/shared/adapter/administrators';
 import { useSecretOnce, type SecretOnce } from '#/shared/repository/useSecretOnce';
+import { useWrite, type Write } from '#/shared/repository/useWrite';
 import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
 import { useTransport } from '#/shared/transport/useTransport';
 
@@ -42,23 +43,19 @@ export function useLockout(tenant: string, id: string, asked: boolean): Read<Loc
 
 export type { CredentialChange };
 
-export interface CredentialChanges {
-  busy: boolean;
-  run: (change: CredentialChange) => Promise<GatewayResult<undefined>>;
-}
-
 // Each change re-reads what it changed, so the tab shows the server's word.
-export function useCredentialChanges(tenant: string, id: string): CredentialChanges {
-  const { gateway } = useTransport();
+export function useCredentialChanges(
+  tenant: string,
+  id: string,
+): Write<CredentialChange, GatewayResult<undefined>> {
   const client = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: (change: CredentialChange) => changeCredential(gateway, tenant, id, change),
-    onSettled: (_result, _error, change) => {
+  return useWrite({
+    send: (gateway, change: CredentialChange) => changeCredential(gateway, tenant, id, change),
+    onSettled: (_result, change) => {
       const key = change.kind === 'lockout' ? lockoutKey(tenant, id) : credentialsKey(tenant, id);
       client.invalidateQueries({ queryKey: key, exact: true }).catch(() => undefined);
     },
   });
-  return { busy: mutation.isPending, run: (change) => mutation.mutateAsync(change) };
 }
 
 // Issuing replaces the password and clears any lockout, so both are read

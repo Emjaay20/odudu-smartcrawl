@@ -1,5 +1,5 @@
 import type { Role } from '@odudu/contracts/admin';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   addComposite,
   createRole,
@@ -9,6 +9,7 @@ import {
 } from '#/features/roles/adapter/roles';
 import type { CopyRead } from '#/features/roles/service';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
+import { useWrite } from '#/shared/repository/useWrite';
 import type { GatewayResult } from '#/shared/transport/gateway';
 import { useTransport } from '#/shared/transport/useTransport';
 
@@ -29,16 +30,16 @@ export interface CreateRole {
 export function useCreateRole(tenant: string): CreateRole {
   const { gateway } = useTransport();
   const client = useQueryClient();
-  const create = useMutation({
-    mutationFn: (input: RoleInput) => createRole(gateway, tenant, input),
+  const create = useWrite({
+    send: (gateway, input: RoleInput) => createRole(gateway, tenant, input),
     onSuccess: (result) => {
       if (!result.ok) return;
       client.invalidateQueries({ queryKey: ['list', tenant, 'roles'] }).catch(() => undefined);
       client.invalidateQueries({ queryKey: ['picker', tenant, 'roles'] }).catch(() => undefined);
     },
   });
-  const nest = useMutation({
-    mutationFn: async ({ id, children }: { id: string; children: readonly Role[] }) => {
+  const nest = useWrite({
+    send: async (gateway, { id, children }: { id: string; children: readonly Role[] }) => {
       const failed: Role[] = [];
       for (const child of children) {
         const added = await addComposite(gateway, tenant, id, child.id, null);
@@ -49,9 +50,9 @@ export function useCreateRole(tenant: string): CreateRole {
   });
   const fresh = useFreshRead();
   return {
-    busy: create.isPending || nest.isPending || fresh.pending,
-    create: (input) => create.mutateAsync(input),
-    nest: (id, children) => nest.mutateAsync({ id, children }),
+    busy: create.busy || nest.busy || fresh.pending,
+    create: create.run,
+    nest: (id, children) => nest.run({ id, children }),
     find: (name) =>
       fresh.read(['find', tenant, 'roles', name], () => findRole(gateway, tenant, name)),
   };

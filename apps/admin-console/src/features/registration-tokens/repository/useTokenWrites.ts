@@ -1,9 +1,9 @@
 import type { MintRegistrationTokenResponse } from '@odudu/contracts/admin';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { mintToken, revokeToken } from '#/features/registration-tokens/adapter/registrationTokens';
 import { useSecretOnce, type SecretOnce } from '#/shared/repository/useSecretOnce';
 import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
-import { useTransport } from '#/shared/transport/useTransport';
+import { useGatewayWrite, type Write } from '#/shared/repository/useWrite';
 
 type Minted = Omit<MintRegistrationTokenResponse, 'token'>;
 
@@ -48,21 +48,11 @@ export function useTokenMint(
   return { busy: once.busy, start: once.start, secret: once.secret, close: once.close };
 }
 
-export interface TokenRevoke {
-  busy: boolean;
-  run: (id: string) => Promise<GatewayResult<undefined>>;
-}
-
 // Whatever the answer, the list is read again: revoked, already gone or lost, it may be stale.
-export function useTokenRevoke(tenant: string): TokenRevoke {
-  const { gateway } = useTransport();
+export function useTokenRevoke(tenant: string): Write<string, GatewayResult<undefined>> {
   const read = useListRead(tenant);
-  const mutation = useMutation({
-    mutationFn: (id: string) =>
-      revokeToken(gateway, tenant, id).catch((): GatewayResult<undefined> => {
-        return { ok: false, kind: 'defect' };
-      }),
+  return useGatewayWrite({
+    send: (gateway, id: string) => revokeToken(gateway, tenant, id),
     onSettled: read,
   });
-  return { busy: mutation.isPending, run: (id) => mutation.mutateAsync(id) };
 }

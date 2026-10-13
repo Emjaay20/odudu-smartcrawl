@@ -1,27 +1,12 @@
-import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
 import { expect, it, vi } from 'vitest';
 import {
   useTokenMint,
   useTokenRevoke,
 } from '#/features/registration-tokens/repository/useTokenWrites';
-import { createQueryClient } from '#/shared/repository/queryClient';
-import { TransportContext } from '#/shared/transport/useTransport';
-import { fakeTransport, json, problem, type Answer } from '#/testing/fakeTransport';
+import { json, problem } from '#/testing/fakeTransport';
+import { hookHarness as harness, rejectingTransport } from '#/testing/hookHarness';
 import { MINTED, MINTED_SECRET, RT } from '#/testing/tokensFixtures';
-
-function harness(routes: Record<string, Answer>) {
-  const fake = fakeTransport(routes);
-  const queryClient = createQueryClient();
-  const invalidated = vi.spyOn(queryClient, 'invalidateQueries');
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <TransportContext value={fake.transport}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </TransportContext>
-  );
-  return { ...fake, queryClient, invalidated, wrapper };
-}
 
 const told = () => ({ minted: vi.fn(), failed: vi.fn() });
 
@@ -93,5 +78,14 @@ it('reads the list again after a revoke, also when the token was already gone', 
     answer = await result.current.run('t-1');
   });
   expect(answer?.ok).toBe(false);
+  expect(invalidated).toHaveBeenCalledWith({ queryKey: ['list', 'acme', 'registration-tokens'] });
+});
+
+it('answers a revoke whose send threw as a defect and still reads the list again', async () => {
+  const { wrapper, invalidated } = harness({}, rejectingTransport());
+  const { result } = renderHook(() => useTokenRevoke('acme'), { wrapper });
+  await act(async () => {
+    expect(await result.current.run('t-1')).toEqual({ ok: false, kind: 'defect' });
+  });
   expect(invalidated).toHaveBeenCalledWith({ queryKey: ['list', 'acme', 'registration-tokens'] });
 });

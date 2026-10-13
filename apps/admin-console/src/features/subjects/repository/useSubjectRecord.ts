@@ -1,5 +1,5 @@
 import type { Profile, Subject } from '@odudu/contracts/admin';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   amendProfile,
   amendSubject,
@@ -15,6 +15,7 @@ import {
   type RecordState,
 } from '#/shared/repository/useRecord';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
+import { useWrite, type Write } from '#/shared/repository/useWrite';
 import { profileRecord, subjectRecord } from '#/features/subjects/service';
 import { isStale } from '#/shared/service/failure';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
@@ -63,24 +64,17 @@ export function saveVerification(tenant: string, id: string) {
     amendProfile(gateway, tenant, id, changes, ifMatch);
 }
 
-export interface SubjectChange<A> {
-  busy: boolean;
-  run: (arg: A) => Promise<GatewayResult<unknown>>;
-}
-
 // Enabling and disabling are one PATCH on the ETag the subject was read
 // with; the answer replaces the record, so its sections rebase on it.
 export function useSubjectEnabled(
   tenant: string,
   id: string,
   etag: string,
-): SubjectChange<boolean> {
-  const { gateway } = useTransport();
+): Write<boolean, GatewayResult<Subject>> {
   const client = useQueryClient();
   const key = recordKey(tenant, subjectRecord(id));
-  const mutation = useMutation({
-    mutationFn: (enabled: boolean): Promise<GatewayResult<Subject>> =>
-      amendSubject(gateway, tenant, id, { enabled }, etag),
+  return useWrite({
+    send: (gateway, enabled: boolean) => amendSubject(gateway, tenant, id, { enabled }, etag),
     onSuccess: (result) => {
       if (result.ok) {
         client.setQueryData<RecordEntry<Subject>>(key, { result, by: 'save' });
@@ -89,14 +83,15 @@ export function useSubjectEnabled(
       }
     },
   });
-  return { busy: mutation.isPending, run: (enabled) => mutation.mutateAsync(enabled) };
 }
 
-export function useSubjectDeletion(tenant: string, id: string): SubjectChange<void> {
-  const { gateway } = useTransport();
+export function useSubjectDeletion(
+  tenant: string,
+  id: string,
+): Write<void, GatewayResult<undefined>> {
   const client = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: () => deleteSubject(gateway, tenant, id),
+  return useWrite({
+    send: (gateway) => deleteSubject(gateway, tenant, id),
     onSuccess: (result) => {
       // The record's own entries are left to lapse: removing them while its
       // page is still mounted would read them again, and find nothing.
@@ -104,7 +99,6 @@ export function useSubjectDeletion(tenant: string, id: string): SubjectChange<vo
       client.invalidateQueries({ queryKey: ['list', tenant, 'subjects'] }).catch(() => undefined);
     },
   });
-  return { busy: mutation.isPending, run: () => mutation.mutateAsync() };
 }
 
 export type UsernamePolicyRead =

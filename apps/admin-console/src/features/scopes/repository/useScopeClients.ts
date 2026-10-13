@@ -1,5 +1,5 @@
 import type { AssignScopeToClientResponse, ScopeClient } from '@odudu/contracts/admin';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { readScopeClients } from '#/features/scopes/adapter/scopes';
 import { assignScope, unassignScope } from '#/shared/adapter/scopeAssignment';
 import { withoutScope, withScopes } from '#/features/scopes/service';
@@ -7,7 +7,7 @@ import { recordKey, type RecordEntry } from '#/shared/repository/useRecord';
 import { useListPages } from '#/shared/repository/useResourceList';
 import type { ListStatus } from '#/shared/service/resourceList';
 import type { GatewayResult } from '#/shared/transport/gateway';
-import { useTransport } from '#/shared/transport/useTransport';
+import { useWrite } from '#/shared/repository/useWrite';
 
 // What the console holds of a client that a scope's assignment changes.
 interface ClientRecord {
@@ -50,11 +50,6 @@ export interface AssignInput {
   assignment: 'default' | 'optional';
 }
 
-export interface ClientChange<A, R> {
-  busy: boolean;
-  run: (arg: A) => Promise<GatewayResult<R>>;
-}
-
 // An assignment changes the client's own ETag, which covers its scopes, and
 // the answer carries the new one. A client the console already holds is
 // rebased on it, so its page saves on that ETag even before it has read the
@@ -82,32 +77,22 @@ function useAfterAssignment(tenant: string, id: string) {
 }
 
 export function useClientAssignment(tenant: string, id: string) {
-  const { gateway } = useTransport();
   const settled = useAfterAssignment(tenant, id);
-  const assign = useMutation({
-    mutationFn: ({ clientId, assignment }: AssignInput) =>
+  const assign = useWrite({
+    send: (gateway, { clientId, assignment }: AssignInput) =>
       assignScope(gateway, tenant, id, clientId, assignment),
-    onSettled: (result, _error, { clientId }) => {
+    onSettled: (result, { clientId }) => {
       settled(clientId, result, (held) =>
         result?.ok === true ? withScopes(held, result.data.scopes) : held,
       );
     },
   });
-  const unassign = useMutation({
-    mutationFn: ({ clientId }: { clientId: string }) =>
+  const unassign = useWrite({
+    send: (gateway, { clientId }: { clientId: string }) =>
       unassignScope(gateway, tenant, id, clientId),
-    onSettled: (result, _error, { clientId }) => {
+    onSettled: (result, { clientId }) => {
       settled(clientId, result, (held) => withoutScope(held, id));
     },
   });
-  return {
-    assign: {
-      busy: assign.isPending,
-      run: (arg: AssignInput) => assign.mutateAsync(arg),
-    },
-    unassign: {
-      busy: unassign.isPending,
-      run: (arg: { clientId: string }) => unassign.mutateAsync(arg),
-    },
-  };
+  return { assign, unassign };
 }

@@ -1,7 +1,7 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { grantHoldings, type Refused } from '#/shared/repository/administratorRoles';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
-import { useTransport } from '#/shared/transport/useTransport';
+import { useWrite } from '#/shared/repository/useWrite';
 
 export interface AdministratorGrant {
   busy: boolean;
@@ -11,10 +11,9 @@ export interface AdministratorGrant {
 // Either way the holders are read again, since a refusal can mean the list
 // was already out of date.
 export function useAdministratorGrant(): AdministratorGrant {
-  const { gateway } = useTransport();
   const client = useQueryClient();
-  const grant = useMutation({
-    mutationFn: ({ subjectId, holdings }: { subjectId: string; holdings: readonly string[] }) =>
+  const grant = useWrite({
+    send: (gateway, { subjectId, holdings }: { subjectId: string; holdings: readonly string[] }) =>
       grantHoldings(gateway, SYSTEM_TENANT, subjectId, holdings),
     onSettled: () => {
       for (const kind of ['list', 'count', 'holders']) {
@@ -23,7 +22,7 @@ export function useAdministratorGrant(): AdministratorGrant {
     },
   });
   return {
-    busy: grant.isPending,
-    grant: (subjectId, holdings) => grant.mutateAsync({ subjectId, holdings }),
+    busy: grant.busy,
+    grant: (subjectId, holdings) => grant.run({ subjectId, holdings }),
   };
 }

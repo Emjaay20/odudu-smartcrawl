@@ -1,5 +1,5 @@
 import type { Consent, EndSessionsResponse, Grant, Session } from '@odudu/contracts/admin';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   endAllSessions,
   endSession,
@@ -10,9 +10,9 @@ import {
   revokeGrants,
 } from '#/features/subjects/adapter/sessions';
 import { useResourceList } from '#/shared/repository/useResourceList';
+import { useWrite, type Write } from '#/shared/repository/useWrite';
 import type { ResourceListState } from '#/shared/service/resourceList';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { useTransport } from '#/shared/transport/useTransport';
 
 function sessionsResource(id: string): string {
   return `subjects/${id}/sessions`;
@@ -50,22 +50,16 @@ export function useConsentList(tenant: string, id: string): ResourceListState<Co
   });
 }
 
-export interface Change<A, R> {
-  busy: boolean;
-  run: (arg: A) => Promise<GatewayResult<R>>;
-}
-
 // A write that ends sessions or revokes grants changes what all three lists
 // show: a session's grants go with it, and a consent's grants with it.
 function useSubjectChange<A, R>(
   tenant: string,
   id: string,
   write: (gateway: Gateway, arg: A) => Promise<GatewayResult<R>>,
-): Change<A, R> {
-  const { gateway } = useTransport();
+): Write<A, GatewayResult<R>> {
   const client = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: (arg: A) => write(gateway, arg),
+  return useWrite({
+    send: write,
     onSettled: () => {
       for (const key of [
         ['list', tenant, sessionsResource(id)],
@@ -76,7 +70,6 @@ function useSubjectChange<A, R>(
       }
     },
   });
-  return { busy: mutation.isPending, run: (arg) => mutation.mutateAsync(arg) };
 }
 
 export function useEndSession(tenant: string, id: string) {

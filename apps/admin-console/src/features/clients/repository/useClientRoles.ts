@@ -1,11 +1,11 @@
 import type { Role } from '@odudu/contracts/admin';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { createClientRole } from '#/features/clients/adapter/clients';
 import { readRoleCount, readRolePage } from '#/shared/adapter/directory';
 import { useResourceList } from '#/shared/repository/useResourceList';
 import type { ResourceListState } from '#/shared/service/resourceList';
 import type { GatewayResult } from '#/shared/transport/gateway';
-import { useTransport } from '#/shared/transport/useTransport';
+import { useWrite } from '#/shared/repository/useWrite';
 
 // The roles the client owns, a page at a time and counted, whatever the tenant holds.
 export function useClientRoleList(tenant: string, clientDbId: string): ResourceListState<Role> {
@@ -25,10 +25,9 @@ export interface CreateClientRole {
 }
 
 export function useCreateClientRole(tenant: string, clientDbId: string): CreateClientRole {
-  const { gateway } = useTransport();
   const client = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: (input: { name: string; description: string }) =>
+  const mutation = useWrite({
+    send: (gateway, input: { name: string; description: string }) =>
       createClientRole(gateway, tenant, clientDbId, input),
     onSuccess: (result) => {
       if (!result.ok) return;
@@ -42,5 +41,5 @@ export function useCreateClientRole(tenant: string, clientDbId: string): CreateC
       }
     },
   });
-  return { busy: mutation.isPending, create: (input) => mutation.mutateAsync(input) };
+  return { busy: mutation.busy, create: mutation.run };
 }

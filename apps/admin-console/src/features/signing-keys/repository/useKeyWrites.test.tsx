@@ -1,29 +1,14 @@
-import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react';
-import type { ReactNode } from 'react';
-import { expect, it, vi } from 'vitest';
+import { expect, it } from 'vitest';
 import {
   useDeleteKey,
   usePromoteKey,
   useRetireKey,
   useStageKey,
 } from '#/features/signing-keys/repository/useKeyWrites';
-import { createQueryClient } from '#/shared/repository/queryClient';
-import { TransportContext } from '#/shared/transport/useTransport';
-import { fakeTransport, json, problem, type Answer } from '#/testing/fakeTransport';
+import { json, problem } from '#/testing/fakeTransport';
+import { hookHarness as harness, rejectingTransport } from '#/testing/hookHarness';
 import { KEYS, READY_KEY } from '#/testing/keysFixtures';
-
-function harness(routes: Record<string, Answer>) {
-  const fake = fakeTransport(routes);
-  const queryClient = createQueryClient();
-  const invalidated = vi.spyOn(queryClient, 'invalidateQueries');
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <TransportContext value={fake.transport}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </TransportContext>
-  );
-  return { ...fake, invalidated, wrapper };
-}
 
 it('stages a key of the algorithm chosen and reads the lanes and the overview again', async () => {
   const { wrapper, sent, invalidated } = harness({ [`POST ${KEYS}`]: json(READY_KEY, 201) });
@@ -76,4 +61,17 @@ it('reads the lanes again whatever the answer, a refusal included', async () => 
   });
   expect(answer?.ok).toBe(false);
   expect(invalidated).toHaveBeenCalledWith({ queryKey: ['list', 'acme', 'keys'] });
+});
+
+it('answers a write whose send threw as a defect and lets the next press through', async () => {
+  const { wrapper, invalidated } = harness({}, rejectingTransport());
+  const { result } = renderHook(() => useStageKey('acme'), { wrapper });
+  await act(async () => {
+    expect(await result.current.run('RS256')).toEqual({ ok: false, kind: 'defect' });
+  });
+  expect(invalidated).toHaveBeenCalledWith({ queryKey: ['list', 'acme', 'keys'] });
+  await act(async () => {
+    expect(await result.current.run('RS256')).toEqual({ ok: false, kind: 'defect' });
+  });
+  expect(invalidated).toHaveBeenCalledTimes(4);
 });

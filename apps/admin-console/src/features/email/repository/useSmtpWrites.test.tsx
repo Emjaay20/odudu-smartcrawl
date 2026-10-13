@@ -1,23 +1,9 @@
-import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
 import { expect, it } from 'vitest';
 import { useSmtpRemove, useSmtpTest } from '#/features/email/repository/useSmtpWrites';
-import { createQueryClient } from '#/shared/repository/queryClient';
-import { TransportContext } from '#/shared/transport/useTransport';
-import { fakeTransport, json, problem, type Answer } from '#/testing/fakeTransport';
+import { json, problem } from '#/testing/fakeTransport';
+import { hookHarness as harness, rejectingTransport } from '#/testing/hookHarness';
 import { SM } from '#/testing/settingsFixtures';
-
-function harness(routes: Record<string, Answer>) {
-  const fake = fakeTransport(routes);
-  const queryClient = createQueryClient();
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <TransportContext value={fake.transport}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </TransportContext>
-  );
-  return { ...fake, wrapper };
-}
 
 it('sends a test message to the address given and answers what the server said', async () => {
   const { wrapper, sent } = harness({ [`POST ${SM}/test`]: json({ sent: true }) });
@@ -56,4 +42,20 @@ it('removes the relay', async () => {
   });
   expect(answer?.ok).toBe(true);
   expect(sent[0]).toMatchObject({ method: 'DELETE' });
+});
+
+it('answers a test whose send threw as a defect, never as a throw', async () => {
+  const { wrapper } = harness({}, rejectingTransport());
+  const { result } = renderHook(() => useSmtpTest('acme'), { wrapper });
+  await act(async () => {
+    expect(await result.current.run('a@b.example')).toEqual({ ok: false, kind: 'defect' });
+  });
+});
+
+it('answers a removal whose send threw as a defect, never as a throw', async () => {
+  const { wrapper } = harness({}, rejectingTransport());
+  const { result } = renderHook(() => useSmtpRemove('acme'), { wrapper });
+  await act(async () => {
+    expect(await result.current.run()).toEqual({ ok: false, kind: 'defect' });
+  });
 });

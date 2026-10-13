@@ -1,5 +1,5 @@
 import type { ClientScope } from '@odudu/contracts/admin';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createScope,
   readScope,
@@ -12,6 +12,7 @@ import {
 } from '#/features/scopes/adapter/scopes';
 import type { CopyRead } from '#/features/scopes/service';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
+import { useWrite } from '#/shared/repository/useWrite';
 import type { GatewayResult } from '#/shared/transport/gateway';
 import { useTransport } from '#/shared/transport/useTransport';
 
@@ -32,8 +33,8 @@ type Part = 'roles' | 'mappers';
 export function useCreateScope(tenant: string): CreateScope {
   const { gateway } = useTransport();
   const client = useQueryClient();
-  const create = useMutation({
-    mutationFn: (input: ScopeInput) => createScope(gateway, tenant, input),
+  const create = useWrite({
+    send: (gateway, input: ScopeInput) => createScope(gateway, tenant, input),
     onSuccess: (result) => {
       if (!result.ok) return;
       for (const key of [
@@ -45,24 +46,21 @@ export function useCreateScope(tenant: string): CreateScope {
       }
     },
   });
-  const setRoles = useMutation({
-    mutationFn: ({ id, ids, ifMatch }: { id: string; ids: readonly string[]; ifMatch: string }) =>
-      setScopeRoles(gateway, tenant, id, ids, ifMatch),
+  const setRoles = useWrite({
+    send: (
+      gateway,
+      { id, ids, ifMatch }: { id: string; ids: readonly string[]; ifMatch: string },
+    ) => setScopeRoles(gateway, tenant, id, ids, ifMatch),
   });
-  const setMappers = useMutation({
-    mutationFn: ({
-      id,
-      names,
-      ifMatch,
-    }: {
-      id: string;
-      names: readonly string[];
-      ifMatch: string;
-    }) => setScopeMappers(gateway, tenant, id, names, ifMatch),
+  const setMappers = useWrite({
+    send: (
+      gateway,
+      { id, names, ifMatch }: { id: string; names: readonly string[]; ifMatch: string },
+    ) => setScopeMappers(gateway, tenant, id, names, ifMatch),
   });
   const fresh = useFreshRead();
   return {
-    busy: create.isPending || setRoles.isPending || setMappers.isPending || fresh.pending,
+    busy: create.busy || setRoles.busy || setMappers.busy || fresh.pending,
     fill: async (id, roleIds, mapperNames) => {
       const missed: Part[] = [];
       if (roleIds.length > 0) {
@@ -71,7 +69,7 @@ export function useCreateScope(tenant: string): CreateScope {
         );
         const set =
           read.ok && read.etag !== null
-            ? await setRoles.mutateAsync({ id, ids: roleIds, ifMatch: read.etag })
+            ? await setRoles.run({ id, ids: roleIds, ifMatch: read.etag })
             : read;
         if (!set.ok) missed.push('roles');
       }
@@ -81,13 +79,13 @@ export function useCreateScope(tenant: string): CreateScope {
         );
         const set =
           read.ok && read.etag !== null
-            ? await setMappers.mutateAsync({ id, names: mapperNames, ifMatch: read.etag })
+            ? await setMappers.run({ id, names: mapperNames, ifMatch: read.etag })
             : read;
         if (!set.ok) missed.push('mappers');
       }
       return missed;
     },
-    create: (input) => create.mutateAsync(input),
+    create: create.run,
     // The search is a prefix, so an exact match is picked out of its answer.
     find: (name) =>
       fresh.read(['find', tenant, 'scopes', name], async () => {
