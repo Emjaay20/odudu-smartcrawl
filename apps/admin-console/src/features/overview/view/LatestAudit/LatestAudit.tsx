@@ -3,21 +3,16 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-aria-components';
 import type { Gated } from '#/features/overview/service';
 import { Panel } from '#/features/overview/view/Panel';
+import { OUTCOME_TONES } from '#/shared/view/ActivityTab';
 import { AuditActor } from '#/shared/view/AuditActor';
 import { Button } from '#/shared/view/Button';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { TableSkeleton } from '#/shared/view/Skeleton';
-import { StatusTag, type StatusTone } from '#/shared/view/StatusTag';
+import { StatusTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
 import styles from '#/features/overview/view/LatestAudit/LatestAudit.module.css';
-
-const TONES: Record<AuditEvent['outcome'], StatusTone> = {
-  allowed: 'active',
-  refused: 'warning',
-  failed: 'danger',
-};
 
 function columns(now: Date | undefined): readonly Column<AuditEvent>[] {
   return [
@@ -33,7 +28,7 @@ function columns(now: Date | undefined): readonly Column<AuditEvent>[] {
     {
       id: 'outcome',
       header: 'Outcome',
-      cell: (event) => <StatusTag tone={TONES[event.outcome]}>{event.outcome}</StatusTag>,
+      cell: (event) => <StatusTag tone={OUTCOME_TONES[event.outcome]}>{event.outcome}</StatusTag>,
     },
     {
       id: 'actor',

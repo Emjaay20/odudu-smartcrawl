@@ -12,7 +12,7 @@ import { StatusTag, type StatusTone } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
 import styles from '#/shared/view/ActivityTab/ActivityTab.module.css';
 
-const TONES: Record<AuditEvent['outcome'], StatusTone> = {
+export const OUTCOME_TONES: Record<AuditEvent['outcome'], StatusTone> = {
   allowed: 'active',
   refused: 'warning',
   failed: 'danger',
@@ -32,7 +32,7 @@ function columns(now: Date | undefined): readonly Column<AuditEvent>[] {
     {
       id: 'outcome',
       header: 'Outcome',
-      cell: (event) => <StatusTag tone={TONES[event.outcome]}>{event.outcome}</StatusTag>,
+      cell: (event) => <StatusTag tone={OUTCOME_TONES[event.outcome]}>{event.outcome}</StatusTag>,
     },
     {
       id: 'actor',

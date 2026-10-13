@@ -43,6 +43,22 @@ it('lists the latest rows, and links the whole trail', () => {
   expect(screen.getByRole('link', { name: 'Open the audit trail' })).toHaveAttribute('href', HREF);
 });
 
+it('tones each outcome as the audit trail does', () => {
+  const audit: Gated<readonly AuditEvent[]> = {
+    status: 'ready',
+    data: [
+      EVENT,
+      { ...EVENT, id: 'a2', outcome: 'refused' },
+      { ...EVENT, id: 'a3', outcome: 'failed' },
+    ],
+  };
+  render(<LatestAudit audit={audit} href={HREF} now={NOW} />);
+  const grid = screen.getByRole('grid', { name: 'Latest audit rows' });
+  expect(within(grid).getByText('allowed')).toHaveAttribute('data-tone', 'active');
+  expect(within(grid).getByText('refused')).toHaveAttribute('data-tone', 'warning');
+  expect(within(grid).getByText('failed')).toHaveAttribute('data-tone', 'danger');
+});
+
 it("names each row's actor, and marks a caller from elsewhere", () => {
   const audit: Gated<readonly AuditEvent[]> = {
     status: 'ready',
