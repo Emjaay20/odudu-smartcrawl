@@ -21,10 +21,10 @@ import {
   type NewClientKind,
 } from '#/features/clients/service';
 import { useToasts } from '#/shared/repository/useToasts';
-import { withoutField } from '#/shared/service/fieldErrors';
-import { createdText, createFailure, lookupText } from '#/shared/service/failure';
-import type { GatewayFailure } from '#/shared/transport/gateway';
+import { problemAt } from '#/shared/service/fieldErrors';
+import { createdText, lookupText } from '#/shared/service/failure';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
+import { useCreationFlow } from '#/shared/usecase/useCreationFlow';
 
 type Errors = Partial<Record<NewClientField, string>>;
 
@@ -68,9 +68,7 @@ export function useNewClient(tenant: string): NewClientPage {
   const [description, setDescription] = useState('');
   const [kind, setKind] = useState<NewClientKind>('confidential');
   const [redirectUris, setRedirectUris] = useState<readonly string[]>(['']);
-  const [errors, setErrors] = useState<Errors>({});
-  const [message, setMessage] = useState<string | null>(null);
-  const [unconfirmed, setUnconfirmed] = useState(false);
+  const flow = useCreationFlow<NewClientField>(refusal);
   // Made, and waiting for its secret to be acknowledged before the page moves on.
   const [made, setMade] = useState<Client | null>(null);
 
@@ -86,24 +84,16 @@ export function useNewClient(tenant: string): NewClientPage {
       if (afterCreation(secret) === 'acknowledge') setMade(client);
       else land(client);
     },
-    failed: (failure: GatewayFailure) => {
-      const outcome = createFailure(failure, {
+    failed: (failure) => {
+      flow.fail(failure, {
         noun: 'client',
         name: clientId,
         fields: NEW_CLIENT_FIELDS,
         taken: { field: 'client_id', fallback: CLIENT_ID_TAKEN },
         capability: CLIENT_CAPABILITY,
       });
-      if (outcome.unconfirmed) setUnconfirmed(true);
-      if (outcome.report) refusal.report(failure, CLIENT_CAPABILITY);
-      setErrors(outcome.errors);
-      setMessage(outcome.message);
     },
   });
-
-  const edit = (field: NewClientField): void => {
-    setErrors((was) => withoutField(was, field));
-  };
 
   return {
     listHref: clientsHref(tenant),
@@ -116,59 +106,41 @@ export function useNewClient(tenant: string): NewClientPage {
     asksRedirects: asksRedirects(kind),
     redirectUris,
     redirectCount: listCount(redirectUris, CLIENT_LIST_LIMIT, 'redirect URIs'),
-    errors,
-    message,
-    unconfirmed,
+    errors: flow.errors,
+    message: flow.message,
+    unconfirmed: flow.unconfirmed,
     busy: creation.busy,
     editClientId: (value) => {
       setClientId(value);
-      edit('client_id');
+      flow.edited('client_id');
     },
     editName: (value) => {
       setName(value);
-      edit('name');
+      flow.edited('name');
     },
     editDescription: (value) => {
       setDescription(value);
-      edit('description');
+      flow.edited('description');
     },
     editKind: (value) => {
       setKind(newClientKind(value));
     },
     editRedirectUris: (value) => {
       setRedirectUris(value);
-      edit('redirect_uris');
+      flow.edited('redirect_uris');
     },
     submit: () => {
-      if (creation.busy || unconfirmed) return;
-      const required = clientIdProblem(clientId);
-      if (required !== null) {
-        setErrors({ client_id: required });
+      if (creation.busy || flow.unconfirmed) return;
+      const problem = problemAt('client_id', clientIdProblem(clientId));
+      if (problem !== null) {
+        flow.invalid(problem);
         return;
       }
-      setErrors({});
-      setMessage(null);
+      flow.begin();
       creation.create({ clientId, name, description, kind, redirectUris });
     },
     check: () => {
-      if (creation.busy) return;
-      creation
-        .find(clientId)
-        .then((result) => {
-          if (!result.ok) {
-            setMessage(looked.failed);
-            return;
-          }
-          if (result.data !== null) {
-            land(result.data);
-            return;
-          }
-          setUnconfirmed(false);
-          setMessage(looked.missing);
-        })
-        .catch(() => {
-          setMessage(looked.failed);
-        });
+      flow.check({ busy: creation.busy, find: () => creation.find(clientId), made: land, looked });
     },
     secret: creation.secret,
     secretTitle: secretTitle(made?.name ?? clientId),

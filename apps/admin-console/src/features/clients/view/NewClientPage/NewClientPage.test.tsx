@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { BILLING, C, clientRoutes, PORTAL } from '#/testing/clientsFixtures';
+import { A, BILLING, C, clientRoutes, PORTAL } from '#/testing/clientsFixtures';
 import { json, offline, problem } from '#/testing/fakeTransport';
 import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
 
@@ -136,6 +136,18 @@ it('says a client ID is taken beside the ID', async () => {
   await fill(user, 'billing', 'https://billing.example/callback');
   await user.click(screen.getByRole('button', { name: 'Create client' }));
   expect(await screen.findByText('The client_id "billing" is already in use.')).toBeVisible();
+});
+
+it('reads whoami again when the creation is refused, and says what it needed', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    clientRoutes(undefined, { [`POST ${C}`]: problem(403, 'about:blank', 'Forbidden') }),
+  );
+  await fill(user, 'billing', 'https://billing.example/callback');
+  await user.click(screen.getByRole('button', { name: 'Create client' }));
+  expect(await screen.findByText(/it needs the manage-clients capability/u)).toBeVisible();
+  expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
 });
 
 it('looks for a client whose creation was not confirmed instead of sending it again', async () => {
