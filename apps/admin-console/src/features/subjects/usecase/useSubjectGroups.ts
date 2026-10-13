@@ -1,5 +1,4 @@
 import type { Group, GroupFields, SetSubjectGroupsResponse, Subject } from '@odudu/contracts/admin';
-import { useState } from 'react';
 import { useRefusal, useRereadAuthority } from '#/features/session';
 import {
   useHeldCapabilities,
@@ -25,6 +24,7 @@ import { useSectionSave, type SectionSave } from '#/shared/repository/useSection
 import { describeIds } from '#/shared/service/format';
 import { sortedIds } from '#/shared/service/ids';
 import type { PickerState } from '#/shared/service/picker';
+import { useSaveConfirmation } from '#/shared/usecase/useSaveConfirmation';
 
 export function useSubjectGroupsRead(
   tenant: string,
@@ -61,7 +61,6 @@ export function useSubjectGroups(
   const name = subjectName(subject);
   const refusal = useRefusal(tenant);
   const reread = useRereadAuthority(tenant);
-  const [confirming, setConfirming] = useState<Confirmation | null>(null);
   const saveGroups = useSaveGroups(tenant, subject.id);
   const effective = useHeldCapabilities(tenant, subject.id);
   const picker = useGroupPicker(tenant);
@@ -93,6 +92,7 @@ export function useSubjectGroups(
       return result;
     },
   });
+  const asking = useSaveConfirmation<Confirmation>(save);
   const members = membershipsOf(save.values.group_ids, known);
   const left = leftGroups(data.items, save.values.group_ids);
   const removesTenants = groupsRemoveTenants(
@@ -115,24 +115,19 @@ export function useSubjectGroups(
             removesTenants: true,
           });
           if (asked !== null) {
-            setConfirming(asked);
+            asking.ask(asked);
             return true;
           }
         }
         const leaving = leaveConfirmation(self, left);
         if (leaving === null) return save.submit();
-        setConfirming(leaving);
+        asking.ask(leaving);
         return true;
       },
     },
-    confirming,
-    confirm: () => {
-      setConfirming(null);
-      save.submit();
-    },
-    cancel: () => {
-      setConfirming(null);
-    },
+    confirming: asking.confirming,
+    confirm: asking.confirm,
+    cancel: asking.cancel,
     choose: (value) => {
       save.edit('group_ids', sortedIds(value));
     },

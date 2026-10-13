@@ -1,5 +1,4 @@
 import type { SetRolesResponse, Subject } from '@odudu/contracts/admin';
-import { useState } from 'react';
 import { useAuthority, useRefusal, useRereadAuthority } from '#/features/session';
 import {
   useAdminRoleIds,
@@ -37,6 +36,7 @@ import { notLacking } from '#/shared/service/access';
 import { holdingsIn, type Holding, type HoldingOption } from '#/shared/service/capabilities';
 import { inOrderOf, removedFrom } from '#/shared/service/ids';
 import type { AdminCapability } from '#/shared/service/principal';
+import { useSaveConfirmation } from '#/shared/usecase/useSaveConfirmation';
 
 export function useSubjectRolesRead(tenant: string, id: string): RecordState<SetRolesResponse> {
   return useRolesRecord(tenant, id);
@@ -109,7 +109,6 @@ export function useCapabilityEditor({
   const counted = administratorCapability(tenant);
   const enabledHolders = useEnabledHolderCount(tenant, counted);
   const saveRoles = useSaveRoles(tenant, subject.id);
-  const [confirming, setConfirming] = useState<Confirmation | null>(null);
   const split = splitRoles(data.items);
   const caller = authority?.capabilities;
   const held = heldOf(effective);
@@ -149,6 +148,7 @@ export function useCapabilityEditor({
     },
   });
 
+  const asking = useSaveConfirmation<Confirmation>(save);
   const chosen = save.values.capabilities;
   const base = inOrderOf(holdingsIn(tenant), split.holdings);
   const removed = removedFrom(base, chosen);
@@ -183,20 +183,15 @@ export function useCapabilityEditor({
         if (blocked !== undefined) return false;
         const asked = removalConfirmation({ name, self, removed, removesTenants });
         if (asked === null) return save.submit();
-        setConfirming(asked);
+        asking.ask(asked);
         return true;
       },
     },
     choose: (value) => {
       save.edit('capabilities', inOrderOf(holdingsIn(tenant), value));
     },
-    confirming,
-    confirm: () => {
-      setConfirming(null);
-      save.submit();
-    },
-    cancel: () => {
-      setConfirming(null);
-    },
+    confirming: asking.confirming,
+    confirm: asking.confirm,
+    cancel: asking.cancel,
   };
 }

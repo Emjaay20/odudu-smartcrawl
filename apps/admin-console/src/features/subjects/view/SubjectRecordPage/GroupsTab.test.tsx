@@ -89,7 +89,8 @@ it('keeps a departure asked about during a save held when that save is refused',
   );
 });
 
-it("asks for the name, typed, before leaving a group takes another's manage-tenants", async () => {
+// Leaving the one group that gives vera system administration, asked about before it is saved.
+async function askedToTakeAdministrationFromVera() {
   const user = userEvent.setup();
   const VS = `${ADMIN}/system/subjects/s-vera`;
   const ONCALL = group('g-oncall', '/admins/oncall');
@@ -138,12 +139,29 @@ it("asks for the name, typed, before leaving a group takes another's manage-tena
   const dialog = await screen.findByRole('alertdialog', {
     name: 'Take system administration from vera?',
   });
+  return { user, sent, dialog };
+}
+
+it("asks for the name, typed, before leaving a group takes another's manage-tenants", async () => {
+  const { user, sent, dialog } = await askedToTakeAdministrationFromVera();
   expect(sent.some((s) => s.method === 'PUT')).toBe(false);
   await user.type(within(dialog).getByRole('textbox'), 'vera');
   await user.click(within(dialog).getByRole('button', { name: 'Save Groups' }));
   await waitFor(() => {
     expect(sent.find((s) => s.method === 'PUT')).toMatchObject({ body: { group_ids: [] } });
   });
+  await waitFor(() => {
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+});
+
+it('sends nothing when the question about taking administration away is cancelled', async () => {
+  const { user, sent, dialog } = await askedToTakeAdministrationFromVera();
+  await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+  await waitFor(() => {
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+  expect(sent.some((s) => s.method === 'PUT')).toBe(false);
 });
 
 it('shows a limited operator the memberships and no way to change them', async () => {
