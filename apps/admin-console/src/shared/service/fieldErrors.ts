@@ -68,6 +68,21 @@ export function withoutField<F extends string, V = string>(
   >;
 }
 
+// The errors of a form with exactly one field wrong.
+export function onlyField<F extends string>(field: F, text: string): Partial<Record<F, string>> {
+  return Object.fromEntries([[field, text]]) as Partial<Record<F, string>>;
+}
+
+export interface FieldProblem<F extends string> {
+  field: F;
+  text: string;
+}
+
+// What is wrong with a field, or nothing when `text` says none.
+export function problemAt<F extends string>(field: F, text: string | null): FieldProblem<F> | null {
+  return text === null ? null : { field, text };
+}
+
 export function requiredProblem(value: string, text: string): string | null {
   return value.trim() === '' ? text : null;
 }

@@ -11,6 +11,7 @@ import {
   lookupText,
   removalOutcome,
   writeFailureText,
+  namedCreation,
   type CreateSpec,
   type WriteCopy,
 } from '#/shared/service/failure';
@@ -177,6 +178,20 @@ describe('createFailure', () => {
       capability: spec.capability,
     };
     expect(createFailure(problem(409, { detail: 'x' }), untaken).errors).toEqual({});
+  });
+});
+
+describe('namedCreation', () => {
+  it('places a name taken under the name, and asks for manage-tenant', () => {
+    const spec = namedCreation('role', 'auditor');
+    expect(spec).toEqual({
+      noun: 'role',
+      name: 'auditor',
+      fields: ['name', 'description'],
+      taken: { field: 'name', fallback: 'That name is taken' },
+      capability: 'manage-tenant',
+    });
+    expect(createFailure(problem(409), spec).errors).toEqual({ name: 'That name is taken.' });
   });
 });
 

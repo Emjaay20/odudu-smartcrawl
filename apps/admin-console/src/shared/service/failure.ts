@@ -1,6 +1,8 @@
 import { writeRefusal } from '#/shared/service/capabilities';
 import { fieldErrorsOf } from '#/shared/service/fieldErrors';
 import { sentence } from '#/shared/service/format';
+import { NAME_TAKEN } from '#/shared/service/labels';
+import type { AdminCapability } from '#/shared/service/principal';
 import type { GatewayFailure, GatewayResult, Problem } from '#/shared/service/result';
 
 function hasStatus(result: GatewayResult<unknown>, status: number): boolean {
@@ -106,10 +108,21 @@ export interface CreateSpec {
   fields: readonly string[];
   // Where a 409 lands, and what it says when the server says nothing.
   taken?: { field: string; fallback: string };
-  capability: string;
+  capability: AdminCapability;
   // Said when the answer arrived but could not be read, if not as a lost one.
   schema?: string;
   refused?: (problem: Problem) => string | null;
+}
+
+// A thing made from a name and a description, as roles and scopes are.
+export function namedCreation(noun: string, name: string): CreateSpec {
+  return {
+    noun,
+    name,
+    fields: ['name', 'description'],
+    taken: { field: 'name', fallback: NAME_TAKEN },
+    capability: 'manage-tenant',
+  };
 }
 
 export interface CreateOutcome {

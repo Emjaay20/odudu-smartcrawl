@@ -1,5 +1,11 @@
 import { expect, it } from 'vitest';
-import { fieldErrorsOf, requiredProblem, withoutField } from '#/shared/service/fieldErrors';
+import {
+  fieldErrorsOf,
+  onlyField,
+  problemAt,
+  requiredProblem,
+  withoutField,
+} from '#/shared/service/fieldErrors';
 
 const FIELDS = ['name', 'redirect_uris', 'access_token_ttl'] as const;
 
@@ -102,4 +108,13 @@ it('asks for a value only when it is blank', () => {
   expect(requiredProblem('', 'Enter a name.')).toBe('Enter a name.');
   expect(requiredProblem('  ', 'Enter a name.')).toBe('Enter a name.');
   expect(requiredProblem('x', 'Enter a name.')).toBeNull();
+});
+
+it('names the one field that is wrong, and nothing else', () => {
+  expect(onlyField('name', 'Enter a name.')).toEqual({ name: 'Enter a name.' });
+});
+
+it('names the field a problem is at, or no problem when there is none', () => {
+  expect(problemAt('name', 'Enter a name.')).toEqual({ field: 'name', text: 'Enter a name.' });
+  expect(problemAt('name', null)).toBeNull();
 });
