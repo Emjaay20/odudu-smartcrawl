@@ -1,6 +1,7 @@
 import type { AssignScopeToClientResponse, ScopeClient } from '@odudu/contracts/admin';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { assignClient, readScopeClients, unassignClient } from '#/features/scopes/adapter/scopes';
+import { readScopeClients } from '#/features/scopes/adapter/scopes';
+import { assignScope, unassignScope } from '#/shared/adapter/scopeAssignment';
 import { withoutScope, withScopes } from '#/features/scopes/service';
 import { recordKey, type RecordEntry } from '#/shared/repository/useRecord';
 import { useListPages } from '#/shared/repository/useResourceList';
@@ -85,7 +86,7 @@ export function useClientAssignment(tenant: string, id: string) {
   const settled = useAfterAssignment(tenant, id);
   const assign = useMutation({
     mutationFn: ({ clientId, assignment }: AssignInput) =>
-      assignClient(gateway, tenant, id, clientId, assignment),
+      assignScope(gateway, tenant, id, clientId, assignment),
     onSettled: (result, _error, { clientId }) => {
       settled(clientId, result, (held) =>
         result?.ok === true ? withScopes(held, result.data.scopes) : held,
@@ -94,7 +95,7 @@ export function useClientAssignment(tenant: string, id: string) {
   });
   const unassign = useMutation({
     mutationFn: ({ clientId }: { clientId: string }) =>
-      unassignClient(gateway, tenant, id, clientId),
+      unassignScope(gateway, tenant, id, clientId),
     onSettled: (result, _error, { clientId }) => {
       settled(clientId, result, (held) => withoutScope(held, id));
     },

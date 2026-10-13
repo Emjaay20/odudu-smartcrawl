@@ -1,10 +1,8 @@
 import {
-  assignScopeToClientResponseSchema,
   clientScopeSchema,
   listScopeClientsResponseSchema,
   scopeMappersSchema,
   setScopeRolesResponseSchema,
-  type AssignScopeToClientResponse,
   type ClientScope,
   type ListScopeClientsResponse,
   type ScopeMappers,
@@ -135,30 +133,5 @@ export function readScopeClients(
   return adminCall(gateway, 'GET', tenant, ['scopes', scopeId, 'clients'], {
     query,
     schema: listScopeClientsResponseSchema,
-  });
-}
-
-// Answers the client's scopes alone, which is all `manage-tenant` may be told of it.
-export function assignClient(
-  gateway: Gateway,
-  tenant: string,
-  scopeId: string,
-  clientDbId: string,
-  assignment: 'default' | 'optional',
-): Promise<GatewayResult<AssignScopeToClientResponse>> {
-  return adminCall(gateway, 'PUT', tenant, ['scopes', scopeId, 'clients', clientDbId], {
-    body: { assignment },
-    schema: assignScopeToClientResponseSchema,
-  });
-}
-
-export function unassignClient(
-  gateway: Gateway,
-  tenant: string,
-  scopeId: string,
-  clientDbId: string,
-): Promise<GatewayResult<undefined>> {
-  return adminCall(gateway, 'DELETE', tenant, ['scopes', scopeId, 'clients', clientDbId], {
-    schema: nothing,
   });
 }

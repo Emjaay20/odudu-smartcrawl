@@ -1,6 +1,6 @@
 import type { AssignScopeToClientResponse, ClientScope } from '@odudu/contracts/admin';
 import { useMutation } from '@tanstack/react-query';
-import { assignScope, unassignScope } from '#/features/clients/adapter/scopes';
+import { assignScope, unassignScope } from '#/shared/adapter/scopeAssignment';
 import { useRereadClient } from '#/features/clients/repository/useClientRecord';
 import { readScopePage } from '#/shared/adapter/directory';
 import { usePicker } from '#/shared/repository/usePicker';
