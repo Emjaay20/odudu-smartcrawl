@@ -5,8 +5,6 @@ import { useRereadClient } from '#/features/clients/repository/useClientRecord';
 import { useScopeChanges, useScopePicker } from '#/features/clients/repository/useClientScopes';
 import {
   alreadyAssigned,
-  assignedText,
-  assignmentOf,
   canChange,
   ceilingRefused,
   moreScopes,
@@ -16,7 +14,6 @@ import {
   SCOPES_PAGE,
   scopesFixed,
   shownScopes,
-  unassignedText,
   type Reach,
 } from '#/features/clients/service';
 import { useToasts } from '#/shared/repository/useToasts';
@@ -24,6 +21,7 @@ import { lacking } from '#/shared/service/access';
 import type { AdminCapability } from '#/shared/service/principal';
 import { lastChosen, type PickerState } from '#/shared/service/picker';
 import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
+import { assignedText, assignmentOf, unassignedText } from '#/shared/service/assignment';
 
 type Assigned = Client['scopes'][number];
 
@@ -114,7 +112,7 @@ export function useClientScopeAssignment({
       scope,
       'assigned',
       () => changes.assign.run({ scopeId: scope.id, assignment: assignmentOf(chosenAssignment) }),
-      assignedText(client.name, scope.name, assignmentOf(chosenAssignment)),
+      assignedText(scope.name, client.name, assignmentOf(chosenAssignment)),
     );
 
   const chosen = picker.options.find((scope) => scope.id === chosenId) ?? null;
@@ -150,7 +148,7 @@ export function useClientScopeAssignment({
         scope,
         'unassigned',
         () => changes.unassign.run({ scopeId: scope.id }),
-        unassignedText(client.name, scope.name),
+        unassignedText(scope.name, client.name),
       ),
   };
 }

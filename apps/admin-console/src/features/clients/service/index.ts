@@ -155,10 +155,6 @@ export {
   ASSIGN_HEADING,
   ASSIGN_LABEL,
   ASSIGNED_HEADING,
-  ASSIGNMENT_RULE,
-  ASSIGNMENTS,
-  assignedText,
-  assignmentOf,
   moreScopes,
   NO_SCOPES,
   PICKER_LABEL,
@@ -168,7 +164,6 @@ export {
   SCOPES_CAPABILITY,
   SCOPES_PAGE,
   shownScopes,
-  unassignedText,
 } from '#/features/clients/service/scopes';
 export {
   assignedCount,

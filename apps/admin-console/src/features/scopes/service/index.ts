@@ -34,15 +34,10 @@ export {
   mappersSummary,
 } from '#/features/scopes/service/mappers';
 export {
-  ASSIGNMENT_RULE,
-  ASSIGNMENTS,
-  assignedText,
   chosenClient,
   clientsOffered,
-  assignmentOf,
   clientAssignmentFailure,
   clientsCount,
-  unassignedText,
   withoutScope,
   withScopes,
 } from '#/features/scopes/service/assignment';

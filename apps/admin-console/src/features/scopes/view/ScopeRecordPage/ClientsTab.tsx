@@ -1,6 +1,5 @@
 import type { ClientScope } from '@odudu/contracts/admin';
 import { useId, useRef } from 'react';
-import { ASSIGNMENT_RULE, ASSIGNMENTS } from '#/features/scopes/service';
 import {
   useScopeClientsTab,
   type ScopeClientsTab,
@@ -12,6 +11,7 @@ import { EmptyState } from '#/shared/view/EmptyState';
 import { InlineFields, SelectField } from '#/shared/view/Field';
 import { ListSkeleton } from '#/shared/view/Skeleton';
 import styles from '#/features/scopes/view/ScopeRecordPage/Tab.module.css';
+import { ASSIGNMENTS, ASSIGNMENT_RULE } from '#/shared/service/assignment';
 
 function Carriers({ scope, page }: { scope: ClientScope; page: ScopeClientsTab }) {
   const heading = useId();

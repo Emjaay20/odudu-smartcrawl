@@ -7,13 +7,10 @@ import {
   type ScopeClients,
 } from '#/features/scopes/repository/useScopeClients';
 import {
-  assignedText,
-  assignmentOf,
   chosenClient,
   clientAssignmentFailure,
   clientsCount,
   clientsOffered,
-  unassignedText,
 } from '#/features/scopes/service';
 import { useClientPicker } from '#/shared/repository/useClientPicker';
 import { useToasts } from '#/shared/repository/useToasts';
@@ -21,6 +18,7 @@ import { lacking } from '#/shared/service/access';
 import { lastChosen, type PickerState } from '#/shared/service/picker';
 import type { AdminCapability } from '#/shared/service/principal';
 import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
+import { assignedText, assignmentOf, unassignedText } from '#/shared/service/assignment';
 
 export interface ScopeClientsTab {
   list: ScopeClients;

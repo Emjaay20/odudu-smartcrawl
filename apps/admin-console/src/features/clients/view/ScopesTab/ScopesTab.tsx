@@ -4,8 +4,6 @@ import {
   ASSIGN_HEADING,
   ASSIGN_LABEL,
   ASSIGNED_HEADING,
-  ASSIGNMENT_RULE,
-  ASSIGNMENTS,
   NO_SCOPES,
   PICKER_LABEL,
   type Reach,
@@ -20,6 +18,7 @@ import { InlineFields, SelectField } from '#/shared/view/Field';
 import { Picker } from '#/shared/view/Picker';
 import { ViewOnlyNote } from '#/shared/view/ViewOnlyNote';
 import styles from '#/features/clients/view/ScopesTab/ScopesTab.module.css';
+import { ASSIGNMENTS, ASSIGNMENT_RULE } from '#/shared/service/assignment';
 
 function Assigned({ client, page }: { client: Client; page: ClientScopes }) {
   const heading = useId();

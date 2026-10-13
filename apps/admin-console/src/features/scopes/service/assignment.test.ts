@@ -1,27 +1,14 @@
 import { expect, it } from 'vitest';
 import {
-  ASSIGNMENTS,
-  assignedText,
   chosenClient,
   clientAssignmentFailure,
   clientsOffered,
   clientsCount,
-  unassignedText,
   withoutScope,
   withScopes,
 } from '#/features/scopes/service';
 
-it('offers default and optional', () => {
-  expect(ASSIGNMENTS.map((each) => each.id)).toEqual(['default', 'optional']);
-});
-
-it('says what an assignment did, and a count of what is loaded', () => {
-  expect(assignedText('billing', 'Billing UI', 'optional')).toBe(
-    'billing is assigned to Billing UI as optional.',
-  );
-  expect(unassignedText('billing', 'Billing UI')).toBe(
-    'billing is no longer assigned to Billing UI.',
-  );
+it('counts what is loaded', () => {
   expect(clientsCount(1, false)).toBe('1 client.');
   expect(clientsCount(50, true)).toBe('50 clients shown, with more to load.');
 });

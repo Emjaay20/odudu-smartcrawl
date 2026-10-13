@@ -2,25 +2,12 @@ import type { Client, ClientScope } from '@odudu/contracts/admin';
 import { writeRefusal } from '#/shared/service/capabilities';
 import { writeFailureText } from '#/shared/service/failure';
 import type { GatewayFailure, Problem } from '#/shared/service/result';
-import type { Choice } from '#/features/clients/service/choices';
 
 export const SCOPES_CAPABILITY = 'manage-tenant';
 
 type Assignment = Client['scopes'][number];
 
-export const ASSIGNMENTS: readonly Choice[] = [
-  { id: 'default', label: 'Default' },
-  { id: 'optional', label: 'Optional' },
-];
-
-export const ASSIGNMENT_RULE =
-  'A default scope goes to a request that names no scope. An optional scope goes only to a request that names it.';
-
 export const SCOPES_PAGE = 50;
-
-export function assignmentOf(value: string): Assignment['assignment'] {
-  return value === 'optional' ? 'optional' : 'default';
-}
 
 export function assignedScopes(scopes: readonly Assignment[]): readonly Assignment[] {
   return [...scopes].sort((a, b) => a.name.localeCompare(b.name));
@@ -36,14 +23,6 @@ export function moreScopes(scopes: readonly Assignment[], shown: number): number
 
 export function scopeCount(count: number): string {
   return count === 1 ? '1 scope assigned.' : `${String(count)} scopes assigned.`;
-}
-
-export function assignedText(client: string, scope: string, assignment: string): string {
-  return `${scope} is assigned to ${client} as ${assignment}.`;
-}
-
-export function unassignedText(client: string, scope: string): string {
-  return `${scope} is no longer assigned to ${client}.`;
 }
 
 export const NO_SCOPES = 'No scope is assigned: a request to this client can ask for none.';

@@ -1,14 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   alreadyAssigned,
-  assignedText,
-  assignmentOf,
   moreScopes,
   scopeCount,
   scopeRefusal,
   SCOPES_PAGE,
   shownScopes,
-  unassignedText,
 } from '#/features/clients/service/scopes';
 
 const SCOPES = [
@@ -32,20 +29,6 @@ describe('what a client is shown of its scopes', () => {
 });
 
 describe('assigning', () => {
-  it('narrows a chosen assignment to one the server holds', () => {
-    expect(assignmentOf('optional')).toBe('optional');
-    expect(assignmentOf('anything else')).toBe('default');
-  });
-
-  it('says what happened, naming the client and the scope', () => {
-    expect(assignedText('billing', 'reports:read', 'optional')).toBe(
-      'reports:read is assigned to billing as optional.',
-    );
-    expect(unassignedText('billing', 'reports:read')).toBe(
-      'reports:read is no longer assigned to billing.',
-    );
-  });
-
   it('keeps a scope from being chosen twice, and says how it is held', () => {
     expect(alreadyAssigned({ id: 's1' }, SCOPES)).toBe('already assigned as optional');
     expect(alreadyAssigned({ id: 'other' }, SCOPES)).toBeNull();
