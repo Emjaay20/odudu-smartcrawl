@@ -1,4 +1,3 @@
-import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { rememberedTenant } from '#/features/session/repository/useSessionQuery';
 import {
@@ -16,6 +15,7 @@ import {
 } from '#/features/session/service';
 import { useSignedIn } from '#/features/session/usecase/useSignedIn';
 import { useSignIn } from '#/features/session/usecase/useSignIn';
+import { useGo } from '#/shared/repository/useGo';
 import { useToasts } from '#/shared/repository/useToasts';
 import { useUrlSearch } from '#/shared/repository/useUrlSearch';
 import { tenantPage } from '#/shared/service/address';
@@ -52,14 +52,14 @@ export function useConsoleHome(): Home {
   const { principal } = useSignedIn();
   const { params, drop } = useUrlSearch();
   const [failed] = useState(() => loginNotice(params.get(LOGIN_ERROR)));
-  const navigate = useNavigate();
+  const go = useGo();
   const signIn = useSignIn();
   const named = namedTenant(params.get('tenant'));
   const target = homeTarget({ principal, named, choosing: params.has(CHOOSE_TENANT) });
 
   const enter = (tenant: string): void => {
     if (entersDirectly(principal, tenant)) {
-      navigate({ href: tenantPage(tenant) }).catch(() => undefined);
+      go(tenantPage(tenant));
     } else {
       signIn(tenant, tenantPage(tenant));
     }
