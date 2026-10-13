@@ -12,9 +12,9 @@ import {
   usernameProblem,
 } from '#/features/subjects/service';
 import { useToasts } from '#/shared/repository/useToasts';
-import { createFailure, lookupText } from '#/shared/service/failure';
-import { withoutField } from '#/shared/service/fieldErrors';
-import type { GatewayFailure } from '#/shared/transport/gateway';
+import { lookupText } from '#/shared/service/failure';
+import { problemAt } from '#/shared/service/fieldErrors';
+import { useCreationFlow } from '#/shared/usecase/useCreationFlow';
 
 export interface NewSubject {
   // Why creating would be refused, named before anything is sent.
@@ -35,10 +35,7 @@ export interface NewSubject {
   check: () => void;
 }
 
-interface Errors {
-  username?: string;
-  email?: string;
-}
+type Field = 'username' | 'email';
 
 export function useNewSubject(tenant: string): NewSubject {
   const authority = useAuthority(tenant);
@@ -48,21 +45,11 @@ export function useNewSubject(tenant: string): NewSubject {
   const push = useToasts((queue) => queue.push);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
-  const [errors, setErrors] = useState<Errors>({});
-  const [message, setMessage] = useState<string | null>(null);
-  const [unconfirmed, setUnconfirmed] = useState(false);
+  const flow = useCreationFlow<Field>(refusal);
 
   const land = (id: string, name: string): void => {
     push({ tone: 'success', message: subjectCreatedText(name) });
     go(subjectHref(tenant, id), { replace: true });
-  };
-
-  const failed = (name: string, failure: GatewayFailure): void => {
-    const outcome = createFailure(failure, newSubjectSpec(name));
-    if (outcome.unconfirmed) setUnconfirmed(true);
-    if (outcome.report) refusal.report(failure, 'manage-users');
-    setErrors(outcome.errors);
-    setMessage(outcome.message);
   };
 
   const looked = lookupText('subject', username);
@@ -73,57 +60,39 @@ export function useNewSubject(tenant: string): NewSubject {
     listHref: subjectsHref(tenant),
     username,
     email,
-    usernameError: errors.username,
-    emailError: errors.email,
-    message,
-    unconfirmed,
+    usernameError: flow.errors.username,
+    emailError: flow.errors.email,
+    message: flow.message,
+    unconfirmed: flow.unconfirmed,
     busy: creation.busy,
     editUsername: (next) => {
       setUsername(next);
-      setErrors((was) => withoutField(was, 'username'));
+      flow.edited('username');
     },
     editEmail: (next) => {
       setEmail(next);
-      setErrors((was) => withoutField(was, 'email'));
+      flow.edited('email');
     },
     submit: () => {
-      if (creation.busy || unconfirmed) return;
-      const problem = usernameProblem(username);
-      if (problem !== null) {
-        setErrors({ username: problem });
-        return;
-      }
-      setErrors({});
-      setMessage(null);
-      creation
-        .create({ username, email })
-        .then((result) => {
-          if (result.ok) land(result.data.id, username);
-          else failed(username, result);
-        })
-        .catch(() => {
-          failed(username, { ok: false, kind: 'defect' });
-        });
+      flow.submit({
+        blocked: creation.busy,
+        problem: problemAt('username', usernameProblem(username)),
+        spec: newSubjectSpec(username),
+        create: () => creation.create({ username, email }),
+        made: (subject) => {
+          land(subject.id, username);
+        },
+      });
     },
     check: () => {
-      if (creation.busy) return;
-      creation
-        .find(username)
-        .then((result) => {
-          if (!result.ok) {
-            setMessage(looked.failed);
-            return;
-          }
-          if (result.data !== null) {
-            land(result.data.id, username);
-            return;
-          }
-          setUnconfirmed(false);
-          setMessage(looked.missing);
-        })
-        .catch(() => {
-          setMessage(looked.failed);
-        });
+      flow.check({
+        busy: creation.busy,
+        find: () => creation.find(username),
+        made: (subject) => {
+          land(subject.id, username);
+        },
+        looked,
+      });
     },
   };
 }
