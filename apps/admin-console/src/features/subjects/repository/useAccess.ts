@@ -17,7 +17,12 @@ import {
   setSubjectGroups,
 } from '#/features/subjects/adapter/access';
 import { readSubjectCount } from '#/features/subjects/adapter/subjects';
-import { heldCapabilitiesKey, holdersKey, listKey } from '#/shared/repository/queryKeys';
+import {
+  heldCapabilitiesKey,
+  holdersKey,
+  listKey,
+  membershipsKey,
+} from '#/shared/repository/queryKeys';
 import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useRead } from '#/shared/repository/useRead';
 import type { Read } from '#/shared/service/read';
@@ -61,10 +66,6 @@ export function useActionsRecord(
 
 function effectiveRolesResource(id: string): string {
   return `subjects/${id}/heldRoles`;
-}
-
-function membershipsKey(tenant: string, id: string) {
-  return ['memberships', tenant, id] as const;
 }
 
 // The admin capabilities a subject holds, whole: every judgement of what it

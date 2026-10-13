@@ -14,8 +14,11 @@ export function pickerKey(tenant: string, resource: string) {
   return ['picker', tenant, resource] as const;
 }
 
+// The kind of a record entry, which a change reads again by its path prefix.
+export const RECORD_KIND = 'record';
+
 export function recordKey(tenant: string, record: string) {
-  return ['record', tenant, record] as const;
+  return [RECORD_KIND, tenant, record] as const;
 }
 
 // The kind of a read of one group, which a change to groups reads again.
@@ -31,6 +34,10 @@ export function holdersKey(tenant: string, ...rest: readonly string[]) {
 
 export function heldCapabilitiesKey(tenant: string, ...subject: readonly string[]) {
   return ['held-capabilities', tenant, ...subject] as const;
+}
+
+export function membershipsKey(tenant: string, subject: string) {
+  return ['memberships', tenant, subject] as const;
 }
 
 export function scopeClientsKey(tenant: string, ...scope: readonly string[]) {

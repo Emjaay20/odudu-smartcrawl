@@ -1,4 +1,5 @@
 import { useQueryClient, type QueryKey } from '@tanstack/react-query';
+import { RECORD_KIND } from '#/shared/repository/queryKeys';
 import { useInvalidate } from '#/shared/repository/useInvalidate';
 import type { GatewayResult } from '#/shared/transport/gateway';
 
@@ -24,7 +25,7 @@ export function useAfterChange(tenant: string, deleted: string | null, reach: Ch
     if (!result.ok) return result;
     const gone = deleted === null ? null : reach.recordOf(deleted);
     const isRecord = (kind: unknown, which: unknown, prefixes: readonly string[]): boolean =>
-      kind === 'record' &&
+      kind === RECORD_KIND &&
       typeof which === 'string' &&
       prefixes.some((prefix) => which.startsWith(prefix));
     client
