@@ -1,30 +1,23 @@
 import type { ClientScope } from '@odudu/contracts/admin';
-import { useRef } from 'react';
 import {
   useScopeClientsTab,
   type ScopeClientsTab,
 } from '#/features/scopes/usecase/useScopeClientsTab';
-import { Button } from '#/shared/view/Button';
+import { AssignedList, AssignedRow, AssignPanel } from '#/shared/view/AssignmentControls';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { ClientPicker } from '#/shared/view/ClientPicker';
-import { InlineFields, SelectField } from '#/shared/view/Field';
 import { ListGate } from '#/shared/view/ListGate';
 import { LoadMore } from '#/shared/view/LoadMore';
 import { Problem } from '#/shared/view/Message';
-import { Panel } from '#/shared/view/Panel';
+import { Panel, useHeadingFocus } from '#/shared/view/Panel';
 import { ListSkeleton } from '#/shared/view/Skeleton';
 import { recordTab } from '#/shared/view/RecordTab';
-import styles from '#/features/scopes/view/ScopeRecordPage/Tab.module.css';
-import { ASSIGNMENTS, ASSIGNMENT_RULE } from '#/shared/service/assignment';
+import { ASSIGNMENT_RULE } from '#/shared/service/assignment';
 
 function Carriers({ scope, page }: { scope: ClientScope; page: ScopeClientsTab }) {
-  const title = useRef<HTMLHeadingElement>(null);
+  const { heading, afterRemoval } = useHeadingFocus();
   const { list } = page;
   const label = `Clients carrying ${scope.name}`;
-  // A removed row takes the focus that was on it, so the heading holds it.
-  const removed = async (row: Parameters<ScopeClientsTab['remove']>[0]): Promise<void> => {
-    if (await page.remove(row)) title.current?.focus();
-  };
   const body = (
     <ListGate
       list={list}
@@ -35,44 +28,35 @@ function Carriers({ scope, page }: { scope: ClientScope; page: ScopeClientsTab }
         list.rows.length === 0 ? (
           <p className={recordTab.text}>{`No client carries ${scope.name}.`}</p>
         ) : (
-          <ul aria-label={label} className={styles.clients}>
+          <AssignedList label={label}>
             {list.rows.map((row) => (
-              <li key={row.id} className={styles.client}>
-                <span>
-                  {row.name} <code>{row.client_id}</code>
-                </span>
-                <InlineFields>
-                  <SelectField
-                    label={`Assignment for ${row.name}`}
-                    hideLabel
-                    options={ASSIGNMENTS}
-                    value={row.assignment}
-                    isDisabled={page.working !== null}
-                    onChange={(value) => {
-                      page.change(row, value).catch(() => undefined);
-                    }}
-                  />
-                </InlineFields>
-                <Button
-                  size="small"
-                  variant="quiet"
-                  isDisabled={page.working !== null}
-                  aria-label={`Unassign ${row.name}`}
-                  onPress={() => {
-                    removed(row).catch(() => undefined);
-                  }}
-                >
-                  Unassign
-                </Button>
-              </li>
+              <AssignedRow
+                key={row.id}
+                name={
+                  <span>
+                    {row.name} <code>{row.client_id}</code>
+                  </span>
+                }
+                assignment={{
+                  label: `Assignment for ${row.name}`,
+                  value: row.assignment,
+                  onChange: (value) => page.change(row, value),
+                }}
+                working={page.working !== null}
+                remove={{
+                  verb: 'Unassign',
+                  target: row.name,
+                  onRemove: () => afterRemoval(page.remove(row)),
+                }}
+              />
             ))}
-          </ul>
+          </AssignedList>
         )
       }
     </ListGate>
   );
   return (
-    <Panel title={label} headingRef={title}>
+    <Panel title={label} headingRef={heading}>
       <p className={recordTab.rule}>{`${ASSIGNMENT_RULE} ${page.count}`}</p>
       {body}
       {list.more ? (
@@ -92,7 +76,14 @@ function Carriers({ scope, page }: { scope: ClientScope; page: ScopeClientsTab }
 
 function Assign({ page }: { page: ScopeClientsTab }) {
   return (
-    <Panel title="Assign to a client">
+    <AssignPanel
+      title="Assign to a client"
+      assignment={page.assignment}
+      onAssignment={page.setAssignment}
+      label={page.chosen === null ? 'Assign to a client' : `Assign to ${page.chosen.name}`}
+      disabled={page.chosen === null || page.working !== null}
+      onAssign={page.assign}
+    >
       <ClientPicker
         label="Client to assign"
         picker={page.picker}
@@ -100,24 +91,7 @@ function Assign({ page }: { page: ScopeClientsTab }) {
         selectionMode="single"
         onChange={page.choose}
       />
-      <SelectField
-        label="Assign it as"
-        options={ASSIGNMENTS}
-        value={page.assignment}
-        onChange={page.setAssignment}
-      />
-      <div className={recordTab.actions}>
-        <Button
-          variant="primary"
-          isDisabled={page.chosen === null || page.working !== null}
-          onPress={() => {
-            page.assign().catch(() => undefined);
-          }}
-        >
-          {page.chosen === null ? 'Assign to a client' : `Assign to ${page.chosen.name}`}
-        </Button>
-      </div>
-    </Panel>
+    </AssignPanel>
   );
 }
 

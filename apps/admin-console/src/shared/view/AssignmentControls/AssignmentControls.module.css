@@ -1,4 +1,4 @@
-.scopes {
+.list {
   display: grid;
   gap: var(--space-2);
   margin: 0;
@@ -6,7 +6,7 @@
   list-style: none;
 }
 
-.scope {
+.row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(8rem, auto) auto;
   align-items: center;
@@ -15,16 +15,16 @@
   border-block-end: var(--hairline);
 }
 
-.scope code {
+.row code {
   overflow-wrap: anywhere;
 }
 
 @media (max-width: 640px) {
-  .scope {
+  .row {
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .scope code {
+  .row > :first-child {
     grid-column: 1 / -1;
   }
 }

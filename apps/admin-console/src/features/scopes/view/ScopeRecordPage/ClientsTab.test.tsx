@@ -81,6 +81,7 @@ it('searches clients on the server, never in the browser, and assigns the one ch
     }),
   );
   const assign = await screen.findByRole('region', { name: 'Assign to a client' });
+  expect(within(assign).getByRole('button', { name: 'Assign to a client' })).toBeDisabled();
   await user.type(within(assign).getByRole('searchbox', { name: 'Search clients by name' }), 'por');
   await user.click(within(assign).getByRole('button', { name: 'Search' }));
   await waitFor(() => {
@@ -89,7 +90,9 @@ it('searches clients on the server, never in the browser, and assigns the one ch
     );
   });
   await user.click(await within(assign).findByRole('option', { name: /portal/u }));
-  await user.click(within(assign).getByRole('button', { name: 'Assign to portal' }));
+  const assignButton = within(assign).getByRole('button', { name: 'Assign to portal' });
+  expect(assignButton).toHaveAttribute('data-variant', 'primary');
+  await user.click(assignButton);
   await waitFor(() => {
     expect(sent.find((s) => s.method === 'PUT')).toMatchObject({
       path: `${SC}/s-bill/clients/c-portal`,
@@ -216,11 +219,17 @@ it('changes an assignment and unassigns, each at once', async () => {
   await waitFor(() => {
     expect(sent.find((s) => s.method === 'PUT')?.body).toEqual({ assignment: 'optional' });
   });
+  expect(within(row).getByRole('button', { name: 'Unassign Billing' })).toHaveTextContent(
+    'Unassign',
+  );
   await user.click(within(row).getByRole('button', { name: 'Unassign Billing' }));
   await waitFor(() => {
     expect(sent.some((s) => s.method === 'DELETE')).toBe(true);
   });
   expect(await screen.findByText('billing is no longer assigned to Billing.')).toBeVisible();
+  await waitFor(() => {
+    expect(screen.getByRole('heading', { name: 'Clients carrying billing' })).toHaveFocus();
+  });
 });
 
 it("words a 403 over the client's service account, naming the capability", async () => {

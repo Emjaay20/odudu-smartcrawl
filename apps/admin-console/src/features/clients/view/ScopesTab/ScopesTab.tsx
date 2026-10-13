@@ -1,5 +1,4 @@
 import type { Client, ClientScope } from '@odudu/contracts/admin';
-import { useRef } from 'react';
 import {
   ASSIGN_HEADING,
   ASSIGN_LABEL,
@@ -13,65 +12,51 @@ import {
   type ClientScopes,
 } from '#/features/clients/usecase/useClientScopeAssignment';
 import { Evaluate } from '#/features/clients/view/Evaluate';
+import { AssignedList, AssignedRow, AssignPanel } from '#/shared/view/AssignmentControls';
 import { Button } from '#/shared/view/Button';
-import { InlineFields, SelectField } from '#/shared/view/Field';
 import { Problem } from '#/shared/view/Message';
-import { Panel } from '#/shared/view/Panel';
+import { Panel, useHeadingFocus } from '#/shared/view/Panel';
 import { Picker } from '#/shared/view/Picker';
 import { ViewOnlyNote } from '#/shared/view/ViewOnlyNote';
 import { recordTab } from '#/shared/view/RecordTab';
-import styles from '#/features/clients/view/ScopesTab/ScopesTab.module.css';
-import { ASSIGNMENTS, ASSIGNMENT_RULE } from '#/shared/service/assignment';
+import { ASSIGNMENT_RULE } from '#/shared/service/assignment';
 
 function Assigned({ client, page }: { client: Client; page: ClientScopes }) {
-  const title = useRef<HTMLHeadingElement>(null);
-  // A removed row takes the focus that was on it, so the heading holds it.
-  const removed = async (scope: Client['scopes'][number]): Promise<void> => {
-    if (await page.remove(scope)) title.current?.focus();
-  };
+  const { heading, afterRemoval } = useHeadingFocus();
   return (
-    <Panel title={ASSIGNED_HEADING} headingRef={title}>
+    <Panel title={ASSIGNED_HEADING} headingRef={heading}>
       <p className={recordTab.rule}>{`${ASSIGNMENT_RULE} ${page.count}`}</p>
       {page.fixed === null ? null : <p className={recordTab.rule}>{page.fixed}</p>}
       {page.shown.length === 0 ? (
         <p className={recordTab.text}>{NO_SCOPES}</p>
       ) : (
-        <ul aria-label={`Scopes assigned to ${client.name}`} className={styles.scopes}>
+        <AssignedList label={`Scopes assigned to ${client.name}`}>
           {page.shown.map((scope) => (
-            <li key={scope.id} className={styles.scope}>
-              <code>{scope.name}</code>
-              {page.offered ? (
-                <InlineFields>
-                  <SelectField
-                    label={`Assignment of ${scope.name}`}
-                    hideLabel
-                    options={ASSIGNMENTS}
-                    value={scope.assignment}
-                    isDisabled={page.working !== null}
-                    onChange={(value) => {
-                      page.change(scope, value).catch(() => undefined);
-                    }}
-                  />
-                </InlineFields>
-              ) : (
-                <span>{scope.assignment}</span>
-              )}
-              {page.offered && page.fixed === null ? (
-                <Button
-                  size="small"
-                  variant="quiet"
-                  isDisabled={page.working !== null}
-                  aria-label={`Remove ${scope.name}`}
-                  onPress={() => {
-                    removed(scope).catch(() => undefined);
-                  }}
-                >
-                  Remove
-                </Button>
-              ) : null}
-            </li>
+            <AssignedRow
+              key={scope.id}
+              name={<code>{scope.name}</code>}
+              assignment={
+                page.offered
+                  ? {
+                      label: `Assignment of ${scope.name}`,
+                      value: scope.assignment,
+                      onChange: (value) => page.change(scope, value),
+                    }
+                  : scope.assignment
+              }
+              working={page.working !== null}
+              remove={
+                page.offered && page.fixed === null
+                  ? {
+                      verb: 'Remove',
+                      target: scope.name,
+                      onRemove: () => afterRemoval(page.remove(scope)),
+                    }
+                  : null
+              }
+            />
           ))}
-        </ul>
+        </AssignedList>
       )}
       {page.more > 0 ? (
         <div className={recordTab.actions}>
@@ -87,7 +72,14 @@ function Assigned({ client, page }: { client: Client; page: ClientScopes }) {
 
 function Assign({ page }: { page: ClientScopes }) {
   return (
-    <Panel title={ASSIGN_HEADING}>
+    <AssignPanel
+      title={ASSIGN_HEADING}
+      assignment={page.assignment}
+      onAssignment={page.setAssignment}
+      label={page.chosen === null ? ASSIGN_LABEL : `${ASSIGN_LABEL} ${page.chosen.name}`}
+      disabled={page.chosen === null || page.working !== null}
+      onAssign={page.assign}
+    >
       <Picker<ClientScope>
         label={PICKER_LABEL}
         noun={{ one: 'scope', other: 'scopes' }}
@@ -101,24 +93,7 @@ function Assign({ page }: { page: ClientScopes }) {
         selectionMode="single"
         onChange={page.choose}
       />
-      <SelectField
-        label="Assign it as"
-        options={ASSIGNMENTS}
-        value={page.assignment}
-        onChange={page.setAssignment}
-      />
-      <div className={recordTab.actions}>
-        <Button
-          variant="primary"
-          isDisabled={page.chosen === null || page.working !== null}
-          onPress={() => {
-            page.assign().catch(() => undefined);
-          }}
-        >
-          {page.chosen === null ? ASSIGN_LABEL : `${ASSIGN_LABEL} ${page.chosen.name}`}
-        </Button>
-      </div>
-    </Panel>
+    </AssignPanel>
   );
 }
 

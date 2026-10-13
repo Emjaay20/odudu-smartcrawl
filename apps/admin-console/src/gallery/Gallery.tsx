@@ -19,6 +19,7 @@ import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { LastAction } from '#/shared/view/LastAction';
 import { ListGate } from '#/shared/view/ListGate';
+import { AssignedList, AssignedRow, AssignPanel } from '#/shared/view/AssignmentControls';
 import { LoadFailed } from '#/shared/view/LoadFailed';
 import { LoadMore, LoadMoreFailed } from '#/shared/view/LoadMore';
 import { LiveMessage, Problem } from '#/shared/view/Message';
@@ -832,6 +833,42 @@ function RecordPieces() {
           <LastAction label="Last revoke" count={0}>
             Revoked the token created Oct 12.
           </LastAction>
+        </Specimen>
+        <Specimen label="AssignPanel, and an assignment that can be changed, one that cannot">
+          <div className={styles.stack}>
+            <AssignPanel
+              title="Assign to a client"
+              assignment="default"
+              onAssignment={NOTHING}
+              label="Assign to Billing"
+              disabled={false}
+              onAssign={() => Promise.resolve(true)}
+            >
+              <p>The picker goes here.</p>
+            </AssignPanel>
+            <AssignedList label="Scopes assigned to Billing">
+              <AssignedRow
+                name={<code>billing</code>}
+                assignment={{
+                  label: 'Assignment of billing',
+                  value: 'optional',
+                  onChange: () => Promise.resolve(true),
+                }}
+                working={false}
+                remove={{
+                  verb: 'Remove',
+                  target: 'billing',
+                  onRemove: () => Promise.resolve(true),
+                }}
+              />
+              <AssignedRow
+                name={<code>openid</code>}
+                assignment="default"
+                working={false}
+                remove={null}
+              />
+            </AssignedList>
+          </div>
         </Specimen>
         <Specimen label="ReadGate: loading, failed, and the record">
           <div className={styles.stack}>

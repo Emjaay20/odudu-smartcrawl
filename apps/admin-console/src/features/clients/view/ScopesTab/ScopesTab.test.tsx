@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { A, ADMIN, BILLING, C, clientRoutes, type ClientAnswer } from '#/testing/clientsFixtures';
-import { inTurn, json, problem } from '#/testing/fakeTransport';
+import { inTurn, json, pending, problem } from '#/testing/fakeTransport';
 import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
 
 afterEach(() => {
@@ -73,6 +73,7 @@ it('searches the tenant scopes on the server, and assigns the one chosen', async
   );
   await open();
   const assign = await screen.findByRole('region', { name: 'Assign a scope' });
+  expect(within(assign).getByRole('button', { name: 'Assign scope' })).toBeDisabled();
   await user.type(within(assign).getByRole('searchbox', { name: 'Search scopes by name' }), 'rep');
   await user.click(within(assign).getByRole('button', { name: 'Search' }));
   await waitFor(() => {
@@ -81,7 +82,12 @@ it('searches the tenant scopes on the server, and assigns the one chosen', async
   await user.click(await within(assign).findByRole('option', { name: /reports:read/u }));
   await user.click(within(assign).getByRole('button', { name: /Assign it as/u }));
   await user.click(await screen.findByRole('option', { name: 'Optional' }));
-  await user.click(within(assign).getByRole('button', { name: 'Assign scope reports:read' }));
+  expect(within(assign).getByRole('button', { name: /Assign it as/u })).toHaveTextContent(
+    'Optional',
+  );
+  const assignButton = within(assign).getByRole('button', { name: 'Assign scope reports:read' });
+  expect(assignButton).toHaveAttribute('data-variant', 'primary');
+  await user.click(assignButton);
   await waitFor(() => {
     expect(sent.find((s) => s.method === 'PUT')).toMatchObject({
       path: `${SCOPES}/s-reports/clients/c-bill`,
@@ -142,6 +148,21 @@ it('changes how a scope is assigned straight from the list', async () => {
   });
 });
 
+it('holds every other change in the list while one is on its way', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(
+    AT,
+    scopesRoutes([OPENID, BILLING_SCOPE], { [`PUT ${SCOPES}/s-bill/clients/c-bill`]: pending() }),
+  );
+  await open();
+  await user.click(screen.getByRole('button', { name: /Assignment of billing/u }));
+  await user.click(await screen.findByRole('option', { name: 'Default' }));
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Remove billing' })).toBeDisabled();
+  });
+  expect(screen.getByRole('button', { name: /Assignment of openid/u })).toBeDisabled();
+});
+
 it('unassigns a scope, and moves focus to the list heading it leaves', async () => {
   const user = userEvent.setup();
   const { sent } = renderConsoleAt(
@@ -176,6 +197,7 @@ it("says in the server's words why a scope was not assigned", async () => {
   expect(await screen.findByRole('alert')).toHaveTextContent(
     'billing was not unassigned: billing cannot be unassigned from this client',
   );
+  expect(screen.getByRole('heading', { name: 'Assigned scopes' })).not.toHaveFocus();
 });
 
 it('reads whoami again when the ceiling refuses an assignment', async () => {
@@ -254,6 +276,9 @@ it('offers no change to a caller without manage-tenant, and says what it needs',
   expect(screen.getByText(/You can view this client's scopes but not change them/u)).toBeVisible();
   expect(screen.queryByRole('region', { name: 'Assign a scope' })).toBeNull();
   expect(screen.queryByRole('button', { name: 'Remove openid' })).toBeNull();
+  const list = screen.getByRole('list', { name: 'Scopes assigned to Billing' });
+  expect(within(list).getByText('default')).toBeVisible();
+  expect(within(list).queryByRole('button')).toBeNull();
 });
 
 it('offers no change while the service account holds what the caller does not', async () => {
