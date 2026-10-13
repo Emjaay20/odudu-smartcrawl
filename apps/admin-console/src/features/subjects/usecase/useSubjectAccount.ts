@@ -105,21 +105,40 @@ export function useSubjectAccount(
       });
   };
 
-  const confirmable = (which: 'disable' | 'delete', confirm: () => void, busy: boolean) => ({
-    confirming: confirming === which,
-    busy,
-    problem: confirming === which ? problem : null,
-    ask: () => {
-      setProblem(null);
-      setConfirming(which);
-    },
-    cancel: () => {
-      setProblem(null);
-      setConfirming(null);
-    },
-    confirm,
-  });
-
+  const ask = (which: 'disable' | 'delete'): void => {
+    setProblem(null);
+    setConfirming(which);
+  };
+  const cancel = (): void => {
+    setProblem(null);
+    setConfirming(null);
+  };
+  const disable = (): void => {
+    setEnabled(false);
+  };
+  const remove = (): void => {
+    if (deletion.busy) return;
+    setProblem(null);
+    deletion
+      .run()
+      .then((result) => {
+        if (result.ok && self) {
+          endOwnSession().catch(() => undefined);
+          return;
+        }
+        if (result.ok) {
+          setConfirming(null);
+          push({ tone: 'success', message: deletedText(name) });
+          go(subjectsHref(tenant), { replace: true });
+          return;
+        }
+        refusal.report(result, 'manage-users');
+        setProblem(subjectWriteFailure(result, name, 'deleted'));
+      })
+      .catch(() => {
+        setProblem(subjectWriteFailure({ ok: false, kind: 'defect' }, name, 'deleted'));
+      });
+  };
   return {
     name,
     section,
@@ -128,40 +147,26 @@ export function useSubjectAccount(
     enable: () => {
       setEnabled(true);
     },
-    disable: confirmable(
-      'disable',
-      () => {
-        setEnabled(false);
+    disable: {
+      confirming: confirming === 'disable',
+      busy: enabledChange.busy,
+      problem: confirming === 'disable' ? problem : null,
+      ask: () => {
+        ask('disable');
       },
-      enabledChange.busy,
-    ),
+      cancel,
+      confirm: disable,
+    },
     enabledMessage,
-    remove: confirmable(
-      'delete',
-      () => {
-        if (deletion.busy) return;
-        setProblem(null);
-        deletion
-          .run()
-          .then((result) => {
-            if (result.ok && self) {
-              endOwnSession().catch(() => undefined);
-              return;
-            }
-            if (result.ok) {
-              setConfirming(null);
-              push({ tone: 'success', message: deletedText(name) });
-              go(subjectsHref(tenant), { replace: true });
-              return;
-            }
-            refusal.report(result, 'manage-users');
-            setProblem(subjectWriteFailure(result, name, 'deleted'));
-          })
-          .catch(() => {
-            setProblem(subjectWriteFailure({ ok: false, kind: 'defect' }, name, 'deleted'));
-          });
+    remove: {
+      confirming: confirming === 'delete',
+      busy: deletion.busy,
+      problem: confirming === 'delete' ? problem : null,
+      ask: () => {
+        ask('delete');
       },
-      deletion.busy,
-    ),
+      cancel,
+      confirm: remove,
+    },
   };
 }

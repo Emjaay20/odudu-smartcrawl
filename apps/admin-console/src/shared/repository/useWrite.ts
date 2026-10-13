@@ -25,7 +25,8 @@ export function useWrite<A, R>({ send, onSuccess, onSettled }: WriteOptions<A, R
       onSettled?.(result, arg);
     },
   });
-  return { busy: mutation.isPending, run: (arg) => mutation.mutateAsync(arg) };
+  const { isPending, mutateAsync } = mutation;
+  return { busy: isPending, run: (arg) => mutateAsync(arg) };
 }
 
 // A write whose rejection is answered as a defect rather than thrown.
