@@ -21,6 +21,7 @@ import { SelectField } from '#/shared/view/Field';
 import { LoadFailed } from '#/shared/view/LoadFailed';
 import { LoadMore } from '#/shared/view/LoadMore';
 import { PageHeader } from '#/shared/view/PageHeader';
+import { LiveMessage } from '#/shared/view/Message';
 import { Panel } from '#/shared/view/Panel';
 import { TableSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
@@ -169,9 +170,7 @@ function Stage({ page }: { page: Page }) {
           {page.staging ? 'Staging…' : 'Stage key'}
         </Button>
       </div>
-      <p role="status" aria-label="Last stage" className={styles.message}>
-        {page.stageMessage}
-      </p>
+      <LiveMessage label="Last stage">{page.stageMessage}</LiveMessage>
     </Panel>
   );
 }

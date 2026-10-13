@@ -10,6 +10,7 @@ import { ClientPicker } from '#/shared/view/ClientPicker';
 import { InlineFields, SelectField } from '#/shared/view/Field';
 import { LoadFailed } from '#/shared/view/LoadFailed';
 import { LoadMore } from '#/shared/view/LoadMore';
+import { Problem } from '#/shared/view/Message';
 import { Panel } from '#/shared/view/Panel';
 import { ListSkeleton } from '#/shared/view/Skeleton';
 import { recordTab } from '#/shared/view/RecordTab';
@@ -81,11 +82,7 @@ function Carriers({ scope, page }: { scope: ClientScope; page: ScopeClientsTab }
           More clients could not be loaded. The ones above are still shown.
         </p>
       ) : null}
-      {page.message === null ? null : (
-        <p role="alert" className={recordTab.message}>
-          {page.message}
-        </p>
-      )}
+      <Problem>{page.message}</Problem>
     </Panel>
   );
 }

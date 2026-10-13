@@ -10,7 +10,6 @@
 }
 
 .rule,
-.message,
 .notice,
 .reading {
   margin: 0;
@@ -23,7 +22,6 @@
   color: var(--ink-muted);
 }
 
-.message:empty,
 .notice:empty {
   display: none;
 }

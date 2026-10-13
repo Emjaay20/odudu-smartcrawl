@@ -6,6 +6,7 @@ import {
   type RoleComposites,
 } from '#/features/roles/usecase/useRoleComposites';
 import type { Ceiling } from '#/features/roles/usecase/useRoleRecordPage';
+import { LiveMessage } from '#/shared/view/Message';
 import { Panel } from '#/shared/view/Panel';
 import { ReadGate } from '#/shared/view/ReadGate';
 import { RoleOwner } from '#/shared/view/RoleOwner';
@@ -60,9 +61,7 @@ function Nested({ role, composites }: { role: Role; composites: RoleComposites }
           ))}
         </ul>
       )}
-      <p role="status" className={recordTab.message}>
-        {composites.message}
-      </p>
+      <LiveMessage>{composites.message}</LiveMessage>
       <AskedDialog
         asked={composites.asking}
         confirmLabel="Take it out"

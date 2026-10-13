@@ -19,6 +19,7 @@ import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { LoadFailed } from '#/shared/view/LoadFailed';
 import { LoadMore, LoadMoreFailed } from '#/shared/view/LoadMore';
+import { LiveMessage, Problem } from '#/shared/view/Message';
 import { MappedRoles } from '#/shared/view/MappedRoles';
 import { NarrowedNote } from '#/shared/view/NarrowedNote';
 import { Note, NoteCode } from '#/shared/view/Note';
@@ -799,6 +800,12 @@ function RecordPieces() {
       <div className={styles.grid}>
         <Specimen label="LoadFailed">
           <LoadFailed title="The groups could not be loaded" retry={NOTHING} />
+        </Specimen>
+        <Specimen label="Problem, and a live message that has something to say">
+          <div className={styles.stack}>
+            <Problem>The secret could not be rotated.</Problem>
+            <LiveMessage label="Last mint">Minted a token that can be used 3 times.</LiveMessage>
+          </div>
         </Specimen>
         <Specimen label="LoadMore: regular, compact and busy, and its failure">
           <div className={styles.stack}>

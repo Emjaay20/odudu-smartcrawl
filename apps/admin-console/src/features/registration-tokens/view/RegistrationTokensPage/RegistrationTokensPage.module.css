@@ -1,11 +1,9 @@
-.message,
 .notice {
   margin: 0;
   max-inline-size: 72ch;
   overflow-wrap: anywhere;
 }
 
-.message:empty,
 .notice:empty {
   display: none;
 }

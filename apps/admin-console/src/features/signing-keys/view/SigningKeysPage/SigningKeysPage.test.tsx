@@ -103,7 +103,9 @@ it('says beside the button that a lost stage was not sent again', async () => {
   const user = userEvent.setup();
   const { sent } = renderConsoleAt(AT, keyRoutes(undefined, { [`POST ${KEYS}`]: offline() }));
   await user.click(await screen.findByRole('button', { name: 'Stage key' }));
-  expect(await screen.findByText(/has not been sent again/u)).toBeVisible();
+  expect(await screen.findByRole('status', { name: 'Last stage' })).toHaveTextContent(
+    /has not been sent again/u,
+  );
   expect(sent.filter((s) => s.method === 'POST')).toHaveLength(1);
 });
 

@@ -36,6 +36,7 @@ import {
   ToggleField,
   UrlField,
 } from '#/shared/view/Field';
+import { Problem } from '#/shared/view/Message';
 import { Panel } from '#/shared/view/Panel';
 import { SecretDialog } from '#/shared/view/SecretDialog';
 import { Timestamp } from '#/shared/view/Timestamp';
@@ -59,11 +60,7 @@ function Rotation({ client, secret }: { client: Client; secret: ClientSecret }) 
         value={secret.grace}
         onChange={secret.setGrace}
       />
-      {secret.problem === null ? null : (
-        <p role="alert" className={recordTab.message}>
-          {secret.problem}
-        </p>
-      )}
+      <Problem>{secret.problem}</Problem>
       <div className={recordTab.actions}>
         <Button variant="danger" isDisabled={secret.busy} onPress={secret.ask}>
           {`Rotate the secret of ${client.name}`}

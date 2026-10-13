@@ -18,6 +18,7 @@ import { Button } from '#/shared/view/Button';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { CopyValue } from '#/shared/view/CopyValue';
 import { TextField } from '#/shared/view/Field';
+import { Problem } from '#/shared/view/Message';
 import { Panel } from '#/shared/view/Panel';
 import { Picker } from '#/shared/view/Picker';
 import { recordTab } from '#/shared/view/RecordTab';
@@ -55,11 +56,7 @@ function Form({ page }: { page: ClientEvaluate }) {
           {EVALUATE_LABEL}
         </Button>
       </div>
-      {page.problem === null ? null : (
-        <p role="alert" className={recordTab.message}>
-          {page.problem}
-        </p>
-      )}
+      <Problem>{page.problem}</Problem>
       {page.worked === null ? null : (
         <div className={styles.claims}>
           <p role="status" className={recordTab.text}>{`Claims for ${page.worked}.`}</p>

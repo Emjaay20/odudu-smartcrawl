@@ -15,6 +15,7 @@ import {
 import { Evaluate } from '#/features/clients/view/Evaluate';
 import { Button } from '#/shared/view/Button';
 import { InlineFields, SelectField } from '#/shared/view/Field';
+import { Problem } from '#/shared/view/Message';
 import { Panel } from '#/shared/view/Panel';
 import { Picker } from '#/shared/view/Picker';
 import { ViewOnlyNote } from '#/shared/view/ViewOnlyNote';
@@ -79,11 +80,7 @@ function Assigned({ client, page }: { client: Client; page: ClientScopes }) {
           </Button>
         </div>
       ) : null}
-      {page.message === null ? null : (
-        <p role="alert" className={recordTab.message}>
-          {page.message}
-        </p>
-      )}
+      <Problem>{page.message}</Problem>
     </Panel>
   );
 }

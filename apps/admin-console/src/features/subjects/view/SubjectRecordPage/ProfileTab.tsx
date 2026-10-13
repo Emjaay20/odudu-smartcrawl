@@ -18,6 +18,7 @@ import { OwnDataFields, TextField, ToggleField, type Chrome } from '#/shared/vie
 import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
 import { PhoneField } from '#/shared/view/Field';
 import { PictureField, UrlField } from '#/shared/view/Field';
+import { LiveMessage } from '#/shared/view/Message';
 import { Panel } from '#/shared/view/Panel';
 import { ReadGate } from '#/shared/view/ReadGate';
 import { SaveSection } from '#/shared/view/SaveSection';
@@ -124,9 +125,7 @@ function Status({ account, self }: { account: SubjectAccount; self: boolean }) {
               : `Enable ${name}`}
         </Button>
       </div>
-      <p role="status" className={recordTab.message}>
-        {account.enabledMessage}
-      </p>
+      <LiveMessage>{account.enabledMessage}</LiveMessage>
       <ConfirmDialog
         isOpen={account.disable.confirming}
         title={self ? 'Disable your own subject?' : `Disable ${name}?`}

@@ -22,6 +22,7 @@ import { DataTable, type Column } from '#/shared/view/DataTable';
 import { TextAreaField, TextField } from '#/shared/view/Field';
 import { LoadFailed } from '#/shared/view/LoadFailed';
 import { Pager } from '#/shared/view/Pager';
+import { Problem } from '#/shared/view/Message';
 import { Panel } from '#/shared/view/Panel';
 import { TableSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
@@ -119,11 +120,7 @@ function NewRole({ page }: { page: ClientRoles }) {
           error={page.errors.description}
           onChange={page.editDescription}
         />
-        {page.message === null ? null : (
-          <p role="alert" className={recordTab.message}>
-            {page.message}
-          </p>
-        )}
+        <Problem>{page.message}</Problem>
         <div className={recordTab.actions}>
           <Button type="submit" variant="primary" isDisabled={page.busy}>
             {page.busy ? 'Creating…' : 'Create role'}

@@ -120,7 +120,9 @@ it('says beside the button that a lost answer was not sent again', async () => {
   const user = userEvent.setup();
   renderConsoleAt(AT, tokenRoutes(undefined, { [`POST ${RT}`]: offline() }));
   await user.click(await screen.findByRole('button', { name: 'Mint token' }));
-  expect(await screen.findByText(/not been sent again/u)).toBeVisible();
+  expect(await screen.findByRole('status', { name: 'Last mint' })).toHaveTextContent(
+    /not been sent again/u,
+  );
 });
 
 it('asks before revoking, says what is lost, and reads the list again', async () => {

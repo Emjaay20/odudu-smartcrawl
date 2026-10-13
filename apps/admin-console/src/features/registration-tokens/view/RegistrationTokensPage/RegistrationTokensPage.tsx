@@ -15,6 +15,7 @@ import { ResourceListPage } from '#/shared/view/ResourceListPage';
 import { SecretDialog } from '#/shared/view/SecretDialog';
 import { Timestamp } from '#/shared/view/Timestamp';
 import { CreationForm } from '#/shared/view/CreationForm';
+import { LiveMessage } from '#/shared/view/Message';
 import { Panel } from '#/shared/view/Panel';
 import { recordTab } from '#/shared/view/RecordTab';
 import styles from '#/features/registration-tokens/view/RegistrationTokensPage/RegistrationTokensPage.module.css';
@@ -90,9 +91,7 @@ function Mint({ page }: { page: Page }) {
             {page.minting ? 'Minting…' : 'Mint token'}
           </Button>
         </div>
-        <p role="status" aria-label="Last mint" className={styles.message}>
-          {page.message}
-        </p>
+        <LiveMessage label="Last mint">{page.message}</LiveMessage>
       </CreationForm>
     </Panel>
   );

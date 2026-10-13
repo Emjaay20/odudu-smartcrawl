@@ -24,6 +24,7 @@ import { ChecklistField } from '#/shared/view/ChecklistField';
 import { AskedDialog } from '#/shared/view/ConfirmDialog';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { LoadFailed } from '#/shared/view/LoadFailed';
+import { LiveMessage } from '#/shared/view/Message';
 import { Panel } from '#/shared/view/Panel';
 import { SecretDialog } from '#/shared/view/SecretDialog';
 import { FormSkeleton } from '#/shared/view/Skeleton';
@@ -42,7 +43,7 @@ interface TabProps {
 
 function Outcome({ outcome }: { outcome: MailOutcome | null }) {
   return (
-    <p role="status" className={recordTab.message}>
+    <LiveMessage>
       {outcome === null ? null : (
         <>
           {outcome.text}
@@ -54,7 +55,7 @@ function Outcome({ outcome }: { outcome: MailOutcome | null }) {
           )}
         </>
       )}
-    </p>
+    </LiveMessage>
   );
 }
 
