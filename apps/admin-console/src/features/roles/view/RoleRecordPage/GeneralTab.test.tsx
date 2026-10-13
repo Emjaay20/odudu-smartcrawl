@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { json, problem } from '#/testing/fakeTransport';
+import { inTurn, json, pending, problem } from '#/testing/fakeTransport';
 import { adminRole } from '#/testing/groupsFixtures';
 import { A, AUDITOR, R, roleRoutes } from '#/testing/rolesFixtures';
 import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
@@ -160,6 +160,30 @@ it('says in the dialog why a refused delete was refused, reads whoami again, and
     await within(dialog).findByText(/it would take manage-users from whoever holds it/u),
   ).toBeVisible();
   expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
+});
+
+it('drops a refusal from the dialog when the delete is pressed again', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(
+    AT,
+    roleRoutes(undefined, {
+      [`DELETE ${R}/r-aud`]: inTurn(
+        problem(403, 'about:blank', 'Forbidden', {
+          detail: 'this removes capabilities the caller does not hold: manage-users',
+        }),
+        pending(),
+      ),
+    }),
+  );
+  await user.click(await screen.findByRole('button', { name: 'Delete auditor' }));
+  const dialog = await screen.findByRole('alertdialog', { name: 'Delete auditor?' });
+  await user.click(within(dialog).getByRole('button', { name: 'Delete auditor' }));
+  const refusal = /it would take manage-users from whoever holds it/u;
+  expect(await within(dialog).findByText(refusal)).toBeVisible();
+  await user.click(within(dialog).getByRole('button', { name: 'Delete auditor' }));
+  await waitFor(() => {
+    expect(within(dialog).queryByText(refusal)).toBeNull();
+  });
 });
 
 it('offers no delete a limited operator could not make, and says why in one line', async () => {

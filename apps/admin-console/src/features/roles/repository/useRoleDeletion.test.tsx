@@ -44,3 +44,19 @@ it("leaves the deleted role's own reads to lapse and reads the others' again", a
   expect(queryClient.getQueryState(['role', 'acme', 'x1'])?.isInvalidated).toBe(false);
   expect(queryClient.getQueryState(['role', 'acme', 'x2'])?.isInvalidated).toBe(true);
 });
+
+it("leaves the deleted record's own entries to lapse and reads the others' again", async () => {
+  const { wrapper, queryClient } = hookHarness({
+    [PATH]: () => new Response(null, { status: 204 }),
+  });
+  queryClient.setQueryData(['record', 'acme', 'roles/x1'], 'held');
+  queryClient.setQueryData(['record', 'acme', 'roles/x1/sub'], 'held');
+  queryClient.setQueryData(['record', 'acme', 'roles/x2'], 'held');
+  const { result } = renderHook(() => useRoleDeletion('acme', 'x1'), { wrapper });
+  await act(async () => {
+    await result.current.run();
+  });
+  expect(queryClient.getQueryState(['record', 'acme', 'roles/x1'])?.isInvalidated).toBe(false);
+  expect(queryClient.getQueryState(['record', 'acme', 'roles/x1/sub'])?.isInvalidated).toBe(false);
+  expect(queryClient.getQueryState(['record', 'acme', 'roles/x2'])?.isInvalidated).toBe(true);
+});

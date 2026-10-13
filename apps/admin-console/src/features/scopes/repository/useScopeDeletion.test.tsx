@@ -42,3 +42,19 @@ it('drops what the console holds of the clients the scope leaves, rather than ma
   });
   expect(queryClient.getQueryState(['record', 'acme', 'clients/c1'])).toBeUndefined();
 });
+
+it("leaves the deleted record's own entries to lapse and reads the others' again", async () => {
+  const { wrapper, queryClient } = hookHarness({
+    [PATH]: () => new Response(null, { status: 204 }),
+  });
+  queryClient.setQueryData(['record', 'acme', 'scopes/x1'], 'held');
+  queryClient.setQueryData(['record', 'acme', 'scopes/x1/sub'], 'held');
+  queryClient.setQueryData(['record', 'acme', 'scopes/x2'], 'held');
+  const { result } = renderHook(() => useScopeDeletion('acme', 'x1'), { wrapper });
+  await act(async () => {
+    await result.current.run();
+  });
+  expect(queryClient.getQueryState(['record', 'acme', 'scopes/x1'])?.isInvalidated).toBe(false);
+  expect(queryClient.getQueryState(['record', 'acme', 'scopes/x1/sub'])?.isInvalidated).toBe(false);
+  expect(queryClient.getQueryState(['record', 'acme', 'scopes/x2'])?.isInvalidated).toBe(true);
+});
