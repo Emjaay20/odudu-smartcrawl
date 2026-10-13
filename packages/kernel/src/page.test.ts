@@ -159,7 +159,7 @@ describe('reloading a form restored from the back/forward cache', () => {
   it('licenses exactly that nonce in the policy, and no request', () => {
     const page = reloadOnRestore(PAGE);
     const csp = headerMap(page)['content-security-policy'];
-    expect(csp).toContain(`script-src 'nonce-${page.script?.nonce}'`);
+    expect(csp).toContain(`script-src 'nonce-${page.script?.nonce ?? ''}'`);
     expect(csp).not.toContain('connect-src');
   });
 
