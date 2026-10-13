@@ -9,7 +9,6 @@ import {
   type ClientTab,
   type Reach,
 } from '#/features/clients/service';
-import { useRecordActivity } from '#/shared/usecase/useRecordActivity';
 import { useClientRecordPage } from '#/features/clients/usecase/useClientRecordPage';
 import type { ClientTabProps } from '#/features/clients/view/ClientTabProps';
 import { AdvancedTab } from '#/features/clients/view/AdvancedTab';
@@ -21,34 +20,25 @@ import { ScopesTab } from '#/features/clients/view/ScopesTab';
 import { SessionsTab } from '#/features/clients/view/SessionsTab';
 import { ServiceAccountTab } from '#/features/clients/view/ServiceAccountTab';
 import { TokensTab } from '#/features/clients/view/TokensTab';
-import { ActivityTab } from '#/shared/view/ActivityTab';
-import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { Note } from '#/shared/view/Note';
+import { RecordActivity } from '#/shared/view/RecordActivity';
 import { RecordPage } from '#/shared/view/RecordPage';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { ViewOnlyNote } from '#/shared/view/ViewOnlyNote';
-import { recordTab } from '#/shared/view/RecordTab';
 
 interface PanelProps extends ClientTabProps {
   reach: Reach;
 }
 
-function Trail({ tenant, id }: { tenant: string; id: string }) {
-  const list = useRecordActivity('client', tenant, id);
-  return <ActivityTab list={list} noun="client" />;
-}
-
 function Activity({ tenant, id }: { tenant: string; id: string }) {
-  const readable = useAuditReadable(tenant);
   return (
-    <div className={recordTab.tab}>
-      <p className={recordTab.rule}>{ACTIVITY_NOTE}</p>
-      {readable ? (
-        <Trail tenant={tenant} id={id} />
-      ) : (
-        <CapabilityNote capability="view-audit">Activity</CapabilityNote>
-      )}
-    </div>
+    <RecordActivity
+      resource="client"
+      tenant={tenant}
+      id={id}
+      lead={ACTIVITY_NOTE}
+      readable={useAuditReadable(tenant)}
+    />
   );
 }
 

@@ -9,42 +9,29 @@ import {
   type Role,
   type RoleTab,
 } from '#/features/roles/service';
-import { useRecordActivity } from '#/shared/usecase/useRecordActivity';
 import { useRoleRecordPage, type Ceiling } from '#/features/roles/usecase/useRoleRecordPage';
 import { CompositesTab } from '#/features/roles/view/RoleRecordPage/CompositesTab';
 import { GeneralTab } from '#/features/roles/view/RoleRecordPage/GeneralTab';
+import { RecordActivity } from '#/shared/view/RecordActivity';
 import { RoleOwner } from '#/shared/view/RoleOwner';
-import { ActivityTab } from '#/shared/view/ActivityTab';
-import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { RecordPage, type RecordPanelProps } from '#/shared/view/RecordPage';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { Note } from '#/shared/view/Note';
-import { recordTab } from '#/shared/view/RecordTab';
 
 type PanelProps = RecordPanelProps<'role', Role> & {
   ceiling: Ceiling;
 };
 
-function Trail({ tenant, id }: { tenant: string; id: string }) {
-  const list = useRecordActivity('role', tenant, id);
-  return <ActivityTab list={list} noun="role" />;
-}
-
 function Activity({ tenant, id }: { tenant: string; id: string }) {
-  const readable = useAuditReadable(tenant);
   return (
-    <div className={recordTab.tab}>
-      <p className={recordTab.rule}>
-        Every change made to this role, and every change refused. Its being given to a subject, a
-        group or a scope is filed under that subject, group or scope.
-      </p>
-      {readable ? (
-        <Trail tenant={tenant} id={id} />
-      ) : (
-        <CapabilityNote capability="view-audit">Activity</CapabilityNote>
-      )}
-    </div>
+    <RecordActivity
+      resource="role"
+      tenant={tenant}
+      id={id}
+      lead="Every change made to this role, and every change refused. Its being given to a subject, a group or a scope is filed under that subject, group or scope."
+      readable={useAuditReadable(tenant)}
+    />
   );
 }
 

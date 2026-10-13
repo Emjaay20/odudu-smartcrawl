@@ -9,39 +9,26 @@ import {
   scopesTrail,
   type ScopeTab,
 } from '#/features/scopes/service';
-import { useRecordActivity } from '#/shared/usecase/useRecordActivity';
 import { useScopeRecordPage } from '#/features/scopes/usecase/useScopeRecordPage';
 import { ClientsTab } from '#/features/scopes/view/ScopeRecordPage/ClientsTab';
 import { GeneralTab } from '#/features/scopes/view/ScopeRecordPage/GeneralTab';
 import { MappersTab } from '#/features/scopes/view/ScopeRecordPage/MappersTab';
 import { RolesTab } from '#/features/scopes/view/ScopeRecordPage/RolesTab';
-import { ActivityTab } from '#/shared/view/ActivityTab';
 import { ButtonLink } from '#/shared/view/ButtonLink';
-import { CapabilityNote } from '#/shared/view/CapabilityNote';
+import { RecordActivity } from '#/shared/view/RecordActivity';
 import { RecordPage, type RecordPanelProps } from '#/shared/view/RecordPage';
-import { recordTab } from '#/shared/view/RecordTab';
 
 type PanelProps = RecordPanelProps<'scope', ClientScope>;
 
-function Trail({ tenant, id }: { tenant: string; id: string }) {
-  const list = useRecordActivity('scope', tenant, id);
-  return <ActivityTab list={list} noun="scope" />;
-}
-
 function Activity({ tenant, id }: { tenant: string; id: string }) {
-  const readable = useAuditReadable(tenant);
   return (
-    <div className={recordTab.tab}>
-      <p className={recordTab.rule}>
-        Every change made to this scope, and every change refused. A client being given or losing it
-        is filed under that client.
-      </p>
-      {readable ? (
-        <Trail tenant={tenant} id={id} />
-      ) : (
-        <CapabilityNote capability="view-audit">Activity</CapabilityNote>
-      )}
-    </div>
+    <RecordActivity
+      resource="scope"
+      tenant={tenant}
+      id={id}
+      lead="Every change made to this scope, and every change refused. A client being given or losing it is filed under that client."
+      readable={useAuditReadable(tenant)}
+    />
   );
 }
 

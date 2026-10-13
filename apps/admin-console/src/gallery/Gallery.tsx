@@ -54,6 +54,7 @@ import { Pager } from '#/shared/view/Pager';
 import { Panel } from '#/shared/view/Panel';
 import { Rail } from '#/shared/view/Rail';
 import { ReadGate } from '#/shared/view/ReadGate';
+import { RecordActivity } from '#/shared/view/RecordActivity';
 import { RecordPage } from '#/shared/view/RecordPage';
 import { recordTab } from '#/shared/view/RecordTab';
 import { ResourceListPage } from '#/shared/view/ResourceListPage';
@@ -800,6 +801,15 @@ function RecordPieces() {
           </div>
         </Specimen>
       </div>
+      <Specimen label="RecordActivity: a tab that needs view-audit">
+        <RecordActivity
+          resource="client"
+          tenant={TENANT}
+          id="c1"
+          lead="Every change made to this client, and every change refused."
+          readable={false}
+        />
+      </Specimen>
       <Specimen label="AccessGate: a principal whoami says cannot read the area">
         <AccessGate
           access={{ kind: 'refused', capability: 'view-users' }}

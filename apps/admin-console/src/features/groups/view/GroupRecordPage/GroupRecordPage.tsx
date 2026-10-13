@@ -9,42 +9,29 @@ import {
   groupsTrail,
   type GroupTab,
 } from '#/features/groups/service';
-import { useRecordActivity } from '#/shared/usecase/useRecordActivity';
 import { useGroupRecordPage, type Ceiling } from '#/features/groups/usecase/useGroupRecordPage';
 import { GeneralTab } from '#/features/groups/view/GroupRecordPage/GeneralTab';
 import { RolesTab } from '#/features/groups/view/GroupRecordPage/RolesTab';
-import { ActivityTab } from '#/shared/view/ActivityTab';
 import { Button } from '#/shared/view/Button';
 import { ButtonLink } from '#/shared/view/ButtonLink';
-import { CapabilityNote } from '#/shared/view/CapabilityNote';
+import { RecordActivity } from '#/shared/view/RecordActivity';
 import { RecordPage, type RecordPanelProps } from '#/shared/view/RecordPage';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { Note } from '#/shared/view/Note';
-import { recordTab } from '#/shared/view/RecordTab';
 
 type PanelProps = RecordPanelProps<'group', GroupRecord> & {
   ceiling: Ceiling;
 };
 
-function Trail({ tenant, id }: { tenant: string; id: string }) {
-  const list = useRecordActivity('group', tenant, id);
-  return <ActivityTab list={list} noun="group" />;
-}
-
 function Activity({ tenant, id }: { tenant: string; id: string }) {
-  const readable = useAuditReadable(tenant);
   return (
-    <div className={recordTab.tab}>
-      <p className={recordTab.rule}>
-        Every change made to this group, and every change refused. A subject joining or leaving it
-        is filed under that subject.
-      </p>
-      {readable ? (
-        <Trail tenant={tenant} id={id} />
-      ) : (
-        <CapabilityNote capability="view-audit">Activity</CapabilityNote>
-      )}
-    </div>
+    <RecordActivity
+      resource="group"
+      tenant={tenant}
+      id={id}
+      lead="Every change made to this group, and every change refused. A subject joining or leaving it is filed under that subject."
+      readable={useAuditReadable(tenant)}
+    />
   );
 }
 
