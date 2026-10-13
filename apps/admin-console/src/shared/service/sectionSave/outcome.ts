@@ -1,6 +1,6 @@
 import { type Values } from '#/shared/service/dirty';
 import { fieldErrorsOf } from '#/shared/service/fieldErrors';
-import { writeFailureText } from '#/shared/service/failure';
+import { CONSOLE_FAULT, writeFailureText } from '#/shared/service/failure';
 import type { GatewayFailure, GatewayResult, Problem } from '#/shared/service/result';
 import { type SavePhase, type SectionState } from '#/shared/service/sectionSave/state';
 import { unsavedAfter } from '#/shared/service/sectionSave/transitions';
@@ -12,7 +12,7 @@ export function saveFailureText(label: string, failure: GatewayFailure): string 
     case 'schema':
       return `${label} may have been saved, but its answer could not be read. Reload to check.`;
     case 'defect':
-      return `The console could not save ${label}. This is a fault in the console, not something you did.`;
+      return `The console could not save ${label}. ${CONSOLE_FAULT}`;
     case 'problem':
       return writeFailureText(failure, {
         name: label,

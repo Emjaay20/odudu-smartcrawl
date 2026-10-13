@@ -1,3 +1,4 @@
+import { CONSOLE_FAULT } from '#/shared/service/failure';
 import type { GatewayFailure } from '#/shared/service/result';
 
 export function tenantChangeFailure(name: string, failure: GatewayFailure): string {
@@ -12,6 +13,6 @@ export function tenantChangeFailure(name: string, failure: GatewayFailure): stri
       return failure.problem.detail ?? failure.problem.title;
     case 'schema':
     case 'defect':
-      return 'The console could not make the change. This is a fault in the console, not something you did.';
+      return `The console could not make the change. ${CONSOLE_FAULT}`;
   }
 }

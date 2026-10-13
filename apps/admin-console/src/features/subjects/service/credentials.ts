@@ -1,7 +1,9 @@
 import { type Credential, type Lockout } from '@odudu/contracts/admin';
 import type { NamedDialog } from '#/shared/service/dialog';
+import { COULD_NOT_FINISH } from '#/shared/service/failure';
 import { counted, formatAbsolute, lowerFirst } from '#/shared/service/format';
 import type { GatewayFailure } from '#/shared/service/result';
+import { subjectRefusal } from '#/features/subjects/service/access';
 
 export interface Credentials {
   password: Credential | null;
@@ -101,10 +103,10 @@ export function credentialFailureText(what: string, failure: GatewayFailure): st
     case 'schema':
       return `${what} may have happened, but the answer could not be read. The tab shows what the server holds now.`;
     case 'defect':
-      return 'The console could not finish. This is a fault in the console, not something you did.';
+      return COULD_NOT_FINISH;
     case 'problem':
       if (failure.problem.status === 403) {
-        return 'Refused: it needs the manage-users capability, or the subject holds an admin capability you do not.';
+        return `Refused: ${subjectRefusal('the subject', 'manage-users')}`;
       }
       return `Refused: ${failure.problem.detail ?? failure.problem.title}`;
   }

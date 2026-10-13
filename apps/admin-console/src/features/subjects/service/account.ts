@@ -3,6 +3,7 @@ import { writeFailureText } from '#/shared/service/failure';
 import { sentence } from '#/shared/service/format';
 import type { Loaded } from '#/shared/service/read';
 import type { GatewayFailure } from '#/shared/service/result';
+import { subjectRefusal } from '#/features/subjects/service/access';
 
 export const USERNAME_RULE_TEXT = sentence(USERNAME_RULE);
 
@@ -28,7 +29,7 @@ export function subjectWriteFailure(failure: GatewayFailure, name: string, verb:
     stale: `${name} changed elsewhere since you opened it, so it was not ${verb}. It has been read again; look at it before trying again.`,
     refused: (problem) =>
       problem.status === 403
-        ? `${name} was not ${verb}: it needs the manage-users capability, or ${name} holds an admin capability you do not.`
+        ? `${name} was not ${verb}: ${subjectRefusal(name, 'manage-users')}`
         : null,
   });
 }

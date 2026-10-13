@@ -5,6 +5,7 @@ import {
 } from '#/shared/service/administrators';
 import { type AdminCapability } from '#/shared/service/principal';
 import { fieldErrorsOf } from '#/shared/service/fieldErrors';
+import { CONSOLE_FAULT } from '#/shared/service/failure';
 import type { GatewayFailure } from '#/shared/service/result';
 
 // A request of a step: what it names when it fails, which fields a refusal
@@ -43,7 +44,7 @@ export function stepFailureText(call: StepCall, failure: GatewayFailure): string
     case 'schema':
       return `${what} may have happened, but the answer could not be read. Check before trying again.`;
     case 'defect':
-      return `The console could not finish: ${what} did not happen. This is a fault in the console, not something you did.`;
+      return `The console could not finish: ${what} did not happen. ${CONSOLE_FAULT}`;
     case 'problem':
       if (failure.problem.status === 403) return `Refused: ${what} needs the ${needed} capability.`;
       return failure.problem.detail ?? failure.problem.title;

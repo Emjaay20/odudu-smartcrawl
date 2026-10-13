@@ -5,6 +5,10 @@ import { NAME_TAKEN } from '#/shared/service/labels';
 import type { AdminCapability } from '#/shared/service/principal';
 import type { GatewayFailure, GatewayResult, Problem } from '#/shared/service/result';
 
+export const CONSOLE_FAULT = 'This is a fault in the console, not something you did.';
+
+export const COULD_NOT_FINISH = `The console could not finish. ${CONSOLE_FAULT}`;
+
 function hasStatus(result: GatewayResult<unknown>, status: number): boolean {
   return !result.ok && result.kind === 'problem' && result.problem.status === status;
 }
@@ -62,7 +66,7 @@ export function writeFailureText(failure: GatewayFailure, copy: WriteCopy): stri
     case 'schema':
       return `${name} may have been ${verb}, but the answer could not be read. Reload to check.`;
     case 'defect':
-      return `The console could not finish, so ${within} was not ${verb}. This is a fault in the console, not something you did.`;
+      return `The console could not finish, so ${within} was not ${verb}. ${CONSOLE_FAULT}`;
     case 'problem': {
       const { problem } = failure;
       if (problem.status === 412 && copy.stale !== undefined) return copy.stale;
@@ -150,7 +154,7 @@ export function createFailure(failure: GatewayFailure, spec: CreateSpec): Create
     case 'defect':
       return {
         ...none,
-        message: `The console could not create the ${spec.noun}. This is a fault in the console, not something you did.`,
+        message: `The console could not create the ${spec.noun}. ${CONSOLE_FAULT}`,
       };
     case 'problem': {
       const { problem } = failure;

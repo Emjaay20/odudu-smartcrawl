@@ -1,6 +1,8 @@
+import { COULD_NOT_FINISH } from '#/shared/service/failure';
 import { fieldErrorsOf, type FieldErrors } from '#/shared/service/fieldErrors';
 import { counted } from '#/shared/service/format';
 import type { GatewayFailure } from '#/shared/service/result';
+import { subjectRefusal } from '#/features/subjects/service/access';
 
 export interface MailRefusal {
   text: string;
@@ -65,7 +67,7 @@ export function mailOutcome(
     case 'defect':
       return {
         sent: false,
-        text: 'The console could not finish. This is a fault in the console, not something you did.',
+        text: COULD_NOT_FINISH,
         fix: null,
       };
     case 'problem': {
@@ -80,7 +82,7 @@ export function mailOutcome(
       if (failure.problem.status === 403) {
         return {
           sent: false,
-          text: `Refused: it needs the manage-users capability, or ${name} holds an admin capability you do not.`,
+          text: `Refused: ${subjectRefusal(name, 'manage-users')}`,
           fix: null,
         };
       }

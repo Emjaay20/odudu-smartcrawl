@@ -1,5 +1,6 @@
 import { holdingLabel, type Holding } from '#/shared/service/capabilities';
 import type { AskedDialog } from '#/shared/service/dialog';
+import { COULD_NOT_FINISH } from '#/shared/service/failure';
 import { andList } from '#/shared/service/format';
 import { type AdminCapability } from '#/shared/service/principal';
 import type { GatewayFailure } from '#/shared/service/result';
@@ -87,6 +88,11 @@ export function onlyHolderText(name: string, tenant: string, counted: string): s
   return `${name} is the only enabled holder of ${counted}, so ${tenant} would be left with nobody holding it. Give it to somebody else first.`;
 }
 
+// Why a 403 on a subject can mean the caller's own ceiling and not only a missing capability.
+export function subjectRefusal(who: string, capability: AdminCapability): string {
+  return `it needs the ${capability} capability, or ${who} holds an admin capability you do not.`;
+}
+
 export function changeFailureText(failure: GatewayFailure, capability: AdminCapability): string {
   switch (failure.kind) {
     case 'network':
@@ -94,10 +100,10 @@ export function changeFailureText(failure: GatewayFailure, capability: AdminCapa
     case 'schema':
       return 'It may have happened, but the answer could not be read. The tab shows what the server holds now.';
     case 'defect':
-      return 'The console could not finish. This is a fault in the console, not something you did.';
+      return COULD_NOT_FINISH;
     case 'problem':
       if (failure.problem.status === 403) {
-        return `Refused: it needs the ${capability} capability, or the subject holds an admin capability you do not.`;
+        return `Refused: ${subjectRefusal('the subject', capability)}`;
       }
       if (failure.problem.status === 404) return 'It is already gone.';
       return `Refused: ${failure.problem.detail ?? failure.problem.title}`;
