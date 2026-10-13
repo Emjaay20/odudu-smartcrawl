@@ -102,6 +102,48 @@ it('hands a change and a removal on, and holds both while another is on its way'
   expect(screen.getByRole('button', { name: /Assignment of billing/u })).toBeDisabled();
 });
 
+it('keeps the select’s label for the screen reader, and out of sight', () => {
+  render(rows());
+  const label = screen.getByText('Assignment of billing');
+  expect(label.closest('[style]')).toHaveStyle({ position: 'absolute' });
+});
+
+it('does not raise a removal the flow already reported as failed', async () => {
+  const user = userEvent.setup();
+  const raised = vi.fn();
+  process.on('unhandledRejection', raised);
+  render(
+    rows({
+      remove: {
+        verb: 'Remove',
+        target: 'billing',
+        onRemove: () => Promise.reject(new Error('refused')),
+      },
+    }),
+  );
+  await user.click(screen.getByRole('button', { name: 'Remove billing' }));
+  process.off('unhandledRejection', raised);
+  expect(raised).not.toHaveBeenCalled();
+});
+
+it('does not raise a change the flow already reported as failed', async () => {
+  const user = userEvent.setup();
+  const raised = vi.fn();
+  let asked: string | null = null;
+  const onChange = (value: string): Promise<boolean> => {
+    asked = value;
+    return Promise.reject(new Error('refused'));
+  };
+  process.on('unhandledRejection', raised);
+  render(rows({ assignment: { label: 'Assignment of billing', value: 'optional', onChange } }));
+  await user.click(screen.getByRole('button', { name: /Assignment of billing/u }));
+  await user.click(await screen.findByRole('option', { name: 'Default' }));
+  await new Promise((settle) => setTimeout(settle, 0));
+  process.off('unhandledRejection', raised);
+  expect(asked).toBe('default');
+  expect(raised).not.toHaveBeenCalled();
+});
+
 it('has no accessibility violations in either theme', async () => {
   expect(
     await axeInBothThemes(() => (

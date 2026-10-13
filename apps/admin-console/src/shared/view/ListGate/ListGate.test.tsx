@@ -55,6 +55,9 @@ it('says a failed list could not be loaded, asks again, and can say nothing was 
   expect(screen.getByText(/Nothing was changed/u)).toBeVisible();
 });
 
-it('has no accessibility violations in either theme', async () => {
-  expect(await axeInBothThemes(() => gate('failed'))).toEqual({ light: [], dark: [] });
-});
+it.each(['loading', 'refused', 'failed', 'ready'] as const)(
+  'has no accessibility violations in either theme while %s',
+  async (status) => {
+    expect(await axeInBothThemes(() => gate(status))).toEqual({ light: [], dark: [] });
+  },
+);

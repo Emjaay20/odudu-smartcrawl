@@ -77,6 +77,16 @@ it('loads more in place while there is a next page, and says when it is busy', a
   expect(screen.getByRole('button', { name: 'Loading more subjects…' })).toBeDisabled();
 });
 
+it('offers no Load more on the last page, whatever can be loaded', () => {
+  render(
+    <Pager
+      label="Subjects"
+      list={{ trail: ['c-2'], next: null, setTrail: vi.fn(), loadMore: vi.fn() }}
+    />,
+  );
+  expect(screen.queryByRole('button', { name: /load more/iu })).toBeNull();
+});
+
 it('offers no jump to a numbered page', () => {
   render(<Pager label="Subjects" list={{ trail: ['c-2'], next: 'c-3', setTrail: vi.fn() }} />);
   expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['Previous', 'Next']);
