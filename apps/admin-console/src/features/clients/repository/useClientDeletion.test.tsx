@@ -16,7 +16,8 @@ it('deletes the client, reads its lists again once it is gone and answers the re
     answer = await result.current.run();
   });
   expect(answer?.ok).toBe(true);
-  expect(invalidated).toHaveBeenCalledWith({ queryKey: ['list', 'acme', 'clients'] });
+  expect(invalidated).toHaveBeenCalledWith({ queryKey: ['list', 'acme'] });
+  expect(invalidated).toHaveBeenCalledWith({ queryKey: ['count', 'acme'] });
 });
 
 it('is busy from the press until the server answers', async () => {
@@ -31,7 +32,7 @@ it('is busy from the press until the server answers', async () => {
   });
 });
 
-it("reads again the lists the client's removal changes, and leaves its own record to lapse", async () => {
+it("reads again what the client's roles and assignments took with them, and leaves its own record to lapse", async () => {
   const { wrapper, queryClient } = hookHarness({
     [PATH]: () => new Response(null, { status: 204 }),
   });
@@ -39,7 +40,12 @@ it("reads again the lists the client's removal changes, and leaves its own recor
     ['list', 'acme', 'roles'],
     ['picker', 'acme', 'roles'],
     ['scope-clients', 'acme', 's1'],
-    ['list', 'acme', 'subjects/u1/consents'],
+    ['held-capabilities', 'acme', 'u1'],
+    ['holders', 'acme', 'enabled', 'any'],
+    ['count', 'acme', 'roles', ''],
+    ['record', 'acme', 'roles/r9/composites'],
+    ['record', 'acme', 'groups/g1/roles'],
+    ['group', 'acme', 'g1'],
     ['record', 'acme', 'clients/x1'],
     ['list', 'other', 'roles'],
   ];
@@ -49,5 +55,5 @@ it("reads again the lists the client's removal changes, and leaves its own recor
     await result.current.run();
   });
   const stale = held.map((key) => queryClient.getQueryState(key)?.isInvalidated);
-  expect(stale).toEqual([true, true, true, true, false, false]);
+  expect(stale).toEqual([true, true, true, true, true, true, true, true, true, false, false]);
 });

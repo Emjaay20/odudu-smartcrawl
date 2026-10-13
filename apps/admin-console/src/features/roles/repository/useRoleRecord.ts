@@ -11,14 +11,8 @@ import {
 import { compositesRecord, roleRecord } from '#/features/roles/service';
 import { isStale } from '#/shared/service/failure';
 import { useAfterChange } from '#/shared/repository/useAfterChange';
-import {
-  GROUP_KIND,
-  heldCapabilitiesKey,
-  holdersKey,
-  listKey,
-  pickerKey,
-  recordKey,
-} from '#/shared/repository/queryKeys';
+import { recordKey } from '#/shared/repository/queryKeys';
+import { rolesGoneReach } from '#/shared/repository/rolesGoneReach';
 import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useRecord, type RecordState } from '#/shared/repository/useRecord';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
@@ -49,17 +43,7 @@ export function useCompositesRecord(
 // above it reaches, and what the lists show; a deleted role's own reads are
 // left to lapse, since reading them again would only find it gone.
 function useAfterRoleChange(tenant: string, deleted: string | null = null) {
-  return useAfterChange(tenant, deleted, {
-    kinds: ['role', GROUP_KIND],
-    records: ['roles/', 'groups/'],
-    recordOf: roleRecord,
-    keys: [
-      listKey(tenant),
-      pickerKey(tenant, 'roles'),
-      heldCapabilitiesKey(tenant),
-      holdersKey(tenant),
-    ],
-  });
+  return useAfterChange(tenant, deleted, { ...rolesGoneReach(tenant), recordOf: roleRecord });
 }
 
 export function useRoleSaves(tenant: string, id: string) {

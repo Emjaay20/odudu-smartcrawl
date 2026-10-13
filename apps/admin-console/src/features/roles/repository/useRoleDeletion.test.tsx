@@ -1,6 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { expect, it } from 'vitest';
 import { useRoleDeletion } from '#/features/roles/repository/useRoleRecord';
+import { groupKey } from '#/shared/repository/queryKeys';
 import { pending } from '#/testing/fakeTransport';
 import { hookHarness } from '#/testing/hookHarness';
 
@@ -31,18 +32,18 @@ it('is busy from the press until the server answers', async () => {
   });
 });
 
-it("leaves the deleted role's own reads to lapse and reads the others' again", async () => {
+it("leaves the deleted role's own group read to lapse and reads the others' again", async () => {
   const { wrapper, queryClient } = hookHarness({
     [PATH]: () => new Response(null, { status: 204 }),
   });
-  queryClient.setQueryData(['role', 'acme', 'x1'], 'held');
-  queryClient.setQueryData(['role', 'acme', 'x2'], 'held');
+  queryClient.setQueryData(groupKey('acme', 'x1'), 'held');
+  queryClient.setQueryData(groupKey('acme', 'x2'), 'held');
   const { result } = renderHook(() => useRoleDeletion('acme', 'x1'), { wrapper });
   await act(async () => {
     await result.current.run();
   });
-  expect(queryClient.getQueryState(['role', 'acme', 'x1'])?.isInvalidated).toBe(false);
-  expect(queryClient.getQueryState(['role', 'acme', 'x2'])?.isInvalidated).toBe(true);
+  expect(queryClient.getQueryState(groupKey('acme', 'x1'))?.isInvalidated).toBe(false);
+  expect(queryClient.getQueryState(groupKey('acme', 'x2'))?.isInvalidated).toBe(true);
 });
 
 it("leaves the deleted record's own entries to lapse and reads the others' again", async () => {
