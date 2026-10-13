@@ -7,10 +7,11 @@ import { ADMIN_ROUTES } from '../../packages/protocol-admin/src/index.js';
 
 // Every admin route has a screen: some console adapter calls it, by method
 // and path template, or it is named below as one the console never calls.
-// A reference is `request('<METHOD>', <path>)` with the path a literal or a
-// template whose spans each fill one whole segment; a query after `?` is
-// ignored. A helper that builds the prefix hides the route from this test,
-// which then fails on the route rather than passing on a guess.
+// A reference is a `request('<METHOD>', <path>)` with a literal or template
+// path, an `adminCall(gateway, '<METHOD>', tenant, [<parts>])`, or a
+// `listReader('<collection>')` or `countReader('<collection>')`; a query
+// after `?` is ignored. Any other helper that builds the prefix hides the
+// route, and this test then fails on the route rather than guessing.
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..');
 const ADAPTERS = [
@@ -47,22 +48,40 @@ function pathOf(node: ts.Expression): string | null {
   return node.head.text + node.templateSpans.map((span) => `:${span.literal.text}`).join('');
 }
 
+function partsOf(node: ts.Expression): string | null {
+  if (!ts.isArrayLiteralExpression(node)) return null;
+  const parts = node.elements.map((part) => (ts.isStringLiteralLike(part) ? part.text : ':'));
+  return `admin/tenants/:/${parts.join('/')}`;
+}
+
+function referenceOf(node: ts.CallExpression): string | null {
+  const name = ts.isIdentifier(node.expression) ? node.expression.text : null;
+  const [first, second, , fourth] = node.arguments;
+  if (name === 'adminCall') {
+    if (second === undefined || fourth === undefined) return null;
+    if (!ts.isStringLiteralLike(second) || !METHODS.has(second.text)) return null;
+    const address = partsOf(fourth);
+    return address === null ? null : `${second.text} /${address}`;
+  }
+  if ((name === 'listReader' || name === 'countReader') && first !== undefined) {
+    if (!ts.isStringLiteralLike(first)) return null;
+    return `GET /admin/tenants/:/${first.text}${name === 'countReader' ? '/count' : ''}`;
+  }
+  const [method, target] = node.arguments;
+  if (method === undefined || target === undefined) return null;
+  if (!ts.isStringLiteralLike(method) || !METHODS.has(method.text)) return null;
+  const address = pathOf(target)?.split('?')[0];
+  return address?.startsWith('admin/') === true ? `${method.text} /${address}` : null;
+}
+
 // `METHOD /admin/...` for every admin path an adapter source asks for.
 function referencesIn(fileName: string, source: string): string[] {
   const file = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true);
   const found: string[] = [];
   const visit = (node: ts.Node): void => {
     if (ts.isCallExpression(node)) {
-      const [method, target] = node.arguments;
-      if (
-        method !== undefined &&
-        target !== undefined &&
-        ts.isStringLiteralLike(method) &&
-        METHODS.has(method.text)
-      ) {
-        const address = pathOf(target)?.split('?')[0];
-        if (address?.startsWith('admin/') === true) found.push(`${method.text} /${address}`);
-      }
+      const reference = referenceOf(node);
+      if (reference !== null) found.push(reference);
     }
     ts.forEachChild(node, visit);
   };
@@ -96,6 +115,11 @@ describe("the console's reach into the admin API", { timeout: 60_000 }, () => {
     const source = `
       gateway.request('GET', \`admin/tenants/\${encodeURIComponent(tenant)}/roles?\${query.toString()}\`, { schema });
       gateway.request('DELETE', \`admin/tenants/\${t}/subjects/\${id}/sessions/\${sid}\`, { schema });
+      adminCall(gateway, 'PATCH', tenant, ['roles', roleId, 'composites'], { schema });
+      adminCall(gateway, 'GET', tenant, ['roles', 'count'], { query, schema });
+      adminCall(gateway, method, tenant, ['roles'], { schema });
+      listReader('groups', schema);
+      countReader('groups');
       gateway.request('POST', 'admin/tenant-imports', { schema });
       gateway.request('GET', 'session', { schema });
       gateway.request(method, 'admin/tenants', { schema });
@@ -104,6 +128,10 @@ describe("the console's reach into the admin API", { timeout: 60_000 }, () => {
     expect(referencesIn('fixture.ts', source).map((reference) => template(reference))).toEqual([
       'GET /admin/tenants/:/roles',
       'DELETE /admin/tenants/:/subjects/:/sessions/:',
+      'PATCH /admin/tenants/:/roles/:/composites',
+      'GET /admin/tenants/:/roles/count',
+      'GET /admin/tenants/:/groups',
+      'GET /admin/tenants/:/groups/count',
       'POST /admin/tenant-imports',
       'GET /admin/tenants',
     ]);
