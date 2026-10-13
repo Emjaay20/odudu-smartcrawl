@@ -930,6 +930,7 @@ running:
 ```bash
 cd infra/docker
 ./ensure-console-key.sh   # the stack refuses to start without the console's key
+./try-certs.sh           # a throwaway certificate for the logout sink below
 export COMPOSE_PROJECT_NAME=odudu-try ODUDU_HOST_PORT=3090 POSTGRES_HOST_PORT=5472
 docker compose -f compose.yaml -f compose.try.yaml up -d --build
 until curl -fsS http://localhost:3090/health/ready; do sleep 2; done
@@ -939,9 +940,10 @@ until curl -fsS http://localhost:3090/health/ready; do sleep 2; done
 Mailpit catches every message the stack sends and shows it at
 http://localhost:8090; on the console's Email page point a tenant's relay at
 host `mailpit`, port `1025`, STARTTLS off, no credentials, and press the test
-send. A request sink at `http://logout-sink:8080/` prints whatever it is sent
-(its logs: `docker compose logs logout-sink`), for a client's back-channel
-logout URI.
+send. A request sink at `https://logout-sink:8443/` (certificate trusted by the
+server through `try-certs.sh`; back-channel logout URIs must be `https`)
+prints whatever it is sent, in its logs (`docker compose logs logout-sink`),
+for a client's back-channel logout URI.
 
 Bootstrap the first administrator, whose one-time password is printed
 once:
