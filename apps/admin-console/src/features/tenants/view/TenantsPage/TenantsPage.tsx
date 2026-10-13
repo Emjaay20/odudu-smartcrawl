@@ -1,6 +1,6 @@
 import type { Tenant } from '@odudu/contracts/admin';
 import { Link } from 'react-aria-components';
-import { enterHref, IMPORT_TENANT_HREF, NEW_TENANT_HREF } from '#/features/tenants/service';
+import { IMPORT_TENANT_HREF, NEW_TENANT_HREF } from '#/features/tenants/service';
 import { useTenantsList } from '#/features/tenants/usecase/useTenantsList';
 import { SystemGate } from '#/features/tenants/view/SystemGate';
 import { ButtonLink } from '#/shared/view/ButtonLink';
@@ -12,6 +12,7 @@ import { Timestamp } from '#/shared/view/Timestamp';
 import { ViewOnlyNote } from '#/shared/view/ViewOnlyNote';
 import styles from '#/features/tenants/view/TenantsPage/TenantsPage.module.css';
 import { STATUS_FILTER } from '#/shared/service/filters';
+import { tenantPage } from '#/shared/service/address';
 
 const COLUMNS: readonly Column<Tenant>[] = [
   {
@@ -41,7 +42,7 @@ const COLUMNS: readonly Column<Tenant>[] = [
     id: 'enter',
     header: 'Console',
     cell: (tenant) => (
-      <Link href={enterHref(tenant.name)} className={styles.enter ?? ''}>
+      <Link href={tenantPage(tenant.name)} className={styles.enter ?? ''}>
         {`Enter ${tenant.name}`}
       </Link>
     ),

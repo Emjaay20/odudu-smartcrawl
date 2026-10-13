@@ -15,7 +15,6 @@ import {
   againOf,
   choosesHoldings,
   createTenantCall,
-  enterHref,
   findAdministratorCall,
   findTenantCall,
   freshCreation,
@@ -41,6 +40,7 @@ import { withoutField } from '#/shared/service/fieldErrors';
 import { inOrderOf } from '#/shared/service/ids';
 import { SYSTEM_TENANT, type AdminCapability } from '#/shared/service/principal';
 import type { GatewayFailure } from '#/shared/transport/gateway';
+import { tenantPage } from '#/shared/service/address';
 
 type Step<S extends Creation['step']> = Extract<Creation, { step: S }>;
 
@@ -333,7 +333,7 @@ export function useNewTenant(flow: CreationFlow): NewTenant {
       again: againOf(flow),
       systemAdminsHref: systemAdminsHrefOf(creation.tenant),
       recordHref: tenantHref(creation.tenant),
-      enterHref: enterHref(creation.tenant),
+      enterHref: tenantPage(creation.tenant),
     },
   };
 }

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  enterHref,
   IMPORT_TENANT_HREF,
   NEW_TENANT_HREF,
   tenantHref,
@@ -17,7 +16,6 @@ describe('the addresses', () => {
     expect(tenantHref('new')).toBe('/console/system/tenants/new');
     expect(NEW_TENANT_HREF).toBe('/console/system/new-tenant');
     expect(IMPORT_TENANT_HREF).toBe('/console/system/import-tenant');
-    expect(enterHref('acme')).toBe('/console/acme');
   });
 });
 

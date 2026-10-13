@@ -84,7 +84,6 @@ export {
   administratorTitle,
   systemAdminsTrail,
   tenantHref,
-  enterHref,
 } from '#/features/tenants/service/address';
 export {
   CREATE_TENANT_TITLE,

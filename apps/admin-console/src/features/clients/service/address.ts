@@ -1,22 +1,10 @@
-import type { Crumb } from '#/shared/service/breadcrumb';
+import { resourceAddress } from '#/shared/service/address';
 
-export function clientsHref(tenant: string): string {
-  return `/console/${encodeURIComponent(tenant)}/clients`;
-}
+const clients = resourceAddress({ segment: 'clients', group: 'Applications', label: 'Clients' });
 
-export function newClientHref(tenant: string): string {
-  return `${clientsHref(tenant)}/new`;
-}
-
-export function clientHref(tenant: string, id: string): string {
-  return `${clientsHref(tenant)}/${encodeURIComponent(id)}`;
-}
-
-// The rail group is a heading, not a page, so it has no address.
-export function clientsTrail(tenant: string, current: string): readonly Crumb[] {
-  return [
-    { label: 'Applications' },
-    { label: 'Clients', href: clientsHref(tenant) },
-    { label: current },
-  ];
-}
+export const {
+  listHref: clientsHref,
+  newHref: newClientHref,
+  recordHref: clientHref,
+  trail: clientsTrail,
+} = clients;

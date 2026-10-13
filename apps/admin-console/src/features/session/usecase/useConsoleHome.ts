@@ -11,7 +11,6 @@ import {
   namedTenant,
   replacedSession,
   switchFailedText,
-  tenantPage,
   tenantProblem,
   type Principal,
 } from '#/features/session/service';
@@ -19,6 +18,7 @@ import { useSignedIn } from '#/features/session/usecase/useSignedIn';
 import { useSignIn } from '#/features/session/usecase/useSignIn';
 import { useToasts } from '#/shared/repository/useToasts';
 import { useUrlSearch } from '#/shared/repository/useUrlSearch';
+import { tenantPage } from '#/shared/service/address';
 
 export type Home =
   | { kind: 'leaving'; tenant: string | null }

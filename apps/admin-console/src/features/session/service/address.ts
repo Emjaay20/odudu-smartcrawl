@@ -38,10 +38,6 @@ export function loginUrl(tenant: string, returnTo: string): string {
   return `/console/auth/login?${query.toString()}`;
 }
 
-export function tenantPage(tenant: string): string {
-  return `/console/${encodeURIComponent(tenant)}`;
-}
-
 export const CHOOSE_TENANT = 'choose';
 
 export const SWITCH_HREF = `/console/?${CHOOSE_TENANT}`;

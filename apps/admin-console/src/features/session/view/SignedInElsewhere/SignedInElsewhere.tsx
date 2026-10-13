@@ -3,12 +3,12 @@ import {
   backToLabel,
   signedInToTitle,
   signInToLabel,
-  tenantPage,
   type Principal,
 } from '#/features/session/service';
 import { SessionStatus } from '#/features/session/view/SessionStatus';
 import { Button } from '#/shared/view/Button';
 import styles from '#/features/session/view/SignedInElsewhere/SignedInElsewhere.module.css';
+import { tenantPage } from '#/shared/service/address';
 
 // A page, not a dialog: nothing destructive has been asked for yet, and
 // going back sends nothing.

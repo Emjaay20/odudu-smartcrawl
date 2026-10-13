@@ -1,29 +1,17 @@
 import { type Credential, type Lockout, type Profile, type Subject } from '@odudu/contracts/admin';
-import type { Crumb } from '#/shared/service/breadcrumb';
+import { resourceAddress } from '#/shared/service/address';
 import { type AdminCapability } from '#/shared/service/principal';
 
 export type { Credential, Lockout, Profile, Subject };
 
-export function subjectsHref(tenant: string): string {
-  return `/console/${encodeURIComponent(tenant)}/subjects`;
-}
+const subjects = resourceAddress({ segment: 'subjects', group: 'Identity', label: 'Subjects' });
 
-export function newSubjectHref(tenant: string): string {
-  return `${subjectsHref(tenant)}/new`;
-}
-
-export function subjectHref(tenant: string, id: string): string {
-  return `${subjectsHref(tenant)}/${encodeURIComponent(id)}`;
-}
-
-// The rail group is a heading, not a page, so it has no address.
-export function subjectsTrail(tenant: string, current: string): readonly Crumb[] {
-  return [
-    { label: 'Identity' },
-    { label: 'Subjects', href: subjectsHref(tenant) },
-    { label: current },
-  ];
-}
+export const {
+  listHref: subjectsHref,
+  newHref: newSubjectHref,
+  recordHref: subjectHref,
+  trail: subjectsTrail,
+} = subjects;
 
 export function subjectName(subject: Pick<Subject, 'id' | 'type' | 'username'>): string {
   return subject.username ?? `${subject.type} ${subject.id}`;

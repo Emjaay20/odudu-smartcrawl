@@ -1,27 +1,19 @@
 import type { Role } from '@odudu/contracts/admin';
-import type { Crumb } from '#/shared/service/breadcrumb';
+import { resourceAddress } from '#/shared/service/address';
 
 export type { Role };
 
-export function rolesHref(tenant: string): string {
-  return `/console/${encodeURIComponent(tenant)}/roles`;
-}
+const roles = resourceAddress({ segment: 'roles', group: 'Identity', label: 'Roles' });
 
-export function newRoleHref(tenant: string): string {
-  return `${rolesHref(tenant)}/new`;
-}
+export const {
+  listHref: rolesHref,
+  newHref: newRoleHref,
+  recordHref: roleHref,
+  trail: rolesTrail,
+} = roles;
 
 export function copyHref(tenant: string, id: string): string {
   return `${newRoleHref(tenant)}?copy=${encodeURIComponent(id)}`;
-}
-
-export function roleHref(tenant: string, id: string): string {
-  return `${rolesHref(tenant)}/${encodeURIComponent(id)}`;
-}
-
-// The rail group is a heading, not a page, so it has no address.
-export function rolesTrail(tenant: string, current: string): readonly Crumb[] {
-  return [{ label: 'Identity' }, { label: 'Roles', href: rolesHref(tenant) }, { label: current }];
 }
 
 // A copy is a tenant role, so only a tenant role offers one.

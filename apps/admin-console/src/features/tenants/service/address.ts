@@ -64,7 +64,3 @@ export function systemAdminsTrail(current: string): readonly Crumb[] {
 export function tenantHref(name: string): string {
   return `${TENANTS_HREF}/${encodeURIComponent(name)}`;
 }
-
-export function enterHref(name: string): string {
-  return `/console/${encodeURIComponent(name)}`;
-}

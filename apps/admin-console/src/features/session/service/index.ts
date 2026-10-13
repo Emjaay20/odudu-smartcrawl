@@ -7,7 +7,6 @@ export {
   CONSOLE_ROOT,
   returnPath,
   loginUrl,
-  tenantPage,
   CHOOSE_TENANT,
   SWITCH_HREF,
   signOutDestination,

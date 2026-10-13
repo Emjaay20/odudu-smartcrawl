@@ -1,0 +1,25 @@
+import { describe, expect, it } from 'vitest';
+import { resourceAddress, tenantPage } from '#/shared/service/address';
+
+describe('addresses', () => {
+  it('addresses a tenant, its name encoded', () => {
+    expect(tenantPage('acme')).toBe('/console/acme');
+    expect(tenantPage('a b')).toBe('/console/a%20b');
+  });
+
+  it('addresses a resource list, its creation page and a record, each tenant and id encoded', () => {
+    const address = resourceAddress({ segment: 'things', group: 'Stuff', label: 'Things' });
+    expect(address.listHref('acme')).toBe('/console/acme/things');
+    expect(address.newHref('a b')).toBe('/console/a%20b/things/new');
+    expect(address.recordHref('acme', 'c/1')).toBe('/console/acme/things/c%2F1');
+  });
+
+  it('trails from the rail group, which is no page, through the list to the record', () => {
+    const address = resourceAddress({ segment: 'things', group: 'Stuff', label: 'Things' });
+    expect(address.trail('acme', 'One')).toEqual([
+      { label: 'Stuff' },
+      { label: 'Things', href: '/console/acme/things' },
+      { label: 'One' },
+    ]);
+  });
+});

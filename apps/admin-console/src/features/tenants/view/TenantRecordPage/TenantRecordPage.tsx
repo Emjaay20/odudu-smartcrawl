@@ -1,4 +1,4 @@
-import { enterHref, tenantsTrail, type TenantRecordAccess } from '#/features/tenants/service';
+import { tenantsTrail, type TenantRecordAccess } from '#/features/tenants/service';
 import {
   useTenantRecordAccess,
   useTenantRecordPage,
@@ -13,6 +13,7 @@ import { PageHeader } from '#/shared/view/PageHeader';
 import { RecordPage } from '#/shared/view/RecordPage';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { ViewOnlyNote } from '#/shared/view/ViewOnlyNote';
+import { tenantPage } from '#/shared/service/address';
 
 function Record({ name, access }: { name: string; access: TenantRecordAccess }) {
   const page = useTenantRecordPage(name);
@@ -32,7 +33,7 @@ function Record({ name, access }: { name: string; access: TenantRecordAccess }) 
             ),
             description: tenant.display_name ?? 'No display name',
           })}
-      actions={<ButtonLink href={enterHref(name)}>{`Enter ${name}`}</ButtonLink>}
+      actions={<ButtonLink href={tenantPage(name)}>{`Enter ${name}`}</ButtonLink>}
       noun="tenant"
       {...(access.blocked === null
         ? {}
@@ -84,7 +85,7 @@ function Readable({ name }: { name: string }) {
       <PageHeader
         breadcrumb={tenantsTrail(name)}
         title={name}
-        actions={<ButtonLink href={enterHref(name)}>{`Enter ${name}`}</ButtonLink>}
+        actions={<ButtonLink href={tenantPage(name)}>{`Enter ${name}`}</ButtonLink>}
       />
       {access.readNeeds.map((capability) => (
         <CapabilityNote key={capability} capability={capability}>
