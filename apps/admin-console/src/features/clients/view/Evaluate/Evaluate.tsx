@@ -1,5 +1,4 @@
 import type { Client, Subject } from '@odudu/contracts/admin';
-import { useId } from 'react';
 import {
   EVALUATE_CAPABILITY,
   EVALUATE_HEADING,
@@ -19,7 +18,9 @@ import { Button } from '#/shared/view/Button';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { CopyValue } from '#/shared/view/CopyValue';
 import { TextField } from '#/shared/view/Field';
+import { Panel } from '#/shared/view/Panel';
 import { Picker } from '#/shared/view/Picker';
+import { recordTab } from '#/shared/view/RecordTab';
 import styles from '#/features/clients/view/Evaluate/Evaluate.module.css';
 
 function Form({ page }: { page: ClientEvaluate }) {
@@ -45,7 +46,7 @@ function Form({ page }: { page: ClientEvaluate }) {
         value={page.scope}
         onChange={page.setScope}
       />
-      <div className={styles.actions}>
+      <div className={recordTab.actions}>
         <Button
           variant="primary"
           isDisabled={page.chosen === null || page.busy}
@@ -55,16 +56,16 @@ function Form({ page }: { page: ClientEvaluate }) {
         </Button>
       </div>
       {page.problem === null ? null : (
-        <p role="alert" className={styles.message}>
+        <p role="alert" className={recordTab.message}>
           {page.problem}
         </p>
       )}
       {page.worked === null ? null : (
         <div className={styles.claims}>
-          <p role="status" className={styles.text}>{`Claims for ${page.worked}.`}</p>
+          <p role="status" className={recordTab.text}>{`Claims for ${page.worked}.`}</p>
           {page.artefacts.map((artefact) =>
             artefact.text === null ? (
-              <p key={artefact.label} className={styles.rule}>
+              <p key={artefact.label} className={recordTab.rule}>
                 {NO_ID_TOKEN}
               </p>
             ) : (
@@ -82,19 +83,15 @@ function Asked({ tenant, client }: { tenant: string; client: Client }) {
 }
 
 export function Evaluate({ tenant, client }: { tenant: string; client: Client }) {
-  const heading = useId();
   const allowed = useEvaluateAllowed(tenant);
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        {EVALUATE_HEADING}
-      </h2>
-      <p className={styles.rule}>{EVALUATE_RULE}</p>
+    <Panel title={EVALUATE_HEADING}>
+      <p className={recordTab.rule}>{EVALUATE_RULE}</p>
       {allowed ? (
         <Asked tenant={tenant} client={client} />
       ) : (
         <CapabilityNote capability={EVALUATE_CAPABILITY}>Evaluating a subject</CapabilityNote>
       )}
-    </section>
+    </Panel>
   );
 }

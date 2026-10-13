@@ -13,7 +13,7 @@ import { useClientLogout } from '#/features/clients/usecase/useClientLogout';
 import { Deliveries } from '#/features/clients/view/Deliveries';
 import { SaveSection } from '#/features/clients/view/SaveSection';
 import { ReadOnlyFields, ToggleField, UrlField, UrlListField } from '#/shared/view/Field';
-import styles from '#/features/clients/view/LogoutTab/LogoutTab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 export function LogoutTab({
   tenant,
@@ -31,7 +31,7 @@ export function LogoutTab({
   const page = useClientLogout({ tenant, client, etag, gone });
   const { postLogout, backchannel, frontchannel } = page;
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       <ReadOnlyFields when={!writable}>
         <SaveSection title={SECTIONS_LOGOUT.postLogout} save={postLogout}>
           <UrlListField

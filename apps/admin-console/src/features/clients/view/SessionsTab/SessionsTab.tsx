@@ -1,5 +1,4 @@
 import type { Client, TenantSession } from '@odudu/contracts/admin';
-import { useId } from 'react';
 import {
   NO_SESSIONS,
   REVOKE_HEADING,
@@ -21,10 +20,11 @@ import { Count } from '#/shared/view/Count';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { Pager } from '#/shared/view/Pager';
+import { Panel } from '#/shared/view/Panel';
 import { TableSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
-import styles from '#/features/clients/view/SessionsTab/SessionsTab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 const COLUMNS: readonly Column<TenantSession>[] = [
   {
@@ -76,7 +76,7 @@ function List({ client, page }: { client: Client; page: ClientSessions }) {
     case 'ready':
       body =
         list.rows.length === 0 ? (
-          <p className={styles.rule}>{NO_SESSIONS}</p>
+          <p className={recordTab.rule}>{NO_SESSIONS}</p>
         ) : (
           <>
             <DataTable
@@ -103,7 +103,7 @@ function List({ client, page }: { client: Client; page: ClientSessions }) {
   return (
     <>
       {list.count === null ? null : (
-        <div className={styles.actions}>
+        <div className={recordTab.actions}>
           <Count count={list.count.count} capped={list.count.capped} noun={SESSIONS_NOUN} />
         </div>
       )}
@@ -113,19 +113,15 @@ function List({ client, page }: { client: Client; page: ClientSessions }) {
 }
 
 function Revoke({ client, page }: { client: Client; page: ClientSessions }) {
-  const heading = useId();
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        {REVOKE_HEADING}
-      </h2>
-      <p className={styles.rule}>{REVOKE_RULE}</p>
+    <Panel title={REVOKE_HEADING}>
+      <p className={recordTab.rule}>{REVOKE_RULE}</p>
       {page.result === null ? null : (
-        <p role="status" className={styles.text}>
+        <p role="status" className={recordTab.text}>
           {page.result}
         </p>
       )}
-      <div className={styles.actions}>
+      <div className={recordTab.actions}>
         <Button variant="danger" isDisabled={page.busy} onPress={page.ask}>
           {`Revoke every token of ${client.name}`}
         </Button>
@@ -142,7 +138,7 @@ function Revoke({ client, page }: { client: Client; page: ClientSessions }) {
         onConfirm={page.confirm}
         onCancel={page.cancel}
       />
-    </section>
+    </Panel>
   );
 }
 
@@ -150,7 +146,7 @@ function Sessions({ tenant, client, reach }: { tenant: string; client: Client; r
   const page = useClientSessionsTab(tenant, client, reach);
   return (
     <>
-      <p className={styles.rule}>{SESSIONS_RULE}</p>
+      <p className={recordTab.rule}>{SESSIONS_RULE}</p>
       <List client={client} page={page} />
       {page.offered ? <Revoke client={client} page={page} /> : null}
     </>
@@ -168,7 +164,7 @@ export function SessionsTab({
 }) {
   const readable = useSessionsReadable(tenant);
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       {readable ? (
         <Sessions tenant={tenant} client={client} reach={reach} />
       ) : (

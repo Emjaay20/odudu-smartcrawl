@@ -1,5 +1,4 @@
 import type { Client } from '@odudu/contracts/admin';
-import { useId } from 'react';
 import {
   CLIENT_ID_FIXED,
   PAGES_RULE,
@@ -12,6 +11,7 @@ import {
   type ClientGeneral,
   type Deletion,
 } from '#/features/clients/usecase/useClientGeneral';
+import { Panel } from '#/shared/view/Panel';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
@@ -20,16 +20,12 @@ import { TextAreaField, TextField, ToggleField, UrlField } from '#/shared/view/F
 import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
 import { Section } from '#/shared/view/Section';
 import { Timestamp } from '#/shared/view/Timestamp';
-import styles from '#/features/clients/view/GeneralTab/GeneralTab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 function Fixed({ client }: { client: Client }) {
-  const heading = useId();
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        Identity
-      </h2>
-      <dl className={styles.fixed}>
+    <Panel title="Identity">
+      <dl className={recordTab.fixed}>
         <div>
           <dt>Client ID</dt>
           <dd>
@@ -51,8 +47,8 @@ function Fixed({ client }: { client: Client }) {
           </dd>
         </div>
       </dl>
-      <p className={styles.rule}>{`${CLIENT_ID_FIXED} ${TYPE_FIXED}`}</p>
-    </section>
+      <p className={recordTab.rule}>{`${CLIENT_ID_FIXED} ${TYPE_FIXED}`}</p>
+    </Panel>
   );
 }
 
@@ -175,7 +171,7 @@ function Availability({ general }: { general: ClientGeneral }) {
           }}
         />
       ) : (
-        <p className={styles.rule}>{general.enabledFixed}</p>
+        <p className={recordTab.rule}>{general.enabledFixed}</p>
       )}
     </Section>
   );
@@ -218,26 +214,22 @@ function Danger({
   fixed: string | null;
   deletion: Deletion;
 }) {
-  const heading = useId();
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        Delete
-      </h2>
+    <Panel title="Delete">
       {fixed === null ? (
         <>
-          <p className={styles.text}>
+          <p className={recordTab.text}>
             A deleted client is gone with the roles scoped to it, and no application can sign in
             through it again. Its ID is typed to confirm, since two clients may share a name.
           </p>
-          <div className={styles.actions}>
+          <div className={recordTab.actions}>
             <Button variant="danger" onPress={deletion.ask}>
               {`Delete ${name}`}
             </Button>
           </div>
         </>
       ) : (
-        <p className={styles.rule}>{fixed}</p>
+        <p className={recordTab.rule}>{fixed}</p>
       )}
       <ConfirmDialog
         isOpen={deletion.confirming}
@@ -251,7 +243,7 @@ function Danger({
         onConfirm={deletion.confirm}
         onCancel={deletion.cancel}
       />
-    </section>
+    </Panel>
   );
 }
 
@@ -272,7 +264,7 @@ export function GeneralTab({
 }) {
   const general = useClientGeneral({ tenant, client, etag, gone });
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       <Fixed client={client} />
       <Details general={general} />
       <Pages general={general} />

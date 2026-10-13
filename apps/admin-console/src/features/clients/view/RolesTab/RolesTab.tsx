@@ -1,5 +1,5 @@
 import type { Client, Role } from '@odudu/contracts/admin';
-import { useId, type SubmitEvent } from 'react';
+import { type SubmitEvent } from 'react';
 import {
   CLIENT_ROLES_RULE,
   NEW_ROLE_HEADING,
@@ -22,10 +22,11 @@ import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { TextAreaField, TextField } from '#/shared/view/Field';
 import { Pager } from '#/shared/view/Pager';
+import { Panel } from '#/shared/view/Panel';
 import { TableSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { ViewOnlyNote } from '#/shared/view/ViewOnlyNote';
-import styles from '#/features/clients/view/RolesTab/RolesTab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 const COLUMNS: readonly Column<Role>[] = [
   { id: 'name', header: 'Role', isRowHeader: true, cell: (role) => <code>{role.name}</code> },
@@ -64,7 +65,7 @@ function List({ client, page }: { client: Client; page: ClientRoles }) {
     case 'ready':
       body =
         list.rows.length === 0 ? (
-          <p className={styles.rule}>{NO_CLIENT_ROLES}</p>
+          <p className={recordTab.rule}>{NO_CLIENT_ROLES}</p>
         ) : (
           <>
             <DataTable
@@ -88,7 +89,7 @@ function List({ client, page }: { client: Client; page: ClientRoles }) {
   return (
     <>
       {list.status === 'refused' ? null : (
-        <div className={styles.actions}>
+        <div className={recordTab.actions}>
           {list.count === null ? null : (
             <Count count={list.count.count} capped={list.count.capped} noun={NOUN} />
           )}
@@ -103,18 +104,14 @@ function List({ client, page }: { client: Client; page: ClientRoles }) {
 }
 
 function NewRole({ page }: { page: ClientRoles }) {
-  const heading = useId();
   const submit = (event: SubmitEvent<HTMLFormElement>): void => {
     event.preventDefault();
     page.submit();
   };
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        {NEW_ROLE_HEADING}
-      </h2>
-      <p className={styles.rule}>{NEW_ROLE_RULE}</p>
-      <form noValidate onSubmit={submit} className={styles.form}>
+    <Panel title={NEW_ROLE_HEADING}>
+      <p className={recordTab.rule}>{NEW_ROLE_RULE}</p>
+      <form noValidate onSubmit={submit} className={recordTab.form}>
         <TextField
           label={NEW_ROLE_NAME_LABEL}
           mono
@@ -131,17 +128,17 @@ function NewRole({ page }: { page: ClientRoles }) {
           onChange={page.editDescription}
         />
         {page.message === null ? null : (
-          <p role="alert" className={styles.message}>
+          <p role="alert" className={recordTab.message}>
             {page.message}
           </p>
         )}
-        <div className={styles.actions}>
+        <div className={recordTab.actions}>
           <Button type="submit" variant="primary" isDisabled={page.busy}>
             {page.busy ? 'Creating…' : 'Create role'}
           </Button>
         </div>
       </form>
-    </section>
+    </Panel>
   );
 }
 
@@ -149,7 +146,7 @@ function Roles({ tenant, client }: { tenant: string; client: Client }) {
   const page = useClientRolesTab(tenant, client);
   return (
     <>
-      <p className={styles.rule}>{CLIENT_ROLES_RULE}</p>
+      <p className={recordTab.rule}>{CLIENT_ROLES_RULE}</p>
       <List client={client} page={page} />
       {page.needs.length === 0 ? (
         <NewRole page={page} />
@@ -163,7 +160,7 @@ function Roles({ tenant, client }: { tenant: string; client: Client }) {
 export function RolesTab({ tenant, client }: { tenant: string; client: Client }) {
   const readable = useRolesReadable(tenant);
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       {readable ? (
         <Roles tenant={tenant} client={client} />
       ) : (

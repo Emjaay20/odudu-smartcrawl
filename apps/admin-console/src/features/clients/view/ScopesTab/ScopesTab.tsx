@@ -1,5 +1,5 @@
 import type { Client, ClientScope } from '@odudu/contracts/admin';
-import { useId, useRef } from 'react';
+import { useRef } from 'react';
 import {
   ASSIGN_HEADING,
   ASSIGN_LABEL,
@@ -15,27 +15,25 @@ import {
 import { Evaluate } from '#/features/clients/view/Evaluate';
 import { Button } from '#/shared/view/Button';
 import { InlineFields, SelectField } from '#/shared/view/Field';
+import { Panel } from '#/shared/view/Panel';
 import { Picker } from '#/shared/view/Picker';
 import { ViewOnlyNote } from '#/shared/view/ViewOnlyNote';
+import { recordTab } from '#/shared/view/RecordTab';
 import styles from '#/features/clients/view/ScopesTab/ScopesTab.module.css';
 import { ASSIGNMENTS, ASSIGNMENT_RULE } from '#/shared/service/assignment';
 
 function Assigned({ client, page }: { client: Client; page: ClientScopes }) {
-  const heading = useId();
   const title = useRef<HTMLHeadingElement>(null);
   // A removed row takes the focus that was on it, so the heading holds it.
   const removed = async (scope: Client['scopes'][number]): Promise<void> => {
     if (await page.remove(scope)) title.current?.focus();
   };
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} ref={title} tabIndex={-1} className={styles.heading}>
-        {ASSIGNED_HEADING}
-      </h2>
-      <p className={styles.rule}>{`${ASSIGNMENT_RULE} ${page.count}`}</p>
-      {page.fixed === null ? null : <p className={styles.rule}>{page.fixed}</p>}
+    <Panel title={ASSIGNED_HEADING} headingRef={title}>
+      <p className={recordTab.rule}>{`${ASSIGNMENT_RULE} ${page.count}`}</p>
+      {page.fixed === null ? null : <p className={recordTab.rule}>{page.fixed}</p>}
       {page.shown.length === 0 ? (
-        <p className={styles.text}>{NO_SCOPES}</p>
+        <p className={recordTab.text}>{NO_SCOPES}</p>
       ) : (
         <ul aria-label={`Scopes assigned to ${client.name}`} className={styles.scopes}>
           {page.shown.map((scope) => (
@@ -75,28 +73,24 @@ function Assigned({ client, page }: { client: Client; page: ClientScopes }) {
         </ul>
       )}
       {page.more > 0 ? (
-        <div className={styles.actions}>
+        <div className={recordTab.actions}>
           <Button size="small" onPress={page.showMore}>
             {`Show ${String(page.more)} more`}
           </Button>
         </div>
       ) : null}
       {page.message === null ? null : (
-        <p role="alert" className={styles.message}>
+        <p role="alert" className={recordTab.message}>
           {page.message}
         </p>
       )}
-    </section>
+    </Panel>
   );
 }
 
 function Assign({ page }: { page: ClientScopes }) {
-  const heading = useId();
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        {ASSIGN_HEADING}
-      </h2>
+    <Panel title={ASSIGN_HEADING}>
       <Picker<ClientScope>
         label={PICKER_LABEL}
         noun={{ one: 'scope', other: 'scopes' }}
@@ -116,7 +110,7 @@ function Assign({ page }: { page: ClientScopes }) {
         value={page.assignment}
         onChange={page.setAssignment}
       />
-      <div className={styles.actions}>
+      <div className={recordTab.actions}>
         <Button
           variant="primary"
           isDisabled={page.chosen === null || page.working !== null}
@@ -127,7 +121,7 @@ function Assign({ page }: { page: ClientScopes }) {
           {page.chosen === null ? ASSIGN_LABEL : `${ASSIGN_LABEL} ${page.chosen.name}`}
         </Button>
       </div>
-    </section>
+    </Panel>
   );
 }
 
@@ -142,7 +136,7 @@ export function ScopesTab({
 }) {
   const page = useClientScopeAssignment({ tenant, client, reach });
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       {page.needs.length > 0 ? (
         <ViewOnlyNote noun="this client's scopes" needs={page.needs} />
       ) : null}

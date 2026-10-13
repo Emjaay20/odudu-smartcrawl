@@ -1,5 +1,4 @@
 import type { Client, LogoutDelivery } from '@odudu/contracts/admin';
-import { useId } from 'react';
 import {
   attemptsText,
   DELIVERIES_HEADING,
@@ -16,10 +15,11 @@ import { Button } from '#/shared/view/Button';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { SelectField } from '#/shared/view/Field';
+import { Panel } from '#/shared/view/Panel';
 import { TableSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
-import styles from '#/features/clients/view/Deliveries/Deliveries.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 const COLUMNS: readonly Column<LogoutDelivery>[] = [
   {
@@ -69,7 +69,7 @@ function Rows({ client, page }: { client: Client; page: ClientDeliveries }) {
     case 'ready':
       break;
   }
-  if (list.rows.length === 0) return <p className={styles.rule}>{NO_DELIVERIES}</p>;
+  if (list.rows.length === 0) return <p className={recordTab.rule}>{NO_DELIVERIES}</p>;
   return (
     <>
       <DataTable
@@ -79,7 +79,7 @@ function Rows({ client, page }: { client: Client; page: ClientDeliveries }) {
         rowKey={(delivery) => delivery.id}
       />
       {list.more ? (
-        <div className={styles.actions}>
+        <div className={recordTab.actions}>
           <Button isDisabled={list.loadingMore} onPress={list.loadMore}>
             {list.loadingMore ? 'Loading more deliveries…' : 'Load more deliveries'}
           </Button>
@@ -90,14 +90,10 @@ function Rows({ client, page }: { client: Client; page: ClientDeliveries }) {
 }
 
 export function Deliveries({ tenant, client }: { tenant: string; client: Client }) {
-  const heading = useId();
   const page = useClientDeliveries(tenant, client);
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        {DELIVERIES_HEADING}
-      </h2>
-      <p className={styles.rule}>{DELIVERIES_RULE}</p>
+    <Panel title={DELIVERIES_HEADING}>
+      <p className={recordTab.rule}>{DELIVERIES_RULE}</p>
       <SelectField
         label="Show"
         options={STATUS_OPTIONS}
@@ -105,6 +101,6 @@ export function Deliveries({ tenant, client }: { tenant: string; client: Client 
         onChange={page.setStatus}
       />
       <Rows client={client} page={page} />
-    </section>
+    </Panel>
   );
 }

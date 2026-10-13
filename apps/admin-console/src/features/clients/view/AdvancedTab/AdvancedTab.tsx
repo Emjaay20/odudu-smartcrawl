@@ -1,5 +1,4 @@
 import type { Client } from '@odudu/contracts/admin';
-import { useId } from 'react';
 import {
   AUDIENCES_RULE,
   authNote,
@@ -36,20 +35,17 @@ import {
   ToggleField,
   UrlField,
 } from '#/shared/view/Field';
+import { Panel } from '#/shared/view/Panel';
 import { SecretDialog } from '#/shared/view/SecretDialog';
 import { Timestamp } from '#/shared/view/Timestamp';
-import styles from '#/features/clients/view/AdvancedTab/AdvancedTab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 function Rotation({ client, secret }: { client: Client; secret: ClientSecret }) {
-  const heading = useId();
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        {SECTIONS_ADVANCED.secret}
-      </h2>
-      <p className={styles.rule}>{SECRET_RULE}</p>
+    <Panel title={SECTIONS_ADVANCED.secret}>
+      <p className={recordTab.rule}>{SECRET_RULE}</p>
       {secret.previous === null ? null : (
-        <p className={styles.text}>
+        <p className={recordTab.text}>
           {secret.previous.lead} <Timestamp value={secret.previous.at} />.
         </p>
       )}
@@ -63,11 +59,11 @@ function Rotation({ client, secret }: { client: Client; secret: ClientSecret }) 
         onChange={secret.setGrace}
       />
       {secret.problem === null ? null : (
-        <p role="alert" className={styles.message}>
+        <p role="alert" className={recordTab.message}>
           {secret.problem}
         </p>
       )}
-      <div className={styles.actions}>
+      <div className={recordTab.actions}>
         <Button variant="danger" isDisabled={secret.busy} onPress={secret.ask}>
           {`Rotate the secret of ${client.name}`}
         </Button>
@@ -91,29 +87,25 @@ function Rotation({ client, secret }: { client: Client; secret: ClientSecret }) 
       >
         {secret.secretNote}
       </SecretDialog>
-    </section>
+    </Panel>
   );
 }
 
 function Fixed() {
-  const heading = useId();
   return (
-    <section aria-labelledby={heading} className={styles.panel}>
-      <h2 id={heading} className={styles.heading}>
-        {SECTIONS_ADVANCED.fixed}
-      </h2>
-      <dl className={styles.fixed}>
+    <Panel title={SECTIONS_ADVANCED.fixed}>
+      <dl className={recordTab.fixed}>
         {FIXED_BY_DESIGN.map((item) => (
           <div key={item.label}>
             <dt>{item.label}</dt>
             <dd>
               <code>{item.value}</code>
-              <span className={styles.rule}>{` · ${item.why}`}</span>
+              <span className={recordTab.rule}>{` · ${item.why}`}</span>
             </dd>
           </div>
         ))}
       </dl>
-    </section>
+    </Panel>
   );
 }
 
@@ -137,12 +129,12 @@ export function AdvancedTab({
   const source = keys.values.key_source;
   const secretFixed = secretFixedNote(client);
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       <Installation tenant={tenant} clientDbId={client.id} />
       <ReadOnlyFields when={!writable}>
         <SaveSection title={SECTIONS_ADVANCED.auth} save={auth}>
           {client.type === 'public' ? (
-            <p className={styles.rule}>{PUBLIC_AUTH_FIXED}</p>
+            <p className={recordTab.rule}>{PUBLIC_AUTH_FIXED}</p>
           ) : (
             <>
               <SelectField
@@ -281,7 +273,7 @@ export function AdvancedTab({
         </SaveSection>
       </ReadOnlyFields>
       {secretFixed !== null ? (
-        <p className={styles.rule}>{secretFixed}</p>
+        <p className={recordTab.rule}>{secretFixed}</p>
       ) : writable ? (
         <Rotation client={client} secret={secret} />
       ) : null}

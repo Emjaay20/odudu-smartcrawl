@@ -27,7 +27,7 @@ import { Note } from '#/shared/view/Note';
 import { RecordPage } from '#/shared/view/RecordPage';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { ViewOnlyNote } from '#/shared/view/ViewOnlyNote';
-import styles from '#/features/clients/view/ClientRecordPage/ClientRecordPage.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 interface PanelProps {
   tenant: string;
@@ -46,8 +46,8 @@ function Trail({ tenant, id }: { tenant: string; id: string }) {
 function Activity({ tenant, id }: { tenant: string; id: string }) {
   const readable = useAuditReadable(tenant);
   return (
-    <div className={styles.tab}>
-      <p className={styles.rule}>{ACTIVITY_NOTE}</p>
+    <div className={recordTab.tab}>
+      <p className={recordTab.rule}>{ACTIVITY_NOTE}</p>
       {readable ? (
         <Trail tenant={tenant} id={id} />
       ) : (

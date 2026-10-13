@@ -22,7 +22,7 @@ import { EmptyState } from '#/shared/view/EmptyState';
 import { ReadOnlyFields } from '#/shared/view/Field';
 import { RolePicker } from '#/shared/view/RolePicker';
 import { FormSkeleton } from '#/shared/view/Skeleton';
-import styles from '#/features/clients/view/ServiceAccountTab/ServiceAccountTab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 function Editor({
   tenant,
@@ -55,15 +55,18 @@ function Roles({ client, page }: { client: Client; page: ServiceRoles }) {
     <>
       <SaveSection title="Roles" description={SERVICE_RULE} save={s}>
         {page.assigned.length === 0 ? (
-          <p className={styles.rule}>{NO_ROLES}</p>
+          <p className={recordTab.rule}>{NO_ROLES}</p>
         ) : (
           <>
-            <p className={styles.rule}>{assignedCount(page.assigned.length)}</p>
-            <ul aria-label={`Assigned to ${client.name}'s service account`} className={styles.list}>
+            <p className={recordTab.rule}>{assignedCount(page.assigned.length)}</p>
+            <ul
+              aria-label={`Assigned to ${client.name}'s service account`}
+              className={recordTab.list}
+            >
               {page.assigned.map((role) => (
                 <li key={role.id}>
                   <code>{role.name}</code>
-                  <span className={styles.rule}>
+                  <span className={recordTab.rule}>
                     {role.client === null ? ' · tenant role' : ` · ${roleOwnerLine(role.client)}`}
                   </span>
                 </li>
@@ -71,7 +74,7 @@ function Roles({ client, page }: { client: Client; page: ServiceRoles }) {
             </ul>
           </>
         )}
-        {page.kept === null ? null : <p className={styles.rule}>{page.kept}</p>}
+        {page.kept === null ? null : <p className={recordTab.rule}>{page.kept}</p>}
         {page.offered ? (
           <RolePicker
             label={`Roles ${client.name}'s service account holds directly`}
@@ -82,7 +85,7 @@ function Roles({ client, page }: { client: Client; page: ServiceRoles }) {
           />
         ) : null}
       </SaveSection>
-      <div className={styles.actions}>
+      <div className={recordTab.actions}>
         <ButtonLink href={page.accountHref} size="small" variant="quiet">
           Open the service account
         </ButtonLink>
@@ -143,8 +146,8 @@ export function ServiceAccountTab({
 }) {
   const access = useServiceAccess(tenant, client);
   return (
-    <div className={styles.tab}>
-      {access.status === 'none' ? <p className={styles.rule}>{NO_ACCOUNT}</p> : null}
+    <div className={recordTab.tab}>
+      {access.status === 'none' ? <p className={recordTab.rule}>{NO_ACCOUNT}</p> : null}
       {access.status === 'denied' ? (
         <CapabilityNote capability={SERVICE_CAPABILITY}>The service account's roles</CapabilityNote>
       ) : null}

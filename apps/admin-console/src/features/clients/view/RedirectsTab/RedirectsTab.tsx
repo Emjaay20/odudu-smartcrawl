@@ -5,7 +5,7 @@ import { useClientRedirects } from '#/features/clients/usecase/useClientRedirect
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { ReadOnlyFields, UrlListField } from '#/shared/view/Field';
 import { Section } from '#/shared/view/Section';
-import styles from '#/features/clients/view/RedirectsTab/RedirectsTab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 export function RedirectsTab({
   tenant,
@@ -24,8 +24,8 @@ export function RedirectsTab({
   const redirects = page.redirects;
   const origins = page.origins;
   return (
-    <div className={styles.tab}>
-      {page.fixed === null ? null : <p className={styles.rule}>{page.fixed}</p>}
+    <div className={recordTab.tab}>
+      {page.fixed === null ? null : <p className={recordTab.rule}>{page.fixed}</p>}
       <ReadOnlyFields when={page.readOnly}>
         <Section
           title="Redirect URIs"
@@ -72,7 +72,7 @@ export function RedirectsTab({
           />
         </Section>
       </ReadOnlyFields>
-      <p className={styles.rule}>
+      <p className={recordTab.rule}>
         {`${POST_LOGOUT_NOTE} `}
         <Link href={page.logoutHref}>Open Logout</Link>
       </p>

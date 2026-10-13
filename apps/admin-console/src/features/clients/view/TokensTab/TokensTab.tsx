@@ -24,7 +24,7 @@ import { OptionalSecondsField } from '#/features/clients/view/OptionalSecondsFie
 import { SaveSection } from '#/features/clients/view/SaveSection';
 import { ChecklistField } from '#/shared/view/ChecklistField';
 import { ReadOnlyFields, SelectField, TextListField, ToggleField } from '#/shared/view/Field';
-import styles from '#/features/clients/view/TokensTab/TokensTab.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 export function TokensTab({
   tenant,
@@ -42,7 +42,7 @@ export function TokensTab({
   const page = useClientTokens({ tenant, client, etag, gone });
   const { lifetimes, grants, credentials, fullScope, idToken } = page;
   return (
-    <div className={styles.tab}>
+    <div className={recordTab.tab}>
       <ReadOnlyFields when={!writable}>
         <SaveSection
           title={SECTIONS_TOKENS.lifetimes}

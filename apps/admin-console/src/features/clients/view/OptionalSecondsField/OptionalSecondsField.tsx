@@ -8,7 +8,7 @@ import {
 } from '#/shared/view/Field';
 import { formatDuration } from '#/shared/service/format';
 import { numberKept } from '#/shared/service/numbers';
-import styles from '#/features/clients/view/OptionalSecondsField/OptionalSecondsField.module.css';
+import { recordTab } from '#/shared/view/RecordTab';
 
 // A duration a client may leave to a default: off, it takes the default and
 // says where from; on, it is a number of seconds with its reading.
@@ -60,7 +60,7 @@ export function OptionalSecondsField({
         }}
       />
       {value === null ? (
-        <p className={styles.rule}>{offText}</p>
+        <p className={recordTab.rule}>{offText}</p>
       ) : (
         <NumberWithUnitField
           label={`${label}, in seconds`}
