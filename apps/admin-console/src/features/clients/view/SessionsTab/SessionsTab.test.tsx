@@ -128,7 +128,7 @@ it('says more remain when one call was not all of them', async () => {
 
 it("keeps the dialog open with the server's refusal beside the action", async () => {
   const user = userEvent.setup();
-  renderConsoleAt(
+  const { sent } = renderConsoleAt(
     AT,
     listing({
       [`DELETE ${GRANTS}`]: problem(403, 'about:blank', 'Forbidden', {
@@ -144,6 +144,10 @@ it("keeps the dialog open with the server's refusal beside the action", async ()
   expect(
     await within(dialog).findByText(/service account holds what the caller does not/u),
   ).toBeVisible();
+  expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
+  await waitFor(() => {
+    expect(sent.filter((s) => s.method === 'GET' && s.path === `${C}/c-bill`)).toHaveLength(2);
+  });
 });
 
 it('lists the sessions and offers no revocation while the service account holds what the caller does not', async () => {

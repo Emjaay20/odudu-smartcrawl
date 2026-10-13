@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { ADMIN, BILLING, C, clientRoutes, PORTAL } from '#/testing/clientsFixtures';
+import { A, ADMIN, BILLING, C, clientRoutes, PORTAL } from '#/testing/clientsFixtures';
 import { inTurn, json, problem } from '#/testing/fakeTransport';
 import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
 
@@ -185,7 +185,7 @@ it('deletes a client once its ID is typed, and goes back to the list', async () 
 
 it("says a refused delete in the dialog, in the server's words, and deletes nothing", async () => {
   const user = userEvent.setup();
-  renderConsoleAt(
+  const { sent } = renderConsoleAt(
     AT,
     clientRoutes(undefined, {
       [`DELETE ${C}/c-bill`]: problem(403, 'about:blank', 'Forbidden', {
@@ -202,6 +202,26 @@ it("says a refused delete in the dialog, in the server's words, and deletes noth
       /it would take manage-users from whoever holds it through here/u,
     ),
   ).toBeVisible();
+  expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
+});
+
+it('reads the client again when the ceiling refuses its delete, so the page says at once why', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    clientRoutes(undefined, {
+      [`DELETE ${C}/c-bill`]: problem(403, 'about:blank', 'Forbidden', {
+        detail: "the client's service account holds what the caller does not: manage-users",
+      }),
+    }),
+  );
+  await user.click(await screen.findByRole('button', { name: 'Delete Billing' }));
+  const dialog = await screen.findByRole('alertdialog');
+  await user.type(within(dialog).getByRole('textbox'), 'billing');
+  await user.click(within(dialog).getByRole('button', { name: 'Delete Billing' }));
+  await waitFor(() => {
+    expect(sent.filter((s) => s.method === 'GET' && s.path === `${C}/c-bill`)).toHaveLength(2);
+  });
 });
 
 it('reads the client again when the ceiling refuses a write, so the page says at once why it cannot change', async () => {

@@ -25,12 +25,10 @@ import {
   subjectName,
   type GrantClient,
 } from '#/features/subjects/service';
-import {
-  useConfirmedChange,
-  type Confirming,
-} from '#/features/subjects/usecase/useConfirmedChange';
+import { useConfirmedSubjectChange } from '#/features/subjects/usecase/useConfirmedSubjectChange';
 import { notLacking } from '#/shared/service/access';
 import type { ResourceListState } from '#/shared/service/resourceList';
+import type { Confirming } from '#/shared/usecase/useConfirmedChange';
 
 // Sessions and grants are read and changed with manage-sessions alone:
 // there is no view-sessions.
@@ -50,13 +48,13 @@ export function useSubjectSessions(tenant: string, subject: Subject): SubjectSes
   return {
     name,
     list: useSessionList(tenant, subject.id),
-    end: useConfirmedChange({
+    end: useConfirmedSubjectChange({
       tenant,
       capability: 'manage-sessions',
       change: useEndSession(tenant, subject.id),
       done: () => sessionEndedText(name),
     }),
-    endAll: useConfirmedChange({
+    endAll: useConfirmedSubjectChange({
       tenant,
       capability: 'manage-sessions',
       change: useEndAllSessions(tenant, subject.id),
@@ -82,7 +80,7 @@ export function useSubjectConsents(
     name,
     canManage,
     consents: useConsentList(tenant, subject.id),
-    revoke: useConfirmedChange({
+    revoke: useConfirmedSubjectChange({
       tenant,
       capability: 'manage-users',
       change: useRevokeConsent(tenant, subject.id),
@@ -108,7 +106,7 @@ export function useSubjectGrants(tenant: string, subject: Subject): SubjectGrant
     name,
     list,
     clients: grantClients(list.rows),
-    revoke: useConfirmedChange({
+    revoke: useConfirmedSubjectChange({
       tenant,
       capability: 'manage-sessions',
       change: useRevokeGrants(tenant, subject.id),

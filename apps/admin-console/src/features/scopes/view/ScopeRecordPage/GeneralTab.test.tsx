@@ -4,7 +4,7 @@ import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { inTurn, json, problem } from '#/testing/fakeTransport';
 import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
-import { BILLING_CARRIES, BILLING_SCOPE, SC, scopeRoutes } from '#/testing/scopesFixtures';
+import { A, BILLING_CARRIES, BILLING_SCOPE, SC, scopeRoutes } from '#/testing/scopesFixtures';
 
 afterEach(() => {
   resetConsole();
@@ -288,9 +288,9 @@ it('still deletes only once the name is typed, after the warning', async () => {
   });
 });
 
-it('says in the dialog why a delete the ceiling refuses was refused, and stays', async () => {
+it('says in the dialog why a delete the ceiling refuses was refused, reads whoami again, and stays', async () => {
   const user = userEvent.setup();
-  renderConsoleAt(
+  const { sent } = renderConsoleAt(
     AT,
     scopeRoutes(undefined, {
       [`DELETE ${SC}/s-bill`]: problem(403, 'about:blank', 'Forbidden', {
@@ -303,6 +303,7 @@ it('says in the dialog why a delete the ceiling refuses was refused, and stays',
   await user.type(within(dialog).getByRole('textbox'), 'billing');
   await user.click(within(dialog).getByRole('button', { name: 'Delete billing' }));
   expect(await within(dialog).findByText(/Refused: it would take manage-keys/u)).toBeVisible();
+  expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
 });
 
 it('shows the openid delete refusal as fixed text, with no delete to press', async () => {

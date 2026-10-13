@@ -35,6 +35,7 @@ import {
 import { useGroupPicker } from '#/shared/repository/useGroupPicker';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { useToasts } from '#/shared/repository/useToasts';
+import { useConfirmedRemoval, type Removal } from '#/shared/usecase/useConfirmedChange';
 import { asksFirst, writeRefusal } from '#/shared/service/capabilities';
 import { writeFailureText } from '#/shared/service/failure';
 import { flagText } from '#/shared/service/format';
@@ -70,17 +71,11 @@ export interface Defaults {
   state: Readiness;
 }
 
-export interface Deletion {
+export interface Deletion extends Removal {
   // Why it cannot be deleted, or null when it can; nothing is offered until known.
   held: string | null;
   state: Readiness;
-  confirming: boolean;
   consequence: string;
-  busy: boolean;
-  problem: string | null;
-  ask: () => void;
-  cancel: () => void;
-  confirm: () => void;
 }
 
 export interface GroupGeneral {
@@ -114,8 +109,6 @@ export function useGroupGeneral({
   const push = useToasts((queue) => queue.push);
   const go = useGo();
   const [asking, setAsking] = useState<Asked | null>(null);
-  const [deleting, setDeleting] = useState(false);
-  const [problem, setProblem] = useState<string | null>(null);
   const record = groupRecord(group.id);
   // A write that may take something from yourself is followed by whoami.
   const reading = <R>(result: GatewayResult<R>): GatewayResult<R> => {
@@ -205,6 +198,17 @@ export function useGroupGeneral({
     lookAt: 'the groups',
     refused: writeRefusal,
   };
+  const removal = useConfirmedRemoval({
+    refusal,
+    capability: 'manage-tenant',
+    change: deletion,
+    failureText: (failure) => writeFailureText(failure, deleteCopy),
+    done: () => {
+      if (asksFirst(deleteLoss)) reread();
+      push({ tone: 'success', message: subtreeDeletedText(group.path) });
+      go(groupsHref(tenant), { replace: true });
+    },
+  });
 
   return {
     description,
@@ -242,40 +246,10 @@ export function useGroupGeneral({
       state: groupReadiness(ceiling.status, { kind: 'none' }),
     },
     deletion: {
+      ...removal,
       held: lines?.remove ?? null,
       state: groupReadiness(ceiling.status, deleteLoss),
-      confirming: deleting,
       consequence: deleteConsequence(group.path, deleteLoss),
-      busy: deletion.busy,
-      problem,
-      ask: () => {
-        setProblem(null);
-        setDeleting(true);
-      },
-      cancel: () => {
-        setProblem(null);
-        setDeleting(false);
-      },
-      confirm: () => {
-        if (deletion.busy) return;
-        setProblem(null);
-        deletion
-          .run()
-          .then((result) => {
-            if (result.ok) {
-              setDeleting(false);
-              if (asksFirst(deleteLoss)) reread();
-              push({ tone: 'success', message: subtreeDeletedText(group.path) });
-              go(groupsHref(tenant), { replace: true });
-              return;
-            }
-            refusal.report(result, 'manage-tenant');
-            setProblem(writeFailureText(result, deleteCopy));
-          })
-          .catch(() => {
-            setProblem(writeFailureText({ ok: false, kind: 'defect' }, deleteCopy));
-          });
-      },
     },
   };
 }

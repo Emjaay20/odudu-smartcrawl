@@ -4,6 +4,7 @@ import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { inTurn, json, pending, problem } from '#/testing/fakeTransport';
 import {
+  A,
   adminRole,
   ENG,
   FINANCE,
@@ -176,6 +177,28 @@ it('deletes a group and everything beneath it once its path is typed', async () 
   // Nothing reads the deleted group again, which would only find it gone.
   const after = sent.slice(sent.findIndex((s) => s.method === 'DELETE') + 1);
   expect(after.filter((s) => s.path.startsWith(`${G}/g-eng`))).toEqual([]);
+});
+
+it('says in the dialog why a refused delete was refused, reads whoami again, and stays', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    '/console/acme/groups/g-eng',
+    groupRoutes(undefined, {
+      [`DELETE ${G}/g-eng`]: problem(403, 'about:blank', 'Forbidden', {
+        detail: 'this removes capabilities the caller does not hold: manage-users',
+      }),
+    }),
+  );
+  await user.click(
+    await screen.findByRole('button', { name: 'Delete /eng and every group beneath it' }),
+  );
+  const dialog = await screen.findByRole('alertdialog', { name: 'Delete /eng?' });
+  await user.type(within(dialog).getByRole('textbox'), '/eng');
+  await user.click(within(dialog).getByRole('button', { name: 'Delete /eng' }));
+  expect(
+    await within(dialog).findByText(/it would take manage-users from whoever holds it/u),
+  ).toBeVisible();
+  expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
 });
 
 it('offers no delete or move a limited operator could not make, and says why in one line', async () => {

@@ -1,5 +1,4 @@
 import type { Role } from '@odudu/contracts/admin';
-import { useState } from 'react';
 import { useRefusal, useRereadAuthority } from '#/features/session';
 import { useOwnRoles } from '#/features/subjects';
 import { useGo } from '#/shared/repository/useGo';
@@ -20,6 +19,7 @@ import {
 } from '#/features/roles/service';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { useToasts } from '#/shared/repository/useToasts';
+import { useConfirmedRemoval, type Removal } from '#/shared/usecase/useConfirmedChange';
 import { asksFirst, judgedLoss, writeRefusal } from '#/shared/service/capabilities';
 import { deletedText } from '#/shared/service/failure';
 import { flagText } from '#/shared/service/format';
@@ -35,19 +35,13 @@ export interface Defaults {
   checking: boolean;
 }
 
-export interface Deletion {
+export interface Deletion extends Removal {
   // A capability role is never deleted, which is a rule rather than a ceiling.
   fixed: string | null;
   // Left out by the ceiling, which the page's one line explains.
   held: boolean;
   checking: boolean;
-  confirming: boolean;
   consequence: string;
-  busy: boolean;
-  problem: string | null;
-  ask: () => void;
-  cancel: () => void;
-  confirm: () => void;
 }
 
 export interface RoleGeneral {
@@ -78,8 +72,6 @@ export function useRoleGeneral({
   const deletion = useRoleDeletion(tenant, role.id);
   const push = useToasts((queue) => queue.push);
   const go = useGo();
-  const [deleting, setDeleting] = useState(false);
-  const [problem, setProblem] = useState<string | null>(null);
   const record = roleRecord(role.id);
   const description = useSectionSave({
     tenant,
@@ -123,6 +115,17 @@ export function useRoleGeneral({
     ready?.caller ?? [],
     role.admin_reach,
   );
+  const removal = useConfirmedRemoval({
+    refusal,
+    capability: 'manage-tenant',
+    change: deletion,
+    failureText: (failure) => roleDeleteFailureText(role.name, failure),
+    done: () => {
+      if (asksFirst(loss)) reread();
+      push({ tone: 'success', message: deletedText(role.name) });
+      go(rolesHref(tenant), { replace: true });
+    },
+  });
   return {
     description,
     descriptionRule: DESCRIPTION_RULE,
@@ -133,41 +136,11 @@ export function useRoleGeneral({
       checking: defaultsChecking(role, ceiling),
     },
     deletion: {
+      ...removal,
       fixed: deletionFixed(role),
       held: isDeleteHeld(ceiling),
       checking: deleteChecking(ceiling, loss),
-      confirming: deleting,
       consequence: roleDeleteConsequence(role.name, loss),
-      busy: deletion.busy,
-      problem,
-      ask: () => {
-        setProblem(null);
-        setDeleting(true);
-      },
-      cancel: () => {
-        setProblem(null);
-        setDeleting(false);
-      },
-      confirm: () => {
-        if (deletion.busy) return;
-        setProblem(null);
-        deletion
-          .run()
-          .then((result) => {
-            if (result.ok) {
-              setDeleting(false);
-              if (asksFirst(loss)) reread();
-              push({ tone: 'success', message: deletedText(role.name) });
-              go(rolesHref(tenant), { replace: true });
-              return;
-            }
-            refusal.report(result, 'manage-tenant');
-            setProblem(roleDeleteFailureText(role.name, result));
-          })
-          .catch(() => {
-            setProblem(roleDeleteFailureText(role.name, { ok: false, kind: 'defect' }));
-          });
-      },
     },
   };
 }

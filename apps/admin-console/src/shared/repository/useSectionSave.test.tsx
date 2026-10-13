@@ -7,7 +7,7 @@ import { storeDrafts } from '#/shared/adapter/draftStorage';
 import { createQueryClient } from '#/shared/repository/queryClient';
 import { useDrafts } from '#/shared/repository/useDrafts';
 import { recordKey, useRecord } from '#/shared/repository/useRecord';
-import { useSectionSave, type SectionRefusal } from '#/shared/repository/useSectionSave';
+import { useSectionSave, type RefusalReporter } from '#/shared/repository/useSectionSave';
 import { useToasts } from '#/shared/repository/useToasts';
 import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 import type { Gateway, GatewayFailure } from '#/shared/transport/gateway';
@@ -61,7 +61,7 @@ function General({
   etag: string;
   gone?: boolean;
   onRefused?: (failure: GatewayFailure) => void;
-  refusal?: SectionRefusal;
+  refusal?: RefusalReporter;
   explain?: (problem: Problem) => string | null;
 }) {
   const save = useSectionSave({
@@ -165,7 +165,7 @@ function ClientRecord({
   explain,
 }: {
   onRefused?: (failure: GatewayFailure) => void;
-  refusal?: SectionRefusal;
+  refusal?: RefusalReporter;
   explain?: (problem: Problem) => string | null;
 }) {
   const record = useRecord({ tenant: 'acme', record: 'clients/c1', read });
@@ -189,7 +189,7 @@ function mount(
   routes: Record<string, Answer>,
   onRefused?: (failure: GatewayFailure) => void,
   explain?: (problem: Problem) => string | null,
-  refusal?: SectionRefusal,
+  refusal?: RefusalReporter,
 ) {
   const fake = fakeTransport(routes);
   const queryClient = createQueryClient();

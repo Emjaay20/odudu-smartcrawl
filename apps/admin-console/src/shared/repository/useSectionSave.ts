@@ -44,7 +44,7 @@ export interface SaveInput<T extends Values> {
 export type { ConflictSource, SaveStatus };
 
 // What `useRefusal.report` answers to: a 403 names the capability it needed.
-export interface SectionRefusal {
+export interface RefusalReporter {
   report: (failure: GatewayFailure, needed: AdminCapability) => boolean;
 }
 
@@ -105,7 +105,7 @@ export function useSectionSave<T extends Values, R>({
   // The record was found deleted since it was read (`useRecord`'s `gone`).
   gone?: boolean;
   // Told of a refusal with the capability it needed (`useRefusal`).
-  refusal?: SectionRefusal;
+  refusal?: RefusalReporter;
   // Told of a refusal after `refusal`, for whatever else it should set going.
   onRefused?: (failure: GatewayFailure) => void;
   // Says what a 403 or 409 means for this section, in place of the default.

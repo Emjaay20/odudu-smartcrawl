@@ -1,11 +1,11 @@
 import type { RevokeClientGrantsResponse } from '@odudu/contracts/admin';
 import { holds } from '#/shared/service/access';
 import { writeFailureText } from '#/shared/service/failure';
-import type { Authority } from '#/shared/service/principal';
+import type { AdminCapability, Authority } from '#/shared/service/principal';
 import type { GatewayFailure } from '#/shared/service/result';
 import { clientRefusal } from '#/features/clients/service/refusal';
 
-export const SESSIONS_CAPABILITY = 'manage-sessions';
+export const SESSIONS_CAPABILITY: AdminCapability = 'manage-sessions';
 
 // Whether whoami admits the caller to the sessions: manage-sessions is held, or not yet answered.
 export function sessionsReadable(authority: Authority | undefined): boolean {

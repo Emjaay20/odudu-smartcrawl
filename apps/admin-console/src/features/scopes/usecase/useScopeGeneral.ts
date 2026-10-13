@@ -1,5 +1,4 @@
 import type { ClientScope } from '@odudu/contracts/admin';
-import { useState } from 'react';
 import { useRefusal } from '#/features/session';
 import { useScopeClients } from '#/features/scopes/repository/useScopeClients';
 import {
@@ -31,6 +30,7 @@ import {
 import { useGo } from '#/shared/repository/useGo';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { useToasts } from '#/shared/repository/useToasts';
+import { useConfirmedRemoval, type Removal } from '#/shared/usecase/useConfirmedChange';
 import { writeRefusal } from '#/shared/service/capabilities';
 import { deletedText } from '#/shared/service/failure';
 import { flagText } from '#/shared/service/format';
@@ -41,18 +41,12 @@ import type { AdminCapability } from '#/shared/service/principal';
 
 const MANAGE: AdminCapability = 'manage-tenant';
 
-export interface Deletion {
+export interface Deletion extends Removal {
   // Why it is never offered, said in place of the button.
   fixed: string | null;
-  confirming: boolean;
   consequence: string;
   // What the dialog says: how many clients lose the scope, then the consequence.
   warning: string;
-  busy: boolean;
-  problem: string | null;
-  ask: () => void;
-  cancel: () => void;
-  confirm: () => void;
 }
 
 export interface ScopeGeneral {
@@ -82,10 +76,18 @@ export function useScopeGeneral({
   const deletion = useScopeDeletion(tenant, scope.id);
   const push = useToasts((queue) => queue.push);
   const go = useGo();
-  const [deleting, setDeleting] = useState(false);
-  const [problem, setProblem] = useState<string | null>(null);
-  const carriers = useScopeClients(tenant, scope.id, deleting);
-  const mappers = useScopeMappersRecord(tenant, scope.id, deleting);
+  const removal = useConfirmedRemoval({
+    refusal,
+    capability: MANAGE,
+    change: deletion,
+    failureText: (failure) => scopeDeleteFailureText(scope.name, failure),
+    done: () => {
+      push({ tone: 'success', message: deletedText(scope.name) });
+      go(scopesHref(tenant), { replace: true });
+    },
+  });
+  const carriers = useScopeClients(tenant, scope.id, removal.confirming);
+  const mappers = useScopeMappersRecord(tenant, scope.id, removal.confirming);
   const common = {
     tenant,
     record: scopeRecord(scope.id),
@@ -168,43 +170,14 @@ export function useScopeGeneral({
     consent: { ...consent, ...guarded },
     consentRule: CONSENT_RULE,
     deletion: {
+      ...removal,
       fixed: isGuarded(scope.name) ? GUARDED_TEXT : null,
-      confirming: deleting,
       consequence: scopeDeleteConsequence(scope.name),
       warning: scopeDeleteDialogText(
         scope.name,
         carryingOf(carriers.status, carriers.rows.length, carriers.more),
         claimMappersOf(mappers.data),
       ),
-      busy: deletion.busy,
-      problem,
-      ask: () => {
-        setProblem(null);
-        setDeleting(true);
-      },
-      cancel: () => {
-        setProblem(null);
-        setDeleting(false);
-      },
-      confirm: () => {
-        if (deletion.busy) return;
-        setProblem(null);
-        deletion
-          .run()
-          .then((result) => {
-            if (result.ok) {
-              setDeleting(false);
-              push({ tone: 'success', message: deletedText(scope.name) });
-              go(scopesHref(tenant), { replace: true });
-              return;
-            }
-            refusal.report(result, MANAGE);
-            setProblem(scopeDeleteFailureText(scope.name, result));
-          })
-          .catch(() => {
-            setProblem(scopeDeleteFailureText(scope.name, { ok: false, kind: 'defect' }));
-          });
-      },
     },
   };
 }

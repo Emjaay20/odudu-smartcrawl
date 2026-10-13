@@ -1,20 +1,15 @@
 import type { Client } from '@odudu/contracts/admin';
-import { useState } from 'react';
-import { useRefusal } from '#/features/session';
 import { useClientSection } from '#/features/clients/usecase/useClientSection';
 import { useGo } from '#/shared/repository/useGo';
 import {
   useClientDeletion,
   useClientSaves,
-  useRereadClient,
   type ConsentValues,
   type DetailValues,
   type EnabledValues,
   type PageValues,
 } from '#/features/clients/repository/useClientRecord';
 import {
-  ceilingRefused,
-  CLIENT_CAPABILITY,
   clientRefusal,
   clientsHref,
   deleteConsequence,
@@ -25,20 +20,15 @@ import {
 } from '#/features/clients/service';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { useToasts } from '#/shared/repository/useToasts';
+import { useConfirmedRemoval, type Removal } from '#/shared/usecase/useConfirmedChange';
 import { deletedText, writeFailureText } from '#/shared/service/failure';
 import { flagText } from '#/shared/service/format';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
 
 export type { SectionSave };
 
-export interface Deletion {
-  confirming: boolean;
+export interface Deletion extends Removal {
   consequence: string;
-  busy: boolean;
-  problem: string | null;
-  ask: () => void;
-  cancel: () => void;
-  confirm: () => void;
 }
 
 export interface ClientGeneral {
@@ -66,15 +56,28 @@ export function useClientGeneral({
   etag: string;
   gone: boolean;
 }): ClientGeneral {
-  const refusal = useRefusal(tenant);
   const saves = useClientSaves(tenant, client.id);
-  const reread = useRereadClient(tenant, client.id);
-  const removal = useClientDeletion(tenant, client.id);
   const push = useToasts((queue) => queue.push);
   const go = useGo();
-  const [deleting, setDeleting] = useState(false);
-  const [problem, setProblem] = useState<string | null>(null);
   const shared = useClientSection({ tenant, client, etag, gone });
+  const copy = {
+    name: client.name,
+    verb: 'deleted',
+    lookAt: 'the clients',
+    refused: clientRefusal,
+  };
+  const deletion = useClientDeletion(tenant, client.id);
+  const removal = useConfirmedRemoval({
+    refusal: shared.refusal,
+    capability: shared.capability,
+    change: deletion,
+    failureText: (failure) => writeFailureText(failure, copy),
+    onRefused: shared.onRefused,
+    done: () => {
+      push({ tone: 'success', message: deletedText(client.name) });
+      go(clientsHref(tenant), { replace: true });
+    },
+  });
 
   const details = useSectionSave({
     ...shared,
@@ -126,13 +129,6 @@ export function useClientGeneral({
     save: saves.consent,
   });
 
-  const copy = {
-    name: client.name,
-    verb: 'deleted',
-    lookAt: 'the clients',
-    refused: clientRefusal,
-  };
-
   return {
     details,
     descriptionRule: DESCRIPTION_RULE,
@@ -142,39 +138,6 @@ export function useClientGeneral({
     enabledFixed: enabledFixed(client),
     consent,
     deleteFixed: deleteFixed(client),
-    deletion: {
-      confirming: deleting,
-      consequence: deleteConsequence(client.name),
-      busy: removal.busy,
-      problem,
-      ask: () => {
-        setProblem(null);
-        setDeleting(true);
-      },
-      cancel: () => {
-        setProblem(null);
-        setDeleting(false);
-      },
-      confirm: () => {
-        if (removal.busy) return;
-        setProblem(null);
-        removal
-          .run()
-          .then((result) => {
-            if (result.ok) {
-              setDeleting(false);
-              push({ tone: 'success', message: deletedText(client.name) });
-              go(clientsHref(tenant), { replace: true });
-              return;
-            }
-            refusal.report(result, CLIENT_CAPABILITY);
-            if (ceilingRefused(result)) reread();
-            setProblem(writeFailureText(result, copy));
-          })
-          .catch(() => {
-            setProblem(writeFailureText({ ok: false, kind: 'defect' }, copy));
-          });
-      },
-    },
+    deletion: { ...removal, consequence: deleteConsequence(client.name) },
   };
 }

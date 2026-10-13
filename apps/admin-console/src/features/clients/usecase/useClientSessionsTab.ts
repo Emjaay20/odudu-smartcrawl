@@ -20,7 +20,7 @@ import {
 import { useGo } from '#/shared/repository/useGo';
 import { lacking } from '#/shared/service/access';
 import type { ResourceListState } from '#/shared/service/resourceList';
-import type { GatewayFailure } from '#/shared/transport/gateway';
+import { useConfirmedRemoval, type Removal } from '#/shared/usecase/useConfirmedChange';
 
 // Whether the caller may read them: whoami says manage-sessions is held,
 // or has not yet answered.
@@ -28,21 +28,15 @@ export function useSessionsReadable(tenant: string): boolean {
   return sessionsReadable(useAuthority(tenant));
 }
 
-export interface ClientSessions {
+export interface ClientSessions extends Removal {
   list: ResourceListState<TenantSession>;
   open: (subjectId: string) => void;
   // Whether revoking is offered: the capability is held and the client's
   // service account is within the caller's reach.
   offered: boolean;
-  confirming: boolean;
   consequence: string;
-  busy: boolean;
-  problem: string | null;
   // What the last revocation did, in one line.
   result: string | null;
-  ask: () => void;
-  cancel: () => void;
-  confirm: () => void;
 }
 
 export function useClientSessionsTab(tenant: string, client: Client, reach: Reach): ClientSessions {
@@ -52,52 +46,29 @@ export function useClientSessionsTab(tenant: string, client: Client, reach: Reac
   const list = useClientSessionList(tenant, client.id);
   const revocation = useGrantRevocation(tenant, client.id);
   const go = useGo();
-  const [confirming, setConfirming] = useState(false);
-  const [problem, setProblem] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const needs = lacking(authority, [SESSIONS_CAPABILITY]);
-
-  const failed = (failure: GatewayFailure): void => {
-    refusal.report(failure, SESSIONS_CAPABILITY);
-    if (ceilingRefused(failure)) reread();
-    setProblem(revokeFailureText(failure, client.name));
-  };
+  const removal = useConfirmedRemoval({
+    refusal,
+    capability: SESSIONS_CAPABILITY,
+    change: revocation,
+    failureText: (failure) => revokeFailureText(failure, client.name),
+    onRefused: (failure) => {
+      if (ceilingRefused(failure)) reread();
+    },
+    done: (answer) => {
+      setResult(revokedText(client.name, answer));
+    },
+  });
 
   return {
     list,
     open: (subjectId) => {
       go(subjectHref(tenant, subjectId));
     },
+    ...removal,
     offered: canChange(reach, needs),
-    confirming,
     consequence: revokeConsequence(client.name, client.builtin_admin),
-    busy: revocation.busy,
-    problem,
     result,
-    ask: () => {
-      setProblem(null);
-      setConfirming(true);
-    },
-    cancel: () => {
-      setProblem(null);
-      setConfirming(false);
-    },
-    confirm: () => {
-      if (revocation.busy) return;
-      setProblem(null);
-      revocation
-        .run()
-        .then((answer) => {
-          if (!answer.ok) {
-            failed(answer);
-            return;
-          }
-          setConfirming(false);
-          setResult(revokedText(client.name, answer.data));
-        })
-        .catch(() => {
-          failed({ ok: false, kind: 'defect' });
-        });
-    },
   };
 }

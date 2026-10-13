@@ -4,7 +4,7 @@ import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, problem } from '#/testing/fakeTransport';
 import { adminRole } from '#/testing/groupsFixtures';
-import { AUDITOR, R, roleRoutes } from '#/testing/rolesFixtures';
+import { A, AUDITOR, R, roleRoutes } from '#/testing/rolesFixtures';
 import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
 import { S } from '#/testing/subjectsFixtures';
 
@@ -141,6 +141,25 @@ it('deletes a role after saying what goes with it, and what you lose yourself', 
   await waitFor(() => {
     expect(router.state.location.pathname).toBe('/acme/roles');
   });
+});
+
+it('says in the dialog why a refused delete was refused, reads whoami again, and stays', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    roleRoutes(undefined, {
+      [`DELETE ${R}/r-aud`]: problem(403, 'about:blank', 'Forbidden', {
+        detail: 'this removes capabilities the caller does not hold: manage-users',
+      }),
+    }),
+  );
+  await user.click(await screen.findByRole('button', { name: 'Delete auditor' }));
+  const dialog = await screen.findByRole('alertdialog', { name: 'Delete auditor?' });
+  await user.click(within(dialog).getByRole('button', { name: 'Delete auditor' }));
+  expect(
+    await within(dialog).findByText(/it would take manage-users from whoever holds it/u),
+  ).toBeVisible();
+  expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
 });
 
 it('offers no delete a limited operator could not make, and says why in one line', async () => {
