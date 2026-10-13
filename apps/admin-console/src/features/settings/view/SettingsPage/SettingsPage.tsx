@@ -12,7 +12,6 @@ import {
   type SettingField,
   type SettingsSection,
 } from '#/features/settings/service';
-import { useSettingsPage } from '#/features/settings/usecase/useSettingsPage';
 import {
   useGeneralSection,
   useSettingsSection,
@@ -25,6 +24,7 @@ import { ChecklistField } from '#/shared/view/ChecklistField';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { NumberWithUnitField, SelectField, TextField, ToggleField } from '#/shared/view/Field';
+import { useTenantSettingsRead } from '#/shared/usecase/useTenantSettingsRead';
 import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { Section } from '#/shared/view/Section';
@@ -212,7 +212,7 @@ function General({ tenant, data, etag, gone, section }: Props & { section: Setti
 }
 
 function Sections({ tenant }: { tenant: string }) {
-  const settings = useSettingsPage(tenant);
+  const settings = useTenantSettingsRead(tenant);
   if (settings.status === 'loading')
     return <FormSkeleton label="Loading the settings" fields={4} />;
   if (settings.data === undefined || settings.etag === null) {

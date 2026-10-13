@@ -2,6 +2,7 @@ import type { Settings } from '@odudu/contracts/admin';
 import type { RecordState } from '#/shared/repository/useRecord';
 import { useTenantSettings } from '#/shared/repository/useTenantSettings';
 
-export function useSettingsPage(tenant: string): RecordState<Settings> {
+// The tenant's settings record for a page that shows or edits one of them.
+export function useTenantSettingsRead(tenant: string): RecordState<Settings> {
   return useTenantSettings(tenant);
 }

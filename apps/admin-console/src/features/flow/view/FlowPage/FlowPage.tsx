@@ -20,7 +20,8 @@ import {
 } from '#/features/flow/service';
 import { useFlowSteps, type FlowSteps } from '#/features/flow/usecase/useFlowSteps';
 import { useOtpRequirement, type OtpRequirement } from '#/features/flow/usecase/useOtpRequirement';
-import { useFlowRead, useOtpRead } from '#/features/flow/usecase/useFlowPage';
+import { useFlowRead } from '#/features/flow/usecase/useFlowPage';
+import { useTenantSettingsRead } from '#/shared/usecase/useTenantSettingsRead';
 import { Button } from '#/shared/view/Button';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { InlineFields, SelectField, ToggleField } from '#/shared/view/Field';
@@ -217,7 +218,7 @@ function OtpReady({
 
 function Flow({ tenant }: { tenant: string }) {
   const flow = useFlowRead(tenant);
-  const settings = useOtpRead(tenant);
+  const settings = useTenantSettingsRead(tenant);
   if (flow.status === 'loading') return <FormSkeleton label="Loading the flow" fields={3} />;
   if (flow.data === undefined || flow.etag === null) {
     return (
