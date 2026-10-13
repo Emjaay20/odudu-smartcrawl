@@ -145,6 +145,7 @@ it('says when the list is loading, and when it failed', async () => {
   expect(screen.getByRole('status').querySelector('[data-shape="list"]')).not.toBeNull();
   rerender(scopes(failed));
   expect(screen.getByRole('alert')).toHaveTextContent('Scopes could not be loaded.');
+  expect(screen.getByRole('button', { name: 'Try again' })).toHaveAttribute('data-size', 'small');
   await user.click(screen.getByRole('button', { name: 'Try again' }));
   expect(failed.retry).toHaveBeenCalledOnce();
 });

@@ -10,6 +10,7 @@ import {
 } from 'react-aria-components';
 import type { PickerState } from '#/shared/service/picker';
 import { Button } from '#/shared/view/Button';
+import { InlineFailed } from '#/shared/view/InlineFailed';
 import { LoadMore } from '#/shared/view/LoadMore';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { ListSkeleton } from '#/shared/view/Skeleton';
@@ -173,12 +174,11 @@ function Options<T>({
       return <ListSkeleton label={`Loading ${noun.other}`} />;
     case 'failed':
       return (
-        <div role="alert" className={styles.empty}>
-          <p>{`${label} could not be loaded.`}</p>
-          <Button size="small" onPress={picker.retry}>
-            Try again
-          </Button>
-        </div>
+        <InlineFailed
+          message={`${label} could not be loaded.`}
+          retry={picker.retry}
+          className={styles.empty}
+        />
       );
     case 'refused':
     case 'ready':

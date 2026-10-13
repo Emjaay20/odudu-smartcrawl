@@ -34,7 +34,13 @@ it('says a level could not be read, and reads it again when asked', async () => 
   );
   const tree = await screen.findByRole('list', { name: 'Groups' });
   await user.click(within(tree).getByRole('button', { name: 'Show the groups under /eng' }));
-  expect(await within(tree).findByText('The groups under /eng could not be loaded.')).toBeVisible();
+  expect(await within(tree).findByRole('alert')).toHaveTextContent(
+    'The groups under /eng could not be loaded.',
+  );
+  expect(within(tree).getByRole('button', { name: 'Try again' })).toHaveAttribute(
+    'data-size',
+    'small',
+  );
   await user.click(within(tree).getByRole('button', { name: 'Try again' }));
   expect(await within(tree).findByRole('link', { name: 'many' })).toBeVisible();
 });

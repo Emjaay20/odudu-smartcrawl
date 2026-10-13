@@ -17,6 +17,7 @@ import { DescriptionField } from '#/shared/view/DescriptionField';
 import { KeyHint, PlatformContext } from '#/shared/view/KeyHint';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
+import { InlineFailed } from '#/shared/view/InlineFailed';
 import { LastAction } from '#/shared/view/LastAction';
 import { ListGate } from '#/shared/view/ListGate';
 import { AssignedList, AssignedRow, AssignPanel } from '#/shared/view/AssignmentControls';
@@ -806,6 +807,9 @@ function RecordPieces() {
             <Problem>The secret could not be rotated.</Problem>
             <LiveMessage label="Last mint">Minted a token that can be used 3 times.</LiveMessage>
           </div>
+        </Specimen>
+        <Specimen label="InlineFailed">
+          <InlineFailed message="The groups under /eng could not be loaded." retry={NOTHING} />
         </Specimen>
         <Specimen label="LoadMore: regular, compact and busy, and its failure">
           <div className={styles.stack}>

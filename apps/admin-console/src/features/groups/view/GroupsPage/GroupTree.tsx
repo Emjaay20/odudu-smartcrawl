@@ -3,6 +3,7 @@ import { useId } from 'react';
 import { Link } from 'react-aria-components';
 import { useGroupNode, type GroupNode } from '#/features/groups/usecase/useGroupsList';
 import { Button } from '#/shared/view/Button';
+import { InlineFailed } from '#/shared/view/InlineFailed';
 import { LoadMore } from '#/shared/view/LoadMore';
 import { ListSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
@@ -24,12 +25,11 @@ function Children({
     case 'failed':
     case 'refused':
       return (
-        <div role="alert" className={styles.empty}>
-          <p>{`The groups under ${parent.path} could not be loaded.`}</p>
-          <Button size="small" onPress={children.retry}>
-            Try again
-          </Button>
-        </div>
+        <InlineFailed
+          message={`The groups under ${parent.path} could not be loaded.`}
+          retry={children.retry}
+          className={styles.empty}
+        />
       );
     case 'ready':
       break;
