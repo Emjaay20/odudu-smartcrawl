@@ -78,6 +78,7 @@ it('creates the administrator, grants tenant-admin on the built-in client, then 
     `PUT ${T}/subjects/${SUBJECT_ID}/roles`,
     `POST ${T}/subjects/${SUBJECT_ID}/password`,
   ]);
+  expect(sent[0]?.body).toEqual({ username: 'grace' });
   expect(sent[2]?.search.toString()).toBe('client=c-admin&name=tenant-admin');
   expect(sent[4]).toMatchObject({
     ifMatch: '"roles-1"',

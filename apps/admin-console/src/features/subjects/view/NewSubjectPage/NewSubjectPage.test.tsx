@@ -39,6 +39,20 @@ it('creates a subject and lands on its record, in place of the creation page', a
   expect(router.history.length).toBe(1);
 });
 
+it('sends no email when none is typed', async () => {
+  const user = userEvent.setup();
+  const { sent, router } = renderConsoleAt(
+    AT,
+    subjectRoutes(undefined, { [`POST ${S}`]: json(ADA, 201) }),
+  );
+  await user.type(await screen.findByRole('textbox', { name: 'Username' }), 'ada');
+  await user.click(screen.getByRole('button', { name: 'Create subject' }));
+  await waitFor(() => {
+    expect(router.state.location.pathname).toBe(`/acme/subjects/${ADA_ID}`);
+  });
+  expect(sent.find((s) => s.method === 'POST')?.body).toEqual({ username: 'ada' });
+});
+
 it('climbs back to the subjects through a breadcrumb', async () => {
   renderConsoleAt(AT, subjectRoutes());
   await screen.findByRole('heading', { level: 1, name: 'Create a subject' });
