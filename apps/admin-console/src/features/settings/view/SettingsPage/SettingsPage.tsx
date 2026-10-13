@@ -22,15 +22,14 @@ import { disableFixed } from '#/shared/service/tenantEnabled';
 import { Button } from '#/shared/view/Button';
 import { ChecklistField } from '#/shared/view/ChecklistField';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
-import { EmptyState } from '#/shared/view/EmptyState';
 import { NumberWithUnitField, SelectField, TextField, ToggleField } from '#/shared/view/Field';
 import { useTenantSettingsRead } from '#/shared/usecase/useTenantSettingsRead';
 import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
 import { PageHeader } from '#/shared/view/PageHeader';
+import { ReadGate } from '#/shared/view/ReadGate';
 import { SaveSection } from '#/shared/view/SaveSection';
 import { Section } from '#/shared/view/Section';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
-import { FormSkeleton } from '#/shared/view/Skeleton';
 import styles from '#/features/settings/view/SettingsPage/SettingsPage.module.css';
 
 const TITLE = 'Settings';
@@ -208,47 +207,56 @@ function General({ tenant, data, etag, gone, section }: Props & { section: Setti
 
 function Sections({ tenant }: { tenant: string }) {
   const settings = useTenantSettingsRead(tenant);
-  if (settings.status === 'loading')
-    return <FormSkeleton label="Loading the settings" fields={4} />;
-  if (settings.data === undefined || settings.etag === null) {
-    return (
-      <EmptyState
-        variant="failed"
-        title="The settings could not be loaded"
-        action={<Button onPress={settings.retry}>Try again</Button>}
-      >
-        The gateway did not answer, or answered with an error.
-      </EmptyState>
-    );
-  }
-  const shared = { tenant, data: settings.data, etag: settings.etag, gone: settings.gone };
   return (
-    <div className={styles.page}>
-      <nav aria-label="On this page" className={styles.nav}>
-        <ul className={styles.sections}>
-          {SETTINGS_SECTIONS.map((section) => (
-            <li key={section.id}>
-              <Button
-                size="small"
-                variant="quiet"
-                onPress={() => {
-                  document.getElementById(sectionHeadingId(section.id))?.focus();
-                }}
-              >
-                {section.title}
-              </Button>
-            </li>
-          ))}
-        </ul>
-      </nav>
-      {SETTINGS_SECTIONS.map((section) =>
-        section.id === GENERAL_SECTION ? (
-          <General key={section.id} {...shared} section={section} />
-        ) : (
-          <Plain key={section.id} {...shared} section={section} />
-        ),
+    <ReadGate
+      read={settings}
+      label="Loading the settings"
+      fields={4}
+      failed="The settings could not be loaded"
+    >
+      {(data, etag) => (
+        <div className={styles.page}>
+          <nav aria-label="On this page" className={styles.nav}>
+            <ul className={styles.sections}>
+              {SETTINGS_SECTIONS.map((section) => (
+                <li key={section.id}>
+                  <Button
+                    size="small"
+                    variant="quiet"
+                    onPress={() => {
+                      document.getElementById(sectionHeadingId(section.id))?.focus();
+                    }}
+                  >
+                    {section.title}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          {SETTINGS_SECTIONS.map((section) =>
+            section.id === GENERAL_SECTION ? (
+              <General
+                key={section.id}
+                tenant={tenant}
+                data={data}
+                etag={etag}
+                gone={settings.gone}
+                section={section}
+              />
+            ) : (
+              <Plain
+                key={section.id}
+                tenant={tenant}
+                data={data}
+                etag={etag}
+                gone={settings.gone}
+                section={section}
+              />
+            ),
+          )}
+        </div>
       )}
-    </div>
+    </ReadGate>
   );
 }
 

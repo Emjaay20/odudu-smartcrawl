@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { inTurn, json, problem } from '#/testing/fakeTransport';
+import { inTurn, json, pending, problem } from '#/testing/fakeTransport';
 import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
 import { SC, scopeRoutes } from '#/testing/scopesFixtures';
 
@@ -27,6 +27,23 @@ it('offers every registered mapper, and names the declared ones an empty binding
       'No mapper is bound, so this scope uses the mappers that declare it: email.',
     ),
   ).toBeVisible();
+});
+
+it('says it is loading the mappers until the read answers', async () => {
+  renderConsoleAt(AT, scopeRoutes(undefined, { [`GET ${SC}/s-bill/mappers`]: pending() }));
+  expect(await screen.findByText('Loading the mappers')).toBeVisible();
+  expect(screen.queryByRole('region', { name: 'Claim mappers' })).toBeNull();
+});
+
+it('says the claim mappers could not be loaded when the read carries no ETag to save against', async () => {
+  renderConsoleAt(
+    AT,
+    scopeRoutes(undefined, {
+      [`GET ${SC}/s-bill/mappers`]: json({ available: ['email'], bound: [], declared: [] }),
+    }),
+  );
+  expect(await screen.findByText('The claim mappers could not be loaded')).toBeVisible();
+  expect(screen.queryByRole('region', { name: 'Claim mappers' })).toBeNull();
 });
 
 it('shows the bound mappers checked', async () => {

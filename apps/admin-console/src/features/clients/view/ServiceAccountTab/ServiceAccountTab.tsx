@@ -14,14 +14,12 @@ import {
   useServiceRolesRead,
   type ServiceRoles,
 } from '#/features/clients/usecase/useServiceAccount';
+import { ReadGate } from '#/shared/view/ReadGate';
 import { SaveSection } from '#/shared/view/SaveSection';
-import { Button } from '#/shared/view/Button';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
-import { EmptyState } from '#/shared/view/EmptyState';
 import { ReadOnlyFields } from '#/shared/view/Field';
 import { RolePicker } from '#/shared/view/RolePicker';
-import { FormSkeleton } from '#/shared/view/Skeleton';
 import { recordTab } from '#/shared/view/RecordTab';
 
 function Editor({
@@ -108,28 +106,25 @@ function Account({
   reach: Reach;
 }) {
   const read = useServiceRolesRead(tenant, subjectId);
-  if (read.status === 'loading') return <FormSkeleton label="Loading the roles" fields={3} />;
-  if (read.data === undefined || read.etag === null) {
-    return (
-      <EmptyState
-        variant="failed"
-        title="The roles could not be loaded"
-        action={<Button onPress={read.retry}>Try again</Button>}
-      >
-        The gateway did not answer, or answered with an error.
-      </EmptyState>
-    );
-  }
   return (
-    <Editor
-      tenant={tenant}
-      client={client}
-      subjectId={subjectId}
-      data={read.data}
-      etag={read.etag}
-      gone={gone || read.gone}
-      reach={reach}
-    />
+    <ReadGate
+      read={read}
+      label="Loading the roles"
+      fields={3}
+      failed="The roles could not be loaded"
+    >
+      {(data, etag) => (
+        <Editor
+          tenant={tenant}
+          client={client}
+          subjectId={subjectId}
+          data={data}
+          etag={etag}
+          gone={gone || read.gone}
+          reach={reach}
+        />
+      )}
+    </ReadGate>
   );
 }
 

@@ -19,8 +19,8 @@ import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { Count } from '#/shared/view/Count';
 import { DataTable, type Column } from '#/shared/view/DataTable';
-import { EmptyState } from '#/shared/view/EmptyState';
 import { TextAreaField, TextField } from '#/shared/view/Field';
+import { LoadFailed } from '#/shared/view/LoadFailed';
 import { Pager } from '#/shared/view/Pager';
 import { Panel } from '#/shared/view/Panel';
 import { TableSkeleton } from '#/shared/view/Skeleton';
@@ -52,15 +52,7 @@ function List({ client, page }: { client: Client; page: ClientRoles }) {
       body = <CapabilityNote capability={ROLES_CAPABILITY}>Roles</CapabilityNote>;
       break;
     case 'failed':
-      body = (
-        <EmptyState
-          variant="failed"
-          title="The roles could not be loaded"
-          action={<Button onPress={list.retry}>Try again</Button>}
-        >
-          The gateway did not answer, or answered with an error.
-        </EmptyState>
-      );
+      body = <LoadFailed title="The roles could not be loaded" retry={list.retry} />;
       break;
     case 'ready':
       body =

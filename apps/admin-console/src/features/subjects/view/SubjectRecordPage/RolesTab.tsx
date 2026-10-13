@@ -9,12 +9,10 @@ import { CapabilitySection } from '#/features/subjects/view/SubjectRecordPage/Ca
 import { Panel } from '#/shared/view/Panel';
 import { PagedList } from '#/features/subjects/view/SubjectRecordPage/SessionsTab';
 import { provenanceText } from '#/shared/service/capabilities';
-import { Button } from '#/shared/view/Button';
 import type { Column } from '#/shared/view/DataTable';
-import { EmptyState } from '#/shared/view/EmptyState';
+import { ReadGate } from '#/shared/view/ReadGate';
 import { RolePicker } from '#/shared/view/RolePicker';
 import { SaveSection } from '#/shared/view/SaveSection';
-import { FormSkeleton } from '#/shared/view/Skeleton';
 import { recordTab } from '#/shared/view/RecordTab';
 
 const EFFECTIVE: readonly Column<EffectiveRoleAssignment>[] = [
@@ -116,29 +114,26 @@ export function RolesTab({
   self: boolean;
 }) {
   const read = useSubjectRolesRead(tenant, subject.id);
-  if (read.status === 'loading') return <FormSkeleton label="Loading the roles" fields={3} />;
-  if (read.data === undefined || read.etag === null) {
-    return (
-      <EmptyState
-        variant="failed"
-        title="The roles could not be loaded"
-        action={<Button onPress={read.retry}>Try again</Button>}
-      >
-        The gateway did not answer, or answered with an error.
-      </EmptyState>
-    );
-  }
   return (
-    <div className={recordTab.tab}>
-      <Ready
-        tenant={tenant}
-        subject={subject}
-        canManage={canManage}
-        self={self}
-        data={read.data}
-        etag={read.etag}
-        gone={read.gone}
-      />
-    </div>
+    <ReadGate
+      read={read}
+      label="Loading the roles"
+      fields={3}
+      failed="The roles could not be loaded"
+    >
+      {(data, etag) => (
+        <div className={recordTab.tab}>
+          <Ready
+            tenant={tenant}
+            subject={subject}
+            canManage={canManage}
+            self={self}
+            data={data}
+            etag={etag}
+            gone={read.gone}
+          />
+        </div>
+      )}
+    </ReadGate>
   );
 }

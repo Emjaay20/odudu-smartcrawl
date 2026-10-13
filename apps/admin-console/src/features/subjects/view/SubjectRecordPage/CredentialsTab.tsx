@@ -23,7 +23,7 @@ import { Button } from '#/shared/view/Button';
 import { ChecklistField } from '#/shared/view/ChecklistField';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { DataTable, type Column } from '#/shared/view/DataTable';
-import { EmptyState } from '#/shared/view/EmptyState';
+import { LoadFailed } from '#/shared/view/LoadFailed';
 import { Panel } from '#/shared/view/Panel';
 import { SecretDialog } from '#/shared/view/SecretDialog';
 import { FormSkeleton } from '#/shared/view/Skeleton';
@@ -38,18 +38,6 @@ interface TabProps {
   gone: boolean;
   canManage: boolean;
   self: boolean;
-}
-
-function Failed({ what, retry }: { what: string; retry: () => void }) {
-  return (
-    <EmptyState
-      variant="failed"
-      title={`${what} could not be loaded`}
-      action={<Button onPress={retry}>Try again</Button>}
-    >
-      The gateway did not answer, or answered with an error.
-    </EmptyState>
-  );
 }
 
 function Outcome({ outcome }: { outcome: MailOutcome | null }) {
@@ -340,7 +328,7 @@ function Held({
       {credentials.status === 'loading' ? (
         <FormSkeleton label="Loading credentials" />
       ) : credentials.status === 'failed' ? (
-        <Failed what="The credentials" retry={credentials.retry} />
+        <LoadFailed title="The credentials could not be loaded" retry={credentials.retry} />
       ) : (
         (() => {
           const held = credentialsOf(credentials.data.items);
@@ -356,7 +344,7 @@ function Held({
       {lockout.status === 'loading' ? (
         <FormSkeleton label="Loading the lockout" fields={2} />
       ) : lockout.status === 'failed' ? (
-        <Failed what="The lockout" retry={lockout.retry} />
+        <LoadFailed title="The lockout could not be loaded" retry={lockout.retry} />
       ) : (
         <LockoutPanel lockout={lockout.data} page={page} canManage={canManage} />
       )}

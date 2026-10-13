@@ -1,12 +1,11 @@
 import type { Subject } from '@odudu/contracts/admin';
 import { subjectName } from '#/features/subjects/service';
 import { useMembers, useMembersReadable } from '#/features/subjects/usecase/useMembers';
-import { Button } from '#/shared/view/Button';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { Count } from '#/shared/view/Count';
 import { DataTable, type Column } from '#/shared/view/DataTable';
-import { EmptyState } from '#/shared/view/EmptyState';
+import { LoadFailed } from '#/shared/view/LoadFailed';
 import { Pager } from '#/shared/view/Pager';
 import { TableSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
@@ -69,15 +68,7 @@ function List({
       body = <CapabilityNote capability="view-users">Members</CapabilityNote>;
       break;
     case 'failed':
-      body = (
-        <EmptyState
-          variant="failed"
-          title="The members could not be loaded"
-          action={<Button onPress={list.retry}>Try again</Button>}
-        >
-          The gateway did not answer, or answered with an error.
-        </EmptyState>
-      );
+      body = <LoadFailed title="The members could not be loaded" retry={list.retry} />;
       break;
     case 'ready':
       body =

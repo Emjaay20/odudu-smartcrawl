@@ -7,6 +7,7 @@ import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { InlineFields } from '#/shared/view/Field';
 import { FilterBar } from '#/shared/view/FilterBar';
+import { LoadFailed } from '#/shared/view/LoadFailed';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { Pager } from '#/shared/view/Pager';
 import { TableSkeleton } from '#/shared/view/Skeleton';
@@ -174,15 +175,7 @@ function Body<T>({
     case 'refused':
       return <CapabilityNote capability={capability}>{title}</CapabilityNote>;
     case 'failed':
-      return (
-        <EmptyState
-          variant="failed"
-          title={`${title} could not be loaded`}
-          action={<Button onPress={list.retry}>Try again</Button>}
-        >
-          The gateway did not answer, or answered with an error. Nothing was changed.
-        </EmptyState>
-      );
+      return <LoadFailed title={`${title} could not be loaded`} retry={list.retry} unchanged />;
     case 'ready':
       break;
   }

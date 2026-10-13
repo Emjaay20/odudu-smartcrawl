@@ -13,8 +13,8 @@ import {
 } from '#/features/clients/usecase/useClientDeliveries';
 import { Button } from '#/shared/view/Button';
 import { DataTable, type Column } from '#/shared/view/DataTable';
-import { EmptyState } from '#/shared/view/EmptyState';
 import { SelectField } from '#/shared/view/Field';
+import { LoadFailed } from '#/shared/view/LoadFailed';
 import { Panel } from '#/shared/view/Panel';
 import { TableSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
@@ -57,15 +57,7 @@ function Rows({ client, page }: { client: Client; page: ClientDeliveries }) {
       return <TableSkeleton label="Loading deliveries" columns={COLUMNS} rows={2} />;
     case 'refused':
     case 'failed':
-      return (
-        <EmptyState
-          variant="failed"
-          title="The deliveries could not be loaded"
-          action={<Button onPress={list.retry}>Try again</Button>}
-        >
-          The gateway did not answer, or answered with an error.
-        </EmptyState>
-      );
+      return <LoadFailed title="The deliveries could not be loaded" retry={list.retry} />;
     case 'ready':
       break;
   }

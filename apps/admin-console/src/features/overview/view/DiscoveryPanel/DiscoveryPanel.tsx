@@ -10,11 +10,10 @@ import {
   type Read,
 } from '#/features/overview/service';
 import { Panel } from '#/features/overview/view/Panel';
-import { Button } from '#/shared/view/Button';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { CopyValue } from '#/shared/view/CopyValue';
 import { DataTable, type Column } from '#/shared/view/DataTable';
-import { EmptyState } from '#/shared/view/EmptyState';
+import { LoadFailed } from '#/shared/view/LoadFailed';
 import { TableSkeleton, TermsSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag, type StatusTone } from '#/shared/view/StatusTag';
 import styles from '#/features/overview/view/DiscoveryPanel/DiscoveryPanel.module.css';
@@ -74,18 +73,6 @@ const COLUMNS: readonly Column<PublishedKey>[] = [
   },
 ];
 
-function Failed({ what, onRetry }: { what: string; onRetry: () => void }) {
-  return (
-    <EmptyState
-      variant="failed"
-      title={unreadableTitle(what)}
-      action={<Button onPress={onRetry}>Try again</Button>}
-    >
-      The gateway did not answer, or answered with an error.
-    </EmptyState>
-  );
-}
-
 // A discovery name is words joined by underscores; it may break after one,
 // never inside a word.
 function Name({ name }: { name: string }) {
@@ -108,7 +95,7 @@ function Keys({ keys }: { keys: Read<KeysView> }) {
     case 'loading':
       return <TableSkeleton label="Loading the published keys" columns={COLUMNS} rows={2} />;
     case 'failed':
-      return <Failed what="JWKS" onRetry={keys.retry} />;
+      return <LoadFailed title={unreadableTitle('JWKS')} retry={keys.retry} />;
     case 'ready':
       return (
         <>
@@ -218,7 +205,7 @@ export function DiscoveryPanel({
       body = <TermsSkeleton label="Loading the discovery document" rows={6} />;
       break;
     case 'failed':
-      body = <Failed what="discovery document" onRetry={discovery.retry} />;
+      body = <LoadFailed title={unreadableTitle('discovery document')} retry={discovery.retry} />;
       break;
     case 'ready':
       body = <Document view={discovery.data} keys={keys} />;

@@ -12,6 +12,7 @@ import { Count } from '#/shared/view/Count';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { SelectField } from '#/shared/view/Field';
 import { FilterBar } from '#/shared/view/FilterBar';
+import { LoadFailed } from '#/shared/view/LoadFailed';
 import { Pager } from '#/shared/view/Pager';
 import { ListSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
@@ -103,15 +104,7 @@ export function CapabilityHolders({
     case 'refused':
       return <CapabilityNote capability="view-users">{label}</CapabilityNote>;
     case 'failed':
-      body = (
-        <EmptyState
-          variant="failed"
-          title="The administrators could not be loaded"
-          action={<Button onPress={list.retry}>Try again</Button>}
-        >
-          The gateway did not answer, or answered with an error.
-        </EmptyState>
-      );
+      body = <LoadFailed title="The administrators could not be loaded" retry={list.retry} />;
       break;
     case 'ready':
       body =

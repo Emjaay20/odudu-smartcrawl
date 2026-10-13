@@ -8,10 +8,9 @@ import { Link } from 'react-aria-components';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { ChecklistField } from '#/shared/view/ChecklistField';
-import { EmptyState } from '#/shared/view/EmptyState';
 import { ReadOnlyFields } from '#/shared/view/Field';
+import { ReadGate } from '#/shared/view/ReadGate';
 import { SaveSection } from '#/shared/view/SaveSection';
-import { FormSkeleton } from '#/shared/view/Skeleton';
 import { recordTab } from '#/shared/view/RecordTab';
 
 export function CapabilitySection({ editing }: { editing: CapabilityEditing }) {
@@ -97,29 +96,24 @@ export function SubjectCapabilities({
   self: boolean;
 }) {
   const read = useSubjectRolesRead(tenant, subject.id);
-  if (read.status === 'loading') {
-    return <FormSkeleton label="Loading the admin capabilities" fields={2} />;
-  }
-  if (read.data === undefined || read.etag === null) {
-    return (
-      <EmptyState
-        variant="failed"
-        title="The admin capabilities could not be loaded"
-        action={<Button onPress={read.retry}>Try again</Button>}
-      >
-        The gateway did not answer, or answered with an error.
-      </EmptyState>
-    );
-  }
   return (
-    <Ready
-      tenant={tenant}
-      subject={subject}
-      authorityTenant={authorityTenant}
-      self={self}
-      data={read.data}
-      etag={read.etag}
-      gone={read.gone}
-    />
+    <ReadGate
+      read={read}
+      label="Loading the admin capabilities"
+      fields={2}
+      failed="The admin capabilities could not be loaded"
+    >
+      {(data, etag) => (
+        <Ready
+          tenant={tenant}
+          subject={subject}
+          authorityTenant={authorityTenant}
+          self={self}
+          data={data}
+          etag={etag}
+          gone={read.gone}
+        />
+      )}
+    </ReadGate>
   );
 }

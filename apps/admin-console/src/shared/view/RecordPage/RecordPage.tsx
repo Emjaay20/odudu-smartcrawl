@@ -4,6 +4,7 @@ import type { Crumb } from '#/shared/view/Breadcrumb';
 import { Button } from '#/shared/view/Button';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { ReadOnlyFields } from '#/shared/view/Field';
+import { LoadFailed } from '#/shared/view/LoadFailed';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { RecordSkeleton } from '#/shared/view/Skeleton';
 import { Tabs, type TabItem } from '#/shared/view/Tabs';
@@ -76,13 +77,7 @@ export function RecordPage({
       return (
         <>
           {head(false)}
-          <EmptyState
-            variant="failed"
-            title={`This ${noun} could not be loaded`}
-            action={<Button onPress={record.retry}>Try again</Button>}
-          >
-            The gateway did not answer, or answered with an error.
-          </EmptyState>
+          <LoadFailed title={`This ${noun} could not be loaded`} retry={record.retry} />
         </>
       );
     case 'ready':

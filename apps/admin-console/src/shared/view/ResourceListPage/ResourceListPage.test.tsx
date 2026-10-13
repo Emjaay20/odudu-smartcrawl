@@ -113,6 +113,9 @@ it('says a list failed to load and offers to try again', async () => {
   const list = state({ status: 'failed', rows: [], count: null });
   render(page(list));
   expect(screen.getByRole('alert')).toHaveTextContent('Clients could not be loaded');
+  expect(screen.getByRole('alert')).toHaveTextContent(
+    'The gateway did not answer, or answered with an error. Nothing was changed.',
+  );
   await user.click(screen.getByRole('button', { name: 'Try again' }));
   expect(list.retry).toHaveBeenCalledOnce();
 });

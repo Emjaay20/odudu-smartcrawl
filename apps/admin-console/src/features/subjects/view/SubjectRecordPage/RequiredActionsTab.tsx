@@ -4,12 +4,10 @@ import {
   useRequiredActions,
   useRequiredActionsRead,
 } from '#/features/subjects/usecase/useRequiredActions';
-import { Button } from '#/shared/view/Button';
 import { ChecklistField } from '#/shared/view/ChecklistField';
-import { EmptyState } from '#/shared/view/EmptyState';
 import { ReadOnlyFields } from '#/shared/view/Field';
+import { ReadGate } from '#/shared/view/ReadGate';
 import { SaveSection } from '#/shared/view/SaveSection';
-import { FormSkeleton } from '#/shared/view/Skeleton';
 import { recordTab } from '#/shared/view/RecordTab';
 
 const OPTIONS = REQUIRED_ACTIONS.map(({ action, label, description }) => ({
@@ -66,29 +64,24 @@ function Panel({
   canManage: boolean;
 }) {
   const read = useRequiredActionsRead(tenant, subject.id);
-  if (read.status === 'loading') {
-    return <FormSkeleton label="Loading the required actions" fields={2} />;
-  }
-  if (read.data === undefined || read.etag === null) {
-    return (
-      <EmptyState
-        variant="failed"
-        title="The required actions could not be loaded"
-        action={<Button onPress={read.retry}>Try again</Button>}
-      >
-        The gateway did not answer, or answered with an error.
-      </EmptyState>
-    );
-  }
   return (
-    <Ready
-      tenant={tenant}
-      subject={subject}
-      allowed={canManage}
-      data={read.data}
-      etag={read.etag}
-      gone={read.gone}
-    />
+    <ReadGate
+      read={read}
+      label="Loading the required actions"
+      fields={2}
+      failed="The required actions could not be loaded"
+    >
+      {(data, etag) => (
+        <Ready
+          tenant={tenant}
+          subject={subject}
+          allowed={canManage}
+          data={data}
+          etag={etag}
+          gone={read.gone}
+        />
+      )}
+    </ReadGate>
   );
 }
 

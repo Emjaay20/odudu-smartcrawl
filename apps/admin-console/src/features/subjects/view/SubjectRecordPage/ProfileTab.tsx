@@ -12,7 +12,6 @@ import {
 } from '#/features/subjects/usecase/useSubjectProfile';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
-import { EmptyState } from '#/shared/view/EmptyState';
 import { BirthdateField } from '#/shared/view/Field';
 import { CountryField, GenderField, LocaleField, TimeZoneField } from '#/shared/view/Field';
 import { OwnDataFields, TextField, ToggleField, type Chrome } from '#/shared/view/Field';
@@ -20,8 +19,8 @@ import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
 import { PhoneField } from '#/shared/view/Field';
 import { PictureField, UrlField } from '#/shared/view/Field';
 import { Panel } from '#/shared/view/Panel';
+import { ReadGate } from '#/shared/view/ReadGate';
 import { SaveSection } from '#/shared/view/SaveSection';
-import { FormSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
 import { recordTab } from '#/shared/view/RecordTab';
@@ -296,26 +295,17 @@ function ProfileSections({
 
 function ProfilePanel({ tenant, id }: { tenant: string; id: string }) {
   const read = useSubjectProfileRead(tenant, id);
-  if (read.status === 'loading') return <FormSkeleton label="Loading the profile" fields={4} />;
-  if (read.data === undefined || read.etag === null) {
-    return (
-      <EmptyState
-        variant="failed"
-        title="The profile could not be loaded"
-        action={<Button onPress={read.retry}>Try again</Button>}
-      >
-        The gateway did not answer, or answered with an error.
-      </EmptyState>
-    );
-  }
   return (
-    <ProfileSections
-      tenant={tenant}
-      id={id}
-      profile={read.data}
-      etag={read.etag}
-      gone={read.gone}
-    />
+    <ReadGate
+      read={read}
+      label="Loading the profile"
+      fields={4}
+      failed="The profile could not be loaded"
+    >
+      {(data, etag) => (
+        <ProfileSections tenant={tenant} id={id} profile={data} etag={etag} gone={read.gone} />
+      )}
+    </ReadGate>
   );
 }
 

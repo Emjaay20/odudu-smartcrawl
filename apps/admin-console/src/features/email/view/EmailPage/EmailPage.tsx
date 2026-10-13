@@ -19,12 +19,11 @@ import { useRelayRemoval } from '#/features/email/usecase/useRelayRemoval';
 import { useTestSend } from '#/features/email/usecase/useTestSend';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
-import { EmptyState } from '#/shared/view/EmptyState';
 import { TextField, ToggleField } from '#/shared/view/Field';
 import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
 import { PageHeader } from '#/shared/view/PageHeader';
+import { ReadGate } from '#/shared/view/ReadGate';
 import { SaveSection } from '#/shared/view/SaveSection';
-import { FormSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
 import styles from '#/features/email/view/EmailPage/EmailPage.module.css';
 
@@ -210,31 +209,26 @@ function RelayAndTest({
 
 function Email({ tenant }: { tenant: string }) {
   const record = useEmailPage(tenant);
-  if (record.status === 'loading')
-    return <FormSkeleton label="Loading the mail relay" fields={4} />;
-  if (record.data === undefined || record.etag === null) {
-    return (
-      <EmptyState
-        variant="failed"
-        title="The mail relay could not be loaded"
-        action={<Button onPress={record.retry}>Try again</Button>}
-      >
-        The gateway did not answer, or answered with an error.
-      </EmptyState>
-    );
-  }
-  const config = record.data;
   return (
-    <div className={styles.page}>
-      <p className={styles.effective}>
-        <StatusTag tone={effectiveTone(config.effective)}>
-          {effectiveLabel(config.effective)}
-        </StatusTag>{' '}
-        {effectiveReading(config.effective)}
-      </p>
-      <RelayAndTest tenant={tenant} config={config} etag={record.etag} gone={record.gone} />
-      {config.configured ? <Removal tenant={tenant} reread={record.retry} /> : null}
-    </div>
+    <ReadGate
+      read={record}
+      label="Loading the mail relay"
+      fields={4}
+      failed="The mail relay could not be loaded"
+    >
+      {(config, etag) => (
+        <div className={styles.page}>
+          <p className={styles.effective}>
+            <StatusTag tone={effectiveTone(config.effective)}>
+              {effectiveLabel(config.effective)}
+            </StatusTag>{' '}
+            {effectiveReading(config.effective)}
+          </p>
+          <RelayAndTest tenant={tenant} config={config} etag={etag} gone={record.gone} />
+          {config.configured ? <Removal tenant={tenant} reread={record.retry} /> : null}
+        </div>
+      )}
+    </ReadGate>
   );
 }
 

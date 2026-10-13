@@ -23,13 +23,12 @@ import { useOtpRequirement, type OtpRequirement } from '#/features/flow/usecase/
 import { useFlowRead } from '#/features/flow/usecase/useFlowPage';
 import { useTenantSettingsRead } from '#/shared/usecase/useTenantSettingsRead';
 import { Button } from '#/shared/view/Button';
-import { EmptyState } from '#/shared/view/EmptyState';
 import { InlineFields, SelectField, ToggleField } from '#/shared/view/Field';
 import { PageHeader } from '#/shared/view/PageHeader';
+import { ReadGate } from '#/shared/view/ReadGate';
 import { SaveSection } from '#/shared/view/SaveSection';
 import { Section } from '#/shared/view/Section';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
-import { FormSkeleton } from '#/shared/view/Skeleton';
 import styles from '#/features/flow/view/FlowPage/FlowPage.module.css';
 
 function Add({ flow }: { flow: FlowSteps }) {
@@ -210,39 +209,35 @@ function OtpReady({
 function Flow({ tenant }: { tenant: string }) {
   const flow = useFlowRead(tenant);
   const settings = useTenantSettingsRead(tenant);
-  if (flow.status === 'loading') return <FormSkeleton label="Loading the flow" fields={3} />;
-  if (flow.data === undefined || flow.etag === null) {
-    return (
-      <EmptyState
-        variant="failed"
-        title="The sign-in flow could not be loaded"
-        action={<Button onPress={flow.retry}>Try again</Button>}
-      >
-        The gateway did not answer, or answered with an error.
-      </EmptyState>
-    );
-  }
-  const reading = settings.data === undefined ? null : otpReading(otpRequired(settings.data));
   return (
-    <div className={styles.page}>
-      <StepsReady
-        tenant={tenant}
-        data={flow.data}
-        etag={flow.etag}
-        gone={flow.gone}
-        reading={reading}
-      />
-      {settings.status === 'failed' ? <p className={styles.rule}>{OTP_UNREAD}</p> : null}
-      {settings.data === undefined || settings.etag === null ? null : (
-        <OtpReady
-          tenant={tenant}
-          data={settings.data}
-          etag={settings.etag}
-          gone={settings.gone}
-          hasStep={hasOtpStep(flow.data.items)}
-        />
+    <ReadGate
+      read={flow}
+      label="Loading the flow"
+      fields={3}
+      failed="The sign-in flow could not be loaded"
+    >
+      {(data, etag) => (
+        <div className={styles.page}>
+          <StepsReady
+            tenant={tenant}
+            data={data}
+            etag={etag}
+            gone={flow.gone}
+            reading={settings.data === undefined ? null : otpReading(otpRequired(settings.data))}
+          />
+          {settings.status === 'failed' ? <p className={styles.rule}>{OTP_UNREAD}</p> : null}
+          {settings.data === undefined || settings.etag === null ? null : (
+            <OtpReady
+              tenant={tenant}
+              data={settings.data}
+              etag={settings.etag}
+              gone={settings.gone}
+              hasStep={hasOtpStep(data.items)}
+            />
+          )}
+        </div>
       )}
-    </div>
+    </ReadGate>
   );
 }
 

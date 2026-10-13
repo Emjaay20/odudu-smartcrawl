@@ -14,6 +14,7 @@ import { DeleteZone } from '#/shared/view/DeleteZone';
 import { KeyHint, PlatformContext } from '#/shared/view/KeyHint';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
+import { LoadFailed } from '#/shared/view/LoadFailed';
 import { Note, NoteCode } from '#/shared/view/Note';
 import { ChunkFailed } from '#/shared/view/ChunkBoundary';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
@@ -50,6 +51,7 @@ import { PageNotFound } from '#/shared/view/PageNotFound';
 import { Pager } from '#/shared/view/Pager';
 import { Panel } from '#/shared/view/Panel';
 import { Rail } from '#/shared/view/Rail';
+import { ReadGate } from '#/shared/view/ReadGate';
 import { RecordPage } from '#/shared/view/RecordPage';
 import { recordTab } from '#/shared/view/RecordTab';
 import { ResourceListPage } from '#/shared/view/ResourceListPage';
@@ -733,6 +735,10 @@ const NO_DELETION = {
   confirm: NOTHING,
 };
 
+function readOf(status: string, data: string | undefined) {
+  return { status, data, etag: data === undefined ? null : '"e1"', gone: false, retry: NOTHING };
+}
+
 function RecordPieces() {
   return (
     <div className={styles.stack}>
@@ -763,6 +769,32 @@ function RecordPieces() {
           }
         />
       </Specimen>
+      <div className={styles.grid}>
+        <Specimen label="LoadFailed">
+          <LoadFailed title="The groups could not be loaded" retry={NOTHING} />
+        </Specimen>
+        <Specimen label="ReadGate: loading, failed, and the record">
+          <div className={styles.stack}>
+            {(
+              [
+                ['loading', undefined],
+                ['failed', undefined],
+                ['ready', 'The record'],
+              ] as const
+            ).map(([status, data]) => (
+              <ReadGate
+                key={status}
+                read={readOf(status, data)}
+                label="Loading the groups"
+                fields={2}
+                failed="The roles could not be loaded"
+              >
+                {(record) => <p>{record}</p>}
+              </ReadGate>
+            ))}
+          </div>
+        </Specimen>
+      </div>
       <Specimen label="PageNotFound: an address that is no page">
         <PageNotFound />
       </Specimen>

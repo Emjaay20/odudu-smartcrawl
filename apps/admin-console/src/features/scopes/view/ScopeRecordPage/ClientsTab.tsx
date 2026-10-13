@@ -7,8 +7,8 @@ import {
 import { Button } from '#/shared/view/Button';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { ClientPicker } from '#/shared/view/ClientPicker';
-import { EmptyState } from '#/shared/view/EmptyState';
 import { InlineFields, SelectField } from '#/shared/view/Field';
+import { LoadFailed } from '#/shared/view/LoadFailed';
 import { Panel } from '#/shared/view/Panel';
 import { ListSkeleton } from '#/shared/view/Skeleton';
 import { recordTab } from '#/shared/view/RecordTab';
@@ -27,15 +27,7 @@ function Carriers({ scope, page }: { scope: ClientScope; page: ScopeClientsTab }
   if (list.status === 'loading') {
     body = <ListSkeleton label="Loading the clients" />;
   } else if (list.status === 'failed' || list.status === 'refused') {
-    body = (
-      <EmptyState
-        variant="failed"
-        title="The clients could not be loaded"
-        action={<Button onPress={list.retry}>Try again</Button>}
-      >
-        The gateway did not answer, or answered with an error.
-      </EmptyState>
-    );
+    body = <LoadFailed title="The clients could not be loaded" retry={list.retry} />;
   } else if (list.rows.length === 0) {
     body = <p className={recordTab.text}>{`No client carries ${scope.name}.`}</p>;
   } else {

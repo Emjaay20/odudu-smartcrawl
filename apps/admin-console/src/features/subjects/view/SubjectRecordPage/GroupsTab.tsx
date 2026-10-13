@@ -5,12 +5,10 @@ import {
   type Membership,
   type SubjectGroups,
 } from '#/features/subjects/usecase/useSubjectGroups';
-import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
-import { EmptyState } from '#/shared/view/EmptyState';
 import { GroupPicker } from '#/shared/view/GroupPicker';
+import { ReadGate } from '#/shared/view/ReadGate';
 import { SaveSection } from '#/shared/view/SaveSection';
-import { FormSkeleton } from '#/shared/view/Skeleton';
 import { recordTab } from '#/shared/view/RecordTab';
 
 export function Memberships({ name, members }: { name: string; members: readonly Membership[] }) {
@@ -102,29 +100,26 @@ export function GroupsTab({
   self: boolean;
 }) {
   const read = useSubjectGroupsRead(tenant, subject.id);
-  if (read.status === 'loading') return <FormSkeleton label="Loading the groups" fields={2} />;
-  if (read.data === undefined || read.etag === null) {
-    return (
-      <EmptyState
-        variant="failed"
-        title="The groups could not be loaded"
-        action={<Button onPress={read.retry}>Try again</Button>}
-      >
-        The gateway did not answer, or answered with an error.
-      </EmptyState>
-    );
-  }
   return (
-    <div className={recordTab.tab}>
-      <Ready
-        tenant={tenant}
-        subject={subject}
-        canManage={canManage}
-        self={self}
-        data={read.data}
-        etag={read.etag}
-        gone={read.gone}
-      />
-    </div>
+    <ReadGate
+      read={read}
+      label="Loading the groups"
+      fields={2}
+      failed="The groups could not be loaded"
+    >
+      {(data, etag) => (
+        <div className={recordTab.tab}>
+          <Ready
+            tenant={tenant}
+            subject={subject}
+            canManage={canManage}
+            self={self}
+            data={data}
+            etag={etag}
+            gone={read.gone}
+          />
+        </div>
+      )}
+    </ReadGate>
   );
 }

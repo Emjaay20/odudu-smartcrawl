@@ -18,6 +18,7 @@ import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { SelectField } from '#/shared/view/Field';
+import { LoadFailed } from '#/shared/view/LoadFailed';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { Panel } from '#/shared/view/Panel';
 import { TableSkeleton } from '#/shared/view/Skeleton';
@@ -111,15 +112,7 @@ function LaneBody({ spec, lane, page }: { spec: LaneSpec; lane: Lane; page: Page
       return <TableSkeleton label={`Loading ${label.toLowerCase()}`} columns={cols} rows={2} />;
     case 'refused':
     case 'failed':
-      return (
-        <EmptyState
-          variant="failed"
-          title={`${label} could not be loaded`}
-          action={<Button onPress={lane.retry}>Try again</Button>}
-        >
-          The gateway did not answer, or answered with an error. Nothing was changed.
-        </EmptyState>
-      );
+      return <LoadFailed title={`${label} could not be loaded`} retry={lane.retry} unchanged />;
     case 'ready':
       break;
   }

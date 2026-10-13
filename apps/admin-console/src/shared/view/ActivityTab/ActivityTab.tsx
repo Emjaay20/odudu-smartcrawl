@@ -1,11 +1,11 @@
 import type { AuditEvent } from '@odudu/contracts/admin';
 import type { ResourceListState } from '#/shared/service/resourceList';
 import { AuditActor } from '#/shared/view/AuditActor';
-import { Button } from '#/shared/view/Button';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { CopyValue } from '#/shared/view/CopyValue';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
+import { LoadFailed } from '#/shared/view/LoadFailed';
 import { Pager } from '#/shared/view/Pager';
 import { TableSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag, type StatusTone } from '#/shared/view/StatusTag';
@@ -70,15 +70,7 @@ export function ActivityTab({
     case 'refused':
       return <CapabilityNote capability="view-audit">Activity</CapabilityNote>;
     case 'failed':
-      return (
-        <EmptyState
-          variant="failed"
-          title="Activity could not be loaded"
-          action={<Button onPress={list.retry}>Try again</Button>}
-        >
-          The gateway did not answer, or answered with an error.
-        </EmptyState>
-      );
+      return <LoadFailed title="Activity could not be loaded" retry={list.retry} />;
     case 'ready':
       break;
   }

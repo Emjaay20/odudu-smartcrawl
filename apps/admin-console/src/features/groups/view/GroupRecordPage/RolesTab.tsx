@@ -6,12 +6,10 @@ import {
   type MappedRole,
 } from '#/features/groups/usecase/useGroupRoles';
 import type { Ceiling } from '#/features/groups/usecase/useGroupRecordPage';
-import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
-import { EmptyState } from '#/shared/view/EmptyState';
+import { ReadGate } from '#/shared/view/ReadGate';
 import { RolePicker } from '#/shared/view/RolePicker';
 import { SaveSection } from '#/shared/view/SaveSection';
-import { FormSkeleton } from '#/shared/view/Skeleton';
 import { RoleOwner } from '#/shared/view/RoleOwner';
 import { recordTab } from '#/shared/view/RecordTab';
 
@@ -97,28 +95,25 @@ export function RolesTab({
   ceiling: Ceiling;
 }) {
   const read = useGroupRolesRead(tenant, group.id);
-  if (read.status === 'loading') return <FormSkeleton label="Loading the roles" fields={2} />;
-  if (read.data === undefined || read.etag === null) {
-    return (
-      <EmptyState
-        variant="failed"
-        title="The roles could not be loaded"
-        action={<Button onPress={read.retry}>Try again</Button>}
-      >
-        The gateway did not answer, or answered with an error.
-      </EmptyState>
-    );
-  }
   return (
-    <div className={recordTab.tab}>
-      <Ready
-        tenant={tenant}
-        group={group}
-        ceiling={ceiling}
-        data={read.data}
-        etag={read.etag}
-        gone={read.gone}
-      />
-    </div>
+    <ReadGate
+      read={read}
+      label="Loading the roles"
+      fields={2}
+      failed="The roles could not be loaded"
+    >
+      {(data, etag) => (
+        <div className={recordTab.tab}>
+          <Ready
+            tenant={tenant}
+            group={group}
+            ceiling={ceiling}
+            data={data}
+            etag={etag}
+            gone={read.gone}
+          />
+        </div>
+      )}
+    </ReadGate>
   );
 }

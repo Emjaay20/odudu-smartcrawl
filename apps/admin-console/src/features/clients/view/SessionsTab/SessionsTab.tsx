@@ -18,7 +18,7 @@ import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { Count } from '#/shared/view/Count';
 import { DataTable, type Column } from '#/shared/view/DataTable';
-import { EmptyState } from '#/shared/view/EmptyState';
+import { LoadFailed } from '#/shared/view/LoadFailed';
 import { Pager } from '#/shared/view/Pager';
 import { Panel } from '#/shared/view/Panel';
 import { TableSkeleton } from '#/shared/view/Skeleton';
@@ -63,15 +63,7 @@ function List({ client, page }: { client: Client; page: ClientSessions }) {
       body = <CapabilityNote capability={SESSIONS_CAPABILITY}>Sessions</CapabilityNote>;
       break;
     case 'failed':
-      body = (
-        <EmptyState
-          variant="failed"
-          title="The sessions could not be loaded"
-          action={<Button onPress={list.retry}>Try again</Button>}
-        >
-          The gateway did not answer, or answered with an error.
-        </EmptyState>
-      );
+      body = <LoadFailed title="The sessions could not be loaded" retry={list.retry} />;
       break;
     case 'ready':
       body =

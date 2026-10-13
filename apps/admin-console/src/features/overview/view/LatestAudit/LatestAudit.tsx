@@ -5,10 +5,10 @@ import type { Gated } from '#/features/overview/service';
 import { Panel } from '#/features/overview/view/Panel';
 import { OUTCOME_TONES } from '#/shared/view/ActivityTab';
 import { AuditActor } from '#/shared/view/AuditActor';
-import { Button } from '#/shared/view/Button';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
+import { LoadFailed } from '#/shared/view/LoadFailed';
 import { TableSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
@@ -58,15 +58,7 @@ export function LatestAudit({
       body = <TableSkeleton label="Loading the latest audit rows" columns={columns(now)} />;
       break;
     case 'failed':
-      body = (
-        <EmptyState
-          variant="failed"
-          title="The audit trail could not be read"
-          action={<Button onPress={audit.retry}>Try again</Button>}
-        >
-          The gateway did not answer, or answered with an error.
-        </EmptyState>
-      );
+      body = <LoadFailed title="The audit trail could not be read" retry={audit.retry} />;
       break;
     case 'ready':
       body =
