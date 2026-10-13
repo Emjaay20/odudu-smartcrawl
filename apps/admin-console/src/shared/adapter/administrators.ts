@@ -1,6 +1,5 @@
 import {
   issuePasswordResponseSchema,
-  listClientsResponseSchema,
   setRolesResponseSchema,
   subjectSchema,
   type IssuePasswordResponse,
@@ -9,9 +8,9 @@ import {
   type SetRolesResponse,
   type Subject,
 } from '@odudu/contracts/admin';
-import { readRolePage, readSubjectPage } from '#/shared/adapter/directory';
+import { readClientPage, readRolePage, readSubjectPage } from '#/shared/adapter/directory';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { adminCall, tenantPath } from '#/shared/adapter/route';
+import { adminCall } from '#/shared/adapter/route';
 
 export function createSubject(
   gateway: Gateway,
@@ -54,13 +53,7 @@ export function readAdminClients(
   gateway: Gateway,
   tenant: string,
 ): Promise<GatewayResult<ListClientsResponse>> {
-  return gateway.request(
-    'GET',
-    `admin/tenants/${tenantPath(tenant)}/clients?client_id=odudu-admin`,
-    {
-      schema: listClientsResponseSchema,
-    },
-  );
+  return readClientPage(gateway, tenant, new URLSearchParams({ client_id: 'odudu-admin' }));
 }
 
 export function readClientRoles(
