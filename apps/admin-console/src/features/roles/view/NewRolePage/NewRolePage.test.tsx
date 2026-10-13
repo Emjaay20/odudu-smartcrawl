@@ -182,6 +182,17 @@ it('holds Create after a lost answer until a look finds nothing, then lets it go
   });
 });
 
+it('holds the look disabled while it is under way', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, roleRoutes(undefined, { [`POST ${R}`]: offline(), [`GET ${R}`]: pending() }));
+  await user.type(await screen.findByRole('textbox', { name: 'Name' }), 'billing{Enter}');
+  await screen.findByText(/Could not confirm whether billing was created/u);
+  await user.click(screen.getByRole('button', { name: 'Look for billing' }));
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Look for billing' })).toBeDisabled();
+  });
+});
+
 it('drops what the last send said while the next one is in flight', async () => {
   const user = userEvent.setup();
   const { sent } = renderConsoleAt(
