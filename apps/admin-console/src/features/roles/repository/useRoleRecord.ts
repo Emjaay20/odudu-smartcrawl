@@ -1,5 +1,5 @@
 import type { ListRoleCompositesResponse, Role } from '@odudu/contracts/admin';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   addComposite,
   amendRole,
@@ -14,7 +14,7 @@ import { isStale } from '#/shared/service/failure';
 import { recordKey, useRecord, type RecordState } from '#/shared/repository/useRecord';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { useTransport } from '#/shared/transport/useTransport';
+import { useWrite, type Write } from '#/shared/repository/useWrite';
 import type { DescriptionValues, DefaultValues } from '#/shared/service/sectionValues';
 
 export function useRoleRecord(tenant: string, id: string): RecordState<Role> {
@@ -91,7 +91,6 @@ export interface CompositeRemoval {
 // One edge at a time, on the ETag the list was read with; the list is read
 // again afterwards, since the write does not answer it.
 export function useCompositeRemoval(tenant: string, id: string): CompositeRemoval {
-  const { gateway } = useTransport();
   const client = useQueryClient();
   const after = useAfterRoleChange(tenant);
   const reread = <R>(result: GatewayResult<R>): GatewayResult<R> => {
@@ -102,27 +101,20 @@ export function useCompositeRemoval(tenant: string, id: string): CompositeRemova
     }
     return after(result);
   };
-  const remove = useMutation({
-    mutationFn: async ({ child, ifMatch }: Edge) =>
+  const remove = useWrite({
+    send: async (gateway, { child, ifMatch }: Edge) =>
       reread(await removeComposite(gateway, tenant, id, child, ifMatch)),
   });
-  return { busy: remove.isPending, remove: (edge) => remove.mutateAsync(edge) };
+  return { busy: remove.busy, remove: remove.run };
 }
 
-export interface RoleDeletion {
-  busy: boolean;
-  run: () => Promise<GatewayResult<undefined>>;
-}
-
-export function useRoleDeletion(tenant: string, id: string): RoleDeletion {
-  const { gateway } = useTransport();
+export function useRoleDeletion(tenant: string, id: string): Write<void, GatewayResult<undefined>> {
   const after = useAfterRoleChange(tenant, id);
   // The record's own entries are left to lapse: removing them while its page
   // is still mounted would read them again, and find nothing.
-  const mutation = useMutation({
-    mutationFn: async () => after(await deleteRole(gateway, tenant, id)),
+  return useWrite({
+    send: async (gateway) => after(await deleteRole(gateway, tenant, id)),
   });
-  return { busy: mutation.isPending, run: () => mutation.mutateAsync() };
 }
 
 export interface AddValues extends Readonly<Record<string, unknown>> {

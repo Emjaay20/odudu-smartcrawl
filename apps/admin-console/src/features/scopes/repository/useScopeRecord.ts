@@ -1,5 +1,5 @@
 import type { ClientScope, ScopeMappers, SetScopeRolesResponse } from '@odudu/contracts/admin';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   amendScope,
   deleteScope,
@@ -20,7 +20,7 @@ import { uniqueIds } from '#/shared/service/ids';
 import { useRecord, type RecordState } from '#/shared/repository/useRecord';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { useTransport } from '#/shared/transport/useTransport';
+import { useWrite, type Write } from '#/shared/repository/useWrite';
 import type { RoleValues } from '#/shared/service/sectionValues';
 
 export function useScopeRecord(tenant: string, id: string): RecordState<ClientScope> {
@@ -128,16 +128,12 @@ export function useScopeSaves(tenant: string, id: string) {
   };
 }
 
-export interface ScopeDeletion {
-  busy: boolean;
-  run: () => Promise<GatewayResult<undefined>>;
-}
-
-export function useScopeDeletion(tenant: string, id: string): ScopeDeletion {
-  const { gateway } = useTransport();
+export function useScopeDeletion(
+  tenant: string,
+  id: string,
+): Write<void, GatewayResult<undefined>> {
   const after = useAfterScopeChange(tenant, id);
-  const mutation = useMutation({
-    mutationFn: async () => after(await deleteScope(gateway, tenant, id)),
+  return useWrite({
+    send: async (gateway) => after(await deleteScope(gateway, tenant, id)),
   });
-  return { busy: mutation.isPending, run: () => mutation.mutateAsync() };
 }

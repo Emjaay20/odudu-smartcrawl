@@ -1,5 +1,5 @@
 import type { GroupRecord, SetGroupRolesResponse } from '@odudu/contracts/admin';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   amendGroup,
   deleteGroup,
@@ -13,6 +13,7 @@ import { useRecord, type RecordState } from '#/shared/repository/useRecord';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 import { useTransport } from '#/shared/transport/useTransport';
+import { useWrite, type Write } from '#/shared/repository/useWrite';
 import type { DescriptionValues, DefaultValues, RoleValues } from '#/shared/service/sectionValues';
 
 export function useGroupRecord(tenant: string, id: string): RecordState<GroupRecord> {
@@ -113,18 +114,14 @@ export function useGroupSaves(tenant: string, id: string) {
   };
 }
 
-export interface GroupDeletion {
-  busy: boolean;
-  run: () => Promise<GatewayResult<undefined>>;
-}
-
-export function useGroupDeletion(tenant: string, id: string): GroupDeletion {
-  const { gateway } = useTransport();
+export function useGroupDeletion(
+  tenant: string,
+  id: string,
+): Write<void, GatewayResult<undefined>> {
   const after = useAfterGroupChange(tenant, id);
   // The record's own entries are left to lapse: removing them while its page
   // is still mounted would read them again, and find nothing.
-  const mutation = useMutation({
-    mutationFn: async () => after(await deleteGroup(gateway, tenant, id)),
+  return useWrite({
+    send: async (gateway) => after(await deleteGroup(gateway, tenant, id)),
   });
-  return { busy: mutation.isPending, run: () => mutation.mutateAsync() };
 }

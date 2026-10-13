@@ -1,5 +1,5 @@
 import type { Client } from '@odudu/contracts/admin';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   amendClient,
   deleteClient,
@@ -10,7 +10,7 @@ import { clientRecord } from '#/features/clients/service';
 import { recordKey, useRecord, type RecordState } from '#/shared/repository/useRecord';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { useTransport } from '#/shared/transport/useTransport';
+import { useWrite, type Write } from '#/shared/repository/useWrite';
 
 export function useClientRecord(tenant: string, id: string): RecordState<Client> {
   return useRecord({
@@ -102,18 +102,14 @@ export function useClientSaves(tenant: string, id: string) {
   };
 }
 
-export interface ClientDeletion {
-  busy: boolean;
-  run: () => Promise<GatewayResult<undefined>>;
-}
-
-export function useClientDeletion(tenant: string, id: string): ClientDeletion {
-  const { gateway } = useTransport();
+export function useClientDeletion(
+  tenant: string,
+  id: string,
+): Write<void, GatewayResult<undefined>> {
   const after = useAfterClientChange(tenant);
   // The record's own entries are left to lapse: removing them while its page
   // is still mounted would read them again, and find nothing.
-  const mutation = useMutation({
-    mutationFn: async () => after(await deleteClient(gateway, tenant, id)),
+  return useWrite({
+    send: async (gateway) => after(await deleteClient(gateway, tenant, id)),
   });
-  return { busy: mutation.isPending, run: () => mutation.mutateAsync() };
 }
