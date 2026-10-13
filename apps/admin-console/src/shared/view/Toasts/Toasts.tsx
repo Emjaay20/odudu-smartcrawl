@@ -2,27 +2,25 @@ import { useEffect, useLayoutEffect, useRef, useState, type FocusEvent } from 'r
 import type { Toast } from '#/shared/service/toast';
 import { Button } from '#/shared/view/Button';
 import styles from '#/shared/view/Toasts/Toasts.module.css';
+import { useLatest } from '#/shared/usecase/useLatest';
 
 const SUCCESS_LIFETIME_MS = 5_000;
 
 // Counts down only while running, keeping what is left across pauses.
 function useCountdown(running: boolean, ms: number, onElapsed: () => void): void {
   const remaining = useRef(ms);
-  const elapsed = useRef(onElapsed);
-  useEffect(() => {
-    elapsed.current = onElapsed;
-  });
+  const elapsed = useLatest(onElapsed);
   useEffect(() => {
     if (!running) return undefined;
     const started = Date.now();
     const timer = setTimeout(() => {
-      elapsed.current();
+      elapsed()();
     }, remaining.current);
     return () => {
       clearTimeout(timer);
       remaining.current -= Date.now() - started;
     };
-  }, [running]);
+  }, [running, elapsed]);
 }
 
 function ToastItem({
@@ -35,19 +33,16 @@ function ToastItem({
   onFocusLost: (id: string) => void;
 }) {
   const item = useRef<HTMLLIElement>(null);
-  const lost = useRef(onFocusLost);
-  useEffect(() => {
-    lost.current = onFocusLost;
-  });
+  const lost = useLatest(onFocusLost);
   // A layout cleanup runs while the item is still in the document, so it can
   // tell whether the focus is about to go with it.
   useLayoutEffect(() => {
     const node = item.current;
     const id = toast.id;
     return () => {
-      if (node?.contains(document.activeElement) === true) lost.current(id);
+      if (node?.contains(document.activeElement) === true) lost()(id);
     };
-  }, [toast.id]);
+  }, [toast.id, lost]);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const dismiss = (): void => {

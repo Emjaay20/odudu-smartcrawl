@@ -42,6 +42,17 @@ it('dismisses a success after five seconds', () => {
   expect(onDismiss).toHaveBeenCalledWith('t1');
 });
 
+it('dismisses through the handler of the latest render', () => {
+  const first = vi.fn();
+  const second = vi.fn();
+  const { rerender } = render(<Toasts toasts={[SAVED]} onDismiss={first} />);
+  advance(2_000);
+  rerender(<Toasts toasts={[SAVED]} onDismiss={second} />);
+  advance(3_000);
+  expect(first).not.toHaveBeenCalled();
+  expect(second).toHaveBeenCalledWith('t1');
+});
+
 it('pauses the countdown while the pointer rests on the toast', () => {
   const onDismiss = vi.fn();
   render(<Toasts toasts={[SAVED]} onDismiss={onDismiss} />);

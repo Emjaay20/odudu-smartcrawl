@@ -11,6 +11,7 @@ import { Dialog, DialogTrigger, Modal, ModalOverlay } from 'react-aria-component
 import { Button } from '#/shared/view/Button';
 import { KeyHint } from '#/shared/view/KeyHint';
 import styles from '#/shared/view/AppShell/AppShell.module.css';
+import { useLatest } from '#/shared/usecase/useLatest';
 
 const SHORTCUT = '[';
 
@@ -30,24 +31,21 @@ function claimedElsewhere(event: KeyboardEvent): boolean {
 }
 
 function useShortcut(onPress: (() => void) | undefined, paused: boolean): void {
-  const latest = useRef({ onPress, paused });
-  useEffect(() => {
-    latest.current = { onPress, paused };
-  });
+  const latest = useLatest({ onPress, paused });
   const enabled = onPress !== undefined;
   useEffect(() => {
     if (!enabled) return undefined;
     const press = (event: KeyboardEvent): void => {
-      if (event.key !== SHORTCUT || event.defaultPrevented || latest.current.paused) return;
+      if (event.key !== SHORTCUT || event.defaultPrevented || latest().paused) return;
       if (claimedElsewhere(event) || typing(event.target)) return;
       event.preventDefault();
-      latest.current.onPress?.();
+      latest().onPress?.();
     };
     document.addEventListener('keydown', press);
     return () => {
       document.removeEventListener('keydown', press);
     };
-  }, [enabled]);
+  }, [enabled, latest]);
 }
 
 function Toggle({

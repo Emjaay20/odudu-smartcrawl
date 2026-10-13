@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { recordKey } from '#/shared/repository/queryKeys';
 import type { RecordEntry } from '#/shared/repository/useRecord';
 import { useSectionDraft } from '#/shared/repository/useSectionDraft';
@@ -33,6 +33,7 @@ import {
 import type { Gateway, GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
 import type { Problem } from '#/shared/transport/problem';
 import { useTransport } from '#/shared/transport/useTransport';
+import { useLatest } from '#/shared/usecase/useLatest';
 
 export type { SectionField, SectionFields };
 
@@ -139,10 +140,7 @@ export function useSectionSave<T extends Values, R>({
     if (rebased !== null) setState(rebased);
   }
 
-  const latest = useRef(current);
-  useEffect(() => {
-    latest.current = current;
-  });
+  const latest = useLatest(current);
   const inFlight = useRef(false);
 
   const update = (change: (was: SectionState<T>) => SectionState<T>): void => {
@@ -221,13 +219,13 @@ export function useSectionSave<T extends Values, R>({
         .catch(() => undefined);
     },
     keepMine: () => {
-      const from = latest.current;
+      const from = latest();
       if (!canStart(from) || from.conflicts.length === 0) return;
       update(mineKept);
       run(mineKept(from)).catch(() => undefined);
     },
     takeTheirs: () => {
-      const from = latest.current;
+      const from = latest();
       if (inFlight.current || from.conflicts.length === 0) return;
       const next = theirsTaken(from);
       update(theirsTaken);
@@ -247,7 +245,7 @@ export function useSectionSave<T extends Values, R>({
       settle();
     },
     submit: () => {
-      const from = latest.current;
+      const from = latest();
       if (from.conflicts.length > 0 || !canStart(from)) return false;
       run(from).catch(() => undefined);
       return true;

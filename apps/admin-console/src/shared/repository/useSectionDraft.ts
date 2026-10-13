@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useDirtySection } from '#/shared/repository/useDirtySection';
 import { sectionKey } from '#/shared/service/record';
 import { currentDrafts, type DraftFields, type KeptDraft } from '#/shared/repository/useDrafts';
+import { useLatest } from '#/shared/usecase/useLatest';
 
 export interface SectionDraft {
   // Edits kept when a session ended, handed back once; the section applies
@@ -35,10 +36,7 @@ export function useSectionDraft({
 }): SectionDraft {
   const record = `${tenant}/${path}`;
   useDirtySection(sectionKey(tenant, path, section), label, dirty);
-  const latest = useRef({ dirty, fields, etag });
-  useEffect(() => {
-    latest.current = { dirty, fields, etag };
-  });
+  const latest = useLatest({ dirty, fields, etag });
   const drafts = currentDrafts();
   const [restored, setRestored] = useState(() => drafts.restore(record, section));
   const kept = useRef(restored?.etag ?? null);
@@ -47,11 +45,11 @@ export function useSectionDraft({
       drafts.register({
         record,
         section,
-        dirty: () => latest.current.dirty,
-        fields: () => latest.current.fields,
-        etag: () => kept.current ?? latest.current.etag,
+        dirty: () => latest().dirty,
+        fields: () => latest().fields,
+        etag: () => kept.current ?? latest().etag,
       }),
-    [drafts, record, section],
+    [drafts, record, section, latest],
   );
   useEffect(() => {
     if (restored !== null) drafts.forget(record, section);

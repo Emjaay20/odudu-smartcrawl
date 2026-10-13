@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { readSession } from '#/features/session/adapter/session';
 import { loadLastTenant, storeLastTenant } from '#/features/session/adapter/lastTenant';
 import {
@@ -16,6 +16,7 @@ import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 import type { Gateway } from '#/shared/transport/gateway';
 import type { SessionEvents } from '#/shared/service/sessionEvents';
 import { useTransport } from '#/shared/transport/useTransport';
+import { useLatest } from '#/shared/usecase/useLatest';
 
 const KEY = ['session'] as const;
 
@@ -96,15 +97,12 @@ export function useSessionEvent(
   listener: () => void,
 ): void {
   const { events } = useTransport();
-  const latest = useRef(listener);
-  useEffect(() => {
-    latest.current = listener;
-  });
+  const heard = useLatest(listener);
   useEffect(
     () =>
       events.on(name, () => {
-        latest.current();
+        heard()();
       }),
-    [events, name],
+    [events, name, heard],
   );
 }
