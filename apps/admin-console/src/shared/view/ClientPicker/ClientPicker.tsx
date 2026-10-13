@@ -1,6 +1,5 @@
 import type { Client } from '@odudu/contracts/admin';
-import type { PickerState } from '#/shared/service/picker';
-import { Picker } from '#/shared/view/Picker';
+import { Picker, type PickerFieldProps } from '#/shared/view/Picker';
 
 type ClientOption = Pick<Client, 'id' | 'name' | 'client_id' | 'type'>;
 
@@ -13,15 +12,7 @@ export function ClientPicker({
   onChange,
   selectionMode = 'multiple',
   unavailableOf,
-}: {
-  label: string;
-  picker: PickerState<ClientOption>;
-  selected: readonly string[];
-  onChange: (ids: string[]) => void;
-  selectionMode?: 'single' | 'multiple';
-  // Why a client cannot be chosen here, or null when it can.
-  unavailableOf?: (client: ClientOption) => string | null;
-}) {
+}: PickerFieldProps<ClientOption>) {
   return (
     <Picker
       label={label}

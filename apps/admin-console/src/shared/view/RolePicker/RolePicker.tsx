@@ -1,6 +1,5 @@
 import type { Role } from '@odudu/contracts/admin';
-import type { PickerState } from '#/shared/service/picker';
-import { Picker } from '#/shared/view/Picker';
+import { Picker, type PickerFieldProps } from '#/shared/view/Picker';
 
 // A client role is carried in a token under its client's name, so two roles
 // of one name are told apart by their owner, spoken as well as shown.
@@ -20,15 +19,7 @@ export function RolePicker({
   onChange,
   selectionMode = 'multiple',
   unavailableOf,
-}: {
-  label: string;
-  picker: PickerState<Role>;
-  selected: readonly string[];
-  onChange: (ids: string[]) => void;
-  selectionMode?: 'single' | 'multiple';
-  // Why a role cannot be chosen here, or null when it can.
-  unavailableOf?: (role: Role) => string | null;
-}) {
+}: PickerFieldProps<Role>) {
   return (
     <Picker
       label={label}

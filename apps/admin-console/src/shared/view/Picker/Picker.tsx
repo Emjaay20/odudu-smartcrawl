@@ -23,6 +23,18 @@ const renderUnavailable: NonNullable<ListBoxItemProps['render']> = (props) =>
     <div {...props} aria-disabled="true" data-unavailable />
   );
 
+// What a picker of one kind of record takes: the label it is named by, the
+// state of its search, the ids chosen, and the reason an option is held back.
+export interface PickerFieldProps<T> {
+  label: string;
+  picker: PickerState<T>;
+  selected: readonly string[];
+  onChange: (ids: string[]) => void;
+  selectionMode?: 'single' | 'multiple';
+  // Why an option cannot be chosen here, or null when it can.
+  unavailableOf?: (item: T) => string | null;
+}
+
 // Sits inside a section's form, so its search is a field and a button and
 // never a form of its own. The selection is ids, including ones chosen
 // from a page no longer loaded.
