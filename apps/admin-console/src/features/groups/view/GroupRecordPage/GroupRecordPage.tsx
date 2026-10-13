@@ -9,7 +9,7 @@ import {
   groupsTrail,
   type GroupTab,
 } from '#/features/groups/service';
-import { useGroupActivity } from '#/features/groups/usecase/useGroupActivity';
+import { useRecordActivity } from '#/shared/usecase/useRecordActivity';
 import { useGroupRecordPage, type Ceiling } from '#/features/groups/usecase/useGroupRecordPage';
 import { GeneralTab } from '#/features/groups/view/GroupRecordPage/GeneralTab';
 import { RolesTab } from '#/features/groups/view/GroupRecordPage/RolesTab';
@@ -31,7 +31,7 @@ interface PanelProps {
 }
 
 function Trail({ tenant, id }: { tenant: string; id: string }) {
-  const list = useGroupActivity(tenant, id);
+  const list = useRecordActivity('group', tenant, id);
   return <ActivityTab list={list} noun="group" />;
 }
 

@@ -1,9 +1,9 @@
-import { useSubjectActivity } from '#/features/subjects/usecase/useSubjectActivity';
+import { useRecordActivity } from '#/shared/usecase/useRecordActivity';
 import { ActivityTab } from '#/shared/view/ActivityTab';
 import styles from '#/features/subjects/view/SubjectRecordPage/Tab.module.css';
 
 export function ActivityPanel({ tenant, id }: { tenant: string; id: string }) {
-  const list = useSubjectActivity(tenant, id);
+  const list = useRecordActivity('subject', tenant, id);
   return (
     <div className={styles.tab}>
       <p className={styles.rule}>

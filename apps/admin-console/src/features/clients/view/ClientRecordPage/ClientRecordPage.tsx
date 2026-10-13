@@ -10,7 +10,7 @@ import {
   type ClientTab,
   type Reach,
 } from '#/features/clients/service';
-import { useClientActivity } from '#/features/clients/usecase/useClientActivity';
+import { useRecordActivity } from '#/shared/usecase/useRecordActivity';
 import { useClientRecordPage } from '#/features/clients/usecase/useClientRecordPage';
 import { AdvancedTab } from '#/features/clients/view/AdvancedTab';
 import { GeneralTab } from '#/features/clients/view/GeneralTab';
@@ -39,7 +39,7 @@ interface PanelProps {
 }
 
 function Trail({ tenant, id }: { tenant: string; id: string }) {
-  const list = useClientActivity(tenant, id);
+  const list = useRecordActivity('client', tenant, id);
   return <ActivityTab list={list} noun="client" />;
 }
 

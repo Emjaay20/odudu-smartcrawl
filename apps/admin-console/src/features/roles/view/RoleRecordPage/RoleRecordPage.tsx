@@ -9,7 +9,7 @@ import {
   type Role,
   type RoleTab,
 } from '#/features/roles/service';
-import { useRoleActivity } from '#/features/roles/usecase/useRoleActivity';
+import { useRecordActivity } from '#/shared/usecase/useRecordActivity';
 import { useRoleRecordPage, type Ceiling } from '#/features/roles/usecase/useRoleRecordPage';
 import { CompositesTab } from '#/features/roles/view/RoleRecordPage/CompositesTab';
 import { GeneralTab } from '#/features/roles/view/RoleRecordPage/GeneralTab';
@@ -31,7 +31,7 @@ interface PanelProps {
 }
 
 function Trail({ tenant, id }: { tenant: string; id: string }) {
-  const list = useRoleActivity(tenant, id);
+  const list = useRecordActivity('role', tenant, id);
   return <ActivityTab list={list} noun="role" />;
 }
 

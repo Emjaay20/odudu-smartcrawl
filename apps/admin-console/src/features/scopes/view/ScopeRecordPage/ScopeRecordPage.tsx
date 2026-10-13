@@ -9,7 +9,7 @@ import {
   scopesTrail,
   type ScopeTab,
 } from '#/features/scopes/service';
-import { useScopeActivity } from '#/features/scopes/usecase/useScopeActivity';
+import { useRecordActivity } from '#/shared/usecase/useRecordActivity';
 import { useScopeRecordPage } from '#/features/scopes/usecase/useScopeRecordPage';
 import { ClientsTab } from '#/features/scopes/view/ScopeRecordPage/ClientsTab';
 import { GeneralTab } from '#/features/scopes/view/ScopeRecordPage/GeneralTab';
@@ -29,7 +29,7 @@ interface PanelProps {
 }
 
 function Trail({ tenant, id }: { tenant: string; id: string }) {
-  const list = useScopeActivity(tenant, id);
+  const list = useRecordActivity('scope', tenant, id);
   return <ActivityTab list={list} noun="scope" />;
 }
 
