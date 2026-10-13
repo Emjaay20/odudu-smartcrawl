@@ -1,5 +1,5 @@
 import type { Role } from '@odudu/contracts/admin';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   addComposite,
   createRole,
@@ -8,7 +8,9 @@ import {
   readRole,
 } from '#/features/roles/adapter/roles';
 import type { CopyRead } from '#/features/roles/service';
+import { listKey, pickerKey } from '#/shared/repository/queryKeys';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
+import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useWrite } from '#/shared/repository/useWrite';
 import type { GatewayResult } from '#/shared/transport/gateway';
 import { useTransport } from '#/shared/transport/useTransport';
@@ -29,13 +31,12 @@ export interface CreateRole {
 
 export function useCreateRole(tenant: string): CreateRole {
   const { gateway } = useTransport();
-  const client = useQueryClient();
+  const { invalidate } = useInvalidate();
   const create = useWrite({
     send: (gateway, input: RoleInput) => createRole(gateway, tenant, input),
     onSuccess: (result) => {
       if (!result.ok) return;
-      client.invalidateQueries({ queryKey: ['list', tenant, 'roles'] }).catch(() => undefined);
-      client.invalidateQueries({ queryKey: ['picker', tenant, 'roles'] }).catch(() => undefined);
+      invalidate(listKey(tenant, 'roles'), pickerKey(tenant, 'roles'));
     },
   });
   const nest = useWrite({

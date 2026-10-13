@@ -1,8 +1,9 @@
 import type { Subject } from '@odudu/contracts/admin';
-import { useQueryClient } from '@tanstack/react-query';
+import { listKey } from '#/shared/repository/queryKeys';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
 import { createSubject, findSubject } from '#/shared/adapter/administrators';
 import type { GatewayResult } from '#/shared/transport/gateway';
+import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useWrite } from '#/shared/repository/useWrite';
 import { useTransport } from '#/shared/transport/useTransport';
 
@@ -15,11 +16,9 @@ export interface CreateSubject {
 
 export function useCreateSubject(tenant: string): CreateSubject {
   const { gateway } = useTransport();
-  const client = useQueryClient();
+  const { invalidate } = useInvalidate();
   const created = (result: GatewayResult<unknown>): void => {
-    if (result.ok) {
-      client.invalidateQueries({ queryKey: ['list', tenant, 'subjects'] }).catch(() => undefined);
-    }
+    if (result.ok) invalidate(listKey(tenant, 'subjects'));
   };
   const create = useWrite({
     send: (gateway, input: { username: string; email: string }) =>

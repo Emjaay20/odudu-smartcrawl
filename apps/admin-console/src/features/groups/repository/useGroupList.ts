@@ -1,5 +1,6 @@
 import type { Group } from '@odudu/contracts/admin';
 import { readGroupCount, readGroupPage } from '#/features/groups/adapter/groups';
+import { listKey } from '#/shared/repository/queryKeys';
 import { useListPages, useResourceList } from '#/shared/repository/useResourceList';
 import { useUrlSearch } from '#/shared/repository/useUrlSearch';
 import type { ResourceListState } from '#/shared/service/resourceList';
@@ -27,7 +28,7 @@ export function useGroupList(tenant: string): GroupList {
 // One level beneath a group, read only once it is opened.
 export function useGroupChildren(tenant: string, id: string, open: boolean) {
   return useListPages({
-    key: ['list', tenant, 'groups', 'children', id],
+    key: listKey(tenant, 'groups', 'children', id),
     query: new URLSearchParams({ parent: id }),
     cursor: undefined,
     read: (gateway, query) => readGroupPage(gateway, tenant, query),

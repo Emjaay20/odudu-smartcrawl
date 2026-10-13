@@ -1,4 +1,5 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { readOutcome, type Read } from '#/shared/service/read';
 import type { GatewayResult } from '#/shared/transport/gateway';
 
@@ -8,9 +9,9 @@ export function useRead<T>(
   asked: boolean,
   read: () => Promise<GatewayResult<T>>,
 ): Read<T> {
-  const client = useQueryClient();
+  const { invalidateExact } = useInvalidate();
   const query = useQuery({ queryKey: key, queryFn: read, enabled: asked });
   return readOutcome(query.data, () => {
-    client.invalidateQueries({ queryKey: key, exact: true }).catch(() => undefined);
+    invalidateExact(key);
   });
 }

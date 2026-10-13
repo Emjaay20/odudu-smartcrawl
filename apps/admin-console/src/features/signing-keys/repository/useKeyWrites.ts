@@ -1,21 +1,17 @@
 import type { SigningKey, SigningKeyAlg } from '@odudu/contracts/admin';
-import { useQueryClient } from '@tanstack/react-query';
 import { useRef } from 'react';
 import { deleteKey, promoteKey, retireKey, stageKey } from '#/features/signing-keys/adapter/keys';
+import { listKey, overviewKey } from '#/shared/repository/queryKeys';
+import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useGatewayWrite, type Write } from '#/shared/repository/useWrite';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 
 // A write's answer changes the lanes and what the overview says about the
 // keys, whatever it was: a refused or lost one may still have left them stale.
 function useKeysRead(tenant: string): () => void {
-  const client = useQueryClient();
+  const { invalidate } = useInvalidate();
   return () => {
-    for (const queryKey of [
-      ['list', tenant, 'keys'],
-      ['overview', tenant],
-    ]) {
-      client.invalidateQueries({ queryKey }).catch(() => undefined);
-    }
+    invalidate(listKey(tenant, 'keys'), overviewKey(tenant));
   };
 }
 

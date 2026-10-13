@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { pickerKey } from '#/shared/repository/queryKeys';
 import { useListPages, type ReadPage } from '#/shared/repository/useResourceList';
 import type { PickerState } from '#/shared/service/picker';
 
@@ -25,7 +26,7 @@ export function usePicker<T>({
   if (query !== '') params.set(field, query);
   for (const [name, value] of Object.entries(fixed)) params.set(name, value);
   const pages = useListPages({
-    key: ['picker', tenant, resource],
+    key: pickerKey(tenant, resource),
     query: params,
     cursor: undefined,
     read,

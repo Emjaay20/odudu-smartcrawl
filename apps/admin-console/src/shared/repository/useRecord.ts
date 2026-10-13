@@ -1,5 +1,7 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { recordKey } from '#/shared/repository/queryKeys';
+import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { recordView, seenAfter, type RecordView } from '#/shared/service/record';
 import type {
   Gateway,
@@ -14,10 +16,6 @@ import { useTransport } from '#/shared/transport/useTransport';
 export interface RecordEntry<R> {
   result: GatewaySuccess<R>;
   by: 'read' | 'save';
-}
-
-export function recordKey(tenant: string, record: string) {
-  return ['record', tenant, record] as const;
 }
 
 export interface RecordState<R> extends RecordView {
@@ -52,7 +50,7 @@ export function useRecord<R>({
   enabled?: boolean;
 }): RecordState<R> {
   const { gateway } = useTransport();
-  const client = useQueryClient();
+  const { invalidateExact } = useInvalidate();
   const key = recordKey(tenant, record);
   const query = useQuery({
     queryKey: key,
@@ -78,7 +76,7 @@ export function useRecord<R>({
       setSeen(etag);
     },
     retry: () => {
-      client.invalidateQueries({ queryKey: key, exact: true }).catch(() => undefined);
+      invalidateExact(key);
     },
   };
 }

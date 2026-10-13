@@ -4,7 +4,8 @@ import type { ReactNode } from 'react';
 import { expect, it } from 'vitest';
 import { z } from 'zod';
 import { createQueryClient } from '#/shared/repository/queryClient';
-import { recordKey, useRecord, type RecordEntry } from '#/shared/repository/useRecord';
+import { recordKey } from '#/shared/repository/queryKeys';
+import { useRecord, type RecordEntry } from '#/shared/repository/useRecord';
 import type { Gateway } from '#/shared/transport/gateway';
 import { TransportContext } from '#/shared/transport/useTransport';
 import {

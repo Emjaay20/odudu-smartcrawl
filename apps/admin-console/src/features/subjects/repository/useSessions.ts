@@ -1,5 +1,4 @@
 import type { Consent, EndSessionsResponse, Grant, Session } from '@odudu/contracts/admin';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   endAllSessions,
   endSession,
@@ -9,6 +8,8 @@ import {
   revokeConsent,
   revokeGrants,
 } from '#/features/subjects/adapter/sessions';
+import { listKey } from '#/shared/repository/queryKeys';
+import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useResourceList } from '#/shared/repository/useResourceList';
 import { useWrite, type Write } from '#/shared/repository/useWrite';
 import type { ResourceListState } from '#/shared/service/resourceList';
@@ -57,17 +58,15 @@ function useSubjectChange<A, R>(
   id: string,
   write: (gateway: Gateway, arg: A) => Promise<GatewayResult<R>>,
 ): Write<A, GatewayResult<R>> {
-  const client = useQueryClient();
+  const { invalidate } = useInvalidate();
   return useWrite({
     send: write,
     onSettled: () => {
-      for (const key of [
-        ['list', tenant, sessionsResource(id)],
-        ['list', tenant, grantsResource(id)],
-        ['list', tenant, consentsResource(id)],
-      ]) {
-        client.invalidateQueries({ queryKey: key }).catch(() => undefined);
-      }
+      invalidate(
+        listKey(tenant, sessionsResource(id)),
+        listKey(tenant, grantsResource(id)),
+        listKey(tenant, consentsResource(id)),
+      );
     },
   });
 }

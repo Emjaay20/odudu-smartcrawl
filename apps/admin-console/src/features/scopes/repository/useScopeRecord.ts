@@ -16,6 +16,7 @@ import {
   type GeneralValues,
 } from '#/features/scopes/service';
 import { uniqueIds } from '#/shared/service/ids';
+import { countKey, listKey, pickerKey } from '#/shared/repository/queryKeys';
 import { useAfterChange } from '#/shared/repository/useAfterChange';
 import { useRecord, type RecordState } from '#/shared/repository/useRecord';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
@@ -66,11 +67,7 @@ function useAfterScopeChange(tenant: string, deleted: string | null = null) {
     records: ['scopes/'],
     recordOf: scopeRecord,
     dropped: ['clients/'],
-    keys: [
-      ['list', tenant, 'scopes'],
-      ['count', tenant, 'scopes'],
-      ['picker', tenant, 'scopes'],
-    ],
+    keys: [listKey(tenant, 'scopes'), countKey(tenant, 'scopes'), pickerKey(tenant, 'scopes')],
   });
 }
 

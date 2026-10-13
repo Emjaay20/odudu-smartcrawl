@@ -3,7 +3,7 @@ import type {
   ListCredentialsResponse,
   Lockout,
 } from '@odudu/contracts/admin';
-import { useQueryClient } from '@tanstack/react-query';
+import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useRead } from '#/shared/repository/useRead';
 import type { Read } from '#/shared/service/read';
 import {
@@ -47,12 +47,12 @@ export function useCredentialChanges(
   tenant: string,
   id: string,
 ): Write<CredentialChange, GatewayResult<undefined>> {
-  const client = useQueryClient();
+  const { invalidateExact } = useInvalidate();
   return useWrite({
     send: (gateway, change: CredentialChange) => changeCredential(gateway, tenant, id, change),
     onSettled: (_result, change) => {
       const key = change.kind === 'lockout' ? lockoutKey(tenant, id) : credentialsKey(tenant, id);
-      client.invalidateQueries({ queryKey: key, exact: true }).catch(() => undefined);
+      invalidateExact(key);
     },
   });
 }
@@ -67,7 +67,7 @@ export function useIssuePassword(
     refused: (failure: GatewayFailure) => void;
   },
 ): SecretOnce<void, null> {
-  const client = useQueryClient();
+  const { invalidateExact } = useInvalidate();
   return useSecretOnce({
     run: async (gateway) => {
       let result: GatewayResult<IssuePasswordResponse>;
@@ -81,9 +81,8 @@ export function useIssuePassword(
         told.refused(result);
         return result;
       }
-      for (const key of [credentialsKey(tenant, id), lockoutKey(tenant, id)]) {
-        client.invalidateQueries({ queryKey: key, exact: true }).catch(() => undefined);
-      }
+      invalidateExact(credentialsKey(tenant, id));
+      invalidateExact(lockoutKey(tenant, id));
       told.issued();
       return result;
     },

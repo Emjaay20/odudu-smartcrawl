@@ -1,4 +1,5 @@
 import { useQueryClient, type QueryKey } from '@tanstack/react-query';
+import { useInvalidate } from '#/shared/repository/useInvalidate';
 import type { GatewayResult } from '#/shared/transport/gateway';
 
 export interface ChangeReach {
@@ -18,6 +19,7 @@ export interface ChangeReach {
 // lost one leaves everything as it was.
 export function useAfterChange(tenant: string, deleted: string | null, reach: ChangeReach) {
   const client = useQueryClient();
+  const { invalidate } = useInvalidate();
   return <R>(result: GatewayResult<R>): GatewayResult<R> => {
     if (!result.ok) return result;
     const gone = deleted === null ? null : reach.recordOf(deleted);
@@ -41,9 +43,7 @@ export function useAfterChange(tenant: string, deleted: string | null, reach: Ch
           at === tenant && isRecord(kind, which, dropped),
       });
     }
-    for (const key of reach.keys) {
-      client.invalidateQueries({ queryKey: key }).catch(() => undefined);
-    }
+    invalidate(...reach.keys);
     return result;
   };
 }

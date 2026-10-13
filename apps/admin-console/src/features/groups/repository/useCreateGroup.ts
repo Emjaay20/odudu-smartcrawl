@@ -1,7 +1,8 @@
 import type { Group } from '@odudu/contracts/admin';
-import { useQueryClient } from '@tanstack/react-query';
 import { createGroup, findGroup } from '#/features/groups/adapter/groups';
+import { listKey, pickerKey } from '#/shared/repository/queryKeys';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
+import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useWrite } from '#/shared/repository/useWrite';
 import type { GatewayResult } from '#/shared/transport/gateway';
 import { useTransport } from '#/shared/transport/useTransport';
@@ -21,13 +22,12 @@ export interface CreateGroup {
 
 export function useCreateGroup(tenant: string): CreateGroup {
   const { gateway } = useTransport();
-  const client = useQueryClient();
+  const { invalidate } = useInvalidate();
   const create = useWrite({
     send: (gateway, input: GroupInput) => createGroup(gateway, tenant, input),
     onSuccess: (result) => {
       if (!result.ok) return;
-      client.invalidateQueries({ queryKey: ['list', tenant, 'groups'] }).catch(() => undefined);
-      client.invalidateQueries({ queryKey: ['picker', tenant, 'groups'] }).catch(() => undefined);
+      invalidate(listKey(tenant, 'groups'), pickerKey(tenant, 'groups'));
     },
   });
   const fresh = useFreshRead();

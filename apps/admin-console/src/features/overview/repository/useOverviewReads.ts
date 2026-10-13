@@ -1,5 +1,7 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { readCount, readJwks, readKeys, readLatestAudit } from '#/features/overview/adapter';
+import { overviewKey } from '#/shared/repository/queryKeys';
+import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { readDiscovery } from '#/shared/adapter/discovery';
 import { readSmtp } from '#/shared/adapter/smtp';
 import { readTenantSettings } from '#/shared/adapter/tenantSettings';
@@ -26,8 +28,8 @@ function useTenantRead<T>(
   onAnswer: OnAnswer,
 ): OverviewRead<T> {
   const { gateway } = useTransport();
-  const client = useQueryClient();
-  const key = ['overview', tenant, name] as const;
+  const { invalidateExact } = useInvalidate();
+  const key = overviewKey(tenant, name);
   const query = useQuery({
     queryKey: key,
     queryFn: async () => {
@@ -38,7 +40,7 @@ function useTenantRead<T>(
     enabled: asked,
   });
   return overviewOutcome(asked, query.data, () => {
-    client.invalidateQueries({ queryKey: key, exact: true }).catch(() => undefined);
+    invalidateExact(key);
   });
 }
 

@@ -1,5 +1,7 @@
 import type { CountResponse } from '@odudu/contracts/admin';
-import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { countKey, listKey } from '#/shared/repository/queryKeys';
+import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useUrlSearch } from '#/shared/repository/useUrlSearch';
 import { currentCursor, trailFromSearch, trailToSearch } from '#/shared/service/cursorTrail';
 import {
@@ -109,16 +111,16 @@ export function useResourceList<T>({
   count?: ReadCount;
 }): ResourceListState<T> {
   const { gateway } = useTransport();
-  const client = useQueryClient();
+  const { invalidate } = useInvalidate();
   const { params, go } = useUrlSearch();
   const spec = { fields: search, filters };
   const narrowing = listFromSearch(params, spec);
   const trail = trailFromSearch(params);
   const query = apiQuery({ ...narrowing, filters: { ...defaults, ...narrowing.filters } }, fixed);
-  const key = ['list', tenant, resource] as const;
+  const key = listKey(tenant, resource);
   const pages = useListPages({ key, query, cursor: currentCursor(trail), read });
   const counted = useQuery({
-    queryKey: ['count', tenant, resource, query.toString()],
+    queryKey: countKey(tenant, resource, query.toString()),
     enabled: count !== undefined,
     queryFn: () =>
       count === undefined ? Promise.resolve(null) : count(gateway, new URLSearchParams(query)),
@@ -151,7 +153,7 @@ export function useResourceList<T>({
     loadMore: pages.loadMore,
     retry: () => {
       pages.retry();
-      client.invalidateQueries({ queryKey: ['count', tenant, resource] }).catch(() => undefined);
+      invalidate(countKey(tenant, resource));
     },
   };
 }

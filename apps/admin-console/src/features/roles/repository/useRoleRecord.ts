@@ -1,5 +1,4 @@
 import type { ListRoleCompositesResponse, Role } from '@odudu/contracts/admin';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   addComposite,
   amendRole,
@@ -12,7 +11,15 @@ import {
 import { compositesRecord, roleRecord } from '#/features/roles/service';
 import { isStale } from '#/shared/service/failure';
 import { useAfterChange } from '#/shared/repository/useAfterChange';
-import { recordKey, useRecord, type RecordState } from '#/shared/repository/useRecord';
+import {
+  heldCapabilitiesKey,
+  holdersKey,
+  listKey,
+  pickerKey,
+  recordKey,
+} from '#/shared/repository/queryKeys';
+import { useInvalidate } from '#/shared/repository/useInvalidate';
+import { useRecord, type RecordState } from '#/shared/repository/useRecord';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 import { useWrite, type Write } from '#/shared/repository/useWrite';
@@ -46,10 +53,10 @@ function useAfterRoleChange(tenant: string, deleted: string | null = null) {
     records: ['roles/', 'groups/'],
     recordOf: roleRecord,
     keys: [
-      ['list', tenant],
-      ['picker', tenant, 'roles'],
-      ['held-capabilities', tenant],
-      ['holders', tenant],
+      listKey(tenant),
+      pickerKey(tenant, 'roles'),
+      heldCapabilitiesKey(tenant),
+      holdersKey(tenant),
     ],
   });
 }
@@ -77,14 +84,10 @@ export interface CompositeRemoval {
 // One edge at a time, on the ETag the list was read with; the list is read
 // again afterwards, since the write does not answer it.
 export function useCompositeRemoval(tenant: string, id: string): CompositeRemoval {
-  const client = useQueryClient();
+  const { invalidateExact } = useInvalidate();
   const after = useAfterRoleChange(tenant);
   const reread = <R>(result: GatewayResult<R>): GatewayResult<R> => {
-    if (result.ok || isStale(result)) {
-      client
-        .invalidateQueries({ queryKey: recordKey(tenant, compositesRecord(id)), exact: true })
-        .catch(() => undefined);
-    }
+    if (result.ok || isStale(result)) invalidateExact(recordKey(tenant, compositesRecord(id)));
     return after(result);
   };
   const remove = useWrite({

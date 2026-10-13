@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { readSubjectPage } from '#/shared/adapter/directory';
+import { listKey } from '#/shared/repository/queryKeys';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
 import { useTransport } from '#/shared/transport/useTransport';
 
@@ -13,7 +14,7 @@ const MOST_PAGES = 10;
 export function usePickerHolders(query: string): ReadonlySet<string> | null {
   const { gateway } = useTransport();
   const holders = useQuery({
-    queryKey: ['list', SYSTEM_TENANT, 'picker holders', query],
+    queryKey: listKey(SYSTEM_TENANT, 'picker holders', query),
     queryFn: async () => {
       const ids: string[] = [];
       let cursor: string | undefined;

@@ -1,5 +1,4 @@
 import type { Client } from '@odudu/contracts/admin';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   amendClient,
   deleteClient,
@@ -7,7 +6,9 @@ import {
   type ClientChanges,
 } from '#/features/clients/adapter/clients';
 import { clientRecord } from '#/features/clients/service';
-import { recordKey, useRecord, type RecordState } from '#/shared/repository/useRecord';
+import { countKey, listKey, recordKey } from '#/shared/repository/queryKeys';
+import { useInvalidate } from '#/shared/repository/useInvalidate';
+import { useRecord, type RecordState } from '#/shared/repository/useRecord';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 import { useWrite, type Write } from '#/shared/repository/useWrite';
@@ -22,26 +23,17 @@ export function useClientRecord(tenant: string, id: string): RecordState<Client>
 
 // Read the record again now rather than at the next refetch.
 export function useRereadClient(tenant: string, id: string): () => void {
-  const client = useQueryClient();
+  const { invalidateExact } = useInvalidate();
   return () => {
-    client
-      .invalidateQueries({ queryKey: recordKey(tenant, clientRecord(id)), exact: true })
-      .catch(() => undefined);
+    invalidateExact(recordKey(tenant, clientRecord(id)));
   };
 }
 
 // Every list of clients, and what counts them, reads again once one changes.
 export function useAfterClientChange(tenant: string) {
-  const client = useQueryClient();
+  const { invalidate } = useInvalidate();
   return <R>(result: GatewayResult<R>): GatewayResult<R> => {
-    if (result.ok) {
-      for (const key of [
-        ['list', tenant, 'clients'],
-        ['count', tenant],
-      ]) {
-        client.invalidateQueries({ queryKey: key }).catch(() => undefined);
-      }
-    }
+    if (result.ok) invalidate(listKey(tenant, 'clients'), countKey(tenant));
     return result;
   };
 }

@@ -1,5 +1,6 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { grantHoldings, type Refused } from '#/shared/repository/administratorRoles';
+import { countKey, holdersKey, listKey } from '#/shared/repository/queryKeys';
+import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
 import { useWrite } from '#/shared/repository/useWrite';
 
@@ -11,14 +12,12 @@ export interface AdministratorGrant {
 // Either way the holders are read again, since a refusal can mean the list
 // was already out of date.
 export function useAdministratorGrant(): AdministratorGrant {
-  const client = useQueryClient();
+  const { invalidate } = useInvalidate();
   const grant = useWrite({
     send: (gateway, { subjectId, holdings }: { subjectId: string; holdings: readonly string[] }) =>
       grantHoldings(gateway, SYSTEM_TENANT, subjectId, holdings),
     onSettled: () => {
-      for (const kind of ['list', 'count', 'holders']) {
-        client.invalidateQueries({ queryKey: [kind, SYSTEM_TENANT] }).catch(() => undefined);
-      }
+      invalidate(listKey(SYSTEM_TENANT), countKey(SYSTEM_TENANT), holdersKey(SYSTEM_TENANT));
     },
   });
   return {

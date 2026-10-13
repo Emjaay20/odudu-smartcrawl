@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
-import { recordKey, type RecordEntry } from '#/shared/repository/useRecord';
+import { recordKey } from '#/shared/repository/queryKeys';
+import type { RecordEntry } from '#/shared/repository/useRecord';
 import { useSectionDraft } from '#/shared/repository/useSectionDraft';
 import { useToasts } from '#/shared/repository/useToasts';
 import type { Conflict } from '#/shared/service/conflict';

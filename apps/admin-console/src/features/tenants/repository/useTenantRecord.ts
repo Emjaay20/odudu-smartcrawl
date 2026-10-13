@@ -2,12 +2,9 @@ import type { Tenant } from '@odudu/contracts/admin';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { amendTenant, readTenant } from '#/features/tenants/adapter/tenants';
 import { tenantRecord } from '#/features/tenants/service';
-import {
-  recordKey,
-  useRecord,
-  type RecordEntry,
-  type RecordState,
-} from '#/shared/repository/useRecord';
+import { recordKey } from '#/shared/repository/queryKeys';
+import { useInvalidate } from '#/shared/repository/useInvalidate';
+import { useRecord, type RecordEntry, type RecordState } from '#/shared/repository/useRecord';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
 import { isStale } from '#/shared/service/failure';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
@@ -48,6 +45,7 @@ export interface EnabledChange {
 export function useTenantEnabled(name: string, etag: string | null): EnabledChange {
   const { gateway } = useTransport();
   const client = useQueryClient();
+  const { invalidateExact } = useInvalidate();
   const key = recordKey(SYSTEM_TENANT, tenantRecord(name));
   const mutation = useMutation({
     mutationFn: (enabled: boolean): Promise<GatewayResult<Tenant>> =>
@@ -58,7 +56,7 @@ export function useTenantEnabled(name: string, etag: string | null): EnabledChan
       if (result.ok) {
         client.setQueryData<RecordEntry<Tenant>>(key, { result, by: 'save' });
       } else if (isStale(result)) {
-        client.invalidateQueries({ queryKey: key, exact: true }).catch(() => undefined);
+        invalidateExact(key);
       }
     },
   });

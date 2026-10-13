@@ -1,6 +1,7 @@
 import type { MintRegistrationTokenResponse } from '@odudu/contracts/admin';
-import { useQueryClient } from '@tanstack/react-query';
 import { mintToken, revokeToken } from '#/features/registration-tokens/adapter/registrationTokens';
+import { listKey } from '#/shared/repository/queryKeys';
+import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useSecretOnce, type SecretOnce } from '#/shared/repository/useSecretOnce';
 import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
 import { useGatewayWrite, type Write } from '#/shared/repository/useWrite';
@@ -8,11 +9,9 @@ import { useGatewayWrite, type Write } from '#/shared/repository/useWrite';
 type Minted = Omit<MintRegistrationTokenResponse, 'token'>;
 
 function useListRead(tenant: string): () => void {
-  const client = useQueryClient();
+  const { invalidate } = useInvalidate();
   return () => {
-    client.invalidateQueries({ queryKey: ['list', tenant, 'registration-tokens'] }).catch(() => {
-      return undefined;
-    });
+    invalidate(listKey(tenant, 'registration-tokens'));
   };
 }
 

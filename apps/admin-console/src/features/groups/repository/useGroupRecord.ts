@@ -8,6 +8,7 @@ import {
   setGroupRoles,
 } from '#/features/groups/adapter/groups';
 import { groupRecord, groupRolesRecord, type GroupRead } from '#/features/groups/service';
+import { heldCapabilitiesKey, holdersKey, listKey, pickerKey } from '#/shared/repository/queryKeys';
 import { useAfterChange } from '#/shared/repository/useAfterChange';
 import { useRead } from '#/shared/repository/useRead';
 import { useRecord, type RecordState } from '#/shared/repository/useRecord';
@@ -63,10 +64,10 @@ function useAfterGroupChange(tenant: string, deleted: string | null = null) {
     records: ['groups/'],
     recordOf: groupRecord,
     keys: [
-      ['list', tenant],
-      ['picker', tenant, 'groups'],
-      ['held-capabilities', tenant],
-      ['holders', tenant],
+      listKey(tenant),
+      pickerKey(tenant, 'groups'),
+      heldCapabilitiesKey(tenant),
+      holdersKey(tenant),
     ],
   });
 }

@@ -1,5 +1,5 @@
 import type { ClientScope } from '@odudu/contracts/admin';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   createScope,
   findScope,
@@ -11,7 +11,9 @@ import {
   type CreateScopeInput,
 } from '#/features/scopes/adapter/scopes';
 import type { CopyRead } from '#/features/scopes/service';
+import { countKey, listKey, pickerKey } from '#/shared/repository/queryKeys';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
+import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useWrite } from '#/shared/repository/useWrite';
 import type { GatewayResult } from '#/shared/transport/gateway';
 import { useTransport } from '#/shared/transport/useTransport';
@@ -32,18 +34,16 @@ type Part = 'roles' | 'mappers';
 
 export function useCreateScope(tenant: string): CreateScope {
   const { gateway } = useTransport();
-  const client = useQueryClient();
+  const { invalidate } = useInvalidate();
   const create = useWrite({
     send: (gateway, input: ScopeInput) => createScope(gateway, tenant, input),
     onSuccess: (result) => {
       if (!result.ok) return;
-      for (const key of [
-        ['list', tenant, 'scopes'],
-        ['count', tenant, 'scopes'],
-        ['picker', tenant, 'scopes'],
-      ]) {
-        client.invalidateQueries({ queryKey: key }).catch(() => undefined);
-      }
+      invalidate(
+        listKey(tenant, 'scopes'),
+        countKey(tenant, 'scopes'),
+        pickerKey(tenant, 'scopes'),
+      );
     },
   });
   const setRoles = useWrite({

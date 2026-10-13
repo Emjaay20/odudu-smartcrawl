@@ -1,6 +1,7 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { readAuthority } from '#/features/session/adapter/session';
 import type { Authority } from '#/features/session/service';
+import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { isUnknownTenant } from '#/shared/service/failure';
 import { useTransport } from '#/shared/transport/useTransport';
 
@@ -21,7 +22,7 @@ export function useAuthorityQuery(
   reread: () => void;
 } {
   const { gateway } = useTransport();
-  const client = useQueryClient();
+  const { invalidate } = useInvalidate();
   const key = ['whoami', tenant, subjectId] as const;
   // Every page and the rail ask for it, so it is fresh for half a minute:
   // one read per page, and a capability gained mid-session shows on the next
@@ -37,7 +38,7 @@ export function useAuthorityQuery(
     refusedUnknown: query.data === undefined ? undefined : isUnknownTenant(query.data),
     answered: query.data !== undefined,
     reread: () => {
-      client.invalidateQueries({ queryKey: key }).catch(() => undefined);
+      invalidate(key);
     },
   };
 }

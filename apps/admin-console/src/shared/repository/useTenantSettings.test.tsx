@@ -3,7 +3,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { expect, it } from 'vitest';
 import { createQueryClient } from '#/shared/repository/queryClient';
-import { recordKey } from '#/shared/repository/useRecord';
+import { recordKey } from '#/shared/repository/queryKeys';
 import { useTenantSettings } from '#/shared/repository/useTenantSettings';
 import { TENANT_SETTINGS_RECORD } from '#/shared/service/tenantSettings';
 import { TransportContext } from '#/shared/transport/useTransport';

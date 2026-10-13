@@ -1,7 +1,8 @@
 import type { Role } from '@odudu/contracts/admin';
-import { useQueryClient } from '@tanstack/react-query';
 import { createClientRole } from '#/features/clients/adapter/clients';
 import { readRoleCount, readRolePage } from '#/shared/adapter/directory';
+import { countKey, listKey, pickerKey } from '#/shared/repository/queryKeys';
+import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useResourceList } from '#/shared/repository/useResourceList';
 import type { ResourceListState } from '#/shared/service/resourceList';
 import type { GatewayResult } from '#/shared/transport/gateway';
@@ -25,20 +26,19 @@ export interface CreateClientRole {
 }
 
 export function useCreateClientRole(tenant: string, clientDbId: string): CreateClientRole {
-  const client = useQueryClient();
+  const { invalidate } = useInvalidate();
   const mutation = useWrite({
     send: (gateway, input: { name: string; description: string }) =>
       createClientRole(gateway, tenant, clientDbId, input),
     onSuccess: (result) => {
       if (!result.ok) return;
-      for (const key of [
-        ['list', tenant, `clients/${clientDbId}/roles`],
-        ['count', tenant, `clients/${clientDbId}/roles`],
-        ['list', tenant, 'roles'],
-        ['picker', tenant, 'roles'],
-      ]) {
-        client.invalidateQueries({ queryKey: key }).catch(() => undefined);
-      }
+      const own = `clients/${clientDbId}/roles`;
+      invalidate(
+        listKey(tenant, own),
+        countKey(tenant, own),
+        listKey(tenant, 'roles'),
+        pickerKey(tenant, 'roles'),
+      );
     },
   });
   return { busy: mutation.busy, create: mutation.run };

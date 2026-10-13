@@ -3,7 +3,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { readScopeClients } from '#/features/scopes/adapter/scopes';
 import { assignScope, unassignScope } from '#/shared/adapter/scopeAssignment';
 import { withoutScope, withScopes } from '#/features/scopes/service';
-import { recordKey, type RecordEntry } from '#/shared/repository/useRecord';
+import { recordKey, scopeClientsKey } from '#/shared/repository/queryKeys';
+import { useInvalidate } from '#/shared/repository/useInvalidate';
+import type { RecordEntry } from '#/shared/repository/useRecord';
 import { useListPages } from '#/shared/repository/useResourceList';
 import type { ListStatus } from '#/shared/service/resourceList';
 import type { GatewayResult } from '#/shared/transport/gateway';
@@ -28,7 +30,7 @@ export interface ScopeClients {
 // the order of its index, so "Load more" is the only way through.
 export function useScopeClients(tenant: string, id: string, enabled = true): ScopeClients {
   const pages = useListPages({
-    key: ['scope-clients', tenant, id],
+    key: scopeClientsKey(tenant, id),
     query: new URLSearchParams(),
     cursor: undefined,
     enabled,
@@ -57,12 +59,13 @@ export interface AssignInput {
 // held is dropped instead, and the page waits for a fresh read.
 function useAfterAssignment(tenant: string, id: string) {
   const client = useQueryClient();
+  const { invalidate } = useInvalidate();
   return (
     clientDbId: string,
     answered: GatewayResult<unknown> | undefined,
     rebase: (held: ClientRecord) => ClientRecord,
   ): void => {
-    client.invalidateQueries({ queryKey: ['scope-clients', tenant, id] }).catch(() => undefined);
+    invalidate(scopeClientsKey(tenant, id));
     const key = recordKey(tenant, `clients/${clientDbId}`);
     const held = client.getQueryData<RecordEntry<ClientRecord>>(key);
     if (answered?.ok === true && answered.etag !== null && held !== undefined) {

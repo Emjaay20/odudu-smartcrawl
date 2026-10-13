@@ -8,12 +8,9 @@ import {
   readSubject,
   readUsernameEditable,
 } from '#/features/subjects/adapter/subjects';
-import {
-  recordKey,
-  useRecord,
-  type RecordEntry,
-  type RecordState,
-} from '#/shared/repository/useRecord';
+import { listKey, recordKey } from '#/shared/repository/queryKeys';
+import { useInvalidate } from '#/shared/repository/useInvalidate';
+import { useRecord, type RecordEntry, type RecordState } from '#/shared/repository/useRecord';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
 import { useRead } from '#/shared/repository/useRead';
 import { useWrite, type Write } from '#/shared/repository/useWrite';
@@ -74,6 +71,7 @@ export function useSubjectEnabled(
   etag: string,
 ): Write<boolean, GatewayResult<Subject>> {
   const client = useQueryClient();
+  const { invalidateExact } = useInvalidate();
   const key = recordKey(tenant, subjectRecord(id));
   return useWrite({
     send: (gateway, enabled: boolean) => amendSubject(gateway, tenant, id, { enabled }, etag),
@@ -81,7 +79,7 @@ export function useSubjectEnabled(
       if (result.ok) {
         client.setQueryData<RecordEntry<Subject>>(key, { result, by: 'save' });
       } else if (isStale(result)) {
-        client.invalidateQueries({ queryKey: key, exact: true }).catch(() => undefined);
+        invalidateExact(key);
       }
     },
   });
@@ -91,14 +89,14 @@ export function useSubjectDeletion(
   tenant: string,
   id: string,
 ): Write<void, GatewayResult<undefined>> {
-  const client = useQueryClient();
+  const { invalidate } = useInvalidate();
   return useWrite({
     send: (gateway) => deleteSubject(gateway, tenant, id),
     onSuccess: (result) => {
       // The record's own entries are left to lapse: removing them while its
       // page is still mounted would read them again, and find nothing.
       if (!result.ok) return;
-      client.invalidateQueries({ queryKey: ['list', tenant, 'subjects'] }).catch(() => undefined);
+      invalidate(listKey(tenant, 'subjects'));
     },
   });
 }
