@@ -1,8 +1,8 @@
 import type { Role } from '@odudu/contracts/admin';
 import { AreaGate, areaAt } from '#/features/shell';
 import { useRolesList } from '#/features/roles/usecase/useRolesList';
+import { NarrowedNote } from '#/shared/view/NarrowedNote';
 import { RoleOwner } from '#/shared/view/RoleOwner';
-import { Button } from '#/shared/view/Button';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import type { Column } from '#/shared/view/DataTable';
 import { SelectField } from '#/shared/view/Field';
@@ -65,21 +65,15 @@ function List({ tenant }: { tenant: string }) {
       searchFields={NAME_SEARCH}
       filters={
         one ? (
-          <p className={styles.narrowed}>
-            <span>
-              {'Only the roles of client '}
-              <code title={client}>{key ?? client}</code>.
-            </span>
-            <Button
-              size="small"
-              variant="quiet"
-              onPress={() => {
-                page.list.setFilter('client', null);
-              }}
-            >
-              Show every role
-            </Button>
-          </p>
+          <NarrowedNote
+            all="Show every role"
+            onClear={() => {
+              page.list.setFilter('client', null);
+            }}
+          >
+            {'Only the roles of client '}
+            <code title={client}>{key ?? client}</code>.
+          </NarrowedNote>
         ) : (
           <SelectField
             label="Belongs to"

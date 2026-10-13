@@ -2,10 +2,10 @@ import { SUBJECT_CAPABILITY_FILTER, type Subject } from '@odudu/contracts/admin'
 import { subjectName } from '#/features/subjects/service';
 import { useSubjectsList } from '#/features/subjects/usecase/useSubjectsList';
 import { SubjectsGate } from '#/features/subjects/view/SubjectsGate';
-import { Button } from '#/shared/view/Button';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import type { Column } from '#/shared/view/DataTable';
 import { SelectField } from '#/shared/view/Field';
+import { NarrowedNote } from '#/shared/view/NarrowedNote';
 import { ResourceListPage } from '#/shared/view/ResourceListPage';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
@@ -103,22 +103,17 @@ function List({ tenant }: { tenant: string }) {
           {NARROWING.map(({ filter, phrase, all }) => {
             const id = list.filters[filter];
             return id === undefined ? null : (
-              <p key={filter} className={styles.narrowed}>
-                <span>
-                  {`${phrase} `}
-                  <code>{id}</code>
-                  {' directly.'}
-                </span>
-                <Button
-                  size="small"
-                  variant="quiet"
-                  onPress={() => {
-                    list.setFilter(filter, null);
-                  }}
-                >
-                  {all}
-                </Button>
-              </p>
+              <NarrowedNote
+                key={filter}
+                all={all}
+                onClear={() => {
+                  list.setFilter(filter, null);
+                }}
+              >
+                {`${phrase} `}
+                <code>{id}</code>
+                {' directly.'}
+              </NarrowedNote>
             );
           })}
         </>

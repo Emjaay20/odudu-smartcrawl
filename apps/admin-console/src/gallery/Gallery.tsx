@@ -18,6 +18,7 @@ import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { LoadFailed } from '#/shared/view/LoadFailed';
 import { MappedRoles } from '#/shared/view/MappedRoles';
+import { NarrowedNote } from '#/shared/view/NarrowedNote';
 import { Note, NoteCode } from '#/shared/view/Note';
 import { ChunkFailed } from '#/shared/view/ChunkBoundary';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
@@ -775,6 +776,11 @@ function RecordPieces() {
       </Specimen>
       <Specimen label="MappedRoles: what a group or a scope hands on">
         <MappedRoles name="billing" mapped={ROLES} />
+      </Specimen>
+      <Specimen label="NarrowedNote: a list narrowed to one record">
+        <NarrowedNote all="Show every role" onClear={NOTHING}>
+          Only the roles of client <code>billing-portal</code>.
+        </NarrowedNote>
       </Specimen>
       <div className={styles.grid}>
         <Specimen label="LoadFailed">
