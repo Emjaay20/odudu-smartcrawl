@@ -15,8 +15,3 @@
   align-items: center;
   block-size: var(--control-height);
 }
-
-.failed {
-  font-size: var(--type-13);
-  color: var(--signal-danger-ink);
-}

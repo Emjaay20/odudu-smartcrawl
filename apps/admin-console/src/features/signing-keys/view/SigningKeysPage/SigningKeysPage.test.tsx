@@ -330,6 +330,24 @@ it('pages a lane with Load more', async () => {
   expect(await screen.findByRole('row', { name: /kid-k-old/u })).toBeVisible();
 });
 
+it('says it is loading more, and holds the button, while the next page is on its way', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(
+    AT,
+    keyRoutes(undefined, {
+      [`GET ${KEYS}`]: (request) => {
+        if (request.search.get('status') !== 'retired')
+          return lanes([READY_KEY, ACTIVE_KEY])(request);
+        return request.search.get('cursor') === null
+          ? json({ items: [RETIRED_KEY], next: 'c2' })(request)
+          : pending()(request);
+      },
+    }),
+  );
+  await user.click(await screen.findByRole('button', { name: 'Load more retired keys' }));
+  expect(await screen.findByRole('button', { name: 'Loading more retired keys…' })).toBeDisabled();
+});
+
 it('says a lane could not be loaded and tries again', async () => {
   const user = userEvent.setup();
   renderConsoleAt(

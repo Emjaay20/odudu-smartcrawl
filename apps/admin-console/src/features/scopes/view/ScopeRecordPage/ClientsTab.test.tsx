@@ -49,6 +49,22 @@ it('loads the next page of clients by the cursor the server gave', async () => {
   expect(sent.some((s) => s.search.get('cursor') === 'cur2')).toBe(true);
 });
 
+it('says it is loading more, and holds the button, while the next page is on its way', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(
+    AT,
+    scopeRoutes(undefined, {
+      [`GET ${SC}/s-bill/clients`]: (request) =>
+        request.search.get('cursor') === null
+          ? json({ items: [BILLING_CARRIES], next: 'cur2' })(request)
+          : pending()(request),
+    }),
+  );
+  await open();
+  await user.click(await screen.findByRole('button', { name: 'Load more clients' }));
+  expect(await screen.findByRole('button', { name: 'Loading more clients…' })).toBeDisabled();
+});
+
 it('says no client carries a scope none carries', async () => {
   renderConsoleAt('/console/acme/scopes/s-rep?tab=clients', scopeRoutes());
   expect(await screen.findByText('No client carries reports:read.')).toBeVisible();

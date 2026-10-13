@@ -10,6 +10,7 @@ import {
 } from 'react-aria-components';
 import type { PickerState } from '#/shared/service/picker';
 import { Button } from '#/shared/view/Button';
+import { LoadMore } from '#/shared/view/LoadMore';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { ListSkeleton } from '#/shared/view/Skeleton';
 import styles from '#/shared/view/Picker/Picker.module.css';
@@ -230,14 +231,12 @@ function Options<T>({
         )}
       </ListBox>
       {picker.more ? (
-        <Button
-          size="small"
-          variant="quiet"
-          isDisabled={picker.loadingMore}
+        <LoadMore
+          compact
+          noun={noun.other}
+          loading={picker.loadingMore}
           onPress={picker.loadMore}
-        >
-          {picker.loadingMore ? `Loading more ${noun.other}…` : `Load more ${noun.other}`}
-        </Button>
+        />
       ) : null}
     </>
   );

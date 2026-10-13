@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import { advance, canAdvance, retreat, type CursorTrail } from '#/shared/service/cursorTrail';
 import { Button } from '#/shared/view/Button';
+import { LoadMore } from '#/shared/view/LoadMore';
 import styles from '#/shared/view/Pager/Pager.module.css';
 
 export function Pager({
@@ -27,15 +28,14 @@ export function Pager({
   return (
     <nav aria-label={`Pages of ${noun}`} className={styles.pager}>
       {onLoadMore === undefined || next === null ? null : (
-        <Button
-          isDisabled={loadingMore}
+        <LoadMore
+          noun={noun}
+          loading={loadingMore}
           onPress={() => {
             setAppendedOn(trail.join(' '));
             onLoadMore();
           }}
-        >
-          {loadingMore ? `Loading more ${noun}…` : `Load more ${noun}`}
-        </Button>
+        />
       )}
       <div className={styles.steps}>
         <Button

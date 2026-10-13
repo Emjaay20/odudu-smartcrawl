@@ -8,6 +8,7 @@ import { EmptyState } from '#/shared/view/EmptyState';
 import { InlineFields } from '#/shared/view/Field';
 import { FilterBar } from '#/shared/view/FilterBar';
 import { LoadFailed } from '#/shared/view/LoadFailed';
+import { LoadMoreFailed } from '#/shared/view/LoadMore';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { Pager } from '#/shared/view/Pager';
 import { TableSkeleton } from '#/shared/view/Skeleton';
@@ -223,11 +224,7 @@ function Body<T>({
         onLoadMore={list.loadMore}
         loadingMore={list.loadingMore}
       />
-      {list.loadMoreFailed ? (
-        <p role="alert" className={styles.failed}>
-          {`More ${noun.other} could not be loaded. Load more tries again.`}
-        </p>
-      ) : null}
+      {list.loadMoreFailed ? <LoadMoreFailed noun={noun.other} /> : null}
     </>
   );
 }

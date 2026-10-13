@@ -18,6 +18,7 @@ import { KeyHint, PlatformContext } from '#/shared/view/KeyHint';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { LoadFailed } from '#/shared/view/LoadFailed';
+import { LoadMore, LoadMoreFailed } from '#/shared/view/LoadMore';
 import { MappedRoles } from '#/shared/view/MappedRoles';
 import { NarrowedNote } from '#/shared/view/NarrowedNote';
 import { Note, NoteCode } from '#/shared/view/Note';
@@ -798,6 +799,13 @@ function RecordPieces() {
       <div className={styles.grid}>
         <Specimen label="LoadFailed">
           <LoadFailed title="The groups could not be loaded" retry={NOTHING} />
+        </Specimen>
+        <Specimen label="LoadMore: regular, compact and busy, and its failure">
+          <div className={styles.stack}>
+            <LoadMore noun="deliveries" loading={false} onPress={NOTHING} />
+            <LoadMore compact noun="groups under /eng" loading onPress={NOTHING} />
+            <LoadMoreFailed noun="deliveries" />
+          </div>
         </Specimen>
         <Specimen label="ReadGate: loading, failed, and the record">
           <div className={styles.stack}>

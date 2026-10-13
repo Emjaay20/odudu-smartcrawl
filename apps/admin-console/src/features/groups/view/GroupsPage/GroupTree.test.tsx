@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { inTurn, json, problem } from '#/testing/fakeTransport';
+import { inTurn, json, pending, problem } from '#/testing/fakeTransport';
 import { G, group, groupRoutes } from '#/testing/groupsFixtures';
 import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
 
@@ -55,6 +55,23 @@ it('pages a long level with Load more', async () => {
     await within(tree).findByRole('button', { name: 'Load more groups under /eng' }),
   );
   expect(await within(tree).findByRole('link', { name: 'more' })).toBeVisible();
+});
+
+it('shows the next page as a small quiet button, busy while it is on its way', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(
+    AT,
+    groupRoutes(undefined, children([json({ items: [MANY], next: 'c1' }), pending()])),
+  );
+  const tree = await screen.findByRole('list', { name: 'Groups' });
+  await user.click(within(tree).getByRole('button', { name: 'Show the groups under /eng' }));
+  const more = await within(tree).findByRole('button', { name: 'Load more groups under /eng' });
+  expect(more).toHaveAttribute('data-size', 'small');
+  expect(more).toHaveAttribute('data-variant', 'quiet');
+  await user.click(more);
+  expect(
+    await within(tree).findByRole('button', { name: 'Loading more groups under /eng…' }),
+  ).toBeDisabled();
 });
 
 it('passes axe in both themes with a level that failed', async () => {

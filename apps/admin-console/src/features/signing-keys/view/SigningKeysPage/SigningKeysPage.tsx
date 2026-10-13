@@ -19,6 +19,7 @@ import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { SelectField } from '#/shared/view/Field';
 import { LoadFailed } from '#/shared/view/LoadFailed';
+import { LoadMore } from '#/shared/view/LoadMore';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { Panel } from '#/shared/view/Panel';
 import { TableSkeleton } from '#/shared/view/Skeleton';
@@ -128,11 +129,7 @@ function LaneBody({ spec, lane, page }: { spec: LaneSpec; lane: Lane; page: Page
       <DataTable label={label} columns={cols} rows={lane.rows} rowKey={({ key }) => key.id} />
       {lane.next === null ? null : (
         <div>
-          <Button isDisabled={lane.loadingMore} onPress={lane.loadMore}>
-            {lane.loadingMore
-              ? `Loading more ${label.toLowerCase()}…`
-              : `Load more ${label.toLowerCase()}`}
-          </Button>
+          <LoadMore noun={label.toLowerCase()} loading={lane.loadingMore} onPress={lane.loadMore} />
         </div>
       )}
       {lane.loadMoreFailed ? (

@@ -9,6 +9,7 @@ import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { ClientPicker } from '#/shared/view/ClientPicker';
 import { InlineFields, SelectField } from '#/shared/view/Field';
 import { LoadFailed } from '#/shared/view/LoadFailed';
+import { LoadMore } from '#/shared/view/LoadMore';
 import { Panel } from '#/shared/view/Panel';
 import { ListSkeleton } from '#/shared/view/Skeleton';
 import { recordTab } from '#/shared/view/RecordTab';
@@ -72,9 +73,7 @@ function Carriers({ scope, page }: { scope: ClientScope; page: ScopeClientsTab }
       {body}
       {list.more ? (
         <div className={recordTab.actions}>
-          <Button isDisabled={list.loadingMore} onPress={list.loadMore}>
-            {list.loadingMore ? 'Loading more clients…' : 'Load more clients'}
-          </Button>
+          <LoadMore noun="clients" loading={list.loadingMore} onPress={list.loadMore} />
         </div>
       ) : null}
       {list.loadMoreFailed ? (

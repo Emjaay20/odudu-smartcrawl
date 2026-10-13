@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { C, clientRoutes } from '#/testing/clientsFixtures';
-import { json, problem } from '#/testing/fakeTransport';
+import { json, pending, problem } from '#/testing/fakeTransport';
 import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
 
 afterEach(() => {
@@ -91,6 +91,21 @@ it('pages by Load more, keeping the rows already shown', async () => {
   await waitFor(() => {
     expect(within(table).getAllByRole('row')).toHaveLength(3);
   });
+});
+
+it('says it is loading more, and holds the button, while the next page is on its way', async () => {
+  const user = userEvent.setup();
+  const first = json({ items: [delivery('d1', 'failed', 'x')], next: 'c2' });
+  renderConsoleAt(
+    AT,
+    clientRoutes(undefined, {
+      [DELIVERIES]: (request) =>
+        request.search.get('cursor') === 'c2' ? pending()(request) : first(request),
+    }),
+  );
+  await open();
+  await user.click(await screen.findByRole('button', { name: 'Load more deliveries' }));
+  expect(await screen.findByRole('button', { name: 'Loading more deliveries…' })).toBeDisabled();
 });
 
 it('says no logout token has been queued, and that a failed read can be tried again', async () => {

@@ -6,6 +6,7 @@ import { CopyValue } from '#/shared/view/CopyValue';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { LoadFailed } from '#/shared/view/LoadFailed';
+import { LoadMoreFailed } from '#/shared/view/LoadMore';
 import { Pager } from '#/shared/view/Pager';
 import { TableSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag, type StatusTone } from '#/shared/view/StatusTag';
@@ -101,11 +102,7 @@ export function ActivityTab({
         onLoadMore={list.loadMore}
         loadingMore={list.loadingMore}
       />
-      {list.loadMoreFailed ? (
-        <p role="alert" className={styles.failed}>
-          More activity could not be loaded. Load more tries again.
-        </p>
-      ) : null}
+      {list.loadMoreFailed ? <LoadMoreFailed noun="activity" /> : null}
     </div>
   );
 }

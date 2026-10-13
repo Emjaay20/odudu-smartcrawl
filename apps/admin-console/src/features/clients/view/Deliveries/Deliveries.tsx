@@ -11,10 +11,10 @@ import {
   useClientDeliveries,
   type ClientDeliveries,
 } from '#/features/clients/usecase/useClientDeliveries';
-import { Button } from '#/shared/view/Button';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { SelectField } from '#/shared/view/Field';
 import { LoadFailed } from '#/shared/view/LoadFailed';
+import { LoadMore } from '#/shared/view/LoadMore';
 import { Panel } from '#/shared/view/Panel';
 import { TableSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
@@ -72,9 +72,7 @@ function Rows({ client, page }: { client: Client; page: ClientDeliveries }) {
       />
       {list.more ? (
         <div className={recordTab.actions}>
-          <Button isDisabled={list.loadingMore} onPress={list.loadMore}>
-            {list.loadingMore ? 'Loading more deliveries…' : 'Load more deliveries'}
-          </Button>
+          <LoadMore noun="deliveries" loading={list.loadingMore} onPress={list.loadMore} />
         </div>
       ) : null}
     </>

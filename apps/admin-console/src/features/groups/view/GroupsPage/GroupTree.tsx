@@ -3,6 +3,7 @@ import { useId } from 'react';
 import { Link } from 'react-aria-components';
 import { useGroupNode, type GroupNode } from '#/features/groups/usecase/useGroupsList';
 import { Button } from '#/shared/view/Button';
+import { LoadMore } from '#/shared/view/LoadMore';
 import { ListSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { recordTab } from '#/shared/view/RecordTab';
@@ -44,16 +45,12 @@ function Children({
         ))}
       </ul>
       {children.next === null ? null : (
-        <Button
-          size="small"
-          variant="quiet"
-          isDisabled={children.loadingMore}
+        <LoadMore
+          compact
+          noun={`groups under ${parent.path}`}
+          loading={children.loadingMore}
           onPress={children.loadMore}
-        >
-          {children.loadingMore
-            ? `Loading more groups under ${parent.path}…`
-            : `Load more groups under ${parent.path}`}
-        </Button>
+        />
       )}
     </>
   );

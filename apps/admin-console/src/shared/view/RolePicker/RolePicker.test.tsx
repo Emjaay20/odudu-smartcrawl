@@ -90,6 +90,29 @@ it('searches on submit and loads further pages in place', async () => {
   expect(state.loadMore).toHaveBeenCalledOnce();
 });
 
+it('draws the next page as a small quiet button, busy while it loads', () => {
+  const { rerender } = render(
+    <RolePicker
+      label="Roles"
+      picker={picker(ROLES, { more: true })}
+      selected={[]}
+      onChange={vi.fn()}
+    />,
+  );
+  const more = screen.getByRole('button', { name: 'Load more roles' });
+  expect(more).toHaveAttribute('data-size', 'small');
+  expect(more).toHaveAttribute('data-variant', 'quiet');
+  rerender(
+    <RolePicker
+      label="Roles"
+      picker={picker(ROLES, { more: true, loadingMore: true })}
+      selected={[]}
+      onChange={vi.fn()}
+    />,
+  );
+  expect(screen.getByRole('button', { name: 'Loading more roles…' })).toBeDisabled();
+});
+
 it('says what it needs when the list is refused, and when nothing matches', () => {
   const { rerender } = render(
     <RolePicker
