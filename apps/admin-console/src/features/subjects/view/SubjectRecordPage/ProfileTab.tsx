@@ -21,7 +21,7 @@ import { PictureField, UrlField } from '#/shared/view/Field';
 import { Panel } from '#/shared/view/Panel';
 import { ReadGate } from '#/shared/view/ReadGate';
 import { SaveSection } from '#/shared/view/SaveSection';
-import { StatusTag } from '#/shared/view/StatusTag';
+import { EnabledTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
 import { recordTab } from '#/shared/view/RecordTab';
 import { DESCRIPTION_RULE } from '#/shared/service/labels';
@@ -107,11 +107,7 @@ function Status({ account, self }: { account: SubjectAccount; self: boolean }) {
   return (
     <Panel title="Status">
       <p className={recordTab.text}>
-        {account.enabled ? (
-          <StatusTag tone="active">enabled</StatusTag>
-        ) : (
-          <StatusTag tone="danger">disabled</StatusTag>
-        )}{' '}
+        <EnabledTag enabled={account.enabled} />{' '}
         {account.enabled ? `${name} can sign in.` : `${name} cannot sign in until enabled again.`}
       </p>
       <div className={recordTab.actions}>

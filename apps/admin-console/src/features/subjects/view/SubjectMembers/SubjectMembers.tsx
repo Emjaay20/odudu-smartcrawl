@@ -8,7 +8,7 @@ import { DataTable, type Column } from '#/shared/view/DataTable';
 import { LoadFailed } from '#/shared/view/LoadFailed';
 import { Pager } from '#/shared/view/Pager';
 import { TableSkeleton } from '#/shared/view/Skeleton';
-import { StatusTag } from '#/shared/view/StatusTag';
+import { EnabledTag } from '#/shared/view/StatusTag';
 import { recordTab } from '#/shared/view/RecordTab';
 
 const COLUMNS: readonly Column<Subject>[] = [
@@ -22,12 +22,7 @@ const COLUMNS: readonly Column<Subject>[] = [
   {
     id: 'enabled',
     header: 'Status',
-    cell: (subject) =>
-      subject.enabled ? (
-        <StatusTag tone="active">enabled</StatusTag>
-      ) : (
-        <StatusTag tone="danger">disabled</StatusTag>
-      ),
+    cell: (subject) => <EnabledTag enabled={subject.enabled} />,
   },
 ];
 

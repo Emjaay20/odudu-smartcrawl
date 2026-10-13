@@ -11,7 +11,7 @@ import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { RecordPage } from '#/shared/view/RecordPage';
-import { StatusTag } from '#/shared/view/StatusTag';
+import { EnabledTag } from '#/shared/view/StatusTag';
 import { ViewOnlyNote } from '#/shared/view/ViewOnlyNote';
 import { tenantPage } from '#/shared/service/address';
 
@@ -26,11 +26,7 @@ function Record({ name, access }: { name: string; access: TenantRecordAccess }) 
       {...(tenant === undefined
         ? {}
         : {
-            status: tenant.enabled ? (
-              <StatusTag tone="active">enabled</StatusTag>
-            ) : (
-              <StatusTag tone="danger">disabled</StatusTag>
-            ),
+            status: <EnabledTag enabled={tenant.enabled} />,
             description: tenant.display_name ?? 'No display name',
           })}
       actions={<ButtonLink href={tenantPage(name)}>{`Enter ${name}`}</ButtonLink>}

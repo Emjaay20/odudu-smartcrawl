@@ -7,7 +7,7 @@ import type { Column } from '#/shared/view/DataTable';
 import { SelectField } from '#/shared/view/Field';
 import { NarrowedNote } from '#/shared/view/NarrowedNote';
 import { ResourceListPage } from '#/shared/view/ResourceListPage';
-import { StatusTag } from '#/shared/view/StatusTag';
+import { EnabledTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
 import { ViewOnlyNote } from '#/shared/view/ViewOnlyNote';
 import styles from '#/features/subjects/view/SubjectsPage/SubjectsPage.module.css';
@@ -24,12 +24,7 @@ const COLUMNS: readonly Column<Subject>[] = [
   {
     id: 'enabled',
     header: 'Status',
-    cell: (subject) =>
-      subject.enabled ? (
-        <StatusTag tone="active">enabled</StatusTag>
-      ) : (
-        <StatusTag tone="danger">disabled</StatusTag>
-      ),
+    cell: (subject) => <EnabledTag enabled={subject.enabled} />,
   },
   {
     id: 'created_at',

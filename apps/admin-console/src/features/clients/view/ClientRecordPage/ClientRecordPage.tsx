@@ -23,7 +23,7 @@ import { TokensTab } from '#/features/clients/view/TokensTab';
 import { Note } from '#/shared/view/Note';
 import { RecordActivity } from '#/shared/view/RecordActivity';
 import { RecordPage } from '#/shared/view/RecordPage';
-import { StatusTag } from '#/shared/view/StatusTag';
+import { EnabledTag } from '#/shared/view/StatusTag';
 import { ViewOnlyNote } from '#/shared/view/ViewOnlyNote';
 
 interface PanelProps extends ClientTabProps {
@@ -101,11 +101,7 @@ function Record({ tenant, id }: { tenant: string; id: string }) {
       {...(client === undefined
         ? {}
         : {
-            status: client.enabled ? (
-              <StatusTag tone="active">enabled</StatusTag>
-            ) : (
-              <StatusTag tone="danger">disabled</StatusTag>
-            ),
+            status: <EnabledTag enabled={client.enabled} />,
             description: client.description ?? client.client_id,
           })}
       noun="client"

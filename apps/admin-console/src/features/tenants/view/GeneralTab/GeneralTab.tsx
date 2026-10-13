@@ -5,7 +5,7 @@ import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { TextField } from '#/shared/view/Field';
 import { SaveSection } from '#/shared/view/SaveSection';
-import { StatusTag } from '#/shared/view/StatusTag';
+import { EnabledTag } from '#/shared/view/StatusTag';
 import styles from '#/features/tenants/view/GeneralTab/GeneralTab.module.css';
 import { DESCRIPTION_RULE } from '#/shared/service/labels';
 
@@ -51,11 +51,7 @@ export function GeneralTab({
           Status
         </h2>
         <p className={styles.state}>
-          {enabled.enabled ? (
-            <StatusTag tone="active">enabled</StatusTag>
-          ) : (
-            <StatusTag tone="danger">disabled</StatusTag>
-          )}{' '}
+          <EnabledTag enabled={enabled.enabled} />{' '}
           {enabled.enabled
             ? `${name} is in service.`
             : `${name} answers as a tenant that does not exist until it is enabled again.`}

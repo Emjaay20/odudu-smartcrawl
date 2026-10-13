@@ -18,3 +18,12 @@ export function StatusTag({
     </span>
   );
 }
+
+// Whether a record may be used, said in words and a tone, wherever one is listed.
+export function EnabledTag({ enabled }: { enabled: boolean }) {
+  return enabled ? (
+    <StatusTag tone="active">enabled</StatusTag>
+  ) : (
+    <StatusTag tone="danger">disabled</StatusTag>
+  );
+}

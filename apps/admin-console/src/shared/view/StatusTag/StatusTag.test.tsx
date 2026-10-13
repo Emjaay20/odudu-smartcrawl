@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { StatusTag } from '#/shared/view/StatusTag/StatusTag';
+import { EnabledTag, StatusTag } from '#/shared/view/StatusTag/StatusTag';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 it('carries its status in words, never in colour alone', () => {
@@ -18,6 +18,13 @@ it('keeps amber to a tone named for system authority', () => {
 it('defaults to the neutral tone', () => {
   render(<StatusTag>Retired</StatusTag>);
   expect(screen.getByText('Retired')).toHaveAttribute('data-tone', 'neutral');
+});
+
+it('says in words whether a record is enabled, active or danger by tone', () => {
+  const { rerender } = render(<EnabledTag enabled />);
+  expect(screen.getByText('enabled')).toHaveAttribute('data-tone', 'active');
+  rerender(<EnabledTag enabled={false} />);
+  expect(screen.getByText('disabled')).toHaveAttribute('data-tone', 'danger');
 });
 
 it('passes axe in both themes for every tone', async () => {

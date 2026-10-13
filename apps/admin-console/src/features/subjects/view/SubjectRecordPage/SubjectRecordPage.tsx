@@ -19,7 +19,7 @@ import { RolesTab } from '#/features/subjects/view/SubjectRecordPage/RolesTab';
 import { ProfileTab } from '#/features/subjects/view/SubjectRecordPage/ProfileTab';
 import { SubjectsGate } from '#/features/subjects/view/SubjectsGate';
 import { RecordPage } from '#/shared/view/RecordPage';
-import { StatusTag } from '#/shared/view/StatusTag';
+import { EnabledTag } from '#/shared/view/StatusTag';
 import { ViewOnlyNote } from '#/shared/view/ViewOnlyNote';
 import { BeyondNote, ReachFailed } from '#/features/subjects/view/BeyondNote';
 
@@ -104,11 +104,7 @@ function Record({ tenant, id }: { tenant: string; id: string }) {
       {...(subject === undefined
         ? {}
         : {
-            status: subject.enabled ? (
-              <StatusTag tone="active">enabled</StatusTag>
-            ) : (
-              <StatusTag tone="danger">disabled</StatusTag>
-            ),
+            status: <EnabledTag enabled={subject.enabled} />,
             description: subject.email ?? (subject.type === 'user' ? 'No email' : subject.type),
           })}
       noun="subject"

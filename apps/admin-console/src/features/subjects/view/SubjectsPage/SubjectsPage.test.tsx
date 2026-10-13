@@ -27,6 +27,12 @@ it('lists subjects with their status and count, and offers creation', async () =
   const table = await screen.findByRole('grid', { name: 'Subjects' });
   expect(within(table).getByRole('row', { name: /ada/u })).toHaveTextContent('enabled');
   expect(within(table).getByRole('row', { name: /linus/u })).toHaveTextContent('disabled');
+  expect(
+    within(within(table).getByRole('row', { name: /ada/u })).getByText('enabled'),
+  ).toHaveAttribute('data-tone', 'active');
+  expect(
+    within(within(table).getByRole('row', { name: /linus/u })).getByText('disabled'),
+  ).toHaveAttribute('data-tone', 'danger');
   expect(within(table).getByText(/^service /u)).toBeVisible();
   expect(await screen.findByText('3 subjects')).toBeVisible();
   expect(screen.getByRole('link', { name: 'Create a subject' })).toHaveAttribute(

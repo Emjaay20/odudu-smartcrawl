@@ -6,7 +6,7 @@ import { ButtonLink } from '#/shared/view/ButtonLink';
 import type { Column } from '#/shared/view/DataTable';
 import { SelectField } from '#/shared/view/Field';
 import { ResourceListPage } from '#/shared/view/ResourceListPage';
-import { StatusTag } from '#/shared/view/StatusTag';
+import { EnabledTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
 import styles from '#/features/clients/view/ClientsPage/ClientsPage.module.css';
 import { STATUS_FILTER } from '#/shared/service/filters';
@@ -27,12 +27,7 @@ const COLUMNS: readonly Column<Client>[] = [
   {
     id: 'enabled',
     header: 'Status',
-    cell: (client) =>
-      client.enabled ? (
-        <StatusTag tone="active">enabled</StatusTag>
-      ) : (
-        <StatusTag tone="danger">disabled</StatusTag>
-      ),
+    cell: (client) => <EnabledTag enabled={client.enabled} />,
   },
   {
     id: 'created_at',

@@ -7,7 +7,7 @@ import { ButtonLink } from '#/shared/view/ButtonLink';
 import type { Column } from '#/shared/view/DataTable';
 import { SelectField } from '#/shared/view/Field';
 import { ResourceListPage } from '#/shared/view/ResourceListPage';
-import { StatusTag } from '#/shared/view/StatusTag';
+import { EnabledTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
 import { ViewOnlyNote } from '#/shared/view/ViewOnlyNote';
 import styles from '#/features/tenants/view/TenantsPage/TenantsPage.module.css';
@@ -25,12 +25,7 @@ const COLUMNS: readonly Column<Tenant>[] = [
   {
     id: 'enabled',
     header: 'Status',
-    cell: (tenant) =>
-      tenant.enabled ? (
-        <StatusTag tone="active">enabled</StatusTag>
-      ) : (
-        <StatusTag tone="danger">disabled</StatusTag>
-      ),
+    cell: (tenant) => <EnabledTag enabled={tenant.enabled} />,
   },
   {
     id: 'created_at',
