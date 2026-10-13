@@ -19,6 +19,7 @@ import {
 } from '#/features/registration-tokens/service';
 import { useToast } from '#/shared/repository/useToasts';
 import type { ResourceListState } from '#/shared/service/resourceList';
+import { useAnnouncedAction } from '#/shared/usecase/useAnnouncedAction';
 
 export interface RegistrationTokensPage {
   list: ResourceListState<RegistrationToken>;
@@ -55,10 +56,12 @@ export function useRegistrationTokensPage(tenant: string): RegistrationTokensPag
   const [lifetime, setLifetime] = useState(DEFAULT_MINT.ttl_seconds);
   const [errors, setErrors] = useState<MintErrors>({});
   const [message, setMessage] = useState<string | null>(null);
-  const [revoking, setRevoking] = useState<RegistrationToken | null>(null);
-  const [revokeProblem, setRevokeProblem] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [revoked, setRevoked] = useState(0);
+  const action = useAnnouncedAction<RegistrationToken>({
+    refusal,
+    capability: 'manage-clients',
+    send: (token) => revoke.run(token.id),
+    outcomeOf: (_token, result) => revokeOutcome(result),
+  });
   const minting = useTokenMint(tenant, {
     minted: (token) => {
       toast.succeeded(mintedText(token));
@@ -93,32 +96,14 @@ export function useRegistrationTokensPage(tenant: string): RegistrationTokensPag
     },
     secret: minting.secret,
     closeSecret: minting.close,
-    revoking,
-    consequence: revoking === null ? '' : revokeConsequence(revoking),
+    revoking: action.asked,
+    consequence: action.asked === null ? '' : revokeConsequence(action.asked),
     revokeBusy: revoke.busy,
-    revokeProblem,
-    notice,
-    revoked,
-    ask: (token) => {
-      setRevokeProblem(null);
-      setRevoking(token);
-    },
-    cancel: () => {
-      setRevoking(null);
-    },
-    confirm: async () => {
-      if (revoking === null) return false;
-      const result = await revoke.run(revoking.id);
-      const outcome = revokeOutcome(result);
-      if (!outcome.done) {
-        setRevokeProblem(outcome.text);
-        refusal.report(result, 'manage-clients');
-        return false;
-      }
-      setRevoking(null);
-      setNotice(outcome.text);
-      setRevoked((count) => count + 1);
-      return true;
-    },
+    revokeProblem: action.problem,
+    notice: action.notice,
+    revoked: action.done,
+    ask: action.ask,
+    cancel: action.cancel,
+    confirm: action.confirm,
   };
 }

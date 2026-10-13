@@ -22,6 +22,7 @@ import {
 } from '#/features/signing-keys/service';
 import { useToast } from '#/shared/repository/useToasts';
 import type { NamedDialog } from '#/shared/service/dialog';
+import { useAnnouncedAction } from '#/shared/usecase/useAnnouncedAction';
 import { useNow } from '#/shared/usecase/useNow';
 
 // Finer than the minutes a key's readiness is measured in.
@@ -77,10 +78,14 @@ export function useSigningKeysPage(tenant: string): SigningKeysPage {
   const remove = useDeleteKey(tenant);
   const [chosen, setChosen] = useState<SigningKeyAlg | null>(null);
   const [stageMessage, setStageMessage] = useState<string | null>(null);
-  const [asked, setAsked] = useState<{ action: KeyAction; key: SigningKey } | null>(null);
-  const [problem, setProblem] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [acted, setActed] = useState(0);
+  const writes = { promote: promote.run, retire: retire.run, delete: remove.run };
+  const acting = useAnnouncedAction<{ action: KeyAction; key: SigningKey }>({
+    refusal,
+    capability: 'manage-keys',
+    blocked: promote.busy || retire.busy || remove.busy,
+    send: (asked) => writes[asked.action](asked.key.id),
+    outcomeOf: (asked, result) => keyActionOutcome(asked.action, asked.key, result),
+  });
   const current = active.rows[0];
   const alg = chosen ?? defaultAlg(current);
   const activeKnown = active.status === 'ready';
@@ -90,7 +95,6 @@ export function useSigningKeysPage(tenant: string): SigningKeysPage {
     ...lane,
     rows: lane.rows.map((key) => ({ key, readiness: rotatingRows ? readiness(key) : null })),
   });
-  const writes = { promote: promote.run, retire: retire.run, delete: remove.run };
   return {
     rotating: laneOf(rotating, true),
     active: laneOf(active, false),
@@ -117,41 +121,25 @@ export function useSigningKeysPage(tenant: string): SigningKeysPage {
     },
     stageMessage,
     asking:
-      asked === null
+      acting.asked === null
         ? null
         : {
-            ...asked,
+            ...acting.asked,
             dialog: dialogOf(
-              asked.action,
-              asked.key,
+              acting.asked.action,
+              acting.asked.key,
               current,
-              promotionOf(asked.key, active.rows, now, activeKnown),
+              promotionOf(acting.asked.key, active.rows, now, activeKnown),
             ),
           },
     busy: promote.busy || retire.busy || remove.busy,
-    problem,
-    notice,
-    acted,
+    problem: acting.problem,
+    notice: acting.notice,
+    acted: acting.done,
     ask: (action, key) => {
-      setProblem(null);
-      setAsked({ action, key });
+      acting.ask({ action, key });
     },
-    cancel: () => {
-      setAsked(null);
-    },
-    confirm: async () => {
-      if (asked === null || promote.busy || retire.busy || remove.busy) return false;
-      const result = await writes[asked.action](asked.key.id);
-      const outcome = keyActionOutcome(asked.action, asked.key, result);
-      if (!outcome.done) {
-        setProblem(outcome.text);
-        refusal.report(result, 'manage-keys');
-        return false;
-      }
-      setAsked(null);
-      setNotice(outcome.text);
-      setActed((count) => count + 1);
-      return true;
-    },
+    cancel: acting.cancel,
+    confirm: acting.confirm,
   };
 }

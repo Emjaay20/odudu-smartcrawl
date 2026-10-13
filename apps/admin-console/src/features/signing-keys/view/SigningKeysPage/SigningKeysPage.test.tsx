@@ -191,6 +191,28 @@ it('keeps the promote dialog and says so when the key can no longer be promoted'
   expect(await within(dialog).findByRole('alert')).toHaveTextContent('can no longer be promoted');
 });
 
+it('reads whoami again after a refusal, and asks afresh once cancelled', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    keyRoutes(undefined, {
+      [`POST ${KEYS}/k-ready/promote`]: problem(403, 'about:blank', 'Forbidden'),
+    }),
+  );
+  await user.click(await screen.findByRole('button', { name: 'Promote kid-k-ready' }));
+  const dialog = await screen.findByRole('alertdialog');
+  await user.click(within(dialog).getByRole('button', { name: 'Promote key' }));
+  expect(await within(dialog).findByRole('alert')).toBeVisible();
+  expect(sent.filter((s) => s.path.endsWith('/whoami')).length).toBeGreaterThan(1);
+  await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+  await waitFor(() => {
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+  await user.click(screen.getByRole('button', { name: 'Promote kid-k-ready' }));
+  const again = await screen.findByRole('alertdialog');
+  expect(within(again).queryByRole('alert')).toBeNull();
+});
+
 it('retires only once the kid is typed, and says what is lost', async () => {
   const user = userEvent.setup();
   const { sent } = renderConsoleAt(

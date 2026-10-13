@@ -171,6 +171,26 @@ it('keeps the dialog and says why when a revoke is refused', async () => {
   expect(await within(dialog).findByRole('alert')).toHaveTextContent('manage-clients');
 });
 
+it('reads whoami again after a refusal, and asks afresh once cancelled', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    tokenRoutes(undefined, { [`DELETE ${RT}/t-few`]: problem(403, 'about:blank', 'Forbidden') }),
+  );
+  await user.click(await screen.findByRole('button', { name: 'Revoke t-few' }));
+  const dialog = await screen.findByRole('alertdialog');
+  await user.click(within(dialog).getByRole('button', { name: 'Revoke token' }));
+  expect(await within(dialog).findByRole('alert')).toBeVisible();
+  expect(sent.filter((s) => s.path.endsWith('/whoami')).length).toBeGreaterThan(1);
+  await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+  await waitFor(() => {
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+  await user.click(screen.getByRole('button', { name: 'Revoke t-few' }));
+  const again = await screen.findByRole('alertdialog');
+  expect(within(again).queryByRole('alert')).toBeNull();
+});
+
 it('names manage-clients for a caller without it', async () => {
   renderConsoleAt(AT, tokenRoutes(['manage-tenant']));
   expect(await screen.findByRole('note')).toHaveTextContent('manage-clients');
