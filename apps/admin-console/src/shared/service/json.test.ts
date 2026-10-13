@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseJson } from '#/shared/service/json';
+import { isRecord, parseJson } from '#/shared/service/json';
 
 describe('parseJson', () => {
   it('returns the parsed value', () => {
@@ -9,5 +9,16 @@ describe('parseJson', () => {
   it('returns undefined for text that is not JSON', () => {
     expect(parseJson('<html>')).toBeUndefined();
     expect(parseJson('')).toBeUndefined();
+  });
+});
+
+describe('isRecord', () => {
+  it('is true for a plain object only', () => {
+    expect(isRecord({})).toBe(true);
+    expect(isRecord({ a: 1 })).toBe(true);
+    expect(isRecord([])).toBe(false);
+    expect(isRecord(null)).toBe(false);
+    expect(isRecord('a')).toBe(false);
+    expect(isRecord(undefined)).toBe(false);
   });
 });

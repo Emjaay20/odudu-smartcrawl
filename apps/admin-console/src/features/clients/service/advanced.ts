@@ -8,6 +8,7 @@ import {
 } from '@odudu/contracts/admin';
 import { AUTO, sentOf } from '#/features/clients/service/choices';
 import type { Choice } from '#/shared/service/choice';
+import { isRecord } from '#/shared/service/json';
 
 export const SECTIONS_ADVANCED = {
   auth: 'Client authentication',
@@ -111,8 +112,7 @@ export function parseJwks(text: string): Jwks {
   } catch {
     return { ok: false, problem: 'This is not valid JSON.' };
   }
-  const keys =
-    typeof parsed === 'object' && parsed !== null ? (parsed as { keys?: unknown }).keys : undefined;
+  const keys = isRecord(parsed) ? parsed.keys : undefined;
   if (!Array.isArray(keys)) {
     return { ok: false, problem: 'A key set is a JSON object with a "keys" array.' };
   }

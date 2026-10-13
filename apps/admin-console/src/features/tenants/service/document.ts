@@ -1,9 +1,5 @@
 import { TENANT_IMPORT_BODY_LIMIT } from '@odudu/contracts/admin';
-import { parseJson } from '#/shared/service/json';
-
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
+import { isRecord, parseJson } from '#/shared/service/json';
 
 // What an export says it left out, by JSON path; read only to show it, since
 // the file saved is the text as the server sent it.

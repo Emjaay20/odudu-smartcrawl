@@ -1,3 +1,4 @@
+import { isRecord } from '#/shared/service/json';
 export type Values = Readonly<Record<string, unknown>>;
 
 export interface Draft<T extends Values> {
@@ -18,10 +19,6 @@ export function sameValue(a: unknown, b: unknown): boolean {
     );
   }
   return false;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 export function startDraft<T extends Values>(base: T): Draft<T> {

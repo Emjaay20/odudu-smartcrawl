@@ -1,4 +1,5 @@
 import type { ExecutionRequirement, ExecutionStep } from '@odudu/contracts/admin';
+import { isRecord } from '#/shared/service/json';
 
 export interface Step {
   authenticator: string;
@@ -63,7 +64,7 @@ export function added(
 }
 
 function isStep(value: unknown): value is Step {
-  return typeof value === 'object' && value !== null && 'authenticator' in value;
+  return isRecord(value) && 'authenticator' in value;
 }
 
 // A conflict's way of showing the order, one step after another.
