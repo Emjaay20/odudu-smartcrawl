@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { Button } from '#/shared/view/Button';
-import { ConfirmDialog } from '#/shared/view/ConfirmDialog/ConfirmDialog';
+import { AskedDialog, ConfirmDialog } from '#/shared/view/ConfirmDialog/ConfirmDialog';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 function Harness({ typed, onConfirm = vi.fn() }: { typed?: string; onConfirm?: () => void }) {
@@ -226,4 +226,91 @@ it('holds its action once settled, however it was confirmed', async () => {
   const user = userEvent.setup();
   await user.type(screen.getByRole('textbox'), 'ada');
   expect(screen.getByRole('button', { name: 'Revoke' })).toBeDisabled();
+});
+
+describe('an asked dialog', () => {
+  const ASKED = { title: 'Take it out?', consequence: 'It is taken from every subject.' };
+
+  it('is shut while nothing is asked, and open with what was asked', () => {
+    const { rerender } = render(
+      <AskedDialog
+        asked={null}
+        confirmLabel="Take it out"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    rerender(
+      <AskedDialog
+        asked={ASKED}
+        confirmLabel="Take it out"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    const dialog = screen.getByRole('alertdialog', { name: 'Take it out?' });
+    expect(dialog).toHaveTextContent('It is taken from every subject.');
+    expect(screen.getByRole('button', { name: 'Take it out' })).toBeVisible();
+  });
+
+  it('confirms and cancels through the handlers it is given', async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
+    render(
+      <AskedDialog
+        asked={ASKED}
+        confirmLabel="Take it out"
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Take it out' }));
+    expect(onConfirm).toHaveBeenCalledOnce();
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(onCancel).toHaveBeenCalledOnce();
+  });
+
+  it('holds the confirm until what the ask says to type is typed', async () => {
+    const user = userEvent.setup();
+    render(
+      <AskedDialog
+        asked={{ ...ASKED, typed: 'manage-tenants' }}
+        confirmLabel="Save"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    await user.type(screen.getByRole('textbox'), 'manage-tenants');
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+  });
+
+  it('asks nothing to be typed where the ask names none', () => {
+    render(
+      <AskedDialog
+        asked={{ ...ASKED, typed: null }}
+        confirmLabel="Save"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+  });
+
+  it('takes the label, the tone and the busy state of the ask it is given', () => {
+    render(
+      <AskedDialog
+        asked={{ ...ASKED, confirmLabel: 'Revoke it', tone: 'primary' }}
+        busy
+        problem="Not now."
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Working…' })).toBeDisabled();
+    expect(screen.getByRole('alert')).toHaveTextContent('Not now.');
+  });
 });

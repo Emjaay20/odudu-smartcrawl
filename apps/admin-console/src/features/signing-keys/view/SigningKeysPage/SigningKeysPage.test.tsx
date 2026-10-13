@@ -119,6 +119,10 @@ it('asks before promoting, says what happens to the active key, and says it is r
   expect(dialog).toHaveTextContent('signs every new token');
   expect(dialog).toHaveTextContent('kid-k-active');
   expect(dialog).not.toHaveTextContent('Ready from');
+  expect(within(dialog).getByRole('button', { name: 'Promote key' })).toHaveAttribute(
+    'data-variant',
+    'primary',
+  );
   await user.click(within(dialog).getByRole('button', { name: 'Promote key' }));
   expect(await screen.findByText(/kid-k-ready is now the active key/u)).toBeVisible();
   expect(sent.filter((s) => s.method === 'POST' && s.path.endsWith('/promote'))).toHaveLength(1);

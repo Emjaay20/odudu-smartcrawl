@@ -25,6 +25,46 @@ export function ConfirmDialog({ isOpen, ...props }: ConfirmProps & { isOpen: boo
   return isOpen ? <OpenConfirm {...props} /> : null;
 }
 
+// A confirmation a usecase has asked for, open while there is one. Danger
+// unless the one asked says otherwise.
+export function AskedDialog({
+  asked,
+  confirmLabel,
+  busy,
+  problem,
+  onConfirm,
+  onCancel,
+}: {
+  asked: {
+    title: string;
+    consequence: string;
+    confirmLabel?: string;
+    tone?: 'primary' | 'danger';
+    typed?: string | null;
+  } | null;
+  // Where the action is named by the page, not by what was asked.
+  confirmLabel?: string;
+  busy?: boolean;
+  problem?: ReactNode;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <ConfirmDialog
+      isOpen={asked !== null}
+      title={asked?.title ?? ''}
+      consequence={asked?.consequence ?? ''}
+      confirmLabel={confirmLabel ?? asked?.confirmLabel ?? ''}
+      tone={asked?.tone ?? 'danger'}
+      {...(typeof asked?.typed === 'string' ? { typed: asked.typed } : {})}
+      {...(busy === undefined ? {} : { busy })}
+      {...(problem === undefined ? {} : { problem })}
+      onConfirm={onConfirm}
+      onCancel={onCancel}
+    />
+  );
+}
+
 function OpenConfirm({
   title,
   consequence,

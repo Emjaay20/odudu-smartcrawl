@@ -6,7 +6,7 @@ import {
 } from '#/features/subjects/usecase/useCapabilities';
 import { Link } from 'react-aria-components';
 import { Button } from '#/shared/view/Button';
-import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
+import { AskedDialog } from '#/shared/view/ConfirmDialog';
 import { ChecklistField } from '#/shared/view/ChecklistField';
 import { ReadOnlyFields } from '#/shared/view/Field';
 import { ReadGate } from '#/shared/view/ReadGate';
@@ -48,15 +48,9 @@ export function CapabilitySection({ editing }: { editing: CapabilityEditing }) {
           <Link href={editing.rolesHref}>Roles</Link> tab.
         </p>
       )}
-      <ConfirmDialog
-        isOpen={editing.confirming !== null}
-        title={editing.confirming?.title ?? ''}
-        consequence={editing.confirming?.consequence ?? ''}
+      <AskedDialog
+        asked={editing.confirming}
         confirmLabel="Save Admin capabilities"
-        tone="danger"
-        {...(typeof editing.confirming?.typed === 'string'
-          ? { typed: editing.confirming.typed }
-          : {})}
         onConfirm={editing.confirm}
         onCancel={editing.cancel}
       />

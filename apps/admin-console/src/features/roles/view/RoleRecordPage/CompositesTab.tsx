@@ -10,7 +10,7 @@ import { Panel } from '#/shared/view/Panel';
 import { ReadGate } from '#/shared/view/ReadGate';
 import { RoleOwner } from '#/shared/view/RoleOwner';
 import { Button } from '#/shared/view/Button';
-import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
+import { AskedDialog } from '#/shared/view/ConfirmDialog';
 import { RolePicker } from '#/shared/view/RolePicker';
 import { SaveSection } from '#/shared/view/SaveSection';
 import { recordTab } from '#/shared/view/RecordTab';
@@ -63,12 +63,9 @@ function Nested({ role, composites }: { role: Role; composites: RoleComposites }
       <p role="status" className={recordTab.message}>
         {composites.message}
       </p>
-      <ConfirmDialog
-        isOpen={composites.asking !== null}
-        title={composites.asking?.title ?? ''}
-        consequence={composites.asking?.consequence ?? ''}
+      <AskedDialog
+        asked={composites.asking}
         confirmLabel="Take it out"
-        tone="danger"
         onConfirm={composites.confirm}
         onCancel={composites.cancel}
       />

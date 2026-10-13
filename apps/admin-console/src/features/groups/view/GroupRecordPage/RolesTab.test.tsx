@@ -143,6 +143,10 @@ it('asks first when a role taken off the group is one you hold through it', asyn
     name: 'Take roles your own access runs through?',
   });
   expect(dialog).toHaveTextContent('You hold view-audit through /eng');
+  expect(within(dialog).getByRole('button', { name: 'Save Roles' })).toHaveAttribute(
+    'data-variant',
+    'danger',
+  );
   expect(sent.some((s) => s.method === 'PUT')).toBe(false);
   await user.click(within(dialog).getByRole('button', { name: 'Save Roles' }));
   await waitFor(() => {

@@ -10,7 +10,7 @@ import {
 import type { Ceiling } from '#/features/groups/usecase/useGroupRecordPage';
 import { DeleteZone } from '#/shared/view/DeleteZone';
 import { Panel } from '#/shared/view/Panel';
-import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
+import { AskedDialog } from '#/shared/view/ConfirmDialog';
 import { TextAreaField, ToggleField } from '#/shared/view/Field';
 import { GroupPicker } from '#/shared/view/GroupPicker';
 import { SaveSection } from '#/shared/view/SaveSection';
@@ -93,12 +93,9 @@ function PlaceSection({ place }: { place: Place }) {
           <p className={recordTab.rule}>Choose the parent again to move it to the top level.</p>
         </>
       ) : null}
-      <ConfirmDialog
-        isOpen={place.asking !== null}
-        title={place.asking?.title ?? ''}
-        consequence={place.asking?.consequence ?? ''}
+      <AskedDialog
+        asked={place.asking}
         confirmLabel="Save Place in the tree"
-        tone="danger"
         onConfirm={place.confirm}
         onCancel={place.cancel}
       />

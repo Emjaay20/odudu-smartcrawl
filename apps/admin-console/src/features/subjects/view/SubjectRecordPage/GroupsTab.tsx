@@ -5,7 +5,7 @@ import {
   type Membership,
   type SubjectGroups,
 } from '#/features/subjects/usecase/useSubjectGroups';
-import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
+import { AskedDialog } from '#/shared/view/ConfirmDialog';
 import { GroupPicker } from '#/shared/view/GroupPicker';
 import { ReadGate } from '#/shared/view/ReadGate';
 import { SaveSection } from '#/shared/view/SaveSection';
@@ -45,15 +45,9 @@ function Groups({ groups }: { groups: SubjectGroups }) {
           onChange={groups.choose}
         />
       ) : null}
-      <ConfirmDialog
-        isOpen={groups.confirming !== null}
-        title={groups.confirming?.title ?? ''}
-        consequence={groups.confirming?.consequence ?? ''}
+      <AskedDialog
+        asked={groups.confirming}
         confirmLabel="Save Groups"
-        tone="danger"
-        {...(typeof groups.confirming?.typed === 'string'
-          ? { typed: groups.confirming.typed }
-          : {})}
         onConfirm={groups.confirm}
         onCancel={groups.cancel}
       />

@@ -5,7 +5,7 @@ import {
   type GroupRoles,
 } from '#/features/groups/usecase/useGroupRoles';
 import type { Ceiling } from '#/features/groups/usecase/useGroupRecordPage';
-import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
+import { AskedDialog } from '#/shared/view/ConfirmDialog';
 import { MappedRoles } from '#/shared/view/MappedRoles';
 import { ReadGate } from '#/shared/view/ReadGate';
 import { RolePicker } from '#/shared/view/RolePicker';
@@ -38,12 +38,9 @@ function Roles({ path, roles }: { path: string; roles: GroupRoles }) {
           saved.
         </p>
       )}
-      <ConfirmDialog
-        isOpen={roles.asking !== null}
-        title={roles.asking?.title ?? ''}
-        consequence={roles.asking?.consequence ?? ''}
+      <AskedDialog
+        asked={roles.asking}
         confirmLabel="Save Roles"
-        tone="danger"
         onConfirm={roles.confirm}
         onCancel={roles.cancel}
       />

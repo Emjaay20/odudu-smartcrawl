@@ -14,7 +14,7 @@ import {
   type SigningKeysPage as Page,
 } from '#/features/signing-keys/usecase/useSigningKeysPage';
 import { Button } from '#/shared/view/Button';
-import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
+import { AskedDialog } from '#/shared/view/ConfirmDialog';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { SelectField } from '#/shared/view/Field';
@@ -210,13 +210,8 @@ function Keys({ tenant }: { tenant: string }) {
           <LaneSection key={spec.status} spec={spec} page={page} />
         ))}
       </div>
-      <ConfirmDialog
-        isOpen={asking !== null}
-        title={asking?.dialog.title ?? ''}
-        consequence={asking?.dialog.consequence ?? ''}
-        confirmLabel={asking?.dialog.confirmLabel ?? ''}
-        tone={asking?.dialog.tone ?? 'primary'}
-        {...(asking?.dialog.typed === undefined ? {} : { typed: asking.dialog.typed })}
+      <AskedDialog
+        asked={asking?.dialog ?? null}
         busy={page.busy}
         problem={page.problem}
         onConfirm={() => {

@@ -21,7 +21,7 @@ import {
 } from '#/features/subjects/usecase/useSubjectMail';
 import { Button } from '#/shared/view/Button';
 import { ChecklistField } from '#/shared/view/ChecklistField';
-import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
+import { AskedDialog } from '#/shared/view/ConfirmDialog';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { LoadFailed } from '#/shared/view/LoadFailed';
 import { Panel } from '#/shared/view/Panel';
@@ -366,12 +366,8 @@ export function CredentialsTab({ tenant, subject, canManage, self }: TabProps) {
       ) : (
         <Held page={page} mail={mail} canManage={canManage} />
       )}
-      <ConfirmDialog
-        isOpen={dialog !== null}
-        title={dialog?.title ?? ''}
-        consequence={dialog?.consequence ?? ''}
-        confirmLabel={dialog?.confirmLabel ?? ''}
-        tone={dialog?.tone ?? 'primary'}
+      <AskedDialog
+        asked={dialog}
         busy={page.busy}
         problem={page.problem}
         onConfirm={page.confirm}
