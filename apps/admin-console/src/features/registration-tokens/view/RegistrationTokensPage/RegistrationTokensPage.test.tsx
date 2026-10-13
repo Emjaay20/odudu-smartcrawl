@@ -28,6 +28,7 @@ it('lists the live tokens with their uses left, and says spent ones are gone', a
   expect(within(table).getByRole('row', { name: /t-few/u })).toHaveTextContent('5');
   expect(screen.getByText(/disappears from this list/u)).toBeVisible();
   expect(screen.getByText(/Audit trail holds the history/u)).toBeVisible();
+  expect(screen.getByRole('status', { name: 'Last revoke' })).not.toHaveFocus();
 });
 
 it('says no token is live when there is none', async () => {

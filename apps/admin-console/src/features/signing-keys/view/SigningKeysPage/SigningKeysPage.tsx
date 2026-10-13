@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from 'react';
+import { useId } from 'react';
 import { AreaGate, areaAt } from '#/features/shell';
 import {
   ALG_OPTIONS,
@@ -18,6 +18,7 @@ import { AskedDialog } from '#/shared/view/ConfirmDialog';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { SelectField } from '#/shared/view/Field';
+import { LastAction } from '#/shared/view/LastAction';
 import { ListGate } from '#/shared/view/ListGate';
 import { LoadMore } from '#/shared/view/LoadMore';
 import { PageHeader } from '#/shared/view/PageHeader';
@@ -180,12 +181,6 @@ function Stage({ page }: { page: Page }) {
 
 function Keys({ tenant }: { tenant: string }) {
   const page = useSigningKeysPage(tenant);
-  const notice = useRef<HTMLParagraphElement>(null);
-  // The row the action was pressed on took the focus with it, so the line
-  // saying what happened holds it once the dialog that held it is gone.
-  useEffect(() => {
-    if (page.acted > 0) notice.current?.focus();
-  }, [page.acted]);
   const { asking } = page;
   return (
     <>
@@ -196,15 +191,9 @@ function Keys({ tenant }: { tenant: string }) {
       />
       <div className={styles.page}>
         <Stage page={page} />
-        <p
-          ref={notice}
-          tabIndex={-1}
-          role="status"
-          aria-label="Last key action"
-          className={styles.notice}
-        >
+        <LastAction label="Last key action" count={page.acted}>
           {page.notice}
-        </p>
+        </LastAction>
         {LANES.map((spec) => (
           <LaneSection key={spec.status} spec={spec} page={page} />
         ))}

@@ -1,5 +1,4 @@
 import type { Role } from '@odudu/contracts/admin';
-import { useRef } from 'react';
 import {
   useCompositesRead,
   useRoleComposites,
@@ -7,7 +6,7 @@ import {
 } from '#/features/roles/usecase/useRoleComposites';
 import type { Ceiling } from '#/features/roles/usecase/useRoleRecordPage';
 import { LiveMessage } from '#/shared/view/Message';
-import { Panel } from '#/shared/view/Panel';
+import { Panel, useHeadingFocus } from '#/shared/view/Panel';
 import { ReadGate } from '#/shared/view/ReadGate';
 import { RoleOwner } from '#/shared/view/RoleOwner';
 import { Button } from '#/shared/view/Button';
@@ -18,10 +17,10 @@ import { recordTab } from '#/shared/view/RecordTab';
 import styles from '#/features/roles/view/RoleRecordPage/Tab.module.css';
 
 function Nested({ role, composites }: { role: Role; composites: RoleComposites }) {
-  const named = useRef<HTMLHeadingElement>(null);
+  const { heading, afterRemoval } = useHeadingFocus();
   const editable = composites.fixed === null && composites.offered;
   return (
-    <Panel title="Nested in it" headingRef={named}>
+    <Panel title="Nested in it" headingRef={heading}>
       <p className={recordTab.rule}>
         {composites.fixed ??
           `Whoever holds ${role.name} holds each of these too, and what each of them nests in turn.`}
@@ -42,12 +41,7 @@ function Nested({ role, composites }: { role: Role; composites: RoleComposites }
                   variant="quiet"
                   isDisabled={composites.removing !== null}
                   onPress={() => {
-                    composites
-                      .remove(child)
-                      .then((gone) => {
-                        if (gone) named.current?.focus();
-                      })
-                      .catch(() => undefined);
+                    afterRemoval(composites.remove(child)).catch(() => undefined);
                   }}
                 >
                   {composites.removing === child.id

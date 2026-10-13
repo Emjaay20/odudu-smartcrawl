@@ -40,6 +40,7 @@ it('lists the keys in three lanes by their stored status, each with its algorith
   expect(
     within(await lane('Retired keys')).getByRole('row', { name: /kid-k-retired/u }),
   ).toBeVisible();
+  expect(screen.getByRole('status', { name: 'Last key action' })).not.toHaveFocus();
 });
 
 it('asks each lane for its own status, a page at a time', async () => {

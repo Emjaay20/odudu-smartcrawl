@@ -17,6 +17,7 @@ import { DescriptionField } from '#/shared/view/DescriptionField';
 import { KeyHint, PlatformContext } from '#/shared/view/KeyHint';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
+import { LastAction } from '#/shared/view/LastAction';
 import { ListGate } from '#/shared/view/ListGate';
 import { LoadFailed } from '#/shared/view/LoadFailed';
 import { LoadMore, LoadMoreFailed } from '#/shared/view/LoadMore';
@@ -826,6 +827,11 @@ function RecordPieces() {
               </ListGate>
             ))}
           </div>
+        </Specimen>
+        <Specimen label="LastAction: what the last action did, once there was one">
+          <LastAction label="Last revoke" count={0}>
+            Revoked the token created Oct 12.
+          </LastAction>
         </Specimen>
         <Specimen label="ReadGate: loading, failed, and the record">
           <div className={styles.stack}>

@@ -10,7 +10,6 @@
 }
 
 .rule,
-.notice,
 .reading {
   margin: 0;
   max-inline-size: 72ch;
@@ -20,15 +19,6 @@
 .rule,
 .reading {
   color: var(--ink-muted);
-}
-
-.notice:empty {
-  display: none;
-}
-
-.notice:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
 }
 
 .stage {

@@ -1,5 +1,4 @@
 import type { RegistrationToken } from '@odudu/contracts/admin';
-import { useEffect, useRef } from 'react';
 import { AreaGate, areaAt } from '#/features/shell';
 import { NOTHING_YET, NOUN, TITLE, TOKENS_RULE } from '#/features/registration-tokens/service';
 import {
@@ -16,6 +15,7 @@ import { SecretDialog } from '#/shared/view/SecretDialog';
 import { Timestamp } from '#/shared/view/Timestamp';
 import { CreationForm } from '#/shared/view/CreationForm';
 import { LiveMessage } from '#/shared/view/Message';
+import { LastAction } from '#/shared/view/LastAction';
 import { Panel } from '#/shared/view/Panel';
 import { recordTab } from '#/shared/view/RecordTab';
 import styles from '#/features/registration-tokens/view/RegistrationTokensPage/RegistrationTokensPage.module.css';
@@ -99,12 +99,6 @@ function Mint({ page }: { page: Page }) {
 
 function List({ tenant }: { tenant: string }) {
   const page = useRegistrationTokensPage(tenant);
-  const notice = useRef<HTMLParagraphElement>(null);
-  // The revoked row took the focus with it, so the line saying so holds it
-  // once the dialog that held it is gone.
-  useEffect(() => {
-    if (page.revoked > 0) notice.current?.focus();
-  }, [page.revoked]);
   return (
     <>
       <ResourceListPage
@@ -119,15 +113,9 @@ function List({ tenant }: { tenant: string }) {
         capability="manage-clients"
         nothingYet={NOTHING_YET}
         notice={
-          <p
-            ref={notice}
-            tabIndex={-1}
-            role="status"
-            aria-label="Last revoke"
-            className={styles.notice}
-          >
+          <LastAction label="Last revoke" count={page.revoked}>
             {page.notice}
-          </p>
+          </LastAction>
         }
       />
       <SecretDialog

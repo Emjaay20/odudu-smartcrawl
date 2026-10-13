@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { json, problem } from '#/testing/fakeTransport';
+import { inTurn, json, problem } from '#/testing/fakeTransport';
 import { adminRole } from '#/testing/groupsFixtures';
 import { R, READER, roleRoutes } from '#/testing/rolesFixtures';
 import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
@@ -82,6 +82,24 @@ it('takes a role out on the ETag, and says when the list changed under it', asyn
   expect(await screen.findByText(/composites changed since you opened them/u)).toBeVisible();
   await waitFor(() => {
     expect(sent.find((s) => s.method === 'DELETE')?.ifMatch).toBe('"c1"');
+  });
+});
+
+it('hands the focus to the heading once a role is taken out', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(
+    AT,
+    roleRoutes(undefined, {
+      [`GET ${C}`]: inTurn(
+        json({ items: [READER] }, 200, { etag: '"c1"' }),
+        json({ items: [] }, 200, { etag: '"c2"' }),
+      ),
+      [`DELETE ${C}/r-read`]: () => new Response(null, { status: 204 }),
+    }),
+  );
+  await user.click(await screen.findByRole('button', { name: 'Take reader out' }));
+  await waitFor(() => {
+    expect(screen.getByRole('heading', { name: 'Nested in it' })).toHaveFocus();
   });
 });
 
