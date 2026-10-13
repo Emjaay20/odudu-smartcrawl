@@ -3,7 +3,7 @@ import {
   type AssignScopeToClientResponse,
 } from '@odudu/contracts/admin';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { nothing } from '#/shared/adapter/route';
+import { adminCall, nothing } from '#/shared/adapter/route';
 
 // Answers the client's scopes alone, which is all `manage-tenant` may be told of it.
 export function assignScope(
@@ -13,10 +13,7 @@ export function assignScope(
   clientDbId: string,
   assignment: 'default' | 'optional',
 ): Promise<GatewayResult<AssignScopeToClientResponse>> {
-  const t = encodeURIComponent(tenant);
-  const scope = encodeURIComponent(scopeId);
-  const client = encodeURIComponent(clientDbId);
-  return gateway.request('PUT', `admin/tenants/${t}/scopes/${scope}/clients/${client}`, {
+  return adminCall(gateway, 'PUT', tenant, ['scopes', scopeId, 'clients', clientDbId], {
     body: { assignment },
     schema: assignScopeToClientResponseSchema,
   });
@@ -28,10 +25,7 @@ export function unassignScope(
   scopeId: string,
   clientDbId: string,
 ): Promise<GatewayResult<undefined>> {
-  const t = encodeURIComponent(tenant);
-  const scope = encodeURIComponent(scopeId);
-  const client = encodeURIComponent(clientDbId);
-  return gateway.request('DELETE', `admin/tenants/${t}/scopes/${scope}/clients/${client}`, {
+  return adminCall(gateway, 'DELETE', tenant, ['scopes', scopeId, 'clients', clientDbId], {
     schema: nothing,
   });
 }

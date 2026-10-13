@@ -13,6 +13,7 @@ import {
   type RevokeClientGrantsResponse,
 } from '@odudu/contracts/admin';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
+import { adminCall } from '#/shared/adapter/route';
 
 export function readClientSessions(
   gateway: Gateway,
@@ -20,9 +21,8 @@ export function readClientSessions(
   clientDbId: string,
   query: URLSearchParams,
 ): Promise<GatewayResult<ListTenantSessionsResponse>> {
-  const t = encodeURIComponent(tenant);
-  const id = encodeURIComponent(clientDbId);
-  return gateway.request('GET', `admin/tenants/${t}/clients/${id}/sessions?${query.toString()}`, {
+  return adminCall(gateway, 'GET', tenant, ['clients', clientDbId, 'sessions'], {
+    query,
     schema: listTenantSessionsResponseSchema,
   });
 }
@@ -33,9 +33,9 @@ export function readClientSessionCount(
   tenant: string,
   clientDbId: string,
 ): Promise<GatewayResult<CountResponse>> {
-  const t = encodeURIComponent(tenant);
   const query = new URLSearchParams({ client: clientDbId });
-  return gateway.request('GET', `admin/tenants/${t}/sessions/count?${query.toString()}`, {
+  return adminCall(gateway, 'GET', tenant, ['sessions', 'count'], {
+    query,
     schema: countResponseSchema,
   });
 }
@@ -46,9 +46,7 @@ export function revokeClientGrants(
   tenant: string,
   clientDbId: string,
 ): Promise<GatewayResult<RevokeClientGrantsResponse>> {
-  const t = encodeURIComponent(tenant);
-  const id = encodeURIComponent(clientDbId);
-  return gateway.request('DELETE', `admin/tenants/${t}/clients/${id}/grants`, {
+  return adminCall(gateway, 'DELETE', tenant, ['clients', clientDbId, 'grants'], {
     schema: revokeClientGrantsResponseSchema,
   });
 }
@@ -59,13 +57,10 @@ export function readLogoutDeliveries(
   clientDbId: string,
   query: URLSearchParams,
 ): Promise<GatewayResult<ListLogoutDeliveriesResponse>> {
-  const t = encodeURIComponent(tenant);
-  const id = encodeURIComponent(clientDbId);
-  return gateway.request(
-    'GET',
-    `admin/tenants/${t}/clients/${id}/logout-deliveries?${query.toString()}`,
-    { schema: listLogoutDeliveriesResponseSchema },
-  );
+  return adminCall(gateway, 'GET', tenant, ['clients', clientDbId, 'logout-deliveries'], {
+    query,
+    schema: listLogoutDeliveriesResponseSchema,
+  });
 }
 
 export function readInstallation(
@@ -73,9 +68,7 @@ export function readInstallation(
   tenant: string,
   clientDbId: string,
 ): Promise<GatewayResult<ClientInstallation>> {
-  const t = encodeURIComponent(tenant);
-  const id = encodeURIComponent(clientDbId);
-  return gateway.request('GET', `admin/tenants/${t}/clients/${id}/installation`, {
+  return adminCall(gateway, 'GET', tenant, ['clients', clientDbId, 'installation'], {
     schema: clientInstallationSchema,
   });
 }
@@ -87,11 +80,10 @@ export function evaluateClaims(
   clientDbId: string,
   request: { subject: string; scope: string },
 ): Promise<GatewayResult<EvaluateClaimsResponse>> {
-  const t = encodeURIComponent(tenant);
-  const id = encodeURIComponent(clientDbId);
   const query = new URLSearchParams({ subject: request.subject });
   if (request.scope.trim() !== '') query.set('scope', request.scope.trim());
-  return gateway.request('GET', `admin/tenants/${t}/clients/${id}/evaluate?${query.toString()}`, {
+  return adminCall(gateway, 'GET', tenant, ['clients', clientDbId, 'evaluate'], {
+    query,
     schema: evaluateClaimsResponseSchema,
   });
 }

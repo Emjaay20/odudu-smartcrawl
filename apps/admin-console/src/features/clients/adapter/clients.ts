@@ -11,7 +11,7 @@ import {
 import { entriesOf, type NewClientKind } from '#/features/clients/service';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 import { readClientPage } from '#/shared/adapter/directory';
-import { countReader, nothing, segment, tenantPath } from '#/shared/adapter/route';
+import { adminCall, countReader, nothing } from '#/shared/adapter/route';
 
 export { readClientPage };
 
@@ -51,7 +51,7 @@ export function createClient(
   tenant: string,
   input: NewClient,
 ): Promise<GatewayResult<CreateClientResponse>> {
-  return gateway.request('POST', `admin/tenants/${tenantPath(tenant)}/clients`, {
+  return adminCall(gateway, 'POST', tenant, ['clients'], {
     body: {
       client_id: input.clientId,
       ...(input.name === '' ? {} : { name: input.name }),
@@ -67,7 +67,7 @@ export function readClient(
   tenant: string,
   id: string,
 ): Promise<GatewayResult<Client>> {
-  return gateway.request('GET', `admin/tenants/${tenantPath(tenant)}/clients/${segment(id)}`, {
+  return adminCall(gateway, 'GET', tenant, ['clients', id], {
     schema: clientSchema,
   });
 }
@@ -147,7 +147,7 @@ export function amendClient(
   changes: ClientChanges,
   ifMatch: string,
 ): Promise<GatewayResult<Client>> {
-  return gateway.request('PATCH', `admin/tenants/${tenantPath(tenant)}/clients/${segment(id)}`, {
+  return adminCall(gateway, 'PATCH', tenant, ['clients', id], {
     body: wireChanges(changes),
     ifMatch,
     schema: clientSchema,
@@ -159,7 +159,7 @@ export function deleteClient(
   tenant: string,
   id: string,
 ): Promise<GatewayResult<undefined>> {
-  return gateway.request('DELETE', `admin/tenants/${tenantPath(tenant)}/clients/${segment(id)}`, {
+  return adminCall(gateway, 'DELETE', tenant, ['clients', id], {
     schema: nothing,
   });
 }
@@ -184,11 +184,10 @@ export function rotateClientSecret(
   graceSeconds: number,
 ): Promise<GatewayResult<RotateClientSecretResponse>> {
   const query = new URLSearchParams({ grace_seconds: String(graceSeconds) });
-  return gateway.request(
-    'POST',
-    `admin/tenants/${tenantPath(tenant)}/clients/${segment(id)}/secret?${query.toString()}`,
-    { schema: rotateClientSecretResponseSchema },
-  );
+  return adminCall(gateway, 'POST', tenant, ['clients', id, 'secret'], {
+    query,
+    schema: rotateClientSecretResponseSchema,
+  });
 }
 
 // A role scoped to the client: the client's row id is what owns it.
@@ -198,7 +197,7 @@ export function createClientRole(
   clientDbId: string,
   input: { name: string; description: string },
 ): Promise<GatewayResult<Role>> {
-  return gateway.request('POST', `admin/tenants/${tenantPath(tenant)}/roles`, {
+  return adminCall(gateway, 'POST', tenant, ['roles'], {
     body: {
       name: input.name,
       client_id: clientDbId,
