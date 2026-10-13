@@ -37,7 +37,7 @@ export {
   deleteFixed,
   scopesFixed,
 } from '#/features/clients/service/blocks';
-export { deleteConsequence, deletedText } from '#/features/clients/service/confirm';
+export { deleteConsequence } from '#/features/clients/service/confirm';
 export {
   type NewClientKind,
   type NewClientField,

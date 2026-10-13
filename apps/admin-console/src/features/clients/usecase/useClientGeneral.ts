@@ -18,7 +18,6 @@ import {
   clientRefusal,
   clientsHref,
   deleteConsequence,
-  deletedText,
   deleteFixed,
   enabledFixed,
   FIELD,
@@ -26,7 +25,7 @@ import {
 } from '#/features/clients/service';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { useToasts } from '#/shared/repository/useToasts';
-import { writeFailureText } from '#/shared/service/failure';
+import { deletedText, writeFailureText } from '#/shared/service/failure';
 import { flagText } from '#/shared/service/format';
 import type { GatewayFailure } from '#/shared/transport/gateway';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
