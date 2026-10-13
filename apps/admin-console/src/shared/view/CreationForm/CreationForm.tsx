@@ -2,6 +2,7 @@ import { useId, type ReactNode, type SubmitEvent } from 'react';
 import { Button } from '#/shared/view/Button';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { TextAreaField, TextField } from '#/shared/view/Field';
+import { LiveMessage } from '#/shared/view/Message';
 import styles from '#/shared/view/CreationForm/CreationForm.module.css';
 
 // The form a record is made on: one submit, held back until the page says it
@@ -114,9 +115,7 @@ export function CreationActions({
           {held}
         </p>
       ) : null}
-      <p role="status" className={styles.message}>
-        {partial?.text ?? message}
-      </p>
+      <LiveMessage>{partial?.text ?? message}</LiveMessage>
     </>
   );
 }

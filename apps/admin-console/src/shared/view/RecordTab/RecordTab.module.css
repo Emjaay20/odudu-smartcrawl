@@ -39,8 +39,10 @@
   color: var(--ink-muted);
 }
 
+/* Kept in the accessibility tree while empty, so what fills it is announced,
+   and out of the layout so an empty one takes no room. */
 .message:empty {
-  display: none;
+  position: absolute;
 }
 
 .actions {

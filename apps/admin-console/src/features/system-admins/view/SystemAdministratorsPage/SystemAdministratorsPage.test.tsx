@@ -119,6 +119,7 @@ it('lists every holder of an admin capability in system, a page at a time', asyn
   const reads = sent.filter((s) => s.path === `${S}/subjects` && s.search.get('limit') === null);
   expect(reads[0]?.search.get('capability')).toBe('any');
   expect(screen.queryByRole('button', { name: /^Revoke/u })).toBeNull();
+  expect(screen.getByRole('status', { name: 'Last grant' })).toBeEmptyDOMElement();
 });
 
 it("creates one through system's guided administrator step", async () => {

@@ -9,6 +9,7 @@ import { SystemGate } from '#/features/tenants';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
 import { Button } from '#/shared/view/Button';
 import { ChecklistField } from '#/shared/view/ChecklistField';
+import { LiveMessage } from '#/shared/view/Message';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { Picker } from '#/shared/view/Picker';
 import { ViewOnlyNote } from '#/shared/view/ViewOnlyNote';
@@ -59,9 +60,7 @@ function Add({ page }: { page: SystemAdministrators }) {
         {page.createNeeds.length > 0 ? null : (
           <Button onPress={page.begin.start}>Create a new subject as an administrator</Button>
         )}
-        <p role="status" aria-label="Last grant" className={styles.message}>
-          {page.grantMessage}
-        </p>
+        <LiveMessage label="Last grant">{page.grantMessage}</LiveMessage>
       </div>
     </section>
   );
