@@ -11,6 +11,7 @@ import { AuditActor } from '#/shared/view/AuditActor';
 import { AppShell } from '#/shared/view/AppShell';
 import { Breadcrumb } from '#/shared/view/Breadcrumb';
 import { Button } from '#/shared/view/Button';
+import { CreationActions, CreationForm } from '#/shared/view/CreationForm';
 import { DeleteZone } from '#/shared/view/DeleteZone';
 import { KeyHint, PlatformContext } from '#/shared/view/KeyHint';
 import { ButtonLink } from '#/shared/view/ButtonLink';
@@ -809,6 +810,20 @@ function RecordPieces() {
           lead="Every change made to this client, and every change refused."
           readable={false}
         />
+      </Specimen>
+      <Specimen label="CreationForm: the form a record is made on, and what it ends in">
+        <CreationForm submit={NOTHING}>
+          <TextField label="Name" value="" onChange={NOTHING} />
+          <CreationActions
+            noun="role"
+            lookFor="billing"
+            busy={false}
+            unconfirmed={false}
+            onCheck={NOTHING}
+            listHref="#records"
+            message={null}
+          />
+        </CreationForm>
       </Specimen>
       <Specimen label="AccessGate: a principal whoami says cannot read the area">
         <AccessGate

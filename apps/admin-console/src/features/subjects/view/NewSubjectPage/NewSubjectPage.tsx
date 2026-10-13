@@ -1,25 +1,18 @@
-import type { SubmitEvent } from 'react';
 import { subjectsTrail } from '#/features/subjects/service';
 import { useNewSubject } from '#/features/subjects/usecase/useNewSubject';
 import { SubjectsGate } from '#/features/subjects/view/SubjectsGate';
-import { Button } from '#/shared/view/Button';
-import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
+import { CreationActions, CreationForm } from '#/shared/view/CreationForm';
 import { TextField } from '#/shared/view/Field';
 import { PageHeader } from '#/shared/view/PageHeader';
-import styles from '#/features/subjects/view/NewSubjectPage/NewSubjectPage.module.css';
 
 function Form({ tenant }: { tenant: string }) {
   const page = useNewSubject(tenant);
   if (page.refused !== null) {
     return <CapabilityNote capability={page.refused}>Creating a subject</CapabilityNote>;
   }
-  const submit = (event: SubmitEvent<HTMLFormElement>): void => {
-    event.preventDefault();
-    page.submit();
-  };
   return (
-    <form noValidate onSubmit={submit} className={styles.form}>
+    <CreationForm submit={page.submit}>
       <TextField
         label="Username"
         description={page.rule}
@@ -39,22 +32,16 @@ function Form({ tenant }: { tenant: string }) {
         autoComplete="email"
         onChange={page.editEmail}
       />
-      <div className={styles.actions}>
-        {page.unconfirmed ? (
-          <Button variant="primary" isDisabled={page.busy} onPress={page.check}>
-            {`Look for ${page.username}`}
-          </Button>
-        ) : (
-          <Button type="submit" variant="primary" isDisabled={page.busy}>
-            {page.busy ? 'Creating…' : 'Create subject'}
-          </Button>
-        )}
-        <ButtonLink href={page.listHref}>Cancel</ButtonLink>
-      </div>
-      <p role="status" className={styles.message}>
-        {page.message}
-      </p>
-    </form>
+      <CreationActions
+        noun="subject"
+        lookFor={page.username}
+        busy={page.busy}
+        unconfirmed={page.unconfirmed}
+        onCheck={page.check}
+        listHref={page.listHref}
+        message={page.message}
+      />
+    </CreationForm>
   );
 }
 

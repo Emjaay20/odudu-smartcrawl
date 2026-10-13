@@ -29,6 +29,23 @@ it('creates a tenant role and lands on it', async () => {
   expect(sent.find((s) => s.method === 'POST')?.body).toEqual({ name: 'billing' });
 });
 
+it('opens on the name, counts the description against its limit and offers the way back', async () => {
+  renderConsoleAt(AT, roleRoutes());
+  expect(await screen.findByRole('textbox', { name: 'Name' })).toHaveFocus();
+  expect(screen.getByText(/^0 of [\d,]+ characters\.$/u)).toBeVisible();
+  expect(screen.getByRole('link', { name: 'Cancel' })).toHaveAttribute(
+    'href',
+    '/console/acme/roles',
+  );
+});
+
+it('says it is creating, and holds Create, while the answer is awaited', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, roleRoutes(undefined, { [`POST ${R}`]: pending() }));
+  await user.type(await screen.findByRole('textbox', { name: 'Name' }), 'billing{Enter}');
+  expect(await screen.findByRole('button', { name: 'Creating…' })).toBeDisabled();
+});
+
 it('copies a role under a new name, with its description and what it nests', async () => {
   const user = userEvent.setup();
   const { sent, router } = renderConsoleAt(

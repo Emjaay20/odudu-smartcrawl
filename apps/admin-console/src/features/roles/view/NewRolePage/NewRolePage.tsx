@@ -1,36 +1,37 @@
-import type { SubmitEvent } from 'react';
 import { AreaGate, areaAt } from '#/features/shell';
 import { copyingText, rolesTrail } from '#/features/roles/service';
 import { useNewRole, type Copying } from '#/features/roles/usecase/useNewRole';
-import { Button } from '#/shared/view/Button';
-import { ButtonLink } from '#/shared/view/ButtonLink';
-import { TextAreaField, TextField } from '#/shared/view/Field';
+import {
+  CreationActions,
+  CreationForm,
+  creationForm,
+  NameDescriptionFields,
+} from '#/shared/view/CreationForm';
 import { PageHeader } from '#/shared/view/PageHeader';
-import styles from '#/features/roles/view/NewRolePage/NewRolePage.module.css';
 
 function CopyNote({ copying }: { copying: Copying }) {
   switch (copying.status) {
     case 'none':
       return null;
     case 'loading':
-      return <p className={styles.rule}>Reading the role to copy…</p>;
+      return <p className={creationForm.rule}>Reading the role to copy…</p>;
     case 'failed':
       return (
-        <p className={styles.error}>
+        <p className={creationForm.error}>
           The role to copy could not be read, so this makes a new role with nothing nested in it.
         </p>
       );
     case 'ready':
       return (
-        <div className={styles.rule}>
-          <span className={styles.place}>{copyingText(copying)}</span> Its description comes along.
-          What it nests is added one role at a time after the copy is made, so a refusal of one
-          leaves the rest in place.
+        <div className={creationForm.rule}>
+          <span className={creationForm.place}>{copyingText(copying)}</span> Its description comes
+          along. What it nests is added one role at a time after the copy is made, so a refusal of
+          one leaves the rest in place.
           {copying.left.length === 0 ? null : (
             <>
               {' '}
               Not copied, since you could not nest it:
-              <ul aria-label="Not copied" className={styles.left}>
+              <ul aria-label="Not copied" className={creationForm.left}>
                 {copying.left.map((each) => (
                   <li key={each.name}>
                     <code>{each.name}</code> · {each.why}
@@ -46,50 +47,31 @@ function CopyNote({ copying }: { copying: Copying }) {
 
 function Form({ tenant }: { tenant: string }) {
   const page = useNewRole(tenant);
-  const submit = (event: SubmitEvent<HTMLFormElement>): void => {
-    event.preventDefault();
-    page.submit();
-  };
   return (
-    <form noValidate onSubmit={submit} className={styles.form}>
+    <CreationForm submit={page.submit}>
       <CopyNote copying={page.copying} />
-      <TextField
-        label="Name"
-        description="Fixed once the role is made: tokens carry it. Unique among the tenant's own roles."
-        value={page.name}
-        error={page.errors.name}
-        onChange={page.editName}
-        mono
-        autoFocus
+      <NameDescriptionFields
+        nameHelp="Fixed once the role is made: tokens carry it. Unique among the tenant's own roles."
+        name={{ value: page.name, error: page.errors.name, onChange: page.editName }}
+        description={{
+          value: page.description,
+          error: page.errors.description,
+          onChange: page.editDescription,
+          rule: page.descriptionRule,
+          limit: page.descriptionLimit,
+        }}
       />
-      <TextAreaField
-        label="Description"
-        description={page.descriptionRule}
-        limit={page.descriptionLimit}
-        value={page.description}
-        error={page.errors.description}
-        onChange={page.editDescription}
+      <CreationActions
+        noun="role"
+        lookFor={page.name}
+        busy={page.busy}
+        unconfirmed={page.unconfirmed}
+        onCheck={page.check}
+        listHref={page.listHref}
+        partial={page.partial}
+        message={page.message}
       />
-      <div className={styles.actions}>
-        {page.partial !== null ? (
-          <ButtonLink href={page.partial.href} variant="primary">
-            {`Open ${page.partial.name}`}
-          </ButtonLink>
-        ) : page.unconfirmed ? (
-          <Button variant="primary" isDisabled={page.busy} onPress={page.check}>
-            {`Look for ${page.name}`}
-          </Button>
-        ) : (
-          <Button type="submit" variant="primary" isDisabled={page.busy}>
-            {page.busy ? 'Creating…' : 'Create role'}
-          </Button>
-        )}
-        <ButtonLink href={page.listHref}>Cancel</ButtonLink>
-      </div>
-      <p role="status" className={styles.message}>
-        {page.partial?.text ?? page.message}
-      </p>
-    </form>
+    </CreationForm>
   );
 }
 

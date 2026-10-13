@@ -1,4 +1,3 @@
-import { type SubmitEvent } from 'react';
 import { AreaGate, areaAt } from '#/features/shell';
 import {
   clientsTrail,
@@ -7,23 +6,17 @@ import {
   REDIRECTS_RULE,
 } from '#/features/clients/service';
 import { useNewClient } from '#/features/clients/usecase/useNewClient';
-import { Button } from '#/shared/view/Button';
-import { ButtonLink } from '#/shared/view/ButtonLink';
+import { CreationActions, CreationForm } from '#/shared/view/CreationForm';
 import { SelectField, TextAreaField, TextField, UrlListField } from '#/shared/view/Field';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { SecretDialog } from '#/shared/view/SecretDialog';
-import styles from '#/features/clients/view/NewClientPage/NewClientPage.module.css';
 
 function Form({ tenant }: { tenant: string }) {
   const page = useNewClient(tenant);
-  const submit = (event: SubmitEvent<HTMLFormElement>): void => {
-    event.preventDefault();
-    page.submit();
-  };
   const chosen = KIND_CHOICES.find((choice) => choice.id === page.kind);
   return (
     <>
-      <form noValidate onSubmit={submit} className={styles.form}>
+      <CreationForm submit={page.submit}>
         <TextField
           label="Client ID"
           description="What the application is configured with. Fixed once the client is made."
@@ -65,22 +58,16 @@ function Form({ tenant }: { tenant: string }) {
             onChange={page.editRedirectUris}
           />
         ) : null}
-        <div className={styles.actions}>
-          {page.unconfirmed ? (
-            <Button variant="primary" isDisabled={page.busy} onPress={page.check}>
-              {`Look for ${page.clientId}`}
-            </Button>
-          ) : (
-            <Button type="submit" variant="primary" isDisabled={page.busy}>
-              {page.busy ? 'Creating…' : 'Create client'}
-            </Button>
-          )}
-          <ButtonLink href={page.listHref}>Cancel</ButtonLink>
-        </div>
-        <p role="status" className={styles.message}>
-          {page.message}
-        </p>
-      </form>
+        <CreationActions
+          noun="client"
+          lookFor={page.clientId}
+          busy={page.busy}
+          unconfirmed={page.unconfirmed}
+          onCheck={page.check}
+          listHref={page.listHref}
+          message={page.message}
+        />
+      </CreationForm>
       <SecretDialog
         secret={page.secret}
         title={page.secretTitle}
