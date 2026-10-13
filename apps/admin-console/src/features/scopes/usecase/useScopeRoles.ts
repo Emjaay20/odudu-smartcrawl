@@ -1,15 +1,7 @@
 import type { ClientScope, Role, SetScopeRolesResponse } from '@odudu/contracts/admin';
 import { useAuthority, useRefusal } from '#/features/session';
 import { useScopeRolesRecord, useScopeSaves } from '#/features/scopes/repository/useScopeRecord';
-import {
-  keptRoles,
-  roleIndex,
-  type ScopeRole,
-  scopeRoleRows,
-  scopeRoleUnavailable,
-  scopeRolesRecord,
-  withKept,
-} from '#/features/scopes/service';
+import { keptRoles, scopeRoleUnavailable, scopeRolesRecord } from '#/features/scopes/service';
 import type { RecordState } from '#/shared/repository/useRecord';
 import { useRolePicker } from '#/shared/repository/useRolePicker';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
@@ -18,6 +10,7 @@ import { describeIds } from '#/shared/service/format';
 import { sortedIds } from '#/shared/service/ids';
 import type { PickerState } from '#/shared/service/picker';
 import type { RoleValues } from '#/shared/service/sectionValues';
+import { type MappedRole, mappedRoles, roleIndex, withKept } from '#/shared/service/mappedRoles';
 
 export function useScopeRolesRead(tenant: string, id: string): RecordState<SetScopeRolesResponse> {
   return useScopeRolesRecord(tenant, id);
@@ -30,7 +23,7 @@ export interface ScopeRoles {
   picker: PickerState<Role>;
   unavailableOf: (role: Role) => string | null;
   choose: (ids: readonly string[]) => void;
-  mapped: readonly ScopeRole[];
+  mapped: readonly MappedRole[];
   // Mapped roles this caller may not take away, each kept by every save.
   kept: readonly string[];
 }
@@ -90,7 +83,7 @@ export function useScopeRoles({
     choose: (ids) => {
       save.edit('role_ids', withKept(ids, kept));
     },
-    mapped: scopeRoleRows(save.values.role_ids, known),
+    mapped: mappedRoles(save.values.role_ids, known),
     kept,
   };
 }

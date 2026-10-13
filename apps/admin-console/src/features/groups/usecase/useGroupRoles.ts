@@ -10,13 +10,9 @@ import {
   groupRolesRecord,
   keptRoles,
   lossOf,
-  type Mapped,
-  mappedRoles,
   reachOfRoles,
-  roleIndex,
   rolesConfirmation,
   roleUnavailable,
-  withKept,
 } from '#/features/groups/service';
 import type { RecordState } from '#/shared/repository/useRecord';
 import { useRolePicker } from '#/shared/repository/useRolePicker';
@@ -26,12 +22,13 @@ import { describeIds } from '#/shared/service/format';
 import { removedFrom, sortedIds } from '#/shared/service/ids';
 import type { PickerState } from '#/shared/service/picker';
 import type { RoleValues } from '#/shared/service/sectionValues';
+import { type MappedRole, mappedRoles, roleIndex, withKept } from '#/shared/service/mappedRoles';
 
 export function useGroupRolesRead(tenant: string, id: string): RecordState<SetGroupRolesResponse> {
   return useGroupRolesRecord(tenant, id);
 }
 
-export type { Mapped };
+export type { MappedRole };
 
 export interface GroupRoles {
   save: SectionSave<RoleValues>;
@@ -40,7 +37,7 @@ export interface GroupRoles {
   picker: PickerState<Role>;
   unavailableOf: (role: Role) => string | null;
   choose: (ids: readonly string[]) => void;
-  mapped: readonly Mapped[];
+  mapped: readonly MappedRole[];
   // Mapped roles this caller may not take away, each kept by every save.
   kept: readonly string[];
   asking: Asked | null;

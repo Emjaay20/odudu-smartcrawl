@@ -55,14 +55,7 @@ export {
   NEW_CLIENT_CHOICES,
   scopeFailureFields,
 } from '#/features/scopes/service/general';
-export {
-  keptRoles,
-  roleIndex,
-  type ScopeRole,
-  scopeRoleRows,
-  scopeRoleUnavailable,
-  withKept,
-} from '#/features/scopes/service/roles';
+export { keptRoles, scopeRoleUnavailable } from '#/features/scopes/service/roles';
 export {
   type Copying,
   type CopyPlan,

@@ -58,11 +58,4 @@ export {
   subtreeDeletedText,
   rolesConfirmation,
 } from '#/features/groups/service/confirm';
-export {
-  type Mapped,
-  roleIndex,
-  mappedRoles,
-  keptRoles,
-  reachOfRoles,
-  withKept,
-} from '#/features/groups/service/mapped';
+export { keptRoles, reachOfRoles } from '#/features/groups/service/mapped';

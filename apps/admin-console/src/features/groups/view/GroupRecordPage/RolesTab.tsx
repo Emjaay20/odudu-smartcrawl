@@ -3,7 +3,7 @@ import {
   useGroupRoles,
   useGroupRolesRead,
   type GroupRoles,
-  type Mapped,
+  type MappedRole,
 } from '#/features/groups/usecase/useGroupRoles';
 import type { Ceiling } from '#/features/groups/usecase/useGroupRecordPage';
 import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
@@ -16,7 +16,7 @@ import { FormSkeleton } from '#/shared/view/Skeleton';
 import { RoleOwner } from '#/shared/view/RoleOwner';
 import styles from '#/features/groups/view/GroupRecordPage/Tab.module.css';
 
-function Listed({ path, mapped }: { path: string; mapped: readonly Mapped[] }) {
+function Listed({ path, mapped }: { path: string; mapped: readonly MappedRole[] }) {
   if (mapped.length === 0) return <p className={styles.rule}>{`${path} carries no role.`}</p>;
   return (
     <ul aria-label={`Carried by ${path}`} className={styles.roles}>

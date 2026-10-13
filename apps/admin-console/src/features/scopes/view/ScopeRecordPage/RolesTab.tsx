@@ -4,7 +4,7 @@ import {
   useScopeRolesRead,
   type ScopeRoles,
 } from '#/features/scopes/usecase/useScopeRoles';
-import type { ScopeRole } from '#/features/scopes/service';
+import type { MappedRole } from '#/shared/service/mappedRoles';
 import { Button } from '#/shared/view/Button';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { RoleOwner } from '#/shared/view/RoleOwner';
@@ -14,7 +14,7 @@ import { SectionNoticeOf } from '#/shared/view/SectionNoticeOf';
 import { FormSkeleton } from '#/shared/view/Skeleton';
 import styles from '#/features/scopes/view/ScopeRecordPage/Tab.module.css';
 
-function Listed({ name, mapped }: { name: string; mapped: readonly ScopeRole[] }) {
+function Listed({ name, mapped }: { name: string; mapped: readonly MappedRole[] }) {
   if (mapped.length === 0) return <p className={styles.rule}>{`${name} carries no role.`}</p>;
   return (
     <ul aria-label={`Carried by ${name}`} className={styles.roles}>
