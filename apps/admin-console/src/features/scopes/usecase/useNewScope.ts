@@ -15,10 +15,10 @@ import {
 import { useGo } from '#/shared/repository/useGo';
 import { useToasts } from '#/shared/repository/useToasts';
 import { useUrlSearch } from '#/shared/repository/useUrlSearch';
-import { requiredProblem, withoutField } from '#/shared/service/fieldErrors';
-import { createdText, createFailure, lookupText } from '#/shared/service/failure';
-import type { GatewayFailure } from '#/shared/transport/gateway';
-import { DESCRIPTION_RULE, NAME_TAKEN } from '#/shared/service/labels';
+import { problemAt, requiredProblem } from '#/shared/service/fieldErrors';
+import { createdText, lookupText, namedCreation } from '#/shared/service/failure';
+import { DESCRIPTION_RULE } from '#/shared/service/labels';
+import { useCreationFlow } from '#/shared/usecase/useCreationFlow';
 import { copiedDescription, type PartialCopy } from '#/shared/service/copy';
 
 type Field = 'name' | 'description';
@@ -55,9 +55,7 @@ export function useNewScope(tenant: string): NewScope {
   const caller = useAuthority(tenant)?.capabilities;
   const [name, setName] = useState('');
   const [description, setDescription] = useState<string | null>(null);
-  const [errors, setErrors] = useState<Errors>({});
-  const [message, setMessage] = useState<string | null>(null);
-  const [unconfirmed, setUnconfirmed] = useState(false);
+  const flow = useCreationFlow<Field>(refusal);
   const [partial, setPartial] = useState<PartialCopy | null>(null);
   const shown = copiedDescription(description, sourceDescription(source));
   const plan = copyPlan(source.status === 'ready' ? source.roles : [], caller, tenant);
@@ -89,85 +87,37 @@ export function useNewScope(tenant: string): NewScope {
       });
   };
 
-  const failed = (failure: GatewayFailure): void => {
-    const outcome = createFailure(failure, {
-      noun: 'scope',
-      name,
-      fields: ['name', 'description'],
-      taken: { field: 'name', fallback: NAME_TAKEN },
-      capability: 'manage-tenant',
-    });
-    if (outcome.unconfirmed) setUnconfirmed(true);
-    if (outcome.report) refusal.report(failure, 'manage-tenant');
-    setErrors(outcome.errors);
-    setMessage(outcome.message);
-  };
-
   return {
     listHref: scopesHref(tenant),
     descriptionRule: DESCRIPTION_RULE,
     copying: copyingOf(source, plan),
     name,
     description: shown,
-    errors,
-    message,
-    unconfirmed,
+    errors: flow.errors,
+    message: flow.message,
+    unconfirmed: flow.unconfirmed,
     partial,
     busy: creation.busy || source.status === 'loading' || caller === undefined,
     editName: (next) => {
       setName(next);
-      setErrors((was) => withoutField(was, 'name'));
+      flow.edited('name');
     },
     editDescription: (next) => {
       setDescription(next);
-      setErrors((was) => withoutField(was, 'description'));
+      flow.edited('description');
     },
     submit: () => {
-      if (
-        creation.busy ||
-        unconfirmed ||
-        partial !== null ||
-        source.status === 'loading' ||
-        caller === undefined
-      ) {
-        return;
-      }
-      const required = requiredProblem(name, 'Enter a name.');
-      if (required !== null) {
-        setErrors({ name: required });
-        return;
-      }
-      setErrors({});
-      setMessage(null);
-      creation
-        .create(createBodyOf(name, shown, source))
-        .then((result) => {
-          if (result.ok) made(result.data);
-          else failed(result);
-        })
-        .catch(() => {
-          failed({ ok: false, kind: 'defect' });
-        });
+      flow.submit({
+        blocked:
+          creation.busy || partial !== null || source.status === 'loading' || caller === undefined,
+        problem: problemAt('name', requiredProblem(name, 'Enter a name.')),
+        spec: namedCreation('scope', name),
+        create: () => creation.create(createBodyOf(name, shown, source)),
+        made,
+      });
     },
     check: () => {
-      if (creation.busy) return;
-      creation
-        .find(name)
-        .then((result) => {
-          if (!result.ok) {
-            setMessage(looked.failed);
-            return;
-          }
-          if (result.data !== null) {
-            made(result.data);
-            return;
-          }
-          setUnconfirmed(false);
-          setMessage(looked.missing);
-        })
-        .catch(() => {
-          setMessage(looked.failed);
-        });
+      flow.check({ busy: creation.busy, find: () => creation.find(name), made, looked });
     },
   };
 }

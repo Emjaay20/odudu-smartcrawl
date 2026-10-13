@@ -4,7 +4,7 @@ import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, offline, problem } from '#/testing/fakeTransport';
 import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
-import { MAPPED, SC, scope, scopeRoutes } from '#/testing/scopesFixtures';
+import { A, MAPPED, SC, scope, scopeRoutes } from '#/testing/scopesFixtures';
 
 afterEach(() => {
   resetConsole();
@@ -171,6 +171,17 @@ it('offers a look, not another send, when the answer was lost, and lands when it
     expect(router.state.location.pathname).toBe('/acme/scopes/s-new');
   });
   expect(sent.filter((s) => s.method === 'POST')).toHaveLength(1);
+});
+
+it('reads whoami again when the creation is refused', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    scopeRoutes(undefined, { [`POST ${SC}`]: problem(403, 'about:blank', 'Forbidden') }),
+  );
+  await user.type(await screen.findByRole('textbox', { name: 'Name' }), 'invoices{Enter}');
+  expect(await screen.findByText(/it needs the manage-tenant capability/u)).toBeVisible();
+  expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
 });
 
 it('passes axe in both themes', async () => {
