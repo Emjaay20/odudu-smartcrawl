@@ -8,7 +8,7 @@ import {
 } from '#/features/tenants/repository/useTenantRecord';
 import { tenantChangeFailure, tenantRecord } from '#/features/tenants/service';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import { enabledText } from '#/shared/service/failure';
 import { disableConsequence, disableFixed } from '#/shared/service/tenantEnabled';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
@@ -40,7 +40,7 @@ export function useTenantGeneral(
 ): TenantGeneral {
   const refusal = useRefusal(SYSTEM_TENANT);
   const principal = usePrincipal();
-  const push = useToasts((queue) => queue.push);
+  const toast = useToast();
   const general = useSectionSave({
     tenant: SYSTEM_TENANT,
     record: tenantRecord(name),
@@ -66,7 +66,7 @@ export function useTenantGeneral(
       .then((result) => {
         setConfirming(false);
         if (result.ok) {
-          push({ tone: 'success', message: enabledText(name, next) });
+          toast.succeeded(enabledText(name, next));
           return;
         }
         refusal.report(result, 'manage-tenant');

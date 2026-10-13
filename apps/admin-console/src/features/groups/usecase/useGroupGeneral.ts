@@ -34,7 +34,7 @@ import {
 } from '#/features/groups/service';
 import { useGroupPicker } from '#/shared/repository/useGroupPicker';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import { useConfirmedRemoval, type Removal } from '#/shared/usecase/useConfirmedChange';
 import { asksFirst, writeRefusal } from '#/shared/service/capabilities';
 import { writeFailureText } from '#/shared/service/failure';
@@ -106,7 +106,7 @@ export function useGroupGeneral({
   const saves = useGroupSaves(tenant, group.id);
   const deletion = useGroupDeletion(tenant, group.id);
   const picker = useGroupPicker(tenant);
-  const push = useToasts((queue) => queue.push);
+  const toast = useToast();
   const go = useGo();
   const [asking, setAsking] = useState<Asked | null>(null);
   const record = groupRecord(group.id);
@@ -205,7 +205,7 @@ export function useGroupGeneral({
     failureText: (failure) => writeFailureText(failure, deleteCopy),
     done: () => {
       if (asksFirst(deleteLoss)) reread();
-      push({ tone: 'success', message: subtreeDeletedText(group.path) });
+      toast.succeeded(subtreeDeletedText(group.path));
       go(groupsHref(tenant), { replace: true });
     },
   });

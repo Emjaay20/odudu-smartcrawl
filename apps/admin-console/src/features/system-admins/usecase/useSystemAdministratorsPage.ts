@@ -13,7 +13,7 @@ import {
   subjectName,
 } from '#/features/system-admins/service';
 import { useBeginAdministrator, type BeginAdministrator } from '#/features/tenants';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import type { Change } from '#/shared/service/access';
 import {
   ADMINISTRATOR_REQUEST_NEEDS,
@@ -53,7 +53,7 @@ export function useSystemAdministratorsPage(): SystemAdministrators {
   const picker = useSubjectPicker(SYSTEM_TENANT);
   const change = useAdministratorGrant();
   const begin = useBeginAdministrator(SYSTEM_TENANT, 'existing');
-  const toast = useToasts((queue) => queue.push);
+  const toast = useToast();
   const [chosen, setChosen] = useState<Subject | null>(null);
   const [holdings, setHoldings] = useState<readonly string[]>([TENANT_ADMIN]);
   const [holdingsError, setHoldingsError] = useState<string | undefined>(undefined);
@@ -104,7 +104,7 @@ export function useSystemAdministratorsPage(): SystemAdministrators {
             return;
           }
           setChosen(null);
-          toast({ tone: 'success', message: grantedText(name, holdings) });
+          toast.succeeded(grantedText(name, holdings));
         })
         .catch(() => undefined);
     },

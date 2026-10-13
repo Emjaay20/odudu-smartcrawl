@@ -13,7 +13,7 @@ import {
   newGroupPlace,
 } from '#/features/groups/service';
 import { useGroupPicker } from '#/shared/repository/useGroupPicker';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import { useUrlSearch } from '#/shared/repository/useUrlSearch';
 import { problemAt, requiredProblem } from '#/shared/service/fieldErrors';
 import { createdText, lookupText } from '#/shared/service/failure';
@@ -55,7 +55,7 @@ export function useNewGroup(tenant: string): NewGroup {
   const refusal = useRefusal(tenant);
   const creation = useCreateGroup(tenant);
   const go = useGo();
-  const push = useToasts((queue) => queue.push);
+  const toast = useToast();
   const { params } = useUrlSearch();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -70,7 +70,7 @@ export function useNewGroup(tenant: string): NewGroup {
   const held = createHeld(parentId, parent, caller);
 
   const land = (group: Group): void => {
-    push({ tone: 'success', message: createdText(group.path) });
+    toast.succeeded(createdText(group.path));
     go(groupHref(tenant, group.id), { replace: true });
   };
 

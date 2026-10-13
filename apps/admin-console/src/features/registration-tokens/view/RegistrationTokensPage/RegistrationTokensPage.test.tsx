@@ -86,6 +86,8 @@ it('mints with the numbers given, shows the token once, and never after', async 
   expect(await screen.findByRole('row', { name: /t-new/u })).toBeVisible();
   const toasts = screen.getByRole('region', { name: 'Notifications' });
   expect(toasts).toHaveTextContent('Registration token minted: 3 uses');
+  expect(within(toasts).getByText('Done')).toBeVisible();
+  expect(within(toasts).queryByRole('alert')).toBeNull();
   expect(toasts).not.toHaveTextContent(MINTED_SECRET);
 });
 

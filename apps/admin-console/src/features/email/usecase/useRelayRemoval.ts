@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useRefusal } from '#/features/session';
 import { useSmtpRemove } from '#/features/email/repository/useSmtpWrites';
 import { removeOutcome } from '#/features/email/service';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 
 export interface RelayRemoval {
   confirming: boolean;
@@ -17,7 +17,7 @@ export interface RelayRemoval {
 export function useRelayRemoval(tenant: string, reread: () => void): RelayRemoval {
   const remove = useSmtpRemove(tenant);
   const refusal = useRefusal(tenant);
-  const push = useToasts((queue) => queue.push);
+  const toast = useToast();
   const [confirming, setConfirming] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   return {
@@ -41,7 +41,7 @@ export function useRelayRemoval(tenant: string, reread: () => void): RelayRemova
           setMessage(outcome.text);
           if (!result.ok) refusal.report(result, 'manage-tenant');
           if (outcome.done) {
-            push({ tone: 'success', message: outcome.text });
+            toast.succeeded(outcome.text);
             reread();
           }
         })

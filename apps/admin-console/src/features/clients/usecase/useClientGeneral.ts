@@ -21,7 +21,7 @@ import {
   SECTION,
 } from '#/features/clients/service';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import { useConfirmedRemoval, type Removal } from '#/shared/usecase/useConfirmedChange';
 import { deletedText, writeFailureText } from '#/shared/service/failure';
 import { flagText } from '#/shared/service/format';
@@ -49,7 +49,7 @@ export interface ClientGeneral {
 
 export function useClientGeneral({ tenant, client, etag, gone }: ClientRecordRead): ClientGeneral {
   const saves = useClientSaves(tenant, client.id);
-  const push = useToasts((queue) => queue.push);
+  const toast = useToast();
   const go = useGo();
   const shared = useClientSection({ tenant, client, etag, gone });
   const copy = {
@@ -66,7 +66,7 @@ export function useClientGeneral({ tenant, client, etag, gone }: ClientRecordRea
     failureText: (failure) => writeFailureText(failure, copy),
     onRefused: shared.onRefused,
     done: () => {
-      push({ tone: 'success', message: deletedText(client.name) });
+      toast.succeeded(deletedText(client.name));
       go(clientsHref(tenant), { replace: true });
     },
   });

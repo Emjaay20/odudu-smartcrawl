@@ -16,7 +16,7 @@ import {
   subjectName,
   type Asking,
 } from '#/features/subjects/service';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import type { NamedDialog } from '#/shared/service/dialog';
 import type { Read } from '#/shared/service/read';
 
@@ -49,7 +49,7 @@ export function useSubjectCredentials(
   const itself = signsInAsItself(subject);
   const name = subjectName(subject);
   const refusal = useRefusal(tenant);
-  const push = useToasts((queue) => queue.push);
+  const toast = useToast();
   const credentials = useCredentials(tenant, subject.id, !itself);
   const lockout = useLockout(tenant, subject.id, !itself);
   const changes = useCredentialChanges(tenant, subject.id);
@@ -98,7 +98,7 @@ export function useSubjectCredentials(
         .then((result) => {
           if (result.ok) {
             setAsking(null);
-            push({ tone: 'success', message: credentialDoneText(name, asking) });
+            toast.succeeded(credentialDoneText(name, asking));
             return;
           }
           refusal.report(result, 'manage-users');

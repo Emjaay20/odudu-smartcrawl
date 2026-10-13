@@ -13,7 +13,7 @@ import {
   scopesHref,
 } from '#/features/scopes/service';
 import { useGo } from '#/shared/repository/useGo';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import { useUrlSearch } from '#/shared/repository/useUrlSearch';
 import { problemAt, requiredProblem } from '#/shared/service/fieldErrors';
 import { createdText, lookupText, namedCreation } from '#/shared/service/failure';
@@ -49,7 +49,7 @@ export function useNewScope(tenant: string): NewScope {
   const refusal = useRefusal(tenant);
   const creation = useCreateScope(tenant);
   const go = useGo();
-  const push = useToasts((queue) => queue.push);
+  const toast = useToast();
   const { params } = useUrlSearch();
   const source = useCopySource(tenant, params.get('copy'));
   const caller = useAuthority(tenant)?.capabilities;
@@ -68,7 +68,7 @@ export function useNewScope(tenant: string): NewScope {
       setPartial(left);
       return;
     }
-    push({ tone: 'success', message: createdText(scope.name) });
+    toast.succeeded(createdText(scope.name));
     go(scopeHref(tenant, scope.id), { replace: true });
   };
 

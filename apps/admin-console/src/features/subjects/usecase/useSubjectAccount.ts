@@ -20,7 +20,7 @@ import {
   type UsernameMode,
 } from '#/features/subjects/service';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import { deletedText, enabledText } from '#/shared/service/failure';
 
 export type { UsernameMode };
@@ -57,7 +57,7 @@ export function useSubjectAccount(
   self: boolean,
 ): SubjectAccount {
   const refusal = useRefusal(tenant);
-  const push = useToasts((queue) => queue.push);
+  const toast = useToast();
   const go = useGo();
   const name = subjectName(subject);
   const section = useSectionSave({
@@ -93,7 +93,7 @@ export function useSubjectAccount(
       .then((result) => {
         if (result.ok) {
           setConfirming(null);
-          push({ tone: 'success', message: enabledText(name, next) });
+          toast.succeeded(enabledText(name, next));
           return;
         }
         refusal.report(result, 'manage-users');
@@ -128,7 +128,7 @@ export function useSubjectAccount(
         }
         if (result.ok) {
           setConfirming(null);
-          push({ tone: 'success', message: deletedText(name) });
+          toast.succeeded(deletedText(name));
           go(subjectsHref(tenant), { replace: true });
           return;
         }

@@ -14,7 +14,7 @@ import {
   rolesReadable,
 } from '#/features/clients/service';
 import { useGo } from '#/shared/repository/useGo';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import { lacking } from '#/shared/service/access';
 import { createdText, createFailure } from '#/shared/service/failure';
 import { requiredProblem, withoutField } from '#/shared/service/fieldErrors';
@@ -54,7 +54,7 @@ export function useClientRolesTab(tenant: string, client: Client): ClientRoles {
   const refusal = useRefusal(tenant);
   const list = useClientRoleList(tenant, client.id);
   const creation = useCreateClientRole(tenant, client.id);
-  const push = useToasts((queue) => queue.push);
+  const toast = useToast();
   const go = useGo();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -112,7 +112,7 @@ export function useClientRolesTab(tenant: string, client: Client): ClientRoles {
             failed(result);
             return;
           }
-          push({ tone: 'success', message: createdText(result.data.name) });
+          toast.succeeded(createdText(result.data.name));
           setName('');
           setDescription('');
         })

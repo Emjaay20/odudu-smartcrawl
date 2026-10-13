@@ -10,7 +10,7 @@ import {
   savedText,
   type Exported,
 } from '#/features/tenants/service';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import type { AdminCapability } from '#/shared/service/principal';
 
 export interface TenantExportState {
@@ -30,7 +30,7 @@ export interface TenantExportState {
 export function useTenantExport(target: string, authority: string): TenantExportState {
   const held = useAuthority(authority);
   const refusal = useRefusal(authority);
-  const push = useToasts((queue) => queue.push);
+  const toast = useToast();
   const exporter = useExport(target);
   const [includeSubjects, setIncludeSubjects] = useState(false);
   const [saved, setSaved] = useState<TenantExportState['saved']>(null);
@@ -44,7 +44,7 @@ export function useTenantExport(target: string, authority: string): TenantExport
       .then((result) => {
         if (result.ok) {
           setSaved({ ...result.data, size: fileSize(result.data.bytes) });
-          push({ tone: 'success', message: savedText(result.data.fileName) });
+          toast.succeeded(savedText(result.data.fileName));
           return;
         }
         setSaved(null);

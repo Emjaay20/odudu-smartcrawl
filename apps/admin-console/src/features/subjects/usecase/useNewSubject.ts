@@ -11,7 +11,7 @@ import {
   USERNAME_RULE_TEXT,
   usernameProblem,
 } from '#/features/subjects/service';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import { lookupText } from '#/shared/service/failure';
 import { problemAt } from '#/shared/service/fieldErrors';
 import { useCreationFlow } from '#/shared/usecase/useCreationFlow';
@@ -42,13 +42,13 @@ export function useNewSubject(tenant: string): NewSubject {
   const refusal = useRefusal(tenant);
   const creation = useCreateSubject(tenant);
   const go = useGo();
-  const push = useToasts((queue) => queue.push);
+  const toast = useToast();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const flow = useCreationFlow<Field>(refusal);
 
   const land = (id: string, name: string): void => {
-    push({ tone: 'success', message: subjectCreatedText(name) });
+    toast.succeeded(subjectCreatedText(name));
     go(subjectHref(tenant, id), { replace: true });
   };
 

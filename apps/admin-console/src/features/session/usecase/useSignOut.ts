@@ -1,17 +1,16 @@
 import { useGatewaySignOut } from '#/features/session/repository/useGatewaySignOut';
 import { SIGN_OUT_FAILED } from '#/features/session/service';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 
 export function useSignOut(): () => void {
   const signOut = useGatewaySignOut();
+  const toast = useToast();
   return () => {
     useUnsavedGuard.getState().request(() => {
       signOut()
         .then((left) => {
-          if (!left) {
-            useToasts.getState().push({ tone: 'error', message: SIGN_OUT_FAILED });
-          }
+          if (!left) toast.failed(SIGN_OUT_FAILED);
         })
         .catch(() => undefined);
     });

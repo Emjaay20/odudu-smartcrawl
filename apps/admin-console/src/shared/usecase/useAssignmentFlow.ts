@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { RefusalReporter } from '#/shared/repository/useSectionSave';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import { lastChosen } from '#/shared/service/picker';
 import type { AdminCapability } from '#/shared/service/principal';
 import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
@@ -49,7 +49,7 @@ export function useAssignmentFlow({
   // Told of a failure before its text is said, for whatever else it should set going.
   onRefused?: (failure: GatewayFailure) => void;
 }): AssignmentFlow {
-  const push = useToasts((queue) => queue.push);
+  const toast = useToast();
   const [chosenId, setChosenId] = useState<string | null>(null);
   const [assignment, setAssignment] = useState('default');
   const [working, setWorking] = useState<string | null>(null);
@@ -80,7 +80,7 @@ export function useAssignmentFlow({
             failed(result, counterpart.name, verb);
             return false;
           }
-          push({ tone: 'success', message: done });
+          toast.succeeded(done);
           return true;
         })
         .catch((): boolean => {

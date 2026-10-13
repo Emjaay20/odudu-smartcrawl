@@ -12,7 +12,7 @@ import {
   roleHref,
   rolesHref,
 } from '#/features/roles/service';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import { useUrlSearch } from '#/shared/repository/useUrlSearch';
 import { problemAt, requiredProblem } from '#/shared/service/fieldErrors';
 import { createdText, lookupText, namedCreation } from '#/shared/service/failure';
@@ -49,7 +49,7 @@ export function useNewRole(tenant: string): NewRole {
   const refusal = useRefusal(tenant);
   const creation = useCreateRole(tenant);
   const go = useGo();
-  const push = useToasts((queue) => queue.push);
+  const toast = useToast();
   const { params } = useUrlSearch();
   const source = useCopySource(tenant, params.get('copy'));
   const [name, setName] = useState('');
@@ -68,7 +68,7 @@ export function useNewRole(tenant: string): NewRole {
       setPartial(left);
       return;
     }
-    push({ tone: 'success', message: createdText(role.name) });
+    toast.succeeded(createdText(role.name));
     go(roleHref(tenant, role.id), { replace: true });
   };
 

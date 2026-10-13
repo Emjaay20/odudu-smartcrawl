@@ -1,5 +1,6 @@
+import { renderHook } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast, useToasts } from '#/shared/repository/useToasts';
 
 afterEach(() => {
   useToasts.setState({ toasts: [] });
@@ -24,4 +25,14 @@ it('dismisses one toast and leaves the others', () => {
   expect(useToasts.getState().toasts.map((t) => t.id)).toEqual([second]);
   dismiss('no-such-toast');
   expect(useToasts.getState().toasts.map((t) => t.id)).toEqual([second]);
+});
+
+it('says a success and a failure with their tones', () => {
+  const { result } = renderHook(() => useToast());
+  result.current.succeeded('Client saved');
+  result.current.failed('Could not reach the server');
+  expect(useToasts.getState().toasts.map(({ tone, message }) => ({ tone, message }))).toEqual([
+    { tone: 'success', message: 'Client saved' },
+    { tone: 'error', message: 'Could not reach the server' },
+  ]);
 });

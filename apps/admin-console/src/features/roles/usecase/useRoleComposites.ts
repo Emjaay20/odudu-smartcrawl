@@ -27,7 +27,7 @@ import {
 import type { RecordState } from '#/shared/repository/useRecord';
 import { useRolePicker } from '#/shared/repository/useRolePicker';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import { judgedLoss, roleReachUnavailable, type Loss } from '#/shared/service/capabilities';
 import { describeId } from '#/shared/service/format';
 import { roleNameOf } from '#/shared/service/mappedRoles';
@@ -90,7 +90,7 @@ export function useRoleComposites({
   const picker = useRolePicker(tenant);
   const save = useAddComposite(tenant, role.id);
   const removal = useCompositeRemoval(tenant, role.id);
-  const push = useToasts((queue) => queue.push);
+  const toast = useToast();
   const [removing, setRemoving] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [asking, setAsking] = useState<{ asked: Asked; child: Role } | null>(null);
@@ -133,7 +133,7 @@ export function useRoleComposites({
     const attempt = async (): Promise<boolean> => {
       const result = await removal.remove({ child: child.id, ifMatch: etag });
       if (result.ok) {
-        push({ tone: 'success', message: unnestedText(child.name, role.name) });
+        toast.succeeded(unnestedText(child.name, role.name));
         if (removalAction(lossOf(child)) !== 'run') reread();
         return true;
       }

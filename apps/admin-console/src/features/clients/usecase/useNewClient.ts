@@ -20,7 +20,7 @@ import {
   type NewClientField,
   type NewClientKind,
 } from '#/features/clients/service';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import { problemAt } from '#/shared/service/fieldErrors';
 import { createdText, lookupText } from '#/shared/service/failure';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
@@ -62,7 +62,7 @@ export interface NewClientPage {
 export function useNewClient(tenant: string): NewClientPage {
   const refusal = useRefusal(tenant);
   const go = useGo();
-  const push = useToasts((queue) => queue.push);
+  const toast = useToast();
   const [clientId, setClientId] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -73,7 +73,7 @@ export function useNewClient(tenant: string): NewClientPage {
   const [made, setMade] = useState<Client | null>(null);
 
   const land = (client: Client): void => {
-    push({ tone: 'success', message: createdText(client.name) });
+    toast.succeeded(createdText(client.name));
     go(clientHref(tenant, client.id), { replace: true });
   };
 

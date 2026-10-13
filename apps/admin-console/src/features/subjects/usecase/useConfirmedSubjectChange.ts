@@ -1,6 +1,6 @@
 import { useRefusal } from '#/features/session';
 import { changeFailureText } from '#/features/subjects/service';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import type { Write } from '#/shared/repository/useWrite';
 import type { AdminCapability } from '#/shared/service/principal';
 import type { GatewayResult } from '#/shared/transport/gateway';
@@ -19,14 +19,14 @@ export function useConfirmedSubjectChange<A, R>({
   done: (arg: A, data: R) => string;
 }): Confirming<A> {
   const refusal = useRefusal(tenant);
-  const push = useToasts((queue) => queue.push);
+  const toast = useToast();
   return useConfirmedChange({
     refusal,
     capability,
     change,
     failureText: (failure) => changeFailureText(failure, capability),
     done: (arg, data) => {
-      push({ tone: 'success', message: done(arg, data) });
+      toast.succeeded(done(arg, data));
     },
   });
 }

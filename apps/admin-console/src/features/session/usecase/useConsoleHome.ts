@@ -16,7 +16,7 @@ import {
 import { useSignedIn } from '#/features/session/usecase/useSignedIn';
 import { useSignIn } from '#/features/session/usecase/useSignIn';
 import { useGo } from '#/shared/repository/useGo';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import { useUrlSearch } from '#/shared/repository/useUrlSearch';
 import { tenantPage } from '#/shared/service/address';
 
@@ -53,6 +53,7 @@ export function useConsoleHome(): Home {
   const { params, drop } = useUrlSearch();
   const [failed] = useState(() => loginNotice(params.get(LOGIN_ERROR)));
   const go = useGo();
+  const toast = useToast();
   const signIn = useSignIn();
   const named = namedTenant(params.get('tenant'));
   const target = homeTarget({ principal, named, choosing: params.has(CHOOSE_TENANT) });
@@ -71,10 +72,7 @@ export function useConsoleHome(): Home {
   const leave = (tenant: string): void => {
     left.current = true;
     if (failed !== null && principal !== null) {
-      useToasts.getState().push({
-        tone: 'error',
-        message: switchFailedText(failed, principal.tenant),
-      });
+      toast.failed(switchFailedText(failed, principal.tenant));
     }
     enter(tenant);
   };

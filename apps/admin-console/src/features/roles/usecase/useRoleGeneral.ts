@@ -18,7 +18,7 @@ import {
   rolesHref,
 } from '#/features/roles/service';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import { useConfirmedRemoval, type Removal } from '#/shared/usecase/useConfirmedChange';
 import { asksFirst, judgedLoss, writeRefusal } from '#/shared/service/capabilities';
 import { deletedText } from '#/shared/service/failure';
@@ -70,7 +70,7 @@ export function useRoleGeneral({
   const own = useOwnRoles(tenant);
   const saves = useRoleSaves(tenant, role.id);
   const deletion = useRoleDeletion(tenant, role.id);
-  const push = useToasts((queue) => queue.push);
+  const toast = useToast();
   const go = useGo();
   const record = roleRecord(role.id);
   const description = useSectionSave({
@@ -122,7 +122,7 @@ export function useRoleGeneral({
     failureText: (failure) => roleDeleteFailureText(role.name, failure),
     done: () => {
       if (asksFirst(loss)) reread();
-      push({ tone: 'success', message: deletedText(role.name) });
+      toast.succeeded(deletedText(role.name));
       go(rolesHref(tenant), { replace: true });
     },
   });

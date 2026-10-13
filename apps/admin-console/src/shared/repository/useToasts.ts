@@ -21,3 +21,17 @@ export const useToasts = create<ToastQueue>()((set) => ({
     set((queue) => ({ toasts: queue.toasts.filter((t) => t.id !== id) }));
   },
 }));
+
+// What a usecase says of a change: a success waits for the reader, an error
+// stays until dismissed.
+export function useToast() {
+  const push = useToasts((queue) => queue.push);
+  return {
+    succeeded: (message: string): void => {
+      push({ tone: 'success', message });
+    },
+    failed: (message: string): void => {
+      push({ tone: 'error', message });
+    },
+  };
+}

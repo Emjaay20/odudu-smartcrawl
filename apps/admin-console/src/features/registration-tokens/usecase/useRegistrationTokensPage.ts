@@ -17,7 +17,7 @@ import {
   revokeOutcome,
   type MintErrors,
 } from '#/features/registration-tokens/service';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import type { ResourceListState } from '#/shared/service/resourceList';
 
 export interface RegistrationTokensPage {
@@ -48,7 +48,7 @@ export interface RegistrationTokensPage {
 
 export function useRegistrationTokensPage(tenant: string): RegistrationTokensPage {
   const refusal = useRefusal(tenant);
-  const push = useToasts((queue) => queue.push);
+  const toast = useToast();
   const list = useTokenList(tenant);
   const revoke = useTokenRevoke(tenant);
   const [uses, setUses] = useState(DEFAULT_MINT.uses);
@@ -61,7 +61,7 @@ export function useRegistrationTokensPage(tenant: string): RegistrationTokensPag
   const [revoked, setRevoked] = useState(0);
   const minting = useTokenMint(tenant, {
     minted: (token) => {
-      push({ tone: 'success', message: mintedText(token) });
+      toast.succeeded(mintedText(token));
     },
     failed: (failure) => {
       const outcome = mintFailure(failure);

@@ -29,7 +29,7 @@ import {
 } from '#/features/scopes/service';
 import { useGo } from '#/shared/repository/useGo';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import { useConfirmedRemoval, type Removal } from '#/shared/usecase/useConfirmedChange';
 import { writeRefusal } from '#/shared/service/capabilities';
 import { deletedText } from '#/shared/service/failure';
@@ -74,7 +74,7 @@ export function useScopeGeneral({
   const refusal = useRefusal(tenant);
   const saves = useScopeSaves(tenant, scope.id);
   const deletion = useScopeDeletion(tenant, scope.id);
-  const push = useToasts((queue) => queue.push);
+  const toast = useToast();
   const go = useGo();
   const removal = useConfirmedRemoval({
     refusal,
@@ -82,7 +82,7 @@ export function useScopeGeneral({
     change: deletion,
     failureText: (failure) => scopeDeleteFailureText(scope.name, failure),
     done: () => {
-      push({ tone: 'success', message: deletedText(scope.name) });
+      toast.succeeded(deletedText(scope.name));
       go(scopesHref(tenant), { replace: true });
     },
   });

@@ -20,7 +20,7 @@ import {
   defaultAlg,
   type KeyAction,
 } from '#/features/signing-keys/service';
-import { useToasts } from '#/shared/repository/useToasts';
+import { useToast } from '#/shared/repository/useToasts';
 import type { NamedDialog } from '#/shared/service/dialog';
 import { useNow } from '#/shared/usecase/useNow';
 
@@ -66,7 +66,7 @@ export interface SigningKeysPage {
 
 export function useSigningKeysPage(tenant: string): SigningKeysPage {
   const refusal = useRefusal(tenant);
-  const push = useToasts((queue) => queue.push);
+  const toast = useToast();
   const now = useNow(CLOCK_MS);
   const rotating = useKeyLane(tenant, 'rotating');
   const active = useKeyLane(tenant, 'active');
@@ -106,7 +106,7 @@ export function useSigningKeysPage(tenant: string): SigningKeysPage {
         .run(alg)
         .then((result) => {
           if (result.ok) {
-            push({ tone: 'success', message: stagedText(result.data) });
+            toast.succeeded(stagedText(result.data));
             return;
           }
           const outcome = stageFailure(result);
