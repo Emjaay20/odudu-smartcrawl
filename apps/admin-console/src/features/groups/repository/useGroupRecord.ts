@@ -42,12 +42,15 @@ function groupKey(tenant: string, id: string | null) {
   return ['group', tenant, id] as const;
 }
 
+// What a read of no group answers if it is ever run, which a disabled read is not.
+const UNASKED: GatewayResult<GroupRecord> = { ok: false, kind: 'defect' };
+
 // A group known by its id alone, such as a record's parent or the parent a
 // creation was asked from; nothing is read for none.
 export function useGroupNamed(tenant: string, id: string | null): GroupRead {
   const { gateway } = useTransport();
   const read = useRead(groupKey(tenant, id), id !== null, () =>
-    readGroup(gateway, tenant, id ?? ''),
+    id === null ? Promise.resolve(UNASKED) : readGroup(gateway, tenant, id),
   );
   return id === null ? { status: 'none' } : read;
 }
