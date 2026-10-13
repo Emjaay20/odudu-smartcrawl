@@ -9,6 +9,7 @@ import { ResourceListPage } from '#/shared/view/ResourceListPage';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
 import styles from '#/features/clients/view/ClientsPage/ClientsPage.module.css';
+import { STATUS_FILTER } from '#/shared/service/filters';
 
 const COLUMNS: readonly Column<Client>[] = [
   {
@@ -52,12 +53,6 @@ const TYPES = [
   { id: 'public', label: 'Public' },
 ];
 
-const STATUS = [
-  { id: 'any', label: 'Any status' },
-  { id: 'true', label: 'Enabled' },
-  { id: 'false', label: 'Disabled' },
-];
-
 function List({ tenant }: { tenant: string }) {
   const page = useClientsList(tenant);
   const { list } = page;
@@ -86,7 +81,7 @@ function List({ tenant }: { tenant: string }) {
           />
           <SelectField
             label="Status"
-            options={STATUS}
+            options={STATUS_FILTER}
             value={list.filters.enabled ?? 'any'}
             onChange={(value) => {
               list.setFilter('enabled', value === 'any' ? null : value);

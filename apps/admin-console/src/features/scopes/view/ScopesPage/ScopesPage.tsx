@@ -6,6 +6,7 @@ import type { Column } from '#/shared/view/DataTable';
 import { ResourceListPage } from '#/shared/view/ResourceListPage';
 import { Timestamp } from '#/shared/view/Timestamp';
 import styles from '#/features/scopes/view/ScopesPage/ScopesPage.module.css';
+import { NAME_SEARCH } from '#/shared/service/filters';
 
 const COLUMNS: readonly Column<ClientScope>[] = [
   {
@@ -23,8 +24,6 @@ const COLUMNS: readonly Column<ClientScope>[] = [
   },
 ];
 
-const SEARCH = [{ id: 'name', label: 'Name' }];
-
 function List({ tenant }: { tenant: string }) {
   const page = useScopesList(tenant);
   return (
@@ -39,7 +38,7 @@ function List({ tenant }: { tenant: string }) {
         </ButtonLink>
       }
       noun={{ one: 'scope', other: 'scopes' }}
-      searchFields={SEARCH}
+      searchFields={NAME_SEARCH}
       columns={COLUMNS}
       rowKey={(scope) => scope.id}
       onRowAction={page.open}

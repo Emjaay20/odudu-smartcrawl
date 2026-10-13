@@ -2,12 +2,8 @@ import { CONSENT_TEXT_MAX } from '@odudu/contracts/admin';
 
 export const CONSENT_RULE = `What the consent screen says in place of the scope's name. At most ${String(CONSENT_TEXT_MAX)} characters; leave it empty for none.`;
 
-export const DESCRIPTION_RULE = 'Leave it empty for none.';
-
 export const NAME_FIXED =
   "A scope's name is the token a client asks for and a token carries, so it is fixed once the scope is made. Make a new scope and assign it instead.";
-
-export const NAME_TAKEN = 'That name is taken';
 
 export const ID_TOKEN_LABEL = 'In the ID token';
 export const ACCESS_TOKEN_LABEL = 'In the access token';

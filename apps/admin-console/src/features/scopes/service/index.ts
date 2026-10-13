@@ -53,12 +53,10 @@ export {
   consentGuard,
   ID_TOKEN_LABEL,
   NEW_CLIENT_LABEL,
-  DESCRIPTION_RULE,
   displayOrderProblem,
   generalPatch,
   type GeneralValues,
   NAME_FIXED,
-  NAME_TAKEN,
   NEW_CLIENT_CHOICES,
   scopeFailureFields,
 } from '#/features/scopes/service/general';

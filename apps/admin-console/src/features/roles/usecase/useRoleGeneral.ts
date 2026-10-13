@@ -16,8 +16,6 @@ import {
   defaultsChecking,
   deleteChecking,
   deletionFixed,
-  DESCRIPTION_MAX,
-  DESCRIPTION_RULE,
   isDeleteHeld,
   roleDeleteConsequence,
   roleDeleteFailureText,
@@ -31,6 +29,7 @@ import { asksFirst, judgedLoss, writeRefusal } from '#/shared/service/capabiliti
 import { deletedText } from '#/shared/service/failure';
 import { flagText } from '#/shared/service/format';
 import type { GatewayFailure } from '#/shared/transport/gateway';
+import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
 
 export type { SectionSave };
 

@@ -15,15 +15,7 @@ export {
   compositesRecord,
   TAB_RECORDS,
 } from '#/features/roles/service/tabs';
-export {
-  NAME_FIXED,
-  DESCRIPTION_MAX,
-  DESCRIPTION_RULE,
-  NAME_TAKEN,
-  DEFAULT_LABEL,
-  ADD_LABEL,
-  NEST_LABEL,
-} from '#/features/roles/service/labels';
+export { NAME_FIXED, DEFAULT_LABEL, ADD_LABEL, NEST_LABEL } from '#/features/roles/service/labels';
 export {
   isBuiltin,
   deleteBlock,

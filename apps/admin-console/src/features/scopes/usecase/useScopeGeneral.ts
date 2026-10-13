@@ -17,7 +17,6 @@ import {
   carryingOf,
   claimMappersOf,
   CONSENT_RULE,
-  DESCRIPTION_RULE,
   consentGuard,
   GUARDED_TEXT,
   ID_TOKEN_LABEL,
@@ -37,6 +36,7 @@ import { writeRefusal } from '#/shared/service/capabilities';
 import { deletedText } from '#/shared/service/failure';
 import { flagText } from '#/shared/service/format';
 import type { GatewayFailure } from '#/shared/transport/gateway';
+import { DESCRIPTION_RULE } from '#/shared/service/labels';
 
 export interface Deletion {
   // Why it is never offered, said in place of the button.

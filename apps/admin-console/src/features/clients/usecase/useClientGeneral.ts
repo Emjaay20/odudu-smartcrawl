@@ -20,8 +20,6 @@ import {
   deleteConsequence,
   deletedText,
   deleteFixed,
-  DESCRIPTION_MAX,
-  DESCRIPTION_RULE,
   enabledFixed,
   FIELD,
   SECTION,
@@ -31,6 +29,7 @@ import { useToasts } from '#/shared/repository/useToasts';
 import { writeFailureText } from '#/shared/service/failure';
 import { flagText } from '#/shared/service/format';
 import type { GatewayFailure } from '#/shared/transport/gateway';
+import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
 
 export type { SectionSave };
 

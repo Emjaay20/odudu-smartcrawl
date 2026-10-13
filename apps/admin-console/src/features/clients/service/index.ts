@@ -15,8 +15,6 @@ export {
   tabsWithEdits,
 } from '#/features/clients/service/tabs';
 export {
-  DESCRIPTION_MAX,
-  DESCRIPTION_RULE,
   CLIENT_ID_FIXED,
   TYPE_FIXED,
   CLIENT_ID_TAKEN,

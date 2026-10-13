@@ -11,6 +11,7 @@ import { StatusTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
 import { ViewOnlyNote } from '#/shared/view/ViewOnlyNote';
 import styles from '#/features/subjects/view/SubjectsPage/SubjectsPage.module.css';
+import { STATUS_FILTER } from '#/shared/service/filters';
 
 const COLUMNS: readonly Column<Subject>[] = [
   {
@@ -41,12 +42,6 @@ const COLUMNS: readonly Column<Subject>[] = [
 const SEARCH = [
   { id: 'username', label: 'Username' },
   { id: 'email', label: 'Email' },
-];
-
-const STATUS = [
-  { id: 'any', label: 'Any status' },
-  { id: 'true', label: 'Enabled' },
-  { id: 'false', label: 'Disabled' },
 ];
 
 // `any` is the server's own value, the holders of at least one capability.
@@ -90,7 +85,7 @@ function List({ tenant }: { tenant: string }) {
         <>
           <SelectField
             label="Status"
-            options={STATUS}
+            options={STATUS_FILTER}
             value={list.filters.enabled ?? 'any'}
             onChange={(value) => {
               list.setFilter('enabled', value === 'any' ? null : value);

@@ -17,15 +17,10 @@ import { ListSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
 import styles from '#/features/subjects/view/CapabilityHolders/CapabilityHolders.module.css';
+import { STATUS_FILTER } from '#/shared/service/filters';
 
 const NOUN = { one: 'administrator', other: 'administrators' };
 const SEARCH = [{ id: 'username', label: 'Username' }];
-const STATUS = [
-  { id: 'any', label: 'Any status' },
-  { id: 'true', label: 'Enabled' },
-  { id: 'false', label: 'Disabled' },
-];
-
 function Row({
   tenant,
   authorityTenant,
@@ -176,7 +171,7 @@ export function CapabilityHolders({
       >
         <SelectField
           label="Status"
-          options={STATUS}
+          options={STATUS_FILTER}
           value={list.filters.enabled ?? 'any'}
           onChange={(value) => {
             list.setFilter('enabled', value === 'any' ? null : value);

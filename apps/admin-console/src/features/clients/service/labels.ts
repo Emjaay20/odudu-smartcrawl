@@ -1,7 +1,3 @@
-export { DESCRIPTION_MAX } from '@odudu/contracts/admin';
-
-export const DESCRIPTION_RULE = 'Leave it empty for none.';
-
 // ADR 0039: relying parties match on the identifier, and every token names it as `azp`.
 export const CLIENT_ID_FIXED =
   "A client's ID is fixed once it is made: every relying party is configured with it, and the azp of every token issued to it names it.";

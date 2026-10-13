@@ -21,8 +21,6 @@ export {
 } from '#/features/groups/service/tabs';
 export {
   NAME_FIXED,
-  DESCRIPTION_MAX,
-  DESCRIPTION_RULE,
   PLACE_LABEL,
   DEFAULT_LABEL,
   NAME_TAKEN,

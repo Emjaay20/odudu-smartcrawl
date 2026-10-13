@@ -8,9 +8,6 @@ import {
   type Copying,
   copyingOf,
   copyPlan,
-  DESCRIPTION_MAX,
-  DESCRIPTION_RULE,
-  NAME_TAKEN,
   type PartialCopy,
   partialCopy,
   roleHref,
@@ -21,6 +18,7 @@ import { useUrlSearch } from '#/shared/repository/useUrlSearch';
 import { requiredProblem, withoutField } from '#/shared/service/fieldErrors';
 import { createdText, createFailure, lookupText } from '#/shared/service/failure';
 import type { GatewayFailure } from '#/shared/transport/gateway';
+import { DESCRIPTION_MAX, DESCRIPTION_RULE, NAME_TAKEN } from '#/shared/service/labels';
 
 type Field = 'name' | 'description';
 type Errors = Partial<Record<Field, string>>;

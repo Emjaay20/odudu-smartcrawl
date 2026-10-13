@@ -10,6 +10,7 @@ import { ResourceListPage } from '#/shared/view/ResourceListPage';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
 import styles from '#/features/roles/view/RolesPage/RolesPage.module.css';
+import { NAME_SEARCH } from '#/shared/service/filters';
 
 const COLUMNS: readonly Column<Role>[] = [
   {
@@ -33,8 +34,6 @@ const COLUMNS: readonly Column<Role>[] = [
     cell: (role) => <Timestamp value={role.created_at} />,
   },
 ];
-
-const SEARCH = [{ id: 'name', label: 'Name' }];
 
 // `tenant` is the server's own value; a client's id narrows to its roles,
 // set from that client's page.
@@ -63,7 +62,7 @@ function List({ tenant }: { tenant: string }) {
         </ButtonLink>
       }
       noun={{ one: 'role', other: 'roles' }}
-      searchFields={SEARCH}
+      searchFields={NAME_SEARCH}
       filters={
         one ? (
           <p className={styles.narrowed}>

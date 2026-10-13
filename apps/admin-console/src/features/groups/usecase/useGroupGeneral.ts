@@ -21,8 +21,6 @@ import {
   defaultBlock,
   DEFAULT_LABEL,
   PLACE_LABEL,
-  DESCRIPTION_MAX,
-  DESCRIPTION_RULE,
   groupReadiness,
   groupRecord,
   groupsHref,
@@ -44,6 +42,7 @@ import { writeFailureText } from '#/shared/service/failure';
 import { flagText } from '#/shared/service/format';
 import type { PickerState } from '#/shared/service/picker';
 import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
+import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
 
 export type { SectionSave };
 

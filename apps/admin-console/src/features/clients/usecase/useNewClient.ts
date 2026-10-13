@@ -10,8 +10,6 @@ import {
   clientHref,
   clientIdProblem,
   clientsHref,
-  DESCRIPTION_MAX,
-  DESCRIPTION_RULE,
   listCount,
   NEW_CLIENT_FIELDS,
   newClientKind,
@@ -26,6 +24,7 @@ import { useToasts } from '#/shared/repository/useToasts';
 import { withoutField } from '#/shared/service/fieldErrors';
 import { createdText, createFailure, lookupText } from '#/shared/service/failure';
 import type { GatewayFailure } from '#/shared/transport/gateway';
+import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
 
 type Errors = Partial<Record<NewClientField, string>>;
 

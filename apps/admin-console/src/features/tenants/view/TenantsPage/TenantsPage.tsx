@@ -11,6 +11,7 @@ import { StatusTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
 import { ViewOnlyNote } from '#/shared/view/ViewOnlyNote';
 import styles from '#/features/tenants/view/TenantsPage/TenantsPage.module.css';
+import { STATUS_FILTER } from '#/shared/service/filters';
 
 const COLUMNS: readonly Column<Tenant>[] = [
   {
@@ -52,12 +53,6 @@ const SEARCH = [
   { id: 'display_name', label: 'Display name' },
 ];
 
-const STATUS = [
-  { id: 'any', label: 'Any status' },
-  { id: 'true', label: 'Enabled' },
-  { id: 'false', label: 'Disabled' },
-];
-
 function List() {
   const { list, open, recordNeeds } = useTenantsList();
   return (
@@ -79,7 +74,7 @@ function List() {
       filters={
         <SelectField
           label="Status"
-          options={STATUS}
+          options={STATUS_FILTER}
           value={list.filters.enabled ?? 'any'}
           onChange={(value) => {
             list.setFilter('enabled', value === 'any' ? null : value);

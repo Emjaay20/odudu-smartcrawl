@@ -6,8 +6,6 @@ import { useGo } from '#/shared/repository/useGo';
 import { useGroupNamed } from '#/features/groups/repository/useGroupRecord';
 import {
   createHeld,
-  DESCRIPTION_MAX,
-  DESCRIPTION_RULE,
   groupHref,
   groupsHref,
   parentUnavailable,
@@ -21,6 +19,7 @@ import { requiredProblem, withoutField } from '#/shared/service/fieldErrors';
 import { createdText, createFailure, lookupText } from '#/shared/service/failure';
 import type { PickerState } from '#/shared/service/picker';
 import type { GatewayFailure } from '#/shared/transport/gateway';
+import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
 
 type Field = 'name' | 'description' | 'parent_id';
 type Errors = Partial<Record<Field, string>>;

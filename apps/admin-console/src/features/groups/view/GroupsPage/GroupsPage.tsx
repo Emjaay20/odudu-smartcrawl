@@ -8,6 +8,7 @@ import { ResourceListPage } from '#/shared/view/ResourceListPage';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
 import styles from '#/features/groups/view/GroupsPage/GroupTree.module.css';
+import { NAME_SEARCH } from '#/shared/service/filters';
 
 const COLUMNS: readonly Column<Group>[] = [
   {
@@ -31,8 +32,6 @@ const COLUMNS: readonly Column<Group>[] = [
   },
 ];
 
-const SEARCH = [{ id: 'name', label: 'Name' }];
-
 function List({ tenant }: { tenant: string }) {
   const page = useGroupsList(tenant);
   return (
@@ -51,7 +50,7 @@ function List({ tenant }: { tenant: string }) {
           ? { one: 'group', other: 'groups' }
           : { one: 'top-level group', other: 'top-level groups' }
       }
-      searchFields={SEARCH}
+      searchFields={NAME_SEARCH}
       columns={COLUMNS}
       rowKey={(group) => group.id}
       onRowAction={(id) => {

@@ -8,8 +8,6 @@ import {
 } from '#/features/clients/repository/useClientRoles';
 import {
   clientRolesListHref,
-  DESCRIPTION_MAX,
-  DESCRIPTION_RULE,
   NAME_REQUIRED,
   ROLE_NAME_TAKEN,
   ROLES_CAPABILITY,
@@ -23,6 +21,7 @@ import { requiredProblem, withoutField } from '#/shared/service/fieldErrors';
 import type { AdminCapability } from '#/shared/service/principal';
 import type { ResourceListState } from '#/shared/service/resourceList';
 import type { GatewayFailure } from '#/shared/transport/gateway';
+import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
 
 type Field = 'name' | 'description';
 type Errors = Partial<Record<Field, string>>;
