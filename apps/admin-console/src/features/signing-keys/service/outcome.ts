@@ -1,16 +1,10 @@
 import type { SigningKey } from '@odudu/contracts/admin';
 import { writeRefusal } from '#/shared/service/capabilities';
-import { writeFailureText } from '#/shared/service/failure';
+import { removalOutcome, type RemovalOutcome } from '#/shared/service/failure';
 import { andList } from '#/shared/service/format';
 import type { GatewayResult, Problem } from '#/shared/service/result';
 
 export type KeyAction = 'promote' | 'retire' | 'delete';
-
-export interface KeyOutcome {
-  // The key is where the action meant it to be, whoever put it there.
-  done: boolean;
-  text: string;
-}
 
 const VERB: Record<KeyAction, string> = {
   promote: 'promoted',
@@ -69,18 +63,18 @@ export function keyActionOutcome(
   action: KeyAction,
   key: SigningKey,
   result: GatewayResult<unknown>,
-): KeyOutcome {
-  if (result.ok) return { done: true, text: successText(action, key) };
-  if (result.kind === 'problem' && result.problem.status === 404 && action !== 'promote') {
-    return { done: true, text: GONE_TEXT };
-  }
-  return {
-    done: false,
-    text: writeFailureText(result, {
+): RemovalOutcome {
+  return removalOutcome(
+    result,
+    {
+      doneText: successText(action, key),
+      ...(action === 'promote' ? {} : { alreadyGoneText: GONE_TEXT }),
+    },
+    {
       name: 'The key',
       verb: VERB[action],
       lookAt: 'the lanes',
       refused: (problem) => refusalText(action, key, problem),
-    }),
-  };
+    },
+  );
 }

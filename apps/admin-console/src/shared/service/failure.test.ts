@@ -9,6 +9,7 @@ import {
   isStale,
   isUnknownTenant,
   lookupText,
+  removalOutcome,
   writeFailureText,
   type CreateSpec,
   type WriteCopy,
@@ -228,5 +229,32 @@ describe('a name that begins a sentence', () => {
   it('keeps a proper name as it is', () => {
     const copy = { name: 'Ada', verb: 'deleted', lookAt: 'the list' };
     expect(writeFailureText({ ok: false, kind: 'network' }, copy)).toContain('whether Ada was');
+  });
+});
+
+describe('removalOutcome', () => {
+  const copy = { name: 'The key', verb: 'retired', lookAt: 'the lanes' };
+  const spec = { doneText: 'Gone.', alreadyGoneText: 'Already gone.' };
+
+  it('is done with the done text on success', () => {
+    expect(removalOutcome(OK, spec, copy)).toEqual({ done: true, text: 'Gone.' });
+  });
+
+  it('counts a 404 as done when the spec names a text for it', () => {
+    expect(removalOutcome(problem(404), spec, copy)).toEqual({
+      done: true,
+      text: 'Already gone.',
+    });
+  });
+
+  it('leaves a 404 to the failure copy when the spec names none', () => {
+    const out = removalOutcome(problem(404), { doneText: 'Gone.' }, { ...copy, missing: 'Nope.' });
+    expect(out).toEqual({ done: false, text: 'Nope.' });
+  });
+
+  it('is not done for any other failure, and says so as writeFailureText does', () => {
+    const out = removalOutcome(NETWORK, spec, copy);
+    expect(out.done).toBe(false);
+    expect(out.text).toBe(writeFailureText(NETWORK, copy));
   });
 });

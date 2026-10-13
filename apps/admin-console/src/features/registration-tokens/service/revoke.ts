@@ -1,5 +1,5 @@
 import { writeRefusal } from '#/shared/service/capabilities';
-import { writeFailureText } from '#/shared/service/failure';
+import { removalOutcome, type RemovalOutcome } from '#/shared/service/failure';
 import { counted } from '#/shared/service/format';
 import type { GatewayResult } from '#/shared/service/result';
 
@@ -9,28 +9,19 @@ export const REVOKED_TEXT = 'The token was revoked.';
 export const ALREADY_GONE =
   'That token is already gone: it was used up, expired or revoked. The list is read again.';
 
-export interface RevokeOutcome {
-  // The token is no longer live, whoever ended it.
-  done: boolean;
-  text: string;
-}
-
 export function revokeConsequence(token: { remaining_uses: number }): string {
   return `Nobody can register a client with it again, and its ${counted(token.remaining_uses, 'use', 'uses')} left are lost. Clients it already registered are not affected.`;
 }
 
-export function revokeOutcome(result: GatewayResult<unknown>): RevokeOutcome {
-  if (result.ok) return { done: true, text: REVOKED_TEXT };
-  if (result.kind === 'problem' && result.problem.status === 404) {
-    return { done: true, text: ALREADY_GONE };
-  }
-  return {
-    done: false,
-    text: writeFailureText(result, {
+export function revokeOutcome(result: GatewayResult<unknown>): RemovalOutcome {
+  return removalOutcome(
+    result,
+    { doneText: REVOKED_TEXT, alreadyGoneText: ALREADY_GONE },
+    {
       name: 'The token',
       verb: 'revoked',
       lookAt: 'the list',
       refused: (problem) => writeRefusal(problem, 'manage-clients'),
-    }),
-  };
+    },
+  );
 }

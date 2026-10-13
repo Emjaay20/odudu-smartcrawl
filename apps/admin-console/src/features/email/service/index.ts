@@ -8,7 +8,6 @@ export {
   removeConsequence,
   removeOutcome,
   REMOVED_TEXT,
-  type RemoveOutcome,
 } from '#/features/email/service/remove';
 export {
   passwordHint,

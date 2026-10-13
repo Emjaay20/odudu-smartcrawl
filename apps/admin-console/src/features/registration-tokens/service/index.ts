@@ -14,7 +14,6 @@ export {
   REVOKED_TEXT,
   revokeConsequence,
   revokeOutcome,
-  type RevokeOutcome,
 } from '#/features/registration-tokens/service/revoke';
 export {
   NOTHING_YET,

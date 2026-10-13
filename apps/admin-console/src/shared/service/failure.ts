@@ -72,6 +72,32 @@ export function writeFailureText(failure: GatewayFailure, copy: WriteCopy): stri
   }
 }
 
+export interface RemovalSpec {
+  // What the page says once the thing is gone.
+  doneText: string;
+  // Said for a 404, which is the outcome the caller wanted too. Absent when a
+  // 404 means something else and goes to `refused`.
+  alreadyGoneText?: string;
+}
+
+export interface RemovalOutcome {
+  // The thing is where the action meant it to be, whoever put it there.
+  done: boolean;
+  text: string;
+}
+
+export function removalOutcome(
+  result: GatewayResult<unknown>,
+  spec: RemovalSpec,
+  copy: WriteCopy,
+): RemovalOutcome {
+  if (result.ok) return { done: true, text: spec.doneText };
+  if (spec.alreadyGoneText !== undefined && isMissing(result)) {
+    return { done: true, text: spec.alreadyGoneText };
+  }
+  return { done: false, text: writeFailureText(result, copy) };
+}
+
 export interface CreateSpec {
   // "group", "role": the thing being made.
   noun: string;
