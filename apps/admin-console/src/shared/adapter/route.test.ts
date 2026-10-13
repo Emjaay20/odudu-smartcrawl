@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { adminCall, countReader, listReader, nothing, segment } from '#/shared/adapter/route';
+import {
+  adminCall,
+  adminRootCall,
+  countReader,
+  listReader,
+  nothing,
+  segment,
+} from '#/shared/adapter/route';
 import { fakeTransport, json } from '#/testing/fakeTransport';
 
 describe('route helpers', () => {
@@ -75,5 +82,26 @@ describe('adminCall', () => {
     const fake = fakeTransport({ 'GET /console/api/admin/tenants/acme/things': json({}) });
     await adminCall(fake.transport.gateway, 'GET', 'acme', ['things'], { schema: z.object({}) });
     expect(fake.sent[0]?.search.toString()).toBe('');
+  });
+});
+
+describe('adminRootCall', () => {
+  it('encodes every part under /admin and appends the query', async () => {
+    const fake = fakeTransport({
+      'GET /console/api/admin/tenants/acme%20corp': json({ ok: 1 }),
+      'POST /console/api/admin/tenant-imports': json({ ok: 2 }),
+    });
+    const schema = z.object({ ok: z.number() });
+    await adminRootCall(fake.transport.gateway, 'GET', ['tenants', 'acme corp'], {
+      query: new URLSearchParams({ q: 'y' }),
+      schema,
+    });
+    await adminRootCall(fake.transport.gateway, 'POST', ['tenant-imports'], { body: {}, schema });
+    expect(fake.sent.map((sent) => `${sent.method} ${sent.path}`)).toEqual([
+      'GET /console/api/admin/tenants/acme%20corp',
+      'POST /console/api/admin/tenant-imports',
+    ]);
+    expect(fake.sent[0]?.search.get('q')).toBe('y');
+    expect(fake.sent[1]?.search.toString()).toBe('');
   });
 });

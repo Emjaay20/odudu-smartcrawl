@@ -18,18 +18,27 @@ interface CallOptions<T> extends RequestOptions<T> {
   query?: URLSearchParams;
 }
 
-// One call under /admin/tenants/<tenant>/: every part is encoded as a path
-// segment, so a part is a name or an id and never a path of its own.
+// One call under /admin/: every part is encoded as a path segment, so a
+// part is a name or an id and never a path of its own.
+export function adminRootCall<T>(
+  gateway: Gateway,
+  method: Method,
+  parts: readonly string[],
+  { query, ...options }: CallOptions<T>,
+): Promise<GatewayResult<T>> {
+  const search = query === undefined ? '' : `?${query.toString()}`;
+  return gateway.request(method, `admin/${parts.map(segment).join('/')}${search}`, options);
+}
+
+// One call under /admin/tenants/<tenant>/.
 export function adminCall<T>(
   gateway: Gateway,
   method: Method,
   tenant: string,
   parts: readonly string[],
-  { query, ...options }: CallOptions<T>,
+  options: CallOptions<T>,
 ): Promise<GatewayResult<T>> {
-  const path = [segment(tenant), ...parts.map(segment)].join('/');
-  const search = query === undefined ? '' : `?${query.toString()}`;
-  return gateway.request(method, `admin/tenants/${path}${search}`, options);
+  return adminRootCall(gateway, method, ['tenants', tenant, ...parts], options);
 }
 
 function reader<T>(parts: readonly string[], schema: ZodType<T>): TenantRead<T> {

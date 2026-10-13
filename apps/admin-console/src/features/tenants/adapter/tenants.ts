@@ -10,23 +10,22 @@ import {
 import type { ImportedSecret } from '#/features/tenants/service';
 import type { Gateway, GatewayResult, RawBody } from '#/shared/transport/gateway';
 import { readDiscovery } from '#/shared/adapter/discovery';
-import { segment } from '#/shared/adapter/route';
+import { adminRootCall, segment } from '#/shared/adapter/route';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
 
 export function readTenantPage(
   gateway: Gateway,
   query: URLSearchParams,
 ): Promise<GatewayResult<ListTenantsResponse>> {
-  return gateway.request('GET', `admin/tenants?${query.toString()}`, {
-    schema: listTenantsResponseSchema,
-  });
+  return adminRootCall(gateway, 'GET', ['tenants'], { query, schema: listTenantsResponseSchema });
 }
 
 export function readTenantCount(
   gateway: Gateway,
   query: URLSearchParams,
 ): Promise<GatewayResult<CountResponse>> {
-  return gateway.request('GET', `admin/tenants/count?${query.toString()}`, {
+  return adminRootCall(gateway, 'GET', ['tenants', 'count'], {
+    query,
     schema: countResponseSchema,
   });
 }
@@ -40,7 +39,7 @@ export function createTenant(
   gateway: Gateway,
   input: { name: string; displayName: string },
 ): Promise<GatewayResult<Tenant>> {
-  return gateway.request('POST', 'admin/tenants', {
+  return adminRootCall(gateway, 'POST', ['tenants'], {
     body: { name: input.name, ...displayNameOf(input.displayName) },
     schema: tenantSchema,
   });
@@ -58,7 +57,7 @@ export async function findTenant(
 }
 
 export function readTenant(gateway: Gateway, name: string): Promise<GatewayResult<Tenant>> {
-  return gateway.request('GET', `admin/tenants/${segment(name)}`, { schema: tenantSchema });
+  return adminRootCall(gateway, 'GET', ['tenants', name], { schema: tenantSchema });
 }
 
 // An emptied display name is cleared, as the server keeps no empty one.
@@ -68,7 +67,7 @@ export function amendTenant(
   changes: { display_name?: string | null; enabled?: boolean },
   ifMatch: string,
 ): Promise<GatewayResult<Tenant>> {
-  return gateway.request('PATCH', `admin/tenants/${segment(name)}`, {
+  return adminRootCall(gateway, 'PATCH', ['tenants', name], {
     body: changes.display_name === '' ? { ...changes, display_name: null } : changes,
     ifMatch,
     schema: tenantSchema,
@@ -79,7 +78,7 @@ export async function importTenant(
   gateway: Gateway,
   input: { name: string; displayName: string; document: unknown },
 ): Promise<GatewayResult<{ tenant: Tenant; secrets: ImportedSecret[] }>> {
-  const result = await gateway.request('POST', 'admin/tenant-imports', {
+  const result = await adminRootCall(gateway, 'POST', ['tenant-imports'], {
     body: { name: input.name, ...displayNameOf(input.displayName), document: input.document },
     schema: importTenantResponseSchema,
   });

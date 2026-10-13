@@ -8,7 +8,8 @@ import { ADMIN_ROUTES } from '../../packages/protocol-admin/src/index.js';
 // Every admin route has a screen: some console adapter calls it, by method
 // and path template, or it is named below as one the console never calls.
 // A reference is a `request('<METHOD>', <path>)` with a literal or template
-// path, an `adminCall(gateway, '<METHOD>', tenant, [<parts>])`, or a
+// path, an `adminCall(gateway, '<METHOD>', tenant, [<parts>])`, an
+// `adminRootCall(gateway, '<METHOD>', [<parts>])`, or a
 // `listReader('<collection>')` or `countReader('<collection>')`; a query
 // after `?` is ignored. Any other helper that builds the prefix hides the
 // route, and this test then fails on the route rather than guessing.
@@ -56,7 +57,14 @@ function partsOf(node: ts.Expression): string | null {
 
 function referenceOf(node: ts.CallExpression): string | null {
   const name = ts.isIdentifier(node.expression) ? node.expression.text : null;
-  const [first, second, , fourth] = node.arguments;
+  const [first, second, third, fourth] = node.arguments;
+  if (name === 'adminRootCall') {
+    if (second === undefined || third === undefined) return null;
+    if (!ts.isStringLiteralLike(second) || !METHODS.has(second.text)) return null;
+    if (!ts.isArrayLiteralExpression(third)) return null;
+    const parts = third.elements.map((part) => (ts.isStringLiteralLike(part) ? part.text : ':'));
+    return `${second.text} /admin/${parts.join('/')}`;
+  }
   if (name === 'adminCall') {
     if (second === undefined || fourth === undefined) return null;
     if (!ts.isStringLiteralLike(second) || !METHODS.has(second.text)) return null;
@@ -118,6 +126,9 @@ describe("the console's reach into the admin API", { timeout: 60_000 }, () => {
       adminCall(gateway, 'PATCH', tenant, ['roles', roleId, 'composites'], { schema });
       adminCall(gateway, 'GET', tenant, ['roles', 'count'], { query, schema });
       adminCall(gateway, method, tenant, ['roles'], { schema });
+      adminRootCall(gateway, 'GET', ['tenants', name], { schema });
+      adminRootCall(gateway, 'POST', ['tenant-imports'], { schema });
+      adminRootCall(gateway, method, ['tenants'], { schema });
       listReader('groups', schema);
       countReader('groups');
       gateway.request('POST', 'admin/tenant-imports', { schema });
@@ -130,6 +141,8 @@ describe("the console's reach into the admin API", { timeout: 60_000 }, () => {
       'DELETE /admin/tenants/:/subjects/:/sessions/:',
       'PATCH /admin/tenants/:/roles/:/composites',
       'GET /admin/tenants/:/roles/count',
+      'GET /admin/tenants/:',
+      'POST /admin/tenant-imports',
       'GET /admin/tenants/:/groups',
       'GET /admin/tenants/:/groups/count',
       'POST /admin/tenant-imports',
