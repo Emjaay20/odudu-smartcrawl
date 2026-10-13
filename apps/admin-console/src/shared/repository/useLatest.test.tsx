@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { useLatest } from '#/shared/usecase/useLatest';
+import { useLatest } from '#/shared/repository/useLatest';
 
 it('reads the value of the latest render, through the same function throughout', () => {
   const { result, rerender } = renderHook(({ value }) => useLatest(value), {

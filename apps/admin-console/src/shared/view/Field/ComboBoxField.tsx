@@ -1,4 +1,4 @@
-import { use, useEffect, useState, type ReactNode } from 'react';
+import { use, useEffect, useEffectEvent, useState, type ReactNode } from 'react';
 import {
   Button as AriaButton,
   ComboBox,
@@ -28,7 +28,6 @@ import {
   type PartLabel,
 } from '#/shared/view/Field/Field';
 import styles from '#/shared/view/Field/Field.module.css';
-import { useLatest } from '#/shared/usecase/useLatest';
 
 export interface ComboOption {
   id: string;
@@ -41,19 +40,21 @@ export interface ComboOption {
 // value that arrived whole, which would keep the page hidden around it.
 function CloseList({ times }: { times: number }) {
   const current = use(ComboBoxStateContext);
-  const state = useLatest(current);
+  const close = useEffectEvent(() => {
+    current?.close();
+  });
   useEffect(() => {
     if (times === 0) return undefined;
     // useComboBoxState (react-stately) opens the list in its own effect when
     // the input value changes while focused; this runs a tick after it, and
     // the paste and axe-open tests fail if an upgrade reorders the two.
     const timer = setTimeout(() => {
-      state()?.close();
+      close();
     }, 0);
     return () => {
       clearTimeout(timer);
     };
-  }, [times, state]);
+  }, [times]);
   return null;
 }
 

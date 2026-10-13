@@ -33,7 +33,7 @@ import {
 import type { Gateway, GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
 import type { Problem } from '#/shared/transport/problem';
 import { useTransport } from '#/shared/transport/useTransport';
-import { useLatest } from '#/shared/usecase/useLatest';
+import { useLatest } from '#/shared/repository/useLatest';
 
 export type { SectionField, SectionFields };
 
