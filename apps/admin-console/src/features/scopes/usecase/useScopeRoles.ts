@@ -1,11 +1,11 @@
 import type { ClientScope, Role, SetScopeRolesResponse } from '@odudu/contracts/admin';
 import { useAuthority, useRefusal } from '#/features/session';
 import { useScopeRolesRecord, useScopeSaves } from '#/features/scopes/repository/useScopeRecord';
-import { keptRoles, scopeRoleUnavailable, scopeRolesRecord } from '#/features/scopes/service';
+import { keptRoles, scopeRolesRecord } from '#/features/scopes/service';
 import type { RecordState } from '#/shared/repository/useRecord';
 import { useRolePicker } from '#/shared/repository/useRolePicker';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
-import { writeRefusal } from '#/shared/service/capabilities';
+import { roleReachUnavailable, writeRefusal } from '#/shared/service/capabilities';
 import { describeIds } from '#/shared/service/format';
 import { sortedIds } from '#/shared/service/ids';
 import type { PickerState } from '#/shared/service/picker';
@@ -77,7 +77,7 @@ export function useScopeRoles({
     save,
     offered: authority !== undefined,
     picker,
-    unavailableOf: (role) => scopeRoleUnavailable(role, caller, tenant),
+    unavailableOf: (role) => roleReachUnavailable(role, caller, tenant),
     choose: (ids) => {
       save.edit('role_ids', withKept(ids, kept));
     },

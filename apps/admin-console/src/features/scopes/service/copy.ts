@@ -1,9 +1,9 @@
 import type { ClientScope, SetScopeRolesResponse } from '@odudu/contracts/admin';
+import { roleReachUnavailable } from '#/shared/service/capabilities';
 import type { LeftOut, PartialCopy } from '#/shared/service/copy';
 import { andList, plural } from '#/shared/service/format';
 import type { AdminCapability } from '#/shared/service/principal';
 import { scopeHref, scopesHref } from '#/features/scopes/service/address';
-import { scopeRoleUnavailable } from '#/features/scopes/service/roles';
 
 type MappedRole = SetScopeRolesResponse['items'][number];
 
@@ -45,7 +45,7 @@ export function copyPlan(
 ): CopyPlan {
   const plan: CopyPlan = { mapped: [], left: [] };
   for (const role of roles) {
-    const why = caller === undefined ? null : scopeRoleUnavailable(role, caller, tenant);
+    const why = caller === undefined ? null : roleReachUnavailable(role, caller, tenant);
     if (why === null) plan.mapped.push(role);
     else plan.left.push({ name: role.name, why });
   }

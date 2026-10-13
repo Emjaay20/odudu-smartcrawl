@@ -18,8 +18,8 @@ import {
   compositeRefusal,
   defaultBlock,
   deleteBlock,
-  removalBlock,
 } from '#/features/roles/service/blocks';
+import { roleReachUnavailable } from '#/shared/service/capabilities';
 
 function role(
   id: string,
@@ -93,10 +93,10 @@ describe('the ceiling on a role, by what the server says it reaches', () => {
         'acme',
       ),
     ).toBe('Every new subject receives this role, so it may nest no admin capability.');
-    expect(removalBlock(USERS, ['view-users'], 'acme')).toBe(
+    expect(roleReachUnavailable(USERS, ['view-users'], 'acme')).toBe(
       'You do not hold manage-users, so you cannot give or take it.',
     );
-    expect(removalBlock(READER, [], 'acme')).toBeNull();
+    expect(roleReachUnavailable(READER, [], 'acme')).toBeNull();
   });
 
   it('says what a refused nesting means where it was asked', () => {

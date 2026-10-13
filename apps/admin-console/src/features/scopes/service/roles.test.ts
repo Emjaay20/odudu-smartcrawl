@@ -1,6 +1,6 @@
 import type { Role } from '@odudu/contracts/admin';
 import { expect, it } from 'vitest';
-import { keptRoles, scopeRoleUnavailable } from '#/features/scopes/service';
+import { keptRoles } from '#/features/scopes/service';
 import { roleIndex } from '#/shared/service/mappedRoles';
 
 const READER = {
@@ -17,11 +17,6 @@ const KEYS = {
   client_key: null,
   admin_reach: ['manage-keys'] as Role['admin_reach'],
 };
-
-it('makes a role unavailable when it reaches what the caller does not hold', () => {
-  expect(scopeRoleUnavailable(READER, ['view-users'], 'acme')).toBeNull();
-  expect(scopeRoleUnavailable(KEYS, ['view-users'], 'acme')).toMatch(/manage-keys/u);
-});
 
 it('keeps a mapped role the caller could not give, though the picker has not loaded it', () => {
   const index = roleIndex([READER, KEYS], []);

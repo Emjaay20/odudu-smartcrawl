@@ -2,9 +2,7 @@ import type { Role } from '@odudu/contracts/admin';
 import {
   ADMIN_CLIENT_KEY,
   beyondCaller,
-  ceilingOf,
-  isAdminRole,
-  isHolding,
+  roleReachUnavailable,
   writeRefusal,
 } from '#/shared/service/capabilities';
 import { andList } from '#/shared/service/format';
@@ -15,8 +13,6 @@ import type { AdminCapability } from '#/shared/service/principal';
 export function isBuiltin(role: Pick<Role, 'client_key'>): boolean {
   return role.client_key === ADMIN_CLIENT_KEY;
 }
-
-type Reaching = Pick<Role, 'name' | 'client_key' | 'admin_reach'>;
 
 // `admin_reach` is the server's judgement of what a role hands out, however
 // deep it nests a capability: the same one each ceiling on its writes makes.
@@ -38,20 +34,6 @@ export function defaultBlock(role: Role): string | null {
   return `It reaches ${andList(role.admin_reach)}, and a role every new subject receives may reach no admin capability. Take those composites out of it first.`;
 }
 
-// Giving a role or taking it out passes on what it reaches, so either is
-// held to the caller's own capabilities.
-export function removalBlock(
-  child: Reaching,
-  caller: readonly AdminCapability[],
-  tenant: string,
-): string | null {
-  if (isAdminRole(child) && isHolding(child.name)) return ceilingOf(tenant, child.name, caller);
-  const beyond = beyondCaller(child.admin_reach, caller);
-  return beyond.length === 0
-    ? null
-    : `It reaches ${andList(beyond)}, which you do not hold, so you cannot give or take it.`;
-}
-
 export function childUnavailable(
   parent: Pick<Role, 'id' | 'default_for_new_subjects'>,
   child: Role,
@@ -64,7 +46,7 @@ export function childUnavailable(
   if (parent.default_for_new_subjects && child.admin_reach.length > 0) {
     return 'Every new subject receives this role, so it may nest no admin capability.';
   }
-  return removalBlock(child, caller, tenant);
+  return roleReachUnavailable(child, caller, tenant);
 }
 
 type RefusedProblem = Parameters<typeof writeRefusal>[0];

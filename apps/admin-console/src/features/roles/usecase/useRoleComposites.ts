@@ -21,7 +21,6 @@ import {
   compositesRecord,
   NEST_LABEL,
   removalAction,
-  removalBlock,
   roleSelfLoss,
   unnestedText,
 } from '#/features/roles/service';
@@ -29,7 +28,7 @@ import type { RecordState } from '#/shared/repository/useRecord';
 import { useRolePicker } from '#/shared/repository/useRolePicker';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { useToasts } from '#/shared/repository/useToasts';
-import { judgedLoss, type Loss } from '#/shared/service/capabilities';
+import { judgedLoss, roleReachUnavailable, type Loss } from '#/shared/service/capabilities';
 import { describeId } from '#/shared/service/format';
 import type { PickerState } from '#/shared/service/picker';
 
@@ -150,7 +149,7 @@ export function useRoleComposites({
     fixed: compositesFixed(role),
     children: data.items.map((child) => ({
       role: child,
-      held: removalBlock(child, caller, tenant),
+      held: roleReachUnavailable(child, caller, tenant),
     })),
     offered: compositesOffered(ceiling, own),
     add,

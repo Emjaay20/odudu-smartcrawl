@@ -20,7 +20,6 @@ export {
   isBuiltin,
   deleteBlock,
   defaultBlock,
-  removalBlock,
   childUnavailable,
   compositeRefusal,
   addRefusal,
