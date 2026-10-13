@@ -1,5 +1,5 @@
 import { type Credential, type Lockout, type Profile, type Subject } from '@odudu/contracts/admin';
-import { resourceAddress } from '#/shared/service/address';
+import { resourceAddress, withSearch } from '#/shared/service/address';
 import { type AdminCapability } from '#/shared/service/principal';
 
 export type { Credential, Lockout, Profile, Subject };
@@ -25,5 +25,5 @@ export function createSubjectHref(
 }
 
 export function membersListHref(tenant: string, by: 'group' | 'role', id: string): string {
-  return `${subjectsHref(tenant)}?${new URLSearchParams({ [by]: id }).toString()}`;
+  return withSearch(subjectsHref(tenant), { [by]: id });
 }

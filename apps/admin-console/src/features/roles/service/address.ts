@@ -1,5 +1,5 @@
 import type { Role } from '@odudu/contracts/admin';
-import { resourceAddress } from '#/shared/service/address';
+import { resourceAddress, withSearch } from '#/shared/service/address';
 
 export type { Role };
 
@@ -13,7 +13,7 @@ export const {
 } = roles;
 
 export function copyHref(tenant: string, id: string): string {
-  return `${newRoleHref(tenant)}?copy=${encodeURIComponent(id)}`;
+  return withSearch(newRoleHref(tenant), { copy: id });
 }
 
 // A copy is a tenant role, so only a tenant role offers one.

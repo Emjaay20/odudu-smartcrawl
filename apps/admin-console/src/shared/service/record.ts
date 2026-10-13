@@ -18,6 +18,9 @@ export interface RecordView {
   retry: () => void;
 }
 
+// The query parameter that names a record's tab.
+export const TAB_PARAM = 'tab';
+
 export function tabNamed<T extends string>(tabs: readonly T[], name: string | null): T | undefined {
   return tabs.find((tab) => tab === name);
 }

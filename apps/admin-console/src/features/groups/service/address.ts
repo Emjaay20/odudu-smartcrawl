@@ -1,5 +1,5 @@
 import type { Group, GroupRecord } from '@odudu/contracts/admin';
-import { resourceAddress } from '#/shared/service/address';
+import { resourceAddress, withSearch } from '#/shared/service/address';
 import { type Loss, type OwnAccess, type Asked } from '#/shared/service/capabilities';
 
 export type { Group, GroupRecord };
@@ -13,8 +13,7 @@ const groups = resourceAddress({ segment: 'groups', group: 'Identity', label: 'G
 export const { listHref: groupsHref, recordHref: groupHref, trail: groupsTrail } = groups;
 
 export function newGroupHref(tenant: string, parent?: string): string {
-  const base = `${groupsHref(tenant)}/new`;
-  return parent === undefined ? base : `${base}?parent=${encodeURIComponent(parent)}`;
+  return withSearch(`${groupsHref(tenant)}/new`, { parent });
 }
 
 export type { Asked };

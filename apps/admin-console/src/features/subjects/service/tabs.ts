@@ -1,3 +1,5 @@
+import { withSearch } from '#/shared/service/address';
+import { TAB_PARAM } from '#/shared/service/record';
 import { subjectHref } from '#/features/subjects/service/address';
 
 // A subject's record, a tab per concern, in the order the page shows them.
@@ -28,7 +30,7 @@ export const SUBJECT_TAB_LABELS: Readonly<Record<SubjectTab, string>> = {
 };
 
 export function subjectTabHref(tenant: string, id: string, tab: SubjectTab): string {
-  return `${subjectHref(tenant, id)}?tab=${tab}`;
+  return withSearch(subjectHref(tenant, id), { [TAB_PARAM]: tab });
 }
 
 export function subjectRecord(id: string): string {

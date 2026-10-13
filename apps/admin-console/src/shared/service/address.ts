@@ -1,7 +1,13 @@
 import type { Crumb } from '#/shared/service/breadcrumb';
+import { stringifySearch } from '#/shared/service/search';
 
 export function tenantPage(tenant: string): string {
   return `/console/${encodeURIComponent(tenant)}`;
+}
+
+// A page's address with its query parameters; a parameter left undefined is left out.
+export function withSearch(href: string, search: Record<string, string | undefined>): string {
+  return `${href}${stringifySearch(search)}`;
 }
 
 interface ResourceNames {

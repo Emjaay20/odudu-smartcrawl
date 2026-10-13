@@ -1,3 +1,5 @@
+import { withSearch } from '#/shared/service/address';
+import { TAB_PARAM } from '#/shared/service/record';
 import { clientHref } from '#/features/clients/service/address';
 
 // A client's record, a tab per concern, in the order the page shows them.
@@ -34,7 +36,7 @@ export function chosenTab(name: string): ClientTab | undefined {
 }
 
 export function clientTabHref(tenant: string, id: string, tab: ClientTab): string {
-  return `${clientHref(tenant, id)}?tab=${tab}`;
+  return withSearch(clientHref(tenant, id), { [TAB_PARAM]: tab });
 }
 
 export function clientRecord(id: string): string {

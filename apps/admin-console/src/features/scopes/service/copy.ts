@@ -1,4 +1,5 @@
 import type { ClientScope, SetScopeRolesResponse } from '@odudu/contracts/admin';
+import { withSearch } from '#/shared/service/address';
 import { roleReachUnavailable } from '#/shared/service/capabilities';
 import type { LeftOut, PartialCopy } from '#/shared/service/copy';
 import { andList, plural } from '#/shared/service/format';
@@ -33,7 +34,7 @@ export interface CopyPlan {
 }
 
 export function copyHrefOf(tenant: string, id: string): string {
-  return `${scopesHref(tenant)}/new?copy=${encodeURIComponent(id)}`;
+  return withSearch(`${scopesHref(tenant)}/new`, { copy: id });
 }
 
 // A copy maps the roles a caller could give. Until the caller is known every

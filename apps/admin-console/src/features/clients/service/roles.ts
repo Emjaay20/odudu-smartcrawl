@@ -1,4 +1,5 @@
 import { holds } from '#/shared/service/access';
+import { withSearch } from '#/shared/service/address';
 import type { Authority } from '#/shared/service/principal';
 
 export const ROLES_CAPABILITY = 'manage-tenant';
@@ -13,7 +14,7 @@ export function rolesReadable(authority: Authority | undefined): boolean {
 
 // The roles list that narrows to this client's own, where every filter applies.
 export function clientRolesListHref(rolesHref: string, clientDbId: string): string {
-  return `${rolesHref}?client=${encodeURIComponent(clientDbId)}`;
+  return withSearch(rolesHref, { client: clientDbId });
 }
 
 export const ROLES_OPEN_LABEL = 'Open them in Roles';

@@ -1,4 +1,5 @@
 import { holds, readable } from '#/shared/service/access';
+import { tenantPage } from '#/shared/service/address';
 import { SYSTEM_TENANT, type Authority, type Principal } from '#/shared/service/principal';
 import {
   type Area,
@@ -36,7 +37,7 @@ export function actsWithSystemAuthority(
 }
 
 export function areaHref(tenant: string, area: Area): string {
-  const base = `/console/${encodeURIComponent(tenant)}`;
+  const base = tenantPage(tenant);
   return area.path === '' ? base : `${base}/${area.path}`;
 }
 
