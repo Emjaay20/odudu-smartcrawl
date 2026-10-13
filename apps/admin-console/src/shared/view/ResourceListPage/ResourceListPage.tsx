@@ -1,13 +1,12 @@
 import type { ReactNode } from 'react';
 import type { ResourceListState } from '#/shared/service/resourceList';
 import { Button } from '#/shared/view/Button';
-import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { Count } from '#/shared/view/Count';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { InlineFields } from '#/shared/view/Field';
 import { FilterBar } from '#/shared/view/FilterBar';
-import { LoadFailed } from '#/shared/view/LoadFailed';
+import { ListGate } from '#/shared/view/ListGate';
 import { LoadMoreFailed } from '#/shared/view/LoadMore';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { Pager } from '#/shared/view/Pager';
@@ -82,18 +81,60 @@ export function ResourceListPage<T>({
           </Narrowing>
         )}
         {notice}
-        <Body
+        <ListGate
           list={list}
-          title={title}
-          noun={noun}
-          columns={columns}
-          rowKey={rowKey}
-          {...(onRowAction === undefined ? {} : { onRowAction })}
-          capability={capability}
-          {...(nothingYet === undefined ? {} : { nothingYet })}
-          {...(nothingYetAction === undefined ? {} : { nothingYetAction })}
-          {...(renderRows === undefined ? {} : { renderRows })}
-        />
+          loading={<TableSkeleton label={`Loading ${noun.other}`} columns={columns} />}
+          refused={{ capability, noun: title }}
+          failed={`${title} could not be loaded`}
+          unchanged
+        >
+          {() => {
+            if (list.rows.length === 0 && list.narrowed) {
+              const query = list.search?.query;
+              return (
+                <EmptyState
+                  variant="nothing-matches"
+                  title={
+                    query === undefined
+                      ? `No ${noun.other} match`
+                      : `No ${noun.other} match “${query}”`
+                  }
+                  action={<Button onPress={list.clear}>{`Show every ${noun.one}`}</Button>}
+                >
+                  A search matches the start of the field it names.
+                </EmptyState>
+              );
+            }
+            if (list.rows.length === 0) {
+              return (
+                <EmptyState
+                  variant="nothing-yet"
+                  title={`No ${noun.other} yet`}
+                  {...(nothingYetAction === undefined ? {} : { action: nothingYetAction })}
+                >
+                  {nothingYet}
+                </EmptyState>
+              );
+            }
+            return (
+              <>
+                {renderRows === undefined ? (
+                  <DataTable
+                    label={title}
+                    columns={columns}
+                    rows={list.rows}
+                    rowKey={rowKey}
+                    {...(onRowAction === undefined ? {} : { onRowAction })}
+                  />
+                ) : (
+                  renderRows(list.rows)
+                )}
+                <Pager label={title} list={list} />
+                {list.loadMoreFailed ? <LoadMoreFailed noun={noun.other} /> : null}
+              </>
+            );
+          }}
+        </ListGate>
       </div>
     </>
   );
@@ -144,87 +185,5 @@ function Narrowing<T>({
     >
       {filters}
     </FilterBar>
-  );
-}
-
-function Body<T>({
-  list,
-  title,
-  noun,
-  columns,
-  rowKey,
-  onRowAction,
-  capability,
-  nothingYet,
-  nothingYetAction,
-  renderRows,
-}: {
-  list: ResourceListState<T>;
-  title: string;
-  noun: { one: string; other: string };
-  columns: readonly Column<T>[];
-  rowKey: (row: T) => string;
-  onRowAction?: (id: string) => void;
-  capability: string;
-  nothingYet?: ReactNode;
-  nothingYetAction?: ReactNode;
-  renderRows?: (rows: readonly T[]) => ReactNode;
-}) {
-  switch (list.status) {
-    case 'loading':
-      return <TableSkeleton label={`Loading ${noun.other}`} columns={columns} />;
-    case 'refused':
-      return <CapabilityNote capability={capability}>{title}</CapabilityNote>;
-    case 'failed':
-      return <LoadFailed title={`${title} could not be loaded`} retry={list.retry} unchanged />;
-    case 'ready':
-      break;
-  }
-  if (list.rows.length === 0 && list.narrowed) {
-    const query = list.search?.query;
-    return (
-      <EmptyState
-        variant="nothing-matches"
-        title={query === undefined ? `No ${noun.other} match` : `No ${noun.other} match “${query}”`}
-        action={<Button onPress={list.clear}>{`Show every ${noun.one}`}</Button>}
-      >
-        A search matches the start of the field it names.
-      </EmptyState>
-    );
-  }
-  if (list.rows.length === 0) {
-    return (
-      <EmptyState
-        variant="nothing-yet"
-        title={`No ${noun.other} yet`}
-        {...(nothingYetAction === undefined ? {} : { action: nothingYetAction })}
-      >
-        {nothingYet}
-      </EmptyState>
-    );
-  }
-  return (
-    <>
-      {renderRows === undefined ? (
-        <DataTable
-          label={title}
-          columns={columns}
-          rows={list.rows}
-          rowKey={rowKey}
-          {...(onRowAction === undefined ? {} : { onRowAction })}
-        />
-      ) : (
-        renderRows(list.rows)
-      )}
-      <Pager
-        label={title}
-        trail={list.trail}
-        next={list.next}
-        onTrailChange={list.setTrail}
-        onLoadMore={list.loadMore}
-        loadingMore={list.loadingMore}
-      />
-      {list.loadMoreFailed ? <LoadMoreFailed noun={noun.other} /> : null}
-    </>
   );
 }

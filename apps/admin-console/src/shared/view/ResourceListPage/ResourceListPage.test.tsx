@@ -79,6 +79,13 @@ it('shows the rows with their count, and pages through them', async () => {
   expect(onRowAction).toHaveBeenCalledWith('c1');
 });
 
+it('says which page it is on, and that more is loading', () => {
+  const { rerender } = render(page(state({ trail: ['c-2'] })));
+  expect(screen.getByRole('navigation', { name: 'Pages of clients' })).toHaveTextContent('Page 2');
+  rerender(page(state({ loadingMore: true })));
+  expect(screen.getByRole('button', { name: 'Loading more clients…' })).toBeDisabled();
+});
+
 it('searches the field the person chose', async () => {
   const user = userEvent.setup();
   const list = state();

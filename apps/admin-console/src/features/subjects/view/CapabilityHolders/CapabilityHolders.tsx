@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { Link } from 'react-aria-components';
 import { holderFilterOptions } from '#/features/subjects/service';
 import {
@@ -12,7 +11,7 @@ import { Count } from '#/shared/view/Count';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { SelectField } from '#/shared/view/Field';
 import { FilterBar } from '#/shared/view/FilterBar';
-import { LoadFailed } from '#/shared/view/LoadFailed';
+import { ListGate } from '#/shared/view/ListGate';
 import { Pager } from '#/shared/view/Pager';
 import { ListSkeleton } from '#/shared/view/Skeleton';
 import { StatusTag } from '#/shared/view/StatusTag';
@@ -96,18 +95,16 @@ export function CapabilityHolders({
   const page = useCapabilityHolders(tenant);
   const { list } = page;
   const label = `Administrators of ${tenant}`;
-  let body: ReactNode;
-  switch (list.status) {
-    case 'loading':
-      body = <ListSkeleton label="Loading administrators" />;
-      break;
-    case 'refused':
-      return <CapabilityNote capability="view-users">{label}</CapabilityNote>;
-    case 'failed':
-      body = <LoadFailed title="The administrators could not be loaded" retry={list.retry} />;
-      break;
-    case 'ready':
-      body =
+  if (list.status === 'refused') {
+    return <CapabilityNote capability="view-users">{label}</CapabilityNote>;
+  }
+  const body = (
+    <ListGate
+      list={list}
+      loading={<ListSkeleton label="Loading administrators" />}
+      failed="The administrators could not be loaded"
+    >
+      {() =>
         page.holders.length === 0 ? (
           list.narrowed ? (
             <EmptyState
@@ -139,18 +136,12 @@ export function CapabilityHolders({
                 />
               ))}
             </ul>
-            <Pager
-              label="Administrators"
-              trail={list.trail}
-              next={list.next}
-              onTrailChange={list.setTrail}
-              onLoadMore={list.loadMore}
-              loadingMore={list.loadingMore}
-            />
+            <Pager label="Administrators" list={list} />
           </>
-        );
-      break;
-  }
+        )
+      }
+    </ListGate>
+  );
   return (
     <div className={styles.holders}>
       <FilterBar

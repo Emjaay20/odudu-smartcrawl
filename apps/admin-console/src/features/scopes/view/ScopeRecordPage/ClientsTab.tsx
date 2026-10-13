@@ -8,7 +8,7 @@ import { Button } from '#/shared/view/Button';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { ClientPicker } from '#/shared/view/ClientPicker';
 import { InlineFields, SelectField } from '#/shared/view/Field';
-import { LoadFailed } from '#/shared/view/LoadFailed';
+import { ListGate } from '#/shared/view/ListGate';
 import { LoadMore } from '#/shared/view/LoadMore';
 import { Problem } from '#/shared/view/Message';
 import { Panel } from '#/shared/view/Panel';
@@ -25,49 +25,52 @@ function Carriers({ scope, page }: { scope: ClientScope; page: ScopeClientsTab }
   const removed = async (row: Parameters<ScopeClientsTab['remove']>[0]): Promise<void> => {
     if (await page.remove(row)) title.current?.focus();
   };
-  let body;
-  if (list.status === 'loading') {
-    body = <ListSkeleton label="Loading the clients" />;
-  } else if (list.status === 'failed' || list.status === 'refused') {
-    body = <LoadFailed title="The clients could not be loaded" retry={list.retry} />;
-  } else if (list.rows.length === 0) {
-    body = <p className={recordTab.text}>{`No client carries ${scope.name}.`}</p>;
-  } else {
-    body = (
-      <ul aria-label={label} className={styles.clients}>
-        {list.rows.map((row) => (
-          <li key={row.id} className={styles.client}>
-            <span>
-              {row.name} <code>{row.client_id}</code>
-            </span>
-            <InlineFields>
-              <SelectField
-                label={`Assignment for ${row.name}`}
-                hideLabel
-                options={ASSIGNMENTS}
-                value={row.assignment}
-                isDisabled={page.working !== null}
-                onChange={(value) => {
-                  page.change(row, value).catch(() => undefined);
-                }}
-              />
-            </InlineFields>
-            <Button
-              size="small"
-              variant="quiet"
-              isDisabled={page.working !== null}
-              aria-label={`Unassign ${row.name}`}
-              onPress={() => {
-                removed(row).catch(() => undefined);
-              }}
-            >
-              Unassign
-            </Button>
-          </li>
-        ))}
-      </ul>
-    );
-  }
+  const body = (
+    <ListGate
+      list={list}
+      loading={<ListSkeleton label="Loading the clients" />}
+      failed="The clients could not be loaded"
+    >
+      {() =>
+        list.rows.length === 0 ? (
+          <p className={recordTab.text}>{`No client carries ${scope.name}.`}</p>
+        ) : (
+          <ul aria-label={label} className={styles.clients}>
+            {list.rows.map((row) => (
+              <li key={row.id} className={styles.client}>
+                <span>
+                  {row.name} <code>{row.client_id}</code>
+                </span>
+                <InlineFields>
+                  <SelectField
+                    label={`Assignment for ${row.name}`}
+                    hideLabel
+                    options={ASSIGNMENTS}
+                    value={row.assignment}
+                    isDisabled={page.working !== null}
+                    onChange={(value) => {
+                      page.change(row, value).catch(() => undefined);
+                    }}
+                  />
+                </InlineFields>
+                <Button
+                  size="small"
+                  variant="quiet"
+                  isDisabled={page.working !== null}
+                  aria-label={`Unassign ${row.name}`}
+                  onPress={() => {
+                    removed(row).catch(() => undefined);
+                  }}
+                >
+                  Unassign
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </ListGate>
+  );
   return (
     <Panel title={label} headingRef={title}>
       <p className={recordTab.rule}>{`${ASSIGNMENT_RULE} ${page.count}`}</p>

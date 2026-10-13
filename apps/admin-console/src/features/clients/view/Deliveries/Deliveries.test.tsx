@@ -122,6 +122,14 @@ it('says the deliveries could not be loaded, and offers another try', async () =
   expect(screen.getByRole('button', { name: 'Try again' })).toBeVisible();
 });
 
+it('reads a refused list as one that could not be loaded', async () => {
+  renderConsoleAt(
+    AT,
+    clientRoutes(undefined, { [DELIVERIES]: problem(403, 'about:blank', 'Forbidden') }),
+  );
+  expect(await screen.findByText('The deliveries could not be loaded')).toBeVisible();
+});
+
 it('passes axe in both themes', async () => {
   expect(
     await axeInBothThemes(

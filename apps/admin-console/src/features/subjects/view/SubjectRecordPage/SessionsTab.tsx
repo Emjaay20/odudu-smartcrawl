@@ -12,7 +12,7 @@ import { Button } from '#/shared/view/Button';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { DataTable, type Column } from '#/shared/view/DataTable';
-import { LoadFailed } from '#/shared/view/LoadFailed';
+import { ListGate } from '#/shared/view/ListGate';
 import { Pager } from '#/shared/view/Pager';
 import { Panel } from '#/shared/view/Panel';
 import { TableSkeleton } from '#/shared/view/Skeleton';
@@ -36,27 +36,25 @@ export function PagedList<T>({
   rowKey: (row: T) => string;
   empty: string;
 }) {
-  switch (list.status) {
-    case 'loading':
-      return <TableSkeleton label={`Loading ${noun}`} columns={columns} rows={2} />;
-    case 'refused':
-    case 'failed':
-      return <LoadFailed title={`The ${noun} could not be loaded`} retry={list.retry} />;
-    case 'ready':
-      break;
-  }
   return (
-    <>
-      <DataTable label={label} columns={columns} rows={list.rows} rowKey={rowKey} empty={empty} />
-      <Pager
-        label={label}
-        trail={list.trail}
-        next={list.next}
-        onTrailChange={list.setTrail}
-        onLoadMore={list.loadMore}
-        loadingMore={list.loadingMore}
-      />
-    </>
+    <ListGate
+      list={list}
+      loading={<TableSkeleton label={`Loading ${noun}`} columns={columns} rows={2} />}
+      failed={`The ${noun} could not be loaded`}
+    >
+      {() => (
+        <>
+          <DataTable
+            label={label}
+            columns={columns}
+            rows={list.rows}
+            rowKey={rowKey}
+            empty={empty}
+          />
+          <Pager label={label} list={list} />
+        </>
+      )}
+    </ListGate>
   );
 }
 

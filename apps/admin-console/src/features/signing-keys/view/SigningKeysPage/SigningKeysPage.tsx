@@ -18,7 +18,7 @@ import { AskedDialog } from '#/shared/view/ConfirmDialog';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { SelectField } from '#/shared/view/Field';
-import { LoadFailed } from '#/shared/view/LoadFailed';
+import { ListGate } from '#/shared/view/ListGate';
 import { LoadMore } from '#/shared/view/LoadMore';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { LiveMessage } from '#/shared/view/Message';
@@ -109,36 +109,39 @@ function columns(spec: LaneSpec, page: Page): readonly Column<KeyRow>[] {
 function LaneBody({ spec, lane, page }: { spec: LaneSpec; lane: Lane; page: Page }) {
   const cols = columns(spec, page);
   const label = `${spec.title} keys`;
-  switch (lane.status) {
-    case 'loading':
-      return <TableSkeleton label={`Loading ${label.toLowerCase()}`} columns={cols} rows={2} />;
-    case 'refused':
-    case 'failed':
-      return <LoadFailed title={`${label} could not be loaded`} retry={lane.retry} unchanged />;
-    case 'ready':
-      break;
-  }
-  if (lane.rows.length === 0) {
-    return (
-      <EmptyState variant="nothing-yet" title={`No ${label.toLowerCase()}`}>
-        {spec.empty}
-      </EmptyState>
-    );
-  }
   return (
-    <>
-      <DataTable label={label} columns={cols} rows={lane.rows} rowKey={({ key }) => key.id} />
-      {lane.next === null ? null : (
-        <div>
-          <LoadMore noun={label.toLowerCase()} loading={lane.loadingMore} onPress={lane.loadMore} />
-        </div>
-      )}
-      {lane.loadMoreFailed ? (
-        <p role="alert" className={styles.failed}>
-          {`More ${label.toLowerCase()} could not be loaded. Load more tries again.`}
-        </p>
-      ) : null}
-    </>
+    <ListGate
+      list={lane}
+      loading={<TableSkeleton label={`Loading ${label.toLowerCase()}`} columns={cols} rows={2} />}
+      failed={`${label} could not be loaded`}
+      unchanged
+    >
+      {() =>
+        lane.rows.length === 0 ? (
+          <EmptyState variant="nothing-yet" title={`No ${label.toLowerCase()}`}>
+            {spec.empty}
+          </EmptyState>
+        ) : (
+          <>
+            <DataTable label={label} columns={cols} rows={lane.rows} rowKey={({ key }) => key.id} />
+            {lane.next === null ? null : (
+              <div>
+                <LoadMore
+                  noun={label.toLowerCase()}
+                  loading={lane.loadingMore}
+                  onPress={lane.loadMore}
+                />
+              </div>
+            )}
+            {lane.loadMoreFailed ? (
+              <p role="alert" className={styles.failed}>
+                {`More ${label.toLowerCase()} could not be loaded. Load more tries again.`}
+              </p>
+            ) : null}
+          </>
+        )
+      }
+    </ListGate>
   );
 }
 

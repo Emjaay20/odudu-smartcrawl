@@ -14,11 +14,11 @@ import {
   type ClientSessions,
 } from '#/features/clients/usecase/useClientSessionsTab';
 import { Button } from '#/shared/view/Button';
-import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { Count } from '#/shared/view/Count';
 import { DataTable, type Column } from '#/shared/view/DataTable';
-import { LoadFailed } from '#/shared/view/LoadFailed';
+import { CapabilityNote } from '#/shared/view/CapabilityNote';
+import { ListGate } from '#/shared/view/ListGate';
 import { Pager } from '#/shared/view/Pager';
 import { Panel } from '#/shared/view/Panel';
 import { TableSkeleton } from '#/shared/view/Skeleton';
@@ -54,44 +54,6 @@ const COLUMNS: readonly Column<TenantSession>[] = [
 
 function List({ client, page }: { client: Client; page: ClientSessions }) {
   const { list } = page;
-  let body;
-  switch (list.status) {
-    case 'loading':
-      body = <TableSkeleton label="Loading sessions" columns={COLUMNS} rows={2} />;
-      break;
-    case 'refused':
-      body = <CapabilityNote capability={SESSIONS_CAPABILITY}>Sessions</CapabilityNote>;
-      break;
-    case 'failed':
-      body = <LoadFailed title="The sessions could not be loaded" retry={list.retry} />;
-      break;
-    case 'ready':
-      body =
-        list.rows.length === 0 ? (
-          <p className={recordTab.rule}>{NO_SESSIONS}</p>
-        ) : (
-          <>
-            <DataTable
-              label={`Sessions through ${client.name}`}
-              columns={COLUMNS}
-              rows={list.rows}
-              rowKey={(session) => session.id}
-              onRowAction={(id) => {
-                const session = list.rows.find((each) => each.id === id);
-                if (session !== undefined) page.open(session.subject_id);
-              }}
-            />
-            <Pager
-              label="Sessions"
-              trail={list.trail}
-              next={list.next}
-              onTrailChange={list.setTrail}
-              onLoadMore={list.loadMore}
-              loadingMore={list.loadingMore}
-            />
-          </>
-        );
-  }
   return (
     <>
       {list.count === null ? null : (
@@ -99,7 +61,32 @@ function List({ client, page }: { client: Client; page: ClientSessions }) {
           <Count count={list.count.count} capped={list.count.capped} noun={SESSIONS_NOUN} />
         </div>
       )}
-      {body}
+      <ListGate
+        list={list}
+        loading={<TableSkeleton label="Loading sessions" columns={COLUMNS} rows={2} />}
+        refused={{ capability: SESSIONS_CAPABILITY, noun: 'Sessions' }}
+        failed="The sessions could not be loaded"
+      >
+        {() =>
+          list.rows.length === 0 ? (
+            <p className={recordTab.rule}>{NO_SESSIONS}</p>
+          ) : (
+            <>
+              <DataTable
+                label={`Sessions through ${client.name}`}
+                columns={COLUMNS}
+                rows={list.rows}
+                rowKey={(session) => session.id}
+                onRowAction={(id) => {
+                  const session = list.rows.find((each) => each.id === id);
+                  if (session !== undefined) page.open(session.subject_id);
+                }}
+              />
+              <Pager label="Sessions" list={list} />
+            </>
+          )
+        }
+      </ListGate>
     </>
   );
 }

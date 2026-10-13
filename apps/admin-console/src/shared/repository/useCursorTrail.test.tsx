@@ -20,12 +20,7 @@ function Subjects() {
   return (
     <>
       <p>{`Showing page ${String(page + 1)}`}</p>
-      <Pager
-        label="Subjects"
-        trail={trail}
-        next={PAGES[page + 1] ?? null}
-        onTrailChange={setTrail}
-      />
+      <Pager label="Subjects" list={{ trail, next: PAGES[page + 1] ?? null, setTrail }} />
     </>
   );
 }

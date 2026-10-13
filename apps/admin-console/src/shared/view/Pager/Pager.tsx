@@ -4,21 +4,18 @@ import { Button } from '#/shared/view/Button';
 import { LoadMore } from '#/shared/view/LoadMore';
 import styles from '#/shared/view/Pager/Pager.module.css';
 
-export function Pager({
-  label,
-  trail,
-  next,
-  onTrailChange,
-  onLoadMore,
-  loadingMore = false,
-}: {
-  label: string;
+// What a paged list gives its pager. Without `loadMore` there is no button
+// to append the next page in place.
+export interface PagedList {
   trail: CursorTrail;
   next: string | null;
-  onTrailChange: (trail: CursorTrail) => void;
-  onLoadMore?: () => void;
+  setTrail: (trail: CursorTrail) => void;
+  loadMore?: () => void;
   loadingMore?: boolean;
-}) {
+}
+
+export function Pager({ label, list }: { label: string; list: PagedList }) {
+  const { trail, next, setTrail, loadMore, loadingMore = false } = list;
   const noun = label.toLowerCase();
   const limitReason = useId();
   const atLimit = next !== null && !canAdvance(trail, next);
@@ -27,13 +24,13 @@ export function Pager({
   const appended = appendedOn === trail.join(' ');
   return (
     <nav aria-label={`Pages of ${noun}`} className={styles.pager}>
-      {onLoadMore === undefined || next === null ? null : (
+      {loadMore === undefined || next === null ? null : (
         <LoadMore
           noun={noun}
           loading={loadingMore}
           onPress={() => {
             setAppendedOn(trail.join(' '));
-            onLoadMore();
+            loadMore();
           }}
         />
       )}
@@ -44,7 +41,7 @@ export function Pager({
           aria-label="Previous page"
           isDisabled={trail.length === 0}
           onPress={() => {
-            onTrailChange(retreat(trail));
+            setTrail(retreat(trail));
           }}
         >
           Previous
@@ -59,7 +56,7 @@ export function Pager({
           isDisabled={next === null || atLimit}
           {...(atLimit ? { 'aria-describedby': limitReason } : {})}
           onPress={() => {
-            if (next !== null) onTrailChange(advance(trail, next));
+            if (next !== null) setTrail(advance(trail, next));
           }}
         >
           Next

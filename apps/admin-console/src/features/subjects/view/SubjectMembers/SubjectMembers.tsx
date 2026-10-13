@@ -2,10 +2,10 @@ import type { Subject } from '@odudu/contracts/admin';
 import { subjectName } from '#/features/subjects/service';
 import { useMembers, useMembersReadable } from '#/features/subjects/usecase/useMembers';
 import { ButtonLink } from '#/shared/view/ButtonLink';
-import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { Count } from '#/shared/view/Count';
 import { DataTable, type Column } from '#/shared/view/DataTable';
-import { LoadFailed } from '#/shared/view/LoadFailed';
+import { CapabilityNote } from '#/shared/view/CapabilityNote';
+import { ListGate } from '#/shared/view/ListGate';
 import { Pager } from '#/shared/view/Pager';
 import { TableSkeleton } from '#/shared/view/Skeleton';
 import { EnabledTag } from '#/shared/view/StatusTag';
@@ -54,41 +54,6 @@ function List({
 }) {
   const { list, listHref, open } = useMembers(tenant, by, id);
   const label = by === 'group' ? `Members of ${name}` : `Holders of ${name}`;
-  let body;
-  switch (list.status) {
-    case 'loading':
-      body = <TableSkeleton label="Loading members" columns={COLUMNS} rows={2} />;
-      break;
-    case 'refused':
-      body = <CapabilityNote capability="view-users">Members</CapabilityNote>;
-      break;
-    case 'failed':
-      body = <LoadFailed title="The members could not be loaded" retry={list.retry} />;
-      break;
-    case 'ready':
-      body =
-        list.rows.length === 0 ? (
-          <p className={recordTab.rule}>{NOBODY[by](name)}</p>
-        ) : (
-          <>
-            <DataTable
-              label={label}
-              columns={COLUMNS}
-              rows={list.rows}
-              rowKey={(subject) => subject.id}
-              onRowAction={open}
-            />
-            <Pager
-              label="Members"
-              trail={list.trail}
-              next={list.next}
-              onTrailChange={list.setTrail}
-              onLoadMore={list.loadMore}
-              loadingMore={list.loadingMore}
-            />
-          </>
-        );
-  }
   return (
     <>
       {list.status === 'refused' ? null : (
@@ -101,7 +66,29 @@ function List({
           </ButtonLink>
         </div>
       )}
-      {body}
+      <ListGate
+        list={list}
+        loading={<TableSkeleton label="Loading members" columns={COLUMNS} rows={2} />}
+        refused={{ capability: 'view-users', noun: 'Members' }}
+        failed="The members could not be loaded"
+      >
+        {() =>
+          list.rows.length === 0 ? (
+            <p className={recordTab.rule}>{NOBODY[by](name)}</p>
+          ) : (
+            <>
+              <DataTable
+                label={label}
+                columns={COLUMNS}
+                rows={list.rows}
+                rowKey={(subject) => subject.id}
+                onRowAction={open}
+              />
+              <Pager label="Members" list={list} />
+            </>
+          )
+        }
+      </ListGate>
     </>
   );
 }

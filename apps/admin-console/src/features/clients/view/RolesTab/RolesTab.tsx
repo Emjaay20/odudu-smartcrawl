@@ -16,11 +16,11 @@ import {
 } from '#/features/clients/usecase/useClientRolesTab';
 import { Button } from '#/shared/view/Button';
 import { ButtonLink } from '#/shared/view/ButtonLink';
-import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { Count } from '#/shared/view/Count';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { TextAreaField, TextField } from '#/shared/view/Field';
-import { LoadFailed } from '#/shared/view/LoadFailed';
+import { CapabilityNote } from '#/shared/view/CapabilityNote';
+import { ListGate } from '#/shared/view/ListGate';
 import { Pager } from '#/shared/view/Pager';
 import { Problem } from '#/shared/view/Message';
 import { Panel } from '#/shared/view/Panel';
@@ -44,41 +44,6 @@ const NOUN = { one: 'role', other: 'roles' };
 
 function List({ client, page }: { client: Client; page: ClientRoles }) {
   const { list } = page;
-  let body;
-  switch (list.status) {
-    case 'loading':
-      body = <TableSkeleton label="Loading roles" columns={COLUMNS} rows={2} />;
-      break;
-    case 'refused':
-      body = <CapabilityNote capability={ROLES_CAPABILITY}>Roles</CapabilityNote>;
-      break;
-    case 'failed':
-      body = <LoadFailed title="The roles could not be loaded" retry={list.retry} />;
-      break;
-    case 'ready':
-      body =
-        list.rows.length === 0 ? (
-          <p className={recordTab.rule}>{NO_CLIENT_ROLES}</p>
-        ) : (
-          <>
-            <DataTable
-              label={`Roles of ${client.name}`}
-              columns={COLUMNS}
-              rows={list.rows}
-              rowKey={(role) => role.id}
-              onRowAction={page.open}
-            />
-            <Pager
-              label="Roles"
-              trail={list.trail}
-              next={list.next}
-              onTrailChange={list.setTrail}
-              onLoadMore={list.loadMore}
-              loadingMore={list.loadingMore}
-            />
-          </>
-        );
-  }
   return (
     <>
       {list.status === 'refused' ? null : (
@@ -91,7 +56,29 @@ function List({ client, page }: { client: Client; page: ClientRoles }) {
           </ButtonLink>
         </div>
       )}
-      {body}
+      <ListGate
+        list={list}
+        loading={<TableSkeleton label="Loading roles" columns={COLUMNS} rows={2} />}
+        refused={{ capability: ROLES_CAPABILITY, noun: 'Roles' }}
+        failed="The roles could not be loaded"
+      >
+        {() =>
+          list.rows.length === 0 ? (
+            <p className={recordTab.rule}>{NO_CLIENT_ROLES}</p>
+          ) : (
+            <>
+              <DataTable
+                label={`Roles of ${client.name}`}
+                columns={COLUMNS}
+                rows={list.rows}
+                rowKey={(role) => role.id}
+                onRowAction={page.open}
+              />
+              <Pager label="Roles" list={list} />
+            </>
+          )
+        }
+      </ListGate>
     </>
   );
 }

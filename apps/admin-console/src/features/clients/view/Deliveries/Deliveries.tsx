@@ -13,7 +13,7 @@ import {
 } from '#/features/clients/usecase/useClientDeliveries';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { SelectField } from '#/shared/view/Field';
-import { LoadFailed } from '#/shared/view/LoadFailed';
+import { ListGate } from '#/shared/view/ListGate';
 import { LoadMore } from '#/shared/view/LoadMore';
 import { Panel } from '#/shared/view/Panel';
 import { TableSkeleton } from '#/shared/view/Skeleton';
@@ -52,30 +52,32 @@ const COLUMNS: readonly Column<LogoutDelivery>[] = [
 
 function Rows({ client, page }: { client: Client; page: ClientDeliveries }) {
   const { list } = page;
-  switch (list.status) {
-    case 'loading':
-      return <TableSkeleton label="Loading deliveries" columns={COLUMNS} rows={2} />;
-    case 'refused':
-    case 'failed':
-      return <LoadFailed title="The deliveries could not be loaded" retry={list.retry} />;
-    case 'ready':
-      break;
-  }
-  if (list.rows.length === 0) return <p className={recordTab.rule}>{NO_DELIVERIES}</p>;
   return (
-    <>
-      <DataTable
-        label={`Logout deliveries of ${client.name}`}
-        columns={COLUMNS}
-        rows={list.rows}
-        rowKey={(delivery) => delivery.id}
-      />
-      {list.more ? (
-        <div className={recordTab.actions}>
-          <LoadMore noun="deliveries" loading={list.loadingMore} onPress={list.loadMore} />
-        </div>
-      ) : null}
-    </>
+    <ListGate
+      list={list}
+      loading={<TableSkeleton label="Loading deliveries" columns={COLUMNS} rows={2} />}
+      failed="The deliveries could not be loaded"
+    >
+      {() =>
+        list.rows.length === 0 ? (
+          <p className={recordTab.rule}>{NO_DELIVERIES}</p>
+        ) : (
+          <>
+            <DataTable
+              label={`Logout deliveries of ${client.name}`}
+              columns={COLUMNS}
+              rows={list.rows}
+              rowKey={(delivery) => delivery.id}
+            />
+            {list.more ? (
+              <div className={recordTab.actions}>
+                <LoadMore noun="deliveries" loading={list.loadingMore} onPress={list.loadMore} />
+              </div>
+            ) : null}
+          </>
+        )
+      }
+    </ListGate>
   );
 }
 

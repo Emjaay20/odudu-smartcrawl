@@ -17,6 +17,7 @@ import { DescriptionField } from '#/shared/view/DescriptionField';
 import { KeyHint, PlatformContext } from '#/shared/view/KeyHint';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
+import { ListGate } from '#/shared/view/ListGate';
 import { LoadFailed } from '#/shared/view/LoadFailed';
 import { LoadMore, LoadMoreFailed } from '#/shared/view/LoadMore';
 import { LiveMessage, Problem } from '#/shared/view/Message';
@@ -289,10 +290,7 @@ function Lists() {
       />
       <Pager
         label="All clients"
-        trail={trail}
-        next="c4"
-        onTrailChange={setTrail}
-        onLoadMore={() => undefined}
+        list={{ trail, next: 'c4', setTrail, loadMore: () => undefined }}
       />
       <div className={styles.counts}>
         <Count count={1204} capped={false} noun={{ one: 'client', other: 'clients' }} />
@@ -812,6 +810,21 @@ function RecordPieces() {
             <LoadMore noun="deliveries" loading={false} onPress={NOTHING} />
             <LoadMore compact noun="groups under /eng" loading onPress={NOTHING} />
             <LoadMoreFailed noun="deliveries" />
+          </div>
+        </Specimen>
+        <Specimen label="ListGate: loading, refused, failed, and the rows">
+          <div className={styles.stack}>
+            {(['loading', 'refused', 'failed', 'ready'] as const).map((status) => (
+              <ListGate
+                key={status}
+                list={{ status, retry: NOTHING }}
+                loading={<ListSkeleton label="Loading the sessions" items={1} />}
+                refused={{ capability: 'view-sessions', noun: 'Sessions' }}
+                failed="The sessions could not be loaded"
+              >
+                {() => <p>The rows</p>}
+              </ListGate>
+            ))}
           </div>
         </Specimen>
         <Specimen label="ReadGate: loading, failed, and the record">

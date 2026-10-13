@@ -1,11 +1,10 @@
 import type { AuditEvent } from '@odudu/contracts/admin';
 import type { ResourceListState } from '#/shared/service/resourceList';
 import { AuditActor } from '#/shared/view/AuditActor';
-import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { CopyValue } from '#/shared/view/CopyValue';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
-import { LoadFailed } from '#/shared/view/LoadFailed';
+import { ListGate } from '#/shared/view/ListGate';
 import { LoadMoreFailed } from '#/shared/view/LoadMore';
 import { Pager } from '#/shared/view/Pager';
 import { TableSkeleton } from '#/shared/view/Skeleton';
@@ -65,44 +64,35 @@ export function ActivityTab({
   noun: string;
   now?: Date;
 }) {
-  switch (list.status) {
-    case 'loading':
-      return <TableSkeleton label="Loading activity" columns={columns(now)} />;
-    case 'refused':
-      return <CapabilityNote capability="view-audit">Activity</CapabilityNote>;
-    case 'failed':
-      return <LoadFailed title="Activity could not be loaded" retry={list.retry} />;
-    case 'ready':
-      break;
-  }
-  if (list.rows.length === 0) {
-    return (
-      <EmptyState variant="nothing-yet" title={`No activity on this ${noun} yet`}>
-        Every change made to it, and every change refused, is listed here.
-      </EmptyState>
-    );
-  }
   return (
-    <div className={styles.activity}>
-      <p className={styles.note}>
-        A correlation id links rows written for one request. The caller can set it, so it is a
-        correlation, not evidence.
-      </p>
-      <DataTable
-        label={`Activity on this ${noun}`}
-        columns={columns(now)}
-        rows={list.rows}
-        rowKey={(event) => event.id}
-      />
-      <Pager
-        label="Activity"
-        trail={list.trail}
-        next={list.next}
-        onTrailChange={list.setTrail}
-        onLoadMore={list.loadMore}
-        loadingMore={list.loadingMore}
-      />
-      {list.loadMoreFailed ? <LoadMoreFailed noun="activity" /> : null}
-    </div>
+    <ListGate
+      list={list}
+      loading={<TableSkeleton label="Loading activity" columns={columns(now)} />}
+      refused={{ capability: 'view-audit', noun: 'Activity' }}
+      failed="Activity could not be loaded"
+    >
+      {() =>
+        list.rows.length === 0 ? (
+          <EmptyState variant="nothing-yet" title={`No activity on this ${noun} yet`}>
+            Every change made to it, and every change refused, is listed here.
+          </EmptyState>
+        ) : (
+          <div className={styles.activity}>
+            <p className={styles.note}>
+              A correlation id links rows written for one request. The caller can set it, so it is a
+              correlation, not evidence.
+            </p>
+            <DataTable
+              label={`Activity on this ${noun}`}
+              columns={columns(now)}
+              rows={list.rows}
+              rowKey={(event) => event.id}
+            />
+            <Pager label="Activity" list={list} />
+            {list.loadMoreFailed ? <LoadMoreFailed noun="activity" /> : null}
+          </div>
+        )
+      }
+    </ListGate>
   );
 }
