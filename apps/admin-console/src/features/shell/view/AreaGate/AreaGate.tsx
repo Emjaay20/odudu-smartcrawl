@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 import { checkingText, type Area } from '#/features/shell/service';
 import { useArea } from '#/features/shell/usecase/useArea';
-import { PageNotFound } from '#/features/shell/view/PageNotFound';
 import type { Crumb } from '#/shared/view/Breadcrumb';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { PageHeader } from '#/shared/view/PageHeader';
+import { PageNotFound } from '#/shared/view/PageNotFound';
 import { Skeleton } from '#/shared/view/Skeleton';
 
 // whoami is advice: a principal it says cannot read the area is told what

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { PageNotFound } from '#/features/shell/view/PageNotFound';
+import { PageNotFound } from '#/shared/view/PageNotFound';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 it('says no page has the address and what to do instead', () => {

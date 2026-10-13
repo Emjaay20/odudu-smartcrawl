@@ -7,12 +7,12 @@ import {
 } from '#/features/session';
 import { areasLabel, brandText } from '#/features/shell/service';
 import { useShell } from '#/features/shell/usecase/useShell';
-import { PageNotFound } from '#/features/shell/view/PageNotFound';
 import { RailFooter } from '#/features/shell/view/RailFooter';
 import { TenantNotFound } from '#/features/shell/view/TenantNotFound';
 import { isTenantName, type Principal } from '#/shared/service/principal';
 import { AppShell } from '#/shared/view/AppShell';
 import { ContextBar } from '#/shared/view/ContextBar';
+import { PageNotFound } from '#/shared/view/PageNotFound';
 import { Rail } from '#/shared/view/Rail';
 import styles from '#/features/shell/view/TenantShell/TenantShell.module.css';
 

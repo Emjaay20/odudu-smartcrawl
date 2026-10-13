@@ -45,6 +45,7 @@ import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
 import { FilterBar } from '#/shared/view/FilterBar';
 import { GroupPicker } from '#/shared/view/GroupPicker';
 import { PageHeader } from '#/shared/view/PageHeader';
+import { PageNotFound } from '#/shared/view/PageNotFound';
 import { Pager } from '#/shared/view/Pager';
 import { Rail } from '#/shared/view/Rail';
 import { RecordPage } from '#/shared/view/RecordPage';
@@ -703,6 +704,15 @@ function Dialogs({ initial }: { initial: GalleryDialog | null }) {
   );
 }
 
+function RecordPieces() {
+  return (
+    <div className={styles.stack}>
+      <Specimen label="PageNotFound: an address that is no page">
+        <PageNotFound />
+      </Specimen>
+    </div>
+  );
+}
 function ThemeChoice({
   theme,
   onChange,
@@ -951,6 +961,10 @@ export function Gallery({
           <Specimen label="SaveBar on its own">
             <SaveBar section="Tokens" saving={false} onDiscard={() => undefined} />
           </Specimen>
+        </Group>
+
+        <Group id="records" title="Record pages">
+          <RecordPieces />
         </Group>
 
         <Group id="typed" title="Typed fields">

@@ -16,12 +16,12 @@ import {
   AreaPage,
   EVERY_AREA,
   OVERVIEW,
-  PageNotFound,
   pendingPage,
   PendingFrame,
   TenantShell,
 } from '#/features/shell';
 import { parseSearch, stringifySearch } from '#/shared/service/search';
+import { PageNotFound } from '#/shared/view/PageNotFound';
 
 // React Aria's links navigate through the router, so a rail link is still a
 // real href for a new tab while an ordinary click waits on the guard.

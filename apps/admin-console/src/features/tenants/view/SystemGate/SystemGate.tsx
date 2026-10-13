@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
-import { PageNotFound } from '#/features/shell';
 import { useTenantsArea } from '#/features/tenants/usecase/useTenantsArea';
 import type { Crumb } from '#/shared/view/Breadcrumb';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { PageHeader } from '#/shared/view/PageHeader';
+import { PageNotFound } from '#/shared/view/PageNotFound';
 import { Skeleton } from '#/shared/view/Skeleton';
 
 // The page is drawn, and its reads made, only once whoami says the System

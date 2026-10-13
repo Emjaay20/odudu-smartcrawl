@@ -1,8 +1,8 @@
 import { checkingText, notBuiltText, type Area } from '#/features/shell/service';
 import { useArea } from '#/features/shell/usecase/useArea';
-import { PageNotFound } from '#/features/shell/view/PageNotFound';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { PageHeader } from '#/shared/view/PageHeader';
+import { PageNotFound } from '#/shared/view/PageNotFound';
 import { Skeleton } from '#/shared/view/Skeleton';
 
 // Each area's page until its own feature takes the route.
