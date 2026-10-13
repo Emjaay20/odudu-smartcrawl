@@ -26,7 +26,9 @@ it('never shows a blank for a value that is not there', () => {
 
 // A conflict describes a flag with the default describer, which says "not set"
 // for undefined where a flag reads "off". Every flag a section compares is a
-// boolean the server must send, so that case cannot arise.
+// boolean the server must send, so that case cannot arise. A stored session
+// draft is JSON and could hold a null there, which now reads "not set"; no
+// code path writes one.
 const FLAGS = [
   ...[
     'enabled',
@@ -43,9 +45,12 @@ const FLAGS = [
   ['scope', clientScopeSchema, OPENID, 'include_in_access_token'] as const,
 ];
 
-it.each(FLAGS)('a %s answer must carry %s as a boolean', (_name, schema, answer, field) => {
-  expect(schema.safeParse(answer).success).toBe(true);
-  expect(typeof answer[field as keyof typeof answer]).toBe('boolean');
-  expect(schema.safeParse({ ...answer, [field]: undefined }).success).toBe(false);
-  expect(schema.safeParse({ ...answer, [field]: null }).success).toBe(false);
-});
+it.each(FLAGS.map(([name, schema, answer, field]) => [field, name, schema, answer] as const))(
+  '%s of a %s answer must be a boolean',
+  (field, _name, schema, answer) => {
+    expect(schema.safeParse(answer).success).toBe(true);
+    expect(typeof answer[field as keyof typeof answer]).toBe('boolean');
+    expect(schema.safeParse({ ...answer, [field]: undefined }).success).toBe(false);
+    expect(schema.safeParse({ ...answer, [field]: null }).success).toBe(false);
+  },
+);

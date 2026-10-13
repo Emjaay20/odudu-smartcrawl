@@ -61,7 +61,22 @@ it('says a refusal in the dialog, reports what was needed and keeps asking', asy
   expect(hook.result.current.notice).toBeNull();
 });
 
-it('clears the problem on the next ask and leaves the notice until the next action', async () => {
+it('clears a refusal on the next ask', async () => {
+  const { hook } = setup(() => Promise.resolve(refused), said);
+  act(() => {
+    hook.result.current.ask(1);
+  });
+  await act(async () => {
+    await hook.result.current.confirm();
+  });
+  expect(hook.result.current.problem).toBe('said false');
+  act(() => {
+    hook.result.current.ask(2);
+  });
+  expect(hook.result.current).toMatchObject({ asked: 2, problem: null });
+});
+
+it('leaves the notice of the last action when the next question is cancelled', async () => {
   const { hook } = setup(() => Promise.resolve(done), said);
   act(() => {
     hook.result.current.ask(1);
@@ -75,7 +90,7 @@ it('clears the problem on the next ask and leaves the notice until the next acti
   act(() => {
     hook.result.current.cancel();
   });
-  expect(hook.result.current).toMatchObject({ asked: null, problem: null, notice: 'said true' });
+  expect(hook.result.current).toMatchObject({ asked: null, notice: 'said true' });
 });
 
 it('does nothing when nothing is asked, or while another write is under way', async () => {

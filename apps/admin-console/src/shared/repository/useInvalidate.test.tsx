@@ -44,12 +44,18 @@ it('marks only the queries under the key stale', () => {
   expect(queryClient.getQueryState(['list', 'other', 'roles'])?.isInvalidated).toBe(false);
 });
 
-it('does not reject into its caller when the read again fails', async () => {
+it('leaves no rejection unhandled when the read again fails', async () => {
+  const unhandled = vi.fn();
+  process.on('unhandledRejection', unhandled);
   const { invalidated, wrapper } = harness();
   invalidated.mockRejectedValue(new Error('refetch failed'));
   const { result } = renderHook(() => useInvalidate(), { wrapper });
   result.current.invalidate(['list', 'acme']);
   result.current.invalidateExact(['record', 'acme', 'x']);
-  await Promise.resolve();
+  await new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
+  process.off('unhandledRejection', unhandled);
   expect(invalidated).toHaveBeenCalledTimes(2);
+  expect(unhandled).not.toHaveBeenCalled();
 });
