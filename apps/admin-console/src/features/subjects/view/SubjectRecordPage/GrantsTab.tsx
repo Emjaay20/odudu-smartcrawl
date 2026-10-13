@@ -1,8 +1,7 @@
 import type { Grant, Subject } from '@odudu/contracts/admin';
-import { useHolds, useSubjectGrants } from '#/features/subjects/usecase/useSubjectSessions';
-import { PagedList } from '#/features/subjects/view/SubjectRecordPage/SessionsTab';
+import { useSubjectGrants } from '#/features/subjects/usecase/useSubjectSessions';
+import { HeldTab, PagedList } from '#/features/subjects/view/SubjectRecordPage/SessionsTab';
 import { Button } from '#/shared/view/Button';
-import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import type { Column } from '#/shared/view/DataTable';
 import { Panel } from '#/shared/view/Panel';
@@ -115,14 +114,9 @@ export function GrantsTab({
   self: boolean;
   withinReach: boolean;
 }) {
-  const allowed = useHolds(tenant, 'manage-sessions');
   return (
-    <div className={recordTab.tab}>
-      {allowed ? (
-        <Grants tenant={tenant} subject={subject} self={self} withinReach={withinReach} />
-      ) : (
-        <CapabilityNote capability="manage-sessions">Grants</CapabilityNote>
-      )}
-    </div>
+    <HeldTab tenant={tenant} capability="manage-sessions" label="Grants">
+      <Grants tenant={tenant} subject={subject} self={self} withinReach={withinReach} />
+    </HeldTab>
   );
 }

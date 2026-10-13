@@ -1,4 +1,5 @@
 import type { Session, Subject } from '@odudu/contracts/admin';
+import type { ReactNode } from 'react';
 import {
   useHolds,
   useSubjectSessions,
@@ -184,6 +185,31 @@ function Sessions({
   );
 }
 
+// A tab whose reads and writes need one admin capability, which whoami says
+// the principal lacks: it is told what that needs instead.
+export function HeldTab({
+  tenant,
+  capability,
+  label,
+  children,
+}: {
+  tenant: string;
+  capability: 'manage-sessions' | 'manage-users';
+  // What the tab is called, in "Grants needs the manage-sessions capability."
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className={recordTab.tab}>
+      {useHolds(tenant, capability) ? (
+        children
+      ) : (
+        <CapabilityNote capability={capability}>{label}</CapabilityNote>
+      )}
+    </div>
+  );
+}
+
 export function SessionsTab({
   tenant,
   subject,
@@ -195,14 +221,9 @@ export function SessionsTab({
   self: boolean;
   withinReach: boolean;
 }) {
-  const allowed = useHolds(tenant, 'manage-sessions');
   return (
-    <div className={recordTab.tab}>
-      {allowed ? (
-        <Sessions tenant={tenant} subject={subject} self={self} withinReach={withinReach} />
-      ) : (
-        <CapabilityNote capability="manage-sessions">Sessions</CapabilityNote>
-      )}
-    </div>
+    <HeldTab tenant={tenant} capability="manage-sessions" label="Sessions">
+      <Sessions tenant={tenant} subject={subject} self={self} withinReach={withinReach} />
+    </HeldTab>
   );
 }
