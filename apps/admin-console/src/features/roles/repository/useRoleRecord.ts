@@ -12,6 +12,7 @@ import { compositesRecord, roleRecord } from '#/features/roles/service';
 import { isStale } from '#/shared/service/failure';
 import { useAfterChange } from '#/shared/repository/useAfterChange';
 import {
+  GROUP_KIND,
   heldCapabilitiesKey,
   holdersKey,
   listKey,
@@ -49,7 +50,7 @@ export function useCompositesRecord(
 // left to lapse, since reading them again would only find it gone.
 function useAfterRoleChange(tenant: string, deleted: string | null = null) {
   return useAfterChange(tenant, deleted, {
-    kinds: ['role', 'group'],
+    kinds: ['role', GROUP_KIND],
     records: ['roles/', 'groups/'],
     recordOf: roleRecord,
     keys: [

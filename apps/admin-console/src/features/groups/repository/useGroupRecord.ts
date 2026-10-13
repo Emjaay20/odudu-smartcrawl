@@ -8,7 +8,14 @@ import {
   setGroupRoles,
 } from '#/features/groups/adapter/groups';
 import { groupRecord, groupRolesRecord, type GroupRead } from '#/features/groups/service';
-import { heldCapabilitiesKey, holdersKey, listKey, pickerKey } from '#/shared/repository/queryKeys';
+import {
+  GROUP_KIND,
+  groupKey,
+  heldCapabilitiesKey,
+  holdersKey,
+  listKey,
+  pickerKey,
+} from '#/shared/repository/queryKeys';
 import { useAfterChange } from '#/shared/repository/useAfterChange';
 import { useRead } from '#/shared/repository/useRead';
 import { useRecord, type RecordState } from '#/shared/repository/useRecord';
@@ -39,10 +46,6 @@ export function useGroupRolesRecord(
 
 export type { GroupRead };
 
-function groupKey(tenant: string, id: string | null) {
-  return ['group', tenant, id] as const;
-}
-
 // What a read of no group answers if it is ever run, which a disabled read is not.
 const UNASKED: GatewayResult<GroupRecord> = { ok: false, kind: 'defect' };
 
@@ -60,7 +63,7 @@ export function useGroupNamed(tenant: string, id: string | null): GroupRead {
 // group read is read again but a deleted one's, which would only find it gone.
 function useAfterGroupChange(tenant: string, deleted: string | null = null) {
   return useAfterChange(tenant, deleted, {
-    kinds: ['group'],
+    kinds: [GROUP_KIND],
     records: ['groups/'],
     recordOf: groupRecord,
     keys: [

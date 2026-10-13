@@ -18,6 +18,13 @@ export function recordKey(tenant: string, record: string) {
   return ['record', tenant, record] as const;
 }
 
+// The kind of a read of one group, which a change to groups reads again.
+export const GROUP_KIND = 'group';
+
+export function groupKey(tenant: string, id: string | null) {
+  return [GROUP_KIND, tenant, id] as const;
+}
+
 export function holdersKey(tenant: string, ...rest: readonly string[]) {
   return ['holders', tenant, ...rest] as const;
 }
