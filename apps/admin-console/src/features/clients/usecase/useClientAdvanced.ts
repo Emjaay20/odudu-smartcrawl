@@ -29,7 +29,6 @@ import {
   type ClientRecordRead,
 } from '#/features/clients/usecase/useClientSection';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
-import { flagText } from '#/shared/service/format';
 import type { Choice } from '#/shared/service/choice';
 
 export interface ClientAdvanced {
@@ -130,7 +129,6 @@ export function useClientAdvanced(args: ClientRecordRead): ClientAdvanced {
         value: client.token_exchange_impersonation_allowed,
         label: EXCHANGE_LABEL,
         kind: 'plain',
-        describe: (value) => flagText(value, 'on', 'off'),
       },
     },
     save: saves.exchange,

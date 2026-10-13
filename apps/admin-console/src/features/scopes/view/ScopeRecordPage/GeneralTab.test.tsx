@@ -325,3 +325,23 @@ it('passes axe in both themes, with the delete dialog open', async () => {
     ),
   ).toEqual({ light: [], dark: [] });
 });
+
+it('shows the flag "In the ID token" kept in a draft beside the record\'s own, as on and off', async () => {
+  sessionStorage.setItem(
+    'odudu.console.drafts',
+    JSON.stringify({
+      owner: 'acme/s1',
+      drafts: {
+        'acme/scopes/s-bill': { tokens: { etag: '"old"', values: { include_in_id_token: true } } },
+      },
+    }),
+  );
+  renderConsoleAt(AT, scopeRoutes());
+  const section = await screen.findByRole('region', { name: 'Tokens' });
+  const row = await within(section).findByRole('row', { name: /In the ID token/u });
+  expect(
+    within(row)
+      .getAllByRole('cell')
+      .map((cell) => cell.textContent),
+  ).toEqual(['off', 'on']);
+});

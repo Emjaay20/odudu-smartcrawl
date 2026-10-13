@@ -24,7 +24,6 @@ import { useSectionSave, type SectionSave } from '#/shared/repository/useSection
 import { useToast } from '#/shared/repository/useToasts';
 import { useConfirmedRemoval, type Removal } from '#/shared/usecase/useConfirmedChange';
 import { deletedText, writeFailureText } from '#/shared/service/failure';
-import { flagText } from '#/shared/service/format';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
 
 export type { SectionSave };
@@ -101,7 +100,6 @@ export function useClientGeneral({ tenant, client, etag, gone }: ClientRecordRea
         value: client.enabled,
         label: FIELD.enabled,
         kind: 'plain',
-        describe: (value) => flagText(value, 'on', 'off'),
       },
     },
     save: saves.availability,
@@ -115,7 +113,6 @@ export function useClientGeneral({ tenant, client, etag, gone }: ClientRecordRea
         value: client.consent_required,
         label: FIELD.consentRequired,
         kind: 'plain',
-        describe: (value) => flagText(value, 'on', 'off'),
       },
     },
     save: saves.consent,

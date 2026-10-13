@@ -18,7 +18,6 @@ import {
   type ClientRecordRead,
 } from '#/features/clients/usecase/useClientSection';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
-import { flagText } from '#/shared/service/format';
 
 export interface ClientLogout {
   postLogout: SectionSave<PostLogoutValues>;
@@ -58,7 +57,6 @@ export function useClientLogout(args: ClientRecordRead): ClientLogout {
         value: client.backchannel_logout_session_required,
         label: BACKCHANNEL_SESSION_LABEL,
         kind: 'plain',
-        describe: (value) => flagText(value, 'on', 'off'),
       },
     },
     save: saves.backchannel,
@@ -77,7 +75,6 @@ export function useClientLogout(args: ClientRecordRead): ClientLogout {
         value: client.frontchannel_logout_session_required,
         label: FRONTCHANNEL_SESSION_LABEL,
         kind: 'plain',
-        describe: (value) => flagText(value, 'on', 'off'),
       },
     },
     save: saves.frontchannel,

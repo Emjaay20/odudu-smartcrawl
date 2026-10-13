@@ -38,7 +38,6 @@ import { useToast } from '#/shared/repository/useToasts';
 import { useConfirmedRemoval, type Removal } from '#/shared/usecase/useConfirmedChange';
 import { asksFirst, writeRefusal } from '#/shared/service/capabilities';
 import { writeFailureText } from '#/shared/service/failure';
-import { flagText } from '#/shared/service/format';
 import type { PickerState } from '#/shared/service/picker';
 import type { GatewayResult } from '#/shared/transport/gateway';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
@@ -171,7 +170,6 @@ export function useGroupGeneral({
         value: group.default_for_new_subjects,
         label: DEFAULT_LABEL,
         kind: 'plain',
-        describe: (value) => flagText(value, 'on', 'off'),
       },
     },
     save: saves.default,

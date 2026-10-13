@@ -30,7 +30,7 @@ import {
   type ClientRecordRead,
 } from '#/features/clients/usecase/useClientSection';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
-import { describeIds, flagText } from '#/shared/service/format';
+import { describeIds } from '#/shared/service/format';
 import type { ChecklistOption } from '#/shared/view/ChecklistField';
 import type { Choice } from '#/shared/service/choice';
 
@@ -115,7 +115,6 @@ export function useClientTokens(args: ClientRecordRead): ClientTokens {
         value: client.full_scope_allowed,
         label: TOKEN_FIELD.fullScope,
         kind: 'plain',
-        describe: (value) => flagText(value, 'on', 'off'),
       },
     },
     save: saves.fullScope,
@@ -140,7 +139,6 @@ export function useClientTokens(args: ClientRecordRead): ClientTokens {
         value: client.require_auth_time,
         label: AUTH_TIME_LABEL,
         kind: 'plain',
-        describe: (value) => flagText(value, 'on', 'off'),
       },
     },
     save: saves.idToken,

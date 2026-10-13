@@ -22,7 +22,6 @@ import { useToast } from '#/shared/repository/useToasts';
 import { useConfirmedRemoval, type Removal } from '#/shared/usecase/useConfirmedChange';
 import { asksFirst, judgedLoss, writeRefusal } from '#/shared/service/capabilities';
 import { deletedText } from '#/shared/service/failure';
-import { flagText } from '#/shared/service/format';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
 import type { DefaultValues, DescriptionValues } from '#/shared/service/sectionValues';
 
@@ -103,7 +102,6 @@ export function useRoleGeneral({
         value: role.default_for_new_subjects,
         label: DEFAULT_LABEL,
         kind: 'plain',
-        describe: (value) => flagText(value, 'on', 'off'),
       },
     },
     save: saves.default,

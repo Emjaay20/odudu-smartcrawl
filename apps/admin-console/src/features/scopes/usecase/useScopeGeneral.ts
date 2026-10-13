@@ -33,7 +33,6 @@ import { useToast } from '#/shared/repository/useToasts';
 import { useConfirmedRemoval, type Removal } from '#/shared/usecase/useConfirmedChange';
 import { writeRefusal } from '#/shared/service/capabilities';
 import { deletedText } from '#/shared/service/failure';
-import { flagText } from '#/shared/service/format';
 import { DESCRIPTION_RULE } from '#/shared/service/labels';
 import type { DescriptionValues } from '#/shared/service/sectionValues';
 import type { Choice } from '#/shared/service/choice';
@@ -115,13 +114,11 @@ export function useScopeGeneral({
         value: scope.include_in_id_token,
         label: ID_TOKEN_LABEL,
         kind: 'plain',
-        describe: (value) => flagText(value, 'on', 'off'),
       },
       include_in_access_token: {
         value: scope.include_in_access_token,
         label: ACCESS_TOKEN_LABEL,
         kind: 'plain',
-        describe: (value) => flagText(value, 'on', 'off'),
       },
     },
     save: saves.general,

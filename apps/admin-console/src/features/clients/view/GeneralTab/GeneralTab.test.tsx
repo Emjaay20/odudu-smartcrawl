@@ -307,3 +307,23 @@ it('passes axe in both themes, with the delete asked and with a refusal shown', 
     ),
   ).toEqual({ light: [], dark: [] });
 });
+
+it('shows the flag "Enabled" kept in a draft beside the record\'s own, as on and off', async () => {
+  sessionStorage.setItem(
+    'odudu.console.drafts',
+    JSON.stringify({
+      owner: 'acme/s1',
+      drafts: {
+        'acme/clients/c-bill': { availability: { etag: '"old"', values: { enabled: false } } },
+      },
+    }),
+  );
+  renderConsoleAt(AT, clientRoutes());
+  const section = await screen.findByRole('region', { name: 'Availability' });
+  const row = await within(section).findByRole('row', { name: /Enabled/u });
+  expect(
+    within(row)
+      .getAllByRole('cell')
+      .map((cell) => cell.textContent),
+  ).toEqual(['on', 'off']);
+});

@@ -438,3 +438,25 @@ it('asks without view-users whether you hold what a delete takes', async () => {
   );
   expect(sent.some((each) => each.path.startsWith(`${S}/s1`))).toBe(false);
 });
+
+it('shows the flag "Joined by every new subject" kept in a draft beside the record\'s own, as on and off', async () => {
+  sessionStorage.setItem(
+    'odudu.console.drafts',
+    JSON.stringify({
+      owner: 'acme/s1',
+      drafts: {
+        'acme/groups/g-plat': {
+          default: { etag: '"old"', values: { default_for_new_subjects: true } },
+        },
+      },
+    }),
+  );
+  renderConsoleAt(AT, groupRoutes());
+  const section = await screen.findByRole('region', { name: 'New subjects' });
+  const row = await within(section).findByRole('row', { name: /Joined by every new subject/u });
+  expect(
+    within(row)
+      .getAllByRole('cell')
+      .map((cell) => cell.textContent),
+  ).toEqual(['off', 'on']);
+});
