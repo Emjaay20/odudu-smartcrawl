@@ -1,4 +1,3 @@
-import type { SubmitEvent } from 'react';
 import { VisuallyHidden } from 'react-aria-components';
 import {
   useNewTenant,
@@ -26,6 +25,7 @@ import { ButtonLink } from '#/shared/view/ButtonLink';
 import { ChecklistField } from '#/shared/view/ChecklistField';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { TextField } from '#/shared/view/Field';
+import { CreationForm, creationForm } from '#/shared/view/CreationForm';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { SecretDialog } from '#/shared/view/SecretDialog';
 import styles from '#/features/tenants/view/NewTenantPage/NewTenantPage.module.css';
@@ -53,13 +53,6 @@ function Steps({ at }: { at: number }) {
   );
 }
 
-function submitted(run: () => void) {
-  return (event: SubmitEvent<HTMLFormElement>): void => {
-    event.preventDefault();
-    run();
-  };
-}
-
 function Message({ text }: { text: string | null }) {
   return (
     <p role="status" className={styles.message}>
@@ -70,7 +63,7 @@ function Message({ text }: { text: string | null }) {
 
 function Tenant({ step }: { step: TenantStep }) {
   return (
-    <form noValidate onSubmit={submitted(step.submit)} className={styles.form}>
+    <CreationForm submit={step.submit}>
       <TextField
         label="Name"
         description={step.rule}
@@ -105,7 +98,7 @@ function Tenant({ step }: { step: TenantStep }) {
           </Button>
         )}
       </div>
-    </form>
+    </CreationForm>
   );
 }
 
@@ -127,7 +120,7 @@ function Administrator({ step }: { step: AdministratorStep }) {
         The administrator is created with a one-time password, shown once, and is asked to change it
         at their first sign-in.
       </p>
-      <form noValidate onSubmit={submitted(step.submit)} className={styles.form}>
+      <CreationForm submit={step.submit}>
         {step.created ? (
           <dl className={styles.fixed}>
             <dt>Username</dt>
@@ -184,7 +177,7 @@ function Administrator({ step }: { step: AdministratorStep }) {
             </Button>
           )}
         </div>
-      </form>
+      </CreationForm>
       <SecretDialog
         secret={step.secret}
         title={`${step.username}'s one-time password`}
@@ -200,7 +193,7 @@ function Administrator({ step }: { step: AdministratorStep }) {
 function Done({ step, onStartOver }: { step: DoneStep; onStartOver: () => void }) {
   if (step.systemAdminsHref !== null) {
     return (
-      <div className={styles.form}>
+      <div className={creationForm.form}>
         <p className={styles.lead}>
           <code>{step.username}</code> {step.systemHolds} <code>system</code>, and changes the
           one-time password at their first sign-in.
@@ -214,7 +207,7 @@ function Done({ step, onStartOver }: { step: DoneStep; onStartOver: () => void }
     );
   }
   return (
-    <div className={styles.form}>
+    <div className={creationForm.form}>
       <p className={styles.lead}>
         <code>{step.tenant}</code> has an administrator, <code>{step.username}</code>, who holds{' '}
         {step.holds} and changes the one-time password at their first sign-in.

@@ -1,9 +1,3 @@
-.form {
-  display: grid;
-  gap: var(--space-4);
-  max-inline-size: 60ch;
-}
-
 .file {
   display: grid;
   gap: var(--space-1);

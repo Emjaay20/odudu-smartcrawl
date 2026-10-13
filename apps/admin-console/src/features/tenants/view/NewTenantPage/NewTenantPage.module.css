@@ -39,12 +39,6 @@
   background: var(--surface-sunken);
 }
 
-.form {
-  display: grid;
-  gap: var(--space-4);
-  max-inline-size: 60ch;
-}
-
 .lead {
   margin: 0 0 var(--space-4);
   max-inline-size: 72ch;

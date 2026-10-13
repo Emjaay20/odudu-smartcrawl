@@ -1,4 +1,4 @@
-import { useId, type SubmitEvent } from 'react';
+import { useId } from 'react';
 import { FileTrigger } from 'react-aria-components';
 import { tenantsTrail } from '#/features/tenants/service';
 import {
@@ -9,6 +9,7 @@ import { SystemGate } from '#/features/tenants/view/SystemGate';
 import { Button } from '#/shared/view/Button';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import { TextField } from '#/shared/view/Field';
+import { CreationForm } from '#/shared/view/CreationForm';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { SecretDialog } from '#/shared/view/SecretDialog';
 import styles from '#/features/tenants/view/ImportTenantPage/ImportTenantPage.module.css';
@@ -95,10 +96,6 @@ function Imported({ state }: { state: ImportState }) {
 
 function Import() {
   const state = useImportTenantPage();
-  const submit = (event: SubmitEvent<HTMLFormElement>): void => {
-    event.preventDefault();
-    state.submit();
-  };
   return (
     <>
       <PageHeader
@@ -107,7 +104,7 @@ function Import() {
         description="An import always creates a new tenant from an exported document. The whole document is checked before anything is written."
       />
       {state.imported === null ? (
-        <form noValidate onSubmit={submit} className={styles.form}>
+        <CreationForm submit={state.submit}>
           <TextField
             label="Name"
             description={state.rule}
@@ -138,7 +135,7 @@ function Import() {
               </Button>
             )}
           </div>
-        </form>
+        </CreationForm>
       ) : null}
       <Problems state={state} />
       <Imported state={state} />
