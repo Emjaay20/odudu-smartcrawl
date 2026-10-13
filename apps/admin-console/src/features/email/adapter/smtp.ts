@@ -6,7 +6,7 @@ import {
   type TestSmtpResponse,
 } from '@odudu/contracts/admin';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { nothing, tenantPath } from '#/shared/adapter/route';
+import { adminCall, nothing } from '#/shared/adapter/route';
 
 // A full replace, except for the password: left out, the stored one is kept.
 export function putSmtp(
@@ -15,7 +15,7 @@ export function putSmtp(
   relay: PutSmtpRequest,
   ifMatch: string,
 ): Promise<GatewayResult<SmtpConfig>> {
-  return gateway.request('PUT', `admin/tenants/${tenantPath(tenant)}/smtp`, {
+  return adminCall(gateway, 'PUT', tenant, ['smtp'], {
     body: relay,
     ifMatch,
     schema: smtpConfigSchema,
@@ -23,7 +23,7 @@ export function putSmtp(
 }
 
 export function deleteSmtp(gateway: Gateway, tenant: string): Promise<GatewayResult<undefined>> {
-  return gateway.request('DELETE', `admin/tenants/${tenantPath(tenant)}/smtp`, { schema: nothing });
+  return adminCall(gateway, 'DELETE', tenant, ['smtp'], { schema: nothing });
 }
 
 export function testSmtp(
@@ -31,7 +31,7 @@ export function testSmtp(
   tenant: string,
   to: string,
 ): Promise<GatewayResult<TestSmtpResponse>> {
-  return gateway.request('POST', `admin/tenants/${tenantPath(tenant)}/smtp/test`, {
+  return adminCall(gateway, 'POST', tenant, ['smtp', 'test'], {
     body: { to },
     schema: testSmtpResponseSchema,
   });

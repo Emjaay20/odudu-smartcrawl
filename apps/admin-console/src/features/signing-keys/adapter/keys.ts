@@ -1,7 +1,7 @@
 import { signingKeySchema, type SigningKey, type SigningKeyAlg } from '@odudu/contracts/admin';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 import { readKeyPage } from '#/shared/adapter/directory';
-import { nothing } from '#/shared/adapter/route';
+import { adminCall, nothing } from '#/shared/adapter/route';
 
 export { readKeyPage };
 
@@ -10,7 +10,7 @@ export function stageKey(
   tenant: string,
   alg: SigningKeyAlg,
 ): Promise<GatewayResult<SigningKey>> {
-  return gateway.request('POST', `admin/tenants/${encodeURIComponent(tenant)}/keys`, {
+  return adminCall(gateway, 'POST', tenant, ['keys'], {
     body: { alg },
     schema: signingKeySchema,
   });
@@ -21,11 +21,7 @@ export function promoteKey(
   tenant: string,
   id: string,
 ): Promise<GatewayResult<SigningKey>> {
-  return gateway.request(
-    'POST',
-    `admin/tenants/${encodeURIComponent(tenant)}/keys/${encodeURIComponent(id)}/promote`,
-    { schema: signingKeySchema },
-  );
+  return adminCall(gateway, 'POST', tenant, ['keys', id, 'promote'], { schema: signingKeySchema });
 }
 
 export function retireKey(
@@ -33,11 +29,7 @@ export function retireKey(
   tenant: string,
   id: string,
 ): Promise<GatewayResult<SigningKey>> {
-  return gateway.request(
-    'POST',
-    `admin/tenants/${encodeURIComponent(tenant)}/keys/${encodeURIComponent(id)}/retire`,
-    { schema: signingKeySchema },
-  );
+  return adminCall(gateway, 'POST', tenant, ['keys', id, 'retire'], { schema: signingKeySchema });
 }
 
 export function deleteKey(
@@ -45,9 +37,5 @@ export function deleteKey(
   tenant: string,
   id: string,
 ): Promise<GatewayResult<undefined>> {
-  return gateway.request(
-    'DELETE',
-    `admin/tenants/${encodeURIComponent(tenant)}/keys/${encodeURIComponent(id)}`,
-    { schema: nothing },
-  );
+  return adminCall(gateway, 'DELETE', tenant, ['keys', id], { schema: nothing });
 }

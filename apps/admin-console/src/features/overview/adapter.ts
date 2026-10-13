@@ -9,7 +9,7 @@ import type { Collection, Discovery, Jwks } from '#/features/overview/service';
 import { readAuditPage } from '#/shared/adapter/audit';
 import { readKeyPage } from '#/shared/adapter/directory';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { discoverySchema, tenantPath } from '#/shared/adapter/route';
+import { adminCall, discoverySchema, tenantPath } from '#/shared/adapter/route';
 
 // The gateway's mirrors of the tenant's public documents have no contract
 // in @odudu/contracts, so these hold them only to what the page reads and
@@ -46,19 +46,18 @@ export function readCount(
   tenant: string,
   collection: Collection,
 ): Promise<GatewayResult<CountResponse>> {
-  const t = tenantPath(tenant);
   const options = { schema: countResponseSchema };
   switch (collection) {
     case 'subjects':
-      return gateway.request('GET', `admin/tenants/${t}/subjects/count`, options);
+      return adminCall(gateway, 'GET', tenant, ['subjects', 'count'], options);
     case 'clients':
-      return gateway.request('GET', `admin/tenants/${t}/clients/count`, options);
+      return adminCall(gateway, 'GET', tenant, ['clients', 'count'], options);
     case 'groups':
-      return gateway.request('GET', `admin/tenants/${t}/groups/count`, options);
+      return adminCall(gateway, 'GET', tenant, ['groups', 'count'], options);
     case 'roles':
-      return gateway.request('GET', `admin/tenants/${t}/roles/count`, options);
+      return adminCall(gateway, 'GET', tenant, ['roles', 'count'], options);
     case 'scopes':
-      return gateway.request('GET', `admin/tenants/${t}/scopes/count`, options);
+      return adminCall(gateway, 'GET', tenant, ['scopes', 'count'], options);
   }
 }
 

@@ -11,14 +11,14 @@ import {
 } from '@odudu/contracts/admin';
 import { readRolePage, readSubjectPage } from '#/shared/adapter/directory';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { tenantPath } from '#/shared/adapter/route';
+import { adminCall, tenantPath } from '#/shared/adapter/route';
 
 export function createSubject(
   gateway: Gateway,
   tenant: string,
   input: { username: string; email: string },
 ): Promise<GatewayResult<Subject>> {
-  return gateway.request('POST', `admin/tenants/${tenantPath(tenant)}/subjects`, {
+  return adminCall(gateway, 'POST', tenant, ['subjects'], {
     body: { username: input.username, ...(input.email === '' ? {} : { email: input.email }) },
     schema: subjectSchema,
   });
@@ -43,11 +43,9 @@ export function issuePassword(
   tenant: string,
   subjectId: string,
 ): Promise<GatewayResult<IssuePasswordResponse>> {
-  return gateway.request(
-    'POST',
-    `admin/tenants/${tenantPath(tenant)}/subjects/${encodeURIComponent(subjectId)}/password`,
-    { schema: issuePasswordResponseSchema },
-  );
+  return adminCall(gateway, 'POST', tenant, ['subjects', subjectId, 'password'], {
+    schema: issuePasswordResponseSchema,
+  });
 }
 
 // A client_id search is a prefix, so a tenant's own `odudu-admin-x` comes
@@ -81,11 +79,9 @@ export function readSubjectRoles(
   tenant: string,
   subjectId: string,
 ): Promise<GatewayResult<SetRolesResponse>> {
-  return gateway.request(
-    'GET',
-    `admin/tenants/${tenantPath(tenant)}/subjects/${encodeURIComponent(subjectId)}/roles`,
-    { schema: setRolesResponseSchema },
-  );
+  return adminCall(gateway, 'GET', tenant, ['subjects', subjectId, 'roles'], {
+    schema: setRolesResponseSchema,
+  });
 }
 
 export function setSubjectRoles(
@@ -95,9 +91,9 @@ export function setSubjectRoles(
   roleIds: readonly string[],
   ifMatch: string,
 ): Promise<GatewayResult<SetRolesResponse>> {
-  return gateway.request(
-    'PUT',
-    `admin/tenants/${tenantPath(tenant)}/subjects/${encodeURIComponent(subjectId)}/roles`,
-    { body: { role_ids: roleIds }, ifMatch, schema: setRolesResponseSchema },
-  );
+  return adminCall(gateway, 'PUT', tenant, ['subjects', subjectId, 'roles'], {
+    body: { role_ids: roleIds },
+    ifMatch,
+    schema: setRolesResponseSchema,
+  });
 }

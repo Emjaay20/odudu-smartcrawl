@@ -4,7 +4,7 @@ import {
   type MintRegistrationTokenResponse,
 } from '@odudu/contracts/admin';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { listReader, nothing, tenantPath } from '#/shared/adapter/route';
+import { adminCall, listReader, nothing } from '#/shared/adapter/route';
 
 export const readTokenPage = listReader(
   'registration-tokens',
@@ -16,7 +16,7 @@ export function mintToken(
   tenant: string,
   input: { uses: number; ttl_seconds: number },
 ): Promise<GatewayResult<MintRegistrationTokenResponse>> {
-  return gateway.request('POST', `admin/tenants/${tenantPath(tenant)}/registration-tokens`, {
+  return adminCall(gateway, 'POST', tenant, ['registration-tokens'], {
     body: input,
     schema: mintRegistrationTokenResponseSchema,
   });
@@ -27,11 +27,7 @@ export function revokeToken(
   tenant: string,
   id: string,
 ): Promise<GatewayResult<undefined>> {
-  return gateway.request(
-    'DELETE',
-    `admin/tenants/${tenantPath(tenant)}/registration-tokens/${encodeURIComponent(id)}`,
-    {
-      schema: nothing,
-    },
-  );
+  return adminCall(gateway, 'DELETE', tenant, ['registration-tokens', id], {
+    schema: nothing,
+  });
 }

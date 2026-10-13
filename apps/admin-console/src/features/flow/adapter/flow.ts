@@ -4,13 +4,13 @@ import {
   type ReplaceExecutionsRequest,
 } from '@odudu/contracts/admin';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { tenantPath } from '#/shared/adapter/route';
+import { adminCall } from '#/shared/adapter/route';
 
 export function readFlow(
   gateway: Gateway,
   tenant: string,
 ): Promise<GatewayResult<ListExecutionsResponse>> {
-  return gateway.request('GET', `admin/tenants/${tenantPath(tenant)}/flow/executions`, {
+  return adminCall(gateway, 'GET', tenant, ['flow', 'executions'], {
     schema: listExecutionsResponseSchema,
   });
 }
@@ -22,7 +22,7 @@ export function replaceFlow(
   steps: ReplaceExecutionsRequest,
   ifMatch: string,
 ): Promise<GatewayResult<ListExecutionsResponse>> {
-  return gateway.request('PUT', `admin/tenants/${tenantPath(tenant)}/flow/executions`, {
+  return adminCall(gateway, 'PUT', tenant, ['flow', 'executions'], {
     body: steps,
     ifMatch,
     schema: listExecutionsResponseSchema,
