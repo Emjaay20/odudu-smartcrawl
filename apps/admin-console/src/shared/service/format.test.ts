@@ -77,6 +77,8 @@ describe('sentence', () => {
     expect(sentence('that name is taken')).toBe('That name is taken.');
     expect(sentence('Already there.')).toBe('Already there.');
     expect(sentence('')).toBe('.');
+    expect(sentence('rule.')).toBe('Rule.');
+    expect(sentence('rule')).toBe('Rule.');
   });
 });
 
