@@ -10,7 +10,7 @@ import {
 } from '@odudu/contracts/admin';
 import { readClientPage, readRolePage, readSubjectPage } from '#/shared/adapter/directory';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { adminCall } from '#/shared/adapter/route';
+import { adminCall, firstMatch } from '#/shared/adapter/route';
 
 export function createSubject(
   gateway: Gateway,
@@ -30,11 +30,7 @@ export async function findSubject(
   username: string,
 ): Promise<GatewayResult<Subject | null>> {
   const result = await readSubjectPage(gateway, tenant, new URLSearchParams({ username }));
-  if (!result.ok) return result;
-  return {
-    ...result,
-    data: result.data.items.find((subject) => subject.username === username) ?? null,
-  };
+  return firstMatch(result, (subject) => subject.username === username);
 }
 
 export function issuePassword(

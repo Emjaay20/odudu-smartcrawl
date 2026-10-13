@@ -115,6 +115,7 @@ it('finds a group by its name under a parent, for a creation whose answer was lo
     data: null,
   });
   expect(fake.sent.at(-1)?.search.get('parent')).toBe('root');
+  expect(fake.sent.at(-1)?.search.get('limit')).toBe('200');
 });
 
 it('follows the pages of a prefix search until the names run past the one looked for', async () => {

@@ -9,8 +9,6 @@ export function exportFileName(tenant: string, now: Date): string {
   return `${tenant}-${now.toISOString().slice(0, 10)}.odudu-tenant.json`;
 }
 
-export const EXPORT_MEDIA_TYPE = 'application/vnd.odudu.tenant+json';
-
 export interface Exported {
   fileName: string;
   bytes: number;

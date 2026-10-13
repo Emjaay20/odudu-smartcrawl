@@ -1,6 +1,7 @@
 import {
   adminCapabilitiesResponseSchema,
   listEffectiveRolesResponseSchema,
+  MAX_LIMIT,
   setRequiredActionsResponseSchema,
   setSubjectGroupsResponseSchema,
   type AdminCapabilitiesResponse,
@@ -115,7 +116,11 @@ export async function readAdminRoles(
     console.error(`console defect: ${tenant} lists no tenant-admin of ${ADMIN_CLIENT_KEY}`);
     return { ok: false, kind: 'defect' };
   }
-  const roles = await readRolePage(gateway, tenant, new URLSearchParams({ client, limit: '200' }));
+  const roles = await readRolePage(
+    gateway,
+    tenant,
+    new URLSearchParams({ client, limit: String(MAX_LIMIT) }),
+  );
   if (!roles.ok) return roles;
   return { ...roles, data: holdingRoleIds(roles.data.items) };
 }

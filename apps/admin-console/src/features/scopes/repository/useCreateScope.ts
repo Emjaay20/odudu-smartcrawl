@@ -2,9 +2,9 @@ import type { ClientScope } from '@odudu/contracts/admin';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createScope,
+  findScope,
   readScope,
   readScopeMappers,
-  readScopePage,
   readScopeRoles,
   setScopeMappers,
   setScopeRoles,
@@ -88,15 +88,7 @@ export function useCreateScope(tenant: string): CreateScope {
     create: create.run,
     // The search is a prefix, so an exact match is picked out of its answer.
     find: (name) =>
-      fresh.read(['find', tenant, 'scopes', name], async () => {
-        const result = await readScopePage(
-          gateway,
-          tenant,
-          new URLSearchParams({ name, limit: '200' }),
-        );
-        if (!result.ok) return result;
-        return { ...result, data: result.data.items.find((scope) => scope.name === name) ?? null };
-      }),
+      fresh.read(['find', tenant, 'scopes', name], () => findScope(gateway, tenant, name)),
   };
 }
 

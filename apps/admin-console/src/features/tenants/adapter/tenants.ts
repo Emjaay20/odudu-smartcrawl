@@ -10,7 +10,7 @@ import {
 import type { ImportedSecret } from '#/features/tenants/service';
 import type { Gateway, GatewayResult, RawBody } from '#/shared/transport/gateway';
 import { readDiscovery } from '#/shared/adapter/discovery';
-import { adminRootCall, segment } from '#/shared/adapter/route';
+import { adminRootCall, firstMatch, segment } from '#/shared/adapter/route';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
 
 export function readTenantPage(
@@ -52,8 +52,7 @@ export async function findTenant(
   name: string,
 ): Promise<GatewayResult<Tenant | null>> {
   const result = await readTenantPage(gateway, new URLSearchParams({ name }));
-  if (!result.ok) return result;
-  return { ...result, data: result.data.items.find((tenant) => tenant.name === name) ?? null };
+  return firstMatch(result, (tenant) => tenant.name === name);
 }
 
 export function readTenant(gateway: Gateway, name: string): Promise<GatewayResult<Tenant>> {

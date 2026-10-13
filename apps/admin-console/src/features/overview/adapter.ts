@@ -1,5 +1,6 @@
 import {
   countResponseSchema,
+  MAX_LIMIT,
   type AuditEvent,
   type CountResponse,
   type SigningKey,
@@ -25,7 +26,6 @@ const jwksSchema = z.looseObject({
   ),
 });
 
-const KEY_PAGE = 200;
 // A tenant holds a handful of keys; this bounds a cursor that never ends.
 const MAX_KEY_PAGES = 10;
 const LATEST_AUDIT = 5;
@@ -68,7 +68,7 @@ export async function readKeys(
   const keys: SigningKey[] = [];
   let cursor: string | undefined;
   for (let page = 0; page < MAX_KEY_PAGES; page += 1) {
-    const query = new URLSearchParams({ limit: String(KEY_PAGE) });
+    const query = new URLSearchParams({ limit: String(MAX_LIMIT) });
     if (cursor !== undefined) query.set('cursor', cursor);
     const result = await readKeyPage(gateway, tenant, query);
     if (!result.ok) return result;

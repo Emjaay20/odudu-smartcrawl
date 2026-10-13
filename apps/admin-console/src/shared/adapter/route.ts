@@ -52,3 +52,13 @@ export function listReader<T>(resource: string, schema: ZodType<T>): TenantRead<
 export function countReader(resource: string): TenantRead<CountResponse> {
   return reader([resource, 'count'], countResponseSchema);
 }
+
+// A prefix search answers with every name that starts with the one asked
+// for; the one wanted is the item that matches whole, or none.
+export function firstMatch<T>(
+  result: GatewayResult<{ items: readonly T[] }>,
+  matches: (item: T) => boolean,
+): GatewayResult<T | null> {
+  if (!result.ok) return result;
+  return { ...result, data: result.data.items.find(matches) ?? null };
+}

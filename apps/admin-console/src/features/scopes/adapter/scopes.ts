@@ -1,6 +1,7 @@
 import {
   clientScopeSchema,
   listScopeClientsResponseSchema,
+  MAX_LIMIT,
   scopeMappersSchema,
   setScopeRolesResponseSchema,
   type ClientScope,
@@ -10,11 +11,24 @@ import {
 } from '@odudu/contracts/admin';
 import { readScopePage } from '#/shared/adapter/directory';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { adminCall, countReader, nothing } from '#/shared/adapter/route';
+import { adminCall, countReader, firstMatch, nothing } from '#/shared/adapter/route';
 
 export { readScopePage };
 
 export const readScopeCount = countReader('scopes');
+
+export async function findScope(
+  gateway: Gateway,
+  tenant: string,
+  name: string,
+): Promise<GatewayResult<ClientScope | null>> {
+  const result = await readScopePage(
+    gateway,
+    tenant,
+    new URLSearchParams({ name, limit: String(MAX_LIMIT) }),
+  );
+  return firstMatch(result, (scope) => scope.name === name);
+}
 
 // A new scope is its name and description; a copy carries the source's other fields too.
 export interface CreateScopeInput {

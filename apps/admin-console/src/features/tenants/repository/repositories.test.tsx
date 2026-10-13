@@ -178,6 +178,31 @@ it('saves an export as the bytes the server sent, and keeps the text nowhere', a
   expect(cached(queryClient)).not.toContain('newer_member');
 });
 
+it("saves an export that names no content type as the tenant document's own", async () => {
+  const types: string[] = [];
+  vi.stubGlobal(
+    'URL',
+    Object.assign(URL, {
+      createObjectURL: (blob: Blob) => {
+        types.push(blob.type);
+        return 'blob:x';
+      },
+      revokeObjectURL: () => undefined,
+    }),
+  );
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+  const { wrapper } = harness({
+    [`GET ${T}/export`]: () => new Response(new TextEncoder().encode('{"version":1}')),
+  });
+  const { result } = renderHook(() => useExport('acme', () => new Date('2026-09-29T10:00:00Z')), {
+    wrapper,
+  });
+  await act(async () => {
+    await result.current.start(false);
+  });
+  expect(types).toEqual(['application/vnd.odudu.tenant+json']);
+});
+
 it('shows each imported secret once, one at a time, and keeps them out of every cache', async () => {
   const { wrapper, queryClient, sent } = harness({
     'POST /console/api/admin/tenant-imports': json(

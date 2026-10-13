@@ -1,12 +1,13 @@
 import {
   listRoleCompositesResponseSchema,
+  MAX_LIMIT,
   roleSchema,
   type ListRoleCompositesResponse,
   type Role,
 } from '@odudu/contracts/admin';
 import { readRole, readRoleCount, readRolePage } from '#/shared/adapter/directory';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { adminCall, nothing } from '#/shared/adapter/route';
+import { adminCall, firstMatch, nothing } from '#/shared/adapter/route';
 
 export { readRole, readRoleCount, readRolePage };
 
@@ -107,8 +108,7 @@ export async function findRole(
   tenant: string,
   name: string,
 ): Promise<GatewayResult<Role | null>> {
-  const query = new URLSearchParams({ name, client: 'tenant', limit: '200' });
+  const query = new URLSearchParams({ name, client: 'tenant', limit: String(MAX_LIMIT) });
   const result = await readRolePage(gateway, tenant, query);
-  if (!result.ok) return result;
-  return { ...result, data: result.data.items.find((role) => role.name === name) ?? null };
+  return firstMatch(result, (role) => role.name === name);
 }

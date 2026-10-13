@@ -4,6 +4,7 @@ import {
   adminCall,
   adminRootCall,
   countReader,
+  firstMatch,
   listReader,
   nothing,
   segment,
@@ -103,5 +104,28 @@ describe('adminRootCall', () => {
     ]);
     expect(fake.sent[0]?.search.get('q')).toBe('y');
     expect(fake.sent[1]?.search.toString()).toBe('');
+  });
+});
+
+describe('firstMatch', () => {
+  const page = {
+    ok: true as const,
+    status: 200,
+    etag: null,
+    next: null,
+    data: { items: [{ n: 'ab' }, { n: 'a' }] },
+  };
+
+  it('picks the item that matches whole, or none', () => {
+    expect(firstMatch(page, (item) => item.n === 'a')).toMatchObject({
+      ok: true,
+      data: { n: 'a' },
+    });
+    expect(firstMatch(page, (item) => item.n === 'x')).toMatchObject({ ok: true, data: null });
+  });
+
+  it('passes a failure through', () => {
+    const failed = { ok: false as const, kind: 'network' as const };
+    expect(firstMatch(failed, () => true)).toBe(failed);
   });
 });

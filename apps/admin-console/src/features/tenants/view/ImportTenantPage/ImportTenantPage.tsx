@@ -1,3 +1,4 @@
+import { TENANT_DOCUMENT_MEDIA_TYPE } from '@odudu/contracts/admin';
 import { useId } from 'react';
 import { FileTrigger } from 'react-aria-components';
 import { tenantsTrail } from '#/features/tenants/service';
@@ -15,7 +16,7 @@ import { PageHeader } from '#/shared/view/PageHeader';
 import { SecretDialog } from '#/shared/view/SecretDialog';
 import styles from '#/features/tenants/view/ImportTenantPage/ImportTenantPage.module.css';
 
-const ACCEPTED = ['application/json', 'application/vnd.odudu.tenant+json', '.json'];
+const ACCEPTED = ['application/json', TENANT_DOCUMENT_MEDIA_TYPE, '.json'];
 
 function DocumentField({ state }: { state: ImportState }) {
   const label = useId();

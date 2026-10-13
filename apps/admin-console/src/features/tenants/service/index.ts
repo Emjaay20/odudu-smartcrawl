@@ -1,7 +1,6 @@
 export { type Tenant, nameProblem, issuerPreview } from '#/features/tenants/service/name';
 export {
   exportFileName,
-  EXPORT_MEDIA_TYPE,
   type Exported,
   exportedOf,
   exportNeeds,

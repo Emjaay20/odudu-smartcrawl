@@ -112,5 +112,6 @@ it('finds a tenant role by its exact name, for a creation whose answer was lost'
   const gateway = fake.transport.gateway;
   expect(await findRole(gateway, 'acme', 'auditor')).toMatchObject({ ok: true, data: AUDITOR });
   expect(fake.sent.at(-1)?.search.get('client')).toBe('tenant');
+  expect(fake.sent.at(-1)?.search.get('limit')).toBe('200');
   expect(await findRole(gateway, 'acme', 'nobody')).toMatchObject({ ok: true, data: null });
 });

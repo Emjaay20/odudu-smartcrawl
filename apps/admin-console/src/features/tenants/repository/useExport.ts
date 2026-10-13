@@ -1,11 +1,7 @@
+import { TENANT_DOCUMENT_MEDIA_TYPE } from '@odudu/contracts/admin';
 import { saveFile } from '#/features/tenants/adapter/files';
 import { readExport } from '#/features/tenants/adapter/tenants';
-import {
-  EXPORT_MEDIA_TYPE,
-  exportedOf,
-  exportFileName,
-  type Exported,
-} from '#/features/tenants/service';
+import { exportedOf, exportFileName, type Exported } from '#/features/tenants/service';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
 import type { GatewayResult } from '#/shared/transport/gateway';
 import { useTransport } from '#/shared/transport/useTransport';
@@ -31,7 +27,7 @@ export function useExport(tenant: string, now: () => Date = currentTime): Tenant
     if (!result.ok) return result;
     const { text, contentType } = result.data;
     const fileName = exportFileName(tenant, now());
-    saveFile(fileName, text, contentType ?? EXPORT_MEDIA_TYPE);
+    saveFile(fileName, text, contentType ?? TENANT_DOCUMENT_MEDIA_TYPE);
     return { ...result, data: exportedOf(fileName, text) };
   };
   return { busy: fresh.pending, start };

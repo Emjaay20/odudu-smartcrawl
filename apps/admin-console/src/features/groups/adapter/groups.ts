@@ -1,5 +1,6 @@
 import {
   groupRecordSchema,
+  MAX_LIMIT,
   setGroupRolesResponseSchema,
   type Group,
   type GroupRecord,
@@ -110,7 +111,7 @@ export async function findGroup(
   parentId: string | null,
 ): Promise<GatewayResult<Group | null>> {
   const folded = name.toLowerCase();
-  const query = new URLSearchParams({ name, parent: parentId ?? 'root', limit: '200' });
+  const query = new URLSearchParams({ name, parent: parentId ?? 'root', limit: String(MAX_LIMIT) });
   for (;;) {
     const result = await readGroupPage(gateway, tenant, query);
     if (!result.ok) return result;
