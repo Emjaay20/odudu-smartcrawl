@@ -8,7 +8,7 @@ import {
   roleSchema,
   type Role,
 } from '@odudu/contracts/admin';
-import { countReader, listReader } from '#/shared/adapter/route';
+import { adminCall, countReader, listReader } from '#/shared/adapter/route';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 
 // The lists and counts that more than one feature reads, whichever record
@@ -28,9 +28,5 @@ export function readRole(
   tenant: string,
   roleId: string,
 ): Promise<GatewayResult<Role>> {
-  return gateway.request(
-    'GET',
-    `admin/tenants/${encodeURIComponent(tenant)}/roles/${encodeURIComponent(roleId)}`,
-    { schema: roleSchema },
-  );
+  return adminCall(gateway, 'GET', tenant, ['roles', roleId], { schema: roleSchema });
 }

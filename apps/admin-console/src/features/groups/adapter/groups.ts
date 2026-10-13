@@ -7,7 +7,7 @@ import {
 } from '@odudu/contracts/admin';
 import { readGroupPage } from '#/shared/adapter/directory';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { countReader, nothing, segment, tenantPath } from '#/shared/adapter/route';
+import { adminCall, countReader, nothing } from '#/shared/adapter/route';
 
 export { readGroupPage };
 
@@ -18,8 +18,7 @@ export function createGroup(
   tenant: string,
   input: { name: string; description: string; parentId: string | null },
 ): Promise<GatewayResult<GroupRecord>> {
-  const t = tenantPath(tenant);
-  return gateway.request('POST', `admin/tenants/${t}/groups`, {
+  return adminCall(gateway, 'POST', tenant, ['groups'], {
     body: {
       name: input.name,
       ...(input.description === '' ? {} : { description: input.description }),
@@ -34,9 +33,7 @@ export function readGroup(
   tenant: string,
   groupId: string,
 ): Promise<GatewayResult<GroupRecord>> {
-  const t = tenantPath(tenant);
-  const id = segment(groupId);
-  return gateway.request('GET', `admin/tenants/${t}/groups/${id}`, { schema: groupRecordSchema });
+  return adminCall(gateway, 'GET', tenant, ['groups', groupId], { schema: groupRecordSchema });
 }
 
 export function amendGroup(
@@ -46,10 +43,8 @@ export function amendGroup(
   changes: { description?: string | null; parent_id?: string | null },
   ifMatch: string,
 ): Promise<GatewayResult<GroupRecord>> {
-  const t = tenantPath(tenant);
-  const id = segment(groupId);
   const { description, ...rest } = changes;
-  return gateway.request('PATCH', `admin/tenants/${t}/groups/${id}`, {
+  return adminCall(gateway, 'PATCH', tenant, ['groups', groupId], {
     // The server keeps no empty description, so an emptied one is cleared.
     body:
       description === undefined
@@ -67,9 +62,7 @@ export function setGroupDefault(
   value: boolean,
   ifMatch: string,
 ): Promise<GatewayResult<GroupRecord>> {
-  const t = tenantPath(tenant);
-  const id = segment(groupId);
-  return gateway.request('PUT', `admin/tenants/${t}/groups/${id}/default`, {
+  return adminCall(gateway, 'PUT', tenant, ['groups', groupId, 'default'], {
     body: { default: value },
     ifMatch,
     schema: groupRecordSchema,
@@ -81,9 +74,7 @@ export function deleteGroup(
   tenant: string,
   groupId: string,
 ): Promise<GatewayResult<undefined>> {
-  const t = tenantPath(tenant);
-  const id = segment(groupId);
-  return gateway.request('DELETE', `admin/tenants/${t}/groups/${id}`, { schema: nothing });
+  return adminCall(gateway, 'DELETE', tenant, ['groups', groupId], { schema: nothing });
 }
 
 export function readGroupRoles(
@@ -91,9 +82,7 @@ export function readGroupRoles(
   tenant: string,
   groupId: string,
 ): Promise<GatewayResult<SetGroupRolesResponse>> {
-  const t = tenantPath(tenant);
-  const id = segment(groupId);
-  return gateway.request('GET', `admin/tenants/${t}/groups/${id}/roles`, {
+  return adminCall(gateway, 'GET', tenant, ['groups', groupId, 'roles'], {
     schema: setGroupRolesResponseSchema,
   });
 }
@@ -105,9 +94,7 @@ export function setGroupRoles(
   roleIds: readonly string[],
   ifMatch: string,
 ): Promise<GatewayResult<SetGroupRolesResponse>> {
-  const t = tenantPath(tenant);
-  const id = segment(groupId);
-  return gateway.request('PUT', `admin/tenants/${t}/groups/${id}/roles`, {
+  return adminCall(gateway, 'PUT', tenant, ['groups', groupId, 'roles'], {
     body: { role_ids: roleIds },
     ifMatch,
     schema: setGroupRolesResponseSchema,

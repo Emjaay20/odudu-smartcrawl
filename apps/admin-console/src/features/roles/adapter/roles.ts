@@ -4,11 +4,11 @@ import {
   type ListRoleCompositesResponse,
   type Role,
 } from '@odudu/contracts/admin';
-import { readRoleCount, readRolePage } from '#/shared/adapter/directory';
+import { readRole, readRoleCount, readRolePage } from '#/shared/adapter/directory';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
-import { nothing, segment, tenantPath } from '#/shared/adapter/route';
+import { adminCall, nothing } from '#/shared/adapter/route';
 
-export { readRoleCount, readRolePage };
+export { readRole, readRoleCount, readRolePage };
 
 // A tenant role: a client's own roles are made from that client's page.
 export function createRole(
@@ -16,24 +16,13 @@ export function createRole(
   tenant: string,
   input: { name: string; description: string },
 ): Promise<GatewayResult<Role>> {
-  const t = tenantPath(tenant);
-  return gateway.request('POST', `admin/tenants/${t}/roles`, {
+  return adminCall(gateway, 'POST', tenant, ['roles'], {
     body: {
       name: input.name,
       ...(input.description === '' ? {} : { description: input.description }),
     },
     schema: roleSchema,
   });
-}
-
-export function readRole(
-  gateway: Gateway,
-  tenant: string,
-  roleId: string,
-): Promise<GatewayResult<Role>> {
-  const t = tenantPath(tenant);
-  const id = segment(roleId);
-  return gateway.request('GET', `admin/tenants/${t}/roles/${id}`, { schema: roleSchema });
 }
 
 export function amendRole(
@@ -43,9 +32,7 @@ export function amendRole(
   changes: { description: string | null },
   ifMatch: string,
 ): Promise<GatewayResult<Role>> {
-  const t = tenantPath(tenant);
-  const id = segment(roleId);
-  return gateway.request('PATCH', `admin/tenants/${t}/roles/${id}`, {
+  return adminCall(gateway, 'PATCH', tenant, ['roles', roleId], {
     // The server keeps no empty description, so an emptied one is cleared.
     body: { description: changes.description === '' ? null : changes.description },
     ifMatch,
@@ -60,9 +47,7 @@ export function setRoleDefault(
   value: boolean,
   ifMatch: string,
 ): Promise<GatewayResult<Role>> {
-  const t = tenantPath(tenant);
-  const id = segment(roleId);
-  return gateway.request('PUT', `admin/tenants/${t}/roles/${id}/default`, {
+  return adminCall(gateway, 'PUT', tenant, ['roles', roleId, 'default'], {
     body: { default: value },
     ifMatch,
     schema: roleSchema,
@@ -74,9 +59,7 @@ export function deleteRole(
   tenant: string,
   roleId: string,
 ): Promise<GatewayResult<undefined>> {
-  const t = tenantPath(tenant);
-  const id = segment(roleId);
-  return gateway.request('DELETE', `admin/tenants/${t}/roles/${id}`, { schema: nothing });
+  return adminCall(gateway, 'DELETE', tenant, ['roles', roleId], { schema: nothing });
 }
 
 export function readComposites(
@@ -84,9 +67,7 @@ export function readComposites(
   tenant: string,
   roleId: string,
 ): Promise<GatewayResult<ListRoleCompositesResponse>> {
-  const t = tenantPath(tenant);
-  const id = segment(roleId);
-  return gateway.request('GET', `admin/tenants/${t}/roles/${id}/composites`, {
+  return adminCall(gateway, 'GET', tenant, ['roles', roleId, 'composites'], {
     schema: listRoleCompositesResponseSchema,
   });
 }
@@ -100,9 +81,7 @@ export function addComposite(
   childId: string,
   ifMatch: string | null,
 ): Promise<GatewayResult<undefined>> {
-  const t = tenantPath(tenant);
-  const id = segment(roleId);
-  return gateway.request('POST', `admin/tenants/${t}/roles/${id}/composites`, {
+  return adminCall(gateway, 'POST', tenant, ['roles', roleId, 'composites'], {
     body: { child_role_id: childId },
     ...(ifMatch === null ? {} : { ifMatch }),
     schema: nothing,
@@ -116,10 +95,7 @@ export function removeComposite(
   childId: string,
   ifMatch: string,
 ): Promise<GatewayResult<undefined>> {
-  const t = tenantPath(tenant);
-  const id = segment(roleId);
-  const child = segment(childId);
-  return gateway.request('DELETE', `admin/tenants/${t}/roles/${id}/composites/${child}`, {
+  return adminCall(gateway, 'DELETE', tenant, ['roles', roleId, 'composites', childId], {
     ifMatch,
     schema: nothing,
   });
