@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { inTurn, json, offline, problem } from '#/testing/fakeTransport';
-import { ENG, G, group, groupRoutes, record } from '#/testing/groupsFixtures';
+import { A, ENG, G, group, groupRoutes, record } from '#/testing/groupsFixtures';
 import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
 
 afterEach(() => {
@@ -56,7 +56,7 @@ it('puts a group at the top level once its parent is let go', async () => {
 
 it('puts a taken name under its field, and a ceiling refusal beside the button', async () => {
   const user = userEvent.setup();
-  renderConsoleAt(
+  const { sent } = renderConsoleAt(
     AT,
     groupRoutes(undefined, {
       [`POST ${G}`]: inTurn(
@@ -79,6 +79,7 @@ it('puts a taken name under its field, and a ceiling refusal beside the button',
       'Refused: it would hand out view-users, which you do not hold yourself.',
     ),
   ).toBeVisible();
+  expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
 });
 
 it('looks for a group whose creation could not be confirmed rather than sending it again', async () => {

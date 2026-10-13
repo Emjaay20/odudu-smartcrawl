@@ -15,11 +15,11 @@ import {
 import { useGroupPicker } from '#/shared/repository/useGroupPicker';
 import { useToasts } from '#/shared/repository/useToasts';
 import { useUrlSearch } from '#/shared/repository/useUrlSearch';
-import { requiredProblem, withoutField } from '#/shared/service/fieldErrors';
-import { createdText, createFailure, lookupText } from '#/shared/service/failure';
+import { problemAt, requiredProblem } from '#/shared/service/fieldErrors';
+import { createdText, lookupText } from '#/shared/service/failure';
 import type { PickerState } from '#/shared/service/picker';
-import type { GatewayFailure } from '#/shared/transport/gateway';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
+import { useCreationFlow } from '#/shared/usecase/useCreationFlow';
 
 type Field = 'name' | 'description' | 'parent_id';
 type Errors = Partial<Record<Field, string>>;
@@ -60,9 +60,7 @@ export function useNewGroup(tenant: string): NewGroup {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [parentId, setParentId] = useState<string | null>(params.get('parent'));
-  const [errors, setErrors] = useState<Errors>({});
-  const [message, setMessage] = useState<string | null>(null);
-  const [unconfirmed, setUnconfirmed] = useState(false);
+  const flow = useCreationFlow<Field>(refusal);
   const picker = useGroupPicker(tenant);
   const asked = useGroupNamed(tenant, parentId);
   const parent =
@@ -78,20 +76,6 @@ export function useNewGroup(tenant: string): NewGroup {
 
   const looked = lookupText('group', name, 'there');
 
-  const failed = (failure: GatewayFailure): void => {
-    const outcome = createFailure(failure, {
-      noun: 'group',
-      name,
-      fields: ['name', 'description', 'parent_id'],
-      taken: { field: 'name', fallback: NAME_TAKEN },
-      capability: 'manage-tenant',
-    });
-    if (outcome.unconfirmed) setUnconfirmed(true);
-    if (outcome.report) refusal.report(failure, 'manage-tenant');
-    setErrors(outcome.errors);
-    setMessage(outcome.message);
-  };
-
   return {
     listHref: groupsHref(tenant),
     descriptionRule: DESCRIPTION_RULE,
@@ -103,60 +87,44 @@ export function useNewGroup(tenant: string): NewGroup {
     picker,
     unavailableOf: (candidate) => parentUnavailable(null, candidate, caller ?? []),
     held,
-    errors,
-    message,
-    unconfirmed,
+    errors: flow.errors,
+    message: flow.message,
+    unconfirmed: flow.unconfirmed,
     busy: creation.busy,
     editName: (next) => {
       setName(next);
-      setErrors((was) => withoutField(was, 'name'));
+      flow.edited('name');
     },
     editDescription: (next) => {
       setDescription(next);
-      setErrors((was) => withoutField(was, 'description'));
+      flow.edited('description');
     },
     chooseParent: (ids) => {
       setParentId(ids[0] ?? null);
-      setErrors((was) => withoutField(was, 'parent_id'));
+      flow.edited('parent_id');
     },
     submit: () => {
-      if (creation.busy || unconfirmed || held !== null) return;
-      const required = requiredProblem(name, 'Enter a name.');
-      if (required !== null) {
-        setErrors({ name: required });
-        return;
-      }
-      setErrors({});
-      setMessage(null);
-      creation
-        .create({ name, description, parentId })
-        .then((result) => {
-          if (result.ok) land(result.data);
-          else failed(result);
-        })
-        .catch(() => {
-          failed({ ok: false, kind: 'defect' });
-        });
+      flow.submit({
+        blocked: creation.busy || held !== null,
+        problem: problemAt('name', requiredProblem(name, 'Enter a name.')),
+        spec: {
+          noun: 'group',
+          name,
+          fields: ['name', 'description', 'parent_id'],
+          taken: { field: 'name', fallback: NAME_TAKEN },
+          capability: 'manage-tenant',
+        },
+        create: () => creation.create({ name, description, parentId }),
+        made: land,
+      });
     },
     check: () => {
-      if (creation.busy) return;
-      creation
-        .find(name, parentId)
-        .then((result) => {
-          if (!result.ok) {
-            setMessage(looked.failed);
-            return;
-          }
-          if (result.data !== null) {
-            land(result.data);
-            return;
-          }
-          setUnconfirmed(false);
-          setMessage(looked.missing);
-        })
-        .catch(() => {
-          setMessage(looked.failed);
-        });
+      flow.check({
+        busy: creation.busy,
+        find: () => creation.find(name, parentId),
+        made: land,
+        looked,
+      });
     },
   };
 }
