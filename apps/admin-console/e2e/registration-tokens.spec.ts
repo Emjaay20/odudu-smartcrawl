@@ -10,6 +10,7 @@ import {
   gridWalk,
   takeSecret,
   PHONE,
+  expectNowhere,
 } from './fixtures';
 import { psql, seeded, inTenant } from './stack';
 
@@ -60,13 +61,7 @@ test('a token is minted and shown once, then nowhere; another is revoked', async
   await expect(dialog).toBeVisible();
   await expectAccessible(page);
   const secret = await takeSecret(dialog);
-  expect(await page.content()).not.toContain(secret);
-  const stored = await page.evaluate(() =>
-    [sessionStorage, localStorage]
-      .flatMap((storage) => Object.keys(storage).map((key) => storage.getItem(key) ?? ''))
-      .join('\n'),
-  );
-  expect(stored).not.toContain(secret);
+  await expectNowhere(page, secret);
   await expect(rowWithUses(page, 7)).toHaveCount(1);
   expect(liveWithUses(7)).toBe('1');
   expect(

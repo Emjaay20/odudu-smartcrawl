@@ -13,6 +13,7 @@ import {
   tabsWithin,
   takeSecret,
   PHONE,
+  expectNowhere,
 } from './fixtures';
 import {
   psql,
@@ -111,13 +112,7 @@ test('a confidential client is made and its secret is shown once, then nowhere',
   await expectAccessible(page);
   const secret = await takeSecret(dialog);
   await expect(page.getByRole('heading', { level: 1, name: 'Made' })).toBeVisible();
-  expect(await page.content()).not.toContain(secret);
-  const stored = await page.evaluate(() =>
-    [sessionStorage, localStorage]
-      .flatMap((storage) => Object.keys(storage).map((key) => storage.getItem(key) ?? ''))
-      .join('\n'),
-  );
-  expect(stored).not.toContain(secret);
+  await expectNowhere(page, secret);
 
   await expect.poll(() => clientColumn('made-confidential', 'type')).toBe('confidential');
   expect(clientColumn('made-confidential', 'secret_hash')).not.toContain(secret);
@@ -520,13 +515,7 @@ test('a secret is rotated behind a confirmation, shown once, and the replaced on
   expect(clientColumn('rotated', 'secret_hash')).not.toContain(secret);
   expect(clientColumn('rotated', 'previous_secret_hash')).not.toBe('<null>');
   await expect(page.getByText(/The previous secret authenticates until/u)).toBeVisible();
-  expect(await page.content()).not.toContain(secret);
-  const stored = await page.evaluate(() =>
-    [sessionStorage, localStorage]
-      .flatMap((storage) => Object.keys(storage).map((key) => storage.getItem(key) ?? ''))
-      .join('\n'),
-  );
-  expect(stored).not.toContain(secret);
+  await expectNowhere(page, secret);
   await page.reload();
   await expect(section.getByRole('textbox', { name: 'Grace period' })).toBeVisible();
   expect(await page.content()).not.toContain(secret);

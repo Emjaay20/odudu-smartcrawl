@@ -8,6 +8,7 @@ import {
   test,
   takeSecret,
   PHONE,
+  expectNowhere,
 } from './fixtures';
 import { psql, seeded, inTenant, sqlText, subjectIdOf } from './stack';
 
@@ -119,13 +120,7 @@ test('a one-time password is shown once, and signs the subject in to a forced ch
   await expectAccessible(page);
   const password = await takeSecret(dialog);
 
-  expect(await page.content()).not.toContain(password);
-  const stored = await page.evaluate(() =>
-    [sessionStorage, localStorage]
-      .flatMap((storage) => Object.keys(storage).map((key) => storage.getItem(key) ?? ''))
-      .join('\n'),
-  );
-  expect(stored).not.toContain(password);
+  await expectNowhere(page, password);
   await page.reload();
   await expect(page.getByRole('heading', { level: 2, name: 'Password' })).toBeVisible();
   expect(await page.content()).not.toContain(password);
