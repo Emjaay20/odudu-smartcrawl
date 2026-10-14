@@ -1,3 +1,4 @@
+import { client } from '#/testing/clientsFixtures';
 import { json, type Answer } from '#/testing/fakeTransport';
 import { ROOT, whoami } from '#/testing/renderConsole';
 
@@ -58,10 +59,7 @@ export function administratorRoutes(
       201,
     ),
     [`GET ${T}/clients`]: json({
-      items: [
-        { id: 'c-copy', builtin_admin: false },
-        { id: 'c-admin', builtin_admin: true },
-      ].map((client) => ({ ...clientDefaults, ...client })),
+      items: [seededAdmin('c-copy', false), seededAdmin('c-admin', true)],
     }),
     [`GET ${T}/roles`]: json({
       items: [
@@ -87,45 +85,19 @@ export function administratorRoutes(
   };
 }
 
-const clientDefaults = {
-  client_id: 'odudu-admin',
-  name: 'Odudu admin',
-  description: null,
-  type: 'public',
-  enabled: true,
-  full_scope_allowed: false,
-  registration_origin: 'seeded',
-  created_at: '2026-09-28T08:41:53.858Z',
-  redirect_uris: [],
-  grant_types: [],
-  token_endpoint_auth_method: 'none',
-  audiences: [],
-  access_token_ttl_seconds: 300,
-  id_token_ttl_seconds: 300,
-  refresh_token_ttl_seconds: 3600,
-  client_credentials_scopes: [],
-  web_origins: [],
-  post_logout_redirect_uris: [],
-  jwks: null,
-  jwks_uri: null,
-  frontchannel_logout_uri: null,
-  backchannel_logout_uri: null,
-  frontchannel_logout_session_required: false,
-  backchannel_logout_session_required: false,
-  consent_required: false,
-  token_exchange_impersonation_allowed: false,
-  userinfo_signed_response_alg: null,
-  userinfo_encrypted_response_alg: null,
-  userinfo_encrypted_response_enc: null,
-  tls_client_auth_subject_dn: null,
-  client_uri: null,
-  policy_uri: null,
-  tos_uri: null,
-  id_token_signed_response_alg: null,
-  default_max_age: null,
-  require_auth_time: false,
-  previous_secret_expires_at: null,
-  service_subject_id: null,
-  service_account_admin_reach: [],
-  scopes: [],
-};
+// The built-in admin client as a freshly created tenant holds it.
+function seededAdmin(id: string, builtin: boolean) {
+  return client(id, 'odudu-admin', {
+    name: 'Odudu admin',
+    type: 'public',
+    registration_origin: 'seeded',
+    redirect_uris: [],
+    grant_types: [],
+    token_endpoint_auth_method: 'none',
+    access_token_ttl_seconds: 300,
+    id_token_ttl_seconds: 300,
+    refresh_token_ttl_seconds: 3600,
+    service_subject_id: null,
+    builtin_admin: builtin,
+  });
+}
