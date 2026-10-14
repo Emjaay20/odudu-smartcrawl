@@ -18,7 +18,14 @@ import {
   type CopyRead,
 } from '#/features/scopes/service';
 import { copyReadOf } from '#/shared/service/copy';
-import { copyKey, countKey, findKey, listKey, pickerKey } from '#/shared/repository/queryKeys';
+import {
+  copyEtagKey,
+  copyKey,
+  countKey,
+  findKey,
+  listKey,
+  pickerKey,
+} from '#/shared/repository/queryKeys';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
 import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useWrite } from '#/shared/repository/useWrite';
@@ -75,7 +82,7 @@ export function useCreateScope(tenant: string): CreateScope {
     write: (ifMatch: string) => Promise<GatewayResult<unknown>>,
   ): Promise<Part[]> => {
     if (!asksPart(wanted)) return [];
-    const answer = await fresh.read(['copy-etag', tenant, id, part], read);
+    const answer = await fresh.read(copyEtagKey(tenant, id, part), read);
     const ifMatch = etagOfRead(answer);
     return partMissed(part, ifMatch === null ? null : await write(ifMatch));
   };

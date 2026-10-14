@@ -99,6 +99,15 @@ export function subjectReadKey(read: 'credentials' | 'lockout', tenant: string, 
   return [read, tenant, id] as const;
 }
 
+// The ETag a copy's write waits on, read once and dropped.
+export function copyEtagKey(tenant: string, id: string, part: string) {
+  return ['copy-etag', tenant, id, part] as const;
+}
+
+export function exportKey(tenant: string, includeSubjects: boolean) {
+  return ['export', tenant, includeSubjects] as const;
+}
+
 export function sessionKey() {
   return ['session'] as const;
 }

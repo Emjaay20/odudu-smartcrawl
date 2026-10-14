@@ -1,10 +1,12 @@
 import { expect, it } from 'vitest';
 import {
   adminRolesKey,
+  copyEtagKey,
   copyKey,
   countKey,
   deliveriesKey,
   evaluateKey,
+  exportKey,
   findKey,
   GROUP_KIND,
   groupKey,
@@ -58,6 +60,8 @@ it('names every kind of cached read by its kind, its tenant and what it reads', 
   expect(findKey('tenants', 'acme')).toEqual(['find', 'tenants', 'acme']);
   expect(subjectReadKey('lockout', 'acme', 's1')).toEqual(['lockout', 'acme', 's1']);
   expect(subjectReadKey('credentials', 'acme', 's1')).toEqual(['credentials', 'acme', 's1']);
+  expect(copyEtagKey('acme', 's1', 'mappers')).toEqual(['copy-etag', 'acme', 's1', 'mappers']);
+  expect(exportKey('acme', true)).toEqual(['export', 'acme', true]);
   expect(sessionKey()).toEqual(['session']);
   expect(GROUP_KIND).toBe('group');
   expect(RECORD_KIND).toBe('record');

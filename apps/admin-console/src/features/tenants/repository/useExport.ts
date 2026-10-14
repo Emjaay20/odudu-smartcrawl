@@ -1,4 +1,5 @@
 import { TENANT_DOCUMENT_MEDIA_TYPE } from '@odudu/contracts/admin';
+import { exportKey } from '#/shared/repository/queryKeys';
 import { saveFile } from '#/features/tenants/adapter/files';
 import { readExport } from '#/features/tenants/adapter/tenants';
 import { exportedOf, exportFileName, type Exported } from '#/features/tenants/service';
@@ -21,7 +22,7 @@ export function useExport(tenant: string, now: () => Date = currentTime): Tenant
   const { gateway } = useTransport();
   const fresh = useFreshRead();
   const start = async (includeSubjects: boolean): Promise<GatewayResult<Exported>> => {
-    const result = await fresh.read(['export', tenant, includeSubjects], () =>
+    const result = await fresh.read(exportKey(tenant, includeSubjects), () =>
       readExport(gateway, tenant, includeSubjects),
     );
     if (!result.ok) return result;
