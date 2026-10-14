@@ -271,7 +271,7 @@
 }
 
 .popover {
-  min-inline-size: var(--trigger-width);
+  min-inline-size: var(--trigger-width, 0);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-s);
   background: var(--surface-panel);
