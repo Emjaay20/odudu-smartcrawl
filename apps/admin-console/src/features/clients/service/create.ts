@@ -63,6 +63,11 @@ export function clientIdProblem(clientId: string): string | null {
 
 export const SECRET_LABEL = 'client secret';
 
+// The client made once there is one, else the ID being typed.
+export function secretName(made: { name: string } | null, clientId: string): string {
+  return made?.name ?? clientId;
+}
+
 export function secretTitle(name: string): string {
   return `Client secret for ${name}`;
 }

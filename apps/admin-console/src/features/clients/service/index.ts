@@ -50,6 +50,7 @@ export {
   afterCreation,
   clientIdProblem,
   SECRET_LABEL,
+  secretName,
   secretTitle,
   secretNote,
 } from '#/features/clients/service/create';

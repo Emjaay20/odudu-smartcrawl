@@ -6,6 +6,7 @@ import {
   KIND_CHOICES,
   NEW_CLIENT_FIELDS,
   newClientKind,
+  secretName,
   secretTitle,
   splitSecret,
 } from '#/features/clients/service/create';
@@ -46,4 +47,9 @@ it('splits a secret off an answer, leaving the client without it', () => {
 it('waits for a secret to be acknowledged before the page moves on, and moves on at once without one', () => {
   expect(afterCreation('s3')).toBe('acknowledge');
   expect(afterCreation(null)).toBe('land');
+});
+
+it('names the secret for the client made, else for the ID being typed', () => {
+  expect(secretName({ name: 'Billing' }, 'billing-web')).toBe('Billing');
+  expect(secretName(null, 'billing-web')).toBe('billing-web');
 });

@@ -22,6 +22,10 @@ export const SYSTEM_TENANT = 'system';
 
 export { isTenantName } from '@odudu/contracts';
 
+export function isOwnTenant(principal: Principal, tenant: string): boolean {
+  return principal.tenant === tenant;
+}
+
 export function isSelf(principal: Principal, tenant: string, subjectId: string): boolean {
   return principal.tenant === tenant && principal.subjectId === subjectId;
 }

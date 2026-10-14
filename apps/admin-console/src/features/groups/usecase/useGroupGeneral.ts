@@ -223,7 +223,7 @@ export function useGroupGeneral({
           return true;
         },
       },
-      held: lines?.move ?? null,
+      held: lines.move,
       state: groupReadiness(ceiling.status, moveLoss),
       current: placeText(destination, 'is'),
       picker,
@@ -247,7 +247,7 @@ export function useGroupGeneral({
     },
     deletion: {
       ...removal,
-      held: lines?.remove ?? null,
+      held: lines.remove,
       state: groupReadiness(ceiling.status, deleteLoss),
       consequence: deleteConsequence(group.path, deleteLoss),
     },

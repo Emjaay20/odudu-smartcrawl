@@ -11,7 +11,7 @@ import { useSectionSave, type SectionSave } from '#/shared/repository/useSection
 import { useToast } from '#/shared/repository/useToasts';
 import { enabledText } from '#/shared/service/failure';
 import { disableConsequence, disableFixed } from '#/shared/service/tenantEnabled';
-import { SYSTEM_TENANT } from '#/shared/service/principal';
+import { isOwnTenant, SYSTEM_TENANT } from '#/shared/service/principal';
 import { orBlank } from '#/shared/service/format';
 
 export interface EnabledControl {
@@ -85,7 +85,7 @@ export function useTenantGeneral(
       enabled: tenant.enabled,
       busy: change.busy,
       confirming,
-      consequence: disableConsequence(name, principal.tenant === name),
+      consequence: disableConsequence(name, isOwnTenant(principal, name)),
       message,
       ask: () => {
         setMessage(null);

@@ -16,6 +16,7 @@ import {
   afterCreation,
   asksRedirects,
   secretNote,
+  secretName,
   secretTitle,
   type NewClientField,
   type NewClientKind,
@@ -143,8 +144,8 @@ export function useNewClient(tenant: string): NewClientPage {
       flow.check({ busy: creation.busy, find: () => creation.find(clientId), made: land, looked });
     },
     secret: creation.secret,
-    secretTitle: secretTitle(made?.name ?? clientId),
-    secretNote: secretNote(made?.name ?? clientId),
+    secretTitle: secretTitle(secretName(made, clientId)),
+    secretNote: secretNote(secretName(made, clientId)),
     closeSecret: () => {
       creation.closeSecret();
       if (made !== null) land(made);

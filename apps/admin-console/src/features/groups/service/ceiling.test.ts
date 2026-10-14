@@ -126,9 +126,9 @@ describe('reading a ceiling', () => {
 
   it('gives the caller, the parent reach and the lines once ready, and nothing before', () => {
     expect(ceilingParentReach(ready)).toEqual([]);
-    expect(ceilingLines(ready)?.remove).toContain('view-users');
+    expect(ceilingLines(ready).remove).toContain('view-users');
     expect(ceilingParentReach({ status: 'checking' })).toEqual([]);
-    expect(ceilingLines({ status: 'checking' })).toBeNull();
+    expect(ceilingLines({ status: 'checking' })).toEqual({ move: null, remove: null });
   });
 });
 

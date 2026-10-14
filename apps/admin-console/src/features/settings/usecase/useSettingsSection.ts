@@ -11,6 +11,7 @@ import { writeRefusal } from '#/shared/service/capabilities';
 import { disableConsequence } from '#/shared/service/tenantEnabled';
 import { TENANT_SETTINGS_RECORD } from '#/shared/service/tenantSettings';
 import { useSaveConfirmation } from '#/shared/usecase/useSaveConfirmation';
+import { isOwnTenant } from '#/shared/service/principal';
 
 export type SettingsSave = SectionSave<SectionValues>;
 
@@ -68,7 +69,7 @@ export function useGeneralSection(input: SectionInput): GeneralSection {
   return {
     save,
     confirming: asking.confirming !== null,
-    consequence: disableConsequence(input.tenant, principal.tenant === input.tenant),
+    consequence: disableConsequence(input.tenant, isOwnTenant(principal, input.tenant)),
     submit: () => {
       if (disablesTenant(input.data.enabled, save.values.enabled)) {
         asking.ask(true);

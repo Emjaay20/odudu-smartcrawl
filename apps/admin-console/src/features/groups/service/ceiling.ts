@@ -121,6 +121,6 @@ export function ceilingParentReach(ceiling: Ceiling): readonly string[] {
   return ceiling.status === 'ready' ? ceiling.parentReach : [];
 }
 
-export function ceilingLines(ceiling: Ceiling): ReachLines | null {
-  return ceiling.status === 'ready' ? ceiling.lines : null;
+export function ceilingLines(ceiling: Ceiling): ReachLines {
+  return ceiling.status === 'ready' ? ceiling.lines : { move: null, remove: null };
 }
