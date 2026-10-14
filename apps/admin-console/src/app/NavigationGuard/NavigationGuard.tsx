@@ -18,6 +18,7 @@ function askTheGuard(): Promise<boolean> {
 // Every route change, back and forward included, waits on the guard; a
 // reload or a close can only be asked about by the browser's own prompt.
 export function NavigationGuard() {
+  const restore = useUnsavedGuard((guard) => guard.restore);
   useBlocker({ shouldBlockFn: askTheGuard, enableBeforeUnload: false });
   useEffect(() => {
     const unload = (event: BeforeUnloadEvent): void => {
@@ -25,7 +26,7 @@ export function NavigationGuard() {
       if (dirty.size > 0 && !released) event.preventDefault();
     };
     const restored = (event: PageTransitionEvent): void => {
-      if (event.persisted) useUnsavedGuard.setState({ released: false });
+      if (event.persisted) restore();
     };
     window.addEventListener('beforeunload', unload);
     window.addEventListener('pageshow', restored);
@@ -33,6 +34,6 @@ export function NavigationGuard() {
       window.removeEventListener('beforeunload', unload);
       window.removeEventListener('pageshow', restored);
     };
-  }, []);
+  }, [restore]);
   return null;
 }

@@ -137,3 +137,11 @@ it('marks the page released once a full-page departure is under way', () => {
   guard().reset();
   expect(guard().released).toBe(false);
 });
+
+it('asks again after a release once the page is restored, and keeps what was dirty', () => {
+  guard().setDirty('client/general', 'General');
+  guard().release();
+  guard().restore();
+  expect(guard().released).toBe(false);
+  expect(guard().unsaved()).toEqual(['General']);
+});

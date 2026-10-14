@@ -23,6 +23,8 @@ interface UnsavedGuard {
   stay: () => void;
   leave: () => void;
   release: () => void;
+  // Back from the back-forward cache, where leaving is asked about again.
+  restore: () => void;
   reset: () => void;
 }
 
@@ -88,6 +90,9 @@ export const useUnsavedGuard = create<UnsavedGuard>()((set, get) => ({
   },
   release: () => {
     set({ released: true });
+  },
+  restore: () => {
+    set({ released: false });
   },
   reset: () => {
     set({ pending: null, dirty: new Map(), released: false });
