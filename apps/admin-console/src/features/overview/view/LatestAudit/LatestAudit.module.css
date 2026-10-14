@@ -1,7 +1,3 @@
-.none {
-  color: var(--ink-muted);
-}
-
 .link {
   display: inline-flex;
   align-items: center;

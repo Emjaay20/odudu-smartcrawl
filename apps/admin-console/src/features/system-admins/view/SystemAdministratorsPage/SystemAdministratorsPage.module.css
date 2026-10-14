@@ -4,13 +4,11 @@
   margin-block-start: var(--space-4);
 }
 
-.reason,
 .lead {
   margin: 0;
   max-inline-size: 72ch;
 }
 
-.reason,
 .lead {
   color: var(--ink-muted);
 }
