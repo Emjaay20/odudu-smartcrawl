@@ -43,7 +43,9 @@ package everything depends on.
 `content-security-policy`, `x-frame-options` or `referrer-policy` — except
 the two files that spread `pageHeaders`' result. A lint test that only
 knows a name is present cannot verify a _value_, but a third hand-copy
-cannot appear undetected either.
+cannot appear undetected either. `cache-control` joined the set in the
+amendment below, and is guarded by a page being sent beside it rather than
+by its name, since tokens, JSON and redirects set it legitimately.
 
 ## Consequences
 
@@ -122,9 +124,39 @@ its advice is to reload on `pageshow` with `event.persisted`.
    reaper keeps it `ODUDU_RETENTION_AUTHENTICATION_SESSION_SECONDS`, an hour
    by default, past expiry) the page adds "Start sign-in again", a path on this
    server rebuilt from the parked request, which `/authorize` validates
-   afresh. The row authenticates nothing. A request that carried an
-   `id_token_hint` or a `claims` `sub` is not rebuilt, since the hint token
-   is not stored and the rebuilt request would no longer be tied to a subject.
+   afresh. The row authenticates nothing. `/authorize` now parks `max_age` on
+   the fresh-login branch too: it had parked it only for the account chooser,
+   so a rebuilt link lost it and was answered from an old session the
+   original had refused. Every parameter `/authorize` acts on is rebuilt
+   (`prompt`, `max_age`, the resolved `resource`, `claims`, `state`, `nonce`,
+   PKCE); the server reads no other (`response_mode` other than `query` is
+   refused, `request` and `request_uri` are refused), so none is dropped.
+   A consumed session also yields the link, and that is safe: the id is the
+   holder's own, the link carries only what the holder's own authorize URL
+   already carried, and `/authorize` revalidates it.
+4. A request that carried an `id_token_hint` or a `claims` `sub` cannot be
+   rebuilt (the hint token is not stored, and a request without it is no
+   longer tied to one subject), so the page offers "Return to the
+   application" instead: an error redirect to the parked `redirect_uri`
+   with `error=access_denied`, `state` and `iss`, built by the same
+   `errorRedirect` the endpoint uses for its other refusals. RFC 6749
+   §4.1.2.1 and OIDC Core §3.1.2.6 allow `access_denied` where the
+   authorization server denied the request; the sign-in was not completed and
+   nothing was granted. `login_required` is defined for a request that
+   forbids interaction, which this was not. The relying party restarts with a
+   hint of its own. It is offered only while the client is enabled and still
+   registers that `redirect_uri`, so the target is validated twice, and never
+   a URL the parked row did not carry. `response_mode` needs no handling:
+   only `query` is accepted.
+
+**A restored form reloading `/authorize`.** The reload re-requests the GET
+that began the attempt. With a live SSO session that answers `302` to the
+relying party again with the same `state`, issuing a new code. That is
+acceptable: it is exactly what navigating to that URL does, the relying party
+already handles a repeated callback (its `state` is spent), and nothing is
+issued that the holder of the session could not obtain by opening the link.
+Chrome also drops a `no-store` page from the cache when cookies change, which
+a sign-in does, so the case is rare.
 
 **What `no-store` costs.** Back to a sign-in page is a request, not a cache
 hit: a person who goes Back sees a form fetched again and a new authentication
