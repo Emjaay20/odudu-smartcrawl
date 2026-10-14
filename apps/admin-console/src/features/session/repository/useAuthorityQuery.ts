@@ -1,8 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { readAuthority } from '#/features/session/adapter/session';
-import type { Authority } from '#/features/session/service';
+import { authorityOf, refusedUnknownOf, type Authority } from '#/features/session/service';
 import { useInvalidate } from '#/shared/repository/useInvalidate';
-import { isUnknownTenant } from '#/shared/service/failure';
 import { useTransport } from '#/shared/transport/useTransport';
 
 // Keyed by the principal as well as the tenant, so what whoami told one
@@ -34,8 +33,8 @@ export function useAuthorityQuery(
     enabled: subjectId !== null && live,
   });
   return {
-    authority: query.data?.ok === true ? query.data.data : undefined,
-    refusedUnknown: query.data === undefined ? undefined : isUnknownTenant(query.data),
+    authority: authorityOf(query.data),
+    refusedUnknown: refusedUnknownOf(query.data),
     answered: query.data !== undefined,
     reread: () => {
       invalidate(key);

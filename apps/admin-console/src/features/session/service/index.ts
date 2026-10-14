@@ -47,6 +47,7 @@ export {
   type TenantEntry,
   tenantEntry,
 } from '#/features/session/service/entry';
+export { authorityOf, refusedUnknownOf } from '#/features/session/service/whoami';
 export {
   signInLabel,
   signingInTitle,
