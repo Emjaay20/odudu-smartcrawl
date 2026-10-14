@@ -1,0 +1,11 @@
+:root {
+  --space-2: 8px;
+  --ink-danger: light-dark(#a00, #f66);
+  --type-13: 13px;
+}
+
+@property --angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}

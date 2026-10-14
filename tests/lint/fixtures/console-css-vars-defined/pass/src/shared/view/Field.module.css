@@ -1,0 +1,14 @@
+/* var(--commented-out) is not a use */
+.field {
+  padding: var(--space-2);
+  color: var(--ink-danger);
+  font-size: var(--type-13);
+}
+
+.popover {
+  min-inline-size: var(--trigger-width, 0);
+  inline-size: var(--measured, var(--space-2));
+  --local: 4px;
+  margin: var(--local);
+  transform: rotate(var(--angle));
+}

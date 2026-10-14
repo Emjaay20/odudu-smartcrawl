@@ -1,0 +1,8 @@
+.field {
+  padding: var(--space-2) var(--space-5);
+}
+
+.failed {
+  color: var(--ink-danger);
+  margin: var(--space-2, var(--space-9));
+}
