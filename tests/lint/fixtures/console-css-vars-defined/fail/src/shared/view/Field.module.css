@@ -6,3 +6,9 @@
   color: var(--ink-danger);
   margin: var(--space-2, var(--space-9));
 }
+
+.typo {
+  margin: var(--spase-2, 0);
+  padding: var(--spase-2, var(--space-2));
+  color: var(--made-up, red);
+}

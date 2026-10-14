@@ -7,7 +7,7 @@
 
 .popover {
   min-inline-size: var(--trigger-width, 0);
-  inline-size: var(--measured, var(--space-2));
+  inline-size: var(--trigger-width, var(--space-2));
   --local: 4px;
   margin: var(--local);
   transform: rotate(var(--angle));
