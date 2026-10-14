@@ -33,7 +33,6 @@ export {
   statusOf,
   isSaving,
   restoredShown,
-  heldEtag,
   sectionBlocked,
   conflictsOf,
 } from '#/shared/service/sectionSave/transitions';

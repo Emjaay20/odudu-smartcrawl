@@ -5,7 +5,6 @@ import {
   mailFieldErrors,
   mailKindState,
   mailOutcome,
-  sentOutcome,
   withOutcome,
   mailSentText,
   mailRefusal,
@@ -136,7 +135,7 @@ describe('mail outcomes', () => {
 });
 
 describe('the state of one kind of mail', () => {
-  const sent = sentOutcome('Reset sent.');
+  const sent = { sent: true, text: 'Reset sent.', fix: null };
 
   it('is busy while that kind is being sent, and has the outcome it last had', () => {
     expect(mailKindState('reset', 'reset', { reset: sent })).toEqual({ busy: true, outcome: sent });
@@ -150,8 +149,5 @@ describe('the state of one kind of mail', () => {
     const was = { verification: sent };
     expect(withOutcome(was, 'reset', sent)).toEqual({ verification: sent, reset: sent });
     expect(was).toEqual({ verification: sent });
-  });
-  it('is a sent mail, with its text and nothing to fix', () => {
-    expect(sent).toEqual({ sent: true, text: 'Reset sent.', fix: null });
   });
 });

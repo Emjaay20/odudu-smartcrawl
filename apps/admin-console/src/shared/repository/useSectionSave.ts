@@ -18,7 +18,6 @@ import {
   editedSection,
   fieldValues,
   hasEdits,
-  heldEtag,
   isSaving,
   mineKept,
   restoredShown,
@@ -119,7 +118,7 @@ export function useSectionSave<T extends Values, R>({
     label,
     dirty: hasEdits(draftEdits),
     fields: draftFieldsOf(draftEdits, fields),
-    etag: heldEtag(state, etag),
+    etag,
   });
 
   const current = currentSection(state, fresh, etag, restored);

@@ -27,5 +27,5 @@ export function isOwnTenant(principal: Principal, tenant: string): boolean {
 }
 
 export function isSelf(principal: Principal, tenant: string, subjectId: string): boolean {
-  return principal.tenant === tenant && principal.subjectId === subjectId;
+  return isOwnTenant(principal, tenant) && principal.subjectId === subjectId;
 }

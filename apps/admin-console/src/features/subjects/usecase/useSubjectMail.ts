@@ -10,7 +10,6 @@ import {
   mailOutcome,
   mailSentText,
   requiredActionsInOrder,
-  sentOutcome,
   subjectName,
   subjectTabHref,
   withOutcome,
@@ -65,7 +64,7 @@ export function useSubjectMail(tenant: string, subject: Subject): SubjectMail {
       .send(request)
       .then((result) => {
         if (result.ok) {
-          setOutcomes((was) => withOutcome(was, kind, sentOutcome(sentText)));
+          setOutcomes((was) => withOutcome(was, kind, { sent: true, text: sentText, fix: null }));
           return;
         }
         refusal.report(result, 'manage-users');

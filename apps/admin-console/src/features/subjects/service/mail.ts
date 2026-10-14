@@ -46,10 +46,6 @@ const MAIL_FIX_LABEL: Readonly<Record<MailRefusal['fix'], string>> = {
   settings: 'Settings',
 };
 
-export function sentOutcome(text: string): MailOutcome {
-  return { sent: true, text, fix: null };
-}
-
 export function withOutcome(
   outcomes: Partial<Record<MailKind, MailOutcome>>,
   kind: MailKind,

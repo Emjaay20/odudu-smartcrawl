@@ -10,7 +10,6 @@ import {
   discardedSection,
   editedSection,
   hasEdits,
-  heldEtag,
   initialSection,
   isSaving,
   mineKept,
@@ -208,11 +207,6 @@ describe('what the section shows of its state', () => {
     expect(restoredShown(kept, state({ edits: { name: 'b' } }))).toBe(true);
     expect(restoredShown(kept, state())).toBe(false);
     expect(restoredShown(null, state({ edits: { name: 'b' } }))).toBe(false);
-  });
-
-  it("holds the ETag it loaded with, or the record's before it has loaded one", () => {
-    expect(heldEtag(state({ etag: 'e1' }), 'e2')).toBe('e1');
-    expect(heldEtag(null, 'e2')).toBe('e2');
   });
 });
 

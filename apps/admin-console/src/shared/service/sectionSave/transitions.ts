@@ -182,11 +182,6 @@ export function restoredShown<T extends Values>(
   return restored !== null && hasEdits(state.edits);
 }
 
-// A section not yet started holds the record's ETag.
-export function heldEtag<T extends Values>(state: SectionState<T> | null, etag: string): string {
-  return state?.etag ?? etag;
-}
-
 export function sectionBlocked(
   gone: boolean,
   conflicts: number,

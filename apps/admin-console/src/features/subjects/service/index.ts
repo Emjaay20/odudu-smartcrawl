@@ -84,7 +84,6 @@ export {
   type MailOutcome,
   mailOutcome,
   mailKindState,
-  sentOutcome,
   withOutcome,
   mailFieldErrors,
   mailFailure,
