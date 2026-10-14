@@ -1,4 +1,5 @@
 import { json, type Answer, type Sent } from '#/testing/fakeTransport';
+import { matchesName } from '#/testing/listFilters';
 import { CLIENTS } from '#/testing/clientsFixtures';
 import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
 import { ROLES } from '#/testing/rolesFixtures';
@@ -48,13 +49,7 @@ export const MAPPED = {
 };
 
 function listed(request: Sent) {
-  const name = request.search.get('name');
-  return SCOPES.filter((each) => name === null || each.name.startsWith(name.toLowerCase()));
-}
-
-function rolesListed(request: Sent) {
-  const name = request.search.get('name');
-  return ROLES.filter((each) => name === null || each.name.startsWith(name.toLowerCase()));
+  return SCOPES.filter((each) => matchesName(request, each));
 }
 
 // The clients that carry a scope, as the scope's own list answers them.
@@ -96,7 +91,8 @@ export function scopeRoutes(
       ),
       [`GET ${SC}/s-bill/roles`]: json({ items: [MAPPED] }, 200, { etag: '"s-bill-r1"' }),
       [`GET ${SC}/s-bill/clients`]: json({ items: [BILLING_CARRIES] }),
-      [`GET ${ACME_ADMIN}/roles`]: (request) => json({ items: rolesListed(request) })(request),
+      [`GET ${ACME_ADMIN}/roles`]: (request) =>
+        json({ items: ROLES.filter((each) => matchesName(request, each)) })(request),
       [`GET ${ACME_ADMIN}/clients`]: (request) =>
         json({
           items: CLIENTS.filter(

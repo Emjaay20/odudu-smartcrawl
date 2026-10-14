@@ -1,4 +1,5 @@
 import { json, type Answer, type Sent } from '#/testing/fakeTransport';
+import { matchesName, underParent } from '#/testing/listFilters';
 import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
 import { ADMIN_ROLES, EVERY_TENANT_CAPABILITY, role } from '#/testing/subjectsFixtures';
 
@@ -10,13 +11,9 @@ export const PORTAL_READER = role('r-portal', 'reader', 'portal');
 export const ROLES = [AUDITOR, READER, PORTAL_READER, ...ADMIN_ROLES];
 
 function listed(request: Sent) {
-  const client = request.search.get('client');
-  const name = request.search.get('name');
   return ROLES.filter(
     (each) =>
-      (client === null ||
-        (client === 'tenant' ? each.client_id === null : each.client_id === client)) &&
-      (name === null || each.name.startsWith(name.toLowerCase())),
+      underParent(request, 'client', 'tenant', each.client_id) && matchesName(request, each),
   );
 }
 

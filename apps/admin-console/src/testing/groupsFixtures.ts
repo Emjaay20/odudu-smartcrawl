@@ -1,6 +1,8 @@
 import { json, type Answer, type Sent } from '#/testing/fakeTransport';
 import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
-import { ADMIN_ROLES, EVERY_TENANT_CAPABILITY, role } from '#/testing/subjectsFixtures';
+import { matchesName, underParent } from '#/testing/listFilters';
+import { AUDITOR, PORTAL_READER } from '#/testing/rolesFixtures';
+import { ADMIN_ROLES, EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures';
 
 export const G = `${ACME_ADMIN}/groups`;
 
@@ -66,9 +68,6 @@ export const PLATFORM = group('g-plat', '/eng/platform', 'g-eng');
 export const FINANCE = group('g-fin', '/finance');
 export const GROUPS = [ENG, PLATFORM, FINANCE];
 
-export const AUDITOR = { ...role('r-aud', 'auditor'), description: 'Reads the books' };
-export const PORTAL_READER = role('r-portal', 'reader', 'portal');
-
 // The built-in admin client's role of this name.
 export function adminRole(name: string) {
   const found = ADMIN_ROLES.find((each) => each.name === name);
@@ -77,13 +76,8 @@ export function adminRole(name: string) {
 }
 
 function listed(request: Sent) {
-  const parent = request.search.get('parent');
-  const name = request.search.get('name');
   return GROUPS.filter(
-    (each) =>
-      (parent === null ||
-        (parent === 'root' ? each.parent_id === null : each.parent_id === parent)) &&
-      (name === null || each.name.startsWith(name.toLowerCase())),
+    (each) => underParent(request, 'parent', 'root', each.parent_id) && matchesName(request, each),
   );
 }
 
