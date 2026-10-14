@@ -46,7 +46,7 @@ export {
   ACCESS_TOKEN_LABEL,
   assignmentName,
   CONSENT_RULE,
-  consentGuard,
+  guardedConsent,
   ID_TOKEN_LABEL,
   NEW_CLIENT_LABEL,
   displayOrderProblem,

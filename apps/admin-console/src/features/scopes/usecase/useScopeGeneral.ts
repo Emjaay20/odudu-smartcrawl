@@ -15,7 +15,7 @@ import {
   carryingOf,
   claimMappersOf,
   CONSENT_RULE,
-  consentGuard,
+  guardedConsent,
   guardedText,
   ID_TOKEN_LABEL,
   NEW_CLIENT_CHOICES,
@@ -151,20 +151,13 @@ export function useScopeGeneral({
     },
     save: saves.general,
   });
-  const guarded = consentGuard(
-    consent.values.display_order,
-    consent.changed,
-    consent.fieldErrors,
-    consent.blocked,
-  );
-
   return {
     description,
     descriptionRule: DESCRIPTION_RULE,
     tokens,
     assignment,
     assignmentChoices: NEW_CLIENT_CHOICES,
-    consent: { ...consent, ...guarded },
+    consent: guardedConsent(consent),
     consentRule: CONSENT_RULE,
     deletion: {
       ...removal,

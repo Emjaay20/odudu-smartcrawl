@@ -31,7 +31,7 @@ export function displayOrderProblem(text: string): string | null {
 // The consent section's guard: a display order that is not a number holds Save
 // and is said under its field once it has been edited, beside what the server
 // said of any field and any reason Save was already held.
-export function consentGuard(
+function consentGuard(
   order: string,
   changed: readonly string[],
   fieldErrors: Readonly<Partial<Record<string, string>>>,
@@ -44,6 +44,27 @@ export function consentGuard(
       ...fieldErrors,
     },
     blocked: problem ?? blocked,
+  };
+}
+
+interface Guarded {
+  values: { display_order: string };
+  changed: readonly string[];
+  fieldErrors: Readonly<Partial<Record<string, string>>>;
+  blocked: string | undefined;
+}
+
+// The consent section as the page shows it: the section's own state with the
+// guard's field errors and held-Save reason laid over it.
+export function guardedConsent<S extends Guarded>(consent: S): S {
+  return {
+    ...consent,
+    ...consentGuard(
+      consent.values.display_order,
+      consent.changed,
+      consent.fieldErrors,
+      consent.blocked,
+    ),
   };
 }
 
