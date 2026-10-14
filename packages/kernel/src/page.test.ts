@@ -1,3 +1,4 @@
+import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 import { pageHeaders, reloadOnRestore } from '#/page';
 
@@ -185,5 +186,49 @@ describe('reloading a form restored from the back/forward cache', () => {
     expect(page.title).toBe('Sign in');
     expect(page.html.startsWith('<!doctype html>\n<html><body>\n<form></form>')).toBe(true);
     expect(page.html.endsWith('\n</body></html>')).toBe(true);
+  });
+});
+
+// The script text itself, run against a stand-in window: no bfcache exists
+// in the browsers CI drives, so the one decision it makes is held here.
+describe('what the reload script does when run', () => {
+  const PAGE = {
+    html: '<html><body>\n</body></html>',
+    body: '',
+    title: 'Sign in',
+    script: null,
+    frames: [],
+  };
+
+  function run(): { fire(persisted: boolean): void; reloads: () => number } {
+    const text = /<script nonce="[^"]+">([^<]*)<\/script>/u.exec(reloadOnRestore(PAGE).body)?.[1];
+    let handler: ((event: { persisted: boolean }) => void) | undefined;
+    let reloads = 0;
+    const events: string[] = [];
+    const window = {
+      addEventListener(type: string, listener: (event: { persisted: boolean }) => void) {
+        events.push(type);
+        handler = listener;
+      },
+    };
+    const location = { reload: () => (reloads += 1) };
+    runInNewContext(text ?? '', { window, location });
+    expect(events).toEqual(['pageshow']);
+    return {
+      fire: (persisted) => handler?.({ persisted }),
+      reloads: () => reloads,
+    };
+  }
+
+  it('does nothing when it is loaded, so a reload cannot start another', () => {
+    expect(run().reloads()).toBe(0);
+  });
+
+  it('reloads on a restore and not on an ordinary show', () => {
+    const page = run();
+    page.fire(false);
+    expect(page.reloads()).toBe(0);
+    page.fire(true);
+    expect(page.reloads()).toBe(1);
   });
 });

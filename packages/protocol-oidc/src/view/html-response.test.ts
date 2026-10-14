@@ -23,6 +23,10 @@ const EXEMPT_FILES = [
   'packages/console-gateway/src/view/spa.ts',
 ];
 
+// `cache-control` is set by plenty of non-page responses (tokens, JSON, a
+// redirect), so the guard is on a page being sent beside it, not on the name.
+const PAGE_SENDER = /\b(sendHtml|sendPage|sendVerificationHtml)\(/u;
+
 async function sourcesUnder(dir: string): Promise<{ path: string; text: string }[]> {
   const found: { path: string; text: string }[] = [];
   for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -183,6 +187,22 @@ describe('[ODUDU-VIEW-HTML-01] an HTML response cannot leave without its framing
       .filter((f) => !EXEMPT_FILES.includes(f.path))
       .filter((f) => HEADER_NAMES.some((name) => f.text.includes(name)))
       .map((f) => f.path);
+    expect(offenders).toEqual([]);
+  });
+
+  // pageHeaders supplies `cache-control` for every page, so a page sender
+  // setting its own beside the call is a second authority that can drift.
+  it('lets no page be sent with a cache-control of its own', async () => {
+    const offenders = (await viewSources()).flatMap((f) =>
+      f.text
+        .split('\n')
+        .flatMap((line, index, lines) =>
+          line.includes('cache-control') &&
+          PAGE_SENDER.test(lines.slice(index, index + 3).join('\n'))
+            ? [`${f.path.slice(REPO_ROOT.length + 1)}:${String(index + 1)}`]
+            : [],
+        ),
+    );
     expect(offenders).toEqual([]);
   });
 });

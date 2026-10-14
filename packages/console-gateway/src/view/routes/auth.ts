@@ -36,7 +36,7 @@ function single(query: unknown, name: string): string | undefined {
 
 function refuse(reply: FastifyReply, status: number, cookies: readonly string[]): FastifyReply {
   if (cookies.length > 0) reply.header('set-cookie', [...cookies]);
-  return sendPage(reply.header('cache-control', 'no-store'), status, renderSignInRefused());
+  return sendPage(reply, status, renderSignInRefused());
 }
 
 function redirect(reply: FastifyReply, location: string, cookies: readonly string[]): FastifyReply {
