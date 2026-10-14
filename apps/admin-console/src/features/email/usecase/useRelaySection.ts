@@ -5,7 +5,7 @@ import { SMTP_RECORD } from '#/features/email/repository/useSmtpRecord';
 import {
   passwordHint,
   RELAY_LABELS,
-  relayBlocked,
+  relayHold,
   relayValues,
   type RelayValues,
 } from '#/features/email/service';
@@ -63,7 +63,7 @@ export function useRelaySection({
   });
   return {
     save,
-    blocked: save.blocked ?? (save.dirty ? relayBlocked(save.values) : undefined),
+    blocked: relayHold(save.blocked, save.dirty, save.values),
     passwordNote: passwordHint(config, save.values),
     removePassword: (remove) => {
       if (remove) save.edit('password', '');

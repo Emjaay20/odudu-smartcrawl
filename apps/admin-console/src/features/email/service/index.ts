@@ -14,6 +14,7 @@ export {
   PORT_RULE,
   RELAY_LABELS,
   relayBlocked,
+  relayHold,
   relayRequest,
   relayValues,
   type RelayValues,

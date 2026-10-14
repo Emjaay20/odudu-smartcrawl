@@ -63,6 +63,15 @@ export function relayBlocked(values: RelayValues): string | undefined {
   return undefined;
 }
 
+// What holds Save: the section's own reason, or an unfinished relay once edited.
+export function relayHold(
+  held: string | undefined,
+  dirty: boolean,
+  values: RelayValues,
+): string | undefined {
+  return held ?? (dirty ? relayBlocked(values) : undefined);
+}
+
 function relayMoved(config: SmtpConfig, values: RelayValues): boolean {
   const username = values.username.trim();
   return (

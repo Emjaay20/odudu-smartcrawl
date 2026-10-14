@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   passwordHint,
   relayBlocked,
+  relayHold,
   relayRequest,
   relayValues,
   type RelayValues,
@@ -130,5 +131,15 @@ describe('passwordHint', () => {
   it('says a relay with no stored password needs none left empty', () => {
     expect(passwordHint({ ...CONFIGURED, password_set: false }, values())).toMatch(/needs none/u);
     expect(passwordHint(NONE, relayValues(NONE))).toMatch(/needs none/u);
+  });
+});
+
+describe('relayHold', () => {
+  it("keeps the section's own reason, and checks the relay only once it is edited", () => {
+    expect(relayHold('Keep yours or take theirs.', true, values({ host: '' }))).toBe(
+      'Keep yours or take theirs.',
+    );
+    expect(relayHold(undefined, false, values({ host: '' }))).toBeUndefined();
+    expect(relayHold(undefined, true, values({ host: '' }))).toMatch(/host/u);
   });
 });
