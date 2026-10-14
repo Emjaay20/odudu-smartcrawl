@@ -1,60 +1,23 @@
-import { act, renderHook, waitFor } from '@testing-library/react';
-import { expect, it } from 'vitest';
 import { useScopeDeletion } from '#/features/scopes/repository/useScopeRecord';
-import { pending } from '#/testing/fakeTransport';
-import { hookHarness } from '#/testing/hookHarness';
+import { deletionContract } from '#/testing/deletionContract';
 
-const PATH = 'DELETE /console/api/admin/tenants/acme/scopes/x1';
-
-it('deletes the scope, reads its lists again once it is gone and answers the result', async () => {
-  const { wrapper, invalidated } = hookHarness({
-    [PATH]: () => new Response(null, { status: 204 }),
-  });
-  const { result } = renderHook(() => useScopeDeletion('acme', 'x1'), { wrapper });
-  let answer: Awaited<ReturnType<typeof result.current.run>> | undefined;
-  await act(async () => {
-    answer = await result.current.run();
-  });
-  expect(answer?.ok).toBe(true);
-  expect(invalidated).toHaveBeenCalledWith({ queryKey: ['list', 'acme', 'scopes'] });
-});
-
-it('is busy from the press until the server answers', async () => {
-  const { wrapper } = hookHarness({ [PATH]: pending() });
-  const { result } = renderHook(() => useScopeDeletion('acme', 'x1'), { wrapper });
-  expect(result.current.busy).toBe(false);
-  act(() => {
-    result.current.run().catch(() => undefined);
-  });
-  await waitFor(() => {
-    expect(result.current.busy).toBe(true);
-  });
-});
-
-it('drops what the console holds of the clients the scope leaves, rather than marking it stale', async () => {
-  const { wrapper, queryClient } = hookHarness({
-    [PATH]: () => new Response(null, { status: 204 }),
-  });
-  queryClient.setQueryData(['record', 'acme', 'clients/c1'], 'held');
-  const { result } = renderHook(() => useScopeDeletion('acme', 'x1'), { wrapper });
-  await act(async () => {
-    await result.current.run();
-  });
-  expect(queryClient.getQueryState(['record', 'acme', 'clients/c1'])).toBeUndefined();
-});
-
-it("leaves the deleted record's own entries to lapse and reads the others' again", async () => {
-  const { wrapper, queryClient } = hookHarness({
-    [PATH]: () => new Response(null, { status: 204 }),
-  });
-  queryClient.setQueryData(['record', 'acme', 'scopes/x1'], 'held');
-  queryClient.setQueryData(['record', 'acme', 'scopes/x1/sub'], 'held');
-  queryClient.setQueryData(['record', 'acme', 'scopes/x2'], 'held');
-  const { result } = renderHook(() => useScopeDeletion('acme', 'x1'), { wrapper });
-  await act(async () => {
-    await result.current.run();
-  });
-  expect(queryClient.getQueryState(['record', 'acme', 'scopes/x1'])?.isInvalidated).toBe(false);
-  expect(queryClient.getQueryState(['record', 'acme', 'scopes/x1/sub'])?.isInvalidated).toBe(false);
-  expect(queryClient.getQueryState(['record', 'acme', 'scopes/x2'])?.isInvalidated).toBe(true);
+deletionContract({
+  noun: 'scope',
+  resource: 'scopes',
+  useDeletion: useScopeDeletion,
+  invalidates: [['list', 'acme', 'scopes']],
+  cache: [
+    {
+      says: 'drops what the console holds of the clients the scope leaves, rather than marking it stale',
+      entries: [[['record', 'acme', 'clients/c1'], 'removed']],
+    },
+    {
+      says: "leaves the deleted record's own entries to lapse and reads the others' again",
+      entries: [
+        [['record', 'acme', 'scopes/x1'], 'untouched'],
+        [['record', 'acme', 'scopes/x1/sub'], 'untouched'],
+        [['record', 'acme', 'scopes/x2'], 'stale'],
+      ],
+    },
+  ],
 });
