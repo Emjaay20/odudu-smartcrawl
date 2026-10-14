@@ -5,6 +5,7 @@ import {
   mappersFailure,
   mappersFailureText,
   mappersSummary,
+  describeMappers,
 } from '#/features/scopes/service';
 
 it('offers every available mapper, in the order the registry names them', () => {
@@ -71,4 +72,10 @@ it('puts the unknown-mapper wording under the mapper field', () => {
   ]);
   const other = { ...failure, problem: { ...failure.problem, status: 409 } };
   expect(mappersFailure(other)).toBe(other);
+});
+
+it('reads a draft mapper list as a sentence, and an empty or odd one as none', () => {
+  expect(describeMappers(['email', 'groups'])).toBe('email and groups');
+  expect(describeMappers([])).toBe('none');
+  expect(describeMappers(undefined)).toBe('none');
 });

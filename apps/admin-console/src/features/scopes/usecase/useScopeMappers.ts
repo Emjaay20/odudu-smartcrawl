@@ -6,6 +6,7 @@ import {
   type MapperValues,
 } from '#/features/scopes/repository/useScopeRecord';
 import {
+  describeMappers,
   mapperOptions,
   mappersFailure,
   mappersSummary,
@@ -14,7 +15,6 @@ import {
 import type { RecordState } from '#/shared/repository/useRecord';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { writeRefusal } from '#/shared/service/capabilities';
-import { andList } from '#/shared/service/format';
 import { inOrderOf } from '#/shared/service/ids';
 import type { Choice } from '#/shared/service/choice';
 
@@ -59,8 +59,7 @@ export function useScopeMapperSet({
         value: inOrderOf(data.available, data.bound),
         label: 'Claim mappers',
         kind: 'plain',
-        describe: (value) =>
-          Array.isArray(value) && value.length > 0 ? andList(value.map(String)) : 'none',
+        describe: describeMappers,
       },
     },
     save: async (gateway, input) => {

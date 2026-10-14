@@ -33,6 +33,7 @@ export {
   mappersFailure,
   mappersFailureText,
   mappersSummary,
+  describeMappers,
 } from '#/features/scopes/service/mappers';
 export {
   chosenClient,

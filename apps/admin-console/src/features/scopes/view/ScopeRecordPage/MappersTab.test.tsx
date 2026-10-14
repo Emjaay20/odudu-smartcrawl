@@ -165,6 +165,31 @@ it('shows a 412 as a conflict', async () => {
   expect(await within(section).findByText(/changed elsewhere/u)).toBeVisible();
 });
 
+it('says what each side of a mapper conflict holds, as a sentence or as none', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(
+    AT,
+    scopeRoutes(undefined, {
+      [`PUT ${SC}/s-bill/mappers`]: problem(412, 'about:blank', 'Precondition Failed'),
+      [`GET ${SC}/s-bill/mappers`]: inTurn(
+        json({ available: ['email', 'groups'], bound: [], declared: ['email'] }, 200, {
+          etag: '"s-bill-m1"',
+        }),
+        json({ available: ['email', 'groups'], bound: ['email', 'groups'], declared: [] }, 200, {
+          etag: '"s-bill-m2"',
+        }),
+      ),
+    }),
+  );
+  const section = await open();
+  await user.click(within(section).getByRole('checkbox', { name: 'groups' }));
+  await user.click(within(section).getByRole('button', { name: 'Save Claim mappers' }));
+  expect(
+    await within(section).findByRole('button', { name: 'Keep mine in Claim mappers' }),
+  ).toBeVisible();
+  expect(within(section).getByText('email and groups')).toBeVisible();
+});
+
 it('passes axe in both themes', async () => {
   expect(
     await axeInBothThemes(
