@@ -1,10 +1,6 @@
-import type { AdminCapability } from '#/shared/service/principal';
 import { describe, expect, it } from 'vitest';
 import { keptRoles, reachOfRoles } from '#/features/groups/service/mapped';
-
-function reach(...capabilities: AdminCapability[]): AdminCapability[] {
-  return capabilities;
-}
+import { reach } from '#/testing/roleAnswers';
 
 describe('the roles of a group', () => {
   const items = [

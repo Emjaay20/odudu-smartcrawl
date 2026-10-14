@@ -12,29 +12,11 @@ import {
   setGroupRoles,
 } from '#/features/groups/adapter/groups';
 import { fakeTransport, json } from '#/testing/fakeTransport';
+import { group, record } from '#/testing/groupAnswers';
+import { ENG, PLATFORM } from '#/testing/groupsFixtures';
 import { ACME_ADMIN } from '#/testing/renderConsole';
 
 const G = `${ACME_ADMIN}/groups`;
-
-function group(id: string, path: string, parent: string | null = null) {
-  return {
-    id,
-    name: path.split('/').at(-1) ?? path,
-    description: null,
-    parent_id: parent,
-    default_for_new_subjects: false,
-    path,
-    created_at: '2026-09-28T08:41:53.858Z',
-    admin_reach: [],
-  };
-}
-
-function record(g: ReturnType<typeof group>) {
-  return { ...g, subtree_admin_reach: [], holds_default_group: false };
-}
-
-const ENG = group('g-eng', '/eng');
-const PLATFORM = group('g-plat', '/eng/platform', 'g-eng');
 
 it('reads one level of the tree, and counts it', async () => {
   const fake = fakeTransport({

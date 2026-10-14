@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { inTurn, json, offline, problem } from '#/testing/fakeTransport';
-import { ENG, G, group, groupRoutes, record } from '#/testing/groupsFixtures';
+import { group, record } from '#/testing/groupAnswers';
+import { ENG, G, groupRoutes } from '#/testing/groupsFixtures';
 import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
 
 afterEach(() => {

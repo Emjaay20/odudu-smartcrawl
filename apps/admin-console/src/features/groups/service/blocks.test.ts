@@ -1,4 +1,3 @@
-import type { AdminCapability } from '#/shared/service/principal';
 import { describe, expect, it } from 'vitest';
 import {
   defaultBlock,
@@ -9,23 +8,8 @@ import {
   parentUnavailable,
   roleUnavailable,
 } from '#/features/groups/service/blocks';
-
-function reach(...capabilities: AdminCapability[]): AdminCapability[] {
-  return capabilities;
-}
-
-function group(id: string, path: string, extra: Record<string, unknown> = {}) {
-  return {
-    id,
-    name: path.split('/').at(-1) ?? path,
-    description: null,
-    parent_id: null,
-    default_for_new_subjects: false,
-    path,
-    created_at: '2026-09-28T08:41:53.858Z',
-    ...extra,
-  };
-}
+import { group } from '#/testing/groupAnswers';
+import { reach } from '#/testing/roleAnswers';
 
 describe('moving a group', () => {
   const eng = group('g-eng', '/eng');

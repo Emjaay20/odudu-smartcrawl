@@ -3,16 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { inTurn, json, pending, problem } from '#/testing/fakeTransport';
-import {
-  adminRole,
-  ENG,
-  FINANCE,
-  G,
-  group,
-  groupRoutes,
-  PLATFORM,
-  record,
-} from '#/testing/groupsFixtures';
+import { group, record } from '#/testing/groupAnswers';
+import { adminRole, ENG, FINANCE, G, groupRoutes, PLATFORM } from '#/testing/groupsFixtures';
 import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/roleAnswers';
 import { assigned, S } from '#/testing/subjectsFixtures';

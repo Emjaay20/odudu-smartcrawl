@@ -74,3 +74,7 @@ export function effectiveRole(
     via,
   };
 }
+
+export function reach(...capabilities: AdminCapability[]): AdminCapability[] {
+  return capabilities;
+}
