@@ -2,7 +2,14 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { recordKey } from '#/shared/repository/queryKeys';
 import { useInvalidate } from '#/shared/repository/useInvalidate';
-import { recordView, seenAfter, type RecordView } from '#/shared/service/record';
+import { ReadFailure, readFailureOf } from '#/shared/service/readFailure';
+import {
+  entryEtag,
+  recordView,
+  seenAfter,
+  shownFailure,
+  type RecordView,
+} from '#/shared/service/record';
 import type {
   Gateway,
   GatewayFailure,
@@ -22,16 +29,6 @@ export interface RecordState<R> extends RecordView {
   data: R | undefined;
   etag: string | null;
   failure: GatewayFailure | null;
-}
-
-// Thrown so that a failed re-read leaves the record already read in place:
-// the sections editing it stay mounted, and their edits with them.
-class RecordReadFailure extends Error {
-  readonly failure: GatewayFailure;
-  constructor(failure: GatewayFailure) {
-    super('a record could not be read');
-    this.failure = failure;
-  }
 }
 
 // One ETag-bearing resource, read once for every section that edits it: a
@@ -57,18 +54,18 @@ export function useRecord<R>({
     enabled,
     queryFn: async (): Promise<RecordEntry<R>> => {
       const result = await read(gateway);
-      if (!result.ok) throw new RecordReadFailure(result);
+      if (!result.ok) throw new ReadFailure(result);
       return { result, by: 'read' };
     },
   });
   const entry = query.data;
-  const etag = entry?.result.etag ?? null;
+  const etag = entryEtag(entry);
   const [seen, setSeen] = useState<string | null>(null);
   const next = seenAfter(seen, etag, entry?.by);
   if (next !== seen) setSeen(next);
-  const failure = query.error instanceof RecordReadFailure ? query.error.failure : null;
+  const failure = readFailureOf(query.error);
   return {
-    ...recordView(entry, query.isError ? failure : null, seen),
+    ...recordView(entry, shownFailure(query.isError, failure), seen),
     data: entry?.result.data,
     etag,
     failure,

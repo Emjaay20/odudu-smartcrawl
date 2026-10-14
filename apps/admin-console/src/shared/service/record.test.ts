@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   dirtyTabs,
+  entryEtag,
   recordsWithEdits,
   recordView,
   seenAfter,
   sectionKey,
   sectionsOf,
+  shownFailure,
   tabNamed,
 } from '#/shared/service/record';
 
@@ -110,5 +112,21 @@ describe('recordsWithEdits', () => {
     const asked = ['groups/2', 'groups/1', 'groups/1/roles', 'groups/10'];
     expect([...recordsWithEdits(keys, 'acme', asked)]).toEqual(['groups/1', 'groups/1/roles']);
     expect([...recordsWithEdits([], 'acme', asked)]).toEqual([]);
+  });
+});
+
+describe('entryEtag and shownFailure', () => {
+  const entry = { result: { etag: 'e1' }, by: 'read' as const };
+  const broken = { ok: false as const, kind: 'network' as const };
+
+  it('takes the ETag off the entry, or none before a first read', () => {
+    expect(entryEtag(entry)).toBe('e1');
+    expect(entryEtag({ result: { etag: null }, by: 'save' })).toBeNull();
+    expect(entryEtag(undefined)).toBeNull();
+  });
+  it('shows a failure only while the read is in error', () => {
+    expect(shownFailure(true, broken)).toBe(broken);
+    expect(shownFailure(false, broken)).toBeNull();
+    expect(shownFailure(true, null)).toBeNull();
   });
 });

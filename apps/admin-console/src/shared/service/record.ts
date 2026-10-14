@@ -61,12 +61,26 @@ export function seenAfter(
   return etag !== null && etag !== seen && (seen === null || by === 'save') ? etag : seen;
 }
 
+type RecordEntryView = { result: { etag: string | null }; by: 'read' | 'save' } | undefined;
+
+export function entryEtag(entry: RecordEntryView): string | null {
+  return entry?.result.etag ?? null;
+}
+
+// A failure counts only while the read is in error.
+export function shownFailure(
+  isError: boolean,
+  failure: GatewayFailure | null,
+): GatewayFailure | null {
+  return isError ? failure : null;
+}
+
 export function recordView(
-  entry: { result: { etag: string | null }; by: 'read' | 'save' } | undefined,
+  entry: RecordEntryView,
   failure: GatewayFailure | null,
   seen: string | null,
 ): Pick<RecordView, 'status' | 'updated' | 'gone' | 'refreshFailed'> {
-  const etag = entry?.result.etag ?? null;
+  const etag = entryEtag(entry);
   const missing = failure !== null && isMissing(failure);
   let status: RecordStatus = 'loading';
   if (entry !== undefined) status = 'ready';
