@@ -5,6 +5,7 @@ import { useCreateGroup } from '#/features/groups/repository/useCreateGroup';
 import { useGo } from '#/shared/repository/useGo';
 import { useGroupNamed } from '#/features/groups/repository/useGroupRecord';
 import {
+  createBlocked,
   createHeld,
   groupHref,
   groupsHref,
@@ -20,6 +21,7 @@ import { createdText, lookupText } from '#/shared/service/failure';
 import { firstChosen, type PickerState } from '#/shared/service/picker';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
 import { useCreationFlow } from '#/shared/usecase/useCreationFlow';
+import { loadedData } from '#/shared/service/read';
 
 type Field = 'name' | 'description' | 'parent_id';
 type Errors = Partial<Record<Field, string>>;
@@ -63,9 +65,7 @@ export function useNewGroup(tenant: string): NewGroup {
   const flow = useCreationFlow<Field>(refusal);
   const picker = useGroupPicker(tenant);
   const asked = useGroupNamed(tenant, parentId);
-  const parent =
-    picker.options.find((group) => group.id === parentId) ??
-    (asked.status === 'ready' ? asked.data : undefined);
+  const parent = picker.options.find((group) => group.id === parentId) ?? loadedData(asked);
   const caller = useAuthority(tenant)?.capabilities;
   const held = createHeld(parentId, parent, caller);
 
@@ -105,7 +105,7 @@ export function useNewGroup(tenant: string): NewGroup {
     },
     submit: () => {
       flow.submit({
-        blocked: creation.busy || held !== null,
+        blocked: createBlocked(creation.busy, held),
         problem: problemAt('name', requiredProblem(name, 'Enter a name.')),
         spec: {
           noun: 'group',

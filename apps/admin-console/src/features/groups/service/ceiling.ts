@@ -60,6 +60,10 @@ export function groupReadiness(status: Ceiling['status'], loss: Loss): Readiness
   return status !== 'ready' || loss.kind === 'checking' ? 'checking' : 'ready';
 }
 
+export function createBlocked(busy: boolean, held: string | null): boolean {
+  return busy || held !== null;
+}
+
 // Why Create is held: what the parent hands out is still being read, or the
 // parent chosen hands out more than the caller holds.
 export function createHeld(
@@ -111,10 +115,6 @@ export function parentPlace(
   known: ReadonlyMap<string, Pick<Group, 'path'>>,
 ): string | null {
   return id === null ? null : parentPathOf(group, id, known);
-}
-
-export function ceilingCaller(ceiling: Ceiling): readonly AdminCapability[] {
-  return ceiling.status === 'ready' ? ceiling.caller : [];
 }
 
 export function ceilingParentReach(ceiling: Ceiling): readonly string[] {

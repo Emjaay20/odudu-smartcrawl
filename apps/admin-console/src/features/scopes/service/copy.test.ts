@@ -11,6 +11,8 @@ import {
   copyReadOf,
   copySourceOf,
   partialCopy,
+  sourceBound,
+  sourceRoles,
 } from '#/features/scopes/service/copy';
 import { role } from '#/testing/roleAnswers';
 
@@ -134,5 +136,17 @@ describe('what a copy is read as', () => {
     expect(copyReadOf('s1', undefined, true)).toEqual({ status: 'failed' });
     expect(copyReadOf('s1', null, false)).toEqual({ status: 'failed' });
     expect(copyReadOf('s1', source, false)).toEqual({ status: 'ready', ...source });
+  });
+});
+
+describe('the roles and mappers of the source a copy is made of', () => {
+  const ready: CopyRead = { status: 'ready', scope: SCOPE, roles: [AUDITOR], bound: ['email'] };
+
+  it('are those of a scope read, and none until then', () => {
+    expect(sourceRoles(ready)).toEqual([AUDITOR]);
+    expect(sourceBound(ready)).toEqual(['email']);
+    expect(sourceRoles({ status: 'loading' })).toEqual([]);
+    expect(sourceBound({ status: 'failed' })).toEqual([]);
+    expect(sourceBound({ status: 'none' })).toEqual([]);
   });
 });

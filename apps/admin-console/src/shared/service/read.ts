@@ -18,6 +18,12 @@ export function readOutcome<T>(result: GatewayResult<T> | undefined, retry: () =
   return { status: 'failed', refused: isRefused(result), retry };
 }
 
+export function loadedData<T>(
+  read: { status: 'ready'; data: T } | { status: 'loading' | 'failed' | 'none' },
+): T | undefined {
+  return read.status === 'ready' ? read.data : undefined;
+}
+
 export function mapRead<T, U>(read: Read<T>, map: (data: T) => U): Read<U> {
   return read.status === 'ready' ? { status: 'ready', data: map(read.data) } : read;
 }

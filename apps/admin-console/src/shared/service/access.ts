@@ -12,6 +12,14 @@ export function callerCapabilities(authority: Authority | undefined): readonly A
   return authority?.capabilities ?? [];
 }
 
+// What the caller can give, once a page's ceiling has been read.
+export function ceilingCaller(
+  ceiling:
+    { status: 'ready'; caller: readonly AdminCapability[] } | { status: 'checking' | 'failed' },
+): readonly AdminCapability[] {
+  return ceiling.status === 'ready' ? ceiling.caller : [];
+}
+
 // What a page's changes need that whoami says is missing; nothing until it
 // has answered, so a page does not flash a refusal it may not owe.
 export function lacking(

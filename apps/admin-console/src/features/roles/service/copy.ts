@@ -66,6 +66,10 @@ export function copyingText(copying: { name: string; children: readonly string[]
   return `A copy of ${copying.name}, nesting ${nests}.`;
 }
 
+export function sourceChildren(source: CopyRead): ListRoleCompositesResponse['items'] {
+  return source.status === 'ready' ? source.children : [];
+}
+
 export function sourceDescription(source: CopyRead): string | null {
   return source.status === 'ready' ? source.role.description : null;
 }

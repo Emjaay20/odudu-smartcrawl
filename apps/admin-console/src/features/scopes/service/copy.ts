@@ -105,6 +105,14 @@ export function copyingText(copying: {
   return `A copy of ${copying.name}, mapping ${roles} and binding ${mappers}.`;
 }
 
+export function sourceRoles(source: CopyRead): readonly MappedRole[] {
+  return source.status === 'ready' ? source.roles : [];
+}
+
+export function sourceBound(source: CopyRead): readonly string[] {
+  return source.status === 'ready' ? source.bound : [];
+}
+
 export function sourceDescription(source: CopyRead): string | null {
   return source.status === 'ready' ? source.scope.description : null;
 }

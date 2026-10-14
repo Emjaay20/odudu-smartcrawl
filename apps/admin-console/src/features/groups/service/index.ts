@@ -43,12 +43,12 @@ export {
   groupCeiling,
   createUnderHref,
   groupReadiness,
+  createBlocked,
   createHeld,
   placeText,
   newGroupPlace,
   parentPathOf,
   parentPlace,
-  ceilingCaller,
   ceilingParentReach,
   ceilingLines,
 } from '#/features/groups/service/ceiling';

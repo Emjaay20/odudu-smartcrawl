@@ -51,6 +51,7 @@ export {
   type Copying,
   type CopyPlan,
   copyPlan,
+  sourceChildren,
   copyingOf,
   copyingText,
   sourceDescription,

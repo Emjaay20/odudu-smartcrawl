@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  createBlocked,
   createHeld,
   createUnderHref,
   groupCeiling,
@@ -7,7 +8,6 @@ import {
   newGroupPlace,
   parentPathOf,
   parentPlace,
-  ceilingCaller,
   ceilingLines,
   ceilingParentReach,
   placeText,
@@ -125,10 +125,8 @@ describe('reading a ceiling', () => {
   const ready = groupCeiling({ status: 'none' }, authority, record);
 
   it('gives the caller, the parent reach and the lines once ready, and nothing before', () => {
-    expect(ceilingCaller(ready)).toEqual(['manage-users']);
     expect(ceilingParentReach(ready)).toEqual([]);
     expect(ceilingLines(ready)?.remove).toContain('view-users');
-    expect(ceilingCaller({ status: 'checking' })).toEqual([]);
     expect(ceilingParentReach({ status: 'checking' })).toEqual([]);
     expect(ceilingLines({ status: 'checking' })).toBeNull();
   });
@@ -139,5 +137,13 @@ describe('the place a parent id names', () => {
     const ops = { path: '/eng/ops', parent_id: 'g-eng' };
     expect(parentPlace(ops, null, new Map())).toBeNull();
     expect(parentPlace(ops, 'g-eng', new Map())).toBe('/eng');
+  });
+});
+
+describe('createBlocked', () => {
+  it('holds Create while a write is under way or the parent hands out too much', () => {
+    expect(createBlocked(false, null)).toBe(false);
+    expect(createBlocked(true, null)).toBe(true);
+    expect(createBlocked(false, 'Checking what the parent hands out first.')).toBe(true);
   });
 });

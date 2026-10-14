@@ -32,6 +32,7 @@ import { judgedLoss, roleReachUnavailable, type Loss } from '#/shared/service/ca
 import { describeId } from '#/shared/service/format';
 import { roleNameOf } from '#/shared/service/mappedRoles';
 import { firstChosen, type PickerState } from '#/shared/service/picker';
+import { ceilingCaller } from '#/shared/service/access';
 
 export function useCompositesRead(
   tenant: string,
@@ -94,7 +95,7 @@ export function useRoleComposites({
   const [removing, setRemoving] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [asking, setAsking] = useState<{ asked: Asked; child: Role } | null>(null);
-  const caller = ceiling.status === 'ready' ? ceiling.caller : [];
+  const caller = ceilingCaller(ceiling);
   const known = new Map<string, Role>(
     [...data.items, ...picker.options].map((each) => [each.id, each]),
   );

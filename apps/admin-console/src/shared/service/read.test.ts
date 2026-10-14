@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mapRead, readOutcome } from '#/shared/service/read';
+import { loadedData, mapRead, readOutcome } from '#/shared/service/read';
 import type { GatewayResult } from '#/shared/service/result';
 
 const retry = (): void => undefined;
@@ -47,5 +47,14 @@ describe('mapRead', () => {
     expect(mapRead(failed, (n) => n * 2)).toBe(failed);
     const loading = readOutcome<number>(undefined, retry);
     expect(mapRead(loading, (n) => n * 2)).toBe(loading);
+  });
+});
+
+describe('loadedData', () => {
+  it('is the data of a read that came, and nothing of one that did not', () => {
+    expect(loadedData({ status: 'ready', data: 3 })).toBe(3);
+    expect(loadedData({ status: 'loading' })).toBeUndefined();
+    const failed = { status: 'failed' as const, retry };
+    expect(loadedData(failed)).toBeUndefined();
   });
 });

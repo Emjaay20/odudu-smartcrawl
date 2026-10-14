@@ -11,6 +11,8 @@ import {
   partialCopy,
   scopeHref,
   scopesHref,
+  sourceBound,
+  sourceRoles,
 } from '#/features/scopes/service';
 import { useGo } from '#/shared/repository/useGo';
 import { useToast } from '#/shared/repository/useToasts';
@@ -19,7 +21,7 @@ import { problemAt, requiredProblem } from '#/shared/service/fieldErrors';
 import { createdText, lookupText, namedCreation } from '#/shared/service/failure';
 import { DESCRIPTION_RULE } from '#/shared/service/labels';
 import { useCreationFlow } from '#/shared/usecase/useCreationFlow';
-import { copiedDescription, type PartialCopy } from '#/shared/service/copy';
+import { copiedDescription, copyBlocked, copyBusy, type PartialCopy } from '#/shared/service/copy';
 
 type Field = 'name' | 'description';
 type Errors = Partial<Record<Field, string>>;
@@ -58,8 +60,8 @@ export function useNewScope(tenant: string): NewScope {
   const flow = useCreationFlow<Field>(refusal);
   const [partial, setPartial] = useState<PartialCopy | null>(null);
   const shown = copiedDescription(description, sourceDescription(source));
-  const plan = copyPlan(source.status === 'ready' ? source.roles : [], caller, tenant);
-  const mappers = source.status === 'ready' ? source.bound : [];
+  const plan = copyPlan(sourceRoles(source), caller, tenant);
+  const mappers = sourceBound(source);
   const looked = lookupText('scope', name);
 
   const land = (scope: ClientScope, missed: Parameters<typeof partialCopy>[2]): void => {
@@ -97,7 +99,7 @@ export function useNewScope(tenant: string): NewScope {
     message: flow.message,
     unconfirmed: flow.unconfirmed,
     partial,
-    busy: creation.busy || source.status === 'loading' || caller === undefined,
+    busy: copyBusy(creation.busy, source.status, caller),
     editName: (next) => {
       setName(next);
       flow.edited('name');
@@ -108,8 +110,7 @@ export function useNewScope(tenant: string): NewScope {
     },
     submit: () => {
       flow.submit({
-        blocked:
-          creation.busy || partial !== null || source.status === 'loading' || caller === undefined,
+        blocked: copyBlocked(creation.busy, partial, source.status, caller),
         problem: problemAt('name', requiredProblem(name, 'Enter a name.')),
         spec: namedCreation('scope', name),
         create: () => creation.create(createBodyOf(name, shown, source)),

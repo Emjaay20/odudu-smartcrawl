@@ -25,6 +25,7 @@ import { deletedText } from '#/shared/service/failure';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
 import type { DefaultValues, DescriptionValues } from '#/shared/service/sectionValues';
 import { orBlank } from '#/shared/service/format';
+import { ceilingCaller } from '#/shared/service/access';
 
 export type { SectionSave };
 
@@ -107,11 +108,10 @@ export function useRoleGeneral({
     },
     save: saves.default,
   });
-  const ready = ceiling.status === 'ready' ? ceiling : null;
   const loss = judgedLoss(
     own,
     (access) => roleSelfLoss(access.roles, { kind: 'delete', id: role.id }),
-    ready?.caller ?? [],
+    ceilingCaller(ceiling),
     role.admin_reach,
   );
   const removal = useConfirmedRemoval({

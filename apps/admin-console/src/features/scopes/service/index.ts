@@ -70,4 +70,6 @@ export {
   copyReadOf,
   copySourceOf,
   partialCopy,
+  sourceBound,
+  sourceRoles,
 } from '#/features/scopes/service/copy';

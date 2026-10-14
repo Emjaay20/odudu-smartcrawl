@@ -29,6 +29,7 @@ import {
   roleNameOf,
   withKept,
 } from '#/shared/service/mappedRoles';
+import { ceilingCaller } from '#/shared/service/access';
 
 export function useGroupRolesRead(tenant: string, id: string): RecordState<SetGroupRolesResponse> {
   return useGroupRolesRecord(tenant, id);
@@ -73,7 +74,7 @@ export function useGroupRoles({
   const saves = useGroupSaves(tenant, group.id);
   const [asking, setAsking] = useState<Asked | null>(null);
   const known = roleIndex(data.items, picker.options);
-  const caller = ceiling.status === 'ready' ? ceiling.caller : [];
+  const caller = ceilingCaller(ceiling);
   const why = (role: Role): string | null =>
     roleUnavailable(role, caller, defaultingOf(group), tenant);
   // A role mapped here that the caller could not give is one it cannot take.

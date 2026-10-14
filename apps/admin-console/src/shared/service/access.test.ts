@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   blockedChanges,
   callerCapabilities,
+  ceilingCaller,
   holds,
   lacking,
   notLacking,
@@ -78,5 +79,13 @@ describe('callerCapabilities', () => {
   it('lists what whoami says is held, and nothing until it has answered', () => {
     expect(callerCapabilities(VIEWER)).toEqual(['view-users']);
     expect(callerCapabilities(undefined)).toEqual([]);
+  });
+});
+
+describe('ceilingCaller', () => {
+  it('gives the caller a ready ceiling read, and nothing before it is', () => {
+    expect(ceilingCaller({ status: 'ready', caller: ['manage-users'] })).toEqual(['manage-users']);
+    expect(ceilingCaller({ status: 'checking' })).toEqual([]);
+    expect(ceilingCaller({ status: 'failed' })).toEqual([]);
   });
 });

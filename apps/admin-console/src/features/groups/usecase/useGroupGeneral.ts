@@ -11,7 +11,6 @@ import {
 import {
   type Asked,
   type Ceiling,
-  ceilingCaller,
   ceilingLines,
   ceilingParentReach,
   parentPlace,
@@ -43,6 +42,7 @@ import type { GatewayResult } from '#/shared/transport/gateway';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
 import type { DefaultValues, DescriptionValues } from '#/shared/service/sectionValues';
 import { orBlank } from '#/shared/service/format';
+import { ceilingCaller } from '#/shared/service/access';
 
 export type { SectionSave };
 

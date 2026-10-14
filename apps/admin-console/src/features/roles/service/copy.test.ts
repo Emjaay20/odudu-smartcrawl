@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   type CopyRead,
+  sourceChildren,
   sourceDescription,
   copyingOf,
   copyingText,
@@ -81,5 +82,15 @@ describe('copying a role', () => {
     expect(copyHrefOf('acme', READER)).toBe('/console/acme/roles/new?copy=r-read');
     expect(copyHrefOf('acme', USERS)).toBeNull();
     expect(copyHrefOf('acme', undefined)).toBeNull();
+  });
+});
+
+describe('the children of the source a copy is made of', () => {
+  it('are those of a role read, and none until then', () => {
+    const ready: CopyRead = { status: 'ready', role: READER, children: [AUDITOR] };
+    expect(sourceChildren(ready)).toEqual([AUDITOR]);
+    expect(sourceChildren({ status: 'loading' })).toEqual([]);
+    expect(sourceChildren({ status: 'failed' })).toEqual([]);
+    expect(sourceChildren({ status: 'none' })).toEqual([]);
   });
 });
