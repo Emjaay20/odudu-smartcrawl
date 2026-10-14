@@ -4,6 +4,7 @@ import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, pending, problem } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
 import { consoleAt, GRACE, renderConsoleAt, ROOT, whoami } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
 afterEach(() => {
   resetConsole();
@@ -12,7 +13,7 @@ afterEach(() => {
 it('frames the tenant with its rail and the principal in the footer', async () => {
   renderConsoleAt('/console/acme', {
     'GET /console/api/session': json(GRACE),
-    'GET /console/api/admin/tenants/acme/whoami': whoami([]),
+    [`GET ${ACME_ADMIN}/whoami`]: whoami([]),
   });
   expect(await screen.findByRole('navigation', { name: 'Areas of acme' })).toBeInTheDocument();
   expect(screen.getByText(/Signed in as/u)).toHaveTextContent('Signed in as grace');
@@ -21,7 +22,7 @@ it('frames the tenant with its rail and the principal in the footer', async () =
 it('lists no area it may take away while whoami is still being asked', async () => {
   renderConsoleAt('/console/acme', {
     'GET /console/api/session': json(GRACE),
-    'GET /console/api/admin/tenants/acme/whoami': pending(),
+    [`GET ${ACME_ADMIN}/whoami`]: pending(),
   });
   const rail = await screen.findByRole('navigation', { name: 'Areas of acme' });
   expect(within(rail).getByRole('link', { name: 'Overview' })).toBeVisible();
@@ -32,11 +33,7 @@ it('lists no area it may take away while whoami is still being asked', async () 
 it('lists every area when whoami could not answer', async () => {
   renderConsoleAt('/console/acme', {
     'GET /console/api/session': json(GRACE),
-    'GET /console/api/admin/tenants/acme/whoami': problem(
-      500,
-      'about:blank',
-      'Internal Server Error',
-    ),
+    [`GET ${ACME_ADMIN}/whoami`]: problem(500, 'about:blank', 'Internal Server Error'),
   });
   const rail = await screen.findByRole('navigation', { name: 'Areas of acme' });
   expect(await within(rail).findByRole('link', { name: 'Subjects' })).toBeVisible();
@@ -51,7 +48,7 @@ it('shows the not-found page for a name no tenant can have', async () => {
 it('offers a system administrator inside a tenant the way back to its record', async () => {
   renderConsoleAt('/console/acme', {
     'GET /console/api/session': json(ROOT),
-    'GET /console/api/admin/tenants/acme/whoami': whoami(['manage-tenants'], true),
+    [`GET ${ACME_ADMIN}/whoami`]: whoami(['manage-tenants'], true),
   });
   const bar = await screen.findByRole('region', { name: 'System authority' });
   expect(within(bar).getByRole('link', { name: 'Back to system' })).toHaveAttribute(
@@ -68,7 +65,7 @@ it('passes axe in both themes, under system authority as well', async () => {
     const shell = () =>
       consoleAt('/console/acme', {
         'GET /console/api/session': json(principal),
-        'GET /console/api/admin/tenants/acme/whoami': whoami(capabilities, cross),
+        [`GET ${ACME_ADMIN}/whoami`]: whoami(capabilities, cross),
       });
     expect(
       await axeInBothThemes(
@@ -107,7 +104,7 @@ it('passes axe in both themes on the tenant-not-found page', async () => {
 it("keeps a tenant administrator's shell on whoami's 401, which says nothing of the tenant", async () => {
   renderConsoleAt('/console/acme', {
     'GET /console/api/session': json(GRACE),
-    'GET /console/api/admin/tenants/acme/whoami': problem(401, 'about:blank', 'Unauthorized'),
+    [`GET ${ACME_ADMIN}/whoami`]: problem(401, 'about:blank', 'Unauthorized'),
   });
   expect(await screen.findByRole('heading', { level: 1, name: 'Overview' })).toBeVisible();
   expect(screen.queryByRole('heading', { name: 'Tenant not found' })).toBeNull();

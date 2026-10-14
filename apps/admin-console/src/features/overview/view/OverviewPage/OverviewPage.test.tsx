@@ -5,7 +5,8 @@ import discoveryCss from '#/features/overview/view/DiscoveryPanel/DiscoveryPanel
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, problem, type Answer } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
-import { consoleAt, GRACE, renderConsoleAt, whoami, ACME_ADMIN } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
+import { consoleAt, GRACE, renderConsoleAt, whoami } from '#/testing/renderConsole';
 
 afterEach(() => {
   resetConsole();

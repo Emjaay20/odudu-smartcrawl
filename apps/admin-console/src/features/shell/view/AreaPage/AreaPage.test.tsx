@@ -4,6 +4,7 @@ import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
 import { consoleAt, GRACE, renderConsoleAt, whoami } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
 afterEach(() => {
   resetConsole();
@@ -12,7 +13,7 @@ afterEach(() => {
 function areaWith(capabilities: readonly string[]) {
   return {
     'GET /console/api/session': json(GRACE),
-    'GET /console/api/admin/tenants/acme/whoami': whoami(capabilities),
+    [`GET ${ACME_ADMIN}/whoami`]: whoami(capabilities),
   };
 }
 

@@ -5,6 +5,7 @@ import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { resetConsole } from '#/testing/resetConsole';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { ADA_AT, subjectRoutes } from '#/testing/subjectsFixtures';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
 afterEach(() => {
   resetConsole();
@@ -20,7 +21,7 @@ it('names the capability a principal without view-users lacks', async () => {
 it('draws its page, and makes its reads, while whoami is still unanswered', async () => {
   const { sent } = renderConsoleAt('/console/acme/subjects', {
     ...subjectRoutes(),
-    'GET /console/api/admin/tenants/acme/whoami': pending(),
+    [`GET ${ACME_ADMIN}/whoami`]: pending(),
   });
   expect(await screen.findByRole('heading', { level: 1, name: 'Subjects' })).toBeVisible();
   await waitFor(() => {

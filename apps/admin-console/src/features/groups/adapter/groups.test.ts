@@ -14,7 +14,7 @@ import {
 import { fakeTransport, json } from '#/testing/fakeTransport';
 import { group, record } from '#/testing/groupAnswers';
 import { ENG, PLATFORM } from '#/testing/groupsFixtures';
-import { ACME_ADMIN } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
 const G = `${ACME_ADMIN}/groups`;
 

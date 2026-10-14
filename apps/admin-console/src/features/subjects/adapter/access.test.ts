@@ -9,7 +9,7 @@ import {
   setSubjectGroups,
 } from '#/features/subjects/adapter/access';
 import { fakeTransport, json } from '#/testing/fakeTransport';
-import { ACME_ADMIN } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
 const S = `${ACME_ADMIN}/subjects/s1`;
 const GROUP = {

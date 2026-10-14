@@ -7,6 +7,7 @@ import { resetConsole } from '#/testing/resetConsole';
 import { consoleAt, renderConsoleAt, whoami } from '#/testing/renderConsole';
 import { ADMIN_ROLES } from '#/testing/roleAnswers';
 import { ADA_AT, ADA_ID, assigned, S, subject, subjectRoutes } from '#/testing/subjectsFixtures';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
 afterEach(() => {
   resetConsole();
@@ -84,7 +85,7 @@ it('follows a whoami re-read after a 403, in the rail and on the page, without a
   const { router } = renderConsoleAt(
     ADA_AT,
     subjectRoutes(undefined, {
-      'GET /console/api/admin/tenants/acme/whoami': (request) =>
+      [`GET ${ACME_ADMIN}/whoami`]: (request) =>
         whoami(revoked ? ['view-users'] : ['view-users', 'manage-users', 'manage-clients'])(
           request,
         ),

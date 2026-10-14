@@ -6,7 +6,8 @@ import { inTurn, json, pending, problem } from '#/testing/fakeTransport';
 import { group, record } from '#/testing/groupAnswers';
 import { adminRole, ENG, FINANCE, G, groupRoutes, PLATFORM } from '#/testing/groupsFixtures';
 import { resetConsole } from '#/testing/resetConsole';
-import { consoleAt, renderConsoleAt, ACME_ADMIN } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
+import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/roleAnswers';
 import { assigned, S } from '#/testing/subjectsFixtures';
 

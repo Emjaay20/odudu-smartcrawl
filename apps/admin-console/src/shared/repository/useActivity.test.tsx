@@ -4,8 +4,9 @@ import { createQueryClient } from '#/shared/repository/queryClient';
 import { useActivity } from '#/shared/repository/useActivity';
 import { fakeTransport, json } from '#/testing/fakeTransport';
 import { mountAtRoute } from '#/testing/mountAtRoute';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
-const AUDIT = 'GET /console/api/admin/tenants/acme/audit';
+const AUDIT = `GET ${ACME_ADMIN}/audit`;
 
 function Activity() {
   const list = useActivity({ tenant: 'acme', resourceType: 'client', resourceId: 'c1' });
@@ -47,6 +48,6 @@ it('reads the audit trail narrowed to the record, from the cursor the address ho
   );
   expect(await screen.findByText('rows 1')).toBeVisible();
   expect(fake.sent.map((request) => `${request.path}?${request.search.toString()}`)).toEqual([
-    '/console/api/admin/tenants/acme/audit?resource_type=client&resource_id=c1&cursor=b2Zmc2V0LTE.dGFnMQ',
+    `${ACME_ADMIN}/audit?resource_type=client&resource_id=c1&cursor=b2Zmc2V0LTE.dGFnMQ`,
   ]);
 });

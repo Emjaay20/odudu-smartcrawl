@@ -11,9 +11,10 @@ import { useResourceList } from '#/shared/repository/useResourceList';
 import type { Gateway } from '#/shared/transport/gateway';
 import { fakeTransport, json, problem, type Answer } from '#/testing/fakeTransport';
 import { mountAtRoute } from '#/testing/mountAtRoute';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
-const LIST = 'GET /console/api/admin/tenants/acme/subjects';
-const COUNT = 'GET /console/api/admin/tenants/acme/subjects/count';
+const LIST = `GET ${ACME_ADMIN}/subjects`;
+const COUNT = `GET ${ACME_ADMIN}/subjects/count`;
 const CURSOR = 'b2Zmc2V0LTE.dGFnMQ';
 const LATER = 'b2Zmc2V0LTI.dGFnMg';
 

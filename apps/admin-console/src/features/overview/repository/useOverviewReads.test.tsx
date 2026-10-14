@@ -7,6 +7,7 @@ import type { OverviewAsks } from '#/features/overview/service';
 import { createQueryClient } from '#/shared/repository/queryClient';
 import { TransportContext } from '#/shared/transport/useTransport';
 import { fakeTransport, json, pending, problem, type Answer } from '#/testing/fakeTransport';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
 const NOTHING: OverviewAsks = {
   discovery: false,
@@ -45,7 +46,7 @@ it('reads discovery and the JWKS together, and each count it is asked for', asyn
     {
       'GET /console/api/tenants/acme/discovery': json({ issuer: 'https://id.example/t/acme' }),
       'GET /console/api/tenants/acme/jwks': json({ keys: [] }),
-      'GET /console/api/admin/tenants/acme/roles/count': json({ count: 4, capped: false }),
+      [`GET ${ACME_ADMIN}/roles/count`]: json({ count: 4, capped: false }),
     },
     { ...NOTHING, discovery: true, roles: true },
   );
@@ -61,7 +62,7 @@ it('reads discovery and the JWKS together, and each count it is asked for', asyn
   });
   expect(hook.result.current.counts.roles).toMatchObject({ data: { count: 4 } });
   expect(calls.map((call) => call.path).sort()).toEqual([
-    '/console/api/admin/tenants/acme/roles/count',
+    `${ACME_ADMIN}/roles/count`,
     '/console/api/tenants/acme/discovery',
     '/console/api/tenants/acme/jwks',
   ]);
@@ -70,9 +71,9 @@ it('reads discovery and the JWKS together, and each count it is asked for', asyn
 it('shows a read waiting, then refused or failed, and reads it again on retry', async () => {
   const { calls, hook } = mount(
     {
-      'GET /console/api/admin/tenants/acme/audit': problem(403, 'about:blank', 'Forbidden'),
-      'GET /console/api/admin/tenants/acme/smtp': problem(500, 'about:blank', 'Broken'),
-      'GET /console/api/admin/tenants/acme/settings': pending(),
+      [`GET ${ACME_ADMIN}/audit`]: problem(403, 'about:blank', 'Forbidden'),
+      [`GET ${ACME_ADMIN}/smtp`]: problem(500, 'about:blank', 'Broken'),
+      [`GET ${ACME_ADMIN}/settings`]: pending(),
     },
     { ...NOTHING, audit: true, smtp: true, settings: true },
   );

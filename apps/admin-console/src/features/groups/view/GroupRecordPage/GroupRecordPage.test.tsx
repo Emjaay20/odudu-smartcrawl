@@ -6,7 +6,8 @@ import { inTurn, json, problem } from '#/testing/fakeTransport';
 import { record } from '#/testing/groupAnswers';
 import { ENG, G, groupRoutes } from '#/testing/groupsFixtures';
 import { resetConsole } from '#/testing/resetConsole';
-import { consoleAt, renderConsoleAt, ACME_ADMIN } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
+import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 
 afterEach(() => {
   resetConsole();

@@ -6,7 +6,8 @@ import { inTurn, json, pending, problem } from '#/testing/fakeTransport';
 import { adminRole } from '#/testing/groupsFixtures';
 import { AUDITOR, R, roleRoutes } from '#/testing/rolesFixtures';
 import { resetConsole } from '#/testing/resetConsole';
-import { consoleAt, renderConsoleAt, ACME_ADMIN } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
+import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { S } from '#/testing/subjectsFixtures';
 
 afterEach(() => {

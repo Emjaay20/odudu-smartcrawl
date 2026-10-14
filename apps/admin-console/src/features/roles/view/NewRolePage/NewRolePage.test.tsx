@@ -5,7 +5,8 @@ import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { inTurn, json, offline, pending, problem } from '#/testing/fakeTransport';
 import { AUDITOR, R, READER, roleRoutes } from '#/testing/rolesFixtures';
 import { resetConsole } from '#/testing/resetConsole';
-import { consoleAt, renderConsoleAt, ACME_ADMIN } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
+import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { role } from '#/testing/roleAnswers';
 afterEach(() => {
   resetConsole();

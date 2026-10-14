@@ -5,6 +5,7 @@ import { pending } from '#/testing/fakeTransport';
 import { groupRoutes } from '#/testing/groupsFixtures';
 import { resetConsole } from '#/testing/resetConsole';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
 afterEach(() => {
   resetConsole();
@@ -22,7 +23,7 @@ it('makes no read of its page while whoami is unanswered, and says it is checkin
   const routes = groupRoutes();
   const { sent } = renderConsoleAt('/console/acme/groups', {
     ...routes,
-    'GET /console/api/admin/tenants/acme/whoami': pending(),
+    [`GET ${ACME_ADMIN}/whoami`]: pending(),
   });
   expect(await screen.findByRole('heading', { level: 1, name: 'Groups' })).toBeVisible();
   expect(await screen.findByText(/Checking access to Groups/u)).toBeVisible();

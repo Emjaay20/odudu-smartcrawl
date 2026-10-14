@@ -16,8 +16,9 @@ import {
   problem,
   type Answer,
 } from '#/testing/fakeTransport';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
-const GET = 'GET /console/api/admin/tenants/acme/clients/c1';
+const GET = `GET ${ACME_ADMIN}/clients/c1`;
 const schema = z.object({ name: z.string() });
 const read = (gateway: Gateway) =>
   gateway.request('GET', 'admin/tenants/acme/clients/c1', { schema });

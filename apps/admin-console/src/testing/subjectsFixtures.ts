@@ -1,9 +1,10 @@
 import { json, type Answer } from '#/testing/fakeTransport';
 import { ADMIN_ROLES, EVERY_TENANT_CAPABILITY } from '#/testing/roleAnswers';
-import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
+import { graceRoutes } from '#/testing/renderConsole';
 
 export const S = `${ACME_ADMIN}/subjects`;
-export const POLICY = '/console/api/admin/tenants/acme/subjects/username-policy';
+export const POLICY = `${ACME_ADMIN}/subjects/username-policy`;
 export const ADA_ID = '01a0e72d-7fc7-7950-a1e7-1d079588f8b4';
 export const ADA_AT = `/console/acme/subjects/${ADA_ID}`;
 

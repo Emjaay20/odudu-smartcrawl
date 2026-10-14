@@ -1,5 +1,6 @@
 import { json, type Answer, type Sent } from '#/testing/fakeTransport';
-import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
+import { graceRoutes } from '#/testing/renderConsole';
 import { group, record } from '#/testing/groupAnswers';
 import { matchesName, underParent } from '#/testing/listFilters';
 import { AUDITOR, PORTAL_READER } from '#/testing/rolesFixtures';

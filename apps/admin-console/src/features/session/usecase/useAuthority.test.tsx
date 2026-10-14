@@ -9,8 +9,9 @@ import { createQueryClient } from '#/shared/repository/queryClient';
 import { useTransport, TransportContext } from '#/shared/transport/useTransport';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { fakeTransport, json, problem } from '#/testing/fakeTransport';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
-const WHOAMI = 'GET /console/api/admin/tenants/acme/whoami';
+const WHOAMI = `GET ${ACME_ADMIN}/whoami`;
 const GRACE = { tenant: 'acme', subjectId: 's1', username: 'grace' };
 
 // A section as a feature will write one: it sends, and hands the answer over.
@@ -47,7 +48,7 @@ function mount(answer: ReturnType<typeof json>) {
       capabilities: ['manage-clients'],
       crossTenant: false,
     }),
-    'POST /console/api/admin/tenants/acme/clients/c1/secret': answer,
+    [`POST ${ACME_ADMIN}/clients/c1/secret`]: answer,
   });
   render(
     <TransportContext value={fake.transport}>

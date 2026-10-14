@@ -4,8 +4,9 @@ import { useSaveGroups } from '#/features/subjects/repository/useAccess';
 import { json } from '#/testing/fakeTransport';
 import { hookHarness } from '#/testing/hookHarness';
 import { useTransport } from '#/shared/transport/useTransport';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
-const PATH = 'PUT /console/api/admin/tenants/acme/subjects/s1/groups';
+const PATH = `PUT ${ACME_ADMIN}/subjects/s1/groups`;
 
 it("reads again what a subject's groups change, and nothing of another subject's", async () => {
   const { wrapper, queryClient } = hookHarness({

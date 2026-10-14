@@ -3,8 +3,9 @@ import { expect, it } from 'vitest';
 import { useGroupNamed } from '#/features/groups/repository/useGroupRecord';
 import { json } from '#/testing/fakeTransport';
 import { hookHarness } from '#/testing/hookHarness';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
-const G = '/console/api/admin/tenants/acme/groups';
+const G = `${ACME_ADMIN}/groups`;
 const GROUP = {
   id: 'g1',
   name: 'eng',

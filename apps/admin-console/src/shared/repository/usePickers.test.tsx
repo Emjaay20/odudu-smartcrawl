@@ -9,9 +9,10 @@ import { useSubjectPicker } from '#/shared/repository/useSubjectPicker';
 import { TransportContext } from '#/shared/transport/useTransport';
 import { fakeTransport, json, problem, type Answer } from '#/testing/fakeTransport';
 import { ADA, ADA_ID } from '#/testing/subjectsFixtures';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
-const ROLES = 'GET /console/api/admin/tenants/acme/roles';
-const GROUPS = 'GET /console/api/admin/tenants/acme/groups';
+const ROLES = `GET ${ACME_ADMIN}/roles`;
+const GROUPS = `GET ${ACME_ADMIN}/groups`;
 const CURSOR = 'b2Zmc2V0LTE.dGFnMQ';
 
 function role(id: string) {
@@ -68,9 +69,9 @@ it('searches roles by name and loads the next page in place', async () => {
   });
   await waitFor(() => {
     expect(asked()).toEqual([
-      '/console/api/admin/tenants/acme/roles?client=tenant',
+      `${ACME_ADMIN}/roles?client=tenant`,
       `/console/api/admin/tenants/acme/roles?client=tenant&cursor=${CURSOR}`,
-      '/console/api/admin/tenants/acme/roles?name=aud&client=tenant',
+      `${ACME_ADMIN}/roles?name=aud&client=tenant`,
     ]);
   });
 });

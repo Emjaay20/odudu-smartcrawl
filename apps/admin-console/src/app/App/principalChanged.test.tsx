@@ -11,11 +11,12 @@ import { Section } from '#/shared/view/Section';
 import { json, problem, type Answer } from '#/testing/fakeTransport';
 import { mountGuardedPage } from '#/testing/mountGuardedPage';
 import { resetConsole } from '#/testing/resetConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
 const GRACE = { tenant: 'acme', subject_id: 's1', username: 'grace' };
 const HOPPER = { tenant: 'acme', subject_id: 's2', username: 'hopper' };
-const WHOAMI = 'GET /console/api/admin/tenants/acme/whoami';
-const SAVE = 'PATCH /console/api/admin/tenants/acme/clients/c1';
+const WHOAMI = `GET ${ACME_ADMIN}/whoami`;
+const SAVE = `PATCH ${ACME_ADMIN}/clients/c1`;
 const CHANGED = problem(409, 'about:blank#console-principal-changed', 'Conflict');
 
 function General() {

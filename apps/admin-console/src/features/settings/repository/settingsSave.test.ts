@@ -1,8 +1,9 @@
 import { expect, it } from 'vitest';
 import { settingsSave } from '#/features/settings/repository/settingsSave';
 import { fakeTransport, json } from '#/testing/fakeTransport';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
-const ST = '/console/api/admin/tenants/acme/settings';
+const ST = `${ACME_ADMIN}/settings`;
 
 it('amends only what changed, on the ETag the settings were read with', async () => {
   const { transport, sent } = fakeTransport({

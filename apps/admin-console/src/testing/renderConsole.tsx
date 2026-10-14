@@ -4,6 +4,7 @@ import { App } from '#/app/App';
 import { beforeAll } from 'vitest';
 import { createConsoleRouter, preloadFeatures } from '#/app/router';
 import { createQueryClient } from '#/shared/repository/queryClient';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { fakeTransport, json, type Answer } from '#/testing/fakeTransport';
 
 // A feature's chunk is transformed the first time a file renders it; paid
@@ -14,9 +15,6 @@ export function preloadConsoleRoutes(): Promise<void> {
 
 // Its own budget: all four feature graphs load here, on a busy runner too.
 beforeAll(preloadConsoleRoutes, 60_000);
-
-// Where the console calls the admin API of the tenant most tests sign in to.
-export const ACME_ADMIN = '/console/api/admin/tenants/acme';
 
 export const GRACE = { tenant: 'acme', subject_id: 's1', username: 'grace' };
 export const ROOT = { tenant: 'system', subject_id: 's0', username: 'root' };

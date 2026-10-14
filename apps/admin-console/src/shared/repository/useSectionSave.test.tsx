@@ -25,8 +25,9 @@ import {
   type Answer,
 } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
-const PATH = '/console/api/admin/tenants/acme/clients/c1';
+const PATH = `${ACME_ADMIN}/clients/c1`;
 const GET = `GET ${PATH}`;
 const PATCH = `PATCH ${PATH}`;
 

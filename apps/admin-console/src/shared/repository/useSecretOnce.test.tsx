@@ -11,9 +11,10 @@ import { TransportContext } from '#/shared/transport/useTransport';
 import { Button } from '#/shared/view/Button';
 import { SecretDialog } from '#/shared/view/SecretDialog';
 import { fakeTransport, json, pending, problem, type Answer } from '#/testing/fakeTransport';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
 const SECRET = 's3cr3t-shown-once-Qm9vYmFy';
-const ROTATE = 'POST /console/api/admin/tenants/acme/clients/c1/secret';
+const ROTATE = `POST ${ACME_ADMIN}/clients/c1/secret`;
 
 const rotatedSchema = z.object({ client_id: z.string(), client_secret: z.string() });
 

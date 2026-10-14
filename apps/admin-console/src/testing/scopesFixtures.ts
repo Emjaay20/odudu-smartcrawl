@@ -1,7 +1,8 @@
 import { json, type Answer, type Sent } from '#/testing/fakeTransport';
 import { matchesName } from '#/testing/listFilters';
 import { CLIENTS } from '#/testing/clientsFixtures';
-import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
+import { graceRoutes } from '#/testing/renderConsole';
 import { ROLES } from '#/testing/rolesFixtures';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/roleAnswers';
 export const SC = `${ACME_ADMIN}/scopes`;

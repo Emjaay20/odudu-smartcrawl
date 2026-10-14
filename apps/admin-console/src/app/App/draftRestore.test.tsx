@@ -10,6 +10,7 @@ import { Section } from '#/shared/view/Section';
 import { json, SESSION_ENDED, type Answer } from '#/testing/fakeTransport';
 import { mountGuardedPage } from '#/testing/mountGuardedPage';
 import { resetConsole } from '#/testing/resetConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
 const BASE = { name: 'Billing portal', secret: '' };
 
@@ -74,7 +75,7 @@ function mount(routes: Record<string, Answer>) {
 
 const SIGNED_IN = {
   'GET /console/api/session': json({ tenant: 'acme', subject_id: 's1', username: 'grace' }),
-  'GET /console/api/admin/tenants/acme/whoami': json({
+  [`GET ${ACME_ADMIN}/whoami`]: json({
     subjectId: 's1',
     issuerTenantId: 't1',
     capabilities: ['manage-clients'],
@@ -95,7 +96,7 @@ it('keeps the edit through a session that ends mid-edit, and puts it back marked
   const user = userEvent.setup();
   const first = mount({
     ...SIGNED_IN,
-    'GET /console/api/admin/tenants/acme/clients': SESSION_ENDED,
+    [`GET ${ACME_ADMIN}/clients`]: SESSION_ENDED,
   });
   const name = await screen.findByRole('textbox', { name: 'Name' });
   await user.type(name, ' EU');
@@ -130,7 +131,7 @@ it('restores nothing for a different administrator signing in to the same tab', 
   const user = userEvent.setup();
   const first = mount({
     ...SIGNED_IN,
-    'GET /console/api/admin/tenants/acme/clients': SESSION_ENDED,
+    [`GET ${ACME_ADMIN}/clients`]: SESSION_ENDED,
   });
   await user.type(await screen.findByRole('textbox', { name: 'Name' }), ' EU');
   await act(() =>
@@ -152,7 +153,7 @@ it('restores nothing for a different administrator signing in to the same tab', 
 
 const ROOT_IN_ACME = {
   'GET /console/api/session': json({ tenant: 'system', subject_id: 's0', username: 'root' }),
-  'GET /console/api/admin/tenants/acme/whoami': json({
+  [`GET ${ACME_ADMIN}/whoami`]: json({
     subjectId: 's0',
     issuerTenantId: 't0',
     capabilities: ['manage-clients', 'manage-tenants'],
@@ -164,7 +165,7 @@ it("sends a system administrator whose session ends inside another tenant to sys
   const user = userEvent.setup();
   const first = mount({
     ...ROOT_IN_ACME,
-    'GET /console/api/admin/tenants/acme/clients': SESSION_ENDED,
+    [`GET ${ACME_ADMIN}/clients`]: SESSION_ENDED,
   });
   await user.type(await screen.findByRole('textbox', { name: 'Name' }), ' EU');
 

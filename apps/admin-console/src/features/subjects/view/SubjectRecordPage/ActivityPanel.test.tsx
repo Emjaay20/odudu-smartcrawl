@@ -4,7 +4,8 @@ import { auditEvent } from '#/testing/auditFixtures';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, problem } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
-import { consoleAt, renderConsoleAt, ACME_ADMIN } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
+import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { ADA_AT, ADA_ID, subjectRoutes } from '#/testing/subjectsFixtures';
 
 afterEach(() => {

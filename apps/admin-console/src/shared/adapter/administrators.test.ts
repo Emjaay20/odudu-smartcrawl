@@ -9,7 +9,7 @@ import {
   setSubjectRoles,
 } from '#/shared/adapter/administrators';
 import { fakeTransport, json } from '#/testing/fakeTransport';
-import { ACME_ADMIN } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
 const SUBJECT = {
   id: '01a0e72d-7fc7-7950-a1e7-1d079588f8b4',

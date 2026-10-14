@@ -4,7 +4,7 @@ import type { Write } from '#/shared/repository/useWrite';
 import type { GatewayResult } from '#/shared/service/result';
 import { pending } from '#/testing/fakeTransport';
 import { hookHarness } from '#/testing/hookHarness';
-import { ACME_ADMIN } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
 type Key = readonly unknown[];
 

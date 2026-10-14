@@ -1,5 +1,6 @@
 import { json, type Answer, type Sent } from '#/testing/fakeTransport';
-import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
+import { graceRoutes } from '#/testing/renderConsole';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/roleAnswers';
 export const C = `${ACME_ADMIN}/clients`;
 

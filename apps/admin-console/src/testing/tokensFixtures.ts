@@ -1,5 +1,6 @@
 import { json, type Answer } from '#/testing/fakeTransport';
-import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
+import { graceRoutes } from '#/testing/renderConsole';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/roleAnswers';
 export const RT = `${ACME_ADMIN}/registration-tokens`;
 

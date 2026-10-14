@@ -4,6 +4,7 @@ import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, SESSION_ENDED } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
 import { consoleAt, GRACE, renderConsoleAt, whoami } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
 beforeEach(() => {
   localStorage.clear();
@@ -23,7 +24,7 @@ it('asks which tenant when nobody is signed in', async () => {
 it('asks a tenant administrator first before another tenant named by ?tenant=', async () => {
   renderConsoleAt('/console/?tenant=globex', {
     'GET /console/api/session': json(GRACE),
-    'GET /console/api/admin/tenants/acme/whoami': whoami([]),
+    [`GET ${ACME_ADMIN}/whoami`]: whoami([]),
   });
   expect(await screen.findByRole('heading', { level: 1, name: 'Signed in to acme' })).toBeVisible();
 });

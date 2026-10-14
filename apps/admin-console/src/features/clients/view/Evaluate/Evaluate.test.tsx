@@ -5,7 +5,8 @@ import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { C, clientRoutes } from '#/testing/clientsFixtures';
 import { json, problem } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
-import { consoleAt, renderConsoleAt, ACME_ADMIN } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
+import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { subject } from '#/testing/subjectsFixtures';
 
 afterEach(() => {

@@ -9,7 +9,7 @@ import { createQueryClient } from '#/shared/repository/queryClient';
 import { TransportContext } from '#/shared/transport/useTransport';
 import { fakeTransport, json, problem, type Answer } from '#/testing/fakeTransport';
 import { administratorRoutes } from '#/testing/tenantsFixtures';
-import { ACME_ADMIN } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
 const SUBJECT_ID = '01a0e72d-7fc7-7950-a1e7-1d079588f8b4';
 const PASSWORD = 'one-time-Qm9vYmFy';

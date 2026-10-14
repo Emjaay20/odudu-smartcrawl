@@ -19,6 +19,7 @@ import {
   type Answer,
 } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
 const GRACE = { tenant: 'acme', subject_id: 's1', username: 'grace' };
 const ROOT = { tenant: 'system', subject_id: 's0', username: 'root' };
@@ -76,7 +77,7 @@ describe('booting from the session', () => {
   it('shows the tenant console to its signed-in administrator', async () => {
     renderAt('/console/acme', {
       'GET /console/api/session': json(GRACE),
-      'GET /console/api/admin/tenants/acme/whoami': whoami(ALL),
+      [`GET ${ACME_ADMIN}/whoami`]: whoami(ALL),
     });
     expect(await screen.findByRole('heading', { level: 1, name: 'Overview' })).toBeVisible();
     expect(screen.getByRole('navigation', { name: 'Areas of acme' })).toBeInTheDocument();
@@ -88,7 +89,7 @@ describe('booting from the session', () => {
   it('goes on from the bare console to the tenant signed in to', async () => {
     const { router } = renderAt('/console/', {
       'GET /console/api/session': json(GRACE),
-      'GET /console/api/admin/tenants/acme/whoami': whoami(ALL),
+      [`GET ${ACME_ADMIN}/whoami`]: whoami(ALL),
     });
     expect(await screen.findByRole('heading', { level: 1, name: 'Overview' })).toBeVisible();
     expect(router.state.location.publicHref).toBe('/console/acme');
@@ -162,7 +163,7 @@ describe('booting from the session', () => {
   it('remembers the tenant once a session proves it', async () => {
     renderAt('/console/acme', {
       'GET /console/api/session': json(GRACE),
-      'GET /console/api/admin/tenants/acme/whoami': whoami(ALL),
+      [`GET ${ACME_ADMIN}/whoami`]: whoami(ALL),
     });
     await screen.findByRole('heading', { level: 1, name: 'Overview' });
     expect(localStorage.getItem('odudu.console.tenant')).toBe('acme');
@@ -175,7 +176,7 @@ describe('booting from the session', () => {
       'The console could not reach the server',
     );
     routes['GET /console/api/session'] = json(GRACE);
-    routes['GET /console/api/admin/tenants/acme/whoami'] = whoami(ALL);
+    routes[`GET ${ACME_ADMIN}/whoami`] = whoami(ALL);
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Overview' })).toBeVisible();
   });
@@ -190,7 +191,7 @@ describe('switching tenant', () => {
   it('tells a tenant administrator the current session ends once the new sign-in succeeds', async () => {
     renderAt('/console/?choose', {
       'GET /console/api/session': json(GRACE),
-      'GET /console/api/admin/tenants/acme/whoami': whoami(ALL),
+      [`GET ${ACME_ADMIN}/whoami`]: whoami(ALL),
     });
     expect(
       await screen.findByRole('textbox', { name: 'Which tenant do you administer?' }),
@@ -233,7 +234,7 @@ describe('a sign-in that came back refused', () => {
   it('lands a failed tenant switch back on the tenant signed in to, saying it did not complete', async () => {
     const { router, leavePage } = renderAt('/console/?login_error=access_denied', {
       'GET /console/api/session': json(GRACE),
-      'GET /console/api/admin/tenants/acme/whoami': whoami(ALL),
+      [`GET ${ACME_ADMIN}/whoami`]: whoami(ALL),
     });
     expect(await screen.findByRole('heading', { level: 1, name: 'Overview' })).toBeVisible();
     expect(router.state.location.publicHref).toBe('/console/acme');
@@ -255,7 +256,7 @@ describe('another tenant while signed in', () => {
       const user = userEvent.setup();
       const { leavePage, router } = renderAt(path, {
         'GET /console/api/session': json(GRACE),
-        'GET /console/api/admin/tenants/acme/whoami': whoami(ALL),
+        [`GET ${ACME_ADMIN}/whoami`]: whoami(ALL),
       });
       const status = await screen.findByRole('heading', { level: 1, name: 'Signed in to acme' });
       expect(status).toBeVisible();
@@ -278,7 +279,7 @@ describe('another tenant while signed in', () => {
     const user = userEvent.setup();
     const { leavePage, router, calls } = renderAt('/console/globex', {
       'GET /console/api/session': json(GRACE),
-      'GET /console/api/admin/tenants/acme/whoami': whoami(ALL),
+      [`GET ${ACME_ADMIN}/whoami`]: whoami(ALL),
     });
     await user.click(await screen.findByRole('link', { name: 'Back to acme' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Overview' })).toBeVisible();
@@ -292,7 +293,7 @@ describe('system authority', () => {
   it('shows the amber bar to a system administrator inside another tenant', async () => {
     renderAt('/console/acme/clients', {
       'GET /console/api/session': json(ROOT),
-      'GET /console/api/admin/tenants/acme/whoami': whoami([...ALL, 'manage-tenants'], true),
+      [`GET ${ACME_ADMIN}/whoami`]: whoami([...ALL, 'manage-tenants'], true),
     });
     const bar = await screen.findByRole('region', { name: 'System authority' });
     expect(bar).toHaveTextContent('Acting in acme with system authority');
@@ -328,7 +329,7 @@ describe('system authority', () => {
   it('keeps the System area from a tenant administrator and from another tenant', async () => {
     renderAt('/console/acme/tenants', {
       'GET /console/api/session': json(GRACE),
-      'GET /console/api/admin/tenants/acme/whoami': whoami(ALL),
+      [`GET ${ACME_ADMIN}/whoami`]: whoami(ALL),
     });
     expect(await screen.findByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible();
     expect(screen.queryByRole('link', { name: 'Tenants' })).toBeNull();
@@ -339,7 +340,7 @@ describe('capabilities', () => {
   it('says which capability an area needs when whoami says it is missing', async () => {
     renderAt('/console/acme/subjects', {
       'GET /console/api/session': json(GRACE),
-      'GET /console/api/admin/tenants/acme/whoami': whoami(['manage-clients']),
+      [`GET ${ACME_ADMIN}/whoami`]: whoami(['manage-clients']),
     });
     expect(await screen.findByRole('note')).toHaveTextContent(
       'Subjects needs the view-users capability.',
@@ -350,7 +351,7 @@ describe('capabilities', () => {
 describe('leaving', () => {
   const signedIn = {
     'GET /console/api/session': json(GRACE),
-    'GET /console/api/admin/tenants/acme/whoami': whoami(ALL),
+    [`GET ${ACME_ADMIN}/whoami`]: whoami(ALL),
   };
 
   it('signs out through the gateway and follows the redirect it names', async () => {
@@ -452,7 +453,7 @@ describe('leaving', () => {
     const user = userEvent.setup();
     const { leavePage, router } = renderAt('/console/?choose', {
       'GET /console/api/session': json(ROOT),
-      'GET /console/api/admin/tenants/acme/whoami': whoami(ALL, true),
+      [`GET ${ACME_ADMIN}/whoami`]: whoami(ALL, true),
     });
     await user.type(
       await screen.findByRole('textbox', { name: 'Which tenant do you administer?' }),
@@ -470,7 +471,7 @@ describe('the rail shortcut', () => {
     const user = userEvent.setup();
     renderAt('/console/acme', {
       'GET /console/api/session': json(GRACE),
-      'GET /console/api/admin/tenants/acme/whoami': whoami(ALL),
+      [`GET ${ACME_ADMIN}/whoami`]: whoami(ALL),
     });
     await screen.findByRole('heading', { level: 1, name: 'Overview' });
     let closed = (): void => undefined;
@@ -490,7 +491,7 @@ describe('the rail shortcut', () => {
     const user = userEvent.setup();
     renderAt('/console/acme', {
       'GET /console/api/session': json(GRACE),
-      'GET /console/api/admin/tenants/acme/whoami': whoami(ALL),
+      [`GET ${ACME_ADMIN}/whoami`]: whoami(ALL),
     });
     await screen.findByRole('heading', { level: 1, name: 'Overview' });
     act(() => {
@@ -510,7 +511,7 @@ describe('the theme', () => {
     const user = userEvent.setup();
     renderAt('/console/acme', {
       'GET /console/api/session': json(GRACE),
-      'GET /console/api/admin/tenants/acme/whoami': whoami(ALL),
+      [`GET ${ACME_ADMIN}/whoami`]: whoami(ALL),
     });
     const theme = await screen.findByRole('radiogroup', { name: 'Theme' });
     expect(within(theme).getByRole('radio', { name: 'System' })).toBeChecked();
@@ -525,7 +526,7 @@ describe('the theme', () => {
 it('keeps the toasts announced and dismissible', async () => {
   renderAt('/console/acme', {
     'GET /console/api/session': json(GRACE),
-    'GET /console/api/admin/tenants/acme/whoami': problem(403),
+    [`GET ${ACME_ADMIN}/whoami`]: problem(403),
   });
   await screen.findByRole('heading', { level: 1, name: 'Overview' });
   act(() => {

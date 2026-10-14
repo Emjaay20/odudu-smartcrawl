@@ -8,8 +8,9 @@ import { useTenantSettings } from '#/shared/repository/useTenantSettings';
 import { TENANT_SETTINGS_RECORD } from '#/shared/service/tenantSettings';
 import { TransportContext } from '#/shared/transport/useTransport';
 import { fakeTransport, json } from '#/testing/fakeTransport';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
-const GET = 'GET /console/api/admin/tenants/acme/settings';
+const GET = `GET ${ACME_ADMIN}/settings`;
 
 it('reads the tenant settings under the record every section of them shares', async () => {
   const fake = fakeTransport({ [GET]: json({ display_name: 'Acme' }, 200, { etag: '"s1"' }) });

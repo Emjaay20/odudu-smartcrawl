@@ -4,6 +4,7 @@ import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, offline, pending } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
 import { consoleAt, GRACE, renderConsoleAt, whoami } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 
 afterEach(() => {
   vi.useRealTimers();
@@ -78,7 +79,7 @@ it('draws the real shell with no placeholder when the session answers at once', 
   onFakeClock();
   renderConsoleAt('/console/acme', {
     'GET /console/api/session': json(GRACE),
-    'GET /console/api/admin/tenants/acme/whoami': whoami([]),
+    [`GET ${ACME_ADMIN}/whoami`]: whoami([]),
   });
   await later(50);
   expect(document.querySelector('[data-shape="panels"]')).toBeNull();
@@ -95,7 +96,7 @@ it('says the server could not be reached, and offers to try again', async () => 
 it('renders the page behind it once the session is read', async () => {
   renderConsoleAt('/console/acme', {
     'GET /console/api/session': json(GRACE),
-    'GET /console/api/admin/tenants/acme/whoami': whoami([]),
+    [`GET ${ACME_ADMIN}/whoami`]: whoami([]),
   });
   expect(await screen.findByRole('heading', { level: 1, name: 'Overview' })).toBeVisible();
 });
