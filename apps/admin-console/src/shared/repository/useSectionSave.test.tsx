@@ -1025,3 +1025,13 @@ it('does not call a kept draft restored when it holds nothing that differs from 
   await screen.findByText('status idle');
   expect(screen.getByText('restored false')).toBeVisible();
 });
+
+it('sends one request at a time whatever calls submit again while it is in flight', async () => {
+  const user = userEvent.setup();
+  const { patches } = mountDirect({ [GET]: client(LOADED, '"e1"'), [PATCH]: pending() });
+  await user.type(await screen.findByRole('textbox', { name: 'Name' }), ' EU');
+  await user.click(screen.getByRole('button', { name: 'Submit' }));
+  await user.click(screen.getByRole('button', { name: 'Submit' }));
+  expect(patches()).toHaveLength(1);
+  expect(screen.getByText('submitted false')).toBeVisible();
+});
