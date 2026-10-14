@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { tenantAdminCarries } from '#/shared/service/administrators';
 import type { AdminCapability, Authority } from '#/shared/service/principal';
-import { tenantRecordAccess } from '#/features/tenants/service/access';
+import { recordOpener, tenantRecordAccess } from '#/features/tenants/service/access';
 
 describe('the tenant record page', () => {
   const caller = (...capabilities: AdminCapability[]): Authority => ({
@@ -24,5 +24,17 @@ describe('the tenant record page', () => {
     expect(access.blocked?.change).toBe('add their administrators');
     const full = tenantRecordAccess(caller(...tenantAdminCarries('acme')), 'acme');
     expect(full).toEqual({ readNeeds: [], addNeeds: [], blocked: null });
+  });
+});
+
+describe('recordOpener', () => {
+  it('opens a row when nothing is missing, and offers nothing when something is', () => {
+    const opened: string[] = [];
+    const open = (name: string): void => {
+      opened.push(name);
+    };
+    recordOpener([], open)?.('acme');
+    expect(opened).toEqual(['acme']);
+    expect(recordOpener(['manage-tenant'], open)).toBeNull();
   });
 });

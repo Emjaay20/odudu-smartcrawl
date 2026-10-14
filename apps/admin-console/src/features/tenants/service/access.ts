@@ -2,6 +2,14 @@ import { blockedChanges, lacking, type Change } from '#/shared/service/access';
 import { administratorNeeds } from '#/shared/service/administrators';
 import type { AdminCapability, Authority } from '#/shared/service/principal';
 
+// A row opens a tenant's record only when whoami says reading one is allowed.
+export function recordOpener(
+  needs: readonly AdminCapability[],
+  open: (name: string) => void,
+): ((name: string) => void) | null {
+  return needs.length === 0 ? open : null;
+}
+
 export interface TenantRecordAccess {
   // What reading the record needs that whoami says is missing.
   readNeeds: readonly AdminCapability[];

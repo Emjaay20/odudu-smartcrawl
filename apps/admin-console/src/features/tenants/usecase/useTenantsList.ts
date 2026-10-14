@@ -2,7 +2,7 @@ import type { Tenant } from '@odudu/contracts/admin';
 import { useAuthority } from '#/features/session';
 import { useGo } from '#/shared/repository/useGo';
 import { useTenantList } from '#/features/tenants/repository/useTenantList';
-import { tenantHref } from '#/features/tenants/service';
+import { recordOpener, tenantHref } from '#/features/tenants/service';
 import { lacking } from '#/shared/service/access';
 import { SYSTEM_TENANT, type AdminCapability } from '#/shared/service/principal';
 import type { ResourceListState } from '#/shared/service/resourceList';
@@ -22,11 +22,8 @@ export function useTenantsList(): TenantsList {
   return {
     list,
     recordNeeds,
-    open:
-      recordNeeds.length > 0
-        ? null
-        : (name) => {
-            go(tenantHref(name));
-          },
+    open: recordOpener(recordNeeds, (name) => {
+      go(tenantHref(name));
+    }),
   };
 }
