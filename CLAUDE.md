@@ -407,16 +407,17 @@ import it; a feature reaches another only through its `index.ts`. If two
 features need the same thing, move it to `shared/` (any layer) in its own
 commit and repoint both. A task's report says what was searched and what was
 reused or moved. Do not merge things that merely look alike and change for
-different reasons: feature-specific wording stays in its feature. Each of
-these is a lint with no allowlist, so resolving a finding means changing the
-code: `console-no-duplicate-exports` fails a declaration copied between
-features, `shared`, `app` or the e2e files; `console-no-module-state` a `let`,
-a mutated collection or a stateful factory at module scope;
-`console-store-access` a store action called through `getState()` in a hook or
-component, a `setState()` or a bare `useStore()`; `console-query-keys` a
-hand-typed cache key; `console-css-vars-defined` and
-`console-css-module-classes-defined` a custom property or class nothing
-defines, and a class nothing uses.
+different reasons: feature-specific wording stays in its feature. Each
+of these is a lint with no allowlist, so resolving a finding means changing the
+code, and each header lists the forms it cannot see, so a green
+lint speaks only for the rest: `console-no-duplicate-exports` fails a
+declaration copied between features, `shared`, `app` or the e2e files;
+`console-no-module-state` module-scope state (a `let`, a mutated collection, a
+class's statics, a counter or setter kept by a factory); `console-store-access`
+a store action called through `getState()` in a hook or component, a
+`setState()` or a whole-store subscription; `console-query-keys` a hand-typed
+cache key; `console-css-vars-defined` and `console-css-module-classes-defined`
+a custom property or class nothing defines, and a class nothing uses.
 
 **"No business logic" in a usecase or repository means none, however small
 it looks.** A usecase wires hooks, state and calls together; a repository
