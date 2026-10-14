@@ -34,9 +34,10 @@ export interface SaveOutcome {
   refused: boolean;
 }
 
-// A 412 whose re-read failed leaves nothing to save over.
-export function rereadPhase(readFailed: boolean): 'unread' | 'stale' {
-  return readFailed ? 'unread' : 'stale';
+// A 412 whose re-read failed leaves nothing to save over; `status` is the
+// query cache's for that read.
+export function rereadPhase(status: string | undefined): 'unread' | 'stale' {
+  return status === 'error' ? 'unread' : 'stale';
 }
 
 export function saveOutcome(

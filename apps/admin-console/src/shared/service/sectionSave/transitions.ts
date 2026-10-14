@@ -6,6 +6,7 @@ import {
   BLOCKED_GONE,
   BLOCKED_UNREAD,
   type SavePhase,
+  type SaveStatus,
   type SectionFields,
   type SectionState,
   changedFrom,
@@ -33,6 +34,22 @@ export function initialSection<T extends Values>(
     fieldErrors: {},
     message: null,
   };
+}
+
+export function hasEdits(edits: object): boolean {
+  return Object.keys(edits).length > 0;
+}
+
+// The state a section shows for a read: the first one, then the same one
+// while neither the record nor its ETag moved, then a rebased one.
+export function currentSection<T extends Values>(
+  state: SectionState<T> | null,
+  fresh: T,
+  etag: string,
+  restored: KeptDraft | null,
+): SectionState<T> {
+  if (state === null) return initialSection(fresh, etag, restored);
+  return rebasedSection(state, fresh, etag) ?? state;
 }
 
 // Null when neither the record nor its ETag moved.
@@ -100,9 +117,74 @@ export function unsavedAfter<T extends Values>(edits: Partial<T>, sent: Partial<
   ) as Partial<T>;
 }
 
-// `inFlight` is the hook's own ref, since it is not state.
 export function startable<T extends Values>(state: SectionState<T>, gone: boolean): boolean {
-  return !gone && state.phase !== 'unread' && Object.keys(state.edits).length > 0;
+  return !gone && state.phase !== 'unread' && hasEdits(state.edits);
+}
+
+// `inFlight` is the hook's own ref, since it is not state.
+export function canStart<T extends Values>(
+  state: SectionState<T>,
+  gone: boolean,
+  inFlight: boolean,
+): boolean {
+  return !inFlight && startable(state, gone);
+}
+
+export function canSubmit<T extends Values>(
+  state: SectionState<T>,
+  gone: boolean,
+  inFlight: boolean,
+): boolean {
+  return state.conflicts.length === 0 && canStart(state, gone, inFlight);
+}
+
+export function canKeepMine<T extends Values>(
+  state: SectionState<T>,
+  gone: boolean,
+  inFlight: boolean,
+): boolean {
+  return state.conflicts.length > 0 && canStart(state, gone, inFlight);
+}
+
+export function canTakeTheirs<T extends Values>(
+  state: SectionState<T>,
+  inFlight: boolean,
+): boolean {
+  return !inFlight && state.conflicts.length > 0;
+}
+
+// Taking theirs left nothing of the section's own to save or keep.
+export function settlesAfter<T extends Values>(state: SectionState<T>): boolean {
+  return !hasEdits(state.edits);
+}
+
+export function valuesOf<T extends Values>(state: SectionState<T>): T {
+  return { ...state.base, ...state.edits };
+}
+
+export function changedFields<T extends Values>(state: SectionState<T>): (keyof T & string)[] {
+  return keysOf(state.edits as T);
+}
+
+export function statusOf<T extends Values>(state: SectionState<T>): SaveStatus {
+  return state.conflicts.length > 0 ? 'conflict' : state.phase;
+}
+
+export function isSaving<T extends Values>(state: SectionState<T>): boolean {
+  return state.phase === 'saving';
+}
+
+// Edits kept across a sign-in that are still unsaved.
+export function restoredShown<T extends Values>(
+  restored: KeptDraft | null,
+  state: SectionState<T>,
+): boolean {
+  return restored !== null && hasEdits(state.edits);
+}
+
+// A section not yet started holds the record's ETag.
+export function heldEtag<T extends Values>(state: SectionState<T> | null, etag: string): string {
+  return state?.etag ?? etag;
 }
 
 export function sectionBlocked(

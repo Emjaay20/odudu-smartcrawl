@@ -1,16 +1,29 @@
 import { describe, expect, it } from 'vitest';
 import {
+  canKeepMine,
+  canStart,
+  canSubmit,
+  canTakeTheirs,
+  changedFields,
   conflictsOf,
+  currentSection,
   discardedSection,
   editedSection,
+  hasEdits,
+  heldEtag,
   initialSection,
+  isSaving,
   mineKept,
   rebasedSection,
+  restoredShown,
   savingSection,
   sectionBlocked,
+  settlesAfter,
   startable,
+  statusOf,
   theirsTaken,
   unsavedAfter,
+  valuesOf,
 } from '#/shared/service/sectionSave/transitions';
 import {
   BLOCKED_BY_CONFLICT,
@@ -163,5 +176,100 @@ describe('what a save leaves', () => {
       ['name', 'Name', 'theirs', 'mine', false],
       ['tags', 'Tags', ['x'], undefined, true],
     ]);
+  });
+});
+
+describe('what the section shows of its state', () => {
+  it('has edits once any field differs, and names them', () => {
+    expect(hasEdits({})).toBe(false);
+    expect(hasEdits({ name: 'b' })).toBe(true);
+    expect(changedFields(state({ edits: { name: 'b', tags: [] } }))).toEqual(['name', 'tags']);
+    expect(changedFields(state())).toEqual([]);
+  });
+
+  it('shows the edits over the base, field by field', () => {
+    expect(valuesOf(state({ edits: { name: 'b' } }))).toEqual({ name: 'b', tags: ['x'] });
+    expect(valuesOf(state())).toEqual(BASE);
+  });
+
+  it('is in conflict whenever a field is, whatever the phase', () => {
+    expect(statusOf(state({ conflicts: ['name'], phase: 'saving' }))).toBe('conflict');
+    expect(statusOf(state({ phase: 'saving' }))).toBe('saving');
+    expect(statusOf(state({ phase: 'unread' }))).toBe('unread');
+  });
+
+  it('is saving only in the saving phase', () => {
+    expect(isSaving(state({ phase: 'saving' }))).toBe(true);
+    expect(isSaving(state({ phase: 'saved' }))).toBe(false);
+  });
+
+  it('calls a section restored while kept edits are still unsaved', () => {
+    const kept = { values: { name: 'b', tags: ['x'] }, etag: 'e1' };
+    expect(restoredShown(kept, state({ edits: { name: 'b' } }))).toBe(true);
+    expect(restoredShown(kept, state())).toBe(false);
+    expect(restoredShown(null, state({ edits: { name: 'b' } }))).toBe(false);
+  });
+
+  it("holds the ETag it loaded with, or the record's before it has loaded one", () => {
+    expect(heldEtag(state({ etag: 'e1' }), 'e2')).toBe('e1');
+    expect(heldEtag(null, 'e2')).toBe('e2');
+  });
+});
+
+describe('currentSection', () => {
+  const fresh = { name: 'theirs', tags: ['x'] };
+
+  it('starts from the record, with what a session kept', () => {
+    const kept = { values: { name: 'b', tags: ['x'] }, etag: 'e1' };
+    expect(currentSection(null, BASE, 'e1', kept)).toEqual(initialSection(BASE, 'e1', kept));
+  });
+
+  it('is the very state it was given while neither the read nor the ETag moved', () => {
+    const was = state({ edits: { name: 'mine' } });
+    expect(currentSection(was, BASE, 'e1', null)).toBe(was);
+  });
+
+  it('rebases the state onto a fresh read', () => {
+    const was = state({ edits: { name: 'mine' } });
+    const next = currentSection(was, fresh, 'e2', null);
+    expect(next).not.toBe(was);
+    expect(next).toEqual(rebasedSection(was, fresh, 'e2'));
+  });
+});
+
+describe('when a section may act', () => {
+  const edited = state({ edits: { name: 'b' } });
+  const clashing = state({ edits: { name: 'b' }, conflicts: ['name'] });
+
+  it('starts a save only when none is in flight, and the state allows it', () => {
+    expect(canStart(edited, false, false)).toBe(true);
+    expect(canStart(edited, false, true)).toBe(false);
+    expect(canStart(edited, true, false)).toBe(false);
+    expect(canStart(state(), false, false)).toBe(false);
+  });
+
+  it('submits only with no conflict left to decide', () => {
+    expect(canSubmit(edited, false, false)).toBe(true);
+    expect(canSubmit(clashing, false, false)).toBe(false);
+    expect(canSubmit(edited, false, true)).toBe(false);
+    expect(canSubmit(state(), false, false)).toBe(false);
+  });
+
+  it('keeps its own edits only to settle a conflict, and as a save could start', () => {
+    expect(canKeepMine(clashing, false, false)).toBe(true);
+    expect(canKeepMine(edited, false, false)).toBe(false);
+    expect(canKeepMine(clashing, false, true)).toBe(false);
+    expect(canKeepMine(clashing, true, false)).toBe(false);
+  });
+
+  it('takes theirs only to settle a conflict, and not while a save is in flight', () => {
+    expect(canTakeTheirs(clashing, false)).toBe(true);
+    expect(canTakeTheirs(edited, false)).toBe(false);
+    expect(canTakeTheirs(clashing, true)).toBe(false);
+  });
+
+  it('settles a kept draft once taking theirs leaves no edit', () => {
+    expect(settlesAfter(state())).toBe(true);
+    expect(settlesAfter(edited)).toBe(false);
   });
 });

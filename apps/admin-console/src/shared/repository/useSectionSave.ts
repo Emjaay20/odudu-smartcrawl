@@ -10,19 +10,28 @@ import { draftFieldsOf } from '#/shared/service/drafts';
 import type { AdminCapability } from '#/shared/service/principal';
 import {
   afterSave,
+  canKeepMine,
+  canSubmit,
+  canTakeTheirs,
+  changedFields,
   conflictsOf,
+  currentSection,
   discardedSection,
   editedSection,
   fieldValues,
-  initialSection,
+  hasEdits,
+  heldEtag,
+  isSaving,
   mineKept,
-  rebasedSection,
   rereadPhase,
+  restoredShown,
   saveOutcome,
   savingSection,
   sectionBlocked,
-  startable,
+  settlesAfter,
+  statusOf,
   theirsTaken,
+  valuesOf,
   type ConflictSource,
   type SaveOutcome,
   type SaveStatus,
@@ -120,25 +129,19 @@ export function useSectionSave<T extends Values, R>({
   const fresh = fieldValues(fields);
   const [state, setState] = useState<SectionState<T> | null>(null);
   const draftEdits = state?.edits ?? {};
+  const push = useToasts((queue) => queue.push);
   const { restored, settle } = useSectionDraft({
     tenant,
     record,
     section,
     label,
-    dirty: Object.keys(draftEdits).length > 0,
+    dirty: hasEdits(draftEdits),
     fields: draftFieldsOf(draftEdits, fields),
-    etag: state?.etag ?? etag,
+    etag: heldEtag(state, etag),
   });
 
-  let current: SectionState<T>;
-  if (state === null) {
-    current = initialSection(fresh, etag, restored);
-    setState(current);
-  } else {
-    const rebased = rebasedSection(state, fresh, etag);
-    current = rebased ?? state;
-    if (rebased !== null) setState(rebased);
-  }
+  const current = currentSection(state, fresh, etag, restored);
+  if (current !== state) setState(current);
 
   const latest = useLatest(current);
   const inFlight = useRef(false);
@@ -148,7 +151,7 @@ export function useSectionSave<T extends Values, R>({
   };
 
   const toast = (outcome: SaveOutcome): void => {
-    if (outcome.toast !== undefined) useToasts.getState().push(outcome.toast);
+    if (outcome.toast !== undefined) push(outcome.toast);
   };
 
   const answer = async (from: SectionState<T>, result: GatewayResult<R>): Promise<void> => {
@@ -169,8 +172,7 @@ export function useSectionSave<T extends Values, R>({
     let phase = outcome.phase;
     if (outcome.refetch) {
       await client.refetchQueries({ queryKey: recordKey(tenant, record), exact: true });
-      const unread = client.getQueryState(recordKey(tenant, record))?.status === 'error';
-      phase = rereadPhase(unread);
+      phase = rereadPhase(client.getQueryState(recordKey(tenant, record))?.status);
     }
     update((was) => afterSave(was, { ...outcome, phase }, from.edits));
     toast(outcome);
@@ -184,7 +186,7 @@ export function useSectionSave<T extends Values, R>({
     inFlight.current = true;
     update(savingSection);
     const attempt = async (): Promise<void> => {
-      const values = { ...from.base, ...from.edits };
+      const values = valuesOf(from);
       await answer(from, await save(gateway, { changes: from.edits, values, ifMatch: from.etag }));
     };
     await attempt()
@@ -201,14 +203,11 @@ export function useSectionSave<T extends Values, R>({
       });
   };
 
-  const canStart = (from: SectionState<T>): boolean => !inFlight.current && startable(from, gone);
-
-  const values = { ...current.base, ...current.edits };
-  const changed = Object.keys(current.edits);
+  const changed = changedFields(current);
   const conflicts: Conflict[] = conflictsOf(current, fields);
 
   return {
-    status: conflicts.length > 0 ? 'conflict' : current.phase,
+    status: statusOf(current),
     fieldErrors: current.fieldErrors as SectionSave<T>['fieldErrors'],
     conflicts,
     conflictSource: current.source,
@@ -220,22 +219,21 @@ export function useSectionSave<T extends Values, R>({
     },
     keepMine: () => {
       const from = latest();
-      if (!canStart(from) || from.conflicts.length === 0) return;
+      if (!canKeepMine(from, gone, inFlight.current)) return;
       update(mineKept);
       run(mineKept(from)).catch(() => undefined);
     },
     takeTheirs: () => {
       const from = latest();
-      if (inFlight.current || from.conflicts.length === 0) return;
-      const next = theirsTaken(from);
+      if (!canTakeTheirs(from, inFlight.current)) return;
       update(theirsTaken);
-      if (Object.keys(next.edits).length === 0) settle();
+      if (settlesAfter(theirsTaken(from))) settle();
     },
-    values,
+    values: valuesOf(current),
     changed,
-    dirty: changed.length > 0,
-    saving: current.phase === 'saving',
-    restored: restored !== null && changed.length > 0,
+    dirty: hasEdits(current.edits),
+    saving: isSaving(current),
+    restored: restoredShown(restored, current),
     message: current.message,
     edit: (field, value) => {
       update((was) => editedSection(was, field, value));
@@ -246,7 +244,7 @@ export function useSectionSave<T extends Values, R>({
     },
     submit: () => {
       const from = latest();
-      if (from.conflicts.length > 0 || !canStart(from)) return false;
+      if (!canSubmit(from, gone, inFlight.current)) return false;
       run(from).catch(() => undefined);
       return true;
     },

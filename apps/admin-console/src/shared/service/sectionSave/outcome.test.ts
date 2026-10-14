@@ -70,8 +70,9 @@ describe('saveOutcome', () => {
   it('re-reads after a 412, and does nothing visible for a 401', () => {
     expect(saveOutcome(problem(412), ctx)).toMatchObject({ phase: 'stale', refetch: true });
     expect(saveOutcome(problem(401), ctx)).toMatchObject({ phase: 'idle', refetch: false });
-    expect(rereadPhase(true)).toBe('unread');
-    expect(rereadPhase(false)).toBe('stale');
+    expect(rereadPhase('error')).toBe('unread');
+    expect(rereadPhase('success')).toBe('stale');
+    expect(rereadPhase(undefined)).toBe('stale');
   });
   it('places a 400 under its fields and toasts what has no field', () => {
     const rejected = problem(400, {
