@@ -1,4 +1,5 @@
 import type { Tenant } from '@odudu/contracts/admin';
+import { findKey } from '#/shared/repository/queryKeys';
 import { useMutation } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { readFileText } from '#/features/tenants/adapter/files';
@@ -67,6 +68,6 @@ export function useImport(onRefused: (failure: GatewayFailure) => void): TenantI
       setShown((count) => count + 1);
       setSecrets((left) => left.slice(1));
     },
-    find: (name) => fresh.read(['find', 'tenants', name], () => findTenant(gateway, name)),
+    find: (name) => fresh.read(findKey('tenants', name), () => findTenant(gateway, name)),
   };
 }

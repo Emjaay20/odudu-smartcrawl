@@ -1,5 +1,5 @@
 import type { Subject } from '@odudu/contracts/admin';
-import { listKey } from '#/shared/repository/queryKeys';
+import { findKey, listKey } from '#/shared/repository/queryKeys';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
 import { createSubject, findSubject } from '#/shared/adapter/administrators';
 import type { GatewayResult } from '#/shared/transport/gateway';
@@ -30,7 +30,7 @@ export function useCreateSubject(tenant: string): CreateSubject {
     busy: create.busy || fresh.pending,
     create: create.run,
     find: (username) =>
-      fresh.read(['find', tenant, 'subjects', username], () =>
+      fresh.read(findKey(tenant, 'subjects', username), () =>
         findSubject(gateway, tenant, username),
       ),
   };

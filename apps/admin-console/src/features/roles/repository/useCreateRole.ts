@@ -9,7 +9,7 @@ import {
 } from '#/features/roles/adapter/roles';
 import { copySourceOf, type CopyRead } from '#/features/roles/service';
 import { copyReadOf } from '#/shared/service/copy';
-import { copyKey, listKey, pickerKey } from '#/shared/repository/queryKeys';
+import { copyKey, findKey, listKey, pickerKey } from '#/shared/repository/queryKeys';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
 import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useWrite } from '#/shared/repository/useWrite';
@@ -56,7 +56,7 @@ export function useCreateRole(tenant: string): CreateRole {
     create: create.run,
     nest: (id, children) => nest.run({ id, children }),
     find: (name) =>
-      fresh.read(['find', tenant, 'roles', name], () => findRole(gateway, tenant, name)),
+      fresh.read(findKey(tenant, 'roles', name), () => findRole(gateway, tenant, name)),
   };
 }
 

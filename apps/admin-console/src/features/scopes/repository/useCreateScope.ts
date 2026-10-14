@@ -18,7 +18,7 @@ import {
   type CopyRead,
 } from '#/features/scopes/service';
 import { copyReadOf } from '#/shared/service/copy';
-import { copyKey, countKey, listKey, pickerKey } from '#/shared/repository/queryKeys';
+import { copyKey, countKey, findKey, listKey, pickerKey } from '#/shared/repository/queryKeys';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
 import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useWrite } from '#/shared/repository/useWrite';
@@ -100,7 +100,7 @@ export function useCreateScope(tenant: string): CreateScope {
     create: create.run,
     // The search is a prefix, so an exact match is picked out of its answer.
     find: (name) =>
-      fresh.read(['find', tenant, 'scopes', name], () => findScope(gateway, tenant, name)),
+      fresh.read(findKey(tenant, 'scopes', name), () => findScope(gateway, tenant, name)),
   };
 }
 

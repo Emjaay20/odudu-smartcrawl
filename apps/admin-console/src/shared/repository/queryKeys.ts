@@ -85,6 +85,20 @@ export function usernamePolicyKey(tenant: string) {
   return ['username-policy', tenant] as const;
 }
 
+export function authorityKey(tenant: string, subject: string | null) {
+  return ['authority', tenant, subject] as const;
+}
+
+// What is found, whichever kind of thing and wherever, read once and dropped.
+export function findKey(...what: readonly string[]) {
+  return ['find', ...what] as const;
+}
+
+// The reads of one subject's sign-in state, each made stale by its own change.
+export function subjectReadKey(read: 'credentials' | 'lockout', tenant: string, id: string) {
+  return [read, tenant, id] as const;
+}
+
 export function sessionKey() {
   return ['session'] as const;
 }

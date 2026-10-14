@@ -1,4 +1,5 @@
 import type { Client } from '@odudu/contracts/admin';
+import { findKey } from '#/shared/repository/queryKeys';
 import { createClient, findClient, type NewClient } from '#/features/clients/adapter/clients';
 import { useAfterClientChange } from '#/features/clients/repository/useClientRecord';
 import { splitSecret } from '#/features/clients/service';
@@ -52,8 +53,6 @@ export function useCreateClient(
     secret: creation.secret,
     closeSecret: creation.close,
     find: (clientId) =>
-      fresh.read(['find', tenant, 'clients', clientId], () =>
-        findClient(gateway, tenant, clientId),
-      ),
+      fresh.read(findKey(tenant, 'clients', clientId), () => findClient(gateway, tenant, clientId)),
   };
 }

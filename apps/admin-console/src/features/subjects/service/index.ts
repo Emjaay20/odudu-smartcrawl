@@ -40,6 +40,7 @@ export {
   type LockoutSummary,
   lockoutSummary,
   type CredentialChange,
+  staleReadOf,
   type Asking,
   credentialChangeOf,
   credentialDoneText,

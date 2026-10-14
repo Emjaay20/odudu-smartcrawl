@@ -3,6 +3,7 @@ import type {
   ListCredentialsResponse,
   Lockout,
 } from '@odudu/contracts/admin';
+import { subjectReadKey } from '#/shared/repository/queryKeys';
 import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useRead } from '#/shared/repository/useRead';
 import type { Read } from '#/shared/service/read';
@@ -11,20 +12,12 @@ import {
   readCredentials,
   readLockout,
 } from '#/features/subjects/adapter/subjects';
-import type { CredentialChange } from '#/features/subjects/service';
+import { staleReadOf, type CredentialChange } from '#/features/subjects/service';
 import { issuePassword } from '#/shared/adapter/administrators';
 import { useSecretOnce, type SecretOnce } from '#/shared/repository/useSecretOnce';
 import { useWrite, type Write } from '#/shared/repository/useWrite';
 import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
 import { useTransport } from '#/shared/transport/useTransport';
-
-function credentialsKey(tenant: string, id: string) {
-  return ['credentials', tenant, id] as const;
-}
-
-function lockoutKey(tenant: string, id: string) {
-  return ['lockout', tenant, id] as const;
-}
 
 export function useCredentials(
   tenant: string,
@@ -32,12 +25,16 @@ export function useCredentials(
   asked: boolean,
 ): Read<ListCredentialsResponse> {
   const { gateway } = useTransport();
-  return useRead(credentialsKey(tenant, id), asked, () => readCredentials(gateway, tenant, id));
+  return useRead(subjectReadKey('credentials', tenant, id), asked, () =>
+    readCredentials(gateway, tenant, id),
+  );
 }
 
 export function useLockout(tenant: string, id: string, asked: boolean): Read<Lockout> {
   const { gateway } = useTransport();
-  return useRead(lockoutKey(tenant, id), asked, () => readLockout(gateway, tenant, id));
+  return useRead(subjectReadKey('lockout', tenant, id), asked, () =>
+    readLockout(gateway, tenant, id),
+  );
 }
 
 export type { CredentialChange };
@@ -51,8 +48,7 @@ export function useCredentialChanges(
   return useWrite({
     send: (gateway, change: CredentialChange) => changeCredential(gateway, tenant, id, change),
     onSettled: (_result, change) => {
-      const key = change.kind === 'lockout' ? lockoutKey(tenant, id) : credentialsKey(tenant, id);
-      invalidateExact(key);
+      invalidateExact(subjectReadKey(staleReadOf(change), tenant, id));
     },
   });
 }
@@ -81,8 +77,8 @@ export function useIssuePassword(
         told.refused(result);
         return result;
       }
-      invalidateExact(credentialsKey(tenant, id));
-      invalidateExact(lockoutKey(tenant, id));
+      invalidateExact(subjectReadKey('credentials', tenant, id));
+      invalidateExact(subjectReadKey('lockout', tenant, id));
       told.issued();
       return result;
     },

@@ -5,6 +5,7 @@ import {
   countKey,
   deliveriesKey,
   evaluateKey,
+  findKey,
   GROUP_KIND,
   groupKey,
   RECORD_KIND,
@@ -19,8 +20,10 @@ import {
   recordKey,
   scopeClientsKey,
   sessionKey,
+  subjectReadKey,
   systemIssuerKey,
   usernamePolicyKey,
+  authorityKey,
 } from '#/shared/repository/queryKeys';
 
 it('names every kind of cached read by its kind, its tenant and what it reads', () => {
@@ -49,6 +52,12 @@ it('names every kind of cached read by its kind, its tenant and what it reads', 
   expect(installationKey('acme', 'c1')).toEqual(['installation', 'acme', 'c1']);
   expect(adminRolesKey('acme')).toEqual(['admin-roles', 'acme']);
   expect(usernamePolicyKey('acme')).toEqual(['username-policy', 'acme']);
+  expect(authorityKey('acme', 's1')).toEqual(['authority', 'acme', 's1']);
+  expect(authorityKey('acme', null)).toEqual(['authority', 'acme', null]);
+  expect(findKey('acme', 'roles', 'ops')).toEqual(['find', 'acme', 'roles', 'ops']);
+  expect(findKey('tenants', 'acme')).toEqual(['find', 'tenants', 'acme']);
+  expect(subjectReadKey('lockout', 'acme', 's1')).toEqual(['lockout', 'acme', 's1']);
+  expect(subjectReadKey('credentials', 'acme', 's1')).toEqual(['credentials', 'acme', 's1']);
   expect(sessionKey()).toEqual(['session']);
   expect(GROUP_KIND).toBe('group');
   expect(RECORD_KIND).toBe('record');

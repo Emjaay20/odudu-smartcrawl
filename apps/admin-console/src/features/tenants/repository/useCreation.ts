@@ -1,4 +1,5 @@
 import type { Subject, Tenant } from '@odudu/contracts/admin';
+import { findKey } from '#/shared/repository/queryKeys';
 import { useEffect, useState } from 'react';
 import { loadCreation, storeCreation } from '#/features/tenants/adapter/creationStorage';
 import { createTenant, findTenant } from '#/features/tenants/adapter/tenants';
@@ -91,7 +92,7 @@ export function useTenantCreate(): TenantCreate {
   return {
     busy: create.busy || fresh.pending,
     create: create.run,
-    find: (name) => fresh.read(['find', 'tenants', name], () => findTenant(gateway, name)),
+    find: (name) => fresh.read(findKey('tenants', name), () => findTenant(gateway, name)),
   };
 }
 
@@ -186,7 +187,5 @@ export function useFindSubject(): (
   const { gateway } = useTransport();
   const fresh = useFreshRead();
   return (tenant, username) =>
-    fresh.read(['find', tenant, 'subjects', username], () =>
-      findSubject(gateway, tenant, username),
-    );
+    fresh.read(findKey(tenant, 'subjects', username), () => findSubject(gateway, tenant, username));
 }

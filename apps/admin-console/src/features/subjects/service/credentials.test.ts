@@ -8,6 +8,7 @@ import {
   recoveryCodesText,
   credentialsOf,
   lockoutSummary,
+  staleReadOf,
 } from '#/features/subjects/service/credentials';
 import { failure, refusal } from '#/testing/failures';
 
@@ -146,5 +147,13 @@ describe('small model reads', () => {
     expect(credentialDialogOf({ kind: 'lockout' }, 'ada', false)?.confirmLabel).toBe(
       'Clear lockout',
     );
+  });
+});
+
+describe('staleReadOf', () => {
+  it('makes a lockout change stale its own read, and any other the credentials list', () => {
+    expect(staleReadOf({ kind: 'lockout' })).toBe('lockout');
+    expect(staleReadOf({ kind: 'factor', credentialId: 'c1' })).toBe('credentials');
+    expect(staleReadOf({ kind: 'recovery-codes' })).toBe('credentials');
   });
 });

@@ -64,6 +64,11 @@ export function lockoutSummary(lockout: Lockout): LockoutSummary {
 export type CredentialChange =
   { kind: 'factor'; credentialId: string } | { kind: 'recovery-codes' } | { kind: 'lockout' };
 
+// Which read a change leaves stale: a lockout's own, or the credentials list.
+export function staleReadOf(change: CredentialChange): 'credentials' | 'lockout' {
+  return change.kind === 'lockout' ? 'lockout' : 'credentials';
+}
+
 export type Asking =
   | { kind: 'password' }
   | { kind: 'factor'; credential: Credential }

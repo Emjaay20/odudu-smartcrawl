@@ -1,6 +1,6 @@
 import type { Group } from '@odudu/contracts/admin';
 import { createGroup, findGroup } from '#/features/groups/adapter/groups';
-import { listKey, pickerKey } from '#/shared/repository/queryKeys';
+import { findKey, listKey, pickerKey } from '#/shared/repository/queryKeys';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
 import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useWrite } from '#/shared/repository/useWrite';
@@ -35,7 +35,7 @@ export function useCreateGroup(tenant: string): CreateGroup {
     busy: create.busy || fresh.pending,
     create: create.run,
     find: (name, parentId) =>
-      fresh.read(['find', tenant, 'groups', parentId ?? 'root', name], () =>
+      fresh.read(findKey(tenant, 'groups', parentId ?? 'root', name), () =>
         findGroup(gateway, tenant, name, parentId),
       ),
   };

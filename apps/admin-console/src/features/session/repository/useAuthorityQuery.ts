@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { readAuthority } from '#/features/session/adapter/session';
 import { authorityOf, refusedUnknownOf, type Authority } from '#/features/session/service';
+import { authorityKey } from '#/shared/repository/queryKeys';
 import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useTransport } from '#/shared/transport/useTransport';
 
@@ -22,7 +23,7 @@ export function useAuthorityQuery(
 } {
   const { gateway } = useTransport();
   const { invalidate } = useInvalidate();
-  const key = ['whoami', tenant, subjectId] as const;
+  const key = authorityKey(tenant, subjectId);
   // Every page and the rail ask for it, so it is fresh for half a minute:
   // one read per page, and a capability gained mid-session shows on the next
   // page after that. A 403 re-reads it at once.
