@@ -36,6 +36,7 @@ export function useCapabilityHolders(tenant: string): CapabilityHolders {
   const principal = usePrincipal();
   const list = useHolderList(tenant);
   const [open, setOpen] = useState<string | null>(null);
+  const request = useUnsavedGuard((guard) => guard.request);
   return {
     list,
     holders: list.rows.map((subject) => {
@@ -51,7 +52,7 @@ export function useCapabilityHolders(tenant: string): CapabilityHolders {
     }),
     open,
     toggle: (id) => {
-      useUnsavedGuard.getState().request(() => {
+      request(() => {
         setOpen((was) => (was === id ? null : id));
       });
     },
