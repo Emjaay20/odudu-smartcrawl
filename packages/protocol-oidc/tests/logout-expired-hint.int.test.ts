@@ -372,10 +372,13 @@ describe('[OIDC-RPINITIATED-2-05] a hint past its exp is accepted when it names 
     const olderId = sessionIdFromCookie(older);
     const newerId = sessionIdFromCookie(newer);
     const hint = await mintHint(tenantName, subjectId, { sid: olderId, expiredFor: AN_HOUR });
+    // One browser holding both: the entries joined the way sessionCookies
+    // joins a list (session-cookie.ts's SEPARATOR).
+    const bothCookie = `${tenantName}-session=${older.split('=')[1] ?? ''}.${newer.split('=')[1] ?? ''}`;
 
     const res = await http.inject({
       url: logoutUrl(tenantName, { id_token_hint: hint, ...END_PARAMS }),
-      headers: { cookie: `${older}; ${newer}` },
+      headers: { cookie: bothCookie },
     });
 
     expect(res.statusCode).toBe(302);
