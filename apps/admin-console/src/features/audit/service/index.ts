@@ -10,6 +10,7 @@ export {
   FILTER_NAMES,
   filtersOf,
   filtersToSearch,
+  hasResourceType,
   isFiltered,
   OUTCOME_OPTIONS,
   readFilters,

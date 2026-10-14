@@ -151,10 +151,15 @@ export function isClean(problems: DraftProblems): boolean {
   return Object.keys(problems).length === 0;
 }
 
+// Whether the form may take a resource id: it names nothing without its type.
+export function hasResourceType(draft: Draft): boolean {
+  return draft.resource_type.trim() !== '';
+}
+
 // A resource id is meaningless without its type, so the form cannot hold one.
 export function withField(draft: Draft, name: FilterName, value: string): Draft {
   const next = { ...draft, [name]: value === ANY ? '' : value };
-  if (next.resource_type.trim() === '') next.resource_id = '';
+  if (!hasResourceType(next)) next.resource_id = '';
   return next;
 }
 

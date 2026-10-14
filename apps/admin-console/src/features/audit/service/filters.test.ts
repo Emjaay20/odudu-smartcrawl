@@ -8,6 +8,7 @@ import {
   draftProblems,
   filtersOf,
   filtersToSearch,
+  hasResourceType,
   isFiltered,
   readFilters,
   withField,
@@ -138,6 +139,12 @@ describe('the form as a draft of the filters', () => {
       action: 'client.update',
       outcome: 'refused',
     });
+  });
+
+  it('takes a resource id only once it has a resource type that is not blank', () => {
+    expect(hasResourceType(EMPTY_DRAFT)).toBe(false);
+    expect(hasResourceType({ ...EMPTY_DRAFT, resource_type: '  ' })).toBe(false);
+    expect(hasResourceType({ ...EMPTY_DRAFT, resource_type: 'client' })).toBe(true);
   });
 
   it('cannot hold a resource id with no resource type: clearing the type clears the id', () => {

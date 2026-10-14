@@ -2,6 +2,7 @@ import type { AuditFilterForm } from '#/features/audit/usecase/useAuditPage';
 import {
   choiceOf,
   EVENT_TYPE_OPTIONS,
+  hasResourceType,
   NOT_FILTERS,
   OUTCOME_OPTIONS,
 } from '#/features/audit/service';
@@ -14,7 +15,7 @@ import styles from '#/features/audit/view/AuditFilters/AuditFilters.module.css';
 // and an applied filter lives in the address.
 export function AuditFilters({ form }: { form: AuditFilterForm }) {
   const { draft, problems, set } = form;
-  const hasType = draft.resource_type.trim() !== '';
+  const hasType = hasResourceType(draft);
   return (
     <form
       role="search"
