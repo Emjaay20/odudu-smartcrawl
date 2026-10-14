@@ -5,7 +5,8 @@ import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { inTurn, json, offline, problem } from '#/testing/fakeTransport';
 import { group, record } from '#/testing/groupAnswers';
 import { ENG, G, groupRoutes } from '#/testing/groupsFixtures';
-import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
+import { resetConsole } from '#/testing/resetConsole';
+import { consoleAt, renderConsoleAt, ACME_ADMIN } from '#/testing/renderConsole';
 
 afterEach(() => {
   resetConsole();

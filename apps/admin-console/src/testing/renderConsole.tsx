@@ -4,9 +4,6 @@ import { App } from '#/app/App';
 import { beforeAll } from 'vitest';
 import { createConsoleRouter, preloadFeatures } from '#/app/router';
 import { createQueryClient } from '#/shared/repository/queryClient';
-import { useDrafts } from '#/shared/repository/useDrafts';
-import { useToasts } from '#/shared/repository/useToasts';
-import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 import { fakeTransport, json, type Answer } from '#/testing/fakeTransport';
 
 // A feature's chunk is transformed the first time a file renders it; paid
@@ -56,11 +53,4 @@ export function renderConsoleAt(path: string, routes: Record<string, Answer>) {
   const { element, ...rest } = consoleAt(path, routes);
   const view = render(element);
   return { ...rest, unmount: view.unmount };
-}
-
-// The stores outlive a render, so a test that mounts the console clears them after.
-export function resetConsole(): void {
-  useToasts.setState({ toasts: [] });
-  useUnsavedGuard.getState().reset();
-  useDrafts.getState().forgetAll();
 }

@@ -12,6 +12,7 @@ import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 import { sectionKey } from '#/shared/service/record';
 import { parseSearch, stringifySearch } from '#/shared/service/search';
 import { useRecordTabs } from '#/shared/usecase/useRecordTabs';
+import { resetConsole } from '#/testing/resetConsole';
 
 const TABS = ['general', 'roles', 'activity'] as const;
 const RECORDS = {
@@ -60,7 +61,7 @@ function mount(url: string) {
 }
 
 beforeEach(() => {
-  useUnsavedGuard.getState().reset();
+  resetConsole();
 });
 
 it('opens on the tab the URL names and moves to one the record has', async () => {

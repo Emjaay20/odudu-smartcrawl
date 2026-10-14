@@ -3,13 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 import { z } from 'zod';
-import { useDrafts, type DraftFields } from '#/shared/repository/useDrafts';
+import { type DraftFields } from '#/shared/repository/useDrafts';
 import { useSectionDraft } from '#/shared/repository/useSectionDraft';
-import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 import { TextField } from '#/shared/view/Field';
 import { Section } from '#/shared/view/Section';
 import { json, SESSION_ENDED, type Answer } from '#/testing/fakeTransport';
 import { mountGuardedPage } from '#/testing/mountGuardedPage';
+import { resetConsole } from '#/testing/resetConsole';
 
 const BASE = { name: 'Billing portal', secret: '' };
 
@@ -88,8 +88,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  useUnsavedGuard.getState().reset();
-  useDrafts.getState().forgetAll();
+  resetConsole();
 });
 
 it('keeps the edit through a session that ends mid-edit, and puts it back marked, sending nothing', async () => {

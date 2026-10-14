@@ -6,9 +6,10 @@ import { lazyFeatureRoute } from '#/app/lazyFeatureRoute/lazyFeatureRoute';
 import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 import { TransportContext } from '#/shared/transport/useTransport';
 import { fakeTransport } from '#/testing/fakeTransport';
+import { resetConsole } from '#/testing/resetConsole';
 
 afterEach(() => {
-  useUnsavedGuard.getState().reset();
+  resetConsole();
   vi.restoreAllMocks();
 });
 

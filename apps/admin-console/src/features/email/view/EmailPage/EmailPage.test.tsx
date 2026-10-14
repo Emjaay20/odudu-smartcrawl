@@ -4,7 +4,8 @@ import { afterEach, expect, it } from 'vitest';
 import { draftsKept } from '#/testing/consoleState';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { inTurn, json, offline, problem } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { resetConsole } from '#/testing/resetConsole';
+import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { emailRoutes, NO_SMTP, OWN_SMTP, SM, smtpAnswer } from '#/testing/settingsFixtures';
 
 afterEach(() => {

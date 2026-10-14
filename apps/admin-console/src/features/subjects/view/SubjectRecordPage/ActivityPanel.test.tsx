@@ -3,7 +3,8 @@ import { afterEach, expect, it } from 'vitest';
 import { auditEvent } from '#/testing/auditFixtures';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, problem } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
+import { resetConsole } from '#/testing/resetConsole';
+import { consoleAt, renderConsoleAt, ACME_ADMIN } from '#/testing/renderConsole';
 import { ADA_AT, ADA_ID, subjectRoutes } from '#/testing/subjectsFixtures';
 
 afterEach(() => {

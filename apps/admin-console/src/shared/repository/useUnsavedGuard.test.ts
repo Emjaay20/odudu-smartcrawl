@@ -1,8 +1,9 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
+import { resetConsole } from '#/testing/resetConsole';
 
 beforeEach(() => {
-  useUnsavedGuard.getState().reset();
+  resetConsole();
 });
 
 const guard = () => useUnsavedGuard.getState();

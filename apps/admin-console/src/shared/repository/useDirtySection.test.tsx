@@ -2,9 +2,10 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, expect, it } from 'vitest';
 import { useDirtySection } from '#/shared/repository/useDirtySection';
 import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
+import { resetConsole } from '#/testing/resetConsole';
 
 beforeEach(() => {
-  useUnsavedGuard.getState().reset();
+  resetConsole();
 });
 
 const unsaved = () => useUnsavedGuard.getState().unsaved();

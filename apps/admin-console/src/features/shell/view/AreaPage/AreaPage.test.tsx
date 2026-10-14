@@ -2,7 +2,8 @@ import { screen } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json } from '#/testing/fakeTransport';
-import { consoleAt, GRACE, renderConsoleAt, whoami, resetConsole } from '#/testing/renderConsole';
+import { resetConsole } from '#/testing/resetConsole';
+import { consoleAt, GRACE, renderConsoleAt, whoami } from '#/testing/renderConsole';
 
 afterEach(() => {
   resetConsole();

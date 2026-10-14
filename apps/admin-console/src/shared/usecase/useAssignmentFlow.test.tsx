@@ -3,13 +3,14 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { useToasts } from '#/shared/repository/useToasts';
 import type { GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
 import { useAssignmentFlow } from '#/shared/usecase/useAssignmentFlow';
+import { resetConsole } from '#/testing/resetConsole';
 
 const done: GatewayResult<string> = { ok: true, status: 200, data: 'ok', etag: null, next: null };
 const refused: GatewayFailure = { ok: false, kind: 'defect' };
 const BILLING = { id: 'c1', name: 'billing' };
 
 afterEach(() => {
-  useToasts.setState({ toasts: [] });
+  resetConsole();
 });
 
 function setup() {

@@ -2,9 +2,10 @@ import { act, renderHook } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
 import { useDirtySections } from '#/shared/repository/useDirtySections';
 import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
+import { resetConsole } from '#/testing/resetConsole';
 
 afterEach(() => {
-  useUnsavedGuard.getState().reset();
+  resetConsole();
 });
 
 it("names the sections of one record that hold unsaved edits, and no other record's", () => {

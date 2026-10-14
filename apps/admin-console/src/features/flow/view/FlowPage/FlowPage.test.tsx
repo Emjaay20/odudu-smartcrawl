@@ -13,7 +13,8 @@ import {
   ST,
   step,
 } from '#/testing/flowFixtures';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { resetConsole } from '#/testing/resetConsole';
+import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 
 afterEach(() => {
   resetConsole();

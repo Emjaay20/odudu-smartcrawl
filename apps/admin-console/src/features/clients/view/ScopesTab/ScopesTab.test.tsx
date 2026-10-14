@@ -4,7 +4,8 @@ import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { ADMIN, BILLING, C, clientRoutes, type ClientAnswer } from '#/testing/clientsFixtures';
 import { inTurn, json, pending, problem } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
+import { resetConsole } from '#/testing/resetConsole';
+import { consoleAt, renderConsoleAt, ACME_ADMIN } from '#/testing/renderConsole';
 
 afterEach(() => {
   resetConsole();

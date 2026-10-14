@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useDrafts, type DraftField, type DraftFields } from '#/shared/repository/useDrafts';
+import { resetConsole } from '#/testing/resetConsole';
 
 const KEY = 'odudu.console.drafts';
 const drafts = () => useDrafts.getState();
@@ -8,21 +9,17 @@ function source(record: string, section: string, fields: DraftFields, dirty = tr
   return { record, section, dirty: () => dirty, fields: () => fields, etag: () => '"e1"' };
 }
 
-const registered: (() => void)[] = [];
 function register(...args: Parameters<typeof source>): () => void {
-  const unregister = drafts().register(source(...args));
-  registered.push(unregister);
-  return unregister;
+  return drafts().register(source(...args));
 }
 
 beforeEach(() => {
   sessionStorage.clear();
-  drafts().forgetAll();
+  resetConsole();
 });
 
 afterEach(() => {
   vi.restoreAllMocks();
-  for (const unregister of registered.splice(0)) unregister();
 });
 
 describe('keeping drafts', () => {

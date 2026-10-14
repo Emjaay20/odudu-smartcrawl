@@ -7,6 +7,7 @@ import { useSectionDraft } from '#/shared/repository/useSectionDraft';
 import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 import { TextField } from '#/shared/view/Field';
 import { Section } from '#/shared/view/Section';
+import { resetConsole } from '#/testing/resetConsole';
 
 const BASE = { name: 'Billing portal', secret: '' };
 const OWNER = 'system/s0';
@@ -84,7 +85,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.restoreAllMocks();
-  useUnsavedGuard.getState().reset();
+  resetConsole();
 });
 
 async function keepAnEdit(tenant = 'acme'): Promise<void> {

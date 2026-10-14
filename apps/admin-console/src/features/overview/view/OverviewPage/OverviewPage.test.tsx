@@ -4,14 +4,8 @@ import gridCss from '#/features/overview/view/OverviewPage/OverviewPage.module.c
 import discoveryCss from '#/features/overview/view/DiscoveryPanel/DiscoveryPanel.module.css?raw';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, problem, type Answer } from '#/testing/fakeTransport';
-import {
-  consoleAt,
-  GRACE,
-  renderConsoleAt,
-  resetConsole,
-  whoami,
-  ACME_ADMIN,
-} from '#/testing/renderConsole';
+import { resetConsole } from '#/testing/resetConsole';
+import { consoleAt, GRACE, renderConsoleAt, whoami, ACME_ADMIN } from '#/testing/renderConsole';
 
 afterEach(() => {
   resetConsole();

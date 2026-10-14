@@ -18,9 +18,10 @@ import { useDirtySection } from '#/shared/repository/useDirtySection';
 import { useRecordTab } from '#/shared/repository/useRecordTab';
 import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 import { Tabs } from '#/shared/view/Tabs';
+import { resetConsole } from '#/testing/resetConsole';
 
 afterEach(() => {
-  useUnsavedGuard.getState().reset();
+  resetConsole();
 });
 
 function DirtyGeneral() {

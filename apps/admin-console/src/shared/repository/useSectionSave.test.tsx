@@ -5,7 +5,6 @@ import { afterEach, expect, it } from 'vitest';
 import { z } from 'zod';
 import { storeDrafts } from '#/shared/adapter/draftStorage';
 import { createQueryClient } from '#/shared/repository/queryClient';
-import { useDrafts } from '#/shared/repository/useDrafts';
 import { recordKey } from '#/shared/repository/queryKeys';
 import { useRecord } from '#/shared/repository/useRecord';
 import { useSectionSave, type RefusalReporter } from '#/shared/repository/useSectionSave';
@@ -25,6 +24,7 @@ import {
   problem,
   type Answer,
 } from '#/testing/fakeTransport';
+import { resetConsole } from '#/testing/resetConsole';
 
 const PATH = '/console/api/admin/tenants/acme/clients/c1';
 const GET = `GET ${PATH}`;
@@ -214,9 +214,7 @@ function mount(
 }
 
 afterEach(() => {
-  useToasts.setState({ toasts: [] });
-  useUnsavedGuard.getState().reset();
-  useDrafts.getState().forgetAll();
+  resetConsole();
 });
 
 const general = () => screen.getByRole('region', { name: 'General' });

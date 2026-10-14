@@ -2,7 +2,8 @@ import { screen, within } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, pending } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole, ROOT, whoami } from '#/testing/renderConsole';
+import { resetConsole } from '#/testing/resetConsole';
+import { consoleAt, renderConsoleAt, ROOT, whoami } from '#/testing/renderConsole';
 import { ADMIN } from '#/testing/tenantsFixtures';
 
 afterEach(() => {

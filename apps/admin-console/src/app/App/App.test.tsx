@@ -7,7 +7,6 @@ import { App } from '#/app/App/App';
 import { createConsoleRouter } from '#/app/router';
 import { createQueryClient } from '#/shared/repository/queryClient';
 import { useDialogHost } from '#/shared/repository/useDialogHost';
-import { useDrafts } from '#/shared/repository/useDrafts';
 import { useToasts } from '#/shared/repository/useToasts';
 import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 import {
@@ -19,6 +18,7 @@ import {
   SESSION_ENDED,
   type Answer,
 } from '#/testing/fakeTransport';
+import { resetConsole } from '#/testing/resetConsole';
 
 const GRACE = { tenant: 'acme', subject_id: 's1', username: 'grace' };
 const ROOT = { tenant: 'system', subject_id: 's0', username: 'root' };
@@ -69,9 +69,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  useToasts.setState({ toasts: [] });
-  useUnsavedGuard.getState().reset();
-  useDrafts.getState().forgetAll();
+  resetConsole();
 });
 
 describe('booting from the session', () => {

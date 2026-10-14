@@ -5,9 +5,10 @@ import { Providers } from '#/app/Providers';
 import { UnsavedGuardLayer } from '#/app/UnsavedGuardLayer/UnsavedGuardLayer';
 import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
+import { resetConsole } from '#/testing/resetConsole';
 
 afterEach(() => {
-  useUnsavedGuard.getState().reset();
+  resetConsole();
 });
 
 function holdDeparture(proceed: () => void): void {

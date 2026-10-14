@@ -4,7 +4,8 @@ import { afterEach, expect, it } from 'vitest';
 import { USERNAME_RULE_TEXT } from '#/features/subjects/service';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, offline, problem } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
+import { resetConsole } from '#/testing/resetConsole';
+import { consoleAt, renderConsoleAt, ACME_ADMIN } from '#/testing/renderConsole';
 import { ADA, ADA_ID, S, subjectRoutes } from '#/testing/subjectsFixtures';
 
 afterEach(() => {

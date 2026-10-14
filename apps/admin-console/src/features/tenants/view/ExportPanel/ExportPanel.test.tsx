@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, problem, type Answer } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole, whoami } from '#/testing/renderConsole';
+import { resetConsole } from '#/testing/resetConsole';
+import { consoleAt, renderConsoleAt, whoami } from '#/testing/renderConsole';
 import { ADMIN, EVERY_CAPABILITY, systemRoutes, tenant } from '#/testing/tenantsFixtures';
 
 const saved: string[] = [];

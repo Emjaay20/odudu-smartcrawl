@@ -6,7 +6,8 @@ import { json } from '#/testing/fakeTransport';
 import { record } from '#/testing/groupAnswers';
 import { adminRole, ENG, G, groupRoutes, mapped } from '#/testing/groupsFixtures';
 import { AUDITOR, PORTAL_READER } from '#/testing/rolesFixtures';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { resetConsole } from '#/testing/resetConsole';
+import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { assigned, S } from '#/testing/subjectsFixtures';
 
 afterEach(() => {

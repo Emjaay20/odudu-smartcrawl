@@ -2,7 +2,8 @@ import { screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
 import { pending } from '#/testing/fakeTransport';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { resetConsole } from '#/testing/resetConsole';
+import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { ADA_AT, subjectRoutes } from '#/testing/subjectsFixtures';
 
 afterEach(() => {

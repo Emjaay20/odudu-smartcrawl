@@ -4,13 +4,13 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 import { z } from 'zod';
-import { useDrafts, type DraftFields } from '#/shared/repository/useDrafts';
+import { type DraftFields } from '#/shared/repository/useDrafts';
 import { useSectionDraft } from '#/shared/repository/useSectionDraft';
-import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 import { TextField } from '#/shared/view/Field';
 import { Section } from '#/shared/view/Section';
 import { json, problem, type Answer } from '#/testing/fakeTransport';
 import { mountGuardedPage } from '#/testing/mountGuardedPage';
+import { resetConsole } from '#/testing/resetConsole';
 
 const GRACE = { tenant: 'acme', subject_id: 's1', username: 'grace' };
 const HOPPER = { tenant: 'acme', subject_id: 's2', username: 'hopper' };
@@ -70,8 +70,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  useUnsavedGuard.getState().reset();
-  useDrafts.getState().forgetAll();
+  resetConsole();
 });
 
 async function editThenReplace() {

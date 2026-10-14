@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { json, type Answer, type Sent } from '#/testing/fakeTransport';
 import { renderCount, resetRenderCount } from '#/testing/renderCounter';
-import { renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { resetConsole } from '#/testing/resetConsole';
+import { renderConsoleAt } from '#/testing/renderConsole';
 import { ADMIN, administratorRoutes, systemRoutes, tenant } from '#/testing/tenantsFixtures';
 import { ADA, ADA_AT, ADA_ID, S, subject, subjectRoutes } from '#/testing/subjectsFixtures';
 

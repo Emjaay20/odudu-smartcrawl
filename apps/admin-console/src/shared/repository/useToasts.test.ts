@@ -1,9 +1,10 @@
 import { renderHook } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
 import { useToast, useToasts } from '#/shared/repository/useToasts';
+import { resetConsole } from '#/testing/resetConsole';
 
 afterEach(() => {
-  useToasts.setState({ toasts: [] });
+  resetConsole();
 });
 
 it('queues toasts in order, each with its own id', () => {

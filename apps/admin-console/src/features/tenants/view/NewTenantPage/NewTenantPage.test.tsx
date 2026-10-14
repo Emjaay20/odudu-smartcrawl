@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { inTurn, json, offline, problem, type Sent } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole, whoami } from '#/testing/renderConsole';
+import { resetConsole } from '#/testing/resetConsole';
+import { consoleAt, renderConsoleAt, whoami } from '#/testing/renderConsole';
 import { ADMIN, administratorRoutes, systemRoutes, tenant } from '#/testing/tenantsFixtures';
 
 const AT = '/console/system/new-tenant';
