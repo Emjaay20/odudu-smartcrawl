@@ -9,6 +9,7 @@
   "exclude": [
     "lint/fixtures/console-reads-not-mutations/**",
     "lint/fixtures/console-folder-imports/**",
-    "lint/fixtures/console-no-duplicate-exports/**"
+    "lint/fixtures/console-no-duplicate-exports/**",
+    "lint/fixtures/console-no-module-state/**"
   ]
 }
