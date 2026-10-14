@@ -225,8 +225,12 @@ export {
   type InstallationRow,
 } from '#/features/clients/service/installation';
 export {
+  answerShown,
+  askedAfter,
+  askedParts,
   artefactsOf,
   evaluateAllowed,
+  evaluationOf,
   evaluatedScope,
   EVALUATE_CAPABILITY,
   EVALUATE_HEADING,
@@ -238,4 +242,6 @@ export {
   SCOPE_RULE,
   SUBJECT_PICKER_LABEL,
   type Artefact,
+  type Asked,
+  type Evaluation,
 } from '#/features/clients/service/evaluate';

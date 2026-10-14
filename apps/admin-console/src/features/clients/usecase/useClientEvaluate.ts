@@ -4,11 +4,11 @@ import { useAuthority } from '#/features/session';
 import { useEvaluation } from '#/features/clients/repository/useClientEvaluation';
 import { useSubjectPicker } from '#/shared/repository/useSubjectPicker';
 import {
-  artefactsOf,
+  answerShown,
+  askedAfter,
   evaluateAllowed,
-  evaluatedScope,
-  evaluateFailureText,
   type Artefact,
+  type Asked,
 } from '#/features/clients/service';
 import { lastChosen, type PickerState } from '#/shared/service/picker';
 
@@ -36,11 +36,8 @@ export function useClientEvaluate(tenant: string, client: Client): ClientEvaluat
   const picker = useSubjectPicker(tenant);
   const [chosenId, setChosenId] = useState<string | null>(null);
   const [scope, setScope] = useState('');
-  const [asked, setAsked] = useState<{ subject: string; scope: string; press: number } | null>(
-    null,
-  );
+  const [asked, setAsked] = useState<Asked | null>(null);
   const evaluation = useEvaluation(tenant, client.id, asked);
-  const answer = evaluation.result;
   return {
     picker,
     chosen: picker.options.find((subject) => subject.id === chosenId) ?? null,
@@ -50,12 +47,9 @@ export function useClientEvaluate(tenant: string, client: Client): ClientEvaluat
     scope,
     setScope,
     evaluate: () => {
-      if (chosenId !== null)
-        setAsked((was) => ({ subject: chosenId, scope, press: (was?.press ?? 0) + 1 }));
+      if (chosenId !== null) setAsked((was) => askedAfter(was, chosenId, scope));
     },
     busy: evaluation.status === 'loading',
-    problem: answer === null || answer.ok ? null : evaluateFailureText(answer),
-    worked: answer?.ok === true ? evaluatedScope(answer.data) : null,
-    artefacts: answer?.ok === true ? artefactsOf(answer.data) : [],
+    ...answerShown(evaluation.result),
   };
 }
