@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
+import { failureOfSettled, restOf, type Settled } from '#/shared/service/settled';
 import type { Gateway, GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
 import { useTransport } from '#/shared/transport/useTransport';
 
@@ -15,8 +16,6 @@ export interface SecretOnce<A, Rest> {
   failure: GatewayFailure | null;
   close: () => void;
 }
-
-type Settled<Rest> = { ok: true; rest: Rest } | { ok: false; failure: GatewayFailure };
 
 // A write whose answer carries one secret shown once; an answer carrying
 // several, as an import's does, shows them in a dialog of its own. The secret is split off
@@ -59,8 +58,8 @@ export function useSecretOnce<A, R, Rest>({
     },
     busy: mutation.isPending,
     secret,
-    outcome: settled?.ok === true ? settled.rest : null,
-    failure: settled?.ok === false ? settled.failure : null,
+    outcome: restOf(settled),
+    failure: failureOfSettled(settled),
     close: () => {
       setSecret(null);
     },

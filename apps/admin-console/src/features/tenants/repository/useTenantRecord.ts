@@ -8,6 +8,7 @@ import { useRecord, type RecordEntry, type RecordState } from '#/shared/reposito
 import type { SaveInput } from '#/shared/repository/useSectionSave';
 import { isStale } from '#/shared/service/failure';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
+import { failureOf } from '#/shared/service/settled';
 import type { Gateway, GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
 import { useTransport } from '#/shared/transport/useTransport';
 
@@ -63,7 +64,7 @@ export function useTenantEnabled(name: string, etag: string | null): EnabledChan
   const settled = mutation.data;
   return {
     busy: mutation.isPending,
-    failure: settled !== undefined && !settled.ok ? settled : null,
+    failure: failureOf(settled),
     set: (enabled) => mutation.mutateAsync(enabled),
   };
 }
