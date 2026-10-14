@@ -7,6 +7,7 @@ import {
   GRANT_NEEDS,
   HOLDINGS_REQUIRED,
   holdingsProblem,
+  subjectlessRequest,
   tenantAdminCarries,
   tenantAdminRole,
   withRole,
@@ -99,5 +100,12 @@ describe('the holdings an administrator is given', () => {
 describe('what changing what an administrator holds needs', () => {
   it('is each distinct capability the grant requests make', () => {
     expect([...GRANT_NEEDS].sort()).toEqual(['manage-clients', 'manage-users', 'view-users']);
+  });
+});
+
+describe('a call that ran with no subject', () => {
+  it('is reported against the request it would have made', () => {
+    expect(subjectlessRequest('grant')).toBe('set-roles');
+    expect(subjectlessRequest('password')).toBe('password');
   });
 });

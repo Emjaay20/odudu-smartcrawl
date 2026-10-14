@@ -19,6 +19,7 @@ import {
 } from '#/shared/repository/administratorRoles';
 import {
   administratorCalls,
+  subjectlessRequest,
   type AdministratorCall,
   type AdministratorRequest,
 } from '#/shared/service/administrators';
@@ -131,7 +132,7 @@ async function runCall(
       ok: false,
       refused: refusedAt(
         defect('console defect: an administrator step ran with no subject'),
-        call === 'grant' ? 'set-roles' : 'password',
+        subjectlessRequest(call),
       ),
     };
   }

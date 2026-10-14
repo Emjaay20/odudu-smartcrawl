@@ -19,6 +19,11 @@ export function tenantAdminCarries(tenant: string): readonly AdminCapability[] {
 
 export type AdministratorCall = 'create' | 'grant' | 'password';
 
+// The request a refused call is reported against, when it ran with no subject.
+export function subjectlessRequest(call: 'grant' | 'password'): AdministratorRequest {
+  return call === 'grant' ? 'set-roles' : 'password';
+}
+
 // Each call is one step a reload can land between. The one-time password is
 // issued last: a lost answer is replaced by issuing another, which nothing
 // else here can say of itself.
