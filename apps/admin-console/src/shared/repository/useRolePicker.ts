@@ -1,6 +1,7 @@
 import type { Role } from '@odudu/contracts/admin';
 import { readRolePage } from '#/shared/adapter/directory';
 import { usePicker } from '#/shared/repository/usePicker';
+import { optionalFilter } from '#/shared/service/filters';
 import type { PickerState } from '#/shared/service/picker';
 
 // `client` narrows to one owner: `tenant` for the tenant's own roles, or a
@@ -12,7 +13,7 @@ export function useRolePicker(
   return usePicker({
     tenant,
     resource: 'roles',
-    fixed: client === undefined ? {} : { client },
+    fixed: optionalFilter('client', client),
     read: (gateway, query) => readRolePage(gateway, tenant, query),
   });
 }

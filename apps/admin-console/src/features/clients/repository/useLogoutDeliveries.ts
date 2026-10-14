@@ -1,5 +1,6 @@
 import { readLogoutDeliveries } from '#/features/clients/adapter/operations';
 import { deliveriesKey } from '#/shared/repository/queryKeys';
+import { optionalFilter } from '#/shared/service/filters';
 import { useListPages } from '#/shared/repository/useResourceList';
 
 // The deliveries of one status, or of any, a page at a time; the list reads
@@ -7,7 +8,7 @@ import { useListPages } from '#/shared/repository/useResourceList';
 export function useLogoutDeliveries(tenant: string, clientDbId: string, status: string | null) {
   return useListPages({
     key: deliveriesKey(tenant, clientDbId),
-    query: new URLSearchParams(status === null ? {} : { status }),
+    query: new URLSearchParams(optionalFilter('status', status)),
     cursor: undefined,
     read: (gateway, query) => readLogoutDeliveries(gateway, tenant, clientDbId, query),
   });
