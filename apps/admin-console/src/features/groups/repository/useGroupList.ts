@@ -1,5 +1,6 @@
 import type { Group } from '@odudu/contracts/admin';
 import { readGroupCount, readGroupPage } from '#/features/groups/adapter/groups';
+import { groupListScope } from '#/features/groups/service';
 import { listKey } from '#/shared/repository/queryKeys';
 import { useListPages, useResourceList } from '#/shared/repository/useResourceList';
 import { useUrlSearch } from '#/shared/repository/useUrlSearch';
@@ -13,12 +14,12 @@ export interface GroupList {
 
 export function useGroupList(tenant: string): GroupList {
   const { params } = useUrlSearch();
-  const searching = (params.get('q') ?? '') !== '';
+  const { searching, fixed } = groupListScope(params.get('q'));
   const list = useResourceList({
     tenant,
     resource: 'groups',
     search: ['name'],
-    fixed: searching ? {} : { parent: 'root' },
+    fixed,
     read: (gateway, query) => readGroupPage(gateway, tenant, query),
     count: (gateway, query) => readGroupCount(gateway, tenant, query),
   });

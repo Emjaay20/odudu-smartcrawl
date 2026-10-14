@@ -19,6 +19,7 @@ export {
   groupRolesRecord,
   TAB_RECORDS,
 } from '#/features/groups/service/tabs';
+export { groupListScope } from '#/features/groups/service/list';
 export {
   NAME_FIXED,
   PLACE_LABEL,
