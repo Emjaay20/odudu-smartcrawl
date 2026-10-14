@@ -35,6 +35,15 @@ it("keeps the chosen tab in the URL, and leaves the last tab's list behind", asy
   expect(router.state.location.href).toBe('/clients/c1?tab=tokens');
 });
 
+it("keeps a tab's list when its own tab is chosen again", async () => {
+  const user = userEvent.setup();
+  const router = mount('/clients/c1?q=x&after=b2Zmc2V0LTE.dGFnMQ');
+  expect(await screen.findByText('General panel')).toBeVisible();
+  const before = router.state.location.href;
+  await user.click(screen.getByRole('tab', { name: 'General' }));
+  expect(router.state.location.href).toBe(before);
+});
+
 it('opens on the tab the URL names', async () => {
   mount('/clients/c1?tab=tokens');
   expect(await screen.findByText('Tokens panel')).toBeVisible();

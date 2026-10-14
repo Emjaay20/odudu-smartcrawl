@@ -32,6 +32,21 @@ it('lists roles, a client role and an admin capability told apart from a tenant 
   );
 });
 
+it('searches by the start of a name on the server, and shows only the roles it matches', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(AT, roleRoutes());
+  const table = await screen.findByRole('grid', { name: 'Roles' });
+  expect(within(table).getAllByRole('row', { name: /reader/u })).toHaveLength(2);
+  await user.type(screen.getByRole('searchbox', { name: /Search/u }), 'aud{Enter}');
+  await waitFor(() => {
+    expect(sent.some((s) => s.path === R && s.search.get('name') === 'aud')).toBe(true);
+  });
+  expect(await screen.findByRole('row', { name: /auditor/u })).toBeVisible();
+  await waitFor(() => {
+    expect(screen.queryAllByRole('row', { name: /reader/u })).toHaveLength(0);
+  });
+});
+
 it('narrows to the tenant roles, and opens a role from its row', async () => {
   const user = userEvent.setup();
   const { sent, router } = renderConsoleAt(AT, roleRoutes());

@@ -32,10 +32,9 @@ it('searches by the start of a name on the server, and opens a scope from its ro
   await waitFor(() => {
     expect(sent.some((s) => s.path === SC && s.search.get('name') === 'bil')).toBe(true);
   });
-  await waitFor(() => {
-    expect(screen.queryByRole('row', { name: /openid/u })).toBeNull();
-  });
-  await user.click(await screen.findByRole('row', { name: /billing/u }));
+  const billing = await screen.findByRole('row', { name: /billing/u });
+  expect(screen.queryByRole('row', { name: /openid/u })).toBeNull();
+  await user.click(billing);
   await waitFor(() => {
     expect(router.state.location.pathname).toBe('/acme/scopes/s-bill');
   });
