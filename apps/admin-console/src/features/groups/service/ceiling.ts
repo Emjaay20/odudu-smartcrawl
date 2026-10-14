@@ -9,6 +9,11 @@ import { type Readiness } from '#/features/groups/service/loss';
 
 export type GroupRead = { status: 'none' } | Loaded<GroupRecord>;
 
+// A group named by an id that may not be there: none for none, else what was read.
+export function namedGroupRead(id: string | null, read: GroupRead): GroupRead {
+  return id === null ? { status: 'none' } : read;
+}
+
 // What its parent hands down beside what the group itself carries, and the
 // caller's own capabilities: every ceiling on its writes is judged by them,
 // so none is offered until all three are known.

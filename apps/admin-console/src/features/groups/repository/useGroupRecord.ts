@@ -7,7 +7,12 @@ import {
   setGroupDefault,
   setGroupRoles,
 } from '#/features/groups/adapter/groups';
-import { groupRecord, groupRolesRecord, type GroupRead } from '#/features/groups/service';
+import {
+  groupRecord,
+  groupRolesRecord,
+  namedGroupRead,
+  type GroupRead,
+} from '#/features/groups/service';
 import {
   GROUP_KIND,
   groupKey,
@@ -56,7 +61,7 @@ export function useGroupNamed(tenant: string, id: string | null): GroupRead {
   const read = useRead(groupKey(tenant, id), id !== null, () =>
     id === null ? Promise.resolve(UNASKED) : readGroup(gateway, tenant, id),
   );
-  return id === null ? { status: 'none' } : read;
+  return namedGroupRead(id, read);
 }
 
 // What a group hands out follows from its roles and its place, so every

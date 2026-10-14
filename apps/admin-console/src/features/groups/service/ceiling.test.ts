@@ -5,6 +5,7 @@ import {
   createUnderHref,
   groupCeiling,
   groupReadiness,
+  namedGroupRead,
   newGroupPlace,
   parentPathOf,
   parentPlace,
@@ -145,5 +146,13 @@ describe('createBlocked', () => {
     expect(createBlocked(false, null)).toBe(false);
     expect(createBlocked(true, null)).toBe(true);
     expect(createBlocked(false, 'Checking what the parent hands out first.')).toBe(true);
+  });
+});
+
+describe('a group named by an id', () => {
+  it('is none for none, and what was read for an id', () => {
+    const read = { status: 'loading' } as const;
+    expect(namedGroupRead(null, read)).toEqual({ status: 'none' });
+    expect(namedGroupRead('g-eng', read)).toBe(read);
   });
 });

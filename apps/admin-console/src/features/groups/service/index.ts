@@ -40,6 +40,7 @@ export {
 export { type Change, selfLoss, lossOf, type Readiness } from '#/features/groups/service/loss';
 export {
   type GroupRead,
+  namedGroupRead,
   type Ceiling,
   groupCeiling,
   createUnderHref,
