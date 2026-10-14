@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 import { loadDrafts, storeDrafts } from '#/shared/adapter/draftStorage';
 import {
-  keepableValues,
+  foreignTo,
+  isKept,
+  keptDrafts,
   withoutDraft,
   type DraftField,
   type DraftFields,
@@ -44,31 +46,29 @@ export const useDrafts = create<Drafts>()((_set, get) => {
       };
     },
     keepDirty: (owner) => {
-      const previous = loadDrafts();
-      const drafts = previous?.owner === owner ? { ...previous.drafts } : {};
-      let kept = 0;
-      for (const source of sources) {
-        if (!source.dirty()) continue;
-        const values = keepableValues(source.fields());
-        if (Object.keys(values).length === 0) continue;
-        drafts[source.record] = {
-          ...drafts[source.record],
-          [source.section]: { values, etag: source.etag() },
-        };
-        kept += 1;
-      }
+      const { drafts, kept } = keptDrafts(
+        loadDrafts(),
+        owner,
+        [...sources].map((source) => ({
+          record: source.record,
+          section: source.section,
+          dirty: source.dirty(),
+          fields: source.fields(),
+          etag: source.etag(),
+        })),
+      );
       storeDrafts({ owner, drafts });
       return kept;
     },
     restore: (record, section) => loadDrafts()?.drafts[record]?.[section] ?? null,
     forget: (record, section) => {
       const stored = loadDrafts();
-      if (stored?.drafts[record]?.[section] === undefined) return;
+      if (stored === null || !isKept(stored, record, section)) return;
       storeDrafts({ owner: stored.owner, drafts: withoutDraft(stored.drafts, record, section) });
     },
     adopt: (owner) => {
       const stored = loadDrafts();
-      if (stored !== null && stored.owner !== owner) storeDrafts(null);
+      if (foreignTo(stored, owner)) storeDrafts(null);
     },
     forgetAll: () => {
       storeDrafts(null);

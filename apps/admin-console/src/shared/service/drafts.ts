@@ -50,3 +50,52 @@ export function withoutDraft(
     rest.length > 0 ? [...others, [record, Object.fromEntries(rest)]] : others,
   );
 }
+
+// A section as the drafts store reads it from the section itself.
+export interface DraftSnapshot {
+  record: string;
+  section: string;
+  dirty: boolean;
+  fields: DraftFields;
+  etag: string | null;
+}
+
+// What to keep when a session ends: each dirty section's plain edits, added
+// to what the same owner kept before and dropping another owner's.
+export function keptDrafts(
+  previous: { owner: string; drafts: StoredRecords } | null,
+  owner: string,
+  snapshots: readonly DraftSnapshot[],
+): { drafts: StoredRecords; kept: number } {
+  const drafts: Record<string, Record<string, KeptDraft>> = {};
+  if (previous?.owner === owner) {
+    for (const [record, sections] of Object.entries(previous.drafts)) {
+      drafts[record] = { ...sections };
+    }
+  }
+  let kept = 0;
+  for (const snapshot of snapshots) {
+    if (!snapshot.dirty) continue;
+    const values = keepableValues(snapshot.fields);
+    if (Object.keys(values).length === 0) continue;
+    drafts[snapshot.record] = {
+      ...drafts[snapshot.record],
+      [snapshot.section]: { values, etag: snapshot.etag },
+    };
+    kept += 1;
+  }
+  return { drafts, kept };
+}
+
+export function isKept(
+  stored: { drafts: StoredRecords },
+  record: string,
+  section: string,
+): boolean {
+  return stored.drafts[record]?.[section] !== undefined;
+}
+
+// A draft another administrator left in this tab.
+export function foreignTo(stored: { owner: string } | null, owner: string): boolean {
+  return stored !== null && stored.owner !== owner;
+}
