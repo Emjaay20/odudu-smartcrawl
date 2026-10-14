@@ -3,6 +3,7 @@ import {
   compareTests,
   explanationOf,
   loadOf,
+  readRules,
   rereadSets,
   timingBySpec,
   requestLine,
@@ -222,5 +223,31 @@ describe('timing', () => {
       ]),
     );
     expect(load).toEqual({ requests: 3, bytes: 150, ttfb: 15, total: 35 });
+  });
+});
+
+describe('the registered rules', () => {
+  const rules = readRules(
+    new URL('../../apps/admin-console/e2e/trace-registered.json', import.meta.url),
+  );
+
+  it('are each named once and say why', () => {
+    expect(rules.length).toBeGreaterThan(0);
+    expect(new Set(rules.map((each) => each.id)).size).toBe(rules.length);
+    expect(rules.every((each) => each.why.length > 20)).toBe(true);
+  });
+
+  it('explain the no-store a sign-in page gained, and nothing that also changed its status', () => {
+    const same = {
+      test: 'a',
+      area: 'requests' as const,
+      type: 'changed' as const,
+      base: 'GET /tenants/t/protocol/openid-connect/auth?x=1 -> 200',
+      final: 'GET /tenants/t/protocol/openid-connect/auth?x=1 -> 200 cache=no-store',
+    };
+    expect(explanationOf(same, rules)).toContain('no-store');
+    expect(
+      explanationOf({ ...same, final: same.final.replace('-> 200', '-> 500') }, rules),
+    ).toBeNull();
   });
 });

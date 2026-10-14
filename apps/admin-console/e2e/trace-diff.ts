@@ -316,6 +316,8 @@ const rule = z.object({
   test: z.string().optional(),
   line: z.string().optional(),
   base: z.string().optional(),
+  // The final line is the base line with this appended and nothing else changed.
+  adds: z.string().optional(),
   after: z.string().optional(),
 });
 
@@ -345,6 +347,7 @@ function matches(each: Rule, difference: Difference): boolean {
     (each.type === undefined || each.type === difference.type) &&
     (each.test === undefined || new RegExp(each.test, 'u').test(difference.test)) &&
     (each.line === undefined || new RegExp(each.line, 'u').test(text)) &&
+    (each.adds === undefined || difference.final === `${difference.base ?? ''} ${each.adds}`) &&
     (each.base === undefined || new RegExp(each.base, 'u').test(difference.base ?? '')) &&
     (each.after === undefined || new RegExp(each.after, 'u').test(difference.after ?? ''))
   );
