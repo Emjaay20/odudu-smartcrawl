@@ -1,5 +1,14 @@
 import { randomBytes } from 'node:crypto';
-import { psql, publish, seed, type Account, type Seeded, inTenant, UNBROKEN } from './stack';
+import {
+  psql,
+  publish,
+  seed,
+  type Account,
+  type Seeded,
+  inSubject,
+  inTenant,
+  UNBROKEN,
+} from './stack';
 
 const TENANT_ADMIN = 'odudu-admin:tenant-admin';
 
@@ -221,6 +230,31 @@ function nest(tenant: string, parent: string, child: string): void {
   );
 }
 
+// The audit tenant's trail: a hundred and twenty rows that page, a request
+// of two rows, a change naming the tenant's client with a long value in its
+// detail, and a row written by a system administrator. Returns the client's id.
+function seedAuditTrail(audit: Seeded['audit']): string {
+  const tenant = inTenant(audit.admin.tenant);
+  const actor = inSubject(audit.admin.tenant, audit.admin.username);
+  const client = psql(
+    `select id from clients where tenant_id = ${tenant} and client_id = 'portal'`,
+  );
+  const long = 'long-value-'.repeat(40);
+  psql(
+    `insert into audit_events (id, tenant_id, occurred_at, event_type, action, outcome, actor_tenant_id, actor_subject_id, resource_type, resource_id, request_id, ip, detail)
+     select gen_random_uuid(), ${tenant}, now() - interval '2 days' - n * interval '1 minute', 'admin_mutation', 'e2e.bulk', 'allowed', ${tenant}, ${actor}, 'e2e', 'bulk-' || n, 'bulk-' || n, '203.0.113.7', '{}'::jsonb
+       from generate_series(1, 120) n`,
+  );
+  psql(
+    `insert into audit_events (id, tenant_id, occurred_at, event_type, action, outcome, actor_tenant_id, actor_subject_id, resource_type, resource_id, request_id, ip, detail)
+     values
+      (gen_random_uuid(), ${tenant}, now() - interval '1 day', 'admin_mutation', 'e2e.client_update', 'allowed', ${tenant}, ${actor}, 'client', '${client}', 'e2e-shared-request', '203.0.113.8', '{"enabled":{"before":true,"after":false},"note":"${long}"}'::jsonb),
+      (gen_random_uuid(), ${tenant}, now() - interval '1 day' - interval '1 second', 'admin_mutation', 'e2e.client_rotate', 'refused', ${tenant}, ${actor}, 'client', '${client}', 'e2e-shared-request', '203.0.113.8', '{"denied":["manage-clients"]}'::jsonb),
+      (gen_random_uuid(), ${tenant}, now() - interval '1 day' - interval '2 seconds', 'admin_mutation', 'e2e.from_elsewhere', 'allowed', (select id from tenants where name = 'system'), gen_random_uuid(), 'tenant', ${tenant}::text, 'e2e-elsewhere-request', '198.51.100.4', '{}'::jsonb)`,
+  );
+  return client;
+}
+
 // The keys tenants each hold the one active key a tenant starts with.
 // The tokens tenant holds five live tokens, of one to five uses, which the
 // tests revoke and mint among; the flow tenants hold the flow a tenant starts
@@ -340,6 +374,12 @@ export default function globalSetup(): void {
     admin: { tenant: `${run}-p`, username: 'cantor', password: password() },
     tenantOnly: { tenant: `${run}-p`, username: 'dedekind', password: password() },
     clientsOnly: { tenant: `${run}-p`, username: 'hilbert', password: password() },
+  };
+  const audit = {
+    admin: { tenant: `${run}-u`, username: 'tarski', password: password() },
+    viewer: { tenant: `${run}-u`, username: 'church', password: password() },
+    usersOnly: { tenant: `${run}-u`, username: 'godel', password: password() },
+    clientId: '',
   };
   const access = {
     tokens: {
@@ -475,6 +515,22 @@ export default function globalSetup(): void {
   subject(scopes.clientsOnly);
   grant(scopes.clientsOnly, 'odudu-admin:manage-clients');
   seedAccess(access);
+  seed(['tenant', '--name', audit.admin.tenant]);
+  administrator(audit.admin);
+  subject(audit.viewer);
+  grant(audit.viewer, 'odudu-admin:view-audit');
+  subject(audit.usersOnly);
+  grant(audit.usersOnly, 'odudu-admin:view-users');
+  seed([
+    'client',
+    '--tenant',
+    audit.admin.tenant,
+    '--client-id',
+    'portal',
+    '--public',
+    '--redirect-uri',
+    'https://portal.example/callback',
+  ]);
   seedConfig(config);
   seedGroupsRoles(groupsRoles.admin.tenant);
   administrator(groupsRoles.admin);
@@ -497,6 +553,7 @@ export default function globalSetup(): void {
   seed(['admin', '--username', `boot-${run}`]);
   administrator(system);
   administrator(resumer);
+  audit.clientId = seedAuditTrail(audit);
   subject(systemAdmins.candidate);
   administrator(systemAdmins.revokee);
   subject(systemAdmins.limited);
@@ -520,6 +577,7 @@ export default function globalSetup(): void {
     groupsRoles,
     scopes,
     access,
+    audit,
     config,
   });
 }

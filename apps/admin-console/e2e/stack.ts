@@ -216,6 +216,17 @@ const seededSchema = z.object({
       fixedClientsOnly: account,
     }),
   }),
+  // A tenant of its own for the Audit tests, with its trail seeded.
+  audit: z.object({
+    // Holds tenant-admin there.
+    admin: account,
+    // Holds view-audit alone: reads the trail, but no subject's name.
+    viewer: account,
+    // Holds view-users alone: not the audit trail.
+    usersOnly: account,
+    // The tenant's client the seeded rows name, by its audit resource id.
+    clientId: z.string(),
+  }),
   // A tenant of its own for the Scopes tests.
   scopes: z.object({
     // Holds tenant-admin there.
