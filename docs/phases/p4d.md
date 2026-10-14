@@ -2068,6 +2068,65 @@ success says the relay accepted the message, and that acceptance is not delivery
 lost answer is not sent again. The browser tests cover the refusal only: loopback
 is always refused, and the e2e stack has no public SMTP sink to accept one.
 
+## Part 4 — the behaviour gate for the consolidation
+
+Unit and e2e tests passed at every commit of the consolidation (B1 to B4,
+SB1 to SB3); none of them asserts what the console _sends_ or what it reads
+again. `apps/admin-console/e2e/` can record that, and a later consolidation
+reruns it the same way.
+
+**Recording.** `E2E_TRACE=<file>` makes `e2e/trace.ts` append one line per
+test to the file: each fetch and navigation (method, path with ids, run names
+and tokens replaced, query, `If-Match` and `x-` header kinds, content type,
+body shape with secrets by length class, status, `cache-control`), what the
+page wrote to browser storage, where focus went, and the test's wall time with
+each request's first-byte time and bytes. Unset, the fixture is not automatic
+and a normal run sets up nothing. `run.sh` takes `E2E_COMPOSE_PROJECT` and
+`E2E_PLAYWRIGHT` (a playwright binary, so a scratch tree needs no install).
+
+```
+git worktree add --detach <dir> <base>        # link node_modules and copy infra/docker/.env
+git diff -U0 <head> -- apps/admin-console/e2e/{fixtures.ts,run.sh,trace*} | (cd <dir> && git apply --unidiff-zero)
+E2E_TRACE=base.jsonl E2E_COMPOSE_PROJECT=x-base ODUDU_HOST_PORT=3092 POSTGRES_HOST_PORT=5492 \
+  E2E_PLAYWRIGHT=<playwright> <dir>/apps/admin-console/e2e/run.sh --workers=1   # then the same in this tree
+node apps/admin-console/e2e/trace-diff.ts base.jsonl final.jsonl           # exit 1 while a difference is unexplained
+node apps/admin-console/e2e/trace-diff.ts --timing base.jsonl final.jsonl  # wall time per spec, requests, bytes
+```
+
+Differences are matched against `e2e/trace-registered.json`: each rule is
+`registered` (a deliberate change) or `benign` (a race, with the reason). A
+request cut short by navigation is explained in code. Record the base twice
+and compare the two: what differs there is the noise floor.
+
+**Registered changes** (consolidation base `a694fcc3`):
+
+- A client's deletion reads again the lists it cascades to (roles, scope
+  clients, held capabilities, holders). No e2e test mounts those views, so
+  the trace shows nothing; `useClientDeletion.test.tsx` pins it.
+- A record deletion's `confirm` does nothing unless the dialog was asked;
+  `useGroupNamed` reads nothing while disabled; `useCreateScope` reports a
+  part whose read had no ETag as missed. None is reachable by the browser tests.
+- Every page the server renders is sent `cache-control: no-store`, and the
+  sign-in refusal page offers a restart link (`restart-sign-in.spec.ts`).
+- Visual: signing keys sections have a 24 px gap and the lane's failure line
+  is in the danger colour at 13 px; a flow step's name is 13 px; registration
+  tokens' Mint is one card (-8 px at 1280, -30 px at 390); email panel headings
+  are 15 px; the tenant General fixed list wraps long names. The 68-page,
+  light and dark, 1280 and 390 px set differs only by those (keys +72 px,
+  flow -12 px, tokens -8 and -30 px, the failure colour); the screenshot
+  spec was not kept in the repository.
+
+**Result.** 175 tests at both builds, 5,142 requests each; 258 differences
+(196 `no-store`, 59 timing, 3 benign), all explained. Two recordings of the base differ
+by some 75 timing differences and, now and then, a whole overview read.
+
+**Timing.** Three sequential runs on one machine, `--workers=1`: base 20.0
+and 18.7 minutes, head 19.2; per spec the ratio is 0.83 to 1.12 either way.
+With two workers, as CI runs: 10.5 and 10.5 minutes. A CI run that took 1.5
+times as long as its base is therefore not this code. `expectAccessible`
+(four axe runs) is 60% of the system-administrator tenant test's 17 s, which
+is why it is the first to meet a slow runner's 30 s.
+
 ## Performance
 
 ### The React Compiler
