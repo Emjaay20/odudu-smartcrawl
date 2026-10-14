@@ -13,7 +13,7 @@ import {
   expectNowhere,
   PHONE,
 } from './fixtures';
-import { psql, seeded, type Account, sqlText } from './stack';
+import { psql, seeded, type Account, sqlText, inSubject } from './stack';
 
 const { admin, limited, resumer, system, systemAdmins, tenants } = seeded();
 
@@ -359,11 +359,7 @@ test('a session that ends mid-edit restores the draft after sign-in and saves no
   await signInToSystem(page, resumer);
   await page.goto(`/console/system/tenants/${name}`);
   await page.getByRole('textbox', { name: 'Display name' }).fill('Kept across sign-in');
-  psql(
-    `delete from console_sessions where subject_id in (select u.subject_id from users u ` +
-      `join tenants t on t.id = u.tenant_id where t.name = 'system' ` +
-      `and u.username = ${sqlText(resumer.username)})`,
-  );
+  psql(`delete from console_sessions where subject_id in ${inSubject('system', resumer.username)}`);
   const back = page.waitForResponse(
     (response) =>
       new URL(response.url()).pathname === '/console/api/session' && response.status() === 200,

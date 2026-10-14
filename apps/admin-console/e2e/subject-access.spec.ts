@@ -11,7 +11,7 @@ import {
   tabsWithin,
   PHONE,
 } from './fixtures';
-import { psql, seed, seeded, sqlText, subjectIdOf } from './stack';
+import { psql, seed, seeded, sqlText, subjectIdOf, inSubject } from './stack';
 
 const { subjects, system } = seeded();
 const { admin, viewer } = subjects;
@@ -287,11 +287,7 @@ test('a Profile edit made as the session ends is restored after signing in again
   await openSubject(page, drafted, 'profile');
   const name = page.getByRole('textbox', { name: 'Full name' });
   await name.fill('Sophie Germain');
-  psql(
-    `delete from console_sessions where subject_id in (select u.subject_id from users u ` +
-      `join tenants t on t.id = u.tenant_id where t.name = ${sqlText(TENANT)} ` +
-      `and u.username = ${sqlText(resumer.username)})`,
-  );
+  psql(`delete from console_sessions where subject_id in ${inSubject(TENANT, resumer.username)}`);
   const back = page.waitForResponse(
     (response) =>
       new URL(response.url()).pathname === '/console/api/session' && response.status() === 200,

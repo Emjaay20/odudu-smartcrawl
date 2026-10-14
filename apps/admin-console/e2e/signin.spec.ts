@@ -8,17 +8,15 @@ import {
   signInAtTenant,
   test,
 } from './fixtures';
-import { psql, seeded, type Account, sqlText } from './stack';
+import { psql, seeded, type Account, inSubject } from './stack';
 
 const { admin, expiring, forced, other, system } = seeded();
 
-const SUBJECT = (account: Account): string =>
-  `select u.subject_id from users u join tenants t on t.id = u.tenant_id ` +
-  `where t.name = ${sqlText(account.tenant)} and u.username = ${sqlText(account.username)}`;
-
 function consoleSessions(account: Account): number {
   return Number(
-    psql(`select count(*) from console_sessions where subject_id in (${SUBJECT(account)})`),
+    psql(
+      `select count(*) from console_sessions where subject_id in ${inSubject(account.tenant, account.username)}`,
+    ),
   );
 }
 
@@ -130,7 +128,9 @@ test('a session that ends on the server signs in again and comes back to the pag
   });
 
   expect(consoleSessions(expiring)).toBeGreaterThan(0);
-  psql(`delete from console_sessions where subject_id in (${SUBJECT(expiring)})`);
+  psql(
+    `delete from console_sessions where subject_id in ${inSubject(expiring.tenant, expiring.username)}`,
+  );
   expect(consoleSessions(expiring)).toBe(0);
   // Only the page that comes back from the sign-in finds a session again.
   const back = page.waitForResponse(

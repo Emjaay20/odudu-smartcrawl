@@ -40,10 +40,16 @@ export function inTenant(name: string): string {
   return `(select id from tenants where name = ${sqlText(name)})`;
 }
 
+const subjectSelect = (tenant: string, username: string): string =>
+  `select u.subject_id from users u join tenants t on t.id = u.tenant_id where t.name = ${sqlText(tenant)} and u.username = ${sqlText(username)}`;
+
 export function subjectIdOf(tenant: string, username: string): string {
-  return psql(
-    `select u.subject_id from users u join tenants t on t.id = u.tenant_id where t.name = ${sqlText(tenant)} and u.username = ${sqlText(username)}`,
-  );
+  return psql(subjectSelect(tenant, username));
+}
+
+// The subject's id as a subquery to compare a subject_id with.
+export function inSubject(tenant: string, username: string): string {
+  return `(${subjectSelect(tenant, username)})`;
 }
 
 // A name no narrow line can break, seeded for the layout tests that look for it.

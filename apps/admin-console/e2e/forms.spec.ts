@@ -1,6 +1,6 @@
 import type { Locator, Page, Route } from '@playwright/test';
 import { expect, expectAccessible, signIn, test, PHONE } from './fixtures';
-import { psql, seeded, sqlText } from './stack';
+import { psql, seeded, sqlText, subjectIdOf } from './stack';
 
 const { subjects } = seeded();
 const { admin } = subjects;
@@ -8,9 +8,7 @@ const TENANT = admin.tenant;
 const DESKTOP = { width: 1440, height: 900 };
 
 function measuredId(): string {
-  return psql(
-    `select u.subject_id from users u join tenants t on t.id = u.tenant_id where t.name = ${sqlText(TENANT)} and u.username = ${sqlText(subjects.measured)}`,
-  );
+  return subjectIdOf(TENANT, subjects.measured);
 }
 
 // Every claim filled, the picture on another site so its note shows, and a

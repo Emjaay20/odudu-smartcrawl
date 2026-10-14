@@ -338,9 +338,7 @@ test('a username is renamed on its record while the tenant allows it', async ({ 
   const tenant = renamer.tenant;
   psql(`update tenants set username_editable = true where name = ${sqlText(tenant)}`);
   await signIn(page, renamer);
-  const id = psql(
-    `select u.subject_id from users u join tenants t on t.id = u.tenant_id where t.name = ${sqlText(tenant)} and u.username = ${sqlText(subjects.renamed)}`,
-  );
+  const id = subjectIdOf(tenant, subjects.renamed);
   await page.goto(`/console/${tenant}/subjects/${id}`);
   const field = page.getByRole('textbox', { name: 'Username', exact: true });
   await expect(field).toHaveValue(subjects.renamed);

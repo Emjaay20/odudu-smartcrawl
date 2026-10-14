@@ -24,6 +24,7 @@ import {
   inTenant,
   UNBROKEN,
   sqlText,
+  subjectIdOf,
 } from './stack';
 
 const { clients } = seeded();
@@ -782,9 +783,7 @@ test('the back-channel deliveries of a client are those its ended sessions queue
   if (first === undefined || second === undefined) throw new Error('no walkers were seeded');
   for (const walker of [first, second]) {
     await signInThrough(browser, walker, 'notified', app.callback);
-    const id = psql(
-      `select u.subject_id from users u join tenants t on t.id = u.tenant_id where t.name = ${sqlText(TENANT)} and u.username = ${sqlText(walker.username)}`,
-    );
+    const id = subjectIdOf(TENANT, walker.username);
     await page.goto(`/console/${TENANT}/subjects/${id}?tab=sessions`);
     await page.getByRole('button', { name: 'End every session' }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: 'End every session' }).click();
