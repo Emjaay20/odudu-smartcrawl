@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   choosable,
+  holdersParams,
   pickerUnavailable,
   subjectName,
   type Subject,
@@ -34,4 +35,9 @@ describe('the picker of subjects', () => {
     expect(choosable('s9', holders, options)).toBeNull();
     expect(choosable(null, holders, options)).toBeNull();
   });
+});
+
+it('asks for any capability, narrowed by the search and continued from a cursor', () => {
+  expect(holdersParams('', undefined).toString()).toBe('capability=any');
+  expect(holdersParams('ada', 'c2').toString()).toBe('capability=any&username=ada&cursor=c2');
 });

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { holdersParams } from '#/features/system-admins/service';
 import { readSubjectPage } from '#/shared/adapter/directory';
 import { listKey } from '#/shared/repository/queryKeys';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
@@ -19,10 +20,7 @@ export function usePickerHolders(query: string): ReadonlySet<string> | null {
       const ids: string[] = [];
       let cursor: string | undefined;
       for (let page = 0; page < MOST_PAGES; page += 1) {
-        const params = new URLSearchParams({ capability: 'any' });
-        if (query !== '') params.set('username', query);
-        if (cursor !== undefined) params.set('cursor', cursor);
-        const result = await readSubjectPage(gateway, SYSTEM_TENANT, params);
+        const result = await readSubjectPage(gateway, SYSTEM_TENANT, holdersParams(query, cursor));
         if (!result.ok) return null;
         ids.push(...result.data.items.map((subject) => subject.id));
         cursor = result.data.next;

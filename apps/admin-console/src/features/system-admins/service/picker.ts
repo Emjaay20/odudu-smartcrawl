@@ -24,3 +24,11 @@ export function choosable(
   if (id === null || holders?.has(id) === true) return null;
   return options.find((option) => option.id === id) ?? null;
 }
+
+// One page of the holders of any admin capability among what a search matches.
+export function holdersParams(query: string, cursor: string | undefined): URLSearchParams {
+  const params = new URLSearchParams({ capability: 'any' });
+  if (query !== '') params.set('username', query);
+  if (cursor !== undefined) params.set('cursor', cursor);
+  return params;
+}

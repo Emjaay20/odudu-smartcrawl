@@ -3,6 +3,7 @@ export {
   subjectName,
   pickerUnavailable,
   choosable,
+  holdersParams,
 } from '#/features/system-admins/service/picker';
 export {
   type AdministratorsAccess,
