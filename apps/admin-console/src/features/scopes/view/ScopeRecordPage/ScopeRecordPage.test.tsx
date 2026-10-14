@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { problem } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
-import { A, SC, scopeRoutes } from '#/testing/scopesFixtures';
+import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
+import { SC, scopeRoutes } from '#/testing/scopesFixtures';
 
 afterEach(() => {
   resetConsole();
@@ -43,7 +43,7 @@ it("reads the scope's own activity", async () => {
   await user.click(await screen.findByRole('tab', { name: 'Activity' }));
   expect(await screen.findByText('No activity on this scope yet')).toBeVisible();
   await waitFor(() => {
-    const read = sent.find((s) => s.path === `${A}/audit`);
+    const read = sent.find((s) => s.path === `${ACME_ADMIN}/audit`);
     expect(read?.search.get('resource_type')).toBe('scope');
     expect(read?.search.get('resource_id')).toBe('s-bill');
   });

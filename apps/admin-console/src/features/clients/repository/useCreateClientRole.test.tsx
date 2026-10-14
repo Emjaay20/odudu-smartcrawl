@@ -3,12 +3,13 @@ import { expect, it } from 'vitest';
 import { useCreateClientRole } from '#/features/clients/repository/useClientRoles';
 import { json } from '#/testing/fakeTransport';
 import { hookHarness } from '#/testing/hookHarness';
-import { A } from '#/testing/clientsFixtures';
+
 import { role } from '#/testing/subjectsFixtures';
+import { ACME_ADMIN } from '#/testing/renderConsole';
 
 it('reads the lists and pickers that show it again once it is created, and not when it is refused', async () => {
   const { wrapper, invalidated } = hookHarness({
-    [`POST ${A}/roles`]: json(role('r-new', 'billing'), 201),
+    [`POST ${ACME_ADMIN}/roles`]: json(role('r-new', 'billing'), 201),
   });
   const { result } = renderHook(() => useCreateClientRole('acme', 'c1'), { wrapper });
   await act(async () => {

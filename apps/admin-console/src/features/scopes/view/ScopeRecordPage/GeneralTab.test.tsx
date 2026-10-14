@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { inTurn, json, problem } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
-import { A, BILLING_CARRIES, BILLING_SCOPE, SC, scopeRoutes } from '#/testing/scopesFixtures';
+import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
+import { BILLING_CARRIES, BILLING_SCOPE, SC, scopeRoutes } from '#/testing/scopesFixtures';
 
 afterEach(() => {
   resetConsole();
@@ -303,7 +303,7 @@ it('says in the dialog why a delete the ceiling refuses was refused, reads whoam
   await user.type(within(dialog).getByRole('textbox'), 'billing');
   await user.click(within(dialog).getByRole('button', { name: 'Delete billing' }));
   expect(await within(dialog).findByText(/Refused: it would take manage-keys/u)).toBeVisible();
-  expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
+  expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
 });
 
 it('shows the openid delete refusal as fixed text, with no delete to press', async () => {

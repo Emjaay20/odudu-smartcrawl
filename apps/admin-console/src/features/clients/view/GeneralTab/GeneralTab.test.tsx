@@ -2,9 +2,9 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { A, ADMIN, BILLING, C, clientRoutes, PORTAL } from '#/testing/clientsFixtures';
+import { ADMIN, BILLING, C, clientRoutes, PORTAL } from '#/testing/clientsFixtures';
 import { inTurn, json, problem } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
 
 afterEach(() => {
   resetConsole();
@@ -202,7 +202,7 @@ it("says a refused delete in the dialog, in the server's words, and deletes noth
       /it would take manage-users from whoever holds it through here/u,
     ),
   ).toBeVisible();
-  expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
+  expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
 });
 
 it('reads the client again when the ceiling refuses its delete, so the page says at once why', async () => {

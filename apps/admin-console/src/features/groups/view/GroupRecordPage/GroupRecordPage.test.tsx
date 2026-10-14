@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { inTurn, json, problem } from '#/testing/fakeTransport';
-import { A, ENG, G, groupRoutes, record } from '#/testing/groupsFixtures';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { ENG, G, groupRoutes, record } from '#/testing/groupsFixtures';
+import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
 
 afterEach(() => {
   resetConsole();
@@ -30,7 +30,7 @@ it("reads the group's own activity from the audit trail", async () => {
   await user.click(await screen.findByRole('tab', { name: 'Activity' }));
   expect(await screen.findByText('No activity on this group yet')).toBeVisible();
   await waitFor(() => {
-    const read = sent.find((s) => s.path === `${A}/audit`);
+    const read = sent.find((s) => s.path === `${ACME_ADMIN}/audit`);
     expect(read?.search.get('resource_type')).toBe('group');
     expect(read?.search.get('resource_id')).toBe('g-eng');
   });
@@ -47,9 +47,11 @@ it('tells a caller without view-audit or view-users what Activity and Members ne
   expect(await screen.findByRole('note')).toHaveTextContent(
     'Members needs the view-users capability.',
   );
-  expect(sent.some((s) => s.path === `${A}/audit` || s.path.startsWith(`${A}/subjects`))).toBe(
-    false,
-  );
+  expect(
+    sent.some(
+      (s) => s.path === `${ACME_ADMIN}/audit` || s.path.startsWith(`${ACME_ADMIN}/subjects`),
+    ),
+  ).toBe(false);
 });
 
 it('holds every write that depends on what its parent hands down until that is read', async () => {

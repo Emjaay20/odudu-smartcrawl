@@ -4,7 +4,6 @@ import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { inTurn, json, pending, problem } from '#/testing/fakeTransport';
 import {
-  A,
   adminRole,
   ENG,
   FINANCE,
@@ -14,7 +13,7 @@ import {
   PLATFORM,
   record,
 } from '#/testing/groupsFixtures';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
 import { assigned, EVERY_TENANT_CAPABILITY, S } from '#/testing/subjectsFixtures';
 
 afterEach(() => {
@@ -111,7 +110,7 @@ it('reads whoami again when a description save is refused, and says what it need
   await user.type(within(section).getByRole('textbox', { name: 'Description' }), 'Runs it');
   await user.click(within(section).getByRole('button', { name: 'Save Description' }));
   expect(await screen.findByText(/it needs the manage-tenant capability/u)).toBeVisible();
-  expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
+  expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
 });
 
 it('shows a description changed elsewhere beside yours, and sends nothing more', async () => {
@@ -259,7 +258,7 @@ it('says in the dialog why a refused delete was refused, reads whoami again, and
   expect(
     await within(dialog).findByText(/it would take manage-users from whoever holds it/u),
   ).toBeVisible();
-  expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
+  expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
 });
 
 it('offers no delete or move a limited operator could not make, and says why in one line', async () => {

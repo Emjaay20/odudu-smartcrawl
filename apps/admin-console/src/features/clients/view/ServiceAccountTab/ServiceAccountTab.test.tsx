@@ -2,9 +2,9 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { A, BILLING, C, clientRoutes, serviceAccountOf } from '#/testing/clientsFixtures';
+import { BILLING, C, clientRoutes, serviceAccountOf } from '#/testing/clientsFixtures';
 import { json, problem } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
 import { role } from '#/testing/subjectsFixtures';
 
 afterEach(() => {
@@ -14,7 +14,7 @@ afterEach(() => {
 
 const AT = '/console/acme/clients/c-bill?tab=service';
 const SERVICE = serviceAccountOf('c-bill');
-const SERVICE_ROLES = `${A}/subjects/${SERVICE}/roles`;
+const SERVICE_ROLES = `${ACME_ADMIN}/subjects/${SERVICE}/roles`;
 
 const READER = role('r-read', 'reader');
 const PORTAL_READER = role('r-portal', 'reader', 'portal');
@@ -31,7 +31,7 @@ function assigned(...held: (typeof READER)[]) {
 function serviceRoutes(held: (typeof READER)[], extra = {}, capabilities?: readonly string[]) {
   return clientRoutes(capabilities, {
     [`GET ${SERVICE_ROLES}`]: json(assigned(...held), 200, { etag: '"sr-1"' }),
-    [`GET ${A}/roles`]: (request) =>
+    [`GET ${ACME_ADMIN}/roles`]: (request) =>
       json({
         items: CATALOGUE.filter((each) => each.name.startsWith(request.search.get('name') ?? '')),
       })(request),
@@ -115,7 +115,9 @@ it('searches the tenant roles on the server', async () => {
   );
   await user.click(within(section).getByRole('button', { name: 'Search' }));
   await waitFor(() => {
-    expect(sent.some((s) => s.path === `${A}/roles` && s.search.get('name') === 'rea')).toBe(true);
+    expect(
+      sent.some((s) => s.path === `${ACME_ADMIN}/roles` && s.search.get('name') === 'rea'),
+    ).toBe(true);
   });
 });
 

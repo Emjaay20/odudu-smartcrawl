@@ -3,9 +3,9 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, problem } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
 import { ADMIN, systemRoutes } from '#/testing/tenantsFixtures';
-import { A, ADA_AT, ADA_ID, group, S, subjectRoutes } from '#/testing/subjectsFixtures';
+import { ADA_AT, ADA_ID, group, S, subjectRoutes } from '#/testing/subjectsFixtures';
 
 afterEach(() => {
   resetConsole();
@@ -23,7 +23,7 @@ it("lists the subject's groups, and joins another on the ETag it read", async ()
     AT,
     subjectRoutes(undefined, {
       [`GET ${G}`]: json({ items: [OPS] }, 200, { etag: '"g1"' }),
-      [`GET ${A}/groups`]: json({ items: [OPS, FINANCE] }),
+      [`GET ${ACME_ADMIN}/groups`]: json({ items: [OPS, FINANCE] }),
       [`PUT ${G}`]: json({ items: [FINANCE, OPS] }, 200, { etag: '"g2"' }),
     }),
   );
@@ -46,7 +46,7 @@ it('says in place why a membership reaching past the caller was refused', async 
   renderConsoleAt(
     AT,
     subjectRoutes(undefined, {
-      [`GET ${A}/groups`]: json({ items: [OPS] }),
+      [`GET ${ACME_ADMIN}/groups`]: json({ items: [OPS] }),
       [`PUT ${G}`]: problem(403, 'about:blank', 'Forbidden'),
     }),
   );
@@ -62,7 +62,7 @@ it('keeps a departure asked about during a save held when that save is refused',
   renderConsoleAt(
     AT,
     subjectRoutes(undefined, {
-      [`GET ${A}/groups`]: json({ items: [OPS] }),
+      [`GET ${ACME_ADMIN}/groups`]: json({ items: [OPS] }),
       [`PUT ${G}`]: () =>
         new Promise<Response>((resolve) => {
           answer = resolve;
@@ -185,7 +185,7 @@ it('passes axe in both themes', async () => {
           AT,
           subjectRoutes(undefined, {
             [`GET ${G}`]: json({ items: [OPS] }, 200, { etag: '"g1"' }),
-            [`GET ${A}/groups`]: json({ items: [OPS, FINANCE] }),
+            [`GET ${ACME_ADMIN}/groups`]: json({ items: [OPS, FINANCE] }),
           }),
         ).element,
       () => screen.findByRole('listbox', { name: 'Groups ada belongs to' }),

@@ -1,9 +1,8 @@
 import { json, type Answer } from '#/testing/fakeTransport';
-import { GRACE, whoami } from '#/testing/renderConsole';
+import { GRACE, whoami, ACME_ADMIN } from '#/testing/renderConsole';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures';
 
-export const A = '/console/api/admin/tenants/acme';
-export const RT = `${A}/registration-tokens`;
+export const RT = `${ACME_ADMIN}/registration-tokens`;
 
 export function token(id: string, uses: number, extra: Record<string, unknown> = {}) {
   return {
@@ -34,7 +33,7 @@ export function tokenRoutes(
 ): Record<string, Answer> {
   return {
     'GET /console/api/session': json(GRACE),
-    [`GET ${A}/whoami`]: whoami(capabilities),
+    [`GET ${ACME_ADMIN}/whoami`]: whoami(capabilities),
     [`GET ${RT}`]: json({ items: [TOKEN_ONE, TOKEN_FEW] }),
     ...extra,
   };

@@ -4,8 +4,8 @@ import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { BILLING, C, clientRoutes } from '#/testing/clientsFixtures';
 import { inTurn, json, pending, problem } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
-import { A, BILLING_CARRIES, carrier, SC, scopeRoutes } from '#/testing/scopesFixtures';
+import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
+import { BILLING_CARRIES, carrier, SC, scopeRoutes } from '#/testing/scopesFixtures';
 
 afterEach(() => {
   resetConsole();
@@ -85,9 +85,9 @@ it('searches clients on the server, never in the browser, and assigns the one ch
   await user.type(within(assign).getByRole('searchbox', { name: 'Search clients by name' }), 'por');
   await user.click(within(assign).getByRole('button', { name: 'Search' }));
   await waitFor(() => {
-    expect(sent.some((s) => s.path === `${A}/clients` && s.search.get('name') === 'por')).toBe(
-      true,
-    );
+    expect(
+      sent.some((s) => s.path === `${ACME_ADMIN}/clients` && s.search.get('name') === 'por'),
+    ).toBe(true);
   });
   await user.click(await within(assign).findByRole('option', { name: /portal/u }));
   const assignButton = within(assign).getByRole('button', { name: 'Assign to portal' });
@@ -246,7 +246,7 @@ it("words a 403 over the client's service account, naming the capability", async
   await user.click(await within(assign).findByRole('option', { name: /portal/u }));
   await user.click(within(assign).getByRole('button', { name: 'Assign to portal' }));
   expect(await screen.findByText(/Refused: it would hand out manage-keys/u)).toBeVisible();
-  expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
+  expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
 });
 
 it('lists the carriers but offers no client search to a caller without manage-clients', async () => {
@@ -254,7 +254,7 @@ it('lists the carriers but offers no client search to a caller without manage-cl
   await open();
   expect(await screen.findByRole('note')).toHaveTextContent('needs the manage-clients capability');
   expect(screen.queryByRole('region', { name: 'Assign to a client' })).toBeNull();
-  expect(sent.some((s) => s.path === `${A}/clients`)).toBe(false);
+  expect(sent.some((s) => s.path === `${ACME_ADMIN}/clients`)).toBe(false);
 });
 
 it('passes axe in both themes', async () => {

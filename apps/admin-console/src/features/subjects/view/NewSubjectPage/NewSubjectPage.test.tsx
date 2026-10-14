@@ -4,8 +4,8 @@ import { afterEach, expect, it } from 'vitest';
 import { USERNAME_RULE_TEXT } from '#/features/subjects/service';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, offline, problem } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
-import { A, ADA, ADA_ID, S, subjectRoutes } from '#/testing/subjectsFixtures';
+import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
+import { ADA, ADA_ID, S, subjectRoutes } from '#/testing/subjectsFixtures';
 
 afterEach(() => {
   resetConsole();
@@ -102,7 +102,7 @@ it('reads whoami again when the creation is refused, and says what it needed', a
   await user.type(await screen.findByRole('textbox', { name: 'Username' }), 'ada');
   await user.click(screen.getByRole('button', { name: 'Create subject' }));
   expect(await screen.findByText(/it needs the manage-users capability/u)).toBeVisible();
-  expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
+  expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
 });
 
 it('never sends a lost creation again, and offers to look for it instead', async () => {

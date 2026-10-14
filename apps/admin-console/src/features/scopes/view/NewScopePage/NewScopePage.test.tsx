@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, offline, problem } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
-import { A, MAPPED, SC, scope, scopeRoutes } from '#/testing/scopesFixtures';
+import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
+import { MAPPED, SC, scope, scopeRoutes } from '#/testing/scopesFixtures';
 
 afterEach(() => {
   resetConsole();
@@ -181,7 +181,7 @@ it('reads whoami again when the creation is refused', async () => {
   );
   await user.type(await screen.findByRole('textbox', { name: 'Name' }), 'invoices{Enter}');
   expect(await screen.findByText(/it needs the manage-tenant capability/u)).toBeVisible();
-  expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
+  expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
 });
 
 it('passes axe in both themes', async () => {

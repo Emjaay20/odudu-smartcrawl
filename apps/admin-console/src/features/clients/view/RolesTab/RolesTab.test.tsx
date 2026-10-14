@@ -2,9 +2,9 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { A, clientRoutes } from '#/testing/clientsFixtures';
+import { clientRoutes } from '#/testing/clientsFixtures';
 import { json, problem } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
 
 afterEach(() => {
   resetConsole();
@@ -12,7 +12,7 @@ afterEach(() => {
 });
 
 const AT = '/console/acme/clients/c-bill?tab=roles';
-const ROLES = `${A}/roles`;
+const ROLES = `${ACME_ADMIN}/roles`;
 
 function owned(id: string, name: string, extra: Record<string, unknown> = {}) {
   return {

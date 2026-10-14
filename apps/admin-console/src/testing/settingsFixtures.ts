@@ -1,10 +1,9 @@
 import { json, type Answer } from '#/testing/fakeTransport';
-import { GRACE, whoami } from '#/testing/renderConsole';
+import { GRACE, whoami, ACME_ADMIN } from '#/testing/renderConsole';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures';
 
-export const A = '/console/api/admin/tenants/acme';
-export const ST = `${A}/settings`;
-export const SM = `${A}/smtp`;
+export const ST = `${ACME_ADMIN}/settings`;
+export const SM = `${ACME_ADMIN}/smtp`;
 
 // What a tenant starts with: the migrations' own defaults.
 export const SETTINGS = {
@@ -66,7 +65,7 @@ export function settingsRoutes(
 ): Record<string, Answer> {
   return {
     'GET /console/api/session': json(GRACE),
-    [`GET ${A}/whoami`]: whoami(capabilities),
+    [`GET ${ACME_ADMIN}/whoami`]: whoami(capabilities),
     [`GET ${ST}`]: settingsAnswer(),
     ...extra,
   };
@@ -105,7 +104,7 @@ export function emailRoutes(
 ): Record<string, Answer> {
   return {
     'GET /console/api/session': json(GRACE),
-    [`GET ${A}/whoami`]: whoami(capabilities),
+    [`GET ${ACME_ADMIN}/whoami`]: whoami(capabilities),
     [`GET ${SM}`]: smtpAnswer(),
     ...extra,
   };

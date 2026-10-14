@@ -9,8 +9,8 @@ import {
   setSubjectRoles,
 } from '#/shared/adapter/administrators';
 import { fakeTransport, json } from '#/testing/fakeTransport';
+import { ACME_ADMIN } from '#/testing/renderConsole';
 
-const T = '/console/api/admin/tenants/acme';
 const SUBJECT = {
   id: '01a0e72d-7fc7-7950-a1e7-1d079588f8b4',
   type: 'user',
@@ -22,8 +22,8 @@ const SUBJECT = {
 
 it('creates a subject, sending the email only when there is one, and finds one by username', async () => {
   const fake = fakeTransport({
-    [`POST ${T}/subjects`]: json(SUBJECT, 201),
-    [`GET ${T}/subjects`]: json({ items: [{ ...SUBJECT, username: 'grace2' }, SUBJECT] }),
+    [`POST ${ACME_ADMIN}/subjects`]: json(SUBJECT, 201),
+    [`GET ${ACME_ADMIN}/subjects`]: json({ items: [{ ...SUBJECT, username: 'grace2' }, SUBJECT] }),
   });
   await createSubject(fake.transport.gateway, 'acme', { username: 'grace', email: '' });
   await createSubject(fake.transport.gateway, 'acme', { username: 'grace', email: 'g@x.test' });
@@ -40,7 +40,7 @@ it('creates a subject, sending the email only when there is one, and finds one b
 
 it('issues a one-time password', async () => {
   const fake = fakeTransport({
-    [`POST ${T}/subjects/${SUBJECT.id}/password`]: json({ password: 'once' }, 201),
+    [`POST ${ACME_ADMIN}/subjects/${SUBJECT.id}/password`]: json({ password: 'once' }, 201),
   });
   expect(await issuePassword(fake.transport.gateway, 'acme', SUBJECT.id)).toMatchObject({
     ok: true,
@@ -50,8 +50,8 @@ it('issues a one-time password', async () => {
 
 it('reads the clients named odudu-admin and the roles of one client by name', async () => {
   const fake = fakeTransport({
-    [`GET ${T}/clients`]: json({ items: [] }),
-    [`GET ${T}/roles`]: json({ items: [] }),
+    [`GET ${ACME_ADMIN}/clients`]: json({ items: [] }),
+    [`GET ${ACME_ADMIN}/roles`]: json({ items: [] }),
   });
   await readAdminClients(fake.transport.gateway, 'acme');
   await readClientRoles(fake.transport.gateway, 'acme', 'c1', 'tenant-admin');
@@ -64,8 +64,8 @@ it('reads the clients named odudu-admin and the roles of one client by name', as
 it("reads a subject's roles with their ETag and replaces them under If-Match", async () => {
   const roles = { items: [{ id: 'r1', name: 'reader', client_id: null, client_key: null }] };
   const fake = fakeTransport({
-    [`GET ${T}/subjects/${SUBJECT.id}/roles`]: json(roles, 200, { etag: '"r1"' }),
-    [`PUT ${T}/subjects/${SUBJECT.id}/roles`]: json(roles, 200, { etag: '"r2"' }),
+    [`GET ${ACME_ADMIN}/subjects/${SUBJECT.id}/roles`]: json(roles, 200, { etag: '"r1"' }),
+    [`PUT ${ACME_ADMIN}/subjects/${SUBJECT.id}/roles`]: json(roles, 200, { etag: '"r2"' }),
   });
   expect(await readSubjectRoles(fake.transport.gateway, 'acme', SUBJECT.id)).toMatchObject({
     ok: true,

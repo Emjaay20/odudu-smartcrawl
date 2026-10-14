@@ -3,9 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, problem, type Sent } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
 import {
-  A,
   ADA_AT,
   ADA_ID,
   ADMIN_ROLES,
@@ -146,7 +145,7 @@ it('assigns a role, sending the admin capabilities back as they were', async () 
     AT,
     subjectRoutes(undefined, {
       [`GET ${R}`]: json({ items: [assigned(FULL)] }, 200, { etag: '"r1"' }),
-      [`GET ${A}/roles`]: roleList,
+      [`GET ${ACME_ADMIN}/roles`]: roleList,
       [`PUT ${R}`]: json({ items: [assigned(FULL), assigned(BILLING)] }, 200, { etag: '"r2"' }),
     }),
   );
@@ -285,7 +284,7 @@ it('passes axe in both themes', async () => {
           AT,
           subjectRoutes(['view-users', 'manage-users', 'view-audit'], {
             [`GET ${R}`]: json({ items: [assigned(BILLING)] }, 200, { etag: '"r1"' }),
-            [`GET ${A}/roles`]: roleList,
+            [`GET ${ACME_ADMIN}/roles`]: roleList,
             [`GET ${E}`]: json({ items: [held(BILLING, [{ kind: 'direct' }])] }),
           }),
         ).element,

@@ -2,9 +2,9 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { A, ADMIN, BILLING, C, clientRoutes, type ClientAnswer } from '#/testing/clientsFixtures';
+import { ADMIN, BILLING, C, clientRoutes, type ClientAnswer } from '#/testing/clientsFixtures';
 import { inTurn, json, pending, problem } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
 
 afterEach(() => {
   resetConsole();
@@ -14,7 +14,7 @@ afterEach(() => {
 const AT = '/console/acme/clients/c-bill?tab=scopes';
 const OPENID = { id: 's-openid', name: 'openid', assignment: 'default' as const };
 const BILLING_SCOPE = { id: 's-bill', name: 'billing', assignment: 'optional' as const };
-const SCOPES = `${A}/scopes`;
+const SCOPES = `${ACME_ADMIN}/scopes`;
 
 const CATALOGUE = [
   { id: 's-openid', name: 'openid', description: null },
@@ -215,7 +215,7 @@ it('reads whoami again when the ceiling refuses an assignment', async () => {
   await user.click(await within(assign).findByRole('option', { name: /billing/u }));
   await user.click(within(assign).getByRole('button', { name: 'Assign scope billing' }));
   await waitFor(() => {
-    expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
+    expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
   });
 });
 
@@ -290,7 +290,7 @@ it('offers no change while the service account holds what the caller does not', 
         200,
         { etag: '"c-bill-1"' },
       ),
-      [`GET ${A}/whoami`]: json({
+      [`GET ${ACME_ADMIN}/whoami`]: json({
         subjectId: 's',
         issuerTenantId: 't',
         capabilities: ['manage-clients', 'manage-tenant'],

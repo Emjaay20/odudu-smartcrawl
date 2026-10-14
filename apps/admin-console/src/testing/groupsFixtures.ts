@@ -1,9 +1,8 @@
 import { json, type Answer, type Sent } from '#/testing/fakeTransport';
-import { GRACE, whoami } from '#/testing/renderConsole';
+import { GRACE, whoami, ACME_ADMIN } from '#/testing/renderConsole';
 import { ADMIN_ROLES, EVERY_TENANT_CAPABILITY, role } from '#/testing/subjectsFixtures';
 
-export const A = '/console/api/admin/tenants/acme';
-export const G = `${A}/groups`;
+export const G = `${ACME_ADMIN}/groups`;
 
 export interface GroupAnswer {
   id: string;
@@ -96,7 +95,7 @@ export function groupRoutes(
 ): Record<string, Answer> {
   return {
     'GET /console/api/session': json(GRACE),
-    [`GET ${A}/whoami`]: whoami(capabilities),
+    [`GET ${ACME_ADMIN}/whoami`]: whoami(capabilities),
     [`GET ${G}`]: (request) => json({ items: listed(request) })(request),
     [`GET ${G}/count`]: (request) =>
       json({ count: listed(request).length, capped: false })(request),
@@ -106,17 +105,17 @@ export function groupRoutes(
         [`GET ${G}/${each.id}/roles`, json({ items: [] }, 200, { etag: `"${each.id}-r1"` })],
       ]),
     ),
-    [`GET ${A}/roles`]: json({ items: [AUDITOR, PORTAL_READER, ...ADMIN_ROLES] }),
+    [`GET ${ACME_ADMIN}/roles`]: json({ items: [AUDITOR, PORTAL_READER, ...ADMIN_ROLES] }),
     ...Object.fromEntries(
       [AUDITOR, PORTAL_READER, ...ADMIN_ROLES].map((each) => [
-        `GET ${A}/roles/${each.id}`,
+        `GET ${ACME_ADMIN}/roles/${each.id}`,
         json(each, 200, { etag: `"${each.id}-1"` }),
       ]),
     ),
-    [`GET ${A}/audit`]: json({ items: [] }),
-    [`GET ${A}/subjects`]: json({ items: [] }),
-    [`GET ${A}/subjects/count`]: json({ count: 0, capped: false }),
-    [`GET ${A}/subjects/s1/groups`]: json({ items: [] }, 200, { etag: '"m0"' }),
+    [`GET ${ACME_ADMIN}/audit`]: json({ items: [] }),
+    [`GET ${ACME_ADMIN}/subjects`]: json({ items: [] }),
+    [`GET ${ACME_ADMIN}/subjects/count`]: json({ count: 0, capped: false }),
+    [`GET ${ACME_ADMIN}/subjects/s1/groups`]: json({ items: [] }, 200, { etag: '"m0"' }),
     ...extra,
   };
 }

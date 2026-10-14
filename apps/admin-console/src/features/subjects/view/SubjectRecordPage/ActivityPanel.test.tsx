@@ -2,8 +2,8 @@ import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, problem } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
-import { A, ADA_AT, ADA_ID, subjectRoutes } from '#/testing/subjectsFixtures';
+import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
+import { ADA_AT, ADA_ID, subjectRoutes } from '#/testing/subjectsFixtures';
 
 afterEach(() => {
   resetConsole();
@@ -32,14 +32,14 @@ const EVENT = {
 it('lists the audit rows filed on the subject, naming each actor', async () => {
   const { sent } = renderConsoleAt(
     AT,
-    subjectRoutes(undefined, { [`GET ${A}/audit`]: json({ items: [EVENT] }) }),
+    subjectRoutes(undefined, { [`GET ${ACME_ADMIN}/audit`]: json({ items: [EVENT] }) }),
   );
   const table = await screen.findByRole('grid', { name: 'Activity on this subject' });
   const [, row] = within(table).getAllByRole('row');
   expect(row).toHaveTextContent('subject.amend');
   expect(row).toHaveTextContent('grace');
   await waitFor(() => {
-    expect(sent.find((s) => s.path === `${A}/audit`)?.search.toString()).toBe(
+    expect(sent.find((s) => s.path === `${ACME_ADMIN}/audit`)?.search.toString()).toBe(
       `resource_type=subject&resource_id=${ADA_ID}`,
     );
   });
@@ -49,7 +49,9 @@ it('lists the audit rows filed on the subject, naming each actor', async () => {
 it('names view-audit when the trail is refused', async () => {
   renderConsoleAt(
     AT,
-    subjectRoutes(undefined, { [`GET ${A}/audit`]: problem(403, 'about:blank', 'Forbidden') }),
+    subjectRoutes(undefined, {
+      [`GET ${ACME_ADMIN}/audit`]: problem(403, 'about:blank', 'Forbidden'),
+    }),
   );
   expect(await screen.findByText(/Activity needs the/u)).toHaveTextContent(
     'Activity needs the view-audit capability.',
@@ -60,8 +62,10 @@ it('passes axe in both themes', async () => {
   expect(
     await axeInBothThemes(
       () =>
-        consoleAt(AT, subjectRoutes(undefined, { [`GET ${A}/audit`]: json({ items: [EVENT] }) }))
-          .element,
+        consoleAt(
+          AT,
+          subjectRoutes(undefined, { [`GET ${ACME_ADMIN}/audit`]: json({ items: [EVENT] }) }),
+        ).element,
       () => screen.findByRole('grid', { name: 'Activity on this subject' }),
     ),
   ).toEqual({ light: [], dark: [] });

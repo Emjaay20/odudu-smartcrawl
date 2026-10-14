@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, problem } from '#/testing/fakeTransport';
-import { A, roleRoutes } from '#/testing/rolesFixtures';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { roleRoutes } from '#/testing/rolesFixtures';
+import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
 import { ADA, S } from '#/testing/subjectsFixtures';
 
 afterEach(() => {
@@ -44,14 +44,14 @@ it("reads the role's own activity", async () => {
   await user.click(await screen.findByRole('tab', { name: 'Activity' }));
   expect(await screen.findByText('No activity on this role yet')).toBeVisible();
   await waitFor(() => {
-    const read = sent.find((s) => s.path === `${A}/audit`);
+    const read = sent.find((s) => s.path === `${ACME_ADMIN}/audit`);
     expect(read?.search.get('resource_type')).toBe('role');
     expect(read?.search.get('resource_id')).toBe('r-portal');
   });
 });
 
 it('offers no delete until whoami says what the caller holds', async () => {
-  renderConsoleAt(AT, roleRoutes(undefined, { [`GET ${A}/whoami`]: problem(500) }));
+  renderConsoleAt(AT, roleRoutes(undefined, { [`GET ${ACME_ADMIN}/whoami`]: problem(500) }));
   expect(await screen.findByRole('heading', { level: 1, name: 'reader' })).toBeVisible();
   expect((await screen.findAllByText('Checking what it nests…')).length).toBeGreaterThan(0);
   expect(screen.queryByRole('button', { name: 'Delete reader' })).toBeNull();

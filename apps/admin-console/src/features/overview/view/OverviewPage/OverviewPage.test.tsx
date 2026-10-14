@@ -4,13 +4,19 @@ import gridCss from '#/features/overview/view/OverviewPage/OverviewPage.module.c
 import discoveryCss from '#/features/overview/view/DiscoveryPanel/DiscoveryPanel.module.css?raw';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, problem, type Answer } from '#/testing/fakeTransport';
-import { consoleAt, GRACE, renderConsoleAt, resetConsole, whoami } from '#/testing/renderConsole';
+import {
+  consoleAt,
+  GRACE,
+  renderConsoleAt,
+  resetConsole,
+  whoami,
+  ACME_ADMIN,
+} from '#/testing/renderConsole';
 
 afterEach(() => {
   resetConsole();
 });
 
-const ADMIN = '/console/api/admin/tenants/acme';
 const ISSUER = 'https://id.example/tenants/acme';
 const EVERYTHING = ['manage-clients', 'manage-keys', 'manage-tenant', 'view-audit', 'view-users'];
 const HOUR_AGO = new Date(Date.now() - 3 * 3600 * 1000).toISOString();
@@ -56,7 +62,7 @@ function routes(capabilities: readonly string[]): Record<string, Answer> {
   const count = (n: number) => json({ count: n, capped: false });
   return {
     'GET /console/api/session': json(GRACE),
-    [`GET ${ADMIN}/whoami`]: whoami(capabilities),
+    [`GET ${ACME_ADMIN}/whoami`]: whoami(capabilities),
     'GET /console/api/tenants/acme/discovery': json({
       issuer: ISSUER,
       token_endpoint: `${ISSUER}/protocol/openid-connect/token`,
@@ -68,18 +74,18 @@ function routes(capabilities: readonly string[]): Record<string, Answer> {
         { kty: 'EC', kid: 'kid-staged', alg: 'ES256', use: 'sig' },
       ],
     }),
-    [`GET ${ADMIN}/subjects/count`]: count(42),
-    [`GET ${ADMIN}/clients/count`]: count(3),
-    [`GET ${ADMIN}/groups/count`]: count(2),
-    [`GET ${ADMIN}/roles/count`]: count(5),
-    [`GET ${ADMIN}/scopes/count`]: count(8),
-    [`GET ${ADMIN}/settings`]: json({
+    [`GET ${ACME_ADMIN}/subjects/count`]: count(42),
+    [`GET ${ACME_ADMIN}/clients/count`]: count(3),
+    [`GET ${ACME_ADMIN}/groups/count`]: count(2),
+    [`GET ${ACME_ADMIN}/roles/count`]: count(5),
+    [`GET ${ACME_ADMIN}/scopes/count`]: count(8),
+    [`GET ${ACME_ADMIN}/settings`]: json({
       verify_email: true,
       reset_password_allowed: false,
       client_registration_policy: 'open',
       max_clients: 3,
     }),
-    [`GET ${ADMIN}/smtp`]: json({
+    [`GET ${ACME_ADMIN}/smtp`]: json({
       configured: false,
       host: null,
       port: null,
@@ -89,8 +95,8 @@ function routes(capabilities: readonly string[]): Record<string, Answer> {
       starttls: null,
       effective: 'none',
     }),
-    [`GET ${ADMIN}/keys`]: json({ items: KEYS }),
-    [`GET ${ADMIN}/audit`]: json({ items: [EVENT] }),
+    [`GET ${ACME_ADMIN}/keys`]: json({ items: KEYS }),
+    [`GET ${ACME_ADMIN}/audit`]: json({ items: [EVENT] }),
   };
 }
 
@@ -145,19 +151,19 @@ it('leaves out what the operator cannot read, as the rail does, and asks nothing
     'manage-keys, manage-clients',
   );
   const asked = calls.map((call) => call.path);
-  expect(asked).not.toContain(`${ADMIN}/audit`);
-  expect(asked).not.toContain(`${ADMIN}/keys`);
-  expect(asked).not.toContain(`${ADMIN}/subjects/count`);
-  expect(asked).not.toContain(`${ADMIN}/clients/count`);
-  expect(asked).toContain(`${ADMIN}/roles/count`);
+  expect(asked).not.toContain(`${ACME_ADMIN}/audit`);
+  expect(asked).not.toContain(`${ACME_ADMIN}/keys`);
+  expect(asked).not.toContain(`${ACME_ADMIN}/subjects/count`);
+  expect(asked).not.toContain(`${ACME_ADMIN}/clients/count`);
+  expect(asked).toContain(`${ACME_ADMIN}/roles/count`);
 });
 
 it('reads whoami again when the server refuses a read whoami said was allowed', async () => {
   const { calls } = renderConsoleAt('/console/acme', {
     ...routes(EVERYTHING),
-    [`GET ${ADMIN}/settings`]: problem(403, 'about:blank', 'Forbidden'),
+    [`GET ${ACME_ADMIN}/settings`]: problem(403, 'about:blank', 'Forbidden'),
   });
-  const whoamis = () => calls.filter((call) => call.path === `${ADMIN}/whoami`).length;
+  const whoamis = () => calls.filter((call) => call.path === `${ACME_ADMIN}/whoami`).length;
   await screen.findByText(ISSUER);
   await waitFor(() => {
     expect(whoamis()).toBe(2);

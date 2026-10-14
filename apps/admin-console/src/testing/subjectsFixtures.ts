@@ -1,8 +1,7 @@
 import { json, type Answer } from '#/testing/fakeTransport';
-import { GRACE, whoami } from '#/testing/renderConsole';
+import { GRACE, whoami, ACME_ADMIN } from '#/testing/renderConsole';
 
-export const A = '/console/api/admin/tenants/acme';
-export const S = `${A}/subjects`;
+export const S = `${ACME_ADMIN}/subjects`;
 export const POLICY = '/console/api/admin/tenants/acme/subjects/username-policy';
 export const ADA_ID = '01a0e72d-7fc7-7950-a1e7-1d079588f8b4';
 export const ADA_AT = `/console/acme/subjects/${ADA_ID}`;
@@ -146,9 +145,9 @@ export function subjectRoutes(
     [`GET ${S}/${ADA_ID}/sessions`]: json({ items: [] }),
     [`GET ${S}/${ADA_ID}/consents`]: json({ items: [] }),
     [`GET ${S}/${ADA_ID}/grants`]: json({ items: [] }),
-    [`GET ${A}/audit`]: json({ items: [] }),
-    [`GET ${A}/groups`]: json({ items: [] }),
-    [`GET ${A}/roles`]: (request) =>
+    [`GET ${ACME_ADMIN}/audit`]: json({ items: [] }),
+    [`GET ${ACME_ADMIN}/groups`]: json({ items: [] }),
+    [`GET ${ACME_ADMIN}/roles`]: (request) =>
       json({
         items:
           request.search.get('client') === 'c-odudu-admin'

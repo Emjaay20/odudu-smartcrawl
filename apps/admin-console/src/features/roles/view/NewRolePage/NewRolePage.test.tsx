@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { inTurn, json, offline, pending, problem } from '#/testing/fakeTransport';
-import { A, AUDITOR, R, READER, roleRoutes } from '#/testing/rolesFixtures';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { AUDITOR, R, READER, roleRoutes } from '#/testing/rolesFixtures';
+import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
 import { role } from '#/testing/subjectsFixtures';
 
 afterEach(() => {
@@ -157,7 +157,7 @@ it('reads whoami again when the creation is refused, and says why on the page', 
   );
   await user.type(await screen.findByRole('textbox', { name: 'Name' }), 'billing{Enter}');
   expect(await screen.findByText(/it needs the manage-tenant capability/u)).toBeVisible();
-  expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
+  expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
 });
 
 it('holds Create after a lost answer until a look finds nothing, then lets it go again', async () => {

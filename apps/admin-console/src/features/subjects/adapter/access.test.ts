@@ -9,9 +9,9 @@ import {
   setSubjectGroups,
 } from '#/features/subjects/adapter/access';
 import { fakeTransport, json } from '#/testing/fakeTransport';
+import { ACME_ADMIN } from '#/testing/renderConsole';
 
-const R = '/console/api/admin/tenants/acme';
-const S = `${R}/subjects/s1`;
+const S = `${ACME_ADMIN}/subjects/s1`;
 const GROUP = {
   id: 'g1',
   name: 'ops',
@@ -118,7 +118,7 @@ it('reads the admin capabilities a subject holds, whole', async () => {
 
 it("finds the built-in admin client's roles through the role list, by name", async () => {
   const fake = fakeTransport({
-    [`GET ${R}/roles`]: (request) =>
+    [`GET ${ACME_ADMIN}/roles`]: (request) =>
       json({
         items:
           request.search.get('client') === 'c-admin'

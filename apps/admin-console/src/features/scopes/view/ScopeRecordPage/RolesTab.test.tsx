@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { inTurn, json, problem } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
-import { A, MAPPED, SC, scopeRoutes } from '#/testing/scopesFixtures';
+import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
+import { MAPPED, SC, scopeRoutes } from '#/testing/scopesFixtures';
 
 afterEach(() => {
   resetConsole();
@@ -58,7 +58,9 @@ it('searches the roles on the server, and saves the set on the ETag it was read 
   );
   await user.click(within(section).getByRole('button', { name: 'Search' }));
   await waitFor(() => {
-    expect(sent.some((s) => s.path === `${A}/roles` && s.search.get('name') === 'rea')).toBe(true);
+    expect(
+      sent.some((s) => s.path === `${ACME_ADMIN}/roles` && s.search.get('name') === 'rea'),
+    ).toBe(true);
   });
   await user.click(await within(section).findByRole('option', { name: /^reader, a tenant role/u }));
   await user.click(within(section).getByRole('button', { name: 'Save Roles' }));

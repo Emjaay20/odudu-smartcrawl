@@ -2,9 +2,9 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { A, BILLING, C, clientRoutes, type ClientAnswer } from '#/testing/clientsFixtures';
+import { BILLING, C, clientRoutes, type ClientAnswer } from '#/testing/clientsFixtures';
 import { json, problem } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
 
 afterEach(() => {
   resetConsole();
@@ -302,5 +302,5 @@ it('reads the client again, and nothing else, for the section it saved', async (
   const { sent } = renderConsoleAt(AT, clientRoutes());
   await open();
   expect(sent.every((s) => s.method === 'GET')).toBe(true);
-  expect(sent.some((s) => s.path === `${A}/whoami`)).toBe(true);
+  expect(sent.some((s) => s.path === `${ACME_ADMIN}/whoami`)).toBe(true);
 });

@@ -1,9 +1,8 @@
 import { json, type Answer, type Sent } from '#/testing/fakeTransport';
-import { GRACE, whoami } from '#/testing/renderConsole';
+import { GRACE, whoami, ACME_ADMIN } from '#/testing/renderConsole';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures';
 
-export const A = '/console/api/admin/tenants/acme';
-export const C = `${A}/clients`;
+export const C = `${ACME_ADMIN}/clients`;
 
 export interface ClientAnswer {
   id: string;
@@ -163,7 +162,7 @@ export function clientRoutes(
 ): Record<string, Answer> {
   return {
     'GET /console/api/session': json(GRACE),
-    [`GET ${A}/whoami`]: whoami(capabilities),
+    [`GET ${ACME_ADMIN}/whoami`]: whoami(capabilities),
     [`GET ${C}`]: (request) => json({ items: listed(request) })(request),
     [`GET ${C}/count`]: (request) =>
       json({ count: listed(request).length, capped: false })(request),
@@ -177,12 +176,12 @@ export function clientRoutes(
         [`GET ${C}/${each.id}/sessions`, json({ items: [] })],
       ]),
     ),
-    [`GET ${A}/sessions/count`]: json({ count: 0, capped: false }),
-    [`GET ${A}/subjects`]: json({ items: [] }),
-    [`GET ${A}/scopes`]: json({ items: [] }),
-    [`GET ${A}/roles`]: json({ items: [] }),
-    [`GET ${A}/roles/count`]: json({ count: 0, capped: false }),
-    [`GET ${A}/audit`]: json({ items: [] }),
+    [`GET ${ACME_ADMIN}/sessions/count`]: json({ count: 0, capped: false }),
+    [`GET ${ACME_ADMIN}/subjects`]: json({ items: [] }),
+    [`GET ${ACME_ADMIN}/scopes`]: json({ items: [] }),
+    [`GET ${ACME_ADMIN}/roles`]: json({ items: [] }),
+    [`GET ${ACME_ADMIN}/roles/count`]: json({ count: 0, capped: false }),
+    [`GET ${ACME_ADMIN}/audit`]: json({ items: [] }),
     ...extra,
   };
 }

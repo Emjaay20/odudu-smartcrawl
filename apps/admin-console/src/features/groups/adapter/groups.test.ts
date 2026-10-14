@@ -12,9 +12,9 @@ import {
   setGroupRoles,
 } from '#/features/groups/adapter/groups';
 import { fakeTransport, json } from '#/testing/fakeTransport';
+import { ACME_ADMIN } from '#/testing/renderConsole';
 
-const A = '/console/api/admin/tenants/acme';
-const G = `${A}/groups`;
+const G = `${ACME_ADMIN}/groups`;
 
 function group(id: string, path: string, parent: string | null = null) {
   return {

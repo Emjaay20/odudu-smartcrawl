@@ -2,9 +2,9 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { A, BILLING, C, clientRoutes } from '#/testing/clientsFixtures';
+import { BILLING, C, clientRoutes } from '#/testing/clientsFixtures';
 import { json, problem } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
 
 afterEach(() => {
   resetConsole();
@@ -32,7 +32,7 @@ function sessionRoutes(extra = {}, capabilities?: readonly string[]) {
     [`GET ${SESSIONS}`]: json({
       items: [session('s-1', 'u-1', 'ada'), session('s-2', 'u-2', null)],
     }),
-    [`GET ${A}/sessions/count`]: json({ count: 2, capped: false }),
+    [`GET ${ACME_ADMIN}/sessions/count`]: json({ count: 2, capped: false }),
     ...extra,
   });
 }
@@ -50,7 +50,9 @@ it('lists who is signed in through the client, counted, a subject with no userna
   expect(within(table).getByText('ada')).toBeVisible();
   expect(within(table).getByText('u-2')).toBeVisible();
   expect(await screen.findByText('2 sessions')).toBeVisible();
-  expect(sent.find((s) => s.path === `${A}/sessions/count`)?.search.get('client')).toBe('c-bill');
+  expect(sent.find((s) => s.path === `${ACME_ADMIN}/sessions/count`)?.search.get('client')).toBe(
+    'c-bill',
+  );
 });
 
 it("opens a session's subject", async () => {
@@ -68,7 +70,7 @@ it('says nobody is signed in through a client with no session', async () => {
     AT,
     clientRoutes(undefined, {
       [`GET ${SESSIONS}`]: json({ items: [] }),
-      [`GET ${A}/sessions/count`]: json({ count: 0, capped: false }),
+      [`GET ${ACME_ADMIN}/sessions/count`]: json({ count: 0, capped: false }),
     }),
   );
   expect(await screen.findByText('Nobody is signed in through this client.')).toBeVisible();
@@ -144,7 +146,7 @@ it("keeps the dialog open with the server's refusal beside the action", async ()
   expect(
     await within(dialog).findByText(/service account holds what the caller does not/u),
   ).toBeVisible();
-  expect(sent.filter((s) => s.path === `${A}/whoami`).length).toBeGreaterThan(1);
+  expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
   await waitFor(() => {
     expect(sent.filter((s) => s.method === 'GET' && s.path === `${C}/c-bill`)).toHaveLength(2);
   });

@@ -2,9 +2,9 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { A, C, clientRoutes } from '#/testing/clientsFixtures';
+import { C, clientRoutes } from '#/testing/clientsFixtures';
 import { json, problem } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
 import { subject } from '#/testing/subjectsFixtures';
 
 afterEach(() => {
@@ -18,8 +18,8 @@ const ADA = subject('u-ada', 'ada');
 
 function routes(extra = {}, capabilities?: readonly string[]) {
   return clientRoutes(capabilities, {
-    [`GET ${A}/scopes`]: json({ items: [] }),
-    [`GET ${A}/subjects`]: json({ items: [ADA] }),
+    [`GET ${ACME_ADMIN}/scopes`]: json({ items: [] }),
+    [`GET ${ACME_ADMIN}/subjects`]: json({ items: [ADA] }),
     ...extra,
   });
 }
@@ -138,9 +138,9 @@ it('searches the subjects by username on the server', async () => {
   );
   await user.click(within(section).getByRole('button', { name: 'Search' }));
   await waitFor(() => {
-    expect(sent.some((s) => s.path === `${A}/subjects` && s.search.get('username') === 'ad')).toBe(
-      true,
-    );
+    expect(
+      sent.some((s) => s.path === `${ACME_ADMIN}/subjects` && s.search.get('username') === 'ad'),
+    ).toBe(true);
   });
 });
 

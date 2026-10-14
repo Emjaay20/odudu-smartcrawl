@@ -18,6 +18,9 @@ export function preloadConsoleRoutes(): Promise<void> {
 // Its own budget: all four feature graphs load here, on a busy runner too.
 beforeAll(preloadConsoleRoutes, 60_000);
 
+// Where the console calls the admin API of the tenant most tests sign in to.
+export const ACME_ADMIN = '/console/api/admin/tenants/acme';
+
 export const GRACE = { tenant: 'acme', subject_id: 's1', username: 'grace' };
 export const ROOT = { tenant: 'system', subject_id: 's0', username: 'root' };
 

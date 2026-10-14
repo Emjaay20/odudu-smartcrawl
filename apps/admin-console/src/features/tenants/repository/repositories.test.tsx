@@ -9,8 +9,8 @@ import { createQueryClient } from '#/shared/repository/queryClient';
 import { TransportContext } from '#/shared/transport/useTransport';
 import { fakeTransport, json, problem, type Answer } from '#/testing/fakeTransport';
 import { administratorRoutes } from '#/testing/tenantsFixtures';
+import { ACME_ADMIN } from '#/testing/renderConsole';
 
-const T = '/console/api/admin/tenants/acme';
 const SUBJECT_ID = '01a0e72d-7fc7-7950-a1e7-1d079588f8b4';
 const PASSWORD = 'one-time-Qm9vYmFy';
 const SECRET = 'client-secret-c2VjcmV0';
@@ -71,12 +71,12 @@ it('creates the administrator, grants tenant-admin on the built-in client, then 
     expect(result.current.secret).toBe(PASSWORD);
   });
   expect(sent.map((s) => `${s.method} ${s.path}`)).toEqual([
-    `POST ${T}/subjects`,
-    `GET ${T}/clients`,
-    `GET ${T}/roles`,
-    `GET ${T}/subjects/${SUBJECT_ID}/roles`,
-    `PUT ${T}/subjects/${SUBJECT_ID}/roles`,
-    `POST ${T}/subjects/${SUBJECT_ID}/password`,
+    `POST ${ACME_ADMIN}/subjects`,
+    `GET ${ACME_ADMIN}/clients`,
+    `GET ${ACME_ADMIN}/roles`,
+    `GET ${ACME_ADMIN}/subjects/${SUBJECT_ID}/roles`,
+    `PUT ${ACME_ADMIN}/subjects/${SUBJECT_ID}/roles`,
+    `POST ${ACME_ADMIN}/subjects/${SUBJECT_ID}/password`,
   ]);
   expect(sent[0]?.body).toEqual({ username: 'grace' });
   expect(sent[2]?.search.toString()).toBe('client=c-admin&name=tenant-admin');
@@ -110,13 +110,17 @@ it('resumes where a reload left it: a granted subject is only issued its passwor
     expect(result.current.secret).toBe(PASSWORD);
   });
   expect(sent.map((s) => `${s.method} ${s.path}`)).toEqual([
-    `POST ${T}/subjects/${SUBJECT_ID}/password`,
+    `POST ${ACME_ADMIN}/subjects/${SUBJECT_ID}/password`,
   ]);
 });
 
 it('stops at a refused call, reporting it, with what landed already told', async () => {
   const routes = administratorRoutes('acme', SUBJECT_ID, PASSWORD);
-  routes[`PUT ${T}/subjects/${SUBJECT_ID}/roles`] = problem(403, 'about:blank', 'Forbidden');
+  routes[`PUT ${ACME_ADMIN}/subjects/${SUBJECT_ID}/roles`] = problem(
+    403,
+    'about:blank',
+    'Forbidden',
+  );
   const { wrapper, sent } = harness(routes);
   const progress = vi.fn();
   const failed = vi.fn();
@@ -156,7 +160,7 @@ it('saves an export as the bytes the server sent, and keeps the text nowhere', a
     saved.push(this.download);
   });
   const { wrapper, queryClient } = harness({
-    [`GET ${T}/export`]: () =>
+    [`GET ${ACME_ADMIN}/export`]: () =>
       new Response(text, { headers: { 'content-type': 'application/vnd.odudu.tenant+json' } }),
   });
   const { result } = renderHook(() => useExport('acme', () => new Date('2026-09-29T10:00:00Z')), {
@@ -192,7 +196,7 @@ it("saves an export that names no content type as the tenant document's own", as
   );
   vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
   const { wrapper } = harness({
-    [`GET ${T}/export`]: () => new Response(new TextEncoder().encode('{"version":1}')),
+    [`GET ${ACME_ADMIN}/export`]: () => new Response(new TextEncoder().encode('{"version":1}')),
   });
   const { result } = renderHook(() => useExport('acme', () => new Date('2026-09-29T10:00:00Z')), {
     wrapper,

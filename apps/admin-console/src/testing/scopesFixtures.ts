@@ -1,11 +1,10 @@
 import { json, type Answer, type Sent } from '#/testing/fakeTransport';
 import { CLIENTS } from '#/testing/clientsFixtures';
-import { GRACE, whoami } from '#/testing/renderConsole';
+import { GRACE, whoami, ACME_ADMIN } from '#/testing/renderConsole';
 import { ROLES } from '#/testing/rolesFixtures';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures';
 
-export const A = '/console/api/admin/tenants/acme';
-export const SC = `${A}/scopes`;
+export const SC = `${ACME_ADMIN}/scopes`;
 
 export interface ScopeAnswer {
   id: string;
@@ -78,7 +77,7 @@ export function scopeRoutes(
 ): Record<string, Answer> {
   return {
     'GET /console/api/session': json(GRACE),
-    [`GET ${A}/whoami`]: whoami(capabilities),
+    [`GET ${ACME_ADMIN}/whoami`]: whoami(capabilities),
     [`GET ${SC}`]: (request) => json({ items: listed(request) })(request),
     [`GET ${SC}/count`]: (request) =>
       json({ count: listed(request).length, capped: false })(request),
@@ -97,8 +96,8 @@ export function scopeRoutes(
     ),
     [`GET ${SC}/s-bill/roles`]: json({ items: [MAPPED] }, 200, { etag: '"s-bill-r1"' }),
     [`GET ${SC}/s-bill/clients`]: json({ items: [BILLING_CARRIES] }),
-    [`GET ${A}/roles`]: (request) => json({ items: rolesListed(request) })(request),
-    [`GET ${A}/clients`]: (request) =>
+    [`GET ${ACME_ADMIN}/roles`]: (request) => json({ items: rolesListed(request) })(request),
+    [`GET ${ACME_ADMIN}/clients`]: (request) =>
       json({
         items: CLIENTS.filter(
           (each) =>
@@ -106,7 +105,7 @@ export function scopeRoutes(
             each.name.toLowerCase().startsWith((request.search.get('name') ?? '').toLowerCase()),
         ),
       })(request),
-    [`GET ${A}/audit`]: json({ items: [] }),
+    [`GET ${ACME_ADMIN}/audit`]: json({ items: [] }),
     ...extra,
   };
 }

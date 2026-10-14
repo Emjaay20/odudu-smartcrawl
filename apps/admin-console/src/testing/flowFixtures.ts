@@ -1,10 +1,9 @@
 import { json, type Answer } from '#/testing/fakeTransport';
-import { GRACE, whoami } from '#/testing/renderConsole';
+import { GRACE, whoami, ACME_ADMIN } from '#/testing/renderConsole';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures';
 
-export const A = '/console/api/admin/tenants/acme';
-export const FL = `${A}/flow/executions`;
-export const ST = `${A}/settings`;
+export const FL = `${ACME_ADMIN}/flow/executions`;
+export const ST = `${ACME_ADMIN}/settings`;
 
 export const AVAILABLE = ['password', 'passkey', 'otp', 'recovery-code'];
 
@@ -38,7 +37,7 @@ export function flowRoutes(
 ): Record<string, Answer> {
   return {
     'GET /console/api/session': json(GRACE),
-    [`GET ${A}/whoami`]: whoami(capabilities),
+    [`GET ${ACME_ADMIN}/whoami`]: whoami(capabilities),
     [`GET ${FL}`]: flowAnswer(),
     [`GET ${ST}`]: settingsAnswer(),
     ...extra,

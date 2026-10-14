@@ -1,9 +1,8 @@
 import { json, type Answer, type Sent } from '#/testing/fakeTransport';
-import { GRACE, whoami } from '#/testing/renderConsole';
+import { GRACE, whoami, ACME_ADMIN } from '#/testing/renderConsole';
 import { ADMIN_ROLES, EVERY_TENANT_CAPABILITY, role } from '#/testing/subjectsFixtures';
 
-export const A = '/console/api/admin/tenants/acme';
-export const R = `${A}/roles`;
+export const R = `${ACME_ADMIN}/roles`;
 
 export const AUDITOR = { ...role('r-aud', 'auditor'), description: 'Reads the books' };
 export const READER = role('r-read', 'reader');
@@ -28,7 +27,7 @@ export function roleRoutes(
 ): Record<string, Answer> {
   return {
     'GET /console/api/session': json(GRACE),
-    [`GET ${A}/whoami`]: whoami(capabilities),
+    [`GET ${ACME_ADMIN}/whoami`]: whoami(capabilities),
     [`GET ${R}`]: (request) => json({ items: listed(request) })(request),
     [`GET ${R}/count`]: (request) =>
       json({ count: listed(request).length, capped: false })(request),
@@ -38,11 +37,11 @@ export function roleRoutes(
         [`GET ${R}/${each.id}/composites`, json({ items: [] }, 200, { etag: `"${each.id}-c1"` })],
       ]),
     ),
-    [`GET ${A}/audit`]: json({ items: [] }),
-    [`GET ${A}/subjects`]: json({ items: [] }),
-    [`GET ${A}/subjects/count`]: json({ count: 0, capped: false }),
-    [`GET ${A}/subjects/s1/admin-capabilities`]: json({ items: [], complete: true }),
-    [`GET ${A}/subjects/s1/groups`]: json({ items: [] }, 200, { etag: '"m0"' }),
+    [`GET ${ACME_ADMIN}/audit`]: json({ items: [] }),
+    [`GET ${ACME_ADMIN}/subjects`]: json({ items: [] }),
+    [`GET ${ACME_ADMIN}/subjects/count`]: json({ count: 0, capped: false }),
+    [`GET ${ACME_ADMIN}/subjects/s1/admin-capabilities`]: json({ items: [], complete: true }),
+    [`GET ${ACME_ADMIN}/subjects/s1/groups`]: json({ items: [] }, 200, { etag: '"m0"' }),
     ...extra,
   };
 }

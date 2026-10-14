@@ -2,9 +2,9 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { A, BILLING, C, clientRoutes } from '#/testing/clientsFixtures';
+import { BILLING, C, clientRoutes } from '#/testing/clientsFixtures';
 import { json, problem } from '#/testing/fakeTransport';
-import { consoleAt, renderConsoleAt, resetConsole } from '#/testing/renderConsole';
+import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
 
 afterEach(() => {
   resetConsole();
@@ -69,7 +69,10 @@ it('says there is no such client for an id that is not one', async () => {
 it('offers nothing to change until the caller capabilities are known', async () => {
   renderConsoleAt(
     AT,
-    clientRoutes(undefined, { [`GET ${A}/whoami`]: problem(500), ...reaching('view-users') }),
+    clientRoutes(undefined, {
+      [`GET ${ACME_ADMIN}/whoami`]: problem(500),
+      ...reaching('view-users'),
+    }),
   );
   await screen.findByRole('heading', { level: 1, name: 'Billing' });
   await screen.findByRole('region', { name: 'Identity' });
@@ -124,9 +127,13 @@ it('lists the changes made to the client under Activity, from the audit trail', 
   const { sent } = renderConsoleAt(AT, clientRoutes());
   await user.click(await screen.findByRole('tab', { name: 'Activity' }));
   await waitFor(() => {
-    expect(sent.find((s) => s.path === `${A}/audit`)?.search.get('resource_id')).toBe('c-bill');
+    expect(sent.find((s) => s.path === `${ACME_ADMIN}/audit`)?.search.get('resource_id')).toBe(
+      'c-bill',
+    );
   });
-  expect(sent.find((s) => s.path === `${A}/audit`)?.search.get('resource_type')).toBe('client');
+  expect(sent.find((s) => s.path === `${ACME_ADMIN}/audit`)?.search.get('resource_type')).toBe(
+    'client',
+  );
 });
 
 it('says Activity needs view-audit when the caller lacks it', async () => {
