@@ -133,6 +133,19 @@ async function attach(context: BrowserContext, index: number, recording: Recordi
     open.set(request, recording.entries.length);
     recording.entries.push(entry);
   });
+  context.on('requestfinished', async (request) => {
+    const at = open.get(request);
+    const entry = at === undefined ? undefined : recording.entries[at];
+    if (at === undefined || entry === undefined) return;
+    const timing = request.timing();
+    const sizes = await request.sizes().catch(() => null);
+    recording.entries[at] = {
+      ...entry,
+      ttfb: Math.max(0, Math.round(timing.responseStart - timing.requestStart)),
+      total: Math.max(0, Math.round(timing.responseEnd - timing.requestStart)),
+      bytes: sizes?.responseBodySize ?? 0,
+    };
+  });
   context.on('response', (response) => {
     const at = open.get(response.request());
     const entry = at === undefined ? undefined : recording.entries[at];
@@ -163,6 +176,7 @@ export async function traceFixture(
   info: TestInfo,
 ): Promise<void> {
   const recording: Recording = { entries: [], storage: [], focus: [] };
+  const started = Date.now();
   const original = browser.newContext.bind(browser);
   let opened = 0;
   browser.newContext = async (options) => {
@@ -178,6 +192,7 @@ export async function traceFixture(
     const line: TestTrace = {
       key: keyOf(info),
       outcome: info.status ?? 'unknown',
+      durationMs: Date.now() - started,
       entries: recording.entries,
       storage: recording.storage,
       focus: recording.focus,

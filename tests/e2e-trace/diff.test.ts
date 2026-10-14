@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   compareTests,
   explanationOf,
+  loadOf,
   rereadSets,
+  timingBySpec,
   requestLine,
   type TestTrace,
   type TraceEntry,
@@ -192,5 +194,33 @@ describe('explanationOf', () => {
     expect(explanationOf(difference, [])).toContain('timing');
     expect(explanationOf({ ...difference, final: 'GET /y -> 200' }, [])).toBeNull();
     expect(explanationOf({ ...difference, base: 'GET /x -> 500' }, [])).toBeNull();
+  });
+});
+
+describe('timing', () => {
+  it('sums wall time per spec over the tests both recordings hold and gives the ratio', () => {
+    const base = [
+      trace('a.spec.ts > one', [], { durationMs: 1000 }),
+      trace('a.spec.ts > two', [], { durationMs: 3000 }),
+      trace('b.spec.ts > only here', [], { durationMs: 500 }),
+    ];
+    const final = [
+      trace('a.spec.ts > one', [], { durationMs: 1500 }),
+      trace('a.spec.ts > two', [], { durationMs: 4500 }),
+    ];
+    expect(timingBySpec(base, final)).toEqual([
+      { spec: 'a.spec.ts', tests: 2, base: 4000, final: 6000, ratio: 1.5 },
+    ]);
+  });
+
+  it('adds up what a test asked of the server', () => {
+    const load = loadOf(
+      trace('a', [
+        entry('GET', '/x', { ttfb: 10, total: 30, bytes: 100 }),
+        entry('GET', '/y', { ttfb: 5, total: 5, bytes: 50 }),
+        entry('GET', '/z'),
+      ]),
+    );
+    expect(load).toEqual({ requests: 3, bytes: 150, ttfb: 15, total: 35 });
   });
 });

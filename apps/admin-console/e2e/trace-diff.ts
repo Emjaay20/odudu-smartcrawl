@@ -20,11 +20,16 @@ export interface TraceEntry {
   readonly status: number | 'aborted';
   readonly cache: string | null;
   readonly etag: string | null;
+  // Milliseconds to the first byte and to the last, and the body's bytes on the wire.
+  readonly ttfb?: number | undefined;
+  readonly total?: number | undefined;
+  readonly bytes?: number | undefined;
 }
 
 export interface TestTrace {
   readonly key: string;
   readonly outcome: string;
+  readonly durationMs?: number | undefined;
   readonly entries: readonly TraceEntry[];
   readonly storage: readonly string[];
   readonly focus: readonly string[];
@@ -249,6 +254,59 @@ export function compareTests(base: readonly TestTrace[], final: readonly TestTra
   };
 }
 
+export interface Timing {
+  readonly spec: string;
+  readonly tests: number;
+  readonly base: number;
+  readonly final: number;
+  readonly ratio: number;
+}
+
+const specOf = (key: string): string => key.split(' > ')[0] ?? key;
+
+// Wall time per spec, summed over the tests both recordings hold.
+export function timingBySpec(base: readonly TestTrace[], final: readonly TestTrace[]): Timing[] {
+  const after = new Map(final.map((each) => [each.key, each]));
+  const sums = new Map<string, { tests: number; base: number; final: number }>();
+  for (const before of base) {
+    const other = after.get(before.key);
+    if (other === undefined || before.durationMs === undefined || other.durationMs === undefined) {
+      continue;
+    }
+    const sum = sums.get(specOf(before.key)) ?? { tests: 0, base: 0, final: 0 };
+    sums.set(specOf(before.key), {
+      tests: sum.tests + 1,
+      base: sum.base + before.durationMs,
+      final: sum.final + other.durationMs,
+    });
+  }
+  return [...sums.entries()]
+    .map(([spec, sum]) => ({ spec, ...sum, ratio: sum.base === 0 ? 0 : sum.final / sum.base }))
+    .sort((a, b) => (a.spec < b.spec ? -1 : 1));
+}
+
+export interface Load {
+  readonly requests: number;
+  readonly bytes: number;
+  readonly ttfb: number;
+  readonly total: number;
+}
+
+// What a test asked of the server and what it cost, for telling a slowdown in
+// the server from one in the browser: `ttfb` is the sum of the time requests
+// waited for a first byte.
+export function loadOf(trace: TestTrace): Load {
+  return trace.entries.reduce<Load>(
+    (sum, each) => ({
+      requests: sum.requests + 1,
+      bytes: sum.bytes + (each.bytes ?? 0),
+      ttfb: sum.ttfb + (each.ttfb ?? 0),
+      total: sum.total + (each.total ?? 0),
+    }),
+    { requests: 0, bytes: 0, ttfb: 0, total: 0 },
+  );
+}
+
 const rule = z.object({
   id: z.string(),
   kind: z.enum(['registered', 'benign']),
@@ -307,11 +365,15 @@ const entry = z.object({
   status: z.union([z.number(), z.literal('aborted')]),
   cache: z.string().nullable(),
   etag: z.string().nullable(),
+  ttfb: z.number().optional(),
+  total: z.number().optional(),
+  bytes: z.number().optional(),
 });
 
 const line = z.object({
   key: z.string(),
   outcome: z.string(),
+  durationMs: z.number().optional(),
   entries: z.array(entry),
   storage: z.array(z.string()),
   focus: z.array(z.string()),
@@ -340,11 +402,33 @@ function show(each: Difference): string {
   return `  [${each.area}] ${sign}${where} ${text}`;
 }
 
+function timingReport(base: readonly TestTrace[], final: readonly TestTrace[]): string {
+  const rows = timingBySpec(base, final).map(
+    (each) =>
+      `${each.spec.padEnd(34)} ${String(each.tests).padStart(3)} ${(each.base / 1000).toFixed(1).padStart(8)}s ${(each.final / 1000).toFixed(1).padStart(8)}s  x${each.ratio.toFixed(2)}`,
+  );
+  const sum = (list: readonly TestTrace[]): Load =>
+    list.map(loadOf).reduce((a, b) => ({
+      requests: a.requests + b.requests,
+      bytes: a.bytes + b.bytes,
+      ttfb: a.ttfb + b.ttfb,
+      total: a.total + b.total,
+    }));
+  const show = (name: string, load: Load): string =>
+    `${name}: ${String(load.requests)} requests, ${String(load.bytes)} bytes, first byte waited ${(load.ttfb / 1000).toFixed(1)}s, transfers ${(load.total / 1000).toFixed(1)}s`;
+  return [...rows, show('base ', sum(base)), show('final', sum(final))].join('\n');
+}
+
 function main(): number {
-  const [baseFile, finalFile] = process.argv.slice(2);
+  const args = process.argv.slice(2);
+  const [baseFile, finalFile] = args.filter((each) => !each.startsWith('--'));
   if (baseFile === undefined || finalFile === undefined) {
     process.stderr.write('usage: node e2e/trace-diff.ts <base.jsonl> <final.jsonl>\n');
     return 2;
+  }
+  if (args.includes('--timing')) {
+    process.stdout.write(`${timingReport(readTrace(baseFile), readTrace(finalFile))}\n`);
+    return 0;
   }
   const rules = readRules(new URL('./trace-registered.json', import.meta.url));
   const base = readTrace(baseFile);
