@@ -13,6 +13,7 @@ export {
   ALREADY_GONE,
   REVOKED_TEXT,
   revokeConsequence,
+  askedConsequence,
   revokeOutcome,
 } from '#/features/registration-tokens/service/revoke';
 export {

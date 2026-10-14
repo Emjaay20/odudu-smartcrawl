@@ -13,7 +13,7 @@ import {
   mintedText,
   mintFailure,
   mintProblems,
-  revokeConsequence,
+  askedConsequence,
   revokeOutcome,
   type MintErrors,
 } from '#/features/registration-tokens/service';
@@ -97,7 +97,7 @@ export function useRegistrationTokensPage(tenant: string): RegistrationTokensPag
     secret: minting.secret,
     closeSecret: minting.close,
     revoking: action.asked,
-    consequence: action.asked === null ? '' : revokeConsequence(action.asked),
+    consequence: askedConsequence(action.asked),
     revokeBusy: revoke.busy,
     revokeProblem: action.problem,
     notice: action.notice,

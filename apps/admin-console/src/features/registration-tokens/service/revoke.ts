@@ -13,6 +13,11 @@ export function revokeConsequence(token: { remaining_uses: number }): string {
   return `Nobody can register a client with it again, and its ${counted(token.remaining_uses, 'use', 'uses')} left are lost. Clients it already registered are not affected.`;
 }
 
+// The dialog's consequence line: empty while no token is being revoked.
+export function askedConsequence(asked: { remaining_uses: number } | null): string {
+  return asked === null ? '' : revokeConsequence(asked);
+}
+
 export function revokeOutcome(result: GatewayResult<unknown>): RemovalOutcome {
   return removalOutcome(
     result,

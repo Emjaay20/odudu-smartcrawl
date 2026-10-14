@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ALREADY_GONE,
+  askedConsequence,
   revokeConsequence,
   revokeOutcome,
   REVOKED_TEXT,
@@ -41,5 +42,12 @@ describe('revokeConsequence', () => {
     const text = revokeConsequence({ remaining_uses: 2 });
     expect(text).toContain('2 uses');
     expect(text).toContain('already registered');
+  });
+});
+
+describe('askedConsequence', () => {
+  it('says nothing while no token is asked about, and what revoking costs once one is', () => {
+    expect(askedConsequence(null)).toBe('');
+    expect(askedConsequence({ remaining_uses: 2 })).toBe(revokeConsequence({ remaining_uses: 2 }));
   });
 });
