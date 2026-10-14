@@ -105,6 +105,17 @@ it('keeps the admin capabilities and the roles that reach one the caller lacks f
   expect(nesting).toHaveTextContent('reaches manage-keys, which you do not hold');
 });
 
+it('offers a role reaching a capability the caller holds', async () => {
+  renderConsoleAt(
+    AT,
+    serviceRoutes([], {}, ['manage-clients', 'manage-users', 'view-users', 'manage-keys']),
+  );
+  await open();
+  const section = screen.getByRole('region', { name: 'Roles' });
+  const nesting = await within(section).findByRole('option', { name: /nesting/u });
+  expect(nesting).not.toHaveAttribute('aria-disabled', 'true');
+});
+
 it('searches the tenant roles on the server', async () => {
   const user = userEvent.setup();
   const { sent } = renderConsoleAt(AT, serviceRoutes([]));

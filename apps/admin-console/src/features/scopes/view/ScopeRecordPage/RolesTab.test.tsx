@@ -81,6 +81,13 @@ it('does not offer a role reaching a capability the caller lacks, and says why',
   expect(option).toHaveAttribute('aria-disabled', 'true');
 });
 
+it('offers a role reaching a capability the caller holds', async () => {
+  renderConsoleAt(AT, scopeRoutes(['manage-tenant', 'manage-keys']));
+  const section = await open();
+  const option = await within(section).findByRole('option', { name: /manage-keys/u });
+  expect(option).not.toHaveAttribute('aria-disabled', 'true');
+});
+
 it('takes the new ETag from the answer, so a second save does not 412', async () => {
   const user = userEvent.setup();
   const { sent } = renderConsoleAt(

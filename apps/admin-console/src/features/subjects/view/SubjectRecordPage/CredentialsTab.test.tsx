@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { inTurn, json, problem, whoamiReads } from '#/testing/fakeTransport';
+import { inTurn, json, pending, problem, whoamiReads } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import {
@@ -267,6 +267,24 @@ it('offers the reset email first and the one-time password second, and sends the
   expect(
     await within(password).findByText('A password reset link was sent to ada@example.test.'),
   ).toBeVisible();
+  expect(sent.filter((s) => s.method === 'POST')).toHaveLength(1);
+});
+
+it('holds the mail being sent, and no other, while its answer is awaited', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    subjectRoutes(undefined, { [`POST ${C}/password-reset`]: pending() }),
+  );
+  const password = await screen.findByRole('region', { name: 'Password' });
+  const reset = within(password).getByRole('button', { name: 'Send a password reset email' });
+  await user.click(reset);
+  await waitFor(() => {
+    expect(reset).toBeDisabled();
+  });
+  const mail = screen.getByRole('region', { name: 'Email' });
+  expect(within(mail).getByRole('button', { name: 'Send a verification email' })).toBeEnabled();
+  await user.click(reset);
   expect(sent.filter((s) => s.method === 'POST')).toHaveLength(1);
 });
 
