@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   choosable,
   holdersParams,
+  holderSet,
   pickerUnavailable,
   subjectName,
   type Subject,
@@ -40,4 +41,10 @@ describe('the picker of subjects', () => {
 it('asks for any capability, narrowed by the search and continued from a cursor', () => {
   expect(holdersParams('', undefined).toString()).toBe('capability=any');
   expect(holdersParams('ada', 'c2').toString()).toBe('capability=any&username=ada&cursor=c2');
+});
+
+it('holds the ids a read answered with, and nothing before or after a failed one', () => {
+  expect([...(holderSet(['s1', 's2']) ?? [])]).toEqual(['s1', 's2']);
+  expect(holderSet(null)).toBeNull();
+  expect(holderSet(undefined)).toBeNull();
 });

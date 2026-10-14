@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { holdersParams } from '#/features/system-admins/service';
+import { holderSet, holdersParams } from '#/features/system-admins/service';
 import { readSubjectPage } from '#/shared/adapter/directory';
 import { listKey } from '#/shared/repository/queryKeys';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
@@ -32,5 +32,5 @@ export function usePickerHolders(query: string): ReadonlySet<string> | null {
       return ids;
     },
   });
-  return holders.data === undefined || holders.data === null ? null : new Set(holders.data);
+  return holderSet(holders.data);
 }

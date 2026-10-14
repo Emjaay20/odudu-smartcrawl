@@ -4,6 +4,7 @@ export {
   pickerUnavailable,
   choosable,
   holdersParams,
+  holderSet,
 } from '#/features/system-admins/service/picker';
 export {
   type AdministratorsAccess,

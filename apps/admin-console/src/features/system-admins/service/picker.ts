@@ -25,6 +25,11 @@ export function choosable(
   return options.find((option) => option.id === id) ?? null;
 }
 
+// The holders a picker search found, once the read has answered with a list.
+export function holderSet(ids: readonly string[] | null | undefined): ReadonlySet<string> | null {
+  return ids === undefined || ids === null ? null : new Set(ids);
+}
+
 // One page of the holders of any admin capability among what a search matches.
 export function holdersParams(query: string, cursor: string | undefined): URLSearchParams {
   const params = new URLSearchParams({ capability: 'any' });
