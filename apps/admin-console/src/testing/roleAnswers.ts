@@ -31,7 +31,7 @@ export function role(
 }
 
 // What a built-in capability reaches: itself, and view-users with manage-users;
-// Full every capability of an ordinary tenant.
+// tenant-admin reaches every capability of an ordinary tenant.
 function reachOf(name: string, clientKey: string | null): AdminCapability[] {
   if (clientKey !== 'odudu-admin') return [];
   if (name === 'tenant-admin') return EVERY_TENANT_CAPABILITY;

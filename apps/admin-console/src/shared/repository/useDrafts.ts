@@ -29,11 +29,12 @@ interface Drafts {
   // Drops drafts some other administrator left in this tab.
   adopt: (owner: string) => void;
   forgetAll: () => void;
-  // Forgets the registered sections as well: a fresh start.
+  // Forgets the registered sections as well, which only a registry held in
+  // the closure can be made to do; a test that registered one directly needs it.
   reset: () => void;
 }
 
-export const useDrafts = create<Drafts>()(() => {
+export const useDrafts = create<Drafts>()((_set, get) => {
   const sources = new Set<DraftSource>();
   return {
     register: (source) => {
@@ -74,7 +75,7 @@ export const useDrafts = create<Drafts>()(() => {
     },
     reset: () => {
       sources.clear();
-      storeDrafts(null);
+      get().forgetAll();
     },
   };
 });
