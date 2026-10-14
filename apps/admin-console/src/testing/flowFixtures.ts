@@ -1,7 +1,6 @@
 import { json, type Answer } from '#/testing/fakeTransport';
 import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
-import { EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures';
-
+import { EVERY_TENANT_CAPABILITY } from '#/testing/roleAnswers';
 export const FL = `${ACME_ADMIN}/flow/executions`;
 export const ST = `${ACME_ADMIN}/settings`;
 

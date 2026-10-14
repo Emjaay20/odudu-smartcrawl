@@ -3,8 +3,7 @@ import { matchesName } from '#/testing/listFilters';
 import { CLIENTS } from '#/testing/clientsFixtures';
 import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
 import { ROLES } from '#/testing/rolesFixtures';
-import { EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures';
-
+import { EVERY_TENANT_CAPABILITY } from '#/testing/roleAnswers';
 export const SC = `${ACME_ADMIN}/scopes`;
 
 export interface ScopeAnswer {

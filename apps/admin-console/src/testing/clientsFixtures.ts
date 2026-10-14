@@ -1,7 +1,6 @@
 import { json, type Answer, type Sent } from '#/testing/fakeTransport';
 import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
-import { EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures';
-
+import { EVERY_TENANT_CAPABILITY } from '#/testing/roleAnswers';
 export const C = `${ACME_ADMIN}/clients`;
 
 export interface ClientAnswer {

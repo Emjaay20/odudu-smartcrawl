@@ -1,8 +1,7 @@
 import { json, type Answer, type Sent } from '#/testing/fakeTransport';
 import { matchesName, underParent } from '#/testing/listFilters';
 import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
-import { ADMIN_ROLES, EVERY_TENANT_CAPABILITY, role } from '#/testing/subjectsFixtures';
-
+import { ADMIN_ROLES, EVERY_TENANT_CAPABILITY, role } from '#/testing/roleAnswers';
 export const R = `${ACME_ADMIN}/roles`;
 
 export const AUDITOR = { ...role('r-aud', 'auditor'), description: 'Reads the books' };

@@ -1,23 +1,11 @@
 import { expect, it } from 'vitest';
 import { grantHoldings, grantTenantAdmin } from '#/shared/repository/administratorRoles';
 import { fakeTransport, json, problem, type Answer } from '#/testing/fakeTransport';
+import { adminClientRole } from '#/testing/roleAnswers';
 import { administratorRoutes } from '#/testing/tenantsFixtures';
 
 const S = '/console/api/admin/tenants/system';
 const ID = '01a0e72d-7fc7-7950-a1e7-1d079588f8b4';
-
-function role(id: string, name: string, client: string | null) {
-  return {
-    id,
-    name,
-    description: null,
-    client_id: client,
-    client_key: client === null ? null : 'odudu-admin',
-    default_for_new_subjects: false,
-    admin_reach: [],
-    created_at: '2026-09-28T08:41:53.858Z',
-  };
-}
 
 function holder(id: string) {
   return {
@@ -45,12 +33,12 @@ function systemRoles(
     [`GET ${S}/roles`]: (request) => {
       const name = request.search.get('name');
       const every = [
-        role('r-admin', 'tenant-admin', 'c-admin'),
-        role('r-tenants', 'manage-tenants', 'c-admin'),
-        role('r-users', 'manage-users', 'c-admin'),
+        adminClientRole('r-admin', 'tenant-admin'),
+        adminClientRole('r-tenants', 'manage-tenants'),
+        adminClientRole('r-users', 'manage-users'),
       ];
       return name === null
-        ? json({ items: [role('r-users', 'manage-users', 'c-admin')], next: 'page-2' })(request)
+        ? json({ items: [adminClientRole('r-users', 'manage-users')], next: 'page-2' })(request)
         : json({ items: every.filter((r) => r.name.startsWith(name)) })(request);
     },
     [`GET ${S}/subjects/${ID}/roles`]: json(assigned(held), 200, { etag: '"roles-1"' }),

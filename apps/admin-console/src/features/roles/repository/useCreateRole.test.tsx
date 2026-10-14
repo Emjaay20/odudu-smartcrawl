@@ -4,8 +4,7 @@ import { useCreateRole } from '#/features/roles/repository/useCreateRole';
 import { json } from '#/testing/fakeTransport';
 import { hookHarness } from '#/testing/hookHarness';
 import { R } from '#/testing/rolesFixtures';
-import { role } from '#/testing/subjectsFixtures';
-
+import { role } from '#/testing/roleAnswers';
 it('reads the lists and pickers that show it again once it is created, and not when it is refused', async () => {
   const { wrapper, invalidated } = hookHarness({
     [`POST ${R}`]: json(role('r-new', 'billing'), 201),

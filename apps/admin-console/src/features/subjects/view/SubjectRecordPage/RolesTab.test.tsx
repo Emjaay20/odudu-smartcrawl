@@ -4,15 +4,8 @@ import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, problem, type Sent } from '#/testing/fakeTransport';
 import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
-import {
-  ADA_AT,
-  ADA_ID,
-  ADMIN_ROLES,
-  assigned,
-  role,
-  S,
-  subjectRoutes,
-} from '#/testing/subjectsFixtures';
+import { ADMIN_ROLES, role } from '#/testing/roleAnswers';
+import { ADA_AT, ADA_ID, assigned, S, subjectRoutes } from '#/testing/subjectsFixtures';
 
 afterEach(() => {
   resetConsole();

@@ -5,6 +5,7 @@ import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, problem, type Answer } from '#/testing/fakeTransport';
 import { consoleAt, GRACE, renderConsoleAt, resetConsole, whoami } from '#/testing/renderConsole';
 import { ADMIN, administratorRoutes, systemRoutes } from '#/testing/tenantsFixtures';
+import { adminClientRole } from '#/testing/roleAnswers';
 
 const AT = '/console/system/system-admins';
 const S = `${ADMIN}/system`;
@@ -26,19 +27,6 @@ function subject(id: string, username: string, extra: Record<string, unknown> = 
 const ROOT_ROW = subject('s0', 'root');
 const ADA = subject('s-ada', 'ada');
 const CANDIDATE = subject('s-grace', 'grace');
-
-function role(id: string, name: string) {
-  return {
-    id,
-    name,
-    description: null,
-    client_id: 'c-admin',
-    client_key: 'odudu-admin',
-    default_for_new_subjects: false,
-    admin_reach: [],
-    created_at: '2026-09-28T08:41:53.858Z',
-  };
-}
 
 function subjects(holders: readonly unknown[], others: readonly unknown[] = []): Answer {
   return (request) => {
@@ -82,7 +70,10 @@ function routes(extra: Record<string, Answer> = {}) {
   return systemRoutes({
     [`GET ${S}/clients`]: base[`GET ${S}/clients`] ?? json({ items: [] }),
     [`GET ${S}/roles`]: json({
-      items: [role('r-admin', 'tenant-admin'), role('r-tenants', 'manage-tenants')],
+      items: [
+        adminClientRole('r-admin', 'tenant-admin'),
+        adminClientRole('r-tenants', 'manage-tenants'),
+      ],
     }),
     [`GET ${S}/subjects`]: subjects([ROOT_ROW, ADA], [CANDIDATE]),
     [`GET ${S}/subjects/count`]: counted(2),

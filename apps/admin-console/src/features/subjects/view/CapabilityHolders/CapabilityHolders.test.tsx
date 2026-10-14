@@ -5,6 +5,7 @@ import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, problem, type Answer } from '#/testing/fakeTransport';
 import { consoleAt, renderConsoleAt, resetConsole, whoami } from '#/testing/renderConsole';
 import { ADMIN, systemRoutes, tenant } from '#/testing/tenantsFixtures';
+import { adminClientRole } from '#/testing/roleAnswers';
 
 afterEach(() => {
   resetConsole();
@@ -33,23 +34,10 @@ const GRACE = holder('s-grace', 'grace', [
 ]);
 const ADA = holder('s-ada', 'ada', [{ name: 'view-audit', direct: false }], false);
 
-function adminRole(id: string, name: string) {
-  return {
-    id,
-    name,
-    description: null,
-    client_id: 'c-admin',
-    client_key: 'odudu-admin',
-    default_for_new_subjects: false,
-    admin_reach: [],
-    created_at: '2026-09-28T08:41:53.858Z',
-  };
-}
-
 const ROLES = [
-  adminRole('r-full', 'tenant-admin'),
-  adminRole('r-audit', 'view-audit'),
-  adminRole('r-users', 'view-users'),
+  adminClientRole('r-full', 'tenant-admin'),
+  adminClientRole('r-audit', 'view-audit'),
+  adminClientRole('r-users', 'view-users'),
 ];
 
 function routes(extra: Record<string, Answer> = {}) {
@@ -150,7 +138,7 @@ function systemHolders(extra: Record<string, Answer> = {}) {
     [`GET ${SYS}`]: json({ items: [root, vera] }),
     [`GET ${SYS}/count`]: json({ count: 2, capped: false }),
     [`GET ${ADMIN}/system/roles`]: json({
-      items: [...ROLES, adminRole('r-tenants', 'manage-tenants')],
+      items: [...ROLES, adminClientRole('r-tenants', 'manage-tenants')],
     }),
     [`GET ${SYS}/s0/roles`]: json(
       {

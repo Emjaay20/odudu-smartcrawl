@@ -20,24 +20,8 @@ import {
   deleteBlock,
 } from '#/features/roles/service/blocks';
 import { roleReachUnavailable } from '#/shared/service/capabilities';
-
-function role(
-  id: string,
-  name: string,
-  clientKey: string | null = null,
-  reach: AdminCapability[] = [],
-) {
-  return {
-    admin_reach: reach,
-    id,
-    name,
-    description: null,
-    client_id: clientKey === null ? null : `c-${clientKey}`,
-    client_key: clientKey,
-    default_for_new_subjects: false,
-    created_at: '2026-09-28T08:41:53.858Z',
-  };
-}
+import { role } from '#/testing/roleAnswers';
+import { refusedWith } from '#/testing/failures';
 
 const AUDITOR = role('r-aud', 'auditor');
 
@@ -51,9 +35,6 @@ const FULL = role('r-full', 'tenant-admin', 'odudu-admin', ['view-users', 'manag
 const DEEP = role('r-deep', 'deep', null, ['view-audit']);
 
 const certain = { kind: 'certain', lost: ['view-audit'] } as const;
-
-const refusal = (status: number, detail?: string, type = 'about:blank') =>
-  ({ ok: false, kind: 'problem', problem: { type, title: 'Refused', status, detail } }) as const;
 
 describe('the ceiling on a role, by what the server says it reaches', () => {
   it('holds a delete back when what the role reaches is beyond the caller', () => {
@@ -182,17 +163,17 @@ describe('the composites a role offers', () => {
   });
 
   it('words a failed removal by what happened to the edge', () => {
-    expect(compositeRemovalFailureText('reader', 'auditor', refusal(412))).toBe(
+    expect(compositeRemovalFailureText('reader', 'auditor', refusedWith(412))).toBe(
       "reader's composites changed since you opened them, so auditor was not taken out. They have been read again; look before trying again.",
     );
     expect(
       compositeRemovalFailureText(
         'reader',
         'auditor',
-        refusal(409, 'would create a role composite cycle'),
+        refusedWith(409, 'would create a role composite cycle'),
       ),
     ).toBe('Refused: auditor already includes this role, so nesting it here would make a loop.');
-    expect(compositeRemovalFailureText('reader', 'auditor', refusal(500, 'boom'))).toBe(
+    expect(compositeRemovalFailureText('reader', 'auditor', refusedWith(500, 'boom'))).toBe(
       'auditor was not taken out: boom',
     );
     for (const kind of ['network', 'schema', 'defect'] as const) {

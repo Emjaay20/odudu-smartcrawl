@@ -13,21 +13,9 @@ import {
   setRoleDefault,
 } from '#/features/roles/adapter/roles';
 import { fakeTransport, json } from '#/testing/fakeTransport';
+import { role } from '#/testing/roleAnswers';
 
 const R = '/console/api/admin/tenants/acme/roles';
-
-function role(id: string, name: string, clientKey: string | null = null) {
-  return {
-    id,
-    name,
-    description: null,
-    client_id: clientKey === null ? null : `c-${clientKey}`,
-    client_key: clientKey,
-    default_for_new_subjects: false,
-    admin_reach: [],
-    created_at: '2026-09-28T08:41:53.858Z',
-  };
-}
 
 const AUDITOR = role('r-aud', 'auditor');
 const READER = role('r-read', 'reader');

@@ -2,8 +2,7 @@ import { json, type Answer, type Sent } from '#/testing/fakeTransport';
 import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
 import { matchesName, underParent } from '#/testing/listFilters';
 import { AUDITOR, PORTAL_READER } from '#/testing/rolesFixtures';
-import { ADMIN_ROLES, EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures';
-
+import { ADMIN_ROLES, EVERY_TENANT_CAPABILITY } from '#/testing/roleAnswers';
 export const G = `${ACME_ADMIN}/groups`;
 
 export interface GroupAnswer {

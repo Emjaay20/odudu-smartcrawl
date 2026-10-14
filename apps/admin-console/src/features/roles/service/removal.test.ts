@@ -5,11 +5,9 @@ import {
   roleDeleteConsequence,
   roleDeleteFailureText,
 } from '#/features/roles/service/removal';
+import { refusedWith } from '#/testing/failures';
 
 const certain = { kind: 'certain', lost: ['view-audit'] } as const;
-
-const refusal = (status: number, detail?: string, type = 'about:blank') =>
-  ({ ok: false, kind: 'problem', problem: { type, title: 'Refused', status, detail } }) as const;
 
 describe('deleting a role', () => {
   it('says what it comes to, with the loss appended', () => {
@@ -22,13 +20,13 @@ describe('deleting a role', () => {
   });
 
   it('words a failed delete, the server own reason for a refusal first', () => {
-    expect(roleDeleteFailureText('reader', refusal(409, 'still in use'))).toBe(
+    expect(roleDeleteFailureText('reader', refusedWith(409, 'still in use'))).toBe(
       'Refused: still in use.',
     );
-    expect(roleDeleteFailureText('reader', refusal(500, 'boom'))).toBe(
+    expect(roleDeleteFailureText('reader', refusedWith(500, 'boom'))).toBe(
       'reader was not deleted: boom',
     );
-    expect(roleDeleteFailureText('reader', refusal(403, 'x'))).toBe('Refused: x.');
+    expect(roleDeleteFailureText('reader', refusedWith(403, 'x'))).toBe('Refused: x.');
     expect(roleDeleteFailureText('reader', { ok: false, kind: 'network' })).toBe(
       'Could not confirm whether reader was deleted. It has not been sent again; look at the roles before trying again.',
     );

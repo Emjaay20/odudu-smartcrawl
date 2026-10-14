@@ -1,19 +1,11 @@
 import { json, type Answer } from '#/testing/fakeTransport';
+import { ADMIN_ROLES, EVERY_TENANT_CAPABILITY } from '#/testing/roleAnswers';
 import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
 
 export const S = `${ACME_ADMIN}/subjects`;
 export const POLICY = '/console/api/admin/tenants/acme/subjects/username-policy';
 export const ADA_ID = '01a0e72d-7fc7-7950-a1e7-1d079588f8b4';
 export const ADA_AT = `/console/acme/subjects/${ADA_ID}`;
-export const EVERY_TENANT_CAPABILITY = [
-  'view-users',
-  'manage-users',
-  'manage-tenant',
-  'manage-clients',
-  'manage-keys',
-  'manage-sessions',
-  'view-audit',
-];
 
 export function subject(id: string, username: string | null, extra: Record<string, unknown> = {}) {
   return {
@@ -82,33 +74,6 @@ export function group(id: string, path: string, description: string | null = nul
     admin_reach: [],
   };
 }
-
-export function role(id: string, name: string, clientKey: string | null = null) {
-  return {
-    id,
-    name,
-    description: null,
-    client_id: clientKey === null ? null : `c-${clientKey}`,
-    client_key: clientKey,
-    default_for_new_subjects: false,
-    created_at: '2026-09-28T08:41:53.858Z',
-    admin_reach: reachOf(name, clientKey),
-  };
-}
-
-// What a built-in capability reaches: itself, and view-users with manage-users;
-// Full every capability of an ordinary tenant.
-function reachOf(name: string, clientKey: string | null): string[] {
-  if (clientKey !== 'odudu-admin') return [];
-  if (name === 'tenant-admin') return EVERY_TENANT_CAPABILITY;
-  return name === 'manage-users' ? ['view-users', 'manage-users'] : [name];
-}
-
-// The built-in admin client's roles, as the role list answers them.
-export const ADMIN_ROLES = [
-  role('r-full', 'tenant-admin', 'odudu-admin'),
-  ...EVERY_TENANT_CAPABILITY.map((name) => role(`r-${name}`, name, 'odudu-admin')),
-];
 
 export function assigned(r: {
   id: string;

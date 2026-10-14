@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import type { AdminCapability } from '#/shared/service/principal';
 import {
   addRefusal,
   compositesFixed,
@@ -8,24 +7,7 @@ import {
   deleteBlock,
   isBuiltin,
 } from '#/features/roles/service/blocks';
-
-function role(
-  id: string,
-  name: string,
-  clientKey: string | null = null,
-  reach: AdminCapability[] = [],
-) {
-  return {
-    admin_reach: reach,
-    id,
-    name,
-    description: null,
-    client_id: clientKey === null ? null : `c-${clientKey}`,
-    client_key: clientKey,
-    default_for_new_subjects: false,
-    created_at: '2026-09-28T08:41:53.858Z',
-  };
-}
+import { role } from '#/testing/roleAnswers';
 
 const READER = role('r-read', 'reader');
 

@@ -1,21 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { GatewayFailure } from '#/shared/service/result';
 import {
   changeFailureText,
   accessRefusal,
   removalConfirmation,
 } from '#/features/subjects/service/access';
-
-const failure = (kind: 'network' | 'schema' | 'defect'): GatewayFailure => ({ ok: false, kind });
-
-const refusal = (
-  status: number,
-  extra: { type?: string; detail?: string; errors?: { path: string; message: string }[] } = {},
-): GatewayFailure => ({
-  ok: false,
-  kind: 'problem',
-  problem: { type: 'about:blank', title: `T${String(status)}`, status, ...extra },
-});
+import { failure, refusal } from '#/testing/failures';
 
 describe('a change to what a subject holds, refused', () => {
   const problem = (status: number, type = 'about:blank') => ({ type, title: 'x', status });

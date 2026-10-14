@@ -1,7 +1,6 @@
 import { json, type Answer } from '#/testing/fakeTransport';
 import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
-import { EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures';
-
+import { EVERY_TENANT_CAPABILITY } from '#/testing/roleAnswers';
 export const RT = `${ACME_ADMIN}/registration-tokens`;
 
 export function token(id: string, uses: number, extra: Record<string, unknown> = {}) {

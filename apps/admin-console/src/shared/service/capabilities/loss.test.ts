@@ -1,21 +1,6 @@
-import type { EffectiveRoleAssignment } from '@odudu/contracts/admin';
 import { describe, expect, it } from 'vitest';
-import { ADMIN_CLIENT_KEY } from '#/shared/service/capabilities/holdings';
 import { asksFirst, lossBlocked, adminLoss } from '#/shared/service/capabilities/loss';
-
-function role(
-  name: string,
-  via: EffectiveRoleAssignment['via'],
-  clientKey: string | null = ADMIN_CLIENT_KEY,
-): EffectiveRoleAssignment {
-  return {
-    id: `r-${name}`,
-    name,
-    client_id: clientKey === null ? null : 'c-admin',
-    client_key: clientKey,
-    via,
-  };
-}
+import { effectiveRole } from '#/testing/roleAnswers';
 
 describe('adminLoss', () => {
   const group = (path: string) => ({
@@ -31,10 +16,10 @@ describe('adminLoss', () => {
 
   it('names what goes once every way it is held goes, nested capabilities with it', () => {
     const own = [
-      role('tenant-admin', [group('/admins')]),
-      role('manage-users', [within('tenant-admin')]),
-      role('view-users', [within('manage-users'), { kind: 'direct' }]),
-      role('auditor', [group('/admins')], null),
+      effectiveRole('tenant-admin', [group('/admins')]),
+      effectiveRole('manage-users', [within('tenant-admin')]),
+      effectiveRole('view-users', [within('manage-users'), { kind: 'direct' }]),
+      effectiveRole('auditor', [group('/admins')], null),
     ];
     expect(adminLoss(own, (via) => via.kind === 'group' && via.group_path === '/admins')).toEqual([
       'tenant-admin',
@@ -43,7 +28,7 @@ describe('adminLoss', () => {
   });
 
   it('keeps what is held another way too', () => {
-    const own = [role('view-audit', [group('/admins'), group('/ops')])];
+    const own = [effectiveRole('view-audit', [group('/admins'), group('/ops')])];
     expect(adminLoss(own, (via) => via.kind === 'group' && via.group_path === '/admins')).toEqual(
       [],
     );

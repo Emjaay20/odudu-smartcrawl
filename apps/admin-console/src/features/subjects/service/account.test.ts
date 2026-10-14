@@ -1,6 +1,5 @@
 import { USERNAME_RULE } from '@odudu/contracts/admin';
 import { describe, expect, it } from 'vitest';
-import type { GatewayFailure } from '#/shared/service/result';
 import {
   enabledVerb,
   subjectWriteFailure,
@@ -8,17 +7,7 @@ import {
   USERNAME_RULE_TEXT,
   usernameProblem,
 } from '#/features/subjects/service/account';
-
-const failure = (kind: 'network' | 'schema' | 'defect'): GatewayFailure => ({ ok: false, kind });
-
-const refusal = (
-  status: number,
-  extra: { type?: string; detail?: string; errors?: { path: string; message: string }[] } = {},
-): GatewayFailure => ({
-  ok: false,
-  kind: 'problem',
-  problem: { type: 'about:blank', title: `T${String(status)}`, status, ...extra },
-});
+import { failure, refusal } from '#/testing/failures';
 
 describe('the username', () => {
   it("states the contract's own rule, as a sentence", () => {

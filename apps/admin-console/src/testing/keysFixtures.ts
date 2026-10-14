@@ -1,7 +1,6 @@
 import { json, type Answer } from '#/testing/fakeTransport';
 import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
-import { EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures';
-
+import { EVERY_TENANT_CAPABILITY } from '#/testing/roleAnswers';
 export const KEYS = `${ACME_ADMIN}/keys`;
 
 export function signingKey(id: string, status: string, extra: Record<string, unknown> = {}) {

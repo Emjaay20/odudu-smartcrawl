@@ -4,7 +4,8 @@ import { useCreateClientRole } from '#/features/clients/repository/useClientRole
 import { json } from '#/testing/fakeTransport';
 import { hookHarness } from '#/testing/hookHarness';
 
-import { role } from '#/testing/subjectsFixtures';
+import { role } from '#/testing/roleAnswers';
+
 import { ACME_ADMIN } from '#/testing/renderConsole';
 
 it('reads the lists and pickers that show it again once it is created, and not when it is refused', async () => {

@@ -1,22 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { createFailure } from '#/shared/service/failure';
-import type { GatewayFailure } from '#/shared/service/result';
 import {
   manageUsersRefusal,
   newSubjectSpec,
   subjectCreatedText,
 } from '#/features/subjects/service/create';
-
-const failure = (kind: 'network' | 'schema' | 'defect'): GatewayFailure => ({ ok: false, kind });
-
-const refusal = (
-  status: number,
-  extra: { type?: string; detail?: string; errors?: { path: string; message: string }[] } = {},
-): GatewayFailure => ({
-  ok: false,
-  kind: 'problem',
-  problem: { type: 'about:blank', title: `T${String(status)}`, status, ...extra },
-});
+import { failure, refusal } from '#/testing/failures';
 
 describe('creating a subject', () => {
   it('says where the password comes from', () => {

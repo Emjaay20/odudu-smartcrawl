@@ -14,7 +14,8 @@ import {
   record,
 } from '#/testing/groupsFixtures';
 import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
-import { assigned, EVERY_TENANT_CAPABILITY, S } from '#/testing/subjectsFixtures';
+import { EVERY_TENANT_CAPABILITY } from '#/testing/roleAnswers';
+import { assigned, S } from '#/testing/subjectsFixtures';
 
 afterEach(() => {
   resetConsole();

@@ -1,4 +1,3 @@
-import type { EffectiveRoleAssignment } from '@odudu/contracts/admin';
 import { describe, expect, it } from 'vitest';
 import { ADMIN_CLIENT_KEY, grantableIn } from '#/shared/service/capabilities/holdings';
 import {
@@ -11,30 +10,17 @@ import {
   provenanceText,
   roleOwnerText,
 } from '#/shared/service/capabilities/held';
-
-function role(
-  name: string,
-  via: EffectiveRoleAssignment['via'],
-  clientKey: string | null = ADMIN_CLIENT_KEY,
-): EffectiveRoleAssignment {
-  return {
-    id: `r-${name}`,
-    name,
-    client_id: clientKey === null ? null : 'c-admin',
-    client_key: clientKey,
-    via,
-  };
-}
+import { effectiveRole } from '#/testing/roleAnswers';
 
 describe('heldCapabilities', () => {
   it('says how each admin capability is held, and leaves other roles out', () => {
     const held = heldCapabilities([
-      role('tenant-admin', [{ kind: 'direct' }]),
-      role('manage-users', [
+      effectiveRole('tenant-admin', [{ kind: 'direct' }]),
+      effectiveRole('manage-users', [
         { kind: 'composite', parent_role_id: 'r-tenant-admin', parent_name: 'tenant-admin' },
         { kind: 'group', group_id: 'g1', group_path: '/ops' },
       ]),
-      role('billing', [{ kind: 'direct' }], null),
+      effectiveRole('billing', [{ kind: 'direct' }], null),
     ]);
     expect(held.get('tenant-admin')).toEqual({ direct: true, through: [] });
     expect(held.get('manage-users')).toEqual({

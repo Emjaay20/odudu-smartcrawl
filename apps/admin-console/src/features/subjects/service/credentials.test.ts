@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import type { GatewayFailure } from '#/shared/service/result';
 import {
   credentialDialogOf,
   credentialChangeOf,
@@ -10,17 +9,7 @@ import {
   credentialsOf,
   lockoutSummary,
 } from '#/features/subjects/service/credentials';
-
-const failure = (kind: 'network' | 'schema' | 'defect'): GatewayFailure => ({ ok: false, kind });
-
-const refusal = (
-  status: number,
-  extra: { type?: string; detail?: string; errors?: { path: string; message: string }[] } = {},
-): GatewayFailure => ({
-  ok: false,
-  kind: 'problem',
-  problem: { type: 'about:blank', title: `T${String(status)}`, status, ...extra },
-});
+import { failure, refusal } from '#/testing/failures';
 
 describe('credentials', () => {
   it('splits a list into the password, the second factors and the recovery-code count', () => {

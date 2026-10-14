@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import type { GatewayFailure } from '#/shared/service/result';
 import { actionsMailProblem } from '#/features/subjects/service/actions';
 import {
   mailFailure,
@@ -8,17 +7,7 @@ import {
   mailSentText,
   mailRefusal,
 } from '#/features/subjects/service/mail';
-
-const failure = (kind: 'network' | 'schema' | 'defect'): GatewayFailure => ({ ok: false, kind });
-
-const refusal = (
-  status: number,
-  extra: { type?: string; detail?: string; errors?: { path: string; message: string }[] } = {},
-): GatewayFailure => ({
-  ok: false,
-  kind: 'problem',
-  problem: { type: 'about:blank', title: `T${String(status)}`, status, ...extra },
-});
+import { failure, refusal } from '#/testing/failures';
 
 describe('a mail the server would not send', () => {
   it('explains each refusal in words, naming where it is fixed', () => {

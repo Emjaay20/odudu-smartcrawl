@@ -1,4 +1,3 @@
-import type { AdminCapability } from '#/shared/service/principal';
 import { describe, expect, it } from 'vitest';
 import {
   type CopyRead,
@@ -11,13 +10,10 @@ import {
   copyPlan,
   partialCopy,
 } from '#/features/scopes/service/copy';
-
-function role(id: string, name: string, reach: AdminCapability[] = []) {
-  return { id, name, client_id: null, client_key: null, admin_reach: reach };
-}
+import { role } from '#/testing/roleAnswers';
 
 const AUDITOR = role('r1', 'auditor');
-const KEEPER = role('r2', 'keeper', ['manage-keys']);
+const KEEPER = role('r2', 'keeper', null, ['manage-keys']);
 
 const SCOPE = {
   id: 's1',
