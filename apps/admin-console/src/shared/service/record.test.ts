@@ -51,6 +51,10 @@ describe('sectionsOf', () => {
     ];
     expect([...sectionsOf(keys, 'acme', 'groups/1')]).toEqual(['general', 'roles']);
   });
+
+  it('finds none for a record there is not', () => {
+    expect(sectionsOf([sectionKey('acme', 'groups/1', 'general')], 'acme', null).size).toBe(0);
+  });
 });
 
 describe('recordView', () => {

@@ -40,11 +40,15 @@ export function sectionKey(tenant: string, record: string, section: string): str
   return `${tenant}/${record}#${section}`;
 }
 
+const NO_SECTIONS: ReadonlySet<string> = new Set();
+
+// A record there is not has no section with unsaved edits.
 export function sectionsOf(
   keys: Iterable<string>,
   tenant: string,
-  record: string,
+  record: string | null,
 ): ReadonlySet<string> {
+  if (record === null) return NO_SECTIONS;
   const prefix = sectionKey(tenant, record, '');
   return new Set(
     [...keys].filter((key) => key.startsWith(prefix)).map((key) => key.slice(prefix.length)),
