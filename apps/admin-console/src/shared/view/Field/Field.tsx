@@ -29,7 +29,7 @@ import {
 import { Button } from '#/shared/view/Button';
 import styles from '#/shared/view/Field/Field.module.css';
 import type { Choice } from '#/shared/service/choice';
-import { lowerFirst } from '#/shared/service/format';
+import { groupedNumber, lowerFirst } from '#/shared/service/format';
 
 export interface Chrome {
   label: string;
@@ -261,11 +261,9 @@ export function TextField({
   );
 }
 
-const COUNT = new Intl.NumberFormat('en');
-
 function counted(length: number, limit: number): string {
-  if (length <= limit) return `${COUNT.format(length)} of ${COUNT.format(limit)} characters.`;
-  return `${COUNT.format(length - limit)} characters over the limit of ${COUNT.format(limit)}.`;
+  if (length <= limit) return `${groupedNumber(length)} of ${groupedNumber(limit)} characters.`;
+  return `${groupedNumber(length - limit)} characters over the limit of ${groupedNumber(limit)}.`;
 }
 
 // Free text of some length, such as a description: the one control taller

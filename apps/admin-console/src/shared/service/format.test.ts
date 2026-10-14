@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  groupedNumber,
   andList,
   capitalise,
   counted,
@@ -129,5 +130,12 @@ describe('describeId', () => {
   it('names one id, and says none for anything that is not one', () => {
     expect(describeId('a', (id) => id.toUpperCase())).toBe('A');
     expect(describeId(null, (id) => id)).toBe('none');
+  });
+});
+
+describe('groupedNumber', () => {
+  it('groups thousands with commas', () => {
+    expect(groupedNumber(1234567)).toBe('1,234,567');
+    expect(groupedNumber(200)).toBe('200');
   });
 });

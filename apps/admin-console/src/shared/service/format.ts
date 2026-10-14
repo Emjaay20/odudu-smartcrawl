@@ -25,6 +25,13 @@ export function formatAbsolute(instant: Date): string {
   return `${iso.slice(0, 10)} ${iso.slice(11, 19)} UTC`;
 }
 
+// Thousands grouped, as the console writes every count.
+const GROUPED = new Intl.NumberFormat('en');
+
+export function groupedNumber(value: number): string {
+  return GROUPED.format(value);
+}
+
 const RELATIVE = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 
 const STEPS = [

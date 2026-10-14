@@ -1,4 +1,5 @@
 import { type KeyLane } from '#/features/overview/service/keys';
+import { groupedNumber } from '#/shared/service/format';
 
 export function laneText(lane: KeyLane): string {
   return lane === 'unlisted' ? 'not in the key list' : lane;
@@ -8,10 +9,8 @@ export function unreadableTitle(what: string): string {
   return `The ${what} could not be read`;
 }
 
-const NUMBER = new Intl.NumberFormat('en');
-
 export function limitText(limit: number): string {
-  return ` of ${NUMBER.format(limit)} allowed`;
+  return ` of ${groupedNumber(limit)} allowed`;
 }
 
 export function countAgainLabel(noun: string): string {
