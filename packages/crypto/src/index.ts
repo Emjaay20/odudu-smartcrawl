@@ -14,6 +14,8 @@ export {
   AUDIENCE_UNCHECKED,
   TYP_UNCHECKED,
   TYP_ABSENT,
+  EXPIRY_NOT_ENFORCED,
+  type ExpiryPolicy,
   type ExpectedAudience,
   type ExpectedTyp,
 } from '#/service/sign';

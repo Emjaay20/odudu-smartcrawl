@@ -118,6 +118,21 @@ function checkTyp(headerTyp: unknown, expected: ExpectedTyp): void {
   }
 }
 
+// A verifier that names this reads a token's other claims, signature and
+// header as it always does, and only declines to judge whether `exp` has
+// passed. It exists for the one reader whose spec asks for that —
+// RP-Initiated Logout 1.0 §2 on an `id_token_hint` — and every other
+// caller omits `expiry` and gets the enforced default.
+export const EXPIRY_NOT_ENFORCED = Symbol('expiry not enforced');
+
+export type ExpiryPolicy = typeof EXPIRY_NOT_ENFORCED;
+
+// jose has no option that drops only the `exp` check. Reading the clock as
+// the epoch makes any `exp` pass, while `requiredClaims`, `iss`, `aud` and
+// the signature are checked as before, and a token carrying `nbf` is
+// refused — an ID Token minted here never has one.
+const EPOCH = new Date(0);
+
 export async function verifyJwt(
   token: string,
   opts: {
@@ -125,6 +140,7 @@ export async function verifyJwt(
     issuer: string;
     audience: ExpectedAudience;
     typ: ExpectedTyp;
+    expiry?: ExpiryPolicy;
   },
 ): Promise<JWTPayload> {
   const header = decodeProtectedHeaderSafely(token);
@@ -161,6 +177,7 @@ export async function verifyJwt(
     algorithms: [record.alg],
     issuer: opts.issuer,
     requiredClaims: ['exp'],
+    ...(opts.expiry === EXPIRY_NOT_ENFORCED ? { currentDate: EPOCH } : {}),
     ...(typeof opts.audience === 'string' ? { audience: opts.audience } : {}),
   });
 
