@@ -1,9 +1,8 @@
 import type { Locator, Page } from '@playwright/test';
-import { expect, expectAccessible, expectFitsViewport, signIn, test } from './fixtures';
+import { expect, expectAccessible, expectFitsViewport, signIn, test, PHONE } from './fixtures';
 import { seeded, subjectIdOf } from './stack';
 
 const { admin, subjects, system, tenants } = seeded();
-const PHONE = { width: 390, height: 844 };
 const LAPTOP = { width: 1440, height: 900 };
 const WIDE = { width: 2560, height: 1440 };
 

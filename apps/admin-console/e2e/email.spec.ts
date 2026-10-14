@@ -1,21 +1,23 @@
 import type { Locator, Page } from '@playwright/test';
-import { expect, expectAccessible, expectFitsViewport, forgive, signIn, test } from './fixtures';
+import {
+  expect,
+  expectAccessible,
+  expectFitsViewport,
+  forgive,
+  signIn,
+  test,
+  tabsWithin,
+  PHONE,
+} from './fixtures';
 import { psql, seeded, inTenant } from './stack';
 
 const { email } = seeded().config;
-const PHONE = { width: 390, height: 844 };
 
 function relayOf(tenant: string, expression: string): string {
   return psql(`select ${expression} from tenant_smtp where tenant_id = ${inTenant(tenant)}`);
 }
 
-async function tabTo(page: Page, target: Locator): Promise<void> {
-  for (let pressed = 0; pressed < 80; pressed += 1) {
-    if (await target.evaluate((node) => node === document.activeElement)) return;
-    await page.keyboard.press('Tab');
-  }
-  await expect(target).toBeFocused();
-}
+const tabTo = tabsWithin(80);
 
 // Everything the page keeps in the browser, as text.
 function browserStorage(page: Page): Promise<string> {

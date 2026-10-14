@@ -1,10 +1,17 @@
 import type { Page } from '@playwright/test';
 import { z } from 'zod';
-import { expect, expectAccessible, expectFitsViewport, forgive, signIn, test } from './fixtures';
+import {
+  expect,
+  expectAccessible,
+  expectFitsViewport,
+  forgive,
+  signIn,
+  test,
+  PHONE,
+} from './fixtures';
 import { psql, seeded } from './stack';
 
 const { admin, limited, overview, system } = seeded();
-const PHONE = { width: 390, height: 844 };
 
 const documentSchema = z.looseObject({ issuer: z.string() });
 const jwksSchema = z.object({ keys: z.array(z.looseObject({ kid: z.string() })) });

@@ -1,22 +1,24 @@
 import type { Locator, Page } from '@playwright/test';
-import { expect, expectAccessible, expectFitsViewport, forgive, signIn, test } from './fixtures';
+import {
+  expect,
+  expectAccessible,
+  expectFitsViewport,
+  forgive,
+  signIn,
+  test,
+  tabsWithin,
+  PHONE,
+} from './fixtures';
 import { psql, seeded } from './stack';
 
 const { settings } = seeded().config;
 const { system } = seeded();
-const PHONE = { width: 390, height: 844 };
 
 function column(tenant: string, name: string): string {
   return psql(`select ${name} from tenants where name = '${tenant}'`);
 }
 
-async function tabTo(page: Page, target: Locator): Promise<void> {
-  for (let pressed = 0; pressed < 250; pressed += 1) {
-    if (await target.evaluate((node) => node === document.activeElement)) return;
-    await page.keyboard.press('Tab');
-  }
-  await expect(target).toBeFocused();
-}
+const tabTo = tabsWithin(250);
 
 async function openSettings(page: Page, tenant: string): Promise<void> {
   await page.goto(`/console/${tenant}/settings`);

@@ -1,9 +1,8 @@
 import type { Page } from '@playwright/test';
-import { expect, expectAccessible, forgive, sessionTenant, signIn, test } from './fixtures';
+import { expect, expectAccessible, forgive, sessionTenant, signIn, test, PHONE } from './fixtures';
 import { seeded } from './stack';
 
 const { admin, system } = seeded();
-const PHONE = { width: 390, height: 844 };
 
 async function backgroundLuminance(page: Page): Promise<number> {
   return page.evaluate(() => {

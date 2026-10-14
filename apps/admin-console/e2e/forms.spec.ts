@@ -1,12 +1,11 @@
 import type { Locator, Page, Route } from '@playwright/test';
-import { expect, expectAccessible, signIn, test } from './fixtures';
+import { expect, expectAccessible, signIn, test, PHONE } from './fixtures';
 import { psql, seeded, sqlText } from './stack';
 
 const { subjects } = seeded();
 const { admin } = subjects;
 const TENANT = admin.tenant;
 const DESKTOP = { width: 1440, height: 900 };
-const PHONE = { width: 390, height: 844 };
 
 function measuredId(): string {
   return psql(

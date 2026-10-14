@@ -1,9 +1,17 @@
 import type { Locator, Page } from '@playwright/test';
-import { expect, expectAccessible, expectFitsViewport, forgive, signIn, test } from './fixtures';
+import {
+  expect,
+  expectAccessible,
+  expectFitsViewport,
+  forgive,
+  signIn,
+  test,
+  tabsWithin,
+  PHONE,
+} from './fixtures';
 import { psql, seeded, inTenant } from './stack';
 
 const { flows } = seeded().access;
-const PHONE = { width: 390, height: 844 };
 
 function flowOf(tenant: string): string {
   return psql(
@@ -15,13 +23,7 @@ function otpRequired(tenant: string): string {
   return psql(`select otp_required from tenants where name = '${tenant}'`);
 }
 
-async function tabTo(page: Page, target: Locator): Promise<void> {
-  for (let pressed = 0; pressed < 150; pressed += 1) {
-    if (await target.evaluate((node) => node === document.activeElement)) return;
-    await page.keyboard.press('Tab');
-  }
-  await expect(target).toBeFocused();
-}
+const tabTo = tabsWithin(150);
 
 async function openFlow(page: Page, tenant: string): Promise<Locator> {
   await page.goto(`/console/${tenant}/flow`);

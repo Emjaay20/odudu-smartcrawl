@@ -1,12 +1,20 @@
-import type { Locator, Page } from '@playwright/test';
-import { expect, expectAccessible, expectFitsViewport, forgive, signIn, test } from './fixtures';
+import type { Page } from '@playwright/test';
+import {
+  expect,
+  expectAccessible,
+  expectFitsViewport,
+  forgive,
+  signIn,
+  test,
+  tabsWithin,
+  PHONE,
+} from './fixtures';
 import { psql, seeded, inTenant, UNBROKEN, sqlText } from './stack';
 
 const { groupsRoles } = seeded();
 const { admin, limited, member } = groupsRoles;
 const TENANT = admin.tenant;
 const UNBROKEN_PATH = `/${UNBROKEN}/${UNBROKEN}`;
-const PHONE = { width: 390, height: 844 };
 
 const IN_TENANT = inTenant(TENANT);
 
@@ -43,13 +51,7 @@ function nested(name: string): string {
 }
 
 // Moves focus with Tab alone until it lands on `target`.
-async function tabTo(page: Page, target: Locator): Promise<void> {
-  for (let pressed = 0; pressed < 80; pressed += 1) {
-    if (await target.evaluate((node) => node === document.activeElement)) return;
-    await page.keyboard.press('Tab');
-  }
-  await expect(target).toBeFocused();
-}
+const tabTo = tabsWithin(80);
 
 async function openGroup(page: Page, path: string, tab = 'general'): Promise<void> {
   await page.goto(`/console/${TENANT}/groups/${groupId(path)}?tab=${tab}`);

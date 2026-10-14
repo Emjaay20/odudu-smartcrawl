@@ -1,11 +1,19 @@
-import type { Locator, Page } from '@playwright/test';
-import { expect, expectAccessible, forgive, signIn, signInAtTenant, test } from './fixtures';
+import type { Page } from '@playwright/test';
+import {
+  expect,
+  expectAccessible,
+  forgive,
+  signIn,
+  signInAtTenant,
+  test,
+  takeSecret,
+  PHONE,
+} from './fixtures';
 import { psql, seeded, inTenant, sqlText, subjectIdOf } from './stack';
 
 const { subjects } = seeded();
 const { admin, viewer } = subjects;
 const TENANT = admin.tenant;
-const PHONE = { width: 390, height: 844 };
 
 const subjectId = (username: string): string => subjectIdOf(TENANT, username);
 
@@ -22,14 +30,6 @@ async function openSubject(page: Page, username: string, tab?: 'credentials'): P
   const at = `/console/${TENANT}/subjects/${subjectId(username)}`;
   await page.goto(tab === undefined ? at : `${at}?tab=${tab}`);
   await expect(page.getByRole('heading', { level: 1, name: username })).toBeVisible();
-}
-
-async function takeSecret(dialog: Locator): Promise<string> {
-  const secret = await dialog.locator('code').first().innerText();
-  await dialog.getByText(/^I have stored the /u).click();
-  await dialog.getByRole('button', { name: 'Close' }).click();
-  await expect(dialog).toBeHidden();
-  return secret;
 }
 
 test('a subject is created from the list and lands on its record, in place of the creation page', async ({

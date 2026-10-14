@@ -7,12 +7,15 @@ import {
   signIn,
   signInAtTenant,
   test,
+  tabsWithin,
+  takeSecret,
+  expectNowhere,
+  PHONE,
 } from './fixtures';
 import { psql, seeded, sqlText } from './stack';
 
 const { system, systemAdmins } = seeded();
 const AT = '/console/system/system-admins';
-const PHONE = { width: 390, height: 844 };
 
 // The roles of system's built-in admin client a subject holds directly.
 function adminRoles(username: string): string {
@@ -39,24 +42,6 @@ async function openSystemAdministrators(page: Page): Promise<Locator> {
   return list;
 }
 
-async function takeSecret(dialog: Locator): Promise<string> {
-  const secret = await dialog.locator('code').first().innerText();
-  await dialog.getByText(/^I have stored the /u).click();
-  await dialog.getByRole('button', { name: 'Close' }).click();
-  await expect(dialog).toBeHidden();
-  return secret;
-}
-
-async function expectNowhere(page: Page, secret: string): Promise<void> {
-  expect(await page.content()).not.toContain(secret);
-  const stored = await page.evaluate(() =>
-    [sessionStorage, localStorage]
-      .flatMap((storage) => Object.keys(storage).map((key) => storage.getItem(key) ?? ''))
-      .join('\n'),
-  );
-  expect(stored).not.toContain(secret);
-}
-
 async function search(page: Page, username: string): Promise<void> {
   await page.getByRole('searchbox', { name: 'Search by Username' }).fill(username);
   await page.getByRole('searchbox', { name: 'Search by Username' }).press('Enter');
@@ -73,13 +58,7 @@ async function chooseSubject(page: Page, username: string): Promise<void> {
 }
 
 // Moves focus with Tab alone until it lands on `target`.
-async function tabTo(page: Page, target: Locator): Promise<void> {
-  for (let pressed = 0; pressed < 40; pressed += 1) {
-    if (await target.evaluate((node) => node === document.activeElement)) return;
-    await page.keyboard.press('Tab');
-  }
-  await expect(target).toBeFocused();
-}
+const tabTo = tabsWithin(40);
 
 test('a system administrator is created with a password shown once, and lands in the list', async ({
   page,

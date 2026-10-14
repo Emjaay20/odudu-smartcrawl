@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import type { Locator, Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { z } from 'zod';
 import {
   expect,
@@ -9,11 +9,13 @@ import {
   signIn,
   signInAtTenant,
   test,
+  takeSecret,
+  expectNowhere,
+  PHONE,
 } from './fixtures';
 import { psql, seeded, type Account, sqlText } from './stack';
 
 const { admin, limited, resumer, system, systemAdmins, tenants } = seeded();
-const PHONE = { width: 390, height: 844 };
 
 function tenantColumn(name: string, column: 'display_name' | 'enabled'): string {
   return psql(
@@ -23,26 +25,6 @@ function tenantColumn(name: string, column: 'display_name' | 'enabled'): string 
 
 async function signInToSystem(page: Page, account: Account = system): Promise<void> {
   await signIn(page, account);
-}
-
-// Reads the secret a SecretDialog shows once, acknowledges it and closes it.
-async function takeSecret(dialog: Locator): Promise<string> {
-  const secret = await dialog.locator('code').first().innerText();
-  await dialog.getByText(/^I have stored the /u).click();
-  await expect(dialog.getByRole('checkbox')).toBeChecked();
-  await dialog.getByRole('button', { name: 'Close' }).click();
-  await expect(dialog).toBeHidden();
-  return secret;
-}
-
-async function expectNowhere(page: Page, secret: string): Promise<void> {
-  expect(await page.content()).not.toContain(secret);
-  const stored = await page.evaluate(() =>
-    [sessionStorage, localStorage]
-      .flatMap((storage) => Object.keys(storage).map((key) => storage.getItem(key) ?? ''))
-      .join('\n'),
-  );
-  expect(stored).not.toContain(secret);
 }
 
 test('a system administrator creates a tenant whose first administrator signs in with the password shown once', async ({

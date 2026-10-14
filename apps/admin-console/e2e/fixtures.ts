@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test as base, type Page } from '@playwright/test';
+import { expect, test as base, type Locator, type Page } from '@playwright/test';
 import type { Account } from './stack';
 
 // Reported by the browser for the one request the console expects to be
@@ -56,6 +56,61 @@ export function forgive(problems: Problem[], path: string): void {
 }
 
 export { expect };
+
+export const PHONE = { width: 390, height: 844 };
+
+// Presses Tab until `target` has focus; fails once `limit` presses have not
+// reached it, which is how a page that makes its controls hard to reach is caught.
+export function tabsWithin(limit: number) {
+  return async (page: Page, target: Locator): Promise<void> => {
+    for (let pressed = 0; pressed < limit; pressed += 1) {
+      if (await target.evaluate((node) => node === document.activeElement)) return;
+      await page.keyboard.press('Tab');
+    }
+    await expect(target).toBeFocused();
+  };
+}
+
+// Tab enters a grid once; arrow keys then move between its cells, and a row's
+// buttons are in its last cell. The walk down to `target` is made with `step`.
+export function gridWalk({ tabs, step }: { tabs: number; step: 'ArrowDown' | 'Tab' }) {
+  return async (page: Page, grid: Locator, target: Locator): Promise<void> => {
+    for (let pressed = 0; pressed < tabs; pressed += 1) {
+      if (await grid.evaluate((node) => node.contains(document.activeElement))) break;
+      await page.keyboard.press('Tab');
+    }
+    for (let pressed = 0; pressed < 8; pressed += 1) {
+      if (await page.evaluate(() => document.activeElement?.tagName === 'BUTTON')) break;
+      await page.keyboard.press('ArrowRight');
+    }
+    for (let pressed = 0; pressed < 12; pressed += 1) {
+      if (await target.evaluate((node) => node === document.activeElement)) return;
+      await page.keyboard.press(step);
+    }
+    await expect(target).toBeFocused();
+  };
+}
+
+// Reads the secret a SecretDialog shows once, acknowledges it and closes it.
+export async function takeSecret(dialog: Locator): Promise<string> {
+  const secret = await dialog.locator('code').first().innerText();
+  await dialog.getByText(/^I have stored the /u).click();
+  await expect(dialog.getByRole('checkbox')).toBeChecked();
+  await dialog.getByRole('button', { name: 'Close' }).click();
+  await expect(dialog).toBeHidden();
+  return secret;
+}
+
+// A secret shown once is in neither the page nor what it keeps in the browser.
+export async function expectNowhere(page: Page, secret: string): Promise<void> {
+  expect(await page.content()).not.toContain(secret);
+  const stored = await page.evaluate(() =>
+    [sessionStorage, localStorage]
+      .flatMap((storage) => Object.keys(storage).map((key) => storage.getItem(key) ?? ''))
+      .join('\n'),
+  );
+  expect(stored).not.toContain(secret);
+}
 
 // Fails with the widest elements past the viewport's right edge, so a layout
 // bug names its element rather than only its width.

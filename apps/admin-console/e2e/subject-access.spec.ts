@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import {
   expect,
   expectAccessible,
@@ -8,13 +8,14 @@ import {
   signInAtTenant,
   test,
   type Problem,
+  tabsWithin,
+  PHONE,
 } from './fixtures';
 import { psql, seed, seeded, sqlText, subjectIdOf } from './stack';
 
 const { subjects, system } = seeded();
 const { admin, viewer } = subjects;
 const TENANT = admin.tenant;
-const PHONE = { width: 390, height: 844 };
 
 type Tab =
   'profile' | 'credentials' | 'groups' | 'roles' | 'required-actions' | 'sessions' | 'consents';
@@ -28,13 +29,7 @@ function heldRoles(username: string): string {
 }
 
 // Moves focus with Tab alone until it lands on `target`.
-async function tabTo(page: Page, target: Locator): Promise<void> {
-  for (let pressed = 0; pressed < 40; pressed += 1) {
-    if (await target.evaluate((node) => node === document.activeElement)) return;
-    await page.keyboard.press('Tab');
-  }
-  await expect(target).toBeFocused();
-}
+const tabTo = tabsWithin(40);
 
 async function openSubject(page: Page, username: string, tab: Tab): Promise<void> {
   await page.goto(`/console/${TENANT}/subjects/${subjectId(username)}?tab=${tab}`);

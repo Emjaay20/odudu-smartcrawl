@@ -1,9 +1,18 @@
 import type { Locator, Page } from '@playwright/test';
-import { expect, expectAccessible, expectFitsViewport, forgive, signIn, test } from './fixtures';
+import {
+  expect,
+  expectAccessible,
+  expectFitsViewport,
+  forgive,
+  signIn,
+  test,
+  tabsWithin,
+  gridWalk,
+  PHONE,
+} from './fixtures';
 import { psql, seeded, inTenant } from './stack';
 
 const { keys } = seeded().access;
-const PHONE = { width: 390, height: 844 };
 
 function keysOf(tenant: string): string {
   return psql(
@@ -37,31 +46,9 @@ function row(page: Page, lane: string, kid: string): Locator {
     .getByRole('row', { name: new RegExp(kid, 'u') });
 }
 
-async function tabTo(page: Page, target: Locator): Promise<void> {
-  for (let pressed = 0; pressed < 150; pressed += 1) {
-    if (await target.evaluate((node) => node === document.activeElement)) return;
-    await page.keyboard.press('Tab');
-  }
-  await expect(target).toBeFocused();
-}
+const tabTo = tabsWithin(150);
 
-// Tab enters a grid once; arrow keys move between its cells, and a row's
-// buttons are in its last cell.
-async function arrowTo(page: Page, grid: Locator, target: Locator): Promise<void> {
-  for (let pressed = 0; pressed < 80; pressed += 1) {
-    if (await grid.evaluate((node) => node.contains(document.activeElement))) break;
-    await page.keyboard.press('Tab');
-  }
-  for (let pressed = 0; pressed < 8; pressed += 1) {
-    if (await page.evaluate(() => document.activeElement?.tagName === 'BUTTON')) break;
-    await page.keyboard.press('ArrowRight');
-  }
-  for (let pressed = 0; pressed < 12; pressed += 1) {
-    if (await target.evaluate((node) => node === document.activeElement)) return;
-    await page.keyboard.press('Tab');
-  }
-  await expect(target).toBeFocused();
-}
+const arrowTo = gridWalk({ tabs: 80, step: 'Tab' });
 
 test('a key is staged, promoted, retired and deleted, and the lanes follow the database', async ({
   page,

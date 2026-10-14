@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import type { Browser, Locator, Page } from '@playwright/test';
+import type { Browser, Page } from '@playwright/test';
 import {
   expect,
   expectAccessible,
@@ -10,6 +10,9 @@ import {
   signIn,
   signInAtTenant,
   test,
+  tabsWithin,
+  takeSecret,
+  PHONE,
 } from './fixtures';
 import {
   psql,
@@ -25,7 +28,6 @@ import {
 const { clients } = seeded();
 const { admin, limited } = clients;
 const TENANT = admin.tenant;
-const PHONE = { width: 390, height: 844 };
 
 const IN_TENANT = inTenant(TENANT);
 
@@ -74,13 +76,7 @@ function serviceRoles(clientKey: string): string {
 }
 
 // Moves focus with Tab alone until it lands on `target`.
-async function tabTo(page: Page, target: Locator): Promise<void> {
-  for (let pressed = 0; pressed < 80; pressed += 1) {
-    if (await target.evaluate((node) => node === document.activeElement)) return;
-    await page.keyboard.press('Tab');
-  }
-  await expect(target).toBeFocused();
-}
+const tabTo = tabsWithin(80);
 
 async function openClient(page: Page, clientKey: string, tab = 'general'): Promise<void> {
   await page.goto(`/console/${TENANT}/clients/${clientId(clientKey)}?tab=${tab}`);
@@ -90,16 +86,6 @@ async function openClient(page: Page, clientKey: string, tab = 'general'): Promi
 // Writes are offered once the service account's capabilities have been read.
 async function waitUntilOffered(page: Page): Promise<void> {
   await expect(page.getByRole('textbox', { name: 'Name' })).toBeVisible();
-}
-
-// Reads the secret a SecretDialog shows once, acknowledges it and closes it.
-async function takeSecret(dialog: Locator): Promise<string> {
-  const secret = await dialog.locator('code').first().innerText();
-  await dialog.getByText(/^I have stored the /u).click();
-  await expect(dialog.getByRole('checkbox')).toBeChecked();
-  await dialog.getByRole('button', { name: 'Close' }).click();
-  await expect(dialog).toBeHidden();
-  return secret;
 }
 
 test('a confidential client is made and its secret is shown once, then nowhere', async ({

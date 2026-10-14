@@ -1,10 +1,20 @@
 import type { Locator, Page } from '@playwright/test';
-import { expect, expectAccessible, expectFitsViewport, forgive, signIn, test } from './fixtures';
+import {
+  expect,
+  expectAccessible,
+  expectFitsViewport,
+  forgive,
+  signIn,
+  test,
+  tabsWithin,
+  gridWalk,
+  takeSecret,
+  PHONE,
+} from './fixtures';
 import { psql, seeded, inTenant } from './stack';
 
 const { admin, tenantOnly, clientsOnly } = seeded().access.tokens;
 const TENANT = admin.tenant;
-const PHONE = { width: 390, height: 844 };
 
 const IN_TENANT = inTenant(TENANT);
 
@@ -20,32 +30,9 @@ function tokenIdWithUses(uses: number): string {
   );
 }
 
-async function tabTo(page: Page, target: Locator): Promise<void> {
-  for (let pressed = 0; pressed < 120; pressed += 1) {
-    if (await target.evaluate((node) => node === document.activeElement)) return;
-    await page.keyboard.press('Tab');
-  }
-  await expect(target).toBeFocused();
-}
+const tabTo = tabsWithin(120);
 
-// Tab enters a grid once and leaves it again; arrow keys move between its
-// cells, and the last cell of a row is where its Revoke button is. The first
-// tab stop in it is a row, from which the buttons are found by arrows.
-async function arrowTo(page: Page, grid: Locator, target: Locator): Promise<void> {
-  for (let pressed = 0; pressed < 60; pressed += 1) {
-    if (await grid.evaluate((node) => node.contains(document.activeElement))) break;
-    await page.keyboard.press('Tab');
-  }
-  for (let pressed = 0; pressed < 8; pressed += 1) {
-    if (await page.evaluate(() => document.activeElement?.tagName === 'BUTTON')) break;
-    await page.keyboard.press('ArrowRight');
-  }
-  for (let pressed = 0; pressed < 12; pressed += 1) {
-    if (await target.evaluate((node) => node === document.activeElement)) return;
-    await page.keyboard.press('ArrowDown');
-  }
-  await expect(target).toBeFocused();
-}
+const arrowTo = gridWalk({ tabs: 60, step: 'ArrowDown' });
 
 function rowWithUses(page: Page, uses: number): Locator {
   return page
@@ -53,16 +40,6 @@ function rowWithUses(page: Page, uses: number): Locator {
     .getByRole('row')
     .filter({ has: page.getByRole('rowheader') })
     .filter({ has: page.getByRole('gridcell', { name: String(uses), exact: true }) });
-}
-
-// Reads the token a SecretDialog shows once, acknowledges it and closes it.
-async function takeSecret(dialog: Locator): Promise<string> {
-  const secret = await dialog.locator('code').first().innerText();
-  await dialog.getByText(/^I have stored the /u).click();
-  await expect(dialog.getByRole('checkbox')).toBeChecked();
-  await dialog.getByRole('button', { name: 'Close' }).click();
-  await expect(dialog).toBeHidden();
-  return secret;
 }
 
 test('a token is minted and shown once, then nowhere; another is revoked', async ({ page }) => {
