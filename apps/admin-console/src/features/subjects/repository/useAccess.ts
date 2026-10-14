@@ -18,6 +18,7 @@ import {
 } from '#/features/subjects/adapter/access';
 import { readSubjectCount } from '#/features/subjects/adapter/subjects';
 import {
+  adminRolesKey,
   heldCapabilitiesKey,
   holdersKey,
   listKey,
@@ -106,7 +107,7 @@ export function useMemberships(
 
 export function useAdminRoleIds(tenant: string): Read<ReadonlyMap<Holding, string>> {
   const { gateway } = useTransport();
-  return useRead(['admin-roles', tenant], true, () => readAdminRoles(gateway, tenant));
+  return useRead(adminRolesKey(tenant), true, () => readAdminRoles(gateway, tenant));
 }
 
 // How many enabled subjects hold what the last-administrator guard counts.

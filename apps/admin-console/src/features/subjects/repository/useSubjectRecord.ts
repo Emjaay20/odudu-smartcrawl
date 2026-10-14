@@ -8,7 +8,7 @@ import {
   readSubject,
   readUsernameEditable,
 } from '#/features/subjects/adapter/subjects';
-import { listKey, recordKey } from '#/shared/repository/queryKeys';
+import { listKey, recordKey, usernamePolicyKey } from '#/shared/repository/queryKeys';
 import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useRecord, type RecordEntry, type RecordState } from '#/shared/repository/useRecord';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
@@ -104,5 +104,5 @@ export function useSubjectDeletion(
 // Whether a rename would be accepted, as the tenant's policy says.
 export function useUsernamePolicy(tenant: string): Read<boolean> {
   const { gateway } = useTransport();
-  return useRead(['username-policy', tenant], true, () => readUsernameEditable(gateway, tenant));
+  return useRead(usernamePolicyKey(tenant), true, () => readUsernameEditable(gateway, tenant));
 }

@@ -70,7 +70,19 @@ export function copyKey(tenant: string, ...source: readonly (string | null)[]) {
 }
 
 export function systemIssuerKey() {
-  return ['tenants', 'system-issuer'] as const;
+  return ['system-issuer'] as const;
+}
+
+export function installationKey(tenant: string, client: string) {
+  return ['installation', tenant, client] as const;
+}
+
+export function adminRolesKey(tenant: string) {
+  return ['admin-roles', tenant] as const;
+}
+
+export function usernamePolicyKey(tenant: string) {
+  return ['username-policy', tenant] as const;
 }
 
 export function sessionKey() {

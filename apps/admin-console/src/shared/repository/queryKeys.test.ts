@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
 import {
+  adminRolesKey,
   copyKey,
   countKey,
   deliveriesKey,
@@ -9,6 +10,7 @@ import {
   RECORD_KIND,
   heldCapabilitiesKey,
   holdersKey,
+  installationKey,
   listKey,
   membershipsKey,
   overviewKey,
@@ -18,6 +20,7 @@ import {
   scopeClientsKey,
   sessionKey,
   systemIssuerKey,
+  usernamePolicyKey,
 } from '#/shared/repository/queryKeys';
 
 it('names every kind of cached read by its kind, its tenant and what it reads', () => {
@@ -42,7 +45,10 @@ it('names every kind of cached read by its kind, its tenant and what it reads', 
   expect(deliveriesKey('acme', 'c1')).toEqual(['deliveries', 'acme', 'c1']);
   expect(copyKey('acme', 'r1')).toEqual(['copy', 'acme', 'r1']);
   expect(copyKey('acme', 'scopes', null)).toEqual(['copy', 'acme', 'scopes', null]);
-  expect(systemIssuerKey()).toEqual(['tenants', 'system-issuer']);
+  expect(systemIssuerKey()).toEqual(['system-issuer']);
+  expect(installationKey('acme', 'c1')).toEqual(['installation', 'acme', 'c1']);
+  expect(adminRolesKey('acme')).toEqual(['admin-roles', 'acme']);
+  expect(usernamePolicyKey('acme')).toEqual(['username-policy', 'acme']);
   expect(sessionKey()).toEqual(['session']);
   expect(GROUP_KIND).toBe('group');
   expect(RECORD_KIND).toBe('record');
