@@ -1,26 +1,26 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, expectAccessible, expectFitsViewport, forgive, signIn, test } from './fixtures';
-import { psql, seeded } from './stack';
+import { psql, seeded, inTenant } from './stack';
 
 const { keys } = seeded().access;
 const PHONE = { width: 390, height: 844 };
 
 function keysOf(tenant: string): string {
   return psql(
-    `select coalesce(string_agg(status, ',' order by status), '') from signing_keys where tenant_id = (select id from tenants where name = '${tenant}')`,
+    `select coalesce(string_agg(status, ',' order by status), '') from signing_keys where tenant_id = ${inTenant(tenant)}`,
   );
 }
 
 function kidOf(tenant: string, status: string): string {
   return psql(
-    `select kid from signing_keys where status = '${status}' and tenant_id = (select id from tenants where name = '${tenant}') order by created_at desc limit 1`,
+    `select kid from signing_keys where status = '${status}' and tenant_id = ${inTenant(tenant)} order by created_at desc limit 1`,
   );
 }
 
 // The key was published `hours` ago, which is all its age is known by.
 function publishedAgo(tenant: string, status: string, hours: number): void {
   psql(
-    `update signing_keys set created_at = now() - interval '${String(hours)} hours' where status = '${status}' and tenant_id = (select id from tenants where name = '${tenant}')`,
+    `update signing_keys set created_at = now() - interval '${String(hours)} hours' where status = '${status}' and tenant_id = ${inTenant(tenant)}`,
   );
 }
 
@@ -177,7 +177,7 @@ test('a key promoted behind the open page cannot be retired, and the server’s 
   const retire = page.getByRole('button', { name: `Retire ${staged}` });
   await expect(retire).toBeVisible();
 
-  const tenant = `(select id from tenants where name = '${raced.tenant}')`;
+  const tenant = inTenant(raced.tenant);
   psql(
     `update signing_keys set status = 'rotating' where status = 'active' and tenant_id = ${tenant}; update signing_keys set status = 'active' where kid = '${staged}' and tenant_id = ${tenant}`,
   );

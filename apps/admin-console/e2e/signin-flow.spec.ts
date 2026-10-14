@@ -1,13 +1,13 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, expectAccessible, expectFitsViewport, forgive, signIn, test } from './fixtures';
-import { psql, seeded } from './stack';
+import { psql, seeded, inTenant } from './stack';
 
 const { flows } = seeded().access;
 const PHONE = { width: 390, height: 844 };
 
 function flowOf(tenant: string): string {
   return psql(
-    `select string_agg(authenticator || ':' || requirement, ',' order by index) from authentication_executions where tenant_id = (select id from tenants where name = '${tenant}')`,
+    `select string_agg(authenticator || ':' || requirement, ',' order by index) from authentication_executions where tenant_id = ${inTenant(tenant)}`,
   );
 }
 
@@ -86,7 +86,7 @@ test('a flow changed behind the open page is shown as changed, and nothing is ov
   const section = await openFlow(page, conflict.tenant);
   await section.getByRole('button', { name: 'Move password up' }).click();
   psql(
-    `update authentication_executions set requirement = 'required' where authenticator = 'otp' and tenant_id = (select id from tenants where name = '${conflict.tenant}')`,
+    `update authentication_executions set requirement = 'required' where authenticator = 'otp' and tenant_id = ${inTenant(conflict.tenant)}`,
   );
   await section.getByRole('button', { name: 'Save Steps' }).click();
   await expect(section.getByText(/changed elsewhere/u).first()).toBeVisible();

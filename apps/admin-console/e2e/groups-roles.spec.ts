@@ -1,19 +1,14 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, expectAccessible, expectFitsViewport, forgive, signIn, test } from './fixtures';
-import { psql, seeded } from './stack';
+import { psql, seeded, inTenant, UNBROKEN, sqlText } from './stack';
 
 const { groupsRoles } = seeded();
 const { admin, limited, member } = groupsRoles;
 const TENANT = admin.tenant;
-const UNBROKEN = 'segment'.repeat(8);
 const UNBROKEN_PATH = `/${UNBROKEN}/${UNBROKEN}`;
 const PHONE = { width: 390, height: 844 };
 
-function sqlText(value: string): string {
-  return `'${value.replaceAll("'", "''")}'`;
-}
-
-const IN_TENANT = `(select id from tenants where name = ${sqlText(TENANT)})`;
+const IN_TENANT = inTenant(TENANT);
 
 function groupId(path: string): string {
   return psql(`select id from groups where tenant_id = ${IN_TENANT} and path = ${sqlText(path)}`);

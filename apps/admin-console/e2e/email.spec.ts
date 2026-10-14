@@ -1,14 +1,12 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, expectAccessible, expectFitsViewport, forgive, signIn, test } from './fixtures';
-import { psql, seeded } from './stack';
+import { psql, seeded, inTenant } from './stack';
 
 const { email } = seeded().config;
 const PHONE = { width: 390, height: 844 };
 
 function relayOf(tenant: string, expression: string): string {
-  return psql(
-    `select ${expression} from tenant_smtp where tenant_id = (select id from tenants where name = '${tenant}')`,
-  );
+  return psql(`select ${expression} from tenant_smtp where tenant_id = ${inTenant(tenant)}`);
 }
 
 async function tabTo(page: Page, target: Locator): Promise<void> {

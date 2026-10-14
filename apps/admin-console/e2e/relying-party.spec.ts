@@ -3,7 +3,7 @@ import { createServer, type Server } from 'node:http';
 import { type AddressInfo } from 'node:net';
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { psql, seed } from './stack';
+import { psql, seed, sqlText } from './stack';
 
 // A relying party on an origin of its own, which the console never is.
 // Chromium holds the redirect a form submission follows to the page's
@@ -17,10 +17,6 @@ const CHALLENGE = createHash('sha256').update(VERIFIER).digest('base64url');
 
 let server: Server;
 let redirectUri: string;
-
-function sqlText(value: string): string {
-  return `'${value.replaceAll("'", "''")}'`;
-}
 
 function base32(secret: string): Buffer {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';

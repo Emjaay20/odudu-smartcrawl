@@ -1,12 +1,12 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, expectAccessible, expectFitsViewport, forgive, signIn, test } from './fixtures';
-import { psql, seeded } from './stack';
+import { psql, seeded, inTenant } from './stack';
 
 const { admin, tenantOnly, clientsOnly } = seeded().access.tokens;
 const TENANT = admin.tenant;
 const PHONE = { width: 390, height: 844 };
 
-const IN_TENANT = `(select id from tenants where name = '${TENANT}')`;
+const IN_TENANT = inTenant(TENANT);
 
 function liveWithUses(uses: number): string {
   return psql(

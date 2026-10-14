@@ -10,14 +10,10 @@ import {
   signInAtTenant,
   test,
 } from './fixtures';
-import { psql, seeded, type Account } from './stack';
+import { psql, seeded, type Account, sqlText } from './stack';
 
 const { admin, limited, resumer, system, systemAdmins, tenants } = seeded();
 const PHONE = { width: 390, height: 844 };
-
-function sqlText(value: string): string {
-  return `'${value.replaceAll("'", "''")}'`;
-}
 
 function tenantColumn(name: string, column: 'display_name' | 'enabled'): string {
   return psql(

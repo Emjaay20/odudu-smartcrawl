@@ -1,17 +1,12 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, expectAccessible, expectFitsViewport, forgive, signIn, test } from './fixtures';
-import { psql, seeded } from './stack';
+import { psql, seeded, inTenant, UNBROKEN, sqlText } from './stack';
 
 const { admin, tenantOnly, clientsOnly } = seeded().scopes;
 const TENANT = admin.tenant;
-const UNBROKEN = 'segment'.repeat(8);
 const PHONE = { width: 390, height: 844 };
 
-function sqlText(value: string): string {
-  return `'${value.replaceAll("'", "''")}'`;
-}
-
-const IN_TENANT = `(select id from tenants where name = ${sqlText(TENANT)})`;
+const IN_TENANT = inTenant(TENANT);
 
 function scopeId(name: string): string {
   return psql(

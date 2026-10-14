@@ -1,21 +1,13 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, expectAccessible, forgive, signIn, signInAtTenant, test } from './fixtures';
-import { psql, seeded } from './stack';
+import { psql, seeded, inTenant, sqlText, subjectIdOf } from './stack';
 
 const { subjects } = seeded();
 const { admin, viewer } = subjects;
 const TENANT = admin.tenant;
 const PHONE = { width: 390, height: 844 };
 
-function sqlText(value: string): string {
-  return `'${value.replaceAll("'", "''")}'`;
-}
-
-function subjectId(username: string): string {
-  return psql(
-    `select u.subject_id from users u join tenants t on t.id = u.tenant_id where t.name = ${sqlText(TENANT)} and u.username = ${sqlText(username)}`,
-  );
-}
+const subjectId = (username: string): string => subjectIdOf(TENANT, username);
 
 type Column =
   'name' | 'email' | 'phone_number' | 'birthdate' | 'zoneinfo' | 'locale' | 'address_country';
@@ -94,7 +86,7 @@ test('a profile edit refused with 412 shows theirs beside yours, and keeping min
   await openSubject(page, username);
   await page.getByRole('textbox', { name: 'Full name' }).fill('Mine');
   psql(
-    `update users set name = 'Theirs' where username = ${sqlText(username)} and tenant_id = (select id from tenants where name = ${sqlText(TENANT)})`,
+    `update users set name = 'Theirs' where username = ${sqlText(username)} and tenant_id = ${inTenant(TENANT)}`,
   );
   await page.getByRole('button', { name: 'Save Name' }).click();
   const table = page.getByRole('table', { name: 'Changed in Name since you opened it' });

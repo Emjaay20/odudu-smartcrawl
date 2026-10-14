@@ -8,15 +8,11 @@ import {
   signInAtTenant,
   test,
 } from './fixtures';
-import { psql, seeded } from './stack';
+import { psql, seeded, sqlText } from './stack';
 
 const { system, systemAdmins } = seeded();
 const AT = '/console/system/system-admins';
 const PHONE = { width: 390, height: 844 };
-
-function sqlText(value: string): string {
-  return `'${value.replaceAll("'", "''")}'`;
-}
 
 // The roles of system's built-in admin client a subject holds directly.
 function adminRoles(username: string): string {

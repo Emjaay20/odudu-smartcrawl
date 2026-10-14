@@ -11,19 +11,23 @@ import {
   signInAtTenant,
   test,
 } from './fixtures';
-import { psql, seed, seeded, sendLogouts, type Account } from './stack';
+import {
+  psql,
+  seed,
+  seeded,
+  sendLogouts,
+  type Account,
+  inTenant,
+  UNBROKEN,
+  sqlText,
+} from './stack';
 
 const { clients } = seeded();
 const { admin, limited } = clients;
 const TENANT = admin.tenant;
-const UNBROKEN = 'segment'.repeat(8);
 const PHONE = { width: 390, height: 844 };
 
-function sqlText(value: string): string {
-  return `'${value.replaceAll("'", "''")}'`;
-}
-
-const IN_TENANT = `(select id from tenants where name = ${sqlText(TENANT)})`;
+const IN_TENANT = inTenant(TENANT);
 
 function clientId(clientKey: string): string {
   return psql(

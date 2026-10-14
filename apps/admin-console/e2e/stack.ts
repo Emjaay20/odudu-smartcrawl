@@ -31,6 +31,24 @@ export function psql(sql: string): string {
   ]).trim();
 }
 
+export function sqlText(value: string): string {
+  return `'${value.replaceAll("'", "''")}'`;
+}
+
+// The id of the tenant of that name, as a subquery to compare a tenant_id with.
+export function inTenant(name: string): string {
+  return `(select id from tenants where name = ${sqlText(name)})`;
+}
+
+export function subjectIdOf(tenant: string, username: string): string {
+  return psql(
+    `select u.subject_id from users u join tenants t on t.id = u.tenant_id where t.name = ${sqlText(tenant)} and u.username = ${sqlText(username)}`,
+  );
+}
+
+// A name no narrow line can break, seeded for the layout tests that look for it.
+export const UNBROKEN = 'segment'.repeat(8);
+
 const account = z.object({ tenant: z.string(), username: z.string(), password: z.string() });
 
 const seededSchema = z.object({

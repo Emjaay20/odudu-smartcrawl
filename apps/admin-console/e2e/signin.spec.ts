@@ -8,13 +8,9 @@ import {
   signInAtTenant,
   test,
 } from './fixtures';
-import { psql, seeded, type Account } from './stack';
+import { psql, seeded, type Account, sqlText } from './stack';
 
 const { admin, expiring, forced, other, system } = seeded();
-
-function sqlText(value: string): string {
-  return `'${value.replaceAll("'", "''")}'`;
-}
 
 const SUBJECT = (account: Account): string =>
   `select u.subject_id from users u join tenants t on t.id = u.tenant_id ` +

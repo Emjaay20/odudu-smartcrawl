@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { psql, publish, seed, type Account, type Seeded } from './stack';
+import { psql, publish, seed, type Account, type Seeded, inTenant, UNBROKEN } from './stack';
 
 const TENANT_ADMIN = 'odudu-admin:tenant-admin';
 
@@ -29,9 +29,6 @@ function administrator(account: Account, ...extra: string[]): void {
   subject(account, ...extra);
   grant(account, TENANT_ADMIN);
 }
-
-// A name with nothing to break at, nested twice, so a path is far wider than a phone.
-const UNBROKEN = 'segment'.repeat(8);
 
 // The groups and roles the Groups and Roles tests change, each changed by one
 // test alone. `deep` nests `middle`, which nests view-users, so its reach is
@@ -144,10 +141,10 @@ function seedClients(tenant: string): void {
     `insert into subject_roles (tenant_id, subject_id, role_id) select t.id, c.service_subject_id, r.id from tenants t join clients c on c.tenant_id = t.id and c.client_id = 'held' join roles r on r.tenant_id = t.id and r.name = 'manage-users' and r.client_id = (select id from clients where tenant_id = t.id and client_id = 'odudu-admin') where t.name = '${tenant}'`,
   );
   psql(
-    `update clients set name = 'Ledger', description = 'Keeps the books' where client_id = 'ledger' and tenant_id = (select id from tenants where name = '${tenant}')`,
+    `update clients set name = 'Ledger', description = 'Keeps the books' where client_id = 'ledger' and tenant_id = ${inTenant(tenant)}`,
   );
   psql(
-    `update clients set description = '${UNBROKEN.repeat(4)}' where client_id = '${UNBROKEN}' and tenant_id = (select id from tenants where name = '${tenant}')`,
+    `update clients set description = '${UNBROKEN.repeat(4)}' where client_id = '${UNBROKEN}' and tenant_id = ${inTenant(tenant)}`,
   );
 }
 
@@ -249,7 +246,7 @@ function seedAccess(access: Seeded['access']): void {
   grant(flows.fixedClientsOnly, 'odudu-admin:manage-clients');
   for (const account of [flows.main, flows.keyed]) {
     psql(
-      `delete from authentication_executions where authenticator = 'recovery-code' and tenant_id = (select id from tenants where name = '${account.tenant}')`,
+      `delete from authentication_executions where authenticator = 'recovery-code' and tenant_id = ${inTenant(account.tenant)}`,
     );
   }
   for (const account of [keys.main, keys.young, keys.raced, keys.keyed, keys.fixed]) {

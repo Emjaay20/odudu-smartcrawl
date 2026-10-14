@@ -9,7 +9,7 @@ import {
   test,
   type Problem,
 } from './fixtures';
-import { psql, seed, seeded } from './stack';
+import { psql, seed, seeded, sqlText, subjectIdOf } from './stack';
 
 const { subjects, system } = seeded();
 const { admin, viewer } = subjects;
@@ -19,15 +19,7 @@ const PHONE = { width: 390, height: 844 };
 type Tab =
   'profile' | 'credentials' | 'groups' | 'roles' | 'required-actions' | 'sessions' | 'consents';
 
-function sqlText(value: string): string {
-  return `'${value.replaceAll("'", "''")}'`;
-}
-
-function subjectId(username: string): string {
-  return psql(
-    `select u.subject_id from users u join tenants t on t.id = u.tenant_id where t.name = ${sqlText(TENANT)} and u.username = ${sqlText(username)}`,
-  );
-}
+const subjectId = (username: string): string => subjectIdOf(TENANT, username);
 
 function heldRoles(username: string): string {
   return psql(

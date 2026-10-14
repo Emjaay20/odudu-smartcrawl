@@ -1,21 +1,11 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, expectAccessible, expectFitsViewport, signIn, test } from './fixtures';
-import { psql, seeded } from './stack';
+import { seeded, subjectIdOf } from './stack';
 
 const { admin, subjects, system, tenants } = seeded();
 const PHONE = { width: 390, height: 844 };
 const LAPTOP = { width: 1440, height: 900 };
 const WIDE = { width: 2560, height: 1440 };
-
-function sqlText(value: string): string {
-  return `'${value.replaceAll("'", "''")}'`;
-}
-
-function subjectId(tenant: string, username: string): string {
-  return psql(
-    `select u.subject_id from users u join tenants t on t.id = u.tenant_id where t.name = ${sqlText(tenant)} and u.username = ${sqlText(username)}`,
-  );
-}
 
 async function box(locator: Locator): Promise<{ x: number; y: number; w: number; h: number }> {
   const found = await locator.boundingBox();
@@ -52,7 +42,7 @@ test.describe('the breadcrumb', () => {
     await signIn(page, subjects.admin);
     const tenant = subjects.admin.tenant;
     const username = subjects.viewer.username;
-    await page.goto(`/console/${tenant}/subjects/${subjectId(tenant, username)}`);
+    await page.goto(`/console/${tenant}/subjects/${subjectIdOf(tenant, username)}`);
     await expect(page.getByRole('heading', { level: 1, name: username })).toBeVisible();
     const trail = breadcrumb(page);
     await expect(trail.getByText(username)).toHaveAttribute('aria-current', 'page');
