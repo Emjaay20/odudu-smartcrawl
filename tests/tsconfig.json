@@ -11,6 +11,7 @@
     "lint/fixtures/console-folder-imports/**",
     "lint/fixtures/console-no-duplicate-exports/**",
     "lint/fixtures/console-no-module-state/**",
-    "lint/fixtures/console-store-access/**"
+    "lint/fixtures/console-store-access/**",
+    "lint/fixtures/console-css-module-classes-defined/**"
   ]
 }
