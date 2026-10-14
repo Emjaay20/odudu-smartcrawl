@@ -1,10 +1,11 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { afterEach, beforeEach, expect, it } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { type DraftFields } from '#/shared/repository/useDrafts';
 import { useSectionDraft } from '#/shared/repository/useSectionDraft';
+import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 import { TextField } from '#/shared/view/Field';
 import { Section } from '#/shared/view/Section';
 import { json, SESSION_ENDED, type Answer } from '#/testing/fakeTransport';
@@ -125,6 +126,27 @@ it('keeps the edit through a session that ends mid-edit, and puts it back marked
   expect(within(section).getByRole('textbox', { name: 'Name' })).toHaveValue('Billing portal EU');
   expect(within(section).getByRole('textbox', { name: 'Client secret' })).toHaveValue('');
   expect(second.calls.every((call) => call.method === 'GET')).toBe(true);
+});
+
+it('drops a question about leaving that the end of the session overtook, without answering it', async () => {
+  const user = userEvent.setup();
+  const first = mount({
+    ...SIGNED_IN,
+    [`GET ${ACME_ADMIN}/clients`]: SESSION_ENDED,
+  });
+  await user.type(await screen.findByRole('textbox', { name: 'Name' }), ' EU');
+  const proceed = vi.fn();
+  expect(useUnsavedGuard.getState().request(proceed)).toBe(false);
+
+  await act(() =>
+    first.transport.gateway.request('GET', 'admin/tenants/acme/clients', { schema: z.unknown() }),
+  );
+
+  await waitFor(() => {
+    expect(first.leavePage).toHaveBeenCalledOnce();
+  });
+  expect(useUnsavedGuard.getState().pending).toBeNull();
+  expect(proceed).not.toHaveBeenCalled();
 });
 
 it('restores nothing for a different administrator signing in to the same tab', async () => {
