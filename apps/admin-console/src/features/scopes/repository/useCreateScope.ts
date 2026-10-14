@@ -10,11 +10,12 @@ import {
   setScopeRoles,
   type CreateScopeInput,
 } from '#/features/scopes/adapter/scopes';
-import type { CopyRead } from '#/features/scopes/service';
+import { copyReadOf, copySourceOf, type CopyRead } from '#/features/scopes/service';
 import { countKey, listKey, pickerKey } from '#/shared/repository/queryKeys';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
 import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useWrite } from '#/shared/repository/useWrite';
+import { etagOfRead } from '#/shared/service/record';
 import type { GatewayResult } from '#/shared/transport/gateway';
 import { useTransport } from '#/shared/transport/useTransport';
 
@@ -59,32 +60,39 @@ export function useCreateScope(tenant: string): CreateScope {
     ) => setScopeMappers(gateway, tenant, id, names, ifMatch),
   });
   const fresh = useFreshRead();
+  // Reads the part for its tag, then writes on it; a read that gave none
+  // is the failure.
+  const mapPart = async (
+    part: Part,
+    id: string,
+    wanted: readonly string[],
+    read: () => Promise<GatewayResult<unknown>>,
+    write: (ifMatch: string) => Promise<GatewayResult<unknown>>,
+  ): Promise<Part[]> => {
+    if (wanted.length === 0) return [];
+    const answer = await fresh.read(['copy-etag', tenant, id, part], read);
+    const ifMatch = etagOfRead(answer);
+    const set = ifMatch === null ? answer : await write(ifMatch);
+    return set.ok ? [] : [part];
+  };
   return {
     busy: create.busy || setRoles.busy || setMappers.busy || fresh.pending,
-    fill: async (id, roleIds, mapperNames) => {
-      const missed: Part[] = [];
-      if (roleIds.length > 0) {
-        const read = await fresh.read(['copy-etag', tenant, id, 'roles'], () =>
-          readScopeRoles(gateway, tenant, id),
-        );
-        const set =
-          read.ok && read.etag !== null
-            ? await setRoles.run({ id, ids: roleIds, ifMatch: read.etag })
-            : read;
-        if (!set.ok) missed.push('roles');
-      }
-      if (mapperNames.length > 0) {
-        const read = await fresh.read(['copy-etag', tenant, id, 'mappers'], () =>
-          readScopeMappers(gateway, tenant, id),
-        );
-        const set =
-          read.ok && read.etag !== null
-            ? await setMappers.run({ id, names: mapperNames, ifMatch: read.etag })
-            : read;
-        if (!set.ok) missed.push('mappers');
-      }
-      return missed;
-    },
+    fill: async (id, roleIds, mapperNames) => [
+      ...(await mapPart(
+        'roles',
+        id,
+        roleIds,
+        () => readScopeRoles(gateway, tenant, id),
+        (ifMatch) => setRoles.run({ id, ids: roleIds, ifMatch }),
+      )),
+      ...(await mapPart(
+        'mappers',
+        id,
+        mapperNames,
+        () => readScopeMappers(gateway, tenant, id),
+        (ifMatch) => setMappers.run({ id, names: mapperNames, ifMatch }),
+      )),
+    ],
     create: create.run,
     // The search is a prefix, so an exact match is picked out of its answer.
     find: (name) =>
@@ -105,12 +113,8 @@ export function useCopySource(tenant: string, id: string | null): CopyRead {
         readScopeRoles(gateway, tenant, id),
         readScopeMappers(gateway, tenant, id),
       ]);
-      return scope.ok && roles.ok && mappers.ok
-        ? { scope: scope.data, roles: roles.data.items, bound: mappers.data.bound }
-        : null;
+      return copySourceOf(scope, roles, mappers);
     },
   });
-  if (id === null) return { status: 'none' };
-  if (query.data === undefined) return query.isError ? { status: 'failed' } : { status: 'loading' };
-  return query.data === null ? { status: 'failed' } : { status: 'ready', ...query.data };
+  return copyReadOf(id, query.data, query.isError);
 }

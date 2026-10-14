@@ -4,6 +4,7 @@ import { roleReachUnavailable } from '#/shared/service/capabilities';
 import type { LeftOut, PartialCopy } from '#/shared/service/copy';
 import { andList, plural } from '#/shared/service/format';
 import type { AdminCapability } from '#/shared/service/principal';
+import type { GatewayResult } from '#/shared/service/result';
 import { scopeHref, scopesHref } from '#/features/scopes/service/address';
 
 type MappedRole = SetScopeRolesResponse['items'][number];
@@ -27,6 +28,34 @@ export type Copying =
       // What it will not map, since the caller could not give it, and why.
       left: readonly LeftOut[];
     };
+
+export interface CopySource {
+  scope: ClientScope;
+  roles: readonly MappedRole[];
+  bound: readonly string[];
+}
+
+// The scope with what it maps and binds, or nothing when any read failed.
+export function copySourceOf(
+  scope: GatewayResult<ClientScope>,
+  roles: GatewayResult<{ items: readonly MappedRole[] }>,
+  mappers: GatewayResult<{ bound: readonly string[] }>,
+): CopySource | null {
+  return scope.ok && roles.ok && mappers.ok
+    ? { scope: scope.data, roles: roles.data.items, bound: mappers.data.bound }
+    : null;
+}
+
+// A source that was read and came to nothing is failed like one that errored.
+export function copyReadOf(
+  id: string | null,
+  source: CopySource | null | undefined,
+  isError: boolean,
+): CopyRead {
+  if (id === null) return { status: 'none' };
+  if (source === undefined) return isError ? { status: 'failed' } : { status: 'loading' };
+  return source === null ? { status: 'failed' } : { status: 'ready', ...source };
+}
 
 export interface CopyPlan {
   mapped: MappedRole[];

@@ -67,5 +67,7 @@ export {
   copyingOf,
   copyingText,
   copyPlan,
+  copyReadOf,
+  copySourceOf,
   partialCopy,
 } from '#/features/scopes/service/copy';

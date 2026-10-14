@@ -1,5 +1,5 @@
 import { isMissing } from '#/shared/service/failure';
-import type { GatewayFailure } from '#/shared/service/result';
+import type { GatewayFailure, GatewayResult } from '#/shared/service/result';
 
 export type RecordStatus = 'loading' | 'ready' | 'missing' | 'failed';
 
@@ -65,6 +65,11 @@ type RecordEntryView = { result: { etag: string | null }; by: 'read' | 'save' } 
 
 export function entryEtag(entry: RecordEntryView): string | null {
   return entry?.result.etag ?? null;
+}
+
+// The tag a write after a read goes on: none when the read failed or gave none.
+export function etagOfRead(result: GatewayResult<unknown> | null | undefined): string | null {
+  return result?.ok === true ? result.etag : null;
 }
 
 // A failure counts only while the read is in error.

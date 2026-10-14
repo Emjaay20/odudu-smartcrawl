@@ -8,6 +8,8 @@ import {
   copyingOf,
   copyingText,
   copyPlan,
+  copyReadOf,
+  copySourceOf,
   partialCopy,
 } from '#/features/scopes/service/copy';
 import { role } from '#/testing/roleAnswers';
@@ -108,5 +110,29 @@ describe('copying a scope', () => {
 
   it('offers a copy from the scope, never for another tenant', () => {
     expect(copyHrefOf('acme', 's1')).toBe('/console/acme/scopes/new?copy=s1');
+  });
+});
+
+describe('what a copy is read as', () => {
+  const ok = <T>(data: T) => ({ ok: true as const, status: 200, data, etag: null, next: null });
+  const failed = { ok: false as const, kind: 'network' as const };
+  const source = { scope: SCOPE, roles: [AUDITOR], bound: ['email'] };
+
+  it('keeps the scope, its mapped roles and its bound mappers when all three were read', () => {
+    expect(copySourceOf(ok(SCOPE), ok({ items: [AUDITOR] }), ok({ bound: ['email'] }))).toEqual(
+      source,
+    );
+  });
+  it('is nothing when any of the three could not be read', () => {
+    expect(copySourceOf(failed, ok({ items: [] }), ok({ bound: [] }))).toBeNull();
+    expect(copySourceOf(ok(SCOPE), failed, ok({ bound: [] }))).toBeNull();
+    expect(copySourceOf(ok(SCOPE), ok({ items: [] }), failed)).toBeNull();
+  });
+  it('is none without a scope to copy, loading until read, and failed on an error or no source', () => {
+    expect(copyReadOf(null, undefined, false)).toEqual({ status: 'none' });
+    expect(copyReadOf('s1', undefined, false)).toEqual({ status: 'loading' });
+    expect(copyReadOf('s1', undefined, true)).toEqual({ status: 'failed' });
+    expect(copyReadOf('s1', null, false)).toEqual({ status: 'failed' });
+    expect(copyReadOf('s1', source, false)).toEqual({ status: 'ready', ...source });
   });
 });

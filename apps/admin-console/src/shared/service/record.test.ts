@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   dirtyTabs,
   entryEtag,
+  etagOfRead,
   recordsWithEdits,
   recordView,
   seenAfter,
@@ -128,5 +129,14 @@ describe('entryEtag and shownFailure', () => {
     expect(shownFailure(true, broken)).toBe(broken);
     expect(shownFailure(false, broken)).toBeNull();
     expect(shownFailure(true, null)).toBeNull();
+  });
+});
+
+describe('etagOfRead', () => {
+  it('is the tag a successful read answered with, and none from a failure or no tag', () => {
+    expect(etagOfRead({ ok: true, status: 200, data: 1, etag: 'e1', next: null })).toBe('e1');
+    expect(etagOfRead({ ok: true, status: 200, data: 1, etag: null, next: null })).toBeNull();
+    expect(etagOfRead({ ok: false, kind: 'network' })).toBeNull();
+    expect(etagOfRead(undefined)).toBeNull();
   });
 });
