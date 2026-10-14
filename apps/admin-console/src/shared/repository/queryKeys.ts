@@ -6,6 +6,15 @@ export function listKey(tenant: string, ...resource: readonly string[]) {
   return ['list', tenant, ...resource] as const;
 }
 
+// One list read, from `cursor` onwards, under the list's own key.
+export function pageKey(
+  key: readonly unknown[],
+  query: URLSearchParams,
+  cursor: string | undefined,
+) {
+  return [...key, query.toString(), cursor ?? ''] as const;
+}
+
 export function countKey(tenant: string, ...resource: readonly string[]) {
   return ['count', tenant, ...resource] as const;
 }

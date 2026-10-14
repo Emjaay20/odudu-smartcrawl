@@ -1,7 +1,8 @@
 import type { CountResponse } from '@odudu/contracts/admin';
 import type { CursorTrail } from '#/shared/service/cursorTrail';
 import { isRefused } from '#/shared/service/failure';
-import type { GatewayFailure } from '#/shared/service/result';
+import { readFailureOf } from '#/shared/service/readFailure';
+import type { GatewayFailure, GatewayResult } from '#/shared/service/result';
 
 // A prefix of one named field, as the admin API searches.
 export interface ListSearch {
@@ -117,4 +118,48 @@ export function withFilter(
     search: narrowing.search,
     filters: Object.fromEntries(value === null ? others : [...others, [name, value]]),
   };
+}
+
+// What a filter the address does not set reads as, without narrowing.
+export function withDefaults(
+  narrowing: ListNarrowing,
+  defaults: Readonly<Record<string, string>>,
+): ListNarrowing {
+  return { ...narrowing, filters: { ...defaults, ...narrowing.filters } };
+}
+
+export interface PagesState<T> {
+  status: ListStatus;
+  rows: readonly T[];
+  next: string | null;
+}
+
+// The pages read so far, or the failure of the first. A page after the
+// first that failed leaves the rows already read as they are.
+export function listPagesState<T>(
+  data: { pages: readonly ListPage<T>[] } | undefined,
+  error: unknown,
+): PagesState<T> {
+  const pages = data?.pages ?? [];
+  const failure = data === undefined ? readFailureOf(error) : null;
+  return {
+    status: data === undefined && failure === null ? 'loading' : listStatusOf(failure),
+    rows: pages.flatMap((page) => page.items),
+    next: pages.at(-1)?.next ?? null,
+  };
+}
+
+export function canLoadMore(hasNextPage: boolean, isFetching: boolean): boolean {
+  return hasNextPage && !isFetching;
+}
+
+export function moreFailed(hasRows: boolean, nextPageFailed: boolean): boolean {
+  return hasRows && nextPageFailed;
+}
+
+// `null` is a count that is not asked for.
+export function countOf(
+  answer: GatewayResult<CountResponse> | null | undefined,
+): CountResponse | null {
+  return answer?.ok === true ? answer.data : null;
 }

@@ -9,6 +9,7 @@ import {
   listKey,
   membershipsKey,
   overviewKey,
+  pageKey,
   pickerKey,
   recordKey,
   scopeClientsKey,
@@ -42,4 +43,10 @@ it('is a prefix of what it names when given no more than the tenant', () => {
   expect(holdersKey('acme')).toEqual(['holders', 'acme']);
   expect(heldCapabilitiesKey('acme')).toEqual(['held-capabilities', 'acme']);
   expect(overviewKey('acme')).toEqual(['overview', 'acme']);
+});
+
+it('names a page of a list by its query and the cursor it starts from, none being empty', () => {
+  const key = listKey('acme', 'roles');
+  expect(pageKey(key, new URLSearchParams('name=a'), 'c1')).toEqual([...key, 'name=a', 'c1']);
+  expect(pageKey(key, new URLSearchParams('name=a'), undefined)).toEqual([...key, 'name=a', '']);
 });

@@ -1,21 +1,26 @@
 import type { CountResponse } from '@odudu/contracts/admin';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { countKey, listKey } from '#/shared/repository/queryKeys';
+import { countKey, listKey, pageKey } from '#/shared/repository/queryKeys';
 import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useUrlSearch } from '#/shared/repository/useUrlSearch';
 import { currentCursor, trailFromSearch, trailToSearch } from '#/shared/service/cursorTrail';
+import { ReadFailure } from '#/shared/service/readFailure';
 import {
   apiQuery,
+  canLoadMore,
+  countOf,
   isNarrowed,
   listFromSearch,
-  listStatusOf,
+  listPagesState,
   listToSearch,
+  moreFailed,
   type ListNarrowing,
   type ListPage,
   type ResourceListState,
+  withDefaults,
   withFilter,
 } from '#/shared/service/resourceList';
-import type { Gateway, GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
+import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 import { useTransport } from '#/shared/transport/useTransport';
 
 export type ReadPage<T> = (
@@ -26,15 +31,6 @@ export type ReadCount = (
   gateway: Gateway,
   query: URLSearchParams,
 ) => Promise<GatewayResult<CountResponse>>;
-
-// Thrown so that a failed page leaves the pages before it in place.
-class PageFailure extends Error {
-  readonly failure: GatewayFailure;
-  constructor(failure: GatewayFailure) {
-    super('a list page could not be read');
-    this.failure = failure;
-  }
-}
 
 // Reads one page of a list at a time, from `cursor` onwards, and keeps the
 // pages "Load more" adds in place.
@@ -53,30 +49,26 @@ export function useListPages<T>({
 }) {
   const { gateway } = useTransport();
   const pages = useInfiniteQuery({
-    queryKey: [...key, query.toString(), cursor ?? ''],
+    queryKey: pageKey(key, query, cursor),
     initialPageParam: cursor,
     enabled,
     queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams(query);
       if (pageParam !== undefined) params.set('cursor', pageParam);
       const result = await read(gateway, params);
-      if (!result.ok) throw new PageFailure(result);
+      if (!result.ok) throw new ReadFailure(result);
       return result.data;
     },
     getNextPageParam: (last: ListPage<T>) => last.next,
   });
-  const loaded = pages.data?.pages ?? [];
-  const failure =
-    pages.data === undefined && pages.error instanceof PageFailure ? pages.error.failure : null;
   return {
-    status:
-      pages.data === undefined && failure === null ? ('loading' as const) : listStatusOf(failure),
-    rows: loaded.flatMap((page) => page.items),
-    next: loaded.at(-1)?.next ?? null,
+    ...listPagesState(pages.data, pages.error),
     loadingMore: pages.isFetchingNextPage,
-    loadMoreFailed: pages.data !== undefined && pages.isFetchNextPageError,
+    loadMoreFailed: moreFailed(pages.data !== undefined, pages.isFetchNextPageError),
     loadMore: () => {
-      if (pages.hasNextPage && !pages.isFetching) pages.fetchNextPage().catch(() => undefined);
+      if (canLoadMore(pages.hasNextPage, pages.isFetching)) {
+        pages.fetchNextPage().catch(() => undefined);
+      }
     },
     retry: () => {
       pages.refetch().catch(() => undefined);
@@ -116,7 +108,7 @@ export function useResourceList<T>({
   const spec = { fields: search, filters };
   const narrowing = listFromSearch(params, spec);
   const trail = trailFromSearch(params);
-  const query = apiQuery({ ...narrowing, filters: { ...defaults, ...narrowing.filters } }, fixed);
+  const query = apiQuery(withDefaults(narrowing, defaults), fixed);
   const key = listKey(tenant, resource);
   const pages = useListPages({ key, query, cursor: currentCursor(trail), read });
   const counted = useQuery({
@@ -132,7 +124,7 @@ export function useResourceList<T>({
     ...narrowing,
     status: pages.status,
     rows: pages.rows,
-    count: counted.data?.ok === true ? counted.data.data : null,
+    count: countOf(counted.data),
     narrowed: isNarrowed(narrowing),
     trail,
     next: pages.next,

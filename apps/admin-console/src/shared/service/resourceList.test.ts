@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
+import { ReadFailure } from '#/shared/service/readFailure';
 import {
   apiQuery,
+  canLoadMore,
+  countOf,
   isNarrowed,
   listFromSearch,
   listStatusOf,
+  listPagesState,
   listToSearch,
+  moreFailed,
+  withDefaults,
   withFilter,
 } from '#/shared/service/resourceList';
 
@@ -89,5 +95,71 @@ describe('isNarrowed and withFilter', () => {
     expect(withFilter(was, 'enabled', 'false').filters).toEqual({ kind: 'x', enabled: 'false' });
     expect(withFilter(was, 'enabled', null).filters).toEqual({ kind: 'x' });
     expect(withFilter(was, 'other', 'v').search).toBeNull();
+  });
+});
+
+describe('listPagesState', () => {
+  const pages = {
+    pages: [
+      { items: ['a', 'b'], next: 'c1' },
+      { items: ['c'], next: 'c2' },
+    ],
+  };
+  const refused = {
+    ok: false as const,
+    kind: 'problem' as const,
+    problem: { type: 'about:blank', title: 'Forbidden', status: 403 },
+  };
+
+  it('is loading until a page or a failure arrives', () => {
+    expect(listPagesState(undefined, null)).toEqual({ status: 'loading', rows: [], next: null });
+    expect(listPagesState(undefined, new Error('boom')).status).toBe('loading');
+  });
+  it("joins the rows of every page and points at the last page's next", () => {
+    expect(listPagesState(pages, null)).toEqual({
+      status: 'ready',
+      rows: ['a', 'b', 'c'],
+      next: 'c2',
+    });
+    expect(listPagesState({ pages: [{ items: ['a'] }] }, null).next).toBeNull();
+    expect(listPagesState({ pages: [] }, null)).toEqual({ status: 'ready', rows: [], next: null });
+  });
+  it('fails or is refused only when the first page failed', () => {
+    expect(listPagesState(undefined, new ReadFailure(refused)).status).toBe('refused');
+    expect(listPagesState(undefined, new ReadFailure({ ok: false, kind: 'network' })).status).toBe(
+      'failed',
+    );
+    expect(listPagesState(pages, new ReadFailure(refused)).status).toBe('ready');
+  });
+});
+
+describe('what a list does while paging', () => {
+  it('loads more only when a page follows and nothing is being read', () => {
+    expect(canLoadMore(true, false)).toBe(true);
+    expect(canLoadMore(false, false)).toBe(false);
+    expect(canLoadMore(true, true)).toBe(false);
+  });
+  it('says a later page failed only while the rows already read are shown', () => {
+    expect(moreFailed(true, true)).toBe(true);
+    expect(moreFailed(false, true)).toBe(false);
+    expect(moreFailed(true, false)).toBe(false);
+  });
+});
+
+describe('withDefaults and countOf', () => {
+  it('reads an unset filter as its default, which the address overrides', () => {
+    const narrowing = { search: null, filters: { enabled: 'false' } };
+    expect(withDefaults(narrowing, { enabled: 'true', kind: 'x' })).toEqual({
+      search: null,
+      filters: { enabled: 'false', kind: 'x' },
+    });
+    expect(withDefaults(narrowing, {}).filters).toEqual({ enabled: 'false' });
+  });
+  it('takes the count off a successful answer, and none off anything else', () => {
+    const counted = { count: 4, capped: false };
+    expect(countOf({ ok: true, status: 200, data: counted, etag: null, next: null })).toBe(counted);
+    expect(countOf({ ok: false, kind: 'network' })).toBeNull();
+    expect(countOf(undefined)).toBeNull();
+    expect(countOf(null)).toBeNull();
   });
 });
