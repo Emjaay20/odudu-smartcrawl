@@ -33,6 +33,7 @@ import { describeId } from '#/shared/service/format';
 import { roleNameOf } from '#/shared/service/mappedRoles';
 import { firstChosen, type PickerState } from '#/shared/service/picker';
 import { ceilingCaller } from '#/shared/service/access';
+import { indexById } from '#/shared/service/ids';
 
 export function useCompositesRead(
   tenant: string,
@@ -96,9 +97,7 @@ export function useRoleComposites({
   const [message, setMessage] = useState<string | null>(null);
   const [asking, setAsking] = useState<{ asked: Asked; child: Role } | null>(null);
   const caller = ceilingCaller(ceiling);
-  const known = new Map<string, Role>(
-    [...data.items, ...picker.options].map((each) => [each.id, each]),
-  );
+  const known = indexById<Role>(data.items, picker.options);
   const add = useSectionSave({
     tenant,
     record: compositesRecord(role.id),

@@ -46,6 +46,26 @@ const MAIL_FIX_LABEL: Readonly<Record<MailRefusal['fix'], string>> = {
   settings: 'Settings',
 };
 
+export function sentOutcome(text: string): MailOutcome {
+  return { sent: true, text, fix: null };
+}
+
+export function withOutcome(
+  outcomes: Partial<Record<MailKind, MailOutcome>>,
+  kind: MailKind,
+  outcome: MailOutcome,
+): Partial<Record<MailKind, MailOutcome>> {
+  return { ...outcomes, [kind]: outcome };
+}
+
+export function mailKindState(
+  kind: MailKind,
+  running: MailKind | null,
+  outcomes: Partial<Record<MailKind, MailOutcome>>,
+): { busy: boolean; outcome: MailOutcome | null } {
+  return { busy: running === kind, outcome: outcomes[kind] ?? null };
+}
+
 export function mailOutcome(
   failure: GatewayFailure,
   name: string,

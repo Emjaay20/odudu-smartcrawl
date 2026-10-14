@@ -3,7 +3,10 @@ import { actionsMailProblem } from '#/features/subjects/service/actions';
 import {
   mailFailure,
   mailFieldErrors,
+  mailKindState,
   mailOutcome,
+  sentOutcome,
+  withOutcome,
   mailSentText,
   mailRefusal,
 } from '#/features/subjects/service/mail';
@@ -129,5 +132,26 @@ describe('mail outcomes', () => {
   it('wants at least one action for the actions mail', () => {
     expect(actionsMailProblem([])).toEqual({ actions: 'Choose at least one action.' });
     expect(actionsMailProblem(['update-password'])).toBeNull();
+  });
+});
+
+describe('the state of one kind of mail', () => {
+  const sent = sentOutcome('Reset sent.');
+
+  it('is busy while that kind is being sent, and has the outcome it last had', () => {
+    expect(mailKindState('reset', 'reset', { reset: sent })).toEqual({ busy: true, outcome: sent });
+    expect(mailKindState('reset', 'actions', {})).toEqual({ busy: false, outcome: null });
+    expect(mailKindState('reset', null, { verification: sent })).toEqual({
+      busy: false,
+      outcome: null,
+    });
+  });
+  it('records an outcome under its kind, leaving the others', () => {
+    const was = { verification: sent };
+    expect(withOutcome(was, 'reset', sent)).toEqual({ verification: sent, reset: sent });
+    expect(was).toEqual({ verification: sent });
+  });
+  it('is a sent mail, with its text and nothing to fix', () => {
+    expect(sent).toEqual({ sent: true, text: 'Reset sent.', fix: null });
   });
 });

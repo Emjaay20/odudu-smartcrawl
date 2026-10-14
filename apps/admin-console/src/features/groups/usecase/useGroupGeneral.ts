@@ -43,6 +43,7 @@ import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
 import type { DefaultValues, DescriptionValues } from '#/shared/service/sectionValues';
 import { orBlank } from '#/shared/service/format';
 import { ceilingCaller } from '#/shared/service/access';
+import { indexById } from '#/shared/service/ids';
 
 export type { SectionSave };
 
@@ -132,7 +133,7 @@ export function useGroupGeneral({
     save: saves.description,
   });
 
-  const known = new Map<string, Group>(picker.options.map((each) => [each.id, each]));
+  const known = indexById<Group>(picker.options);
   const pathOf = (id: unknown): string => parentPathOf(group, id, known);
   const parent = useSectionSave({
     tenant,

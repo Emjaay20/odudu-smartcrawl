@@ -10,10 +10,10 @@ import {
   accessRefusal,
   groupsRecord,
   groupsRemoveTenants,
-  leaveConfirmation,
+  groupPathOf,
+  groupsSaveConfirmation,
   leftGroups,
   membershipsOf,
-  removalConfirmation,
   subjectName,
   type Confirmation,
   type Membership,
@@ -22,7 +22,7 @@ import { useGroupPicker } from '#/shared/repository/useGroupPicker';
 import type { RecordState } from '#/shared/repository/useRecord';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { describeIds } from '#/shared/service/format';
-import { sortedIds } from '#/shared/service/ids';
+import { indexById, sortedIds } from '#/shared/service/ids';
 import type { PickerState } from '#/shared/service/picker';
 import { useSaveConfirmation } from '#/shared/usecase/useSaveConfirmation';
 
@@ -64,10 +64,8 @@ export function useSubjectGroups(
   const saveGroups = useSaveGroups(tenant, subject.id);
   const effective = useHeldCapabilities(tenant, subject.id);
   const picker = useGroupPicker(tenant);
-  const known = new Map<string, GroupFields>(
-    [...data.items, ...picker.options].map((group) => [group.id, group]),
-  );
-  const nameOf = (id: string): string => known.get(id)?.path ?? id;
+  const known = indexById<GroupFields>(data.items, picker.options);
+  const nameOf = (id: string): string => groupPathOf(known, id);
   const save = useSectionSave({
     tenant,
     record: groupsRecord(subject.id),
@@ -107,21 +105,9 @@ export function useSubjectGroups(
     save: {
       ...save,
       submit: () => {
-        if (removesTenants) {
-          const asked = removalConfirmation({
-            name,
-            self,
-            removed: ['manage-tenants'],
-            removesTenants: true,
-          });
-          if (asked !== null) {
-            asking.ask(asked);
-            return true;
-          }
-        }
-        const leaving = leaveConfirmation(self, left);
-        if (leaving === null) return save.submit();
-        asking.ask(leaving);
+        const confirmation = groupsSaveConfirmation({ name, self, removesTenants, left });
+        if (confirmation === null) return save.submit();
+        asking.ask(confirmation);
         return true;
       },
     },

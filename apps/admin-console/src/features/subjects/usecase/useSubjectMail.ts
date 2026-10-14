@@ -6,11 +6,14 @@ import { useMailSend, type MailRequest } from '#/features/subjects/repository/us
 import {
   actionsMailProblem,
   mailFailure,
+  mailKindState,
   mailOutcome,
   mailSentText,
   requiredActionsInOrder,
+  sentOutcome,
   subjectName,
   subjectTabHref,
+  withOutcome,
   type MailOutcome,
 } from '#/features/subjects/service';
 import { withoutField } from '#/shared/service/fieldErrors';
@@ -62,7 +65,7 @@ export function useSubjectMail(tenant: string, subject: Subject): SubjectMail {
       .send(request)
       .then((result) => {
         if (result.ok) {
-          setOutcomes((was) => ({ ...was, [kind]: { sent: true, text: sentText, fix: null } }));
+          setOutcomes((was) => withOutcome(was, kind, sentOutcome(sentText)));
           return;
         }
         refusal.report(result, 'manage-users');
@@ -70,14 +73,13 @@ export function useSubjectMail(tenant: string, subject: Subject): SubjectMail {
         if (failed.errors !== null) setErrors(failed.errors);
         if (failed.outcome !== null) {
           const { outcome } = failed;
-          setOutcomes((was) => ({ ...was, [kind]: outcome }));
+          setOutcomes((was) => withOutcome(was, kind, outcome));
         }
       })
       .catch(() => {
-        setOutcomes((was) => ({
-          ...was,
-          [kind]: mailOutcome({ ok: false, kind: 'defect' }, name, fixHrefs),
-        }));
+        setOutcomes((was) =>
+          withOutcome(was, kind, mailOutcome({ ok: false, kind: 'defect' }, name, fixHrefs)),
+        );
       })
       .finally(() => {
         setRunning(null);
@@ -87,22 +89,19 @@ export function useSubjectMail(tenant: string, subject: Subject): SubjectMail {
   return {
     email: subject.email,
     reset: {
-      busy: running === 'reset',
-      outcome: outcomes.reset ?? null,
+      ...mailKindState('reset', running, outcomes),
       send: () => {
         run('reset', { kind: 'reset' }, mailSentText('reset', subject.email));
       },
     },
     verification: {
-      busy: running === 'verification',
-      outcome: outcomes.verification ?? null,
+      ...mailKindState('verification', running, outcomes),
       send: () => {
         run('verification', { kind: 'verification' }, mailSentText('verification', subject.email));
       },
     },
     actions: {
-      busy: running === 'actions',
-      outcome: outcomes.actions ?? null,
+      ...mailKindState('actions', running, outcomes),
       actions,
       errors,
       choose: (next) => {

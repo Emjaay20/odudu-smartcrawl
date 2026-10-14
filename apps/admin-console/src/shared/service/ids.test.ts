@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { inOrderOf, removedFrom, sortedIds, uniqueIds } from '#/shared/service/ids';
+import { indexById, inOrderOf, removedFrom, sortedIds, uniqueIds } from '#/shared/service/ids';
 
 describe('sortedIds', () => {
   it('sorts a copy and leaves the input alone', () => {
@@ -26,5 +26,18 @@ describe('removedFrom', () => {
 describe('uniqueIds', () => {
   it('keeps the first of each, in order', () => {
     expect(uniqueIds(['b', 'a', 'b', 'c', 'a'])).toEqual(['b', 'a', 'c']);
+  });
+});
+
+describe('indexById', () => {
+  it('finds each item by its id, a later list winning over an earlier one', () => {
+    const first = { id: 'a', name: 'old' };
+    const later = { id: 'a', name: 'new' };
+    const other = { id: 'b', name: 'b' };
+    const index = indexById([first, other], [later]);
+    expect(index.get('a')).toBe(later);
+    expect(index.get('b')).toBe(other);
+    expect(index.get('c')).toBeUndefined();
+    expect(indexById().size).toBe(0);
   });
 });

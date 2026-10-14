@@ -1,3 +1,10 @@
+// Each item by its id; where lists share one, the later list's item is kept.
+export function indexById<T extends { id: string }>(
+  ...lists: readonly (readonly T[])[]
+): ReadonlyMap<string, T> {
+  return new Map(lists.flat().map((item) => [item.id, item]));
+}
+
 export function sortedIds(ids: readonly string[]): string[] {
   return [...ids].sort();
 }

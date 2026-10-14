@@ -15,6 +15,7 @@ export {
   USERNAME_RULE_TEXT,
   usernameProblem,
   signsInAsItself,
+  confirmationOf,
   enabledVerb,
   subjectWriteFailure,
   type UsernameMode,
@@ -82,6 +83,9 @@ export {
   type MailKind,
   type MailOutcome,
   mailOutcome,
+  mailKindState,
+  sentOutcome,
+  withOutcome,
   mailFieldErrors,
   mailFailure,
   mailSentText,
@@ -99,7 +103,9 @@ export {
   membershipsOf,
   leftGroups,
   leaveConfirmation,
+  groupPathOf,
   groupsRemoveTenants,
+  groupsSaveConfirmation,
 } from '#/features/subjects/service/memberships';
 export {
   subjectCreatedText,

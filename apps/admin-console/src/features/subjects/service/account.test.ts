@@ -1,6 +1,7 @@
 import { USERNAME_RULE } from '@odudu/contracts/admin';
 import { describe, expect, it } from 'vitest';
 import {
+  confirmationOf,
   enabledVerb,
   subjectWriteFailure,
   usernameMode,
@@ -66,5 +67,20 @@ describe('the username in the account section', () => {
       settingsHref: '/s',
       reason: expect.stringMatching(/username_editable setting is off/u) as string,
     });
+  });
+});
+
+describe('confirmationOf', () => {
+  it('shows a question only for the one asked, with the problem that goes with it', () => {
+    expect(confirmationOf('disable', 'disable', 'refused')).toEqual({
+      confirming: true,
+      problem: 'refused',
+    });
+    expect(confirmationOf('disable', 'delete', 'refused')).toEqual({
+      confirming: false,
+      problem: null,
+    });
+    expect(confirmationOf('delete', null, 'refused')).toEqual({ confirming: false, problem: null });
+    expect(confirmationOf('delete', 'delete', null)).toEqual({ confirming: true, problem: null });
   });
 });

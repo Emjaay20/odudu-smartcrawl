@@ -11,6 +11,7 @@ import {
   type AccountValues,
 } from '#/features/subjects/repository/useSubjectRecord';
 import {
+  confirmationOf,
   enabledVerb,
   subjectName,
   subjectRecord,
@@ -149,9 +150,8 @@ export function useSubjectAccount(
       setEnabled(true);
     },
     disable: {
-      confirming: confirming === 'disable',
+      ...confirmationOf('disable', confirming, problem),
       busy: enabledChange.busy,
-      problem: confirming === 'disable' ? problem : null,
       ask: () => {
         ask('disable');
       },
@@ -160,9 +160,8 @@ export function useSubjectAccount(
     },
     enabledMessage,
     remove: {
-      confirming: confirming === 'delete',
+      ...confirmationOf('delete', confirming, problem),
       busy: deletion.busy,
-      problem: confirming === 'delete' ? problem : null,
       ask: () => {
         ask('delete');
       },

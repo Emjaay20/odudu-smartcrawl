@@ -1,7 +1,7 @@
 import { type EffectiveRoleAssignment } from '@odudu/contracts/admin';
 import { isAdminRole } from '#/shared/service/capabilities';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
-import { type Confirmation } from '#/features/subjects/service/access';
+import { removalConfirmation, type Confirmation } from '#/features/subjects/service/access';
 import { type Loaded } from '#/shared/service/read';
 
 function under(path: string, mapped: string): boolean {
@@ -67,6 +67,30 @@ export function leaveConfirmation(self: boolean, left: readonly string[]): Confi
     consequence: `You are leaving ${left.join(', ')}. Every role a group carries goes with it, admin capabilities among them, so this console may stop offering some of what it offers you now, and you may not be able to join again yourself.`,
     typed: null,
   };
+}
+
+// A group is named by its path once it is known, and by its id before.
+export function groupPathOf(known: ReadonlyMap<string, { path: string }>, id: string): string {
+  return known.get(id)?.path ?? id;
+}
+
+// Taking system administration from anybody comes before the leaving of
+// groups of your own; either is asked first, a plain save is not.
+export function groupsSaveConfirmation({
+  name,
+  self,
+  removesTenants,
+  left,
+}: {
+  name: string;
+  self: boolean;
+  removesTenants: boolean;
+  left: readonly string[];
+}): Confirmation | null {
+  const removal = removesTenants
+    ? removalConfirmation({ name, self, removed: ['manage-tenants'], removesTenants: true })
+    : null;
+  return removal ?? leaveConfirmation(self, left);
 }
 
 export function groupsRemoveTenants(

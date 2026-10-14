@@ -21,6 +21,16 @@ export function enabledVerb(enabled: boolean): 'enabled' | 'disabled' {
   return enabled ? 'enabled' : 'disabled';
 }
 
+// A confirmation question shows only for the one asked; the problem a
+// failed answer left belongs to it.
+export function confirmationOf<W extends string>(
+  which: W,
+  asked: W | null,
+  problem: string | null,
+): { confirming: boolean; problem: string | null } {
+  return asked === which ? { confirming: true, problem } : { confirming: false, problem: null };
+}
+
 export function subjectWriteFailure(failure: GatewayFailure, name: string, verb: string): string {
   return writeFailureText(failure, {
     name,
