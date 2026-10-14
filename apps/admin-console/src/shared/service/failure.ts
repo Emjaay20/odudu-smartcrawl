@@ -34,6 +34,17 @@ export function isUnknownTenant(result: GatewayResult<unknown> | undefined): boo
   );
 }
 
+// The server refuses a cursor it did not issue under these filters, or one
+// past its life, by naming the cursor field; the page it led to is gone, not
+// the list.
+export function isStaleCursor(failure: GatewayFailure | null): boolean {
+  return (
+    failure?.kind === 'problem' &&
+    failure.problem.status === 400 &&
+    failure.problem.errors?.some((error) => error.path === 'cursor') === true
+  );
+}
+
 export function isMissing(result: GatewayResult<unknown>): boolean {
   return hasStatus(result, 404);
 }

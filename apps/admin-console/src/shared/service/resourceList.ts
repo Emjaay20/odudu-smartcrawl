@@ -1,6 +1,6 @@
 import type { CountResponse } from '@odudu/contracts/admin';
 import type { CursorTrail } from '#/shared/service/cursorTrail';
-import { isRefused } from '#/shared/service/failure';
+import { isRefused, isStaleCursor } from '#/shared/service/failure';
 import { readFailureOf } from '#/shared/service/readFailure';
 import type { GatewayFailure, GatewayResult } from '#/shared/service/result';
 
@@ -147,6 +147,14 @@ export function listPagesState<T>(
     rows: pages.flatMap((page) => page.items),
     next: pages.at(-1)?.next ?? null,
   };
+}
+
+// The first page failed because the cursor it was asked from is no longer one.
+export function staleCursorOf(
+  data: { pages: readonly unknown[] } | undefined,
+  error: unknown,
+): boolean {
+  return data === undefined && isStaleCursor(readFailureOf(error));
 }
 
 export function canLoadMore(hasNextPage: boolean, isFetching: boolean): boolean {

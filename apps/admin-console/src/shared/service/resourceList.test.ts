@@ -8,6 +8,7 @@ import {
   listFromSearch,
   listStatusOf,
   listPagesState,
+  staleCursorOf,
   listToSearch,
   moreFailed,
   withDefaults,
@@ -161,5 +162,25 @@ describe('withDefaults and countOf', () => {
     expect(countOf({ ok: false, kind: 'network' })).toBeNull();
     expect(countOf(undefined)).toBeNull();
     expect(countOf(null)).toBeNull();
+  });
+});
+
+describe('staleCursorOf', () => {
+  const stale = new ReadFailure({
+    ok: false,
+    kind: 'problem',
+    problem: {
+      type: 'about:blank',
+      title: 'Bad Request',
+      status: 400,
+      errors: [{ path: 'cursor', message: 'is invalid or expired' }],
+    },
+  });
+
+  it('is true only while the first page is what failed, with a stale cursor', () => {
+    expect(staleCursorOf(undefined, stale)).toBe(true);
+    expect(staleCursorOf({ pages: [{ items: [] }] }, stale)).toBe(false);
+    expect(staleCursorOf(undefined, new ReadFailure({ ok: false, kind: 'network' }))).toBe(false);
+    expect(staleCursorOf(undefined, null)).toBe(false);
   });
 });

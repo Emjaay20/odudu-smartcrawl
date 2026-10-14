@@ -7,6 +7,7 @@ import {
   isMissing,
   isRefused,
   isStale,
+  isStaleCursor,
   isUnknownTenant,
   lookupText,
   removalOutcome,
@@ -271,5 +272,32 @@ describe('removalOutcome', () => {
     const out = removalOutcome(NETWORK, spec, copy);
     expect(out.done).toBe(false);
     expect(out.text).toBe(writeFailureText(NETWORK, copy));
+  });
+});
+
+describe('isStaleCursor', () => {
+  const stale: GatewayFailure = {
+    ok: false,
+    kind: 'problem',
+    problem: {
+      type: 'about:blank',
+      title: 'Bad Request',
+      status: 400,
+      detail: 'cursor is invalid or expired',
+      errors: [{ path: 'cursor', message: 'is invalid or expired' }],
+    },
+  };
+
+  it('is the 400 that names the cursor field', () => {
+    expect(isStaleCursor(stale)).toBe(true);
+  });
+
+  it('is not any other 400, another status or a failure with no answer', () => {
+    expect(isStaleCursor(problem(400, { detail: 'resource_id requires resource_type' }))).toBe(
+      false,
+    );
+    expect(isStaleCursor(problem(403))).toBe(false);
+    expect(isStaleCursor(NETWORK)).toBe(false);
+    expect(isStaleCursor(null)).toBe(false);
   });
 });
