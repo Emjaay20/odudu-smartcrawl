@@ -3,18 +3,18 @@ import type { Toast } from '#/shared/service/toast';
 
 interface ToastQueue {
   toasts: readonly Toast[];
+  // The number the next toast's id is made from.
+  nextId: number;
   push: (toast: Omit<Toast, 'id'>) => string;
   dismiss: (id: string) => void;
 }
 
-let issued = 0;
-
-export const useToasts = create<ToastQueue>()((set) => ({
+export const useToasts = create<ToastQueue>()((set, get) => ({
   toasts: [],
+  nextId: 1,
   push: (toast) => {
-    issued += 1;
-    const id = `toast-${String(issued)}`;
-    set((queue) => ({ toasts: [...queue.toasts, { ...toast, id }] }));
+    const id = `toast-${String(get().nextId)}`;
+    set((queue) => ({ toasts: [...queue.toasts, { ...toast, id }], nextId: queue.nextId + 1 }));
     return id;
   },
   dismiss: (id) => {

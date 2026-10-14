@@ -29,48 +29,55 @@ interface Drafts {
   // Drops drafts some other administrator left in this tab.
   adopt: (owner: string) => void;
   forgetAll: () => void;
+  // Forgets the registered sections as well: a fresh start.
+  reset: () => void;
 }
 
-const sources = new Set<DraftSource>();
-
-export const useDrafts = create<Drafts>()(() => ({
-  register: (source) => {
-    sources.add(source);
-    return () => {
-      sources.delete(source);
-    };
-  },
-  keepDirty: (owner) => {
-    const previous = loadDrafts();
-    const drafts = previous?.owner === owner ? { ...previous.drafts } : {};
-    let kept = 0;
-    for (const source of sources) {
-      if (!source.dirty()) continue;
-      const values = keepableValues(source.fields());
-      if (Object.keys(values).length === 0) continue;
-      drafts[source.record] = {
-        ...drafts[source.record],
-        [source.section]: { values, etag: source.etag() },
+export const useDrafts = create<Drafts>()(() => {
+  const sources = new Set<DraftSource>();
+  return {
+    register: (source) => {
+      sources.add(source);
+      return () => {
+        sources.delete(source);
       };
-      kept += 1;
-    }
-    storeDrafts({ owner, drafts });
-    return kept;
-  },
-  restore: (record, section) => loadDrafts()?.drafts[record]?.[section] ?? null,
-  forget: (record, section) => {
-    const stored = loadDrafts();
-    if (stored?.drafts[record]?.[section] === undefined) return;
-    storeDrafts({ owner: stored.owner, drafts: withoutDraft(stored.drafts, record, section) });
-  },
-  adopt: (owner) => {
-    const stored = loadDrafts();
-    if (stored !== null && stored.owner !== owner) storeDrafts(null);
-  },
-  forgetAll: () => {
-    storeDrafts(null);
-  },
-}));
+    },
+    keepDirty: (owner) => {
+      const previous = loadDrafts();
+      const drafts = previous?.owner === owner ? { ...previous.drafts } : {};
+      let kept = 0;
+      for (const source of sources) {
+        if (!source.dirty()) continue;
+        const values = keepableValues(source.fields());
+        if (Object.keys(values).length === 0) continue;
+        drafts[source.record] = {
+          ...drafts[source.record],
+          [source.section]: { values, etag: source.etag() },
+        };
+        kept += 1;
+      }
+      storeDrafts({ owner, drafts });
+      return kept;
+    },
+    restore: (record, section) => loadDrafts()?.drafts[record]?.[section] ?? null,
+    forget: (record, section) => {
+      const stored = loadDrafts();
+      if (stored?.drafts[record]?.[section] === undefined) return;
+      storeDrafts({ owner: stored.owner, drafts: withoutDraft(stored.drafts, record, section) });
+    },
+    adopt: (owner) => {
+      const stored = loadDrafts();
+      if (stored !== null && stored.owner !== owner) storeDrafts(null);
+    },
+    forgetAll: () => {
+      storeDrafts(null);
+    },
+    reset: () => {
+      sources.clear();
+      storeDrafts(null);
+    },
+  };
+});
 
 // The store's functions for a hook to hold: the compiler refuses a method
 // read off a hook.
