@@ -288,6 +288,28 @@ it('holds the mail being sent, and no other, while its answer is awaited', async
   expect(sent.filter((s) => s.method === 'POST')).toHaveLength(1);
 });
 
+it('keeps what each kind of mail came to beside the others', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(
+    AT,
+    subjectRoutes(undefined, {
+      [`POST ${C}/password-reset`]: accepted(),
+      [`POST ${C}/verification`]: accepted(),
+    }),
+  );
+  const password = await screen.findByRole('region', { name: 'Password' });
+  await user.click(within(password).getByRole('button', { name: 'Send a password reset email' }));
+  await within(password).findByText('A password reset link was sent to ada@example.test.');
+  const mail = screen.getByRole('region', { name: 'Email' });
+  await user.click(within(mail).getByRole('button', { name: 'Send a verification email' }));
+  expect(
+    await within(mail).findByText('A verification link was sent to ada@example.test.'),
+  ).toBeVisible();
+  expect(
+    within(password).getByText('A password reset link was sent to ada@example.test.'),
+  ).toBeVisible();
+});
+
 it('offers only the one-time password to a subject with no email, and says why', async () => {
   renderConsoleAt(
     AT,

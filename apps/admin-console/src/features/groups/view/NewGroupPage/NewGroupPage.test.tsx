@@ -41,6 +41,14 @@ it('creates a group under the parent it was asked from, and lands on it', async 
   });
 });
 
+it('names the parent it was asked from even when the picker has not listed it', async () => {
+  renderConsoleAt(
+    `${AT}?parent=g-eng`,
+    groupRoutes(undefined, { [`GET ${G}`]: json({ items: [] }) }),
+  );
+  expect(await screen.findByText('It will sit under /eng.')).toBeVisible();
+});
+
 it('puts a group at the top level once its parent is let go', async () => {
   const user = userEvent.setup();
   const { sent } = renderConsoleAt(
