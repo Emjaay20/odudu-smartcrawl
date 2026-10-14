@@ -387,7 +387,7 @@ export async function handleAuthorizationRequest(
     // against: the client making this very request. A hint minted for
     // another client is refused here even though its signature and issuer
     // are this tenant's own.
-    const hint = await subjectOfIdTokenHint(
+    const hint = await subjectOfAuthorizeHint(
       deps,
       tenant.id,
       issuer,
@@ -893,6 +893,7 @@ async function verifiedHint(
 // claims it carries, or null for a hint this server cannot recognise as its
 // own. `audience` is a parameter, not a constant — callers differ on
 // whether they check it; see docs/protocols/oidc-core.md's reading note.
+// Strict about `exp`: the reader for token exchange.
 export function subjectOfIdTokenHint(
   deps: Pick<AuthorizeUsecaseDeps, 'listPublishableKeys'>,
   tenantId: string,
@@ -914,4 +915,20 @@ export function subjectOfLogoutHint(
   hint: string,
 ): Promise<IdTokenHintClaims | null> {
   return verifiedHint(deps, tenantId, issuer, hint, AUDIENCE_UNCHECKED, EXPIRY_NOT_ENFORCED);
+}
+
+// OIDC Core §3.1.2.2 asks the OP to accept a hint "even when the `exp` time
+// has passed". Here the hint only constrains: it filters the candidate
+// sessions and forces the login to be its subject, and authenticates
+// nobody, so a lapsed one is read with `aud` pinned to the requesting
+// client. Token exchange, which turns a hint into a credential, keeps
+// `subjectOfIdTokenHint`.
+export function subjectOfAuthorizeHint(
+  deps: Pick<AuthorizeUsecaseDeps, 'listPublishableKeys'>,
+  tenantId: string,
+  issuer: string,
+  hint: string,
+  clientId: string,
+): Promise<IdTokenHintClaims | null> {
+  return verifiedHint(deps, tenantId, issuer, hint, clientId, EXPIRY_NOT_ENFORCED);
 }
