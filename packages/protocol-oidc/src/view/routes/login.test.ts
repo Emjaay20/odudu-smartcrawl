@@ -45,6 +45,7 @@ function deps(): LoginRouteDeps {
     authenticatedSubject: vi.fn().mockResolvedValue('subject-1'),
     loadPendingRequest: vi.fn().mockResolvedValue(PENDING),
     recoverPendingRequest: vi.fn().mockResolvedValue(PENDING),
+    redirectStillRegistered: vi.fn().mockResolvedValue(true),
     resolveClientId: vi.fn().mockResolvedValue('client-uuid-1'),
     checkEmailVerification: vi.fn().mockResolvedValue({ verified: true, hasEmail: true }),
     pendingActions: vi.fn().mockResolvedValue([]),

@@ -8,6 +8,14 @@ export interface ContinuationDeps {
   // live. Not a liveness check, so never a reason to act on the session;
   // sendSignInExpired reads it only to rebuild a link to /authorize.
   recoverPendingRequest(tenantId: string, authSessionId: string): Promise<PendingRequest | null>;
+  // Whether the client is still enabled and still registers this
+  // redirect_uri. A parked redirect_uri was validated once; it is offered
+  // back to the person only if it still is.
+  redirectStillRegistered(
+    tenantId: string,
+    oauthClientId: string,
+    redirectUri: string,
+  ): Promise<boolean>;
 }
 
 // A page whose form continues a parked authorization request can be answered

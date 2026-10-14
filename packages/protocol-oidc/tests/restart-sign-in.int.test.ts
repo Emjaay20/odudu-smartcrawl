@@ -124,6 +124,7 @@ function linkLabelled(res: LightMyRequestResponse, label: string): string | unde
 }
 
 const restartHref = (res: LightMyRequestResponse) => linkLabelled(res, 'Start sign-in again');
+const returnHref = (res: LightMyRequestResponse) => linkLabelled(res, 'Return to the application');
 
 // The cookies a login set, as the browser would send them back.
 function cookieOf(res: LightMyRequestResponse): string {
@@ -377,6 +378,130 @@ describe('a restarted request keeps what it demanded', () => {
     expect(new URL(href, 'https://x').searchParams.get('prompt')).toBe('login');
     expect(followed.statusCode).toBe(200);
     expect(followed.body).toContain('name="auth_session_id"');
+  });
+});
+
+// A request tied to one subject by a hint or a claims `sub` cannot be
+// rebuilt, so the page hands the person back to the application, which
+// restarts with a hint of its own.
+describe('a request that cannot be rebuilt returns to the application', () => {
+  const SUBJECT = '01a13787-6969-7c23-ab7f-382a9a9af6d4';
+  const claimsSub = JSON.stringify({ id_token: { sub: { value: SUBJECT } } });
+
+  async function expiredRefusal(
+    name: string,
+    extra: Record<string, string>,
+  ): Promise<LightMyRequestResponse> {
+    const form = await http.inject({ url: authorizeUrl(name, extra) });
+    expect(form.statusCode).toBe(200);
+    const id = authSessionIdOf(form);
+    await expireRow(id);
+    return submit(name, { auth_session_id: id, username: USERNAME, password: PASSWORD });
+  }
+
+  it('offers the redirect_uri with access_denied, state and iss, and no restart link', async () => {
+    const name = `acme-claims-sub-${newId()}`;
+    await setupTenant(name);
+    const refused = await expiredRefusal(name, { claims: claimsSub });
+    expect(refused.statusCode).toBe(400);
+    expect(restartHref(refused)).toBeUndefined();
+    const back = new URL(returnHref(refused) ?? 'x:');
+    expect(back.origin + back.pathname).toBe(REDIRECT_URI);
+    expect(back.searchParams.get('error')).toBe('access_denied');
+    expect(back.searchParams.get('state')).toBe('xyz 123');
+    expect(back.searchParams.get('iss')).toContain(`/tenants/${name}`);
+    expect(back.searchParams.has('code')).toBe(false);
+  });
+
+  it('is never offered once the client no longer registers that redirect_uri', async () => {
+    const name = `acme-gone-uri-${newId()}`;
+    const tenantId = await setupTenant(name);
+    const form = await http.inject({ url: authorizeUrl(name, { claims: claimsSub }) });
+    const id = authSessionIdOf(form);
+    await expireRow(id);
+    await owner.db
+      .update(clientOidcConfig)
+      .set({ redirectUris: ['https://elsewhere.example/cb'] })
+      .where(eq(clientOidcConfig.tenantId, tenantId));
+    const refused = await submit(name, {
+      auth_session_id: id,
+      username: USERNAME,
+      password: PASSWORD,
+    });
+    expect(refused.statusCode).toBe(400);
+    expect(refused.body).not.toContain('<a ');
+  });
+
+  it('is never offered for a client that has been disabled', async () => {
+    const name = `acme-off-client-${newId()}`;
+    const tenantId = await setupTenant(name);
+    const form = await http.inject({ url: authorizeUrl(name, { claims: claimsSub }) });
+    const id = authSessionIdOf(form);
+    await expireRow(id);
+    await owner.db.update(clients).set({ enabled: false }).where(eq(clients.tenantId, tenantId));
+    const refused = await submit(name, {
+      auth_session_id: id,
+      username: USERNAME,
+      password: PASSWORD,
+    });
+    expect(refused.body).not.toContain('<a ');
+  });
+
+  it('offers nothing when the request was never parked with a validated redirect_uri', async () => {
+    const name = `acme-hint-row-${newId()}`;
+    const tenantId = await setupTenant(name);
+    const id = newId();
+    await owner.db.insert(authenticationSessions).values({
+      id,
+      tenantId,
+      pendingRequest: {
+        clientId: CLIENT_ID,
+        redirectUri: 'https://not-registered.example/cb',
+        scope: 'openid',
+        state: 's',
+        nonce: null,
+        codeChallenge: CHALLENGE,
+        codeChallengeMethod: 'S256',
+        idTokenHintSubject: SUBJECT,
+      },
+      expiresAt: new Date(clock.now().getTime() - 60_000),
+    });
+    const refused = await submit(name, {
+      auth_session_id: id,
+      username: USERNAME,
+      password: PASSWORD,
+    });
+    expect(refused.body).toContain(EXPIRED_NOTICE);
+    expect(refused.body).not.toContain('<a ');
+  });
+
+  it('carries a hostile state through both links without breaking the markup', async () => {
+    const hostile = `"><script>alert(1)</script>'&amp;%22\\//evil.example\u202e ${'é'.repeat(50)}`;
+    const plain = `acme-hostile-${newId()}`;
+    await setupTenant(plain);
+    const refusedPlain = await expiredRefusal(plain, { state: hostile });
+    expect(refusedPlain.body).not.toContain('<script>alert');
+    expect(refusedPlain.body.match(/<a /gu)).toHaveLength(1);
+    expect(new URL(restartHref(refusedPlain) ?? 'x:', 'https://x').searchParams.get('state')).toBe(
+      hostile,
+    );
+
+    const tied = `acme-hostile-tied-${newId()}`;
+    await setupTenant(tied);
+    const refusedTied = await expiredRefusal(tied, { state: hostile, claims: claimsSub });
+    expect(refusedTied.body).not.toContain('<script>alert');
+    expect(refusedTied.body.match(/<a /gu)).toHaveLength(1);
+    const back = new URL(returnHref(refusedTied) ?? 'x:');
+    expect(back.origin + back.pathname).toBe(REDIRECT_URI);
+    expect(back.searchParams.get('state')).toBe(hostile);
+  });
+
+  it('does not offer a response_mode other than query a way to bypass the redirect check', async () => {
+    const name = `acme-mode-${newId()}`;
+    await setupTenant(name);
+    const res = await http.inject({ url: authorizeUrl(name, { response_mode: 'fragment' }) });
+    expect(res.statusCode).toBe(400);
+    expect(res.body).not.toContain('<a ');
   });
 });
 

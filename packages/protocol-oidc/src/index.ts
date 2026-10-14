@@ -49,6 +49,7 @@ import { type FastifyPluginAsync } from 'fastify';
 import { type ClientKeySet } from '#/repository/client-keys';
 import { loadClaimContextIn } from '#/usecase/evaluate-claims';
 import { clientOidcConfigRepository } from '#/repository/client-oidc-config';
+import { isRegisteredRedirectUri } from '#/service/redirect-uri';
 import { tokenGrantRepository } from '#/repository/grants';
 import { tenantLookupRepository } from '#/repository/tenant-lookup';
 import { reachableRoleIds } from '#/repository/scope-role-reach';
@@ -625,10 +626,22 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
 
     const recoverPendingRequest = (tenantId: string, authSessionId: string) =>
       withTenant(deps.database.db, tenantId, (tx) => loadPendingRequest(tx, authSessionId));
+    const redirectStillRegistered = (
+      tenantId: string,
+      oauthClientId: string,
+      redirectUri: string,
+    ) =>
+      withTenant(deps.database.db, tenantId, async (tx) => {
+        const client = await clientRepository(tx).byClientId(oauthClientId);
+        if (!client?.enabled) return false;
+        const config = await clientOidcConfigRepository(tx).byClientId(client.id);
+        return config !== null && isRegisteredRedirectUri(redirectUri, config.redirectUris);
+      });
 
     registerAuthorizeRoute(app, {
       findTenant,
       recoverPendingRequest,
+      redirectStillRegistered,
       tls,
       ...passkeyLogin,
       listPublishableKeys,
@@ -765,6 +778,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       loadPendingRequest: (tenantId: string, authSessionId: string) =>
         withTenant(deps.database.db, tenantId, (tx) => loadPendingRequest(tx, authSessionId)),
       recoverPendingRequest,
+      redirectStillRegistered,
       pendingChallenge: pendingChallengeFor,
       checkEmailVerification,
       pendingActions,
@@ -799,6 +813,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
     registerConsentRoute(app, {
       findTenant,
       recoverPendingRequest,
+      redirectStillRegistered,
       tls,
       authenticatedSubject: authenticatedSubjectOf,
       authenticatedSession: (tenantId, authSessionId) =>

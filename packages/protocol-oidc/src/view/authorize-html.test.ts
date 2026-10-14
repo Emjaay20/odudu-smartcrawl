@@ -20,25 +20,38 @@ describe('renderAuthorizeErrorPage', () => {
   });
 });
 
-describe('renderAuthorizeErrorPage with a way to start again', () => {
-  it('offers a link to the given location, and carries no script', () => {
-    const page = renderAuthorizeErrorPage('invalid_request', 'expired', '/tenants/acme/auth?a=1');
+describe('renderAuthorizeErrorPage with a way on', () => {
+  it('offers a restart link to the given location, and carries no script', () => {
+    const page = renderAuthorizeErrorPage('invalid_request', 'expired', {
+      kind: 'restart',
+      href: '/tenants/acme/auth?a=1',
+    });
     expect(page.body).toContain('<a href="/tenants/acme/auth?a=1">Start sign-in again</a>');
     expect(page.script).toBeNull();
     expect(page.body).not.toContain('<script');
   });
 
-  it('escapes the location it was given', () => {
-    const page = renderAuthorizeErrorPage(
-      'invalid_request',
-      'x',
-      '/auth?a=1&b="><script>x</script>',
+  it('offers a return to the application under its own label', () => {
+    const page = renderAuthorizeErrorPage('invalid_request', 'expired', {
+      kind: 'return',
+      href: 'https://app.example/cb?error=access_denied',
+    });
+    expect(page.body).toContain(
+      '<a href="https://app.example/cb?error=access_denied">Return to the application</a>',
     );
+    expect(page.body).not.toContain('Start sign-in again');
+  });
+
+  it('escapes the location it was given', () => {
+    const page = renderAuthorizeErrorPage('invalid_request', 'x', {
+      kind: 'restart',
+      href: '/auth?a=1&b="><script>x</script>',
+    });
     expect(page.body).toContain('href="/auth?a=1&amp;b=&quot;&gt;&lt;script&gt;x&lt;/script&gt;"');
     expect(page.body).not.toContain('<script');
   });
 
-  it('offers no link when there is nothing to restart', () => {
+  it('offers no link when there is nothing to go on to', () => {
     expect(renderAuthorizeErrorPage('invalid_request', 'x').body).not.toContain('<a ');
   });
 });

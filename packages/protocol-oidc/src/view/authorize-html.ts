@@ -1,21 +1,32 @@
 import { scriptNonce, type RenderedPage } from '@odudu/kernel';
 import { escapeHtml, page } from '#/view/document';
 
-// `restartHref` is only ever this server's own authorize path, rebuilt by
-// restartAuthorizeLocation from a request /authorize already validated.
+// Where an expired sign-in can go on from. Both hrefs are built from a
+// request /authorize already validated: the restart one is this server's own
+// authorize path, the return one the client's registered redirect_uri.
+export interface WayOn {
+  kind: 'restart' | 'return';
+  href: string;
+}
+
+const WAY_ON_LABEL: Record<WayOn['kind'], string> = {
+  restart: 'Start sign-in again',
+  return: 'Return to the application',
+};
+
 export function renderAuthorizeErrorPage(
   error: string,
   description: string,
-  restartHref?: string,
+  wayOn?: WayOn,
 ): RenderedPage {
-  const restart =
-    restartHref === undefined
+  const link =
+    wayOn === undefined
       ? ''
-      : `\n<p><a href="${escapeHtml(restartHref)}">Start sign-in again</a></p>`;
+      : `\n<p><a href="${escapeHtml(wayOn.href)}">${WAY_ON_LABEL[wayOn.kind]}</a></p>`;
   return page(
     'Sign-in error',
     `<h1>Can't continue</h1>
-<p>${escapeHtml(description)}</p>${restart}
+<p>${escapeHtml(description)}</p>${link}
 <p><small>${escapeHtml(error)}</small></p>`,
   );
 }
