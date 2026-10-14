@@ -1,15 +1,13 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { recordKey } from '#/shared/repository/queryKeys';
-import type { RecordEntry } from '#/shared/repository/useRecord';
+import { useSaveRun, type RefusalReporter, type SaveInput } from '#/shared/repository/useSaveRun';
 import { useSectionDraft } from '#/shared/repository/useSectionDraft';
-import { useToasts } from '#/shared/repository/useToasts';
 import type { Conflict } from '#/shared/service/conflict';
 import type { Values } from '#/shared/service/dirty';
 import { draftFieldsOf } from '#/shared/service/drafts';
 import type { AdminCapability } from '#/shared/service/principal';
 import {
-  afterSave,
   canKeepMine,
   canSubmit,
   canTakeTheirs,
@@ -23,17 +21,13 @@ import {
   heldEtag,
   isSaving,
   mineKept,
-  rereadPhase,
   restoredShown,
-  saveOutcome,
-  savingSection,
   sectionBlocked,
   settlesAfter,
   statusOf,
   theirsTaken,
   valuesOf,
   type ConflictSource,
-  type SaveOutcome,
   type SaveStatus,
   type SectionField,
   type SectionFields,
@@ -41,23 +35,13 @@ import {
 } from '#/shared/service/sectionSave';
 import type { Gateway, GatewayFailure, GatewayResult } from '#/shared/transport/gateway';
 import type { Problem } from '#/shared/transport/problem';
-import { useTransport } from '#/shared/transport/useTransport';
 import { useLatest } from '#/shared/repository/useLatest';
 
 export type { SectionField, SectionFields };
 
-export interface SaveInput<T extends Values> {
-  changes: Partial<T>;
-  values: T;
-  ifMatch: string;
-}
+export type { RefusalReporter, SaveInput };
 
 export type { ConflictSource, SaveStatus };
-
-// What `useRefusal.report` answers to: a 403 names the capability it needed.
-export interface RefusalReporter {
-  report: (failure: GatewayFailure, needed: AdminCapability) => boolean;
-}
 
 export interface SectionSave<T extends Values> {
   status: SaveStatus;
@@ -124,12 +108,10 @@ export function useSectionSave<T extends Values, R>({
   fields: SectionFields<T>;
   save: (gateway: Gateway, input: SaveInput<T>) => Promise<GatewayResult<R>>;
 }): SectionSave<T> {
-  const { gateway } = useTransport();
   const client = useQueryClient();
   const fresh = fieldValues(fields);
   const [state, setState] = useState<SectionState<T> | null>(null);
   const draftEdits = state?.edits ?? {};
-  const push = useToasts((queue) => queue.push);
   const { restored, settle } = useSectionDraft({
     tenant,
     record,
@@ -144,64 +126,21 @@ export function useSectionSave<T extends Values, R>({
   if (current !== state) setState(current);
 
   const latest = useLatest(current);
-  const inFlight = useRef(false);
-
   const update = (change: (was: SectionState<T>) => SectionState<T>): void => {
     setState((was) => (was === null ? was : change(was)));
   };
-
-  const toast = (outcome: SaveOutcome): void => {
-    if (outcome.toast !== undefined) push(outcome.toast);
-  };
-
-  const answer = async (from: SectionState<T>, result: GatewayResult<R>): Promise<void> => {
-    const outcome = saveOutcome(result, {
-      label,
-      capability,
-      explain,
-      fields: Object.keys(from.base),
-    });
-    if (result.ok) {
-      const entry: RecordEntry<R> = { result, by: 'save' };
-      client.setQueryData(recordKey(tenant, record), entry);
-      update((was) => afterSave(was, outcome, from.edits));
-      settle();
-      toast(outcome);
-      return;
-    }
-    let phase = outcome.phase;
-    if (outcome.refetch) {
-      await client.refetchQueries({ queryKey: recordKey(tenant, record), exact: true });
-      phase = rereadPhase(client.getQueryState(recordKey(tenant, record))?.status);
-    }
-    update((was) => afterSave(was, { ...outcome, phase }, from.edits));
-    toast(outcome);
-    if (outcome.refused) {
-      refusal.report(result, capability);
-      onRefused?.(result);
-    }
-  };
-
-  const run = async (from: SectionState<T>): Promise<void> => {
-    inFlight.current = true;
-    update(savingSection);
-    const attempt = async (): Promise<void> => {
-      const values = valuesOf(from);
-      await answer(from, await save(gateway, { changes: from.edits, values, ifMatch: from.etag }));
-    };
-    await attempt()
-      .catch(() => {
-        const failed = saveOutcome(
-          { ok: false, kind: 'defect' },
-          { label, capability, fields: [] },
-        );
-        update((was) => afterSave(was, failed, from.edits));
-        toast(failed);
-      })
-      .finally(() => {
-        inFlight.current = false;
-      });
-  };
+  const { run, running } = useSaveRun({
+    tenant,
+    record,
+    label,
+    capability,
+    refusal,
+    onRefused,
+    explain,
+    save,
+    update,
+    settle,
+  });
 
   const changed = changedFields(current);
   const conflicts: Conflict[] = conflictsOf(current, fields);
@@ -219,13 +158,13 @@ export function useSectionSave<T extends Values, R>({
     },
     keepMine: () => {
       const from = latest();
-      if (!canKeepMine(from, gone, inFlight.current)) return;
+      if (!canKeepMine(from, gone, running())) return;
       update(mineKept);
       run(mineKept(from)).catch(() => undefined);
     },
     takeTheirs: () => {
       const from = latest();
-      if (!canTakeTheirs(from, inFlight.current)) return;
+      if (!canTakeTheirs(from, running())) return;
       update(theirsTaken);
       if (settlesAfter(theirsTaken(from))) settle();
     },
@@ -244,7 +183,7 @@ export function useSectionSave<T extends Values, R>({
     },
     submit: () => {
       const from = latest();
-      if (!canSubmit(from, gone, inFlight.current)) return false;
+      if (!canSubmit(from, gone, running())) return false;
       run(from).catch(() => undefined);
       return true;
     },
