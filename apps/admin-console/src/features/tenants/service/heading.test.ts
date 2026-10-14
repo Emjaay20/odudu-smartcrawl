@@ -119,6 +119,11 @@ describe('pageOf', () => {
         holdings: [],
       }),
     ).toMatchObject({ step: 'administrator', tenant: 'system', origin: 'existing' });
+    expect(pageOf({ step: 'done', tenant: 'system', username: 'g' })).toEqual({
+      step: 'done',
+      tenant: 'system',
+      systemAdminsHref: '/console/system/system-admins',
+    });
     expect(pageOf({ step: 'done', tenant: 'acme', username: 'g' })).toEqual({
       step: 'done',
       tenant: 'acme',
