@@ -3,6 +3,10 @@
 # console's browser tests against it. CI and a developer both run this.
 #   ODUDU_HOST_PORT / POSTGRES_HOST_PORT  host ports (default 3080 / 5462)
 #   E2E_KEEP_STACK=1                      leave the stack up afterwards
+#   E2E_COMPOSE_PROJECT                   the stack's project name (default odudu-e2e)
+#   E2E_PLAYWRIGHT                        a playwright binary to run, in place of
+#                                         `pnpm exec playwright`; the browser install is skipped
+#   E2E_TRACE=<file>                      record the requests each test makes (see docs/phases/p4d.md)
 #   Extra arguments go to `playwright test`.
 set -euo pipefail
 
@@ -28,7 +32,7 @@ set +a
 export ODUDU_CONSOLE_CLIENT_KEY="${ODUDU_CONSOLE_CLIENT_KEY:-$("$DOCKER_DIR/console-key.sh")}"
 export ODUDU_HOST_PORT="$host_port"
 export POSTGRES_HOST_PORT="$postgres_port"
-export COMPOSE_PROJECT_NAME=odudu-e2e
+export COMPOSE_PROJECT_NAME="${E2E_COMPOSE_PROJECT:-odudu-e2e}"
 export COMPOSE_FILE="$DOCKER_DIR/compose.yaml"
 # Every test signs in, from one origin, more often than a person would.
 export ODUDU_THROTTLE_LIMIT=10000
@@ -48,6 +52,10 @@ trap cleanup EXIT
 compose up -d --build --wait --wait-timeout 180 postgres odudu
 
 cd "$REPO/apps/admin-console"
-# For a developer's own machine; CI installs Chromium with its OS deps first.
-pnpm exec playwright install chromium
-pnpm exec playwright test --config e2e/playwright.config.ts "$@"
+if [ -n "${E2E_PLAYWRIGHT:-}" ]; then
+  "$E2E_PLAYWRIGHT" test --config e2e/playwright.config.ts "$@"
+else
+  # For a developer's own machine; CI installs Chromium with its OS deps first.
+  pnpm exec playwright install chromium
+  pnpm exec playwright test --config e2e/playwright.config.ts "$@"
+fi

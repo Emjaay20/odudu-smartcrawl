@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test as base, type Locator, type Page } from '@playwright/test';
 import type { Account } from './stack';
+import { traceFixture, tracing } from './trace';
 
 // Reported by the browser for the one request the console expects to be
 // refused: it reads its session to learn that it has none. The console only
@@ -21,7 +22,10 @@ export interface Problem {
 
 // Every page fails its test on a policy violation or a console error, on
 // the console's pages and on the tenant's own sign-in pages alike.
-export const test = base.extend<{ problems: Problem[] }>({
+export const test = base.extend<{ problems: Problem[]; requestTrace: undefined }>({
+  // Records the console's requests when E2E_TRACE names a file; otherwise
+  // never set up, so a normal run is the run it always was.
+  requestTrace: [traceFixture, { auto: tracing }],
   problems: [
     async ({ page }, use) => {
       const problems: Problem[] = [];
