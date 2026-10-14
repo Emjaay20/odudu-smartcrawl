@@ -15,6 +15,7 @@ export {
 } from '#/features/scopes/service/tabs';
 export {
   GUARDED_TEXT,
+  guardedText,
   isGuarded,
   scopeDeleteConsequence,
   scopeDeleteFailureText,

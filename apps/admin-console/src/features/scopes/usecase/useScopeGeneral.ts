@@ -16,9 +16,8 @@ import {
   claimMappersOf,
   CONSENT_RULE,
   consentGuard,
-  GUARDED_TEXT,
+  guardedText,
   ID_TOKEN_LABEL,
-  isGuarded,
   NEW_CLIENT_CHOICES,
   NEW_CLIENT_LABEL,
   scopeDeleteConsequence,
@@ -169,7 +168,7 @@ export function useScopeGeneral({
     consentRule: CONSENT_RULE,
     deletion: {
       ...removal,
-      fixed: isGuarded(scope.name) ? GUARDED_TEXT : null,
+      fixed: guardedText(scope.name),
       consequence: scopeDeleteConsequence(scope.name),
       warning: scopeDeleteDialogText(
         scope.name,

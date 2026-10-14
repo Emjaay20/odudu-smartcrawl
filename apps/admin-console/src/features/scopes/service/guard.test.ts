@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
 import {
   GUARDED_TEXT,
+  guardedText,
   isGuarded,
   scopeDeleteConsequence,
   scopeDeleteFailureText,
@@ -39,4 +40,9 @@ it('words a refused delete by the ceiling, and a lost answer as unknown', () => 
   expect(scopeDeleteFailureText('billing', { ok: false, kind: 'network' })).toMatch(
     /Could not confirm whether billing was deleted/u,
   );
+});
+
+it('says why a guarded scope stays, and nothing of any other', () => {
+  expect(guardedText('openid')).toBe(GUARDED_TEXT);
+  expect(guardedText('profile')).toBeNull();
 });

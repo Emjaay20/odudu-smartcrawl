@@ -10,6 +10,11 @@ export function isGuarded(name: string): boolean {
   return name === GUARDED;
 }
 
+// Why the delete is not offered, or null for a scope that can be deleted.
+export function guardedText(name: string): string | null {
+  return isGuarded(name) ? GUARDED_TEXT : null;
+}
+
 export const GUARDED_TEXT =
   'openid cannot be deleted. Deleting it takes it off every client, the built-in admin client included, and could lock out every administrator of this tenant.';
 
