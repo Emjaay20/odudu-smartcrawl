@@ -256,6 +256,60 @@ it('pages on with a cursor trail kept in the address', async () => {
   expect(await screen.findByText('tenant.amend_settings')).toBeVisible();
 });
 
+it('appends the next page in place on Load more, from the cursor the last one named', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    auditRoutes(undefined, {
+      [`GET ${AUDIT}`]: (request) =>
+        json(
+          request.search.get('cursor') === null
+            ? { items: TRAIL.slice(0, 2), next: 'Zmlyc3Q.dGFn' }
+            : { items: TRAIL.slice(2) },
+        )(request),
+    }),
+  );
+  expect(await rowsOf()).toHaveLength(2);
+  await user.click(screen.getByRole('button', { name: 'Load more audit events' }));
+  await waitFor(async () => {
+    expect(await rowsOf()).toHaveLength(3);
+  });
+  expect(auditSent(sent).map((request) => request.search.get('cursor'))).toEqual([
+    null,
+    'Zmlyc3Q.dGFn',
+  ]);
+});
+
+it('appends the next page on Load more after paging forward and back', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    auditRoutes(undefined, {
+      [`GET ${AUDIT}`]: (request) => {
+        const cursor = request.search.get('cursor');
+        if (cursor === null)
+          return json({ items: TRAIL.slice(0, 1), next: 'Zmlyc3Q.dGFn' })(request);
+        if (cursor === 'Zmlyc3Q.dGFn')
+          return json({ items: TRAIL.slice(1, 2), next: 'c2Vjb25k.dGFn' })(request);
+        return json({ items: TRAIL.slice(2) })(request);
+      },
+    }),
+  );
+  expect(await rowsOf()).toHaveLength(1);
+  await user.click(screen.getByRole('button', { name: 'Next page' }));
+  expect(await screen.findByText('client.rotate_secret')).toBeVisible();
+  await user.click(screen.getByRole('button', { name: 'Previous page' }));
+  expect(await screen.findByText('client.update')).toBeVisible();
+  const before = auditSent(sent).length;
+  await waitFor(async () => {
+    await user.click(screen.getByRole('button', { name: 'Load more audit events' }));
+    expect(auditSent(sent).length).toBeGreaterThan(before);
+  });
+  await waitFor(async () => {
+    expect(await rowsOf()).toHaveLength(2);
+  });
+});
+
 it('resets the cursor trail when a filter changes', async () => {
   const user = userEvent.setup();
   const { router } = renderConsoleAt(`${AT}?after=Zmlyc3Q.dGFn`, auditRoutes());

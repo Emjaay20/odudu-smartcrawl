@@ -62,13 +62,17 @@ export function useListPages<T>({
     },
     getNextPageParam: (last: ListPage<T>) => last.next,
   });
+  // Read while rendering: the query result re-renders only for what a render
+  // read, so a flag first read inside the handler would be as stale as the
+  // render before the refetch it was meant to wait out.
+  const loadable = canLoadMore(pages.hasNextPage, pages.isFetching);
   return {
     ...listPagesState(pages.data, pages.error),
     staleCursor: staleCursorOf(pages.data, pages.error),
     loadingMore: pages.isFetchingNextPage,
     loadMoreFailed: moreFailed(pages.data !== undefined, pages.isFetchNextPageError),
     loadMore: () => {
-      if (canLoadMore(pages.hasNextPage, pages.isFetching)) {
+      if (loadable) {
         pages.fetchNextPage().catch(() => undefined);
       }
     },
