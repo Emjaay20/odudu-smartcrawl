@@ -5,6 +5,7 @@ import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, offline, problem, whoamiReads } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { MAPPED, SC, scope, scopeRoutes } from '#/testing/scopesFixtures';
 
 afterEach(() => {
@@ -128,6 +129,39 @@ it('stays to say which parts a copy could not take', async () => {
     '/console/acme/scopes/s-new',
   );
   expect(router.state.location.pathname).toBe('/acme/scopes/new');
+});
+
+it('sends nothing more while a part-made copy stays on the page', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(`${AT}?copy=s-bill`, {
+    ...scopeRoutes(undefined, {
+      ...BILLING_PARTS,
+      [`POST ${SC}`]: json(MADE, 201),
+      [`GET ${SC}/s-new/roles`]: problem(500),
+      [`GET ${SC}/s-new/mappers`]: problem(500),
+    }),
+  });
+  await screen.findByText(/A copy of billing/u);
+  const name = screen.getByRole('textbox', { name: 'Name' });
+  await user.type(name, 'invoices{Enter}');
+  await screen.findByText(/could not be copied/u);
+  await user.type(name, 's{Enter}');
+  expect(sent.filter((request) => request.method === 'POST')).toHaveLength(1);
+});
+
+it('sends nothing before whoami has said what the caller holds', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    `${AT}?copy=s-bill`,
+    scopeRoutes(undefined, {
+      ...BILLING_PARTS,
+      [`POST ${SC}`]: json(MADE, 201),
+      [`GET ${ACME_ADMIN}/whoami`]: problem(500),
+    }),
+  );
+  await user.type(await screen.findByRole('textbox', { name: 'Name' }), 'invoices{Enter}');
+  expect(screen.getByRole('button', { name: 'Creating…' })).toBeDisabled();
+  expect(sent.some((request) => request.method === 'POST')).toBe(false);
 });
 
 it('says the scope to copy could not be read, and makes a plain one', async () => {

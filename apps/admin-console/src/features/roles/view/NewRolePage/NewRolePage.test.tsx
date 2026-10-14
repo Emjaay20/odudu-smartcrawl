@@ -6,6 +6,7 @@ import { inTurn, json, offline, pending, problem, whoamiReads } from '#/testing/
 import { AUDITOR, R, READER, roleRoutes } from '#/testing/rolesFixtures';
 import { resetConsole } from '#/testing/resetConsole';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { role } from '#/testing/roleAnswers';
 afterEach(() => {
   resetConsole();
@@ -105,6 +106,38 @@ it('stays to say which composites a copy could not take', async () => {
     'href',
     '/console/acme/roles/r-new?tab=composites',
   );
+});
+
+it('sends nothing more while a part-made copy stays on the page', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    `${AT}?copy=r-aud`,
+    roleRoutes(undefined, {
+      [`GET ${R}/r-aud/composites`]: json({ items: [READER] }, 200, { etag: '"c"' }),
+      [`POST ${R}`]: json(MADE, 201),
+      [`POST ${R}/r-new/composites`]: problem(403, 'about:blank', 'Forbidden'),
+    }),
+  );
+  const name = await screen.findByRole('textbox', { name: 'Name' });
+  await user.type(name, 'billing{Enter}');
+  await screen.findByText(/could not be nested in it/u);
+  await user.type(name, 's{Enter}');
+  expect(sent.filter((request) => request.method === 'POST' && request.path === R)).toHaveLength(1);
+});
+
+it('sends nothing before whoami has said what the caller holds', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    `${AT}?copy=r-aud`,
+    roleRoutes(undefined, {
+      [`GET ${R}/r-aud/composites`]: json({ items: [READER] }, 200, { etag: '"c"' }),
+      [`POST ${R}`]: json(MADE, 201),
+      [`GET ${ACME_ADMIN}/whoami`]: problem(500),
+    }),
+  );
+  await user.type(await screen.findByRole('textbox', { name: 'Name' }), 'billing{Enter}');
+  expect(screen.getByRole('button', { name: 'Creating…' })).toBeDisabled();
+  expect(sent.some((request) => request.method === 'POST')).toBe(false);
 });
 
 it('puts a taken name under its field', async () => {
