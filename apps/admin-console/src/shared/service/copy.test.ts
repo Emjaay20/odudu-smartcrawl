@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { copiedDescription, copyBlocked, copyBusy } from '#/shared/service/copy';
+import { copiedDescription, copyBlocked, copyBusy, copyReadOf } from '#/shared/service/copy';
 
 it('shows the description edited, else the source one', () => {
   expect(copiedDescription('mine', 'Reads')).toBe('mine');
@@ -24,5 +24,17 @@ describe('what holds a copy back', () => {
     expect(copyBlocked(true, null, 'ready', [])).toBe(true);
     expect(copyBlocked(false, null, 'loading', [])).toBe(true);
     expect(copyBlocked(false, null, 'none', undefined)).toBe(true);
+  });
+});
+
+describe('what a copy is read as', () => {
+  const source = { name: 'billing' };
+
+  it('is none without something to copy, loading until read, and failed on an error or no source', () => {
+    expect(copyReadOf(null, undefined, false)).toEqual({ status: 'none' });
+    expect(copyReadOf('s1', undefined, false)).toEqual({ status: 'loading' });
+    expect(copyReadOf('s1', undefined, true)).toEqual({ status: 'failed' });
+    expect(copyReadOf('s1', null, false)).toEqual({ status: 'failed' });
+    expect(copyReadOf('s1', source, false)).toEqual({ status: 'ready', name: 'billing' });
   });
 });

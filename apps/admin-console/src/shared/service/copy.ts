@@ -27,6 +27,19 @@ export function copyBlocked(
   return partial !== null || copyBusy(busy, source, caller);
 }
 
+// What a copy is read as: nothing to copy, the source being read, a source
+// that could not be, or the source and whatever it is made of. A source
+// that was read and came to nothing is failed like one that errored.
+export function copyReadOf<S extends object>(
+  id: string | null,
+  source: S | null | undefined,
+  isError: boolean,
+): { status: 'none' } | { status: 'loading' } | { status: 'failed' } | ({ status: 'ready' } & S) {
+  if (id === null) return { status: 'none' };
+  if (source === undefined) return isError ? { status: 'failed' } : { status: 'loading' };
+  return source === null ? { status: 'failed' } : { status: 'ready', ...source };
+}
+
 // An edited description wins, even an emptied one; otherwise the source's.
 export function copiedDescription(edited: string | null, source: string | null): string {
   return edited ?? source ?? '';

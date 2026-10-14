@@ -46,17 +46,6 @@ export function copySourceOf(
     : null;
 }
 
-// A source that was read and came to nothing is failed like one that errored.
-export function copyReadOf(
-  id: string | null,
-  source: CopySource | null | undefined,
-  isError: boolean,
-): CopyRead {
-  if (id === null) return { status: 'none' };
-  if (source === undefined) return isError ? { status: 'failed' } : { status: 'loading' };
-  return source === null ? { status: 'failed' } : { status: 'ready', ...source };
-}
-
 export interface CopyPlan {
   mapped: MappedRole[];
   left: LeftOut[];

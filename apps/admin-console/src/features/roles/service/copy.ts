@@ -3,6 +3,7 @@ import { withSearch } from '#/shared/service/address';
 import type { LeftOut, PartialCopy } from '#/shared/service/copy';
 import { andList } from '#/shared/service/format';
 import type { AdminCapability } from '#/shared/service/principal';
+import type { GatewayResult } from '#/shared/service/result';
 import { TAB_PARAM } from '#/shared/service/record';
 import { childUnavailable } from '#/features/roles/service/blocks';
 import { roleHref } from '#/features/roles/service/address';
@@ -64,6 +65,14 @@ export function copyingOf(source: CopyRead, plan: CopyPlan): Copying {
 export function copyingText(copying: { name: string; children: readonly string[] }): string {
   const nests = copying.children.length === 0 ? 'nothing' : andList(copying.children);
   return `A copy of ${copying.name}, nesting ${nests}.`;
+}
+
+// The role with its children, or nothing when either read failed.
+export function copySourceOf(
+  role: GatewayResult<Role>,
+  children: GatewayResult<ListRoleCompositesResponse>,
+): { role: Role; children: ListRoleCompositesResponse['items'] } | null {
+  return role.ok && children.ok ? { role: role.data, children: children.data.items } : null;
 }
 
 export function sourceChildren(source: CopyRead): ListRoleCompositesResponse['items'] {

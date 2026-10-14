@@ -6,6 +6,7 @@ import {
   copyingOf,
   copyingText,
   copyPlan,
+  copySourceOf,
   partialCopy,
 } from '#/features/roles/service/copy';
 import { copyHrefOf } from '#/features/roles/service/address';
@@ -92,5 +93,18 @@ describe('the children of the source a copy is made of', () => {
     expect(sourceChildren({ status: 'loading' })).toEqual([]);
     expect(sourceChildren({ status: 'failed' })).toEqual([]);
     expect(sourceChildren({ status: 'none' })).toEqual([]);
+  });
+});
+
+describe('what a role copy keeps of its reads', () => {
+  const ok = <T>(data: T) => ({ ok: true as const, status: 200, data, etag: null, next: null });
+
+  it('keeps the role and its children when both were read, and nothing when either failed', () => {
+    expect(copySourceOf(ok(READER), ok({ items: [AUDITOR] }))).toEqual({
+      role: READER,
+      children: [AUDITOR],
+    });
+    expect(copySourceOf({ ok: false, kind: 'network' }, ok({ items: [] }))).toBeNull();
+    expect(copySourceOf(ok(READER), { ok: false, kind: 'network' })).toBeNull();
   });
 });

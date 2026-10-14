@@ -8,7 +8,6 @@ import {
   copyingOf,
   copyingText,
   copyPlan,
-  copyReadOf,
   copySourceOf,
   partialCopy,
   sourceBound,
@@ -129,13 +128,6 @@ describe('what a copy is read as', () => {
     expect(copySourceOf(failed, ok({ items: [] }), ok({ bound: [] }))).toBeNull();
     expect(copySourceOf(ok(SCOPE), failed, ok({ bound: [] }))).toBeNull();
     expect(copySourceOf(ok(SCOPE), ok({ items: [] }), failed)).toBeNull();
-  });
-  it('is none without a scope to copy, loading until read, and failed on an error or no source', () => {
-    expect(copyReadOf(null, undefined, false)).toEqual({ status: 'none' });
-    expect(copyReadOf('s1', undefined, false)).toEqual({ status: 'loading' });
-    expect(copyReadOf('s1', undefined, true)).toEqual({ status: 'failed' });
-    expect(copyReadOf('s1', null, false)).toEqual({ status: 'failed' });
-    expect(copyReadOf('s1', source, false)).toEqual({ status: 'ready', ...source });
   });
 });
 

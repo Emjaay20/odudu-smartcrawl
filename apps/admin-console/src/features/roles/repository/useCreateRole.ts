@@ -7,7 +7,8 @@ import {
   readComposites,
   readRole,
 } from '#/features/roles/adapter/roles';
-import type { CopyRead } from '#/features/roles/service';
+import { copySourceOf, type CopyRead } from '#/features/roles/service';
+import { copyReadOf } from '#/shared/service/copy';
 import { listKey, pickerKey } from '#/shared/repository/queryKeys';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
 import { useInvalidate } from '#/shared/repository/useInvalidate';
@@ -73,10 +74,8 @@ export function useCopySource(tenant: string, id: string | null): CopyRead {
         readRole(gateway, tenant, id),
         readComposites(gateway, tenant, id),
       ]);
-      return role.ok && children.ok ? { role: role.data, children: children.data.items } : null;
+      return copySourceOf(role, children);
     },
   });
-  if (id === null) return { status: 'none' };
-  if (query.data === undefined) return query.isError ? { status: 'failed' } : { status: 'loading' };
-  return query.data === null ? { status: 'failed' } : { status: 'ready', ...query.data };
+  return copyReadOf(id, query.data, query.isError);
 }

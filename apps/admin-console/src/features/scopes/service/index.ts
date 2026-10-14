@@ -67,7 +67,6 @@ export {
   copyingOf,
   copyingText,
   copyPlan,
-  copyReadOf,
   copySourceOf,
   partialCopy,
   sourceBound,

@@ -10,7 +10,8 @@ import {
   setScopeRoles,
   type CreateScopeInput,
 } from '#/features/scopes/adapter/scopes';
-import { copyReadOf, copySourceOf, type CopyRead } from '#/features/scopes/service';
+import { copySourceOf, type CopyRead } from '#/features/scopes/service';
+import { copyReadOf } from '#/shared/service/copy';
 import { countKey, listKey, pickerKey } from '#/shared/repository/queryKeys';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
 import { useInvalidate } from '#/shared/repository/useInvalidate';
