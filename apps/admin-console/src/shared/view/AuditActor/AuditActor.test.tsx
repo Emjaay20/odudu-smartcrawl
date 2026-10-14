@@ -19,6 +19,14 @@ it('names the actor, keeping the id on hover and to copy', () => {
   expect(screen.queryByText('from elsewhere')).toBeNull();
 });
 
+it('links the name to the subject where the page knows the way', () => {
+  render(<AuditActor event={actor()} href="/console/acme/subjects/s1" />);
+  expect(screen.getByRole('link', { name: 'grace, open the subject' })).toHaveAttribute(
+    'href',
+    '/console/acme/subjects/s1',
+  );
+});
+
 it('says a name is not shown when the row carries none', () => {
   render(<AuditActor event={actor({ actor_name: null })} />);
   expect(screen.getByText('name not shown')).toHaveAttribute('title', ID);

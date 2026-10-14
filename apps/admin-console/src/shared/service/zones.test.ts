@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isValidZoneinfo } from '@odudu/contracts';
-import { offsetOf, timeZoneOptions, zoneProblem } from '#/shared/service/zones';
+import { formatInZone, offsetOf, timeZoneOptions, zoneProblem } from '#/shared/service/zones';
 
 const JANUARY = new Date('2026-01-15T12:00:00Z');
 const JULY = new Date('2026-07-15T12:00:00Z');
@@ -29,5 +29,20 @@ describe('zoneProblem', () => {
     expect(zoneProblem('')).toBeNull();
     expect(zoneProblem('Asia/Calcutta')).toBeNull();
     expect(zoneProblem('+1')).toBe('Choose a zone from the list, such as Africa/Lagos.');
+  });
+});
+
+describe('formatInZone', () => {
+  it('writes an instant as the zone reads it, with the zone and its offset', () => {
+    const at = new Date('2026-09-28T13:41:05Z');
+    expect(formatInZone(at, 'Africa/Lagos')).toBe('2026-09-28 14:41:05 Africa/Lagos (UTC+01:00)');
+    expect(formatInZone(at, 'UTC')).toBe('2026-09-28 13:41:05 UTC (UTC+00:00)');
+  });
+
+  it('rolls the date over where the zone is a day ahead', () => {
+    const at = new Date('2026-09-28T23:30:00Z');
+    expect(formatInZone(at, 'Pacific/Auckland')).toBe(
+      '2026-09-29 12:30:00 Pacific/Auckland (UTC+13:00)',
+    );
   });
 });

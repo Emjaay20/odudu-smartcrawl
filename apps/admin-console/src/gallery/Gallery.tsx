@@ -8,6 +8,8 @@ import { AccessGate } from '#/shared/view/AccessGate';
 import { ActivityTab } from '#/shared/view/ActivityTab';
 import { ChecklistField } from '#/shared/view/ChecklistField';
 import { AuditActor } from '#/shared/view/AuditActor';
+import { AuditDetail } from '#/shared/view/AuditDetail';
+import { AuditTable } from '#/shared/view/AuditTable';
 import { AppShell } from '#/shared/view/AppShell';
 import { Breadcrumb } from '#/shared/view/Breadcrumb';
 import { Button } from '#/shared/view/Button';
@@ -40,6 +42,7 @@ import {
   BirthdateField,
   ComboBoxField,
   CountryField,
+  DateTimeField,
   GenderField,
   KeyValueField,
   LocaleField,
@@ -96,6 +99,7 @@ import {
   CLIENT_FIELDS,
   CLIENTS,
   CONFLICTS,
+  DETAILED_EVENT,
   EVENTS,
   GROUPS,
   JWKS_SAMPLE,
@@ -1127,6 +1131,21 @@ export function Gallery({
                 onChange={() => undefined}
               />
             </Section>
+          </Specimen>
+          <Specimen label="AuditTable: audit rows, a row opening to every field">
+            <AuditTable label="Audit events" rows={EVENTS} now={NOW} withResource />
+          </Specimen>
+          <Specimen label="AuditDetail: every field of one audit event">
+            <AuditDetail event={DETAILED_EVENT} zone="UTC" />
+          </Specimen>
+          <Specimen label="DateTimeField: a minute in the reader's zone, kept in UTC">
+            <DateTimeField
+              label="From"
+              edge="start"
+              zone="UTC"
+              value="2026-10-12T09:03:00.000Z"
+              onChange={NOTHING}
+            />
           </Specimen>
           <Specimen label="ActivityTab: the audit trail for one record">
             <ActivityTab list={listOf(EVENTS, 'c2')} noun="client" now={NOW} />

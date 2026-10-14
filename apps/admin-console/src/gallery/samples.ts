@@ -146,6 +146,12 @@ const EVENT: AuditEvent = {
   detail: {},
 };
 
+export const DETAILED_EVENT: AuditEvent = {
+  ...EVENT,
+  actor_name: 'grace',
+  detail: { enabled: { before: true, after: false }, denied: ['manage-clients'] },
+};
+
 export const EVENTS: readonly AuditEvent[] = [
   { ...EVENT, actor_name: 'grace' },
   {

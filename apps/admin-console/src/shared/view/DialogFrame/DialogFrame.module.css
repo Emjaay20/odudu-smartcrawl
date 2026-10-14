@@ -22,6 +22,10 @@
   box-shadow: var(--shadow-overlay);
 }
 
+.modal[data-size='wide'] {
+  inline-size: min(760px, 100%);
+}
+
 .modal[data-entering] {
   animation: rise var(--motion-panel) var(--ease);
 }

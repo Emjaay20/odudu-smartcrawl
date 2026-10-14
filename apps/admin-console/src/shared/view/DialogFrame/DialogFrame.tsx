@@ -8,6 +8,7 @@ import styles from '#/shared/view/DialogFrame/DialogFrame.module.css';
 export function DialogFrame({
   isOpen,
   role = 'dialog',
+  size = 'regular',
   title,
   description,
   onEscape,
@@ -16,6 +17,8 @@ export function DialogFrame({
 }: {
   isOpen: boolean;
   role?: 'dialog' | 'alertdialog';
+  // A wide one holds a page of fields, where a narrow one holds a question.
+  size?: 'regular' | 'wide';
   title: string;
   description: ReactNode;
   onEscape?: () => void;
@@ -34,7 +37,7 @@ export function DialogFrame({
       }}
       className={styles.overlay ?? ''}
     >
-      <Modal className={styles.modal ?? ''}>
+      <Modal className={styles.modal ?? ''} data-size={size}>
         <Dialog role={role} aria-describedby={describedBy} className={styles.dialog ?? ''}>
           <Heading slot="title" className={styles.title ?? ''}>
             {title}
