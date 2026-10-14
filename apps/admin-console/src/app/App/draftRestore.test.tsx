@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { type DraftFields } from '#/shared/repository/useDrafts';
+import { useDrafts, type DraftFields } from '#/shared/repository/useDrafts';
 import { useSectionDraft } from '#/shared/repository/useSectionDraft';
 import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 import { TextField } from '#/shared/view/Field';
@@ -147,6 +147,29 @@ it('drops a question about leaving that the end of the session overtook, without
   });
   expect(useUnsavedGuard.getState().pending).toBeNull();
   expect(proceed).not.toHaveBeenCalled();
+});
+
+it('forgets what a restored section kept again once its edits are discarded', async () => {
+  const user = userEvent.setup();
+  sessionStorage.setItem(
+    'odudu.console.drafts',
+    JSON.stringify({
+      owner: 'acme/s1',
+      drafts: {
+        'acme/clients/c1': { general: { etag: '"e1"', values: { name: 'Billing portal EU' } } },
+      },
+    }),
+  );
+  mount(SIGNED_IN);
+  const section = await screen.findByRole('region', { name: 'General' });
+  expect(within(section).getByText('Restored — review before saving')).toBeVisible();
+  expect(sessionStorage.getItem('odudu.console.drafts')).toBeNull();
+  act(() => {
+    useDrafts.getState().keepDirty('acme/s1');
+  });
+  expect(sessionStorage.getItem('odudu.console.drafts') ?? '').toContain('Billing portal EU');
+  await user.click(within(section).getByRole('button', { name: /Discard/u }));
+  expect(sessionStorage.getItem('odudu.console.drafts')).toBeNull();
 });
 
 it('restores nothing for a different administrator signing in to the same tab', async () => {

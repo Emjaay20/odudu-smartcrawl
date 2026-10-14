@@ -43,6 +43,21 @@ it("lists the subject's groups, and joins another on the ETag it read", async ()
   expect(screen.getByRole('tab', { name: 'Groups' })).toBeVisible();
 });
 
+it("names a group by the picker's read of it when that read is newer than the one held", async () => {
+  renderConsoleAt(
+    AT,
+    subjectRoutes(undefined, {
+      [`GET ${G}`]: json({ items: [OPS] }, 200, { etag: '"g1"' }),
+      [`GET ${ACME_ADMIN}/groups`]: json({ items: [{ ...OPS, path: '/operations' }] }),
+    }),
+  );
+  const section = await screen.findByRole('region', { name: 'Groups' });
+  await within(section).findByRole('listbox', { name: 'Groups ada belongs to' });
+  expect(within(section).getByRole('list', { name: 'ada belongs to' })).toHaveTextContent(
+    '/operations',
+  );
+});
+
 it('says in place why a membership reaching past the caller was refused', async () => {
   const user = userEvent.setup();
   renderConsoleAt(
@@ -92,18 +107,24 @@ it('keeps a departure asked about during a save held when that save is refused',
 });
 
 // Leaving the one group that gives vera system administration, asked about before it is saved.
-async function askedToTakeAdministrationFromVera() {
+async function askedToTakeAdministrationFrom(
+  who: { id: string; name: string; title: string } = {
+    id: 's-vera',
+    name: 'vera',
+    title: 'Take system administration from vera?',
+  },
+) {
   const user = userEvent.setup();
-  const VS = `${ADMIN}/system/subjects/s-vera`;
+  const VS = `${ADMIN}/system/subjects/${who.id}`;
   const ONCALL = group('g-oncall', '/admins/oncall');
   const { sent } = renderConsoleAt(
-    '/console/system/subjects/s-vera?tab=groups',
+    `/console/system/subjects/${who.id}?tab=groups`,
     systemRoutes({
       [`GET ${VS}`]: json(
         {
-          id: 's-vera',
+          id: who.id,
           type: 'user',
-          username: 'vera',
+          username: who.name,
           email: null,
           enabled: true,
           created_at: '2026-09-28T08:41:53.858Z',
@@ -139,10 +160,12 @@ async function askedToTakeAdministrationFromVera() {
   await user.click(await within(section).findByRole('option', { name: /oncall/u }));
   await user.click(within(section).getByRole('button', { name: 'Save Groups' }));
   const dialog = await screen.findByRole('alertdialog', {
-    name: 'Take system administration from vera?',
+    name: who.title,
   });
   return { user, sent, dialog };
 }
+
+const askedToTakeAdministrationFromVera = () => askedToTakeAdministrationFrom();
 
 it("asks for the name, typed, before leaving a group takes another's manage-tenants", async () => {
   const { user, sent, dialog } = await askedToTakeAdministrationFromVera();
@@ -155,6 +178,15 @@ it("asks for the name, typed, before leaving a group takes another's manage-tena
   await waitFor(() => {
     expect(screen.queryByRole('alertdialog')).toBeNull();
   });
+});
+
+it('asks about taking system administration from yourself in preference to leaving a group of your own', async () => {
+  const { dialog } = await askedToTakeAdministrationFrom({
+    id: 's0',
+    name: 'root',
+    title: 'Revoke your own system administration?',
+  });
+  expect(dialog).toBeVisible();
 });
 
 it('sends nothing when the question about taking administration away is cancelled', async () => {

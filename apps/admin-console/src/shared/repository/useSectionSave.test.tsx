@@ -919,7 +919,7 @@ it('holds Save, saying why, once the record is found deleted', async () => {
 
 // The section's own handlers, called as the hook hands them out: what Save
 // and the conflict buttons do is theirs to decide, whatever the view offers.
-function Direct({ data, etag }: { data: Client; etag: string }) {
+function Direct({ data, etag, gone }: { data: Client; etag: string; gone: boolean }) {
   const save = useSectionSave({
     tenant: 'acme',
     record: 'clients/c1',
@@ -927,8 +927,12 @@ function Direct({ data, etag }: { data: Client; etag: string }) {
     label: 'General',
     etag,
     capability: 'manage-clients',
+    gone,
     refusal: NO_REFUSAL,
-    fields: { name: { value: data.name, label: 'Name', kind: 'plain' } },
+    fields: {
+      name: { value: data.name, label: 'Name', kind: 'plain' },
+      access_token_ttl: { value: data.access_token_ttl, label: 'TTL', kind: 'plain' },
+    },
     save: (gateway, { changes, ifMatch }) => amend(gateway, changes, ifMatch),
   });
   const [answer, setAnswer] = useState('');
@@ -941,6 +945,14 @@ function Direct({ data, etag }: { data: Client; etag: string }) {
           save.edit('name', event.target.value);
         }}
       />
+      <button
+        type="button"
+        onClick={() => {
+          save.edit('access_token_ttl', 900);
+        }}
+      >
+        Edit TTL
+      </button>
       <button
         type="button"
         onClick={() => {
@@ -965,19 +977,20 @@ function Direct({ data, etag }: { data: Client; etag: string }) {
 function DirectRecord() {
   const record = useRecord({ tenant: 'acme', record: 'clients/c1', read });
   if (record.data === undefined || record.etag === null) return <p>Loading</p>;
-  return <Direct data={record.data} etag={record.etag} />;
+  return <Direct data={record.data} etag={record.etag} gone={record.gone} />;
 }
 
 function mountDirect(routes: Record<string, Answer>) {
   const fake = fakeTransport(routes);
+  const queryClient = createQueryClient();
   render(
     <TransportContext value={fake.transport}>
-      <QueryClientProvider client={createQueryClient()}>
+      <QueryClientProvider client={queryClient}>
         <DirectRecord />
       </QueryClientProvider>
     </TransportContext>,
   );
-  return { patches: () => fake.sent.filter((request) => request.method === 'PATCH') };
+  return { queryClient, patches: () => fake.sent.filter((request) => request.method === 'PATCH') };
 }
 
 const KEPT_AGAINST_OLDER = {
@@ -1034,4 +1047,43 @@ it('sends one request at a time whatever calls submit again while it is in fligh
   await user.click(screen.getByRole('button', { name: 'Submit' }));
   expect(patches()).toHaveLength(1);
   expect(screen.getByText('submitted false')).toBeVisible();
+});
+
+it('leaves a section as it is when taking theirs is asked with nothing in conflict', async () => {
+  const user = userEvent.setup();
+  mountDirect({
+    [GET]: inTurn(client(LOADED, '"e1"'), problem(500, 'about:blank', 'Internal Server Error')),
+    [PATCH]: problem(412, 'about:blank', 'Precondition Failed'),
+  });
+  await user.type(await screen.findByRole('textbox', { name: 'Name' }), ' EU');
+  await user.click(screen.getByRole('button', { name: 'Submit' }));
+  await screen.findByText('status unread');
+  await user.click(screen.getByRole('button', { name: 'Take' }));
+  expect(screen.getByText('status unread')).toBeVisible();
+});
+
+it('keeps a kept draft marked restored while taking theirs leaves edits of its own', async () => {
+  const user = userEvent.setup();
+  storeDrafts(KEPT_AGAINST_OLDER);
+  mountDirect({ [GET]: client(LOADED, '"e1"'), [PATCH]: pending() });
+  await screen.findByText('status conflict');
+  await user.click(screen.getByRole('button', { name: 'Edit TTL' }));
+  await user.click(screen.getByRole('button', { name: 'Take' }));
+  await screen.findByText('status idle');
+  expect(screen.getByText('restored true')).toBeVisible();
+});
+
+it('sends nothing for a record found deleted, and answers false', async () => {
+  const user = userEvent.setup();
+  const { patches, queryClient } = mountDirect({
+    [GET]: inTurn(client(LOADED, '"e1"'), problem(404, 'about:blank#not-found', 'Not Found')),
+    [PATCH]: pending(),
+  });
+  await user.type(await screen.findByRole('textbox', { name: 'Name' }), ' EU');
+  await act(async () => {
+    await queryClient.refetchQueries({ queryKey: recordKey('acme', 'clients/c1') });
+  });
+  await user.click(screen.getByRole('button', { name: 'Submit' }));
+  expect(screen.getByText('submitted false')).toBeVisible();
+  expect(patches()).toEqual([]);
 });
