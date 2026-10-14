@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDirtySection } from '#/shared/repository/useDirtySection';
 import { sectionKey } from '#/shared/service/record';
-import { currentDrafts, type DraftFields, type KeptDraft } from '#/shared/repository/useDrafts';
+import { useDrafts, type DraftFields, type KeptDraft } from '#/shared/repository/useDrafts';
 import { useLatest } from '#/shared/repository/useLatest';
 
 export interface SectionDraft {
@@ -37,30 +37,32 @@ export function useSectionDraft({
   const record = `${tenant}/${path}`;
   useDirtySection(sectionKey(tenant, path, section), label, dirty);
   const latest = useLatest({ dirty, fields, etag });
-  const drafts = currentDrafts();
-  const [restored, setRestored] = useState(() => drafts.restore(record, section));
+  const register = useDrafts((drafts) => drafts.register);
+  const restore = useDrafts((drafts) => drafts.restore);
+  const forget = useDrafts((drafts) => drafts.forget);
+  const [restored, setRestored] = useState(() => restore(record, section));
   const kept = useRef(restored?.etag ?? null);
   useEffect(
     () =>
-      drafts.register({
+      register({
         record,
         section,
         dirty: () => latest().dirty,
         fields: () => latest().fields,
         etag: () => kept.current ?? latest().etag,
       }),
-    [drafts, record, section, latest],
+    [register, record, section, latest],
   );
   useEffect(() => {
-    if (restored !== null) drafts.forget(record, section);
-  }, [drafts, restored, record, section]);
+    if (restored !== null) forget(record, section);
+  }, [forget, restored, record, section]);
 
   return {
     restored,
     settle: () => {
       kept.current = null;
       setRestored(null);
-      drafts.forget(record, section);
+      forget(record, section);
     },
   };
 }
