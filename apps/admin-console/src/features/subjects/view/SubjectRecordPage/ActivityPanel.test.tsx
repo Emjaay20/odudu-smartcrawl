@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
+import { auditEvent } from '#/testing/auditFixtures';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { json, problem } from '#/testing/fakeTransport';
 import { consoleAt, renderConsoleAt, resetConsole, ACME_ADMIN } from '#/testing/renderConsole';
@@ -11,23 +12,18 @@ afterEach(() => {
 });
 
 const AT = `${ADA_AT}?tab=activity`;
-const EVENT = {
+const EVENT = auditEvent({
   id: 'e1',
   occurred_at: '2026-09-28T08:00:00.000Z',
-  event_type: 'admin_mutation',
   action: 'subject.amend',
-  outcome: 'allowed',
   actor_tenant_id: 't',
   actor_subject_id: 's1',
-  actor_client_id: null,
   actor_name: 'grace',
-  actor_origin: 'tenant',
   resource_type: 'subject',
   resource_id: ADA_ID,
   request_id: null,
   ip: null,
-  detail: {},
-};
+});
 
 it('lists the audit rows filed on the subject, naming each actor', async () => {
   const { sent } = renderConsoleAt(
