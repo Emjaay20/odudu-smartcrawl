@@ -6,10 +6,11 @@ import { describe, expect, it } from 'vitest';
 // `styles.name` on a CSS module that has no `.name` is `undefined`, so the
 // element renders unstyled and nothing complains. Every reference in non-test
 // source must be a class its module defines, and every class a module defines
-// must be referenced, because a class nothing uses is a rule that cannot match.
-// A module's binding is its default import, or a named import of a name that an
-// `export { default as name } from '….module.css'` re-exports. A lookup by a
-// computed key, or the binding used whole, cannot be checked and is reported.
+// must be used: referenced, or named by a `composes:`. A module's binding is
+// its default import, or a named import of a name an `export { default as x }`
+// re-exports. A computed lookup or the binding used whole is reported. Classes
+// inside `:global(…)` are not the module's. Not seen: `.scss` modules, and
+// bindings made by `require` or a dynamic import.
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..');
 const CONSOLE = 'apps/admin-console';
@@ -24,7 +25,23 @@ function stripped(css: string): string {
   return css
     .replace(/\/\*[\s\S]*?\*\//gu, blank)
     .replace(/"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/gu, blank)
-    .replace(/url\([^)]*\)/gu, blank);
+    .replace(/url\([^)]*\)/gu, blank)
+    .replace(/:global\([^)]*\)/gu, blank);
+}
+
+// The classes a stylesheet composes, with the module each comes from.
+function composedBy(file: string, css: string): { module: string; name: string }[] {
+  const composed: { module: string; name: string }[] = [];
+  for (const match of css
+    .replace(/\/\*[\s\S]*?\*\//gu, blank)
+    .matchAll(/composes:\s*([^;}]+?)\s*(?:from\s*([^;}]+))?;/gu)) {
+    const from = (match[2] ?? '').trim().replace(/^["']|["']$/gu, '');
+    const module = from === '' ? file : resolve(file, from);
+    for (const name of (match[1] ?? '').split(/\s+/u)) {
+      if (name !== '') composed.push({ module, name });
+    }
+  }
+  return composed;
 }
 
 // Each class a module defines, with the line of its first appearance.
@@ -36,6 +53,16 @@ function classesOf(css: string): Map<string, number> {
     if (!classes.has(name)) classes.set(name, before.split('\n').length);
   }
   return classes;
+}
+
+function byPlace(a: string, b: string): number {
+  const place = (text: string): [string, number] => {
+    const [file = '', line = '0'] = text.split(':', 2);
+    return [file, Number(line)];
+  };
+  const [fileA, lineA] = place(a);
+  const [fileB, lineB] = place(b);
+  return fileA.localeCompare(fileB) || lineA - lineB || a.localeCompare(b);
 }
 
 function resolve(from: string, specifier: string): string {
@@ -152,7 +179,11 @@ function referencesIn(
 export function violations(files: Map<string, string>): string[] {
   const trees = new Map<string, ts.SourceFile>();
   for (const [file, text] of files) {
-    if (/\.tsx?$/u.test(file) && !/\.test\.tsx?$/u.test(file) && !file.endsWith('.d.ts')) {
+    if (
+      /\.[cm]?tsx?$/u.test(file) &&
+      !/\.test\.[cm]?tsx?$/u.test(file) &&
+      !file.endsWith('.d.ts')
+    ) {
       trees.set(file, treeOf(file, text));
     }
   }
@@ -163,6 +194,12 @@ export function violations(files: Map<string, string>): string[] {
   }
   const found: string[] = [];
   const used = new Map<string, Set<string>>();
+  for (const [file, text] of files) {
+    if (!file.endsWith('.module.css')) continue;
+    for (const { module, name } of composedBy(file, text)) {
+      used.set(module, (used.get(module) ?? new Set()).add(name));
+    }
+  }
   for (const [file, tree] of trees) {
     for (const reference of referencesIn(file, tree, bindingsOf(file, tree, named))) {
       const place = `${file}:${String(reference.line)}`;
@@ -185,12 +222,14 @@ export function violations(files: Map<string, string>): string[] {
       }
     }
   }
-  return found.sort((a, b) => a.localeCompare(b));
+  return found.sort(byPlace);
 }
 
 async function read(root: string): Promise<Map<string, string>> {
   const files = new Map<string, string>();
-  for await (const file of glob('src/**/*.{css,ts,tsx}', { cwd: path.join(REPO_ROOT, root) })) {
+  for await (const file of glob('src/**/*.{css,ts,tsx,mts,cts}', {
+    cwd: path.join(REPO_ROOT, root),
+  })) {
     const posix = file.split(path.sep).join('/');
     files.set(posix, await readFile(path.join(REPO_ROOT, root, file), 'utf8'));
   }
@@ -218,10 +257,10 @@ describe('console CSS modules', { timeout: 60_000 }, () => {
     expect(violations(files)).toEqual([
       'src/features/clients/view/Sessions.tsx:4: recordTab.rule is not a class in src/shared/view/RecordTab/RecordTab.module.css',
       'src/shared/view/Card/Card.module.css:9: .unused is defined and no source file uses it',
-      'src/shared/view/Card/Card.tsx:14: styles is looked up by a computed key or used whole',
       'src/shared/view/Card/Card.tsx:7: styles.action is not a class in src/shared/view/Card/Card.module.css',
       'src/shared/view/Card/Card.tsx:8: styles.separator is not a class in src/shared/view/Card/Card.module.css',
       'src/shared/view/Card/Card.tsx:9: styles is looked up by a computed key or used whole',
+      'src/shared/view/Card/Card.tsx:14: styles is looked up by a computed key or used whole',
     ]);
   });
 });

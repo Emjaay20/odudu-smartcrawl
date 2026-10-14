@@ -1,0 +1,15 @@
+.base {
+  color: red;
+}
+
+.primary {
+  composes: base;
+}
+
+.other {
+  composes: shared from './Shared.module.css';
+}
+
+:global(.legacy) .primary {
+  color: blue;
+}
