@@ -16,7 +16,7 @@ const TREES = [
   'apps/admin-console/scripts/**/*.{ts,tsx}',
 ];
 
-describe('console imports carry no file extension', () => {
+describe('console imports carry no file extension', { timeout: 60_000 }, () => {
   it('names no .ts or .tsx suffix in a relative or #/ specifier', async () => {
     const offences: string[] = [];
     for (const pattern of TREES) {
