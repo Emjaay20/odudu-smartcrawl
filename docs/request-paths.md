@@ -6389,7 +6389,9 @@ this browser's own resolved set — stale, or another browser's — is treated
 as a hint that names nothing usable: confirmation falls back to whichever
 of this browser's own sessions was most recently active, and the
 confirmation page names that session, not the one the `sid` asked for, so
-nobody is misled about which session confirming will end. The refresh
+nobody is misled about which session confirming will end. A hint past its
+`exp` is read the same way ([below](#an-id-token-past-its-exp-sent-as-the-hint)).
+The refresh
 token this session's grant issued is now refused:
 
 ```bash
@@ -6403,6 +6405,199 @@ curl -sS \
 ```json
 { "error": "invalid_grant" }
 ```
+
+### An ID token past its `exp`, sent as the hint
+
+A hint is usually older than five minutes by the time a client sends it —
+the console's own sign-out sends the ID token it stored at sign-in — so §2
+asks the OP to accept one "even when the `exp` time has passed". What
+bounds that is the session the hint's `sid` names, not the clock: the
+`sid` has to equal a session still live in this browser's own cookies.
+
+This section ran against a fresh stack of its own (compose project
+`odudu-17e`, `ODUDU_REAP_ENABLED=false`), seeded only with `demo`,
+`demo-spa` and `ada` as [Bootstrap](#bootstrap) does, and published on
+port 3170, so every URL below was run against 3170 where the rest of this
+document says 3000. `demo-spa`'s ID token lifetime is lowered to its
+minimum of five seconds, and the redirect list from the section above is
+still in place, so a hint can be shown past its `exp` in the time it takes
+to run the next block. `psql` is a function for the compose stack's
+database, the way `odudu` is for its CLI:
+
+```bash
+psql() { docker compose -f infra/docker/compose.yaml exec -T postgres psql -U odudu -d odudu "$@"; }
+psql -c "UPDATE client_oidc_config SET id_token_ttl_seconds = 5
+  FROM clients WHERE clients.id = client_oidc_config.client_id AND clients.client_id = 'demo-spa';"
+```
+
+```
+UPDATE 1
+```
+
+Two sign-ins, each from its own browser (its own cookie jar), each
+redeemed for an ID token. `signin` is [the shell variables
+section](#the-shell-variables-the-rest-of-this-document-uses)'s sequence
+with a cookie jar added; `claims` prints what a token says about itself.
+Seven seconds later both tokens are past their `exp`:
+
+```bash
+signin() { # $1 = cookie jar; sets ID_TOKEN
+  VERIFIER=$(openssl rand -hex 32)
+  CHALLENGE=$(printf '%s' "$VERIFIER" | openssl dgst -binary -sha256 | openssl base64 | tr '+/' '-_' | tr -d '=')
+  AUTH_SESSION_ID=$(curl -sS --get --data-urlencode 'response_type=code' --data-urlencode 'client_id=demo-spa' \
+    --data-urlencode 'redirect_uri=http://localhost:8080/callback' --data-urlencode 'scope=openid' \
+    --data-urlencode 'state=s' --data-urlencode "code_challenge=$CHALLENGE" --data-urlencode 'code_challenge_method=S256' \
+    "$BASE/auth" | sed -n '/name="auth_session_id"/{s/.*value="\([^"]*\)".*/\1/p;q;}')
+  CODE=$(curl -sS -c "$1" -D - -o /dev/null --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
+    --data-urlencode 'username=ada' --data-urlencode 'password=correct-horse-battery' "$LOGIN" \
+    | sed -n 's/.*[?&]code=\([^&[:space:]]*\).*/\1/p' | tr -d '\r')
+  ID_TOKEN=$(curl -sS --data-urlencode 'grant_type=authorization_code' --data-urlencode "code=$CODE" \
+    --data-urlencode 'redirect_uri=http://localhost:8080/callback' --data-urlencode 'client_id=demo-spa' \
+    --data-urlencode "code_verifier=$VERIFIER" "$BASE/token" | sed -n 's/.*"id_token":"\([^"]*\)".*/\1/p')
+}
+claims() { python3 - "$1" <<'PY'
+import sys,json,base64
+p=sys.argv[1].split('.')[1]; p+='='*(-len(p)%4)
+c=json.loads(base64.urlsafe_b64decode(p))
+print(json.dumps({k:c[k] for k in ('iat','exp','sid') if k in c}))
+PY
+}
+signin jarA.txt; TOKEN_A=$ID_TOKEN; claims "$TOKEN_A"
+signin jarB.txt; TOKEN_B=$ID_TOKEN; claims "$TOKEN_B"
+sleep 7; date -u +%s
+```
+
+```
+{"iat": 1792002299, "exp": 1792002304, "sid": "01a13ba9-15e5-732b-a6a5-ab6c97b4f7d5"}
+{"iat": 1792002299, "exp": 1792002304, "sid": "01a13ba9-1703-780b-97d0-bf41e32e6cfc"}
+1792002306
+```
+
+The precondition that makes the next call safe is the session, not the
+clock, and it is shown rather than asserted: both sessions (`$SID_A` and
+`$SID_B` are the two `sid` values above) are live, and `post_logout_redirect_uris`
+is what `demo-spa` may be sent to:
+
+```bash
+LIVE="select id, expires_at > now() as live from sessions where id in ('$SID_A','$SID_B') order by created_at;"
+psql -c "$LIVE"
+psql -c "select c.client_id, o.post_logout_redirect_uris, o.id_token_ttl_seconds
+  from client_oidc_config o join clients c on c.id = o.client_id where c.client_id = 'demo-spa';"
+```
+
+```
+                  id                  | live
+--------------------------------------+------
+ 01a13ba9-15e5-732b-a6a5-ab6c97b4f7d5 | t
+ 01a13ba9-1703-780b-97d0-bf41e32e6cfc | t
+(2 rows)
+
+ client_id |     post_logout_redirect_uris      | id_token_ttl_seconds
+-----------+------------------------------------+----------------------
+ demo-spa  | {http://localhost:8080/logged-out} |                    5
+(1 row)
+```
+
+First the cases that still ask. Browser B presents the hint of session A:
+that `sid` names a session B's cookie does not hold, so the token does not
+belong to the current session and §2's confirmation fires. A hint with the
+last character of its signature changed (`$FORGED`) is no hint at all,
+however its `exp` reads. And a request with no session cookie has no
+session to end, so it gets the no-session page:
+
+```bash
+FORGED="${TOKEN_A%?}$([ "${TOKEN_A: -1}" = A ] && echo B || echo A)"
+curl -sS -b jarB.txt -D - -o /dev/null --get --data-urlencode "id_token_hint=$TOKEN_A" \
+  --data-urlencode 'client_id=demo-spa' --data-urlencode 'post_logout_redirect_uri=http://localhost:8080/logged-out' \
+  --data-urlencode 'state=xyz-bye' "$BASE/logout" | grep -iE '^HTTP|^location|^set-cookie'
+echo ---
+curl -sS -b jarA.txt -D - -o /dev/null --get --data-urlencode "id_token_hint=$FORGED" \
+  --data-urlencode 'client_id=demo-spa' --data-urlencode 'post_logout_redirect_uri=http://localhost:8080/logged-out' \
+  --data-urlencode 'state=xyz-bye' "$BASE/logout" | grep -iE '^HTTP|^location|^set-cookie'
+echo ---
+curl -sS --get --data-urlencode "id_token_hint=$TOKEN_A" --data-urlencode 'client_id=demo-spa' "$BASE/logout" \
+  | grep -o '<title>[^<]*</title>'
+```
+
+```
+HTTP/1.1 200 OK
+---
+HTTP/1.1 200 OK
+---
+<title>Already signed out</title>
+```
+
+No `location` and no `set-cookie`: each is a page, not a redirect. The
+first two pages are the confirmation form (`<title>Sign out?</title>`, `<title>Sign out?</title>`: the same
+two requests with the `-D - -o /dev/null` pair swapped for a pipe to
+`grep -o '<title>[^<]*</title>'`), and the third is the one printed above.
+Neither session ended:
+
+```bash
+psql -c "$LIVE"
+```
+
+```
+                  id                  | live
+--------------------------------------+------
+ 01a13ba9-15e5-732b-a6a5-ab6c97b4f7d5 | t
+ 01a13ba9-1703-780b-97d0-bf41e32e6cfc | t
+(2 rows)
+```
+
+Now browser A presents the hint of its own session, at least five seconds
+past its `exp`. The `sid` equals a live session in this browser, so the OP
+asks nothing and redirects:
+
+```bash
+curl -sS -b jarA.txt -D - -o /dev/null --get --data-urlencode "id_token_hint=$TOKEN_A" \
+  --data-urlencode 'client_id=demo-spa' --data-urlencode 'post_logout_redirect_uri=http://localhost:8080/logged-out' \
+  --data-urlencode 'state=xyz-bye' "$BASE/logout"
+```
+
+```
+HTTP/1.1 302 Found
+x-request-id: 01a13ba9-3543-7d60-8276-a1e9aae0c834
+set-cookie: demo-session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+set-cookie: demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+cache-control: no-store
+location: http://localhost:8080/logged-out?state=xyz-bye
+content-length: 0
+Date: Wed, 14 Oct 2026 18:25:07 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+```
+
+Session A is ended and B untouched, and the audit trail records the end
+exactly as it does for an unexpired hint — `session.ended` with
+`via: logout`; the audit vocabulary has no member for the hint's outcome:
+
+```bash
+psql -c "$LIVE"
+psql -c "select action, outcome, detail from audit_events where resource_id = '$SID_A' order by occurred_at;"
+```
+
+```
+                  id                  | live
+--------------------------------------+------
+ 01a13ba9-15e5-732b-a6a5-ab6c97b4f7d5 | f
+ 01a13ba9-1703-780b-97d0-bf41e32e6cfc | t
+(2 rows)
+
+     action      | outcome |      detail
+-----------------+---------+-------------------
+ session.created | allowed | {}
+ session.ended   | allowed | {"via": "logout"}
+(2 rows)
+```
+
+That is the bound: a lapsed hint is good for as long as the session it
+names is live and in the presenting browser's cookies, and for nothing
+else. `OIDC-RPINITIATED-2-05` holds the rest of the matrix to the same
+answer — a hint whose `sid` is an ended session, a forged signature, a
+wrong issuer, tenant, audience or `typ`, no `sub` or `exp`, `alg: none`, a
+retired signing key — and an hour or three years of lapse alike.
+`/authorize` does not read a lapsed hint this way; it still refuses one.
 
 ### Token introspection and revocation
 

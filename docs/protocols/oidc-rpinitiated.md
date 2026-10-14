@@ -32,9 +32,9 @@ the mechanism it points at is Back-Channel Logout 1.0, whose own table
 | 2      | SHOULD | no error results when some or all of the locales requested through `ui_locales` are unsupported                                                          | —                         | n/a: `ui_locales` is not read at the Logout Endpoint, whose pages are served in one language, so no requested locale can produce an error                                                         |
 | 2      | MUST   | the OP supports the HTTP `GET` and `POST` methods at the Logout Endpoint                                                                                 | `OIDC-RPINITIATED-2-03`   | covered                                                                                                                                                                                           |
 | 2      | MUST   | when an `id_token_hint` is present, the OP validates that it was the issuer of the ID Token                                                              | `OIDC-RPINITIATED-2-02`   | covered                                                                                                                                                                                           |
-| 2      | SHOULD | the OP accepts an ID Token whose `exp` has passed, where the RP identified by its `aud` and/or `sid` has a current or recent session                     | —                         | gap                                                                                                                                                                                               |
+| 2      | SHOULD | the OP accepts an ID Token whose `exp` has passed, where the RP identified by its `aud` and/or `sid` has a current or recent session                     | `OIDC-RPINITIATED-2-05`   | covered                                                                                                                                                                                           |
 | 2      | SHOULD | a logout request whose `sid` does not correspond to a current or recent session is treated as suspect                                                    | `OIDC-RPINITIATED-2-01`   | covered                                                                                                                                                                                           |
-| 2      | MAY    | the OP declines to act on a logout request whose `sid` does not correspond to a current or recent session                                                | —                         | gap                                                                                                                                                                                               |
+| 2      | MAY    | the OP declines to act on a logout request whose `sid` does not correspond to a current or recent session                                                | —                         | accepted: the request is answered with the confirmation page rather than declined, the more conservative of the two outcomes a MAY leaves open                                                    |
 | 2      | SHOULD | at the Logout Endpoint, the OP asks the End-User whether to log out of the OP as well                                                                    | `OIDC-RPINITIATED-2-01`   | covered                                                                                                                                                                                           |
 | 2      | MUST   | the OP asks the End-User to confirm logout if an `id_token_hint` was not provided, or if the supplied ID Token does not belong to the current OP session | `OIDC-RPINITIATED-2-01`   | covered                                                                                                                                                                                           |
 | 2      | MUST   | if the End-User says "yes", the OP logs the End-User out                                                                                                 | `OIDC-RPINITIATED-2-01`   | covered                                                                                                                                                                                           |
@@ -128,19 +128,47 @@ closing on a test of the components a test can see. What would close it is
 a scheme this process establishes rather than reads off a forwarded
 header.
 
-### An expired hint is refused, not accepted
+### An expired hint is accepted, bound to the live session
 
 §2 asks the OP to "accept ID Tokens when the RP identified by the ID
 Token's `aud` claim and/or `sid` claim has a current session or had a
-recent session at the OP, even when the `exp` time has passed."
-`subjectOfIdTokenHint` verifies the hint through `verifyJwt`, which
-enforces `exp` (RFC 7519 §4.1, `docs/protocols/jose.md`), so an expired
-hint resolves to nothing and the request falls to the confirmation page.
-The consequence of the gap is a prompt the End-User did not strictly need,
-never a session ended on an unproven hint, which is why the row records a
-gap rather than a divergence worth accepting: closing it means a second,
-narrower verification path that skips `exp` while still checking issuer,
-signature and type, and that path does not exist yet.
+recent session at the OP, even when the `exp` time has passed." The
+logout door reads its hint through `subjectOfLogoutHint`
+(`packages/protocol-oidc/src/usecase/authorization-request.ts`), which is
+`subjectOfIdTokenHint` with `verifyJwt`'s `expiry: EXPIRY_NOT_ENFORCED`
+named. Everything else is judged as before: a signature by one of the
+tenant's publishable keys, `iss`, `typ` absent, `sub` present, and `exp`
+**present** (OIDC Core §2 makes it required, so a token with none is not an
+ID Token). `aud` is compared against `client_id` in `handleLogoutRequest`
+as it always was. The option is a named symbol, not a flag: `/authorize`,
+the token-exchange subject check and every other `verifyJwt` caller omit it
+and still refuse a lapsed token (`OIDC-RPINITIATED-2-05` pins `/authorize`
+doing so).
+
+**No age cap, because the session is the bound.** A lapsed hint ends
+something only when its `sid` equals a session in this browser's own
+cookies that is still live, which `decideLogout` already required of an
+unexpired hint. A session is bounded by the tenant's idle and maximum
+lifetimes, so the hint is usable for exactly as long as the session it
+names and no longer: once that session ends, the same hint falls to the
+confirmation page, however recently it expired. A cap would shorten a
+session's own life for one door only, and every number it could take is
+arbitrary against tenants that configure those lifetimes themselves.
+Holding a lapsed hint grants nothing a live unexpired one would not: it
+names a session, and the cookie has to be the browser's own.
+
+What a lapsed hint still cannot do, each case a test: carry a forged
+signature, another issuer or another tenant's key, a `typ` header, an
+`aud` that disagrees with `client_id`, no `sub`, no `exp`, or `alg: none`;
+name a session the browser does not hold or that already ended; or arrive
+with no session cookie. Each is treated as no hint and asks. A hint signed
+by a **retired** key is among them: `listPublishableKeys` omits retired keys,
+so the `kid` resolves to nothing, exactly as a lapsed hint from a key that
+has since been rotated out of publication should.
+
+The audit trail does not tell the two apart. Ending a session on either
+hint writes the same `session.ended` row with `detail: {via: 'logout'}`;
+the audit vocabulary records no hint outcome and this change adds none.
 
 ### One endpoint, two methods, and `session_id` as the discriminator
 

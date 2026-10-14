@@ -248,9 +248,13 @@ is deliberately left unconsumed, so the end-user the hint names can still
 sign in against the same parked request.
 
 **Two `id_token_hint` rows stay `gap`.** §3.1.2.2's SHOULD to accept a hint
-past its `exp` is not implemented: `verifyJwt` enforces `exp` for every token
-this server reads, and carving out an exception belongs with the session
-lookup that would make an expired hint useful in the first place. §3.1.2.1's
+past its `exp` is not implemented at `/authorize`: `verifyJwt` enforces `exp`
+for every token this server reads except the logout endpoint's, which names
+`EXPIRY_NOT_ENFORCED` because RP-Initiated Logout §2 asks for it and the
+hint's `sid` must name a live session of the browser
+(`docs/protocols/oidc-rpinitiated.md`). `/authorize` keeps refusing a lapsed
+hint: it reads one to narrow which account may sign in, a different use from
+logout's, and accepting one there is a separate decision. §3.1.2.1's
 MAY to answer `invalid_request` when `prompt=none` arrives without a hint is
 declined on purpose — `login_required` describes what actually happened.
 
