@@ -39,5 +39,3 @@ export function createSessionEvents(): SessionEvents {
     },
   };
 }
-
-export const sessionEvents = createSessionEvents();

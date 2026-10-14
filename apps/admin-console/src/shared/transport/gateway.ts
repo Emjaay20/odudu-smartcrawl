@@ -1,6 +1,6 @@
 import type { ZodType } from 'zod';
 import { isPrincipalChanged, isSessionEnded } from '#/shared/service/sessionEnded';
-import { sessionEvents, type SessionEvents } from '#/shared/service/sessionEvents';
+import { createSessionEvents, type SessionEvents } from '#/shared/service/sessionEvents';
 import { nextCursor } from '#/shared/transport/cursor';
 import { readEtag } from '#/shared/transport/etag';
 import { readProblem } from '#/shared/transport/problem';
@@ -106,7 +106,7 @@ export function createGateway(dependencies: GatewayDependencies = {}): Gateway {
     ((message: string) => {
       console.error(message);
     });
-  const events = dependencies.events ?? sessionEvents;
+  const events = dependencies.events ?? createSessionEvents();
   const timeoutMs = dependencies.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   let believed: string | null = null;
 

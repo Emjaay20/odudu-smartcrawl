@@ -1,4 +1,4 @@
-import { sessionEvents, type SessionEvents } from '#/shared/service/sessionEvents';
+import { createSessionEvents, type SessionEvents } from '#/shared/service/sessionEvents';
 import { createAuth, type Auth } from '#/shared/transport/auth';
 import { createGateway, type Gateway } from '#/shared/transport/gateway';
 
@@ -13,10 +13,11 @@ export interface Transport {
 }
 
 export function createBrowserTransport(): Transport {
+  const events = createSessionEvents();
   return {
-    gateway: createGateway({ events: sessionEvents }),
+    gateway: createGateway({ events }),
     auth: createAuth(),
-    events: sessionEvents,
+    events,
     leavePage: (url) => {
       window.location.assign(url);
     },
