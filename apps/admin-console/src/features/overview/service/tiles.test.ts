@@ -1,54 +1,7 @@
 import type { Settings } from '@odudu/contracts/admin';
 import { describe, expect, it } from 'vitest';
-import type { AdminCapability, Authority } from '#/shared/service/principal';
-import { countTiles, type AreaOf } from '#/features/overview/service/tiles';
-import { type OverviewReads, type OverviewRead } from '#/features/overview/service/reads';
-
-const retry = (): void => undefined;
-
-const OFF: OverviewRead<never> = { status: 'off' };
-
-const LOADING: OverviewRead<never> = { status: 'loading' };
-
-const REFUSED: OverviewRead<never> = { status: 'failed', refused: true, retry };
-
-function ready<T>(data: T): OverviewRead<T> {
-  return { status: 'ready', data };
-}
-
-function authority(...capabilities: Authority['capabilities'][number][]): Authority {
-  return { capabilities, crossTenant: false };
-}
-
-const AREAS: Readonly<Record<string, { label: string; capability: AdminCapability | null }>> = {
-  subjects: { label: 'Subjects', capability: 'view-users' },
-  clients: { label: 'Clients', capability: 'manage-clients' },
-  groups: { label: 'Groups', capability: 'manage-tenant' },
-  roles: { label: 'Roles', capability: 'manage-tenant' },
-  scopes: { label: 'Scopes', capability: 'manage-tenant' },
-  email: { label: 'Email', capability: 'manage-tenant' },
-  keys: { label: 'Signing keys', capability: 'manage-keys' },
-  settings: { label: 'Settings', capability: 'manage-tenant' },
-};
-
-const areaOf: AreaOf = (path) => {
-  const found = AREAS[path];
-  if (found === undefined) throw new Error(`no area ${path}`);
-  return { label: found.label, capability: found.capability, href: `/console/acme/${path}` };
-};
-
-function reads(over: Partial<OverviewReads> = {}): OverviewReads {
-  return {
-    discovery: OFF,
-    jwks: OFF,
-    counts: { subjects: OFF, clients: OFF, groups: OFF, roles: OFF, scopes: OFF },
-    settings: OFF,
-    smtp: OFF,
-    keys: OFF,
-    audit: OFF,
-    ...over,
-  };
-}
+import { countTiles } from '#/features/overview/service/tiles';
+import { OFF, LOADING, REFUSED, ready, authority, areaOf, reads } from '#/testing/overviewFixtures';
 
 describe('the count tiles', () => {
   const asked = reads({

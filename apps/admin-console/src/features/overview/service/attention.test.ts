@@ -1,50 +1,6 @@
-import type { SigningKey, SmtpConfig } from '@odudu/contracts/admin';
 import { describe, expect, it } from 'vitest';
 import { needsAttention, type AttentionInputs } from '#/features/overview/service/attention';
-
-const KEYS: readonly SigningKey[] = [
-  {
-    id: 'a',
-    status: 'active',
-    kid: 'kid-a',
-    alg: 'ES256',
-    created_at: '2026-09-01T00:00:00Z',
-    not_after: null,
-  },
-  {
-    id: 'r',
-    status: 'rotating',
-    kid: 'kid-r',
-    alg: 'ES256',
-    created_at: '2026-09-02T00:00:00Z',
-    not_after: null,
-  },
-];
-
-const SMTP_NONE: SmtpConfig = {
-  configured: false,
-  host: null,
-  port: null,
-  from_address: null,
-  username: null,
-  password_set: false,
-  starttls: null,
-  effective: 'none',
-};
-
-const QUIET: AttentionInputs = {
-  settings: {
-    verify_email: false,
-    reset_password_allowed: false,
-    client_registration_policy: 'disabled',
-    max_clients: 200,
-  },
-  smtp: SMTP_NONE,
-  keys: KEYS,
-  clients: { count: 3, capped: false },
-  // Half an hour after the rotating key was staged.
-  now: new Date('2026-09-02T00:30:00Z'),
-};
+import { SMTP_NONE, QUIET } from '#/testing/overviewFixtures';
 
 function ids(inputs: Partial<AttentionInputs>): readonly string[] {
   return needsAttention({ ...QUIET, ...inputs }).map((item) => item.id);

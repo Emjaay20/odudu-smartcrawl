@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import type { Authority } from '#/shared/service/principal';
 import type { GatewayResult } from '#/shared/service/result';
 import {
   auditView,
@@ -10,22 +9,7 @@ import {
   overviewOutcome,
   type OverviewRead,
 } from '#/features/overview/service/reads';
-
-const retry = (): void => undefined;
-
-const LOADING: OverviewRead<never> = { status: 'loading' };
-
-const FAILED: OverviewRead<never> = { status: 'failed', refused: false, retry };
-
-const REFUSED: OverviewRead<never> = { status: 'failed', refused: true, retry };
-
-function ready<T>(data: T): OverviewRead<T> {
-  return { status: 'ready', data };
-}
-
-function authority(...capabilities: Authority['capabilities'][number][]): Authority {
-  return { capabilities, crossTenant: false };
-}
+import { retry, LOADING, FAILED, REFUSED, ready, authority } from '#/testing/overviewFixtures';
 
 describe('a read gated by a capability', () => {
   const read = ready(1);

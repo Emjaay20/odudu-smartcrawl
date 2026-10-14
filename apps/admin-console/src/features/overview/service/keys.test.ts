@@ -1,53 +1,7 @@
-import type { SigningKey } from '@odudu/contracts/admin';
 import { describe, expect, it } from 'vitest';
-import type { Authority } from '#/shared/service/principal';
 import { keysView, publishedKeys } from '#/features/overview/service/keys';
 import { rawJson } from '#/features/overview/service/discovery';
-import { type OverviewReads, type OverviewRead } from '#/features/overview/service/reads';
-
-const KEYS: readonly SigningKey[] = [
-  {
-    id: 'a',
-    status: 'active',
-    kid: 'kid-a',
-    alg: 'ES256',
-    created_at: '2026-09-01T00:00:00Z',
-    not_after: null,
-  },
-  {
-    id: 'r',
-    status: 'rotating',
-    kid: 'kid-r',
-    alg: 'ES256',
-    created_at: '2026-09-02T00:00:00Z',
-    not_after: null,
-  },
-];
-
-const OFF: OverviewRead<never> = { status: 'off' };
-
-const LOADING: OverviewRead<never> = { status: 'loading' };
-
-function ready<T>(data: T): OverviewRead<T> {
-  return { status: 'ready', data };
-}
-
-function authority(...capabilities: Authority['capabilities'][number][]): Authority {
-  return { capabilities, crossTenant: false };
-}
-
-function reads(over: Partial<OverviewReads> = {}): OverviewReads {
-  return {
-    discovery: OFF,
-    jwks: OFF,
-    counts: { subjects: OFF, clients: OFF, groups: OFF, roles: OFF, scopes: OFF },
-    settings: OFF,
-    smtp: OFF,
-    keys: OFF,
-    audit: OFF,
-    ...over,
-  };
-}
+import { LOADING, ready, authority, reads, KEYS } from '#/testing/overviewFixtures';
 
 describe('the published keys', () => {
   const jwks = {
