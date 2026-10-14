@@ -6,6 +6,7 @@ import {
 } from '#/features/system-admins/usecase/useSystemAdministratorsPage';
 import { subjectName } from '#/features/system-admins/service';
 import { SystemGate } from '#/features/tenants';
+import { firstChosen } from '#/shared/service/picker';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
 import { Button } from '#/shared/view/Button';
 import { ChecklistField } from '#/shared/view/ChecklistField';
@@ -41,7 +42,7 @@ function Add({ page }: { page: SystemAdministrators }) {
         searchBy="username"
         selected={chosen === null ? [] : [chosen.id]}
         onChange={(ids) => {
-          page.choose(ids[0] ?? null);
+          page.choose(firstChosen(ids));
         }}
         selectionMode="single"
       />

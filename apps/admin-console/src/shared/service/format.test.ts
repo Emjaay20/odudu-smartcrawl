@@ -11,6 +11,7 @@ import {
   formatDuration,
   formatRelative,
   lowerFirst,
+  orBlank,
   plural,
   sentence,
 } from '#/shared/service/format';
@@ -137,5 +138,14 @@ describe('groupedNumber', () => {
   it('groups thousands with commas', () => {
     expect(groupedNumber(1234567)).toBe('1,234,567');
     expect(groupedNumber(200)).toBe('200');
+  });
+});
+
+describe('orBlank', () => {
+  it('shows a text a record does not hold as an empty one', () => {
+    expect(orBlank('a')).toBe('a');
+    expect(orBlank('')).toBe('');
+    expect(orBlank(null)).toBe('');
+    expect(orBlank(undefined)).toBe('');
   });
 });

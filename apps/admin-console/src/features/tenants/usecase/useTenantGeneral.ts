@@ -12,6 +12,7 @@ import { useToast } from '#/shared/repository/useToasts';
 import { enabledText } from '#/shared/service/failure';
 import { disableConsequence, disableFixed } from '#/shared/service/tenantEnabled';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
+import { orBlank } from '#/shared/service/format';
 
 export interface EnabledControl {
   // Why it cannot be changed, shown as fixed text instead of a control.
@@ -51,7 +52,7 @@ export function useTenantGeneral(
     gone,
     refusal,
     fields: {
-      display_name: { value: tenant.display_name ?? '', label: 'Display name', kind: 'plain' },
+      display_name: { value: orBlank(tenant.display_name), label: 'Display name', kind: 'plain' },
     },
     save: saveGeneral(name),
   });

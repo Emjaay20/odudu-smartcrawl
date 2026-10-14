@@ -9,6 +9,7 @@ import { roleReachUnavailable, writeRefusal } from '#/shared/service/capabilitie
 import { describeIds } from '#/shared/service/format';
 import { sortedIds } from '#/shared/service/ids';
 import type { PickerState } from '#/shared/service/picker';
+import { callerCapabilities } from '#/shared/service/access';
 import type { RoleValues } from '#/shared/service/sectionValues';
 import {
   type MappedRole,
@@ -52,7 +53,7 @@ export function useScopeRoles({
   const picker = useRolePicker(tenant);
   const saves = useScopeSaves(tenant, scope.id);
   const known = roleIndex(data.items, picker.options);
-  const caller = authority?.capabilities ?? [];
+  const caller = callerCapabilities(authority);
   const kept = keptRoles(
     data.items.map((role) => role.id),
     known,

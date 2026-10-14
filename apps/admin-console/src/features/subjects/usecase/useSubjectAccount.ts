@@ -22,6 +22,7 @@ import {
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { useToast } from '#/shared/repository/useToasts';
 import { deletedText, enabledText } from '#/shared/service/failure';
+import { orBlank } from '#/shared/service/format';
 
 export type { UsernameMode };
 
@@ -70,8 +71,8 @@ export function useSubjectAccount(
     gone,
     refusal,
     fields: {
-      username: { value: subject.username ?? '', label: 'Username', kind: 'plain' },
-      email: { value: subject.email ?? '', label: 'Email', kind: 'plain' },
+      username: { value: orBlank(subject.username), label: 'Username', kind: 'plain' },
+      email: { value: orBlank(subject.email), label: 'Email', kind: 'plain' },
     },
     save: saveAccount(tenant, subject.id),
   });

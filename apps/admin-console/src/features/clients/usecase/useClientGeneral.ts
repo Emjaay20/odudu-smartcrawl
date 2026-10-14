@@ -25,6 +25,7 @@ import { useToast } from '#/shared/repository/useToasts';
 import { useConfirmedRemoval, type Removal } from '#/shared/usecase/useConfirmedChange';
 import { deletedText, writeFailureText } from '#/shared/service/failure';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
+import { orBlank } from '#/shared/service/format';
 
 export type { SectionSave };
 
@@ -76,7 +77,7 @@ export function useClientGeneral({ tenant, client, etag, gone }: ClientRecordRea
     label: SECTION.details,
     fields: {
       name: { value: client.name, label: FIELD.name, kind: 'plain' },
-      description: { value: client.description ?? '', label: FIELD.description, kind: 'plain' },
+      description: { value: orBlank(client.description), label: FIELD.description, kind: 'plain' },
     },
     save: saves.details,
   });
@@ -85,9 +86,9 @@ export function useClientGeneral({ tenant, client, etag, gone }: ClientRecordRea
     section: 'pages',
     label: SECTION.pages,
     fields: {
-      client_uri: { value: client.client_uri ?? '', label: FIELD.homePage, kind: 'plain' },
-      policy_uri: { value: client.policy_uri ?? '', label: FIELD.privacyPolicy, kind: 'plain' },
-      tos_uri: { value: client.tos_uri ?? '', label: FIELD.termsOfService, kind: 'plain' },
+      client_uri: { value: orBlank(client.client_uri), label: FIELD.homePage, kind: 'plain' },
+      policy_uri: { value: orBlank(client.policy_uri), label: FIELD.privacyPolicy, kind: 'plain' },
+      tos_uri: { value: orBlank(client.tos_uri), label: FIELD.termsOfService, kind: 'plain' },
     },
     save: saves.pages,
   });

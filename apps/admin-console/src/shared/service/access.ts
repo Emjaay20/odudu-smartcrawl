@@ -8,6 +8,10 @@ export function holds(authority: Authority | undefined, capability: AdminCapabil
   return authority?.capabilities.includes(capability) === true;
 }
 
+export function callerCapabilities(authority: Authority | undefined): readonly AdminCapability[] {
+  return authority?.capabilities ?? [];
+}
+
 // What a page's changes need that whoami says is missing; nothing until it
 // has answered, so a page does not flash a refusal it may not owe.
 export function lacking(

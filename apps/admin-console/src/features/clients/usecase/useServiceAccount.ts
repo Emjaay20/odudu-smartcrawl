@@ -23,7 +23,7 @@ import {
 import type { RecordState } from '#/shared/repository/useRecord';
 import { useRolePicker } from '#/shared/repository/useRolePicker';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
-import { lacking } from '#/shared/service/access';
+import { callerCapabilities, lacking } from '#/shared/service/access';
 import { writeRefusal } from '#/shared/service/capabilities';
 import { knownAssignments, roleNameOf, type AssignedRole } from '#/shared/service/mappedRoles';
 import { describeIds } from '#/shared/service/format';
@@ -80,7 +80,7 @@ export function useServiceRoles({
   const reread = useRereadClient(tenant, client.id);
   const picker = useRolePicker(tenant);
   const saveRoles = useSaveServiceRoles(tenant, client.id, subjectId);
-  const caller = authority?.capabilities ?? [];
+  const caller = callerCapabilities(authority);
   const needs = lacking(authority, [SERVICE_CAPABILITY]);
   const split = splitAssigned(data.items);
   const known = knownAssignments(data.items, picker.options);

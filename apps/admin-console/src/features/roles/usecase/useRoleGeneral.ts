@@ -24,6 +24,7 @@ import { asksFirst, judgedLoss, writeRefusal } from '#/shared/service/capabiliti
 import { deletedText } from '#/shared/service/failure';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
 import type { DefaultValues, DescriptionValues } from '#/shared/service/sectionValues';
+import { orBlank } from '#/shared/service/format';
 
 export type { SectionSave };
 
@@ -83,7 +84,7 @@ export function useRoleGeneral({
     refusal,
     explain: writeRefusal,
     fields: {
-      description: { value: role.description ?? '', label: 'Description', kind: 'plain' },
+      description: { value: orBlank(role.description), label: 'Description', kind: 'plain' },
     },
     save: saves.description,
   });

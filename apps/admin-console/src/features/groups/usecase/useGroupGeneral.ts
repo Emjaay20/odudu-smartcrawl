@@ -38,10 +38,11 @@ import { useToast } from '#/shared/repository/useToasts';
 import { useConfirmedRemoval, type Removal } from '#/shared/usecase/useConfirmedChange';
 import { asksFirst, writeRefusal } from '#/shared/service/capabilities';
 import { writeFailureText } from '#/shared/service/failure';
-import type { PickerState } from '#/shared/service/picker';
+import { firstChosen, type PickerState } from '#/shared/service/picker';
 import type { GatewayResult } from '#/shared/transport/gateway';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
 import type { DefaultValues, DescriptionValues } from '#/shared/service/sectionValues';
+import { orBlank } from '#/shared/service/format';
 
 export type { SectionSave };
 
@@ -126,7 +127,7 @@ export function useGroupGeneral({
     refusal,
     explain: writeRefusal,
     fields: {
-      description: { value: group.description ?? '', label: 'Description', kind: 'plain' },
+      description: { value: orBlank(group.description), label: 'Description', kind: 'plain' },
     },
     save: saves.description,
   });
@@ -227,7 +228,7 @@ export function useGroupGeneral({
       picker,
       unavailableOf: (candidate) => parentUnavailable(group, candidate, caller),
       choose: (ids) => {
-        parent.edit('parent_id', ids[0] ?? null);
+        parent.edit('parent_id', firstChosen(ids));
       },
       asking,
       confirm: () => {

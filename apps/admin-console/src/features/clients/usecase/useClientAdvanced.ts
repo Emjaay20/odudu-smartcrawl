@@ -30,6 +30,7 @@ import {
 } from '#/features/clients/usecase/useClientSection';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import type { Choice } from '#/shared/service/choice';
+import { orBlank } from '#/shared/service/format';
 
 export interface ClientAdvanced {
   auth: SectionSave<AuthValues>;
@@ -65,7 +66,7 @@ export function useClientAdvanced(args: ClientRecordRead): ClientAdvanced {
         kind: 'plain',
       },
       tls_client_auth_subject_dn: {
-        value: client.tls_client_auth_subject_dn ?? '',
+        value: orBlank(client.tls_client_auth_subject_dn),
         label: 'Certificate subject',
         kind: 'plain',
       },
@@ -78,7 +79,7 @@ export function useClientAdvanced(args: ClientRecordRead): ClientAdvanced {
     label: SECTIONS_ADVANCED.keys,
     fields: {
       key_source: { value: keySourceOf(client), label: 'Key source', kind: 'plain' },
-      jwks_uri: { value: client.jwks_uri ?? '', label: 'JWKS URI', kind: 'plain' },
+      jwks_uri: { value: orBlank(client.jwks_uri), label: 'JWKS URI', kind: 'plain' },
       jwks: { value: jwksText(client.jwks), label: 'Key set', kind: 'plain' },
     },
     save: saves.keys,

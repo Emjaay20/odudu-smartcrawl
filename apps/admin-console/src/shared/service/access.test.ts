@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { notLacking, blockedChanges, holds, lacking, readable } from '#/shared/service/access';
+import {
+  blockedChanges,
+  callerCapabilities,
+  holds,
+  lacking,
+  notLacking,
+  readable,
+} from '#/shared/service/access';
 
 const VIEWER = { capabilities: ['view-users'] as const, crossTenant: false };
 
@@ -64,5 +71,12 @@ describe('notLacking', () => {
     expect(notLacking(VIEWER, ['view-users'])).toBe(true);
     expect(notLacking(VIEWER, ['view-users', 'manage-users'])).toBe(false);
     expect(notLacking(undefined, ['view-users'])).toBe(true);
+  });
+});
+
+describe('callerCapabilities', () => {
+  it('lists what whoami says is held, and nothing until it has answered', () => {
+    expect(callerCapabilities(VIEWER)).toEqual(['view-users']);
+    expect(callerCapabilities(undefined)).toEqual([]);
   });
 });

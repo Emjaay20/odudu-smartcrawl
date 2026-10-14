@@ -31,7 +31,7 @@ import { useToast } from '#/shared/repository/useToasts';
 import { judgedLoss, roleReachUnavailable, type Loss } from '#/shared/service/capabilities';
 import { describeId } from '#/shared/service/format';
 import { roleNameOf } from '#/shared/service/mappedRoles';
-import type { PickerState } from '#/shared/service/picker';
+import { firstChosen, type PickerState } from '#/shared/service/picker';
 
 export function useCompositesRead(
   tenant: string,
@@ -157,7 +157,7 @@ export function useRoleComposites({
     picker,
     unavailableOf: (candidate) => childUnavailable(role, candidate, data.items, caller, tenant),
     choose: (ids) => {
-      add.edit('child_role_id', ids[0] ?? null);
+      add.edit('child_role_id', firstChosen(ids));
     },
     removing,
     message,

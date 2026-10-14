@@ -17,7 +17,7 @@ import { useToast } from '#/shared/repository/useToasts';
 import { useUrlSearch } from '#/shared/repository/useUrlSearch';
 import { problemAt, requiredProblem } from '#/shared/service/fieldErrors';
 import { createdText, lookupText } from '#/shared/service/failure';
-import type { PickerState } from '#/shared/service/picker';
+import { firstChosen, type PickerState } from '#/shared/service/picker';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
 import { useCreationFlow } from '#/shared/usecase/useCreationFlow';
 
@@ -100,7 +100,7 @@ export function useNewGroup(tenant: string): NewGroup {
       flow.edited('description');
     },
     chooseParent: (ids) => {
-      setParentId(ids[0] ?? null);
+      setParentId(firstChosen(ids));
       flow.edited('parent_id');
     },
     submit: () => {

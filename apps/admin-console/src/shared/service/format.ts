@@ -79,6 +79,11 @@ export function counted(count: number, one: string, other: string): string {
   return `${String(count)} ${plural(count, one, other)}`;
 }
 
+// A text a record may not hold, as a field's value.
+export function orBlank(value: string | null | undefined): string {
+  return value ?? '';
+}
+
 export function flagText(value: unknown, on: string, off: string): string {
   return value === true ? on : off;
 }

@@ -13,6 +13,11 @@ export interface PickerState<T> {
   retry: () => void;
 }
 
+// A picker used to choose one, whose first id is the choice.
+export function firstChosen(ids: readonly string[]): string | null {
+  return ids[0] ?? null;
+}
+
 // A multiple-choice picker used to choose one reports every id it holds; the one chosen last is the choice.
 export function lastChosen(ids: readonly string[]): string | null {
   return ids.at(-1) ?? null;

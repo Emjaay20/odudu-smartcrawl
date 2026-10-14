@@ -37,6 +37,7 @@ import { DESCRIPTION_RULE } from '#/shared/service/labels';
 import type { DescriptionValues } from '#/shared/service/sectionValues';
 import type { Choice } from '#/shared/service/choice';
 import type { AdminCapability } from '#/shared/service/principal';
+import { orBlank } from '#/shared/service/format';
 
 const MANAGE: AdminCapability = 'manage-tenant';
 
@@ -101,7 +102,7 @@ export function useScopeGeneral({
     section: 'description',
     label: 'Description',
     fields: {
-      description: { value: scope.description ?? '', label: 'Description', kind: 'plain' },
+      description: { value: orBlank(scope.description), label: 'Description', kind: 'plain' },
     },
     save: saves.general,
   });
@@ -142,7 +143,7 @@ export function useScopeGeneral({
     section: 'consent',
     label: 'Consent',
     fields: {
-      consent_text: { value: scope.consent_text ?? '', label: 'Consent text', kind: 'plain' },
+      consent_text: { value: orBlank(scope.consent_text), label: 'Consent text', kind: 'plain' },
       display_order: {
         value: String(scope.display_order),
         label: 'Display order',
