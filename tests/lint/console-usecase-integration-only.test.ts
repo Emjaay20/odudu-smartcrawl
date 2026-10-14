@@ -8,9 +8,9 @@ import { describe, expect, it } from 'vitest';
 // every rule, message, failure-to-copy mapping and formatter is a pure
 // service function. These are the shapes logic takes in a hook that can be
 // found without judgement; guards and `result.ok` choices are orchestration.
-//
-// Every feature's usecase and repository files are held to it, and so is
-// shared. There is no allowlist of exceptions and no waiver.
+// A hook's returned object holds no ternary (`conditional`) and its body
+// merges no two objects (`spread`); a handler or callback may do both, as
+// building a request is the orchestration itself. No allowlist, no waiver.
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..');
 const SRC = 'apps/admin-console/src';
@@ -138,6 +138,7 @@ export function violations(fileName: string, source: string, layer: Layer): stri
     ts.forEachChild(node, visit);
   };
   visit(file);
+  hookDecisions(file, report);
   if (layer === 'usecase') {
     for (const statement of file.statements) {
       if (
@@ -164,6 +165,93 @@ export function violations(fileName: string, source: string, layer: Layer): stri
     }
   }
   return found;
+}
+
+function unwrapped(node: ts.Expression): ts.Expression {
+  let at = node;
+  while (
+    ts.isParenthesizedExpression(at) ||
+    ts.isAsExpression(at) ||
+    ts.isSatisfiesExpression(at)
+  ) {
+    at = at.expression;
+  }
+  return at;
+}
+
+function hookBodies(file: ts.SourceFile): ts.Node[] {
+  const bodies: ts.Node[] = [];
+  for (const statement of file.statements) {
+    if (ts.isFunctionDeclaration(statement) && statement.name && isHook(statement.name.text)) {
+      if (statement.body !== undefined) bodies.push(statement.body);
+    }
+    if (ts.isVariableStatement(statement)) {
+      for (const declaration of statement.declarationList.declarations) {
+        const init = declaration.initializer;
+        if (
+          ts.isIdentifier(declaration.name) &&
+          isHook(declaration.name.text) &&
+          init !== undefined &&
+          (ts.isArrowFunction(init) || ts.isFunctionExpression(init))
+        ) {
+          bodies.push(init.body);
+        }
+      }
+    }
+  }
+  return bodies;
+}
+
+// What a hook does itself, not inside a handler or callback it creates.
+function shallow(node: ts.Node, visit: (inner: ts.Node) => void): void {
+  ts.forEachChild(node, (child) => {
+    if (ts.isFunctionLike(child)) return;
+    visit(child);
+    shallow(child, visit);
+  });
+}
+
+// The object literals a hook returns, and the literals nested in their values.
+function returnedObjects(body: ts.Node): ts.ObjectLiteralExpression[] {
+  const found: ts.ObjectLiteralExpression[] = [];
+  const collect = (expression: ts.Expression): void => {
+    const value = unwrapped(expression);
+    if (!ts.isObjectLiteralExpression(value)) return;
+    found.push(value);
+    for (const property of value.properties) {
+      if (ts.isPropertyAssignment(property)) collect(property.initializer);
+    }
+  };
+  if (ts.isExpression(body)) collect(body);
+  const visit = (inner: ts.Node): void => {
+    if (ts.isReturnStatement(inner) && inner.expression !== undefined) collect(inner.expression);
+  };
+  visit(body);
+  shallow(body, visit);
+  return found;
+}
+
+function hookDecisions(file: ts.SourceFile, report: (node: ts.Node, rule: string) => void): void {
+  for (const body of hookBodies(file)) {
+    for (const object of returnedObjects(body)) {
+      for (const property of object.properties) {
+        if (ts.isPropertyAssignment(property)) {
+          const value = unwrapped(property.initializer);
+          if (ts.isConditionalExpression(value)) report(value, 'conditional');
+        }
+      }
+    }
+    const merges = (inner: ts.Node): void => {
+      if (
+        ts.isObjectLiteralExpression(inner) &&
+        inner.properties.filter((property) => ts.isSpreadAssignment(property)).length >= 2
+      ) {
+        report(inner, 'spread');
+      }
+    };
+    merges(body);
+    shallow(body, merges);
+  }
 }
 
 function layerOf(file: string): Layer | null {
@@ -230,7 +318,7 @@ describe('the console usecases and repositories', { timeout: 60_000 }, () => {
 
   it('fail every non-conforming fixture, for the rule it is named after', async () => {
     const files = await read(`${FIXTURES}/fail/*/*.ts`);
-    expect(files.size).toBeGreaterThanOrEqual(6);
+    expect(files.size).toBeGreaterThanOrEqual(8);
     for (const [file, source] of files) {
       const layer = layerOf(file);
       expect(layer, file).not.toBeNull();
