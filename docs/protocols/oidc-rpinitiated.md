@@ -140,10 +140,11 @@ named. Everything else is judged as before: a signature by one of the
 tenant's publishable keys, `iss`, `typ` absent, `sub` present, and `exp`
 **present** (OIDC Core §2 makes it required, so a token with none is not an
 ID Token). `aud` is compared against `client_id` in `handleLogoutRequest`
-as it always was. The option is a named symbol, not a flag: `/authorize`,
-the token-exchange subject check and every other `verifyJwt` caller omit it
-and still refuse a lapsed token (`OIDC-RPINITIATED-2-05` pins `/authorize`
-doing so).
+as it always was. The option is a named symbol, not a flag. Only this door
+and `/authorize` (`docs/protocols/oidc-core.md`, where the hint merely
+constrains the login) name it; the token-exchange subject check and every
+other `verifyJwt` caller omit it and still refuse a lapsed token
+(`token-exchange.int.test.ts` pins token exchange doing so).
 
 **No age cap, because the session is the bound.** A lapsed hint ends
 something only when its `sid` equals a session in this browser's own
@@ -154,8 +155,15 @@ names and no longer: once that session ends, the same hint falls to the
 confirmation page, however recently it expired. A cap would shorten a
 session's own life for one door only, and every number it could take is
 arbitrary against tenants that configure those lifetimes themselves.
-Holding a lapsed hint grants nothing a live unexpired one would not: it
-names a session, and the cookie has to be the browser's own.
+What it does widen is the exposure window of a leaked ID token. The hint
+travels in a query string, so it can reach logs and history; before, a copy
+was good for a logout for the token's lifetime (five minutes by default),
+and now it is good for as long as the session it names is live. That is
+acceptable because the only effect is ending that one session: a request
+whose `sid` matches no live session of the presenting browser still gets
+the confirmation page, a redirect still needs an exact registered match, and
+the same token cannot be exchanged, introspected or used as a bearer
+credential.
 
 What a lapsed hint still cannot do, each case a test: carry a forged
 signature, another issuer or another tenant's key, a `typ` header, an
@@ -163,8 +171,15 @@ signature, another issuer or another tenant's key, a `typ` header, an
 name a session the browser does not hold or that already ended; or arrive
 with no session cookie. Each is treated as no hint and asks. A hint signed
 by a **retired** key is among them: `listPublishableKeys` omits retired keys,
-so the `kid` resolves to nothing, exactly as a lapsed hint from a key that
-has since been rotated out of publication should.
+so the `kid` resolves to nothing and the request falls to the confirmation
+page. Rotation alone does not do this: `promote` leaves the previous key
+`rotating`, which is still published and still verifies. Only an operator's
+explicit `key.retire` (`packages/protocol-admin/src/usecase/keys.ts`) makes
+a key unpublished, and nothing retires one automatically (`not_after` is not
+consulted). So the page reappears only for a session whose sign-in was signed
+by a key retired since, which for the console means one long console session
+spanning an operator's retirement; its sign-out then asks once, and the
+console's next sign-in carries a hint from the active key.
 
 A request whose `sid` names no live session of the browser is answered
 with the confirmation page rather than declined outright: §2's "MAY

@@ -87,10 +87,11 @@ and not `jose`'s:
 
 ## Reading note
 
-`JOSE-4.1-03` holds for every caller of `verifyJwt` but one that names
-`expiry: EXPIRY_NOT_ENFORCED`: the logout endpoint's `id_token_hint`, where
-RP-Initiated Logout 1.0 §2 asks the OP to accept an ID Token "even when the
-`exp` time has passed" (`docs/protocols/oidc-rpinitiated.md`). jose has no
+`JOSE-4.1-03` holds for every caller of `verifyJwt` but two that name
+`expiry: EXPIRY_NOT_ENFORCED`: the logout endpoint's and `/authorize`'s
+`id_token_hint`, where RP-Initiated Logout 1.0 §2 and OIDC Core §3.1.2.2 ask
+the OP to accept an ID Token "even when the `exp` time has passed"
+(`docs/protocols/oidc-rpinitiated.md`, `docs/protocols/oidc-core.md`). jose has no
 option that drops only the `exp` check, so the option reads the clock as
 the epoch; `exp` stays required, and `iss`, `aud`, `typ`, the algorithm and
 the signature are still checked. A token carrying `nbf` is refused under it.

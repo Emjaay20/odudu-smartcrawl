@@ -247,16 +247,23 @@ login the request itself said it did not want. The authentication session
 is deliberately left unconsumed, so the end-user the hint names can still
 sign in against the same parked request.
 
-**Two `id_token_hint` rows stay `gap`.** §3.1.2.2's SHOULD to accept a hint
-past its `exp` is not implemented at `/authorize`: `verifyJwt` enforces `exp`
-for every token this server reads except the logout endpoint's, which names
-`EXPIRY_NOT_ENFORCED` because RP-Initiated Logout §2 asks for it and the
-hint's `sid` must name a live session of the browser
-(`docs/protocols/oidc-rpinitiated.md`). `/authorize` keeps refusing a lapsed
-hint: it reads one to narrow which account may sign in, a different use from
-logout's, and accepting one there is a separate decision. §3.1.2.1's
+**One `id_token_hint` row stays declined.** §3.1.2.1's
 MAY to answer `invalid_request` when `prompt=none` arrives without a hint is
 declined on purpose — `login_required` describes what actually happened.
+
+**A hint past its `exp` is accepted at `/authorize`, as a constraint only.**
+§3.1.2.2's SHOULD is met by `subjectOfAuthorizeHint`
+(`packages/protocol-oidc/src/usecase/authorization-request.ts`), which reads
+the hint with `verifyJwt`'s `expiry: EXPIRY_NOT_ENFORCED` and `aud` pinned to
+the requesting client. A hint here only filters the candidate sessions and
+forces the login to be its subject; it authenticates nobody, so a lapsed one
+adds nothing a live one could not. With a live session of another subject,
+`prompt=none` is still `login_required` and no other user's token is issued
+(§3.1.2.2's MUST NOT); with no session it is `login_required` as before; a
+lapsed hint with another audience or issuer, a forged signature, a `typ`
+header or no `exp` is `invalid_request`. Token exchange keeps
+`subjectOfIdTokenHint`, strict about `exp`, because there a hint becomes a
+credential (`OIDC-CORE-3.1.2.2-08`; token exchange is held to it in `token-exchange.int.test.ts`).
 
 **An access token is not an ID Token, and is refused as a hint.** §3.1.2.1
 says the parameter carries an ID Token previously issued by this OP, so a
@@ -988,7 +995,7 @@ Odudu never uses one, so nothing in `acrFor`'s output can violate it.
 | 3.1.2.2 | MUST   | when `sub` is requested with a specific value, a positive response is sent only if the identified end-user has an active session or was authenticated as a result of this request                                                                                                              | `OIDC-CORE-3.1.2.2-07` | covered                                                                                                                                                                                                                                                                                                                               |
 | 3.1.2.2 | MUST   | the authorization server does not reply with an ID Token or Access Token for a different user, even if that user has an active session                                                                                                                                                         | `OIDC-CORE-3.1.2.2-05` | covered                                                                                                                                                                                                                                                                                                                               |
 | 3.1.2.2 | MUST   | when `id_token_hint` is present, the OP validates that it was itself the issuer of that ID Token                                                                                                                                                                                               | `OIDC-CORE-3.1.2.2-01` | covered                                                                                                                                                                                                                                                                                                                               |
-| 3.1.2.2 | SHOULD | the OP accepts an `id_token_hint` when the identified RP has a current or recent session, even past its `exp`                                                                                                                                                                                  | —                      | gap                                                                                                                                                                                                                                                                                                                                   |
+| 3.1.2.2 | SHOULD | the OP accepts an `id_token_hint` when the identified RP has a current or recent session, even past its `exp`                                                                                                                                                                                  | `OIDC-CORE-3.1.2.2-08` | covered                                                                                                                                                                                                                                                                                                                               |
 | 3.1.2.2 | SHOULD | unrecognized request parameters are ignored                                                                                                                                                                                                                                                    | `OIDC-CORE-3.1.2.2-06` | covered                                                                                                                                                                                                                                                                                                                               |
 | 3.1.2.2 | MUST   | any error encountered results in an error response per §3.1.2.6                                                                                                                                                                                                                                | `OIDC-CORE-3.1.2.2-04` | covered                                                                                                                                                                                                                                                                                                                               |
 | 3.1.2.3 | MUST   | the end-user is authenticated when not already authenticated                                                                                                                                                                                                                                   | `OIDC-CORE-3.1.2.3-04` | covered                                                                                                                                                                                                                                                                                                                               |
