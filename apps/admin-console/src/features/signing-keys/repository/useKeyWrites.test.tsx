@@ -8,6 +8,7 @@ import {
 } from '#/features/signing-keys/repository/useKeyWrites';
 import { json, problem } from '#/testing/fakeTransport';
 import { hookHarness as harness, rejectingTransport } from '#/testing/hookHarness';
+import { settledWriteContract } from '#/testing/settledWriteContract';
 import { KEYS, READY_KEY } from '#/testing/keysFixtures';
 
 it('stages a key of the algorithm chosen and reads the lanes and the overview again', async () => {
@@ -50,17 +51,13 @@ it('promotes and retires by id with no body and no If-Match', async () => {
   expect(sent.every((s) => s.ifMatch === null && s.body === undefined)).toBe(true);
 });
 
-it('reads the lanes again whatever the answer, a refusal included', async () => {
-  const { wrapper, invalidated } = harness({
-    [`DELETE ${KEYS}/k1`]: problem(409, 'about:blank#key-not-retired', 'Conflict'),
-  });
-  const { result } = renderHook(() => useDeleteKey('acme'), { wrapper });
-  let answer: Awaited<ReturnType<typeof result.current.run>> | undefined;
-  await act(async () => {
-    answer = await result.current.run('k1');
-  });
-  expect(answer?.ok).toBe(false);
-  expect(invalidated).toHaveBeenCalledWith({ queryKey: ['list', 'acme', 'keys'] });
+settledWriteContract({
+  noun: 'delete',
+  useWrite: useDeleteKey,
+  id: 'k1',
+  request: `DELETE ${KEYS}/k1`,
+  refusal: problem(409, 'about:blank#key-not-retired', 'Conflict'),
+  listKey: ['list', 'acme', 'keys'],
 });
 
 it('answers a write whose send threw as a defect and lets the next press through', async () => {

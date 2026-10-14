@@ -5,7 +5,8 @@ import {
   useTokenRevoke,
 } from '#/features/registration-tokens/repository/useTokenWrites';
 import { json, problem } from '#/testing/fakeTransport';
-import { hookHarness as harness, rejectingTransport } from '#/testing/hookHarness';
+import { hookHarness as harness } from '#/testing/hookHarness';
+import { settledWriteContract } from '#/testing/settledWriteContract';
 import { MINTED, MINTED_SECRET, RT } from '#/testing/tokensFixtures';
 
 const told = () => ({ minted: vi.fn(), failed: vi.fn() });
@@ -68,24 +69,11 @@ it('sends a mint once for one press, however often it is pressed', async () => {
   expect(sent.filter((s) => s.method === 'POST')).toHaveLength(1);
 });
 
-it('reads the list again after a revoke, also when the token was already gone', async () => {
-  const { wrapper, invalidated } = harness({
-    [`DELETE ${RT}/t-1`]: problem(404, 'about:blank', 'Not Found'),
-  });
-  const { result } = renderHook(() => useTokenRevoke('acme'), { wrapper });
-  let answer: Awaited<ReturnType<typeof result.current.run>> | undefined;
-  await act(async () => {
-    answer = await result.current.run('t-1');
-  });
-  expect(answer?.ok).toBe(false);
-  expect(invalidated).toHaveBeenCalledWith({ queryKey: ['list', 'acme', 'registration-tokens'] });
-});
-
-it('answers a revoke whose send threw as a defect and still reads the list again', async () => {
-  const { wrapper, invalidated } = harness({}, rejectingTransport());
-  const { result } = renderHook(() => useTokenRevoke('acme'), { wrapper });
-  await act(async () => {
-    expect(await result.current.run('t-1')).toEqual({ ok: false, kind: 'defect' });
-  });
-  expect(invalidated).toHaveBeenCalledWith({ queryKey: ['list', 'acme', 'registration-tokens'] });
+settledWriteContract({
+  noun: 'revoke',
+  useWrite: useTokenRevoke,
+  id: 't-1',
+  request: `DELETE ${RT}/t-1`,
+  refusal: problem(404, 'about:blank', 'Not Found'),
+  listKey: ['list', 'acme', 'registration-tokens'],
 });
