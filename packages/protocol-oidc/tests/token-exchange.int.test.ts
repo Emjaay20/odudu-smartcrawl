@@ -609,6 +609,32 @@ describe('[ODUDU-TOKEN-EXCHANGE-SUBJECT-03] an id_token as subject_token', () =>
     expect(outcome).toEqual({ kind: 'refused' });
   });
 
+  // /authorize reads a lapsed hint as a constraint; an exchange turns an ID
+  // token into a credential, so an expired one is refused even while the
+  // session it names is live.
+  it('refuses an id_token past its exp, though its session is live', async () => {
+    const { idToken } = await loginAndGetToken();
+    const payload: unknown = JSON.parse(
+      Buffer.from(idToken.split('.')[1] ?? '', 'base64url').toString('utf8'),
+    );
+    if (typeof payload !== 'object' || payload === null) throw new Error('unreadable id_token');
+    const key = await withTenant(app.db, TENANT_ID, (tx) => signingKeyRepository(tx).active());
+    const lapsed = await signJwt(
+      { ...payload, exp: Math.floor(Date.now() / 1000) - 3600 },
+      { key, kek: KEK },
+    );
+
+    const outcome = await withTenant(app.db, TENANT_ID, (tx) =>
+      resolveExchangeToken(
+        tx,
+        { ...resolveDeps, requestingClientId: CLIENT_ID },
+        'id_token',
+        lapsed,
+      ),
+    );
+    expect(outcome).toEqual({ kind: 'refused' });
+  });
+
   it('refuses an id_token whose subject has been disabled', async () => {
     const { tenantId, tokens, deps } = await disabledSubjectTokens();
     const outcome = await withTenant(app.db, tenantId, (tx) =>

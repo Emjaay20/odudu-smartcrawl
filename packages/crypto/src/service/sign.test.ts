@@ -398,6 +398,15 @@ describe('EXPIRY_NOT_ENFORCED reads a token whose exp has passed', () => {
     await expect(verifyLapsed(token, key)).rejects.toThrow(/typ/i);
   });
 
+  it('refuses a token carrying nbf, which the epoch clock would place in the future', async () => {
+    const key = await makeKey('ES256');
+    const token = await signJwt(
+      { sub: 'u', iss: ISS, nbf: nowSeconds() - years - 60, exp: nowSeconds() - years },
+      { key, kek: KEK },
+    );
+    await expect(verifyLapsed(token, key)).rejects.toThrow(/nbf/i);
+  });
+
   it('still refuses alg none', async () => {
     const key = await makeKey('ES256');
     await expect(

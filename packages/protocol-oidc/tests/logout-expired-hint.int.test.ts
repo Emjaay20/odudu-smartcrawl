@@ -585,33 +585,3 @@ describe('a hint past its exp is no hint when anything else about it is wrong', 
     expect(await sessionIsLive(tenantId, sid)).toBe(true);
   });
 });
-
-describe('only the logout door reads a lapsed hint', () => {
-  it('/authorize still refuses an id_token_hint past its exp', async () => {
-    const tenantName = `logout-lapsed-authorize-${newId()}`;
-    const { tenantId } = await setupTenant(tenantName);
-    const cookie = await signIn(tenantName);
-    const hint = await mintHint(tenantName, await subjectIdOf(tenantId, USERNAME), {
-      sid: sessionIdFromCookie(cookie),
-      expiredFor: AN_HOUR,
-    });
-
-    const lapsedRes = await http.inject({
-      url: `${authorizeUrl(tenantName)}&id_token_hint=${hint}`,
-      headers: { cookie },
-    });
-    const liveHint = await mintHint(tenantName, await subjectIdOf(tenantId, USERNAME), {
-      sid: sessionIdFromCookie(cookie),
-    });
-    const liveRes = await http.inject({
-      url: `${authorizeUrl(tenantName)}&id_token_hint=${liveHint}`,
-      headers: { cookie },
-    });
-
-    expect(liveRes.statusCode).toBe(302);
-    expect(String(liveRes.headers.location)).toContain('code=');
-    const refusal = new URL(String(lapsedRes.headers.location));
-    expect(refusal.searchParams.get('error')).toBe('invalid_request');
-    expect(refusal.searchParams.get('code')).toBeNull();
-  });
-});
