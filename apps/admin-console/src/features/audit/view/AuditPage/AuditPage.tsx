@@ -1,5 +1,6 @@
 import { AreaGate, areaAt } from '#/features/shell';
 import {
+  EXPORT_NOTE,
   NO_COUNT,
   NOTHING_MATCHES,
   NOTHING_YET,
@@ -15,6 +16,7 @@ import { Button } from '#/shared/view/Button';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { ListGate } from '#/shared/view/ListGate';
 import { LoadMoreFailed } from '#/shared/view/LoadMore';
+import { LiveMessage } from '#/shared/view/Message';
 import { Note } from '#/shared/view/Note';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { Pager } from '#/shared/view/Pager';
@@ -90,6 +92,15 @@ function Trail({ tenant }: { tenant: string }) {
         title={TITLE}
         kicker={tenant}
         description="Every change made in this tenant, and every one refused, with who made it and from where."
+        {...(refused
+          ? {}
+          : {
+              actions: (
+                <Button isDisabled={page.exporting.busy} onPress={page.exporting.start}>
+                  {page.exporting.busy ? 'Exporting…' : 'Export these events'}
+                </Button>
+              ),
+            })}
       />
       <div className={styles.page}>
         {refused ? null : <AuditFilters form={page.form} />}
@@ -102,7 +113,9 @@ function Trail({ tenant }: { tenant: string }) {
             {page.range === null ? null : ` ${page.range}`}
           </p>
           <p>{CORRELATION_NOTE}</p>
+          <p>{EXPORT_NOTE}</p>
         </div>
+        <LiveMessage label="Last export">{page.exporting.message}</LiveMessage>
         <Body page={page} />
       </div>
     </>

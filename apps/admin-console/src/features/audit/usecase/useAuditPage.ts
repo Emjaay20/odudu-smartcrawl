@@ -7,6 +7,7 @@ import { roleHref } from '#/features/roles';
 import { scopeHref } from '#/features/scopes';
 import { subjectHref } from '#/features/subjects';
 import { useAuditList, type AuditList } from '#/features/audit/repository/useAuditList';
+import { useExportEvents, type ExportEvents } from '#/features/audit/usecase/useExportEvents';
 import {
   actorHref,
   auditQuery,
@@ -52,6 +53,7 @@ export interface AuditPageState {
   list: AuditList;
   form: AuditFilterForm;
   hrefs: AuditHrefs;
+  exporting: ExportEvents;
   // Whether the address holds any filter the trail can read.
   narrowed: boolean;
   // How far back the rows loaded reach, since the trail has no count.
@@ -92,10 +94,12 @@ function useFilterForm(list: AuditList): AuditFilterForm {
 export function useAuditPage(tenant: string): AuditPageState {
   const list = useAuditList(tenant);
   const form = useFilterForm(list);
+  const exporting = useExportEvents(tenant, list.filters);
   const mayReadSubjects = holds(useAuthority(tenant), 'view-users');
   return {
     list,
     form,
+    exporting,
     hrefs: {
       resource: (event: AuditEvent) =>
         resourceHref(tenant, event.resource_type, event.resource_id, RECORD_PAGES),

@@ -1,14 +1,30 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { AUDIT, auditRoutes, CLIENT_ID, GRACE_ID, TRAIL } from '#/testing/auditFixtures';
 import { at } from '#/testing/at';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { json, offline, pending, problem } from '#/testing/fakeTransport';
+import { json, offline, pending, problem, type Answer } from '#/testing/fakeTransport';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { resetConsole } from '#/testing/resetConsole';
 
+const saved: string[] = [];
+
+beforeEach(() => {
+  saved.length = 0;
+  vi.stubGlobal(
+    'URL',
+    Object.assign(URL, { createObjectURL: () => 'blob:x', revokeObjectURL: () => undefined }),
+  );
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+    this: HTMLAnchorElement,
+  ) {
+    saved.push(this.download);
+  });
+});
+
 afterEach(() => {
+  vi.restoreAllMocks();
   resetConsole();
 });
 
@@ -317,4 +333,53 @@ it('passes axe in both themes: rows, empty, failed and refused', async () => {
       ),
     ).toEqual({ light: [], dark: [] });
   }
+});
+
+const NDJSON: Answer = () =>
+  new Response('{"id":"e3"}\n{"id":"e2"}\n', {
+    headers: { 'content-type': 'application/x-ndjson' },
+  });
+
+it('exports the events the applied filters match, as a file named for the day', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    `${AT}?outcome=refused`,
+    auditRoutes(undefined, { [`GET ${AUDIT}/export`]: NDJSON }),
+  );
+  await table();
+  await user.type(screen.getByRole('textbox', { name: 'Action' }), 'typed but not applied');
+  await user.click(screen.getByRole('button', { name: 'Export these events' }));
+  const today = new Date().toISOString().slice(0, 10);
+  expect(await screen.findByText(`Saved acme-audit-${today}.ndjson, 2 events.`)).toBeVisible();
+  expect(saved).toEqual([`acme-audit-${today}.ndjson`]);
+  const request = sent.find((each) => each.path === `${AUDIT}/export`);
+  expect(request?.search.toString()).toBe('outcome=refused');
+});
+
+it('says the filters match more than an export holds, and saves nothing', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(
+    AT,
+    auditRoutes(undefined, {
+      [`GET ${AUDIT}/export`]: problem(413, 'about:blank#export-too-large', 'Content Too Large'),
+    }),
+  );
+  await table();
+  await user.click(screen.getByRole('button', { name: 'Export these events' }));
+  expect(await screen.findByText(/Narrow the filters and export again/u)).toBeVisible();
+  expect(saved).toEqual([]);
+});
+
+it('names view-audit when the export is refused', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, auditRoutes(undefined, { [`GET ${AUDIT}/export`]: problem(403) }));
+  await table();
+  await user.click(screen.getByRole('button', { name: 'Export these events' }));
+  expect(await screen.findByText('Exporting the trail needs view-audit.')).toBeVisible();
+});
+
+it('offers no export where the trail is refused', async () => {
+  renderConsoleAt(AT, auditRoutes(undefined, { [`GET ${AUDIT}`]: problem(403) }));
+  expect(await screen.findByText(/view-audit/u)).toBeVisible();
+  expect(screen.queryByRole('button', { name: 'Export these events' })).toBeNull();
 });

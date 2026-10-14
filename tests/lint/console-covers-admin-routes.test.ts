@@ -31,13 +31,14 @@ const TODO: readonly string[] = [
   'DELETE /admin/tenants/:tenant/sessions',
   'DELETE /admin/tenants/:tenant/lockouts',
   'GET /admin/tenants/:tenant/mail',
-  'GET /admin/tenants/:tenant/audit/count',
-  'GET /admin/tenants/:tenant/audit/export',
   'DELETE /admin/tenants/:tenant',
 ];
 
 // Routes the console deliberately never calls, each with the reason.
-const NEVER: Readonly<Record<string, string>> = {};
+const NEVER: Readonly<Record<string, string>> = {
+  'GET /admin/tenants/:tenant/audit/count':
+    'The audit trail has no count, by design: over a trail that long a capped total would be an estimate the page cannot stand behind, so it says how far back the loaded rows reach instead.',
+};
 
 function template(pattern: string): string {
   return pattern.replace(/\/:[^/]+/gu, '/:');

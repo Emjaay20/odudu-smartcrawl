@@ -108,6 +108,10 @@ export function exportKey(tenant: string, includeSubjects: boolean) {
   return ['export', tenant, includeSubjects] as const;
 }
 
+export function auditExportKey(tenant: string, query: string) {
+  return ['audit-export', tenant, query] as const;
+}
+
 export function sessionKey() {
   return ['session'] as const;
 }

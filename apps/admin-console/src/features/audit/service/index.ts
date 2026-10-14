@@ -32,3 +32,10 @@ export {
   STALE_TITLE,
   TITLE,
 } from '#/features/audit/service/page';
+export {
+  auditFileName,
+  EXPORT_NOTE,
+  eventsIn,
+  exportFailureText,
+  savedText,
+} from '#/features/audit/service/export';

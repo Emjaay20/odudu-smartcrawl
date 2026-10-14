@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
 import {
   adminRolesKey,
+  auditExportKey,
   copyEtagKey,
   copyKey,
   countKey,
@@ -79,4 +80,13 @@ it('names a page of a list by its query and the cursor it starts from, none bein
   const key = listKey('acme', 'roles');
   expect(pageKey(key, new URLSearchParams('name=a'), 'c1')).toEqual([...key, 'name=a', 'c1']);
   expect(pageKey(key, new URLSearchParams('name=a'), undefined)).toEqual([...key, 'name=a', '']);
+});
+
+it('keeps one audit export per tenant and per set of filters', () => {
+  expect(auditExportKey('acme', 'outcome=refused')).toEqual([
+    'audit-export',
+    'acme',
+    'outcome=refused',
+  ]);
+  expect(auditExportKey('acme', '')).not.toEqual(auditExportKey('acme', 'action=x'));
 });
