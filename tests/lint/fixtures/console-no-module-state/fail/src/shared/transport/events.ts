@@ -7,3 +7,8 @@ export function createEvents() {
     },
   };
 }
+
+export default function createDefaultEvents() {
+  const listeners = new Set<() => void>();
+  return { on: (listener: () => void) => listeners.add(listener) };
+}
