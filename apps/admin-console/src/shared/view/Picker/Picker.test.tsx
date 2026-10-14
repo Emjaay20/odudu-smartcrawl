@@ -5,6 +5,7 @@ import type { PickerState } from '#/shared/service/picker';
 import pickerCss from '#/shared/view/Picker/Picker.module.css?raw';
 import { Picker } from '#/shared/view/Picker/Picker';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
+import { pickerState } from '#/testing/pickerState';
 
 interface Scope {
   id: string;
@@ -17,17 +18,7 @@ const SCOPES: readonly Scope[] = [
 ];
 
 function state(overrides: Partial<PickerState<Scope>> = {}): PickerState<Scope> {
-  return {
-    status: 'ready',
-    options: SCOPES,
-    query: '',
-    search: vi.fn(),
-    more: false,
-    loadingMore: false,
-    loadMore: vi.fn(),
-    retry: vi.fn(),
-    ...overrides,
-  };
+  return pickerState(SCOPES, overrides);
 }
 
 function scopes(picker: PickerState<Scope>, onChange = vi.fn(), selected: readonly string[] = []) {

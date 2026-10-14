@@ -2,9 +2,9 @@ import type { Role } from '@odudu/contracts/admin';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
-import type { PickerState } from '#/shared/service/picker';
 import { RolePicker } from '#/shared/view/RolePicker/RolePicker';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
+import { pickerState } from '#/testing/pickerState';
 
 function role(id: string, name: string, clientKey: string | null = null): Role {
   return {
@@ -22,22 +22,8 @@ function role(id: string, name: string, clientKey: string | null = null): Role {
 const ROLES = [role('r1', 'auditor'), role('r2', 'admin', 'billing-portal')];
 const DESCRIBED = { ...role('r3', 'reviewer'), description: 'Reads every invoice' };
 
-function picker<T>(options: readonly T[], overrides: Partial<PickerState<T>> = {}): PickerState<T> {
-  return {
-    status: 'ready',
-    options,
-    query: '',
-    search: vi.fn(),
-    more: false,
-    loadingMore: false,
-    loadMore: vi.fn(),
-    retry: vi.fn(),
-    ...overrides,
-  };
-}
-
 it("names each role's owner: the tenant, or the client it belongs to", () => {
-  render(<RolePicker label="Roles" picker={picker(ROLES)} selected={[]} onChange={vi.fn()} />);
+  render(<RolePicker label="Roles" picker={pickerState(ROLES)} selected={[]} onChange={vi.fn()} />);
   const list = screen.getByRole('listbox', { name: 'Roles' });
   const options = within(list).getAllByRole('option');
   expect(options.map((option) => option.textContent)).toEqual([
@@ -49,7 +35,7 @@ it("names each role's owner: the tenant, or the client it belongs to", () => {
 
 it("shows a role's description beside its owner", () => {
   render(
-    <RolePicker label="Roles" picker={picker([DESCRIBED])} selected={[]} onChange={vi.fn()} />,
+    <RolePicker label="Roles" picker={pickerState([DESCRIBED])} selected={[]} onChange={vi.fn()} />,
   );
   const option = within(screen.getByRole('listbox', { name: 'Roles' })).getByRole('option');
   expect(option).toHaveTextContent('reviewertenant role · Reads every invoice');
@@ -58,7 +44,9 @@ it("shows a role's description beside its owner", () => {
 it('adds to the selection and keeps what is selected but not on this page', async () => {
   const user = userEvent.setup();
   const onChange = vi.fn();
-  render(<RolePicker label="Roles" picker={picker(ROLES)} selected={['r9']} onChange={onChange} />);
+  render(
+    <RolePicker label="Roles" picker={pickerState(ROLES)} selected={['r9']} onChange={onChange} />,
+  );
   expect(screen.getByText('1 selected')).toBeVisible();
   await user.click(screen.getByRole('option', { name: /^auditor/u }));
   expect(onChange).toHaveBeenCalledWith(['r9', 'r1']);
@@ -70,7 +58,7 @@ it('picks one when asked for one', async () => {
   render(
     <RolePicker
       label="Composite role"
-      picker={picker(ROLES)}
+      picker={pickerState(ROLES)}
       selected={['r1']}
       onChange={onChange}
       selectionMode="single"
@@ -82,7 +70,7 @@ it('picks one when asked for one', async () => {
 
 it('searches on submit and loads further pages in place', async () => {
   const user = userEvent.setup();
-  const state = picker(ROLES, { more: true });
+  const state = pickerState(ROLES, { more: true });
   render(<RolePicker label="Roles" picker={state} selected={[]} onChange={vi.fn()} />);
   await user.type(screen.getByRole('searchbox', { name: 'Search roles by name' }), 'aud{Enter}');
   expect(state.search).toHaveBeenCalledWith('aud');
@@ -94,7 +82,7 @@ it('draws the next page as a small quiet button, busy while it loads', () => {
   const { rerender } = render(
     <RolePicker
       label="Roles"
-      picker={picker(ROLES, { more: true })}
+      picker={pickerState(ROLES, { more: true })}
       selected={[]}
       onChange={vi.fn()}
     />,
@@ -105,7 +93,7 @@ it('draws the next page as a small quiet button, busy while it loads', () => {
   rerender(
     <RolePicker
       label="Roles"
-      picker={picker(ROLES, { more: true, loadingMore: true })}
+      picker={pickerState(ROLES, { more: true, loadingMore: true })}
       selected={[]}
       onChange={vi.fn()}
     />,
@@ -117,7 +105,7 @@ it('says what it needs when the list is refused, and when nothing matches', () =
   const { rerender } = render(
     <RolePicker
       label="Roles"
-      picker={picker([], { status: 'refused' })}
+      picker={pickerState([], { status: 'refused' })}
       selected={[]}
       onChange={vi.fn()}
     />,
@@ -128,7 +116,7 @@ it('says what it needs when the list is refused, and when nothing matches', () =
   rerender(
     <RolePicker
       label="Roles"
-      picker={picker([], { query: 'zz' })}
+      picker={pickerState([], { query: 'zz' })}
       selected={[]}
       onChange={vi.fn()}
     />,
@@ -141,7 +129,7 @@ it('passes axe in both themes', async () => {
     await axeInBothThemes(() => (
       <RolePicker
         label="Roles"
-        picker={picker(ROLES, { more: true })}
+        picker={pickerState(ROLES, { more: true })}
         selected={['r2']}
         onChange={vi.fn()}
       />

@@ -4,6 +4,7 @@ import { expect, it, vi } from 'vitest';
 import type { PickerState } from '#/shared/service/picker';
 import { ClientPicker } from '#/shared/view/ClientPicker/ClientPicker';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
+import { pickerState } from '#/testing/pickerState';
 
 const CLIENTS = [
   { id: 'c1', name: 'Billing', client_id: 'billing', type: 'confidential' as const },
@@ -11,17 +12,7 @@ const CLIENTS = [
 ];
 
 function picker(overrides: Partial<PickerState<(typeof CLIENTS)[number]>> = {}) {
-  return {
-    status: 'ready' as const,
-    options: CLIENTS,
-    query: '',
-    search: vi.fn(),
-    more: false,
-    loadingMore: false,
-    loadMore: vi.fn(),
-    retry: vi.fn(),
-    ...overrides,
-  };
+  return pickerState(CLIENTS, overrides);
 }
 
 it('names each client and its client id, so two of one name are told apart', () => {
