@@ -29,15 +29,14 @@ export interface TenantStep {
   check: () => void;
 }
 
-// The step that creates the tenant, or null while the creation is at another.
+// The step that creates the tenant.
 export function useTenantStep(
-  creation: Creation,
+  creation: Extract<Creation, { step: 'tenant' }>,
   feedback: StepFeedback,
   update: (creation: Creation) => void,
   systemIssuer: string | undefined,
-): TenantStep | null {
+): TenantStep {
   const tenantCreate = useTenantCreate();
-  if (creation.step !== 'tenant') return null;
   const { name, displayName } = creation;
   const { errors, setErrors, setMessage, setUnconfirmed, setChecking, move, refused } = feedback;
   const created = (tenant: string): void => {

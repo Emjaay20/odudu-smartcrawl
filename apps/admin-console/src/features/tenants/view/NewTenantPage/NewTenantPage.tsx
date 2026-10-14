@@ -1,14 +1,16 @@
 import { VisuallyHidden } from 'react-aria-components';
-import {
-  useNewTenant,
-  type AdministratorStep,
-  type DoneStep,
-  type TenantStep,
-} from '#/features/tenants/usecase/useNewTenant';
+import { useNewTenant } from '#/features/tenants/usecase/useNewTenant';
+import { useAdministratorStep } from '#/features/tenants/usecase/useAdministratorStep';
+import { type StepFeedback } from '#/features/tenants/usecase/useStepFeedback';
+import { useTenantStep } from '#/features/tenants/usecase/useTenantStep';
 import {
   ADD_SYSTEM_ADMIN_TITLE,
   CREATE_TENANT_TITLE,
   creationHeading,
+  doneStepOf,
+  pageOf,
+  type Creation,
+  type DoneStep,
   firstAdministratorNote,
   originText,
   flowOf,
@@ -62,7 +64,15 @@ function Message({ text }: { text: string | null }) {
   );
 }
 
-function Tenant({ step }: { step: TenantStep }) {
+interface StepProps<S extends Creation['step']> {
+  creation: Extract<Creation, { step: S }>;
+  feedback: StepFeedback;
+  update: (creation: Creation) => void;
+  systemIssuer: string | undefined;
+}
+
+function Tenant({ creation, feedback, update, systemIssuer }: StepProps<'tenant'>) {
+  const step = useTenantStep(creation, feedback, update, systemIssuer);
   return (
     <CreationForm submit={step.submit}>
       <TextField
@@ -103,7 +113,8 @@ function Tenant({ step }: { step: TenantStep }) {
   );
 }
 
-function Administrator({ step }: { step: AdministratorStep }) {
+function Administrator({ creation, feedback, update, systemIssuer }: StepProps<'administrator'>) {
+  const step = useAdministratorStep(creation, feedback, update, systemIssuer);
   const note = firstAdministratorNote(step.origin, step.tenant);
   return (
     <>
@@ -227,15 +238,16 @@ function Done({ step, onStartOver }: { step: DoneStep; onStartOver: () => void }
 }
 
 function Creation({ flow }: { flow: CreationFlow }) {
-  const { current, startOver, replacing, replace, keep } = useNewTenant(flow);
-  const { at, title, breadcrumb } = creationHeading(flow, current);
+  const { creation, update, feedback, systemIssuer, startOver, replacing, replace, keep } =
+    useNewTenant(flow);
+  const { at, title, breadcrumb } = creationHeading(flow, pageOf(creation));
   return (
     <>
       <PageHeader
         breadcrumb={breadcrumb}
         title={title}
         description="Where it has got to is kept in this tab, so a reload carries on from the last request that landed."
-        {...(current.step === 'administrator'
+        {...(creation.step === 'administrator'
           ? {
               actions: (
                 <Button variant="quiet" onPress={startOver}>
@@ -246,9 +258,25 @@ function Creation({ flow }: { flow: CreationFlow }) {
           : {})}
       />
       {flow === 'tenant' ? <Steps at={at} /> : null}
-      {current.step === 'tenant' ? <Tenant step={current} /> : null}
-      {current.step === 'administrator' ? <Administrator step={current} /> : null}
-      {current.step === 'done' ? <Done step={current} onStartOver={startOver} /> : null}
+      {creation.step === 'tenant' ? (
+        <Tenant
+          creation={creation}
+          feedback={feedback}
+          update={update}
+          systemIssuer={systemIssuer}
+        />
+      ) : null}
+      {creation.step === 'administrator' ? (
+        <Administrator
+          creation={creation}
+          feedback={feedback}
+          update={update}
+          systemIssuer={systemIssuer}
+        />
+      ) : null}
+      {creation.step === 'done' ? (
+        <Done step={doneStepOf(creation, flow)} onStartOver={startOver} />
+      ) : null}
       <ReplaceUnfinished unfinished={replacing} onReplace={replace} onKeep={keep} />
     </>
   );

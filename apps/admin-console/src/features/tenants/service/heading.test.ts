@@ -6,6 +6,7 @@ import {
 } from '#/features/tenants/service/address';
 import {
   creationHeading,
+  pageOf,
   ADD_SYSTEM_ADMIN_TITLE,
   CREATE_TENANT_TITLE,
   firstAdministratorNote,
@@ -100,5 +101,28 @@ describe('the administrator step copy', () => {
   it('keeps the page titles in one place', () => {
     expect(CREATE_TENANT_TITLE).toBe('Create a tenant');
     expect(ADD_SYSTEM_ADMIN_TITLE).toBe('Add a system administrator');
+  });
+});
+
+describe('pageOf', () => {
+  it('reads the page off a creation: the tenant step bare, the others with their way back', () => {
+    expect(pageOf({ step: 'tenant', name: 'a', displayName: '' })).toEqual({ step: 'tenant' });
+    expect(
+      pageOf({
+        step: 'administrator',
+        tenant: 'system',
+        origin: 'existing',
+        username: '',
+        email: '',
+        subjectId: null,
+        granted: false,
+        holdings: [],
+      }),
+    ).toMatchObject({ step: 'administrator', tenant: 'system', origin: 'existing' });
+    expect(pageOf({ step: 'done', tenant: 'acme', username: 'g' })).toEqual({
+      step: 'done',
+      tenant: 'acme',
+      systemAdminsHref: null,
+    });
   });
 });

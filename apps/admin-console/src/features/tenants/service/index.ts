@@ -1,3 +1,4 @@
+export { doneStepOf, type DoneStep } from '#/features/tenants/service/done';
 export { type Tenant, nameProblem, issuerPreview } from '#/features/tenants/service/name';
 export {
   exportFileName,
@@ -86,6 +87,7 @@ export {
   firstAdministratorNote,
   type CreationPage,
   creationHeading,
+  pageOf,
 } from '#/features/tenants/service/heading';
 export { TENANT_TABS, type TenantTab, tenantRecord } from '#/features/tenants/service/tabs';
 export { type TenantRecordAccess, tenantRecordAccess } from '#/features/tenants/service/access';

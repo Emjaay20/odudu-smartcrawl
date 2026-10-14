@@ -51,18 +51,16 @@ export interface AdministratorStep {
   closeSecret: () => void;
 }
 
-// The step that makes the tenant's administrator, or null while the creation
-// is at another.
+// The step that makes the tenant's administrator.
 export function useAdministratorStep(
-  creation: Creation,
+  creation: Extract<Creation, { step: 'administrator' }>,
   feedback: StepFeedback,
   update: (creation: Creation) => void,
   systemIssuer: string | undefined,
-): AdministratorStep | null {
+): AdministratorStep {
   const authority = useAuthority(SYSTEM_TENANT);
   const administrator = useFirstAdministrator();
   const findSubject = useFindSubject();
-  if (creation.step !== 'administrator') return null;
   const step = creation;
   const { errors, setErrors, setMessage, setUnconfirmed, setChecking, move, refused } = feedback;
   const needs = lacking(authority, administratorNeeds(step.tenant, step));

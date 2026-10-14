@@ -1,7 +1,8 @@
 import type { Crumb } from '#/shared/service/breadcrumb';
-import { type CreationFlow } from '#/features/tenants/service/creation';
+import { type Creation, type CreationFlow } from '#/features/tenants/service/creation';
 import {
   administratorTitle,
+  systemAdminsHrefOf,
   systemAdminsTrail,
   tenantAdministratorTrail,
   tenantsTrail,
@@ -42,6 +43,14 @@ export type CreationPage =
       systemAdminsHref: string | null;
     }
   | { step: 'done'; tenant: string; systemAdminsHref: string | null };
+
+export function pageOf(creation: Creation): CreationPage {
+  if (creation.step === 'tenant') return { step: 'tenant' };
+  const systemAdminsHref = systemAdminsHrefOf(creation.tenant);
+  return creation.step === 'done'
+    ? { step: 'done', tenant: creation.tenant, systemAdminsHref }
+    : { step: 'administrator', tenant: creation.tenant, origin: creation.origin, systemAdminsHref };
+}
 
 // Where the page is among the steps, what it is called, and the way back.
 export function creationHeading(
