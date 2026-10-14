@@ -212,6 +212,26 @@ function watching(scope: ts.Node, first: string, object: ts.ObjectLiteralExpress
   return watched;
 }
 
+function isPattern(node: ts.Expression): boolean {
+  return ts.isArrayLiteralExpression(node) || ts.isObjectLiteralExpression(node);
+}
+
+// Whether a destructuring assignment writes into a member of a watched value.
+function targetsReach(pattern: ts.Node, reaches: (node: ts.Expression) => boolean): boolean {
+  let hit = false;
+  const visit = (node: ts.Node): void => {
+    if (
+      (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) &&
+      reaches(node)
+    ) {
+      hit = true;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(pattern);
+  return hit;
+}
+
 // The line of the first thing inside `scope` that changes a watched value.
 function mutationOf(tree: ts.SourceFile, scope: ts.Node, watched: Watched): number | null {
   let found: number | null = null;
@@ -267,7 +287,7 @@ function mutationOf(tree: ts.SourceFile, scope: ts.Node, watched: Watched): numb
       ts.isBinaryExpression(node) &&
       ASSIGNMENTS.has(node.operatorToken.kind) &&
       !ts.isIdentifier(node.left) &&
-      reaches(node.left)
+      (reaches(node.left) || (isPattern(node.left) && targetsReach(node.left, reaches)))
     ) {
       found = lineOf(tree, node);
     } else if (
@@ -882,14 +902,15 @@ describe('console source', { timeout: 60_000 }, () => {
       'src/shared/repository/registry.ts:4: top-level seen is mutated at line 12',
       'src/shared/repository/registry.ts:5: top-level options is mutated at line 13',
       'src/shared/repository/ticks.ts:1: top-level clock is mutated at line 4',
-      'src/shared/service/alias.ts:1: top-level seen is mutated at line 13',
-      'src/shared/service/alias.ts:3: top-level pending is mutated at line 14',
-      'src/shared/service/alias.ts:5: top-level names is mutated at line 15',
-      'src/shared/service/alias.ts:6: top-level typed is mutated at line 16',
-      'src/shared/service/alias.ts:7: top-level fresh is mutated at line 17',
-      'src/shared/service/alias.ts:8: top-level copy is mutated at line 18',
-      'src/shared/service/alias.ts:9: top-level pushed is mutated at line 19',
-      'src/shared/service/alias.ts:10: top-level quiet is mutated at line 20',
+      'src/shared/service/alias.ts:1: top-level seen is mutated at line 14',
+      'src/shared/service/alias.ts:3: top-level pending is mutated at line 15',
+      'src/shared/service/alias.ts:5: top-level names is mutated at line 16',
+      'src/shared/service/alias.ts:6: top-level typed is mutated at line 17',
+      'src/shared/service/alias.ts:7: top-level fresh is mutated at line 18',
+      'src/shared/service/alias.ts:8: top-level copy is mutated at line 19',
+      'src/shared/service/alias.ts:9: top-level pushed is mutated at line 20',
+      'src/shared/service/alias.ts:10: top-level quiet is mutated at line 21',
+      'src/shared/service/alias.ts:11: top-level target is mutated at line 22',
       'src/shared/service/cache.ts:1: top-level cache is mutated at src/shared/service/put.ts:4',
       'src/shared/service/cache.ts:2: top-level log is mutated at src/shared/service/put.ts:5',
       'src/shared/service/cache.ts:3: top-level settings is mutated at src/shared/service/put.ts:6',

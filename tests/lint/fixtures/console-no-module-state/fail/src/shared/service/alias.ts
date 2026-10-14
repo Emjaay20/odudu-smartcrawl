@@ -8,6 +8,7 @@ const fresh = new Array<string>();
 const copy = Array.from([1]);
 const pushed: string[] = [];
 const quiet: string[] = [];
+const target = { a: 1 };
 
 export function mutate(): void {
   same.add('a');
@@ -18,4 +19,5 @@ export function mutate(): void {
   copy.push(2);
   Array.prototype.push.call(pushed, 'd');
   quiet?.push('e');
+  [target.a] = [2];
 }

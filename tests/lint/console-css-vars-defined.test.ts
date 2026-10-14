@@ -118,7 +118,7 @@ function byPlace(a: string, b: string): number {
 export function violations(files: Map<string, string>, vendor: ReadonlySet<string>): string[] {
   const found: Found = { declared: new Set(), uses: new Map() };
   for (const [file, text] of files) {
-    if (file.endsWith('.css')) scanText(stripComments(text), 1, found, file);
+    if (/\.s?css$/u.test(file)) scanText(stripComments(text), 1, found, file);
     else if (
       /\.[cm]?tsx?$/u.test(file) &&
       !/\.test\.[cm]?tsx?$/u.test(file) &&
@@ -211,7 +211,7 @@ export async function vendorProperties(
 
 async function read(root: string): Promise<Map<string, string>> {
   const files = new Map<string, string>();
-  for await (const file of glob('src/**/*.{css,ts,tsx,mts,cts}', {
+  for await (const file of glob('src/**/*.{css,scss,ts,tsx,mts,cts}', {
     cwd: path.join(REPO_ROOT, root),
   })) {
     const posix = file.split(path.sep).join('/');
@@ -250,17 +250,16 @@ describe('console custom properties', { timeout: 60_000 }, () => {
   it('fail every non-conforming fixture, naming the file and the line', async () => {
     const files = await read(`${FIXTURES}/fail`);
     expect(files.size).toBeGreaterThan(2);
-    const advice =
-      'is declared nowhere in the console; declare it, set it in a style object, or give the use a fallback';
     expect(violations(files, FIXTURE_VENDOR)).toEqual([
-      `src/features/signing-keys/view/Keys.tsx:2: var(--type-14) ${advice}`,
-      `src/features/signing-keys/view/Keys.tsx:7: var(--edge) ${advice}`,
-      `src/shared/view/Field.module.css:2: var(--space-5) ${advice}`,
-      `src/shared/view/Field.module.css:6: var(--ink-danger) ${advice}`,
-      `src/shared/view/Field.module.css:7: var(--space-9) ${advice}`,
+      'src/features/signing-keys/view/Keys.tsx:2: var(--type-14) is declared nowhere in the console; declare it, set it in a style object, or give the use a fallback',
+      'src/features/signing-keys/view/Keys.tsx:7: var(--edge) is declared nowhere in the console; declare it, set it in a style object, or give the use a fallback',
+      'src/shared/view/Field.module.css:2: var(--space-5) is declared nowhere in the console; declare it, set it in a style object, or give the use a fallback',
+      'src/shared/view/Field.module.css:6: var(--ink-danger) is declared nowhere in the console; declare it, set it in a style object, or give the use a fallback',
+      'src/shared/view/Field.module.css:7: var(--space-9) is declared nowhere in the console; declare it, set it in a style object, or give the use a fallback',
       'src/shared/view/Field.module.css:11: var(--spase-2) is a typo of --space-2, which the console declares',
       'src/shared/view/Field.module.css:12: var(--spase-2) is a typo of --space-2, which the console declares',
       'src/shared/view/Field.module.css:13: var(--made-up) falls back, but nothing declares --made-up and no package the console imports sets it',
+      'src/shared/view/Sass.module.scss:2: var(--space-6) is declared nowhere in the console; declare it, set it in a style object, or give the use a fallback',
     ]);
   });
 });
