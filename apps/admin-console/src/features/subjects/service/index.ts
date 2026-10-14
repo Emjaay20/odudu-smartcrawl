@@ -93,6 +93,7 @@ export {
 export {
   accessRefusal,
   type Confirmation,
+  offersWrites,
   removalConfirmation,
   onlyHolderText,
   changeFailureText,
@@ -137,6 +138,7 @@ export {
   elsewhereText,
   describeHoldings,
   adminRolesBlocked,
+  rolesFailure,
   reachesEveryTenant,
   holderFilterOptions,
 } from '#/features/subjects/service/holdings';

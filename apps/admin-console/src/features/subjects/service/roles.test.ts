@@ -120,8 +120,10 @@ describe('role assignments', () => {
 describe('the admin capabilities a subject is given', () => {
   it('names a role id for each holding, or the holdings that have none', () => {
     const roles = new Map([['view-audit' as const, 'r1']]);
-    expect(roleIdsOf(['view-audit'], roles)).toEqual({ ids: ['r1'] });
-    expect(roleIdsOf(['view-audit', 'manage-keys'], roles)).toEqual({ missing: ['manage-keys'] });
-    expect(roleIdsOf([], null)).toEqual({ missing: [] });
+    const read = { status: 'ready' as const, data: roles };
+    expect(roleIdsOf(['view-audit'], read)).toEqual({ ids: ['r1'] });
+    expect(roleIdsOf(['view-audit', 'manage-keys'], read)).toEqual({ missing: ['manage-keys'] });
+    expect(roleIdsOf([], { status: 'loading' })).toEqual({ missing: [] });
+    expect(roleIdsOf(['view-audit'], { status: 'loading' })).toEqual({ missing: ['view-audit'] });
   });
 });

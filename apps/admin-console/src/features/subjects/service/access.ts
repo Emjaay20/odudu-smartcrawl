@@ -2,8 +2,15 @@ import { holdingLabel, type Holding } from '#/shared/service/capabilities';
 import type { DialogAsk } from '#/shared/service/dialog';
 import { COULD_NOT_FINISH } from '#/shared/service/failure';
 import { andList } from '#/shared/service/format';
-import { type AdminCapability } from '#/shared/service/principal';
+import { notLacking } from '#/shared/service/access';
+import { type AdminCapability, type Authority } from '#/shared/service/principal';
 import type { GatewayFailure } from '#/shared/service/result';
+
+// Whether the page offers changes: it has not ruled every write out, and
+// whoami does not say manage-users is missing.
+export function offersWrites(allowed: boolean, authority: Authority | undefined): boolean {
+  return allowed && notLacking(authority, ['manage-users']);
+}
 
 // What a 403 or the last-administrator 409 means for a change to what a
 // subject holds: a caller gives only what it holds itself, and reaches no

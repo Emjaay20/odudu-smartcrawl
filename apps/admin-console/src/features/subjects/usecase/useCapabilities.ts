@@ -10,6 +10,8 @@ import {
 import {
   accessRefusal,
   adminRolesBlocked,
+  offersWrites,
+  rolesFailure,
   beyondText,
   capabilitiesRemoveTenants,
   capabilityOptions,
@@ -32,7 +34,6 @@ import {
 import { administratorCapability } from '#/shared/service/administrators';
 import type { RecordState } from '#/shared/repository/useRecord';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
-import { notLacking } from '#/shared/service/access';
 import { holdingsIn, type Holding, type HoldingOption } from '#/shared/service/capabilities';
 import { inOrderOf, removedFrom } from '#/shared/service/ids';
 import type { AdminCapability } from '#/shared/service/principal';
@@ -110,10 +111,11 @@ export function useCapabilityEditor({
   const enabledHolders = useEnabledHolderCount(tenant, counted);
   const saveRoles = useSaveRoles(tenant, subject.id);
   const split = splitRoles(data.items);
+  const base = inOrderOf(holdingsIn(tenant), split.holdings);
   const caller = authority?.capabilities;
   const held = heldOf(effective);
   const beyond = subjectBeyond(effective, caller);
-  const canManage = allowed && notLacking(authority, ['manage-users']);
+  const canManage = offersWrites(allowed, authority);
 
   const save = useSectionSave({
     tenant,
@@ -127,17 +129,14 @@ export function useCapabilityEditor({
     explain: accessRefusal(name, 'roles', self),
     fields: {
       capabilities: {
-        value: inOrderOf(holdingsIn(tenant), split.holdings),
+        value: base,
         label: 'Admin capabilities',
         kind: 'plain',
         describe: describeHoldings,
       },
     },
     save: async (gateway, { values, ifMatch }) => {
-      const roles = roleIdsOf(
-        values.capabilities,
-        adminRoles.status === 'ready' ? adminRoles.data : null,
-      );
+      const roles = roleIdsOf(values.capabilities, adminRoles);
       if ('missing' in roles) {
         console.error(`console defect: no role id for ${roles.missing.join(', ')} in ${tenant}`);
         return { ok: false, kind: 'defect' };
@@ -150,7 +149,6 @@ export function useCapabilityEditor({
 
   const asking = useSaveConfirmation<Confirmation>(save);
   const chosen = save.values.capabilities;
-  const base = inOrderOf(holdingsIn(tenant), split.holdings);
   const removed = removedFrom(base, chosen);
   const kept = keptOtherwise(held, counted);
   const removesTenants = capabilitiesRemoveTenants(tenant, base, chosen, kept);
@@ -175,7 +173,7 @@ export function useCapabilityEditor({
     beyondText: beyondText(name, beyond, 'change'),
     groupsHref: subjectTabHref(tenant, subject.id, 'groups'),
     rolesHref: subjectTabHref(tenant, subject.id, 'roles'),
-    rolesFailed: adminRoles.status === 'failed' ? { retry: adminRoles.retry } : null,
+    rolesFailed: rolesFailure(adminRoles),
     save: {
       ...save,
       blocked,

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Holding } from '#/shared/service/capabilities';
 import {
   adminRolesBlocked,
+  rolesFailure,
   capabilitiesRemoveTenants,
   capabilityOptions,
   describeHoldings,
@@ -168,5 +169,14 @@ describe('holders of admin capabilities', () => {
     expect(holderFilterOptions('system').some((option) => option.id === 'manage-tenants')).toBe(
       true,
     );
+  });
+});
+
+describe('rolesFailure', () => {
+  it('offers a retry only for admin roles that failed to read', () => {
+    const retry = (): void => undefined;
+    expect(rolesFailure({ status: 'failed', refused: false, retry })).toEqual({ retry });
+    expect(rolesFailure({ status: 'loading' })).toBeNull();
+    expect(rolesFailure({ status: 'ready', data: 1 })).toBeNull();
   });
 });

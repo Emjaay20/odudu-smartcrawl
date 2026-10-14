@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   changeFailureText,
   accessRefusal,
+  offersWrites,
   removalConfirmation,
 } from '#/features/subjects/service/access';
 import { failure, refusal } from '#/testing/failures';
@@ -107,5 +108,17 @@ describe('what a confirmed change says when it fails', () => {
       'Refused: boom',
     );
     expect(changeFailureText(refusal(500), 'manage-users')).toBe('Refused: T500');
+  });
+});
+
+describe('offersWrites', () => {
+  const manager = { capabilities: ['manage-users' as const], crossTenant: false };
+  const viewer = { capabilities: ['view-users' as const], crossTenant: false };
+
+  it('is allowed unless the page ruled it out or whoami says manage-users is missing', () => {
+    expect(offersWrites(true, manager)).toBe(true);
+    expect(offersWrites(true, undefined)).toBe(true);
+    expect(offersWrites(true, viewer)).toBe(false);
+    expect(offersWrites(false, manager)).toBe(false);
   });
 });

@@ -9,7 +9,7 @@ import {
   type Holding,
 } from '#/shared/service/capabilities';
 import { type Authority } from '#/shared/service/principal';
-import { type Loaded } from '#/shared/service/read';
+import { loadedData, type Loaded } from '#/shared/service/read';
 
 interface Assigned {
   id: string;
@@ -105,9 +105,10 @@ export function roleOwnerOf(client: string | null): string {
 
 export function roleIdsOf(
   holdings: readonly Holding[],
-  adminRoles: ReadonlyMap<Holding, string> | null,
+  read: Loaded<ReadonlyMap<Holding, string>>,
 ): { ids: string[] } | { missing: Holding[] } {
-  if (adminRoles === null) return { missing: [...holdings] };
+  const adminRoles = loadedData(read);
+  if (adminRoles === undefined) return { missing: [...holdings] };
   const missing = holdings.filter((holding) => !adminRoles.has(holding));
   if (missing.length > 0) return { missing };
   return { ids: holdings.flatMap((holding) => adminRoles.get(holding) ?? []) };
