@@ -34,6 +34,20 @@ export function defaultBlock(role: Role): string | null {
   return `It reaches ${andList(role.admin_reach)}, and a role every new subject receives may reach no admin capability. Take those composites out of it first.`;
 }
 
+export interface Child {
+  role: Role;
+  // Why it cannot be taken out here, or null when it can.
+  held: string | null;
+}
+
+export function childRows(
+  children: readonly Role[],
+  caller: readonly AdminCapability[],
+  tenant: string,
+): Child[] {
+  return children.map((role) => ({ role, held: roleReachUnavailable(role, caller, tenant) }));
+}
+
 export function childUnavailable(
   parent: Pick<Role, 'id' | 'default_for_new_subjects'>,
   child: Role,

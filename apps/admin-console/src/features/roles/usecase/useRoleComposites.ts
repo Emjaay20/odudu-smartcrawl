@@ -13,6 +13,8 @@ import {
   addRefusal,
   type Asked,
   type Ceiling,
+  type Child,
+  childRows,
   childUnavailable,
   compositeRemovalConfirmation,
   compositeRemovalFailureText,
@@ -28,7 +30,7 @@ import type { RecordState } from '#/shared/repository/useRecord';
 import { useRolePicker } from '#/shared/repository/useRolePicker';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { useToast } from '#/shared/repository/useToasts';
-import { judgedLoss, roleReachUnavailable, type Loss } from '#/shared/service/capabilities';
+import { judgedLoss, type Loss } from '#/shared/service/capabilities';
 import { describeId } from '#/shared/service/format';
 import { roleNameOf } from '#/shared/service/mappedRoles';
 import { firstChosen, type PickerState } from '#/shared/service/picker';
@@ -42,13 +44,7 @@ export function useCompositesRead(
   return useCompositesRecord(tenant, id);
 }
 
-export interface Child {
-  role: Role;
-  // Why it cannot be taken out here, or null when it can.
-  held: string | null;
-}
-
-export type { Asked };
+export type { Asked, Child };
 
 export interface RoleComposites {
   // A capability role keeps what it was provisioned with, as fixed text.
@@ -148,10 +144,7 @@ export function useRoleComposites({
 
   return {
     fixed: compositesFixed(role),
-    children: data.items.map((child) => ({
-      role: child,
-      held: roleReachUnavailable(child, caller, tenant),
-    })),
+    children: childRows(data.items, caller, tenant),
     offered: compositesOffered(ceiling, own),
     add,
     picker,

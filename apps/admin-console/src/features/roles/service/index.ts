@@ -25,6 +25,8 @@ export {
   addRefusal,
   compositesFixed,
   deletionFixed,
+  childRows,
+  type Child,
 } from '#/features/roles/service/blocks';
 export {
   type RoleChange,

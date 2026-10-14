@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   addRefusal,
+  childRows,
   compositesFixed,
   deletionFixed,
   defaultBlock,
@@ -54,5 +55,15 @@ describe('adding a composite', () => {
       'Refused: the role chosen already includes this role, so nesting it here would make a loop.',
     );
     expect(addRefusal({ type: 'about:blank', status: 500 })).toBeNull();
+  });
+});
+
+describe('childRows', () => {
+  it('says for each child why it cannot be taken out here, or that it can', () => {
+    expect(childRows([READER, USERS], ['view-users'], 'acme')).toEqual([
+      { role: READER, held: null },
+      { role: USERS, held: expect.stringContaining('manage-users') as string },
+    ]);
+    expect(childRows([], ['view-users'], 'acme')).toEqual([]);
   });
 });
