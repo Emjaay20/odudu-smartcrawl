@@ -27,3 +27,10 @@ export function EnabledTag({ enabled }: { enabled: boolean }) {
     <StatusTag tone="danger">disabled</StatusTag>
   );
 }
+
+const OUTCOME_TONES = { allowed: 'active', refused: 'warning', failed: 'danger' } as const;
+
+// What an audit event came to, in words and a tone.
+export function OutcomeTag({ outcome }: { outcome: keyof typeof OUTCOME_TONES }) {
+  return <StatusTag tone={OUTCOME_TONES[outcome]}>{outcome}</StatusTag>;
+}

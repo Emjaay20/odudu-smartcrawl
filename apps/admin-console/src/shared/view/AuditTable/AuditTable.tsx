@@ -14,15 +14,9 @@ import { Button } from '#/shared/view/Button';
 import { CopyValue } from '#/shared/view/CopyValue';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { DialogFrame } from '#/shared/view/DialogFrame';
-import { StatusTag, type StatusTone } from '#/shared/view/StatusTag';
+import { OutcomeTag, StatusTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
 import styles from '#/shared/view/AuditTable/AuditTable.module.css';
-
-export const OUTCOME_TONES: Record<AuditEvent['outcome'], StatusTone> = {
-  allowed: 'active',
-  refused: 'warning',
-  failed: 'danger',
-};
 
 // Where a row's resource and its actor lead, where there is a page for them.
 export interface AuditHrefs {
@@ -105,7 +99,7 @@ export function auditColumns({
     {
       id: 'outcome',
       header: 'Outcome',
-      cell: (event) => <StatusTag tone={OUTCOME_TONES[event.outcome]}>{event.outcome}</StatusTag>,
+      cell: (event) => <OutcomeTag outcome={event.outcome} />,
     },
     {
       id: 'actor',

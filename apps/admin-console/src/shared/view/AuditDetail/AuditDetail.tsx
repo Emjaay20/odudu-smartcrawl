@@ -12,7 +12,7 @@ import { formatInZone, localZone } from '#/shared/service/zones';
 import { AuditActor } from '#/shared/view/AuditActor';
 import { Button } from '#/shared/view/Button';
 import { CopyValue } from '#/shared/view/CopyValue';
-import { StatusTag } from '#/shared/view/StatusTag';
+import { OutcomeTag } from '#/shared/view/StatusTag';
 import styles from '#/shared/view/AuditDetail/AuditDetail.module.css';
 
 function Row({ term, children }: { term: string; children: ReactNode }) {
@@ -115,9 +115,7 @@ export function AuditDetail({
           <code>{event.action}</code>
         </Row>
         <Row term="Outcome">
-          <StatusTag tone={event.outcome === 'allowed' ? 'active' : 'warning'}>
-            {event.outcome}
-          </StatusTag>
+          <OutcomeTag outcome={event.outcome} />
         </Row>
         <Row term="Actor">
           <AuditActor event={event} />

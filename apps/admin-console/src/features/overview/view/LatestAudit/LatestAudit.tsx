@@ -4,13 +4,12 @@ import { Link } from 'react-aria-components';
 import type { Gated } from '#/features/overview/service';
 import { Panel } from '#/features/overview/view/Panel';
 import { AuditActor } from '#/shared/view/AuditActor';
-import { OUTCOME_TONES } from '#/shared/view/AuditTable';
 import { CapabilityNote } from '#/shared/view/CapabilityNote';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { LoadFailed } from '#/shared/view/LoadFailed';
 import { TableSkeleton } from '#/shared/view/Skeleton';
-import { StatusTag } from '#/shared/view/StatusTag';
+import { OutcomeTag } from '#/shared/view/StatusTag';
 import { Timestamp } from '#/shared/view/Timestamp';
 import styles from '#/features/overview/view/LatestAudit/LatestAudit.module.css';
 
@@ -28,7 +27,7 @@ function columns(now: Date | undefined): readonly Column<AuditEvent>[] {
     {
       id: 'outcome',
       header: 'Outcome',
-      cell: (event) => <StatusTag tone={OUTCOME_TONES[event.outcome]}>{event.outcome}</StatusTag>,
+      cell: (event) => <OutcomeTag outcome={event.outcome} />,
     },
     {
       id: 'actor',

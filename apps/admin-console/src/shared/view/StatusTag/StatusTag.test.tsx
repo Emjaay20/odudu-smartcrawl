@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { EnabledTag, StatusTag } from '#/shared/view/StatusTag/StatusTag';
+import { EnabledTag, OutcomeTag, StatusTag } from '#/shared/view/StatusTag/StatusTag';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 
 it('carries its status in words, never in colour alone', () => {
@@ -40,4 +40,14 @@ it('passes axe in both themes for every tone', async () => {
       </p>
     )),
   ).toEqual({ light: [], dark: [] });
+});
+
+it('tones each outcome an audit event can have, in words', () => {
+  const { container, rerender } = render(<OutcomeTag outcome="allowed" />);
+  expect(container.querySelector('[data-tone]')).toHaveAttribute('data-tone', 'active');
+  rerender(<OutcomeTag outcome="refused" />);
+  expect(container.querySelector('[data-tone]')).toHaveAttribute('data-tone', 'warning');
+  rerender(<OutcomeTag outcome="failed" />);
+  expect(container.querySelector('[data-tone]')).toHaveAttribute('data-tone', 'danger');
+  expect(screen.getByText('failed')).toBeVisible();
 });
