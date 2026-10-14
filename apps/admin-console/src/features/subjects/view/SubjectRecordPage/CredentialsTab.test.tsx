@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { inTurn, json, problem } from '#/testing/fakeTransport';
+import { inTurn, json, problem, whoamiReads } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import {
@@ -145,7 +145,7 @@ it('says in its dialog why an issue was refused, and shows no secret', async () 
   expect(await within(dialog).findByRole('alert')).toHaveTextContent(/manage-users/u);
   expect(screen.queryByRole('dialog', { name: "ada's one-time password" })).toBeNull();
   await waitFor(() => {
-    expect(sent.filter((s) => s.path.endsWith('/whoami')).length).toBeGreaterThan(1);
+    expect(whoamiReads(sent)).toBeGreaterThan(1);
   });
 });
 

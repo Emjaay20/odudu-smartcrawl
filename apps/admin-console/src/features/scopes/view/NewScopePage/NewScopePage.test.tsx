@@ -2,9 +2,8 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { json, offline, problem } from '#/testing/fakeTransport';
+import { json, offline, problem, whoamiReads } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
-import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { MAPPED, SC, scope, scopeRoutes } from '#/testing/scopesFixtures';
 
@@ -183,7 +182,7 @@ it('reads whoami again when the creation is refused', async () => {
   );
   await user.type(await screen.findByRole('textbox', { name: 'Name' }), 'invoices{Enter}');
   expect(await screen.findByText(/it needs the manage-tenant capability/u)).toBeVisible();
-  expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
+  expect(whoamiReads(sent)).toBeGreaterThan(1);
 });
 
 it('passes axe in both themes', async () => {

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { BILLING, C, clientRoutes } from '#/testing/clientsFixtures';
-import { json, problem } from '#/testing/fakeTransport';
+import { json, problem, whoamiReads } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
 import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
@@ -148,7 +148,7 @@ it("keeps the dialog open with the server's refusal beside the action", async ()
   expect(
     await within(dialog).findByText(/service account holds what the caller does not/u),
   ).toBeVisible();
-  expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
+  expect(whoamiReads(sent)).toBeGreaterThan(1);
   await waitFor(() => {
     expect(sent.filter((s) => s.method === 'GET' && s.path === `${C}/c-bill`)).toHaveLength(2);
   });

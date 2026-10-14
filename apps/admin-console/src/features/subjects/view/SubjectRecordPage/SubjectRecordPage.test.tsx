@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { inTurn, json, pending, problem } from '#/testing/fakeTransport';
+import { inTurn, json, pending, problem, whoamiReads } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
 import { consoleAt, renderConsoleAt, whoami } from '#/testing/renderConsole';
 import { ADMIN_ROLES } from '#/testing/roleAnswers';
@@ -128,7 +128,7 @@ it('follows a whoami re-read after a 403, in the rail and on the page, without a
 it('reads whoami once, however many parts of the page ask what it says', async () => {
   const { sent } = renderConsoleAt(ADA_AT, subjectRoutes());
   await screen.findByRole('textbox', { name: 'Nickname' });
-  expect(sent.filter((s) => s.path.endsWith('/whoami'))).toHaveLength(1);
+  expect(whoamiReads(sent)).toBe(1);
 });
 
 const FULL_HOLDER = {

@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { inTurn, json, offline, problem } from '#/testing/fakeTransport';
+import { inTurn, json, offline, problem, whoamiReads } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import {
@@ -186,7 +186,7 @@ it('reads whoami again after a refusal, and asks afresh once cancelled', async (
   const dialog = await screen.findByRole('alertdialog');
   await user.click(within(dialog).getByRole('button', { name: 'Revoke token' }));
   expect(await within(dialog).findByRole('alert')).toBeVisible();
-  expect(sent.filter((s) => s.path.endsWith('/whoami')).length).toBeGreaterThan(1);
+  expect(whoamiReads(sent)).toBeGreaterThan(1);
   await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
   await waitFor(() => {
     expect(screen.queryByRole('alertdialog')).toBeNull();

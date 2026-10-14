@@ -2,11 +2,10 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { inTurn, json, offline, problem } from '#/testing/fakeTransport';
+import { inTurn, json, offline, problem, whoamiReads } from '#/testing/fakeTransport';
 import { group, record } from '#/testing/groupAnswers';
 import { ENG, G, groupRoutes } from '#/testing/groupsFixtures';
 import { resetConsole } from '#/testing/resetConsole';
-import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 
 afterEach(() => {
@@ -82,7 +81,7 @@ it('puts a taken name under its field, and a ceiling refusal beside the button',
       'Refused: it would hand out view-users, which you do not hold yourself.',
     ),
   ).toBeVisible();
-  expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
+  expect(whoamiReads(sent)).toBeGreaterThan(1);
 });
 
 it('looks for a group whose creation could not be confirmed rather than sending it again', async () => {

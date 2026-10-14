@@ -110,3 +110,8 @@ export function fakeTransport(routes: Record<string, Answer>) {
   };
   return { transport, calls, sent, leavePage, routes };
 }
+
+// How many times the console asked what the caller holds.
+export function whoamiReads(sent: readonly Sent[]): number {
+  return sent.filter((request) => request.path.endsWith('/whoami')).length;
+}

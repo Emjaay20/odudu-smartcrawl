@@ -3,9 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { ADMIN, BILLING, C, clientRoutes, PORTAL } from '#/testing/clientsFixtures';
-import { inTurn, json, problem } from '#/testing/fakeTransport';
+import { inTurn, json, problem, whoamiReads } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
-import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 
 afterEach(() => {
@@ -204,7 +203,7 @@ it("says a refused delete in the dialog, in the server's words, and deletes noth
       /it would take manage-users from whoever holds it through here/u,
     ),
   ).toBeVisible();
-  expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
+  expect(whoamiReads(sent)).toBeGreaterThan(1);
 });
 
 it('reads the client again when the ceiling refuses its delete, so the page says at once why', async () => {

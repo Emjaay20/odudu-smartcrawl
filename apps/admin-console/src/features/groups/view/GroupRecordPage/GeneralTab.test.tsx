@@ -2,11 +2,10 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { inTurn, json, pending, problem } from '#/testing/fakeTransport';
+import { inTurn, json, pending, problem, whoamiReads } from '#/testing/fakeTransport';
 import { group, record } from '#/testing/groupAnswers';
 import { adminRole, ENG, FINANCE, G, groupRoutes, PLATFORM } from '#/testing/groupsFixtures';
 import { resetConsole } from '#/testing/resetConsole';
-import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/roleAnswers';
 import { assigned, S } from '#/testing/subjectsFixtures';
@@ -105,7 +104,7 @@ it('reads whoami again when a description save is refused, and says what it need
   await user.type(within(section).getByRole('textbox', { name: 'Description' }), 'Runs it');
   await user.click(within(section).getByRole('button', { name: 'Save Description' }));
   expect(await screen.findByText(/it needs the manage-tenant capability/u)).toBeVisible();
-  expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
+  expect(whoamiReads(sent)).toBeGreaterThan(1);
 });
 
 it('shows a description changed elsewhere beside yours, and sends nothing more', async () => {
@@ -253,7 +252,7 @@ it('says in the dialog why a refused delete was refused, reads whoami again, and
   expect(
     await within(dialog).findByText(/it would take manage-users from whoever holds it/u),
   ).toBeVisible();
-  expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
+  expect(whoamiReads(sent)).toBeGreaterThan(1);
 });
 
 it('offers no delete or move a limited operator could not make, and says why in one line', async () => {

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { BILLING, C, clientRoutes } from '#/testing/clientsFixtures';
-import { inTurn, json, pending, problem } from '#/testing/fakeTransport';
+import { inTurn, json, pending, problem, whoamiReads } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
 import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
@@ -248,7 +248,7 @@ it("words a 403 over the client's service account, naming the capability", async
   await user.click(await within(assign).findByRole('option', { name: /portal/u }));
   await user.click(within(assign).getByRole('button', { name: 'Assign to portal' }));
   expect(await screen.findByText(/Refused: it would hand out manage-keys/u)).toBeVisible();
-  expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
+  expect(whoamiReads(sent)).toBeGreaterThan(1);
 });
 
 it('lists the carriers but offers no client search to a caller without manage-clients', async () => {

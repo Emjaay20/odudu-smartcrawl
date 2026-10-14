@@ -2,10 +2,9 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { inTurn, json, offline, pending, problem } from '#/testing/fakeTransport';
+import { inTurn, json, offline, pending, problem, whoamiReads } from '#/testing/fakeTransport';
 import { AUDITOR, R, READER, roleRoutes } from '#/testing/rolesFixtures';
 import { resetConsole } from '#/testing/resetConsole';
-import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { role } from '#/testing/roleAnswers';
 afterEach(() => {
@@ -158,7 +157,7 @@ it('reads whoami again when the creation is refused, and says why on the page', 
   );
   await user.type(await screen.findByRole('textbox', { name: 'Name' }), 'billing{Enter}');
   expect(await screen.findByText(/it needs the manage-tenant capability/u)).toBeVisible();
-  expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
+  expect(whoamiReads(sent)).toBeGreaterThan(1);
 });
 
 it('holds Create after a lost answer until a look finds nothing, then lets it go again', async () => {

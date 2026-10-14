@@ -3,9 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { BILLING, C, clientRoutes, type ClientAnswer } from '#/testing/clientsFixtures';
-import { json, problem } from '#/testing/fakeTransport';
+import { json, problem, whoamiReads } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
-import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 
 afterEach(() => {
@@ -304,5 +303,5 @@ it('reads the client again, and nothing else, for the section it saved', async (
   const { sent } = renderConsoleAt(AT, clientRoutes());
   await open();
   expect(sent.every((s) => s.method === 'GET')).toBe(true);
-  expect(sent.some((s) => s.path === `${ACME_ADMIN}/whoami`)).toBe(true);
+  expect(whoamiReads(sent)).toBeGreaterThan(0);
 });

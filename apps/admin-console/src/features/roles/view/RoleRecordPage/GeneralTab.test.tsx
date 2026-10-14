@@ -2,11 +2,10 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { inTurn, json, pending, problem } from '#/testing/fakeTransport';
+import { inTurn, json, pending, problem, whoamiReads } from '#/testing/fakeTransport';
 import { adminRole } from '#/testing/groupsFixtures';
 import { AUDITOR, R, roleRoutes } from '#/testing/rolesFixtures';
 import { resetConsole } from '#/testing/resetConsole';
-import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { S } from '#/testing/subjectsFixtures';
 
@@ -161,7 +160,7 @@ it('says in the dialog why a refused delete was refused, reads whoami again, and
   expect(
     await within(dialog).findByText(/it would take manage-users from whoever holds it/u),
   ).toBeVisible();
-  expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
+  expect(whoamiReads(sent)).toBeGreaterThan(1);
 });
 
 it('drops a refusal from the dialog when the delete is pressed again', async () => {

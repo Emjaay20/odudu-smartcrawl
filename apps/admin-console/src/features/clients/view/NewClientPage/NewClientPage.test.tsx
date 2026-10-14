@@ -3,9 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { BILLING, C, clientRoutes, PORTAL } from '#/testing/clientsFixtures';
-import { json, offline, problem } from '#/testing/fakeTransport';
+import { json, offline, problem, whoamiReads } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
-import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 
 afterEach(() => {
@@ -149,7 +148,7 @@ it('reads whoami again when the creation is refused, and says what it needed', a
   await fill(user, 'billing', 'https://billing.example/callback');
   await user.click(screen.getByRole('button', { name: 'Create client' }));
   expect(await screen.findByText(/it needs the manage-clients capability/u)).toBeVisible();
-  expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
+  expect(whoamiReads(sent)).toBeGreaterThan(1);
 });
 
 it('looks for a client whose creation was not confirmed instead of sending it again', async () => {

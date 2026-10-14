@@ -3,9 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { USERNAME_RULE_TEXT } from '#/features/subjects/service';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { json, offline, problem } from '#/testing/fakeTransport';
+import { json, offline, problem, whoamiReads } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
-import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { ADA, ADA_ID, S, subjectRoutes } from '#/testing/subjectsFixtures';
 
@@ -104,7 +103,7 @@ it('reads whoami again when the creation is refused, and says what it needed', a
   await user.type(await screen.findByRole('textbox', { name: 'Username' }), 'ada');
   await user.click(screen.getByRole('button', { name: 'Create subject' }));
   expect(await screen.findByText(/it needs the manage-users capability/u)).toBeVisible();
-  expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
+  expect(whoamiReads(sent)).toBeGreaterThan(1);
 });
 
 it('never sends a lost creation again, and offers to look for it instead', async () => {

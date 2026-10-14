@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { ADMIN, BILLING, C, clientRoutes, type ClientAnswer } from '#/testing/clientsFixtures';
-import { inTurn, json, pending, problem } from '#/testing/fakeTransport';
+import { inTurn, json, pending, problem, whoamiReads } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
 import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
@@ -217,7 +217,7 @@ it('reads whoami again when the ceiling refuses an assignment', async () => {
   await user.click(await within(assign).findByRole('option', { name: /billing/u }));
   await user.click(within(assign).getByRole('button', { name: 'Assign scope billing' }));
   await waitFor(() => {
-    expect(sent.filter((s) => s.path === `${ACME_ADMIN}/whoami`).length).toBeGreaterThan(1);
+    expect(whoamiReads(sent)).toBeGreaterThan(1);
   });
 });
 
