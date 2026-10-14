@@ -5,11 +5,11 @@ import { describe, expect, it } from 'vitest';
 
 // A declaration copied between two owners (a feature, `shared`, `app`, an e2e
 // file) is one change made in two places. Declarations are grouped by name and
-// normalised body, a body being its leaf tokens, so layout, comments,
-// trailing commas and `export` do not matter. Exported declarations of any size are compared;
-// private functions and values from MINIMUM_BODY characters, private types
-// never. In e2e numbers are wildcarded. `index.ts`, tests, `gallery/` and
-// `testing/` are not read. No allowlist: move the code or let the bodies differ.
+// normalised body (leaf tokens: layout, comments, trailing commas and `export`
+// do not matter). Exported declarations of any size compare; private functions
+// and values from MINIMUM_BODY characters; private types never; in e2e numbers
+// are wildcarded. Barrels, tests, `gallery/` and `testing/` are not read. Not
+// seen: a copy under another name, nested declarations and class members.
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..');
 const CONSOLE = 'apps/admin-console';
@@ -56,6 +56,15 @@ function bodyOf(node: ts.Node, wildcard: boolean): string {
     .join(' ');
 }
 
+function bound(name: ts.BindingName, out: Set<string>): void {
+  if (ts.isIdentifier(name)) out.add(name.text);
+  else {
+    for (const element of name.elements) {
+      if (!ts.isOmittedExpression(element)) bound(element.name, out);
+    }
+  }
+}
+
 function declarations(file: string, source: string, wildcard: boolean): Declaration[] {
   const tree = ts.createSourceFile(
     file,
@@ -77,15 +86,14 @@ function declarations(file: string, source: string, wildcard: boolean): Declarat
       );
     if (ts.isVariableStatement(statement)) {
       for (const declarator of statement.declarationList.declarations) {
-        if (ts.isIdentifier(declarator.name)) {
-          add(declarator, declarator.name.text, exported, false);
-        }
+        const names = new Set<string>();
+        bound(declarator.name, names);
+        add(declarator, [...names].join(','), exported, false);
       }
-    } else if (
-      (ts.isFunctionDeclaration(statement) || ts.isClassDeclaration(statement)) &&
-      statement.name !== undefined
-    ) {
-      add(statement, statement.name.text, exported, false);
+    } else if (ts.isFunctionDeclaration(statement) || ts.isClassDeclaration(statement)) {
+      add(statement, statement.name?.text ?? 'default', exported, false);
+    } else if (ts.isExportAssignment(statement)) {
+      add(statement, 'default', true, false);
     } else if (
       ts.isInterfaceDeclaration(statement) ||
       ts.isTypeAliasDeclaration(statement) ||
@@ -109,11 +117,21 @@ function ownerOf(file: string): string | null {
 
 function isRead(file: string): boolean {
   return (
-    !/\.test\.tsx?$/u.test(file) &&
-    !/(^|\/)index\.ts$/u.test(file) &&
+    !/\.test\.[cm]?tsx?$/u.test(file) &&
+    !/(^|\/)index\.[cm]?ts$/u.test(file) &&
     !file.endsWith('.d.ts') &&
     ownerOf(file) !== null
   );
+}
+
+function byPlace(a: string, b: string): number {
+  const place = (text: string): [string, number] => {
+    const [file = '', line = '0'] = text.split(':', 2);
+    return [file, Number(line)];
+  };
+  const [fileA, lineA] = place(a);
+  const [fileB, lineB] = place(b);
+  return fileA.localeCompare(fileB) || lineA - lineB;
 }
 
 function listed(places: string[]): string {
@@ -136,9 +154,7 @@ export function violations(files: Map<string, string>): string[] {
     .filter((group) => new Set(group.map((each) => ownerOf(each.file))).size > 1)
     .map((group) => ({
       name: group[0]?.name ?? '',
-      places: group
-        .map((each) => `${each.file}:${String(each.line)}`)
-        .sort((a, b) => a.localeCompare(b)),
+      places: group.map((each) => `${each.file}:${String(each.line)}`).sort(byPlace),
     }))
     .sort((a, b) => `${a.name} ${a.places.join()}`.localeCompare(`${b.name} ${b.places.join()}`))
     .map(({ name, places }) => `${name} is declared identically in ${listed(places)}${ADVICE}`);
@@ -155,7 +171,7 @@ async function read(root: string, patterns: string[]): Promise<Map<string, strin
   return files;
 }
 
-const TREE = ['src/**/*.{ts,tsx}', 'e2e/*.ts'];
+const TREE = ['src/**/*.{ts,tsx,mts,cts}', 'e2e/**/*.ts'];
 
 describe('declarations in the console', { timeout: 60_000 }, () => {
   it('are not copied between features, shared, app and the e2e files', async () => {
@@ -201,6 +217,18 @@ describe('declarations in the console', { timeout: 60_000 }, () => {
       ],
     ],
     ['e2e', ['tabTo is declared identically in e2e/groups.spec.ts:1 and e2e/roles.spec.ts:1']],
+    [
+      'default',
+      [
+        'default is declared identically in src/features/groups/view/Page.tsx:1 and src/features/roles/view/Page.tsx:1',
+      ],
+    ],
+    [
+      'destructured',
+      [
+        'a,b is declared identically in src/features/groups/service/things.mts:1 and src/features/roles/service/things.mts:1',
+      ],
+    ],
     [
       'tsx',
       [
