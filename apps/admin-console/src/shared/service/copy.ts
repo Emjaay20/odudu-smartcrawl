@@ -13,7 +13,13 @@ export interface PartialCopy {
 
 // Create is held while a write is under way, the source is being read, or
 // the caller is not yet known.
-export function copyBusy(busy: boolean, source: string, caller: unknown): boolean {
+export type CopySourceStatus = 'none' | 'loading' | 'failed' | 'ready';
+
+export function copyBusy(
+  busy: boolean,
+  source: CopySourceStatus,
+  caller: readonly string[] | undefined,
+): boolean {
   return busy || source === 'loading' || caller === undefined;
 }
 
@@ -21,8 +27,8 @@ export function copyBusy(busy: boolean, source: string, caller: unknown): boolea
 export function copyBlocked(
   busy: boolean,
   partial: PartialCopy | null,
-  source: string,
-  caller: unknown,
+  source: CopySourceStatus,
+  caller: readonly string[] | undefined,
 ): boolean {
   return partial !== null || copyBusy(busy, source, caller);
 }
@@ -30,7 +36,7 @@ export function copyBlocked(
 // What a copy is read as: nothing to copy, the source being read, a source
 // that could not be, or the source and whatever it is made of. A source
 // that was read and came to nothing is failed like one that errored.
-export function copyReadOf<S extends object>(
+export function copyReadOf<S extends object & { status?: never }>(
   id: string | null,
   source: S | null | undefined,
   isError: boolean,

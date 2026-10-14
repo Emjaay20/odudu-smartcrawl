@@ -10,7 +10,13 @@ import {
   setScopeRoles,
   type CreateScopeInput,
 } from '#/features/scopes/adapter/scopes';
-import { copySourceOf, type CopyRead } from '#/features/scopes/service';
+import {
+  asksPart,
+  copySourceOf,
+  partMissed,
+  type CopyPart as Part,
+  type CopyRead,
+} from '#/features/scopes/service';
 import { copyReadOf } from '#/shared/service/copy';
 import { countKey, listKey, pickerKey } from '#/shared/repository/queryKeys';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
@@ -31,8 +37,6 @@ export interface CreateScope {
   // its own read answers, and answers the parts that did not take.
   fill: (id: string, roleIds: readonly string[], mapperNames: readonly string[]) => Promise<Part[]>;
 }
-
-type Part = 'roles' | 'mappers';
 
 export function useCreateScope(tenant: string): CreateScope {
   const { gateway } = useTransport();
@@ -70,12 +74,10 @@ export function useCreateScope(tenant: string): CreateScope {
     read: () => Promise<GatewayResult<unknown>>,
     write: (ifMatch: string) => Promise<GatewayResult<unknown>>,
   ): Promise<Part[]> => {
-    if (wanted.length === 0) return [];
+    if (!asksPart(wanted)) return [];
     const answer = await fresh.read(['copy-etag', tenant, id, part], read);
     const ifMatch = etagOfRead(answer);
-    if (ifMatch === null) return [part];
-    const set = await write(ifMatch);
-    return set.ok ? [] : [part];
+    return partMissed(part, ifMatch === null ? null : await write(ifMatch));
   };
   return {
     busy: create.busy || setRoles.busy || setMappers.busy || fresh.pending,

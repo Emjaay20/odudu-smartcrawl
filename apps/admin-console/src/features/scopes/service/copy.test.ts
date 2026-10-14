@@ -8,7 +8,9 @@ import {
   copyingOf,
   copyingText,
   copyPlan,
+  asksPart,
   copySourceOf,
+  partMissed,
   partialCopy,
   sourceBound,
   sourceRoles,
@@ -140,5 +142,18 @@ describe('the roles and mappers of the source a copy is made of', () => {
     expect(sourceRoles({ status: 'loading' })).toEqual([]);
     expect(sourceBound({ status: 'failed' })).toEqual([]);
     expect(sourceBound({ status: 'none' })).toEqual([]);
+  });
+});
+
+describe('a part of a copy', () => {
+  it('is asked for only when there is something to put in it', () => {
+    expect(asksPart(['a'])).toBe(true);
+    expect(asksPart([])).toBe(false);
+  });
+  it('is missed unless its write was made and took', () => {
+    const ok = { ok: true as const };
+    expect(partMissed('roles', ok)).toEqual([]);
+    expect(partMissed('roles', { ok: false })).toEqual(['roles']);
+    expect(partMissed('mappers', null)).toEqual(['mappers']);
   });
 });

@@ -129,6 +129,18 @@ export function createBodyOf(name: string, description: string, source: CopyRead
 
 const PARTS = { roles: 'roles', mappers: 'claim mappers' } as const;
 
+export type CopyPart = keyof typeof PARTS;
+
+// A copy asks for a part only when the source has something in it.
+export function asksPart(wanted: readonly string[]): boolean {
+  return wanted.length > 0;
+}
+
+// `written` is null when no write could be made, since the read gave no tag.
+export function partMissed(part: CopyPart, written: { ok: boolean } | null): CopyPart[] {
+  return written?.ok === true ? [] : [part];
+}
+
 // A copy missing some of its parts stays on the page, saying so, since a toast
 // is never the only copy of something to act on.
 export function partialCopy(
