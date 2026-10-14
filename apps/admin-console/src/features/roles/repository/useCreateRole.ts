@@ -9,7 +9,7 @@ import {
 } from '#/features/roles/adapter/roles';
 import { copySourceOf, type CopyRead } from '#/features/roles/service';
 import { copyReadOf } from '#/shared/service/copy';
-import { listKey, pickerKey } from '#/shared/repository/queryKeys';
+import { copyKey, listKey, pickerKey } from '#/shared/repository/queryKeys';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
 import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useWrite } from '#/shared/repository/useWrite';
@@ -66,7 +66,7 @@ export type { CopyRead };
 export function useCopySource(tenant: string, id: string | null): CopyRead {
   const { gateway } = useTransport();
   const query = useQuery({
-    queryKey: ['copy', tenant, id],
+    queryKey: copyKey(tenant, id),
     enabled: id !== null,
     queryFn: async () => {
       if (id === null) return null;

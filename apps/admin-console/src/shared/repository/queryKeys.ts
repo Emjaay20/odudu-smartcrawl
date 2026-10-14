@@ -53,6 +53,30 @@ export function scopeClientsKey(tenant: string, ...scope: readonly string[]) {
   return ['scope-clients', tenant, ...scope] as const;
 }
 
+export function evaluateKey(
+  tenant: string,
+  client: string,
+  ...asked: readonly (string | number)[]
+) {
+  return ['evaluate', tenant, client, ...asked] as const;
+}
+
+export function deliveriesKey(tenant: string, client: string) {
+  return ['deliveries', tenant, client] as const;
+}
+
+export function copyKey(tenant: string, ...source: readonly (string | null)[]) {
+  return ['copy', tenant, ...source] as const;
+}
+
+export function systemIssuerKey() {
+  return ['tenants', 'system-issuer'] as const;
+}
+
+export function sessionKey() {
+  return ['session'] as const;
+}
+
 export function overviewKey(tenant: string, ...read: readonly string[]) {
   return ['overview', tenant, ...read] as const;
 }

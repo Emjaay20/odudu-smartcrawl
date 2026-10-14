@@ -8,6 +8,7 @@ import {
   useSessionQuery,
 } from '#/features/session/repository/useSessionQuery';
 import { createQueryClient } from '#/shared/repository/queryClient';
+import { sessionKey } from '#/shared/repository/queryKeys';
 import { TransportContext } from '#/shared/transport/useTransport';
 import { fakeTransport, json } from '#/testing/fakeTransport';
 
@@ -34,7 +35,7 @@ it('drops every other cached read when the session is marked ended', async () =>
 
   expect(client.getQueryData(['whoami', 'acme'])).toBeUndefined();
   expect(client.getQueryData(['clients', 'acme'])).toBeUndefined();
-  expect(client.getQueryData(['session'])).toMatchObject({ result: { ok: false } });
+  expect(client.getQueryData(sessionKey())).toMatchObject({ result: { ok: false } });
   await waitFor(() => {
     expect(result.current.read?.result).toMatchObject({ ok: false, problem: { status: 401 } });
   });

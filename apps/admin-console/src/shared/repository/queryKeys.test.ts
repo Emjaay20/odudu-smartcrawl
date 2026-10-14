@@ -1,6 +1,9 @@
 import { expect, it } from 'vitest';
 import {
+  copyKey,
   countKey,
+  deliveriesKey,
+  evaluateKey,
   GROUP_KIND,
   groupKey,
   RECORD_KIND,
@@ -13,6 +16,8 @@ import {
   pickerKey,
   recordKey,
   scopeClientsKey,
+  sessionKey,
+  systemIssuerKey,
 } from '#/shared/repository/queryKeys';
 
 it('names every kind of cached read by its kind, its tenant and what it reads', () => {
@@ -33,6 +38,12 @@ it('names every kind of cached read by its kind, its tenant and what it reads', 
   expect(overviewKey('acme', 'keys')).toEqual(['overview', 'acme', 'keys']);
   expect(membershipsKey('acme', 's1')).toEqual(['memberships', 'acme', 's1']);
   expect(groupKey('acme', 'g1')).toEqual(['group', 'acme', 'g1']);
+  expect(evaluateKey('acme', 'c1', 'a', 'b', 2)).toEqual(['evaluate', 'acme', 'c1', 'a', 'b', 2]);
+  expect(deliveriesKey('acme', 'c1')).toEqual(['deliveries', 'acme', 'c1']);
+  expect(copyKey('acme', 'r1')).toEqual(['copy', 'acme', 'r1']);
+  expect(copyKey('acme', 'scopes', null)).toEqual(['copy', 'acme', 'scopes', null]);
+  expect(systemIssuerKey()).toEqual(['tenants', 'system-issuer']);
+  expect(sessionKey()).toEqual(['session']);
   expect(GROUP_KIND).toBe('group');
   expect(RECORD_KIND).toBe('record');
 });

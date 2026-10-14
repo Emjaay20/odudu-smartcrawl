@@ -11,13 +11,14 @@ import {
   type Principal,
   type SessionRead,
 } from '#/features/session/service';
+import { sessionKey } from '#/shared/repository/queryKeys';
 import { useDrafts } from '#/shared/repository/useDrafts';
 import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 import type { Gateway } from '#/shared/transport/gateway';
 import type { SessionEvents } from '#/shared/service/sessionEvents';
 import { useTransport } from '#/shared/transport/useTransport';
 
-const KEY = ['session'] as const;
+const KEY = sessionKey();
 
 // An ended or replaced session's server data belongs to nobody now, so none
 // of it stays in the cache for whoever is signed in next.

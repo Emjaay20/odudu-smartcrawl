@@ -18,7 +18,7 @@ import {
   type CopyRead,
 } from '#/features/scopes/service';
 import { copyReadOf } from '#/shared/service/copy';
-import { countKey, listKey, pickerKey } from '#/shared/repository/queryKeys';
+import { copyKey, countKey, listKey, pickerKey } from '#/shared/repository/queryKeys';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
 import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useWrite } from '#/shared/repository/useWrite';
@@ -108,7 +108,7 @@ export function useCreateScope(tenant: string): CreateScope {
 export function useCopySource(tenant: string, id: string | null): CopyRead {
   const { gateway } = useTransport();
   const query = useQuery({
-    queryKey: ['copy', tenant, 'scopes', id],
+    queryKey: copyKey(tenant, 'scopes', id),
     enabled: id !== null,
     queryFn: async () => {
       if (id === null) return null;
