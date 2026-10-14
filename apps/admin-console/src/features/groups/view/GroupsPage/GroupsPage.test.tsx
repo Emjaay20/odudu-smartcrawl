@@ -63,6 +63,7 @@ it('searches every level by name, and shows each match where it sits', async () 
   await user.type(screen.getByRole('searchbox', { name: 'Search by Name' }), 'plat{Enter}');
   const found = await screen.findByRole('grid', { name: 'Groups' });
   expect(within(found).getByRole('row', { name: /platform/u })).toHaveTextContent('/eng/platform');
+  expect(within(found).queryByRole('row', { name: /finance/u })).toBeNull();
   await waitFor(() => {
     expect(sent.at(-1)?.search.get('parent')).toBeNull();
   });
