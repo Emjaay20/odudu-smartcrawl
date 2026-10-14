@@ -9,7 +9,7 @@ import { expect, it } from 'vitest';
 import { createQueryClient } from '#/shared/repository/queryClient';
 import { useResourceList } from '#/shared/repository/useResourceList';
 import type { Gateway } from '#/shared/transport/gateway';
-import { fakeTransport, json, problem, type Answer } from '#/testing/fakeTransport';
+import { fakeTransport, json, pending, problem, type Answer } from '#/testing/fakeTransport';
 import { mountAtRoute } from '#/testing/mountAtRoute';
 import { ACME_ADMIN } from '#/testing/tenantPaths';
 
@@ -198,4 +198,59 @@ it('says when a further page could not be loaded, keeping the rows it has', asyn
   expect(await screen.findByText('more failed')).toBeVisible();
   expect(screen.getByText('ada')).toBeVisible();
   expect(screen.getByText('status ready')).toBeVisible();
+});
+
+it('says it is loading until the first page answers', async () => {
+  mount('/console/acme/subjects', { [LIST]: pending(), [COUNT]: pending() });
+  expect(await screen.findByText('status loading')).toBeVisible();
+  expect(screen.getByText('count none')).toBeVisible();
+});
+
+it('does not ask for the next page again while one is on its way', async () => {
+  const user = userEvent.setup();
+  const { asked } = mount('/console/acme/subjects', {
+    [LIST]: (request) =>
+      request.search.get('cursor') === CURSOR
+        ? pending()(request)
+        : json({ items: [subject('ada')], next: CURSOR })(request),
+    [COUNT]: json({ count: 2, capped: false }),
+  });
+  await screen.findByText('ada');
+  const more = screen.getByRole('button', { name: 'Load more' });
+  await user.click(more);
+  await user.click(more);
+  await waitFor(() => {
+    expect(asked(LIST)).toEqual(['', `cursor=${CURSOR}`]);
+  });
+});
+
+function Defaulted() {
+  const list = useResourceList({
+    tenant: 'acme',
+    resource: 'subjects',
+    filters: ['enabled'],
+    defaults: { enabled: 'true' },
+    read: readSubjects,
+  });
+  return <p>{`narrowed ${String(list.narrowed)} rows ${String(list.rows.length)}`}</p>;
+}
+
+it('reads a filter the address does not set as its default, without calling that narrowing', async () => {
+  const fake = fakeTransport({ [LIST]: json({ items: [subject('ada')] }) });
+  mountAtRoute('/console/acme/subjects', '/acme/subjects', Defaulted, {
+    basepath: '/console',
+    providers: { transport: fake.transport, queryClient: createQueryClient() },
+  });
+  expect(await screen.findByText('narrowed false rows 1')).toBeVisible();
+  expect(fake.sent.map((request) => request.search.toString())).toEqual(['enabled=true']);
+});
+
+it('lets the address override a default', async () => {
+  const fake = fakeTransport({ [LIST]: json({ items: [subject('ada')] }) });
+  mountAtRoute('/console/acme/subjects?enabled=false', '/acme/subjects', Defaulted, {
+    basepath: '/console',
+    providers: { transport: fake.transport, queryClient: createQueryClient() },
+  });
+  expect(await screen.findByText('narrowed true rows 1')).toBeVisible();
+  expect(fake.sent.map((request) => request.search.toString())).toEqual(['enabled=false']);
 });
