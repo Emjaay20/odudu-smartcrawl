@@ -407,7 +407,16 @@ import it; a feature reaches another only through its `index.ts`. If two
 features need the same thing, move it to `shared/` (any layer) in its own
 commit and repoint both. A task's report says what was searched and what was
 reused or moved. Do not merge things that merely look alike and change for
-different reasons: feature-specific wording stays in its feature.
+different reasons: feature-specific wording stays in its feature. Each of
+these is a lint with no allowlist, so resolving a finding means changing the
+code: `console-no-duplicate-exports` fails a declaration copied between
+features, `shared`, `app` or the e2e files; `console-no-module-state` a `let`,
+a mutated collection or a stateful factory at module scope;
+`console-store-access` a store action called through `getState()` in a hook or
+component, a `setState()` or a bare `useStore()`; `console-query-keys` a
+hand-typed cache key; `console-css-vars-defined` and
+`console-css-module-classes-defined` a custom property or class nothing
+defines, and a class nothing uses.
 
 **"No business logic" in a usecase or repository means none, however small
 it looks.** A usecase wires hooks, state and calls together; a repository
@@ -416,8 +425,10 @@ neither phrases or formats anything. A rule, a message, a failure-to-copy
 mapping and a formatter are each a pure `service` function, and one shared
 by two features lives once in `shared/service`. ADR 0010's amendment has
 the reasoning, and `tests/lint/console-usecase-integration-only.test.ts`
-fails the build on the constructs it can see. A construct it cannot see is
-still a breach.
+fails the build on the constructs it can see, a ternary in a hook's returned
+object and a spread merging two objects among them, as ESLint's `complexity`
+holds each usecase and repository function to 8. A construct they cannot see
+is still a breach.
 
 Domain packages never import protocol packages. Protocol packages never
 import each other.
