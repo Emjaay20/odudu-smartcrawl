@@ -694,6 +694,13 @@
       "when": 1789308781736,
       "tag": "0098_clients_secret_by_type",
       "breakpoints": true
+    },
+    {
+      "idx": 99,
+      "version": "7",
+      "when": 1789308881736,
+      "tag": "0099_audit_events_resource_type",
+      "breakpoints": true
     }
   ]
 }

@@ -2068,6 +2068,70 @@ success says the relay accepted the message, and that acceptance is not delivery
 lost answer is not sent again. The browser tests cover the refusal only: loopback
 is always refused, and the e2e stack has no public SMTP sink to accept one.
 
+## Part 4 — Audit
+
+**One table draws every audit row.** `shared/view/AuditTable` is the Audit trail's
+table and every record's Activity tab, so the two cannot drift. A row's Details
+button opens a dialog with every field of `auditEventSchema` (the time in the
+reader's zone and in UTC, the ids with copy buttons, the actor, the resource with a
+link to its record) and the redacted `detail` as keys and values: a before and after
+pair reads `true → false`, nested keys by their path, a long value cut at 120
+characters with a way to see all of it, every value put on the page as text.
+
+**The caller-from-elsewhere mark is the server's, not the console's.** The brief
+for this increment had the SPA compare `actor_tenant_id` with the viewed tenant,
+but the row carries no id for the tenant being viewed (the path is a name), and
+the API already answers `actor_origin` (`tenant`, `system`, `other-tenant`) from
+that comparison made where both ids are known. The console marks `system` and
+`other-tenant`, says once under the table why such a caller has no name (the API
+resolves a name only inside the row's own tenant), and in the detail explains it
+again; the id is always shown.
+
+**Filters live in the address, are checked on read, and cannot reach an illegal
+state.** The eight filters the API takes are URL parameters. Each is checked against
+the contract's own schema (`listAuditQuerySchema.shape`), so a value the API would
+answer 400 for is left out and named in a note rather than failing the page. A
+`resource_id` with no `resource_type` and a range that ends before it starts are
+left out the same way. The form cannot hold the first (the id field waits for its
+type, and clearing the type clears the id) and refuses the second beside the field.
+Changing a filter drops the cursor trail, since a cursor is bound to the filters it
+was issued under, and a cursor the server no longer honours (a 400 naming the
+`cursor` field) shows "start again" rather than a generic failure.
+
+**Date-time fields pick a minute in the reader's zone and send UTC.** `DateTimeField`
+is a React Aria `DateField` over a `ZonedDateTime`; an upper bound is the last
+millisecond of the minute picked, so `to` being inclusive takes the whole minute.
+
+**There is no count, and the page says so.** It says how far back the rows loaded
+reach instead. `GET /audit/count` is named in the coverage test's `NEVER` list with
+that reason. `GET /audit/export` is the page's "Export these events" button: it
+saves what the applied filters match as NDJSON (not what is typed in the form), says
+when they match more than the export's 10,000, and each export is itself recorded.
+
+**Rows of one request are labelled, only among those loaded.** The label is the last
+six characters of `request_id`, stable across pages; it appears on rows that share
+an id with another loaded row, with how many, and a note says the server cannot
+filter by request and the caller can set the id. Nothing pages to group.
+
+**A trail read by `resource_type` alone had no ordered index, and now has one.**
+The Audit page offers the type without an id, as the API does. `audit_events_resource`
+ends `(resource_type, resource_id, occurred_at, id)`, so a type alone cannot read it
+in the listing's order: `EXPLAIN` against a type whose rows are all older than the
+rest of the trail showed the first page walking `audit_events_tenant_time` through
+every newer row, and a later page a Bitmap Heap Scan of the type and a `Sort` of all
+of it. Migration `0099` adds `audit_events_resource_type (tenant_id, resource_type,
+occurred_at DESC, id DESC)`, and `list-plans.int.test.ts` holds the first and a later
+page to an `Index Scan` of it with no `Sort` (red before the migration). It is a
+seventh index on the table every event writes to, which P11's partitioning row already
+carries. The other filters (`event_type`, `action`, `outcome`, `actor_subject_id`, a
+resource with its id, and the time range) were each served by an index ending in the
+listing's order already; a combination of two takes one of them and filters by the
+rest, which is bounded by how common the combination is, not by the page.
+
+**The area placeholder is gone.** Audit was the last area without a page, so
+`AreaPage`, `notBuiltText` and the router's catch-all over `EVERY_AREA` are removed,
+and `app/router.test.ts` holds every area to a route instead.
+
 ## Part 4 — the behaviour gate for the consolidation
 
 Unit and e2e tests passed at every commit of the consolidation (B1 to B4,

@@ -47,6 +47,9 @@ const ROLES_PER_CLIENT = 300;
 // resource_id, so a busy grant's own trail is not the handful of rows a
 // resource ordinarily has.
 const BUSY_RESOURCE_ROWS = 5_000;
+// A resource type whose rows are all older than the rest of the trail, so a
+// read of it alone cannot be found by walking the newest rows.
+const OLD_TYPE_ROWS = 3_000;
 const HELD_ROLE_SUBJECTS = 2_000;
 const SERVICE_SUBJECTS = 50;
 const CHILD_GROUPS = 3_000;
@@ -221,6 +224,13 @@ beforeAll(async () => {
     select gen_random_uuid(), ${targetTenantId}, now() - (n || ' seconds')::interval,
            'token', 'token.refresh', 'allowed', 'grant', ${busyGrantId}
       from generate_series(1, ${BUSY_RESOURCE_ROWS}) n`;
+
+  await owner.sql`
+    insert into audit_events
+      (id, tenant_id, occurred_at, event_type, action, outcome, resource_type, resource_id)
+    select gen_random_uuid(), ${targetTenantId}, now() - interval '30 days' - (n || ' seconds')::interval,
+           'admin_mutation', 'key.create', 'allowed', 'signing_key', gen_random_uuid()::text
+      from generate_series(1, ${OLD_TYPE_ROWS}) n`;
 
   await owner.sql`analyze`;
 }, 300_000);
@@ -628,6 +638,43 @@ describe('the plan an audit trail narrowed by resource_type and resource_id is g
         ].join('\n'),
       );
     }
+  });
+});
+
+// `audit_events_resource` leads with resource_id after the type, so a read by
+// the type alone has no order on time through it and would need a Sort of
+// every row of the type; the type's own index ends in the listing's order.
+describe('the plan an audit trail narrowed by resource_type alone is given', () => {
+  it.each([
+    ['the first page', false],
+    ['a later page', true],
+  ])('is a sort-free index scan of the type, on %s', async (page, later) => {
+    const list = (cursor: string | undefined) =>
+      withTenant(app.db, targetTenantId, async (tx) => {
+        const outcome = await listAudit(tx, {
+          revealNames: true,
+          tenantId: targetTenantId,
+          limit: 50,
+          cursor,
+          cursorKey: CURSOR_KEY,
+          resourceType: 'signing_key',
+        });
+        return outcome.kind === 'ok' ? outcome.next : null;
+      });
+    const primed = await list(undefined);
+    if (later && primed === null) throw new Error('the type fitted on one page');
+    const cursor = later ? (primed ?? undefined) : undefined;
+    const { statement } = await issuedBy(() => list(cursor));
+
+    const [json] = await explained(app, statement, 'FORMAT JSON', targetTenantId);
+    const nodes = allNodes(rootPlan(json));
+    const scan = nodes.find((node) => node.indexName === 'audit_events_resource_type');
+    expect(scan?.nodeType).toBe('Index Scan');
+    expect(scan?.indexCond).toContain("resource_type = 'signing_key'");
+    if (later) expect(scan?.indexCond).toContain('ROW(occurred_at');
+    expect(nodes.map((node) => node.nodeType)).not.toContain('Seq Scan');
+    expect(nodes.map((node) => node.nodeType)).not.toContain('Sort');
+    await recordPlan(`audit ?resource_type=signing_key, ${page}`, statement);
   });
 });
 
