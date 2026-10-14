@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { C, clientRoutes } from '#/testing/clientsFixtures';
-import { json, problem } from '#/testing/fakeTransport';
+import { json, pending, problem } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
 import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
@@ -121,6 +121,18 @@ it('asks again when the person presses Evaluate again', async () => {
   await user.click(within(section).getByRole('button', { name: 'Evaluate claims' }));
   await waitFor(() => {
     expect(sent.filter((s) => s.path === `${C}/c-bill/evaluate`)).toHaveLength(2);
+  });
+});
+
+it('holds Evaluate back while the answer is awaited', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, routes({ [EVALUATE]: pending() }));
+  const section = await chooseAda(user);
+  const evaluate = within(section).getByRole('button', { name: 'Evaluate claims' });
+  expect(evaluate).toBeEnabled();
+  await user.click(evaluate);
+  await waitFor(() => {
+    expect(evaluate).toBeDisabled();
   });
 });
 
