@@ -7856,7 +7856,10 @@ it still carries no script. The text is one string for now; a text per
 locale is P4b's, with the rest of the translated pages. Both travel in the
 tenant document and are amended by `PATCH`.
 
-On the twelfth stack's `demo`, with `billing` marked as above: a public
+On the `odudu-17a` stack's `demo` (the compose project `odudu-17a` on
+`http://localhost:3094`, built from commit `a29df187`, with `$ADMIN_TOKEN` got
+as above for its own system administrator), with `billing` created and marked
+as above: a public
 client `consent-portal`, named `Consent <Portal>`, made with
 `consent_required` and given the vocabulary — `billing` among it — by
 `POST /clients`; `profile` given a text and an order; `grace` seeded with
@@ -7868,36 +7871,33 @@ order. The pre-approved pair is listed `openid` then `profile`, by their
 ```bash
 curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
   -d '{"client_id":"consent-portal","name":"Consent <Portal>","redirect_uris":["https://portal.demo.example/callback"],"token_endpoint_auth_method":"none","consent_required":true}' \
-  http://localhost:3082/admin/tenants/demo/clients > /dev/null
+  http://localhost:3094/admin/tenants/demo/clients > /dev/null
 curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
   -d '{"consent_text":"Your name & <picture>","display_order":5}' \
-  http://localhost:3082/admin/tenants/demo/scopes/01a109b6-1d90-79dd-bd97-5ff11a7bdada > /dev/null
+  http://localhost:3094/admin/tenants/demo/scopes/01a137d6-beba-78b4-a54d-34603e6f37fa > /dev/null
 docker compose exec -T odudu node dist/main.js seed user --tenant demo \
   --username grace --password 'correct-horse-battery-8c2' > /dev/null
 curl -sS -c jar -b jar -o /dev/null \
-  'http://localhost:3082/tenants/demo/protocol/openid-connect/auth?response_type=code&client_id=consent-portal&redirect_uri=https%3A%2F%2Fportal.demo.example%2Fcallback&scope=openid%20billing%20profile%20offline_access&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'
+  'http://localhost:3094/tenants/demo/protocol/openid-connect/auth?response_type=code&client_id=consent-portal&redirect_uri=https%3A%2F%2Fportal.demo.example%2Fcallback&scope=openid%20billing%20profile%20offline_access&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'
 curl -sS -D - -c jar -b jar \
-  --data-urlencode "auth_session_id=01a109bb-ebe1-7939-9b64-c49b58303c2d" \
+  --data-urlencode "auth_session_id=01a137da-fe1b-73d0-adb7-877a0657f131" \
   --data-urlencode 'username=grace' --data-urlencode 'password=correct-horse-battery-8c2' \
-  http://localhost:3082/tenants/demo/login-actions/authenticate
+  http://localhost:3094/tenants/demo/login-actions/authenticate
 ```
 
 The `auth_session_id` is the one the login form that request rendered
-carried. _(The `content-security-policy` line is left out: this page now
-sends `form-action 'self' https://portal.demo.example`, as the re-run
-[consent screen](request-paths.md#the-consent-screen) shows for its own
-client, and the twelfth stack's `billing` scope and grants cannot be rebuilt
-on a fresh one. Every other line is as shown.)_
+carried.
 
 ````
 HTTP/1.1 200 OK
-x-request-id: 01a109bb-ebef-720a-b749-5783b7fe7027
+x-request-id: 01a137da-fe58-7897-8b4c-bcd168243669
 content-type: text/html
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' https://portal.demo.example; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 content-length: 796
-Date: Mon, 05 Oct 2026 01:44:33 GMT
+Date: Wed, 14 Oct 2026 00:41:01 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -7907,7 +7907,7 @@ Keep-Alive: timeout=72
 <body>
 <h1>Consent &lt;Portal&gt; is asking for access</h1>
 <form method="post" action="/tenants/demo/login-actions/consent">
-  <input type="hidden" name="auth_session_id" value="01a109bb-ebe1-7939-9b64-c49b58303c2d">
+  <input type="hidden" name="auth_session_id" value="01a137da-fe1b-73d0-adb7-877a0657f131">
   <ul>
   <li>openid</li>
   <li>Your name &amp; &lt;picture&gt;</li>

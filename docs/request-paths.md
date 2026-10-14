@@ -1282,49 +1282,68 @@ GET carries a small script that reloads it on `pageshow` when
 reload would send the POST again. ADR 0029's amendment has the reasoning.
 
 Captured on its own stack, not the one above: the `infra/docker` compose file
-as the project `odudu-e2e` on `http://localhost:3080`, built from commit
-`0fdcca36`, with the tenant `t17a` and its administrator `ada`, seeded with
-`odudu seed tenant`, `seed user` and `seed grant-role`. A form fetched from
-the authorization endpoint parked the request as
-`01a13789-3a08-7d56-a6d6-ca2a71cc343e`. Its lifetime, then the same row
-expired with `psql`:
+as the project `odudu-17a` on `http://localhost:3094`, built from commit
+`a29df187`, with `demo` seeded as [Bootstrap](#bootstrap) does. A form fetched
+from the authorization endpoint parked the request as
+`01a137db-8c45-74c1-94ea-205ea7fded94`. The row, as stored, then the same row expired with
+`psql` and shown to be (the `-x` listing and the header spaces trimmed):
 
 ```sql
-select expires_at - created_at as lifetime from authentication_sessions
-  where id = '01a13789-3a08-7d56-a6d6-ca2a71cc343e';
+select expires_at - created_at as lifetime, pending_request from authentication_sessions
+  where id = '01a137db-8c45-74c1-94ea-205ea7fded94';
 update authentication_sessions set expires_at = now() - interval '1 second'
-  where id = '01a13789-3a08-7d56-a6d6-ca2a71cc343e';
+  where id = '01a137db-8c45-74c1-94ea-205ea7fded94';
+select expires_at < now() as expired from authentication_sessions
+  where id = '01a137db-8c45-74c1-94ea-205ea7fded94';
 ```
 
 ```
-    lifetime
-----------------
- 00:30:00.00042
-(1 row)
+-[ RECORD 1 ]---+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+lifetime        | 00:30:00.00075
+pending_request | {"nonce": null, "scope": "openid", "state": "demo-state", "claims": {"idToken": {}, "userinfo": {}}, "prompt": [], "clientId": "demo-spa", "resource": [], "redirectUri": "http://localhost:8080/callback", "codeChallenge": "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", "codeChallengeMethod": "S256"}
 
 UPDATE 1
+ expired
+---------
+ t
+(1 row)
 ```
 
-The right password, posted against it:
+The tenant's codes at this point, so that nothing below can be said to have
+issued one:
+
+```sql
+select count(*) as codes from authorization_codes
+  where tenant_id = (select id from tenants where name = 'demo');
+```
+
+```
+ codes
+-------
+     4
+(1 row)
+```
+
+The right password, posted against the expired row:
 
 ```bash
 curl -sS -D - -X POST \
-  --data-urlencode auth_session_id=01a13789-3a08-7d56-a6d6-ca2a71cc343e \
+  --data-urlencode auth_session_id=01a137db-8c45-74c1-94ea-205ea7fded94 \
   --data-urlencode username=ada \
-  --data-urlencode password=Tr17a-manual-only-pw \
-  http://localhost:3080/tenants/t17a/login-actions/authenticate
+  --data-urlencode password=correct-horse-battery \
+  http://localhost:3094/tenants/demo/login-actions/authenticate
 ```
 
 ```
 HTTP/1.1 400 Bad Request
-x-request-id: 01a13789-3b76-7e92-a2a3-d0c247466e9a
+x-request-id: 01a137db-8e6b-77ac-b25e-37ce7a4452eb
 content-type: text/html
 content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 636
-Date: Tue, 13 Oct 2026 23:11:42 GMT
+content-length: 570
+Date: Wed, 14 Oct 2026 00:41:38 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -1334,57 +1353,60 @@ Keep-Alive: timeout=72
 <body>
 <h1>Can't continue</h1>
 <p>This sign-in attempt is no longer valid. Go back and start again.</p>
-<p><a href="/tenants/t17a/protocol/openid-connect/auth?response_type=code&amp;client_id=odudu-admin&amp;redirect_uri=http%3A%2F%2Flocalhost%3A3080%2Fconsole%2Fauth%2Fcallback&amp;scope=openid&amp;code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&amp;code_challenge_method=S256&amp;state=demo-state&amp;resource=urn%3Aodudu%3Aparams%3Aadmin-api">Start sign-in again</a></p>
+<p><a href="/tenants/demo/protocol/openid-connect/auth?response_type=code&amp;client_id=demo-spa&amp;redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&amp;scope=openid&amp;code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&amp;code_challenge_method=S256&amp;state=demo-state">Start sign-in again</a></p>
 <p><small>invalid_request</small></p>
 </body>
 </html>
 ```
 
 The link is this server's own authorization endpoint, rebuilt from the request
-`/authorize` parked and validated; `/authorize` validates it again from
-scratch when it is followed. The row authenticated nothing: it was read only
-for those parameters, and the row is there because the reaper keeps an
-expired one for `ODUDU_RETENTION_AUTHENTICATION_SESSION_SECONDS` (an hour by
-default) after it expires. The `resource` is the audience the client's
-registration resolved the original request to. A request that carried an
-`id_token_hint`, or a `claims` `sub`, is not rebuilt, since the hint token
-itself is not stored and a request without it would no longer be tied to one
-subject.
+`/authorize` parked and validated, which the `pending_request` above shows:
+`client_id`, `redirect_uri`, `scope`, `state` and the PKCE challenge are its
+`clientId`, `redirectUri`, `scope`, `state` and `codeChallenge`. `/authorize`
+validates it again from scratch when it is followed. The row authenticated
+nothing: it was read only for those parameters, and it is still there because
+the reaper keeps an expired one for
+`ODUDU_RETENTION_AUTHENTICATION_SESSION_SECONDS` (an hour by default) after it
+expires. A request that carried an `id_token_hint`, or a `claims` `sub`, is not
+rebuilt, since the hint token itself is not stored and a request without it
+would no longer be tied to one subject; it is handed back to its client
+instead, in [Returning to the application](#returning-to-the-application)
+below.
 
-Following it, with its `&amp;` read as `&`:
+Following the link, with its `&amp;` read as `&`:
 
 ```bash
-curl -sS -D - 'http://localhost:3080/tenants/t17a/protocol/openid-connect/auth?response_type=code&client_id=odudu-admin&redirect_uri=http%3A%2F%2Flocalhost%3A3080%2Fconsole%2Fauth%2Fcallback&scope=openid&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&state=demo-state&resource=urn%3Aodudu%3Aparams%3Aadmin-api'
+curl -sS -D - 'http://localhost:3094/tenants/demo/protocol/openid-connect/auth?response_type=code&client_id=demo-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&state=demo-state'
 ```
 
 The response is `200` with the login form under a new `auth_session_id`
-(`01a13789-5280-700c-8da0-b5f5b3e4c5f9`), these headers, and, after the form, the
-reload script on the same nonce the policy names:
+(`01a137db-8eb0-798d-bf67-370de418d9e6`), these headers, and, after the form, the reload script on the
+same nonce the policy names:
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a13789-526a-7479-8d60-446ac2b4c2b9
+x-request-id: 01a137db-8ea4-73d6-a50c-2ada49a729f8
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:3080; base-uri 'none'; script-src 'nonce-ZyS8r4BN/oexBWSSziIg0g=='; connect-src 'self'
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-w7KIfq6XnBzAxpE1SFNYdQ=='; connect-src 'self'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 content-length: 2521
-Date: Tue, 13 Oct 2026 23:11:48 GMT
+Date: Wed, 14 Oct 2026 00:41:38 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
 
 ```
-<script nonce="ZyS8r4BN/oexBWSSziIg0g==">window.addEventListener('pageshow', function (event) { if (event.persisted) location.reload(); });</script>
+<script nonce="w7KIfq6XnBzAxpE1SFNYdQ==">window.addEventListener('pageshow', function (event) { if (event.persisted) location.reload(); });</script>
 ```
 
-The same post once the reaper has deleted the row, which is also what an
-`auth_session_id` that names nothing gets. The page has no link, since there
-is no request left to rebuild:
+Then the reaper's work, which is what makes the link impossible: with the row
+deleted, the same post has nothing to rebuild from and the page has no link.
+The deletion, then the post:
 
 ```sql
-delete from authentication_sessions where id = '01a13789-3a08-7d56-a6d6-ca2a71cc343e';
+delete from authentication_sessions where id = '01a137db-8c45-74c1-94ea-205ea7fded94';
 ```
 
 ```
@@ -1393,14 +1415,14 @@ DELETE 1
 
 ```
 HTTP/1.1 400 Bad Request
-x-request-id: 01a13789-3c0b-732d-962b-253f0dbc7436
+x-request-id: 01a137db-8fa1-7f47-be66-a008a108cfbf
 content-type: text/html
 content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 content-length: 254
-Date: Tue, 13 Oct 2026 23:11:43 GMT
+Date: Wed, 14 Oct 2026 00:41:38 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -1415,23 +1437,137 @@ Keep-Alive: timeout=72
 </html>
 ```
 
-No code was issued by any of it:
+An `auth_session_id` that names nothing at all
+(`00000000-0000-4000-8000-000000000000`, which no row holds) is answered by the same page:
+
+```bash
+curl -sS -D - -X POST \
+  --data-urlencode auth_session_id=00000000-0000-4000-8000-000000000000 \
+  --data-urlencode username=ada \
+  --data-urlencode password=correct-horse-battery \
+  http://localhost:3094/tenants/demo/login-actions/authenticate
+```
+
+```
+HTTP/1.1 400 Bad Request
+x-request-id: 01a137db-facc-7f29-86ed-3823793412ee
+content-type: text/html
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+content-length: 254
+Date: Wed, 14 Oct 2026 00:42:05 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Sign-in error</title></head>
+<body>
+<h1>Can't continue</h1>
+<p>This sign-in attempt is no longer valid. Go back and start again.</p>
+<p><small>invalid_request</small></p>
+</body>
+</html>
+```
+
+No code was issued by any of it, which the count shows against the one read
+before:
 
 ```sql
 select count(*) as codes from authorization_codes
-  where tenant_id = (select id from tenants where name = 't17a');
+  where tenant_id = (select id from tenants where name = 'demo');
 ```
 
 ```
  codes
 -------
-     0
+     4
 (1 row)
 ```
 
 The 30 minutes are the tenant's `login_ttl_seconds`, which
 `PATCH /admin/tenants/{tenant}/settings` amends between `60` and `86400`
 ([Admin paths](admin-paths.md#get-settings-and-patch-settings)).
+
+#### Returning to the application
+
+A request that carried an `id_token_hint`, or a `claims` parameter whose
+`id_token` names a `sub`, parks the subject it names with the request, and a
+rebuilt authorization request could not carry that constraint (the hint token
+is not stored). Its refusal offers **Return to the application** instead: an
+error redirect to the `redirect_uri` the request was validated with, built by
+the same `errorRedirect` the endpoint uses for its other refusals, with
+`error=access_denied` (RFC 6749 section 4.1.2.1, OIDC Core section 3.1.2.6: the
+sign-in was not completed and nothing was granted), the request's `state` and
+the issuer as `iss`. The relying party restarts with a hint of its own. It is
+offered only while the client is enabled and still registers that
+`redirect_uri`. Same stack as above, a request naming `ada` as the `sub`
+(`01a137d6-bf12-771f-81fb-97620b5fd349`), its row, expired, then the right password:
+
+```bash
+curl -sS -G 'http://localhost:3094/tenants/demo/protocol/openid-connect/auth' \
+  --data-urlencode response_type=code --data-urlencode client_id=demo-spa \
+  --data-urlencode redirect_uri=http://localhost:8080/callback \
+  --data-urlencode scope=openid --data-urlencode state=demo-state \
+  --data-urlencode code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM \
+  --data-urlencode code_challenge_method=S256 \
+  --data-urlencode 'claims={"id_token":{"sub":{"value":"01a137d6-bf12-771f-81fb-97620b5fd349"}}}'
+```
+
+The form it rendered parked the request as `01a137db-f90d-7fad-a999-84eb2dd317cb`, and the row holds the
+constraint as `claimsSubject`:
+
+```sql
+select pending_request from authentication_sessions
+  where id = '01a137db-f90d-7fad-a999-84eb2dd317cb';
+update authentication_sessions set expires_at = now() - interval '1 second'
+  where id = '01a137db-f90d-7fad-a999-84eb2dd317cb';
+```
+
+```
+-[ RECORD 1 ]---+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+pending_request | {"nonce": null, "scope": "openid", "state": "demo-state", "claims": {"idToken": {"sub": {"value": "01a137d6-bf12-771f-81fb-97620b5fd349", "essential": false}}, "userinfo": {}}, "prompt": [], "clientId": "demo-spa", "resource": [], "redirectUri": "http://localhost:8080/callback", "claimsSubject": "01a137d6-bf12-771f-81fb-97620b5fd349", "codeChallenge": "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", "codeChallengeMethod": "S256"}
+UPDATE 1
+```
+
+```bash
+curl -sS -D - -X POST \
+  --data-urlencode auth_session_id=01a137db-f90d-7fad-a999-84eb2dd317cb \
+  --data-urlencode username=ada \
+  --data-urlencode password=correct-horse-battery \
+  http://localhost:3094/tenants/demo/login-actions/authenticate
+```
+
+```
+HTTP/1.1 400 Bad Request
+x-request-id: 01a137db-fa94-75e9-bec9-c11977da9446
+content-type: text/html
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+content-length: 428
+Date: Wed, 14 Oct 2026 00:42:05 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Sign-in error</title></head>
+<body>
+<h1>Can't continue</h1>
+<p>This sign-in attempt is no longer valid. Go back and start again.</p>
+<p><a href="http://localhost:8080/callback?error=access_denied&amp;state=demo-state&amp;iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo">Return to the application</a></p>
+<p><small>invalid_request</small></p>
+</body>
+</html>
+```
+
+The link is the client's own callback, carrying the error and the `state` the
+client sent, so the client can tell which of its requests ended and start the
+next one.
 
 #### Signing in with an email address
 
@@ -3273,12 +3409,10 @@ action at their next login, and the login does not complete until they have
 enrolled.
 
 Captured on a stack of its own: the `infra/docker` compose file as the
-project `odudu-t8d2` on `http://localhost:3086`, its `odudu` service built
-from commit `6feb06b7`, started on an empty volume, with this section and
-the `otp-demo` half of [Recovery codes](#recovery-codes) run front to back
-against it. The `rc8-demo` run inside Recovery codes comes from the earlier
-stack, `odudu-t8d` at `511db0fd`: its pages are the recovery-codes page and
-the redirects, which nothing since has changed. The HTML
+project `odudu-17a` on `http://localhost:3094`, its `odudu` service built
+from commit `a29df187`, started on an empty volume, with this section, the
+`otp-demo` half of [Recovery codes](#recovery-codes) and its `rc8-demo` half
+run front to back against it. The HTML
 bodies are the bytes it served, line breaks, indentation and all. A fenced
 response block carries no language tag, so Prettier leaves them alone.
 
@@ -3293,8 +3427,8 @@ odudu seed tenant --name otp-demo --set otp_required=true
 ```
 
 ```
-{"created":true,"tenant":"otp-demo","tenantId":"01a10be7-\u2026","clientId":"otp-spa","userSubjectId":"01a10be7-\u2026"}
-{"command":"tenant","created":false,"tenant":"otp-demo","tenantId":"01a10be7-1dc7-7e04-8ab7-9bfe3ada8843","settings":["otp_required"]}
+{"created":true,"tenant":"otp-demo","tenantId":"01a137d3-\u2026","clientId":"otp-spa","userSubjectId":"01a137d3-\u2026"}
+{"command":"tenant","created":false,"tenant":"otp-demo","tenantId":"01a137d3-93e5-7a35-b789-277980331f13","settings":["otp_required"]}
 ```
 
 `created` is `false` because the line above it made the tenant: `seed tenant`
@@ -3309,18 +3443,18 @@ second factor is decided before somebody has said who they are, because
 which account a code belongs to is not knowable until then.
 
 ```bash
-curl -sS 'http://localhost:3086/tenants/otp-demo/protocol/openid-connect/auth?response_type=code&client_id=otp-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'
+curl -sS 'http://localhost:3094/tenants/otp-demo/protocol/openid-connect/auth?response_type=code&client_id=otp-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'
 ```
 
-The `auth_session_id` in that form — `01a10be7-227d-76b6-9df7-e407bdfcdd5d`
+The `auth_session_id` in that form — `01a137d3-98b1-7904-aeda-9a6709b81b53`
 in this run — is what every request below carries. Posting the correct
 password answers 200 with an enrolment page rather than 302 with a code:
 the password was accepted, and the pending action is what stops the login
 from completing (no `set-cookie`, no `code`).
 
 ```bash
-curl -sS -X POST http://localhost:3086/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a10be7-227d-76b6-9df7-e407bdfcdd5d' \
+curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a137d3-98b1-7904-aeda-9a6709b81b53' \
   --data-urlencode 'username=ada' \
   --data-urlencode 'password=correct-horse-battery'
 ```
@@ -3333,11 +3467,11 @@ curl -sS -X POST http://localhost:3086/tenants/otp-demo/login-actions/authentica
 <h1>Set up your authenticator</h1>
 <p>Scan this with your authenticator app, or enter the key by hand.</p>
 <svg …>…</svg>
-<p><code>otpauth://totp/otp-demo:ada?secret=RQAU4FIXSR3DNTFQNDMVHZLB3AJNUTNW&amp;issuer=otp-demo&amp;algorithm=SHA1&amp;digits=6&amp;period=30</code></p>
-<p>Key: <code>RQAU4FIXSR3DNTFQNDMVHZLB3AJNUTNW</code></p>
+<p><code>otpauth://totp/otp-demo:ada?secret=BYIQDMIGLQSMNOGKTZMVAGWBLWEOE7ZY&amp;issuer=otp-demo&amp;algorithm=SHA1&amp;digits=6&amp;period=30</code></p>
+<p>Key: <code>BYIQDMIGLQSMNOGKTZMVAGWBLWEOE7ZY</code></p>
 <form method="post" action="/tenants/otp-demo/login-actions/required-action?action=configure-totp">
-  <input type="hidden" name="auth_session_id" value="01a10be7-227d-76b6-9df7-e407bdfcdd5d">
-  <input type="hidden" name="secret" value="RQAU4FIXSR3DNTFQNDMVHZLB3AJNUTNW">
+  <input type="hidden" name="auth_session_id" value="01a137d3-98b1-7904-aeda-9a6709b81b53">
+  <input type="hidden" name="secret" value="BYIQDMIGLQSMNOGKTZMVAGWBLWEOE7ZY">
   <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
   <button type="submit">Confirm</button>
 </form>
@@ -3366,32 +3500,32 @@ than a phone:
 ```bash
 node --input-type=module -e "
 import { totpCode, totpCounter } from './packages/crypto/src/service/totp.ts';
-console.log(totpCode('RQAU4FIXSR3DNTFQNDMVHZLB3AJNUTNW', totpCounter(new Date())));
+console.log(totpCode('BYIQDMIGLQSMNOGKTZMVAGWBLWEOE7ZY', totpCounter(new Date())));
 "
 ```
 
 ```
-705512
+474168
 ```
 
 ```bash
 curl -sS -i -X POST \
-  'http://localhost:3086/tenants/otp-demo/login-actions/required-action?action=configure-totp' \
-  --data-urlencode 'auth_session_id=01a10be7-227d-76b6-9df7-e407bdfcdd5d' \
-  --data-urlencode 'secret=RQAU4FIXSR3DNTFQNDMVHZLB3AJNUTNW' \
-  --data-urlencode 'code=705512'
+  'http://localhost:3094/tenants/otp-demo/login-actions/required-action?action=configure-totp' \
+  --data-urlencode 'auth_session_id=01a137d3-98b1-7904-aeda-9a6709b81b53' \
+  --data-urlencode 'secret=BYIQDMIGLQSMNOGKTZMVAGWBLWEOE7ZY' \
+  --data-urlencode 'code=474168'
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a10be7-240d-788b-afc6-a33186c4a2b4
+x-request-id: 01a137d3-99f5-7c70-ba82-a75606f1c447
 content-type: text/html
 content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 content-length: 1078
-Date: Mon, 05 Oct 2026 11:51:00 GMT
+Date: Wed, 14 Oct 2026 00:32:57 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -3402,19 +3536,19 @@ Keep-Alive: timeout=72
 <h1>Save your recovery codes</h1>
 <p>Each of these signs you in once, in place of your second factor, if you lose it. <strong>This is the only time they are shown.</strong> Print them or put them in a password manager before you continue — nobody, including an administrator, can show them to you again.</p>
 <ol>
-  <li><code>ZJM81-PYSM4</code></li>
-  <li><code>9KE32-3V907</code></li>
-  <li><code>1VQ72-N7WRG</code></li>
-  <li><code>Q82WZ-S7Z0N</code></li>
-  <li><code>8EK5J-B5EA8</code></li>
-  <li><code>6T3PH-RQXSQ</code></li>
-  <li><code>AV0FW-GFWGH</code></li>
-  <li><code>C29VS-FZS5N</code></li>
-  <li><code>PSS4Q-0CG7Q</code></li>
-  <li><code>07RS9-7ATJV</code></li>
+  <li><code>TKBYN-J8QGH</code></li>
+  <li><code>NMFNF-273QV</code></li>
+  <li><code>WMTKH-5WFJ9</code></li>
+  <li><code>AWXJH-9Q43E</code></li>
+  <li><code>NTPYA-9GJNJ</code></li>
+  <li><code>NS5BM-Z503B</code></li>
+  <li><code>40HQS-ZTRXC</code></li>
+  <li><code>STXZG-CGAQF</code></li>
+  <li><code>TFF63-YK29X</code></li>
+  <li><code>TGGRZ-1EF3V</code></li>
 </ol>
 <form method="post" action="/tenants/otp-demo/login-actions/required-action?action=generate-recovery-codes">
-  <input type="hidden" name="auth_session_id" value="01a10be7-227d-76b6-9df7-e407bdfcdd5d">
+  <input type="hidden" name="auth_session_id" value="01a137d3-98b1-7904-aeda-9a6709b81b53">
   <button type="submit">I have saved these codes</button>
 </form>
 </body>
@@ -3439,18 +3573,18 @@ amendment). Acknowledging it finishes the login:
 
 ```bash
 curl -sS -i -X POST \
-  'http://localhost:3086/tenants/otp-demo/login-actions/required-action?action=generate-recovery-codes' \
-  --data-urlencode 'auth_session_id=01a10be7-227d-76b6-9df7-e407bdfcdd5d'
+  'http://localhost:3094/tenants/otp-demo/login-actions/required-action?action=generate-recovery-codes' \
+  --data-urlencode 'auth_session_id=01a137d3-98b1-7904-aeda-9a6709b81b53'
 ```
 
 ```
 HTTP/1.1 302 Found
-x-request-id: 01a10be7-25bd-7220-848b-3e610448a798
-set-cookie: otp-demo-session=01a10be7-25f3-79b3-949b-7b2e5a76d98f:v8Iyexg5EbBvbWzE4cIE7x7qEZnc1JxwYax0hdrod8w; HttpOnly; SameSite=Lax; Path=/
+x-request-id: 01a137d3-9aef-775e-a7a6-a250bd854b55
+set-cookie: otp-demo-session=01a137d3-9b25-7358-b71d-b4293a769a47:57eh4x7sl2aNGrjf91JFD2mnXWmy-ktG6t0dz5uTDfA; HttpOnly; SameSite=Lax; Path=/
 set-cookie: otp-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-location: http://localhost:8080/callback?code=-UTJzM-vwR1cU1eWo2tUktozU8j7Q4hLwwK68emcbco&state=xyz&iss=http%3A%2F%2Flocalhost%3A3086%2Ftenants%2Fotp-demo
+location: http://localhost:8080/callback?code=TS_QW6o-8Y1kzRj1_rRh2hQ4FbtDaLhFaz9tBf5F6sw&state=xyz&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fotp-demo
 content-length: 0
-Date: Mon, 05 Oct 2026 11:51:00 GMT
+Date: Wed, 14 Oct 2026 00:32:57 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
@@ -3461,9 +3595,9 @@ a session cookie of the form `<session id>:<secret>`.
 ### What two factors do to the ID token
 
 ```bash
-curl -sS -X POST http://localhost:3086/tenants/otp-demo/protocol/openid-connect/token \
+curl -sS -X POST http://localhost:3094/tenants/otp-demo/protocol/openid-connect/token \
   -d grant_type=authorization_code \
-  -d code=-UTJzM-vwR1cU1eWo2tUktozU8j7Q4hLwwK68emcbco \
+  -d code=TS_QW6o-8Y1kzRj1_rRh2hQ4FbtDaLhFaz9tBf5F6sw \
   -d client_id=otp-spa \
   --data-urlencode 'redirect_uri=http://localhost:8080/callback' \
   -d code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
@@ -3474,12 +3608,12 @@ base64url segments):
 
 ```json
 {
-  "sub": "01a10be7-1f11-7065-bf11-953d123bdaf2",
-  "iss": "http://localhost:3086/tenants/otp-demo",
+  "sub": "01a137d3-946e-727f-91c9-3c754e9981c3",
+  "iss": "http://localhost:3094/tenants/otp-demo",
   "aud": "otp-spa",
-  "iat": 1791201060,
-  "exp": 1791201360,
-  "sid": "01a10be7-25f3-79b3-949b-7b2e5a76d98f",
+  "iat": 1791937977,
+  "exp": 1791938277,
+  "sid": "01a137d3-9b25-7358-b71d-b4293a769a47",
   "amr": ["otp", "pwd"],
   "acr": "2"
 }
@@ -3494,11 +3628,11 @@ then. The enrolment's code is the `otp` in it.
 ### The next login answers the password with a code form
 
 A fresh attempt, parked by the same `/authorize` as above, for a new
-`auth_session_id`, `01a10be7-2673-760f-b7bc-f5987e562d43`:
+`auth_session_id`, `01a137d3-9bc1-7987-8c23-f806ce89510f`:
 
 ```bash
-curl -sS -X POST http://localhost:3086/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a10be7-2673-760f-b7bc-f5987e562d43' \
+curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a137d3-9bc1-7987-8c23-f806ce89510f' \
   --data-urlencode 'username=ada' \
   --data-urlencode 'password=correct-horse-battery'
 ```
@@ -3509,7 +3643,7 @@ curl -sS -X POST http://localhost:3086/tenants/otp-demo/login-actions/authentica
 <head><meta charset="utf-8"><title>Enter your authentication code</title></head>
 <body>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a10be7-2673-760f-b7bc-f5987e562d43">
+  <input type="hidden" name="auth_session_id" value="01a137d3-9bc1-7987-8c23-f806ce89510f">
   <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
   <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>
   <button type="submit">Verify</button>
@@ -3534,9 +3668,9 @@ answers with the same form again:
 
 ```bash
 curl -sS -o /dev/null -w '%{http_code}\n' -X POST \
-  http://localhost:3086/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a10be7-2673-760f-b7bc-f5987e562d43' \
-  --data-urlencode 'code=705512'
+  http://localhost:3094/tenants/otp-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a137d3-9bc1-7987-8c23-f806ce89510f' \
+  --data-urlencode 'code=474168'
 ```
 
 ```
@@ -3549,19 +3683,19 @@ code spent that step when it created the credential. A code from the next
 step is accepted, and with nothing owed any more it finishes the login:
 
 ```bash
-curl -sS -i -X POST http://localhost:3086/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a10be7-2673-760f-b7bc-f5987e562d43' \
-  --data-urlencode 'code=048484'
+curl -sS -i -X POST http://localhost:3094/tenants/otp-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a137d3-9bc1-7987-8c23-f806ce89510f' \
+  --data-urlencode 'code=164806'
 ```
 
 ```
 HTTP/1.1 302 Found
-x-request-id: 01a10be7-a0a6-7da4-8442-2771de1e134d
-set-cookie: otp-demo-session=01a10be7-a30b-793d-a617-1b09f56d1a5f:S_eUiDDKp0Ps4Dd9fznA_5OG3_T9AZUHfsbyf0wNl4o; HttpOnly; SameSite=Lax; Path=/
+x-request-id: 01a137d3-9cf6-70e7-9bec-7754f5fb6e3d
+set-cookie: otp-demo-session=01a137d3-9d0a-760c-aa16-a26add0afde0:zTqnr3XE8dypwf4XLpxGBiuJ2OHjtAiWDmJs-tLj3Wk; HttpOnly; SameSite=Lax; Path=/
 set-cookie: otp-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-location: http://localhost:8080/callback?code=SC9jvVDw41wuHFSw0tVMSzam64ZbVJuYwfbj_QMQbiE&state=xyz&iss=http%3A%2F%2Flocalhost%3A3086%2Ftenants%2Fotp-demo
+location: http://localhost:8080/callback?code=REWfO6a8FMPFBqjUJBmd7EFLtUciTh0GfCLSyFWNwl4&state=xyz&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fotp-demo
 content-length: 0
-Date: Mon, 05 Oct 2026 11:51:32 GMT
+Date: Wed, 14 Oct 2026 00:32:57 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
@@ -3602,7 +3736,7 @@ hash with the same parameters as a password — nothing anywhere holds the
 plaintext, so no later page and no administrator can print these again:
 
 ```bash
-docker compose -p odudu-t8d2 -f infra/docker/compose.yaml exec -T postgres \
+docker compose -p odudu-17a -f infra/docker/compose.yaml exec -T postgres \
   psql -U odudu -d odudu -c \
   "SELECT type, left(secret_data->>'hash', 30) AS hash_prefix,
           secret_data->>'usedAt' AS used_at
@@ -3644,13 +3778,13 @@ end of [Confirming the secret](#confirming-the-secret-enrols-it-and-is-the-login
 A fresh attempt, and this time the authenticator is gone. The request is
 parked and the password form rendered exactly as
 [Path A](#path-a-authorization-code-with-pkce) shows, for a new
-`auth_session_id`, `01a10be7-a74c-7439-8542-95c360b08f98`. The password step runs as always, and answers
+`auth_session_id`, `01a137d3-9df0-76d0-b626-fe71c6edce91`. The password step runs as always, and answers
 with the code form — the same two fields, because nothing about this
 submission says the authenticator is gone:
 
 ```bash
-curl -sS -X POST http://localhost:3086/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a10be7-a74c-7439-8542-95c360b08f98' \
+curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a137d3-9df0-76d0-b626-fe71c6edce91' \
   --data-urlencode 'username=ada' \
   --data-urlencode 'password=correct-horse-battery'
 ```
@@ -3661,7 +3795,7 @@ curl -sS -X POST http://localhost:3086/tenants/otp-demo/login-actions/authentica
 <head><meta charset="utf-8"><title>Enter your authentication code</title></head>
 <body>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a10be7-a74c-7439-8542-95c360b08f98">
+  <input type="hidden" name="auth_session_id" value="01a137d3-9df0-76d0-b626-fe71c6edce91">
   <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
   <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>
   <button type="submit">Verify</button>
@@ -3673,19 +3807,19 @@ curl -sS -X POST http://localhost:3086/tenants/otp-demo/login-actions/authentica
 The second field is what gets filled:
 
 ```bash
-curl -sS -i -X POST http://localhost:3086/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a10be7-a74c-7439-8542-95c360b08f98' \
-  --data-urlencode 'recovery_code=ZJM81-PYSM4'
+curl -sS -i -X POST http://localhost:3094/tenants/otp-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a137d3-9df0-76d0-b626-fe71c6edce91' \
+  --data-urlencode 'recovery_code=TKBYN-J8QGH'
 ```
 
 ```
 HTTP/1.1 302 Found
-x-request-id: 01a10be7-abfb-765b-930f-24df44d32336
-set-cookie: otp-demo-session=01a10be7-ae21-7cc3-b95f-a4e3599a2867:I9hgtc6y24H7RKWdK8BjQ1muTANvQqsmsQn5KyW6Em4; HttpOnly; SameSite=Lax; Path=/
+x-request-id: 01a137d3-9ea5-72a6-b4d1-3d451af1a220
+set-cookie: otp-demo-session=01a137d3-9ee4-774c-a1f0-7b51a53740c3:j1qO2TJFYsDsCP29koTcK5BgwzgDtSYtdpuBiFsEXD4; HttpOnly; SameSite=Lax; Path=/
 set-cookie: otp-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-location: http://localhost:8080/callback?code=an6ZTK36shixcfc1nBve-PSE06KGRzHXS99VoqmVd9w&state=xyz&iss=http%3A%2F%2Flocalhost%3A3086%2Ftenants%2Fotp-demo
+location: http://localhost:8080/callback?code=5I3UGs_lZLJ8IzO16HHeB478eel2UUMkRKTQ7rbbDQs&state=xyz&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fotp-demo
 content-length: 0
-Date: Mon, 05 Oct 2026 11:51:35 GMT
+Date: Wed, 14 Oct 2026 00:32:58 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
@@ -3700,12 +3834,12 @@ The ID token says less about this login than the two-factor one above:
 
 ```json
 {
-  "sub": "01a10be7-1f11-7065-bf11-953d123bdaf2",
-  "iss": "http://localhost:3086/tenants/otp-demo",
+  "sub": "01a137d3-946e-727f-91c9-3c754e9981c3",
+  "iss": "http://localhost:3094/tenants/otp-demo",
   "aud": "otp-spa",
-  "iat": 1791201095,
-  "exp": 1791201395,
-  "sid": "01a10be7-ae21-7cc3-b95f-a4e3599a2867",
+  "iat": 1791937978,
+  "exp": 1791938278,
+  "sid": "01a137d3-9ee4-774c-a1f0-7b51a53740c3",
   "amr": ["pwd"],
   "acr": "2"
 }
@@ -3726,8 +3860,8 @@ parks the request, then the password, which answers 200 with the code form:
 
 ```bash
 curl -sS -o /dev/null -w '%{http_code}\n' -X POST \
-  http://localhost:3086/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a10be7-b0ba-7e0e-88f1-54f40bc95144' \
+  http://localhost:3094/tenants/otp-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a137d3-9f79-7cc3-9e4e-81be29da7384' \
   --data-urlencode 'username=ada' \
   --data-urlencode 'password=correct-horse-battery'
 ```
@@ -3740,8 +3874,8 @@ Then the code that already signed somebody in — typed in lower case with a
 space where the hyphen was:
 
 ```bash
-curl -sS -X POST http://localhost:3086/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a10be7-b0ba-7e0e-88f1-54f40bc95144' \
+curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a137d3-9f79-7cc3-9e4e-81be29da7384' \
   --data-urlencode 'recovery_code=zjm81 pysm4'
 ```
 
@@ -3752,7 +3886,7 @@ curl -sS -X POST http://localhost:3086/tenants/otp-demo/login-actions/authentica
 <body>
 <p><strong>You have already used that recovery code. Try another one from your list.</strong></p>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a10be7-b0ba-7e0e-88f1-54f40bc95144">
+  <input type="hidden" name="auth_session_id" value="01a137d3-9f79-7cc3-9e4e-81be29da7384">
   <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
   <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>
   <button type="submit">Verify</button>
@@ -3768,8 +3902,8 @@ confusable letters onto digits. And the refusal _says_ the code is spent,
 which a wrong code does not:
 
 ```bash
-curl -sS -X POST http://localhost:3086/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a10be7-b0ba-7e0e-88f1-54f40bc95144' \
+curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a137d3-9f79-7cc3-9e4e-81be29da7384' \
   --data-urlencode 'recovery_code=ZZZZZ-ZZZZZ'
 ```
 
@@ -3779,7 +3913,7 @@ curl -sS -X POST http://localhost:3086/tenants/otp-demo/login-actions/authentica
 <head><meta charset="utf-8"><title>Enter your authentication code</title></head>
 <body>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a10be7-b0ba-7e0e-88f1-54f40bc95144">
+  <input type="hidden" name="auth_session_id" value="01a137d3-9f79-7cc3-9e4e-81be29da7384">
   <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
   <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>
   <button type="submit">Verify</button>
@@ -3800,7 +3934,7 @@ What makes the refusal possible is that the row survives its use, marked
 rather than deleted:
 
 ```bash
-docker compose -p odudu-t8d2 -f infra/docker/compose.yaml exec -T postgres \
+docker compose -p odudu-17a -f infra/docker/compose.yaml exec -T postgres \
   psql -U odudu -d odudu -c \
   "SELECT count(*) AS codes, count(secret_data->>'usedAt') AS spent
      FROM user_credentials WHERE type = 'recovery-code';"
@@ -3824,7 +3958,7 @@ both would succeed.
 A list that runs out is the lockout recovery codes exist to prevent, so
 spending the last one owes `generate-recovery-codes` again — in the login
 that spent it, not the next one. The section below was captured against a
-tenant of its own, `rc8-demo`, on the earlier stack named above, with
+tenant of its own, `rc8-demo`, on the stack named above, with
 `otp_required` on: ada
 enrolled through the same two pages as above, acknowledged her ten, and then
 spent them one login at a time, each a fresh `/authorize` and the password
@@ -3834,19 +3968,19 @@ The ninth code signs in the way every earlier one did, with one still
 unspent behind it:
 
 ```bash
-curl -sS -i -X POST http://localhost:3086/tenants/rc8-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a10b6d-1b3b-7077-a906-9bce6bb854d0' \
-  --data-urlencode 'recovery_code=NYBCQ-2Q6ES'
+curl -sS -i -X POST http://localhost:3094/tenants/rc8-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a137d4-5cca-713b-903c-d3ce599a19c2' \
+  --data-urlencode 'recovery_code=ZBA0Z-8N4XS'
 ```
 
 ```
 HTTP/1.1 302 Found
-x-request-id: 01a10b6d-1bdb-73b4-8dd5-80ac10218bb1
-set-cookie: rc8-demo-session=01a10b6d-1c12-7e2d-a66f-d79623832986:14YbC4yznCwS1avEtV71k3HGOk9BHxcs7D79EYlTcl8; HttpOnly; SameSite=Lax; Path=/
+x-request-id: 01a137d4-5d60-7709-a701-0194a352560d
+set-cookie: rc8-demo-session=01a137d4-5e4e-7a32-826d-3d83b7545e54:-Z5iI7GF488P51f-1HRCTMKKXHGGsUyCG8mZF2ES0Ao; HttpOnly; SameSite=Lax; Path=/
 set-cookie: rc8-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-location: http://localhost:8080/callback?code=m65G3cfMWGDMTONjRUDNyapN1MXUuj876Ty_ZLdmCx8&state=xyz&iss=http%3A%2F%2Flocalhost%3A3086%2Ftenants%2Frc8-demo
+location: http://localhost:8080/callback?code=4ClFExsSD-g_CG_ClPjfnaN3kBwgHoorQMiZiJELTvE&state=xyz&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Frc8-demo
 content-length: 0
-Date: Mon, 05 Oct 2026 09:37:42 GMT
+Date: Wed, 14 Oct 2026 00:33:47 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
@@ -3854,9 +3988,9 @@ Keep-Alive: timeout=72
 The tenth authenticates just as well, and does not redirect:
 
 ```bash
-curl -sS -i -X POST http://localhost:3086/tenants/rc8-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a10b6d-1ca5-7547-9db4-2c5a53e8a3bc' \
-  --data-urlencode 'recovery_code=F0MP0-XVQYW'
+curl -sS -i -X POST http://localhost:3094/tenants/rc8-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a137d4-5f25-7dd5-b54e-f530dd226d0d' \
+  --data-urlencode 'recovery_code=W7762-A4QFZ'
 ```
 
 The codes themselves are elided here — the set shown above is the one this
@@ -3865,14 +3999,14 @@ one:
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a10b6d-1ce8-7755-9413-0dee6998b218
+x-request-id: 01a137d4-5faf-7d4c-867b-86e075e0ac38
 content-type: text/html
 content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 content-length: 1166
-Date: Mon, 05 Oct 2026 09:37:42 GMT
+Date: Wed, 14 Oct 2026 00:33:47 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -3887,7 +4021,7 @@ Keep-Alive: timeout=72
   …ten of them…
 </ol>
 <form method="post" action="/tenants/rc8-demo/login-actions/required-action?action=generate-recovery-codes">
-  <input type="hidden" name="auth_session_id" value="01a10b6d-1ca5-7547-9db4-2c5a53e8a3bc">
+  <input type="hidden" name="auth_session_id" value="01a137d4-5f25-7dd5-b54e-f530dd226d0d">
   <button type="submit">I have saved these codes</button>
 </form>
 </body>
@@ -3900,18 +4034,18 @@ finishes the login, exactly as it did there:
 
 ```bash
 curl -sS -i -X POST \
-  'http://localhost:3086/tenants/rc8-demo/login-actions/required-action?action=generate-recovery-codes' \
-  --data-urlencode 'auth_session_id=01a10b6d-1ca5-7547-9db4-2c5a53e8a3bc'
+  'http://localhost:3094/tenants/rc8-demo/login-actions/required-action?action=generate-recovery-codes' \
+  --data-urlencode 'auth_session_id=01a137d4-5f25-7dd5-b54e-f530dd226d0d'
 ```
 
 ```
 HTTP/1.1 302 Found
-x-request-id: 01a10b6d-1e1b-772f-808a-06e8be35eb35
-set-cookie: rc8-demo-session=01a10b6d-1e2e-7a23-8a12-11d4060f3f79:I-03jWRBl2yhj0YZvHhHXIAGpsraU16a2FC9_uPsIcU; HttpOnly; SameSite=Lax; Path=/
+x-request-id: 01a137d4-6212-702f-98e3-e260b931935c
+set-cookie: rc8-demo-session=01a137d4-6228-72ef-acce-7825c414d1ce:s-AxqiUj8ccFNiWeaAltx-kfFz_ZHL4TTnKs6mn1xvk; HttpOnly; SameSite=Lax; Path=/
 set-cookie: rc8-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-location: http://localhost:8080/callback?code=w10l-Hl7rMUTHy4c1A2SQjginUcuGUycycjgOKrCN04&state=xyz&iss=http%3A%2F%2Flocalhost%3A3086%2Ftenants%2Frc8-demo
+location: http://localhost:8080/callback?code=0X0v6AqfNZkZMfluApYongAIiQ1N0ovrRGryRx984X0&state=xyz&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Frc8-demo
 content-length: 0
-Date: Mon, 05 Oct 2026 09:37:42 GMT
+Date: Wed, 14 Oct 2026 00:33:48 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
@@ -3920,7 +4054,7 @@ What the two responses did to the account, read after the ninth code and
 again after the tenth:
 
 ```bash
-docker compose -p odudu-t8d -f infra/docker/compose.yaml exec -T postgres \
+docker compose -p odudu-17a -f infra/docker/compose.yaml exec -T postgres \
   psql -U odudu -d odudu -c \
   "SELECT count(*) FILTER (WHERE secret_data->>'usedAt' IS NULL) AS unspent
      FROM user_credentials
@@ -3963,7 +4097,7 @@ the warning.
 ### Where the step sits in the flow
 
 ```bash
-docker compose -p odudu-t8d2 -f infra/docker/compose.yaml exec -T postgres \
+docker compose -p odudu-17a -f infra/docker/compose.yaml exec -T postgres \
   psql -U odudu -d odudu -c \
   "SELECT index, authenticator, requirement FROM authentication_executions e
      JOIN tenants r ON r.id = e.tenant_id WHERE r.name = 'otp-demo' ORDER BY index;"
@@ -4593,9 +4727,20 @@ to the client. A link
 that sets a password is stopped by `reset_password_allowed` the way a reset
 link is, and every link is spent once.
 
-Against the stack and the link [docs/admin-paths.md](admin-paths.md)'s
-`POST /subjects/:id/actions-email` section mailed — the `odudu-t8d2` stack's
-`required-actions-demo`, whose `grace` had no password yet — the page, the
+Against a stack of its own, the compose project `odudu-17a` on
+`http://localhost:3094` built from commit `a29df187`, started on an empty volume
+with `ODUDU_OUTBOX_ENABLED=false`, `ODUDU_REAP_ENABLED=false` and
+`ODUDU_ALLOW_PRIVATE_SMTP_HOSTS=true`, with `seed admin --username ada` run
+against it and `$ADMIN_TOKEN` got the way
+[Admin paths](admin-paths.md#getting-the-token) shows. Its tenant
+`required-actions-demo` came from `odudu seed --tenant required-actions-demo
+--client actions-app --redirect-uri https://app.example/callback --user seeder
+--password correct-horse-battery`, a relay at the `postgres` container's port
+25 was set with `PUT /smtp`, `grace` was made with an address and no password,
+and the link was mailed by `POST /subjects/:id/actions-email` for
+`configure-totp` and `update-password` and read from `email_outbox`. The link
+there is that run's own, not the one [Admin paths](admin-paths.md)'s section
+shows. Its page, the
 submission, then what `grace` now owes, read through the admin API with
 `$ADMIN_TOKEN` as there, and the same submission again — its page is the
 spent-link one, not the missing- or weak-password one the same endpoint
@@ -4603,19 +4748,19 @@ also answers `400` with:
 
 ```bash
 curl -sS -D - \
-  'http://localhost:3086/tenants/required-actions-demo/login-actions/action-token?key=_rt1ViHEsgUP9YYb_k-e_wCJkNdECOnTOYReAUa-uXQ'
+  'http://localhost:3094/tenants/required-actions-demo/login-actions/action-token?key=ZPLLKU68CFpPmla3ybn_vHhlGZIfv0LxQOgMkCaLO1M'
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a10bee-1912-708c-bd4b-c5c57294cfec
+x-request-id: 01a137d6-0294-7385-8d89-25ff1b96ce96
 content-type: text/html
 content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 content-length: 595
-Date: Mon, 05 Oct 2026 11:58:35 GMT
+Date: Wed, 14 Oct 2026 00:35:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -4630,7 +4775,7 @@ Keep-Alive: timeout=72
 <li>Set up an authenticator app</li>
 </ul>
 <form method="post" action="/tenants/required-actions-demo/login-actions/action-token">
-  <input type="hidden" name="key" value="_rt1ViHEsgUP9YYb_k-e_wCJkNdECOnTOYReAUa-uXQ">
+  <input type="hidden" name="key" value="ZPLLKU68CFpPmla3ybn_vHhlGZIfv0LxQOgMkCaLO1M">
   <label>New password <input type="password" name="password" autocomplete="new-password"></label>
   <button type="submit">Continue</button>
 </form>
@@ -4639,21 +4784,21 @@ Keep-Alive: timeout=72
 ```
 
 ```bash
-curl -sS -D - -X POST http://localhost:3086/tenants/required-actions-demo/login-actions/action-token \
-  --data-urlencode 'key=_rt1ViHEsgUP9YYb_k-e_wCJkNdECOnTOYReAUa-uXQ' \
+curl -sS -D - -X POST http://localhost:3094/tenants/required-actions-demo/login-actions/action-token \
+  --data-urlencode 'key=ZPLLKU68CFpPmla3ybn_vHhlGZIfv0LxQOgMkCaLO1M' \
   --data-urlencode 'password=a-new-passphrase-for-ops'
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a10bee-1921-784c-8f02-4faf4575a17e
+x-request-id: 01a137d6-02c7-7996-9fc9-0c51ccac9243
 content-type: text/html
 content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 content-length: 247
-Date: Mon, 05 Oct 2026 11:58:35 GMT
+Date: Wed, 14 Oct 2026 00:35:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -4672,10 +4817,10 @@ Keep-Alive: timeout=72
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
-  http://localhost:3086/admin/tenants/required-actions-demo/subjects/01a10bee-17d6-7f85-8cf7-950a77cbcfd4/required-actions; echo
+  http://localhost:3094/admin/tenants/required-actions-demo/subjects/01a137d6-00b4-7bdc-a5f0-449c5f9c5dbb/required-actions; echo
 curl -sS -w '\n' -X POST \
-  http://localhost:3086/tenants/required-actions-demo/login-actions/action-token \
-  --data-urlencode 'key=_rt1ViHEsgUP9YYb_k-e_wCJkNdECOnTOYReAUa-uXQ' \
+  http://localhost:3094/tenants/required-actions-demo/login-actions/action-token \
+  --data-urlencode 'key=ZPLLKU68CFpPmla3ybn_vHhlGZIfv0LxQOgMkCaLO1M' \
   --data-urlencode 'password=another-passphrase-for-ops'
 ```
 
@@ -6458,21 +6603,21 @@ nothing:
 
 ```bash
 SID2=$(curl -sS -b cookies2.txt \
-  "http://localhost:3000/tenants/demo/protocol/openid-connect/logout" \
+  "http://localhost:3094/tenants/demo/protocol/openid-connect/logout" \
   | sed -n 's/.*name="session_id" value="\([^"]*\)".*/\1/p')
 
 curl -sS -b cookies2.txt -D - -X POST \
   --data-urlencode "session_id=$SID2" \
-  "http://localhost:3000/tenants/demo/protocol/openid-connect/logout"
+  "http://localhost:3094/tenants/demo/protocol/openid-connect/logout"
 ```
 
 ```
 HTTP/1.1 400 Bad Request
-cache-control: no-store
 content-type: text/html
 content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
+cache-control: no-store
 content-length: 220
 
 <!doctype html>
@@ -6487,7 +6632,10 @@ content-length: 220
 
 (`x-request-id`, `Date` and the keep-alive headers are omitted. This page
 and the refusal were captured after the form gained its token, against a
-fresh sign-in into `cookies2.txt` on the same stack.)
+fresh sign-in into `cookies2.txt`, on the project `odudu-17a` at
+`http://localhost:3094`, built from commit `a29df187`, with `demo` seeded as
+[Bootstrap](#bootstrap) does. `cache-control` comes last of the page
+headers, where `pageHeaders` puts it.)
 
 A `post_logout_redirect_uri` that is not an exact match to a registered
 value — a trailing slash, a query string, a different host — is refused,
@@ -6804,18 +6952,18 @@ now frames `reports-widget`:
 ```bash
 curl -sS -b cookies.txt --get \
   --data-urlencode "id_token_hint=$ID_TOKEN" \
-  "http://localhost:3000/tenants/demo/protocol/openid-connect/logout"
+  "http://localhost:3094/tenants/demo/protocol/openid-connect/logout"
 ```
 
 ```
 HTTP/1.1 200 OK
 set-cookie: demo-session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 set-cookie: demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-cache-control: no-store
 content-type: text/html
 content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'; frame-src http://localhost:9100
 x-frame-options: DENY
 referrer-policy: no-referrer
+cache-control: no-store
 content-length: 318
 ```
 
@@ -6826,13 +6974,15 @@ content-length: 318
 <body>
 <h1>Signed out</h1>
 <p>You have been signed out.</p>
-<iframe src="http://localhost:9100/logout?iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fdemo&amp;sid=01a0cb20-97a7-…"></iframe>
+<iframe src="http://localhost:9100/logout?iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo&amp;sid=01a137d7-eae6-…"></iframe>
 </body>
 </html>
 ```
 
 (`sid` shortened; it is the id half of the session cookie's entry, and `iss`
-is this tenant's issuer.) `sid` is present because `reports-widget`
+is this tenant's issuer. Captured on the same `odudu-17a` stack at
+`http://localhost:3094`, with the two commands above run against it and
+`x-request-id`, `Date` and the keep-alive headers omitted.) `sid` is present because `reports-widget`
 registered `frontchannel_logout_session_required`; a client that had not
 would be framed with `iss` alone. `demo-spa` itself is not framed here — it
 registered no `frontchannel_logout_uri` at all, and §2's own rule is that a
@@ -7242,9 +7392,12 @@ every anonymously self-registered client (`consent_required` defaults
 `true` there, per [Dynamic client registration](#dynamic-client-registration)
 and ADR 0027) — and for `prompt=consent` on any client at all.
 
-This section runs on a stack of its own: the project `odudu-t8d` on
-`http://localhost:3086`, built from commit `511db0fd` and started on an
-empty volume, with `demo` seeded the way [Bootstrap](#bootstrap) seeds it.
+The screen and the reuse and `prompt=none` answers below were captured on a
+stack of its own: the project `odudu-17a` on `http://localhost:3094`, built
+from commit `a29df187` and started on an empty volume, with `demo` seeded the
+way [Bootstrap](#bootstrap) seeds it. The subsections from "The client's own
+pages" on keep the earlier stack they name, `odudu-t8d` at `511db0fd`, whose
+transcripts show no response header.
 `client_registration_policy` is `disabled` on `demo` by default, the same as
 every tenant, so the anonymously self-registered client this section needs
 it open:
@@ -7258,7 +7411,7 @@ odudu seed tenant --name demo --set client_registration_policy=open
   "command": "tenant",
   "created": false,
   "tenant": "demo",
-  "tenantId": "01a10b6c-\u2026",
+  "tenantId": "01a137d6-\u2026",
   "settings": ["client_registration_policy"]
 }
 ```
@@ -7267,16 +7420,16 @@ Then the client itself, with no credential presented — `registration_origin`
 is `'anonymous'` and `consent_required` defaults `true` on the row it wrote:
 
 ```bash
-curl -sS -X POST http://localhost:3086/tenants/demo/clients-registrations/openid-connect \
+curl -sS -X POST http://localhost:3094/tenants/demo/clients-registrations/openid-connect \
   -H 'content-type: application/json' \
   -d '{"redirect_uris":["https://rp.example/cb"],"client_name":"Example RP"}'
 ```
 
 ```json
 {
-  "client_id": "01a10b6c-8dc6-7fd0-80ac-f74e3b923d81",
-  "client_id_issued_at": 1791193025,
-  "client_secret": "xOvcft4El7pdrOhYK3GFZZ01L3mpMqy3OsH8HXw8Y5A",
+  "client_id": "01a137d6-c1b7-76fa-92b1-bb33828ae56f",
+  "client_id_issued_at": 1791938183,
+  "client_secret": "zEOnBPiO5AnubSnAQ3nQTq_DHRsIvOd4cXTTXEGp-lw",
   "client_secret_expires_at": 0,
   "redirect_uris": ["https://rp.example/cb"],
   "grant_types": ["authorization_code"],
@@ -7298,19 +7451,19 @@ curl -sS -D - -c cookies-consent.txt -b cookies-consent.txt \
   --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
   --data-urlencode 'username=ada' \
   --data-urlencode 'password=correct-horse-battery' \
-  'http://localhost:3086/tenants/demo/login-actions/authenticate'
+  'http://localhost:3094/tenants/demo/login-actions/authenticate'
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a10b6c-8e44-7019-836c-f7322903a3fd
+x-request-id: 01a137d6-c260-716b-9777-461155c440c8
 content-type: text/html
 content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' https://rp.example; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 content-length: 664
-Date: Mon, 05 Oct 2026 09:37:06 GMT
+Date: Wed, 14 Oct 2026 00:36:23 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -7320,7 +7473,7 @@ Keep-Alive: timeout=72
 <body>
 <h1>Example RP is asking for access</h1>
 <form method="post" action="/tenants/demo/login-actions/consent">
-  <input type="hidden" name="auth_session_id" value="01a10b6c-8e33-7f10-9707-dca5c7b56a28">
+  <input type="hidden" name="auth_session_id" value="01a137d6-c22e-791c-9097-e8d295b70e7f">
   <ul>
   <li>openid</li>
   <li>profile</li>
@@ -7351,17 +7504,17 @@ Allow:
 curl -sS -D - -c cookies-consent.txt -b cookies-consent.txt \
   --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
   --data-urlencode 'decision=allow' \
-  'http://localhost:3086/tenants/demo/login-actions/consent'
+  'http://localhost:3094/tenants/demo/login-actions/consent'
 ```
 
 ```
 HTTP/1.1 302 Found
-x-request-id: 01a10b6c-8e8c-7c1c-ae06-95d60c4bea5d
-set-cookie: demo-session=01a10b6c-8e9d-7382-af84-f55e31ae77b8:cF4GuuxFDMgF8r3kRa97ZnGxmnqUJm1TbgdKTMX2-lg; HttpOnly; SameSite=Lax; Path=/
+x-request-id: 01a137d6-c2c7-78cf-8e8d-1b9762557de3
+set-cookie: demo-session=01a137d6-c2e4-7f70-8fc3-6dbee704dde9:a-7981Ir1Wexv7gTDwGcUtsV2iJBTzlNF6CaRh_DHds; HttpOnly; SameSite=Lax; Path=/
 set-cookie: demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-location: https://rp.example/cb?code=tJQC-Ax5INAgvV8qOdiPmAYxAO111ybmU7_hMwCKan0&state=xyz-123&iss=http%3A%2F%2Flocalhost%3A3086%2Ftenants%2Fdemo
+location: https://rp.example/cb?code=NreYk9SzpC5ttZWW-ylIReNrfpOulmUMp4DXbH8_JDk&state=xyz-123&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo
 content-length: 0
-Date: Mon, 05 Oct 2026 09:37:06 GMT
+Date: Wed, 14 Oct 2026 00:36:23 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
@@ -7372,10 +7525,10 @@ login recorded on its authentication session, and the password that finished
 it is one of them:
 
 ```bash
-curl -sS -X POST http://localhost:3086/tenants/demo/protocol/openid-connect/token \
+curl -sS -X POST http://localhost:3094/tenants/demo/protocol/openid-connect/token \
   -u "$CLIENT_ID:$CLIENT_SECRET" \
   -d grant_type=authorization_code \
-  -d code=tJQC-Ax5INAgvV8qOdiPmAYxAO111ybmU7_hMwCKan0 \
+  -d code=NreYk9SzpC5ttZWW-ylIReNrfpOulmUMp4DXbH8_JDk \
   --data-urlencode 'redirect_uri=https://rp.example/cb' \
   -d code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
 ```
@@ -7384,14 +7537,14 @@ The `id_token`'s payload, decoded:
 
 ```json
 {
-  "sub": "01a10b6c-8ac7-7a0f-978e-93d77d0e35ec",
+  "sub": "01a137d6-bf12-771f-81fb-97620b5fd349",
   "name": "ada",
   "preferred_username": "ada",
-  "iss": "http://localhost:3086/tenants/demo",
-  "aud": "01a10b6c-8dc6-7fd0-80ac-f74e3b923d81",
-  "iat": 1791193026,
-  "exp": 1791193326,
-  "sid": "01a10b6c-8e9d-7382-af84-f55e31ae77b8",
+  "iss": "http://localhost:3094/tenants/demo",
+  "aud": "01a137d6-c1b7-76fa-92b1-bb33828ae56f",
+  "iat": 1791938184,
+  "exp": 1791938484,
+  "sid": "01a137d6-c2e4-7f70-8fc3-6dbee704dde9",
   "amr": ["pwd"],
   "acr": "1"
 }
@@ -7411,15 +7564,15 @@ answer twice.)
 curl -sS -D - \
   --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
   --data-urlencode 'decision=deny' \
-  'http://localhost:3086/tenants/demo/login-actions/consent'
+  'http://localhost:3094/tenants/demo/login-actions/consent'
 ```
 
 ```
 HTTP/1.1 302 Found
-x-request-id: 01a10b6c-8f77-7bf7-82f9-f16793f2d89d
-location: https://rp.example/cb?error=access_denied&state=xyz-deny&iss=http%3A%2F%2Flocalhost%3A3086%2Ftenants%2Fdemo
+x-request-id: 01a137d6-c44e-771e-81f8-36db32b150f1
+location: https://rp.example/cb?error=access_denied&state=xyz-deny&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo
 content-length: 0
-Date: Mon, 05 Oct 2026 09:37:06 GMT
+Date: Wed, 14 Oct 2026 00:36:24 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
@@ -7445,19 +7598,19 @@ curl -sS -D - -b cookies-consent.txt --get \
   --data-urlencode 'state=xyz-reuse' \
   --data-urlencode "code_challenge=$CHALLENGE" \
   --data-urlencode 'code_challenge_method=S256' \
-  'http://localhost:3086/tenants/demo/protocol/openid-connect/auth'
+  'http://localhost:3094/tenants/demo/protocol/openid-connect/auth'
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a10b6c-8f87-760f-bcfc-43a72a21f84c
+x-request-id: 01a137d6-c485-73aa-b3c3-824d47fe7178
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' https://rp.example; base-uri 'none'
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' https://rp.example; base-uri 'none'; script-src 'nonce-RGkC4LknpA2uMvjtQxZIHg=='
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 664
-Date: Mon, 05 Oct 2026 09:37:06 GMT
+content-length: 813
+Date: Wed, 14 Oct 2026 00:36:24 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -7467,7 +7620,7 @@ Keep-Alive: timeout=72
 <body>
 <h1>Example RP is asking for access</h1>
 <form method="post" action="/tenants/demo/login-actions/consent">
-  <input type="hidden" name="auth_session_id" value="01a10b6c-8f94-756e-84a7-9bcb4d56b9ef">
+  <input type="hidden" name="auth_session_id" value="01a137d6-c495-744e-aefc-7c457bb799de">
   <ul>
   <li>openid</li>
   <li>profile</li>
@@ -7476,13 +7629,18 @@ Keep-Alive: timeout=72
   <button type="submit" name="decision" value="allow">Allow</button>
   <button type="submit" name="decision" value="deny">Deny</button>
 </form>
+<script nonce="RGkC4LknpA2uMvjtQxZIHg==">window.addEventListener('pageshow', function (event) { if (event.persisted) location.reload(); });</script>
 </body>
 </html>
 ```
 
-(Same markup the login POST produced above, byte-for-byte other than the
-fresh `auth_session_id` — a second `/authorize`, not a POST, is what got
-here, because the SSO cookie skipped the login form entirely.) Under
+(The same form the login POST produced above under a fresh
+`auth_session_id`, with two differences that come from this being a GET: the
+policy gains `script-src` naming a nonce, and the one `<script>` carrying it
+follows the form, reloading the page if a browser restores it from its cache
+— a reload would re-send the POST that produced the page above, so that
+page has none. A second `/authorize`, not a POST, is what got here, because
+the SSO cookie skipped the login form entirely.) Under
 `prompt=none`, that same reused-but-under-consented session is refused
 rather than asked, since `prompt=none` forbids the interaction a consent
 screen is:
@@ -7497,15 +7655,15 @@ curl -sS -D - -b cookies-consent.txt --get \
   --data-urlencode 'prompt=none' \
   --data-urlencode "code_challenge=$CHALLENGE" \
   --data-urlencode 'code_challenge_method=S256' \
-  'http://localhost:3086/tenants/demo/protocol/openid-connect/auth'
+  'http://localhost:3094/tenants/demo/protocol/openid-connect/auth'
 ```
 
 ```
 HTTP/1.1 302 Found
-x-request-id: 01a10b6c-8fa4-7108-9dcc-9d8e78dedb63
-location: https://rp.example/cb?error=consent_required&state=xyz-reuse&iss=http%3A%2F%2Flocalhost%3A3086%2Ftenants%2Fdemo
+x-request-id: 01a137d6-c4cb-7d96-a306-9101560c4c46
+location: https://rp.example/cb?error=consent_required&state=xyz-reuse&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo
 content-length: 0
-Date: Mon, 05 Oct 2026 09:37:06 GMT
+Date: Wed, 14 Oct 2026 00:36:24 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
@@ -7517,7 +7675,7 @@ has each linked under its name, so the End-User can read them before
 answering. Every link is escaped through the renderer's own `escapeHtml`,
 attribute and text alike, and the page's policy is the one every
 continuing page sends: a link is a navigation, which `default-src 'none'`
-does not govern. Captured on the same stack as the rest of this section,
+does not govern. Captured on the earlier stack named above (`odudu-t8d`),
 with a tenant of its own, `email-demo`, holding `grace`
 (`odudu seed tenant --name email-demo`, then `odudu seed user` with an
 address), `$ADMIN_TOKEN` got the way [docs/admin-paths.md](admin-paths.md#getting-the-token)
