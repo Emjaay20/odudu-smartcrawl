@@ -1,6 +1,7 @@
 import { TENANT_DOCUMENT_MEDIA_TYPE } from '@odudu/contracts/admin';
+import { currentTime } from '#/shared/adapter/clock';
+import { saveFile } from '#/shared/adapter/files';
 import { exportKey } from '#/shared/repository/queryKeys';
-import { saveFile } from '#/features/tenants/adapter/files';
 import { readExport } from '#/features/tenants/adapter/tenants';
 import { exportedOf, exportFileName, type Exported } from '#/features/tenants/service';
 import { useFreshRead } from '#/shared/repository/useFreshRead';
@@ -10,10 +11,6 @@ import { useTransport } from '#/shared/transport/useTransport';
 export interface TenantExport {
   busy: boolean;
   start: (includeSubjects: boolean) => Promise<GatewayResult<Exported>>;
-}
-
-function currentTime(): Date {
-  return new Date();
 }
 
 // The document is saved as the text the server sent and kept nowhere else:
