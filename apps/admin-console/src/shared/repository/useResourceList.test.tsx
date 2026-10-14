@@ -1,12 +1,4 @@
-import { QueryClientProvider } from '@tanstack/react-query';
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-  RouterProvider,
-} from '@tanstack/react-router';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   countResponseSchema,
@@ -16,10 +8,9 @@ import {
 import { expect, it } from 'vitest';
 import { createQueryClient } from '#/shared/repository/queryClient';
 import { useResourceList } from '#/shared/repository/useResourceList';
-import { parseSearch, stringifySearch } from '#/shared/service/search';
 import type { Gateway } from '#/shared/transport/gateway';
-import { TransportContext } from '#/shared/transport/useTransport';
 import { fakeTransport, json, problem, type Answer } from '#/testing/fakeTransport';
+import { mountAtRoute } from '#/testing/mountAtRoute';
 
 const LIST = 'GET /console/api/admin/tenants/acme/subjects';
 const COUNT = 'GET /console/api/admin/tenants/acme/subjects/count';
@@ -103,26 +94,10 @@ function Subjects() {
 
 function mount(url: string, routes: Record<string, Answer>) {
   const fake = fakeTransport(routes);
-  const root = createRootRoute();
-  const page = createRoute({
-    getParentRoute: () => root,
-    path: '/acme/subjects',
-    component: Subjects,
-  });
-  const router = createRouter({
-    routeTree: root.addChildren([page]),
-    history: createMemoryHistory({ initialEntries: [url] }),
+  const { router } = mountAtRoute(url, '/acme/subjects', Subjects, {
     basepath: '/console',
-    parseSearch,
-    stringifySearch,
+    providers: { transport: fake.transport, queryClient: createQueryClient() },
   });
-  render(
-    <TransportContext value={fake.transport}>
-      <QueryClientProvider client={createQueryClient()}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>
-    </TransportContext>,
-  );
   const asked = (key: string) =>
     fake.sent
       .filter((request) => `${request.method} ${request.path}` === key)

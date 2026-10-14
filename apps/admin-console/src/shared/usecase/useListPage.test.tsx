@@ -1,15 +1,9 @@
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-  RouterProvider,
-} from '@tanstack/react-router';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it } from 'vitest';
 import type { ResourceListState } from '#/shared/service/resourceList';
 import { useListPage } from '#/shared/usecase/useListPage';
+import { mountAtRoute } from '#/testing/mountAtRoute';
 
 const LIST: ResourceListState<{ id: string }> = {
   status: 'ready',
@@ -48,14 +42,9 @@ function Page() {
 }
 
 it('carries the list and the create address, and opens a row through the router', async () => {
-  const root = createRootRoute();
-  const route = createRoute({ getParentRoute: () => root, path: '/acme/things', component: Page });
-  const router = createRouter({
-    routeTree: root.addChildren([route]),
-    history: createMemoryHistory({ initialEntries: ['/console/acme/things'] }),
+  const { router } = mountAtRoute('/console/acme/things', '/acme/things', Page, {
     basepath: '/console',
   });
-  render(<RouterProvider router={router} />);
   expect(await screen.findByRole('link', { name: 'New' })).toHaveAttribute(
     'href',
     '/console/acme/things/new',

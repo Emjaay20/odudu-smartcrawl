@@ -1,16 +1,9 @@
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-  RouterProvider,
-} from '@tanstack/react-router';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it } from 'vitest';
 import { useCursorTrail } from '#/shared/repository/useCursorTrail';
-import { parseSearch, stringifySearch } from '#/shared/service/search';
 import { Pager } from '#/shared/view/Pager';
+import { mountAtRoute } from '#/testing/mountAtRoute';
 
 const PAGES = ['', 'b2Zmc2V0LTE.dGFnMQ', 'b2Zmc2V0LTI.dGFnMg'];
 
@@ -26,22 +19,7 @@ function Subjects() {
 }
 
 function mount(url: string) {
-  const root = createRootRoute();
-  const subjects = createRoute({
-    getParentRoute: () => root,
-    path: '/acme/subjects',
-    component: Subjects,
-  });
-  const history = createMemoryHistory({ initialEntries: [url] });
-  const router = createRouter({
-    routeTree: root.addChildren([subjects]),
-    history,
-    basepath: '/console',
-    parseSearch,
-    stringifySearch,
-  });
-  const view = render(<RouterProvider router={router} />);
-  return { router, unmount: view.unmount };
+  return mountAtRoute(url, '/acme/subjects', Subjects, { basepath: '/console' });
 }
 
 it('keeps the visited cursors in the URL, so Previous and Next survive a reload', async () => {

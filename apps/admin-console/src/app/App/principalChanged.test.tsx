@@ -1,30 +1,16 @@
 import { focusManager } from '@tanstack/react-query';
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-  Outlet,
-  RouterProvider,
-} from '@tanstack/react-router';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 import { z } from 'zod';
-import { NavigationGuard } from '#/app/NavigationGuard';
-import { Providers } from '#/app/Providers';
-import { UnsavedGuardLayer } from '#/app/UnsavedGuardLayer';
-import { SessionGate } from '#/features/session';
-import { TenantShell } from '#/features/shell';
-import { createQueryClient } from '#/shared/repository/queryClient';
 import { useDrafts, type DraftFields } from '#/shared/repository/useDrafts';
 import { useSectionDraft } from '#/shared/repository/useSectionDraft';
 import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
-import { parseSearch, stringifySearch } from '#/shared/service/search';
 import { TextField } from '#/shared/view/Field';
 import { Section } from '#/shared/view/Section';
-import { fakeTransport, json, problem, type Answer } from '#/testing/fakeTransport';
+import { json, problem, type Answer } from '#/testing/fakeTransport';
+import { mountGuardedPage } from '#/testing/mountGuardedPage';
 
 const GRACE = { tenant: 'acme', subject_id: 's1', username: 'grace' };
 const HOPPER = { tenant: 'acme', subject_id: 's2', username: 'hopper' };
@@ -66,47 +52,7 @@ function General() {
 }
 
 function mount(routes: Record<string, Answer>) {
-  const fake = fakeTransport(routes);
-  const root = createRootRoute({
-    component: () => (
-      <>
-        <NavigationGuard />
-        <SessionGate>
-          <Outlet />
-        </SessionGate>
-      </>
-    ),
-  });
-  const tenant = createRoute({
-    getParentRoute: () => root,
-    path: '$tenant',
-    component: function Tenant() {
-      return (
-        <TenantShell tenant={tenant.useParams().tenant}>
-          <Outlet />
-        </TenantShell>
-      );
-    },
-  });
-  const client = createRoute({
-    getParentRoute: () => tenant,
-    path: 'clients/c1',
-    component: General,
-  });
-  const router = createRouter({
-    routeTree: root.addChildren([tenant.addChildren([client])]),
-    history: createMemoryHistory({ initialEntries: ['/console/acme/clients/c1'] }),
-    basepath: '/console',
-    parseSearch,
-    stringifySearch,
-  });
-  const view = render(
-    <Providers transport={fake.transport} queryClient={createQueryClient()}>
-      <RouterProvider router={router} />
-      <UnsavedGuardLayer />
-    </Providers>,
-  );
-  return { ...fake, unmount: view.unmount };
+  return mountGuardedPage(routes, General);
 }
 
 function whoami(subjectId: string): Answer {

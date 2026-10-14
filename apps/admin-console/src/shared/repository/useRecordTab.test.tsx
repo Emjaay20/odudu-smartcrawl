@@ -1,16 +1,9 @@
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-  RouterProvider,
-} from '@tanstack/react-router';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it } from 'vitest';
 import { useRecordTab } from '#/shared/repository/useRecordTab';
-import { parseSearch, stringifySearch } from '#/shared/service/search';
 import { Tabs } from '#/shared/view/Tabs';
+import { mountAtRoute } from '#/testing/mountAtRoute';
 
 function Client() {
   const { tab, selectTab } = useRecordTab(['general', 'tokens'] as const);
@@ -30,20 +23,7 @@ function Client() {
 }
 
 function mount(url: string) {
-  const root = createRootRoute();
-  const client = createRoute({
-    getParentRoute: () => root,
-    path: '/clients/c1',
-    component: Client,
-  });
-  const router = createRouter({
-    routeTree: root.addChildren([client]),
-    history: createMemoryHistory({ initialEntries: [url] }),
-    parseSearch,
-    stringifySearch,
-  });
-  render(<RouterProvider router={router} />);
-  return router;
+  return mountAtRoute(url, '/clients/c1', Client).router;
 }
 
 it("keeps the chosen tab in the URL, and leaves the last tab's list behind", async () => {
