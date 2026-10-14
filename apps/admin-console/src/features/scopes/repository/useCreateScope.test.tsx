@@ -127,3 +127,20 @@ it('counts a part whose read failed as missed, without writing it', async () => 
   expect(missed).toEqual(['roles']);
   expect(sent.filter((request) => request.path === `${S1}/roles`)).toHaveLength(1);
 });
+
+it('counts a part whose read gave no tag as missed, without writing it', async () => {
+  const { wrapper, sent } = hookHarness({
+    ...READS,
+    [`GET ${S1}/roles`]: json({ items: [] }),
+    ...PUTS,
+  });
+  const { result } = renderHook(() => useCreateScope('acme'), { wrapper });
+  let missed: readonly string[] = [];
+  await act(async () => {
+    missed = await result.current.fill('s1', ['r-aud'], ['email']);
+  });
+  expect(missed).toEqual(['roles']);
+  expect(sent.filter((request) => request.method === 'PUT').map((request) => request.path)).toEqual(
+    [`${S1}/mappers`],
+  );
+});

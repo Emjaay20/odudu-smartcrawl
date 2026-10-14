@@ -73,7 +73,8 @@ export function useCreateScope(tenant: string): CreateScope {
     if (wanted.length === 0) return [];
     const answer = await fresh.read(['copy-etag', tenant, id, part], read);
     const ifMatch = etagOfRead(answer);
-    const set = ifMatch === null ? answer : await write(ifMatch);
+    if (ifMatch === null) return [part];
+    const set = await write(ifMatch);
     return set.ok ? [] : [part];
   };
   return {
