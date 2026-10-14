@@ -59,3 +59,16 @@ it('leaves no rejection unhandled when the read again fails', async () => {
   expect(invalidated).toHaveBeenCalledTimes(2);
   expect(unhandled).not.toHaveBeenCalled();
 });
+
+it('handles the rejection of every read again it starts, so none reaches its caller', async () => {
+  const { invalidated, wrapper } = harness();
+  const refused = [Promise.reject(new Error('one')), Promise.reject(new Error('two'))];
+  const handled = refused.map((promise) => vi.spyOn(promise, 'catch'));
+  invalidated.mockReturnValueOnce(refused[0] ?? Promise.resolve());
+  invalidated.mockReturnValueOnce(refused[1] ?? Promise.resolve());
+  const { result } = renderHook(() => useInvalidate(), { wrapper });
+  result.current.invalidate(['list', 'acme']);
+  result.current.invalidateExact(['record', 'acme', 'x']);
+  expect(handled.map((spy) => spy.mock.calls.length)).toEqual([1, 1]);
+  await Promise.allSettled(refused);
+});
