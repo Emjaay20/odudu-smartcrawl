@@ -1,7 +1,7 @@
 import type { Tenant } from '@odudu/contracts/admin';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { amendTenant, readTenant } from '#/features/tenants/adapter/tenants';
-import { tenantRecord } from '#/features/tenants/service';
+import { generalPatch, tenantRecord } from '#/features/tenants/service';
 import { recordKey } from '#/shared/repository/queryKeys';
 import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useRecord, type RecordEntry, type RecordState } from '#/shared/repository/useRecord';
@@ -26,12 +26,7 @@ export interface GeneralValues extends Readonly<Record<string, unknown>> {
 
 export function saveGeneral(name: string) {
   return (gateway: Gateway, { changes, ifMatch }: SaveInput<GeneralValues>) =>
-    amendTenant(
-      gateway,
-      name,
-      changes.display_name === undefined ? {} : { display_name: changes.display_name },
-      ifMatch,
-    );
+    amendTenant(gateway, name, generalPatch(changes), ifMatch);
 }
 
 export interface EnabledChange {

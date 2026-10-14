@@ -1,5 +1,10 @@
 export { doneStepOf, type DoneStep } from '#/features/tenants/service/done';
-export { type Tenant, nameProblem, issuerPreview } from '#/features/tenants/service/name';
+export {
+  type Tenant,
+  nameProblem,
+  issuerPreview,
+  generalPatch,
+} from '#/features/tenants/service/name';
 export {
   exportFileName,
   type Exported,
