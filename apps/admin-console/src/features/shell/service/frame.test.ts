@@ -5,7 +5,6 @@ import {
   brandText,
   checkingText,
   dialogOpen,
-  notBuiltText,
   pathnameOf,
   signedInFrom,
   tenantNotFoundText,
@@ -24,9 +23,6 @@ describe('the frame text', () => {
 
   it('says what an area is doing before it opens', () => {
     expect(checkingText(areaAt('subjects'))).toBe('Checking access to Subjects');
-    expect(notBuiltText(areaAt('flow'))).toBe(
-      'Sign-in flow is not in this build of the console yet.',
-    );
     expect(tenantNotFoundText('ghost')).toBe('No tenant is named ghost.');
   });
 

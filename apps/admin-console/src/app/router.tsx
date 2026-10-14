@@ -12,14 +12,7 @@ import { RouterProvider as AriaRouterProvider } from 'react-aria-components';
 import { lazyFeatureRoute } from '#/app/lazyFeatureRoute';
 import { NavigationGuard } from '#/app/NavigationGuard';
 import { ConsoleHome, SessionGate } from '#/features/session';
-import {
-  AreaPage,
-  EVERY_AREA,
-  OVERVIEW,
-  pendingPage,
-  PendingFrame,
-  TenantShell,
-} from '#/features/shell';
+import { pendingPage, PendingFrame, TenantShell } from '#/features/shell';
 import { parseSearch, stringifySearch } from '#/shared/service/search';
 import { PageNotFound } from '#/shared/view/PageNotFound';
 
@@ -474,6 +467,20 @@ const email = createRoute({
   },
 });
 
+const Audit = lazyFeatureRoute(
+  () => import('#/features/audit').then((feature) => feature.AuditPage),
+  'Loading the audit trail',
+);
+
+const audit = createRoute({
+  getParentRoute: () => tenant,
+  path: 'audit',
+  component: function TenantAudit() {
+    const { tenant: name } = tenant.useParams();
+    return <Audit key={name} tenant={name} />;
+  },
+});
+
 // Every feature chunk the routes load, for a caller that wants them all in
 // hand before the first render.
 export function preloadFeatures(): Promise<void> {
@@ -506,36 +513,10 @@ export function preloadFeatures(): Promise<void> {
     SigningKeys,
     Settings,
     Email,
+    Audit,
   ];
   return Promise.all(features.map((feature) => feature.preload())).then(() => undefined);
 }
-
-const TAKEN = new Set([
-  'tenants',
-  'export',
-  'system-admins',
-  'subjects',
-  'groups',
-  'roles',
-  'clients',
-  'scopes',
-  'registration-tokens',
-  'flow',
-  'keys',
-  'settings',
-  'email',
-]);
-
-const areas = EVERY_AREA.filter((area) => area !== OVERVIEW && !TAKEN.has(area.path)).map((area) =>
-  createRoute({
-    getParentRoute: () => tenant,
-    path: area.path,
-    component: function Area() {
-      const { tenant: name } = tenant.useParams();
-      return <AreaPage key={`${name}/${area.path}`} tenant={name} area={area} />;
-    },
-  }),
-);
 
 const routeTree = root.addChildren([
   home,
@@ -554,7 +535,7 @@ const routeTree = root.addChildren([
     signingKeys,
     settings,
     email,
-    ...areas,
+    audit,
   ]),
 ]);
 

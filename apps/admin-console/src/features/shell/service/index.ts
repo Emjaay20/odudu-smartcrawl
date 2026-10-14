@@ -29,7 +29,6 @@ export {
   areasLabel,
   signedInFrom,
   checkingText,
-  notBuiltText,
   tenantNotFoundText,
   dialogOpen,
   pathnameOf,

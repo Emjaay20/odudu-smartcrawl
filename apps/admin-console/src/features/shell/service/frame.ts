@@ -17,10 +17,6 @@ export function checkingText(area: Area): string {
   return `Checking access to ${area.label}`;
 }
 
-export function notBuiltText(area: Area): string {
-  return `${area.label} is not in this build of the console yet.`;
-}
-
 export function tenantNotFoundText(tenant: string): string {
   return `No tenant is named ${tenant}.`;
 }
