@@ -1,6 +1,12 @@
 import { expect, it } from 'vitest';
 import type { GatewayFailure, GatewayResult } from '#/shared/service/result';
-import { failureOf, failureOfSettled, restOf, type Settled } from '#/shared/service/settled';
+import {
+  dataOf,
+  failureOf,
+  failureOfSettled,
+  restOf,
+  type Settled,
+} from '#/shared/service/settled';
 
 const refused: GatewayFailure = { ok: false, kind: 'network' };
 const kept: Settled<string> = { ok: true, rest: 'kept' };
@@ -29,4 +35,17 @@ it('keeps the refusal in an answer, and nothing while there is no answer', () =>
   expect(failureOf(refused)).toBe(refused);
   expect(failureOf(answered)).toBeNull();
   expect(failureOf(undefined)).toBeNull();
+});
+
+it('keeps what a read answered, and nothing before it answers or when it was refused', () => {
+  const answered: GatewayResult<string> = {
+    ok: true,
+    status: 200,
+    data: 'x',
+    etag: null,
+    next: null,
+  };
+  expect(dataOf(answered)).toBe('x');
+  expect(dataOf<string>(refused)).toBeUndefined();
+  expect(dataOf<string>(undefined)).toBeUndefined();
 });

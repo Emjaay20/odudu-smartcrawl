@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { readSystemIssuer } from '#/features/tenants/adapter/tenants';
 import { systemIssuerKey } from '#/shared/repository/queryKeys';
+import { dataOf } from '#/shared/service/settled';
 import { useTransport } from '#/shared/transport/useTransport';
 
 // The system tenant's issuer as relying parties see it, the public base's.
@@ -11,6 +12,5 @@ export function useSystemIssuer(): string | undefined {
     queryFn: () => readSystemIssuer(gateway),
     staleTime: Infinity,
   });
-  const result = query.data;
-  return result?.ok === true ? result.data : undefined;
+  return dataOf(query.data);
 }

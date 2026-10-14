@@ -1,10 +1,11 @@
+import { dataOf } from '#/shared/service/settled';
 import { isUnknownTenant } from '#/shared/service/failure';
 import type { Authority } from '#/shared/service/principal';
 import type { GatewayResult } from '#/shared/service/result';
 
 // What whoami granted, nothing until it has answered or when it refused.
 export function authorityOf(read: GatewayResult<Authority> | undefined): Authority | undefined {
-  return read?.ok === true ? read.data : undefined;
+  return dataOf(read);
 }
 
 // Whether the tenant is one the admin API does not know; unknown until answered.

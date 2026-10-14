@@ -11,6 +11,11 @@ export function failureOfSettled<Rest>(settled: Settled<Rest> | undefined): Gate
   return settled?.ok === false ? settled.failure : null;
 }
 
+// What a read answered, nothing until it has answered or when it was refused.
+export function dataOf<T>(result: GatewayResult<T> | undefined): T | undefined {
+  return result?.ok === true ? result.data : undefined;
+}
+
 // The refusal in a write's answer, nothing while it has not answered.
 export function failureOf(result: GatewayResult<unknown> | undefined): GatewayFailure | null {
   return result === undefined || result.ok ? null : result;
