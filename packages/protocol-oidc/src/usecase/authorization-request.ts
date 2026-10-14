@@ -614,6 +614,9 @@ export async function handleAuthorizationRequest(
     // which is the login submission, so it travels with the parked request.
     ...(hintSubject !== null ? { idTokenHintSubject: hintSubject } : {}),
     ...(claimsSubject !== null ? { claimsSubject } : {}),
+    // Parked on this branch too, so a restart link rebuilt from it asks for
+    // the same freshness instead of being answered from an older session.
+    ...(maxAge !== null ? { maxAge } : {}),
     // Carried forward so handleLoginSubmission's own consent gate, once
     // this login completes, still sees `prompt=consent` the way it would
     // have at the moment this request first arrived.

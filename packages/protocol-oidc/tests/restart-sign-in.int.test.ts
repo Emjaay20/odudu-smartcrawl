@@ -9,6 +9,7 @@ import {
   type DatabaseHandle,
 } from '@odudu/db';
 import { clients, provisionClientDefaults } from '@odudu/domain-tenant';
+import { clientOidcConfig } from '#/schema/client-oidc-config';
 import { FakeClock, newId } from '@odudu/kernel';
 import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/testkit';
 import formbody from '@fastify/formbody';
@@ -72,7 +73,7 @@ async function setupTenant(name: string): Promise<string> {
   return tenantId;
 }
 
-function authorizeUrl(tenant: string): string {
+function authorizeUrl(tenant: string, extra: Record<string, string> = {}): string {
   const query = new URLSearchParams({
     response_type: 'code',
     client_id: CLIENT_ID,
@@ -82,6 +83,7 @@ function authorizeUrl(tenant: string): string {
     nonce: 'n-1',
     code_challenge: CHALLENGE,
     code_challenge_method: 'S256',
+    ...extra,
   });
   return `/tenants/${tenant}/protocol/openid-connect/auth?${query.toString()}`;
 }
@@ -107,9 +109,48 @@ function asRequest(location: string | undefined): { path: string; params: Record
   return { path: url.pathname, params: Object.fromEntries(url.searchParams) };
 }
 
-function restartHref(res: LightMyRequestResponse): string | undefined {
-  const raw = /<a href="([^"]*)">Start sign-in again<\/a>/.exec(res.body)?.[1];
-  return raw?.replaceAll('&amp;', '&');
+function unescapeHtml(value: string): string {
+  return value
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#39;', "'")
+    .replaceAll('&amp;', '&');
+}
+
+function linkLabelled(res: LightMyRequestResponse, label: string): string | undefined {
+  const raw = new RegExp(`<a href="([^"]*)">${label}</a>`, 'u').exec(res.body)?.[1];
+  return raw === undefined ? undefined : unescapeHtml(raw);
+}
+
+const restartHref = (res: LightMyRequestResponse) => linkLabelled(res, 'Start sign-in again');
+
+// The cookies a login set, as the browser would send them back.
+function cookieOf(res: LightMyRequestResponse): string {
+  const raw = res.headers['set-cookie'];
+  const values = raw === undefined ? [] : Array.isArray(raw) ? raw : [raw];
+  return values
+    .map((value) => value.split(';')[0] ?? '')
+    .filter((pair) => !pair.endsWith('='))
+    .join('; ');
+}
+
+async function signedInCookie(name: string): Promise<string> {
+  const form = await http.inject({ url: authorizeUrl(name) });
+  const res = await submit(name, {
+    auth_session_id: authSessionIdOf(form),
+    username: USERNAME,
+    password: PASSWORD,
+  });
+  expect(res.statusCode).toBe(302);
+  return cookieOf(res);
+}
+
+function expireRow(id: string): Promise<unknown> {
+  return owner.db
+    .update(authenticationSessions)
+    .set({ expiresAt: new Date(clock.now().getTime() - 1000) })
+    .where(eq(authenticationSessions.id, id));
 }
 
 beforeAll(async () => {
@@ -295,33 +336,103 @@ describe('a sign-in that expired while its form was open', () => {
     expect(refused.statusCode).toBe(400);
     expect(refused.body).not.toContain('<a ');
   });
+});
 
-  it('offers nothing for a request that was constrained to one subject', async () => {
-    const name = `acme-hint-${newId()}`;
-    const tenantId = await setupTenant(name);
-    const id = newId();
-    await owner.db.insert(authenticationSessions).values({
-      id,
-      tenantId,
-      pendingRequest: {
-        clientId: CLIENT_ID,
-        redirectUri: REDIRECT_URI,
-        scope: 'openid',
-        state: null,
-        nonce: null,
-        codeChallenge: CHALLENGE,
-        codeChallengeMethod: 'S256',
-        idTokenHintSubject: newId(),
-      },
-      expiresAt: new Date(clock.now().getTime() - 60_000),
-    });
+// A request that demanded a fresh authentication must demand it again: the
+// restart link may never answer from an SSO session the original refused.
+describe('a restarted request keeps what it demanded', () => {
+  async function restartedWith(
+    extra: Record<string, string>,
+    ageMinutes: number,
+  ): Promise<{ href: string; followed: LightMyRequestResponse; first: LightMyRequestResponse }> {
+    const name = `acme-demand-${newId()}`;
+    await setupTenant(name);
+    const cookie = await signedInCookie(name);
+    clock.advance(ageMinutes * 60_000);
+    const first = await http.inject({ url: authorizeUrl(name, extra), headers: { cookie } });
+    expect(first.statusCode).toBe(200);
+    const id = authSessionIdOf(first);
+    await expireRow(id);
     const refused = await submit(name, {
       auth_session_id: id,
       username: USERNAME,
       password: PASSWORD,
     });
-    expect(refused.statusCode).toBe(400);
-    expect(refused.body).toContain(EXPIRED_NOTICE);
-    expect(refused.body).not.toContain('<a ');
+    const href = restartHref(refused);
+    expect(href).toBeDefined();
+    const followed = await http.inject({ url: href ?? '', headers: { cookie } });
+    return { href: href ?? '', followed, first };
+  }
+
+  it('asks for a fresh sign-in again when max_age had made the session too old', async () => {
+    const { href, followed } = await restartedWith({ max_age: '60' }, 10);
+    expect(new URL(href, 'https://x').searchParams.get('max_age')).toBe('60');
+    expect(followed.statusCode).toBe(200);
+    expect(followed.headers.location).toBeUndefined();
+    expect(followed.body).toContain('name="auth_session_id"');
   });
+
+  it('asks for a fresh sign-in again under prompt=login', async () => {
+    const { href, followed } = await restartedWith({ prompt: 'login' }, 0);
+    expect(new URL(href, 'https://x').searchParams.get('prompt')).toBe('login');
+    expect(followed.statusCode).toBe(200);
+    expect(followed.body).toContain('name="auth_session_id"');
+  });
+});
+
+describe('a followed restart link is still held to the client as registered now', () => {
+  async function refusalWithLink(name: string): Promise<string> {
+    const form = await http.inject({ url: authorizeUrl(name) });
+    const id = authSessionIdOf(form);
+    await expireRow(id);
+    const refused = await submit(name, {
+      auth_session_id: id,
+      username: USERNAME,
+      password: PASSWORD,
+    });
+    return restartHref(refused) ?? '';
+  }
+
+  it('is refused for a client disabled since', async () => {
+    const name = `acme-follow-off-${newId()}`;
+    const tenantId = await setupTenant(name);
+    const href = await refusalWithLink(name);
+    await owner.db.update(clients).set({ enabled: false }).where(eq(clients.tenantId, tenantId));
+    const followed = await http.inject({ url: href });
+    expect(followed.statusCode).toBe(400);
+    expect(followed.body).toContain('invalid_client');
+  });
+
+  it('is refused for a redirect_uri unregistered since', async () => {
+    const name = `acme-follow-uri-${newId()}`;
+    const tenantId = await setupTenant(name);
+    const href = await refusalWithLink(name);
+    await owner.db
+      .update(clientOidcConfig)
+      .set({ redirectUris: ['https://elsewhere.example/cb'] })
+      .where(eq(clientOidcConfig.tenantId, tenantId));
+    const followed = await http.inject({ url: href });
+    expect(followed.statusCode).toBe(400);
+    expect(followed.headers.location).toBeUndefined();
+  });
+});
+
+describe('the other doors a stale id reaches', () => {
+  it.each(['update-password', 'configure-totp', 'generate-recovery-codes', 'configure-passkey'])(
+    'offers the link on the required-action POST for %s',
+    async (action) => {
+      const name = `acme-door-${newId()}`;
+      await setupTenant(name);
+      const stale = authSessionIdOf(await http.inject({ url: authorizeUrl(name) }));
+      await expireRow(stale);
+      const res = await http.inject({
+        method: 'POST',
+        url: `/tenants/${name}/login-actions/required-action?action=${action}`,
+        payload: new URLSearchParams({ auth_session_id: stale }).toString(),
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(asRequest(restartHref(res))).toEqual(asRequest(authorizeUrl(name)));
+    },
+  );
 });
