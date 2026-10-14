@@ -5,8 +5,9 @@ import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 // console's own dialog rather than the browser's.
 export function useReloadConsole(): () => void {
   const leave = useLeaveConsole();
+  const request = useUnsavedGuard((guard) => guard.request);
   return () => {
-    useUnsavedGuard.getState().request(() => {
+    request(() => {
       leave(window.location.href);
     });
   };

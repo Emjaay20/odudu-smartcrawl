@@ -9,9 +9,10 @@ import { useLeaveConsole } from '#/features/session/repository/useLeaveConsole';
 export function useEndOwnSession(): () => Promise<void> {
   const endSession = useGatewaySessionEnd();
   const leave = useLeaveConsole();
+  const forgetAll = useDrafts((drafts) => drafts.forgetAll);
   return async () => {
     await endSession();
-    useDrafts.getState().forgetAll();
+    forgetAll();
     leave(CONSOLE_ROOT);
   };
 }

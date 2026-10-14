@@ -6,8 +6,9 @@ import { useUnsavedGuard } from '#/shared/repository/useUnsavedGuard';
 export function useSignOut(): () => void {
   const signOut = useGatewaySignOut();
   const toast = useToast();
+  const request = useUnsavedGuard((guard) => guard.request);
   return () => {
-    useUnsavedGuard.getState().request(() => {
+    request(() => {
       signOut()
         .then((left) => {
           if (!left) toast.failed(SIGN_OUT_FAILED);

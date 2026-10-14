@@ -9,10 +9,11 @@ import { useTransport } from '#/shared/transport/useTransport';
 export function useGatewaySignOut(): () => Promise<boolean> {
   const { auth } = useTransport();
   const leave = useLeaveConsole();
+  const forgetAll = useDrafts((drafts) => drafts.forgetAll);
   return async () => {
     const result = await logOut(auth);
     if (!sessionGone(result)) return false;
-    useDrafts.getState().forgetAll();
+    forgetAll();
     leave(signOutDestination(result));
     return true;
   };

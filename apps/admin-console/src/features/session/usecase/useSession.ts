@@ -28,10 +28,12 @@ export type Boot =
 export function useSession(): Boot {
   const { read, retry, markEnded, carryOn } = useSessionQuery();
   const signIn = useSignIn();
+  const keepDirty = useDrafts((drafts) => drafts.keepDirty);
+  const reset = useUnsavedGuard((guard) => guard.reset);
   const principal = shownPrincipal(read);
   useSessionEvent('sessionEnded', () => {
-    if (principal !== null) useDrafts.getState().keepDirty(draftOwner(principal));
-    useUnsavedGuard.getState().reset();
+    if (principal !== null) keepDirty(draftOwner(principal));
+    reset();
     markEnded(principal);
   });
   useSessionEvent('principalChanged', retry);
