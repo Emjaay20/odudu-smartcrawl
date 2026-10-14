@@ -6,11 +6,11 @@ import { describe, expect, it } from 'vitest';
 
 // A usecase integrates and a repository holds state (ADR 0010's amendment):
 // every rule, message, failure-to-copy mapping and formatter is a pure
-// service function. These are the shapes logic takes in a hook that can be
-// found without judgement; guards and `result.ok` choices are orchestration.
-// A hook's returned object holds no ternary (`conditional`) and its body
-// merges no two objects (`spread`); a handler or callback may do both, as
-// building a request is the orchestration itself. No allowlist, no waiver.
+// service function. A hook's returned value holds no ternary, whether in an
+// object, tuple, call argument, template or a local it returns (`conditional`),
+// and its body merges no two objects, arrays or `Object.assign` sources
+// (`spread`); handlers and callbacks may. Not seen: if/else building a value,
+// a ternary in a `useMemo` callback. No allowlist, no waiver.
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..');
 const SRC = 'apps/admin-console/src';
@@ -167,18 +167,6 @@ export function violations(fileName: string, source: string, layer: Layer): stri
   return found;
 }
 
-function unwrapped(node: ts.Expression): ts.Expression {
-  let at = node;
-  while (
-    ts.isParenthesizedExpression(at) ||
-    ts.isAsExpression(at) ||
-    ts.isSatisfiesExpression(at)
-  ) {
-    at = at.expression;
-  }
-  return at;
-}
-
 function hookBodies(file: ts.SourceFile): ts.Node[] {
   const bodies: ts.Node[] = [];
   for (const statement of file.statements) {
@@ -211,43 +199,76 @@ function shallow(node: ts.Node, visit: (inner: ts.Node) => void): void {
   });
 }
 
-// The object literals a hook returns, and the literals nested in their values.
-function returnedObjects(body: ts.Node): ts.ObjectLiteralExpression[] {
-  const found: ts.ObjectLiteralExpression[] = [];
-  const collect = (expression: ts.Expression): void => {
-    const value = unwrapped(expression);
-    if (!ts.isObjectLiteralExpression(value)) return;
-    found.push(value);
-    for (const property of value.properties) {
-      if (ts.isPropertyAssignment(property)) collect(property.initializer);
-    }
-  };
-  if (ts.isExpression(body)) collect(body);
+// What a hook hands back: each `return` expression, or its concise body.
+function returnedValues(body: ts.Node): ts.Expression[] {
+  const found: ts.Expression[] = [];
+  if (ts.isExpression(body)) found.push(body);
   const visit = (inner: ts.Node): void => {
-    if (ts.isReturnStatement(inner) && inner.expression !== undefined) collect(inner.expression);
+    if (ts.isReturnStatement(inner) && inner.expression !== undefined) found.push(inner.expression);
   };
   visit(body);
   shallow(body, visit);
   return found;
 }
 
-function hookDecisions(file: ts.SourceFile, report: (node: ts.Node, rule: string) => void): void {
-  for (const body of hookBodies(file)) {
-    for (const object of returnedObjects(body)) {
-      for (const property of object.properties) {
-        if (ts.isPropertyAssignment(property)) {
-          const value = unwrapped(property.initializer);
-          if (ts.isConditionalExpression(value)) report(value, 'conditional');
-        }
+function localsOf(body: ts.Node): Map<string, ts.Expression> {
+  const locals = new Map<string, ts.Expression>();
+  const visit = (inner: ts.Node): void => {
+    if (ts.isVariableDeclaration(inner) && ts.isIdentifier(inner.name) && inner.initializer) {
+      locals.set(inner.name.text, inner.initializer);
+    }
+  };
+  shallow(body, visit);
+  return locals;
+}
+
+// Every ternary in what a hook returns, however it reaches it: in an object or
+// tuple, a call argument or template, or a local the return names. A function
+// stored in the value is a handler and is not entered.
+function returnedConditionals(body: ts.Node): ts.ConditionalExpression[] {
+  const locals = localsOf(body);
+  const seen = new Set<string>();
+  const found: ts.ConditionalExpression[] = [];
+  const visit = (node: ts.Node): void => {
+    if (ts.isFunctionLike(node)) return;
+    if (ts.isConditionalExpression(node)) found.push(node);
+    if (ts.isIdentifier(node)) {
+      const { parent } = node;
+      const named =
+        (ts.isPropertyAccessExpression(parent) && parent.name === node) ||
+        (ts.isPropertyAssignment(parent) && parent.name === node);
+      const init = locals.get(node.text);
+      if (!named && init !== undefined && !seen.has(node.text)) {
+        seen.add(node.text);
+        visit(init);
       }
     }
+    ts.forEachChild(node, visit);
+  };
+  for (const value of returnedValues(body)) visit(value);
+  return found;
+}
+
+function isMerge(node: ts.Node): boolean {
+  const spreads = (items: readonly ts.Node[], kind: (item: ts.Node) => boolean): number =>
+    items.filter(kind).length;
+  if (ts.isObjectLiteralExpression(node))
+    return spreads(node.properties, ts.isSpreadAssignment) >= 2;
+  if (ts.isArrayLiteralExpression(node)) return spreads(node.elements, ts.isSpreadElement) >= 2;
+  return (
+    ts.isCallExpression(node) &&
+    ts.isPropertyAccessExpression(node.expression) &&
+    node.expression.expression.getText() === 'Object' &&
+    node.expression.name.text === 'assign' &&
+    node.arguments.length >= 3
+  );
+}
+
+function hookDecisions(file: ts.SourceFile, report: (node: ts.Node, rule: string) => void): void {
+  for (const body of hookBodies(file)) {
+    for (const conditional of returnedConditionals(body)) report(conditional, 'conditional');
     const merges = (inner: ts.Node): void => {
-      if (
-        ts.isObjectLiteralExpression(inner) &&
-        inner.properties.filter((property) => ts.isSpreadAssignment(property)).length >= 2
-      ) {
-        report(inner, 'spread');
-      }
+      if (isMerge(inner)) report(inner, 'spread');
     };
     merges(body);
     shallow(body, merges);
