@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
@@ -8,6 +8,7 @@ import { ENG, G, groupRoutes } from '#/testing/groupsFixtures';
 import { resetConsole } from '#/testing/resetConsole';
 import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
+import { expectOwnActivity } from '#/testing/ownActivity';
 
 afterEach(() => {
   resetConsole();
@@ -28,15 +29,7 @@ it("heads a group's page with its path and description, and offers its tabs", as
 });
 
 it("reads the group's own activity from the audit trail", async () => {
-  const user = userEvent.setup();
-  const { sent } = renderConsoleAt(AT, groupRoutes());
-  await user.click(await screen.findByRole('tab', { name: 'Activity' }));
-  expect(await screen.findByText('No activity on this group yet')).toBeVisible();
-  await waitFor(() => {
-    const read = sent.find((s) => s.path === `${ACME_ADMIN}/audit`);
-    expect(read?.search.get('resource_type')).toBe('group');
-    expect(read?.search.get('resource_id')).toBe('g-eng');
-  });
+  await expectOwnActivity(AT, groupRoutes(), { noun: 'group', id: 'g-eng' });
 });
 
 it('tells a caller without view-audit or view-users what Activity and Members need, reading neither', async () => {

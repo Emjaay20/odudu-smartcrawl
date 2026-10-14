@@ -1,12 +1,11 @@
-import { screen, waitFor, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { screen, within } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { problem } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
-import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { SC, scopeRoutes } from '#/testing/scopesFixtures';
+import { expectOwnActivity } from '#/testing/ownActivity';
 
 afterEach(() => {
   resetConsole();
@@ -39,16 +38,8 @@ it('offers a copy of the scope, which is a new scope under another name', async 
   );
 });
 
-it("reads the scope's own activity", async () => {
-  const user = userEvent.setup();
-  const { sent } = renderConsoleAt(AT, scopeRoutes());
-  await user.click(await screen.findByRole('tab', { name: 'Activity' }));
-  expect(await screen.findByText('No activity on this scope yet')).toBeVisible();
-  await waitFor(() => {
-    const read = sent.find((s) => s.path === `${ACME_ADMIN}/audit`);
-    expect(read?.search.get('resource_type')).toBe('scope');
-    expect(read?.search.get('resource_id')).toBe('s-bill');
-  });
+it("reads the scope's own activity from the audit trail", async () => {
+  await expectOwnActivity(AT, scopeRoutes(), { noun: 'scope', id: 's-bill' });
 });
 
 it('says there is no such scope for a 404', async () => {

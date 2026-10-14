@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
@@ -8,6 +8,7 @@ import { resetConsole } from '#/testing/resetConsole';
 import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { ADA, S } from '#/testing/subjectsFixtures';
+import { expectOwnActivity } from '#/testing/ownActivity';
 
 afterEach(() => {
   resetConsole();
@@ -40,16 +41,8 @@ it('lists the subjects the role is assigned to directly', async () => {
   expect(sent.find((s) => s.path === S)?.search.get('role')).toBe('r-portal');
 });
 
-it("reads the role's own activity", async () => {
-  const user = userEvent.setup();
-  const { sent } = renderConsoleAt(AT, roleRoutes());
-  await user.click(await screen.findByRole('tab', { name: 'Activity' }));
-  expect(await screen.findByText('No activity on this role yet')).toBeVisible();
-  await waitFor(() => {
-    const read = sent.find((s) => s.path === `${ACME_ADMIN}/audit`);
-    expect(read?.search.get('resource_type')).toBe('role');
-    expect(read?.search.get('resource_id')).toBe('r-portal');
-  });
+it("reads the role's own activity from the audit trail", async () => {
+  await expectOwnActivity(AT, roleRoutes(), { noun: 'role', id: 'r-portal' });
 });
 
 it('offers no delete until whoami says what the caller holds', async () => {
