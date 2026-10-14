@@ -1,6 +1,7 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { afterEach, expect, it } from 'vitest';
 import { z } from 'zod';
 import { storeDrafts } from '#/shared/adapter/draftStorage';
@@ -914,4 +915,113 @@ it('holds Save, saying why, once the record is found deleted', async () => {
   await user.type(within(general()).getByRole('textbox', { name: 'Name' }), '{Enter}');
   expect(patches()).toEqual([]);
   expect(within(general()).getByRole('textbox', { name: 'Name' })).toHaveValue('Billing');
+});
+
+// The section's own handlers, called as the hook hands them out: what Save
+// and the conflict buttons do is theirs to decide, whatever the view offers.
+function Direct({ data, etag }: { data: Client; etag: string }) {
+  const save = useSectionSave({
+    tenant: 'acme',
+    record: 'clients/c1',
+    section: 'general',
+    label: 'General',
+    etag,
+    capability: 'manage-clients',
+    refusal: NO_REFUSAL,
+    fields: { name: { value: data.name, label: 'Name', kind: 'plain' } },
+    save: (gateway, { changes, ifMatch }) => amend(gateway, changes, ifMatch),
+  });
+  const [answer, setAnswer] = useState('');
+  return (
+    <>
+      <input
+        aria-label="Name"
+        value={save.values.name}
+        onChange={(event) => {
+          save.edit('name', event.target.value);
+        }}
+      />
+      <button
+        type="button"
+        onClick={() => {
+          setAnswer(String(save.submit()));
+        }}
+      >
+        Submit
+      </button>
+      <button type="button" onClick={save.keepMine}>
+        Keep
+      </button>
+      <button type="button" onClick={save.takeTheirs}>
+        Take
+      </button>
+      <p>{`status ${save.status}`}</p>
+      <p>{`restored ${String(save.restored)}`}</p>
+      <p>{`submitted ${answer}`}</p>
+    </>
+  );
+}
+
+function DirectRecord() {
+  const record = useRecord({ tenant: 'acme', record: 'clients/c1', read });
+  if (record.data === undefined || record.etag === null) return <p>Loading</p>;
+  return <Direct data={record.data} etag={record.etag} />;
+}
+
+function mountDirect(routes: Record<string, Answer>) {
+  const fake = fakeTransport(routes);
+  render(
+    <TransportContext value={fake.transport}>
+      <QueryClientProvider client={createQueryClient()}>
+        <DirectRecord />
+      </QueryClientProvider>
+    </TransportContext>,
+  );
+  return { patches: () => fake.sent.filter((request) => request.method === 'PATCH') };
+}
+
+const KEPT_AGAINST_OLDER = {
+  owner: 'acme/s1',
+  drafts: { 'acme/clients/c1': { general: { etag: '"e0"', values: { name: 'Billing' } } } },
+};
+
+it('declines to submit while a conflict is open, and answers false', async () => {
+  const user = userEvent.setup();
+  storeDrafts(KEPT_AGAINST_OLDER);
+  const { patches } = mountDirect({ [GET]: client(LOADED, '"e1"'), [PATCH]: pending() });
+  await screen.findByText('status conflict');
+  await user.click(screen.getByRole('button', { name: 'Submit' }));
+  expect(screen.getByText('submitted false')).toBeVisible();
+  expect(patches()).toEqual([]);
+});
+
+it('keeps its edits only to settle a conflict, and sends nothing without one', async () => {
+  const user = userEvent.setup();
+  const { patches } = mountDirect({ [GET]: client(LOADED, '"e1"'), [PATCH]: pending() });
+  await user.type(await screen.findByRole('textbox', { name: 'Name' }), ' EU');
+  await user.click(screen.getByRole('button', { name: 'Keep' }));
+  expect(patches()).toEqual([]);
+});
+
+it('settles a kept draft once taking theirs leaves nothing of it, so a later edit is not marked restored', async () => {
+  const user = userEvent.setup();
+  storeDrafts(KEPT_AGAINST_OLDER);
+  mountDirect({ [GET]: client(LOADED, '"e1"'), [PATCH]: pending() });
+  await screen.findByText('status conflict');
+  await user.click(screen.getByRole('button', { name: 'Take' }));
+  await screen.findByText('status idle');
+  await user.type(screen.getByRole('textbox', { name: 'Name' }), ' EU');
+  expect(screen.getByText('restored false')).toBeVisible();
+});
+
+it('does not call a kept draft restored when it holds nothing that differs from the record', async () => {
+  storeDrafts({
+    owner: 'acme/s1',
+    drafts: {
+      'acme/clients/c1': { general: { etag: '"e1"', values: { name: 'Billing portal' } } },
+    },
+  });
+  mountDirect({ [GET]: client(LOADED, '"e1"'), [PATCH]: pending() });
+  await screen.findByText('status idle');
+  expect(screen.getByText('restored false')).toBeVisible();
 });
