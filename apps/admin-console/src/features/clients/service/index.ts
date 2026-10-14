@@ -146,6 +146,7 @@ export {
   GRACE_RULE,
   previousSecretLine,
   rotationFailureText,
+  rotationProblem,
   type PreviousSecret,
   rotatedNote,
   rotatedTitle,

@@ -8,7 +8,7 @@ import {
   rotatedNote,
   rotatedTitle,
   rotateConsequence,
-  rotationFailureText,
+  rotationProblem,
 } from '#/features/clients/service';
 
 export interface ClientSecret {
@@ -46,7 +46,7 @@ export function useClientSecret(tenant: string, client: Client): ClientSecret {
     confirming,
     consequence: rotateConsequence(client.name, grace),
     busy: rotation.busy,
-    problem: rotation.failure === null ? null : rotationFailureText(rotation.failure, client.name),
+    problem: rotationProblem(rotation.failure, client.name),
     secret: rotation.secret,
     secretTitle: rotatedTitle(client.name),
     secretNote: rotatedNote(client.name, grace),

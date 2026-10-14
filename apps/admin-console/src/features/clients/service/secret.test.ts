@@ -5,6 +5,7 @@ import {
   rotatedTitle,
   previousSecretLine,
   rotationFailureText,
+  rotationProblem,
   rotateConsequence,
 } from '#/features/clients/service/secret';
 
@@ -62,5 +63,13 @@ describe('rotationFailureText', () => {
     const lost = rotationFailureText({ ok: false, kind: 'network' }, 'Billing');
     expect(lost).toContain('whether the secret of Billing was rotated');
     expect(lost).toContain('It has not been sent again');
+  });
+});
+
+describe('rotationProblem', () => {
+  it('says nothing until a rotation failed, then what rotationFailureText says', () => {
+    const lost = { ok: false, kind: 'network' } as const;
+    expect(rotationProblem(null, 'Billing')).toBeNull();
+    expect(rotationProblem(lost, 'Billing')).toBe(rotationFailureText(lost, 'Billing'));
   });
 });

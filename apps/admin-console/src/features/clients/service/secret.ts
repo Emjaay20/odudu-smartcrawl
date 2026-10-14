@@ -37,6 +37,11 @@ export function rotationFailureText(failure: GatewayFailure, name: string): stri
   });
 }
 
+// The dialog's failure line: none until a rotation failed.
+export function rotationProblem(failure: GatewayFailure | null, name: string): string | null {
+  return failure === null ? null : rotationFailureText(failure, name);
+}
+
 export interface PreviousSecret {
   lead: string;
   // The instant it stops, or stopped, authenticating.
