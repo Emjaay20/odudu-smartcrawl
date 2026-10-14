@@ -22,6 +22,9 @@
 }
 
 .link {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
   color: var(--ink-primary);
   text-decoration: underline;
 }

@@ -584,6 +584,11 @@
 }
 
 .segment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: var(--target-min);
+  min-block-size: var(--target-min);
   padding: 0 1px;
   border-radius: 2px;
   outline: none;
@@ -594,6 +599,8 @@
 }
 
 .segment[data-type='literal'] {
+  min-inline-size: 0;
+  min-block-size: 0;
   color: var(--ink-muted);
 }
 

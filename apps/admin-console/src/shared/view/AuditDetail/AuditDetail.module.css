@@ -47,6 +47,9 @@
 }
 
 .link {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
   font-size: var(--type-13);
   color: var(--ink-primary);
   text-decoration: underline;
