@@ -10,38 +10,29 @@ import {
 } from '#/features/signing-keys/repository/useKeyWrites';
 import {
   algOf,
-  dialogOf,
+  askingOf,
   keyActionOutcome,
+  keyRows,
   promotionOf,
   promotionReading,
-  type PromotionReading,
+  shownAlg,
   stageFailure,
   stagedText,
-  defaultAlg,
+  type Asking,
   type KeyAction,
+  type KeyRow,
+  type Promotion,
+  type PromotionReading,
 } from '#/features/signing-keys/service';
 import { useToast } from '#/shared/repository/useToasts';
-import type { NamedDialog } from '#/shared/service/dialog';
 import { useAnnouncedAction } from '#/shared/usecase/useAnnouncedAction';
 import { useNow } from '#/shared/usecase/useNow';
 
 // Finer than the minutes a key's readiness is measured in.
 const CLOCK_MS = 30_000;
 
-export interface KeyRow {
-  key: SigningKey;
-  // Only a rotating key can be promoted, and says whether it is ready.
-  readiness: PromotionReading | null;
-}
-
 export interface Lane extends Omit<KeyLane, 'rows'> {
   rows: readonly KeyRow[];
-}
-
-export interface Asking {
-  action: KeyAction;
-  key: SigningKey;
-  dialog: NamedDialog;
 }
 
 export interface SigningKeysPage {
@@ -87,13 +78,14 @@ export function useSigningKeysPage(tenant: string): SigningKeysPage {
     outcomeOf: (asked, result) => keyActionOutcome(asked.action, asked.key, result),
   });
   const current = active.rows[0];
-  const alg = chosen ?? defaultAlg(current);
+  const alg = shownAlg(chosen, current);
   const activeKnown = active.status === 'ready';
-  const readiness = (key: SigningKey): PromotionReading =>
-    promotionReading(promotionOf(key, active.rows, now, activeKnown));
+  const promotionFor = (key: SigningKey): Promotion =>
+    promotionOf(key, active.rows, now, activeKnown);
+  const readiness = (key: SigningKey): PromotionReading => promotionReading(promotionFor(key));
   const laneOf = (lane: KeyLane, rotatingRows: boolean): Lane => ({
     ...lane,
-    rows: lane.rows.map((key) => ({ key, readiness: rotatingRows ? readiness(key) : null })),
+    rows: keyRows(lane.rows, rotatingRows ? readiness : null),
   });
   return {
     rotating: laneOf(rotating, true),
@@ -120,18 +112,7 @@ export function useSigningKeysPage(tenant: string): SigningKeysPage {
         .catch(() => undefined);
     },
     stageMessage,
-    asking:
-      acting.asked === null
-        ? null
-        : {
-            ...acting.asked,
-            dialog: dialogOf(
-              acting.asked.action,
-              acting.asked.key,
-              current,
-              promotionOf(acting.asked.key, active.rows, now, activeKnown),
-            ),
-          },
+    asking: askingOf(acting.asked, current, promotionFor),
     busy: promote.busy || retire.busy || remove.busy,
     problem: acting.problem,
     notice: acting.notice,

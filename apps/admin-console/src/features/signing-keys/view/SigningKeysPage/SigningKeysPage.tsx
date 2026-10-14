@@ -5,11 +5,11 @@ import {
   LANES,
   STAGE_RULE,
   TITLE,
+  type KeyRow,
   type Lane as LaneSpec,
 } from '#/features/signing-keys/service';
 import {
   useSigningKeysPage,
-  type KeyRow,
   type Lane,
   type SigningKeysPage as Page,
 } from '#/features/signing-keys/usecase/useSigningKeysPage';
