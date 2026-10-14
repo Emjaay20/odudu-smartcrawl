@@ -1,7 +1,9 @@
 import { useQueryClient, type QueryKey } from '@tanstack/react-query';
 
 // A failed refetch is the next read's to show, so an invalidation never
-// rejects into its caller.
+// rejects into its caller. It is fire-and-forget at its callers (a retry, a
+// reread and an after-change hook return void or the write's own result, and
+// awaiting a refetch would hold that answer back), so the one catch lives here.
 export function useInvalidate() {
   const client = useQueryClient();
   return {
