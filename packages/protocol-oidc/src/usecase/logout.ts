@@ -1,11 +1,11 @@
 import { type PresentedSession } from '@odudu/authn-flows';
-import { AUDIENCE_UNCHECKED, type SigningKeyRecord } from '@odudu/crypto';
+import { type SigningKeyRecord } from '@odudu/crypto';
 import { type RequestContext } from '@odudu/domain-audit';
 import { type ClientLogoutTarget } from '#/repository/grants';
 import { type TenantLookup } from '#/repository/tenant-lookup';
 import { frontChannelLogoutUrl } from '#/service/frontchannel-logout';
 import { mostRecentlyActive } from '#/service/session-selection';
-import { subjectOfIdTokenHint } from '#/usecase/authorization-request';
+import { subjectOfLogoutHint } from '#/usecase/authorization-request';
 
 export interface LogoutSession {
   id: string;
@@ -109,8 +109,8 @@ export type LogoutOutcome =
 
 export interface LogoutUsecaseDeps {
   findTenant(name: string): Promise<TenantLookup | null>;
-  // Shared with /authorize's own hint validation via subjectOfIdTokenHint —
-  // this tenant's own keys, this tenant's issuer.
+  // Shared with /authorize's own hint validation — this tenant's own keys,
+  // this tenant's issuer.
   listPublishableKeys(tenantId: string): Promise<SigningKeyRecord[]>;
   // Resolved from an OAuth `client_id` to that client's registered
   // post_logout_redirect_uris; an unknown or unspecified client yields an
@@ -244,16 +244,16 @@ export async function handleLogoutRequest(
     },
     header,
   );
-  // AUDIENCE_UNCHECKED here does not mean this door leaves `aud`
-  // unexamined — §4 requires a disagreeing `client_id`/hint pair told apart
-  // from no usable hint at all, and `subjectOfIdTokenHint` returns `null`
-  // for every failure alike, so a mismatch refused inside verification
-  // would be indistinguishable from an absent hint. `disagreeing`, below,
-  // makes that comparison where the caller can still see which case it is.
+  // The hint is read with `aud` unchecked and `exp` unjudged. `aud` is
+  // compared by `disagreeing`, below: §4 requires a disagreeing
+  // `client_id`/hint pair told apart from no usable hint at all, and the
+  // reader returns `null` for every failure alike. `exp` is left to the
+  // live-session binding in decideLogout (§2; the reading note in
+  // docs/protocols/oidc-rpinitiated.md).
   const hint =
     params.idTokenHint === null
       ? null
-      : await subjectOfIdTokenHint(deps, tenant.id, issuer, params.idTokenHint, AUDIENCE_UNCHECKED);
+      : await subjectOfLogoutHint(deps, tenant.id, issuer, params.idTokenHint);
   const registered = await registeredUris(deps, tenant.id, params.clientId);
 
   // §2: "When both `client_id` and `id_token_hint` are present, the OP MUST

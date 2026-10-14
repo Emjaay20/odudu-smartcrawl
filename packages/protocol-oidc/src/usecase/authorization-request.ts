@@ -5,7 +5,15 @@ import {
   type RequiredAction,
   type SessionRecord,
 } from '@odudu/authn-flows';
-import { verifyJwt, TYP_ABSENT, type ExpectedAudience, type SigningKeyRecord } from '@odudu/crypto';
+import {
+  verifyJwt,
+  AUDIENCE_UNCHECKED,
+  EXPIRY_NOT_ENFORCED,
+  TYP_ABSENT,
+  type ExpectedAudience,
+  type ExpiryPolicy,
+  type SigningKeyRecord,
+} from '@odudu/crypto';
 import { type ClientRecord } from '@odudu/domain-tenant';
 import { isUuid } from '@odudu/kernel';
 import { type ClientOidcConfig } from '#/schema/client-oidc-config';
@@ -844,19 +852,13 @@ function audiencesOf(claim: unknown): readonly string[] {
   return claim.filter((value): value is string => typeof value === 'string');
 }
 
-// OIDC Core §3.1.2.2: "the OP MUST validate that it was the issuer of the ID
-// Token" — a signature made by one of this tenant's keys, over a payload whose
-// `iss` is this tenant; `exp` is enforced by verifyJwt too. Returns the
-// claims it carries, or null for a hint this server cannot recognise as its
-// own. `audience` is a parameter, not a constant — callers differ on
-// whether they check it; see docs/protocols/oidc-core.md's reading note.
-// Exported for `#/usecase/logout.ts`, which shares this check.
-export async function subjectOfIdTokenHint(
+async function verifiedHint(
   deps: Pick<AuthorizeUsecaseDeps, 'listPublishableKeys'>,
   tenantId: string,
   issuer: string,
   hint: string,
   audience: ExpectedAudience,
+  expiry: ExpiryPolicy | undefined,
 ): Promise<IdTokenHintClaims | null> {
   const keys = await deps.listPublishableKeys(tenantId);
   try {
@@ -870,6 +872,7 @@ export async function subjectOfIdTokenHint(
       // server had already made once; `TYP_ABSENT` closes the shape rather
       // than the instance (docs/protocols/oidc-core.md's reading note).
       typ: TYP_ABSENT,
+      ...(expiry === undefined ? {} : { expiry }),
     });
     if (typeof payload.sub !== 'string' || payload.sub.length === 0) return null;
     return {
@@ -882,4 +885,33 @@ export async function subjectOfIdTokenHint(
   } catch {
     return null;
   }
+}
+
+// OIDC Core §3.1.2.2: "the OP MUST validate that it was the issuer of the ID
+// Token" — a signature made by one of this tenant's keys, over a payload whose
+// `iss` is this tenant; `exp` is enforced by verifyJwt too. Returns the
+// claims it carries, or null for a hint this server cannot recognise as its
+// own. `audience` is a parameter, not a constant — callers differ on
+// whether they check it; see docs/protocols/oidc-core.md's reading note.
+export function subjectOfIdTokenHint(
+  deps: Pick<AuthorizeUsecaseDeps, 'listPublishableKeys'>,
+  tenantId: string,
+  issuer: string,
+  hint: string,
+  audience: ExpectedAudience,
+): Promise<IdTokenHintClaims | null> {
+  return verifiedHint(deps, tenantId, issuer, hint, audience, undefined);
+}
+
+// The same checks with `exp` left unjudged, for the logout endpoint alone:
+// RP-Initiated Logout 1.0 §2 has the OP accept an ID Token "even when the
+// `exp` time has passed". What bounds it is the session the hint's `sid`
+// must name, not the clock (docs/protocols/oidc-rpinitiated.md).
+export function subjectOfLogoutHint(
+  deps: Pick<AuthorizeUsecaseDeps, 'listPublishableKeys'>,
+  tenantId: string,
+  issuer: string,
+  hint: string,
+): Promise<IdTokenHintClaims | null> {
+  return verifiedHint(deps, tenantId, issuer, hint, AUDIENCE_UNCHECKED, EXPIRY_NOT_ENFORCED);
 }
