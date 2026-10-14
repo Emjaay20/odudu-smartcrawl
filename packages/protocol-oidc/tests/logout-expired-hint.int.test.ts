@@ -9,12 +9,7 @@ import {
   type DatabaseHandle,
   type TenantScopedDatabase,
 } from '@odudu/db';
-import {
-  sessionRepository,
-  sessions,
-  provisionTenant,
-  type SessionLifespans,
-} from '@odudu/authn-flows';
+import { sessionRepository, provisionTenant, type SessionLifespans } from '@odudu/authn-flows';
 import { auditEvents } from '@odudu/domain-audit';
 import { clients, provisionClientDefaults } from '@odudu/domain-tenant';
 import { newId } from '@odudu/kernel';
@@ -237,16 +232,6 @@ function sessionIdFromCookie(cookie: string): string {
   const id = cookie.split('=')[1]?.split(':')[0];
   if (id === undefined) throw new Error('expected a session id in the cookie');
   return id;
-}
-
-async function sessionRowFor(
-  sessionId: string,
-): Promise<{ expiresAt: Date; lastActiveAt: Date } | undefined> {
-  const rows = await owner.db
-    .select({ expiresAt: sessions.expiresAt, lastActiveAt: sessions.lastActiveAt })
-    .from(sessions)
-    .where(eq(sessions.id, sessionId));
-  return rows[0];
 }
 
 function logoutUrl(tenantName: string, overrides: Record<string, string | undefined> = {}): string {
