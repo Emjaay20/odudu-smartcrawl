@@ -20,11 +20,9 @@ const TENANT = admin.tenant;
 type Tab =
   'profile' | 'credentials' | 'groups' | 'roles' | 'required-actions' | 'sessions' | 'consents';
 
-const subjectId = (username: string): string => subjectIdOf(TENANT, username);
-
 function heldRoles(username: string): string {
   return psql(
-    `select coalesce(string_agg(r.name, ',' order by r.name), '') from subject_roles sr join roles r on r.id = sr.role_id where sr.subject_id = '${subjectId(username)}'`,
+    `select coalesce(string_agg(r.name, ',' order by r.name), '') from subject_roles sr join roles r on r.id = sr.role_id where sr.subject_id = '${subjectIdOf(TENANT, username)}'`,
   );
 }
 
@@ -32,7 +30,7 @@ function heldRoles(username: string): string {
 const tabTo = tabsWithin(40);
 
 async function openSubject(page: Page, username: string, tab: Tab): Promise<void> {
-  await page.goto(`/console/${TENANT}/subjects/${subjectId(username)}?tab=${tab}`);
+  await page.goto(`/console/${TENANT}/subjects/${subjectIdOf(TENANT, username)}?tab=${tab}`);
   await expect(page.getByRole('heading', { level: 1, name: username })).toBeVisible();
 }
 
@@ -150,7 +148,7 @@ test('a subject with more consents than a page holds has them paged, and Load mo
   page,
 }) => {
   const member = subjects.member;
-  const id = subjectId(member);
+  const id = subjectIdOf(TENANT, member);
   psql(`
     with made as (
       insert into clients (id, tenant_id, client_id, name, type)
@@ -216,7 +214,7 @@ test('a mail the tenant cannot send is explained in place, with where to put it 
     'href',
     `/console/${TENANT}/email`,
   );
-  forgive(problems, `/subjects/${subjectId(subjects.member)}/verification`);
+  forgive(problems, `/subjects/${subjectIdOf(TENANT, subjects.member)}/verification`);
   await expectAccessible(page);
 });
 
@@ -258,9 +256,11 @@ test('a membership changed behind an open page is shown beside yours, and nothin
   await groups.getByRole('button', { name: 'Save Groups' }).click();
   await expect(groups.getByText(/changed elsewhere/u).first()).toBeVisible();
   await expectAccessible(page);
-  forgive(problems, `/subjects/${subjectId(subjects.raced)}/groups`);
+  forgive(problems, `/subjects/${subjectIdOf(TENANT, subjects.raced)}/groups`);
   expect(
-    psql(`select count(*) from subject_groups where subject_id = '${subjectId(subjects.raced)}'`),
+    psql(
+      `select count(*) from subject_groups where subject_id = '${subjectIdOf(TENANT, subjects.raced)}'`,
+    ),
   ).toBe('1');
 });
 
@@ -302,7 +302,7 @@ test('a Profile edit made as the session ends is restored after signing in again
   forgiveEnded(problems);
 
   await expect(page).toHaveURL(
-    new RegExp(`/console/${TENANT}/subjects/${subjectId(drafted)}`, 'u'),
+    new RegExp(`/console/${TENANT}/subjects/${subjectIdOf(TENANT, drafted)}`, 'u'),
   );
   await expect(page.getByRole('textbox', { name: 'Full name' })).toHaveValue('Sophie Germain');
   await expect(page.getByText('Restored — review before saving')).toBeVisible();

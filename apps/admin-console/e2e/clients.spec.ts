@@ -31,17 +31,15 @@ const { clients } = seeded();
 const { admin, limited } = clients;
 const TENANT = admin.tenant;
 
-const IN_TENANT = inTenant(TENANT);
-
 function clientId(clientKey: string): string {
   return psql(
-    `select id from clients where tenant_id = ${IN_TENANT} and client_id = ${sqlText(clientKey)}`,
+    `select id from clients where tenant_id = ${inTenant(TENANT)} and client_id = ${sqlText(clientKey)}`,
   );
 }
 
 function clientColumn(clientKey: string, column: string): string {
   return psql(
-    `select coalesce(${column}::text, '<null>') from clients where tenant_id = ${IN_TENANT} and client_id = ${sqlText(clientKey)}`,
+    `select coalesce(${column}::text, '<null>') from clients where tenant_id = ${inTenant(TENANT)} and client_id = ${sqlText(clientKey)}`,
   );
 }
 
@@ -67,7 +65,7 @@ function keysStored(clientKey: string): string {
 
 function scopeAssignments(clientKey: string, scope: string): string {
   return psql(
-    `select count(*) from client_scope_assignments where client_id = ${sqlText(clientId(clientKey))}::uuid and client_scope_id = (select id from client_scopes where tenant_id = ${IN_TENANT} and name = ${sqlText(scope)})`,
+    `select count(*) from client_scope_assignments where client_id = ${sqlText(clientId(clientKey))}::uuid and client_scope_id = (select id from client_scopes where tenant_id = ${inTenant(TENANT)} and name = ${sqlText(scope)})`,
   );
 }
 
@@ -180,7 +178,9 @@ test('a client ID already in use is refused beside the ID, and nothing is made',
   await expectAccessible(page);
   forgive(problems, `/clients`);
   expect(
-    psql(`select count(*) from clients where tenant_id = ${IN_TENANT} and client_id = 'ledger'`),
+    psql(
+      `select count(*) from clients where tenant_id = ${inTenant(TENANT)} and client_id = 'ledger'`,
+    ),
   ).toBe('1');
 });
 
@@ -194,7 +194,7 @@ test('a name changed behind an open page is shown beside yours, and keeping your
   const section = page.getByRole('region', { name: 'Details' });
   await section.getByRole('textbox', { name: 'Name' }).fill('Mine');
   psql(
-    `update clients set name = 'Theirs' where tenant_id = ${IN_TENANT} and client_id = 'ledger'`,
+    `update clients set name = 'Theirs' where tenant_id = ${inTenant(TENANT)} and client_id = 'ledger'`,
   );
   await section.getByRole('button', { name: 'Save Details' }).click();
   await expect(section.getByText(/changed elsewhere/u).first()).toBeVisible();
@@ -288,7 +288,9 @@ test('a client is deleted once its ID is typed', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1, name: 'Clients' })).toBeVisible();
   await expect
     .poll(() =>
-      psql(`select count(*) from clients where tenant_id = ${IN_TENANT} and client_id = 'doomed'`),
+      psql(
+        `select count(*) from clients where tenant_id = ${inTenant(TENANT)} and client_id = 'doomed'`,
+      ),
     )
     .toBe('0');
 });
@@ -571,7 +573,7 @@ test('a role is made for the client, and an operator without manage-tenant is to
   await expect(page.getByRole('grid', { name: /^Roles of / })).toContainText('bookkeeper');
   expect(
     psql(
-      `select count(*) from roles where tenant_id = ${IN_TENANT} and name = 'bookkeeper' and client_id = ${sqlText(clientId('ledger'))}::uuid`,
+      `select count(*) from roles where tenant_id = ${inTenant(TENANT)} and name = 'bookkeeper' and client_id = ${sqlText(clientId('ledger'))}::uuid`,
     ),
   ).toBe('1');
   await expectAccessible(page);
@@ -740,7 +742,7 @@ test('who is signed in through a client is listed, and revoking its tokens leave
   await expect
     .poll(() =>
       psql(
-        `select count(*) from audit_events where tenant_id = ${IN_TENANT} and action = 'client.grants_revoke' and resource_id = ${sqlText(clientId('granted'))}`,
+        `select count(*) from audit_events where tenant_id = ${inTenant(TENANT)} and action = 'client.grants_revoke' and resource_id = ${sqlText(clientId('granted'))}`,
       ),
     )
     .toBe('2');

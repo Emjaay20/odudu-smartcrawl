@@ -17,17 +17,15 @@ import { psql, seeded, inTenant } from './stack';
 const { admin, tenantOnly, clientsOnly } = seeded().access.tokens;
 const TENANT = admin.tenant;
 
-const IN_TENANT = inTenant(TENANT);
-
 function liveWithUses(uses: number): string {
   return psql(
-    `select count(*) from client_registration_tokens where tenant_id = ${IN_TENANT} and remaining_uses = ${String(uses)}`,
+    `select count(*) from client_registration_tokens where tenant_id = ${inTenant(TENANT)} and remaining_uses = ${String(uses)}`,
   );
 }
 
 function tokenIdWithUses(uses: number): string {
   return psql(
-    `select id from client_registration_tokens where tenant_id = ${IN_TENANT} and remaining_uses = ${String(uses)} limit 1`,
+    `select id from client_registration_tokens where tenant_id = ${inTenant(TENANT)} and remaining_uses = ${String(uses)} limit 1`,
   );
 }
 
@@ -66,7 +64,7 @@ test('a token is minted and shown once, then nowhere; another is revoked', async
   expect(liveWithUses(7)).toBe('1');
   expect(
     psql(
-      `select token_hash from client_registration_tokens where tenant_id = ${IN_TENANT} and remaining_uses = 7`,
+      `select token_hash from client_registration_tokens where tenant_id = ${inTenant(TENANT)} and remaining_uses = 7`,
     ),
   ).not.toContain(secret);
   await page.reload();

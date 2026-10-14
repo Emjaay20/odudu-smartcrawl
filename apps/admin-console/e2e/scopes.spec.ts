@@ -14,17 +14,15 @@ import { psql, seeded, inTenant, UNBROKEN, sqlText } from './stack';
 const { admin, tenantOnly, clientsOnly } = seeded().scopes;
 const TENANT = admin.tenant;
 
-const IN_TENANT = inTenant(TENANT);
-
 function scopeId(name: string): string {
   return psql(
-    `select id from client_scopes where tenant_id = ${IN_TENANT} and name = ${sqlText(name)}`,
+    `select id from client_scopes where tenant_id = ${inTenant(TENANT)} and name = ${sqlText(name)}`,
   );
 }
 
 function scopeField(name: string, column: string): string {
   return psql(
-    `select coalesce(${column}::text, '<null>') from client_scopes where tenant_id = ${IN_TENANT} and name = ${sqlText(name)}`,
+    `select coalesce(${column}::text, '<null>') from client_scopes where tenant_id = ${inTenant(TENANT)} and name = ${sqlText(name)}`,
   );
 }
 
@@ -49,7 +47,7 @@ function carriers(name: string): string {
 
 function clientConfig(clientKey: string, column: string): string {
   return psql(
-    `select coalesce(${column}::text, '<null>') from client_oidc_config where client_id = (select id from clients where tenant_id = ${IN_TENANT} and client_id = ${sqlText(clientKey)})`,
+    `select coalesce(${column}::text, '<null>') from client_oidc_config where client_id = (select id from clients where tenant_id = ${inTenant(TENANT)} and client_id = ${sqlText(clientKey)})`,
   );
 }
 
@@ -169,7 +167,7 @@ test("a client's page still saves after a scope was assigned to it from the scop
 }) => {
   await signIn(page, admin);
   const client = psql(
-    `select id from clients where tenant_id = ${IN_TENANT} and client_id = 'billing'`,
+    `select id from clients where tenant_id = ${inTenant(TENANT)} and client_id = 'billing'`,
   );
   await page.goto(`/console/${TENANT}/clients/${client}?tab=scopes`);
   await expect(page.getByRole('region', { name: 'Assigned scopes' })).toBeVisible();
@@ -213,7 +211,7 @@ test('a description changed behind an open page is shown beside yours, and nothi
   const section = page.getByRole('region', { name: 'Description' });
   await section.getByRole('textbox', { name: 'Description' }).fill('Mine');
   psql(
-    `update client_scopes set description = 'Theirs' where tenant_id = ${IN_TENANT} and name = 'raced'`,
+    `update client_scopes set description = 'Theirs' where tenant_id = ${inTenant(TENANT)} and name = 'raced'`,
   );
   await section.getByRole('button', { name: 'Save Description' }).click();
   await expect(section.getByText(/changed elsewhere/u).first()).toBeVisible();
@@ -277,7 +275,9 @@ test('a scope is deleted once its name is typed, and goes from the list', async 
   await dialog.getByRole('button', { name: 'Delete doomed' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Scopes' })).toBeVisible();
   expect(
-    psql(`select count(*) from client_scopes where tenant_id = ${IN_TENANT} and name = 'doomed'`),
+    psql(
+      `select count(*) from client_scopes where tenant_id = ${inTenant(TENANT)} and name = 'doomed'`,
+    ),
   ).toBe('0');
 });
 

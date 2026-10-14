@@ -16,25 +16,25 @@ const { admin, limited, member } = groupsRoles;
 const TENANT = admin.tenant;
 const UNBROKEN_PATH = `/${UNBROKEN}/${UNBROKEN}`;
 
-const IN_TENANT = inTenant(TENANT);
-
 function groupId(path: string): string {
-  return psql(`select id from groups where tenant_id = ${IN_TENANT} and path = ${sqlText(path)}`);
+  return psql(
+    `select id from groups where tenant_id = ${inTenant(TENANT)} and path = ${sqlText(path)}`,
+  );
 }
 
 function groupField(path: string, column: string): string {
   return psql(
-    `select coalesce(${column}::text, '<null>') from groups where tenant_id = ${IN_TENANT} and path = ${sqlText(path)}`,
+    `select coalesce(${column}::text, '<null>') from groups where tenant_id = ${inTenant(TENANT)} and path = ${sqlText(path)}`,
   );
 }
 
 // A tenant role, or the built-in admin client's role of that name.
 function roleId(name: string, builtin = false): string {
   const owner = builtin
-    ? `client_id = (select id from clients where tenant_id = ${IN_TENANT} and client_id = 'odudu-admin')`
+    ? `client_id = (select id from clients where tenant_id = ${inTenant(TENANT)} and client_id = 'odudu-admin')`
     : 'client_id is null';
   return psql(
-    `select id from roles where tenant_id = ${IN_TENANT} and name = ${sqlText(name)} and ${owner}`,
+    `select id from roles where tenant_id = ${inTenant(TENANT)} and name = ${sqlText(name)} and ${owner}`,
   );
 }
 
@@ -136,7 +136,9 @@ test("a group's members are listed, and a subtree is deleted once its path is ty
   await dialog.getByRole('button', { name: 'Delete /doomed' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Groups' })).toBeVisible();
   expect(
-    psql(`select count(*) from groups where tenant_id = ${IN_TENANT} and path like '/doomed%'`),
+    psql(
+      `select count(*) from groups where tenant_id = ${inTenant(TENANT)} and path like '/doomed%'`,
+    ),
   ).toBe('0');
 });
 
@@ -149,7 +151,7 @@ test('a description changed behind an open page is shown beside yours, and nothi
   const section = page.getByRole('region', { name: 'Description' });
   await section.getByRole('textbox', { name: 'Description' }).fill('Mine');
   psql(
-    `update groups set description = 'Theirs' where tenant_id = ${IN_TENANT} and path = '/raced'`,
+    `update groups set description = 'Theirs' where tenant_id = ${inTenant(TENANT)} and path = '/raced'`,
   );
   await section.getByRole('button', { name: 'Save Description' }).click();
   await expect(section.getByText(/changed elsewhere/u).first()).toBeVisible();

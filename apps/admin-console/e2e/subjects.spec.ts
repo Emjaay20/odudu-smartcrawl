@@ -16,8 +16,6 @@ const { subjects } = seeded();
 const { admin, viewer } = subjects;
 const TENANT = admin.tenant;
 
-const subjectId = (username: string): string => subjectIdOf(TENANT, username);
-
 type Column =
   'name' | 'email' | 'phone_number' | 'birthdate' | 'zoneinfo' | 'locale' | 'address_country';
 
@@ -28,7 +26,7 @@ function userColumn(username: string, column: Column): string {
 }
 
 async function openSubject(page: Page, username: string, tab?: 'credentials'): Promise<void> {
-  const at = `/console/${TENANT}/subjects/${subjectId(username)}`;
+  const at = `/console/${TENANT}/subjects/${subjectIdOf(TENANT, username)}`;
   await page.goto(tab === undefined ? at : `${at}?tab=${tab}`);
   await expect(page.getByRole('heading', { level: 1, name: username })).toBeVisible();
 }
@@ -57,7 +55,9 @@ test('a subject is created from the list and lands on its record, in place of th
   await page.getByRole('button', { name: 'Create subject' }).click();
 
   await expect(page.getByRole('heading', { level: 1, name: username })).toBeVisible();
-  expect(new URL(page.url()).pathname).toBe(`/console/${TENANT}/subjects/${subjectId(username)}`);
+  expect(new URL(page.url()).pathname).toBe(
+    `/console/${TENANT}/subjects/${subjectIdOf(TENANT, username)}`,
+  );
   await expectAccessible(page);
   await page.goBack();
   await expect(page.getByRole('heading', { level: 1, name: 'Subjects' })).toBeVisible();
@@ -93,7 +93,10 @@ test('a profile edit refused with 412 shows theirs beside yours, and keeping min
   const table = page.getByRole('table', { name: 'Changed in Name since you opened it' });
   await expect(table.getByRole('row', { name: /Full name/u })).toContainText('TheirsMine');
   await expectAccessible(page);
-  forgive(problems, `/console/api/admin/tenants/${TENANT}/subjects/${subjectId(username)}/profile`);
+  forgive(
+    problems,
+    `/console/api/admin/tenants/${TENANT}/subjects/${subjectIdOf(TENANT, username)}/profile`,
+  );
   await page.getByRole('button', { name: 'Keep mine in Name' }).click();
   await expect(page.getByRole('heading', { level: 2, name: 'Name' })).toBeFocused();
   await expect(table).toBeHidden();
@@ -137,7 +140,7 @@ test('a one-time password is shown once, and signs the subject in to a forced ch
 
 test('a lockout is shown and cleared', async ({ page }) => {
   const { username } = subjects.locked;
-  const id = subjectId(username);
+  const id = subjectIdOf(TENANT, username);
   psql(
     `insert into login_failures (tenant_id, subject_id, failure_count, first_failure_at, last_failure_at, locked_until) select tenant_id, subject_id, 6, now(), now(), now() + interval '1 hour' from users where subject_id = '${id}'`,
   );
@@ -312,7 +315,7 @@ test('a subject is created by keyboard alone', async ({ page }) => {
   await page.keyboard.type(username);
   await page.keyboard.press('Enter');
   await expect(page.getByRole('heading', { level: 1, name: username })).toBeVisible();
-  expect(subjectId(username)).not.toBe('');
+  expect(subjectIdOf(TENANT, username)).not.toBe('');
   expect(userColumn(username, 'email')).toBe('<null>');
 });
 
@@ -329,7 +332,7 @@ test('a subject is deleted only once its username is typed, and is gone from the
   await dialog.getByRole('textbox', { name: `Type ${username} to confirm` }).fill(username);
   await dialog.getByRole('button', { name: `Delete ${username}` }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Subjects' })).toBeVisible();
-  expect(subjectId(username)).toBe('');
+  expect(subjectIdOf(TENANT, username)).toBe('');
   await expect(page.getByRole('grid', { name: 'Subjects' })).not.toContainText(username);
 });
 
@@ -371,6 +374,6 @@ test('an administrator who deletes their own subject is signed out, not shown an
   await dialog.getByRole('button', { name: `Delete ${departing.username}` }).click();
   await expect(page.getByRole('heading', { level: 1, name: /^Sign in/u })).toBeVisible();
   expect(new URL(page.url()).pathname).toMatch(/^\/tenants\/|^\/console\//u);
-  expect(subjectId(departing.username)).toBe('');
+  expect(subjectIdOf(TENANT, departing.username)).toBe('');
   expect((await page.request.get('/console/api/session')).status()).toBe(401);
 });
