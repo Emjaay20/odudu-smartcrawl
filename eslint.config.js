@@ -43,7 +43,16 @@ export default tseslint.config(
           // so that `await app.register(...)` can force plugin readiness.
           // Registration itself is deferred until listen()/ready(), so leaving
           // the call unawaited is the ordinary usage, not a dropped promise.
-          allowForKnownSafeCalls: [{ from: 'package', package: 'fastify', name: 'register' }],
+          //
+          // QueryClient.invalidateQueries (@tanstack/query-core 5.104.0) resolves
+          // once the refetch settles and never rejects on a query's failure
+          // unless throwOnError is set: refetchQueries puts promise.catch(noop)
+          // on each fetch (build/modern/queryClient.js, lines 331-341). The
+          // console passes none, so leaving it unawaited drops no error.
+          allowForKnownSafeCalls: [
+            { from: 'package', package: 'fastify', name: 'register' },
+            { from: 'package', package: '@tanstack/query-core', name: 'invalidateQueries' },
+          ],
         },
       ],
       '@typescript-eslint/no-misused-promises': 'error',

@@ -1,5 +1,5 @@
-import { QueryClientProvider } from '@tanstack/react-query';
-import { renderHook } from '@testing-library/react';
+import { QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { expect, it, vi } from 'vitest';
 import { createQueryClient } from '#/shared/repository/queryClient';
@@ -44,31 +44,38 @@ it('marks only the queries under the key stale', () => {
   expect(queryClient.getQueryState(['list', 'other', 'roles'])?.isInvalidated).toBe(false);
 });
 
-it('leaves no rejection unhandled when the read again fails', async () => {
+it("lets a read again that fails stay the query's own to show, rejecting nothing", async () => {
   const unhandled = vi.fn();
   process.on('unhandledRejection', unhandled);
-  const { invalidated, wrapper } = harness();
-  invalidated.mockRejectedValue(new Error('refetch failed'));
-  const { result } = renderHook(() => useInvalidate(), { wrapper });
-  result.current.invalidate(['list', 'acme']);
-  result.current.invalidateExact(['record', 'acme', 'x']);
+  const { queryClient, wrapper } = harness();
+  let reads = 0;
+  const { result } = renderHook(
+    () => ({
+      query: useQuery({
+        queryKey: ['list', 'acme'],
+        queryFn: () => {
+          reads += 1;
+          return reads === 1
+            ? Promise.resolve('first')
+            : Promise.reject(new Error('refetch failed'));
+        },
+      }),
+      invalidation: useInvalidate(),
+    }),
+    { wrapper },
+  );
+  await waitFor(() => {
+    expect(result.current.query.data).toBe('first');
+  });
+  act(() => {
+    result.current.invalidation.invalidate(['list', 'acme']);
+  });
+  await waitFor(() => {
+    expect(queryClient.getQueryState(['list', 'acme'])?.status).toBe('error');
+  });
   await new Promise((resolve) => {
     setTimeout(resolve, 0);
   });
   process.off('unhandledRejection', unhandled);
-  expect(invalidated).toHaveBeenCalledTimes(2);
   expect(unhandled).not.toHaveBeenCalled();
-});
-
-it('handles the rejection of every read again it starts, so none reaches its caller', async () => {
-  const { invalidated, wrapper } = harness();
-  const refused = [Promise.reject(new Error('one')), Promise.reject(new Error('two'))];
-  const handled = refused.map((promise) => vi.spyOn(promise, 'catch'));
-  invalidated.mockReturnValueOnce(refused[0] ?? Promise.resolve());
-  invalidated.mockReturnValueOnce(refused[1] ?? Promise.resolve());
-  const { result } = renderHook(() => useInvalidate(), { wrapper });
-  result.current.invalidate(['list', 'acme']);
-  result.current.invalidateExact(['record', 'acme', 'x']);
-  expect(handled.map((spy) => spy.mock.calls.length)).toEqual([1, 1]);
-  await Promise.allSettled(refused);
 });
