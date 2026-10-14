@@ -1,5 +1,5 @@
 import { json, type Answer } from '#/testing/fakeTransport';
-import { GRACE, whoami, ACME_ADMIN } from '#/testing/renderConsole';
+import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures';
 
 export const RT = `${ACME_ADMIN}/registration-tokens`;
@@ -31,10 +31,11 @@ export function tokenRoutes(
   capabilities: readonly string[] = EVERY_TENANT_CAPABILITY,
   extra: Record<string, Answer> = {},
 ): Record<string, Answer> {
-  return {
-    'GET /console/api/session': json(GRACE),
-    [`GET ${ACME_ADMIN}/whoami`]: whoami(capabilities),
-    [`GET ${RT}`]: json({ items: [TOKEN_ONE, TOKEN_FEW] }),
-    ...extra,
-  };
+  return graceRoutes(
+    capabilities,
+    {
+      [`GET ${RT}`]: json({ items: [TOKEN_ONE, TOKEN_FEW] }),
+    },
+    extra,
+  );
 }

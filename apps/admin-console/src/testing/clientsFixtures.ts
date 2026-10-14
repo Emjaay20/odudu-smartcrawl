@@ -1,5 +1,5 @@
 import { json, type Answer, type Sent } from '#/testing/fakeTransport';
-import { GRACE, whoami, ACME_ADMIN } from '#/testing/renderConsole';
+import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures';
 
 export const C = `${ACME_ADMIN}/clients`;
@@ -160,28 +160,29 @@ export function clientRoutes(
   capabilities: readonly string[] = EVERY_TENANT_CAPABILITY,
   extra: Record<string, Answer> = {},
 ): Record<string, Answer> {
-  return {
-    'GET /console/api/session': json(GRACE),
-    [`GET ${ACME_ADMIN}/whoami`]: whoami(capabilities),
-    [`GET ${C}`]: (request) => json({ items: listed(request) })(request),
-    [`GET ${C}/count`]: (request) =>
-      json({ count: listed(request).length, capped: false })(request),
-    ...Object.fromEntries(
-      CLIENTS.map((each) => [`GET ${C}/${each.id}`, json(each, 200, { etag: `"${each.id}-1"` })]),
-    ),
-    ...Object.fromEntries(
-      CLIENTS.flatMap((each) => [
-        [`GET ${C}/${each.id}/installation`, json(installationOf(each))],
-        [`GET ${C}/${each.id}/logout-deliveries`, json({ items: [] })],
-        [`GET ${C}/${each.id}/sessions`, json({ items: [] })],
-      ]),
-    ),
-    [`GET ${ACME_ADMIN}/sessions/count`]: json({ count: 0, capped: false }),
-    [`GET ${ACME_ADMIN}/subjects`]: json({ items: [] }),
-    [`GET ${ACME_ADMIN}/scopes`]: json({ items: [] }),
-    [`GET ${ACME_ADMIN}/roles`]: json({ items: [] }),
-    [`GET ${ACME_ADMIN}/roles/count`]: json({ count: 0, capped: false }),
-    [`GET ${ACME_ADMIN}/audit`]: json({ items: [] }),
-    ...extra,
-  };
+  return graceRoutes(
+    capabilities,
+    {
+      [`GET ${C}`]: (request) => json({ items: listed(request) })(request),
+      [`GET ${C}/count`]: (request) =>
+        json({ count: listed(request).length, capped: false })(request),
+      ...Object.fromEntries(
+        CLIENTS.map((each) => [`GET ${C}/${each.id}`, json(each, 200, { etag: `"${each.id}-1"` })]),
+      ),
+      ...Object.fromEntries(
+        CLIENTS.flatMap((each) => [
+          [`GET ${C}/${each.id}/installation`, json(installationOf(each))],
+          [`GET ${C}/${each.id}/logout-deliveries`, json({ items: [] })],
+          [`GET ${C}/${each.id}/sessions`, json({ items: [] })],
+        ]),
+      ),
+      [`GET ${ACME_ADMIN}/sessions/count`]: json({ count: 0, capped: false }),
+      [`GET ${ACME_ADMIN}/subjects`]: json({ items: [] }),
+      [`GET ${ACME_ADMIN}/scopes`]: json({ items: [] }),
+      [`GET ${ACME_ADMIN}/roles`]: json({ items: [] }),
+      [`GET ${ACME_ADMIN}/roles/count`]: json({ count: 0, capped: false }),
+      [`GET ${ACME_ADMIN}/audit`]: json({ items: [] }),
+    },
+    extra,
+  );
 }

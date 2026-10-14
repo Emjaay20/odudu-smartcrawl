@@ -28,6 +28,21 @@ export function whoami(capabilities: readonly string[], crossTenant = false): An
   return json({ subjectId: 's', issuerTenantId: 't', capabilities, crossTenant });
 }
 
+// grace of acme holding the capabilities given, answering a page's own routes
+// besides; `extra` wins over both.
+export function graceRoutes(
+  capabilities: readonly string[],
+  page: Record<string, Answer>,
+  extra: Record<string, Answer>,
+): Record<string, Answer> {
+  return {
+    'GET /console/api/session': json(GRACE),
+    [`GET ${ACME_ADMIN}/whoami`]: whoami(capabilities),
+    ...page,
+    ...extra,
+  };
+}
+
 // The whole console at one address, over a fake gateway, as a page renders it.
 export function consoleAt(path: string, routes: Record<string, Answer>) {
   const fake = fakeTransport(routes);

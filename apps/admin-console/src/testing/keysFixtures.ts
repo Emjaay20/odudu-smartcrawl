@@ -1,5 +1,5 @@
 import { json, type Answer } from '#/testing/fakeTransport';
-import { GRACE, whoami, ACME_ADMIN } from '#/testing/renderConsole';
+import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures';
 
 export const KEYS = `${ACME_ADMIN}/keys`;
@@ -47,10 +47,11 @@ export function keyRoutes(
   extra: Record<string, Answer> = {},
   keys: readonly { status: string }[] = [READY_KEY, ACTIVE_KEY, RETIRED_KEY],
 ): Record<string, Answer> {
-  return {
-    'GET /console/api/session': json(GRACE),
-    [`GET ${ACME_ADMIN}/whoami`]: whoami(capabilities),
-    [`GET ${KEYS}`]: lanes(keys),
-    ...extra,
-  };
+  return graceRoutes(
+    capabilities,
+    {
+      [`GET ${KEYS}`]: lanes(keys),
+    },
+    extra,
+  );
 }

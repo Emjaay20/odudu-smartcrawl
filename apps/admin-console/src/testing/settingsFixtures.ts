@@ -1,5 +1,5 @@
 import { json, type Answer } from '#/testing/fakeTransport';
-import { GRACE, whoami, ACME_ADMIN } from '#/testing/renderConsole';
+import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures';
 
 export const ST = `${ACME_ADMIN}/settings`;
@@ -63,12 +63,13 @@ export function settingsRoutes(
   capabilities: readonly string[] = EVERY_TENANT_CAPABILITY,
   extra: Record<string, Answer> = {},
 ): Record<string, Answer> {
-  return {
-    'GET /console/api/session': json(GRACE),
-    [`GET ${ACME_ADMIN}/whoami`]: whoami(capabilities),
-    [`GET ${ST}`]: settingsAnswer(),
-    ...extra,
-  };
+  return graceRoutes(
+    capabilities,
+    {
+      [`GET ${ST}`]: settingsAnswer(),
+    },
+    extra,
+  );
 }
 
 export const NO_SMTP = {
@@ -102,10 +103,11 @@ export function emailRoutes(
   capabilities: readonly string[] = EVERY_TENANT_CAPABILITY,
   extra: Record<string, Answer> = {},
 ): Record<string, Answer> {
-  return {
-    'GET /console/api/session': json(GRACE),
-    [`GET ${ACME_ADMIN}/whoami`]: whoami(capabilities),
-    [`GET ${SM}`]: smtpAnswer(),
-    ...extra,
-  };
+  return graceRoutes(
+    capabilities,
+    {
+      [`GET ${SM}`]: smtpAnswer(),
+    },
+    extra,
+  );
 }

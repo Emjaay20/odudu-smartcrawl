@@ -1,6 +1,6 @@
 import { json, type Answer, type Sent } from '#/testing/fakeTransport';
 import { CLIENTS } from '#/testing/clientsFixtures';
-import { GRACE, whoami, ACME_ADMIN } from '#/testing/renderConsole';
+import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
 import { ROLES } from '#/testing/rolesFixtures';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/subjectsFixtures';
 
@@ -75,37 +75,38 @@ export function scopeRoutes(
   capabilities: readonly string[] = EVERY_TENANT_CAPABILITY,
   extra: Record<string, Answer> = {},
 ): Record<string, Answer> {
-  return {
-    'GET /console/api/session': json(GRACE),
-    [`GET ${ACME_ADMIN}/whoami`]: whoami(capabilities),
-    [`GET ${SC}`]: (request) => json({ items: listed(request) })(request),
-    [`GET ${SC}/count`]: (request) =>
-      json({ count: listed(request).length, capped: false })(request),
-    ...Object.fromEntries(
-      SCOPES.flatMap((each) => [
-        [`GET ${SC}/${each.id}`, json(each, 200, { etag: `"${each.id}-1"` })],
-        [`GET ${SC}/${each.id}/roles`, json({ items: [] }, 200, { etag: `"${each.id}-r1"` })],
-        [
-          `GET ${SC}/${each.id}/mappers`,
-          json({ available: ['email', 'groups'], bound: [], declared: ['email'] }, 200, {
-            etag: `"${each.id}-m1"`,
-          }),
-        ],
-        [`GET ${SC}/${each.id}/clients`, json({ items: [] })],
-      ]),
-    ),
-    [`GET ${SC}/s-bill/roles`]: json({ items: [MAPPED] }, 200, { etag: '"s-bill-r1"' }),
-    [`GET ${SC}/s-bill/clients`]: json({ items: [BILLING_CARRIES] }),
-    [`GET ${ACME_ADMIN}/roles`]: (request) => json({ items: rolesListed(request) })(request),
-    [`GET ${ACME_ADMIN}/clients`]: (request) =>
-      json({
-        items: CLIENTS.filter(
-          (each) =>
-            request.search.get('name') === null ||
-            each.name.toLowerCase().startsWith((request.search.get('name') ?? '').toLowerCase()),
-        ),
-      })(request),
-    [`GET ${ACME_ADMIN}/audit`]: json({ items: [] }),
-    ...extra,
-  };
+  return graceRoutes(
+    capabilities,
+    {
+      [`GET ${SC}`]: (request) => json({ items: listed(request) })(request),
+      [`GET ${SC}/count`]: (request) =>
+        json({ count: listed(request).length, capped: false })(request),
+      ...Object.fromEntries(
+        SCOPES.flatMap((each) => [
+          [`GET ${SC}/${each.id}`, json(each, 200, { etag: `"${each.id}-1"` })],
+          [`GET ${SC}/${each.id}/roles`, json({ items: [] }, 200, { etag: `"${each.id}-r1"` })],
+          [
+            `GET ${SC}/${each.id}/mappers`,
+            json({ available: ['email', 'groups'], bound: [], declared: ['email'] }, 200, {
+              etag: `"${each.id}-m1"`,
+            }),
+          ],
+          [`GET ${SC}/${each.id}/clients`, json({ items: [] })],
+        ]),
+      ),
+      [`GET ${SC}/s-bill/roles`]: json({ items: [MAPPED] }, 200, { etag: '"s-bill-r1"' }),
+      [`GET ${SC}/s-bill/clients`]: json({ items: [BILLING_CARRIES] }),
+      [`GET ${ACME_ADMIN}/roles`]: (request) => json({ items: rolesListed(request) })(request),
+      [`GET ${ACME_ADMIN}/clients`]: (request) =>
+        json({
+          items: CLIENTS.filter(
+            (each) =>
+              request.search.get('name') === null ||
+              each.name.toLowerCase().startsWith((request.search.get('name') ?? '').toLowerCase()),
+          ),
+        })(request),
+      [`GET ${ACME_ADMIN}/audit`]: json({ items: [] }),
+    },
+    extra,
+  );
 }

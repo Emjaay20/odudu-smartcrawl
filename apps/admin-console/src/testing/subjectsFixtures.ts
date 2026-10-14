@@ -1,5 +1,5 @@
 import { json, type Answer } from '#/testing/fakeTransport';
-import { GRACE, whoami, ACME_ADMIN } from '#/testing/renderConsole';
+import { graceRoutes, ACME_ADMIN } from '#/testing/renderConsole';
 
 export const S = `${ACME_ADMIN}/subjects`;
 export const POLICY = '/console/api/admin/tenants/acme/subjects/username-policy';
@@ -124,40 +124,41 @@ export function subjectRoutes(
   capabilities: readonly string[] = EVERY_TENANT_CAPABILITY,
   extra: Record<string, Answer> = {},
 ): Record<string, Answer> {
-  return {
-    'GET /console/api/session': json(GRACE),
-    'GET /console/api/admin/tenants/acme/whoami': whoami(capabilities),
-    [`GET ${S}`]: json({ items: [ADA] }),
-    [`GET ${S}/count`]: json({ count: 1, capped: false }),
-    [`GET ${S}/${ADA_ID}`]: json(ADA, 200, { etag: '"s1"' }),
-    [`GET ${S}/${ADA_ID}/profile`]: json(profile(), 200, { etag: '"p1"' }),
-    [`GET ${S}/${ADA_ID}/credentials`]: json({ items: [] }),
-    [`GET ${S}/${ADA_ID}/lockout`]: json(NOT_LOCKED),
-    [`GET ${POLICY}`]: json({ username_editable: false }),
-    [`GET ${S}/${ADA_ID}/groups`]: json({ items: [] }, 200, { etag: '"g0"' }),
-    [`GET ${S}/${ADA_ID}/roles`]: json({ items: [] }, 200, { etag: '"r0"' }),
-    [`GET ${S}/${ADA_ID}/effective-roles`]: json({ items: [] }),
-    [`GET ${S}/${ADA_ID}/admin-capabilities`]: json({ items: [], complete: true }),
-    // grace herself, for a test of her own record.
-    [`GET ${S}/s1/effective-roles`]: json({ items: [] }),
-    [`GET ${S}/s1/admin-capabilities`]: json({ items: [], complete: true }),
-    [`GET ${S}/${ADA_ID}/required-actions`]: json({ actions: [] }, 200, { etag: '"a0"' }),
-    [`GET ${S}/${ADA_ID}/sessions`]: json({ items: [] }),
-    [`GET ${S}/${ADA_ID}/consents`]: json({ items: [] }),
-    [`GET ${S}/${ADA_ID}/grants`]: json({ items: [] }),
-    [`GET ${ACME_ADMIN}/audit`]: json({ items: [] }),
-    [`GET ${ACME_ADMIN}/groups`]: json({ items: [] }),
-    [`GET ${ACME_ADMIN}/roles`]: (request) =>
-      json({
-        items:
-          request.search.get('client') === 'c-odudu-admin'
-            ? ADMIN_ROLES
-            : request.search.get('name') === 'tenant-admin'
-              ? ADMIN_ROLES.slice(0, 1)
-              : [],
-      })(request),
-    ...extra,
-  };
+  return graceRoutes(
+    capabilities,
+    {
+      [`GET ${S}`]: json({ items: [ADA] }),
+      [`GET ${S}/count`]: json({ count: 1, capped: false }),
+      [`GET ${S}/${ADA_ID}`]: json(ADA, 200, { etag: '"s1"' }),
+      [`GET ${S}/${ADA_ID}/profile`]: json(profile(), 200, { etag: '"p1"' }),
+      [`GET ${S}/${ADA_ID}/credentials`]: json({ items: [] }),
+      [`GET ${S}/${ADA_ID}/lockout`]: json(NOT_LOCKED),
+      [`GET ${POLICY}`]: json({ username_editable: false }),
+      [`GET ${S}/${ADA_ID}/groups`]: json({ items: [] }, 200, { etag: '"g0"' }),
+      [`GET ${S}/${ADA_ID}/roles`]: json({ items: [] }, 200, { etag: '"r0"' }),
+      [`GET ${S}/${ADA_ID}/effective-roles`]: json({ items: [] }),
+      [`GET ${S}/${ADA_ID}/admin-capabilities`]: json({ items: [], complete: true }),
+      // grace herself, for a test of her own record.
+      [`GET ${S}/s1/effective-roles`]: json({ items: [] }),
+      [`GET ${S}/s1/admin-capabilities`]: json({ items: [], complete: true }),
+      [`GET ${S}/${ADA_ID}/required-actions`]: json({ actions: [] }, 200, { etag: '"a0"' }),
+      [`GET ${S}/${ADA_ID}/sessions`]: json({ items: [] }),
+      [`GET ${S}/${ADA_ID}/consents`]: json({ items: [] }),
+      [`GET ${S}/${ADA_ID}/grants`]: json({ items: [] }),
+      [`GET ${ACME_ADMIN}/audit`]: json({ items: [] }),
+      [`GET ${ACME_ADMIN}/groups`]: json({ items: [] }),
+      [`GET ${ACME_ADMIN}/roles`]: (request) =>
+        json({
+          items:
+            request.search.get('client') === 'c-odudu-admin'
+              ? ADMIN_ROLES
+              : request.search.get('name') === 'tenant-admin'
+                ? ADMIN_ROLES.slice(0, 1)
+                : [],
+        })(request),
+    },
+    extra,
+  );
 }
 
 export function noContent(): Answer {
