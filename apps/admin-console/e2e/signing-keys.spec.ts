@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
+import { z } from 'zod';
 import {
   expect,
   expectAccessible,
@@ -11,6 +12,8 @@ import {
   PHONE,
 } from './fixtures';
 import { psql, seeded, inTenant } from './stack';
+
+const endedAnswer = z.object({ type: z.string() });
 
 const { keys } = seeded().access;
 
@@ -100,16 +103,21 @@ test('a key is staged, promoted, retired and deleted, and the lanes follow the d
   await retire.getByRole('textbox').fill(original);
   // The console's own token was signed by the key being retired, so the
   // gateway ends the console session and the console signs in again.
-  const ended = page.waitForResponse(
-    (response) => response.url().includes('/keys?status=') && response.status() === 401,
-  );
+  // Read in the route's handler: the page signs in again as soon as the 401
+  // lands, and a body not read by then is gone.
+  let sessionEnded: string | undefined;
+  await page.route(/\/keys\?status=/u, async (route) => {
+    const response = await route.fetch();
+    if (response.status() === 401) {
+      sessionEnded ??= endedAnswer.parse(await response.json()).type;
+    }
+    await route.fulfill({ response });
+  });
   const resumed = page.waitForResponse(
     (response) => response.url().endsWith('/console/api/session') && response.status() === 200,
   );
   await confirm.click();
-  expect(((await (await ended).json()) as { type: string }).type).toBe(
-    'about:blank#console-session-ended',
-  );
+  await expect.poll(() => sessionEnded).toBe('about:blank#console-session-ended');
   await resumed;
   for (const status of ['rotating', 'active', 'retired']) {
     forgive(problems, `/keys?status=${status}`);
