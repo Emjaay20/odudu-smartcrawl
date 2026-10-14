@@ -145,3 +145,43 @@ it('asks again after a release once the page is restored, and keeps what was dir
   expect(guard().released).toBe(false);
   expect(guard().unsaved()).toEqual(['General']);
 });
+
+it('closes a stale question before refusing it, and refuses it before letting the departure through', () => {
+  const log: string[] = [];
+  useUnsavedGuard.setState({
+    pending: {
+      proceed: () => log.push('stale proceed'),
+      refuse: () => log.push('stale refuse'),
+    },
+  });
+  const unsubscribe = useUnsavedGuard.subscribe((state) => {
+    log.push(state.pending === null ? 'pending cleared' : 'pending held');
+  });
+  guard().request(() => log.push('proceed'));
+  unsubscribe();
+  expect(log).toEqual(['pending cleared', 'stale refuse', 'proceed']);
+});
+
+it('holds a question before refusing the one it replaces', () => {
+  guard().setDirty('client/general', 'General');
+  const log: string[] = [];
+  guard().request(vi.fn(), () => log.push('replaced refuse'));
+  const unsubscribe = useUnsavedGuard.subscribe((state) => {
+    log.push(state.pending === null ? 'pending cleared' : 'pending held');
+  });
+  guard().request(vi.fn());
+  unsubscribe();
+  expect(log).toEqual(['pending held', 'replaced refuse']);
+});
+
+it('closes a question before letting its departure go when nothing is left unsaved', () => {
+  guard().setDirty('client/general', 'General');
+  const log: string[] = [];
+  guard().request(() => log.push('proceed'));
+  const unsubscribe = useUnsavedGuard.subscribe((state) => {
+    log.push(state.pending === null ? 'pending cleared' : 'pending held');
+  });
+  guard().setDirty('client/general', null);
+  unsubscribe();
+  expect(log).toEqual(['pending held', 'pending cleared', 'proceed']);
+});

@@ -1,9 +1,13 @@
 import { create } from 'zustand';
-
-interface Departure {
-  proceed: () => void;
-  refuse: () => void;
-}
+import {
+  left,
+  requested,
+  settledDeparture,
+  stayed,
+  unsavedLabels,
+  withLabel,
+  type Departure,
+} from '#/shared/service/unsavedGuard';
 
 interface UnsavedGuard {
   // Section id to the name a person knows it by.
@@ -30,71 +34,57 @@ interface UnsavedGuard {
 
 const NOTHING = (): void => undefined;
 
-export const useUnsavedGuard = create<UnsavedGuard>()((set, get) => ({
-  dirty: new Map(),
-  pending: null,
-  generation: 0,
-  released: false,
-  setDirty: (section, label) => {
-    set(({ dirty }) => {
-      if (label === null ? !dirty.has(section) : dirty.get(section) === label) return {};
-      const next = new Map(dirty);
-      if (label === null) next.delete(section);
-      else next.set(section, label);
-      return { dirty: next };
-    });
-    // Once nothing is left unsaved, the question asked has nothing to protect.
-    const { pending, dirty } = get();
-    if (pending !== null && dirty.size === 0) {
-      set({ pending: null });
-      pending.proceed();
-    }
-  },
-  forget: (section) => {
-    set(({ dirty }) => {
-      if (!dirty.has(section)) return {};
-      const next = new Map(dirty);
-      next.delete(section);
-      return { dirty: next };
-    });
-    // A question left asking about nothing is closed, never shown empty.
-    const { pending, dirty } = get();
-    if (pending !== null && dirty.size === 0) {
-      set({ pending: null });
-      pending.proceed();
-    }
-  },
-  unsaved: () => [...get().dirty.values()],
-  request: (proceed, refuse = NOTHING) => {
-    if (get().dirty.size === 0) {
-      const stale = get().pending;
-      set({ pending: null });
-      stale?.refuse();
-      proceed();
-      return true;
-    }
-    const replaced = get().pending;
-    set({ pending: { proceed, refuse } });
-    replaced?.refuse();
-    return false;
-  },
-  stay: () => {
-    const { pending } = get();
+export const useUnsavedGuard = create<UnsavedGuard>()((set, get) => {
+  const settle = (): void => {
+    const settled = settledDeparture(get());
+    if (settled === null) return;
     set({ pending: null });
-    pending?.refuse();
-  },
-  leave: () => {
-    const { pending, generation } = get();
-    set({ pending: null, dirty: new Map(), generation: generation + 1 });
-    pending?.proceed();
-  },
-  release: () => {
-    set({ released: true });
-  },
-  restore: () => {
-    set({ released: false });
-  },
-  reset: () => {
-    set({ pending: null, dirty: new Map(), released: false });
-  },
-}));
+    settled.proceed();
+  };
+  return {
+    dirty: new Map(),
+    pending: null,
+    generation: 0,
+    released: false,
+    setDirty: (section, label) => {
+      const next = withLabel(get().dirty, section, label);
+      set(next === null ? {} : { dirty: next });
+      settle();
+    },
+    forget: (section) => {
+      get().setDirty(section, null);
+    },
+    unsaved: () => unsavedLabels(get().dirty),
+    request: (proceed, refuse = NOTHING) => {
+      const asked = requested(get(), proceed, refuse);
+      if (asked.now) {
+        set({ pending: null });
+        asked.stale?.refuse();
+        proceed();
+        return true;
+      }
+      set({ pending: asked.held });
+      asked.replaced?.refuse();
+      return false;
+    },
+    stay: () => {
+      const { patch, answer } = stayed(get());
+      set(patch);
+      answer?.refuse();
+    },
+    leave: () => {
+      const { patch, answer } = left(get());
+      set(patch);
+      answer?.proceed();
+    },
+    release: () => {
+      set({ released: true });
+    },
+    restore: () => {
+      set({ released: false });
+    },
+    reset: () => {
+      set({ pending: null, dirty: new Map(), released: false });
+    },
+  };
+});
