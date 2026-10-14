@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { inTurn, json, offline, problem, whoamiReads } from '#/testing/fakeTransport';
+import { inTurn, json, offline, problem } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import {
@@ -13,6 +13,7 @@ import {
   TOKEN_ONE,
   tokenRoutes,
 } from '#/testing/tokensFixtures';
+import { expectRefusedThenCancelled } from '#/testing/refusedThenCancelled';
 
 afterEach(() => {
   resetConsole();
@@ -177,23 +178,11 @@ it('keeps the dialog and says why when a revoke is refused', async () => {
 });
 
 it('reads whoami again after a refusal, and asks afresh once cancelled', async () => {
-  const user = userEvent.setup();
-  const { sent } = renderConsoleAt(
+  await expectRefusedThenCancelled(
     AT,
     tokenRoutes(undefined, { [`DELETE ${RT}/t-few`]: problem(403, 'about:blank', 'Forbidden') }),
+    { open: 'Revoke t-few', confirm: 'Revoke token' },
   );
-  await user.click(await screen.findByRole('button', { name: 'Revoke t-few' }));
-  const dialog = await screen.findByRole('alertdialog');
-  await user.click(within(dialog).getByRole('button', { name: 'Revoke token' }));
-  expect(await within(dialog).findByRole('alert')).toBeVisible();
-  expect(whoamiReads(sent)).toBeGreaterThan(1);
-  await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
-  await waitFor(() => {
-    expect(screen.queryByRole('alertdialog')).toBeNull();
-  });
-  await user.click(screen.getByRole('button', { name: 'Revoke t-few' }));
-  const again = await screen.findByRole('alertdialog');
-  expect(within(again).queryByRole('alert')).toBeNull();
 });
 
 it('names manage-clients for a caller without it', async () => {

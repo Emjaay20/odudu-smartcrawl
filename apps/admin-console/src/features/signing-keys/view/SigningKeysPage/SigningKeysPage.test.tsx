@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { inTurn, json, offline, pending, problem, whoamiReads } from '#/testing/fakeTransport';
+import { inTurn, json, offline, pending, problem } from '#/testing/fakeTransport';
 import {
   ACTIVE_KEY,
   KEYS,
@@ -15,6 +15,7 @@ import {
 } from '#/testing/keysFixtures';
 import { resetConsole } from '#/testing/resetConsole';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
+import { expectRefusedThenCancelled } from '#/testing/refusedThenCancelled';
 
 afterEach(() => {
   resetConsole();
@@ -197,25 +198,13 @@ it('keeps the promote dialog and says so when the key can no longer be promoted'
 });
 
 it('reads whoami again after a refusal, and asks afresh once cancelled', async () => {
-  const user = userEvent.setup();
-  const { sent } = renderConsoleAt(
+  await expectRefusedThenCancelled(
     AT,
     keyRoutes(undefined, {
       [`POST ${KEYS}/k-ready/promote`]: problem(403, 'about:blank', 'Forbidden'),
     }),
+    { open: 'Promote kid-k-ready', confirm: 'Promote key' },
   );
-  await user.click(await screen.findByRole('button', { name: 'Promote kid-k-ready' }));
-  const dialog = await screen.findByRole('alertdialog');
-  await user.click(within(dialog).getByRole('button', { name: 'Promote key' }));
-  expect(await within(dialog).findByRole('alert')).toBeVisible();
-  expect(whoamiReads(sent)).toBeGreaterThan(1);
-  await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
-  await waitFor(() => {
-    expect(screen.queryByRole('alertdialog')).toBeNull();
-  });
-  await user.click(screen.getByRole('button', { name: 'Promote kid-k-ready' }));
-  const again = await screen.findByRole('alertdialog');
-  expect(within(again).queryByRole('alert')).toBeNull();
 });
 
 it('retires only once the kid is typed, and says what is lost', async () => {
