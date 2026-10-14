@@ -315,6 +315,7 @@ const rule = z.object({
   type: z.enum(['added', 'removed', 'changed', 'moved']).optional(),
   test: z.string().optional(),
   line: z.string().optional(),
+  base: z.string().optional(),
   after: z.string().optional(),
 });
 
@@ -324,7 +325,7 @@ export function readRules(file: URL | string): Rule[] {
   return z.array(rule).parse(JSON.parse(readFileSync(file, 'utf8')));
 }
 
-const withoutStatus = (text: string): string => text.replace(/ -> (\d+|aborted)/u, ' -> *');
+const withoutOutcome = (text: string): string => text.split(' -> ')[0] ?? text;
 
 // A request cut short by the page leaving is the same request, issued; whether
 // it finished first is a matter of timing.
@@ -333,7 +334,7 @@ function cutShort(difference: Difference): boolean {
   if (difference.type !== 'changed' || base === undefined || final === undefined) return false;
   return (
     (base.includes(' -> aborted') || final.includes(' -> aborted')) &&
-    withoutStatus(base) === withoutStatus(final)
+    withoutOutcome(base) === withoutOutcome(final)
   );
 }
 
@@ -344,6 +345,7 @@ function matches(each: Rule, difference: Difference): boolean {
     (each.type === undefined || each.type === difference.type) &&
     (each.test === undefined || new RegExp(each.test, 'u').test(difference.test)) &&
     (each.line === undefined || new RegExp(each.line, 'u').test(text)) &&
+    (each.base === undefined || new RegExp(each.base, 'u').test(difference.base ?? '')) &&
     (each.after === undefined || new RegExp(each.after, 'u').test(difference.after ?? ''))
   );
 }

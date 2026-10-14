@@ -2,7 +2,7 @@
 // console produce identically: ids, per-run names, timestamps and secrets are
 // replaced by placeholders, and everything that is a decision is kept.
 
-const RUN_ID = /e2e-[0-9a-z]{6,10}/gu;
+const RUN_ID = /e2e-[0-9a-z]{6,10}|rp-[0-9a-f]{8}/gu;
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/giu;
 const TIMESTAMP = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?/gu;
 const LONG_NUMBER = /\d{10,}/gu;
@@ -22,13 +22,15 @@ const NAMED_HEADERS = new Set([
 ]);
 const LONG_TEXT = 60;
 
+// A long run of letters of one case is a name (the layout tests seed one);
+// digits or both cases together are what a generated value looks like.
 function looksGenerated(text: string): boolean {
-  return /\d/u.test(text) && /[A-Za-z]/u.test(text);
+  return /\d/u.test(text) || (/[a-z]/u.test(text) && /[A-Z]/u.test(text));
 }
 
 export function normaliseText(text: string): string {
   return text
-    .replace(RUN_ID, 'e2e-RUN')
+    .replace(RUN_ID, (found) => (found.startsWith('rp-') ? 'rp-RUN' : 'e2e-RUN'))
     .replace(LOCAL_PORT, '$1:PORT')
     .replace(UUID, ':uuid')
     .replace(TIMESTAMP, ':ts')
@@ -145,7 +147,7 @@ function classOfJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.slice(0, 10).map(classOfJson).join(',')}]`;
   if (typeof value === 'object') {
     const fields = Object.entries(value).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-    return `{${fields.map(([name, inner]) => `${name}:${classOfJson(inner)}`).join(',')}}`;
+    return `{${fields.map(([name, inner]) => `${normaliseText(name)}:${classOfJson(inner)}`).join(',')}}`;
   }
   return '<unknown>';
 }

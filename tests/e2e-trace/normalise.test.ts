@@ -15,6 +15,7 @@ describe('normaliseText', () => {
   it('replaces the per-run tenant prefix, keeping the suffix a seed gives it', () => {
     expect(normaliseText('e2e-mv76su6b-a')).toBe('e2e-RUN-a');
     expect(normaliseText('made-e2e-mv76su6b')).toBe('made-e2e-RUN');
+    expect(normaliseText('/tenants/rp-f50173ec/x')).toBe('/tenants/rp-RUN/x');
   });
 
   it('replaces uuids, timestamps and long numbers', () => {
@@ -29,6 +30,7 @@ describe('normaliseText', () => {
 
   it('replaces a generated secret but keeps a long name made of letters alone', () => {
     expect(normaliseText('6H3uNOz4nKyG3YW5z-yqOssc')).toBe(':token');
+    expect(normaliseText('WgXirvCsEaNWJyhGn_Ys_TiCGZyNWALjeqJJge-WlaA')).toBe(':token');
     const unbroken = 'segment'.repeat(8);
     expect(normaliseText(unbroken)).toBe(unbroken);
   });
@@ -125,6 +127,12 @@ describe('valueClass', () => {
     expect(valueClass('Ada Lovelace')).toBe('len9-32');
     expect(valueClass('e2e-mv76su6b-k')).toBe('word:e2e-RUN-k');
     expect(valueClass('x'.repeat(40))).toBe('len33+');
+  });
+
+  it('names a key that holds a tenant or an id by its placeholder', () => {
+    expect(valueClass(JSON.stringify({ [`e2e-mv76su6b-s/subjects/${UUID}`]: 'x' }))).toBe(
+      'json{e2e-RUN-s/subjects/:uuid:word:x}',
+    );
   });
 
   it('records a JSON value by its keys and the class of each scalar', () => {

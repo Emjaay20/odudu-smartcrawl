@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "id": "17a: sign-in pages are sent no-store",
+    "kind": "registered",
+    "why": "pageHeaders adds cache-control: no-store to every page the server renders, so a Back to a login form is fetched again",
+    "area": "requests",
+    "type": "changed",
+    "base": "^(GET|POST) /tenants/.* -> \\d+$",
+    "line": "^(GET|POST) /tenants/.* -> \\d+ cache=no-store$"
+  }
+]
