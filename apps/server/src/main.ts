@@ -142,6 +142,10 @@ const app = buildApp({
     limit: config.ODUDU_THROTTLE_LIMIT,
     windowSeconds: config.ODUDU_THROTTLE_WINDOW_SECONDS,
   },
+  clientSecretThrottle: {
+    limit: config.ODUDU_CLIENT_SECRET_THROTTLE_LIMIT,
+    windowSeconds: config.ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS,
+  },
   allowPrivateClientUrls: config.ODUDU_ALLOW_PRIVATE_CLIENT_URLS,
   allowPrivateSmtpHosts: config.ODUDU_ALLOW_PRIVATE_SMTP_HOSTS,
   deploymentSmtp: emailFallback.kind === 'smtp',

@@ -79,6 +79,36 @@ export const DEFAULT_OUTBOX_MAX_ATTEMPTS = 5;
 
 export const DEFAULT_CONSOLE_DIR = '/app/console';
 
+// Ten thousand a window is two hundred Argon2id verifications a second from
+// one origin, past what a process can run, so a larger budget protects
+// nothing; and the exact window log it would otherwise need holds a
+// timestamp per request per key, about a gigabyte at the key cap (ADR 0023).
+export const MAX_THROTTLE_LIMIT = 10_000;
+// A refusal telling a caller to come back after more than an hour is a
+// lockout, which the account lockout already is.
+export const MAX_THROTTLE_WINDOW_SECONDS = 3600;
+
+function throttleLimit(fallback: number) {
+  return z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(MAX_THROTTLE_LIMIT, `must be at most ${String(MAX_THROTTLE_LIMIT)} requests per window`)
+    .default(fallback);
+}
+
+function throttleWindowSeconds(fallback: number) {
+  return z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(
+      MAX_THROTTLE_WINDOW_SECONDS,
+      `must be at most ${String(MAX_THROTTLE_WINDOW_SECONDS)} seconds`,
+    )
+    .default(fallback);
+}
+
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   ODUDU_HTTP_HOST: z.string().min(1).default('0.0.0.0'),
@@ -106,8 +136,12 @@ const schema = z.object({
   // an Argon2id hash or a mail send (ADR 0023). Raise it for a deployment
   // that puts many users behind one address, or for a test suite driving
   // logins in bulk, as infra/conformance/compose.yaml does.
-  ODUDU_THROTTLE_LIMIT: z.coerce.number().int().min(1).max(1_000_000).default(10),
-  ODUDU_THROTTLE_WINDOW_SECONDS: z.coerce.number().int().min(1).max(86_400).default(60),
+  ODUDU_THROTTLE_LIMIT: throttleLimit(10),
+  ODUDU_THROTTLE_WINDOW_SECONDS: throttleWindowSeconds(60),
+  // ADR 0023's other budget: failed client_secret_basic and
+  // client_secret_post attempts at /token, per client.
+  ODUDU_CLIENT_SECRET_THROTTLE_LIMIT: throttleLimit(5),
+  ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS: throttleWindowSeconds(60),
   // How long `odudu reap` keeps a row after nothing can still read it
   // (ADR 0021). These are retention windows, not lifespans: a credential's
   // own expiry is enforced at read time and is always the shorter of the

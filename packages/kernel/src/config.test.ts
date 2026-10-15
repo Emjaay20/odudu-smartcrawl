@@ -115,6 +115,48 @@ describe('loadConfig', () => {
     expect(() => loadConfig({ ...minimal, ODUDU_THROTTLE_LIMIT: '0' })).toThrow(/THROTTLE_LIMIT/u);
   });
 
+  it('accepts a throttle limit up to the ceiling and names the variable past it', () => {
+    expect(loadConfig({ ...minimal, ODUDU_THROTTLE_LIMIT: '10000' }).ODUDU_THROTTLE_LIMIT).toBe(
+      10_000,
+    );
+    expect(() => loadConfig({ ...minimal, ODUDU_THROTTLE_LIMIT: '10001' })).toThrow(
+      /ODUDU_THROTTLE_LIMIT: .*10000/u,
+    );
+  });
+
+  it('bounds the throttle window at an hour', () => {
+    expect(
+      loadConfig({ ...minimal, ODUDU_THROTTLE_WINDOW_SECONDS: '3600' })
+        .ODUDU_THROTTLE_WINDOW_SECONDS,
+    ).toBe(3600);
+    expect(() => loadConfig({ ...minimal, ODUDU_THROTTLE_WINDOW_SECONDS: '3601' })).toThrow(
+      /ODUDU_THROTTLE_WINDOW_SECONDS: .*3600/u,
+    );
+  });
+
+  it('reads the per-client secret budget, five a minute by default, under the same bounds', () => {
+    const defaults = loadConfig(minimal);
+    expect(defaults.ODUDU_CLIENT_SECRET_THROTTLE_LIMIT).toBe(5);
+    expect(defaults.ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS).toBe(60);
+
+    const raised = loadConfig({
+      ...minimal,
+      ODUDU_CLIENT_SECRET_THROTTLE_LIMIT: '20',
+      ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS: '120',
+    });
+    expect(raised.ODUDU_CLIENT_SECRET_THROTTLE_LIMIT).toBe(20);
+    expect(raised.ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS).toBe(120);
+
+    for (const bad of ['0', '10001']) {
+      expect(() => loadConfig({ ...minimal, ODUDU_CLIENT_SECRET_THROTTLE_LIMIT: bad })).toThrow(
+        /ODUDU_CLIENT_SECRET_THROTTLE_LIMIT/u,
+      );
+    }
+    expect(() =>
+      loadConfig({ ...minimal, ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS: '3601' }),
+    ).toThrow(/ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS/u);
+  });
+
   it('schedules the retention pass hourly by default', () => {
     const config = loadConfig(minimal);
     expect(config.ODUDU_REAP_ENABLED).toBe(true);

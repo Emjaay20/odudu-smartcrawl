@@ -5325,9 +5325,9 @@ subject, which a client is not, and the throttle's key is one address for
 every request a server-side client will ever make. `/token` gets a third,
 separate budget instead — a `slidingWindow` of its own, keyed by
 `client_id` — consulted only when a `client_secret_basic` or
-`client_secret_post` attempt fails. `ODUDU_CLIENT_SECRET_THROTTLE` has no
-env var yet; the default is five attempts per sixty seconds, mirroring the
-account lockout's own defaults. ADR 0023's amendment has the design.
+`client_secret_post` attempt fails. `ODUDU_CLIENT_SECRET_THROTTLE_LIMIT`
+(default `5`) attempts per `ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS`
+(default `60`), mirroring the account lockout's own defaults. ADR 0023's amendment has the design.
 
 A client of its own for this run, so its budget starts clean regardless of
 what earlier sections in this document did to `demo-backend`'s:

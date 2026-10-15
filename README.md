@@ -397,7 +397,14 @@ registration and the reset request — share a budget per client address:
 with `Retry-After` and an empty body, decided before the body is parsed or
 any account looked up, so a refusal cannot say whether the address or the
 account existed. There is no value that switches it off; a deployment
-putting many users behind one address raises the limit. An administrator's three mail sends —
+putting many users behind one address raises the limit, to at most `10000`
+(the server refuses to boot past that, naming the variable) over a window of
+at most `3600` seconds. A budget of up to 100 keeps an exact log of each
+key's requests, about 3 MB at the default of `10` and 9 MB at `100` once
+10,000 origins have spent it; above 100 it keeps two counters per key, about
+2 MB however high the limit, at the price of an estimate that can be off by a
+couple of requests on steady traffic and by up to the limit on traffic timed
+against a window boundary ([ADR 0023](docs/adr/0023-brute-force-authority-is-split.md)). An administrator's three mail sends —
 `…/password-reset`, `…/verification` and `…/actions-email` — draw on the
 same budget.
 
@@ -423,7 +430,9 @@ client is not one, and a budget per address is one address for every
 request a server-side client will ever make. RFC 6749 §2.3.1's protection
 for a client's password is a third budget instead — a `client_secret_basic`
 or `client_secret_post` attempt at `/token` that fails spends a window keyed
-by `client_id`, five attempts per sixty seconds by default. A healthy
+by `client_id`, `ODUDU_CLIENT_SECRET_THROTTLE_LIMIT` (default `5`) attempts per
+`ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS` (default `60`), under the same
+ceilings as the budget above. A healthy
 client is never throttled: only a failed attempt is counted, so a client
 that finally presents its real secret succeeds regardless of the failure
 count on record — the opposite trade from the account lockout above, which
