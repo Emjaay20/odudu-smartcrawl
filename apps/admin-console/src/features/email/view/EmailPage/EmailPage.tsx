@@ -26,6 +26,7 @@ import { ReadGate } from '#/shared/view/ReadGate';
 import { SaveSection } from '#/shared/view/SaveSection';
 import { StatusTag } from '#/shared/view/StatusTag';
 import { recordTab } from '#/shared/view/RecordTab';
+import { MailDelivery } from '#/features/email/view/MailDelivery';
 import styles from '#/features/email/view/EmailPage/EmailPage.module.css';
 
 const TITLE = 'Email';
@@ -233,7 +234,10 @@ export function EmailPage({ tenant }: { tenant: string }) {
         title={TITLE}
         description="The relay this tenant's verification and reset mail goes through."
       />
-      <Email tenant={tenant} />
+      <div className={styles.page}>
+        <Email tenant={tenant} />
+        <MailDelivery tenant={tenant} />
+      </div>
     </AreaGate>
   );
 }

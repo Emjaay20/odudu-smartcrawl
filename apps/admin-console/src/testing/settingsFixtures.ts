@@ -4,6 +4,7 @@ import { graceRoutes } from '#/testing/renderConsole';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/roleAnswers';
 export const ST = `${ACME_ADMIN}/settings`;
 export const SM = `${ACME_ADMIN}/smtp`;
+export const MAIL = `${ACME_ADMIN}/mail`;
 
 // What a tenant starts with: the migrations' own defaults.
 export const SETTINGS = {
@@ -98,7 +99,23 @@ export function smtpAnswer(config: Record<string, unknown> = OWN_SMTP, etag = '"
   return json(config, 200, { etag });
 }
 
-// grace of acme holding the capabilities given, with a relay of its own.
+export function mailMessage(id: string, status: string, extra: Record<string, unknown> = {}) {
+  return {
+    id,
+    to: 'a***@example.org',
+    to_masked: true,
+    subject: 'Verify your Acme account',
+    status,
+    attempts: status === 'queued' ? 0 : 1,
+    last_error: null,
+    created_at: '2026-10-12T08:00:00.000Z',
+    next_attempt_at: '2026-10-12T08:05:00.000Z',
+    sent_at: status === 'sent' ? '2026-10-12T08:01:00.000Z' : null,
+    ...extra,
+  };
+}
+
+// grace of acme holding the capabilities given, with a relay of its own and no mail.
 export function emailRoutes(
   capabilities: readonly string[] = EVERY_TENANT_CAPABILITY,
   extra: Record<string, Answer> = {},
@@ -107,6 +124,7 @@ export function emailRoutes(
     capabilities,
     {
       [`GET ${SM}`]: smtpAnswer(),
+      [`GET ${MAIL}`]: json({ items: [] }),
     },
     extra,
   );
