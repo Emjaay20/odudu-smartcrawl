@@ -175,7 +175,8 @@ export const ACCESS_SECTIONS: readonly SettingsSection[] = [
   {
     id: LOCKOUT_SECTION,
     title: 'Brute force',
-    description: 'When repeated wrong passwords lock an account, and for how long.',
+    description:
+      'When repeated wrong passwords or wrong second-factor codes lock an account, and for how long.',
     fields: [
       {
         name: 'brute_force_max_failures',

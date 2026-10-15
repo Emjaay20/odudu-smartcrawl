@@ -72,3 +72,10 @@ describe('sectionHeadingId', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 });
+
+it('says the brute-force section covers wrong second-factor codes as well as passwords', () => {
+  const section = SETTINGS_SECTIONS.find((each) => each.id === 'brute-force');
+  expect(section?.description).toBe(
+    'When repeated wrong passwords or wrong second-factor codes lock an account, and for how long.',
+  );
+});
