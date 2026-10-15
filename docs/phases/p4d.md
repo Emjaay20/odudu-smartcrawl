@@ -1246,6 +1246,8 @@ area still a placeholder. Route-level code splitting and a vendor chunk are
 placed in P4d's fourth part, where the feature routes arrive and there is
 something to split along; splitting placeholders now would only measure
 the router.
+Done in Part 4: the largest chunk is 390.56 kB and the entry 364.63 kB
+([the bundle, at the close](#the-bundle-at-the-close)).
 
 ## Part 3 — the browser tests
 
@@ -1290,6 +1292,8 @@ than 24px. They belong to `protocol-oidc`'s view layer, not to the console.
 Their styling is P4b's, whose criterion themes every page the server
 renders. `signin.spec.ts` holds the check as a `test.fixme`, to be switched
 on when it passes.
+Closed in Part 4: the passkey button sits in its own paragraph and the check
+is on ([what building the features found](#part-4--what-building-the-features-found)).
 
 **Owed by P4d's fourth part, with its first editing feature, and done
 there:** the e2e test of a session expiring mid-edit, which restores the
@@ -2545,3 +2549,171 @@ the `reject` outcome carried a `reason`, and no credential failure did.
 - **The echo bound counts code points**, not UTF-16 units.
 - The transcripts the passkey button's `<p>` and the echo touched were all
   captured again on one stack, so none carries a hand edit.
+
+## Part 4 — what building the features found
+
+The per-feature findings are in the sections above, one per feature. This
+section is what they add up to: the defects the phase fixed that nobody had
+planned for, what was checked against a standard, what each lint added in
+Part 4 can and cannot see, and the checklist for the one check only a person
+can do.
+
+### Defects fixed here that the plans did not know about
+
+Each belongs to P4d by topic: it was found in a feature, a route or a page the
+phase built, so none is placed elsewhere.
+
+| Defect                                                                                                                                           | Found by                                          | Fixed in                                                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| A client's deletion cascaded to roles, scope assignments and holders, and the console kept showing them                                          | the semantic duplicate audit of the consolidation | every list a deletion reaches is read again; `useClientDeletion.test.tsx` pins it                                       |
+| `Load more` ignored the click on every list after paging forward and back                                                                        | the Audit page's browser run                      | the flag is read while rendering, not inside the handler; the Audit page test pages first                               |
+| Two audit filters that few events share planned as an unbounded scan (3.6 s cold at 3 M rows)                                                    | the plan check at scale                           | a 5 s `statement_timeout` and a typed `audit-query-too-broad` 400, the console's own message                            |
+| A NUL in a name, form field, query parameter or tenant segment was a 500 whose body held SQL                                                     | a review of the sign-in work                      | `apps/server/src/input-hygiene.ts`, and every server error answers a fixed problem document                             |
+| A disabled account's right password was a distinguishable refusal, at the form and at consent                                                    | the indistinguishability test                     | the check moved ahead of every later gate; ADR 0023's last amendment states what remains                                |
+| Second-factor guessing had no per-account bound, and a right password cleared the counter                                                        | a review of the rate limiter                      | wrong codes and replays count against `login_failures`; the clear moved to the end of `advance`                         |
+| An expired `id_token_hint` made sign-out ask for confirmation, and `/authorize` refused it                                                       | trying the console by hand                        | both accept a lapsed hint bound to a live session; token exchange stays strict                                          |
+| Back after an expired sign-in showed the old form, and its submit failed                                                                         | trying the console by hand                        | `no-store` on every server page, a reload on `pageshow`, a restart link; ADR 0029's amendment                           |
+| A restart link dropped `max_age`, so a stale session satisfied a fresh-authentication request                                                    | a review of the back-button fix                   | every authorize parameter is parked on the login branch; a real `/authorize` test                                       |
+| The rate limiter keyed a client by its address's text (IPv6 per address, IPv4-mapped twice) and allowed ceilings of a million requests and a day | the rate limiter's hardening                      | `throttleOrigin`, a `/64` key, a counter above a threshold, ceilings of 10,000 and an hour; ADR 0023's second amendment |
+| A finished required action resumed nothing, and a reused password-only session skipped the second factor                                         | trying the console by hand                        | the action resumes the same sign-in; reuse is judged against the flow                                                   |
+
+Three of these were found by a review rather than by a test, and each of the
+three was an assertion that could not fail: a counter memory test, a
+two-session test with one session, and a transcript edited by hand. A new
+test is seen red before its code, and a review reads whether it could be.
+
+### What was checked against a standard
+
+- **WCAG 2.2 AA.** axe runs on every console view in both themes and under
+  both theme overrides, and on every page the browser tests reach. Targets
+  of at least 24 px found the one-digit date segments, a link beside a Copy
+  button and the passkey button on the sign-in page (now in its own
+  paragraph, since the page has no stylesheet). `console-view-tests-run-axe`
+  holds the unit half.
+- **Cache headers on a login page.** No OIDC or OAuth specification asks for
+  one; RFC 9700 says nothing. `no-store` is normative only on token
+  responses (RFC 6749 section 5.1). RFC 9111 section 5.4 deprecates
+  `Pragma`, so `cache-control: no-store` alone is sent, not OWASP's
+  cross-browser set. Chrome restored a `no-store` page from its back-forward
+  cache in a real run, which is why the reload on `pageshow` exists
+  ([ADR 0029](../adr/0029-a-pages-headers-have-one-authority.md)'s amendment).
+- **An expired `id_token_hint`.** RP-Initiated Logout 1.0 section 2 and OIDC
+  Core section 3.1.2.2 both let the OP accept one. `jose`'s behaviour was
+  run: `verified: a scratch jose 6.2.12 script showed an expired token
+passes with currentDate: new Date(0), and a missing exp, a non-numeric exp
+and a wrong iss still fail`.
+- **A refused authorization request that cannot be restarted.** The page
+  offers "Return to the application", an error redirect with
+  `error=access_denied`, `state` and `iss` (RFC 6749 section 4.1.2.1).
+- **Localization.** Placed rather than built:
+  [ADR 0043](../adr/0043-localization-is-a-catalogue-a-negotiation-and-a-set-of-owners.md).
+  RFC 7591 section 2.2 was checked; the OpenID Registration section 2.1
+  citation for `client_name#fr` was written from memory and is not yet
+  re-read.
+
+### The lints Part 4 added, and what each cannot see
+
+Each has no allowlist and no inline waiver, and each header lists its blind
+spots; a green run speaks only for the rest. Offenders were fixed before the
+lint was switched on, and each lint was planted with offenders to see it red.
+
+| Lint                                            | What it fails                                                                                 | What it cannot see                                                       |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `console-covers-admin-routes`                   | an admin route no console adapter calls and `NEVER` does not name                             | a route reached through a helper that builds the prefix itself           |
+| `console-query-keys`                            | a hand-typed cache key, a `*Key` function outside `queryKeys.ts`, `invalidateQueries`         | a key built in another file by a function not named `*Key`, or passed in |
+| `console-no-module-state`                       | a top-level `let`, a mutated collection, class statics, a factory holding a counter or setter | namespace-import mutation, factories behind a call, parameter mutation   |
+| `console-store-access`                          | a store action called through `getState()` in a hook or component, any `setState`             | a store held in a local                                                  |
+| `console-usecase-integration-only`              | a ternary in a hook's returned value, a merge of two objects                                  | if/else building a value, a ternary inside a `useMemo` callback          |
+| ESLint `complexity` 8 on usecase and repository | a decision too large to be integration code                                                   | a decision split across several small functions                          |
+| `console-no-duplicate-exports`                  | a declaration copied between features, `shared`, `app` or the e2e files                       | a copy under another name, nested declarations, class members            |
+| `console-css-vars-defined`                      | a `var(--name)` nothing declares, or a typo within two edits of a declared name               | a name set at runtime by a package not imported by the console           |
+| `console-css-module-classes-defined`            | a class referenced and not defined, or defined and unused                                     | `.scss` modules, bindings by `require` or a dynamic import               |
+
+Earlier in the phase, and unchanged: `console-folder-imports`,
+`console-imports-no-extension`, `console-service-length`,
+`console-fetch-only-in-transport`, `console-storage-only-in-adapter`,
+`console-reads-not-mutations`, `console-plain-properties`,
+`console-collection-dependencies`, `console-no-manual-memo`,
+`console-view-tests-run-axe`.
+
+### The bundle, at the close
+
+`vite build` on the branch tip, from `apps/admin-console`
+(`node_modules/.bin/vite build`; the baseline is Part 3's one 561 KB chunk).
+Every area is its own chunk and Vite prints no chunk-size warning.
+
+| Chunk                       | Size      | Gzip      |
+| --------------------------- | --------- | --------- |
+| entry (`index-CmI7E2zt.js`) | 364.63 kB | 116.84 kB |
+| largest area (`subjects`)   | 390.56 kB | 114.67 kB |
+| next (`clients`)            | 122.17 kB | 38.56 kB  |
+
+Both are under Vite's 500 kB warning, and the largest chunk is 30% under the
+baseline. `console-phone-chunk` keeps `libphonenumber-js`'s metadata and React Aria's
+Table, ComboBox, DateInput and NumberField out of the entry, and holds the
+entry's gzip size to a budget.
+
+### What building left that is a decision for the owner
+
+- **Six admin routes have no console screen**, each named with its reason in
+  `tests/lint/console-covers-admin-routes.test.ts`: bulk subject operations,
+  the tenant-wide session list and its mass end, the tenant-wide lockout
+  clear, mail status, and tenant deletion. The P4d criterion in §11 says the
+  console reaches "every capability the admin API exposes", which these
+  contradict until either the console gets screens for them or the criterion
+  says they are for scripts. The README and the test say the second today.
+- **No composite index serves the two-filter audit reads** (an actor with a
+  resource type, a type with an action). Bounded by a timeout rather than
+  indexed, because a seventh and eighth index on a table of 100,000,000 rows
+  is a cost the evidence has not yet justified. P11's plan check at scale is
+  the evidence that decides it.
+
+### The VoiceOver pass
+
+The one check in the spec's §9 only a person can do, and the one that closes
+Part 4. Every label below is one the page has: each is an accessible name an
+e2e spec in `apps/admin-console/e2e/` asserts, or a heading and label the
+server page renders.
+
+**Set up.** Bring the try stack up as the README says, seed `ada`
+(`seed admin`) and a `demo` tenant with `grace`, and open
+`http://localhost:3090/console/` in Safari. Turn VoiceOver on with Cmd+F5.
+Use `VO` for Control+Option; `VO+U` opens the rotor, and "Landmarks",
+"Headings", "Form controls" and "Links" are the lists to check.
+
+**Throughout, on every flow:**
+
+- Each page has one level-1 heading, read when the page loads or after a
+  navigation, and the rail's current area is read as "current page".
+- Every field is read with its label, then its role and value. Nothing is
+  "unlabelled" or "button" alone.
+- A save puts the focus on the section's heading, and a dialog closing puts
+  it back on the control that opened it.
+- A refusal is read under its field or as an alert; a toast is read once,
+  as a status.
+- A secret is read in its one node, and only there.
+- State is said in words ("on", "checked", "selected", "disabled"), never by
+  colour alone.
+
+| #   | Flow                   | Steps, and what VoiceOver should say                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| --- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Sign-in page           | Open `/console/`. Hear heading "Sign in", the field "Which tenant do you administer?", button "Continue to sign-in". Enter `demo`; on the server's page hear heading "Sign in", "Username", "Password", button "Sign in". Enter a wrong password: hear the alert "Sign-in failed. Check your details and try again.", and the username field still filled. Sign in as `grace`: hear heading "Change your password", "New password", button "Update password".                                                                                                                                                                                                                          |
+| 2   | Shell and Overview     | After sign-in hear heading "Overview". Landmarks include banner, navigation "Areas of demo" and main. Open the rail: links Subjects, Groups, Roles, Clients, Scopes, Registration tokens, Sign-in flow, Signing keys, Settings, Email, Export, Audit trail. Hear list "Needs attention" with "Open Email"; region "Counts" with Subjects and Clients; region "Discovery" with "Copy issuer": press it and hear the status "Copied issuer". Region "Latest activity" and link "Open the audit trail". Press "Collapse menu" and hear "Expand menu"; the theme radio group is "Theme".                                                                                                   |
+| 3   | Tenants (as `ada`)     | Open `/console/system`. Rail navigation is "Areas of system". Open Tenants: heading "Tenants", grid "Tenants", link "Create a tenant". Create one: textbox "Name", button "Create tenant"; the next step's heading "First administrator of" and the name, textbox "Username", button "Create administrator"; a dialog "<username>'s one-time password" appears: the password is read there, once. Open the tenant, tab "Administrators", list "Administrators of" and the name. General: "Save General" then the heading "General" has focus; "Disable" and the name opens an alert dialog "Disable <name>?" whose confirm button stays dimmed until "Type <name> to confirm" matches. |
+| 4   | System administrators  | Heading "System administrators", list "Administrators of system", searchbox "Search by Username". Group "Subject in system" with searchbox "Search subjects by username" and button "Search"; options read the username, and a current holder is read as one you cannot choose. Button "Create a new subject as an administrator". "Change <username>'s capabilities" opens region "Admin capabilities", checkbox "Full (tenant-admin)", button "Save Admin capabilities"; saving your own raises the alert dialog "Revoke your own system administration?".                                                                                                                           |
+| 5   | Subjects               | Heading "Subjects", grid "Subjects", link "Create a subject". Create: textbox "Username", button "Create subject"; the record's heading is the username. Tabs, including "Credentials": button "Issue a one-time password" opens the alert dialog "Issue <username> a one-time password?", then "Issue password", then the dialog "<username>'s one-time password". Region "Lockout" reads "No failed sign-ins on record." or the lock's reason, with "Clear the lockout". Delete: button "Delete <username>", alert dialog, textbox "Type <username> to confirm".                                                                                                                     |
+| 6   | Groups                 | Heading "Groups", list "Groups", button "Show the groups under /eng" (expanded or collapsed is said). Create: "Create group", heading as the path. Tabs General, Roles, Members, Activity. Regions "Description", "Place in the tree", "New subjects"; "Save Description". Roles: listbox "Roles /eng/qa carries", "Save Roles". Delete: "Delete /doomed", alert dialog "Delete /doomed?". Grid "Members of /eng".                                                                                                                                                                                                                                                                     |
+| 7   | Roles                  | Heading "Roles", link "Create a role", "Create role". Tabs General, Composites, Members, Activity. Composites: region "Add a composite", listbox "Role to nest in" and the name, button "Nest it in" and the name; options read as "auditor, a tenant role" or "view-users, a role of client odudu-admin". A composite is removed with "Take" and the name "out". "Create a copy" is a link.                                                                                                                                                                                                                                                                                           |
+| 8   | Clients                | Heading "Clients", grid "Clients", "Create a client", button "Create client". The dialog "Client secret for" and the name shows a secret once. Record tabs, then General: "Save Details", "Copy client id". Redirects: group "Redirect URIs", "Add redirect URI", "Save Redirect URIs"; "Add web origin". "Rotate secret" opens the alert dialog "Rotate the secret of", "Revoke every token" an alert dialog "Revoke every token of". Sessions: grid "Sessions through" the name. Delete: "Delete" and the name.                                                                                                                                                                      |
+| 9   | Scopes                 | Heading "Scopes", grid "Scopes", "Create a scope", "Create scope". Tabs General, Roles, Claim mappers, Clients, Activity. Regions "Description", "Consent", "Token lifetimes", "Claim mappers" (checkbox "email"), each with its "Save". Clients tab: region "Assign to a client", listbox "Client to assign", button "Assign to" and the client, list "Clients carrying" and the scope, "Unassign" and the client. Delete: alert dialog "Delete" and the name with "?".                                                                                                                                                                                                               |
+| 10  | Registration tokens    | Heading "Registration tokens", textboxes "Uses" and "Lifetime", button "Mint token", then the dialog "New registration token" with the token read once, and "Close". Grid "Registration tokens"; "Revoke token" opens the alert dialog "Revoke this token?".                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| 11  | Sign-in flow           | Heading "Sign-in flow", list "Sign-in steps". Each step has "Move password up" or "Move password down" and "Requirement for" the step; options "Disabled" and "Required". "Add step", region "Steps" and "Save Steps". Region "One-time password": the switch "Ask every subject for a one-time password" and "Save One-time password". An unsaved change is read on the tab or section ("Discard changes to Steps").                                                                                                                                                                                                                                                                  |
+| 12  | Signing keys           | Heading "Signing keys". Grids "Rotating keys", "Active keys" and "Retired keys", each with a "No ... keys" line when empty. "Stage key" is read; the staged key's row has "Promote" and its id, which opens the alert dialog "Promote this key?" and "Promote key". "Retire this key?" and "Delete this key?" read the same way. Status "Last key action" is read after each.                                                                                                                                                                                                                                                                                                          |
+| 13  | Settings               | Heading "Settings", navigation "On this page" (buttons that move the focus to a section's heading, which is read). Regions General, Usernames, Sessions, Password policy, Brute force, Registration and recovery, Audit retention. Switches "Enabled", "Verify email addresses"; textboxes "Display name", "Idle timeout", "Minimum length"; each section has "Save" and its name. Turning "Enabled" off and saving raises the alert dialog "Disable <tenant>?".                                                                                                                                                                                                                       |
+| 14  | Email                  | Heading "Email". Region "Mail relay": textboxes "Host", "Sender address", "Username", a password field whose help says a password is stored and never shown, and "Save Mail relay". Region "Test message": textbox "Send to", button "Send test message", then a status. "Remove the relay" opens the alert dialog "Remove this tenant's relay?".                                                                                                                                                                                                                                                                                                                                      |
+| 15  | Audit                  | Heading "Audit trail". A search landmark with textboxes "Action", "Resource type", "Resource id", "Actor (subject id)", the date fields "From" and "To", an Outcome picker, and "Apply filters". Grid "Audit events"; each row has a button "Details of" and its action, which opens the dialog "Audit event" and returns the focus to that button on close. "Next page", "Previous page", "Load more audit events", "Export these events". An invalid filter is read under its field.                                                                                                                                                                                                 |
+| 16  | Sign-out and its pages | Press "Sign out" in the shell: the browser goes to the console's "Sign in" heading at once, even when the sign-in is older than the ID token's lifetime. The server's own confirmation page (heading "Sign out?", a sentence about ending the session for every application, button "Sign out") shows only when the hint names a different session: open the console in two tabs signed in as two people, sign out in the first, and read the page that follows. Then open a sign-in, wait until its row has expired and go Back: the page reloads itself, or reads "Start sign-in again" or "Return to the application".                                                              |
+
+Anything that is read as "button" with no name, a dialog that does not
+announce its title, a focus that lands on the page's top after a save, or a
+secret read twice is a finding: write it against the flow's number.
