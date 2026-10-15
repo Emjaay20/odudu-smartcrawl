@@ -23,19 +23,20 @@ const ADAPTERS = [
 const TEST = /\.test\.tsx?$/u;
 const METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
 
-// Routes no console adapter calls yet. Each feature takes its own out as it
-// lands, and the list is empty when the console is complete.
-const TODO: readonly string[] = [
-  'POST /admin/tenants/:tenant/subjects/bulk',
-  'GET /admin/tenants/:tenant/sessions',
-  'DELETE /admin/tenants/:tenant/sessions',
-  'DELETE /admin/tenants/:tenant/lockouts',
-  'GET /admin/tenants/:tenant/mail',
-  'DELETE /admin/tenants/:tenant',
-];
-
 // Routes the console deliberately never calls, each with the reason.
 const NEVER: Readonly<Record<string, string>> = {
+  'POST /admin/tenants/:tenant/subjects/bulk':
+    'API-only: acts on up to 100 subjects in one call for scripts and migrations. Every console list and record page acts on one subject at a time and has no multi-select.',
+  'GET /admin/tenants/:tenant/sessions':
+    'API-only: the tenant-wide session list. The console lists sessions on a client (Sessions tab) and lists and ends them on a subject (Sessions tab).',
+  'DELETE /admin/tenants/:tenant/sessions':
+    "API-only: ends every session in the tenant, a door for a script. The console ends one subject's sessions, or revokes one client's grants, from their own pages.",
+  'DELETE /admin/tenants/:tenant/lockouts':
+    "API-only: clears every brute-force lockout in the tenant. The console clears one subject's lockout, on that subject.",
+  'GET /admin/tenants/:tenant/mail':
+    'API-only: mail delivery status for monitoring. The Email page configures SMTP and sends a test message; it lists no deliveries.',
+  'DELETE /admin/tenants/:tenant':
+    'API-only, by design: a tenant must be disabled first and its deletion is irreversible. The console disables a tenant and offers no delete.',
   'GET /admin/tenants/:tenant/audit/count':
     'The audit trail has no count, by design: over a trail that long a capped total would be an estimate the page cannot stand behind, so it says how far back the loaded rows reach instead.',
 };
@@ -158,16 +159,14 @@ describe("the console's reach into the admin API", { timeout: 60_000 }, () => {
     expect(unknown.map(([reference, files]) => `${reference} in ${files.join(', ')}`)).toEqual([]);
   });
 
-  it('calls every admin route, but for those still to come and those it never calls', async () => {
+  it('calls every admin route but those it never calls', async () => {
     const referenced = new Set([...(await adapterReferences()).keys()].map((r) => template(r)));
     const never = new Set(Object.keys(NEVER));
     const uncovered = [...ROUTES]
       .filter(([key, route]) => !referenced.has(key) && !never.has(route))
       .map(([, route]) => route)
       .sort();
-    expect([...TODO].sort(), 'TODO must name exactly the routes no adapter calls yet').toEqual(
-      uncovered,
-    );
+    expect(uncovered, 'a route no adapter calls needs a screen, or a reason in NEVER').toEqual([]);
   });
 
   it('never calls a route it says it never calls, and says why for each', async () => {
@@ -176,7 +175,6 @@ describe("the console's reach into the admin API", { timeout: 60_000 }, () => {
     for (const [route, reason] of Object.entries(NEVER)) {
       expect(routes.has(route), route).toBe(true);
       expect(reason.trim(), route).not.toBe('');
-      expect(TODO, route).not.toContain(route);
       expect(referenced.has(template(route)), route).toBe(false);
     }
   });
