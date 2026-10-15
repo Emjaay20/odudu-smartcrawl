@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { existsSync, globSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -215,5 +216,51 @@ describe('every link in every document resolves', () => {
 
     expect(links, 'the link extractor has stopped recognising links').toBeGreaterThan(50);
     expect(broken, 'links to files that are not in this repository').toEqual([]);
+  });
+});
+
+// A `docs/....md` path named anywhere a person or a tool might follow it: prose,
+// a source comment, a test, a workflow. A link check cannot see these, since
+// none is a Markdown link, and moving a document leaves every one of them
+// pointing at nothing.
+const DOCS_PATH = /(?<![\w/.-])docs\/[\w./-]*[\w]\.md\b/gu;
+const SCANNED = /\.(?:md|ts|tsx|js|cjs|mjs|json|ya?ml|sql|sh)$/u;
+
+// The archive records how a phase was planned, including files it intended to
+// create and ones since renamed, so its paths are not held to the tree as it
+// is. Lint fixtures are sample input for other checks, not documentation.
+const NOT_CHECKED = /^(?:docs\/archive\/|tests\/lint\/fixtures\/)/u;
+
+function trackedFiles(): string[] {
+  const listing = execFileSync('git', ['ls-files', '-z'], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  return listing
+    .split('\0')
+    .filter(
+      (file) =>
+        SCANNED.test(file) && !NOT_CHECKED.test(file) && existsSync(path.join(REPO_ROOT, file)),
+    );
+}
+
+describe('every docs path a file names exists', () => {
+  it('resolves each `docs/....md` reference in every tracked text file', () => {
+    let references = 0;
+    const missing: string[] = [];
+    for (const file of trackedFiles()) {
+      const text = readFileSync(path.join(REPO_ROOT, file), 'utf8');
+      for (const match of text.matchAll(DOCS_PATH)) {
+        references += 1;
+        if (!existsSync(path.join(REPO_ROOT, match[0]))) missing.push(`${file} -> ${match[0]}`);
+      }
+    }
+
+    expect(references, 'the extractor has stopped recognising docs paths').toBeGreaterThan(100);
+    expect(
+      [...new Set(missing)],
+      'references to documents that are not in this repository',
+    ).toEqual([]);
   });
 });
