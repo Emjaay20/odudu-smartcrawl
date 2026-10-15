@@ -732,8 +732,9 @@ lists every problem the import found at once, each at its JSON path, and on
 success shows each client's fresh secret once. It then offers the guided
 step's first administrator, because an import creates none.
 
-A tenant is disabled in the console and never deleted there. The API can delete
-a disabled tenant (the gap audit added the route); the console calls it nowhere.
+A tenant is disabled first and may then be deleted from its record's danger zone
+(decided 2026-10-15; the gap audit added the route). The zone offers the delete only
+for a disabled tenant, asks for the tenant's name, and lists what the cascade removes.
 
 ### 7.3 Editing
 
@@ -1016,7 +1017,7 @@ a pushed commit and the review it attracted answered.
 | `odudu-admin` is provisioned per tenant by `provisionAdminClient`, public until 2026-10-09 and, while the console is on, confidential by `private_key_jwt` since (ADR 0038's amendment) | `grep -n "confidential" packages/domain-tenant/src/usecase/provision-admin-client.ts`; `packages/protocol-oidc/src/usecase/provision-admin-client.ts` |
 | `provisionAdminClient`'s only callers are tenant creation and `seed admin`                                                                                                              | `grep -rn "provisionAdminClient(" packages apps --include='*.ts'`                                                                                     |
 | The view-layer header walk exempts exactly two files                                                                                                                                    | `packages/protocol-oidc/src/view/html-response.test.ts:17`                                                                                            |
-| There is no tenant delete route (closed by the gap audit: `DELETE /admin/tenants/{tenant}` exists, and the console never calls it)                                                      | `ADMIN_ROUTES`, `capability.ts:208-235`                                                                                                               |
+| There is no tenant delete route (closed by the gap audit: `DELETE /admin/tenants/{tenant}` exists, and the console calls it from the Tenants record's danger zone)                      | `ADMIN_ROUTES`, `capability.ts:208-235`                                                                                                               |
 | No admin route clears a brute-force lockout (closed by the gap audit: `DELETE …/subjects/{id}/lockout` and `DELETE …/lockouts` exist)                                                   | `grep -n "lockout" docs/admin-paths.md`; `login_failures` is read only by `domain-identity`                                                           |
 | RFC 10017 recommends a BFF for sensitive browser applications                                                                                                                           | https://oauth.net/2/browser-based-apps/                                                                                                               |
 | React 19.3 is current, released 2026-09-09                                                                                                                                              | https://react.dev/blog/2026/09/09/react-19-3                                                                                                          |
