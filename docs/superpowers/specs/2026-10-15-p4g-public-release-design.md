@@ -28,6 +28,14 @@ people who run it.
 ## Goals
 
 - The exit criterion in section 11 for P4g, unchanged.
+- One command takes a stranger from nothing to a signed-in admin console:
+  it starts the stack, migrates the database, creates the system tenant and
+  its first administrator, and ends by printing the console address and the
+  administrator's sign-in. Run in a terminal it asks for the administrator's
+  email and password; run without one (a script, a CI job) it takes them from
+  environment variables, and when it is given neither it generates a password,
+  prints it once and requires it to be changed at first sign-in. The CI job
+  that proves the ten-minute claim signs in to the console this way.
 - The landing page is the front door: it shows what Odudu is, the one
   command that runs it locally, and a way into the documentation, with
   restrained, smooth motion (CSS transitions and scroll-linked reveals; no
