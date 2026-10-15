@@ -3,7 +3,12 @@ import { tenants, withTenant, type TenantScopedDatabase } from '@odudu/db';
 import { expectCrossTenantMethodProbe } from '@odudu/db/testing';
 import { auditRepository } from '@odudu/domain-audit';
 import { roleRepository } from '@odudu/domain-authz';
-import { loginFailures, subjectRepository, userRepository } from '@odudu/domain-identity';
+import {
+  loginFailureRepository,
+  loginFailures,
+  subjectRepository,
+  userRepository,
+} from '@odudu/domain-identity';
 import {
   ADMIN_CLIENT_ID,
   clientRepository,
@@ -119,6 +124,42 @@ describe('clearLockouts, a batch at a time', () => {
       { cleared: 1, beyondCeiling: 0, remaining: 0 },
     ]);
     expect(await failuresOf(t.id)).toEqual([]);
+  });
+});
+
+describe('the placeholder an unknown username is counted against', () => {
+  it('stores no row, so a clear never counts it as an account', async () => {
+    const t = await fixture.createTenant(`lockout-dummy-${newId()}`);
+    await fail(t.id, await seedUser(t.id, 'locked'), 60_000);
+    const policy = {
+      maxFailures: 5,
+      lockoutSeconds: 60,
+      maxLockoutSeconds: 900,
+      failureResetSeconds: 3600,
+    };
+    const outcome = await withTenant(fixture.app.db, t.id, (tx) =>
+      loginFailureRepository(tx).recordFailure(
+        '00000000-0000-0000-0000-000000000000',
+        policy,
+        fixture.clock.now(),
+      ),
+    );
+    expect(outcome).toEqual({ kind: 'no_subject' });
+    expect(await failuresOf(t.id)).toHaveLength(1);
+    const cleared = await withTenant(fixture.app.db, t.id, (tx) =>
+      clearLockouts(
+        tx,
+        { audit: () => Promise.resolve() },
+        {
+          tenantId: t.id,
+          callerCapabilities: EVERY_CAPABILITY,
+          actorSubjectId: newId(),
+          actorTenantId: t.id,
+          actorClientId: newId(),
+        },
+      ),
+    );
+    expect(cleared).toEqual({ cleared: 1, beyondCeiling: 0, remaining: 0 });
   });
 });
 
