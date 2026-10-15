@@ -65,6 +65,29 @@ people who run it.
 - Not a rewrite of the content. The three `*-paths.md` documents migrate;
   their commands stay executed in CI.
 
+## Documentation moves into the site
+
+The exit criterion in section 11 already names this; it is repeated here
+because it is easy to read past.
+
+- `README.md` becomes a standard front door: logo, tagline, badges, what it
+  is and the meaning of the name, the one-command quickstart, links to the
+  docs, examples, roadmap, contributing and security, and the licence. Its
+  operating detail moves into the site.
+- `docs/request-paths.md`, `docs/admin-paths.md` and `docs/console-paths.md`
+  move into the site's source as guides and reference, with their commands
+  still executed in CI and `tests/docs/` retargeted at the site. The three
+  files are then retired, every citation of them repointed, and CLAUDE.md's
+  documentation rules retargeted at the site's source.
+- **The docs ship inside the image.** The same build that publishes the site
+  is copied into the server image and served by it under `/docs`, so anyone
+  running Odudu has the documentation for exactly the version they run, with
+  no network. The hosted site is the latest release; the image's copy is
+  the one that matches it. The pages are static files served from the
+  server's own origin under a fixed policy of their own, in the way the
+  console shell is (ADR 0029's amendment), and the image grows by the size
+  of the built site only. The landing page itself is not in the image.
+
 ## Brand
 
 - The owner chose the **staff** direction from two rounds of sketches: a
