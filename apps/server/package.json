@@ -14,8 +14,8 @@
     "test": "vitest run --config ../../vitest.config.ts --reporter=default --reporter=json --outputFile=trace-report.json"
   },
   "dependencies": {
-    "@fastify/cookie": "11.1.2",
-    "@fastify/formbody": "9.0.0",
+    "@fastify/cookie": "11.1.3",
+    "@fastify/formbody": "9.0.1",
     "@odudu/account": "workspace:*",
     "@odudu/authn-flows": "workspace:*",
     "@odudu/console-gateway": "workspace:*",
