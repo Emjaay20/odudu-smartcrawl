@@ -109,4 +109,5 @@ export {
   deleteFailure,
   settledDeletion,
   heldForTenant,
+  missingIfUnknown,
 } from '#/features/tenants/service/deletion';

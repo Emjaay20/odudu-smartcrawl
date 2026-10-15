@@ -1,5 +1,5 @@
 import { writeRefusal } from '#/shared/service/capabilities';
-import { isMissing, writeFailureText } from '#/shared/service/failure';
+import { isMissing, isUnknownTenant, writeFailureText } from '#/shared/service/failure';
 import { SYSTEM_TENANT, type AdminCapability } from '#/shared/service/principal';
 import type { GatewayFailure, GatewayResult, Problem } from '#/shared/service/result';
 import { tenantRecord } from '#/features/tenants/service/tabs';
@@ -82,4 +82,15 @@ export function heldForTenant(
   const [kind, at, record] = queryKey;
   if (at === name) return true;
   return kind === recordKind && at === SYSTEM_TENANT && record === tenantRecord(name);
+}
+
+// The admin API answers a tenant it does not know, one just deleted among
+// them, with a plain 401 rather than a 404; as a record it is not found.
+export function missingIfUnknown<T>(result: GatewayResult<T>): GatewayResult<T> {
+  if (!isUnknownTenant(result)) return result;
+  return {
+    ok: false,
+    kind: 'problem',
+    problem: { type: 'about:blank', title: 'Not Found', status: 404 },
+  };
 }

@@ -86,6 +86,14 @@ it('says so of a tenant that does not exist', async () => {
   expect(await screen.findByRole('heading', { name: 'No such tenant' })).toBeVisible();
 });
 
+it('says so of a tenant the admin API answers with its plain 401, as it does one that was deleted', async () => {
+  renderConsoleAt('/console/system/tenants/gone', {
+    ...systemRoutes(),
+    [`GET ${ADMIN}/gone`]: problem(401, 'about:blank', 'Unauthorized'),
+  });
+  expect(await screen.findByRole('heading', { name: 'No such tenant' })).toBeVisible();
+});
+
 it('passes axe in both themes', async () => {
   expect(
     await axeInBothThemes(

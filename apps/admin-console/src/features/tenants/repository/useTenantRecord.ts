@@ -1,7 +1,7 @@
 import type { Tenant } from '@odudu/contracts/admin';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { amendTenant, readTenant } from '#/features/tenants/adapter/tenants';
-import { generalPatch, tenantRecord } from '#/features/tenants/service';
+import { generalPatch, missingIfUnknown, tenantRecord } from '#/features/tenants/service';
 import { recordKey } from '#/shared/repository/queryKeys';
 import { useInvalidate } from '#/shared/repository/useInvalidate';
 import { useRecord, type RecordEntry, type RecordState } from '#/shared/repository/useRecord';
@@ -16,7 +16,7 @@ export function useTenantRecord(name: string): RecordState<Tenant> {
   return useRecord({
     tenant: SYSTEM_TENANT,
     record: tenantRecord(name),
-    read: (gateway) => readTenant(gateway, name),
+    read: async (gateway) => missingIfUnknown(await readTenant(gateway, name)),
   });
 }
 

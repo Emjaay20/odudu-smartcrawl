@@ -5,6 +5,7 @@ import {
   deleteState,
   DELETE_NEEDS,
   heldForTenant,
+  missingIfUnknown,
   settledDeletion,
 } from '#/features/tenants/service/deletion';
 import type { GatewayFailure } from '#/shared/service/result';
@@ -120,5 +121,20 @@ describe('which cached entries belong to a tenant', () => {
     expect(heldForTenant(['record', 'system', 'tenants/acme-eu'], 'acme', 'record')).toBe(false);
     expect(heldForTenant(['list', 'system', 'tenants'], 'acme', 'record')).toBe(false);
     expect(heldForTenant(['session'], 'acme', 'record')).toBe(false);
+  });
+});
+
+describe('a tenant the admin API does not know', () => {
+  it('is not found as a record: its plain 401 is a 404, anything else is as it was', () => {
+    const plain = refused(401);
+    expect(missingIfUnknown(plain)).toMatchObject({
+      ok: false,
+      kind: 'problem',
+      problem: { status: 404 },
+    });
+    const ended = refused(401, 'about:blank#console-session-ended');
+    expect(missingIfUnknown(ended)).toBe(ended);
+    const done = { ok: true, status: 200, data: 1, etag: null, next: null } as const;
+    expect(missingIfUnknown(done)).toBe(done);
   });
 });
