@@ -1,0 +1,938 @@
+# P4g: Public Release Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** A stranger with Docker opens the landing page, runs one command and signs in to an admin console and to an example application of their own kind within ten minutes, from a signed, SBOM-carrying image published from a tagged release, with documentation that is generated or executed so it cannot drift, server pages in Instrument and in message catalogues, and the AGPL-3.0 / Apache-2.0 licence and CLA in force.
+
+**Architecture:** Machinery first, content last. Spikes retire every load-bearing assumption (VitePress under a strict CSP, the one-file compose, the Instrument stylesheet, ICU in the bundle, cosign on a real runner). A release workflow then publishes a multi-arch, digest-pinned, signed image from `rc` tags, so the quickstart, example and docs jobs run against something published. The one command is `docker compose up` on a single `compose.yaml` whose `setup` service runs a new idempotent `odudu init`; the server pages gain a same-origin Instrument stylesheet, a catalogue runtime and a negotiation function while every renderer is rewritten once. The VitePress site (`apps/docs`) is built twice from one source (two `base` paths), generated reference pages come from code, guide commands run in CI, the three `*-paths.md` files move in and are retired, and the landing page, mark, README and community files close the phase.
+
+**Tech Stack:** VitePress 1.6.4, Vue 3.5.44 (the site only); `intl-messageformat` 12.1.3; Docker Buildx multi-arch with cosign keyless signing and Syft SBOMs on GitHub Actions; GitHub Pages; `contributor-assistant/github-action`; Playwright 1.63.0 and `@axe-core/playwright` 4.13.0 (the versions `apps/admin-console` already pins); example applications on `jose` 6.2.12, `openid-client` 6.8.8, `oauth4webapi` 3.8.8 and Vite 8.3.1 (npm, outside the workspace).
+
+**Spec:** `docs/superpowers/specs/2026-10-15-p4g-public-release-design.md` (the phase design), the P4g row and the documentation outline under "Public release moved earlier" in `docs/superpowers/specs/2026-09-10-odudu-design.md` §11, ADR 0042 (licensing), ADR 0043 (localization), ADR 0029 and its amendments (page headers), ADR 0018's amendment (a page declares its script). Read all five before Task 1.
+
+## Global Constraints
+
+Every task's requirements include this section.
+
+- **Phase sequence** (`CLAUDE.md`): work on branch `p4g-public-release`; open a draft pull request with the first push; push at the end of every increment; an increment is finished when CI is green on the pushed commit **and** the review that push attracted is answered (valid: fix with a test first; wrong on the facts: reply citing file and line; right about a risk, wrong about the fix: say so and address the risk; out of scope: a `deferred:` row or a `docs/NEXT.md` entry). `main` requires `verify`, `container` and `commit-messages`; the owner adds `e2e`, and this phase adds the jobs named below.
+- **A phase finishes everything inside its own topic.** Nothing found in a P4g topic (release, quickstart, site, pages, catalogues, licence) is recorded as left standing; a gap outside it is named against the phase whose topic covers it. The close (Increment 36) runs the four whole-phase passes.
+- **Comments:** only what the code cannot express; never the plan, a task or a finding; no block longer than eight lines (`tests/lint/comment-block-length.test.ts`). Quote this in every dispatch.
+- **Commits:** subject at most 72 characters, body at most 8 lines, blank line between, **no tool-attribution trailer** (`tools/commit-message`); a pull request description carries none either.
+- **No `any`**, test first, integration tests on real PostgreSQL through Testcontainers, `void doThing()` never.
+- **Layering** (view / usecase / repository / adapter / service) in the console and on the server; domain packages never import protocol packages. Server pages are a `*-html.ts` in a package's `view` layer returning a `RenderedPage`; headers come only from `pageHeaders` (ADR 0029); a user-facing string is an entry in a catalogue, never a literal in markup.
+- **Documentation an increment owns:** `README.md` and the site describe the server **now**. A transcript block carries no language tag, says what ran before it, and shows a precondition rather than asserting it.
+- **Performance and scale** is stated at 1,000,000 subjects, 10,000 clients, 10,000 tenants, 100,000,000 audit events (ADR 0041); see "Performance and scale" below.
+- **Ports and stacks:** never 3000, 3090, 5472, 8090 or 8091 and never the `odudu-try` project. Every stack a task starts has its own compose project name and its own ports (this plan uses 3210 to 3260 and 5510 to 5560).
+- **Pinning:** every new dependency is an exact version; every action is a major tag (the repository's convention, `grep -n "uses:" .github/workflows/verify.yml`), except the signing steps of the release workflow, which Task 6 pins by commit SHA.
+- **Third-party claims** carry `verified: <command run>` or `assumption:`; each load-bearing assumption has a spike before its first dependent task. Claims about this repository carry the grep beside them.
+
+## Decisions this plan makes
+
+The design leaves these to the builder. Each is the call, not a proposal.
+
+| #   | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Why                                                                                                                                                                                                                                                                                                                                                                       |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | **The one command is `docker compose up`**, on a downloaded `compose.yaml`. A `setup` service runs `odudu init` (secrets, roles, migrate, system tenant, first administrator) and the `odudu` service waits for it. `docker compose run --rm setup` is the same step with a terminal: it prompts. Headless it reads `ODUDU_ADMIN_EMAIL` and `ODUDU_ADMIN_PASSWORD`, or generates a password, prints it once and requires a change.                                                                                                                                                     | `up` never attaches stdin, so a prompt cannot live in it; `run` allocates a TTY. One file, one `init`, two ways in. `docker compose -f - up` (piped file) was rejected for the same reason.                                                                                                                                                                               |
+| D2  | **Secrets for the quickstart live in a named volume**, written by `init` as `/var/lib/odudu/quickstart.env` (mode 0600) and read by the server through Node's `--env-file`, which the compose `command` passes. The server gains no secret-loading code.                                                                                                                                                                                                                                                                                                                               | Secrets sourcing is P12's (§11 P12 row). `node --env-file` is the stock mechanism (`grep -n "env-file" apps/server/package.json` shows the dev script already uses it). The quickstart refuses a public base URL that is not loopback, so the generated secrets can never front a real deployment.                                                                        |
+| D3  | **`odudu` becomes a real command in the image** (`/usr/local/bin/odudu`, a two-line shim) and the image's `ENTRYPOINT` stays unset. `docker compose exec odudu odudu seed ...` replaces `node dist/main.js seed ...` in the docs.                                                                                                                                                                                                                                                                                                                                                      | `grep -c "dist/main.js" README.md docs/*-paths.md` finds 60 occurrences of the long form; no `odudu` binary exists (`grep -n "usr/local/bin" infra/docker/Dockerfile` is empty). Existing `exec ... node dist/main.js` callers (`apps/admin-console/e2e/stack.ts:18`) keep working.                                                                                       |
+| D4  | **The site is `apps/docs`** (`@odudu/docs`), source in `apps/docs/en/` (one directory per language, ADR 0043 row 8), generated pages in `apps/docs/en/reference/generated/` (git-ignored, built by `pnpm --filter @odudu/docs generate`). It is built **twice from one commit**: base `/odudu/` for Pages, base `/docs/` for the image.                                                                                                                                                                                                                                                | verified: a build with `base: './'` still emits `./assets/...` in `guide/a.html`, which resolves under `/guide/` and breaks (scratch build, Task 1). VitePress has no relative base, so "the same build" in the design cannot be literal; the same source and commit can.                                                                                                 |
+| D5  | **Docs in the image are served by `@odudu/web-assets`** (new package, `view/docs-routes.ts`) under a fixed policy built from `docs/csp.json`, which the docs build writes: the SHA-256 of each inline script and each distinct inline `style=""` value.                                                                                                                                                                                                                                                                                                                                | verified: VitePress 1.6.4 emits three inline `<script>` elements and inline style attributes in every page (scratch build, Task 1), so a pure `script-src 'self'` policy like `spa.ts`'s breaks the site. Hashes computed at build and recomputed by a test is the `react-aria-style.test.ts` pattern (`grep -n "sha256" packages/console-gateway/src/view/spa.ts`).      |
+| D6  | **The Instrument stylesheet is generated, not authored twice.** `@odudu/instrument` concatenates the console's `tokens.css` and `fonts.css` (the single source) with its own logical-only `pages.css`, hashes the font files, and the server serves it at `/instrument/instrument.css` (`no-cache`, strong ETag) and `/instrument/fonts/*` (`immutable`).                                                                                                                                                                                                                              | `grep -n "light-dark" apps/admin-console/src/shared/view/tokens.css` shows the tokens are already one declaration per colour. A stable stylesheet URL avoids threading a hash into four `document.ts` copies.                                                                                                                                                             |
+| D7  | **Catalogues:** `@odudu/i18n` (new leaf package) holds `negotiateLocale`, `createCatalogue`, `directionOf` and the shipped-locale table; each rendering package keeps `catalogue/en.json` and a typed `messages.ts` beside its renderers. JSON is bundled by tsup (`grep -n "noExternal" apps/server/tsup.config.ts`: everything but argon2 is bundled), so the image ships no catalogue files.                                                                                                                                                                                        | ADR 0043 "a catalogue per package". A typed `MessageId` derived from `en.json` makes an unknown key a compile error.                                                                                                                                                                                                                                                      |
+| D8  | **Licence classification:** every workspace package and app is AGPL-3.0-only; `examples/` (and the example directories' own `LICENSE`) are Apache-2.0; the site's prose is Apache-2.0; the Odudu name and the staff mark are **not** licensed by either (`LICENSING.md` says so). `@odudu/contracts` is AGPL because only the server packages and the console depend on it (`grep -rln "@odudu/contracts" --include=package.json packages apps` lists domain-tenant, domain-identity, protocol-admin, protocol-oidc, console-gateway, the server and the console). **Owner confirms.** | ADR 0042 names Apache for "client libraries, SDKs and the example applications"; this repository has no published library. The owner may prefer Apache for `contracts`; it is a one-line change in `LICENSING.md` and the package field, held by the Task 3 test.                                                                                                         |
+| D9  | **Docs command runner:** a fenced block annotated ` ```sh {run} ` is executed by `tools/docs-run` against a live quickstart stack in CI; exit status must be 0 and an optional `{expect="…"}` substring must appear in output. A transcript with no annotation is a captured transcript (as today), held by the retargeted drift tests.                                                                                                                                                                                                                                                | The design says guide commands are "executed in CI as `request-paths.md`'s transcripts are". They are not: nothing in `.github/workflows/verify.yml` executes a document, and the transcripts are captured by hand (Task 21 states this and closes it).                                                                                                                   |
+| D10 | **Digests stay current through Dependabot** (`docker` for Dockerfiles, `docker-compose` for compose files) plus a no-network lint that every `FROM` and `image:` carries `@sha256:`.                                                                                                                                                                                                                                                                                                                                                                                                   | verified: `curl -sL https://raw.githubusercontent.com/github/docs/main/content/code-security/reference/supply-chain-security/dependabot-options-reference.md \| grep -n 'package-ecosystem: "docker"'` and the supported-ecosystems page list both ecosystems; `dependabot-core`'s `update_checker_spec.rb` has a "digest is out of date and the tag is up to date" case. |
+
+## Verified and assumed
+
+`verified:` lines are commands run while writing this plan (2026-10-15, Node 24.15.0, Docker 29.8.2, Compose v5.6.0, Buildx 0.37.2).
+
+| Claim                                                                                                                                                                                                                                                                                                                                                                                                                                 | Status                                                                                                                                                                                                                      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| VitePress latest stable is 1.6.4; `2.0.0-alpha.20` is the newest alpha                                                                                                                                                                                                                                                                                                                                                                | verified: `npm view vitepress version` and `npm view vitepress time --json \| tail -5`                                                                                                                                      |
+| VitePress `base` cannot be relative; a nested page keeps `./assets`                                                                                                                                                                                                                                                                                                                                                                   | verified: scratch `BASE=./ vitepress build docs; grep -o 'href="[^"]*css"' docs/.vitepress/dist/guide/a.html` printed `./assets/style...css`                                                                                |
+| VitePress 1.6.4 pages carry inline scripts (`check-dark-mode`, `check-mac-os`, one unnamed) and inline `style=` attributes                                                                                                                                                                                                                                                                                                            | verified: scratch `grep -o '<script[^>]*>' docs/.vitepress/dist/index.html` and `grep -o 'style="[^"]*"'`                                                                                                                   |
+| VitePress local search emits `@localSearchIndexroot.*.js` and `VPLocalSearchBox.*.js` under `/assets/chunks`                                                                                                                                                                                                                                                                                                                          | verified: scratch `ls docs/.vitepress/dist/assets docs/.vitepress/dist/assets/chunks` with `themeConfig.search.provider = 'local'`                                                                                          |
+| `vitepress --version` starts the dev server (do not use it as a check)                                                                                                                                                                                                                                                                                                                                                                | verified: it printed `Local: http://localhost:5173/` and had to be killed                                                                                                                                                   |
+| Index digests, 2026-10-15: `node:24-alpine` `sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f`; `postgres:17-alpine` `sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24`; `axllent/mailpit:v1.31.5` `sha256:94f6b70c1436defae6799d9ac7ff0eeff9540465b842026d5cdb018f1c0234ea`; `swaggerapi/swagger-ui:v5.33.0` `sha256:f9b8432be04e320406157e26c3ff52a7e9a4bea7eabe5477e9636791737eb119` | verified: `docker buildx imagetools inspect <image>` for each, the top-level index digest, so one pin serves amd64 and arm64. The executor re-resolves at Task 4; these are what it must reproduce or replace deliberately. |
+| Action releases: build-push-action v7.4.0, login-action v4.6.0, setup-buildx-action v4.4.1, metadata-action v6.2.0, cosign-installer v4.1.2, sbom-action v0.24.3, deploy-pages v5.0.1, upload-pages-artifact v5.0.0, configure-pages v6.0.0, contributor-assistant v2.6.1, lychee-action v2.9.0, setup-qemu-action v4.4.0                                                                                                             | verified: `gh api repos/<r>/releases/latest -q .tag_name` for each                                                                                                                                                          |
+| Latest npm versions: `jose` 6.2.12, `openid-client` 6.8.8, `oauth4webapi` 3.8.8, `vite` 8.3.4 (repo pins 8.3.1), `intl-messageformat` 12.1.3, `@playwright/test` 1.64.1 (repo pins 1.63.0)                                                                                                                                                                                                                                            | verified: `npm view <pkg> version`                                                                                                                                                                                          |
+| Baseline: `tests/docs` and `tests/lint` green                                                                                                                                                                                                                                                                                                                                                                                         | verified: `node_modules/.bin/vitest run --project unit tests/docs tests/lint` printed `Test Files 61 passed (61)`, `Tests 305 passed (305)`                                                                                 |
+| The design's "ten-minute CI proof", "every command executed in CI" and "the CLI's own help" describe machinery that does not exist                                                                                                                                                                                                                                                                                                    | verified: `grep -n "help\|usage" apps/server/src/main.ts apps/server/src/cli/*.ts` finds no help text; `grep -n "request-paths" .github/workflows/verify.yml` is empty                                                      |
+
+Assumptions that remain after the spikes are listed in "Assumptions left" at the end.
+
+## Review Focus
+
+The five failures most likely to bite a stranger that no feature task's happy path exercises. Each has a pinning test in the task named.
+
+1. **A port already in use.** A machine with something on 3000 (or 5432) runs `docker compose up` and is told "port is already allocated", or moves the port and gets a sign-in that redirects to the old one, because the issuer is built from `ODUDU_PUBLIC_BASE_URL`. Expected: one variable, `ODUDU_PORT`, moves the published port and the public base URL together, Postgres is not published at all, and the closing banner prints the real address. Pinned in Task 9 (static compose test) and Task 10 (the CI job runs on port 3190).
+2. **Apple silicon.** An amd64-only image runs under emulation, slowly, or not at all. Expected: every image the quickstart pulls is a multi-arch index (digest-pinned at the index) and the Odudu image lists `linux/amd64` and `linux/arm64`. Pinned in Task 6 (`imagetools inspect` step fails the release) and Task 10 (an arm64 runner smoke).
+3. **A password with shell metacharacters or a prompt that echoes.** `p'"$(id)\\n` typed at the prompt, or passed as `ODUDU_ADMIN_PASSWORD`, must sign in byte-exact, never be echoed, never reach a log line or the printed banner. Pinned in Task 9.
+4. **Copy and paste from the site.** A command pasted with smart quotes, a `$ ` prompt or a trailing backslash continuation fails in a way the reader cannot diagnose. Expected: every runnable block is one logical command, ASCII only, no leading prompt, and the runner executes the text exactly as published. Pinned in Task 21.
+5. **A pre-release taken as the release, and a site served from the wrong base.** An `rc` tag must never move `latest` or the quickstart's pin, and the copy of the docs inside the image must contain no `/odudu/` path while the Pages copy contains no `/docs/` one. Pinned in Task 6 and Task 20. (Two further stranger failures are pinned where they arise: a system clock skewed enough that signature verification fails is documented with the verify command's own error in Task 6, and a reverse proxy that mounts Odudu under a path prefix is documented as unsupported, with a test that the docs never emit an absolute link to another origin, in Task 20.)
+
+## Performance and scale
+
+At 1,000,000 subjects, 10,000 clients and tenants, 100,000,000 audit events, none of the server paths this phase adds reads the database.
+
+| Path                                           | What it does per request                                                                                                                                          | Bound                                                                                                                                                                                                                           |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /docs/*`                                  | one `Map` lookup; the tree is read once at boot                                                                                                                   | at most 5,000 files and 64 MiB in total; over either the route refuses to register and logs (Task 20). Each file at most 10 MiB, as `spa.ts`'s `MAX_FILE_BYTES`. The built site is expected at 10 to 20 MB; Task 18 budgets it. |
+| `GET /instrument/instrument.css`               | one lookup, `304` on a matching ETag                                                                                                                              | one file under 64 KB (gzip 12 KB budget, asserted in Task 11); six font files at most 120 KB each                                                                                                                               |
+| Catalogue lookup per page render               | one object property read, then a formatter drawn from a `Map` keyed `locale:id`                                                                                   | formatters are built on first use and held: at most (message IDs in `en.json` x shipped locales), about 600 entries in P4g and a few thousand with P4b's locale. No per-request parse.                                          |
+| Locale negotiation                             | one pass over at most 16 `Accept-Language` entries and 1,024 bytes, plus at most one `ui_locales` list (bounded by the authorize request's existing length limit) | constant; no I/O. The subject's `locale` is read only after the first factor, from a row the request already holds                                                                                                              |
+| `<bdi>`, `lang`, `dir`                         | string concatenation                                                                                                                                              | constant                                                                                                                                                                                                                        |
+| Bidi refusal at a typed identity or name field | one linear scan of a string already bounded by its column length                                                                                                  | constant per field                                                                                                                                                                                                              |
+| Reference generation, link check               | build time only                                                                                                                                                   | the docs job's duration budget is 10 minutes (Task 18)                                                                                                                                                                          |
+
+Sign-in, consent and logout keep their present query counts; the existing query-plan job (`pnpm test:plans`) is the evidence and must stay green. The image grows by the built docs (about 10 to 20 MB) and the Instrument assets (under 1 MB).
+
+## Budget
+
+Estimated hours per increment; the design's whole-phase estimate is **86 to 137 h** (section 11, P4g row, which already includes ADR 0043's +16 to 27 h). **This plan will not fit inside it:** the sum below is 135 to 186 h. The overrun is in four places the row does not size: the docs command runner (nothing like it exists), the CLI help registry (no help exists), the docs-in-image serving under hashes (VitePress is not strict-CSP clean), and the content migration of about 25,000 lines of documents into a site. The owner should re-baseline §11 at the first increment's merge; the plan does not cut scope to meet the old number.
+
+| Inc | Title                                                  | Hours       |
+| --- | ------------------------------------------------------ | ----------- |
+| 1   | Spikes: the site                                       | 3-5         |
+| 2   | Spikes: the stack and the pages                        | 4-6         |
+| 3   | Roadmap row, licence, LICENSING                        | 3-4         |
+| 4   | Pinned bases, the `odudu` command, Dependabot          | 3-4         |
+| 5   | Spike: a real release tag                              | 3-4         |
+| 6   | Release workflow, process, changelog                   | 4-6         |
+| 7   | CLI help registry                                      | 2-4         |
+| 8   | `odudu init`                                           | 4-6         |
+| 9   | The prompt, the compose file, the `setup` service      | 4-6         |
+| 10  | The quickstart job and the ten-minute proof            | 3-5         |
+| 11  | Instrument stylesheet and the CSP amendment            | 5-6         |
+| 12  | The shared page shell and the reach check              | 3-5         |
+| 13  | Catalogue runtime, negotiation, discovery              | 5-6         |
+| 14  | protocol-oidc pages                                    | 5-6         |
+| 15  | authn-flows pages                                      | 4-5         |
+| 16  | account and console-gateway pages                      | 4-5         |
+| 17  | Mail catalogues, bidi refusal, the literal lint        | 5-6         |
+| 18  | The docs app                                           | 4-5         |
+| 19  | Generated reference                                    | 5-6         |
+| 20  | The docs inside the image                              | 4-5         |
+| 21  | The docs command runner                                | 4-6         |
+| 22  | Moving the three documents in                          | 5-6         |
+| 23  | Roadmap page, citations, retirement, CLAUDE.md         | 4-6         |
+| 24  | Introduction, quick start, the four integration guides | 4-6         |
+| 25  | Concepts                                               | 4-5         |
+| 26  | The admin console tour                                 | 3-5         |
+| 27  | Operating, security, contributing                      | 4-6         |
+| 28  | Examples: web app, API, machine-to-machine             | 4-5         |
+| 29  | Example: SPA, and the examples job                     | 4-5         |
+| 30  | The mark                                               | 3-5         |
+| 31  | The landing page                                       | 5-6         |
+| 32  | README                                                 | 2-3         |
+| 33  | Community files                                        | 3-4         |
+| 34  | The CLA                                                | 3-4         |
+| 35  | Pages deployment                                       | 3-4         |
+| 36  | Close                                                  | 3-5         |
+|     | **Total**                                              | **135-186** |
+
+## Owner steps
+
+Plain steps the owner performs; each increment that needs one says so and waits.
+
+1. **GHCR package public** (after Increment 5's first push): GitHub, Packages, `odudu`, Package settings, Change visibility, Public. Needed before any stranger or any CI job without a token can pull.
+2. **GitHub Pages enabled**, source "GitHub Actions" (before Increment 35's first deploy). The domain, when chosen, is Settings, Pages, Custom domain, plus the one-line change in Task 35.
+3. **Private vulnerability reporting** on (Settings, Code security) before Increment 33 merges; `SECURITY.md` links to it.
+4. **Required checks on `main`:** add `e2e`, `quickstart`, `docs` and `cla` beside `verify`, `container` and `commit-messages` once each has gone green once.
+5. **CLA text approved** (Increment 34): the plan drafts it from the Apache ICLA's grant plus the relicensing clause ADR 0042 needs; the owner, ideally with a lawyer, approves it before the first outside pull request.
+6. **Mark approved** (Increment 30) and **wordmark confirmed**; any Nsibidi-inspired detail confirmed by someone who knows the tradition, or left out (design, "Brand").
+7. **Domain** for the site (design, "Open for the owner"): until given, the site lives at `https://wizzywit.github.io/odudu/`.
+8. **Licence classification** (Decision D8) and the statement that the name and mark are not licensed.
+9. **The first non-rc tag** (Increment 36): the owner cuts it by hand after reading the close report. Steps 1 to 8 are its gate.
+10. **The "not production ready" notice** stays in `README.md` and on the landing page until the owner declares otherwise; its removal is the owner's decision after a hardening pass, not this phase's (README, top).
+
+---
+
+## Increment 1: Spikes: the site (3 to 5 h)
+
+Throwaway code; results go in `docs/phases/p4g.md`, "## Spikes", one `###` per spike, each with `verified:` lines. Delete the throwaway code, keep the findings.
+
+### Task 1: VitePress under this repository's rules
+
+**Files:** throwaway `apps/docs-spike/` (never committed); results in `docs/phases/p4g.md`.
+
+- [ ] **S1. Workspace install and the big page.** In a throwaway git worktree, add `apps/docs-spike` with `vitepress@1.6.4` and `vue@3.5.44`, run `pnpm install`, and confirm `minimumReleaseAge: 1440` and `engine-strict=true` (`cat .npmrc`) do not refuse it and that VitePress's vite 5 beside the console's vite 8.3.1 resolves without clashes. `assumption:` it does. Then copy `docs/request-paths.md` (11,291 lines) in as one page and record: build time, the page's HTML size, whether `{{ }}` and bare `<tag>` text in it break the Vue compiler, and which of a `::: v-pre` container or a per-page `v-pre` front-matter flag keeps three known transcript blocks byte-identical in the rendered `<code>`. Task 22 follows whatever this records.
+- [ ] **S2. Custom home layout and motion.** A `layout: home` page with a Vue-free custom layout slot (`Layout.vue` extending `DefaultTheme`), pure CSS reveal using `animation-timeline: view()` with a fallback, and `@media (prefers-reduced-motion: reduce)` disabling it. Confirm in Chromium via Playwright 1.63.0 (`pnpm --filter @odudu/admin-console exec playwright`) that reduced motion yields computed `animation-name: none` and that a browser without `animation-timeline` shows content fully visible (no hidden-until-scrolled text). `assumption:` `animation-timeline` support is not required for legibility.
+- [ ] **S3. Local search and locale layout.** `themeConfig.search.provider = 'local'` finds a term on a generated page; `locales: { root: { label: 'English', lang: 'en' } }` with `srcDir: 'en'` builds; a second directory `fr/` with one page builds under `/fr/` and the language switcher appears. `assumption:` ADR 0043 row 8's layout is supported (`srcDir` plus `locales`).
+- [ ] **S4. Two bases from one source.** Build with `base: '/odudu/'` and `base: '/docs/'` from the same checkout; assert every absolute `href` and `src` in every emitted HTML file starts with its own base and no file mentions the other (script: `grep -rho '\(href\|src\)="/[^"]*"' dist | grep -v '^.*="/docs/'`). Also build a second home: with `srcExclude: ['index.md']` and `rewrites: { 'docs-index.md': 'index.md' }` under `DOCS_TARGET=image`, the image build's root page is the plain documentation home and the landing is absent (Task 20). Record build time and `du -sh dist`.
+- [ ] **S5. Inline script and style inventory.** For the built site list every inline `<script>` body and every `style="…"` value across all HTML files; compute `sha256` base64 for each. Serve `dist` with a Node static server under `default-src 'self'; script-src 'self' <hashes>; style-src 'self' <hashes>` (style attributes need `'unsafe-hashes'` on `style-src-attr`) in Playwright and record every console CSP violation while clicking nav, opening search (`Ctrl+K`), toggling dark mode and loading the code-copy button. `assumption:` the hash inventory is small (a handful of distinct values) and stable across pages. If a violation has no hash remedy (a runtime-injected style attribute), record it; Task 20 then widens `style-src-attr` and says why.
+- [ ] Record results; delete `apps/docs-spike`. Commit `Record what the site spikes found`.
+
+---
+
+## Increment 2: Spikes: the stack and the pages (4 to 6 h)
+
+### Task 2: The one-file compose, the Instrument stylesheet, ICU in the bundle
+
+**Files:** throwaway directory under the scratchpad; results appended to `docs/phases/p4g.md`.
+
+- [ ] **S6. One-file compose.** Build the current image locally (`docker build -f infra/docker/Dockerfile -t odudu:spike .`). Write a scratch `compose.yaml` with only `postgres` and `odudu`; project `odudu-spike`, host port 3220, no Postgres port published. Confirm each: (a) `configs:` with inline `content:` creates a file in a service (Compose v5.6.0; the `odudu_app`/`odudu_svc` role script is **not** needed if `init` creates the roles through the owner connection, so test both and record which is simpler); (b) a command `["node","--env-file=/var/lib/odudu/quickstart.env","dist/main.js"]` reads a file written by another service into a shared named volume, and `depends_on: setup: condition: service_completed_successfully` orders them; (c) `docker compose run --rm setup` allocates a TTY (`[ -t 0 ]` inside) and `docker compose up` does not; (d) `script -q /dev/null docker compose run --rm setup` gives CI a TTY on ubuntu-latest and on macOS; (e) `ODUDU_PORT` in both the `ports:` mapping and `ODUDU_PUBLIC_BASE_URL` composes correctly with `${ODUDU_PORT:-3000}`. `assumption:` all five hold.
+- [ ] **S7. Instrument stylesheet under CSP.** Concatenate `apps/admin-console/src/shared/view/tokens.css` and `fonts.css` (fonts rewritten to `/instrument/fonts/…`), serve through a throwaway Fastify route, render one existing login page with `<link rel="stylesheet" href="/instrument/instrument.css">`, and open it in Chromium under `default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'`. Confirm no violation, fonts load, `light-dark()` follows `prefers-color-scheme`, and measure the gzip size (budget 12 KB, plain 64 KB). `assumption:` `light-dark()` and the 12 font faces fit the budget; if not, drop `latin-ext` faces and record the loss.
+- [ ] **S8. ICU in the bundle.** Install `intl-messageformat@12.1.3` in a scratch tsup project with `noExternal` as `apps/server/tsup.config.ts` has it; bundle `import en from './en.json' with { type: 'json' }` and one ICU plural message; run `node dist/main.js` under Node 24.15 and print `new IntlMessageFormat('{n, plural, one {# second} other {# seconds}}','en').format({n:2})`; repeat for `ar` with six categories. Measure its gzip size added to the console bundle (ADR 0043 asks; the console is P4h's, but the number decides whether P4h can use it) and record it against ADR 0041's chunk budget (`grep -n "phone\|budget" tests/lint/console-phone-chunk.test.ts`). `assumption:` esbuild bundles the JSON import and the library with no `require` of a missing file.
+- [ ] Record, delete, commit `Record what the stack and page spikes found`.
+
+---
+
+## Increment 3: Roadmap row, licence, LICENSING (3 to 4 h)
+
+ADR 0042 puts the relicence before anything is published; the roadmap row goes in "the first increment of this phase" (design).
+
+### Task 3: The placeholder row, the AGPL and Apache licences, a guard on every package
+
+**Files:**
+
+- Modify: `docs/superpowers/specs/2026-09-10-odudu-design.md` (insert one unnumbered row after P5 in the §11 table; extend "Total"? no: the row carries no hours); `LICENSE`; every `package.json` of `apps/*`, `packages/*`, `tools/*`, `tests`; `README.md` (licence line only).
+- Create: `LICENSING.md`, `LICENSES/Apache-2.0.txt`, `tests/lint/licence-fields.test.ts`.
+
+**Interfaces:** Produces the licence table in `LICENSING.md` that Task 28's example `LICENSE` files and Task 33's `CONTRIBUTING.md` cite.
+
+- [ ] Write the failing test `tests/lint/licence-fields.test.ts`: (a) `it('gives every workspace manifest the licence LICENSING.md assigns its directory')` reads `LICENSING.md`'s first table (`| Path | Licence |`) through `tableWithHeadings` from `tests/docs/markdown.ts` and compares each of `globSync('{apps,packages,tools}/*/package.json')` plus `tests/package.json` against it; (b) `it('has no manifest the table does not cover')`; (c) `it('ships both licence texts')` asserts `LICENSE` starts `GNU AFFERO GENERAL PUBLIC LICENSE` and `LICENSES/Apache-2.0.txt` starts `Apache License`; (d) `it('keeps the name and mark out of both licences')` asserts `LICENSING.md` contains the sentence "The name Odudu and the staff mark are not licensed". Run `node_modules/.bin/vitest run --project unit tests/lint/licence-fields.test.ts` (expect FAIL: no `LICENSING.md`).
+- [ ] Fetch the AGPL-3.0 text: `curl -fsSL https://www.gnu.org/licenses/agpl-3.0.txt -o LICENSE` and compare its first line; move the current Apache text to `LICENSES/Apache-2.0.txt` (`git mv LICENSE LICENSES/Apache-2.0.txt` before the fetch). `assumption:` gnu.org serves the canonical text unchanged; the test in step 1 is the check.
+- [ ] Write `LICENSING.md`: the table (Decision D8), the header policy ("no per-file header is required; the directory decides; a file copied out of a directory carries its licence with it"), the commercial-licence paragraph (ADR 0042: offered, enquiries by the security contact until a sales address exists, owner step), the mark sentence, and a "What this means for you" paragraph for an application that only talks to Odudu over OIDC (not a derivative, ADR 0042).
+- [ ] Add `"license": "AGPL-3.0-only"` to every manifest the table classifies so; edit `README.md`'s licence section to one line pointing at `LICENSING.md`.
+- [ ] Insert the §11 row: `|     | Hosted Odudu (placeholder)                                       | unscheduled | not before P5; not scheduled. The paid layer of ADR 0042: hosting, upgrades, backups and an AI administration layer on the public admin API. Nothing in the open product waits on it; the landing page says it is planned and offers no price, payment or sign-up. |`. Run `node_modules/.bin/vitest run --project unit tests/docs` (the roadmap parsers accept an unnumbered row; if `roadmapPhases` objects, fix the row, not the test).
+- [ ] Run the two directories, then `node_modules/.bin/prettier --check LICENSING.md docs/superpowers/specs/2026-09-10-odudu-design.md`. Commit `Relicense under AGPL-3.0 and Apache-2.0 per ADR 0042` (body: names the placeholder row).
+- [ ] Update `docs/NEXT.md`: "Start here" gains one sentence naming P4g in progress (budget test: `node_modules/.bin/vitest run --project unit tests/docs/next-budget.test.ts`). Push; open the draft pull request; wait for CI green.
+
+---
+
+## Increment 4: Pinned bases, the `odudu` command, Dependabot (3 to 4 h)
+
+### Task 4: Every base image by digest, and a lint that keeps it so (4a)
+
+**Files:**
+
+- Modify: `infra/docker/Dockerfile`, `infra/docker/compose.yaml`, `infra/docker/compose.try.yaml`, `infra/conformance/proxy/Dockerfile`, `infra/conformance/compose.yaml` if it names images (grep below), `.github/dependabot.yml`.
+- Create: `tests/lint/base-images-pinned.test.ts`.
+
+Greps beside the claims: `git grep -nE "^\s*(FROM|image:)" -- infra .github` lists `node:24-alpine` (four `FROM`s in `infra/docker/Dockerfile`, lines 5, 25, 43 via `FROM pnpm`, 63), `nginx:1.27-alpine` (`infra/conformance/proxy/Dockerfile:9`), `swaggerapi/swagger-ui:v5.33.0` and `postgres:17-alpine` (`infra/docker/compose.yaml`), `axllent/mailpit:v1.31.5` (`infra/docker/compose.try.yaml`), and the already-pinned `mendhak/http-https-echo@sha256:...`.
+
+- [ ] Write the failing test: `it('pins every FROM and image: by digest')` globs `{infra,examples,quickstart}/**/{Dockerfile,*.yaml,*.yml}` (excluding `node_modules`), strips stage aliases (`FROM pnpm AS build` names a stage, not an image: collect `AS` names first), and requires every remaining image reference to match `@sha256:[0-9a-f]{64}`; `it('names a tag beside the digest')` requires `image:tag@sha256:` so Dependabot can read the tag; `it('catches an unpinned fixture')` runs the same function over `tests/lint/fixtures/unpinned-compose.yaml` and expects one finding. Run `node_modules/.bin/vitest run --project unit tests/lint/base-images-pinned.test.ts` (FAIL: five unpinned).
+- [ ] Resolve each digest with `docker buildx imagetools inspect <image> | sed -n 's/^Digest: *//p'` (the index digest, so one pin serves both architectures) and write `node:24-alpine@sha256:44fce6...`, `postgres:17-alpine@sha256:b0f956...`, `axllent/mailpit:v1.31.5@sha256:94f6b7...`, `swaggerapi/swagger-ui:v5.33.0@sha256:f9b843...`, `nginx:1.27-alpine@sha256:<resolved>`. A one-line comment above the first use says "digest of the multi-arch index; Dependabot moves it".
+- [ ] Extend `.github/dependabot.yml`: `docker` for `/infra/docker` and `/infra/conformance/proxy`; `docker-compose` for `/infra/docker`, `/infra/conformance` and (Task 9) `/quickstart`; weekly; group `base-images`. verified: ecosystems `docker` and `docker-compose` are supported (Decision D10). Task 29 adds the four `/examples/*` npm entries.
+- [ ] Verify the image still builds and boots: `docker build -f infra/docker/Dockerfile -t odudu:pin .` exits 0, then `./infra/docker/smoke.sh` (it owns its own project `odudu-smoke` and ports 3100 and 5452, none of the forbidden ones) ends with `smoke: the console shell and /console/assets/... are served from the image`.
+- [ ] Commit `Pin every base image by digest and keep it current`. Push; CI green.
+
+### Task 4b: `odudu` as a command, `ODUDU_VERSION`, OCI labels
+
+**Files:** Modify `infra/docker/Dockerfile`, `apps/server/src/main.ts` (version only in Task 7). Create `infra/docker/odudu` (the shim).
+
+**Interfaces:** Produces `odudu <subcommand>` on `PATH` in the image and `ARG ODUDU_VERSION` / `ENV ODUDU_VERSION` for Task 7 and Task 6.
+
+- [ ] Write the failing check into `infra/docker/smoke.sh` (it already `exec`s into the stack): `docker compose exec -T odudu odudu reap` must print a JSON report and exit 0 (today: `exec: "odudu": executable file not found`). The `container` job runs `smoke.sh` on every push, so this is the test.
+- [ ] Add the shim `infra/docker/odudu` (`#!/bin/sh` then `exec node /app/dist/main.js "$@"`), `COPY --chmod=0755 infra/docker/odudu /usr/local/bin/odudu` in the runtime stage, `ARG ODUDU_VERSION=dev` and `ENV ODUDU_VERSION=$ODUDU_VERSION`, and `LABEL org.opencontainers.image.source="https://github.com/wizzywit/odudu" org.opencontainers.image.licenses="AGPL-3.0-only" org.opencontainers.image.version=$ODUDU_VERSION`. Leave `CMD ["node","dist/main.js"]` and add no `ENTRYPOINT` (Decision D3).
+- [ ] Run `./infra/docker/smoke.sh` (the new `odudu reap` check passes). Commit `Make odudu a command in the image and label it`. Push; CI green.
+
+---
+
+## Increment 5: Spike: a real release tag (3 to 4 h)
+
+Only a real runner can answer these. Everything here happens on a throwaway tag `v0.0.0-spike.1` and is deleted after.
+
+### Task 5: The release spike
+
+**Files:** throwaway `.github/workflows/release-spike.yml` on the branch (deleted at the end), findings in `docs/phases/p4g.md`.
+
+- [ ] **S9. Multi-arch build on native runners.** A matrix of `ubuntu-latest` and `ubuntu-24.04-arm` each `docker/build-push-action@v7.4.0` with `outputs: type=image,name=ghcr.io/wizzywit/odudu,push-by-digest=true,name-canonical=true,push=true`, then a merge job `docker buildx imagetools create -t ghcr.io/wizzywit/odudu:0.0.0-spike.1 <digest-amd64> <digest-arm64>`. `assumption:` `ubuntu-24.04-arm` is available to this public repository. Record both build times; if the arm64 job exceeds 20 minutes switch to QEMU (`docker/setup-qemu-action@v4.4.0`) and record that time.
+- [ ] **S10. Keyless signing.** `sigstore/cosign-installer@v4.1.2`, job permissions `id-token: write` and `packages: write`, `cosign sign --yes ghcr.io/wizzywit/odudu@<index digest>`. Then from a clean machine without credentials run `cosign verify ghcr.io/wizzywit/odudu@<digest> --certificate-identity-regexp '^https://github.com/wizzywit/odudu/.github/workflows/release.yml@refs/tags/v' --certificate-oidc-issuer https://token.actions.githubusercontent.com` and record its exact output and the cosign major version the installer provided. `assumption:` the identity string for a tag-triggered workflow is `.../release.yml@refs/tags/<tag>`; this spike measures it. Also record what `cosign verify` prints when the verifier's clock is wrong by an hour (`faketime` or a VM): verification uses the signature's recorded time, so state whether a skewed clock changes the outcome (Review Focus 5).
+- [ ] **S11. SBOM.** `anchore/sbom-action@v0.24.3` against the pushed image reference producing `odudu.spdx.json`, then `cosign attest --yes --type spdxjson --predicate odudu.spdx.json <digest>` and `cosign verify-attestation --type spdxjson` with the same identity flags. Record whether the multi-arch index or each platform manifest carries the SBOM, the file size, and the package count. `assumption:` an SBOM attested to the index digest is enough; `docker buildx` built-in `sbom: true` attestations were rejected beforehand because `imagetools create` of two by-digest pushes drops them (state what the spike shows rather than trusting this).
+- [ ] **S12. GHCR visibility and pull.** After the owner makes the package public (Owner step 1) `docker pull ghcr.io/wizzywit/odudu:0.0.0-spike.1` with no login from a second machine or a clean `DOCKER_CONFIG`; confirm the package page links the repository through the `org.opencontainers.image.source` label.
+- [ ] Delete the spike tag (`git push origin :refs/tags/v0.0.0-spike.1`) and its package versions (`gh api -X DELETE /user/packages/container/odudu/versions/<id>` after listing them; **ask the owner before deleting a package version**: it is irreversible). Record findings; commit `Record what the release spike found`. Push; CI green.
+
+---
+
+## Increment 6: Release workflow, process, changelog (4 to 6 h)
+
+### Task 6: `release.yml`, `RELEASING.md`, `CHANGELOG.md`
+
+**Files:**
+
+- Create: `.github/workflows/release.yml`, `RELEASING.md`, `CHANGELOG.md`, `tests/lint/release-workflow.test.ts`.
+- Modify: `.github/workflows/verify.yml` (add a `release-dry-run` job: build only, no push), `.github/dependabot.yml` (nothing new).
+
+**Interfaces:** Produces image tags `ghcr.io/wizzywit/odudu:<semver>` (and `<major>.<minor>`, `latest` for a stable tag only), the signature and SBOM attestation from S10 and S11, GitHub Release assets `compose.yaml` (version-stamped), `odudu.spdx.json`, `SHA256SUMS`. Consumes the spike's recorded cosign identity and flags.
+
+- [ ] Write the failing test `tests/lint/release-workflow.test.ts`, reading `release.yml` line-wise with regexes as `tests/lint/conformance-results-retention.test.ts` reads `verify.yml` (`grep -n "verify.yml" tests/lint/conformance-results-retention.test.ts`; the repository has no YAML parser dependency and this adds none). Assertions, each its own `it`: `triggers only on tags matching v*` (and not on `branches`); `grants id-token write and packages write only to the sign and merge jobs`; `pins sigstore/cosign-installer and docker/login-action by a 40-hex commit SHA`; `never assigns latest to a prerelease` (the `latest` tag expression is `enable=${{ !contains(github.ref_name, '-') }}`); `fails the release when the manifest list lacks linux/arm64` (a step running `docker buildx imagetools inspect` and grepping both platforms); `signs by digest, never by tag`; `uploads compose.yaml, odudu.spdx.json and SHA256SUMS`. Run (FAIL: no file).
+- [ ] Write `release.yml` per the spike: jobs `build` (matrix amd64, arm64; push by digest), `merge` (imagetools create with `docker/metadata-action@v6.2.0` tags: `type=semver,pattern={{version}}`, `{{major}}.{{minor}}` only when not a prerelease, `latest` only when not a prerelease, `flavor: latest=false`), `sign` (cosign sign and attest by digest; verify in the same job with the identity regexp, so a mis-signed image fails the release), `assets` (stamp `quickstart/compose.yaml`'s default image to `:<version>` with `sed`, generate `SHA256SUMS`, create the GitHub Release with `gh release create --prerelease` when the tag contains `-`, notes from the matching `CHANGELOG.md` section extracted by a 10-line script `tools/release-notes`). `ODUDU_VERSION` passed as a build arg from the tag.
+- [ ] Extend the existing `container` job (not a new job) with a label check, `docker inspect --format '{{index .Config.Labels "org.opencontainers.image.licenses"}}'` expecting `AGPL-3.0-only`, so Task 4b's Dockerfile change is exercised on every pull request.
+- [ ] Write `RELEASING.md`: tag naming (`vMAJOR.MINOR.PATCH`, prereleases `-rc.N`), the checklist (changelog section written first, `pnpm verify` green on `main`, tag from `main`, wait for the workflow, verify the signature with the exact command, announce), how to verify a pulled image (`cosign verify` command and the SBOM inspect command from S10/S11, copy-pastable), the clock-skew note from S10, and "an `rc` is never `latest`". Write `CHANGELOG.md` in Keep a Changelog form with an `Unreleased` section and a `0.1.0` heading for the first stable cut, filled from `docs/phases/` summaries in one paragraph per phase (no new claims).
+- [ ] Run `node_modules/.bin/vitest run --project unit tests/lint/release-workflow.test.ts tests/docs` (PASS). Commit `Publish a signed multi-arch image from a tag`. Push, then **cut `v0.1.0-rc.1` from the branch** (a tag on a pull request's head triggers the workflow because it matches `v*`): expect the image, signature and assets; run the verify command from `RELEASING.md` on a clean machine; expect `Verified OK`. Push; CI green.
+
+---
+
+## Increment 7: CLI help registry (2 to 4 h)
+
+`grep -n "help\|usage" apps/server/src/main.ts apps/server/src/cli/*.ts` finds no help text; `main.ts` is an `if (process.argv[2] === 'x')` chain (lines 40 to 100) and `seed` has its own `SEED_COMMANDS` list (`apps/server/src/cli/seed.ts:1822`). The reference needs one source.
+
+### Task 7: A command registry, `odudu help`, `odudu --version`
+
+**Files:** Create `apps/server/src/cli/registry.ts`, `apps/server/src/cli/registry.test.ts`, `apps/server/src/cli/help.ts`, `apps/server/src/cli/help.test.ts`. Modify `apps/server/src/main.ts` (route `help`, `--help`, `-h`, `--version`, and unknown subcommand to help + exit 2), `apps/server/src/cli/seed.ts` (export per-subcommand option metadata).
+
+**Interfaces:**
+
+```ts
+export interface CliOption {
+  readonly name: string;
+  readonly type: 'string' | 'boolean';
+  readonly repeatable: boolean;
+  readonly summary: string;
+}
+export interface CliCommand {
+  readonly name: string;
+  readonly summary: string;
+  readonly options: readonly CliOption[];
+  readonly subcommands: readonly CliCommand[];
+  readonly example: string;
+}
+export const CLI_COMMANDS: readonly CliCommand[]; // registry.ts
+export function renderHelp(commands: readonly CliCommand[], path: readonly string[]): string; // help.ts, pure
+export function renderMarkdown(commands: readonly CliCommand[]): string; // used by Task 19's generator
+```
+
+- [ ] Write failing tests: `registry.test.ts`: `it('names every subcommand main.ts routes')` reads `main.ts` text for `process.argv[2] === '<name>'` and requires each in `CLI_COMMANDS`; `it('names every seed subcommand SEED_COMMANDS lists')` (`SEED_COMMANDS` equality, both directions); `it('gives every option a summary of at least 12 characters')`; `it('has an example that starts with odudu')` for each command. `help.test.ts`: `renderHelp([], [])` lists commands alphabetically with their summaries; `renderHelp(CLI_COMMANDS, ['seed','client'])` lists its options with `--public`/`--client-secret` ("accepts --public or --client-secret, not both" appears in the summary, copied from `seed.ts:1125`); an unknown path throws `OduduError('cli_unknown_command', ...)`; no line exceeds 80 columns. Run `node_modules/.bin/vitest run --project unit apps/server/src/cli` (FAIL).
+- [ ] Implement `CLI_COMMANDS` by hand-writing each command's summary and options from the existing `parseArgs` option tables (`seed-invocation.ts:11`, `seed.ts:1110`, `console.ts`, `client-origins.ts`) — the registry is the one place wording lives; `renderMarkdown` emits one `##` per command with a `text`-less fenced usage block (no language tag).
+- [ ] Route in `main.ts`: `help`, `--help`, `-h` print `renderHelp` to stdout and exit 0; `--version` prints `process.env.ODUDU_VERSION ?? 'dev'`; an unknown first argument prints help to stderr and exits 2 (today it falls through and **starts the server**: `grep -n "^const config = loadConfig" apps/server/src/main.ts`; a typo like `odudu sead` must not boot a server; add `it('does not start the server for an unknown subcommand')` through a spawned `node src/main.ts sead` (Node 24 strips types by itself; the `#/` imports resolve through the package's `imports` map, as the `dev` script relies on) expecting exit 2 within 2 s with no `DATABASE_URL` set).
+- [ ] Run the three suites plus `apps/server` typecheck (`pnpm --filter @odudu/server typecheck`); commit `Add odudu help, --version and a command registry`. Push; CI green.
+
+---
+
+## Increment 8: `odudu init` (4 to 6 h)
+
+`grep -n "export async function seedAdmin" apps/server/src/cli/seed.ts` is line 647. It takes `{ username }`, generates a one-time password with `generateOneTimePassword()` (`packages/domain-identity/src/service/one-time-password.ts:7`), adds the `update-password` required action and returns the password; `consoleProvisioning(config)` and the KEK and database URLs come from `loadConfig()`. `runMigrations(db, folder)` is `packages/db/src/migrate.ts:7`.
+
+### Task 8: The idempotent bootstrap
+
+**Files:** Create `apps/server/src/cli/init.ts`, `init.test.ts`, `init.int.test.ts`, `apps/server/src/cli/init-plan.ts` (pure decisions). Modify `apps/server/src/cli/seed.ts` (`seedAdmin` takes `{ username, email?, password? }`), `apps/server/src/cli/registry.ts` (add `init`).
+
+**Interfaces:**
+
+```ts
+export interface InitInput {
+  readonly adminEmail?: string;
+  readonly adminPassword?: string;
+  readonly interactive: boolean;
+  readonly publicBaseUrl: string;
+  readonly stateDir: string;
+}
+export type InitPlan = {
+  readonly secrets: 'generate' | 'reuse';
+  readonly admin: 'create' | 'exists';
+  readonly passwordSource: 'prompt' | 'env' | 'generated';
+};
+export function planInit(
+  input: InitInput,
+  state: { hasSecretsFile: boolean; adminExists: boolean },
+): InitPlan; // init-plan.ts, pure
+export function assertLoopbackBase(publicBaseUrl: string): void; // refuses a non-loopback host, naming ODUDU_PUBLIC_BASE_URL
+export async function init(input: InitInput, io: InitIo): Promise<InitReport>;
+export interface InitReport {
+  readonly consoleUrl: string;
+  readonly adminEmail: string;
+  readonly generatedPassword?: string;
+  readonly created: boolean;
+}
+```
+
+- [ ] Write failing unit tests (`init.test.ts`, `init-plan.test.ts`): `planInit` is a table: no secrets file generates; a secrets file reuses; admin exists is `exists` whatever the env says; `passwordSource` is `prompt` only when `interactive` and no env password, `env` when `adminPassword` given, else `generated`; `assertLoopbackBase` accepts `http://localhost:3000`, `http://127.0.0.1:3210`, `http://[::1]:3000` and refuses `https://id.example.com` with a message naming "ODUDU_PUBLIC_BASE_URL" and "docs/operating/deploying"; a chosen password failing the system tenant's password policy is refused with the policy's own reason (`grep -n "export" packages/domain-identity/src/service/password-policy.ts` gives the checker to call; use it, do not copy rules). Run (FAIL).
+- [ ] Write the failing integration test `init.int.test.ts` (Testcontainers, `packages/testkit`): `it('creates the roles, migrates, creates the system tenant and one administrator from an empty database')` runs `init` against a fresh database with only the owner URL, then asserts `select count(*) from tenants` is 1 under the owner, `odudu_svc` can `select` from `tenants` and sees 0 rows (RLS filters; same shape as `smoke.sh`), the admin signs in through `/tenants/system/...` (reuse the helper `apps/server/src/testing`: `ls apps/server/src/testing`); `it('is idempotent: a second run changes nothing and reports created: false')`; `it('stores the chosen password so the first sign-in is not forced to change it, and a generated one is')` (required action `update-password` present only for generated); `it('writes quickstart.env with mode 0600 and the same KEK on a second run')`; `it('refuses to run against a non-loopback public base URL')`; `it('never prints a chosen password')` (captured `io.out` contains no part of it, no matter its characters: `p'"$(id)\n and a 200-character one`).
+- [ ] Implement `init`: ensure the roles through the owner connection (`CREATE ROLE odudu_app NOLOGIN` if missing, `CREATE ROLE odudu_svc LOGIN PASSWORD <generated>` if missing, `GRANT odudu_app TO odudu_svc`; the password reaches SQL as a bound parameter of the `postgres` driver (`grep -n postgres packages/db/package.json` shows 3.4.9), never by string concatenation); `runMigrations`; build the env file (`ODUDU_KEK` 32 random bytes base64, `ODUDU_CONSOLE_CLIENT_KEY` from `generateClientKey()` as `console keygen` does, the two database URLs, `ODUDU_PUBLIC_BASE_URL`, `ODUDU_CONSOLE=true`) with `fs.writeFile(..., { mode: 0o600, flag: 'wx' })` so an existing file is never overwritten; set those into `process.env` and call the extended `seedAdmin`. `seedAdmin` keeps its generated-password default and required action when `password` is undefined and sets neither the action nor a generated password when one is given; username equals email (Decision: the administrator signs in with the address they typed). Add the registry entry; `init` joins the router in `main.ts`.
+- [ ] Run `node_modules/.bin/vitest run --project unit apps/server/src/cli` and `--project integration apps/server/src/cli/init.int.test.ts` (PASS). `grep -rn "seedAdmin(" apps packages --include=*.ts` and update each caller (`seed.ts` `runAdminCommand`, tests). Commit `Add odudu init: roles, migrate, system tenant, first admin`. Push; CI green.
+
+---
+
+## Increment 9: The prompt, the compose file, the `setup` service (4 to 6 h)
+
+### Task 9: A terminal prompt, `quickstart/compose.yaml`, the banner
+
+**Files:** Create `apps/server/src/cli/prompt.ts`, `prompt.test.ts`, `apps/server/src/cli/banner.ts`, `banner.test.ts`, `quickstart/compose.yaml`, `quickstart/.env.example`, `tests/lint/quickstart-compose.test.ts`. Modify `apps/server/src/cli/init.ts` (wire prompt and banner), `.github/dependabot.yml` (`/quickstart`).
+
+**Interfaces:**
+
+```ts
+export interface PromptIo {
+  readonly input: NodeJS.ReadableStream & { isTTY?: boolean; setRawMode?: (on: boolean) => void };
+  readonly output: NodeJS.WritableStream;
+}
+export async function promptAdmin(
+  io: PromptIo,
+  validate: (pw: string) => string | null,
+): Promise<{ email: string; password: string }>;
+export function renderBanner(report: InitReport): string; // pure; the only place a password is printed
+```
+
+- [ ] Write failing tests. `prompt.test.ts` over `PassThrough` streams: `it('reads the password without echoing it')` (output never contains the typed text, only a newline); `it('reads the password byte for byte, whatever shell metacharacters it holds')` for `p'"$(id)\n`, backticks, `;|&`, a tab, and a 128-character string; `it('asks twice and again when they differ')`; `it('re-asks with the policy reason when validate refuses')`; `it('restores the terminal after Ctrl-C')` (`setRawMode(false)` called in `finally`); `it('refuses to prompt when input is not a TTY')` (throws, the caller then falls back to env or generation). `banner.test.ts`: `renderBanner` of a generated report contains the console URL, the email and, on one line beginning ` password:` (the line Task 10's proof reads), the password exactly once, the sentence "shown once" and the command that removes the `setup` container's log (`docker compose rm -f setup`); of a chosen-password report contains no password; no line exceeds 72 columns. `quickstart-compose.test.ts`: `it('parametrises the port and the public base URL from one variable')` (both contain `${ODUDU_PORT:-3000}`); `it('publishes nothing for Postgres')`; `it('binds the Odudu port to loopback')`; `it('depends the server on setup completing')`; `it('pins postgres and mailpit by digest and tag')`; `it('has no build: key')` (a stranger has no checkout); `it('mounts one named volume for state and one for data')`; `it('keeps mailpit behind a profile')`. Run (FAIL).
+- [ ] Implement `promptAdmin` with `node:readline` on the injected streams, raw mode while reading the password, and a `finally` restore. Implement `renderBanner`. In `init`, when `planInit` says `prompt` call `promptAdmin`; otherwise skip.
+- [ ] Write `quickstart/compose.yaml`: services `postgres` (digest-pinned `postgres:17-alpine`, `POSTGRES_PASSWORD` a generated-at-first-run value is **not** possible without a file, so the password is fixed per project and the port unpublished: the database is reachable only inside the project network; comment says so), `setup` (image `${ODUDU_IMAGE:-ghcr.io/wizzywit/odudu:latest}`, `command: ["odudu","init"]`, `restart: "no"`, volume `odudu-state:/var/lib/odudu`, env `ODUDU_ADMIN_EMAIL: ${ODUDU_ADMIN_EMAIL:-}`, `ODUDU_ADMIN_PASSWORD: ${ODUDU_ADMIN_PASSWORD:-}`, `ODUDU_PUBLIC_BASE_URL: http://localhost:${ODUDU_PORT:-3000}`, `stdin_open: true`, `tty: true`), `odudu` (same image, `command: ["node","--env-file=/var/lib/odudu/quickstart.env","dist/main.js"]`, `depends_on: setup: condition: service_completed_successfully`, `ports: ["127.0.0.1:${ODUDU_PORT:-3000}:3000"]`, healthcheck as `infra/docker/compose.yaml`), `mailpit` (profile `mail`, `ODUDU_SMTP_HOST=mailpit` only when started; the compose passes `ODUDU_SMTP_*` through unset by default). Add the spike's recorded fixes from S6.
+- [ ] Run the new tests and `docker compose -f quickstart/compose.yaml config -q` (expect exit 0). With a locally built image: `ODUDU_IMAGE=odudu:spike ODUDU_PORT=3250 COMPOSE_PROJECT_NAME=odudu-p4g-qs docker compose -f quickstart/compose.yaml up -d`, then `docker compose -f quickstart/compose.yaml logs setup` shows the banner once and `curl -fsS localhost:3250/health/ready` answers; tear down with `down -v`. Commit `Add the quickstart compose file and a first-admin prompt`. Push; CI green.
+
+---
+
+## Increment 10: The quickstart job and the ten-minute proof (3 to 5 h)
+
+### Task 10: `quickstart` job; sign in to the console as the first administrator
+
+**Files:** Create `quickstart/prove.ts` (Node, type-stripped; drives Playwright's chromium via `@playwright/test`'s library API), `quickstart/prove.sh`, `.github/workflows/quickstart.yml`. Modify `.github/workflows/verify.yml` only to name the new required check in a comment.
+
+**Interfaces:** Produces `quickstart/prove.sh <image-ref> <port>` (exit 0 when a person could sign in within the budget) used by Tasks 24, 29 and 35.
+
+- [ ] Write the proof first as the failing test: `quickstart/prove.sh` starts `docker compose -f quickstart/compose.yaml` under project `odudu-qs-$PORT` with `ODUDU_IMAGE=$1 ODUDU_PORT=$2`, records `date +%s`, waits for `/health/ready`, reads the generated password with `docker compose logs --no-log-stream setup | sed -n 's/^ *password: //p'` (banner format pinned by `banner.test.ts`), opens `http://localhost:$PORT/console/` in Chromium, signs in as the generated administrator, handles the forced password change, and asserts the console shell renders its rail. It then repeats with `ODUDU_ADMIN_EMAIL`/`ODUDU_ADMIN_PASSWORD` set to `p'"$(id)` on a second project and signs in with that exact password, and fails if elapsed time from `up` to first rendered shell exceeds 600 s (the ten-minute claim; the image pull is inside it).
+- [ ] `.github/workflows/quickstart.yml`, on `pull_request` and on tags: job `quickstart` (ubuntu-latest) builds the image from the branch (`docker build -t odudu:ci .`) on a pull request and pulls `ghcr.io/wizzywit/odudu:<tag>` on a tag; runs `quickstart/prove.sh odudu:ci 3190` (**not** 3000: Review Focus 1); job `quickstart-arm` on `ubuntu-24.04-arm` runs it once more on port 3191 (Review Focus 2); both upload the Playwright trace on failure. `assumption:` `ubuntu-24.04-arm` runs Docker and Playwright's chromium; if it does not, the arm job is a pull-only smoke (`docker run --rm <image> odudu --version`) and S9's finding is recorded as why.
+- [ ] Add the port-in-use case: a step binds 3000 on the runner (`python3 -m http.server 3000 &`) then runs the default `docker compose up` expecting failure naming the port, and the documented fix (`ODUDU_PORT=3100`) succeeding. This pins what the page tells a stranger.
+- [ ] Run `quickstart/prove.sh odudu:spike 3260` locally (Docker is available: `docker --version` printed 29.8.2); expect `PASS elapsed <n>s`. Commit `Prove the quickstart end to end in CI`. Push; CI green. Owner step 4 starts here: `quickstart` becomes a required check.
+
+---
+
+## Increment 11: Instrument stylesheet and the CSP amendment (5 to 6 h)
+
+`grep -nE "style-src|font-src|img-src" packages/kernel/src/page.ts` finds nothing: the policy today is `default-src 'none'`. `grep -l "<style" packages/*/src/view` finds only a test. So a page can carry no CSS and ADR 0029 must be amended before the first stylesheet link.
+
+### Task 11a: Hoist the static-tree reader
+
+**Files:** Create `packages/kernel/src/static-tree.ts`, `static-tree.test.ts`. Modify `packages/console-gateway/src/view/spa.ts`, `packages/kernel/src/index.ts`.
+
+**Interfaces:**
+
+```ts
+export interface StaticFile {
+  readonly content: Buffer;
+  readonly contentType: string;
+}
+export interface StaticTreeLimits {
+  readonly maxFileBytes: number;
+  readonly maxFiles: number;
+  readonly maxTotalBytes: number;
+}
+export async function readStaticTree(
+  dir: string,
+  types: Readonly<Record<string, string>>,
+  limits: StaticTreeLimits,
+  warn: (m: string) => void,
+): Promise<ReadonlyMap<string, StaticFile>>;
+```
+
+- [ ] Characterise first: `packages/console-gateway/src/view/spa.test.ts` must stay green untouched (run it: PASS). Write `static-tree.test.ts`: skips dotfiles; never follows a symlink out (a link to `/etc/hosts` is absent); refuses a file over `maxFileBytes` with a warning; refuses the whole tree past `maxFiles` or `maxTotalBytes` by throwing `OduduError('static_tree_too_large', ...)`; keys use `/`. Run (FAIL). Move `readAssets`'s walk (`spa.ts:60-95`) here with the new limits; `spa.ts` calls it with its present 10 MiB cap and no file or total cap beyond 1,000 files and 64 MiB. Run `node_modules/.bin/vitest run --project unit packages/kernel packages/console-gateway/src/view/spa.test.ts` (PASS). Commit `Move the static tree reader into the kernel`.
+
+### Task 11b: `@odudu/instrument`
+
+**Files:** Create `packages/instrument/{package.json,tsconfig.json,scripts/build.ts,src/pages.css,src/view/routes.ts,src/view/routes.test.ts,src/service/build.test.ts}`. Modify `packages/kernel/src/page.ts`, `packages/kernel/src/page.test.ts`, `apps/server/src/app.ts`, `apps/server/package.json`, `infra/docker/Dockerfile`, `docs/adr/0029-a-pages-headers-have-one-authority.md`, `docs/adr/0018-framing-defence-on-rendered-pages.md`.
+
+**Interfaces:**
+
+```ts
+// @odudu/kernel
+export const INSTRUMENT_STYLESHEET = '/instrument/instrument.css';
+// @odudu/instrument
+export function instrumentRoutes(dir: string): FastifyPluginAsync; // GET /instrument/*; 404 outside the manifest
+export function buildInstrument(opts: {
+  tokensCss: string;
+  fontsCss: string;
+  pagesCss: string;
+  fontFile: (name: string) => Buffer;
+}): { css: string; fonts: ReadonlyMap<string, Buffer> };
+```
+
+- [ ] Write failing tests. `page.test.ts` additions: `it('licenses a same-origin stylesheet, font and image on every page')` (policy contains `style-src 'self'`, `font-src 'self'`, `img-src 'self'`, still `default-src 'none'` and no `'unsafe-inline'`); the existing assertions (`default-src 'none'`, nonce script rule) stay. `build.test.ts`: `it('rewrites every font url to /instrument/fonts/<name>.<hash>.woff2')`; `it('declares each token the stylesheet uses')` (every `var(--x)` in `pages.css` is defined by the tokens, the check `console-css-vars-defined` applies to the console); `it('uses only logical properties')` (no `margin-left`, `padding-right`, `left:`, `right:`, `text-align: left|right`, `float`, `border-left|right`; ADR 0043 row 1); `it('stays inside the size budget')` (plain under 64 KB, gzip under 12 KB); `it('contains no remote url()')`. `routes.test.ts` through `inject`: `GET /instrument/instrument.css` is `200`, `text/css`, strong `etag`, `cache-control: no-cache`; `If-None-Match` gives `304`; `/instrument/fonts/<hashed>.woff2` is `public, max-age=31536000, immutable`; `/instrument/../etc/passwd` and `/instrument/%2e%2e/x` are `404`; a directory missing at registration yields a warning and `404`, not a throw. Run (FAIL).
+- [ ] Implement `pageHeaders`' policy: `baseDirectives` gains `style-src 'self'`, `font-src 'self'`, `img-src 'self'` unconditionally (every page links the stylesheet and the mark; a directive that licenses nothing stops describing the page, so these are not conditional). Implement `buildInstrument` (concatenate tokens, rewritten fonts, pages) and `scripts/build.ts` (reads the console's `tokens.css` and `fonts.css` by path, the `@fontsource` woff2 files from the workspace's `node_modules`, writes `dist/`); `pages.css` is the page shell and component rules for the 15 renderers' elements (body grid, `h1`, `form`, `label`, `input`, `button`, `.alert`, `.stack`, `.mark`), logical properties only, at most 250 lines, tokens only.
+- [ ] Wire `app.ts`: `await app.register(instrumentRoutes(config.ODUDU_INSTRUMENT_DIR))` (new config key, default `/app/instrument`, added to the schema with its docs entry in Task 19); Dockerfile `build` stage runs `pnpm --filter @odudu/instrument build`, runtime copies `packages/instrument/dist` to `./instrument`; add `ENV ODUDU_INSTRUMENT_DIR=/app/instrument`. The `container` job's `smoke.sh` gains `GET /instrument/instrument.css` 200 with `content-type: text/css`.
+- [ ] Browser proof (S7 repeated on the real thing): `apps/admin-console/e2e` runs against the image; add `apps/admin-console/e2e/instrument.spec.ts` that opens a sign-in page, asserts zero CSP violations (`page.on('console')` filtered for "Content Security Policy"), `getComputedStyle(document.body).fontFamily` starts with `IBM Plex Sans`, and passes axe in both colour schemes with the existing helper (`grep -n "axe" apps/admin-console/e2e/fixtures.ts`).
+- [ ] Write the ADR 0029 amendment (dated, "a page may link one same-origin stylesheet and font": `style-src 'self'`, `font-src 'self'`, `img-src 'self'`, no inline CSS, no remote fonts, why the stylesheet URL is stable and revalidated, what the policy still refuses) and a one-paragraph note in ADR 0018's amendment index that "markup only" is no longer true of every page. Commit in three: `Move the static tree reader...` (above), `Serve Instrument's stylesheet and fonts from the server`, `Amend ADR 0029 for a same-origin stylesheet`. The new package's dependencies are workspace links and `@fontsource/*` versions already in the lockfile: run `pnpm install`, commit the lockfile delta and say so in the pull request. Push; CI green.
+
+---
+
+## Increment 12: The shared page shell and the reach check (3 to 5 h)
+
+The four shells are duplicated on purpose (`diff packages/protocol-oidc/src/view/document.ts packages/account/src/view/document.ts` differs only in comments and the `frames` parameter; the comment there explains no markup in `kernel`). The shell is where `lang`, `dir`, the stylesheet link, the favicon and the mark go, four times, so a test holds all four to one shape.
+
+### Task 12: The shell, and a build check that fails when a renderer is not under Instrument
+
+**Files:** Modify `packages/{protocol-oidc,account,authn-flows,console-gateway}/src/view/document.ts` (console-gateway has none: `refusal-html.ts` imports only `RenderedPage` and writes its own `<!doctype html>`, `sed -n 1,30p packages/console-gateway/src/view/refusal-html.ts`, a fourth copy of the shell; this task adds `packages/console-gateway/src/view/document.ts` with the same shape and rewrites `refusal-html.ts` to call its `page()`, text unchanged until Task 16), their tests. Create `packages/protocol-oidc/src/view/instrument-reach.test.ts`, `tests/lint/fixtures/renderer-without-shell/bad-html.ts`.
+
+**Interfaces:** Each `page(title, body, script?, frames?, locale?)` keeps its signature plus an optional trailing `locale: PageLocale = { tag: 'en', dir: 'ltr' }` (type from `@odudu/i18n`, defined in Task 13; this task uses a local structural type and Task 13 narrows it), emits `<html lang="{tag}" dir="{dir}">`, `<meta name="viewport" content="width=device-width, initial-scale=1">`, `<meta name="color-scheme" content="light dark">`, `<link rel="stylesheet" href="/instrument/instrument.css">`, `<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">`, and wraps `body` in `<main class="page">` with the Instrument mark above it.
+
+- [ ] Write failing tests: per package `document.test.ts`: `it('links the Instrument stylesheet, declares lang and dir and a viewport')`; `it('keeps the body a theme may replace free of the document chrome')` (ADR 0030: `body` has no `<link>`, no `<html>`); `it('escapes the title')`. `instrument-reach.test.ts` beside `html-response.test.ts`, walking `viewSources()`-style over every `packages/*/src/view/*-html.ts`: `it('imports its package's shell in every renderer')` (each file contains `from '#/view/document'`), `it('builds no document of its own')` (none contains `<html`, `<!doctype`, `<link`, `<style` or ` style="`), `it('has a renderer test for every renderer')` (each `x-html.ts` has `x-html.test.ts`; the list of exceptions is empty: `update-password-html.ts` has no test today, `ls packages/authn-flows/src/view`, so this fails and Task 15 adds it), `it('fails on a fixture that builds its own document')` over `tests/lint/fixtures/renderer-without-shell`. Header comment states what it cannot see: a renderer built in a route file, or markup from a helper that is not a `*-html.ts`. Run (FAIL).
+- [ ] Implement the four shells identically; add `mark.svg` to `@odudu/instrument` as the placeholder staff mark (replaced by Task 30's approved drawing; the placeholder is a plain ring on a shaft, 32 x 32, `currentColor`), served at `/instrument/mark.svg`. Update every existing renderer test that asserted the old `<html lang="en">` exact string.
+- [ ] Run `node_modules/.bin/vitest run --project unit packages/protocol-oidc packages/account packages/authn-flows packages/console-gateway` (PASS), `pnpm boundaries` equivalent `node_modules/.bin/depcruise --config .dependency-cruiser.cjs packages apps` (PASS). Commit `Put every server page in one Instrument shell`. Push; CI green; the `e2e` job renders the real pages and axe passes in both schemes.
+
+---
+
+## Increment 13: Catalogue runtime, negotiation, discovery (5 to 6 h)
+
+ADR 0043 decides the mechanism. `grep -rn "ui_locales" packages apps --include=*.ts` outside tests finds nothing: the parameter is not parked, so negotiation needs it parked beside `prompt` and `maxAge` in `pending_request` (`packages/authn-flows/src/schema/authentication-sessions.ts:62-73`, jsonb, no migration) and rebuilt by `restart-request.ts` (ADR 0018's amendment: every parameter `/authorize` acts on is rebuilt).
+
+### Task 13a: `@odudu/i18n`
+
+**Files:** Create `packages/i18n/{package.json,tsconfig.json,src/index.ts,src/service/negotiate.ts,negotiate.test.ts,catalogue.ts,catalogue.test.ts,direction.ts,direction.test.ts}`. Modify `.dependency-cruiser.cjs` (allowlist `i18n` for `console-gateway`, with the rule's comment updated).
+
+**Interfaces:**
+
+```ts
+export interface PageLocale {
+  readonly tag: string;
+  readonly dir: 'ltr' | 'rtl';
+}
+export interface NegotiationInput {
+  readonly uiLocales: readonly string[];
+  readonly subjectLocale: string | null;
+  readonly authenticated: boolean;
+  readonly tenantDefault: string | null;
+  readonly acceptLanguage: string | null;
+  readonly supported: readonly string[];
+}
+export function negotiateLocale(input: NegotiationInput): PageLocale;
+export function directionOf(tag: string): 'ltr' | 'rtl';
+export function createCatalogue<T extends Record<string, string>>(
+  byLocale: Readonly<Record<string, T>>,
+): {
+  readonly locales: readonly string[];
+  format(
+    locale: string,
+    id: keyof T & string,
+    values?: Readonly<Record<string, string | number | Date>>,
+  ): string;
+};
+```
+
+- [ ] Write failing tests exactly to ADR 0043's order: `negotiate.test.ts`: `it('prefers the first supported ui_locales tag')`; `it('ignores the subject locale before the first factor is verified')` (same output when only `subjectLocale` differs and `authenticated` is false; the pin for the enumeration oracle); `it('uses the subject locale once authenticated')`; `it('falls to the tenant default, then Accept-Language by quality, then en')`; `it('looks up by truncation: zh-Hant-TW tries zh-Hant-TW, zh-Hant, zh')`; `it('reduces a variant or extension tag to language-script-region: de-CH-1996 matches de-CH, en-u-ca-iso8601 matches en')`; `it('reads at most 16 Accept-Language entries and 1024 bytes')` (a 5,000-byte header with the supported tag in position 17 yields `en`); `it('refuses a tag that fails isLocale shape')` (`../../etc`, `en\r\nX`, a 200-char tag yield `en` and never reach the output); `it('never returns a tag that is not in supported')`. `direction.test.ts`: `it('knows the rtl languages the table lists')`, `it('agrees with the platform')` (`new Intl.Locale(tag).getTextInfo?.().direction ?? textInfo?.direction` for `ar`, `he`, `fa`, `ur`, `en`, ADR 0043's verified line), `it('answers ltr for an unknown tag')`. `catalogue.test.ts`: ICU plural in `en` and `ar` (six categories, S8's values), a missing key in a locale falls back per key to `en`, an unknown id throws at format time with the id in the message, values typed (a `Date` is formatted through `Intl.DateTimeFormat` in the locale, never concatenated), formatter built once per `locale:id` (spy counts constructions). Run (FAIL).
+- [ ] Implement with `intl-messageformat@12.1.3` (pinned in `packages/i18n/package.json`; S8 verified it bundles). Reuse the tag shape `LOCALE` from `packages/contracts/src/profile-claims.ts` rather than a second regex (`grep -n "LOCALE" packages/contracts/src/profile-claims.ts` shows `isValidLocale`): export what is needed from `@odudu/contracts` and depend on it. Commit `Add the i18n package: negotiation, catalogues, direction`.
+
+### Task 13b: Park `ui_locales`, negotiate per page, `Content-Language`, discovery
+
+**Files:** Modify `packages/authn-flows/src/schema/authentication-sessions.ts` (type only), `packages/protocol-oidc/src/usecase/authorization-request.ts`, `packages/protocol-oidc/src/service/restart-request.ts` and its test, `packages/protocol-oidc/src/view/html-response.ts`, `packages/account/src/view/verification-html.ts`, `packages/kernel/src/page.ts` (+ test), `packages/contracts/src/discovery.ts`, `packages/protocol-oidc/src/view/routes/discovery.ts` (the route that builds it: `grep -rn "claims_supported" packages/protocol-oidc/src` locates it), `tests/docs/discovery.test.ts`.
+
+**Interfaces:** `RenderedPage` gains `locale: PageLocale` (default `{tag:'en',dir:'ltr'}` from each `page()`); `pageHeaders` adds `['content-language', page.locale.tag]`; discovery adds `ui_locales_supported: readonly string[]` (the shipped tags, `['en']`); the parked request gains `uiLocales?: string[]`.
+
+- [ ] Write failing tests: `page.test.ts` `it('sends Content-Language from the negotiated locale')`; `restart-request.test.ts` `it('rebuilds ui_locales from the parked request')` (and that a request without it rebuilds without it); an `authorize` integration test `it('parks ui_locales and shows it on the login page lang attribute')` using the `fr` fixture catalogue (test-only, under the package's `tests/fixtures`); discovery tests `it('lists ui_locales_supported and omits claims_locales_supported')` in `packages/contracts/src/discovery.test.ts` and in the route test; `tests/docs/discovery.test.ts` extended to read the site page (Task 23 retargets the path; today it reads the document it reads).
+- [ ] Implement. Page routes negotiate once per response: `negotiateLocale({ uiLocales: parked.uiLocales ?? [], subjectLocale: authenticated ? subject.locale : null, authenticated, tenantDefault: null /* P4b */, acceptLanguage: request.headers['accept-language'] ?? null, supported: catalogue.locales })`. The login form and refusal page pass `authenticated: false` (ADR 0043 security). Keep `claims_locales` accepted and ignored.
+- [ ] Run `node_modules/.bin/vitest run --project unit packages/kernel packages/i18n packages/contracts packages/protocol-oidc`, then the integration project for `protocol-oidc` (`node_modules/.bin/vitest run --project integration packages/protocol-oidc` with Docker available). Commit `Negotiate a page locale and advertise ui_locales_supported`. Push; CI green.
+
+---
+
+## Increment 14: protocol-oidc pages (5 to 6 h)
+
+Six renderers and one messages file: `authorize-html.ts`, `consent-html.ts`, `logout-html.ts`, `select-account-html.ts`, `throttled-html.ts` and `login-messages.ts` (`ls packages/protocol-oidc/src/view`; `wc -l` of the renderers is 1,035 across all fifteen, `cat packages/*/src/view/*-html.ts | wc -l`).
+
+### Task 14: Extract the text, isolate user text, one renderer at a time
+
+**Files:** Create `packages/protocol-oidc/catalogue/en.json`, `packages/protocol-oidc/src/view/messages.ts` (`createCatalogue({ en })` exporting `t(locale, id, values?)` typed by `keyof typeof en`). Modify the five renderers, `login-messages.ts`, their tests.
+
+- [ ] For each renderer in turn (one commit each, `Read <page> text from the catalogue`): (1) extend its existing `*-html.test.ts` with the failing assertions: **every visible string and `aria-label`/`alt`/`placeholder`/`title` equals `t('en', '<id>')`** (the test imports `en.json` and compares, so rewording `en` cannot silently diverge); the page has `lang="en"` and `dir="ltr"`; user-controlled text (client name, username, tenant display name, redirect host) appears inside `<bdi>` and is escaped (`<img src=x onerror=1>` stays inert); a `fr` fixture catalogue renders French through the same renderer when `locale` says so, and `ar` renders `dir="rtl"`; (2) run (FAIL); (3) move the text to `catalogue/en.json` with IDs named for the thing (`login.title`, `consent.scope.optional`, `throttled.retryAfter` as ICU `{seconds, plural, one {# second} other {# seconds}}`, which replaces the hand-written `seconds === 1 ? 'second' : 'seconds'` at `throttled-html.ts:11`); (4) run the package's unit tests (PASS).
+- [ ] `login-messages.ts`: its three exported constants (`SIGN_IN_FAILED`, `CODE_FAILED`, `RECOVERY_CODE_FAILED`, `ALREADY_USED_RECOVERY_CODE`) become IDs and `refusalMessage(form, refusal)` returns an ID; the page formats it. `login-messages.test.ts` asserts the one-message-per-step property still holds (the page is no oracle) by id equality.
+- [ ] Review Focus 3's page half: add `it('renders a username that holds markup and bidi controls inert and isolated')` to `authorize-html.test.ts` and `select-account-html.test.ts` (the controls are refused on entry by Task 17; on display they must still be isolated for rows that predate it).
+- [ ] After the last renderer run `node_modules/.bin/vitest run --project unit packages/protocol-oidc` and the integration project; `e2e` runs axe. Push; CI green.
+
+---
+
+## Increment 15: authn-flows pages (4 to 5 h)
+
+Five renderers: `passkey-enrolment-html.ts`, `recovery-codes-html.ts`, `required-action-html.ts`, `totp-enrolment-html.ts`, `update-password-html.ts`. `update-password-html.ts` has **no test** (`ls packages/authn-flows/src/view`), which Task 12's reach check reports.
+
+### Task 15: The same cycle, plus the missing test
+
+**Files:** Create `packages/authn-flows/catalogue/en.json`, `src/view/messages.ts`, `src/view/update-password-html.test.ts`. Modify the five renderers and their tests.
+
+- [ ] Same four-step cycle per renderer as Task 14, one commit each. Pages carrying a nonced script (`passkey-enrolment-html.ts` and the passkey sign-in script) keep returning their `script` member unchanged; their script's user-visible strings (button labels, error text) are catalogue entries serialised into a `data-*` attribute at render time and read by the script, never a literal in the script body (the lint in Task 17 reads script bodies too). The recovery-code page prints codes inside `<bdi dir="ltr">` (codes are Latin tokens in any locale). Add `update-password-html.test.ts` first (failing: no file): asserts the form posts to the action it was given, the title, `<bdi>`, and escaping.
+- [ ] Run the package's unit and integration tests; the passkey and TOTP e2e specs in `apps/admin-console/e2e` still pass in the `e2e` job. Push; CI green.
+
+---
+
+## Increment 16: account and console-gateway pages (4 to 5 h)
+
+Four account renderers (`registration-html.ts`, `required-actions-html.ts`, `reset-html.ts`, `verification-html.ts`) and `packages/console-gateway/src/view/refusal-html.ts`. `console-gateway` is allowlisted to a short list of packages (`.dependency-cruiser.cjs` rule `console-gateway-allowlist`); Task 13a added `i18n`.
+
+### Task 16: The same cycle
+
+**Files:** Create `packages/account/catalogue/en.json`, `src/view/messages.ts`, `packages/console-gateway/catalogue/en.json`, `src/view/messages.ts`. Modify the five renderers and tests.
+
+- [ ] Same cycle, one commit each. `verification-html.ts` has its own `sendVerificationHtml` wrapper (`packages/account/src/view/verification-html.ts`) which must also send `Content-Language` through `pageHeaders` (Task 13b changed `pageHeaders`; this task adds `it('sends content-language from the verification wrapper')`). The registration form's tenant display name and the entered email are `<bdi>`-isolated.
+- [ ] `refusal-html.ts` renders through `sendPage` (`packages/console-gateway/src/view/send-page.ts` spreads `pageHeaders`): its test asserts the Instrument link and `Content-Language: en` arrive on the response, not only in markup.
+- [ ] Run unit and integration tests for both packages, `node_modules/.bin/depcruise --config .dependency-cruiser.cjs packages apps`. Push; CI green. Update `docs/phases/p4g.md` with the renderer count and the number of catalogue entries per package (`jq 'length'` on each `en.json`) so the performance table's "about 600 formatters" is checked, not guessed.
+
+---
+
+## Increment 17: Mail catalogues, bidi refusal, the literal lint (5 to 6 h)
+
+### Task 17a: Mail templates from the catalogue
+
+**Files:** Create `packages/email/catalogue/en.json`, `packages/email/src/service/messages.ts`. Modify `packages/email/src/service/templates.ts`, `templates.test.ts`, `packages/email/package.json` (`@odudu/i18n`).
+
+- [ ] `templates.ts` has three renderers (`renderVerifyEmail`, `renderResetPassword`, `renderRequiredActions`, 65 lines, English in template literals, `grep -n "subject:" packages/email/src/service/templates.ts`). Failing tests first: each message's subject, text and html come from `en.json` (the test compares); the tenant display name is escaped in html and left as typed in `text` and `subject`, with bidi controls stripped from the **subject** (a header cannot carry an isolate; document that in the test name); the link is never escaped and never catalogued; `locale` is an optional input defaulting to `en`. Implement; the send path passes the negotiated locale only when it has one (P4b wires tenant locale; none passes today). Commit `Read mail text from a catalogue`.
+
+### Task 17b: Refuse bidi controls in typed identity and name fields
+
+**Files:** Create `packages/kernel/src/bidi.ts`, `bidi.test.ts`. Modify `packages/contracts/src/admin/subjects.ts` (`usernameSchema`, display-name schemas), the tenant, client, group, role and scope name schemas under `packages/contracts/src/admin/`, `packages/account/src/usecase/register.ts` (grep: `git grep -n "username" packages/account/src/usecase | head`), their tests.
+
+**Interfaces:** `export function containsBidiControl(value: string): boolean` (U+202A to U+202E, U+2066 to U+2069); `export const BIDI_REFUSED = 'bidi_control_refused'`.
+
+- [ ] Failing tests: `bidi.test.ts` table of the nine code points true, U+200E/U+200F (LRM/RLM, harmless marks that Persian text legitimately uses) false, plain Arabic and Hebrew false. Schema tests: `usernameSchema` (`grep -n "usernameSchema = z.string().min(1)" packages/contracts/src/admin/subjects.ts:119`) refuses a username with U+202E with field error code `bidi_control_refused` and the same message text everywhere; the same for the other name fields the grep lists (`git grep -n "z.string()" packages/contracts/src/admin/*.ts | grep -i name`); registration through the account usecase answers the form with a field error, creating nothing; an existing row containing one still **signs in** (login does not refuse: refusal is on creation and rename). Run (FAIL). Implement as a zod `refine` in one shared `noBidiControls` helper exported from kernel; compose it into the schemas; no new dependency.
+- [ ] `apps/server/src/input-hygiene.ts` is **not** changed: its replacement of C0/C1 controls (`neutralise`) stays; bidi controls are refused at the field, not silently replaced, because replacing would collide two different usernames. Commit `Refuse bidi control characters in typed identity fields`.
+
+### Task 17c: The lint for a user-facing literal outside a catalogue
+
+**Files:** Create `tests/lint/server-page-literals.test.ts`, `tests/lint/fixtures/literals/{bad-html.ts,good-html.ts}`.
+
+- [ ] Write the test and its negative control **before** enabling it over the tree: the checker `findLiterals(source: string): Finding[]` extracts the template-literal and string-literal text of each `*-html.ts`, `view/**/messages-using` file and `packages/email/src/service/templates.ts`, blanks every `${...}` expression and every tag, and reports text nodes holding two or more consecutive letters plus attribute values for `alt`, `title`, `placeholder`, `aria-label`, `aria-describedby` text, `value` on `<button>`/`<input type=submit>` and the `title:` argument to `page()`. Cases: `bad-html.ts` fails with file and line; `good-html.ts` (all text through `t()`) passes; a `<script>` body with a literal string fails; `tests/lint` header comment lists what it cannot see (text built in a route or usecase and passed in; a literal in a non-`*-html.ts` helper; text assembled by concatenation across files).
+- [ ] Enable over the tree: `it('finds no user-facing literal in any server renderer')` over `packages/*/src/view/*-html.ts` and the mail templates (PASS once Tasks 14 to 17a are done; if it finds something, extract it, do not allowlist: the rule has no waiver). Update `CLAUDE.md`'s "Server-rendered pages" paragraph: delete "Nothing enforces this yet" for the server half, name this test, leave the console half pointing at P4h.
+- [ ] `node_modules/.bin/vitest run --project unit tests/lint tests/docs packages/email packages/kernel packages/contracts`; commit `Fail the build on a literal in a server renderer`. Push; CI green.
+
+---
+
+## Increment 18: The docs app (4 to 5 h)
+
+### Task 18: `apps/docs`, the information architecture, search, a build in `verify`
+
+**Files:**
+
+- Create: `apps/docs/{package.json,tsconfig.json,.gitignore}`, `apps/docs/.vitepress/config.mts`, `apps/docs/.vitepress/theme/{index.ts,Layout.vue,instrument.css}`, `apps/docs/en/index.md` (placeholder home, replaced by Task 31), one stub `index.md` per section below, `apps/docs/scripts/build.sh`, `apps/docs/tests/ia.test.ts`, `apps/docs/tests/links.test.ts`.
+- Modify: `pnpm-workspace.yaml` (nothing: `apps/*` already globs it), `turbo.json` (`build` outputs `.vitepress/dist/**`), `.github/workflows/verify.yml` (the `docs` job), `tests/lint/no-relative-imports.test.ts` only if it objects (read it first: `sed -n 1,30p tests/lint/no-relative-imports.test.ts`), `eslint.config.js` (ignore `apps/docs/.vitepress/dist/**` and `.vitepress/cache/**`).
+
+**Interfaces:** `pnpm --filter @odudu/docs build:pages` writes `dist-pages/` (base `/odudu/`); `build:image` writes `dist-image/` (base `/docs/`, with `csp.json` from Task 20); `generate` runs Task 19's generator. The base comes from `DOCS_BASE`.
+
+- [ ] Failing tests first: `ia.test.ts` reads `apps/docs/.vitepress/config.mts`'s exported sidebar and asserts the nine sections, in the order §11 gives, each with at least one page: Introduction; Quick start; Guides; Concepts; Admin console; Operating Odudu; Reference; Security; Contributing. `it('reaches every page from the home page in one click to its section and one more to the page')` walks the built `dist-pages` link graph (HTML, `href` extraction): home links each section's first page; every page appears in its section's sidebar. **Reading of the design's "readable from any page in one hop from the home page":** the home page links to every section and the top navigation is on every page, so any page is at most two clicks from home; search (`Ctrl+K`) is on every page. `links.test.ts`: `it('has no internal link that resolves to nothing')` (VitePress fails the build on a dead link by default, `ignoreDeadLinks` stays `false`; this test additionally checks anchors) and `it('uses no absolute /odudu or /docs path in source')` (links are relative in Markdown so both bases work; Review Focus 5). Run `node_modules/.bin/vitest run --project unit apps/docs` (FAIL: no config).
+- [ ] Implement per spike S1 to S5: `defineConfig({ srcDir: 'en', base: process.env.DOCS_BASE ?? '/odudu/', cleanUrls: true, lastUpdated: false, ignoreDeadLinks: false, locales: { root: { label: 'English', lang: 'en', dir: 'ltr' } }, themeConfig: { search: { provider: 'local' }, nav, sidebar, outline: [2, 3], socialLinks: [{ icon: 'github', link: 'https://github.com/wizzywit/odudu' }] } })`; theme `instrument.css` maps VitePress's `--vp-c-*` variables onto the console's tokens (copied by reference: the build reads `apps/admin-console/src/shared/view/tokens.css`, as `@odudu/instrument` does, so the site and the product share one palette); fonts: IBM Plex via the same hashed files, no remote fonts; mobile first (the sidebar collapses under 960 px as VitePress does; assert at 360 px in Task 31).
+- [ ] The nine stub pages carry a one-sentence purpose each and a `<!-- filled by Increment N -->` marker the **test forbids** (`it('has no unfilled marker')` reads `apps/docs/tests/unfilled.json`, the list of stub pages still to be filled, which each of Increments 24 to 27 shortens and Increment 36 requires to be `[]`; a stub not on the list fails).
+- [ ] `verify.yml` job `docs` (ubuntu-latest, 10-minute budget): install, `generate`, `build:pages`, `build:image`, `vitest run --project unit apps/docs`, `lychee` over `dist-pages` **internal links only** in this increment (`lycheeverse/lychee-action@v2.9.0` with `--offline`; external links are checked weekly in Task 35). `turbo run build` in `pnpm verify` now builds the docs too; record the added minutes in `docs/phases/p4g.md` (the CI-caching section of P4d is the precedent).
+- [ ] Commit `Add the documentation site shell and its information architecture`. Push; CI green (this is the first install of VitePress: commit the lockfile delta from a clean clone, per Task 11b).
+
+---
+
+## Increment 19: Generated reference (5 to 6 h)
+
+`grep -n "buildAdminOpenApiDocument" packages/protocol-admin/src/index.ts` finds nothing (it is exported from `view/routes/openapi.ts:160` only, line 160); `grep -n "^const schema\|export const schema" packages/kernel/src/config.ts` shows `schema` is internal (`config.ts:336` exports `Config` and `loadConfig` only). Both need exporting.
+
+### Task 19a: Admin API reference from the OpenAPI document
+
+**Files:** Create `apps/docs/scripts/generate.ts`, `apps/docs/scripts/openapi-pages.ts`, `openapi-pages.test.ts`. Modify `packages/protocol-admin/src/index.ts` (export `buildAdminOpenApiDocument`).
+
+**Interfaces:** `renderOpenApiPages(doc: OpenApiDocument): ReadonlyMap<string, string>` (path to Markdown; one page per tag or per first path segment; pure).
+
+- [ ] Failing tests: `it('writes one section per operation with its method, path, capability and request and response schemas')`; `it('names every route ADMIN_ROUTES lists')` (imports `ADMIN_ROUTES`, `grep -n "export const ADMIN_ROUTES" -r packages/protocol-admin/src` gives the module; counts equal both ways); `it('escapes Vue interpolation and HTML in descriptions')` (VitePress treats `{{ }}` in Markdown as Vue: a description containing `{{x}}` must render as text; wrap pages in `v-pre` containers); `it('is deterministic')` (two runs byte-equal). Run (FAIL). Implement; the generator writes into `apps/docs/en/reference/generated/admin-api/` and an index page. Commit `Generate the admin API reference from the OpenAPI document`.
+
+### Task 19b: CLI, configuration, error codes, events, endpoints
+
+**Files:** Create `apps/docs/scripts/{cli-page,config-page,errors-page,events-page,endpoints-page}.ts` with tests, `packages/kernel/src/config-docs.ts`, `config-docs.test.ts`. Modify `packages/kernel/src/config.ts` (`export const configSchema`), `packages/kernel/src/index.ts`.
+
+- [ ] CLI: `cli-page.ts` calls Task 7's `renderMarkdown(CLI_COMMANDS)`; test: every command in the registry has a heading and its example. Configuration: `CONFIG_DOCS: Record<ConfigKey, { summary: string; secret: boolean }>` typed over `keyof typeof configSchema.shape`, so a new key without an entry is a compile error; `config-docs.test.ts`: `it('documents every key the loader accepts and no other')`, `it('marks ODUDU_KEK, the SMTP password and the console key secret and prints no default for them')`; `config-page.ts` renders name, type, default and bounds from `z.toJSONSchema(configSchema)` plus the summary (`verified:` Zod 4 has `z.toJSONSchema`: the repo already uses it, `grep -rn "toJSONSchema" packages/protocol-admin/src | head -2`; if the grep is empty at execution, use `jsonSchemaFor` from `openapi.ts` instead). Error codes: from the OIDC token error table (`TokenErrorCode` in `packages/protocol-oidc/src/service/errors.ts`, the type `tests/docs/error-codes.test.ts` imports) and the admin problem `code`s (`git grep -n "new OduduError('" -- packages apps | wc -l` is 72: list distinct codes with their message first line). Events: `AUDIT_ACTIONS` (`packages/domain-audit/src/service/vocabulary.ts:6`) with each action's `eventType`. Endpoints: from the discovery document builder and route tables, every endpoint with method, auth and one-line purpose (the data `tests/docs/endpoints.test.ts` already extracts; reuse its extractor instead of a second one: move it to `tests/docs/` shared module only if it is not already exported; `sed -n 1,40p tests/docs/endpoints.test.ts` first).
+- [ ] Each generated page begins with a banner "Generated from <source> at <commit>; do not edit" and has no hand-written line. `apps/docs/tests/generated-not-committed.test.ts`: `it('keeps generated pages out of git')` (`git check-ignore apps/docs/en/reference/generated/x`). Commit `Generate the CLI, configuration, error and event reference`. Push; CI green.
+
+---
+
+## Increment 20: The docs inside the image (4 to 5 h)
+
+### Task 20: `/docs` from the server's own origin under a hashed fixed policy
+
+**Files:** Create `packages/web-assets/{package.json,tsconfig.json,src/index.ts,src/view/docs-routes.ts,docs-routes.test.ts,src/service/docs-policy.ts,docs-policy.test.ts}`, `apps/docs/scripts/csp.ts`, `apps/docs/tests/csp.test.ts`. Modify `apps/server/src/app.ts`, `packages/kernel/src/config.ts` (`ODUDU_DOCS_DIR`, default `/app/docs`, and a documented `ODUDU_DOCS=false` switch), `infra/docker/Dockerfile` (a `docs` stage: `pnpm --filter @odudu/docs generate && build:image`; copy to `./docs`), `infra/docker/smoke.sh`, `packages/protocol-oidc/src/view/html-response.test.ts` (the exemption list), `docs/adr/0029-...md` (second amendment).
+
+**Interfaces:**
+
+```ts
+export function docsRoutes(dir: string): FastifyPluginAsync; // GET /docs, /docs/*; fixed policy; 404 outside the manifest
+export function docsPolicy(csp: {
+  scriptHashes: readonly string[];
+  styleHashes: readonly string[];
+}): string; // pure
+// apps/docs build output: dist-image/csp.json  { scriptHashes: string[]; styleHashes: string[] }
+```
+
+- [ ] Failing tests. `docs-policy.test.ts`: the policy is `default-src 'self'; script-src 'self' <hashes>; style-src 'self' <hashes>; style-src-attr 'unsafe-hashes' <hashes>; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'`; contains no `'unsafe-inline'` and no `'unsafe-eval'`; refuses a hash that is not `sha256-` plus 44 base64 characters. `csp.test.ts` (in `apps/docs`, over a real `build:image`): `it('names the hash of every inline script and style attribute the built pages carry')` (recomputes from the HTML, the `react-aria-style.test.ts` pattern), `it('hashes every inline script in every emitted HTML file, not a sample')`; `it('has no landing page in the image build')` (the image's `index.html` is the documentation home, has no "Hosted Odudu" text and no `layout: home` markup: the design says the landing page is not in the image; the two homes come from `srcExclude` and `rewrites` per `DOCS_TARGET`, recorded by S4); `it('contains no link to /odudu/')` and, in the Pages build, `it('contains no link to /docs/')` (Review Focus 5); `it('makes no request to another origin')` (no absolute `http(s)://` `src`, `href` to a stylesheet, script or font; ordinary anchors to GitHub are allowed). `docs-routes.test.ts` through `inject`: `/docs` redirects `308` to `/docs/`; `/docs/` is `200` `text/html; charset=utf-8` with the policy, `x-frame-options: DENY`, `referrer-policy: no-referrer`, `cache-control: no-cache`; `/docs/assets/<hashed>.js` is `immutable`; unknown path `404` (not the shell: a static site, not an SPA, so VitePress's own `404.html` is served with status 404); path traversal `404`; an over-limit tree (5,001 files or 64 MiB, built in a tmp dir) makes registration log and register `503` for `/docs/*` without throwing; `ODUDU_DOCS=false` registers nothing. Run (FAIL).
+- [ ] Implement with `readStaticTree` (Task 11a) and the manifest, as `spa.ts` does. `apps/docs/scripts/csp.ts` scans `dist-image`, hashes, writes `csp.json`. `html-response.test.ts`'s `EXEMPT_FILES` gains `packages/web-assets/src/view/docs-routes.ts` (a fourth file naming page headers, like `spa.ts`) and `viewSources()` already walks `packages/*/src/view`, so the new package is covered; the `exempts only files that exist` test proves the path is right.
+- [ ] ADR 0029 second amendment: the docs are the second static-serving exception; policy derived from build-time hashes, not `pageHeaders`; why `'unsafe-hashes'` for style attributes and which values they are (from S5); what a sub-path reverse proxy does (**unsupported**: the docs are at `/docs/` on the issuer origin; the page "Deploying" says so) and that the hosted copy at `/odudu/` is the latest release while the image's copy matches its version.
+- [ ] `smoke.sh` gains `GET /docs/` `200` with the policy header present and `GET /docs/assets/…` immutable. Run `docker build` and the `container` job's smoke locally only by pushing (the script owns port 3100). Commit `Serve the built docs from the image under a fixed policy`. Push; CI green.
+
+---
+
+## Increment 21: The docs command runner (4 to 6 h)
+
+`grep -rn "request-paths" .github tools package.json` finds no step that runs a document. The transcripts are captured by hand against a live stack and `tests/docs/` compares assertions to source; **no command in the documents is executed by CI today** (the design's premise is wrong; this increment makes it true for the guides and states what stays captured).
+
+### Task 21: `tools/docs-run`
+
+**Files:** Create `tools/docs-run/{package.json,src/index.ts,src/parse.ts,src/parse.test.ts,src/run.ts,src/run.test.ts}`, `.github/workflows/docs-commands.yml`. Modify `eslint.config.js` only if the `tools/*` glob needs it (`grep -n "tools" eslint.config.js`).
+
+**Interfaces:**
+
+```ts
+export interface RunnableBlock {
+  readonly file: string;
+  readonly line: number;
+  readonly command: string;
+  readonly expect: readonly string[];
+  readonly env: Readonly<Record<string, string>>;
+}
+export function extractRunnable(markdown: string, file: string): RunnableBlock[]; // fences tagged `sh {run}`; attributes: expect="…" (repeatable), timeout=<s>
+export function lintCommand(block: RunnableBlock): string[]; // findings; [] is clean
+export async function runBlocks(
+  blocks: readonly RunnableBlock[],
+  exec: (
+    command: string,
+    env: Record<string, string>,
+  ) => Promise<{ status: number; output: string }>,
+): Promise<Result[]>;
+```
+
+- [ ] Failing tests (Review Focus 4): `lintCommand` refuses: a smart quote (U+2018/2019/201C/201D), a non-ASCII hyphen or dash where ASCII is expected (U+2010 to U+2015, U+2212), a leading `$ ` or `> `, a trailing backslash continuation, more than one logical command line, a tab, a trailing space, a zero-width character (U+200B, U+FEFF). Fixture blocks for each. `extractRunnable` reads ` ```sh {run expect="signed in"} ` and ignores an untagged block and a block tagged `sh` without `{run}`; a ` ```` ` four-tick outer fence containing a three-tick example is handled. `runBlocks` runs blocks in document order within a file, one shell session per file so `cd` and exported variables persist and `set -e` semantics apply, fails the file at the first non-zero exit naming `file:line`, and checks every `expect` substring. A block whose `command` differs from the published text in any byte (the runner reads the Markdown, never a copy) is impossible by construction; a test asserts the runner is given `block.command` verbatim. Run (FAIL).
+- [ ] Implement. `.github/workflows/docs-commands.yml` (on `pull_request`, job `docs-commands`): starts the quickstart stack with `quickstart/prove.sh`'s helper (extract its start/stop into `quickstart/stack.sh up|down <image> <port>` in this task; `prove.sh` calls it), exports `ODUDU_BASE=http://localhost:3195` and the generated administrator's credentials into the environment, runs `node tools/docs-run/src/index.ts apps/docs/en/guides apps/docs/en/quick-start`, then `down`. The guides (Increment 24) are written against this contract: **a guide command is a runnable block, or it is not in the guide**; an illustrative command is tagged `text`.
+- [ ] Commit `Run the guides' commands in CI`. Push; CI green (the job has no guides yet and passes on an empty set only if `it('finds at least the quick start block')` is false: make the job require `>= 1` block from Task 24 on by a floor in `tools/docs-run/src/index.ts` that Task 24 raises).
+
+---
+
+## Increment 22: Moving the three documents in (5 to 6 h)
+
+Sizes (`wc -l`): `docs/request-paths.md` 11,291, `docs/admin-paths.md` 10,172, `docs/console-paths.md` 2,189, `README.md` 1,806. Twenty tests under `tests/docs/` read them by path (`git grep -l "request-paths\|admin-paths\|console-paths" tests/docs | wc -l` is 21). H2 counts: 24, 70, 20.
+
+### Task 22: Split by section, read by a loader, retarget the tests, keep the bytes
+
+**Files:** Create `apps/docs/en/reference/protocol/*.md` (from `request-paths.md`'s 24 H2 sections, minus "What is not implemented", which Task 23 moves), `apps/docs/en/reference/admin-api-paths/*.md` (from `admin-paths.md`'s 70 H2 sections), `apps/docs/en/admin-console/paths/*.md` (from `console-paths.md`), `apps/docs/en/reference/protocol/index.md`. Modify `tests/docs/markdown.ts`, every `tests/docs/*.test.ts` that names a retired path, `tests/docs/structure.test.ts`. The three originals stay until Task 23.
+
+**Interfaces:** `loadPages(relativeDir: string): Document` in `tests/docs/markdown.ts`: concatenates a directory's pages in `order.json` order into one `Document` whose `name` is the directory, and keeps a `sources: readonly { file: string; fromLine: number }[]` map so a failure message cites `file:line` of the page, not of the concatenation.
+
+- [ ] Failing test first: `tests/docs/split-preserves-the-documents.test.ts`: `it('has every line of request-paths.md in a page, in order')` compares `loadDocument('docs/request-paths.md').lines` (minus the "What is not implemented" section, which must appear in Task 23's roadmap page) with `loadPages('apps/docs/en/reference/protocol').lines` after removing each page's front matter; the same two tests for the other documents. This is the whole safety net: a split that loses or reorders a line fails. Run (FAIL: pages do not exist).
+- [ ] Split mechanically with a one-off script kept out of the tree (`/tmp`-style scratch; the repository gets the **result**, and `docs/phases/p4g.md` records the script's three rules): cut at `^## `, name the file by the heading's slug, prepend front matter `title:` and `description:` (first sentence), add `order.json`. No prose is edited in this task. Prettier is **not** run on the moved transcript pages' fenced blocks beyond what `prettier --check` already enforces (CLAUDE.md: an untagged fence is not reformatted). Because VitePress compiles `{{ }}` and bare `<tag>` text in Markdown as Vue, apply the `v-pre` mechanism S1 recorded to every moved page; the build must show the transcripts byte-identical (Task 22's `it('renders a fenced transcript byte for byte')` compares the HTML `<code>` text of three known blocks with the source).
+- [ ] Retarget every test: `DOCUMENTS`/`GUIDE` constants become `loadPages(...)` calls (`tests/docs/{structure,references,phase-references,not-implemented-placement,gap-audit-placement,admin-paths,console-paths,endpoints,discovery,error-codes,id-token-claims,access-token-claims,password-policy,session-cookie-shape,session-lifespans,throttle,brute-force,recovery-codes,retention-schedule,login-step-resource,required-action-order}.test.ts`; `git grep -ln "loadDocument(" tests/docs` is the list to edit). `structure.test.ts`'s floors (`400`, `80`, `30`) move to the page sets. `not-implemented-placement.test.ts` stays pointed at `request-paths.md` until Task 23.
+- [ ] Run `node_modules/.bin/vitest run --project unit tests/docs` (PASS both before and after: every retargeted test passes against the pages **and** the originals still pass, because both exist), `build:pages` and `build:image` (the 11,000-line pages must build: record build time and the largest page's HTML size; if a page exceeds 2 MB, split it further and say so). Commit `Move the three path documents into the site, split by section`. Push; CI green.
+
+---
+
+## Increment 23: Roadmap page, citations, retirement, CLAUDE.md (4 to 6 h)
+
+### Task 23a: The public roadmap, held by its placement test
+
+**Files:** Create `apps/docs/en/roadmap.md` (the "What is not implemented" list, moved verbatim; plus a header paragraph that the hosted service is planned and unscheduled, ADR 0042), `apps/docs/en/roadmap-phases.md` is **not** created (the roadmap table is the umbrella spec's, linked). Modify `tests/docs/not-implemented-placement.test.ts` (`GUIDE` and `HEADING` point at the page), `tests/docs/gap-audit-placement.test.ts`, `docs/NEXT.md` (the pointer).
+
+- [ ] Failing test: the placement test pointed at `apps/docs/en/roadmap.md` (FAIL: no file). Move the section (24 bullets; `grep -c "^- " ` over it), confirm each marker is **still true** by the pass CLAUDE.md names (read the section against the roadmap: any item whose phase moved or closed is corrected here; at least P4g-owned items are removed as they are now shipped: image, docs site, catalogue mechanism). Run `node_modules/.bin/vitest run --project unit tests/docs` (PASS). Commit `Publish the roadmap page from the not-implemented list`.
+
+### Task 23b: Repoint every citation, retire the three files
+
+**Files:** the 56 files listed by `git grep -l "request-paths\|admin-paths\|console-paths" -- . ':!docs/archive'`. `docs/archive/**` (20 files) is **not** edited: it records the past, as `docs/NEXT.md` already says of the plans (`grep -n "A plan records what was planned" docs/NEXT.md`); the link check excludes it.
+
+- [ ] Failing test first: `tests/docs/retired-documents.test.ts`: `it('has no citation of a retired path outside the archive')` (greps the working tree, excluding `docs/archive`, `node_modules`, `dist`, `trace-report.json`, this test's own file) and `it('has deleted the three files')`. FAIL (56 files).
+- [ ] Repoint by category: source-code comments cite the site page by repo path (`apps/docs/en/reference/protocol/refresh.md`) because a comment may name a durable file; ADRs, specs and phase notes cite the page the same way; README's 35 mentions go in Task 32. Use `git grep -l` then edit each; for anchors `docs/request-paths.md#foo`, find the new page with `grep -rn "^## .*foo" apps/docs/en`; a shell helper is fine but **review the diff by file**. Then `git rm docs/request-paths.md docs/admin-paths.md docs/console-paths.md`; `docs/README.md` table updated.
+- [ ] Add the link check to CI properly: `lychee` over `README.md`, `docs/**` (not `docs/archive`), `apps/docs/en/**` source Markdown, relative links resolved from the repository root; fails on a dead relative link. (`lychee --offline --include-fragments`; `assumption:` `--include-fragments` checks heading anchors in local Markdown files; the spike is this step's first run on a deliberately broken anchor in a scratch file.)
+- [ ] **CLAUDE.md retargeting.** Rewrite "The documentation an increment owns" so `README.md` and `apps/docs/en/` describe the server now, the transcript rules apply to the site's reference transcripts and to runnable blocks, and `tests/docs/` compares the site to the server; "The pass that closes a phase" item 1 names `apps/docs/en/roadmap.md`; item 4 names it; "Server-rendered pages" and "NEXT.md" paragraphs repointed. Change nothing else in the file. `tests/lint/comment-block-length.test.ts` and the commit-message test do not read CLAUDE.md.
+- [ ] Run the full docs and lint suites and `build:pages`; commit in three: `Repoint citations of the path documents`, `Retire the three path documents`, `Retarget CLAUDE.md's documentation rules at the site`. Push; CI green. (`docs/NEXT.md` mentions `request-paths.md#what-is-not-implemented` at line 308: repoint, check budget.)
+
+---
+
+## Increment 24: Introduction, quick start, the four integration guides (4 to 6 h)
+
+Content written against what exists. Every command is a runnable block (Task 21) or tagged `text`. Written for a reader who reaches a working sign-in before a concept (§11).
+
+### Task 24: The first ten minutes
+
+**Files:** Create `apps/docs/en/introduction/{index.md,odudu.md,compare.md}`, `apps/docs/en/quick-start/index.md`, `apps/docs/en/guides/{index.md,web-app.md,single-page-app.md,api.md,machine-to-machine.md}`, `apps/docs/en/guides/keycloak.md` (a stub page saying "after P6"? **No**: the §11 list includes "moving from Keycloak"; it ships as a short real guide: concepts mapped one-to-one and the export/import path that exists, `docs/phases/p4d.md` "What export and import found"; no placeholder). Modify `tools/docs-run/src/index.ts` (floor raised), `apps/docs/tests/unfilled.json`.
+
+- [ ] Failing tests: `apps/docs/tests/quick-start.test.ts`: `it('has the one command in the first code block on the page')`; `it('shows the sign-in and the generated password source before any concept')` (no H2 after the first code block links to `/concepts/`); `it('states where a port conflict is fixed')` (`ODUDU_PORT`); `it('tells the reader to remove the setup container once the password is copied')` (the generated password stays in that container's log until removed); `it('is under 400 words before the first command')` (reader reaches the command fast). `introduction` test: the page states the meaning of the name (Ibibio, Akwa Ibom, Nigeria) exactly once in `odudu.md`; `compare.md` has a table with at least Keycloak, Ory, Zitadel, Authentik rows and **only** claims the repository can back (features listed with the phase or page that proves them; competitor columns say "see their documentation" rather than assert it, since facts about others rot; an honest note on what Odudu is not: not production ready, one instance). Run (FAIL).
+- [ ] Write quick start: `curl -fsSLO <site>/compose.yaml` and `docker compose up`, the banner explained, sign in at the console URL, the forced password change, then **"Sign in to an app"**: `docker compose exec odudu odudu seed client --tenant demo ...` as runnable blocks creating a tenant and a client; link to the guide for the reader's kind. Guides: each ends with a working sign-in against the example application of its kind (Increments 28 and 29 supply the code; this task's guide text embeds the example's files with VitePress `<<< @/../../examples/web-app/app.ts` imports so the page shows the real file, which the examples job runs: the code a reader sees is the code CI ran). The M2M and API guides use `curl` runnable blocks against the real token endpoint.
+- [ ] Raise the runner floor, run the guides: `quickstart/stack.sh up odudu:spike 3195` then `node tools/docs-run/src/index.ts apps/docs/en/quick-start` (PASS), `down`. Commit `Write the introduction, the quick start and the integration guides`. Push; CI green; `docs-commands` runs them.
+
+---
+
+## Increment 25: Concepts (4 to 5 h)
+
+### Task 25: Seven concepts, each with a diagram
+
+**Files:** Create `apps/docs/en/concepts/{index.md,tenants.md,clients.md,scopes.md,roles-and-groups.md,sessions.md,tokens.md,consent-and-audit.md}`, `apps/docs/en/public/diagrams/*.svg` (hand-written, one per page, using `currentColor` and Instrument's custom properties so both themes work, each with `<title>` and `<desc>`).
+
+- [ ] Failing tests (`apps/docs/tests/concepts.test.ts`): each page embeds exactly one `<img src="…diagram….svg" alt="…">` with non-empty alt; every SVG has `<title>`, `<desc>`, no `<script>`, no `style=` attribute (the image-policy and hash inventory stay small), no external `href`; each page's claims that name a column, route or default are checked against code by one shared extractor: `it('names only routes and defaults the server has')` reusing `tests/docs/endpoints.test.ts`'s extractor (Task 19b) and the session lifespans extractor (`tests/docs/session-lifespans.test.ts`). Run (FAIL).
+- [ ] Write the pages from the existing narratives and ADRs (tenancy: ADR 0009; scopes and claims: ADR 0022, 0036; sessions: ADR 0033; tokens: `docs/protocols/rfc9068.md`; consent and audit: ADR 0037), one concept each, 400 to 900 words, linking the reference page where the exact behaviour lives. Mermaid is **not** used (it injects styles and scripts the docs policy refuses, S5); diagrams are SVG files.
+- [ ] Commit `Write the concepts pages with diagrams`. Push; CI green.
+
+---
+
+## Increment 26: The admin console tour (3 to 5 h)
+
+`docs/console-paths.md` (2,189 lines, 20 H2) moved in Task 22 as `apps/docs/en/admin-console/paths/*`; the console has the areas listed in `ADMIN_ROUTES` and the rail (`ls apps/admin-console/src/features`).
+
+### Task 26: A tour, then one page per area
+
+**Files:** Create `apps/docs/en/admin-console/{index.md,tour.md}` and one page per feature directory (`ls apps/admin-console/src/features` at execution gives the list; the plan does not restate it). Screenshots: `apps/admin-console/scripts/galleryScreenshots.ts` exists (`grep -n "gallery:screenshots" apps/admin-console/package.json`) for the component gallery, not for areas: do **not** commit screenshots of live screens (they rot and have no check); each area page instead names its rail label, its tabs and its dangerous actions as text, generated from the console's own route table where possible.
+
+- [ ] Failing test `apps/docs/tests/console-areas.test.ts`: `it('has a page for every feature directory of the console')` (readdir of `apps/admin-console/src/features` against the page slugs); `it('names every area's tabs')` using each feature's exported tab labels if `index.ts` exposes them (`grep -rn "tabs" apps/admin-console/src/features/*/index.ts | head`; where not exposed, the page lists them by hand and the test only checks the page exists). Write the pages from `console-paths.md` (sign-in path, gateway, cookies) and `docs/phases/p4d.md` ("what building the features found"); each page ends with "Do the same through the API" linking the generated reference. Commit `Write the admin console tour and one page per area`. Push; CI green.
+
+---
+
+## Increment 27: Operating, security, contributing (4 to 6 h)
+
+README's operating content (1,806 lines) moves here; `grep -n "^## " README.md` gives six sections: Status, Running it (line 743), Why not Keycloak (1621), Conformance (1633), Deploying (1653), License.
+
+### Task 27: Deploying, configuration, upgrading, backups, scaling, hardening; the security and contributing sections
+
+**Files:** Create `apps/docs/en/operating/{index.md,deploying.md,configuration.md,upgrading.md,backups.md,scaling.md,hardening.md,releasing.md}`, `apps/docs/en/security/{index.md,threat-model.md,disclosure.md}`, `apps/docs/en/contributing/{index.md,architecture.md,running-the-tests.md,the-phase-process.md}`.
+
+- [ ] Failing tests (`apps/docs/tests/operating.test.ts`): `configuration.md` embeds the generated configuration reference and states which variables the server refuses to boot without in production (the list comes from `apps/server/src/config-guard.ts`'s `assert*` functions: test: every `assertProduction*` name in `config-guard.ts` appears, by the variable it names, on the page: `grep -n "export function assert" apps/server/src/config-guard.ts`); `deploying.md` says the image is `ghcr.io/wizzywit/odudu`, shows `cosign verify` copied from `RELEASING.md` through an include (one source), names Postgres 17, the two roles and `ODUDU_APP_DATABASE_URL`, TLS and `ODUDU_TRUST_PROXY` with the strip-the-header warning (moved from README, not rewritten), and **states that Odudu must be served at the root of its origin, never under a path prefix** (pinned by Task 20's docs test); `upgrading.md`: migrations run at boot (`apps/server/src/modules/database.ts:9`), no rolling upgrade yet (P11), take a backup first; `backups.md`: `pg_dump` is the mechanism, restore proof is P12 (named, not argued); `scaling.md`: one instance today, the P11 placement; `hardening.md`: the checklist of the guards. `security/threat-model.md` is the ADR-derived summary with links; `disclosure.md` embeds `SECURITY.md` through an include (one source). `contributing/the-phase-process.md` summarises `CLAUDE.md`'s sequence without copying its rules; `architecture.md` is the layering table and the package map generated from `ls packages apps` (test: every workspace directory is named). Run (FAIL).
+- [ ] Write the pages by moving README paragraphs (cut from README in Task 32, so nothing is duplicated); each moved passage keeps its wording and gains a heading. Commit `Move operating and security guidance into the site`. Push; CI green.
+
+---
+
+## Increment 28: Examples: web app, API, machine-to-machine (4 to 5 h)
+
+The examples live in `examples/`, **outside the pnpm workspace** (`pnpm-workspace.yaml` globs `apps/*`, `packages/*`, `tools/*`, `tests` only), each a standalone project with its own `package.json`, `package-lock.json`, `LICENSE` (Apache-2.0, Decision D8) and README, copyable alone. TypeScript run by Node 24's built-in type stripping (the repository already runs `node tools/commit-message/src/index.ts`, `grep -n "commit-message" package.json .github/workflows/verify.yml`), so there is no build step except the SPA's Vite.
+
+### Task 28: Three examples and the contract they share
+
+**Files:** Create `examples/README.md`, `examples/_shared/provision.sh` (creates tenant, clients, user, scope through `odudu seed ...` in the quickstart stack; the **only** script the examples job and the guides share), `examples/web-app/{package.json,package-lock.json,app.ts,README.md,LICENSE}` (`openid-client` 6.8.8, `node:http`; authorization code with PKCE and a server-side session cookie), `examples/api/{...,server.ts}` (`jose` 6.2.12 `createRemoteJWKSet` and `jwtVerify` with `issuer`, `audience`, and `typ: 'at+jwt'`; refuses an ID token and an expired token), `examples/machine-to-machine/{...,client.ts}` (no dependencies: `fetch` with `client_secret_basic` for `client_credentials`, then calls the API example). Create `examples/tests/*.test.ts`? No: the proof is the job in Task 29.
+
+- [ ] Failing first: `examples/web-app/test.ts`, `examples/api/test.ts`, `examples/machine-to-machine/test.ts`, each a Node script using `node:test` (no dependency) that talks to a running stack at `ODUDU_BASE`: the API test calls with a token from M2M and asserts `200`, with no token `401`, with a token for another audience `401`, with an ID token `401`; the web-app test drives the flow with Playwright's library API from `@playwright/test` is **not** a dependency of the example: the test lives in `examples/_shared/browser.ts` run by the job with the repository's pinned `@playwright/test` 1.63.0 (verified: `grep -n playwright apps/admin-console/package.json` shows `"@playwright/test": "1.63.0"`). Each test fails now (no app).
+- [ ] Write each app to the smallest correct size (under 120 lines each), strict about `state`, `nonce`, PKCE and redirect URI exactly equal; every file's header says what is example-specific ("a production app needs HTTPS and a real session store"). `npm ci` determinism: commit each `package-lock.json` generated by `npm install --package-lock-only` in the example directory (npm is available; `npm view` worked), pinned exact versions.
+- [ ] Run locally: stack up (`quickstart/stack.sh up odudu:spike 3200`), `examples/_shared/provision.sh`, then each example against it. Commit `Add the web app, API and machine-to-machine examples`. Push; CI green (formatting and lint cover `examples/`: eslint and prettier both run from the root; if ESLint's TypeScript project service rejects files outside `tsconfig`, add `examples/**` to the ESLint ignores with one comment saying they are standalone and checked by their own job).
+
+---
+
+## Increment 29: Example: SPA, and the examples job (4 to 5 h)
+
+### Task 29: The single-page app and the job that runs all four
+
+**Files:** Create `examples/single-page-app/{package.json,package-lock.json,index.html,src/main.ts,vite.config.ts,README.md,LICENSE}` (`oauth4webapi` 3.8.8, Vite 8.3.1, authorization code with PKCE, tokens held in memory only, silent nothing: a refresh token is not requested), `.github/workflows/examples.yml`. Modify `.github/dependabot.yml` (four `npm` entries, one per `/examples/<name>`).
+
+- [ ] Failing test `examples/single-page-app/test.ts` through the shared browser helper: the page redirects to Odudu with `code_challenge_method=S256` and `state`; after sign-in the app shows the subject and the access token's `exp`; a tampered `state` is refused with a visible error; CORS: the SPA's origin is a registered `web_origin` (the guide says how: `seed client --web-origin`, `grep -n "web-origin" apps/server/src/cli/seed.ts:1117`). Run (FAIL).
+- [ ] Implement. `examples.yml`: triggers `pull_request` and tags; job `examples` (matrix: the four examples, `fail-fast: false`): start the quickstart stack on port 3205 from `odudu:ci` (pull request) or the tag's published image (tag), run `examples/_shared/provision.sh`, `npm ci` in the example, start it, run its test. The matrix names the image it ran: `echo "image: $IMAGE@$(docker inspect --format '{{.Id}}' ...)"` in the log so "run against the published image" is checkable. On tags the job also runs for `--platform linux/arm64`? no: the arm quickstart job is Task 10's.
+- [ ] Commit `Add the single-page app example and run all four in CI`. Push; CI green. On the next `rc` tag the `examples` job runs against the **published** image: cut `v0.1.0-rc.2` at the end of this increment, confirm the matrix is green with the GHCR image, and record the run URL in `docs/phases/p4g.md`.
+
+---
+
+## Increment 30: The mark (3 to 5 h)
+
+Brand rules from the design: the **staff** direction; a ring on a straight shaft with a short crossbar; single-weight line geometry so it works as a favicon, in a terminal and large; monospace lowercase `odudu` wordmark (a proposal the owner confirms); any glyph-like detail confirmed by someone who knows the Nsibidi tradition before use, otherwise omitted.
+
+### Task 30: Draw it, test its geometry, ask the owner
+
+**Files:** Create `brand/mark.svg`, `brand/wordmark.svg`, `brand/lockup.svg`, `brand/favicon.svg`, `brand/favicon.ico` (generated), `brand/social.svg` and `brand/social.png` (1200 x 630), `brand/README.md` (usage, clear space, minimum size, what not to do, trademark note), `brand/build.ts` (exports PNG/ICO from SVG with Playwright's chromium, already available), `tests/lint/brand-assets.test.ts`. Modify `packages/instrument/src/…/mark.svg` (replace the placeholder), `apps/docs/en/public/*` (copies at build, not committed twice: the docs build copies from `brand/`).
+
+- [ ] Failing test `tests/lint/brand-assets.test.ts`: every SVG in `brand/` has a `viewBox`, `<title>` and `<desc>`, no `<script>`, no `style=`, no `<image>` or external `href`, only `stroke="currentColor"` or `fill="none"`/`currentColor` (single colour so it themes), one stroke width value used throughout the mark (`stroke-width` set once, on a group); `favicon.svg` is under 1 KB; `social.png` is exactly 1200 x 630 and under 300 KB; the wordmark text is the lowercase string `odudu` set in `font-family: monospace` **as outlines** (paths, not `<text>`, so it renders identically everywhere); `brand/README.md` contains the sentence that the mark is not licensed (Task 3's wording). FAIL.
+- [ ] **Draw.** Geometry (the builder's drawing; the owner approves): 32 x 32 grid; shaft a vertical line at x=16 from y=9 to y=30; ring a circle centre (16, 6) radius 4; crossbar a short horizontal line at y=20 from x=12 to x=20; `stroke-width` 2, `stroke-linecap` round, `fill` none. Check legibility at 16, 24, 32 and 180 px in light and dark by exporting four PNGs and viewing them (Read the images). Wordmark: lowercase `odudu` in a monospace face converted to outlines (IBM Plex Mono is already self-hosted for Instrument, `grep -n "ibm-plex-mono" apps/admin-console/package.json`; its licence is SIL OFL, which permits embedding as outlines; record that in `brand/README.md`). Lockup: mark left, wordmark right, baseline aligned. Social image: mark and wordmark on the Instrument surface colour with the tagline, 1200 x 630.
+- [ ] **OWNER GATE 1 (mark).** Stop. Show the owner the four exported sizes, the lockup and the social image. Ask: approve the mark? confirm the monospace wordmark? Do **not** continue to Increment 31 until the owner replies; a changed mark means redoing these assets and nothing else (design, "Brand", accepted risk). Record the owner's reply and date in `docs/phases/p4g.md`. If the owner wants any Nsibidi-inspired detail, record who confirmed it; the default is none.
+- [ ] Wire the approved assets: the Instrument placeholder mark, the docs favicon and logo, README (Task 32). Commit `Add the approved Odudu mark, wordmark, favicon and social image`. Push; CI green.
+
+---
+
+## Increment 31: The landing page (5 to 6 h)
+
+Content (design, "Goals", and the owner's brief): what it is and what **odudu** means (authority in Ibibio, Akwa Ibom, Nigeria); the one command; quick paths per reader (a person signing in, an administrator, a developer integrating a client, an operator deploying); capabilities; **Hosted Odudu: in the works**, with no payment, no price and no sign-up that provisions anything. A custom layout, restrained CSS-only motion respecting `prefers-reduced-motion`, mobile first, unique and clean (Instrument's mineral surfaces, jade focus, amber reserved for authority: the one place amber appears is the staff mark's ring).
+
+### Task 31: A custom home layout with proof
+
+**Files:** Create `apps/docs/.vitepress/theme/Home.vue` (the layout; no JS beyond VitePress's own, no animation library), `apps/docs/.vitepress/theme/home.css` (logical properties only), `apps/docs/en/index.md` (`layout: home`, content as front matter data), `apps/docs/tests/landing.spec.ts` (Playwright), `apps/docs/playwright.config.ts`. Modify `apps/docs/package.json` (`@playwright/test` 1.63.0, `@axe-core/playwright` 4.13.0 as devDependencies, the same exact versions the console has), `.github/workflows/verify.yml` (`docs` job installs Chromium and runs `landing.spec.ts` against `vitepress preview` of `dist-pages`).
+
+- [ ] Failing Playwright specs first (run `pnpm --filter @odudu/docs exec playwright test` after Task 18's install): `it('shows what it is, the one command and the docs link above the fold at 390 x 844')`; `it('has no horizontal scroll at 320, 390, 768 and 1280 px')` (`document.documentElement.scrollWidth <= innerWidth`); `it('copies the one command to the clipboard without smart characters')` (clipboard text equals the page's `<code>` text, ASCII, one line; Review Focus 4); `it('says odudu means authority in Ibibio, a language of Akwa Ibom, Nigeria')`; `it('has quick paths for four readers, each one click from the page it leads to')`; `it('lists capabilities that each link to a page that exists')` (the link-check owns existence; the spec owns count >= 6); `it('presents Hosted Odudu as planned only')`: the section contains the text "in the works", **no** `<form>`, **no** `<input>`, **no** `mailto:`, **no** link whose text or href matches `/pricing|price|buy|checkout|sign.?up|subscribe|trial|waitlist|\$\d/i`, no currency symbol in the section, and a link only to `/roadmap`; `it('has no motion under prefers-reduced-motion: reduce')` (`page.emulateMedia({ reducedMotion: 'reduce' })`: every element's computed `animation-name` is `none` and `transition-duration` is `0s` within the landing's own rules, scroll position irrelevant); `it('shows all content without CSS scroll-linked animation support')` (spike S2: with `animation-timeline` unsupported via `@supports` forced off, text opacity is 1); `it('passes axe in light and dark')`; `it('loads no script from another origin and no font from another origin')` (network log); `it('keeps first-load JavaScript under 150 KB gzip')` (VitePress's runtime counted; a paint-time budget is not asserted because it is flaky in CI).
+- [ ] Implement `Home.vue` sections in this order: hero (mark, tagline, the one command with copy button, a "Read the docs" link, a quiet "Why 'odudu'?" line), the meaning of the name (its own short section with a small typographic treatment, not decoration), the ten-minute path as three numbered steps, quick paths (four cards), capabilities (a dense list drawn from the roadmap's shipped phases: standards, tenants, MFA, admin API and console, token exchange, audit, self-hosted single container), Hosted Odudu (in the works), footer (licence, security, contributing, roadmap). Motion: sections fade and rise 8 px with `animation-timeline: view()` inside `@supports (animation-timeline: view())` and `@media (prefers-reduced-motion: no-preference)`; the hero mark's ring has one slow 6 s opacity pulse likewise gated; nothing blocks reading; no parallax; hover and focus transitions 120 ms as Instrument specifies (`docs/archive/specs/2026-09-26-p4d-admin-console-design.md` §8).
+- [ ] Look at it: `pnpm --filter @odudu/docs exec vitepress preview dist-pages` is **not** started on a forbidden port: use `--port 4173` and view at 390 and 1280 px with the browser tools; read screenshots, fix anything that looks unfinished. (This step is the owner's "unique, clean landing" bar; a screenshot is not a test, so say what was seen in the commit's PR comment.)
+- [ ] Commit `Add the landing page`. Push; CI green. **OWNER GATE 2 (landing).** Show the owner screenshots at 390 and 1280 px, light and dark, before Increment 35 deploys it publicly.
+
+---
+
+## Increment 32: README (2 to 3 h)
+
+### Task 32: The standard front door
+
+**Files:** Modify `README.md` (1,806 lines to under 150). Create `tests/docs/readme-front-door.test.ts`. Modify `tests/docs/{structure,references,phase-references}.test.ts` (README floors).
+
+- [ ] Failing test: `it('is a front door, not a manual')` (under 200 lines); `it('opens with the logo, the name, a tagline and badges')` (first image is `brand/lockup.svg` with alt text; badges: verify workflow status, latest release, licence, container image); `it('says what odudu means, once')`; `it('holds a quickstart of at most five lines, each a command copied from the quick start page')` (compared byte for byte with the runnable block in `apps/docs/en/quick-start/index.md`: one source, drift fails); `it('links docs, examples, roadmap, contributing, security and licence')` (each link target exists); `it('keeps the not-production-ready notice')` (Owner step 10); `it('names the licence by LICENSING.md and carries no operating detail')` (no `ODUDU_` variable appears more than in the quickstart). FAIL.
+- [ ] Rewrite. The 1,806 lines' content was moved by Task 27 and Task 23; before cutting, `git diff --stat` and a grep pass confirms each README `##` has a home in the site (record the mapping in `docs/phases/p4g.md`). Retarget the README floors in the three docs tests to the new smaller counts. Commit `Rewrite the README as a front door`. Push; CI green.
+
+---
+
+## Increment 33: Community files (3 to 4 h)
+
+### Task 33: SECURITY, CONTRIBUTING, code of conduct, templates
+
+**Files:** Modify `SECURITY.md` (drop "has not been security reviewed, do not deploy" duplication of the README notice; keep the facts: how to report, response expectations, supported versions: "the latest release"; the private-reporting link at `https://github.com/wizzywit/odudu/security/advisories/new` already there). Create `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1, fetched: `curl -fsSL https://www.contributor-covenant.org/version/2/1/code_of_conduct/code_of_conduct.md` and fill the contact with the security address in `SECURITY.md`; the test compares the title line), `.github/ISSUE_TEMPLATE/{bug_report.yml,feature_request.yml,config.yml}`, `.github/PULL_REQUEST_TEMPLATE.md`, `tests/lint/community-files.test.ts`.
+
+- [ ] Failing test: each file exists; `CONTRIBUTING.md` states the CLA (Task 34), the licence split by pointing at `LICENSING.md`, how to run `pnpm verify`, the commit-message rules (72/8, no attribution) and the phase process pointer, how to run the quickstart from a checkout (`infra/docker`), and what a good bug report holds (version from `odudu --version`, image digest, the stack's `docker compose logs odudu` tail with secrets redacted); issue templates are YAML forms (`body:` array, a required `version` input); `config.yml` sets `blank_issues_enabled: false` and a `contact_links` entry to the private-reporting URL; the pull request template has the checklist that mirrors CLAUDE.md's finishing bar (CI, docs updated, tests first, no `any`) and **no attribution line**. FAIL.
+- [ ] Write them. **Owner step 3** (private reporting on) before merge. Commit `Add contribution, conduct and reporting files`. Push; CI green.
+
+---
+
+## Increment 34: The CLA (3 to 4 h)
+
+ADR 0042: "Contributions are accepted under a CLA, enforced in CI, from the first outside pull request." Dependabot's version bumps are exempt (the ADR says every commit so far is the owner's apart from them).
+
+### Task 34: A CLA text, its enforcement, and a proof
+
+**Files:** Create `CLA.md`, `.github/workflows/cla.yml`, `tests/lint/cla-workflow.test.ts`. Modify `CONTRIBUTING.md`, `.github/dependabot.yml` is untouched.
+
+- [ ] Failing test: `cla.yml` triggers on `pull_request_target` (types `opened`, `synchronize`, `closed`) and `issue_comment` (types `created`) **and checks out nothing** (no `actions/checkout`: a `pull_request_target` job that checks out the pull request's code runs untrusted code with write permissions; `verify.yml`'s header comment makes the same argument for plain `pull_request`); permissions are exactly `actions: write`, `contents: write` (for the signatures branch), `pull-requests: write`, `statuses: write`; `uses: contributor-assistant/github-action@v2.6.1`; `path-to-document` points at `CLA.md` on `main` by raw URL; `branch: cla-signatures` (not `main`); `allowlist: wizzywit,dependabot[bot]`; the job is named `cla`. A second `it` asserts `CLA.md` contains the grant of copyright licence, the grant of patent licence, the sentence that contributions may be offered under other licences including a commercial one (ADR 0042: why a CLA, not a DCO), and the signing sentence the action matches (`I have read the CLA Document and I hereby sign the CLA`). FAIL.
+- [ ] **S13. The action's behaviour** (spike; `assumption:` it stores signatures in a branch of this repository with the default token, that a `pull_request_target` run reports a status named `CLA Assistant`, and that an allowlisted actor passes). Verify with a throwaway pull request from a second GitHub account (owner-assisted: ask the owner for one, or use a fork), record the status name, and set the required-check name in Owner step 4 from the observed value. `assumption:` a fork's pull request can comment-to-sign; record what happened.
+- [ ] Draft `CLA.md` from the Apache Individual CLA's structure (grants, representations, no obligation to use) with the one added clause above. **OWNER GATE 3 (CLA text).** The plan does not decide legal wording: stop and ask the owner to approve or to take it to a lawyer. Commit `Enforce a contributor licence agreement in CI`. Push; CI green; Owner step 4 adds `cla` to required checks once green on one real pull request.
+
+---
+
+## Increment 35: Pages deployment (3 to 4 h)
+
+### Task 35: The site from the release workflow, the domain a one-line change, a weekly external link check
+
+**Files:** Modify `.github/workflows/release.yml` (job `pages`), `apps/docs/.vitepress/config.mts` (`SITE_URL` constant: the **one line** a domain changes, together with `DOCS_BASE`), `quickstart/compose.yaml` publication path. Create `.github/workflows/links.yml`, `tests/lint/pages-workflow.test.ts`, `apps/docs/en/public/CNAME` is **not** committed (the owner adds it with the domain).
+
+- [ ] Failing test: `release.yml`'s `pages` job `needs: [sign]`, permissions `pages: write` and `id-token: write` only, `environment: github-pages`, uses `actions/configure-pages@v6.0.0`, `actions/upload-pages-artifact@v5.0.0`, `actions/deploy-pages@v5.0.1`, runs **only** for tags without `-` (an `rc` never replaces the live site: Review Focus 5), builds with `DOCS_BASE=/odudu/`, and also publishes `compose.yaml` (the version-stamped copy) at `/compose.yaml` and the SBOM at `/sbom/odudu.spdx.json` inside the artifact; `config.mts` contains `const SITE_URL` and `const DOCS_BASE` each on exactly one line (a domain change edits those two lines: the test finds every occurrence of `wizzywit.github.io` outside `docs/archive`, `CHANGELOG.md` and tests and expects each file to be on a named allowlist of `config.mts`, `README.md`, `quickstart/compose.yaml` and `apps/docs/en/quick-start/index.md`, so a hard-coded host elsewhere fails). `links.yml` runs `lychee` weekly and on demand over the **built** site including external links, opening an issue on failure; external failures never gate a pull request. FAIL.
+- [ ] Implement. The quickstart's one command on the landing page and in the README is `curl -fsSLO https://wizzywit.github.io/odudu/compose.yaml && docker compose up`: that is a single shell line (`&&`), copy-safe; Task 21's lint accepts `&&` joined commands? It refuses more than one logical command line, and `&&` stays one line, so allow it explicitly in `lintCommand` with a test (`it('allows && on one line')`) and say why in the test name.
+- [ ] Owner step 2 (Pages enabled). Cut `v0.1.0-rc.3`: the `pages` job must **skip**, the image job must run. Then, only on the owner's go, the first stable tag deploys (that is Increment 36's gate). Commit `Deploy the site to GitHub Pages from the release workflow`. Push; CI green.
+
+---
+
+## Increment 36: Close (3 to 5 h)
+
+### Task 36a: The four whole-phase passes, `docs/phases/p4g.md`, `docs/NEXT.md`
+
+**Files:** Modify `docs/phases/p4g.md`, `docs/NEXT.md`, `docs/superpowers/specs/2026-09-10-odudu-design.md`, `docs/README.md`, `apps/docs/tests/unfilled.json`.
+
+- [ ] **Pass 1.** Read `apps/docs/en/roadmap.md` item by item: each marker names a phase, a decision or an ADR (the test checks presence) **and is still true** (read it). Items P4g shipped are gone; the hosted service has its own entry placed against the unnumbered §11 row.
+- [ ] **Pass 2.** `git grep -n "P10\|P4b\|P4f\|P4g\|P12" -- apps/docs/en README.md docs/NEXT.md docs/superpowers/specs/2026-09-10-odudu-design.md` for any number this phase moved (design: "P4g", Instrument "moved here from P4b", the image "moved here from P12"): each citation agrees with §11.
+- [ ] **Pass 3.** Read `docs/NEXT.md`'s headings against the closed phases (P4g now). The "Deployment is still unpublished" paragraph (`grep -n "Deployment is still unpublished" docs/NEXT.md`) and the "Base images are mutable tags" row (`grep -n "Base images are mutable" docs/NEXT.md`) are now false: rewrite the first (image published; backup/restore is P12, replicas P11) and delete the row. The "Localization has a mechanism and owners and no code" row narrows to P4b and P4h. NEXT's budget test stays green.
+- [ ] **Pass 4.** Reconcile §11 against the roadmap page both ways: every item the roadmap places in a phase appears in that phase's criterion, and every criterion's work is in the roadmap. §11's P4g row is edited **in this task** to say what shipped differently from the row's wording (the "executed in CI" clause is now true of runnable guide blocks and the captured transcripts stay captured; the docs image copy is a second build of the same source) and the hours as built. `apps/docs/tests/unfilled.json` is `[]`.
+- [ ] `docs/phases/p4g.md`: the spikes (already there), what each increment found (one paragraph per increment: measured, not narrated), build and CI minutes added, the owner-gate replies, the image digests at release. Commit `Close P4g: roadmap, NEXT and the phase note`.
+
+### Task 36b: Whole-branch review, then the owner's go
+
+- [ ] Run `pnpm verify` equivalent locally where possible (`node_modules/.bin/prettier --check .`, `node_modules/.bin/vitest run --project unit`, `node_modules/.bin/depcruise --config .dependency-cruiser.cjs packages apps`, `pnpm typecheck` is not allowed to install: rely on CI). Dispatch the whole-branch review (spec compliance and quality, a fix loop until clean).
+- [ ] **Walk the stranger's path** as the user would: from the deployed (rc) landing at 390 px, copy the one command, run it on a machine with 3000 busy, read the banner, sign in, run the example of your kind, find the API reference in one hop, verify the image signature with the page's own command. Fix whatever stopped you.
+- [ ] **OWNER GATE 4 (first stable tag).** Steps 1 to 9 of "Owner steps" are the checklist; the owner cuts `v0.1.0` (`RELEASING.md`). `finishing-a-development-branch` follows.
+
+---
+
+## Spec coverage
+
+| Clause (P4g row and design)                                                                                                    | Where                                                              |
+| ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| Stranger signs in within ten minutes, CI proves it                                                                             | Tasks 9, 10 (`quickstart` job, 600 s budget, port 3190, arm64)     |
+| Versioned image on GHCR from a tagged release, signed, SBOM                                                                    | Tasks 5 (spike), 6                                                 |
+| Base images `node`, `postgres`, `mailpit`, `swagger-ui` by digest; release process; changelog                                  | Tasks 4, 6 (`RELEASING.md`, `CHANGELOG.md`), Dependabot (D10)      |
+| One-file `compose.yaml` needing no checkout                                                                                    | Task 9 (no `build:`; test), Task 35 (published at `/compose.yaml`) |
+| One command: start, migrate, system tenant, first admin; TTY prompt, env, generated password                                   | Tasks 8, 9 (D1)                                                    |
+| Example applications in CI against the published image                                                                         | Tasks 28, 29                                                       |
+| VitePress, mobile-first, searchable, one hop, IA, generated reference, guides executed in CI                                   | Tasks 18, 19, 21, 24 to 27                                         |
+| Every server page under Instrument; build check                                                                                | Tasks 11, 12 (`instrument-reach.test.ts`)                          |
+| Three documents migrated, tests retargeted, retired, citations, link check, CLAUDE.md                                          | Tasks 22, 23                                                       |
+| Roadmap page held by its placement test                                                                                        | Task 23a                                                           |
+| README front door                                                                                                              | Task 32                                                            |
+| Landing page; logo, wordmark, favicon, social image chosen by the owner                                                        | Tasks 30, 31 (gates 1, 2)                                          |
+| SECURITY, CONTRIBUTING, code of conduct, templates                                                                             | Task 33                                                            |
+| AGPL / Apache relicence, LICENSING, package fields; CLA in CI                                                                  | Tasks 3, 34                                                        |
+| Catalogues, negotiation, `lang`/`dir`/`Content-Language`, `ui_locales_supported`, logical CSS, `<bdi>`, bidi refusal, the lint | Tasks 11b (logical CSS test), 12, 13, 14 to 17                     |
+| Docs inside the image at `/docs` under a fixed policy                                                                          | Task 20 (D5)                                                       |
+| Hosted placeholder row; "Hosted Odudu" section with no payment, price or sign-up                                               | Tasks 3, 31 (the `presents Hosted Odudu as planned only` spec)     |
+| GitHub Pages from the release workflow, domain a one-line change                                                               | Task 35                                                            |
+| Dependabot / digest maintenance                                                                                                | Task 4, D10                                                        |
+| Performance and scale statement                                                                                                | "Performance and scale"                                            |
+
+## Assumptions left after the spikes
+
+Every one has the task whose first step observes it.
+
+1. `animation-timeline: view()` degrades to fully visible content (Task 1, S2).
+2. VitePress's `srcDir` plus `locales` supports a second language directory (Task 1, S3).
+3. The inline-script and style-attribute hash inventory is small and stable (Task 1, S5; Task 20 widens only what a violation proves).
+4. Compose inline `configs`, `--env-file` through a shared volume, TTY on `run` and not on `up`, and `script` giving CI a TTY (Task 2, S6).
+5. The Instrument stylesheet fits 12 KB gzip (Task 2, S7).
+6. esbuild bundles `intl-messageformat` and the JSON catalogue (Task 2, S8).
+7. `ubuntu-24.04-arm` is available (Task 5, S9; Task 10).
+8. cosign keyless identity strings and SBOM attestation on the index digest (Task 5, S10, S11).
+9. `lychee --include-fragments` checks local Markdown anchors (Task 23b).
+10. The CLA action's status name, signature branch and fork behaviour (Task 34, S13).
+11. gnu.org serves the canonical AGPL text (Task 3, caught by its test).
+12. `z.toJSONSchema` is available to the config page (Task 19b, with the fallback named).
+
+Spikes: **13** (S1 to S13), each recorded in `docs/phases/p4g.md`.
