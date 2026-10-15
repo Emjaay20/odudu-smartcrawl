@@ -11033,29 +11033,6 @@ session lifecycle. A citation of either half here means that half.
 
 **Login**
 
-- **Password, TOTP, passkey and recovery codes all sign somebody in.**
-  The executor runs a tenant's own ordered `authentication_executions`
-  (REQUIRED/ALTERNATIVE/CONDITIONAL/DISABLED) through a registry keyed by
-  authenticator name, and a login resumes across steps rather than
-  restarting — a satisfied authenticator is never asked for twice, even
-  across a rejected attempt at whatever comes after it. `otp` runs for any
-  subject holding a TOTP credential
-  ([Two-factor authentication with TOTP](#two-factor-authentication-with-totp)),
-  and `passkey` signs a subject in with no username at all
-  ([Signing in with a passkey](#signing-in-with-a-passkey-and-no-username)).
-  `passkey` and `password` share an ALTERNATIVE group and a group offers one
-  form at a time, so the passkey step is applicable to a submission that
-  actually carries an assertion; with nothing submitted the group falls
-  through to the password, whose page is what offers the passkey button.
-  `recovery-code` is applicable on the same terms — only to a submission
-  carrying one — which is how it substitutes for the OTP step instead of
-  competing with it ([Recovery codes](#recovery-codes)).
-  `GET`/`PUT /admin/tenants/{tenant}/flow/executions`
-  ([Admin paths](admin-paths.md#get-flowexecutions-and-put-flowexecutions))
-  now reads and replaces the ordered list wholesale — `authentication_executions`
-  is no longer insert-only, so the rows `provisionBrowserFlow` writes are a
-  starting point rather than what a tenant has for good. What is not there:
-  a UI to drive it, which is **P4d**'s.
 - **Recovery codes are issued once and shown once.** Ten per subject, each
   Argon2id-hashed in its own credential row, offered by the
   `generate-recovery-codes` required action that enrolling either second
@@ -11075,28 +11052,6 @@ session lifecycle. A citation of either half here means that half.
   and the per-origin throttle is what bounds both — ten submissions a
   minute per client address, which is a budget on the multiplier rather
   than a fix for it.
-- **The account-lifecycle flows exist, and none of them mails on the
-  request path.** Address verification
-  (`GET /tenants/{tenant}/login-actions/action-token`,
-  [Address verification](#address-verification)), self-registration
-  (`GET`/`POST /tenants/{tenant}/login-actions/registration`,
-  [Self-registration](#self-registration)) and password reset
-  (`GET`/`POST /tenants/{tenant}/login-actions/reset-password`,
-  [Password reset](#password-reset)) all exist now, gated by their own
-  tenant setting, each off by default. A tenant with `verify_email` on
-  refuses to complete a login for a self-registered address until it is
-  verified — no authorization code, not just a page saying so. Each queues
-  its mail in `email_outbox` and answers; a pass of its own sends it
-  ([Sending queued mail](#sending-queued-mail-odudu-send-mail)), which is
-  what closed the reset endpoint's timing oracle. Per-tenant SMTP is no
-  longer missing: `GET`/`PUT /admin/tenants/{tenant}/smtp` configures a
-  tenant's own transport and `POST /admin/tenants/{tenant}/smtp/test` sends
-  one message through it
-  ([Admin paths](admin-paths.md#get-smtp-put-smtp-and-post-smtptest)), with
-  the password behind the same key-encryption interface §5 puts a signing
-  key behind, and `resolveSender` falling back to the deployment's own
-  `ODUDU_SMTP_*` where a tenant configures none. What is not there yet: a UI
-  to configure it, which is **P4d**'s.
 - **A password change or reset leaves every other session alive.** Neither
   the `update-password` action nor a redeemed reset link ends the subject's
   other sessions, and neither offers to — ASVS V3.3.3 asks that a subject be
@@ -11107,9 +11062,10 @@ session lifecycle. A citation of either half here means that half.
   ([Admin paths](admin-paths.md#delete-subjectsidsessions)).
 
 - **Every page this server renders is hardcoded HTML**, dependency-free with
-  every interpolated value escaped: twelve `*-html.ts` renderers across the
-  `view` layers of `packages/protocol-oidc`, `packages/authn-flows` and
-  `packages/account`, from the sign-in form to the logged-out page. Theming
+  every interpolated value escaped: fifteen `*-html.ts` renderers across the
+  `view` layers of `packages/protocol-oidc`, `packages/authn-flows`,
+  `packages/account` and `packages/console-gateway`, from the sign-in form
+  to the logged-out page and the console's refusal page. Theming
   and per-client branding are **P4b**, split out of P10 on 2026-09-17 because
   P10's criterion tested provider loading and would have passed with no
   theming at all. Its criterion names every renderer rather than a list of
@@ -11198,19 +11154,19 @@ session lifecycle. A citation of either half here means that half.
 
 **The admin API**
 
-- **The audit trail has one reader, the admin API, and no destination
-  outside the database.** Every kind of row the vocabulary names is
-  written — [one sign-in's trail](#one-sign-ins-audit-trail-read-through-the-admin-api)
-  reads two of them back through `GET /admin/tenants/{tenant}/audit` — but
-  nothing shows it except that endpoint, its count and its NDJSON export
-  (`GET …/audit/count` and `GET …/audit/export`,
-  [Admin paths](admin-paths.md#get-auditcount-and-get-auditexport)), which
-  hand it over only when asked: a console is **P4d**'s, whose
-  criterion shows the audit trail, and an `EventListener` delivering a
-  tenant's events to a SIEM or a webhook is **P10**'s, whose criterion
-  names one. A successful `/introspect` or `/userinfo` call writes no row,
-  which is a decision (the P4e spec's §2): each is a read a resource server
-  makes per request, and the grant it reads was recorded when it was
+- **The audit trail has two readers, the admin API and the console's Audit
+  trail area, and no destination outside the database.** Every kind of row
+  the vocabulary names is written —
+  [one sign-in's trail](#one-sign-ins-audit-trail-read-through-the-admin-api)
+  reads two of them back through `GET /admin/tenants/{tenant}/audit` — and
+  the console shows them filtered, one page at a time, with the NDJSON
+  export (`GET …/audit/export`,
+  [Admin paths](admin-paths.md#get-auditcount-and-get-auditexport)) beside
+  them. Nothing hands them to anything unasked: an `EventListener`
+  delivering a tenant's events to a SIEM or a webhook is **P10**'s, whose
+  criterion names one. A successful `/introspect` or `/userinfo` call writes
+  no row, which is a decision (the P4e spec's §2): each is a read a resource
+  server makes per request, and the grant it reads was recorded when it was
   issued.
 - **A refused credential or session change writes no row.** A spent,
   expired or unknown reset or verification link, a password the policy
@@ -11224,21 +11180,6 @@ session lifecycle. A citation of either half here means that half.
   `/introspect` and the admin API's own checks do record their refusals.
   The request log shows each such request's path and status, not its
   reason.
-- **The console's single-page app has only some of its features.** The
-  image builds `apps/admin-console` into `/app/console`, and the gateway
-  under `/console` serves it ([docs/console-paths.md](console-paths.md)).
-  Beyond signing in, the rail, the tenant switch and sign-out, the
-  Overview and System › Tenants work — the tenant list, guided creation
-  with a first administrator, the tenant record, import, and export,
-  which is also a tenant's own Export area — and System › System
-  administrators, which lists, grants and revokes them. Every other area
-  is a placeholder that reads and changes nothing. Planned: **P4d**, whose
-  fourth part adds the rest one at a time.
-- **The tenant's sign-in pages do not pass WCAG 2.2 AA.** They are
-  unstyled, and axe reports `target-size` on `#passkey-submit`; the
-  console's browser tests hold that check as a `fixme`. Planned: **P4b**,
-  whose criterion requires every server-rendered page to pass axe in both
-  colour schemes.
 
 **Endpoints that do not exist at all**
 

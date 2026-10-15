@@ -910,6 +910,21 @@ image serves the console's shell with its CSP and a hashed asset as
 own compose project, `odudu-smoke`, on ports 3100 and 5452, so it runs
 beside the stack started below and its teardown never reaches that one.
 
+**What the console covers.** A tenant's rail groups its areas by task:
+Overview; Identity (Subjects, Groups, Roles); Applications (Clients, Scopes,
+Registration tokens); Security (Sign-in flow, Signing keys); Tenant
+(Settings, Email, Export); Observe (the Audit trail). A system administrator
+signed in to `system` also has System, with Tenants and System
+administrators. What the rail lists, and what a page lets a caller change,
+follows `whoami`'s capabilities; the server still decides every request.
+Six admin routes have no screen and are for scripts:
+`POST /subjects/bulk`, `GET` and `DELETE /sessions`, `DELETE /lockouts`,
+`GET /mail` and `DELETE` of a tenant. `tests/lint/console-covers-admin-routes.test.ts`
+names each, so a new admin route with neither a screen nor a reason fails
+the build. The console's own sign-in, drafts and sections are described in
+[docs/console-paths.md](docs/console-paths.md) and
+[the P4d note](docs/phases/p4d.md).
+
 **Drive the console in a browser** against the same image:
 
 ```bash
@@ -1740,15 +1755,14 @@ A real deployment today looks like:
 Being straight about this, because "self-hostable" should mean something.
 Every row says where it stands, and every row has a phase:
 
-|                                                                                                                                         | Where it stands |
-| --------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| Self-service for an End-User: a "me" API and application-initiated actions for credential ceremonies                                    | P4f             |
-| An admin **console** — Overview, System › Tenants and System administrators, and a tenant's Export are built; the rest are placeholders | P4d             |
-| Published images and a release process                                                                                                  | P12             |
-| Secret management beyond environment variables                                                                                          | P12             |
-| Backup and restore guidance                                                                                                             | P12             |
-| Multi-replica support: migration locking, shared session cache, HA                                                                      | P11             |
-| Helm chart or Kubernetes manifests                                                                                                      | P11             |
+|                                                                                                      | Where it stands |
+| ---------------------------------------------------------------------------------------------------- | --------------- |
+| Self-service for an End-User: a "me" API and application-initiated actions for credential ceremonies | P4f             |
+| Published images and a release process                                                               | P12             |
+| Secret management beyond environment variables                                                       | P12             |
+| Backup and restore guidance                                                                          | P12             |
+| Multi-replica support: migration locking, shared session cache, HA                                   | P11             |
+| Helm chart or Kubernetes manifests                                                                   | P11             |
 
 The three P12 rows had no phase at all until 2026-09-14. They are
 operational rather than protocol work, and the roadmap — written outward
