@@ -37,7 +37,7 @@ export function useMailDelivery(tenant: string): MailDelivery {
       loadMore: pages.loadMore,
       refresh: pages.retry,
     },
-    oldestWaiting: oldestWaiting(pages.rows, more),
+    oldestWaiting: oldestWaiting(pages.rows, more, status),
     masked: anyMasked(pages.rows),
   };
 }

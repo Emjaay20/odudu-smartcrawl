@@ -51,9 +51,14 @@ export function mailOutcome(message: MailMessage): MailOutcome {
 }
 
 // Mail is listed newest first, so with no page left unread the last message
-// still unsent is the oldest one waiting; with pages left it could be later.
-export function oldestWaiting(rows: readonly MailMessage[], more: boolean): string | null {
-  if (more) return null;
+// still unsent is the oldest one waiting. Narrowed to one status the rows
+// cannot see the other waiting status, so nothing is said.
+export function oldestWaiting(
+  rows: readonly MailMessage[],
+  more: boolean,
+  status: string,
+): string | null {
+  if (more || status !== ANY_STATUS) return null;
   const waiting = rows.filter((row) => row.status === 'queued' || row.status === 'retrying');
   return waiting.at(-1)?.created_at ?? null;
 }

@@ -1,4 +1,5 @@
 import type { MailMessage } from '@odudu/contracts/admin';
+import { ANY_STATUS } from '#/shared/service/filters';
 import { describe, expect, it } from 'vitest';
 import {
   anyMasked,
@@ -69,15 +70,25 @@ describe('what became of a message', () => {
 });
 
 describe('the oldest message still waiting', () => {
-  it('is the last waiting one of a list that is complete', () => {
-    const rows = [message('3', 'queued'), message('2', 'sent'), message('1', 'retrying')];
-    expect(oldestWaiting(rows, false)).toBe('2026-10-11T08:00:00.000Z');
+  const rows = [message('3', 'queued'), message('2', 'sent'), message('1', 'retrying')];
+
+  it('is the last waiting one of a list that is complete and unfiltered', () => {
+    expect(oldestWaiting(rows, false, ANY_STATUS)).toBe('2026-10-11T08:00:00.000Z');
   });
 
+  it.each(['queued', 'retrying', 'sent', 'failed'])(
+    'is never derived from rows narrowed to %s, which cannot see the other waiting status',
+    (status) => {
+      expect(oldestWaiting(rows, false, status)).toBeNull();
+    },
+  );
+
   it('is unknown while more messages are left unread, and none when nothing waits', () => {
-    expect(oldestWaiting([message('3', 'queued')], true)).toBeNull();
-    expect(oldestWaiting([message('3', 'sent'), message('2', 'failed')], false)).toBeNull();
-    expect(oldestWaiting([], false)).toBeNull();
+    expect(oldestWaiting([message('3', 'queued')], true, ANY_STATUS)).toBeNull();
+    expect(
+      oldestWaiting([message('3', 'sent'), message('2', 'failed')], false, ANY_STATUS),
+    ).toBeNull();
+    expect(oldestWaiting([], false, ANY_STATUS)).toBeNull();
   });
 });
 
