@@ -200,7 +200,29 @@ describe('renderLoginForm', () => {
       ).toBe(username);
     });
 
-    it('does not reflect a username longer than any account has', () => {
+    it.each([
+      ['254 code points of one unit each', 'a'.repeat(254), true],
+      ['255 code points of one unit each', 'a'.repeat(255), false],
+      ['254 code points of two units each', '\u{1F642}'.repeat(254), true],
+      ['255 code points of two units each', '\u{1F642}'.repeat(255), false],
+    ])('counts code points at the echo bound: %s', (_label, username, echoed) => {
+      const page = renderLoginForm('acme', 'sid', 'password', false, false, {
+        ...refusal,
+        username,
+      });
+      expect(page.body.includes(`value="${username}"`)).toBe(echoed);
+    });
+
+    it('does not echo an empty username as an empty value', () => {
+      const page = renderLoginForm('acme', 'sid', 'password', false, false, {
+        ...refusal,
+        username: '',
+      });
+      expect(page.body).not.toContain('value=""');
+      expect(page.body).toMatch(/name="username"[^>]*autofocus/u);
+    });
+
+    it('does not reflect a very long username', () => {
       const page = renderLoginForm('acme', 'sid', 'password', false, false, {
         ...refusal,
         username: 'a'.repeat(1_000_000),

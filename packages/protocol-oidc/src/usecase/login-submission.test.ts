@@ -51,6 +51,7 @@ interface Harness {
   pendingActions: Mock;
   resetAuthenticationProgress: Mock;
   recordRememberMe: Mock;
+  subjectEnabled: Mock;
 }
 
 function harness(): Harness {
@@ -64,6 +65,7 @@ function harness(): Harness {
   const pendingActions = vi.fn().mockResolvedValue([]);
   const resetAuthenticationProgress = vi.fn().mockResolvedValue(undefined);
   const recordRememberMe = vi.fn().mockResolvedValue(undefined);
+  const subjectEnabled = vi.fn().mockResolvedValue(true);
   const deps: LoginSubmissionDeps = {
     findTenant: vi.fn().mockResolvedValue(TENANT),
     advance,
@@ -73,6 +75,7 @@ function harness(): Harness {
     pendingActions,
     resetAuthenticationProgress,
     recordRememberMe,
+    subjectEnabled,
     completeLogin,
     // consentRequired: false is 'not_required' unconditionally — none of
     // this file's cases are about consent, so the gate stays a no-op here;
@@ -97,6 +100,7 @@ function harness(): Harness {
     pendingActions,
     resetAuthenticationProgress,
     recordRememberMe,
+    subjectEnabled,
   };
 }
 
@@ -520,6 +524,41 @@ describe('handleLoginSubmission — a failed attempt must not consume the sessio
     );
 
     expect(outcome).toEqual({ kind: 'reject', authSessionId: AUTH_SESSION_ID, username: 'ada' });
+  });
+});
+
+describe('handleLoginSubmission — a disabled subject who passed the factors', () => {
+  it('is refused as a wrong password is, before any later gate speaks', async () => {
+    const {
+      deps,
+      subjectEnabled,
+      resetAuthenticationProgress,
+      checkEmailVerification,
+      pendingActions,
+      completeLogin,
+    } = harness();
+    subjectEnabled.mockResolvedValue(false);
+
+    const outcome = await handleLoginSubmission(
+      deps,
+      'acme',
+      'https://idp.example',
+      AUTH_SESSION_ID,
+      { username: 'ada', password: 'right' },
+      REQUEST,
+      undefined,
+    );
+
+    expect(outcome).toEqual({
+      kind: 'reject',
+      authSessionId: AUTH_SESSION_ID,
+      refusal: 'rejected',
+      username: 'ada',
+    });
+    expect(resetAuthenticationProgress).toHaveBeenCalledWith('tenant-1', AUTH_SESSION_ID);
+    expect(checkEmailVerification).not.toHaveBeenCalled();
+    expect(pendingActions).not.toHaveBeenCalled();
+    expect(completeLogin).not.toHaveBeenCalled();
   });
 });
 

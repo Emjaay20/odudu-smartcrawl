@@ -226,6 +226,27 @@ describe('the sign-in budget per address and username', () => {
     expect(refused.body).toContain(`Try again in ${String(retryAfter)} second`);
   });
 
+  it('refuses a throttled origin before the body is parsed', async () => {
+    const app = buildApp({
+      database: noSuchTenantDatabase,
+      ownerDatabase: noSuchTenantDatabase,
+      kek: config.ODUDU_KEK,
+      logger: createLogger(config),
+      throttle: { limit: 1, windowSeconds: 60 },
+    });
+    await submit(app, { username: 'ada', password: 'x' });
+
+    const refused = await submit(app, { username: 'ada', password: 'x'.repeat(2_000_000) });
+    const fresh = await submit(
+      app,
+      { username: 'ada', password: 'x'.repeat(2_000_000) },
+      '203.0.113.9',
+    );
+
+    expect(refused.statusCode).toBe(429);
+    expect(fresh.statusCode).toBe(413);
+  });
+
   it('keeps the machine routes on a bare 429', async () => {
     const app = buildApp({
       database: noSuchTenantDatabase,

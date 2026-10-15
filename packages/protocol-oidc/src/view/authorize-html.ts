@@ -63,10 +63,30 @@ const FORM_LABELS: Record<string, readonly [string, string]> = {
   'recovery-code': ['Enter a recovery code', 'Verify'],
 };
 
-// A username no account has is neither echoed nor truncated: half of a
-// 1 MB string is still reflected input, and the person is told nothing less
-// than the generic message already says.
+// Reflection is bounded, not validated: a name past this many code points is
+// not given back at all, because half of a 1 MB string is still reflected
+// input. Code points, not UTF-16 units, so an emoji name counts as it reads;
+// the length test short-circuits so a huge value is never walked.
 const MAX_ECHOED_USERNAME_LENGTH = 254;
+
+function codePointCount(value: string): number {
+  let count = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    const unit = value.charCodeAt(index);
+    const pairedHigh = unit >= 0xd800 && unit <= 0xdbff;
+    if (pairedHigh && index + 1 < value.length) index += 1;
+    count += 1;
+  }
+  return count;
+}
+
+function isEchoable(username: string): boolean {
+  return (
+    username.length > 0 &&
+    username.length <= MAX_ECHOED_USERNAME_LENGTH * 2 &&
+    codePointCount(username) <= MAX_ECHOED_USERNAME_LENGTH
+  );
+}
 
 // What a refused step gives back to the person. Only the username ever
 // travels: a password, a code or a recovery code is never put back in a field.
@@ -86,9 +106,7 @@ function renderFormFields(
   if (form === 'password') {
     const label = loginWithEmail ? 'Username or email' : 'Username';
     const echoed =
-      refusal?.username !== undefined &&
-      refusal.username.length > 0 &&
-      refusal.username.length <= MAX_ECHOED_USERNAME_LENGTH
+      refusal?.username !== undefined && isEchoable(refusal.username)
         ? refusal.username
         : undefined;
     const username =

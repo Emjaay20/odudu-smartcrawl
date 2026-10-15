@@ -12,6 +12,7 @@ import { clients, provisionClientDefaults } from '@odudu/domain-tenant';
 import { FakeClock, newId } from '@odudu/kernel';
 import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/testkit';
 import formbody from '@fastify/formbody';
+import { eq } from 'drizzle-orm';
 import Fastify, { type FastifyInstance, type LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { oidcRoutes } from '#/index';
@@ -77,7 +78,7 @@ async function setupTenant(name: string): Promise<string> {
   return tenantId;
 }
 
-function authorizeUrl(tenant: string): string {
+function authorizeUrl(tenant: string, extra: Record<string, string> = {}): string {
   const query = new URLSearchParams({
     response_type: 'code',
     client_id: CLIENT_ID,
@@ -87,12 +88,13 @@ function authorizeUrl(tenant: string): string {
     nonce: 'n-1',
     code_challenge: CHALLENGE,
     code_challenge_method: 'S256',
+    ...extra,
   });
   return `/tenants/${tenant}/protocol/openid-connect/auth?${query.toString()}`;
 }
 
-async function startSession(tenant: string): Promise<string> {
-  const form = await http.inject({ url: authorizeUrl(tenant) });
+async function startSession(tenant: string, extra: Record<string, string> = {}): Promise<string> {
+  const form = await http.inject({ url: authorizeUrl(tenant, extra) });
   const id = /name="auth_session_id" value="([^"]*)"/.exec(form.body)?.[1];
   if (id === undefined) throw new Error('no auth_session_id in the page');
   return id;
@@ -266,5 +268,88 @@ describe('a refused password step', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.length).toBeLessThan(5_000);
     expect(res.body).toContain('Sign-in failed.');
+  });
+});
+
+async function setEnabled(tenantName: string, username: string, enabled: boolean): Promise<void> {
+  const [tenant] = await owner.db.select().from(tenants).where(eq(tenants.name, tenantName));
+  if (tenant === undefined) throw new Error('no such tenant');
+  await withTenant(app.db, tenant.id, async (tx) => {
+    const [user] = await tx.select().from(users).where(eq(users.username, username));
+    if (user === undefined) throw new Error('no such user');
+    await subjectRepository(tx).setEnabled(user.subjectId, enabled);
+  });
+}
+
+function consentPost(tenant: string, session: string): Promise<LightMyRequestResponse> {
+  return http.inject({
+    method: 'POST',
+    url: `/tenants/${tenant}/login-actions/consent`,
+    payload: new URLSearchParams({ auth_session_id: session, decision: 'allow' }).toString(),
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+  });
+}
+
+describe('a disabled account where a later gate would have spoken', () => {
+  it('is refused like a wrong password under prompt=consent, not shown the consent page', async () => {
+    const name = `refusal-consent-${newId()}`;
+    await setupTenant(name);
+    const asked = { prompt: 'consent' };
+    const wrong = await signIn(
+      name,
+      RIGHT_USERNAME,
+      'not the password',
+      await startSession(name, asked),
+    );
+    const disabled = await signIn(
+      name,
+      DISABLED_USERNAME,
+      PASSWORD,
+      await startSession(name, asked),
+    );
+
+    expect(disabled.body).not.toContain('login-actions/consent');
+    expect(disabled.statusCode).toBe(200);
+    expect(normalised(disabled, DISABLED_USERNAME)).toBe(normalised(wrong, RIGHT_USERNAME));
+  });
+
+  it('is refused like a wrong password when the address is unverified', async () => {
+    const name = `refusal-unverified-${newId()}`;
+    const tenantId = await setupTenant(name);
+    await withTenant(app.db, tenantId, (tx) =>
+      tx.update(tenants).set({ verifyEmail: true }).where(eq(tenants.id, tenantId)),
+    );
+    const wrong = await signIn(name, RIGHT_USERNAME, 'not the password');
+    const disabled = await signIn(name, DISABLED_USERNAME, PASSWORD);
+
+    expect(disabled.body).not.toContain('Verify your email');
+    expect(normalised(disabled, DISABLED_USERNAME)).toBe(normalised(wrong, RIGHT_USERNAME));
+  });
+
+  it('clears the attempt, so the next person on the same session can sign in', async () => {
+    const name = `refusal-progress-${newId()}`;
+    await setupTenant(name);
+    const session = await startSession(name);
+
+    const refused = await signIn(name, DISABLED_USERNAME, PASSWORD, session);
+    expect(refused.statusCode).toBe(200);
+    const next = await signIn(name, RIGHT_USERNAME, PASSWORD, session);
+
+    expect(next.statusCode).toBe(302);
+  });
+
+  it('refuses a consent decision from an account disabled after the consent page, as expired', async () => {
+    const name = `refusal-consent-post-${newId()}`;
+    await setupTenant(name);
+    const session = await startSession(name, { prompt: 'consent' });
+    const asked = await signIn(name, RIGHT_USERNAME, PASSWORD, session);
+    expect(asked.body).toContain('login-actions/consent');
+    await setEnabled(name, RIGHT_USERNAME, false);
+
+    const res = await consentPost(name, session);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.headers.location).toBeUndefined();
+    expect(res.headers['set-cookie']).toBeUndefined();
   });
 });

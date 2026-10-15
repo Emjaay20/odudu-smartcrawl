@@ -349,6 +349,9 @@ export interface LoginSubmissionDeps extends ConsentGateDeps {
   // That route reads the same set, and refuses to act on an action it does
   // not find there.
   pendingActions(tenantId: string, subjectId: string): Promise<readonly RequiredAction[]>;
+  // Whether the subject is enabled, asked right after the factors succeed so
+  // a disabled account is refused before any later gate can answer for it.
+  subjectEnabled(tenantId: string, subjectId: string): Promise<boolean>;
   // Unbinds the authentication session from the subject who just
   // authenticated and forgets the factors they satisfied — see the
   // id_token_hint branch below, its only caller.
@@ -489,7 +492,7 @@ export async function completeAuthorizedLogin(
   // Refused like a wrong password rather than as an expired sign-in, so the
   // right password for a disabled account answers as any other refusal does.
   if (completed.kind === 'subject_disabled') {
-    return { kind: 'reject', authSessionId, refusal: 'rejected' };
+    return disabledRefusal(authSessionId, undefined);
   }
   const { sessionId, code, entry: issued } = completed;
 
@@ -543,6 +546,18 @@ export async function completeAuthorizedLogin(
 // advance()'s 'authentication_session_expired' failure reason; a wrong
 // password (a live session, wrong credentials) is a distinct 'reject'
 // outcome that lets the same session retry.
+function disabledRefusal(
+  authSessionId: string,
+  username: string | undefined,
+): LoginSubmissionOutcome {
+  return {
+    kind: 'reject',
+    authSessionId,
+    refusal: 'rejected',
+    ...(username === undefined ? {} : { username }),
+  };
+}
+
 export async function handleLoginSubmission(
   deps: LoginSubmissionDeps,
   tenantName: string,
@@ -596,6 +611,14 @@ export async function handleLoginSubmission(
         : {}),
       ...(input.username === undefined ? {} : { username: input.username }),
     };
+  }
+
+  // Before the verification, required-action, consent and hint gates, each of
+  // which answers differently from a wrong password: the right password of a
+  // disabled account must be refused exactly as a wrong one is.
+  if (!(await deps.subjectEnabled(tenant.id, result.subjectId))) {
+    await deps.resetAuthenticationProgress(tenant.id, authSessionId);
+    return disabledRefusal(authSessionId, input.username);
   }
 
   const refusal = await refusedForUnverifiedEmail(deps, tenant, result.subjectId);

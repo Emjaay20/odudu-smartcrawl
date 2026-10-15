@@ -755,6 +755,10 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
         withTenant(deps.database.db, tenantId, (tx) =>
           resetAuthenticationProgress(tx, authSessionId),
         ),
+      subjectEnabled: (tenantId: string, subjectId: string) =>
+        withTenant(deps.database.db, tenantId, async (tx) =>
+          subjectIsEnabled(await subjectRepository(tx).byId(subjectId)),
+        ),
       recordRememberMe: (tenantId: string, authSessionId: string, remembered: boolean) =>
         withTenant(deps.database.db, tenantId, (tx) =>
           recordRememberMe(tx, authSessionId, remembered),
