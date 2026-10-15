@@ -406,7 +406,8 @@ an IPv4-mapped IPv6 peer as the IPv4 address it carries):
 with `Retry-After`, decided before the body is parsed or any account looked
 up, so a refusal cannot say whether the address or the account existed. On
 the three routes a person submits from, the answer is a short page naming the
-wait; on an administrator's mail sends it is an empty body. There is no value that switches it off; a deployment
+wait, so a program that posts those forms receives an HTML body with the
+`429` and `Retry-After`; on an administrator's mail sends it is an empty body. There is no value that switches it off; a deployment
 putting many users behind one address raises the limit, to at most `10000`
 (the server refuses to boot past that, naming the variable) over a window of
 at most `3600` seconds. (Upgrading: these ceilings were once a million and a

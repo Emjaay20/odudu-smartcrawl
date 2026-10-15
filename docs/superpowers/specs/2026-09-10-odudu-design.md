@@ -1268,7 +1268,7 @@ code writes the credential, the same code replayed is refused (RFC 6238
 way — one of the ten printed codes signed in with `amr: ["pwd"]`, `acr: "2"`,
 the same code typed back in lower case with a space for the hyphen was
 refused _as spent_, and a code from no list was refused with no message at
-all. `authentication_executions` for that tenant reads `passkey`/`password`
+all (at the time; a refused step now says so, see ADR 0023's last amendment). `authentication_executions` for that tenant reads `passkey`/`password`
 `alternative`, `otp`/`recovery-code` `conditional`, in that order.
 **The two WebAuthn ceremonies were not driven**, and cannot be from this
 repository: only `navigator.credentials.create()` and `.get()` inside a

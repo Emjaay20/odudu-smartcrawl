@@ -181,8 +181,9 @@ subjects.
 real one does, and is refused in the same bytes — not in the same time.**
 The key is the presented `client_id` itself, so nothing about which
 failure occurred changes what gets counted or how the refusal reads once
-the budget is spent (`429`, `Retry-After`, no body, mirroring this
-throttle's own). That is as far as the claim goes: an unknown `client_id`
+the budget is spent (`429`, `Retry-After`, no body: a program reads this
+one, and the origin throttle's own refusal is a page on the routes a
+browser submits from, see the last amendment). That is as far as the claim goes: an unknown `client_id`
 returns at the client lookup, before `verifyClientSecret` runs, while a
 wrong secret against a real client pays the Argon2id comparison first, so
 the two answer at different speeds even though their bytes and their
@@ -352,7 +353,8 @@ characters with the tenant to 64, so the key set is bounded by
 `MAX_THROTTLE_KEYS` like the others. It runs in `preHandler` rather than
 `onRequest`, because the form is not parsed until then; that is still before
 the route, so before any lookup or Argon2id verification, and it answers the
-same `429`, `Retry-After` and empty body as the per-origin refusal. Tests
+same `429`, `Retry-After` and body as the per-origin refusal (a page since
+the last amendment; empty when this ADR was written). Tests
 establish both halves: the refusal happens with the database untouched
 (`app.test.ts`), and a username that is an account and one that is not
 are refused in the same bytes against a real database
@@ -454,6 +456,25 @@ behind it is `no-store`, so Back fetches a fresh one.
 header and gain nothing from markup. The set of page routes is `PAGE_POSTS`
 in `apps/server/src/app.ts`; a route is a page route only by being listed.
 
+**What a holder of the right password can still observe.** The refusal is
+the same whatever the cause for anyone who does not hold the account's
+password, and, since the check follows the factors directly, for the right
+password of a disabled account too, on the form and, because a disabled
+account never reaches the consent page, at the consent POST. Three things
+remain, each reachable only with the right password. An account that needs
+a second factor answers the right password with the code form and a wrong
+one with the password form, as it did before. A disabled account's right
+password takes about 15 ms longer than a wrong one (an extra read and the
+progress write; a review measured 52 against 37 ms, and about 10 ms on the
+base commit): accepted, because the right password is already the proof of
+who the account is, and equalising would mean doing the same writes for a
+wrong password. A subject disabled between the consent page and the consent
+POST is refused as an expired sign-in (400), which is the page any expired
+session gets. Values are neutralised before any of this (a NUL or a lone
+surrogate in a name or form field becomes U+FFFD) and a server error never
+carries driver text, so the sign-in route has no input that answers
+differently from an unknown name.
+
 ## Alternatives rejected
 
 - **(a) Both halves in Postgres, keyed by origin.** Globally true, and it
@@ -482,7 +503,9 @@ in `apps/server/src/app.ts`; a route is a page route only by being listed.
 - **`preHandler` rather than `onRequest`.** Both precede the Argon2id cost,
   which is the expensive part. `onRequest` additionally precedes the body
   parse, and there is nothing in the decision that needs the body.
-- **A `429` carrying a rendered page.** These three routes serve HTML to
-  browsers, so a page would be friendlier. An empty body is chosen because
+- **A `429` carrying a rendered page.** (Adopted for these three routes in
+  the last amendment, once a page could be rendered from the wait alone.)
+  These routes serve HTML to
+  browsers, so a page would be friendlier. An empty body was chosen because
   the refusal must be identical for every request that reaches it, and
   rendering is where per-tenant and per-request variation creeps in.

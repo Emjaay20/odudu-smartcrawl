@@ -230,16 +230,19 @@ async function auditStatementsFor(attempt: Attempt): Promise<number> {
 }
 
 // The form gives back the username that was typed, so that value is masked
-// and so is the content-length that follows its length.
+// and the content-length is compared without the length of what was echoed.
 function comparable(res: LightMyRequestResponse, typed: string): unknown {
   const headers = Object.fromEntries(
     Object.entries(res.headers).filter(
-      ([name]) => !['date', 'x-request-id', 'content-length'].includes(name.toLowerCase()),
+      ([name]) => !['date', 'x-request-id'].includes(name.toLowerCase()),
     ),
   );
   return {
     statusCode: res.statusCode,
-    headers,
+    headers: {
+      ...headers,
+      'content-length': Number(res.headers['content-length']) - Buffer.byteLength(typed),
+    },
     body: res.body.replaceAll(`value="${typed}"`, 'value="TYPED"'),
   };
 }

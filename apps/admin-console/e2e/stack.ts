@@ -257,3 +257,27 @@ export function seeded(): Seeded {
 export function sendLogouts(): string {
   return compose(['exec', '-T', 'odudu', 'node', 'dist/main.js', 'send-logouts']);
 }
+
+const THROTTLED_NAME = `${PROJECT}-throttled`;
+
+// A second server from the same image on its own port with a budget of one
+// request, because every other test shares the origin budget of the stack
+// and a throttled page cannot be reached there without starving them.
+export function startThrottledServer(port: number): void {
+  compose([
+    'run',
+    '-d',
+    '--no-deps',
+    '--name',
+    THROTTLED_NAME,
+    '-e',
+    'ODUDU_THROTTLE_LIMIT=1',
+    '-p',
+    `127.0.0.1:${String(port)}:3000`,
+    'odudu',
+  ]);
+}
+
+export function stopThrottledServer(): void {
+  execFileSync('docker', ['rm', '-f', THROTTLED_NAME], { stdio: 'ignore' });
+}
