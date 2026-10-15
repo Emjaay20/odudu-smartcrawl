@@ -2067,37 +2067,30 @@ Keep-Alive: timeout=72
 The logout's `302` lands on the console shell. Every path under `/console/`
 that neither the API nor the sign-in routes claim answers the shell, with
 the gateway's CSP, and each hashed asset the shell names is served
-`immutable`. The shell holds Instrument's tokens, the app frame, the
-session gate and the sign-in flow; every area past the rail is still a
-placeholder. See
-[docs/request-paths.md](request-paths.md#what-is-not-implemented) for what
-that leaves undone.
+`immutable`. The shell holds Instrument's tokens, the app frame, the session
+gate and the sign-in flow. Each area is a chunk of its own, fetched when its
+route is first opened, which is why the shell names only the entry, the
+chunks every page needs, and their stylesheets.
 
-**The stack for this section only.** Not `docker-odudu-1`: a throwaway
-compose project, `odudu-try`, built from this branch (`c43d473`) and
-removed afterwards, on its own ports beside anything else running. The
-shell reads no cookie, so none is sent.
-
-```bash
-cd infra/docker
-COMPOSE_PROJECT_NAME=odudu-try ODUDU_HOST_PORT=3080 POSTGRES_HOST_PORT=5462 \
-  docker compose up -d --build
-```
+**The stack for this section only.** The eighth run's stack, the project
+`odudu-docs-18a` on `http://localhost:3185`, built from the tree this
+document describes and removed afterwards. The shell reads no cookie, so none
+is sent.
 
 ```bash
-curl -sS -D - http://localhost:3080/console/
+curl -sS -D - http://localhost:3185/console/
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a0e930-f572-73dd-a1a4-1310c8d8b036
+x-request-id: 01a13ff6-df6a-7c4a-85b1-eb5eccf1fa0c
 content-type: text/html; charset=utf-8
 content-security-policy: default-src 'self'; script-src 'self'; style-src 'self' 'sha256-38RhXrc7EdReTKsOm23ZPOCUgniTUUcjky8QOOrQx6o=' 'sha256-gYiS/BvZvRcK27JIXTuwhZ3hs2+VJ1X+2gUlE+farlg='; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 412
-Date: Mon, 28 Sep 2026 18:04:55 GMT
+content-length: 1124
+Date: Thu, 15 Oct 2026 14:28:26 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -2107,8 +2100,16 @@ Keep-Alive: timeout=72
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Odudu console</title>
-    <script type="module" crossorigin src="/console/assets/index-CYySuAHG.js"></script>
-    <link rel="stylesheet" crossorigin href="/console/assets/index-BoHWD5ls.css">
+    <script type="module" crossorigin src="/console/assets/index-CmI7E2zt.js"></script>
+    <link rel="modulepreload" crossorigin href="/console/assets/rolldown-runtime-hePW80VL.js">
+    <link rel="modulepreload" crossorigin href="/console/assets/zod-DEvWxZHY.js">
+    <link rel="modulepreload" crossorigin href="/console/assets/PageHeader-Ba6Mzgz0.js">
+    <link rel="modulepreload" crossorigin href="/console/assets/useUrlSearch-BK_ckyjB.js">
+    <link rel="modulepreload" crossorigin href="/console/assets/PageNotFound-lGGOps6B.js">
+    <link rel="modulepreload" crossorigin href="/console/assets/useDrafts-D0obH0-B.js">
+    <link rel="stylesheet" crossorigin href="/console/assets/PageHeader-D3NRoIlr.css">
+    <link rel="stylesheet" crossorigin href="/console/assets/PageNotFound-OaJZDCvc.css">
+    <link rel="stylesheet" crossorigin href="/console/assets/index-n9jwgC2c.css">
   </head>
   <body>
     <div id="root"></div>
@@ -2120,28 +2121,47 @@ The two style hashes are React Aria's own injected `<style>` elements —
 `usePress`'s pressable style and, on iOS WebKit only, `usePreventScroll`'s
 `overscroll-behavior: contain` rule — recomputed from the installed
 react-aria by `packages/console-gateway/src/view/react-aria-style.test.ts`.
-The stylesheet is Instrument's tokens and fonts, built and hashed like any
-other asset.
+The stylesheets are Instrument's tokens and fonts and the shared pieces'
+styles, built and hashed like any other asset.
 
 ```bash
-curl -sS -D - -o /dev/null http://localhost:3080/console/assets/index-CYySuAHG.js
+curl -sS -D - -o /dev/null http://localhost:3185/console/assets/index-CmI7E2zt.js
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a0e931-04aa-7699-a95f-fbc4d89fd7d0
+x-request-id: 01a13ff6-f198-7590-8575-c106097f8039
 content-type: text/javascript; charset=utf-8
 cache-control: public, max-age=31536000, immutable
-content-length: 562745
-Date: Mon, 28 Sep 2026 18:04:58 GMT
+content-length: 364637
+Date: Thu, 15 Oct 2026 14:28:30 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+```
+
+The entry is 364,637 bytes. The Subjects area's chunk is not in the shell; it
+is fetched when `/console/<tenant>/subjects` is first opened, and is the
+largest chunk the build makes:
+
+```bash
+curl -sS -D - -o /dev/null http://localhost:3185/console/assets/subjects-C0WQsSRj.js
+```
+
+```
+HTTP/1.1 200 OK
+x-request-id: 01a13ff6-f1a8-76f7-a353-659e90c6e1aa
+content-type: text/javascript; charset=utf-8
+cache-control: public, max-age=31536000, immutable
+content-length: 390560
+Date: Thu, 15 Oct 2026 14:28:30 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
 
 ```bash
 cd infra/docker
-COMPOSE_PROJECT_NAME=odudu-try ODUDU_HOST_PORT=3080 POSTGRES_HOST_PORT=5462 \
-  docker compose down -v
+COMPOSE_PROJECT_NAME=odudu-docs-18a ODUDU_HOST_PORT=3185 POSTGRES_HOST_PORT=5493 \
+  ODUDU_CONSOLE_CLIENT_KEY=$(./console-key.sh) docker compose down -v
 ```
 
 ## What these runs do not show
