@@ -224,8 +224,8 @@ importers:
         specifier: 5.0.0
         version: 5.0.0(@types/node@24.19.1)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.1)(esbuild@0.28.2)(tsx@4.23.13)(yaml@2.9.0))
       zod:
-        specifier: 4.6.5
-        version: 4.6.5
+        specifier: 4.6.7
+        version: 4.6.7
       zustand:
         specifier: 5.0.15
         version: 5.0.15(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
@@ -370,8 +370,8 @@ importers:
         specifier: 2.0.4
         version: 2.0.4
       zod:
-        specifier: 4.6.5
-        version: 4.6.5
+        specifier: 4.6.7
+        version: 4.6.7
     devDependencies:
       '@odudu/testkit':
         specifier: workspace:*
@@ -407,8 +407,8 @@ importers:
         specifier: 5.12.5
         version: 5.12.5
       zod:
-        specifier: 4.6.5
-        version: 4.6.5
+        specifier: 4.6.7
+        version: 4.6.7
     devDependencies:
       '@odudu/testkit':
         specifier: workspace:*
@@ -420,8 +420,8 @@ importers:
   packages/contracts:
     dependencies:
       zod:
-        specifier: 4.6.5
-        version: 4.6.5
+        specifier: 4.6.7
+        version: 4.6.7
     devDependencies:
       vitest:
         specifier: 5.0.0
@@ -499,8 +499,8 @@ importers:
         specifier: 0.45.3
         version: 0.45.3(postgres@3.4.9)
       zod:
-        specifier: 4.6.5
-        version: 4.6.5
+        specifier: 4.6.7
+        version: 4.6.7
     devDependencies:
       '@odudu/testkit':
         specifier: workspace:*
@@ -527,8 +527,8 @@ importers:
         specifier: 0.45.3
         version: 0.45.3(postgres@3.4.9)
       zod:
-        specifier: 4.6.5
-        version: 4.6.5
+        specifier: 4.6.7
+        version: 4.6.7
     devDependencies:
       '@odudu/testkit':
         specifier: workspace:*
@@ -590,8 +590,8 @@ importers:
         specifier: 5.0.0
         version: 5.0.0(@types/node@24.19.1)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.19.1)(esbuild@0.28.2)(tsx@4.23.13)(yaml@2.9.0))
       zod:
-        specifier: 4.6.5
-        version: 4.6.5
+        specifier: 4.6.7
+        version: 4.6.7
 
   packages/kernel:
     dependencies:
@@ -599,8 +599,8 @@ importers:
         specifier: 1.2.1
         version: 1.2.1
       zod:
-        specifier: 4.6.5
-        version: 4.6.5
+        specifier: 4.6.7
+        version: 4.6.7
 
   packages/protocol-admin:
     dependencies:
@@ -650,8 +650,8 @@ importers:
         specifier: 5.12.5
         version: 5.12.5
       zod:
-        specifier: 4.6.5
-        version: 4.6.5
+        specifier: 4.6.7
+        version: 4.6.7
     devDependencies:
       '@fastify/formbody':
         specifier: 9.0.1
@@ -705,8 +705,8 @@ importers:
         specifier: 5.12.5
         version: 5.12.5
       zod:
-        specifier: 4.6.5
-        version: 4.6.5
+        specifier: 4.6.7
+        version: 4.6.7
     devDependencies:
       '@fastify/formbody':
         specifier: 9.0.1
@@ -4493,8 +4493,8 @@ packages:
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
 
-  zod@4.6.5:
-    resolution: {integrity: sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==}
+  zod@4.6.7:
+    resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
 
   zustand@5.0.15:
     resolution: {integrity: sha512-MpSEjRiBkA9crSYeOUH32rJC7SVqAbm0Fqcqge/bUi2PPoLcBWKOsG+C8mevmpr8TwXHBVkChbbJiyvkE+i/3A==}
@@ -6571,8 +6571,8 @@ snapshots:
       '@babel/parser': 7.29.9
       eslint: 10.12.0(supports-color@7.2.0)
       hermes-parser: 0.25.1
-      zod: 4.6.5
-      zod-validation-error: 4.0.2(zod@4.6.5)
+      zod: 4.6.7
+      zod-validation-error: 4.0.2(zod@4.6.7)
     transitivePeerDependencies:
       - supports-color
 
@@ -7128,7 +7128,7 @@ snapshots:
 
   mutation-server-protocol@0.4.1:
     dependencies:
-      zod: 4.6.5
+      zod: 4.6.7
 
   mutation-testing-elements@3.8.4: {}
 
@@ -8103,11 +8103,11 @@ snapshots:
       compress-commons: 6.0.2
       readable-stream: 4.7.0
 
-  zod-validation-error@4.0.2(zod@4.6.5):
+  zod-validation-error@4.0.2(zod@4.6.7):
     dependencies:
-      zod: 4.6.5
+      zod: 4.6.7
 
-  zod@4.6.5: {}
+  zod@4.6.7: {}
 
   zustand@5.0.15(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0)):
     optionalDependencies:

@@ -24,7 +24,7 @@
     "@simplewebauthn/server": "14.0.2",
     "drizzle-orm": "0.45.3",
     "qrcode-generator": "2.0.4",
-    "zod": "4.6.5"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@odudu/testkit": "workspace:*",
