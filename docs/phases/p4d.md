@@ -2492,3 +2492,40 @@ ADR 0023's second amendment has the decisions; what building it found.
   an hour; a deployment configured above them now fails to boot, which is
   the hard-cutover convention while nothing is deployed. README and ADR 0023
   say so.
+
+## Part 4 — a failed sign-in says so
+
+The try stack showed a wrong password re-rendering the login form with no
+message, an empty username field and the POST URL in the address bar. The
+cause was by design and wrong: `renderLoginForm` showed a message only where
+the `reject` outcome carried a `reason`, and no credential failure did.
+
+- **One message per step, whatever the cause**, named constants in
+  `packages/protocol-oidc/src/view/login-messages.ts`: the password step,
+  the code form and the recovery-code form each have one. A spent recovery
+  code keeps its own, actionable one. The outcome now carries a `refusal`
+  value instead of text, absent when a step only asks for more, so the next
+  factor's form claims no failure.
+- **The username comes back, nothing else.** A name of more than 254 characters is
+  not reflected. The first field still to fill carries `autofocus`; no script.
+- **A disabled account's right password was a distinguishable refusal.**
+  `completeAuthorizedLogin` answered `subject_disabled` as an expired sign-in
+  (400, a different page) where a wrong password re-rendered the form, so
+  the pair told a disabled account from a wrong password to anyone holding
+  the password. The indistinguishability test written for this task found it;
+  the form path now refuses it as any other credential failure, and clears
+  the attempt's progress so the next try is not a subject mismatch. The
+  consent POST keeps its expired answer.
+- **A throttled page route answers with a page.** `PAGE_POSTS` in
+  `apps/server/src/app.ts`; the admin mail sends, `/token`, `/revoke` and
+  `/introspect` keep the bare `429`. No link back, because building one
+  reads the parked sign-in per refused request; ADR 0023's last amendment
+  says why a page is safe.
+- **The address bar stays at the POST URL.** A redirect would need
+  server-side state keyed to the session, the session id cannot travel in a
+  URL, and the page already carries what the person needs. A reload re-posts
+  and counts as an attempt; Back refetches the form because pages are
+  `no-store`.
+- **Not covered by the e2e suite:** the throttled page, since the suite's
+  budgets are 10000 for every test; it is held in `app.test.ts` and
+  `tests/throttle.int.test.ts` instead.

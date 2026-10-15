@@ -46,7 +46,8 @@ memory. An `onRequest` hook in `apps/server/src/app.ts` applies it, keyed on
 `POST /tenants/{tenant}/login-actions/authenticate`, `…/registration` and
 `…/reset-password`. `ODUDU_THROTTLE_LIMIT` (default `10`) and
 `ODUDU_THROTTLE_WINDOW_SECONDS` (default `60`) are the budget. A refused
-request answers `429` with `Retry-After` and no body.
+request answers `429` with `Retry-After` and no body (a page, on the routes
+a browser submits from — see the last amendment).
 
 Three properties this shape is chosen for:
 
@@ -422,6 +423,36 @@ above. A check is a map operation and a filter over at most 100 entries, or
 constant. N replicas admit N times every budget, and P11's criterion that
 every in-process bound is shared or documented as multiplied by the replica
 count covers these three new settings as it covers the older ones.
+
+## Amendment, 2026-10-15 — a refusal a person reads is a page
+
+The `429` above answered with no body. On the three routes a browser submits
+from (`…/authenticate`, `…/registration`, `…/reset-password`) that put a blank
+white page in front of a person who had done nothing but type a password
+again. Those answers now carry a short page, `Too many attempts`, saying
+`Try again in N seconds`, with `N` the `Retry-After` value rounded up and the
+header unchanged. It goes through the same page machinery as every other
+rendered page (`RenderedPage`, `pageHeaders`, `no-store`) and carries no
+script and no form.
+
+**Why a page is safe.** It is decided exactly where the empty body was,
+before any account is looked up: `onRequest` for the per-origin budget,
+`preHandler` after the body parse for the per-username one. It is rendered
+from the wait alone, so it is identical for both budgets and for an account
+that exists and one that does not, apart from the seconds. The existing
+tests that compared the empty bodies compare these instead, with the seconds
+masked (`tests/throttle.int.test.ts`).
+
+**No link back.** A link to restart the sign-in would need the parked request
+read from the database for every refused request, which is a lookup a flood
+must not cost and which the per-origin refusal, decided before the body is
+parsed, has no session id to make. The page says to go back instead; the form
+behind it is `no-store`, so Back fetches a fresh one.
+
+**What keeps the bare answer.** The admin mail sends, and `/token`,
+`/revoke` and `/introspect`, are called by programs, which read a status and a
+header and gain nothing from markup. The set of page routes is `PAGE_POSTS`
+in `apps/server/src/app.ts`; a route is a page route only by being listed.
 
 ## Alternatives rejected
 

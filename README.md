@@ -371,7 +371,10 @@ replicas, and it is keyed by **subject** rather than by the name submitted —
 a lockout following a username could be aimed at a name the account no longer
 answers to, and would miss an attacker arriving by email.
 
-A locked account is refused with the response a wrong password gets: same
+A refused sign-in step says so: the form comes back with one message for the
+step, whatever the cause, and gives back the username that was typed and
+nothing else — never a password, a code or a recovery code. A locked account
+is refused with the response a wrong password gets: same
 status, same page, same headers, and the refusal is decided _after_ the
 Argon2id verification a wrong password pays for, so neither the page nor the
 timing distinguishes a locked account from a wrong password or from a
@@ -400,9 +403,10 @@ registration and the reset request — share a budget per client address
 an IPv4-mapped IPv6 peer as the IPv4 address it carries):
 `ODUDU_THROTTLE_LIMIT` (default `10`) requests per
 `ODUDU_THROTTLE_WINDOW_SECONDS` (default `60`). Over budget answers `429`
-with `Retry-After` and an empty body, decided before the body is parsed or
-any account looked up, so a refusal cannot say whether the address or the
-account existed. There is no value that switches it off; a deployment
+with `Retry-After`, decided before the body is parsed or any account looked
+up, so a refusal cannot say whether the address or the account existed. On
+the three routes a person submits from, the answer is a short page naming the
+wait; on an administrator's mail sends it is an empty body. There is no value that switches it off; a deployment
 putting many users behind one address raises the limit, to at most `10000`
 (the server refuses to boot past that, naming the variable) over a window of
 at most `3600` seconds. (Upgrading: these ceilings were once a million and a
@@ -417,7 +421,7 @@ address, tenant and the username as submitted:
 `ODUDU_LOGIN_THROTTLE_LIMIT` (default `5`) per
 `ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS` (default `60`), under the same ceilings.
 One account tried over and over from one address is refused sooner, without
-spending a whole NAT's budget, and the refusal is the same `429` for a name
+spending a whole NAT's budget, and the refusal is the same `429` page for a name
 that is an account and one that is not, because it is decided from the form
 before any lookup. An administrator's three mail sends —
 `…/password-reset`, `…/verification` and `…/actions-email` — draw on the

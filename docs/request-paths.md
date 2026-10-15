@@ -962,7 +962,7 @@ content-length: 2372
 <form method="post" action="/tenants/demo/login-actions/authenticate" id="passkey-form">
   <input type="hidden" name="auth_session_id" value="01a0cb08-f324-…">
   <input type="hidden" name="assertion" id="passkey-assertion">
-  <button type="submit" id="passkey-submit">Sign in with a passkey</button>
+  <p><button type="submit" id="passkey-submit">Sign in with a passkey</button></p>
 </form>
 <p id="passkey-error" hidden></p>
 <noscript><p>Signing in with a passkey needs JavaScript, because only the browser can talk to your authenticator. Use your username and password above.</p></noscript>
@@ -1128,12 +1128,143 @@ decides whether that is allowed: see
 **What the client does next:** verify `state` and `iss`, then redeem the
 code. Immediately: it expires in a minute.
 
+#### A refused login says so
+
+A password the server turns down answers `200` with the form again, and the
+form says so. The run below is against `demo` and `ada` as
+[Bootstrap](#a-public-client-with-a-user) seeded them, on a stack started
+with `ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000`;
+`$AUTH_SESSION_ID` is the `auth_session_id` of a fresh `/authorize` form and
+`$LOGIN` the login endpoint, `http://localhost:3000/tenants/demo/login-actions/authenticate`.
+The response is shortened at the passkey script, which is the one
+[the login page](#2-authorize) prints in full:
+
+```bash
+curl -sS -i \
+  --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
+  --data-urlencode 'username=ada' \
+  --data-urlencode 'password=wrong-password' \
+  "$LOGIN" | tr -d '\r' > /tmp/refused-wrong-password.txt
+```
+
+```
+HTTP/1.1 200 OK
+x-request-id: 01a13f67-19be-7ade-ad69-4dc3ef9fdf9b
+content-type: text/html
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-Awrrs3Hhqr1cjbCRKTabCQ=='; connect-src 'self'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+content-length: 2488
+Date: Thu, 15 Oct 2026 11:51:23 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Sign in</title></head>
+<body>
+<p role="alert"><strong>Sign-in failed. Check your details and try again.</strong></p>
+<form method="post" action="/tenants/demo/login-actions/authenticate">
+  <input type="hidden" name="auth_session_id" value="01a13f67-19a9-7efb-afb9-fadd63eb23c8">
+  <label>Username <input type="text" name="username" autocomplete="username" value="ada"></label>
+  <label>Password <input type="password" name="password" autocomplete="current-password" autofocus></label>
+  <button type="submit">Sign in</button>
+</form>
+<form method="post" action="/tenants/demo/login-actions/authenticate" id="passkey-form">
+  <input type="hidden" name="auth_session_id" value="01a13f67-19a9-7efb-afb9-fadd63eb23c8">
+  <input type="hidden" name="assertion" id="passkey-assertion">
+  <p><button type="submit" id="passkey-submit">Sign in with a passkey</button></p>
+</form>
+<p id="passkey-error" hidden></p>
+<noscript><p>Signing in with a passkey needs JavaScript, because only the browser can talk to your authenticator. Use your username and password above.</p></noscript>
+<script nonce="Awrrs3Hhqr1cjbCRKTabCQ==">…</script>
+</body>
+</html>
+```
+
+The same request for a name nobody holds, compared with that file line by
+line:
+
+```bash
+curl -sS -i \
+  --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
+  --data-urlencode 'username=nobody' \
+  --data-urlencode 'password=wrong-password' \
+  "$LOGIN" | tr -d '\r' > /tmp/refused-unknown-user.txt
+diff /tmp/refused-wrong-password.txt /tmp/refused-unknown-user.txt
+```
+
+```
+2c2
+< x-request-id: 01a13f67-19be-7ade-ad69-4dc3ef9fdf9b
+---
+> x-request-id: 01a13f67-1a01-7605-85e8-784ba8d1fe82
+4c4
+< content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-Awrrs3Hhqr1cjbCRKTabCQ=='; connect-src 'self'
+---
+> content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-vl2cSH3oqSOizPejpAZshg=='; connect-src 'self'
+8c8
+< content-length: 2488
+---
+> content-length: 2491
+20c20
+<   <label>Username <input type="text" name="username" autocomplete="username" value="ada"></label>
+---
+>   <label>Username <input type="text" name="username" autocomplete="username" value="nobody"></label>
+31c31
+< <script nonce="Awrrs3Hhqr1cjbCRKTabCQ==">
+---
+> <script nonce="vl2cSH3oqSOizPejpAZshg==">
+```
+
+Four lines differ: the request id, the script nonce (in the header and on
+the element), the length that follows the typed name, and the typed name
+itself. Nothing says whether the account exists.
+
+- **One message per step, whatever the cause.** The password step says
+  `Sign-in failed. Check your details and try again.` for a wrong password,
+  an unknown username, a locked account, a disabled account and an assertion
+  that did not verify alike; the code form says `That code did not work.
+Check it and try again.` for a wrong or replayed code and for a recovery
+  code no list holds; a form that asks only for a recovery code says `That
+recovery code did not work. Check it and try again.` The one message that
+  says more is a recovery code the list **did** hold and the person has
+  already spent ([below](#the-same-code-again-is-refused-as-a-used-code)),
+  because that is their own credential on an attempt already bound to them.
+  A form that only asks for the next factor, or that was submitted with a
+  field missing, claims no failure and carries no message.
+- **The message is an alert and moves focus without a script.** It is
+  `<p role="alert">` above the form, and the first field still to fill
+  carries `autofocus`: the password when the username is given back, the
+  username otherwise, the code on the code form.
+- **The username comes back, nothing else does.** It is escaped like any
+  other interpolated value, and given back only on the password form: a
+  password, a code or a recovery code is never put into a field. A name
+  of more than 254 characters is not reflected at all, and the field comes
+  back empty with the same message, so a megabyte of input is not a
+  megabyte of output.
+- **The page stays at the POST URL.** The address bar shows
+  `/login-actions/authenticate`, not the `/authorize` URL the form came from.
+  A reload asks the browser to confirm re-sending the form, and a confirmed
+  one is another attempt — it counts towards the lockout and the throttle
+  like any other. Back works because every page here is `no-store`
+  ([how Back is handled](#a-login-posted-after-its-authentication-session-expired)):
+  the browser fetches the `/authorize` form again rather than showing a stale
+  one. A redirect to a `GET` that restored the URL was weighed and not
+  built. The session id must stay out of a URL, since the hidden field is the
+  form's whole CSRF defence, so the message could only reach the second page
+  through server-side state keyed to the session, which is a new table to
+  write, expire and read for a cosmetic gain; and the page at the POST URL
+  already carries everything the person needs to try again.
+
 #### What a refused login leaves behind
 
 Every password submitted writes one `login.password` row, accepted or not,
 in the transaction that checked it. The two refusals below both answer
-`200`, in bytes [Brute-force lockout](#brute-force-lockout) shows are
-identical by hash; the rows are where they differ.
+`200`, in bytes that differ only in the name typed, which
+[Brute-force lockout](#brute-force-lockout) shows are identical by hash
+once that is set aside; the rows are where they differ.
 Each carries its own `x-request-id`, which the server adopts as the request
 id and binds into the row, so the query that reads them back is scoped to
 these two requests and to nothing else this document has done. The first
@@ -1585,17 +1716,18 @@ does, through the same statements, so the form says nothing about which
 addresses exist. A wrong password counts towards the lockout of the
 subject the address resolves to.
 
-Captured on a stack of its own built from this branch, in a tenant
-`email-demo` seeded for it with
+Captured on the project `odudu-17g` on `http://localhost:3000`, built from
+commit `7fc38b58`, in a tenant `email-demo` seeded for it with
 `odudu seed --tenant email-demo --client email-spa --redirect-uri http://localhost:8080/callback --user grace --password correct-horse-battery --email Grace@Example.com`,
-the address then marked verified with
-`PATCH /admin/tenants/email-demo/subjects/{id}/profile` `{"email_verified": true}`
-and the setting turned on with `PATCH /admin/tenants/email-demo/settings`
-`{"login_with_email": true}`. The form names the field for both, and the
-address signs in typed in another case:
+the setting turned on with
+`odudu seed tenant --name email-demo --set login_with_email=true`, and the
+address marked verified directly, with
+`update users set email_verified = true where email = 'Grace@Example.com'`
+in that tenant, in place of the admin API's profile `PATCH`. The form names
+the field for both, and the address signs in typed in another case:
 
 ```bash
-AUTHORIZE='http://localhost:3082/tenants/email-demo/protocol/openid-connect/auth?response_type=code&client_id=email-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&state=s&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'
+AUTHORIZE='http://localhost:3000/tenants/email-demo/protocol/openid-connect/auth?response_type=code&client_id=email-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&state=s&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'
 PAGE=$(curl -sS "$AUTHORIZE")
 echo "$PAGE" | grep -o '<label>[^<]*<input type="text"[^>]*>'
 AUTH_SESSION_ID=$(echo "$PAGE" | sed -n 's/.*name="auth_session_id" value="\([^"]*\)".*/\1/p' | head -1)
@@ -1603,20 +1735,20 @@ curl -sS -D - -o /dev/null \
   --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
   --data-urlencode 'username=GRACE@example.com' \
   --data-urlencode 'password=correct-horse-battery' \
-  http://localhost:3082/tenants/email-demo/login-actions/authenticate \
+  http://localhost:3000/tenants/email-demo/login-actions/authenticate \
   | tr -d '\r' | grep -E '^HTTP|^location'
 ```
 
 ```
 <label>Username or email <input type="text" name="username" autocomplete="username">
 HTTP/1.1 302 Found
-location: http://localhost:8080/callback?code=Qoploq5vLoyfbO0K1cJcYrNk7cEvcJi08-YMrb3cGWc&state=s&iss=http%3A%2F%2Flocalhost%3A3082%2Ftenants%2Femail-demo
+location: http://localhost:8080/callback?code=SRmTyTmDvS7YEg7X0iKQVA7Izo-VYWIBrTqIUkH6njo&state=s&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Femail-demo
 ```
 
 A wrong password for the held address and any password for an address
-nobody holds return byte-identical pages, once the two values that differ
-on every render — the form's own `auth_session_id` and the passkey
-script's nonce — are set aside:
+nobody holds return byte-identical pages, once the three values that differ
+— the form's own `auth_session_id`, the passkey script's nonce, and the
+address typed, which the form gives back — are set aside:
 
 ```bash
 for login in nobody@example.com grace@example.com; do
@@ -1626,15 +1758,16 @@ for login in nobody@example.com grace@example.com; do
     --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
     --data-urlencode "username=$login" \
     --data-urlencode 'password=wrong-password' \
-    http://localhost:3082/tenants/email-demo/login-actions/authenticate \
+    http://localhost:3000/tenants/email-demo/login-actions/authenticate \
     | sed -e "s/$AUTH_SESSION_ID/AUTH_SESSION_ID/g" -e 's/nonce="[^"]*"/nonce="NONCE"/' \
+          -e "s/value=\"$login\"/value=\"LOGIN\"/" \
     | shasum -a 256
 done
 ```
 
 ```
-fee64ef949a1eb5872315bdd3668fa0cb91635048d77bd7654a5a02169dfe9d5  -
-fee64ef949a1eb5872315bdd3668fa0cb91635048d77bd7654a5a02169dfe9d5  -
+9907ad7c4e1460aed2894afae9bff30c902d5cfc4b5932c67c1f20016e85f25d  -
+9907ad7c4e1460aed2894afae9bff30c902d5cfc4b5932c67c1f20016e85f25d  -
 ```
 
 ### 4. `/token`
@@ -3666,18 +3799,36 @@ form that named the account would let a second factor answer for somebody
 who never passed the first one.
 
 Submitting the code that confirmed the enrolment does **not** work — it
-answers with the same form again:
+answers with the same form again, saying so. (This one and the two recovery
+code refusals below were captured again on the project `odudu-17g` on
+`http://localhost:3000`, built from commit `7fc38b58`, where the enrolment's
+code was `380681`, once a refusal began to carry a message.)
 
 ```bash
-curl -sS -o /dev/null -w '%{http_code}\n' -X POST \
-  http://localhost:3094/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a137d3-9bc1-7987-8c23-f806ce89510f' \
-  --data-urlencode 'code=474168'
+curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a13f65-6fc2-798d-b022-fab2a73714f1' \
+  --data-urlencode 'code=380681'
 ```
 
 ```
-200
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Enter your authentication code</title></head>
+<body>
+<p role="alert"><strong>That code did not work. Check it and try again.</strong></p>
+<form method="post" action="/tenants/otp-demo/login-actions/authenticate">
+  <input type="hidden" name="auth_session_id" value="01a13f65-6fc2-798d-b022-fab2a73714f1">
+  <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" autofocus></label>
+  <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>
+  <button type="submit">Verify</button>
+</form>
+</body>
+</html>
 ```
+
+The message is the one a wrong code gets, whether the code was replayed,
+mistyped or never valid; the code field is the one that takes focus, and the
+recovery field beside it does not.
 
 RFC 6238 §5.2: a verifier must not accept an OTP twice. The credential
 stores the time step of the last code it accepted, and the enrolment's own
@@ -3862,8 +4013,8 @@ parks the request, then the password, which answers 200 with the code form:
 
 ```bash
 curl -sS -o /dev/null -w '%{http_code}\n' -X POST \
-  http://localhost:3094/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a137d3-9f79-7cc3-9e4e-81be29da7384' \
+  http://localhost:3000/tenants/otp-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a13f65-709f-77fd-916a-4dde358b7bbc' \
   --data-urlencode 'username=ada' \
   --data-urlencode 'password=correct-horse-battery'
 ```
@@ -3876,9 +4027,9 @@ Then the code that already signed somebody in — typed in lower case with a
 space where the hyphen was:
 
 ```bash
-curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a137d3-9f79-7cc3-9e4e-81be29da7384' \
-  --data-urlencode 'recovery_code=zjm81 pysm4'
+curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a13f65-709f-77fd-916a-4dde358b7bbc' \
+  --data-urlencode 'recovery_code=75nft 0nhhg'
 ```
 
 ```
@@ -3886,10 +4037,10 @@ curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authentica
 <html lang="en">
 <head><meta charset="utf-8"><title>Enter your authentication code</title></head>
 <body>
-<p><strong>You have already used that recovery code. Try another one from your list.</strong></p>
+<p role="alert"><strong>You have already used that recovery code. Try another one from your list.</strong></p>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a137d3-9f79-7cc3-9e4e-81be29da7384">
-  <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
+  <input type="hidden" name="auth_session_id" value="01a13f65-709f-77fd-916a-4dde358b7bbc">
+  <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" autofocus></label>
   <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>
   <button type="submit">Verify</button>
 </form>
@@ -3904,8 +4055,8 @@ confusable letters onto digits. And the refusal _says_ the code is spent,
 which a wrong code does not:
 
 ```bash
-curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a137d3-9f79-7cc3-9e4e-81be29da7384' \
+curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a13f65-709f-77fd-916a-4dde358b7bbc' \
   --data-urlencode 'recovery_code=ZZZZZ-ZZZZZ'
 ```
 
@@ -3914,9 +4065,10 @@ curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authentica
 <html lang="en">
 <head><meta charset="utf-8"><title>Enter your authentication code</title></head>
 <body>
+<p role="alert"><strong>That code did not work. Check it and try again.</strong></p>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a137d3-9f79-7cc3-9e4e-81be29da7384">
-  <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
+  <input type="hidden" name="auth_session_id" value="01a13f65-709f-77fd-916a-4dde358b7bbc">
+  <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" autofocus></label>
   <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>
   <button type="submit">Verify</button>
 </form>
@@ -3924,8 +4076,8 @@ curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authentica
 </html>
 ```
 
-The same form, and no message: which codes a list holds is not something a
-wrong guess gets told. The distinction is safe in the other direction
+The generic message, the one a wrong app code gets: which codes a list
+holds is not something a wrong guess gets told. The distinction is safe in the other direction
 because a recovery code is a _second_ factor — by the time one is presented
 the attempt is already bound to a subject, so "you have used that one"
 tells that subject about their own credential and nobody else anything at
@@ -4205,7 +4357,7 @@ beside the password fields, and pressing it asks for nothing typed:
 <form method="post" action="/tenants/demo/login-actions/authenticate" id="passkey-form">
   <input type="hidden" name="auth_session_id" value="01a0cb08-f324-…">
   <input type="hidden" name="assertion" id="passkey-assertion">
-  <button type="submit" id="passkey-submit">Sign in with a passkey</button>
+  <p><button type="submit" id="passkey-submit">Sign in with a passkey</button></p>
 </form>
 <p id="passkey-error" hidden></p>
 <noscript><p>Signing in with a passkey needs JavaScript, because only the browser can talk to your authenticator. Use your username and password above.</p></noscript>
@@ -5050,17 +5202,24 @@ and counting starts again from one.
 both that the account exists and that somebody is attacking it — a worse
 oracle than the username enumeration the rest of this document works to
 close. So a locked account is refused with the response a wrong password
-gets. Below, eight submissions against one parked request: five wrong
-passwords, a sixth after the lockout has begun, the _right_ password, and a
-username nobody holds. The hash is of the whole response — status line,
-headers and body — with four per-response values normalised out: `date`,
-`x-request-id`, the CSP script nonce the login page mints for its passkey
-button (which appears both in the header and in the markup), and the
-`auth_session_id` the re-rendered form carries, so the digest is the same
-value for any parked request rather than one nobody else can reproduce.
+gets, and the response it gets is the page's one message for a refused
+password step (`Sign-in failed. Check your details and try again.`), which
+names no cause. Below, eight submissions against one parked request: five
+wrong passwords, a sixth after the lockout has begun, the _right_ password,
+and a username nobody holds. The hash is of the whole response — status
+line, headers and body — with six per-response values normalised out:
+`date`, `x-request-id`, the CSP script nonce the login page mints for its
+passkey button (which appears both in the header and in the markup), the
+`auth_session_id` the re-rendered form carries, the username the form gives
+back, which is the one typed, and the `content-length` that follows its
+length — so the digest is the same value for any parked request rather than
+one nobody else can reproduce.
 
 `$SID` is the `auth_session_id` the rendered form carries, taken from the
 `/authorize` response the way [the login POST](#3-the-login-post) does.
+`ada` had no failures when this began — the tenant's `login_failures` rows
+were deleted first, on a stack where the transcripts before it had already
+run, so the count below starts from zero.
 
 One thing about reproducing it: eight submissions in a minute from one
 address is past the [per-origin throttle](#the-per-origin-throttle) below,
@@ -5078,7 +5237,9 @@ post() {
   cat /tmp/h.txt /tmp/b.txt | tr -d '\r' \
     | grep -iv '^date:' | grep -iv '^x-request-id:' \
     | sed 's/nonce-[A-Za-z0-9+/=]*/nonce-NONCE/; s/nonce="[^"]*"/nonce="NONCE"/
-           s/auth_session_id" value="[^"]*"/auth_session_id" value="SID"/g' \
+           s/auth_session_id" value="[^"]*"/auth_session_id" value="SID"/g
+           s/name="username" autocomplete="username" value="[^"]*"/name="username" autocomplete="username" value="USER"/
+           s/^content-length: .*/content-length: N/' \
     | shasum -a 256 | cut -c1-32
 }
 
@@ -5088,20 +5249,24 @@ echo "8  unknown username  $(post nobody wrong-password)"
 ```
 
 ```
-1  wrong password    67fa63f64b43d44caf3b7bf853e11cf6
-2  wrong password    67fa63f64b43d44caf3b7bf853e11cf6
-3  wrong password    67fa63f64b43d44caf3b7bf853e11cf6
-4  wrong password    67fa63f64b43d44caf3b7bf853e11cf6
-5  wrong password    67fa63f64b43d44caf3b7bf853e11cf6
-6  wrong password    67fa63f64b43d44caf3b7bf853e11cf6
-7  right password    67fa63f64b43d44caf3b7bf853e11cf6
-8  unknown username  67fa63f64b43d44caf3b7bf853e11cf6
+1  wrong password    47e49d11ac4d5b8984187fc0176becb6
+2  wrong password    47e49d11ac4d5b8984187fc0176becb6
+3  wrong password    47e49d11ac4d5b8984187fc0176becb6
+4  wrong password    47e49d11ac4d5b8984187fc0176becb6
+5  wrong password    47e49d11ac4d5b8984187fc0176becb6
+6  wrong password    47e49d11ac4d5b8984187fc0176becb6
+7  right password    47e49d11ac4d5b8984187fc0176becb6
+8  unknown username  47e49d11ac4d5b8984187fc0176becb6
 ```
 
-The four normalised values vary between responses — `date`, the request id
-and the nonce between any two, the session id between any two parked
-requests — so none of them distinguishes an account that exists from one
-that does not, or a locked account from a wrong password.
+The normalised values vary between responses — `date`, the request id and
+the nonce between any two, the session id between any two parked requests,
+and the typed name and the length that follows it between two submissions
+that typed different names — so none of them distinguishes an account that
+exists from one that does not, or a locked account from a wrong password.
+`packages/protocol-oidc/tests/login-refusal.int.test.ts` makes the same comparison against a real
+database for four causes at once — a wrong password, an unknown name, a
+locked account and a disabled one — with the typed name masked.
 
 ### A wrong second-factor code counts too
 
@@ -5113,7 +5278,7 @@ the sign-in's correct password does **not** clear the row — only a sign-in
 that completes does. Once the account is locked the second-factor step is
 refused without the code being looked at, so a locked account cannot say
 whether a guess was right, and the refusal is the answer a wrong code gets:
-the code form again.
+the code form again, with `That code did not work. Check it and try again.`
 
 What is observable is what the session already told its holder: the account
 exists, because the password was right. The refusal does not say the account
@@ -5123,8 +5288,8 @@ it answers faster than one that is, which tells a holder of the password
 nothing the lockout's own effect does not.
 
 The run below was captured on a stack of its own: the `infra/docker` compose
-file as the project `odudu-t17c` on `http://localhost:3083`, its `odudu`
-service built from commit `a7ed7491`, started on an empty volume with
+file as the project `odudu-17g` on `http://localhost:3000`, its `odudu`
+service built from commit `7fc38b58`, started on an empty volume with
 `ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000` so no throttle
 refuses first. It uses a tenant and a user nothing else in this document
 holds, since the run ends with the account locked: `otp-lock` and `grace`,
@@ -5139,7 +5304,7 @@ implementation that section used:
 post_code() {
   curl -sS -D /tmp/h.txt -o /tmp/b.txt \
     --data-urlencode "auth_session_id=$SID" --data-urlencode "code=$1" \
-    'http://localhost:3083/tenants/otp-lock/login-actions/authenticate' >/dev/null
+    'http://localhost:3000/tenants/otp-lock/login-actions/authenticate' >/dev/null
   cat /tmp/h.txt /tmp/b.txt | tr -d '\r' \
     | grep -iv '^date:' | grep -iv '^x-request-id:' \
     | sed 's/nonce-[A-Za-z0-9+/=]*/nonce-NONCE/; s/nonce="[^"]*"/nonce="NONCE"/
@@ -5151,12 +5316,12 @@ echo "6  right code      $(post_code $RIGHT)"
 ```
 
 ```
-1  wrong code      0e9eed04a93bc73d7731461c8e4dd847
-2  wrong code      0e9eed04a93bc73d7731461c8e4dd847
-3  wrong code      0e9eed04a93bc73d7731461c8e4dd847
-4  wrong code      0e9eed04a93bc73d7731461c8e4dd847
-5  wrong code      0e9eed04a93bc73d7731461c8e4dd847
-6  right code      0e9eed04a93bc73d7731461c8e4dd847
+1  wrong code      3b07878ffadaacfa12b3ad3f7811beb6
+2  wrong code      3b07878ffadaacfa12b3ad3f7811beb6
+3  wrong code      3b07878ffadaacfa12b3ad3f7811beb6
+4  wrong code      3b07878ffadaacfa12b3ad3f7811beb6
+5  wrong code      3b07878ffadaacfa12b3ad3f7811beb6
+6  right code      3b07878ffadaacfa12b3ad3f7811beb6
 ```
 
 The sixth, the right code, is the same bytes as the five wrong ones. The row
@@ -5184,7 +5349,7 @@ than the sign-in form either — the account is locked at the first step too:
 
 ```bash
 curl -sS -D - -o /tmp/b.txt -X POST \
-  'http://localhost:3083/tenants/otp-lock/login-actions/authenticate' \
+  'http://localhost:3000/tenants/otp-lock/login-actions/authenticate' \
   --data-urlencode "auth_session_id=$SID2" \
   --data-urlencode 'username=grace' --data-urlencode 'password=correct-horse-battery' \
   | tr -d '\r' | grep -iE '^(HTTP|location)'
@@ -5213,11 +5378,11 @@ docker compose exec -T postgres psql -U odudu -d odudu -x -c \
 
 ```
 -[ RECORD 1 ]----+-------------------------------------
-subject_id       | 01a0cb07-4e76-7fbe-8d86-b7c083319ef0
+subject_id       | 01a13f62-94fa-77af-8951-86d91d0a060a
 failure_count    | 7
-first_failure_at | 2026-09-22 21:50:31.894+00
-last_failure_at  | 2026-09-22 21:50:32.303+00
-locked_until     | 2026-09-22 21:54:32.303+00
+first_failure_at | 2026-10-15 11:48:32.58+00
+last_failure_at  | 2026-10-15 11:48:32.957+00
+locked_until     | 2026-10-15 11:52:32.957+00
 ```
 
 One row for `ada`, none for the username nobody holds — and seven failures,
@@ -5327,11 +5492,11 @@ for n in $(seq 1 10); do
     --data-urlencode 'email=ada@example.test' "$RESET"
 done
 echo '--- the eleventh, from the same address ---'
-curl -sS -D - -o /dev/null --data-urlencode 'email=ada@example.test' "$RESET" \
-  | tr -d '\r' | grep -iE '^(HTTP|retry-after|content-length)'
+curl -sS -D - --data-urlencode 'email=ada@example.test' "$RESET" | tr -d '\r'
+echo
 echo '--- an address this tenant has never seen, still throttled ---'
 curl -sS -D - -o /dev/null --data-urlencode 'email=nobody@example.test' "$RESET" \
-  | tr -d '\r' | grep -iE '^(HTTP|retry-after|content-length)'
+  | tr -d '\r' | grep -iE '^(HTTP|retry-after|content-type|content-length)'
 ```
 
 ```
@@ -5347,17 +5512,44 @@ request 9: 200
 request 10: 200
 --- the eleventh, from the same address ---
 HTTP/1.1 429 Too Many Requests
+x-request-id: 01a13f69-ab71-78df-86cd-aad092231823
 retry-after: 60
-content-length: 0
+content-type: text/html
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+content-length: 239
+Date: Thu, 15 Oct 2026 11:54:12 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Too many attempts</title></head>
+<body>
+<h1>Too many attempts</h1>
+<p>Try again in 60 seconds.</p>
+<p>Go back to the previous page when the time is up.</p>
+</body>
+</html>
 --- an address this tenant has never seen, still throttled ---
 HTTP/1.1 429 Too Many Requests
 retry-after: 60
-content-length: 0
+content-type: text/html
+content-length: 239
 ```
 
-Empty body, and the same one either way: the refusal is decided before the
-body is parsed or any account looked up, so it cannot say whether the
-address was one this tenant knows. The budget is shared across the three
+A page rather than a bare status, because a person at a browser who submitted
+one of these three forms would otherwise be looking at a blank tab. The wait
+it names is the `retry-after` header's value, rounded up, and it is the same
+page either way: the refusal is decided before the body is parsed or any
+account looked up, so it cannot say whether the address was one this tenant
+knows, and it offers no link back, since building one would mean reading the
+parked sign-in for every refused request. The administrator's three mail
+sends (`…/password-reset`, `…/verification`, `…/actions-email`) are called by
+programs and keep the empty body, as do `/token`, `/revoke` and
+`/introspect`. The budget is shared across the three
 routes rather than one per route, the rendered forms are not throttled, and
 neither is `/token` — this one, by origin, is not where `/token`'s own
 budget lives; [the client_secret budget](#the-client_secret-budget-at-token)
@@ -5385,7 +5577,7 @@ done
 ```
 --- the sign-in submission shares the same budget ---
 HTTP/1.1 429 Too Many Requests
-retry-after: 60
+retry-after: 53
 ```
 
 ```
@@ -5398,7 +5590,8 @@ token request 3: 400
 ```
 
 `retry-after` is what is left of the oldest counted request's minute,
-rounded up to a second — `60` after a burst this fast, and lower after a
+rounded up to a second — `60` after a burst this fast (the sign-in refusal
+above came a few seconds later and says `53`), and lower after a
 slower one, since the window slides rather than resetting. The three `400`s
 are `invalid_grant` on a code that never existed — an OAuth refusal, which
 is the point.
@@ -5429,7 +5622,7 @@ and over from one address is refused after five, while the rest of a shared
 address is left its ten. The username is read from the form after it is
 parsed and before any account is looked up, folded for case, padding and
 Unicode compatibility forms, so nothing a lookup could say reaches the
-decision, and the refusal is the same `429`, `Retry-After` and empty body as
+decision, and the refusal is the same `429`, `Retry-After` and page as
 the per-origin one. A submission that names no username — the second-factor
 and passkey steps carry only the authentication session — is not counted
 here, and neither are registration or the reset request. A wrong second-factor
@@ -5437,18 +5630,18 @@ code is bounded per account instead, by the lockout
 ([a wrong second-factor code counts too](#a-wrong-second-factor-code-counts-too)).
 
 The run below was captured on a stack of its own: the `infra/docker` compose
-file as the project `odudu-t17c` on `http://localhost:3083`, its `odudu`
-service built from commit `a7ed7491` and started on an empty volume with
+file as the project `odudu-17g` on `http://localhost:3000`, its `odudu`
+service built from commit `7fc38b58` and started with
 `ODUDU_THROTTLE_LIMIT=1000` and the login budget left at its default, so the
 only budget in play is this one. It needs a user nothing else in this
 document uses, because the fifth wrong password also locks the account:
-`lena`, in the `demo` tenant, seeded for this run alone.
+`lena`, in the `demo` tenant, seeded for this run alone (`demo` already held
+`demo-spa` and `ada`, and `seed` does not add a user to an existing client,
+so it is `seed user`).
 
 ```bash
-odudu seed \
-  --tenant demo --client demo-spa \
-  --redirect-uri http://localhost:8080/callback \
-  --user lena --password correct-horse-battery --email lena@example.com
+odudu seed user --tenant demo --username lena \
+  --password correct-horse-battery --email lena@example.com
 ```
 
 `$SID` is an `auth_session_id` taken from the `/authorize` form. Five wrong
@@ -5460,7 +5653,7 @@ attempt() {
   curl -sS -D - -o /dev/null \
     --data-urlencode "auth_session_id=$SID" \
     --data-urlencode "username=$1" --data-urlencode 'password=wrong-password' \
-    'http://localhost:3083/tenants/demo/login-actions/authenticate' \
+    'http://localhost:3000/tenants/demo/login-actions/authenticate' \
     | tr -d '\r' | grep -iE '^(HTTP|retry-after|content-length)' | tr '\n' ' '
   echo
 }
@@ -5473,19 +5666,19 @@ echo '--- another username, same address ---'; attempt grace
 ```
 
 ```
-lena, submission 1: HTTP/1.1 200 OK content-length: 2372
-lena, submission 2: HTTP/1.1 200 OK content-length: 2372
-lena, submission 3: HTTP/1.1 200 OK content-length: 2372
-lena, submission 4: HTTP/1.1 200 OK content-length: 2372
-lena, submission 5: HTTP/1.1 200 OK content-length: 2372
+lena, submission 1: HTTP/1.1 200 OK content-length: 2489
+lena, submission 2: HTTP/1.1 200 OK content-length: 2489
+lena, submission 3: HTTP/1.1 200 OK content-length: 2489
+lena, submission 4: HTTP/1.1 200 OK content-length: 2489
+lena, submission 5: HTTP/1.1 200 OK content-length: 2489
 --- the sixth, for lena ---
-HTTP/1.1 429 Too Many Requests retry-after: 60 content-length: 0
+HTTP/1.1 429 Too Many Requests retry-after: 60 content-length: 239
 --- a username nobody holds, after five of its own ---
-HTTP/1.1 429 Too Many Requests retry-after: 60 content-length: 0
+HTTP/1.1 429 Too Many Requests retry-after: 60 content-length: 239
 --- lena again, in other letters ---
-HTTP/1.1 429 Too Many Requests retry-after: 60 content-length: 0
+HTTP/1.1 429 Too Many Requests retry-after: 60 content-length: 239
 --- another username, same address ---
-HTTP/1.1 200 OK content-length: 2372
+HTTP/1.1 200 OK content-length: 2490
 ```
 
 The fifth wrong password also starts the account lockout, and its answer is
@@ -10102,8 +10295,8 @@ client is told.
 | Unknown username                                                      | 200, the sign-in form again                    | Indistinguishable from a wrong password, and the credential query is still issued so the timing matches                                                                                                                  |
 | Any password, while the account is locked                             | 200, the sign-in form again                    | Byte-identical to a wrong password, and reached after the same verification, so neither the page nor the timing says the account is locked ([Brute-force lockout](#brute-force-lockout))                                 |
 | A password over 256 characters                                        | 400, "Password must be at most 256 characters" | Refused at the read, before the Argon2id verification, so it costs nothing and counts no failure against the account                                                                                                     |
-| Any submission over the per-origin budget                             | 429, `Retry-After`, empty body                 | Decided before the body is parsed, so it is the same refusal whatever was submitted ([The per-origin throttle](#the-per-origin-throttle))                                                                                |
-| Sign-in submissions for one username over its budget from one address | 429, `Retry-After`, empty body                 | Decided from the submitted form before any account is looked up, so it is the same refusal for a name that is an account and one that is not ([The per-username budget on sign-in](#the-per-username-budget-on-sign-in)) |
+| Any submission over the per-origin budget                             | 429, `Retry-After`, a page naming the wait     | Decided before the body is parsed, so it is the same refusal whatever was submitted ([The per-origin throttle](#the-per-origin-throttle))                                                                                |
+| Sign-in submissions for one username over its budget from one address | 429, `Retry-After`, a page naming the wait     | Decided from the submitted form before any account is looked up, so it is the same refusal for a name that is an account and one that is not ([The per-username budget on sign-in](#the-per-username-budget-on-sign-in)) |
 | No `auth_session_id`                                                  | 400, "This sign-in attempt is no longer valid" | That field is the form's CSRF defence; a submission without it is not a submission from the form                                                                                                                         |
 | Unknown or expired `auth_session_id`                                  | 400, same page                                 | Folded together deliberately: neither names a live parked request                                                                                                                                                        |
 | A second submit of a consumed session                                 | 400, same page                                 | The atomic consume is what stops a back-button press minting a second session and a second code                                                                                                                          |
