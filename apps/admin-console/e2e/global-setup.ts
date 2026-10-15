@@ -249,8 +249,7 @@ function seedAuditTrail(audit: Seeded['audit']): string {
     `insert into audit_events (id, tenant_id, occurred_at, event_type, action, outcome, actor_tenant_id, actor_subject_id, resource_type, resource_id, request_id, ip, detail)
      values
       (gen_random_uuid(), ${tenant}, now() - interval '1 day', 'admin_mutation', 'e2e.client_update', 'allowed', ${tenant}, ${actor}, 'client', '${client}', 'e2e-shared-request', '203.0.113.8', '{"enabled":{"before":true,"after":false},"note":"${long}"}'::jsonb),
-      (gen_random_uuid(), ${tenant}, now() - interval '1 day' - interval '1 second', 'admin_mutation', 'e2e.client_rotate', 'refused', ${tenant}, ${actor}, 'client', '${client}', 'e2e-shared-request', '203.0.113.8', '{"denied":["manage-clients"]}'::jsonb),
-      (gen_random_uuid(), ${tenant}, now() - interval '1 day' - interval '2 seconds', 'admin_mutation', 'e2e.from_elsewhere', 'allowed', (select id from tenants where name = 'system'), gen_random_uuid(), 'tenant', ${tenant}::text, 'e2e-elsewhere-request', '198.51.100.4', '{}'::jsonb)`,
+      (gen_random_uuid(), ${tenant}, now() - interval '1 day' - interval '1 second', 'admin_mutation', 'e2e.client_rotate', 'refused', ${tenant}, ${actor}, 'client', '${client}', 'e2e-shared-request', '203.0.113.8', '{"denied":["manage-clients"]}'::jsonb)`,
   );
   return client;
 }

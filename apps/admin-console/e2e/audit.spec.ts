@@ -7,12 +7,14 @@ import {
   forgive,
   signIn,
   tabsWithin,
+  takeSecret,
   test,
   PHONE,
 } from './fixtures';
 import { seeded } from './stack';
 
 const { admin, viewer, usersOnly, clientId } = seeded().audit;
+const { other } = seeded();
 const TENANT = admin.tenant;
 const AT = `/console/${TENANT}/audit`;
 const { system } = seeded();
@@ -48,9 +50,8 @@ async function reachInGrid(page: Page, target: Locator): Promise<void> {
   await expect(target).toBeFocused();
 }
 
-async function typeDate(page: Page, name: string, digits: string): Promise<void> {
-  await page.getByRole('group', { name, exact: true }).getByRole('spinbutton').first().click();
-  await page.keyboard.type(digits);
+async function typeDate(page: Page, name: string, local: string): Promise<void> {
+  await page.getByLabel(name, { exact: true }).fill(local);
 }
 
 test('the trail is filtered, paged by cursor and opened to a row, with no count', async ({
@@ -83,7 +84,6 @@ test('the trail is filtered, paged by cursor and opened to a row, with no count'
   await expect(rowsOf(page)).toHaveCount(50);
 
   await expect(rowsOf(page)).toHaveCount(50);
-  await page.waitForLoadState('networkidle');
   await page.getByRole('button', { name: 'Load more audit events' }).click();
   await expect(rowsOf(page)).toHaveCount(100);
 
@@ -161,12 +161,12 @@ test('a resource id waits for its type, an actor must be a UUID and a range must
   await expectAccessible(page);
   await page.getByRole('textbox', { name: 'Actor (subject id)' }).fill('');
 
-  await typeDate(page, 'From', '010120311200');
-  await typeDate(page, 'To', '010120301200');
+  await typeDate(page, 'From', '2031-01-01T12:00');
+  await typeDate(page, 'To', '2030-01-01T12:00');
   await apply(page);
   await expect(page.getByText(/To is before From/u)).toBeVisible();
   await expectAccessible(page);
-  await typeDate(page, 'To', '010220311200');
+  await typeDate(page, 'To', '2031-02-01T12:00');
   await apply(page);
   await expect(page).toHaveURL(/from=2031-01-01T/u);
   await expect(page.getByRole('heading', { name: 'No event matches these filters' })).toBeVisible();
@@ -200,19 +200,6 @@ test('rows of one request are labelled, a caller from elsewhere is marked, and a
   await expectAccessible(page);
   await dialog.getByRole('link', { name: 'Open the client' }).click();
   await expect(page).toHaveURL(new RegExp(`/clients/${clientId}`, 'u'));
-});
-
-test('a caller from elsewhere is marked, and the reason is given', async ({ page }) => {
-  await signIn(page, admin);
-  await page.goto(`${AT}?action=e2e.from_elsewhere`);
-  const row = rowsOf(page).first();
-  await expect(row).toContainText('from elsewhere');
-  await expect(row).toContainText('a system administrator');
-  await expect(page.getByText(/cannot name them/u)).toBeVisible();
-  await row.getByRole('button', { name: /^Details of/u }).click();
-  const dialog = page.getByRole('dialog', { name: 'Audit event' });
-  await expect(dialog).toContainText('system administrator acting across tenants');
-  await expectAccessible(page);
 });
 
 test('an actor of the tenant is named and links to its subject', async ({ page }) => {
@@ -333,4 +320,79 @@ test('the system tenant’s own trail is the same page', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1, name: 'Audit trail' })).toBeVisible();
   await expect(trail(page)).toBeVisible();
   await expectAccessible(page);
+});
+
+test('a system administrator’s action on the tenant is marked as from elsewhere, the product having written it', async ({
+  page,
+}) => {
+  test.slow();
+  await signIn(page, system);
+  await page.goto(`/console/${TENANT}/registration-tokens`);
+  await page.getByRole('button', { name: 'Mint token' }).click();
+  const dialog = page.getByRole('dialog', { name: 'New registration token' });
+  await takeSecret(dialog);
+  await page.context().clearCookies();
+  await signIn(page, admin);
+  await page.goto(`${AT}?action=registration_token.mint`);
+  const row = rowsOf(page).first();
+  await expect(row).toContainText('from elsewhere');
+  await expect(row).toContainText('a system administrator');
+  await row.getByRole('button', { name: /^Details of/u }).click();
+  await expect(page.getByRole('dialog', { name: 'Audit event' })).toContainText(
+    'system administrator acting across tenants',
+  );
+  await expectAccessible(page);
+});
+
+test('another tenant’s administrator refused at this tenant is marked as from elsewhere', async ({
+  page,
+}) => {
+  test.slow();
+  await signIn(page, other);
+  const refused = await page.request.get(`/console/api/admin/tenants/${TENANT}/whoami`);
+  expect(refused.status()).toBeGreaterThanOrEqual(400);
+  await page.context().clearCookies();
+  await signIn(page, admin);
+  await page.goto(`${AT}?action=token.foreign_issuer`);
+  const row = rowsOf(page).first();
+  await expect(row).toContainText('from elsewhere');
+  await expect(row).toContainText('another tenant');
+  await expectAccessible(page);
+});
+
+test.describe('a date no instant reads from', () => {
+  test.use({ timezoneId: 'America/New_York' });
+
+  test('a half-typed value is marked invalid, keeps its text, and holds Apply', async ({
+    page,
+  }) => {
+    await signIn(page, admin);
+    await page.goto(AT);
+    const from = page.getByLabel('From', { exact: true });
+    await from.click();
+    await page.keyboard.type('09');
+    await page.getByRole('textbox', { name: 'Action', exact: true }).click();
+    await expect(from).toHaveAttribute('aria-invalid', 'true');
+    await expect(page.getByText(/not a complete date and time/u).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Apply filters' })).toBeDisabled();
+    await expect(page.getByText(/not narrowed by it until then/u)).toBeVisible();
+    await expectAccessible(page);
+    expect(new URL(page.url()).searchParams.has('from')).toBe(false);
+  });
+
+  test('the hour a spring-forward skips is refused, naming the zone, with the text kept', async ({
+    page,
+  }) => {
+    await signIn(page, admin);
+    await page.goto(AT);
+    const from = page.getByLabel('From', { exact: true });
+    await from.fill('2026-03-08T02:30');
+    await expect(from).toHaveAttribute('aria-invalid', 'true');
+    await expect(from).toHaveValue('2026-03-08T02:30');
+    await expect(page.getByText(/does not exist in America\/New_York/u).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Apply filters' })).toBeDisabled();
+    await from.fill('2026-03-08T03:30');
+    await expect(from).not.toHaveAttribute('aria-invalid', 'true');
+    await expect(page.getByRole('button', { name: 'Apply filters' })).toBeEnabled();
+  });
 });

@@ -195,3 +195,21 @@ authenticated caller. So it writes a `refused` row under the action the
 caller attempted, with the reason under `detail.reason`, on every door
 ADR 0040's amendment lists. The attempted write itself is undone first,
 inside a savepoint, so the row is the only trace it leaves.
+
+## Amendment, 2026-10-15 — what `actor_origin` says
+
+A row's `actor_origin` is computed when the row is read and never stored
+(`originOf`, `packages/protocol-admin/src/usecase/audit.ts`). It is `tenant`
+when the row's `actor_tenant_id` is the tenant whose trail is being read,
+`system` when it is the system tenant's (a system administrator acting
+across tenants), and `other-tenant` otherwise: a subject of another tenant
+whose token reached this one and was refused (`token.foreign_issuer`). It is
+`null` when the row names no actor subject or no actor tenant, so a caller
+from elsewhere recorded with no subject is not marked. Every admin writer
+passes the caller's subject, so no producer of that case exists today.
+
+A name is resolved only for `tenant` rows, and only for a caller who holds
+`view-users`; `system` and `other-tenant` callers are shown by id. The
+console marks `system` and `other-tenant` as "from elsewhere" and does not
+compute the comparison itself, since the row carries no id for the tenant it
+is read under.

@@ -2098,9 +2098,18 @@ Changing a filter drops the cursor trail, since a cursor is bound to the filters
 was issued under, and a cursor the server no longer honours (a 400 naming the
 `cursor` field) shows "start again" rather than a generic failure.
 
-**Date-time fields pick a minute in the reader's zone and send UTC.** `DateTimeField`
-is a React Aria `DateField` over a `ZonedDateTime`; an upper bound is the last
-millisecond of the minute picked, so `to` being inclusive takes the whole minute.
+**Date-time fields are the browser's own `datetime-local` input, read in the reader's
+zone and sent as UTC.** A first version used a React Aria `DateField`; on blur it
+clamped a typed 02/30 to 02/29 and sent that, so an impossible date silently became a
+different one. The native input cannot complete a day the month lacks and reports what
+it could not read as `badInput`, which the field tells apart from empty: it is marked
+invalid with a message tied to it (`aria-describedby`), keeps what was typed, and Apply
+is held with a line saying the trail is not narrowed by it until it is corrected or
+cleared. A time a spring-forward skips has no reading and is refused naming the zone; a
+time a fall-back repeats is the earlier of the two, so a lower bound includes the whole
+repeat. An upper bound is the last millisecond of the minute, so `to` being inclusive
+takes the whole minute; an address carrying seconds shows seconds, so what is shown is
+what is sent. It offers the browser's own picker.
 
 **There is no count, and the page says so.** It says how far back the rows loaded
 reach instead. `GET /audit/count` is named in the coverage test's `NEVER` list with
@@ -2123,10 +2132,31 @@ of it. Migration `0099` adds `audit_events_resource_type (tenant_id, resource_ty
 occurred_at DESC, id DESC)`, and `list-plans.int.test.ts` holds the first and a later
 page to an `Index Scan` of it with no `Sort` (red before the migration). It is a
 seventh index on the table every event writes to, which P11's partitioning row already
-carries. The other filters (`event_type`, `action`, `outcome`, `actor_subject_id`, a
-resource with its id, and the time range) were each served by an index ending in the
-listing's order already; a combination of two takes one of them and filters by the
-rest, which is bounded by how common the combination is, not by the page.
+carries. The other single filters (`event_type`, `action`, `outcome`, `actor_subject_id`, a
+resource with its id, and the time range) each had an index ending in the listing's
+order already.
+
+**Two filters that few events share are bounded by a statement timeout.** A pair such as
+an action and an actor makes Postgres read all of the cheaper index and filter by the
+other: on a local table of three million rows, 50,000 rows removed by the filter, 50,458
+buffers and 3.6 s cold, which at the design volume is about 33 times that held in an open
+admin transaction. No index can serve every pair (fifteen pairs, six filters), and none
+was added: the time range leads `audit_events_tenant_time`, so a pair narrowed by `from`
+and `to` is read by that index and is cheap, which the integration test shows. So the
+audit listing, count and export run under `SET LOCAL statement_timeout` of 5 s
+(`AUDIT_READ_TIMEOUT_MS`), set with `set_config(..., true)` in the request's own
+transaction so it ends with it. Postgres's `57014` becomes a `400` of type
+`about:blank#audit-query-too-broad` whose `detail` says to narrow the time range, with
+`from` and `to` bounded to 1970..9999 in the contract (year 0 reached Postgres as a 500).
+It is a 400 rather than a 503 because retrying the same request can only fail the same
+way, and the caller fixes it by narrowing it, as with the 413 of an export past its cap.
+The console says which filters were on and offers the last 24 hours rather than a generic
+failure. `audit-bound.int.test.ts` provokes the timeout over a table of 600,000 rows with
+the bound shortened, on all three routes, and holds that the connection returns with no
+bound left on it. `pnpm test:plans` drives every filter alone and the pairs the console
+offers, fails on a `Sort` or a `Seq Scan` for those that must be index-served, and names
+the one pair held to the timeout (`event_type` with `action`) and checks the timeout was
+set; dropping 0099 turns it red.
 
 **The area placeholder is gone.** Audit was the last area without a page, so
 `AreaPage`, `notBuiltText` and the router's catch-all over `EVERY_AREA` are removed,

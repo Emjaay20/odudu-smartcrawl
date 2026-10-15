@@ -9757,6 +9757,127 @@ Keep-Alive: timeout=72
 {"items":[{"id":"01a0ee96-1551-7830-a44f-fd26a2050e16","occurred_at":"2026-09-29T19:13:28.400Z","event_type":"admin_access","action":"capability.refused","outcome":"refused","actor_tenant_id":"01a0ee8f-032e-718b-b030-be2b154a9e99","actor_subject_id":"01a0ee96-104f-7c7f-b3da-d7049248b038","actor_client_id":"01a0ee96-1084-772b-b51a-848699f7a2e1","actor_name":"demo-operator","actor_origin":"tenant","resource_type":null,"resource_id":null,"request_id":"capability-refused-doc","ip":"172.22.0.1","detail":{"reason":"missing_capability","capability":"view-users"}}]}
 ```
 
+### Reads that are too broad, and instants that cannot be held
+
+`GET /audit`, `GET /audit/count` and `GET /audit/export` walk one index, the one
+serving the most selective filter, and filter by the rest. Two filters few rows share
+(an action and an actor, say) leave Postgres reading all of the cheaper one, however
+small the page. So each runs under a statement timeout of five seconds, set in its own
+transaction and gone with it, and past it the answer is a `400` of type
+`about:blank#audit-query-too-broad` whose `detail` says to narrow the time range with
+`from` and `to`: they lead the time index, so a pair narrowed by them is cheap. It is a
+`400` rather than a `503` because asking again unchanged can only fail the same way.
+`from` and `to` are instants from 1970 to 9999; the year 0 that used to reach Postgres
+as a `500` is refused at the door.
+
+Against the twenty-third stack, compose project `odudu-docs-19` on port 3082, its
+Postgres on 5464, built from this branch (the server as of `2918f960`) and brought up
+from an empty volume, with `seed admin --username ada` and the token got the way
+"Getting the token" shows. Twelve million rows were then inserted into `system`'s trail as
+the database owner, half under the action `bulk.a` and an actor, half under `bulk.b`
+and another, the last eight million fifty days older than the rest, and `analyze` run;
+`$P` is `http://localhost:3082/admin/tenants/system` and `$A` the second actor,
+`22222222-2222-4222-8222-222222222222`. Each response is followed by its `time_total`.
+The same pair on four million rows took 2.5 s, so the bound is crossed from about
+ten million, and a hundred million is some twenty-five times that:
+
+```bash
+curl -sS -D - -w "\n%{time_total} s\n" -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "$P/audit?action=bulk.a&actor_subject_id=$A&limit=1"
+```
+
+```
+HTTP/1.1 400 Bad Request
+x-request-id: 01a13cfd-82b0-7ec2-8445-39b5e544e774
+cache-control: no-store
+content-type: application/problem+json; charset=utf-8
+content-length: 251
+Date: Thu, 15 Oct 2026 00:36:54 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+{"type":"about:blank#audit-query-too-broad","title":"Bad Request","status":400,"detail":"these filters could not be searched within 5 seconds; narrow the time range with from and to, or drop a filter","instance":"01a13cfd-82b0-7ec2-8445-39b5e544e774"}
+5.125595 s
+```
+
+The same filters with a ten minute window, which the time index serves, and the count, which
+answered inside the bound this time, and the export, which did not:
+
+```bash
+curl -sS -D - -w "\n%{time_total} s\n" -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "$P/audit?action=bulk.a&actor_subject_id=$A&from=2026-10-15T00:26:49Z&limit=1"
+curl -sS -D - -w "\n%{time_total} s\n" -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "$P/audit/count?action=bulk.a&actor_subject_id=$A"
+curl -sS -D - -w "\n%{time_total} s\n" -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "$P/audit/export?action=bulk.a&actor_subject_id=$A"
+```
+
+```
+HTTP/1.1 200 OK
+x-request-id: 01a13cfd-96c3-7f6d-8178-6164156d37b1
+cache-control: no-store
+content-type: application/json; charset=utf-8
+content-length: 12
+Date: Thu, 15 Oct 2026 00:36:54 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+{"items":[]}
+0.029296 s
+```
+
+```
+HTTP/1.1 200 OK
+x-request-id: 01a13cfd-96e7-76eb-9fd3-f4e2b838f8dc
+cache-control: no-store
+content-type: application/json; charset=utf-8
+content-length: 26
+Date: Thu, 15 Oct 2026 00:36:58 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+{"count":0,"capped":false}
+4.107103 s
+```
+
+```
+HTTP/1.1 400 Bad Request
+x-request-id: 01a13cfd-a709-7603-815f-a3c9f0ad99a0
+cache-control: no-store
+content-type: application/problem+json; charset=utf-8
+content-length: 251
+Date: Thu, 15 Oct 2026 00:37:03 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+{"type":"about:blank#audit-query-too-broad","title":"Bad Request","status":400,"detail":"these filters could not be searched within 5 seconds; narrow the time range with from and to, or drop a filter","instance":"01a13cfd-a709-7603-815f-a3c9f0ad99a0"}
+5.067626 s
+```
+
+And an instant before 1970 (captured on the stack's first run, before the twelve
+million rows, with the same image):
+
+```bash
+curl -sS -D - -w "\n%{time_total} s\n" -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "$P/audit?from=0000-01-01T00:00:00Z"
+```
+
+```
+HTTP/1.1 400 Bad Request
+x-request-id: 01a13cf6-159e-79d6-a5d4-58c5e1a086c9
+cache-control: no-store
+content-type: application/problem+json; charset=utf-8
+content-length: 272
+Date: Thu, 15 Oct 2026 00:28:42 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+{"type":"about:blank","title":"Error","status":400,"detail":"querystring/from must match pattern \"^(?:19[7-9]\\d|[2-9]\\d{3})-\"","errors":[{"path":"from","message":"must match pattern \"^(?:19[7-9]\\d|[2-9]\\d{3})-\""}],"instance":"01a13cf6-159e-79d6-a5d4-58c5e1a086c9"}
+0.006910 s
+```
+
+The stack was torn down with `docker compose down -v` when the capture finished.
+
 ## `GET /audit/count` and `GET /audit/export`
 
 Requires `view-audit`. Both take `GET /audit`'s filters, and the same refusals
