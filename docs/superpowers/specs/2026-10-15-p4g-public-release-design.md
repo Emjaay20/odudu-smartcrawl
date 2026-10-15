@@ -73,7 +73,7 @@ people who run it.
   in the terminal and at large sizes.
 - The wordmark is lowercase `odudu` in a monospace face; this is a
   proposal, the owner confirms it.
-- A designer or the owner finishes the mark; the phase supplies it in SVG at
+- The phase draws the mark in SVG and the owner approves it; it is supplied at
   the sizes the site, README, favicon and social image need.
 - **Risk accepted by the owner, 2026-10-15.** The owner believes the staff
   mark is not in use by another product and chose not to wait for a formal
@@ -113,5 +113,5 @@ are page rendering and message catalogues; the bound is the same as today).
 ## Open for the owner
 
 - The domain for the site.
-- The finished mark, drawn from the staff direction, as SVG.
+- Approval of the finished mark, which the phase draws from the staff direction.
 - Who confirms any Nsibidi-inspired detail.
