@@ -1,7 +1,9 @@
 import type { Tenant } from '#/features/tenants/service';
+import { useTenantDelete } from '#/features/tenants/usecase/useTenantDelete';
 import { useTenantGeneral } from '#/features/tenants/usecase/useTenantGeneral';
 import { Button } from '#/shared/view/Button';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
+import { DeleteZone } from '#/shared/view/DeleteZone';
 import { TextField } from '#/shared/view/Field';
 import { SaveSection } from '#/shared/view/SaveSection';
 import { EnabledTag } from '#/shared/view/StatusTag';
@@ -9,6 +11,31 @@ import { Panel } from '#/shared/view/Panel';
 import { recordTab } from '#/shared/view/RecordTab';
 import styles from '#/features/tenants/view/GeneralTab/GeneralTab.module.css';
 import { DESCRIPTION_RULE } from '#/shared/service/labels';
+
+// Absent for a caller the route would refuse; beside Disable, which a
+// tenant needs first, it says so rather than offering a delete the server
+// would turn away.
+function Danger({ name, enabled }: { name: string; enabled: boolean }) {
+  const deletion = useTenantDelete(name, enabled);
+  const { state } = deletion;
+  if (state.kind === 'hidden') return null;
+  return (
+    <DeleteZone
+      name={name}
+      deletion={deletion}
+      consequence={deletion.consequence}
+      typed={name}
+      lead={
+        <p className={recordTab.text}>
+          Deletes {name} and everything it holds. This cannot be undone.
+        </p>
+      }
+      {...(state.kind === 'fixed' || state.kind === 'disable-first'
+        ? { note: <p className={recordTab.rule}>{state.text}</p> }
+        : {})}
+    />
+  );
+}
 
 export function GeneralTab({
   name,
@@ -81,6 +108,7 @@ export function GeneralTab({
         onConfirm={enabled.disable}
         onCancel={enabled.cancel}
       />
+      <Danger name={name} enabled={tenant.enabled} />
     </div>
   );
 }

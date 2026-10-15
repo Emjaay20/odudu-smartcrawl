@@ -101,3 +101,12 @@ export {
   recordOpener,
 } from '#/features/tenants/service/access';
 export { tenantChangeFailure } from '#/features/tenants/service/failure';
+export {
+  DELETE_NEEDS,
+  deleteState,
+  type DeleteState,
+  deleteConsequence,
+  deleteFailure,
+  settledDeletion,
+  heldForTenant,
+} from '#/features/tenants/service/deletion';

@@ -35,8 +35,6 @@ const NEVER: Readonly<Record<string, string>> = {
     "API-only: clears every brute-force lockout in the tenant. The console clears one subject's lockout, on that subject.",
   'GET /admin/tenants/:tenant/mail':
     'API-only: mail delivery status for monitoring. The Email page configures SMTP and sends a test message; it lists no deliveries.',
-  'DELETE /admin/tenants/:tenant':
-    'API-only, by design: a tenant must be disabled first and its deletion is irreversible. The console disables a tenant and offers no delete.',
   'GET /admin/tenants/:tenant/audit/count':
     'The audit trail has no count, by design: over a trail that long a capped total would be an estimate the page cannot stand behind, so it says how far back the loaded rows reach instead.',
 };

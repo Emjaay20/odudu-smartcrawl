@@ -915,11 +915,12 @@ Overview; Identity (Subjects, Groups, Roles); Applications (Clients, Scopes,
 Registration tokens); Security (Sign-in flow, Signing keys); Tenant
 (Settings, Email, Export); Observe (the Audit trail). A system administrator
 signed in to `system` also has System, with Tenants and System
-administrators. What the rail lists, and what a page lets a caller change,
-follows `whoami`'s capabilities; the server still decides every request.
-Six admin routes have no screen and are for scripts:
-`POST /subjects/bulk`, `GET` and `DELETE /sessions`, `DELETE /lockouts`,
-`GET /mail` and `DELETE` of a tenant. `tests/lint/console-covers-admin-routes.test.ts`
+administrators; a tenant's record ends in a danger zone that deletes it,
+once it is disabled and its name is typed. What the rail lists, and what a
+page lets a caller change, follows `whoami`'s capabilities; the server still
+decides every request. Five admin routes have no screen and are for scripts:
+`POST /subjects/bulk`, `GET` and `DELETE /sessions`, `DELETE /lockouts` and
+`GET /mail`. `tests/lint/console-covers-admin-routes.test.ts`
 names each, so a new admin route with neither a screen nor a reason fails
 the build. The console's own sign-in, drafts and sections are described in
 [docs/console-paths.md](docs/console-paths.md) and

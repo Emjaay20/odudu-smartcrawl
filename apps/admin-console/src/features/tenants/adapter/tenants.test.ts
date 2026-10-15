@@ -2,6 +2,7 @@ import { expect, it } from 'vitest';
 import {
   amendTenant,
   createTenant,
+  deleteTenant,
   findTenant,
   importTenant,
   readExport,
@@ -143,4 +144,14 @@ it("reads the system tenant's issuer from its discovery document", async () => {
     ok: true,
     data: 'https://id.example/tenants/system',
   });
+});
+
+it('deletes a tenant by its name, which it names again as the confirmation', async () => {
+  const fake = fakeTransport({
+    'DELETE /console/api/admin/tenants/acme-eu': () => new Response(null, { status: 204 }),
+  });
+  expect(await deleteTenant(fake.transport.gateway, 'acme-eu')).toMatchObject({ ok: true });
+  expect(fake.sent.map((sent) => [sent.method, sent.path, sent.search.toString()])).toEqual([
+    ['DELETE', '/console/api/admin/tenants/acme-eu', 'confirm=acme-eu'],
+  ]);
 });

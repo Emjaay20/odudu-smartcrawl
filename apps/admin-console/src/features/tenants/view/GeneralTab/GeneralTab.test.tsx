@@ -147,3 +147,102 @@ it('passes axe in both themes, with the confirmation open', async () => {
     ),
   ).toEqual({ light: [], dark: [] });
 });
+
+const DISABLED = { ...ACME, enabled: false };
+
+function deleteRoutes(extra = {}) {
+  return routes({
+    [`GET ${ADMIN}/acme`]: json(DISABLED, 200, { etag: '"t1"' }),
+    [`GET ${ADMIN}`]: json({ items: [tenant('system')] }),
+    ...extra,
+  });
+}
+
+it('asks for the disable first while the tenant is enabled, and offers no delete', async () => {
+  renderConsoleAt('/console/system/tenants/acme', routes());
+  expect(await screen.findByText(/Disable acme first/u)).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Disable acme' })).toBeVisible();
+  expect(screen.queryByRole('button', { name: 'Delete acme' })).toBeNull();
+});
+
+it('offers the delete once the tenant is disabled, and enables it only for its typed name', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    '/console/system/tenants/acme',
+    deleteRoutes({ [`DELETE ${ADMIN}/acme`]: () => new Response(null, { status: 204 }) }),
+  );
+  await user.click(await screen.findByRole('button', { name: 'Delete acme' }));
+  const dialog = await screen.findByRole('alertdialog', { name: 'Delete acme?' });
+  expect(dialog).toHaveTextContent('its audit trail');
+  expect(dialog).toHaveTextContent('This cannot be undone');
+  const confirm = within(dialog).getByRole('button', { name: 'Delete acme' });
+  expect(confirm).toBeDisabled();
+  await user.type(within(dialog).getByRole('textbox', { name: 'Type acme to confirm' }), 'acme');
+  await user.click(confirm);
+  expect(await screen.findByRole('heading', { level: 1, name: 'Tenants' })).toBeVisible();
+  expect(screen.getByText('acme was deleted.')).toBeVisible();
+  expect(sent.find((s) => s.method === 'DELETE')?.search.toString()).toBe('confirm=acme');
+});
+
+it("says the server's typed refusal in the dialog, and keeps the tenant", async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(
+    '/console/system/tenants/acme',
+    deleteRoutes({
+      [`DELETE ${ADMIN}/acme`]: problem(409, 'about:blank#sessions-live', 'Conflict', {
+        detail: 'sessions still live: 2; disable acme again',
+      }),
+    }),
+  );
+  await user.click(await screen.findByRole('button', { name: 'Delete acme' }));
+  const dialog = await screen.findByRole('alertdialog');
+  await user.type(within(dialog).getByRole('textbox'), 'acme{Enter}');
+  expect(await within(dialog).findByText(/acme still has live sessions/u)).toBeVisible();
+  expect(screen.getByRole('heading', { level: 1, name: 'acme', hidden: true })).toBeInTheDocument();
+});
+
+it('says what the capability ceiling refuses, from the typed 403', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(
+    '/console/system/tenants/acme',
+    deleteRoutes({
+      [`DELETE ${ADMIN}/acme`]: problem(403, 'about:blank', 'Forbidden', {
+        detail: 'the tenant\u2019s subjects hold what the caller does not: manage-keys',
+      }),
+    }),
+  );
+  await user.click(await screen.findByRole('button', { name: 'Delete acme' }));
+  const dialog = await screen.findByRole('alertdialog');
+  await user.type(within(dialog).getByRole('textbox'), 'acme{Enter}');
+  expect(await within(dialog).findByText(/subjects hold what the caller does not/u)).toBeVisible();
+});
+
+it('offers no delete of the system tenant, and says why', async () => {
+  renderConsoleAt('/console/system/tenants/system', {
+    ...systemRoutes(),
+    [`GET ${ADMIN}/system`]: json(tenant('system'), 200, { etag: '"s1"' }),
+  });
+  expect(await screen.findByText(/system cannot be deleted/u)).toBeVisible();
+  expect(screen.queryByRole('button', { name: /Delete/u })).toBeNull();
+});
+
+it('passes axe in both themes with the delete confirmation open and with the disable first', async () => {
+  const user = userEvent.setup();
+  expect(
+    await axeInBothThemes(
+      () => consoleAt('/console/system/tenants/acme', routes()).element,
+      async () => {
+        await screen.findByText(/Disable acme first/u);
+      },
+    ),
+  ).toEqual({ light: [], dark: [] });
+  expect(
+    await axeInBothThemes(
+      () => consoleAt('/console/system/tenants/acme', deleteRoutes()).element,
+      async () => {
+        await user.click(await screen.findByRole('button', { name: 'Delete acme' }));
+        await screen.findByRole('alertdialog', { name: 'Delete acme?' });
+      },
+    ),
+  ).toEqual({ light: [], dark: [] });
+});

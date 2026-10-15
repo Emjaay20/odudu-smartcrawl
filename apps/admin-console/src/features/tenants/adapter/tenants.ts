@@ -10,7 +10,7 @@ import {
 import type { ImportedSecret } from '#/features/tenants/service';
 import type { Gateway, GatewayResult, RawBody } from '#/shared/transport/gateway';
 import { readDiscovery } from '#/shared/adapter/discovery';
-import { adminRootCall, firstMatch, segment } from '#/shared/adapter/route';
+import { adminRootCall, firstMatch, nothing, segment } from '#/shared/adapter/route';
 import { SYSTEM_TENANT } from '#/shared/service/principal';
 
 export function readTenantPage(
@@ -70,6 +70,15 @@ export function amendTenant(
     body: changes.display_name === '' ? { ...changes, display_name: null } : changes,
     ifMatch,
     schema: tenantSchema,
+  });
+}
+
+// The server wants the tenant's own name again, so a slip of the path
+// deletes nothing.
+export function deleteTenant(gateway: Gateway, name: string): Promise<GatewayResult<undefined>> {
+  return adminRootCall(gateway, 'DELETE', ['tenants', name], {
+    query: new URLSearchParams({ confirm: name }),
+    schema: nothing,
   });
 }
 
