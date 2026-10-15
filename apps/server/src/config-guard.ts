@@ -33,7 +33,7 @@ export function assertProductionKekNotExample(config: Config): void {
     throw new OduduError(
       'config_invalid',
       'ODUDU_KEK is the throwaway value infra/docker/.env.example ships, which is public. ' +
-        'Generate one: node -e "console.log(require(\'node:crypto\').randomBytes(32).toString(\'base64\'))"',
+        "Generate one: node -e \"console.log(require('node:crypto').randomBytes(32).toString('base64'))\"",
     );
   }
 }
