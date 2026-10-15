@@ -2071,25 +2071,26 @@ gate and the sign-in flow. Each area is a chunk of its own, fetched when its
 route is first opened, which is why the shell names only the entry, the
 chunks every page needs, and their stylesheets.
 
-**The stack for this section only.** The eighth run's stack, the project
-`odudu-docs-18a` on `http://localhost:3185`, built from the tree this
-document describes and removed afterwards. The shell reads no cookie, so none
-is sent.
+**The stack for this section only.** A stack of its own, the project
+`odudu-fix18b` on `http://localhost:3187`, built at the close of P4d from the
+tree at `126ad3b7`, whose console is the one this document describes
+(nothing under `apps/admin-console` or `packages/console-gateway` has changed
+since) and removed afterwards. The shell reads no cookie, so none is sent.
 
 ```bash
-curl -sS -D - http://localhost:3185/console/
+curl -sS -D - http://localhost:3187/console/
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a13ff6-df6a-7c4a-85b1-eb5eccf1fa0c
+x-request-id: 01a140c4-98b3-78a7-9e5c-806cbeb103c2
 content-type: text/html; charset=utf-8
 content-security-policy: default-src 'self'; script-src 'self'; style-src 'self' 'sha256-38RhXrc7EdReTKsOm23ZPOCUgniTUUcjky8QOOrQx6o=' 'sha256-gYiS/BvZvRcK27JIXTuwhZ3hs2+VJ1X+2gUlE+farlg='; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 content-length: 1124
-Date: Thu, 15 Oct 2026 14:28:26 GMT
+Date: Thu, 15 Oct 2026 18:13:08 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -2099,13 +2100,13 @@ Keep-Alive: timeout=72
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Odudu console</title>
-    <script type="module" crossorigin src="/console/assets/index-CmI7E2zt.js"></script>
+    <script type="module" crossorigin src="/console/assets/index-Cf7KEx-q.js"></script>
     <link rel="modulepreload" crossorigin href="/console/assets/rolldown-runtime-hePW80VL.js">
     <link rel="modulepreload" crossorigin href="/console/assets/zod-DEvWxZHY.js">
-    <link rel="modulepreload" crossorigin href="/console/assets/PageHeader-Ba6Mzgz0.js">
-    <link rel="modulepreload" crossorigin href="/console/assets/useUrlSearch-BK_ckyjB.js">
-    <link rel="modulepreload" crossorigin href="/console/assets/PageNotFound-lGGOps6B.js">
-    <link rel="modulepreload" crossorigin href="/console/assets/useDrafts-D0obH0-B.js">
+    <link rel="modulepreload" crossorigin href="/console/assets/PageHeader-swcs4fPt.js">
+    <link rel="modulepreload" crossorigin href="/console/assets/useUrlSearch-BCpFpgTc.js">
+    <link rel="modulepreload" crossorigin href="/console/assets/PageNotFound-CGcqeypr.js">
+    <link rel="modulepreload" crossorigin href="/console/assets/useDrafts-Bqnb6iHY.js">
     <link rel="stylesheet" crossorigin href="/console/assets/PageHeader-D3NRoIlr.css">
     <link rel="stylesheet" crossorigin href="/console/assets/PageNotFound-OaJZDCvc.css">
     <link rel="stylesheet" crossorigin href="/console/assets/index-n9jwgC2c.css">
@@ -2124,42 +2125,42 @@ The stylesheets are Instrument's tokens and fonts and the shared pieces'
 styles, built and hashed like any other asset.
 
 ```bash
-curl -sS -D - -o /dev/null http://localhost:3185/console/assets/index-CmI7E2zt.js
+curl -sS -D - -o /dev/null http://localhost:3187/console/assets/index-Cf7KEx-q.js
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a13ff6-f198-7590-8575-c106097f8039
+x-request-id: 01a140c5-0e77-7ae2-83b6-927449114fb5
 content-type: text/javascript; charset=utf-8
 cache-control: public, max-age=31536000, immutable
-content-length: 364637
-Date: Thu, 15 Oct 2026 14:28:30 GMT
+content-length: 365185
+Date: Thu, 15 Oct 2026 18:13:38 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
 
-The entry is 364,637 bytes. The Subjects area's chunk is not in the shell; it
+The entry is 365,185 bytes. The Subjects area's chunk is not in the shell; it
 is fetched when `/console/<tenant>/subjects` is first opened, and is the
 largest chunk the build makes:
 
 ```bash
-curl -sS -D - -o /dev/null http://localhost:3185/console/assets/subjects-C0WQsSRj.js
+curl -sS -D - -o /dev/null http://localhost:3187/console/assets/subjects-WNaHQGIi.js
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a13ff6-f1a8-76f7-a353-659e90c6e1aa
+x-request-id: 01a140c5-0e86-79c8-92f2-a50b5300936a
 content-type: text/javascript; charset=utf-8
 cache-control: public, max-age=31536000, immutable
-content-length: 390560
-Date: Thu, 15 Oct 2026 14:28:30 GMT
+content-length: 390585
+Date: Thu, 15 Oct 2026 18:13:38 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
 
 ```bash
 cd infra/docker
-COMPOSE_PROJECT_NAME=odudu-docs-18a ODUDU_HOST_PORT=3185 POSTGRES_HOST_PORT=5493 \
+COMPOSE_PROJECT_NAME=odudu-fix18b ODUDU_HOST_PORT=3187 POSTGRES_HOST_PORT=5487 \
   ODUDU_CONSOLE_CLIENT_KEY=$(./console-key.sh) docker compose down -v
 ```
 

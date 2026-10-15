@@ -1246,7 +1246,7 @@ area still a placeholder. Route-level code splitting and a vendor chunk are
 placed in P4d's fourth part, where the feature routes arrive and there is
 something to split along; splitting placeholders now would only measure
 the router.
-Done in Part 4: the largest chunk is 390.56 kB and the entry 364.63 kB
+Done in Part 4: the largest chunk is 390.58 kB and the entry 365.18 kB
 ([the bundle, at the close](#the-bundle-at-the-close)).
 
 ## Part 3 — the browser tests
@@ -2648,9 +2648,9 @@ Every area is its own chunk and Vite prints no chunk-size warning.
 
 | Chunk                       | Size      | Gzip      |
 | --------------------------- | --------- | --------- |
-| entry (`index-CmI7E2zt.js`) | 364.63 kB | 116.84 kB |
-| largest area (`subjects`)   | 390.56 kB | 114.67 kB |
-| next (`clients`)            | 122.17 kB | 38.56 kB  |
+| entry (`index-Cf7KEx-q.js`) | 365.18 kB | 117.01 kB |
+| largest area (`subjects`)   | 390.58 kB | 114.64 kB |
+| next (`clients`)            | 122.17 kB | 38.59 kB  |
 
 Both are under Vite's 500 kB warning, and the largest chunk is 30% under the
 baseline. `console-phone-chunk` keeps `libphonenumber-js`'s metadata and React Aria's
