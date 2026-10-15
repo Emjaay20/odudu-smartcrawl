@@ -46,7 +46,11 @@ export function slidingWindowLog(options: SlidingWindowOptions): MeasuredRateLim
       if (!refused) return { allowed: true, retryAfterSeconds: 0 };
       const oldest = hits[0] ?? now;
       const waitMs = oldest + windowMs - now;
-      return { allowed: false, retryAfterSeconds: Math.max(1, Math.ceil(waitMs / 1000)) };
+      // Capped at the window: a clock that stepped back leaves hits stamped
+      // in what is now the future, and waiting longer than a window for them
+      // would be a refusal nothing the caller did can explain.
+      const seconds = Math.min(options.windowSeconds, Math.ceil(waitMs / 1000));
+      return { allowed: false, retryAfterSeconds: Math.max(1, seconds) };
     },
     size: () => seen.size,
     retained: () => {

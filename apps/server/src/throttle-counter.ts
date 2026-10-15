@@ -76,6 +76,14 @@ export function slidingWindowCounter(options: SlidingWindowOptions): MeasuredRat
       return { allowed: false, retryAfterSeconds: Math.max(1, seconds) };
     },
     size: () => seen.size,
-    retained: () => seen.size * 3,
+    retained: () => {
+      let held = 0;
+      for (const counts of seen.values()) {
+        for (const field of Object.values<unknown>({ ...counts })) {
+          held += Array.isArray(field) ? field.length : 1;
+        }
+      }
+      return held;
+    },
   };
 }

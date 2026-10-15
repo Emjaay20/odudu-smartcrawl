@@ -22,6 +22,7 @@ import { buildEmailSender, resolveSender, smtpDestinationPolicyFor } from '#/ema
 import { loadConsoleKeys } from '#/console-key';
 import { createLogger } from '#/logger';
 import { createLogoutDeliveryTransport } from '#/logout-delivery-transport';
+import { throttleSettingsFrom } from '#/throttle-settings';
 import { databaseModule } from '#/modules/database';
 import { httpModule } from '#/modules/http';
 import { logoutSenderModule } from '#/modules/logout-sender';
@@ -138,18 +139,7 @@ const app = buildApp({
   consoleDir: config.ODUDU_CONSOLE_DIR,
   trustProxy: config.ODUDU_TRUST_PROXY,
   tlsClientCertHeader: config.ODUDU_TLS_CLIENT_CERT_HEADER,
-  throttle: {
-    limit: config.ODUDU_THROTTLE_LIMIT,
-    windowSeconds: config.ODUDU_THROTTLE_WINDOW_SECONDS,
-  },
-  loginThrottle: {
-    limit: config.ODUDU_LOGIN_THROTTLE_LIMIT,
-    windowSeconds: config.ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS,
-  },
-  clientSecretThrottle: {
-    limit: config.ODUDU_CLIENT_SECRET_THROTTLE_LIMIT,
-    windowSeconds: config.ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS,
-  },
+  ...throttleSettingsFrom(config),
   allowPrivateClientUrls: config.ODUDU_ALLOW_PRIVATE_CLIENT_URLS,
   allowPrivateSmtpHosts: config.ODUDU_ALLOW_PRIVATE_SMTP_HOSTS,
   deploymentSmtp: emailFallback.kind === 'smtp',

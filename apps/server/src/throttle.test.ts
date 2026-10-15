@@ -134,3 +134,33 @@ describe('slidingWindowLog', () => {
     expect(log.retained()).toBe(4);
   });
 });
+
+describe('a clock that steps backwards', () => {
+  it('never tells the log’s caller to wait longer than one window', () => {
+    let seconds = 0;
+    const log = slidingWindowLog({ limit: 2, windowSeconds: 60, now: () => at(seconds) });
+    seconds = 200;
+    log.check('k');
+    log.check('k');
+
+    seconds = 80;
+    const refused = log.check('k');
+
+    expect(refused.allowed).toBe(false);
+    expect(refused.retryAfterSeconds).toBeLessThanOrEqual(60);
+    expect(refused.retryAfterSeconds).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('the log at the edges of its window', () => {
+  it('counts a request exactly one window old as already out of it', () => {
+    let seconds = 0;
+    const log = slidingWindowLog({ limit: 1, windowSeconds: 60, now: () => at(seconds) });
+    log.check('k');
+
+    seconds = 59.999;
+    expect(log.check('k').allowed).toBe(false);
+    seconds = 60;
+    expect(log.check('k').allowed).toBe(true);
+  });
+});

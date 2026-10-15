@@ -100,6 +100,35 @@ describe('slidingWindowCounter', () => {
     expect(limiter.check('198.51.100.7').allowed).toBe(false);
   });
 
+  it('forgets what the previous window held once a whole window passes with nothing', () => {
+    let seconds = 0;
+    const limiter = slidingWindowCounter({ limit: 200, windowSeconds: 60, now: () => at(seconds) });
+    // Behind it in the map, so the stale-key sweep takes this one and 'k'
+    // is still there to be rolled forward rather than recreated.
+    limiter.check('older');
+    for (let attempt = 0; attempt < 200; attempt += 1) limiter.check('k');
+
+    // Window 0 spent, window 1 idle, window 2 reached: window 0 is no longer
+    // the previous window, so nothing of it weighs on the estimate.
+    seconds = 125;
+    expect(limiter.check('k')).toEqual({ allowed: true, retryAfterSeconds: 0 });
+    let admitted = 1;
+    while (limiter.check('k').allowed) admitted += 1;
+    expect(admitted).toBe(200);
+  });
+
+  it('gives a key a fresh budget when the clock steps back past two windows', () => {
+    let seconds = 300;
+    const limiter = slidingWindowCounter({ limit: 200, windowSeconds: 60, now: () => at(seconds) });
+    for (let attempt = 0; attempt < 200; attempt += 1) limiter.check('k');
+    expect(limiter.check('k').allowed).toBe(false);
+
+    // Accepted rather than clamped: holding the last instant seen would
+    // freeze every window for as long as a forward jump lasted.
+    seconds = 60;
+    expect(limiter.check('k').allowed).toBe(true);
+  });
+
   describe('Retry-After', () => {
     // Wherever in the window the refusal lands, and however the previous
     // window was spent: at least a second, at most one window, and waiting
@@ -220,6 +249,10 @@ describe('slidingWindowCounter', () => {
 });
 
 describe('slidingWindow picks the implementation by budget', () => {
+  it('puts the line at a limit of one hundred', () => {
+    expect(COUNTER_THRESHOLD).toBe(100);
+  });
+
   const spend = (limit: number): number => {
     const limiter = slidingWindow({ limit, windowSeconds: 60, now: () => at(0) });
     for (let key = 0; key < 50; key += 1) {
