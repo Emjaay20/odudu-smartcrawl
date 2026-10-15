@@ -483,4 +483,51 @@ describe('the per-origin throttle on the routes that cost CPU', () => {
       await app.close();
     }
   });
+
+  // A repeated field parses to an array; the route reads it as absent, and
+  // the per-username budget has no key for it, so the two agree: a
+  // submission naming `ada` twice attempts no account, however many are
+  // sent, and costs ada neither a lockout nor the budget of a real attempt.
+  it('treats a repeated username as no attempt at any account', async () => {
+    const tenantName = `throttle-${newId()}`;
+    await seed({
+      tenant: tenantName,
+      clientId: 'throttle-app',
+      redirectUris: [REDIRECT_URI],
+      username: 'ada',
+      password: PASSWORD,
+      email: EMAIL,
+    });
+
+    const app = buildTestApp();
+    await app.ready();
+
+    try {
+      const url = `/tenants/${tenantName}/login-actions/authenticate`;
+      const attempts = DEFAULT_LOGIN_THROTTLE.limit + 2;
+      for (let attempt = 0; attempt < attempts; attempt += 1) {
+        const authSessionId = await extractAuthSessionId(app, tenantName);
+        const res = await app.inject({
+          method: 'POST',
+          url,
+          payload: `auth_session_id=${authSessionId}&username=ada&username=x&password=${encodeURIComponent(PASSWORD)}`,
+          headers: { 'content-type': 'application/x-www-form-urlencoded' },
+          remoteAddress: ORIGIN,
+        });
+        expect(res.statusCode).toBe(200);
+        expect(res.headers.location).toBeUndefined();
+      }
+
+      const authSessionId = await extractAuthSessionId(app, tenantName);
+      const single = await formPost(
+        app,
+        url,
+        { auth_session_id: authSessionId, username: 'ada', password: PASSWORD },
+        ORIGIN,
+      );
+      expect(single.statusCode).toBe(302);
+    } finally {
+      await app.close();
+    }
+  });
 });
