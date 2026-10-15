@@ -2,8 +2,9 @@
 
 ## Start here
 
-**P0, P1, P2a, P2b, P3a, P3b, P4a, P4c and P4e are complete, and the
-tenant rename is done. P4 has been split five ways.** Phases are section 11 of
+**P0, P1, P2a, P2b, P3a, P3b, P4a, P4c and P4e are complete, the tenant
+rename is done, and P4d is built and awaiting its whole-range review and the
+merge to `main`. P4 has been split five ways.** Phases are section 11 of
 [the umbrella spec](superpowers/specs/2026-09-10-odudu-design.md), whose
 "P4 became four phases, then five" subsection has the reasoning.
 
@@ -14,8 +15,8 @@ split and an accepted ADR cites it. P4a was token exchange
 the admin API
 ([spec](superpowers/specs/2026-09-24-p4c-admin-api-design.md)); P4e was
 authentication and token audit events
-([spec](superpowers/specs/2026-09-26-p4e-audit-events-design.md)); **P4d is
-in progress** — the admin console and the admin API it needs
+([spec](superpowers/specs/2026-09-26-p4e-audit-events-design.md)); **P4d**,
+the admin console and the admin API it needs
 ([spec](superpowers/specs/2026-09-26-p4d-admin-console-design.md)); **P4f**,
 self-service through a "me" API and application-initiated actions, replaced
 the account console; P4b stays theming; **P4h**, console localization, follows it ([ADR 0043](adr/0043-localization-is-a-catalogue-a-negotiation-and-a-set-of-owners.md)).
@@ -26,20 +27,18 @@ request by a capability role on the tenant's `odudu-admin` client, with
 narrative is [docs/admin-paths.md](admin-paths.md), every transcript
 executed; the reference is `/admin/openapi.json`.
 
-**P4d's Parts 1–3 have landed.** Part 1 added `whoami` capabilities, prefix
-search with filter-bound keyset cursors, bounded counts, a target ceiling on
-every mutation of a subject or client that holds admin capabilities,
-username rename behind `username_editable`, tenant export and import, and
-per-package Turbo test caching in CI (ADRs 0038 and 0039;
-[docs/phases/p4d.md](phases/p4d.md)). Part 2 is the console gateway under
-`/console` ([docs/console-paths.md](console-paths.md)). Part 3 is the
-console's foundation — the transport, the Instrument design system, the
-shell, the session and drafts, and the e2e harness
-([docs/phases/p4d.md](phases/p4d.md)) — and **Part 4, the console's
-features, is in progress**: Tasks 1–12 of
-[its plan](superpowers/plans/2026-09-29-p4d-part4-console-features.md) have
-landed, Clients included, and Task 12b has made `odudu-admin` confidential
-(ADR 0038's amendment; the console needs `ODUDU_CONSOLE_CLIENT_KEY` to boot). What Part 4 inherits and owes is below.
+**P4d built the admin console and the admin API it needs.** Part 1 added
+`whoami` capabilities, prefix search with filter-bound keyset cursors,
+bounded counts, a target ceiling on every mutation of a subject or client
+that holds admin capabilities, tenant export and import, and per-package
+Turbo test caching in CI (ADRs 0038 and 0039). Part 2 is the console gateway
+under `/console` ([docs/console-paths.md](console-paths.md)); Part 3 the
+transport, the Instrument design system, the shell and the e2e harness; Part
+4 every area of the rail, the hardening the features found, and the
+localization placement (ADR 0043). `odudu-admin` is confidential, and the
+server needs `ODUDU_CONSOLE_CLIENT_KEY` to boot with the console on.
+[docs/phases/p4d.md](phases/p4d.md) has what building found, the defects it
+fixed and the VoiceOver checklist, which is still to be run by a person.
 
 **P4e filled that audit trail.** Beside `admin_mutation`, it writes
 `admin_access`, `authentication`, `session`, `token` and `credential` rows,
@@ -59,7 +58,7 @@ extra statement, an aborted transaction, a lock (P4e).
 amendment (the admin API is its first JSON surface), ADR 0036 (UserInfo's
 claims narrowing) and [p4c.md](phases/p4c.md) (`client.enabled`).
 
-**A bare `P4` below means P4d** unless it concerns token exchange, the grant
+**A bare `P4` below means P4d, which has closed,** unless it concerns token exchange, the grant
 allowlist, the admin API, audit events, the grant's UserInfo claims,
 theming or client branding — the
 same disambiguation the P2 split used, and for the same reason: a citation
@@ -75,6 +74,7 @@ issuer included, as a hard cutover nothing deployed had to survive
 The running records, split out of this file on 2026-09-17: P2b reached
 1,873 lines here, of which the part describing where the project stood was 58.
 
+- [P4d — the admin console and the admin API it needs](phases/p4d.md)
 - [P4e — authentication and token audit events](phases/p4e.md)
 - [P4c — the admin API](phases/p4c.md)
 - [P4a — token exchange](phases/p4a.md)
@@ -97,59 +97,30 @@ another paragraph. `tests/docs/next-budget.test.ts` holds the file to 400
 lines and any one section to 130, so an entry that has somewhere better to
 live is pushed there rather than accumulating here.
 
-## What P4d, P4f and P4b inherit
+## What P4g, P4f and P4b inherit
 
-**An audit trail with six kinds of row to show.** P4d's criterion shows the
-audit trail; `GET /admin/tenants/{tenant}/audit` is what it reads, filtered
-by `event_type` (`admin_mutation`, `admin_access`, `authentication`,
-`session`, `token`, `credential`), `actor_subject_id`, `resource_type`,
-`action`, `outcome` and an `occurred_at` range, newest first by opaque
-cursor. The vocabulary is `AUDIT_ACTIONS` in `@odudu/domain-audit`; what
-each row carries is in the README's P4e paragraph and
-[docs/request-paths.md](request-paths.md#one-sign-ins-audit-trail-read-through-the-admin-api).
-Three things a console showing it needs to know: `actor_tenant_id` differs
-from the row's own tenant only for a caller from elsewhere; `request_id`
-correlates a login's last step with its `session.created`, but any caller
-sets it, so it is a correlation to show rather than evidence (ADR 0037's
-third amendment); and a refresh whose
-rotation committed before a refusal leaves both an `allowed` and a
-`refused` row under one request id ([p4e.md](phases/p4e.md)).
+**A console to build on, and the ways in.** The SPA talks to nothing but
+`/console/api/session`, `/console/api/admin/*`, `/console/auth/login` and
+`POST /console/auth/logout`; `gateway.request` is the one caller of `fetch`,
+and a feature reaches it through `shared/transport`. A feature is five
+layers behind one `index.ts`, built from the Instrument components in
+`shared/view`, with a draft keyed by tenant and record, a rebase on a `412`
+and an unsaved-changes guard. The lints that hold this, and what each cannot
+see, are in [p4d.md](phases/p4d.md), "what building the features found".
+P4h's catalogue replaces the console's English strings (ADR 0043); P4f's
+self-service pages are server-rendered, not console areas.
 
-**Part 4 inherits the gateway and the console's foundation.** The SPA talks
-to nothing but `/console/api/session`, `/console/api/admin/*` (the admin
-API, forwarded), `/console/auth/login?tenant=&return_to=` and
-`POST /console/auth/logout`, which it sends with no body and answers by
-navigating to the returned `redirect` itself
-([docs/console-paths.md](console-paths.md)). A `401` of type
-`about:blank#console-session-ended` means sign in again, and the admin
-API's own `401` answers that too once the token is refused at the session's
-own tenant; otherwise that `401`, and every `403`, is passed back as it is.
-Every write carries `X-Odudu-Console: 1` and a same-origin `Origin`, or it
-is refused `403`; every admin request names its tab's subject in
-`X-Odudu-Console-Subject`, sent by `gateway.request`, and one naming
-somebody else ends that tab's session as a `401` does. The shell's CSP allows React Aria's two injected styles by hash, recomputed
-by a test on every upgrade ([p4d.md](phases/p4d.md), "React Aria under a
-strict CSP"). `gateway.request` is the one caller of
-`fetch`, retries GET and, with `If-Match`, PATCH/PUT, and never retries
-POST or DELETE; `shared/transport` is where a feature reaches it, never
-`fetch` directly (boundary-enforced). The Instrument design system and its
-gallery (`pnpm --filter @odudu/admin-console gallery`) hold every
-non-editing component and its light/dark, phone and dialog states, each
-axe-clean; a feature builds its screens from those, not new primitives.
-Every section's draft carries the ETag it was made against, keyed
-`${tenant}/${record}`; `rebase(draft, fresh)` returns `{ draft, conflicts }`
-so a 412 view can show what the server changed underneath an edit, and
-`useUnsavedGuard` already blocks navigation, sign-out and tenant switch on
-a dirty section. Route slots exist per area, the cursor-trail search helper
-(`shared/service/cursorTrail.ts`) keeps a list's paging in the URL, and the
-e2e harness (`apps/admin-console/e2e/`) seeds fresh tenants and
-administrators per run.
-
-**What Part 4 owes** is named in the P4d spec's §12, item 5, and its
-accessibility duties and per-feature checklist in §9.
+**The audit trail has six kinds of row and a reader.** The vocabulary is
+`AUDIT_ACTIONS` in `@odudu/domain-audit`, the filters are in the admin API,
+and the console's Audit trail area shows them. Two facts a new reader needs:
+`request_id` is a correlation any caller sets, not evidence (ADR 0037's third
+amendment), and a refresh whose rotation committed before a refusal leaves
+both an `allowed` and a `refused` row under one request id
+([p4e.md](phases/p4e.md)).
 
 **For the repository owner:** add `e2e` as a required check on `main`,
-beside `verify`, `container` and `commit-messages`.
+beside `verify`, `container` and `commit-messages`, and re-add `query-plans`
+once P4d has merged.
 
 **Two recovery-code gaps that need self-service.** A subject cannot
 ask for a fresh set before running out, and nothing warns as the list gets
@@ -236,6 +207,8 @@ that should hold it, which is usually false.
 | Migrations are hard cutovers: Drizzle runs every pending migration in one transaction, so no index is built `CONCURRENTLY`, `0073`–`0075` add stored generated columns that rewrite their tables under lock, `0076` rebuilds an `audit_events` index without `CONCURRENTLY`, and `0095` builds twenty-odd indexes plain, four of them on `audit_events`, as `0099` builds a fifth | the umbrella spec's §5, "Migrations", and §11's P11 row                               | **P11**, with rolling upgrades across replicas          |
 | `audit_events` at 100,000,000 rows is one table with seven secondary indexes and per-tenant unbatched retention deletes; the query-plan check ran at a fifth of the subjects and a hundredth of the events, on one node                                                                                                                                                           | `docs/phases/p4d.md`, "Server query plans", and §11's P11 row                         | **P11**, partitioning by month and batched deletes      |
 | Localization has a mechanism and owners and no code: every server page, mail and console string is English, and the new-code rule is unenforced until the extraction lints land                                                                                                                                                                                                   | [ADR 0043](adr/0043-localization-is-a-catalogue-a-negotiation-and-a-set-of-owners.md) | **P4g**, **P4b** and **P4h**                            |
+| Six admin routes have no console screen, while §11's P4d criterion says the console reaches every capability the API exposes                                                                                                                                                                                                                                                      | [p4d.md](phases/p4d.md), "What building left that is a decision for the owner"        | the owner: build the screens, or amend the criterion    |
+| No composite index serves the two-filter audit reads (actor and type, type and action); a 5 s timeout bounds them                                                                                                                                                                                                                                                                 | [p4d.md](phases/p4d.md), "Server query plans"                                         | **P11**, whose plan check at scale is the evidence      |
 | Committed development credentials                                                                                                                                                                                                                                                                                                                                                 | [ADR 0014](adr/0014-committed-development-credentials.md)                             | the conditions that ADR names                           |
 
 ### Argued here, because there is nowhere else
@@ -297,7 +270,7 @@ blank — so it is reachable only by a hand-written `INSERT`, the class the
 **Affected-package-only CI filtering.** Turborepo and pnpm both support
 `--filter='...[<ref>]'`, so no tooling change is needed. Not adopted:
 skipping a package's tests carries "we did not run those tests" semantics
-that caching, owed first (below), avoids. Typecheck, lint, boundaries and
+that caching, which landed in P4d, avoids. Typecheck, lint, boundaries and
 unit tests stay always-full either way.
 
 - Trigger: slow suites dominate — **P8** SAML interop, **P9** policy
@@ -344,12 +317,12 @@ a phase note.
   **P4b**, whose criterion names it: the remedy is to render the frames and
   navigate afterwards, which gives the redirecting branch the page it lacks,
   and P4b is the phase that owes every page the server renders a theme.
-- The two `user_credentials` counts at `docs/request-paths.md:3052` and
-  `:3282` are unscoped, and correct only in document order — the
-  neighbouring query of the same kind is scoped. Re-scoping them needs a
-  re-run against a live stack. **P4f**, which re-captures those transcripts
-  anyway: its criterion gives a subject a fresh set of recovery codes before
-  the old set is spent, which is what those two queries count.
+- The `codes`/`spent` count of `user_credentials` in `docs/request-paths.md`'s
+  recovery-code section is unscoped, and correct only in document order — the
+  unspent count after it names its tenant. Re-scoping it needs a re-run
+  against a live stack. **P4f**, which re-captures those transcripts anyway:
+  its criterion gives a subject a fresh set of recovery codes before the old
+  set is spent, which is what that query counts.
 - `tests/lint/production-guard-order.test.ts` compares source offsets and
   breaks on a rename or a helper extraction. A reasonable stopgap for the
   still-positional server-boot path, but its narrowness should be visible to
