@@ -187,6 +187,38 @@ function get(world: PlanWorld, token: string, url: string): Promise<LightMyReque
   return world.http.inject({ url, headers: { authorization: `Bearer ${token}` } });
 }
 
+// The window and the pair the audit drives use. A window leads the time index,
+// so what it narrows is found by the page; the pair is two filters each common
+// whose rows never meet, which no index serves within a page, so it is held to
+// the statement timeout instead (query-plans.plan.test.ts).
+export const WINDOW_FROM = new Date(Date.now() - 3_600_000).toISOString();
+export const WINDOW_TO = new Date(Date.now() + 60_000).toISOString();
+export const BOUNDED_PAIR = 'event_type=token&action=client.create';
+
+// Every audit filter the console offers alone, and the pairs it offers beside
+// a window or another filter, as a query string each.
+const AUDIT_FILTERS: readonly ((ids: AdminIds) => string)[] = [
+  () => 'resource_type=subject',
+  () => 'resource_type=signing_key',
+  () => `from=${WINDOW_FROM}&to=${WINDOW_TO}`,
+  () => `from=${WINDOW_FROM}`,
+  () => `to=${WINDOW_TO}`,
+  () => 'event_type=token',
+  () => `event_type=token&from=${WINDOW_FROM}&to=${WINDOW_TO}`,
+  () => 'outcome=allowed',
+  () => 'outcome=refused',
+  () => `outcome=refused&from=${WINDOW_FROM}&to=${WINDOW_TO}`,
+  (ids) => `actor_subject_id=${ids.subject}`,
+  (ids) => `actor_subject_id=${ids.subject}&outcome=allowed`,
+  (ids) => `actor_subject_id=${ids.subject}&from=${WINDOW_FROM}&to=${WINDOW_TO}`,
+  () => 'resource_type=subject&outcome=allowed',
+  () => 'resource_type=signing_key&outcome=allowed',
+  () => `resource_type=subject&from=${WINDOW_FROM}&to=${WINDOW_TO}`,
+  () => 'action=login.success&outcome=allowed',
+  () => BOUNDED_PAIR,
+  () => `${BOUNDED_PAIR}&from=${WINDOW_FROM}&to=${WINDOW_TO}`,
+];
+
 export function adminPaths(ids: AdminIds): {
   readonly lists: AdminDrive[];
   readonly reads: AdminDrive[];
@@ -238,6 +270,7 @@ export function adminPaths(ids: AdminIds): {
     { path: `${T}/audit?action=login.success` },
     { path: `${T}/audit?outcome=refused` },
     { path: `${T}/audit?resource_type=subject&resource_id=${ids.subject}` },
+    ...AUDIT_FILTERS.map((query) => ({ path: `${T}/audit?${query(ids)}` })),
     { path: `${T}/mail` },
     { path: `${T}/mail?status=queued` },
     { path: `${T}/mail?status=retrying` },
@@ -285,6 +318,9 @@ export function adminPaths(ids: AdminIds): {
     `${T}/audit/count`,
     `${T}/audit/count?event_type=authentication`,
     `${T}/audit/count?actor_subject_id=${ids.subject}`,
+    `${T}/audit/count?resource_type=signing_key`,
+    `${T}/audit/count?from=${WINDOW_FROM}&to=${WINDOW_TO}`,
+    `${T}/audit/count?${BOUNDED_PAIR}`,
   ].map((path): AdminDrive => ({ path }));
   const reads: AdminDrive[] = [
     ...counts,
@@ -296,6 +332,9 @@ export function adminPaths(ids: AdminIds): {
     { path: `${T}/audit/export`, alsoAnswers: [413] },
     { path: `${T}/audit/export?actor_subject_id=${ids.subject}` },
     { path: `${T}/audit/export?resource_type=subject&resource_id=${ids.subject}` },
+    { path: `${T}/audit/export?resource_type=signing_key` },
+    { path: `${T}/audit/export?outcome=refused&from=${WINDOW_FROM}&to=${WINDOW_TO}` },
+    { path: `${T}/audit/export?${BOUNDED_PAIR}` },
     { path: `${T}/export`, system: true },
     { path: `${S}/${ids.subject}` },
     { path: `${S}/${ids.subject}/profile` },

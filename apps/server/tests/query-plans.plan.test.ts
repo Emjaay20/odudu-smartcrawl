@@ -19,6 +19,7 @@ import { MAX_LIMIT } from '@odudu/contracts/admin';
 import { ADMIN_ROUTES, COUNT_CAP } from '@odudu/protocol-admin';
 import {
   adminIds,
+  BOUNDED_PAIR,
   adminTokens,
   driveAdmin,
   type QueryCount,
@@ -110,6 +111,15 @@ const EXPORTS = /^GET \/admin\/tenants\/[^/]+\/(audit\/)?export$/u;
 // A search holds its own collection to two pages of reads: it must stop at the
 // page, not read what matches. Judged under a page cost a spinning disk gives, at
 // which the planner prices a bitmap of the matches under an ordered scan.
+// The audit pair of two common filters whose rows never meet: read by the cheaper
+// of the two indexes and filtered by the other, so it reads a share of the table
+// however small its page. It is not held to a read budget but to the statement
+// timeout, which the audit describe below asserts was set.
+const BOUNDED_BY_TIMEOUT = new RegExp(
+  `/audit(?:/count|/export)?\\?${BOUNDED_PAIR.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}`,
+  'u',
+);
+
 const SEARCHED =
   /^GET \/admin\/tenants\/[^/]+\/(clients|roles|groups|scopes|subjects|tenants)\?(name|client_id|username|email|given_name|family_name|display_name)=/u;
 const LISTED_TABLES: Record<string, readonly string[]> = {
@@ -149,7 +159,7 @@ async function violations(run: PathRun): Promise<string[]> {
       query: statement.query.replace(/\s+/gu, ' ').slice(0, 220),
       scans: scansOf(plan),
     });
-    if (EXPORTS.test(run.path)) continue;
+    if (EXPORTS.test(run.path) || BOUNDED_BY_TIMEOUT.test(run.path)) continue;
     for (const finding of findings(plan, budget)) {
       if (run.outputBound === true && finding.rule === 'wide-scan') continue;
       out.push(line(run, finding, statement));
@@ -217,6 +227,71 @@ describe('every statement a path sends', () => {
     }
     expect(all).toEqual([]);
   }, 300_000);
+});
+
+// The audit filters the console offers: each reads audit_events in the listing's
+// own order by an index, never by sorting or scanning the table, and the pair
+// no index can serve runs under the statement timeout.
+const AUDIT_FILTERED = /\/audit(?:\/count|\/export)?\?/u;
+
+function planNodes(node: PlanNode): PlanNode[] {
+  return [node, ...node.children.flatMap(planNodes)];
+}
+
+describe('the audit trail narrowed by a filter', () => {
+  const runs = (): PathRun[] => log.runs.filter((run) => AUDIT_FILTERED.test(run.path));
+
+  it('is driven for every filter, alone and in the pairs the console offers', () => {
+    const paths = runs().map((run) => run.path);
+    for (const filter of [
+      'resource_type=subject',
+      'resource_type=signing_key',
+      'from=',
+      'event_type=token',
+      'actor_subject_id=',
+      'outcome=',
+      'resource_type=subject&resource_id=',
+      'resource_type=subject&outcome=allowed',
+      'actor_subject_id=',
+    ]) {
+      expect(
+        paths.some((path) => path.includes(filter)),
+        filter,
+      ).toBe(true);
+    }
+    expect(paths.some((path) => BOUNDED_BY_TIMEOUT.test(path))).toBe(true);
+  });
+
+  it('is read in the listing order by an index, with no Sort and no Seq Scan, unless held to the timeout', async () => {
+    const offending: string[] = [];
+    for (const run of runs().filter((each) => !BOUNDED_BY_TIMEOUT.test(each.path))) {
+      for (const statement of distinct(run)) {
+        if (!statement.query.includes('"audit_events"') || !readsOnly(statement)) continue;
+        const nodes = planNodes(await planned(statement));
+        for (const node of nodes) {
+          const onAudit = node.relationName === 'audit_events' || node.nodeType === 'Sort';
+          if (onAudit && (node.nodeType === 'Sort' || node.nodeType === 'Seq Scan')) {
+            offending.push(`${run.path}: ${node.nodeType}`);
+          }
+        }
+      }
+    }
+    expect(offending).toEqual([]);
+  }, 300_000);
+
+  it('runs the pair no index serves under the statement timeout', () => {
+    const bounded = runs().filter((run) => BOUNDED_BY_TIMEOUT.test(run.path));
+    expect(bounded.length).toBeGreaterThanOrEqual(3);
+    for (const run of bounded) {
+      expect(
+        run.statements.some((statement) =>
+          statement.query.includes("set_config('statement_timeout'"),
+        ),
+        run.path,
+      ).toBe(true);
+      expect(run.status ?? 200, run.path).not.toBe(500);
+    }
+  });
 });
 
 // Routes the drives do not reach, each with the reason a plan over this volume

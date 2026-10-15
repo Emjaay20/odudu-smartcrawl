@@ -30,6 +30,11 @@ export const PLAN_VOLUME = {
   assertionIds: 100_000,
   auditEvents: 600_000,
   auditEventsPerOtherTenant: 80,
+  // Rows of a resource type and an outcome the main run does not hold, older
+  // than all of it, so a read narrowed by either cannot find its page by
+  // walking the newest rows.
+  auditOldTypeEvents: 3_000,
+  auditRefusedEvents: 2_000,
   // The size of each collection a drive pages through: more than MAX_LIMIT,
   // so a page of MAX_LIMIT is full and has a next page.
   fanOut: 300,
@@ -312,6 +317,14 @@ select gen_random_uuid(), ${t}, now() - (g || ' seconds')::interval,
        'allowed', s.id, 'subject', s.id::text
   from generate_series(1, ${v.auditEvents}) g
   join vol_subjects s on s.n = 1 + (g % ${v.subjects});
+insert into audit_events (id, tenant_id, occurred_at, event_type, action, outcome, resource_type, resource_id)
+select gen_random_uuid(), ${t}, now() - interval '30 days' - (g || ' seconds')::interval,
+       'admin_mutation', 'key.create', 'allowed', 'signing_key', gen_random_uuid()::text
+  from generate_series(1, ${v.auditOldTypeEvents}) g;
+insert into audit_events (id, tenant_id, occurred_at, event_type, action, outcome)
+select gen_random_uuid(), ${t}, now() - interval '10 days' - (g || ' seconds')::interval,
+       'admin_access', 'capability.refused', 'refused'
+  from generate_series(1, ${v.auditRefusedEvents}) g;
 
 drop table vol_other, vol_subjects, vol_clients, vol_service, vol_roles, vol_groups, vol_scopes, vol_sessions, vol_grants;
 `;
