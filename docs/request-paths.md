@@ -5023,7 +5023,8 @@ answers no decision.
 
 ## Brute-force lockout
 
-Five consecutive wrong passwords lock an account, and the tenant ships that
+Five consecutive wrong credentials lock an account — passwords, and after a
+correct one the codes of a second factor ([below](#a-wrong-second-factor-code-counts-too)) — and the tenant ships that
 way: the four columns behind it are on in every tenant, unlike every other
 credential setting on this page.
 
@@ -5101,6 +5102,103 @@ The four normalised values vary between responses — `date`, the request id
 and the nonce between any two, the session id between any two parked
 requests — so none of them distinguishes an account that exists from one
 that does not, or a locked account from a wrong password.
+
+### A wrong second-factor code counts too
+
+A wrong password is not the only guess an attacker can make: whoever holds
+the password still has a six-digit code to find. A wrong TOTP code, a wrong
+recovery code and a replay of a code already used all count against the same
+`login_failures` row as a wrong password, under the same tenant policy, and
+the sign-in's correct password does **not** clear the row — only a sign-in
+that completes does. Once the account is locked the second-factor step is
+refused without the code being looked at, so a locked account cannot say
+whether a guess was right, and the refusal is the answer a wrong code gets:
+the code form again.
+
+What is observable is what the session already told its holder: the account
+exists, because the password was right. The refusal does not say the account
+is locked, and the lockout applies whichever session the guess arrives
+through; a recovery code checked against a locked account is not hashed, so
+it answers faster than one that is, which tells a holder of the password
+nothing the lockout's own effect does not.
+
+The run below was captured on a stack of its own: the `infra/docker` compose
+file as the project `odudu-t17c` on `http://localhost:3083`, its `odudu`
+service built from commit `a7ed7491`, started on an empty volume with
+`ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000` so no throttle
+refuses first. It uses a tenant and a user nothing else in this document
+holds, since the run ends with the account locked: `otp-lock` and `grace`,
+enrolled for a second factor the way
+[Two-factor authentication with TOTP](#two-factor-authentication-with-totp)
+shows, and the `tenants` row at its defaults (five failures, a minute).
+`$SID` is an `auth_session_id` whose password step has just passed, and
+`$RIGHT` is the code the authenticator would show now, made with the same
+implementation that section used:
+
+```bash
+post_code() {
+  curl -sS -D /tmp/h.txt -o /tmp/b.txt \
+    --data-urlencode "auth_session_id=$SID" --data-urlencode "code=$1" \
+    'http://localhost:3083/tenants/otp-lock/login-actions/authenticate' >/dev/null
+  cat /tmp/h.txt /tmp/b.txt | tr -d '\r' \
+    | grep -iv '^date:' | grep -iv '^x-request-id:' \
+    | sed 's/nonce-[A-Za-z0-9+/=]*/nonce-NONCE/; s/nonce="[^"]*"/nonce="NONCE"/
+           s/auth_session_id" value="[^"]*"/auth_session_id" value="SID"/g' \
+    | shasum -a 256 | cut -c1-32
+}
+for n in 1 2 3 4 5; do echo "$n  wrong code      $(post_code 00000$n)"; done
+echo "6  right code      $(post_code $RIGHT)"
+```
+
+```
+1  wrong code      0e9eed04a93bc73d7731461c8e4dd847
+2  wrong code      0e9eed04a93bc73d7731461c8e4dd847
+3  wrong code      0e9eed04a93bc73d7731461c8e4dd847
+4  wrong code      0e9eed04a93bc73d7731461c8e4dd847
+5  wrong code      0e9eed04a93bc73d7731461c8e4dd847
+6  right code      0e9eed04a93bc73d7731461c8e4dd847
+```
+
+The sixth, the right code, is the same bytes as the five wrong ones. The row
+shows why, and that the sixth was counted as well — a refused attempt during
+a lockout still counts, as it does for a password:
+
+```bash
+docker compose exec -T postgres psql -U odudu -d odudu -c \
+  "select u.username, f.failure_count, f.locked_until is not null as locked
+     from login_failures f
+     join users u on u.subject_id = f.subject_id
+     join tenants t on t.id = f.tenant_id
+    where t.name = 'otp-lock';"
+```
+
+```
+ username | failure_count | locked
+----------+---------------+--------
+ grace    |             6 | t
+(1 row)
+```
+
+And the password, right this time, in a fresh sign-in, does not get further
+than the sign-in form either — the account is locked at the first step too:
+
+```bash
+curl -sS -D - -o /tmp/b.txt -X POST \
+  'http://localhost:3083/tenants/otp-lock/login-actions/authenticate' \
+  --data-urlencode "auth_session_id=$SID2" \
+  --data-urlencode 'username=grace' --data-urlencode 'password=correct-horse-battery' \
+  | tr -d '\r' | grep -iE '^(HTTP|location)'
+grep -o '<title>[^<]*</title>' /tmp/b.txt
+```
+
+```
+HTTP/1.1 200 OK
+<title>Sign in</title>
+```
+
+(`$SID2` is a fresh `/authorize` session; no `location` header, so no code.
+The lockout and the per-origin throttle are separate: a `429` is the
+throttle, and nothing here was refused by it.)
 The counter is keyed by **subject**, never by the submitted name — a name
 the account no longer answers to would otherwise lock it out, and one it
 answers to by email would miss it — which is why the eighth submission above
@@ -5334,44 +5432,57 @@ Unicode compatibility forms, so nothing a lookup could say reaches the
 decision, and the refusal is the same `429`, `Retry-After` and empty body as
 the per-origin one. A submission that names no username — the second-factor
 and passkey steps carry only the authentication session — is not counted
-here, and neither are registration or the reset request.
+here, and neither are registration or the reset request. A wrong second-factor
+code is bounded per account instead, by the lockout
+([a wrong second-factor code counts too](#a-wrong-second-factor-code-counts-too)).
 
-The run below was captured against a stack started with
+The run below was captured on a stack of its own: the `infra/docker` compose
+file as the project `odudu-t17c` on `http://localhost:3083`, its `odudu`
+service built from commit `a7ed7491` and started on an empty volume with
 `ODUDU_THROTTLE_LIMIT=1000` and the login budget left at its default, so the
-only budget in play is this one; `demo` and `ada` are the ones seeded in
-[A public client, with a user](#a-public-client-with-a-user), and `$SID` is
-an `auth_session_id` taken from the `/authorize` form. Five wrong passwords
-for `ada` are answered with the form, and the sixth is refused; then the
-same for a name nobody holds, which is refused in the same bytes:
+only budget in play is this one. It needs a user nothing else in this
+document uses, because the fifth wrong password also locks the account:
+`lena`, in the `demo` tenant, seeded for this run alone.
+
+```bash
+odudu seed \
+  --tenant demo --client demo-spa \
+  --redirect-uri http://localhost:8080/callback \
+  --user lena --password correct-horse-battery --email lena@example.com
+```
+
+`$SID` is an `auth_session_id` taken from the `/authorize` form. Five wrong
+passwords for `lena` are answered with the form, and the sixth is refused;
+then the same for a name nobody holds, which is refused in the same bytes:
 
 ```bash
 attempt() {
   curl -sS -D - -o /dev/null \
     --data-urlencode "auth_session_id=$SID" \
     --data-urlencode "username=$1" --data-urlencode 'password=wrong-password' \
-    'http://localhost:3000/tenants/demo/login-actions/authenticate' \
+    'http://localhost:3083/tenants/demo/login-actions/authenticate' \
     | tr -d '\r' | grep -iE '^(HTTP|retry-after|content-length)' | tr '\n' ' '
   echo
 }
-for n in 1 2 3 4 5; do echo "ada, submission $n: $(attempt ada)"; done
-echo '--- the sixth, for ada ---'; attempt ada
+for n in 1 2 3 4 5; do echo "lena, submission $n: $(attempt lena)"; done
+echo '--- the sixth, for lena ---'; attempt lena
 echo '--- a username nobody holds, after five of its own ---'
 for n in 1 2 3 4 5; do attempt nobody >/dev/null; done; attempt nobody
-echo '--- ada again, in other letters ---'; attempt ' ADA '
+echo '--- lena again, in other letters ---'; attempt ' LENA '
 echo '--- another username, same address ---'; attempt grace
 ```
 
 ```
-ada, submission 1: HTTP/1.1 200 OK content-length: 2372
-ada, submission 2: HTTP/1.1 200 OK content-length: 2372
-ada, submission 3: HTTP/1.1 200 OK content-length: 2372
-ada, submission 4: HTTP/1.1 200 OK content-length: 2372
-ada, submission 5: HTTP/1.1 200 OK content-length: 2372
---- the sixth, for ada ---
+lena, submission 1: HTTP/1.1 200 OK content-length: 2372
+lena, submission 2: HTTP/1.1 200 OK content-length: 2372
+lena, submission 3: HTTP/1.1 200 OK content-length: 2372
+lena, submission 4: HTTP/1.1 200 OK content-length: 2372
+lena, submission 5: HTTP/1.1 200 OK content-length: 2372
+--- the sixth, for lena ---
 HTTP/1.1 429 Too Many Requests retry-after: 60 content-length: 0
 --- a username nobody holds, after five of its own ---
 HTTP/1.1 429 Too Many Requests retry-after: 60 content-length: 0
---- ada again, in other letters ---
+--- lena again, in other letters ---
 HTTP/1.1 429 Too Many Requests retry-after: 60 content-length: 0
 --- another username, same address ---
 HTTP/1.1 200 OK content-length: 2372

@@ -2480,3 +2480,15 @@ ADR 0023's second amendment has the decisions; what building it found.
   re-admits a whole burst when the previous one expires, the counter spreads
   it), so the stated error is on the admission threshold for a steady
   stream, not on each decision of an overloaded one.
+- **Second-factor guessing had no per-account bound.** `runOtpStep` and
+  `runRecoveryStep` never called `recordFailure`, and a correct password
+  cleared the counter, so a holder of the password guessed six-digit codes
+  bounded only by the per-origin budget, per address. The review of this
+  work found it; it is ADR 0023's topic, so it was fixed here rather than
+  placed. A wrong code, a wrong recovery code and a replay count against
+  `login_failures`; the clear moved from the password step to the end of
+  `advance`, when a sign-in that began with a password completes.
+- **The ceilings tightened** from a million requests and a day to 10,000 and
+  an hour; a deployment configured above them now fails to boot, which is
+  the hard-cutover convention while nothing is deployed. README and ADR 0023
+  say so.

@@ -358,7 +358,7 @@ every writer of a password: registration, reset redemption, the seed CLI's
 action. A rejected password answers `400` with every violated rule listed
 at once, not just the first.
 
-**Five consecutive wrong passwords lock an account**, and this is the one
+**Five consecutive wrong credentials lock an account**, and this is the one
 credential setting that ships on: RFC 6749 §2.3.1's brute-force protection is
 a MUST, and a MUST that defaults off is not held. `brute_force_max_failures`
 (default `5`) is the threshold, `brute_force_lockout_seconds` (default `60`)
@@ -377,8 +377,12 @@ Argon2id verification a wrong password pays for, so neither the page nor the
 timing distinguishes a locked account from a wrong password or from a
 username nobody holds. An attempt made during a lockout still counts, which
 is what keeps those costs equal — and means retrying extends the wait. A
-correct password accepted by an unlocked account deletes the row, and so
-does an operator: `GET /admin/tenants/{tenant}/subjects/{id}/lockout`
+correct password accepted by an unlocked account ends the run once the whole
+sign-in completes — not when the password alone is right, because a wrong
+second-factor code (a TOTP code, a recovery code, a replay of one already
+used) counts against the same row, so an attacker holding the password cannot
+guess codes without limit; a locked account refuses the code step without
+looking at the code. An operator can also end it: `GET /admin/tenants/{tenant}/subjects/{id}/lockout`
 answers whether the account is locked now, until when and after how many
 failures, `DELETE` on the same path clears it at once, and
 `POST …/subjects/{id}/password` issues a one-time
@@ -401,7 +405,9 @@ any account looked up, so a refusal cannot say whether the address or the
 account existed. There is no value that switches it off; a deployment
 putting many users behind one address raises the limit, to at most `10000`
 (the server refuses to boot past that, naming the variable) over a window of
-at most `3600` seconds. A budget of up to 100 keeps an exact log of each
+at most `3600` seconds. (Upgrading: these ceilings were once a million and a
+day, so a deployment configured above the new ones fails to start until it is
+lowered; ADR 0023 records the change.) A budget of up to 100 keeps an exact log of each
 key's requests, about 3 MB at the default of `10` and 9 MB at `100` once
 10,000 origins have spent it; above 100 it keeps two counters per key, about
 2 MB however high the limit, at the price of an estimate that can be off by a

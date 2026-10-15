@@ -24,6 +24,15 @@ response carries no language tag, a section whose output depends on the
 state of the stack it ran against says which state, and a precondition a
 refusal depends on is shown rather than asserted.
 
+**Reproducing a run that signs in repeatedly.** Several stacks below are
+described as started with `ODUDU_THROTTLE_LIMIT=1000` (or `10000`) so a
+scripted run of sign-ins is not refused. Those captures pre-date the
+per-username sign-in budget, which refuses a sixth submission naming one
+username from one address inside a minute
+([ADR 0023](adr/0023-brute-force-authority-is-split.md)); to run any of them
+again, start the stack with `ODUDU_LOGIN_THROTTLE_LIMIT=1000` as well. The
+transcripts themselves are unchanged.
+
 **The stack.** One run of `infra/docker/compose.yaml`, brought up from an
 empty volume, with `odudu seed admin --username ada` run against it and a
 tenant named `demo` created through `POST /admin/tenants` below. The
@@ -107,8 +116,9 @@ confidential client `consents-demo-app2` created with `consent_required`
 `DELETE /subjects/:id/lockout`, `DELETE /subjects/:id/sessions` and
 `POST /subjects/:id/password` were captured in that order after one more
 rebuild, with the `odudu` service alone started with
-`ODUDU_THROTTLE_LIMIT=1000` so a scripted run of sign-ins is not refused
-by the per-origin throttle, as a new admin subject `ada-recovery` in the
+`ODUDU_THROTTLE_LIMIT=1000` (and, to reproduce it now,
+`ODUDU_LOGIN_THROTTLE_LIMIT=1000`) so a scripted run of sign-ins is not
+refused by the per-origin throttle, as a new admin subject `ada-recovery` in the
 system tenant, in a tenant `recovery-demo` created for them, on a subject
 `hana` seeded there with `odudu seed user`, and, for the target ceiling,
 subjects `mo` and `lin` seeded beside it. The service was restarted
@@ -168,8 +178,9 @@ to nothing on the stacks above.
 `DELETE /subjects/:id/recovery-codes` were captured against a stack of
 their own: compose project `odudu-t8` on port 3080, built from this branch
 with both routes in it and brought up from an empty volume with
-`ODUDU_THROTTLE_LIMIT=1000`, so a scripted run of sign-ins is not refused
-by the per-origin throttle, and `seed admin --username ada-t8` run against
+`ODUDU_THROTTLE_LIMIT=1000` (and, to reproduce it now,
+`ODUDU_LOGIN_THROTTLE_LIMIT=1000`), so a scripted run of sign-ins is not
+refused by the per-origin throttle, and `seed admin --username ada-t8` run against
 it. Each of the two sections says what else it seeded. It was torn down
 with `docker compose down -v` when the capture finished.
 

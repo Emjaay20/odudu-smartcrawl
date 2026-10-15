@@ -259,7 +259,9 @@ limit whose log stays under about 10 MB per budget at the key cap; below it
 the exact answer costs almost nothing, and above it the counter's constant
 three numbers per key are worth an approximation that, at a budget that
 size, is small next to the budget. The number is a judgement on those
-measurements, not a knee in them.
+measurements, not a knee in them. The figures exclude the key strings: the
+per-origin key is under 70 bytes, but the sign-in budget's keys run to about
+260 characters, which adds up to a few megabytes more per full map.
 
 **What the counter assumes, and what that costs.** It keeps the current and
 the previous fixed window's counts and estimates the trailing window as
@@ -285,10 +287,13 @@ current window is already spent.
 
 **The settings are bounded.** `ODUDU_THROTTLE_LIMIT`,
 `ODUDU_CLIENT_SECRET_THROTTLE_LIMIT` and `ODUDU_LOGIN_THROTTLE_LIMIT` refuse
-to boot above 10,000, naming the variable: ten thousand a window is two
-hundred Argon2id verifications a second from one origin, which no process
-runs, so a larger budget protects nothing, and it is the figure at which the
-log would have cost a gigabyte. The windows refuse past 3,600 seconds: a
+to boot above 10,000, naming the variable: at the default
+sixty-second window, ten thousand is about 170 Argon2id verifications a
+second from one origin, past what one process runs, and it is the figure at
+which the exact log would have cost a gigabyte. That is the whole of the
+claim: at a one-second window the same ceiling admits ten thousand a second,
+so the ceiling bounds memory and is not a CPU-rate bound, which stays the
+operator's to choose with the window. The windows refuse past 3,600 seconds: a
 refusal telling a caller to return in over an hour is a lockout, and the
 account lockout is the mechanism for that. Both bounds used to be a million
 and a day; the e2e stack's 10,000 and the conformance stack's 5,000 sit
@@ -314,8 +319,19 @@ a zone id and reads every spelling the same way; text that is no address
 passes through cut to 64 characters, so a client-controlled header still
 cannot grow a key. The cost is that two unrelated hosts in one /64 share
 a budget, the way two behind one NAT do, and the remedy is the same
-setting. The trust rule is unchanged: behind a proxy that appends rather than
-overwrites, the key is client text and the throttle decorative.
+setting. An attacker holding a /56 or a /48, which is what a residential or hosting
+customer is typically given, holds 256 or 65,536 /64s and so that many
+budgets: the rotation defence is partial, and keying by a shorter prefix
+would throttle unrelated customers of one provider together. Some forms
+are reachable only through a trusted `X-Forwarded-For`, since a translator
+does not sit in front of this listener: `::`, `::1`, an IPv4-compatible
+`::a.b.c.d` and an SIIT `::ffff:0:a.b.c.d` all collapse to the one key
+`0:0:0:0::/64`; NAT64 (`64:ff9b::/96`) collapses every embedded IPv4 address
+to one key; 6to4 (`2002:aabb:ccdd::/48`) splits one site into 65,536 keys;
+and Teredo clients of one server share one. None of that is new exposure —
+the same header already chose the key — and all of it is accepted for the
+same reason. The trust rule is unchanged: behind a proxy that appends rather
+than overwrites, the key is client text and the throttle decorative.
 
 **A second budget on sign-in, keyed by address and username.** The
 per-origin budget cannot tell one account being attacked from a shared
@@ -340,11 +356,60 @@ establish both halves: the refusal happens with the database untouched
 (`app.test.ts`), and a username that is an account and one that is not
 are refused in the same bytes against a real database
 (`tests/throttle.int.test.ts`). A submission that names no username — the
-second-factor and passkey steps carry the authentication session instead —
-spends nothing here, and registration and the reset request are not covered:
+second-factor steps carry the authentication session instead — spends
+nothing here, and registration and the reset request are not covered:
 neither verifies a password, and the per-origin budget still bounds them.
+The second factor is bounded per account instead (below). The key is the
+origin, the tenant and the folded name as a JSON array, so no tenant or
+username can make two different triples one key.
+
+The cost is a denial of service on one pair: whoever shares the victim's
+address, or can choose a trusted `X-Forwarded-For`, can spend that address's
+budget for that username and lock it out of signing in for a minute. A
+victim on another address is unaffected, and the account lockout's own
+any-origin version of this is unchanged.
 Per-origin runs first, so a request the username budget refuses has already
 spent an origin slot, which keeps the two within each other's bounds.
+
+**Second-factor guessing is bounded per account, by the lockout.** The
+per-origin budget bounds guesses per address, and an attacker who holds a
+password has six-digit codes to find from as many addresses as they own, so
+that was never a bound on the account. A wrong TOTP code, a wrong recovery
+code and a replay of a code already used now each count against the same
+`login_failures` row as a wrong password, under the tenant's own threshold,
+doubling and ceiling (`packages/authn-flows/src/usecase/executor.ts`); the
+counter moves with the same compare-and-swap the password path uses, so
+guesses in parallel are all counted rather than racing under the threshold.
+A correct password no longer ends the run of failures on its own: the run is
+cleared when the whole sign-in that began with a password completes, so
+wrong codes after a right password accumulate. A locked account refuses the
+second-factor step without the code being looked at, and still counts the
+attempt, as a password attempt during a lockout does; the answer is the one
+a wrong code gets, so the refusal says nothing about whether a guess was
+right. What is observable is only what the session already told its holder:
+the account exists, because the password was right, and a recovery code on a
+locked account is not hashed and so answers sooner. A replay counts because
+it is a presented credential that must not work, which is the case the rule
+exists for; the price is that a double-submitted correct code can leave one
+failure on record when the sign-in it belonged to still completes and clears
+it. A passkey assertion is not counted: a signature is not guessable, and
+the step's failures are a different mechanism. The per-origin budget remains
+the bound on the rate; the lockout is the bound on the account.
+
+**A clock that steps back.** Both implementations read an injected clock. The
+log caps `Retry-After` at one window, so a backward step cannot ask a caller
+to wait longer than the window; the counter, after a backward step of two
+windows or more, gives a key a fresh budget. Clamping to the last instant seen
+would remove that and was rejected, because it would hold every window shut
+for as long as an equal forward jump had lasted. Fail-open for a stepped clock
+is the same posture as eviction.
+
+**Upgrading.** The ceilings tightened from 1,000,000 requests and 86,400
+seconds to 10,000 and 3,600, and the settings that were unbounded are now
+checked at boot: a deployment configured above them fails to start with a
+message naming the variable, and takes the new ceiling or a lower value. No
+migration is involved. The project has been a hard cutover while nothing was
+deployed, so this is the place the change is recorded.
 
 **What stays per instance.** All of it. Five budgets now live in one
 process's memory (origin, username, client secret and the two audit refusal
