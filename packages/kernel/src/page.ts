@@ -95,7 +95,7 @@ function policyFor(page: RenderedPage): string {
   // Two clients may register a logout URI on the same host, and the list is
   // built per relying party, so a duplicate origin is expected rather than
   // exceptional.
-  const framed = [...new Set(page.frames)];
+  const framed = [...new Set(page.frames.filter((origin) => ORIGIN_SOURCE.test(origin)))];
   if (framed.length > 0) directives.push(`frame-src ${framed.join(' ')}`);
   return directives.join('; ');
 }

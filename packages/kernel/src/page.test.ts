@@ -90,6 +90,27 @@ describe('the headers every rendered page carries', () => {
     expect(csp).toContain('frame-src https://rp.example');
     expect(csp?.match(/rp\.example/gu)).toHaveLength(1);
   });
+
+  // `new URL('https://a.test;script-src/x').origin` keeps the semicolon, so
+  // an origin from a registered URI can open a directive of its own.
+  it('names no origin that is not a plain host, so none can add a directive', () => {
+    const csp = headerMap({
+      ...MARKUP_ONLY_PAGE,
+      frames: ['https://rp.example', 'https://a.test;sandbox', "https://a.test 'self'", 'null'],
+    })['content-security-policy'];
+    expect(csp).toContain('frame-src https://rp.example');
+    expect(csp).not.toContain('sandbox');
+    expect(csp?.split('; ').filter((directive) => directive.startsWith('frame-src'))).toEqual([
+      'frame-src https://rp.example',
+    ]);
+  });
+
+  it('names no frame-src when none of the origins is a plain host', () => {
+    const csp = headerMap({ ...MARKUP_ONLY_PAGE, frames: ['https://a.test;sandbox'] })[
+      'content-security-policy'
+    ];
+    expect(csp).not.toContain('frame-src');
+  });
 });
 
 // Chromium applies form-action to every redirect a form submission follows,
