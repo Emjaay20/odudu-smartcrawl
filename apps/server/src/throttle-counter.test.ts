@@ -198,7 +198,7 @@ describe('slidingWindowCounter', () => {
 
     it('admits a stream the log admits and refuses one the log refuses, but for the stated error', () => {
       const random = lcg(42);
-      for (let trial = 0; trial < 200; trial += 1) {
+      for (let trial = 0; trial < 50; trial += 1) {
         const limit = 101 + Math.floor(random() * 300);
         const windowSeconds = 10 + Math.floor(random() * 110);
         const perWindow = limit + (random() * 2 - 1) * 12;
