@@ -369,7 +369,8 @@ test.describe('a date no instant reads from', () => {
     await signIn(page, admin);
     await page.goto(AT);
     const from = page.getByLabel('From', { exact: true });
-    await from.click();
+    // The first segment, not the middle of an input wider than its segments.
+    await from.click({ position: { x: 12, y: 20 } });
     await page.keyboard.type('09');
     await page.getByRole('textbox', { name: 'Action', exact: true }).click();
     await expect(from).toHaveAttribute('aria-invalid', 'true');
@@ -377,6 +378,19 @@ test.describe('a date no instant reads from', () => {
     await expect(page.getByRole('button', { name: 'Apply filters' })).toBeDisabled();
     await expect(page.getByText(/not narrowed by it until then/u)).toBeVisible();
     await expectAccessible(page);
+    expect(new URL(page.url()).searchParams.has('from')).toBe(false);
+  });
+
+  test('Enter in a half-typed field holds the submit and marks it, with no blur before it', async ({
+    page,
+  }) => {
+    await signIn(page, admin);
+    await page.goto(AT);
+    const from = page.getByLabel('From', { exact: true });
+    await from.click({ position: { x: 12, y: 20 } });
+    await page.keyboard.type('09');
+    await page.keyboard.press('Enter');
+    await expect(from).toHaveAttribute('aria-invalid', 'true');
     expect(new URL(page.url()).searchParams.has('from')).toBe(false);
   });
 

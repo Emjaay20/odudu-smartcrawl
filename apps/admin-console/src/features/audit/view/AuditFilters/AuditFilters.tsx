@@ -26,7 +26,14 @@ export function AuditFilters({ form }: { form: AuditFilterForm }) {
       className={styles.form}
       onSubmit={(event) => {
         event.preventDefault();
-        form.submit();
+        // A browser says nothing of a half-typed first value until it is
+        // left, so a submit with no blur in front of it asks the fields.
+        const unread = [
+          ...event.currentTarget.querySelectorAll<HTMLInputElement>('input[type="datetime-local"]'),
+        ].filter((input) => input.validity.badInput);
+        for (const input of unread)
+          input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+        if (unread.length === 0) form.submit();
       }}
     >
       <FieldGrid>

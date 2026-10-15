@@ -76,6 +76,20 @@ it('tells the form what a date field cannot read', () => {
   );
 });
 
+it('does not submit while a date field holds a half-typed value, even with no event from it', async () => {
+  const user = userEvent.setup();
+  const held = form();
+  render(<AuditFilters form={held} />);
+  const field = screen.getByLabelText('From');
+  Object.defineProperty(field, 'validity', { configurable: true, value: { badInput: true } });
+  await user.type(screen.getByRole('textbox', { name: 'Action' }), '{Enter}');
+  expect(held.submit).not.toHaveBeenCalled();
+  expect(held.report).toHaveBeenCalledWith(
+    'from',
+    expect.stringMatching(/complete date and time/u),
+  );
+});
+
 it('puts each problem beside its field', () => {
   render(
     <AuditFilters
