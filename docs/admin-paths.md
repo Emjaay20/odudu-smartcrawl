@@ -226,8 +226,8 @@ read under `GET /audit` and the back-channel logout queue ran last, on the image
 rebuilt at `1507a6c3`, whose only change is the wording of the
 `about:blank#logout-deliveries-pending` detail. The stack was torn down with
 `docker compose down -v` when the capture finished. `DELETE
-/admin/tenants/{tenant}` was captured again on an eleventh stack, as its section
-says.
+/admin/tenants/{tenant}` was captured again at the close of P4d, on a stack of its own,
+as its section says.
 
 **The twelfth stack.** Every transcript whose output changed once groups and
 roles carried a `description` (the role and group ones since recaptured on the
@@ -1588,19 +1588,20 @@ that raced it and began second fails its foreign-key check once the
 deletion commits, and answers `500`; nothing is orphaned, since the row it
 needed is gone and it writes nothing.
 
-Against an eleventh stack — compose project `odudu-t8b2` again, on 3082 and
-5464, brought up from an empty volume with the tenth's settings and
-`ada-t8b2` seeded in `system`, its image built from this branch at `cd930b59`
-— a tenant `doomed` created through `POST /admin/tenants`, given a
-client through `POST /clients`, its id
-`01a0ef1f-415e-75a4-b079-953dc3de7ae0`. `count-rows.sql` counts that id's rows
+Against a stack of its own, the project `odudu-fix18b` on 3187, brought up
+from an empty volume at the close of P4d with `ada` seeded in `system`
+(`ODUDU_ALLOW_PRIVATE_CLIENT_URLS=true` and the server's own logout sender
+off, so the passes below are the ones the transcript runs), its image built
+from the tree at `126ad3b7` — a tenant `doomed` created through
+`POST /admin/tenants`, given a client through `POST /clients`, its id
+`01a140bf-2b2b-7e8f-a63a-c6c8b0f964d9`. `count-rows.sql` counts that id's rows
 in every table with a `tenant_id` column, as the database's owner:
 
 ```
 SELECT table_name,
        (xpath('/row/n/text()', query_to_xml(format(
          'select count(*) as n from %I where tenant_id = %L',
-         table_name, '01a0ef1f-415e-75a4-b079-953dc3de7ae0'), false, true, '')))[1]::text::int AS n
+         table_name, '01a140bf-2b2b-7e8f-a63a-c6c8b0f964d9'), false, true, '')))[1]::text::int AS n
   FROM information_schema.columns
  WHERE table_schema = 'public' AND column_name = 'tenant_id'
  ORDER BY n DESC, table_name;
@@ -1616,13 +1617,14 @@ and key set, still served, beside a `/token` it refuses; a session written
 straight into the table after the disable, and the refusal it causes; the
 disable sent again, which ends it; the refusal while the token is pending;
 five passes of the sender a minute apart, each a failure, the fifth its last
-attempt; the deletion; a read of the tenant, its discovery document and key
+attempt; the deletion, with `$A` minted again first because the loop outlasts
+its five minutes; a read of the tenant, its discovery document and key
 set, now gone; after; and `system`'s trail:
 
 ```bash
 A="Authorization: Bearer $ADMIN_TOKEN"
-T=http://localhost:3082/admin/tenants
-O=http://localhost:3082/tenants/doomed
+T=http://localhost:3187/admin/tenants
+O=http://localhost:3187/tenants/doomed
 pg() { docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f -'; }
 pg < count-rows.sql
 curl -sS -X DELETE -H "$A" "$T/doomed"; echo
@@ -1638,7 +1640,7 @@ done
 curl -sS "$O/protocol/openid-connect/certs" | python3 -c 'import json,sys;print([k["kid"] for k in json.load(sys.stdin)["keys"]])'
 echo "INSERT INTO sessions (id, tenant_id, subject_id, expires_at, last_active_at, secret_hash)
   SELECT gen_random_uuid(), tenant_id, subject_id, now() + interval '1 hour', now(), md5('late')
-    FROM users WHERE tenant_id = '01a0ef1f-415e-75a4-b079-953dc3de7ae0' AND username = 'ada';" | pg
+    FROM users WHERE tenant_id = '01a140bf-2b2b-7e8f-a63a-c6c8b0f964d9' AND username = 'ada';" | pg
 curl -sS -X DELETE -H "$A" "$T/doomed?confirm=doomed"; echo
 curl -sS -o /dev/null -w '%{http_code}\n' -X PATCH -H "$A" -H 'content-type: application/json' \
   -d '{"enabled":false}' "$T/doomed"
@@ -1653,7 +1655,7 @@ for p in .well-known/openid-configuration protocol/openid-connect/certs; do
   printf '%-40s %s\n' "$p" "$(curl -s -o /dev/null -w '%{http_code}' "$O/$p")"
 done
 pg < count-rows.sql
-curl -sS -H "$A" "$T/system/audit?action=tenant.delete&resource_type=tenant&resource_id=01a0ef1f-415e-75a4-b079-953dc3de7ae0" \
+curl -sS -H "$A" "$T/system/audit?action=tenant.delete&resource_type=tenant&resource_id=01a140bf-2b2b-7e8f-a63a-c6c8b0f964d9" \
   | python3 -c 'import json,sys;[print(json.dumps({k:i[k] for k in ("action","outcome","actor_name","resource_id","detail")})) for i in json.load(sys.stdin)["items"]]'
 curl -sS -H "$A" "$T/system/audit?action=tenant.delete&outcome=refused&limit=1" \
   | python3 -c 'import json,sys;[print(json.dumps({k:i[k] for k in ("action","outcome","actor_name","resource_id","detail")})) for i in json.load(sys.stdin)["items"]]'
@@ -1666,7 +1668,7 @@ curl -sS -H "$A" "$T/system/audit?action=tenant.delete&outcome=refused&limit=1" 
  client_scopes                 |  8
  role_composites               |  8
  roles                         |  8
- audit_events                  |  5
+ audit_events                  |  6
  authentication_executions     |  4
  client_oidc_config            |  2
  clients                       |  2
@@ -1681,6 +1683,7 @@ curl -sS -H "$A" "$T/system/audit?action=tenant.delete&outcome=refused&limit=1" 
  action_tokens                 |  0
  backchannel_logout_deliveries |  0
  client_assertion_jti          |  0
+ client_origins                |  0
  client_registration_tokens    |  0
  client_scope_mappers          |  0
  client_scope_roles            |  0
@@ -1697,35 +1700,35 @@ curl -sS -H "$A" "$T/system/audit?action=tenant.delete&outcome=refused&limit=1" 
  subject_roles                 |  0
  tenant_smtp                   |  0
  user_required_actions         |  0
-(35 rows)
+(36 rows)
 
-{"type":"about:blank","title":"Error","status":400,"detail":"querystring must have required property 'confirm'","errors":[{"path":"confirm","message":"must have required property 'confirm'"}],"instance":"01a0ef1f-51b7-77cc-a683-bf9043781642"}
-{"type":"about:blank","title":"Bad Request","status":400,"detail":"confirm: must be the tenant’s own name, doomed","errors":[{"path":"confirm","message":"must be the tenant’s own name, doomed"}],"instance":"01a0ef1f-51ce-7b10-a100-eebf1c4fe3c9"}
-{"type":"about:blank","title":"Conflict","status":409,"detail":"the system tenant is where every cross-tenant administrator authenticates, and is never deleted","instance":"01a0ef1f-5203-727b-ae1d-079ca4810cfb"}
-{"type":"about:blank#tenant-enabled","title":"Conflict","status":409,"detail":"doomed is enabled: disable it first, which ends its sessions and tells their relying parties","instance":"01a0ef1f-523a-78db-b44d-9c982b92a47f"}
-{"id":"01a0ef1f-415e-75a4-b079-953dc3de7ae0","name":"doomed","display_name":null,"enabled":false,"created_at":"2026-09-29T21:43:18.111Z"}
+{"type":"about:blank","title":"Error","status":400,"detail":"querystring must have required property 'confirm'","errors":[{"path":"confirm","message":"must have required property 'confirm'"}],"instance":"01a140bf-be87-77d4-877c-d365c631feba"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"confirm: must be the tenant’s own name, doomed","errors":[{"path":"confirm","message":"must be the tenant’s own name, doomed"}],"instance":"01a140bf-be92-7f53-9a9e-c3b3c55d3640"}
+{"type":"about:blank","title":"Conflict","status":409,"detail":"the system tenant is where every cross-tenant administrator authenticates, and is never deleted","instance":"01a140bf-beab-7098-8d9e-d4fe29242035"}
+{"type":"about:blank#tenant-enabled","title":"Conflict","status":409,"detail":"doomed is enabled: disable it first, which ends its sessions and tells their relying parties","instance":"01a140bf-bec2-7b3e-9c95-9051417c88ff"}
+{"id":"01a140bf-2b2b-7e8f-a63a-c6c8b0f964d9","name":"doomed","display_name":null,"enabled":false,"created_at":"2026-10-15T18:07:12.683Z"}
 {"action": "session.end_all", "actor_name": null, "detail": {"via": "tenant_disabled", "ended": 1, "remaining": 0}}
 .well-known/openid-configuration         200
 protocol/openid-connect/certs            200
 protocol/openid-connect/token            404
-['01a0ef1f-41e5-7509-b721-b3a12b2168e4']
+['01a140bf-2b76-7cb8-a9e8-842a01ba082c']
 INSERT 0 1
-{"type":"about:blank#sessions-live","title":"Conflict","status":409,"detail":"sessions still live: 1; disable doomed again to end them and tell their relying parties","instance":"01a0ef1f-54d2-7a78-b158-df25a7400b30"}
+{"type":"about:blank#sessions-live","title":"Conflict","status":409,"detail":"sessions still live: 1; disable doomed again to end them and tell their relying parties","instance":"01a140bf-bfaf-719a-942f-8ee3a32b79f2"}
 200
-{"type":"about:blank#logout-deliveries-pending","title":"Conflict","status":409,"detail":"Back-Channel Logout Tokens still to be sent: 1; deleting the tenant would discard them","instance":"01a0ef1f-554e-7188-ae9b-a2ca513aa10b"}
+{"type":"about:blank#logout-deliveries-pending","title":"Conflict","status":409,"detail":"Back-Channel Logout Tokens still to be sent: 1; deleting the tenant would discard them","instance":"01a140bf-bfea-7fca-98f3-077111bac882"}
 {"ran":true,"delivered":0,"failed":1}
 {"ran":true,"delivered":0,"failed":1}
 {"ran":true,"delivered":0,"failed":1}
 {"ran":true,"delivered":0,"failed":1}
 {"ran":true,"delivered":0,"failed":1}
 HTTP/1.1 204 No Content
-x-request-id: 01a0ef23-1f57-7e1f-8774-24782c430191
+x-request-id: 01a140c3-83f3-7be8-87b8-8f16b0b7f002
 cache-control: no-store
-Date: Tue, 29 Sep 2026 21:47:31 GMT
+Date: Thu, 15 Oct 2026 18:11:57 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"type":"about:blank","title":"Unauthorized","status":401,"instance":"01a0ef23-1fad-7791-9255-113e6c46a30e"}
+{"type":"about:blank","title":"Unauthorized","status":401,"instance":"01a140c3-8418-758b-9e00-e7deb1aa2f25"}
 .well-known/openid-configuration         404
 protocol/openid-connect/certs            404
           table_name           | n
@@ -1738,6 +1741,7 @@ protocol/openid-connect/certs            404
  backchannel_logout_deliveries | 0
  client_assertion_jti          | 0
  client_oidc_config            | 0
+ client_origins                | 0
  client_registration_tokens    | 0
  client_scope_assignments      | 0
  client_scope_mappers          | 0
@@ -1765,10 +1769,10 @@ protocol/openid-connect/certs            404
  user_credentials              | 0
  user_required_actions         | 0
  users                         | 0
-(35 rows)
+(36 rows)
 
-{"action": "tenant.delete", "outcome": "allowed", "actor_name": "ada-t8b2", "resource_id": "01a0ef1f-415e-75a4-b079-953dc3de7ae0", "detail": {"name": "doomed"}}
-{"action": "tenant.delete", "outcome": "refused", "actor_name": "ada-t8b2", "resource_id": "0199aa00-0000-7000-8000-000000000001", "detail": {"name": "system", "reason": "system_tenant_guarded"}}
+{"action": "tenant.delete", "outcome": "allowed", "actor_name": "ada", "resource_id": "01a140bf-2b2b-7e8f-a63a-c6c8b0f964d9", "detail": {"name": "doomed"}}
+{"action": "tenant.delete", "outcome": "refused", "actor_name": "ada", "resource_id": "0199aa00-0000-7000-8000-000000000001", "detail": {"name": "system", "reason": "system_tenant_guarded"}}
 ```
 
 The read of `doomed` afterwards answers `401` rather than `404`: the router
@@ -9896,6 +9900,31 @@ Keep-Alive: timeout=72
 0.022757 s
 ```
 
+A year after 9999 is refused earlier, by the route's own date pattern rather than
+the contract, so its `400` is titled `Error` and its `detail` is the pattern
+itself, which accepts four-digit years only; `from`, the count and the export
+answer the same. Captured against a stack of its own, the project
+`odudu-fix18b` on port 3187, built from the tree at `126ad3b7` on an empty
+volume with `seed admin --username ada`:
+
+```bash
+curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://localhost:3187/admin/tenants/system/audit?to=10000-01-01T00:00:00Z"
+```
+
+```
+HTTP/1.1 400 Bad Request
+x-request-id: 01a140be-b3f5-7530-9aa8-b1346cc2c373
+cache-control: no-store
+content-type: application/problem+json; charset=utf-8
+content-length: 822
+Date: Thu, 15 Oct 2026 18:06:42 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+{"type":"about:blank","title":"Error","status":400,"detail":"querystring/to must match pattern \"^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$\"","errors":[{"path":"to","message":"must match pattern \"^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$\""}],"instance":"01a140be-b3f5-7530-9aa8-b1346cc2c373"}
+```
+
 The stack was torn down with `docker compose down -v` when the capture finished.
 
 ## `GET /audit/count` and `GET /audit/export`
@@ -10084,28 +10113,29 @@ The reference this document points at: an OpenAPI 3.1 description of every
 route above, generated from the same route table the router registers from,
 so the two cannot drift. It takes no `{tenant}` — it describes the API
 rather than reaching into one — and is served without authentication, since
-a client that cannot read it cannot generate against it. Captured against the
-twelfth stack:
+a client that cannot read it cannot generate against it. Captured again at the close of P4d, against a stack of its own — the
+project `odudu-fix18b` on `http://localhost:3187`, built from the tree at
+`126ad3b7` on an empty volume:
 
 ```bash
-curl -sS -D - -o openapi.json http://localhost:3082/admin/openapi.json
+curl -sS -D - -o openapi.json http://localhost:3187/admin/openapi.json
 jq '.paths | length' openapi.json
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a109c0-e764-785f-b5bd-6cbedd84c522
+x-request-id: 01a140be-1aa4-7732-9373-b578e205487c
 access-control-allow-origin: *
 content-type: application/json; charset=utf-8
-content-length: 311878
-Date: Mon, 05 Oct 2026 01:49:59 GMT
+content-length: 326972
+Date: Thu, 15 Oct 2026 18:06:02 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-74
+75
 ```
 
-305 KB and 75 paths, which is the whole route table. It is the one admin
+319 KB and 75 paths, which is the whole route table. It is the one admin
 response readable from any origin, so a viewer served from another port can
 load it — the local stack's optional Swagger UI does exactly that (see
 `README.md`, "Browsing the admin API"). No admin route carries that header,
@@ -10123,7 +10153,7 @@ substring at `securitySchemes`:
 ```
 
 `security` is declared once at the top level, so every path inherits it
-rather than repeating it. `/admin/openapi.json` is not among those 74
+rather than repeating it. `/admin/openapi.json` is not among those 75
 paths: the document does not describe itself, which is why serving it
 unauthenticated does not contradict the blanket `security` above.
 
