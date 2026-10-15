@@ -1763,28 +1763,28 @@ Every row says where it stands, and every row has a phase:
 |                                                                                                      | Where it stands |
 | ---------------------------------------------------------------------------------------------------- | --------------- |
 | Self-service for an End-User: a "me" API and application-initiated actions for credential ceremonies | P4f             |
-| Published images and a release process                                                               | P12             |
+| Published images and a release process                                                               | P4g             |
 | Secret management beyond environment variables                                                       | P12             |
 | Backup and restore guidance                                                                          | P12             |
-| Multi-replica support: migration locking, shared session cache, HA                                   | P11             |
+| Multi-replica support: migration locking, shared in-process limits, HA                               | P11             |
 | Helm chart or Kubernetes manifests                                                                   | P11             |
 
-The three P12 rows had no phase at all until 2026-09-14. They are
+The published image had no phase at all until 2026-09-14, when P12,
+Operational readiness, was appended for it, secret management and backup;
+the image and release process moved to P4g on 2026-10-09. These are
 operational rather than protocol work, and the roadmap — written outward
-from the specifications — had named nobody to do it, so P12, Operational
-readiness, was appended for them. The credentials the server reads today
-come from the environment by decision (ADR 0015), which settles where they
-live and not how a deployment manages them.
+from the specifications — had named nobody to do it. The credentials the
+server reads today come from the environment by decision (ADR 0015), which
+settles where they live and not how a deployment manages them.
 
 **P12 being last in the table does not mean deployment waits on everything
-before it.** Publishing a versioned image depends on no other phase and is
-the prerequisite for anybody running this at all; it should be pulled
-forward as soon as there is something worth tagging. Sourcing secrets from
-something other than the environment is nearly as free — the key-encryption
-key is already behind an interface a KMS adapter can replace. Backup and
-restore guidance is the one worth waiting on, and not on clustering: it is
-cheap to write once the data that must be restored consistently has stopped
-changing shape.
+before it.** Publishing a versioned image, now P4g's, depends on no other
+phase and is the prerequisite for anybody running this at all. Sourcing
+secrets from something other than the environment is nearly as free — the
+key-encryption key is already behind an interface a KMS adapter can replace.
+Backup and restore guidance is the one worth waiting on, and not on
+clustering: it is cheap to write once the data that must be restored
+consistently has stopped changing shape.
 
 The single-container-plus-Postgres shape is a deliberate design decision
 (ADR 0002) and the image is built for it. There is now a protocol surface to

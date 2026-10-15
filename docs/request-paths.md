@@ -11248,11 +11248,12 @@ session lifecycle. A citation of either half here means that half.
   `/userinfo` — between a resource server's request and its answer. **P11**,
   whose criterion documents a p99 for those two paths and so cannot be met
   while an unbounded lookup sits on either.
-- **No published image, no release process, no secret store beyond the
-  process environment, and no backup or restore guidance.** **P12**,
-  Operational readiness, appended on 2026-09-14 because none of it had a
-  phase. Its position in the table is not a dependency: publishing an image
-  waits on nothing, and `README.md` says what can be pulled forward.
+- **No published image or release process.** **P4g**, Public release (moved
+  there from P12 on 2026-10-09). Publishing an image waits on nothing, and
+  `README.md` says what can be pulled forward.
+- **No secret store beyond the process environment, and no backup or restore
+  guidance.** **P12**, Operational readiness, appended on 2026-09-14 because
+  none of it had a phase.
 - **Expired state is deleted, on a window per table, by one pass** —
   `odudu reap`, on the server's own schedule or as a command
   ([Retention](#retention-what-odudu-reap-removes)). What is not there yet:
@@ -11273,8 +11274,7 @@ phase owned them. Each is now named in its phase's exit criterion in design
 spec §11. `tests/docs/gap-audit-placement.test.ts` fails the build when an
 item here names a phase whose §11 criterion does not name it too. The audit
 also found admin routes and configuration for features the server already
-has; those are P4d's own work (its plan, Tasks 8a–8c) and are not listed
-here.
+has; those are P4d's own work and are not listed here.
 
 - **more required actions (verify email, update profile, accept terms)**:
   P4f.

@@ -1579,8 +1579,11 @@ issued before the tenant was disabled until it expires — at most 3600
 seconds, the cap on `access_token_ttl_seconds`. Disabling ends the sessions
 and refresh tokens behind it; it cannot recall a token already handed out.
 
-The deletion is one transaction, so a very large tenant cascades inside one
-request, holding its locks until the last row is gone. A tenant-scoped write
+The deletion is a single transaction, and its duration grows with the
+tenant's audit trail, the largest table it cascades through: there is no
+bound, batch or timeout, so a tenant holding tens of millions of audit rows
+holds its locks until the last is gone. A chunked, resumable delete is
+**P11**'s (the umbrella spec's §11, P11 row). A tenant-scoped write
 that raced it and began second fails its foreign-key check once the
 deletion commits, and answers `500`; nothing is orphaned, since the row it
 needed is gone and it writes nothing.
@@ -3460,7 +3463,9 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
 ### How many one call revokes
 
 Likewise at most 10,000 grants per call, with `remaining` counting what is
-left; the transcript above predates it. Against `perf-demo`, with one grant
+left. The transcript above is the tenth stack's, run on 2026-09-29
+before the cap existed, so its answer lacks `remaining`; the one below is
+the current shape. Against `perf-demo`, with one grant
 for `grace` through `alpha-app` written by `insert into token_grants`:
 
 ```bash
@@ -5306,7 +5311,9 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
 One call clears at most 10,000 subjects, in subject id order, and answers how
 many are left under `remaining` (counted to 10,000 and no further), so a
 tenant with more is cleared by calling again until `remaining` is `0`. The
-transcript above predates that field. Against `perf-demo`, with a run of five
+transcript above is the tenth stack's, run on 2026-09-29 before the field
+existed, so its answer lacks it; the one below is the current shape. Against
+`perf-demo`, with a run of five
 failures written for `grace` by `insert into login_failures`:
 
 ```bash

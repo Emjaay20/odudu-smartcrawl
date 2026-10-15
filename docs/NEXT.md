@@ -3,8 +3,8 @@
 ## Start here
 
 **P0, P1, P2a, P2b, P3a, P3b, P4a, P4c and P4e are complete, the tenant
-rename is done, and P4d is built and awaiting its whole-range review and the
-merge to `main`. P4 has been split five ways.** Phases are section 11 of
+rename is done, and P4d, whose four parts are all built, is under its
+whole-branch review and awaits the merge into `main`. P4 has been split five ways.** Phases are section 11 of
 [the umbrella spec](superpowers/specs/2026-09-10-odudu-design.md), whose
 "P4 became four phases, then five" subsection has the reasoning.
 
@@ -50,7 +50,7 @@ on the grant, closing ADR 0036's follow-up.
 
 What turned out to be **wrong** while building each is in
 [docs/phases/p4c.md](phases/p4c.md) and [docs/phases/p4e.md](phases/p4e.md),
-not here. Two themes are worth keeping in view while P4d is built: a mechanism built
+not here. Two themes are worth keeping in view: a mechanism built
 with no caller (P4c), and an audit write that changes what it records — an
 extra statement, an aborted transaction, a lock (P4e).
 
@@ -58,7 +58,7 @@ extra statement, an aborted transaction, a lock (P4e).
 amendment (the admin API is its first JSON surface), ADR 0036 (UserInfo's
 claims narrowing) and [p4c.md](phases/p4c.md) (`client.enabled`).
 
-**A bare `P4` below means P4d, which has closed,** unless it concerns token exchange, the grant
+**A bare `P4` below means P4d, which is complete and awaits the merge into `main`,** unless it concerns token exchange, the grant
 allowlist, the admin API, audit events, the grant's UserInfo claims,
 theming or client branding — the
 same disambiguation the P2 split used, and for the same reason: a citation
@@ -136,11 +136,12 @@ the reasoning, and the `frames` member ADR 0034 added is part of the same
 contract.
 
 **Deployment is still unpublished.** There is no published image or release
-process, secrets are environment variables and nothing more, and there is
-no backup or restore guidance — **P12**, whose position in the table is not
-a dependency: publishing an image waits on nothing and is the prerequisite
-for anybody deploying this at all. Multi-replica deployment is blocked on
-migration locking and a shared session cache, both P11.
+process (**P4g**, which waits on nothing and is the prerequisite for anybody
+deploying this at all), secrets are environment variables and nothing more,
+and there is no backup or restore guidance (**P12**). Multi-replica
+deployment is blocked on migration locking and on the in-process bounds
+(throttles, the client-secret limiter), both **P11**, which also owes the
+Helm chart or manifests.
 
 ## What P5 inherits
 
@@ -204,8 +205,10 @@ that should hold it, which is usually false.
 | RFC 7523 has no clause table, so the clauses of an implemented RFC are untracked by the system built for it                                                                                                                                                                                                                                                                                                                                                                                                                                      | [rfc7523.md](protocols/rfc7523.md)'s own header                                       | **P13**                                                 |
 | The session cap is per browser and admits `cap + (k - 1)` under `k` concurrent logins, orphaning one                                                                                                                                                                                                                                                                                                                                                                                                                                             | [ADR 0033](adr/0033-admitting-a-session-locks-the-tenant-row.md)                      | **P4f**, wanting a session's device                     |
 | `CLAUDE.md` states an untagged-fence rule that `tests/docs/markdown.ts` cannot see, so no JSON response is byte-checked                                                                                                                                                                                                                                                                                                                                                                                                                          | [p3b.md](phases/p3b.md), "`CLAUDE.md` states a rule its own tests forbid"             | its own change; it untags every JSON transcript at once |
-| Migrations are hard cutovers: Drizzle runs every pending migration in one transaction, so no index is built `CONCURRENTLY`, `0073`–`0075` add stored generated columns that rewrite their tables under lock, `0076` rebuilds an `audit_events` index without `CONCURRENTLY`, and `0095` builds twenty-odd indexes plain, four of them on `audit_events`, as `0099` builds a fifth, and `0100` three on `email_outbox`, whose `failed` mail read still sorts a tenant's unsent rows (about 100 ms at 1,000,000 unsent, an incident-sized backlog) | the umbrella spec's §5, "Migrations", and §11's P11 row                               | **P11**, with rolling upgrades across replicas          |
+| Migrations are hard cutovers: Drizzle runs every pending migration in one transaction, so no index is built `CONCURRENTLY`, `0073`–`0075` add stored generated columns that rewrite their tables under lock, `0076` rebuilds an `audit_events` index without `CONCURRENTLY`, `0079` adds three more such columns to `users`, `0080`, `0081` and `0097` build indexes plain, and `0095` builds twenty-odd, four of them on `audit_events`, as `0099` builds a fifth, and `0100` three on `email_outbox`, whose `failed` mail read still sorts a tenant's unsent rows (about 100 ms at 1,000,000 unsent, an incident-sized backlog) | the umbrella spec's §5, "Migrations", and §11's P11 row                               | **P11**, with rolling upgrades across replicas          |
 | `audit_events` at 100,000,000 rows is one table with seven secondary indexes and per-tenant unbatched retention deletes; the query-plan check ran at a fifth of the subjects and a hundredth of the events, on one node                                                                                                                                                                                                                                                                                                                          | `docs/phases/p4d.md`, "Server query plans", and §11's P11 row                         | **P11**, partitioning by month and batched deletes      |
+| Tenant delete is one transaction cascading through every tenant table, `audit_events` included, so it holds locks as long as the tenant's audit trail is deep; no bound or timeout (`docs/admin-paths.md`, "Delete a tenant") | the umbrella spec's §11, P11 row | **P11**, a chunked, resumable delete |
+| Base images are mutable tags (`node:24-alpine`, `postgres:17-alpine`, `mailpit`, `swagger-ui`); only the logout sink is pinned by digest | the umbrella spec's §11, P4g row | **P4g**, with the published image |
 | Localization has a mechanism and owners and no code: every server page, mail and console string is English, and the new-code rule is unenforced until the extraction lints land                                                                                                                                                                                                                                                                                                                                                                  | [ADR 0043](adr/0043-localization-is-a-catalogue-a-negotiation-and-a-set-of-owners.md) | **P4g**, **P4b** and **P4h**                            |
 | No composite index serves the two-filter audit reads (actor and type, type and action); a 5 s timeout bounds them                                                                                                                                                                                                                                                                                                                                                                                                                                | [p4d.md](phases/p4d.md), "Server query plans"                                         | **P11**, whose plan check at scale is the evidence      |
 | Committed development credentials                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | [ADR 0014](adr/0014-committed-development-credentials.md)                             | the conditions that ADR names                           |

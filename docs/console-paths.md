@@ -33,8 +33,7 @@ The image built at those commits shipped no console build, so
 `ODUDU_CONSOLE_DIR` (`/app/console`) was absent, and the third run logged
 that below. The image has carried a build since `78826ac`;
 [`GET /console/`](#get-console) is captured separately, against its own
-throwaway stack, since this stack's own build predates the console's
-foundation. The server logged these warnings when it booted for the third
+throwaway stack, because this stack's image carried no console build. The server logged these warnings when it booted for the third
 run. The second line is the console cookie's plain-HTTP fallback, and the
 third is the missing build:
 
