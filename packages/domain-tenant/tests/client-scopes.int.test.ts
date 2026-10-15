@@ -643,6 +643,28 @@ describe('countAssignedUpTo', () => {
   });
 });
 
+describe('assigned', () => {
+  it('says whether the client carries the scope, and no for another tenant’s client', async () => {
+    await expectCrossTenantMethodProbe(app.db, {
+      seed: async (tx, tenantId) => {
+        await seedTenant(tx, tenantId);
+        const clientId = await insertClient(tx, tenantId);
+        const scope = await clientScopeRepository(tx).create({ tenantId, name: 'openid' });
+        await clientScopeRepository(tx).assign(clientId, scope.id, 'default');
+        return { clientId, scopeId: scope.id };
+      },
+      verifySeeded: async (tx, { clientId, scopeId }) => {
+        expect(await clientScopeRepository(tx).assigned(clientId, scopeId)).toBe(true);
+      },
+      attempt: async (tx, { clientId, scopeId }) =>
+        clientScopeRepository(tx).assigned(clientId, scopeId),
+      expectBlocked: (result) => {
+        expect(result).toBe(false);
+      },
+    });
+  });
+});
+
 describe('countDefaultsUpTo', () => {
   it('counts the scopes the tenant marks for every new client, and stops at the limit', async () => {
     const tenantId = newId();
