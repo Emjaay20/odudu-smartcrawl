@@ -7,6 +7,7 @@ import {
   type Seeded,
   inSubject,
   inTenant,
+  sqlText,
   UNBROKEN,
 } from './stack';
 
@@ -292,6 +293,25 @@ function seedAccess(access: Seeded['access']): void {
   grant(keys.fixedTenantOnly, 'odudu-admin:manage-tenant');
 }
 
+// The list tenant holds sixty live sessions of its administrator, beyond the
+// one page the server returns by default; the others are made by signing in.
+function seedSessions(sessions: Seeded['sessions']): void {
+  seed(['tenant', '--name', sessions.own.tenant]);
+  administrator(sessions.own);
+  for (const tenant of [sessions.flow, sessions.keyed]) {
+    seed(['tenant', '--name', tenant.tenant]);
+    administrator(tenant.walker);
+  }
+  const { admin, tenantOnly } = sessions.list;
+  seed(['tenant', '--name', admin.tenant]);
+  administrator(admin);
+  subject(tenantOnly);
+  grant(tenantOnly, 'odudu-admin:manage-tenant');
+  psql(
+    `insert into sessions (id, tenant_id, subject_id, expires_at, last_active_at, secret_hash) select gen_random_uuid(), u.tenant_id, u.subject_id, now() + interval '1 hour', now() - (n || ' seconds')::interval, md5('seed' || n) from users u cross join generate_series(1, 60) n where u.tenant_id = ${inTenant(admin.tenant)} and u.username = ${sqlText(admin.username)}`,
+  );
+}
+
 // A tenant per test that saves its settings or its relay, since one ETag
 // covers all of a tenant's settings and two tests would meet in a 412.
 function seedConfig(config: Seeded['config']): void {
@@ -431,6 +451,27 @@ export default function globalSetup(): void {
     conflict: `${run}-f`,
     resume: `${run}-g`,
     prefix: `${run}-n`,
+    doomed: {
+      main: `${run}-x1`,
+      keyed: `${run}-x2`,
+      raced: `${run}-x3`,
+      phone: `${run}-x4`,
+    },
+  };
+  const sessions = {
+    own: { tenant: `${run}-v1`, username: 'wegener', password: password() },
+    flow: {
+      tenant: `${run}-v2`,
+      walker: { tenant: `${run}-v2`, username: 'bohr', password: password() },
+    },
+    keyed: {
+      tenant: `${run}-v4`,
+      walker: { tenant: `${run}-v4`, username: 'pauling', password: password() },
+    },
+    list: {
+      admin: { tenant: `${run}-v3`, username: 'mendel', password: password() },
+      tenantOnly: { tenant: `${run}-v3`, username: 'darwin', password: password() },
+    },
   };
 
   seed(['tenant', '--name', admin.tenant]);
@@ -439,6 +480,10 @@ export default function globalSetup(): void {
   for (const name of [tenants.general, tenants.source, tenants.conflict, tenants.resume]) {
     seed(['tenant', '--name', name]);
   }
+  for (const name of Object.values(tenants.doomed)) seed(['tenant', '--name', name]);
+  psql(
+    `update tenants set enabled = false where name in (${sqlText(tenants.doomed.keyed)}, ${sqlText(tenants.doomed.raced)}, ${sqlText(tenants.doomed.phone)})`,
+  );
   seed([
     'client',
     '--tenant',
@@ -514,6 +559,7 @@ export default function globalSetup(): void {
   subject(scopes.clientsOnly);
   grant(scopes.clientsOnly, 'odudu-admin:manage-clients');
   seedAccess(access);
+  seedSessions(sessions);
   seed(['tenant', '--name', audit.admin.tenant]);
   administrator(audit.admin);
   subject(audit.viewer);
@@ -578,5 +624,6 @@ export default function globalSetup(): void {
     access,
     audit,
     config,
+    sessions,
   });
 }

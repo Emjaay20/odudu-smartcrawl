@@ -314,7 +314,7 @@ test('a system administrator holding manage-tenants alone is told what a tenant 
     "A tenant's record needs the manage-tenant capability.",
   );
   await expect(page.getByRole('textbox')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /^(Disable|Enable|Add) /u })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^(Disable|Enable|Add|Delete) /u })).toHaveCount(0);
   await expect(page.getByRole('link', { name: `Enter ${tenants.general}` })).toBeVisible();
   await expectAccessible(page);
 });

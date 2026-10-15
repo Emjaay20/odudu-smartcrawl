@@ -85,6 +85,10 @@ const seededSchema = z.object({
     resume: z.string(),
     // The prefix every tenant a test creates starts with.
     prefix: z.string(),
+    // Deleted by a test each: disabled and deleted by hand, deleted by
+    // keyboard from a tenant seeded disabled, enabled again behind an open
+    // page, and deleted at a phone's width.
+    doomed: z.object({ main: z.string(), keyed: z.string(), raced: z.string(), phone: z.string() }),
   }),
   // Subjects of system the System administrators tests grant, revoke or sign in as.
   systemAdmins: z.object({
@@ -226,6 +230,17 @@ const seededSchema = z.object({
     usersOnly: account,
     // The tenant's client the seeded rows name, by its audit resource id.
     clientId: z.string(),
+  }),
+  // Tenants of their own for the Sessions tests.
+  sessions: z.object({
+    // A tenant administrator who ends their own tenant's sessions, hers among them.
+    own: account,
+    // A tenant a system administrator ends every session in, once its administrator has signed in.
+    flow: z.object({ tenant: z.string(), walker: account }),
+    // The same, by keyboard alone.
+    keyed: z.object({ tenant: z.string(), walker: account }),
+    // A tenant holding sixty more sessions than one page, read and never changed.
+    list: z.object({ admin: account, tenantOnly: account }),
   }),
   // A tenant of its own for the Scopes tests.
   scopes: z.object({
