@@ -54,6 +54,10 @@ services:
       # effectively unlimited, so the mechanism still runs and a window
       # that stopped sliding would still eventually show up here.
       ODUDU_THROTTLE_LIMIT: '5000'
+      # The suite signs in as a handful of users over and over, so the
+      # per-username budget is the one it meets first. Raised for the same
+      # reason, and as far.
+      ODUDU_LOGIN_THROTTLE_LIMIT: '5000'
     depends_on:
       postgres:
         condition: service_healthy

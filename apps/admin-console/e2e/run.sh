@@ -36,6 +36,7 @@ export COMPOSE_PROJECT_NAME="${E2E_COMPOSE_PROJECT:-odudu-e2e}"
 export COMPOSE_FILE="$DOCKER_DIR/compose.yaml"
 # Every test signs in, from one origin, more often than a person would.
 export ODUDU_THROTTLE_LIMIT=10000
+export ODUDU_LOGIN_THROTTLE_LIMIT=10000
 export E2E_BASE_URL="http://localhost:$ODUDU_HOST_PORT"
 
 compose() { docker compose --project-directory "$DOCKER_DIR" "$@"; }

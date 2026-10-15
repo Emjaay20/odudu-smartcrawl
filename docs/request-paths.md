@@ -24,10 +24,12 @@ stack it ran against **says which state** — [Retention](#retention-what-odudu-
 the second [lockout](#brute-force-lockout) run and
 [the throttle](#the-per-origin-throttle) each do. Everything else was run in
 the order it appears, front to back, against one stack started with
-`ODUDU_THROTTLE_LIMIT=1000`: a scripted walkthrough of a whole document
-sends more requests a minute than the budget a person needs
-([the per-origin throttle](#the-per-origin-throttle)), and every transcript
-past the tenth would otherwise be a `429`.
+`ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000`: a scripted
+walkthrough of a whole document sends more requests a minute than the budget
+a person needs ([the per-origin throttle](#the-per-origin-throttle), and
+[the per-username one](#the-per-username-budget-on-sign-in) for one user
+signing in again and again), and every transcript past the tenth would
+otherwise be a `429`.
 
 ## The shape of it
 
@@ -5062,8 +5064,9 @@ value for any parked request rather than one nobody else can reproduce.
 One thing about reproducing it: eight submissions in a minute from one
 address is past the [per-origin throttle](#the-per-origin-throttle) below,
 so the runs in this section were captured against a stack started with
-`ODUDU_THROTTLE_LIMIT=1000 docker compose up -d` — at the default of ten,
-the later submissions answer `429` and never reach the lockout at all.
+`ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000 docker compose up -d`
+— at the defaults, the later submissions answer `429` (the per-origin budget
+at ten, the per-username one at five) and never reach the lockout at all.
 
 ```bash
 post() {
@@ -5317,6 +5320,69 @@ transcript. And the key is `request.ip`, which with `ODUDU_TRUST_PROXY=true`
 comes from `X-Forwarded-For`: a proxy that appends rather than overwrites
 that header leaves the key client-controlled. Both are in
 [README.md](../README.md) as deployment requirements.
+
+### The per-username budget on sign-in
+
+Beside the per-origin budget, the sign-in submission alone carries a second
+one, keyed by the address, the tenant and the username as submitted —
+`ODUDU_LOGIN_THROTTLE_LIMIT` (default `5`) submissions per
+`ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS` (default `60`). One account tried over
+and over from one address is refused after five, while the rest of a shared
+address is left its ten. The username is read from the form after it is
+parsed and before any account is looked up, folded for case, padding and
+Unicode compatibility forms, so nothing a lookup could say reaches the
+decision, and the refusal is the same `429`, `Retry-After` and empty body as
+the per-origin one. A submission that names no username — the second-factor
+and passkey steps carry only the authentication session — is not counted
+here, and neither are registration or the reset request.
+
+The run below was captured against a stack started with
+`ODUDU_THROTTLE_LIMIT=1000` and the login budget left at its default, so the
+only budget in play is this one; `demo` and `ada` are the ones seeded in
+[A public client, with a user](#a-public-client-with-a-user), and `$SID` is
+an `auth_session_id` taken from the `/authorize` form. Five wrong passwords
+for `ada` are answered with the form, and the sixth is refused; then the
+same for a name nobody holds, which is refused in the same bytes:
+
+```bash
+attempt() {
+  curl -sS -D - -o /dev/null \
+    --data-urlencode "auth_session_id=$SID" \
+    --data-urlencode "username=$1" --data-urlencode 'password=wrong-password' \
+    'http://localhost:3000/tenants/demo/login-actions/authenticate' \
+    | tr -d '\r' | grep -iE '^(HTTP|retry-after|content-length)' | tr '\n' ' '
+  echo
+}
+for n in 1 2 3 4 5; do echo "ada, submission $n: $(attempt ada)"; done
+echo '--- the sixth, for ada ---'; attempt ada
+echo '--- a username nobody holds, after five of its own ---'
+for n in 1 2 3 4 5; do attempt nobody >/dev/null; done; attempt nobody
+echo '--- ada again, in other letters ---'; attempt ' ADA '
+echo '--- another username, same address ---'; attempt grace
+```
+
+```
+ada, submission 1: HTTP/1.1 200 OK content-length: 2372
+ada, submission 2: HTTP/1.1 200 OK content-length: 2372
+ada, submission 3: HTTP/1.1 200 OK content-length: 2372
+ada, submission 4: HTTP/1.1 200 OK content-length: 2372
+ada, submission 5: HTTP/1.1 200 OK content-length: 2372
+--- the sixth, for ada ---
+HTTP/1.1 429 Too Many Requests retry-after: 60 content-length: 0
+--- a username nobody holds, after five of its own ---
+HTTP/1.1 429 Too Many Requests retry-after: 60 content-length: 0
+--- ada again, in other letters ---
+HTTP/1.1 429 Too Many Requests retry-after: 60 content-length: 0
+--- another username, same address ---
+HTTP/1.1 200 OK content-length: 2372
+```
+
+The fifth wrong password also starts the account lockout, and its answer is
+still the form: the `200`s say nothing about which mechanism will refuse
+next, which is the point. The budget does not replace the lockout. The
+lockout is keyed by the account, holds across addresses and replicas, and
+refuses a correct password too; this one is keyed by address and username,
+per instance, and costs an attacker nothing but time.
 
 ### The `client_secret` budget at `/token`
 
@@ -9919,17 +9985,18 @@ client is told.
 
 ### The login POST
 
-| Request                                      | Answer                                         | Why                                                                                                                                                                                      |
-| -------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Wrong password                               | 200, the sign-in form again, same session id   | The session is live and can be retried; nothing is consumed                                                                                                                              |
-| Unknown username                             | 200, the sign-in form again                    | Indistinguishable from a wrong password, and the credential query is still issued so the timing matches                                                                                  |
-| Any password, while the account is locked    | 200, the sign-in form again                    | Byte-identical to a wrong password, and reached after the same verification, so neither the page nor the timing says the account is locked ([Brute-force lockout](#brute-force-lockout)) |
-| A password over 256 characters               | 400, "Password must be at most 256 characters" | Refused at the read, before the Argon2id verification, so it costs nothing and counts no failure against the account                                                                     |
-| Any submission over the per-origin budget    | 429, `Retry-After`, empty body                 | Decided before the body is parsed, so it is the same refusal whatever was submitted ([The per-origin throttle](#the-per-origin-throttle))                                                |
-| No `auth_session_id`                         | 400, "This sign-in attempt is no longer valid" | That field is the form's CSRF defence; a submission without it is not a submission from the form                                                                                         |
-| Unknown or expired `auth_session_id`         | 400, same page                                 | Folded together deliberately: neither names a live parked request                                                                                                                        |
-| A second submit of a consumed session        | 400, same page                                 | The atomic consume is what stops a back-button press minting a second session and a second code                                                                                          |
-| Right password, wrong `id_token_hint`ed user | 302 `error=login_required` to the client       | A positive response is for the end user the hint identifies. The session is left unconsumed, so the right user can still sign in against the same parked request                         |
+| Request                                                               | Answer                                         | Why                                                                                                                                                                                                                      |
+| --------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Wrong password                                                        | 200, the sign-in form again, same session id   | The session is live and can be retried; nothing is consumed                                                                                                                                                              |
+| Unknown username                                                      | 200, the sign-in form again                    | Indistinguishable from a wrong password, and the credential query is still issued so the timing matches                                                                                                                  |
+| Any password, while the account is locked                             | 200, the sign-in form again                    | Byte-identical to a wrong password, and reached after the same verification, so neither the page nor the timing says the account is locked ([Brute-force lockout](#brute-force-lockout))                                 |
+| A password over 256 characters                                        | 400, "Password must be at most 256 characters" | Refused at the read, before the Argon2id verification, so it costs nothing and counts no failure against the account                                                                                                     |
+| Any submission over the per-origin budget                             | 429, `Retry-After`, empty body                 | Decided before the body is parsed, so it is the same refusal whatever was submitted ([The per-origin throttle](#the-per-origin-throttle))                                                                                |
+| Sign-in submissions for one username over its budget from one address | 429, `Retry-After`, empty body                 | Decided from the submitted form before any account is looked up, so it is the same refusal for a name that is an account and one that is not ([The per-username budget on sign-in](#the-per-username-budget-on-sign-in)) |
+| No `auth_session_id`                                                  | 400, "This sign-in attempt is no longer valid" | That field is the form's CSRF defence; a submission without it is not a submission from the form                                                                                                                         |
+| Unknown or expired `auth_session_id`                                  | 400, same page                                 | Folded together deliberately: neither names a live parked request                                                                                                                                                        |
+| A second submit of a consumed session                                 | 400, same page                                 | The atomic consume is what stops a back-button press minting a second session and a second code                                                                                                                          |
+| Right password, wrong `id_token_hint`ed user                          | 302 `error=login_required` to the client       | A positive response is for the end user the hint identifies. The session is left unconsumed, so the right user can still sign in against the same parked request                                                         |
 
 The last one, both halves, run against one parked request:
 

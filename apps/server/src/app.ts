@@ -39,6 +39,7 @@ import { createClientKeyRequest, defaultClientKeyLookup } from '#/client-key-tra
 import { type ConsoleKeys, missingConsoleKey } from '#/console-key';
 import { registerHealth } from '#/health';
 import { type RateLimiter, slidingWindow } from '#/throttle';
+import { loginBudgetKey } from '#/login-throttle';
 import { throttleOrigin } from '#/throttle-origin';
 
 export interface AppDeps {
@@ -122,6 +123,14 @@ export interface AppDeps {
    */
   readonly clientSecretThrottle?: ThrottleSettings;
   /**
+   * The budget per address and username on the sign-in submission alone,
+   * beside the per-origin one: credential stuffing against one account
+   * from one address is refused sooner without punishing a whole NAT.
+   * Defaults to `DEFAULT_LOGIN_THROTTLE`; `main.ts` passes what
+   * `ODUDU_LOGIN_THROTTLE_*` says.
+   */
+  readonly loginThrottle?: ThrottleSettings;
+  /**
    * ADR 0028's escape hatch for a `jwks_uri` resolving to a private or
    * loopback address — the same flag `main.ts` already passes to the
    * back-channel logout transport, reused here for `private_key_jwt`'s
@@ -152,6 +161,8 @@ export interface ThrottleSettings {
 }
 
 export const DEFAULT_THROTTLE: ThrottleSettings = { limit: 10, windowSeconds: 60 };
+
+export const DEFAULT_LOGIN_THROTTLE: ThrottleSettings = { limit: 5, windowSeconds: 60 };
 
 // Mirrors the account lockout's own defaults (brute_force_max_failures,
 // brute_force_lockout_seconds — packages/db/drizzle/0041_login_failures.sql):
@@ -194,8 +205,10 @@ export function auditRefusalBudget(now: () => Date): AuditRefusalBudget {
  * budget is `clientSecretThrottle` below, keyed by client and consulted
  * inside `authenticateClient`, not here.
  */
+const SIGN_IN_POST = '/tenants/:tenant/login-actions/authenticate';
+
 const THROTTLED_POSTS: ReadonlySet<string> = new Set([
-  '/tenants/:tenant/login-actions/authenticate',
+  SIGN_IN_POST,
   '/tenants/:tenant/login-actions/registration',
   '/tenants/:tenant/login-actions/reset-password',
   '/admin/tenants/:tenant/subjects/:id/password-reset',
@@ -255,6 +268,11 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     now: () => new Date(),
   });
 
+  const loginLimiter: RateLimiter = slidingWindow({
+    ...(deps.loginThrottle ?? DEFAULT_LOGIN_THROTTLE),
+    now: () => new Date(),
+  });
+
   // private_key_jwt's own address-guarded fetcher (RFC 7523 §2.2, ADR
   // 0028) — the real `node:https`/`node:dns` pair `#/client-key-transport`
   // wraps, shared by every tenant's clients the way the cache in
@@ -281,6 +299,21 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     const route = request.routeOptions.url;
     if (route === undefined || !THROTTLED_POSTS.has(route)) return;
     const decision = throttle.check(throttleOrigin(request.ip));
+    if (decision.allowed) return;
+    reply.header('retry-after', String(decision.retryAfterSeconds));
+    return reply.code(429).send();
+  });
+
+  // The composite budget needs the form, so it waits for the body parse —
+  // still before the route runs, so before any account lookup or Argon2id
+  // verification — and answers the same bytes the per-origin refusal does.
+  app.addHook('preHandler', async (request, reply) => {
+    if (request.method !== 'POST') return;
+    if (request.routeOptions.url !== SIGN_IN_POST) return;
+    const params = request.params as { tenant?: string };
+    const key = loginBudgetKey(throttleOrigin(request.ip), params.tenant ?? '', request.body);
+    if (key === undefined) return;
+    const decision = loginLimiter.check(key);
     if (decision.allowed) return;
     reply.header('retry-after', String(decision.retryAfterSeconds));
     return reply.code(429).send();

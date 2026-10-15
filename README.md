@@ -406,7 +406,14 @@ key's requests, about 3 MB at the default of `10` and 9 MB at `100` once
 10,000 origins have spent it; above 100 it keeps two counters per key, about
 2 MB however high the limit, at the price of an estimate that can be off by a
 couple of requests on steady traffic and by up to the limit on traffic timed
-against a window boundary ([ADR 0023](docs/adr/0023-brute-force-authority-is-split.md)). An administrator's three mail sends —
+against a window boundary ([ADR 0023](docs/adr/0023-brute-force-authority-is-split.md)). The sign-in submission carries a second budget beside it, keyed by
+address, tenant and the username as submitted:
+`ODUDU_LOGIN_THROTTLE_LIMIT` (default `5`) per
+`ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS` (default `60`), under the same ceilings.
+One account tried over and over from one address is refused sooner, without
+spending a whole NAT's budget, and the refusal is the same `429` for a name
+that is an account and one that is not, because it is decided from the form
+before any lookup. An administrator's three mail sends —
 `…/password-reset`, `…/verification` and `…/actions-email` — draw on the
 same budget.
 

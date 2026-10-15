@@ -1,5 +1,6 @@
 import { type DatabaseHandle } from '@odudu/db';
 import { loadConfig } from '@odudu/kernel';
+import { type FastifyInstance } from 'fastify';
 import { describe, expect, it } from 'vitest';
 import { AUDIT_REFUSAL_ROWS_PER_CLIENT, auditRefusalBudget, buildApp } from '#/app';
 import { createLogger } from '#/logger';
@@ -127,6 +128,188 @@ describe('the per-origin throttle keys an address by its network', () => {
     }
 
     expect(await spend(app, '10.0.0.1', forwarded('2001:db8:9:9::4'))).toBe(429);
+  });
+});
+
+describe('the sign-in budget per address and username', () => {
+  const AUTHENTICATE = '/tenants/acme/login-actions/authenticate';
+  const FORM = { 'content-type': 'application/x-www-form-urlencoded' };
+
+  // Counts every use of the database, so a refusal can be shown to have
+  // happened before anything account-dependent ran.
+  function countingDatabase() {
+    const handle = { uses: 0 };
+    const database = {
+      db: new Proxy(
+        {},
+        {
+          get: () => {
+            handle.uses += 1;
+            throw new Error('the throttle must refuse before the database is touched');
+          },
+        },
+      ),
+      sql: (() => Promise.resolve([{ ok: 1 }])) as unknown as DatabaseHandle['sql'],
+      close: () => Promise.resolve(),
+    } as unknown as DatabaseHandle;
+    return { handle, database };
+  }
+
+  function loginApp(database: DatabaseHandle, loginLimit = 3) {
+    return buildApp({
+      database,
+      ownerDatabase: database,
+      kek: config.ODUDU_KEK,
+      logger: createLogger(config),
+      throttle: { limit: 1000, windowSeconds: 60 },
+      loginThrottle: { limit: loginLimit, windowSeconds: 60 },
+    });
+  }
+
+  function submit(
+    app: FastifyInstance,
+    fields: Record<string, string>,
+    remoteAddress = '198.51.100.7',
+    url = AUTHENTICATE,
+  ) {
+    return app.inject({
+      method: 'POST',
+      url,
+      payload: new URLSearchParams(fields).toString(),
+      headers: FORM,
+      remoteAddress,
+    });
+  }
+
+  async function spendUsername(app: FastifyInstance, username: string, times: number) {
+    for (let attempt = 0; attempt < times; attempt += 1) {
+      expect((await submit(app, { username, password: 'x' })).statusCode).not.toBe(429);
+    }
+  }
+
+  it('refuses the submission past the budget with 429, Retry-After and no body', async () => {
+    const app = loginApp(noSuchTenantDatabase);
+    await spendUsername(app, 'ada', 3);
+
+    const refused = await submit(app, { username: 'ada', password: 'x' });
+
+    expect(refused.statusCode).toBe(429);
+    expect(Number(refused.headers['retry-after'])).toBeGreaterThanOrEqual(1);
+    expect(Number(refused.headers['retry-after'])).toBeLessThanOrEqual(60);
+    expect(refused.body).toBe('');
+  });
+
+  it('decides on the submitted string, before the database is touched', async () => {
+    const { handle, database } = countingDatabase();
+    const app = loginApp(database);
+    await spendUsername(app, 'ada', 3);
+    const usesBefore = handle.uses;
+
+    const refused = await submit(app, { username: 'ada', password: 'x' });
+
+    expect(refused.statusCode).toBe(429);
+    expect(handle.uses).toBe(usesBefore);
+  });
+
+  it('answers the same bytes whether or not the account exists in the key', async () => {
+    const app = loginApp(noSuchTenantDatabase);
+    await spendUsername(app, 'ada', 3);
+    await spendUsername(app, 'no-such-account', 3);
+
+    const [known, unknown] = await Promise.all([
+      submit(app, { username: 'ada', password: 'x' }),
+      submit(app, { username: 'no-such-account', password: 'x' }),
+    ]);
+
+    expect(unknown.statusCode).toBe(known.statusCode);
+    expect(unknown.body).toBe(known.body);
+    expect(unknown.headers['retry-after']).toBe(known.headers['retry-after']);
+    expect(unknown.headers['content-length']).toBe(known.headers['content-length']);
+  });
+
+  it('answers a composite refusal exactly as the per-address one', async () => {
+    const app = loginApp(noSuchTenantDatabase);
+    await spendUsername(app, 'ada', 3);
+    const composite = await submit(app, { username: 'ada', password: 'x' });
+
+    const addressApp = buildApp({
+      database: noSuchTenantDatabase,
+      ownerDatabase: noSuchTenantDatabase,
+      kek: config.ODUDU_KEK,
+      logger: createLogger(config),
+      throttle: { limit: 1, windowSeconds: 60 },
+    });
+    await submit(addressApp, { username: 'ada' });
+    const perAddress = await submit(addressApp, { username: 'ada' });
+
+    expect(composite.statusCode).toBe(429);
+    expect(perAddress.statusCode).toBe(429);
+    expect(composite.body).toBe(perAddress.body);
+    expect(composite.headers['content-length']).toBe(perAddress.headers['content-length']);
+    expect(composite.headers['retry-after']).toBe(perAddress.headers['retry-after']);
+  });
+
+  it('does not punish a neighbour: another username, or another address, is untouched', async () => {
+    const app = loginApp(noSuchTenantDatabase);
+    await spendUsername(app, 'ada', 3);
+
+    expect((await submit(app, { username: 'ada', password: 'x' })).statusCode).toBe(429);
+    expect((await submit(app, { username: 'bob', password: 'x' })).statusCode).not.toBe(429);
+    expect(
+      (await submit(app, { username: 'ada', password: 'x' }, '203.0.113.9')).statusCode,
+    ).not.toBe(429);
+  });
+
+  it('reads one username however it is cased, padded or composed', async () => {
+    const app = loginApp(noSuchTenantDatabase);
+    await spendUsername(app, 'Ada', 1);
+    await spendUsername(app, '  ADA ', 1);
+    await spendUsername(app, 'ada', 1);
+
+    expect((await submit(app, { username: 'ａｄａ', password: 'x' })).statusCode).toBe(429);
+  });
+
+  it('counts only a submission that names a username, and only on the sign-in route', async () => {
+    const app = loginApp(noSuchTenantDatabase);
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      expect((await submit(app, { auth_session_id: 'x', code: '123456' })).statusCode).not.toBe(
+        429,
+      );
+      expect(
+        (
+          await submit(
+            app,
+            { username: 'ada', email: 'a@example.test', password: 'x' },
+            '198.51.100.7',
+            '/tenants/acme/login-actions/registration',
+          )
+        ).statusCode,
+      ).not.toBe(429);
+    }
+  });
+
+  it('keeps tenants apart, so one name in two tenants is two budgets', async () => {
+    const app = loginApp(noSuchTenantDatabase);
+    await spendUsername(app, 'admin', 3);
+
+    const other = await submit(
+      app,
+      { username: 'admin', password: 'x' },
+      '198.51.100.7',
+      '/tenants/globex/login-actions/authenticate',
+    );
+
+    expect(other.statusCode).not.toBe(429);
+  });
+
+  it('bounds the usernames it remembers, whatever an attacker submits', async () => {
+    const app = loginApp(noSuchTenantDatabase);
+    for (let n = 0; n < 50; n += 1) {
+      await submit(app, { username: `${'u'.repeat(5000)}${String(n)}`, password: 'x' });
+    }
+    // Reached without exhausting anything: the key is cut to a fixed length,
+    // so fifty near-identical long names are one budget and not fifty.
+    expect((await submit(app, { username: 'u'.repeat(5000), password: 'x' })).statusCode).toBe(429);
   });
 });
 

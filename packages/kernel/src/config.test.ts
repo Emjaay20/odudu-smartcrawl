@@ -157,6 +157,26 @@ describe('loadConfig', () => {
     ).toThrow(/ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS/u);
   });
 
+  it('reads the sign-in budget per address and username, five a minute by default', () => {
+    const defaults = loadConfig(minimal);
+    expect(defaults.ODUDU_LOGIN_THROTTLE_LIMIT).toBe(5);
+    expect(defaults.ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS).toBe(60);
+
+    const raised = loadConfig({
+      ...minimal,
+      ODUDU_LOGIN_THROTTLE_LIMIT: '50',
+      ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS: '300',
+    });
+    expect(raised.ODUDU_LOGIN_THROTTLE_LIMIT).toBe(50);
+    expect(raised.ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS).toBe(300);
+    expect(() => loadConfig({ ...minimal, ODUDU_LOGIN_THROTTLE_LIMIT: '10001' })).toThrow(
+      /ODUDU_LOGIN_THROTTLE_LIMIT/u,
+    );
+    expect(() => loadConfig({ ...minimal, ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS: '0' })).toThrow(
+      /ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS/u,
+    );
+  });
+
   it('schedules the retention pass hourly by default', () => {
     const config = loadConfig(minimal);
     expect(config.ODUDU_REAP_ENABLED).toBe(true);

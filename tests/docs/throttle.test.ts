@@ -47,6 +47,15 @@ describe('the throttle numbers the documents state are the numbers the code uses
     );
   });
 
+  it.each(DOCUMENTS)('%s states the sign-in budget the config schema defaults to', (name) => {
+    expect(statedDefault(name, 'ODUDU_LOGIN_THROTTLE_LIMIT')).toBe(
+      String(defaults.ODUDU_LOGIN_THROTTLE_LIMIT),
+    );
+    expect(statedDefault(name, 'ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS')).toBe(
+      String(defaults.ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS),
+    );
+  });
+
   it('README.md states the ceilings the server refuses to boot past', () => {
     const text = loadDocument('README.md').lines.join('\n');
     expect(text).toContain(`at most \`${String(MAX_THROTTLE_LIMIT)}\``);

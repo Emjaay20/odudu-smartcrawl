@@ -10,7 +10,7 @@ import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/test
 import { eq } from 'drizzle-orm';
 import { type FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { buildApp, DEFAULT_THROTTLE } from '#/app';
+import { buildApp, DEFAULT_LOGIN_THROTTLE, DEFAULT_THROTTLE } from '#/app';
 import { seed } from '#/cli/seed';
 import { createLogger } from '#/logger';
 
@@ -380,7 +380,7 @@ describe('the per-origin throttle on the routes that cost CPU', () => {
   // The fixture hazard the lockout creates for any burst of wrong
   // passwords: five failures lock the account, and a locked account is
   // refused with the sign-in form at 200, byte-identical to a wrong
-  // password. So a 429 in this burst can only be the throttle, and every
+  // password. So a 429 in this burst can only be a throttle, and every
   // 200 in it is one mechanism or the other refusing the credential.
   it('answers 429 where the throttle refuses and 200 where the lockout does', async () => {
     const tenantName = `throttle-${newId()}`;
@@ -399,7 +399,7 @@ describe('the per-origin throttle on the routes that cost CPU', () => {
     try {
       const url = `/tenants/${tenantName}/login-actions/authenticate`;
       const statuses: number[] = [];
-      for (let attempt = 0; attempt <= DEFAULT_THROTTLE.limit; attempt += 1) {
+      for (let attempt = 0; attempt <= DEFAULT_LOGIN_THROTTLE.limit; attempt += 1) {
         const authSessionId = await extractAuthSessionId(app, tenantName);
         const res = await formPost(
           app,
@@ -410,10 +410,71 @@ describe('the per-origin throttle on the routes that cost CPU', () => {
         statuses.push(res.statusCode);
       }
 
-      expect(statuses.slice(0, DEFAULT_THROTTLE.limit)).toEqual(
-        Array.from({ length: DEFAULT_THROTTLE.limit }, () => 200),
+      // The fifth wrong password locks the account and is still answered
+      // with the form; the sixth submission for this username from this
+      // address is over the per-username budget.
+      expect(statuses.slice(0, DEFAULT_LOGIN_THROTTLE.limit)).toEqual(
+        Array.from({ length: DEFAULT_LOGIN_THROTTLE.limit }, () => 200),
       );
       expect(statuses.at(-1)).toBe(429);
+    } finally {
+      await app.close();
+    }
+  });
+
+  // The per-username budget keys on the submitted string, so spending it on
+  // a name that is an account and on one that is not must be
+  // indistinguishable from outside — the reason ADR 0023 decides it before
+  // any lookup.
+  it('refuses a username that is an account in the same bytes as one that is not', async () => {
+    const tenantName = `throttle-${newId()}`;
+    await seed({
+      tenant: tenantName,
+      clientId: 'throttle-app',
+      redirectUris: [REDIRECT_URI],
+      username: 'ada',
+      password: PASSWORD,
+      email: EMAIL,
+    });
+
+    const app = buildTestApp();
+    await app.ready();
+
+    try {
+      const url = `/tenants/${tenantName}/login-actions/authenticate`;
+      const refuseAfterBudget = async (username: string, origin: string) => {
+        let last = await formPost(app, url, { username, password: 'wrong' }, origin);
+        for (let attempt = 1; attempt <= DEFAULT_LOGIN_THROTTLE.limit; attempt += 1) {
+          last = await formPost(app, url, { username, password: 'wrong' }, origin);
+        }
+        return last;
+      };
+
+      // Each from its own address, so neither spends the other's per-origin
+      // budget and the only refusal on offer is the per-username one.
+      const account = await refuseAfterBudget('ada', ORIGIN);
+      const stranger = await refuseAfterBudget('nobody', OTHER_ORIGIN);
+
+      expect(account.statusCode).toBe(429);
+      expect(stranger.statusCode).toBe(429);
+      expect(stranger.body).toBe(account.body);
+      expect(stranger.body).toBe('');
+      expect(stranger.headers['content-length']).toBe(account.headers['content-length']);
+      expect(stranger.headers['content-type']).toBe(account.headers['content-type']);
+      expect(
+        Math.abs(Number(stranger.headers['retry-after']) - Number(account.headers['retry-after'])),
+      ).toBeLessThanOrEqual(1);
+
+      // The refusal is for that username from that address, not for the
+      // whole origin: another account is still answered, by the route
+      // rather than the throttle.
+      const neighbour = await formPost(
+        app,
+        url,
+        { username: 'someone-else', password: 'wrong' },
+        ORIGIN,
+      );
+      expect(neighbour.statusCode).not.toBe(429);
     } finally {
       await app.close();
     }

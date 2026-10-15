@@ -140,6 +140,10 @@ const schema = z.object({
   ODUDU_THROTTLE_WINDOW_SECONDS: throttleWindowSeconds(60),
   // ADR 0023's other budget: failed client_secret_basic and
   // client_secret_post attempts at /token, per client.
+  // The budget per address and username on the sign-in submission alone,
+  // beside the per-origin one above (ADR 0023).
+  ODUDU_LOGIN_THROTTLE_LIMIT: throttleLimit(5),
+  ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS: throttleWindowSeconds(60),
   ODUDU_CLIENT_SECRET_THROTTLE_LIMIT: throttleLimit(5),
   ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS: throttleWindowSeconds(60),
   // How long `odudu reap` keeps a row after nothing can still read it
