@@ -20,6 +20,24 @@ const AUDIT_EVENT_TYPES = [
 // after an index scan finds no rows.
 const AUDIT_TEXT_FILTER_MAX = 256;
 
+// Postgres takes a timestamptz from 4713 BC, but JavaScript writes a year
+// past 9999 as `+010000-…`, which it does not read back, and a trail older
+// than 1970 cannot exist. A bound in the text of the year catches a value
+// before the instant is formed; the instant's own bound catches an offset
+// that carries a year-9999 time into year 10000.
+const AUDIT_YEAR = /^(?:19[7-9]\d|[2-9]\d{3})-/u;
+const LAST_INSTANT_MS = 253_402_300_799_999;
+
+function withinTheTrail(value: string): boolean {
+  const at = Date.parse(value);
+  return at >= 0 && at <= LAST_INSTANT_MS;
+}
+
+const auditInstant = z.iso
+  .datetime({ offset: true })
+  .regex(AUDIT_YEAR, { message: 'must be an instant from 1970 to 9999' })
+  .refine(withinTheTrail, { message: 'must be an instant from 1970 to 9999' });
+
 const auditFilters = {
   event_type: z.enum(AUDIT_EVENT_TYPES).optional(),
   // A `uuid` column: anything else reaches Postgres and fails on syntax
@@ -33,8 +51,8 @@ const auditFilters = {
   resource_id: z.string().min(1).max(AUDIT_TEXT_FILTER_MAX).optional(),
   action: z.string().min(1).max(AUDIT_TEXT_FILTER_MAX).optional(),
   outcome: z.enum(['allowed', 'refused', 'failed']).optional(),
-  from: z.iso.datetime({ offset: true }).optional(),
-  to: z.iso.datetime({ offset: true }).optional(),
+  from: auditInstant.optional(),
+  to: auditInstant.optional(),
 };
 
 function resourceIdNeedsType(query: {
@@ -98,3 +116,6 @@ export const listAuditResponseSchema = z.object({
   next: z.string().optional(),
 });
 export type ListAuditResponse = z.infer<typeof listAuditResponseSchema>;
+
+// The problem type of an audit read that Postgres stopped at its time bound.
+export const AUDIT_QUERY_TOO_BROAD = 'about:blank#audit-query-too-broad';

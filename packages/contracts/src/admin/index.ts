@@ -29,6 +29,7 @@ export {
   type ExportAuditQuery,
   AUDIT_EXPORT_MEDIA_TYPE,
   AUDIT_EXPORT_CAP,
+  AUDIT_QUERY_TOO_BROAD,
   auditEventSchema,
   type AuditEvent,
   listAuditResponseSchema,
