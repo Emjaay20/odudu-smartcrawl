@@ -1,7 +1,7 @@
 import type { Client, LogoutDelivery } from '@odudu/contracts/admin';
 import { useState } from 'react';
 import { useLogoutDeliveries } from '#/features/clients/repository/useLogoutDeliveries';
-import { ANY_STATUS, statusFilter } from '#/features/clients/service';
+import { ANY_STATUS, statusFilter } from '#/shared/service/filters';
 import type { ListStatus } from '#/shared/service/resourceList';
 
 export interface ClientDeliveries {

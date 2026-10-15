@@ -13,3 +13,11 @@ export function optionalFilter(
 ): Record<string, string> {
   return value === null || value === undefined ? {} : { [name]: value };
 }
+
+// The choice that sends no status filter, for a list a status narrows.
+export const ANY_STATUS = 'any';
+
+// A filter the server takes, or none for any.
+export function statusFilter(choice: string): string | null {
+  return choice === ANY_STATUS ? null : choice;
+}

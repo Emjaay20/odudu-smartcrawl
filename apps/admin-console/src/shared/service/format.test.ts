@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   groupedNumber,
   andList,
+  attemptsText,
   capitalise,
   counted,
   describeId,
@@ -147,5 +148,13 @@ describe('orBlank', () => {
     expect(orBlank('')).toBe('');
     expect(orBlank(null)).toBe('');
     expect(orBlank(undefined)).toBe('');
+  });
+});
+
+describe('attemptsText', () => {
+  it('counts attempts in words', () => {
+    expect(attemptsText(1)).toBe('1 attempt');
+    expect(attemptsText(0)).toBe('0 attempts');
+    expect(attemptsText(5)).toBe('5 attempts');
   });
 });

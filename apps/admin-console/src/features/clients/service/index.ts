@@ -210,14 +210,11 @@ export {
   sessionsReadable,
 } from '#/features/clients/service/sessions';
 export {
-  ANY_STATUS,
-  attemptsText,
   DELIVERIES_HEADING,
   DELIVERIES_RULE,
   deliveryTone,
   NO_DELIVERIES,
   STATUS_OPTIONS,
-  statusFilter,
 } from '#/features/clients/service/deliveries';
 export {
   INSTALLATION_HEADING,

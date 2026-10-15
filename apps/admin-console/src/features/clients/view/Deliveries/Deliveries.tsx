@@ -1,6 +1,5 @@
 import type { Client, LogoutDelivery } from '@odudu/contracts/admin';
 import {
-  attemptsText,
   DELIVERIES_HEADING,
   DELIVERIES_RULE,
   deliveryTone,
@@ -11,6 +10,7 @@ import {
   useClientDeliveries,
   type ClientDeliveries,
 } from '#/features/clients/usecase/useClientDeliveries';
+import { attemptsText } from '#/shared/service/format';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { SelectField } from '#/shared/view/Field';
 import { ListGate } from '#/shared/view/ListGate';
