@@ -35,7 +35,10 @@ describe('the instants an audit read takes', () => {
           const res = await get(`${route}?${name}=${value}`);
           expect(res.statusCode, `${route} ${name} ${value}`).toBe(400);
           expect(res.json()).toMatchObject({ status: 400 });
-          expect(res.json()).toMatchObject({ errors: [{ path: name }] });
+          expect(res.json()).toMatchObject({
+            detail: `${name} must be a date between 1970 and 9999`,
+            errors: [{ path: name, message: `${name} must be a date between 1970 and 9999` }],
+          });
         }
       }
     },

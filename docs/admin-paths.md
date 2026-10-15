@@ -9854,8 +9854,10 @@ Keep-Alive: timeout=72
 5.067626 s
 ```
 
-And an instant before 1970 (captured on the stack's first run, before the twelve
-million rows, with the same image):
+And an instant before 1970, refused by the contract with a sentence naming the field and
+the range, as the same `errors[]` every other admin `400` carries (recaptured on a
+stack of its own, `odudu-docs-19` again, built from this branch after the change; the
+count and the export answer the same with `to`):
 
 ```bash
 curl -sS -D - -w "\n%{time_total} s\n" -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -9864,16 +9866,16 @@ curl -sS -D - -w "\n%{time_total} s\n" -H "Authorization: Bearer $ADMIN_TOKEN" \
 
 ```
 HTTP/1.1 400 Bad Request
-x-request-id: 01a13cf6-159e-79d6-a5d4-58c5e1a086c9
+x-request-id: 01a13d62-c82f-7859-866d-bb29899ca1a1
 cache-control: no-store
 content-type: application/problem+json; charset=utf-8
-content-length: 272
-Date: Thu, 15 Oct 2026 00:28:42 GMT
+content-length: 241
+Date: Thu, 15 Oct 2026 02:27:26 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"type":"about:blank","title":"Error","status":400,"detail":"querystring/from must match pattern \"^(?:19[7-9]\\d|[2-9]\\d{3})-\"","errors":[{"path":"from","message":"must match pattern \"^(?:19[7-9]\\d|[2-9]\\d{3})-\""}],"instance":"01a13cf6-159e-79d6-a5d4-58c5e1a086c9"}
-0.006910 s
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"from must be a date between 1970 and 9999","errors":[{"path":"from","message":"from must be a date between 1970 and 9999"}],"instance":"01a13d62-c82f-7859-866d-bb29899ca1a1"}
+0.022757 s
 ```
 
 The stack was torn down with `docker compose down -v` when the capture finished.

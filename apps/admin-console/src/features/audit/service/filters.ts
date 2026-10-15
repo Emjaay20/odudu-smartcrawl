@@ -1,4 +1,4 @@
-import { listAuditQuerySchema } from '@odudu/contracts/admin';
+import { isAuditInstant, listAuditQuerySchema } from '@odudu/contracts/admin';
 import type { Choice } from '#/shared/service/choice';
 
 export const FILTER_NAMES = [
@@ -72,7 +72,9 @@ function validValues(params: URLSearchParams): {
   for (const name of FILTER_NAMES) {
     const value = params.get(name);
     if (value === null || value === '') continue;
-    if (SHAPE[name].safeParse(value).success) filters[name] = value;
+    const readable = SHAPE[name].safeParse(value).success;
+    const inRange = (name !== 'from' && name !== 'to') || isAuditInstant(value);
+    if (readable && inRange) filters[name] = value;
     else ignored.push(ignoredText(name, value));
   }
   return { filters, ignored };

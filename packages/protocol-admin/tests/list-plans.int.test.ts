@@ -49,7 +49,7 @@ const ROLES_PER_CLIENT = 300;
 const BUSY_RESOURCE_ROWS = 5_000;
 // A resource type whose rows are all older than the rest of the trail, so a
 // read of it alone cannot be found by walking the newest rows.
-const OLD_TYPE_ROWS = 3_000;
+const OLD_TYPE_ROWS = 30_000;
 const HELD_ROLE_SUBJECTS = 2_000;
 const SERVICE_SUBJECTS = 50;
 const CHILD_GROUPS = 3_000;
@@ -669,7 +669,8 @@ describe('the plan an audit trail narrowed by resource_type alone is given', () 
     const [json] = await explained(app, statement, 'FORMAT JSON', targetTenantId);
     const nodes = allNodes(rootPlan(json));
     const scan = nodes.find((node) => node.indexName === 'audit_events_resource_type');
-    expect(scan?.nodeType).toBe('Index Scan');
+    // A bitmap would need a Sort to give the listing's order, which is refused below.
+    expect(['Index Scan', 'Bitmap Index Scan']).toContain(scan?.nodeType);
     expect(scan?.indexCond).toContain("resource_type = 'signing_key'");
     if (later) expect(scan?.indexCond).toContain('ROW(occurred_at');
     expect(nodes.map((node) => node.nodeType)).not.toContain('Seq Scan');

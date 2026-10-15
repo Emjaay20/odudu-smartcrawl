@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { z } from 'zod';
-import { listAuditQuerySchema } from '#/admin/audit';
+import { countAuditQuerySchema, exportAuditQuerySchema, listAuditQuerySchema } from '#/admin/audit';
 
 function parsed(query: Record<string, string>) {
   return listAuditQuerySchema.safeParse(query);
@@ -24,13 +23,20 @@ describe('the instants an audit listing takes', () => {
       expect(result.success, value).toBe(false);
     }
     expect(parsed({ to: '0000-01-01T00:00:00Z' }).error?.issues[0]?.message).toBe(
-      'must be an instant from 1970 to 9999',
+      'to must be a date between 1970 and 9999',
     );
   });
 
-  it('holds the same bound in the JSON Schema the route validates with', () => {
-    const json = z.toJSONSchema(listAuditQuerySchema, { io: 'input' });
-    const patterns = JSON.stringify(json);
-    expect(patterns).toContain('19[7-9]');
+  it('names the field in the message, for each of the three queries', () => {
+    expect(parsed({ from: '0000-01-01T00:00:00Z' }).error?.issues[0]).toMatchObject({
+      message: 'from must be a date between 1970 and 9999',
+      path: ['from'],
+    });
+    for (const schema of [countAuditQuerySchema, exportAuditQuerySchema]) {
+      expect(schema.safeParse({ to: '0000-01-01T00:00:00Z' }).error?.issues[0]).toMatchObject({
+        message: 'to must be a date between 1970 and 9999',
+        path: ['to'],
+      });
+    }
   });
 });

@@ -22,21 +22,23 @@ const AUDIT_TEXT_FILTER_MAX = 256;
 
 // Postgres takes a timestamptz from 4713 BC, but JavaScript writes a year
 // past 9999 as `+010000-…`, which it does not read back, and a trail older
-// than 1970 cannot exist. A bound in the text of the year catches a value
-// before the instant is formed; the instant's own bound catches an offset
-// that carries a year-9999 time into year 10000.
-const AUDIT_YEAR = /^(?:19[7-9]\d|[2-9]\d{3})-/u;
+// than 1970 cannot exist. The bound is one function so the route, the
+// listing's count and export, and the console's address read agree on it.
+export const AUDIT_FIRST_YEAR = 1970;
+export const AUDIT_LAST_YEAR = 9999;
 const LAST_INSTANT_MS = 253_402_300_799_999;
 
-function withinTheTrail(value: string): boolean {
+export function isAuditInstant(value: string): boolean {
+  const year = Number(value.slice(0, 4));
   const at = Date.parse(value);
-  return at >= 0 && at <= LAST_INSTANT_MS;
+  return year >= AUDIT_FIRST_YEAR && year <= AUDIT_LAST_YEAR && at >= 0 && at <= LAST_INSTANT_MS;
 }
 
-const auditInstant = z.iso
-  .datetime({ offset: true })
-  .regex(AUDIT_YEAR, { message: 'must be an instant from 1970 to 9999' })
-  .refine(withinTheTrail, { message: 'must be an instant from 1970 to 9999' });
+export function auditInstantMessage(field: string): string {
+  return `${field} must be a date between ${String(AUDIT_FIRST_YEAR)} and ${String(AUDIT_LAST_YEAR)}`;
+}
+
+const auditInstant = z.iso.datetime({ offset: true });
 
 const auditFilters = {
   event_type: z.enum(AUDIT_EVENT_TYPES).optional(),
@@ -61,6 +63,18 @@ function resourceIdNeedsType(query: {
 }): boolean {
   return query.resource_id === undefined || query.resource_type !== undefined;
 }
+function instantsInRange(
+  query: { from?: string | undefined; to?: string | undefined },
+  context: z.RefinementCtx,
+): void {
+  for (const field of ['from', 'to'] as const) {
+    const value = query[field];
+    if (value !== undefined && !isAuditInstant(value)) {
+      context.addIssue({ code: 'custom', message: auditInstantMessage(field), path: [field] });
+    }
+  }
+}
+
 const RESOURCE_ID_NEEDS_TYPE = {
   message: 'resource_id requires resource_type',
   path: ['resource_id'],
@@ -68,13 +82,15 @@ const RESOURCE_ID_NEEDS_TYPE = {
 
 export const listAuditQuerySchema = cursorQuerySchema
   .extend(auditFilters)
-  .refine(resourceIdNeedsType, RESOURCE_ID_NEEDS_TYPE);
+  .refine(resourceIdNeedsType, RESOURCE_ID_NEEDS_TYPE)
+  .superRefine(instantsInRange);
 export type ListAuditQuery = z.infer<typeof listAuditQuerySchema>;
 
 export const countAuditQuerySchema = z
   .object(auditFilters)
   .strict()
-  .refine(resourceIdNeedsType, RESOURCE_ID_NEEDS_TYPE);
+  .refine(resourceIdNeedsType, RESOURCE_ID_NEEDS_TYPE)
+  .superRefine(instantsInRange);
 export type CountAuditQuery = z.infer<typeof countAuditQuerySchema>;
 
 // The export reads the same rows under the same filters, unpaged.
