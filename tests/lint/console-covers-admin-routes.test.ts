@@ -27,10 +27,6 @@ const METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
 const NEVER: Readonly<Record<string, string>> = {
   'POST /admin/tenants/:tenant/subjects/bulk':
     'API-only: acts on up to 100 subjects in one call for scripts and migrations. Every console list and record page acts on one subject at a time and has no multi-select.',
-  'GET /admin/tenants/:tenant/sessions':
-    'API-only: the tenant-wide session list. The console lists sessions on a client (Sessions tab) and lists and ends them on a subject (Sessions tab).',
-  'DELETE /admin/tenants/:tenant/sessions':
-    "API-only: ends every session in the tenant, a door for a script. The console ends one subject's sessions, or revokes one client's grants, from their own pages.",
   'DELETE /admin/tenants/:tenant/lockouts':
     "API-only: clears every brute-force lockout in the tenant. The console clears one subject's lockout, on that subject.",
   'GET /admin/tenants/:tenant/mail':

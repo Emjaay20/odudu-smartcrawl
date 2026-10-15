@@ -912,15 +912,16 @@ beside the stack started below and its teardown never reaches that one.
 
 **What the console covers.** A tenant's rail groups its areas by task:
 Overview; Identity (Subjects, Groups, Roles); Applications (Clients, Scopes,
-Registration tokens); Security (Sign-in flow, Signing keys); Tenant
+Registration tokens); Security (Sign-in flow, Signing keys, Sessions); Tenant
 (Settings, Email, Export); Observe (the Audit trail). A system administrator
 signed in to `system` also has System, with Tenants and System
 administrators; a tenant's record ends in a danger zone that deletes it,
 once it is disabled and its name is typed. What the rail lists, and what a
 page lets a caller change, follows `whoami`'s capabilities; the server still
-decides every request. Five admin routes have no screen and are for scripts:
-`POST /subjects/bulk`, `GET` and `DELETE /sessions`, `DELETE /lockouts` and
-`GET /mail`. `tests/lint/console-covers-admin-routes.test.ts`
+decides every request. Four admin routes have no screen, each by decision:
+`POST /subjects/bulk`, `DELETE /lockouts`, `GET /mail`, and
+`GET /audit/count` (the audit trail has no count).
+`tests/lint/console-covers-admin-routes.test.ts`
 names each, so a new admin route with neither a screen nor a reason fails
 the build. The console's own sign-in, drafts and sections are described in
 [docs/console-paths.md](docs/console-paths.md) and

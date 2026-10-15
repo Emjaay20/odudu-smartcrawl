@@ -439,6 +439,20 @@ const signingKeys = createRoute({
   },
 });
 
+const TenantSessions = lazyFeatureRoute(
+  () => import('#/features/tenant-sessions').then((feature) => feature.TenantSessionsPage),
+  'Loading sessions',
+);
+
+const tenantSessions = createRoute({
+  getParentRoute: () => tenant,
+  path: 'sessions',
+  component: function TenantSessionList() {
+    const { tenant: name } = tenant.useParams();
+    return <TenantSessions key={name} tenant={name} />;
+  },
+});
+
 const Settings = lazyFeatureRoute(
   () => import('#/features/settings').then((feature) => feature.SettingsPage),
   'Loading the settings',
@@ -511,6 +525,7 @@ export function preloadFeatures(): Promise<void> {
     RegistrationTokens,
     Flow,
     SigningKeys,
+    TenantSessions,
     Settings,
     Email,
     Audit,
@@ -533,6 +548,7 @@ const routeTree = root.addChildren([
     registrationTokens,
     flow,
     signingKeys,
+    tenantSessions,
     settings,
     email,
     audit,

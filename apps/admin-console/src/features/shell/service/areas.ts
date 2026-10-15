@@ -63,6 +63,7 @@ export const TENANT_AREAS: readonly AreaGroup[] = [
     areas: [
       area('flow', 'Sign-in flow', 'manage-tenant'),
       area('keys', 'Signing keys', 'manage-keys'),
+      area('sessions', 'Sessions', 'manage-sessions', true),
     ],
   },
   {
