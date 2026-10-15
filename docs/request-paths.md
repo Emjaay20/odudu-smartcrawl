@@ -8,6 +8,15 @@ bootstrap and a full authorization-code exchange were additionally run in
 each of the other two ways of running the server, which
 [Pick how you are running it](#pick-how-you-are-running-it) sets out.
 
+Every command is written against `http://localhost:3000`, the port the compose
+file publishes by default. A block that was captured on a stack publishing
+another port says so in the command itself, and the port in its output is that
+stack's: the blocks re-run for the sign-in refusal message, the passkey
+button's spacing and the throttle page ran on the project `odudu-17h` on port
+`3171`, built from the branch commit `a92240a1` plus the documentation, started
+with `ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000` unless a
+block says otherwise.
+
 Values that change on every run — authorization codes, tokens, `jti`,
 session ids, timestamps — are shortened or truncated where they appear, and
 that is said each time. Nothing here is reconstructed from what the code
@@ -941,32 +950,40 @@ curl -sS -D - --get \
   --data-urlencode 'nonce=n-0S6_WzA2Mj' \
   --data-urlencode "code_challenge=$CHALLENGE" \
   --data-urlencode 'code_challenge_method=S256' \
-  'http://localhost:3000/tenants/demo/protocol/openid-connect/auth'
+  'http://localhost:3171/tenants/demo/protocol/openid-connect/auth'
 ```
 
 ```
 HTTP/1.1 200 OK
+x-request-id: 01a13fbd-81c1-7294-9818-8d28aade3532
 content-type: text/html
-content-length: 2372
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-Wl0HqPsMni5vrqbjy4QgLg=='; connect-src 'self'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+content-length: 2528
+Date: Thu, 15 Oct 2026 13:25:46 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 <!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"><title>Sign in</title></head>
 <body>
 <form method="post" action="/tenants/demo/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a0cb08-f324-…">
+  <input type="hidden" name="auth_session_id" value="01a13fbd-81d7-7035-a05f-3ed8c91cac49">
   <label>Username <input type="text" name="username" autocomplete="username"></label>
   <label>Password <input type="password" name="password" autocomplete="current-password"></label>
   <button type="submit">Sign in</button>
 </form>
 <form method="post" action="/tenants/demo/login-actions/authenticate" id="passkey-form">
-  <input type="hidden" name="auth_session_id" value="01a0cb08-f324-…">
+  <input type="hidden" name="auth_session_id" value="01a13fbd-81d7-7035-a05f-3ed8c91cac49">
   <input type="hidden" name="assertion" id="passkey-assertion">
   <p><button type="submit" id="passkey-submit">Sign in with a passkey</button></p>
 </form>
 <p id="passkey-error" hidden></p>
 <noscript><p>Signing in with a passkey needs JavaScript, because only the browser can talk to your authenticator. Use your username and password above.</p></noscript>
-<script nonce="JGsq3onA180fWL9O8001pg==">
+<script nonce="Wl0HqPsMni5vrqbjy4QgLg==">
 const form = document.getElementById('passkey-form');
 const field = document.getElementById('passkey-assertion');
 const failure = document.getElementById('passkey-error');
@@ -996,13 +1013,13 @@ form.addEventListener('submit', async (event) => {
   }
 });
 </script>
+<script nonce="Wl0HqPsMni5vrqbjy4QgLg==">window.addEventListener('pageshow', function (event) { if (event.persisted) location.reload(); });</script>
 </body>
 </html>
 ```
 
 (`auth_session_id`, the script's `nonce`, and the `x-request-id` and `Date`
-headers differ per run. The `Content-Security-Policy` and `X-Frame-Options`
-headers are elided above and shown below.)
+headers differ per run.)
 
 The second form is the passkey one, and it has no username field of its
 own: see [Signing in with a passkey](#signing-in-with-a-passkey-and-no-username).
@@ -1135,7 +1152,7 @@ form says so. The run below is against `demo` and `ada` as
 [Bootstrap](#a-public-client-with-a-user) seeded them, on a stack started
 with `ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000`;
 `$AUTH_SESSION_ID` is the `auth_session_id` of a fresh `/authorize` form and
-`$LOGIN` the login endpoint, `http://localhost:3000/tenants/demo/login-actions/authenticate`.
+`$LOGIN` the login endpoint, `http://localhost:3171/tenants/demo/login-actions/authenticate`.
 The response is shortened at the passkey script, which is the one
 [the login page](#2-authorize) prints in full:
 
@@ -1149,14 +1166,14 @@ curl -sS -i \
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a13f67-19be-7ade-ad69-4dc3ef9fdf9b
+x-request-id: 01a13fbd-b4de-707d-9c69-765926abc2e3
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-Awrrs3Hhqr1cjbCRKTabCQ=='; connect-src 'self'
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-kwGGd/DNU6OyCipi1Taykw=='; connect-src 'self'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 content-length: 2488
-Date: Thu, 15 Oct 2026 11:51:23 GMT
+Date: Thu, 15 Oct 2026 13:25:59 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -1166,19 +1183,19 @@ Keep-Alive: timeout=72
 <body>
 <p role="alert"><strong>Sign-in failed. Check your details and try again.</strong></p>
 <form method="post" action="/tenants/demo/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a13f67-19a9-7efb-afb9-fadd63eb23c8">
+  <input type="hidden" name="auth_session_id" value="01a13fbd-b4cc-7f45-a470-fe600d127131">
   <label>Username <input type="text" name="username" autocomplete="username" value="ada"></label>
   <label>Password <input type="password" name="password" autocomplete="current-password" autofocus></label>
   <button type="submit">Sign in</button>
 </form>
 <form method="post" action="/tenants/demo/login-actions/authenticate" id="passkey-form">
-  <input type="hidden" name="auth_session_id" value="01a13f67-19a9-7efb-afb9-fadd63eb23c8">
+  <input type="hidden" name="auth_session_id" value="01a13fbd-b4cc-7f45-a470-fe600d127131">
   <input type="hidden" name="assertion" id="passkey-assertion">
   <p><button type="submit" id="passkey-submit">Sign in with a passkey</button></p>
 </form>
 <p id="passkey-error" hidden></p>
 <noscript><p>Signing in with a passkey needs JavaScript, because only the browser can talk to your authenticator. Use your username and password above.</p></noscript>
-<script nonce="Awrrs3Hhqr1cjbCRKTabCQ==">…</script>
+<script nonce="kwGGd/DNU6OyCipi1Taykw==">…</script>
 </body>
 </html>
 ```
@@ -1197,13 +1214,13 @@ diff /tmp/refused-wrong-password.txt /tmp/refused-unknown-user.txt
 
 ```
 2c2
-< x-request-id: 01a13f67-19be-7ade-ad69-4dc3ef9fdf9b
+< x-request-id: 01a13fbd-b4de-707d-9c69-765926abc2e3
 ---
-> x-request-id: 01a13f67-1a01-7605-85e8-784ba8d1fe82
+> x-request-id: 01a13fbd-b521-70cb-b665-17c89a7337a4
 4c4
-< content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-Awrrs3Hhqr1cjbCRKTabCQ=='; connect-src 'self'
+< content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-kwGGd/DNU6OyCipi1Taykw=='; connect-src 'self'
 ---
-> content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-vl2cSH3oqSOizPejpAZshg=='; connect-src 'self'
+> content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-JH3t1PMcC0g+CoWx0yazjg=='; connect-src 'self'
 8c8
 < content-length: 2488
 ---
@@ -1213,12 +1230,12 @@ diff /tmp/refused-wrong-password.txt /tmp/refused-unknown-user.txt
 ---
 >   <label>Username <input type="text" name="username" autocomplete="username" value="nobody"></label>
 31c31
-< <script nonce="Awrrs3Hhqr1cjbCRKTabCQ==">
+< <script nonce="kwGGd/DNU6OyCipi1Taykw==">
 ---
-> <script nonce="vl2cSH3oqSOizPejpAZshg==">
+> <script nonce="JH3t1PMcC0g+CoWx0yazjg==">
 ```
 
-Four lines differ: the request id, the script nonce (in the header and on
+Five lines differ: the request id, the script nonce (in the header and on
 the element), the length that follows the typed name, and the typed name
 itself. Nothing says whether the account exists.
 
@@ -1241,7 +1258,7 @@ recovery code did not work. Check it and try again.` The one message that
 - **The username comes back, nothing else does.** It is escaped like any
   other interpolated value, and given back only on the password form: a
   password, a code or a recovery code is never put into a field. A name
-  of more than 254 characters is not reflected at all, and the field comes
+  of more than 254 code points is not reflected at all, and the field comes
   back empty with the same message, so a megabyte of input is not a
   megabyte of output.
 - **The page stays at the POST URL.** The address bar shows
@@ -1509,29 +1526,29 @@ below.
 Following the link, with its `&amp;` read as `&`:
 
 ```bash
-curl -sS -D - 'http://localhost:3094/tenants/demo/protocol/openid-connect/auth?response_type=code&client_id=demo-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&state=demo-state'
+curl -sS -D - 'http://localhost:3171/tenants/demo/protocol/openid-connect/auth?response_type=code&client_id=demo-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&state=demo-state'
 ```
 
 The response is `200` with the login form under a new `auth_session_id`
-(`01a137db-8eb0-798d-bf67-370de418d9e6`), these headers, and, after the form, the reload script on the
+(`01a13fbe-5249-763c-b2e5-d2f276d734a5`), these headers, and, after the form, the reload script on the
 same nonce the policy names:
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a137db-8ea4-73d6-a50c-2ada49a729f8
+x-request-id: 01a13fbe-5240-7c96-8789-6be19bcf58ab
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-w7KIfq6XnBzAxpE1SFNYdQ=='; connect-src 'self'
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-A4EUaub9ChHrn95wQwVmDg=='; connect-src 'self'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 2521
-Date: Wed, 14 Oct 2026 00:41:38 GMT
+content-length: 2528
+Date: Thu, 15 Oct 2026 13:26:39 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
 
 ```
-<script nonce="w7KIfq6XnBzAxpE1SFNYdQ==">window.addEventListener('pageshow', function (event) { if (event.persisted) location.reload(); });</script>
+<script nonce="A4EUaub9ChHrn95wQwVmDg==">window.addEventListener('pageshow', function (event) { if (event.persisted) location.reload(); });</script>
 ```
 
 Then the reaper's work, which is what makes the link impossible: with the row
@@ -1716,8 +1733,7 @@ does, through the same statements, so the form says nothing about which
 addresses exist. A wrong password counts towards the lockout of the
 subject the address resolves to.
 
-Captured on the project `odudu-17g` on `http://localhost:3000`, built from
-commit `7fc38b58`, in a tenant `email-demo` seeded for it with
+Captured on the project `odudu-17h` on `http://localhost:3171`, in a tenant `email-demo` seeded for it with
 `odudu seed --tenant email-demo --client email-spa --redirect-uri http://localhost:8080/callback --user grace --password correct-horse-battery --email Grace@Example.com`,
 the setting turned on with
 `odudu seed tenant --name email-demo --set login_with_email=true`, and the
@@ -1727,7 +1743,7 @@ in that tenant, in place of the admin API's profile `PATCH`. The form names
 the field for both, and the address signs in typed in another case:
 
 ```bash
-AUTHORIZE='http://localhost:3000/tenants/email-demo/protocol/openid-connect/auth?response_type=code&client_id=email-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&state=s&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'
+AUTHORIZE='http://localhost:3171/tenants/email-demo/protocol/openid-connect/auth?response_type=code&client_id=email-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&state=s&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'
 PAGE=$(curl -sS "$AUTHORIZE")
 echo "$PAGE" | grep -o '<label>[^<]*<input type="text"[^>]*>'
 AUTH_SESSION_ID=$(echo "$PAGE" | sed -n 's/.*name="auth_session_id" value="\([^"]*\)".*/\1/p' | head -1)
@@ -1735,14 +1751,14 @@ curl -sS -D - -o /dev/null \
   --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
   --data-urlencode 'username=GRACE@example.com' \
   --data-urlencode 'password=correct-horse-battery' \
-  http://localhost:3000/tenants/email-demo/login-actions/authenticate \
+  http://localhost:3171/tenants/email-demo/login-actions/authenticate \
   | tr -d '\r' | grep -E '^HTTP|^location'
 ```
 
 ```
 <label>Username or email <input type="text" name="username" autocomplete="username">
 HTTP/1.1 302 Found
-location: http://localhost:8080/callback?code=SRmTyTmDvS7YEg7X0iKQVA7Izo-VYWIBrTqIUkH6njo&state=s&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Femail-demo
+location: http://localhost:8080/callback?code=m_AGVWoDQOIiXXSQXiBjo6AdthcOo__zmLqpnJLKmFU&state=s&iss=http%3A%2F%2Flocalhost%3A3171%2Ftenants%2Femail-demo
 ```
 
 A wrong password for the held address and any password for an address
@@ -1758,7 +1774,7 @@ for login in nobody@example.com grace@example.com; do
     --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
     --data-urlencode "username=$login" \
     --data-urlencode 'password=wrong-password' \
-    http://localhost:3000/tenants/email-demo/login-actions/authenticate \
+    http://localhost:3171/tenants/email-demo/login-actions/authenticate \
     | sed -e "s/$AUTH_SESSION_ID/AUTH_SESSION_ID/g" -e 's/nonce="[^"]*"/nonce="NONCE"/' \
           -e "s/value=\"$login\"/value=\"LOGIN\"/" \
     | shasum -a 256
@@ -1766,8 +1782,8 @@ done
 ```
 
 ```
-9907ad7c4e1460aed2894afae9bff30c902d5cfc4b5932c67c1f20016e85f25d  -
-9907ad7c4e1460aed2894afae9bff30c902d5cfc4b5932c67c1f20016e85f25d  -
+dd856882a68ba289d87a9a1d39efefb1c8bc6679b6364e198c464e280fa529a0  -
+dd856882a68ba289d87a9a1d39efefb1c8bc6679b6364e198c464e280fa529a0  -
 ```
 
 ### 4. `/token`
@@ -4355,7 +4371,7 @@ beside the password fields, and pressing it asks for nothing typed:
 
 ```
 <form method="post" action="/tenants/demo/login-actions/authenticate" id="passkey-form">
-  <input type="hidden" name="auth_session_id" value="01a0cb08-f324-…">
+  <input type="hidden" name="auth_session_id" value="01a13fbd-81d7-…">
   <input type="hidden" name="assertion" id="passkey-assertion">
   <p><button type="submit" id="passkey-submit">Sign in with a passkey</button></p>
 </form>
@@ -5233,7 +5249,7 @@ post() {
   curl -sS -D /tmp/h.txt -o /tmp/b.txt \
     --data-urlencode "auth_session_id=$SID" \
     --data-urlencode "username=$1" --data-urlencode "password=$2" \
-    'http://localhost:3000/tenants/demo/login-actions/authenticate' >/dev/null
+    'http://localhost:3171/tenants/demo/login-actions/authenticate' >/dev/null
   cat /tmp/h.txt /tmp/b.txt | tr -d '\r' \
     | grep -iv '^date:' | grep -iv '^x-request-id:' \
     | sed 's/nonce-[A-Za-z0-9+/=]*/nonce-NONCE/; s/nonce="[^"]*"/nonce="NONCE"/
@@ -5249,14 +5265,14 @@ echo "8  unknown username  $(post nobody wrong-password)"
 ```
 
 ```
-1  wrong password    47e49d11ac4d5b8984187fc0176becb6
-2  wrong password    47e49d11ac4d5b8984187fc0176becb6
-3  wrong password    47e49d11ac4d5b8984187fc0176becb6
-4  wrong password    47e49d11ac4d5b8984187fc0176becb6
-5  wrong password    47e49d11ac4d5b8984187fc0176becb6
-6  wrong password    47e49d11ac4d5b8984187fc0176becb6
-7  right password    47e49d11ac4d5b8984187fc0176becb6
-8  unknown username  47e49d11ac4d5b8984187fc0176becb6
+1  wrong password    afb5a54113c56b88e7f98987507863c2
+2  wrong password    afb5a54113c56b88e7f98987507863c2
+3  wrong password    afb5a54113c56b88e7f98987507863c2
+4  wrong password    afb5a54113c56b88e7f98987507863c2
+5  wrong password    afb5a54113c56b88e7f98987507863c2
+6  wrong password    afb5a54113c56b88e7f98987507863c2
+7  right password    afb5a54113c56b88e7f98987507863c2
+8  unknown username  afb5a54113c56b88e7f98987507863c2
 ```
 
 The normalised values vary between responses — `date`, the request id and
@@ -5378,11 +5394,11 @@ docker compose exec -T postgres psql -U odudu -d odudu -x -c \
 
 ```
 -[ RECORD 1 ]----+-------------------------------------
-subject_id       | 01a13f62-94fa-77af-8951-86d91d0a060a
+subject_id       | 01a13fbd-8144-74d4-891f-4e35e203f63c
 failure_count    | 7
-first_failure_at | 2026-10-15 11:48:32.58+00
-last_failure_at  | 2026-10-15 11:48:32.957+00
-locked_until     | 2026-10-15 11:52:32.957+00
+first_failure_at | 2026-10-15 13:26:00.007+00
+last_failure_at  | 2026-10-15 13:26:00.405+00
+locked_until     | 2026-10-15 13:30:00.405+00
 ```
 
 One row for `ada`, none for the username nobody holds — and seven failures,
@@ -5630,8 +5646,8 @@ code is bounded per account instead, by the lockout
 ([a wrong second-factor code counts too](#a-wrong-second-factor-code-counts-too)).
 
 The run below was captured on a stack of its own: the `infra/docker` compose
-file as the project `odudu-17g` on `http://localhost:3000`, its `odudu`
-service built from commit `7fc38b58` and started with
+file as the project `odudu-17h` on `http://localhost:3171`, its `odudu`
+service started with
 `ODUDU_THROTTLE_LIMIT=1000` and the login budget left at its default, so the
 only budget in play is this one. It needs a user nothing else in this
 document uses, because the fifth wrong password also locks the account:
@@ -5653,7 +5669,7 @@ attempt() {
   curl -sS -D - -o /dev/null \
     --data-urlencode "auth_session_id=$SID" \
     --data-urlencode "username=$1" --data-urlencode 'password=wrong-password' \
-    'http://localhost:3000/tenants/demo/login-actions/authenticate' \
+    'http://localhost:3171/tenants/demo/login-actions/authenticate' \
     | tr -d '\r' | grep -iE '^(HTTP|retry-after|content-length)' | tr '\n' ' '
   echo
 }

@@ -2506,7 +2506,7 @@ the `reject` outcome carried a `reason`, and no credential failure did.
   code keeps its own, actionable one. The outcome now carries a `refusal`
   value instead of text, absent when a step only asks for more, so the next
   factor's form claims no failure.
-- **The username comes back, nothing else.** A name of more than 254 characters is
+- **The username comes back, nothing else.** A name of more than 254 code points is
   not reflected. The first field still to fill carries `autofocus`; no script.
 - **A disabled account's right password was a distinguishable refusal.**
   `completeAuthorizedLogin` answered `subject_disabled` as an expired sign-in
@@ -2529,3 +2529,19 @@ the `reject` outcome carried a `reason`, and no credential failure did.
 - **Not covered by the e2e suite:** the throttled page, since the suite's
   budgets are 10000 for every test; it is held in `app.test.ts` and
   `tests/throttle.int.test.ts` instead.
+
+### Fix round
+
+- **The disabled-account check moved ahead of the verification, required
+  action, consent and hint gates**, so the consent page is never shown to a
+  disabled account and the consent POST no longer separates it. What a holder
+  of the right password can still observe is in ADR 0023's last amendment.
+- **A NUL in a name, form field, query parameter or tenant segment under
+  `/tenants` was a 500 whose JSON carried the SQL text** (it predates 17g,
+  reproduced on `b3edf4c8`). Such values are now neutralised to U+FFFD before
+  anything reads them (`apps/server/src/input-hygiene.ts`), and the root error
+  handler answers every server error with a fixed problem document, the
+  driver's text logged by kind only.
+- **The echo bound counts code points**, not UTF-16 units.
+- The transcripts the passkey button's `<p>` and the echo touched were all
+  captured again on one stack, so none carries a hand edit.
