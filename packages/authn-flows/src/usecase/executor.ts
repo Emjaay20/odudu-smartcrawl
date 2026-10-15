@@ -106,12 +106,11 @@ async function runPasswordStep(
   const outcome = await passwordStep(input, attempt.verification);
   const failures = loginFailureRepository(tx);
 
+  // A correct password does not end the run of failures before it: when a
+  // second factor is still owed the run is what that factor's guesses
+  // extend, and `advance` ends it once the whole sign-in has completed.
+  // Never for a locked account, which is refused here.
   if (outcome.kind === 'success' && !isLockedOut(attempt.onRecord, context.now)) {
-    // A correct password ends the run of failures before it. Never for a
-    // locked account: the lockout is what refuses this attempt, and
-    // clearing the counter would let whoever holds the password shorten
-    // their own lockout by spending it.
-    await failures.clear(attempt.keyedOn);
     return outcome;
   }
 
@@ -145,6 +144,57 @@ async function storedTotpFor(
   return { id: record.id, secret: record.secret };
 }
 
+// A second-factor submission against a locked account is refused without
+// the code being looked at, so a locked account cannot say whether a guess
+// was right, and it still counts: the same escalation a password attempt
+// during a lockout gets. A submission with nothing in it is the form being
+// rendered, not an attempt, and is left alone.
+async function refusedWhileLocked(
+  tx: TenantScopedDatabase,
+  context: StepContext,
+  submitted: boolean,
+): Promise<AuthenticatorResult | null> {
+  const { subjectId } = context;
+  if (!submitted || subjectId === null) return null;
+  const failures = loginFailureRepository(tx);
+  if (!isLockedOut(await failures.forSubject(subjectId), context.now)) return null;
+  await failures.recordFailure(subjectId, context.lockout, context.now);
+  return {
+    kind: 'failure',
+    reason: 'invalid_credentials',
+    audit: { reason: 'locked_out', subjectId, lockoutTripped: false },
+  };
+}
+
+// One more failed second-factor attempt, on the same `login_failures` row
+// and under the same tenant policy as a wrong password: the subject is the
+// one the session is bound to, so there is no unknown-account case to keep
+// indistinguishable here. A session bound to nobody counts nothing.
+type AuditedFailure = Extract<AuthenticatorResult, { kind: 'failure' }>;
+
+async function countSecondFactorFailure(
+  tx: TenantScopedDatabase,
+  context: StepContext,
+  reason: NonNullable<AuditedFailure['audit']>['reason'],
+  answer = 'invalid_credentials',
+): Promise<AuthenticatorResult> {
+  const { subjectId } = context;
+  const recorded =
+    subjectId === null
+      ? null
+      : await loginFailureRepository(tx).recordFailure(subjectId, context.lockout, context.now);
+  return {
+    kind: 'failure',
+    reason: answer,
+    audit: {
+      reason,
+      subjectId,
+      lockoutTripped:
+        recorded !== null && recorded.kind === 'recorded' && recorded.state.lockedUntil !== null,
+    },
+  };
+}
+
 // The subject comes from the authentication session, never from the
 // submission: a code says which secret it was computed from, not who is
 // signing in, so letting the form name the account is how a second factor
@@ -154,6 +204,8 @@ async function runOtpStep(
   input: AdvanceInput,
   context: StepContext,
 ): Promise<AuthenticatorResult> {
+  const locked = await refusedWhileLocked(tx, context, input.code !== undefined);
+  if (locked !== null) return locked;
   const stored = context.subjectId === null ? null : await storedTotpFor(tx, context.subjectId);
   const outcome = totpStep(input, {
     subjectId: context.subjectId,
@@ -162,14 +214,12 @@ async function runOtpStep(
   });
 
   if (outcome.kind === 'failure') {
-    return {
-      kind: 'failure',
-      reason: outcome.reason,
-      audit: {
-        reason: outcome.replayed ? 'replayed' : 'bad_credential',
-        subjectId: context.subjectId,
-      },
-    };
+    return countSecondFactorFailure(
+      tx,
+      context,
+      outcome.replayed ? 'replayed' : 'bad_credential',
+      outcome.reason,
+    );
   }
   if (outcome.kind !== 'success' || stored === null) return outcome;
 
@@ -185,11 +235,7 @@ async function runOtpStep(
   // own subject — a passkey assertion — must not spend anything until that
   // guard has passed.
   if (spent) return outcome;
-  return {
-    kind: 'failure',
-    reason: 'invalid_credentials',
-    audit: { reason: 'replayed', subjectId: context.subjectId },
-  };
+  return countSecondFactorFailure(tx, context, 'replayed');
 }
 
 async function storedRecoveryCodesFor(
@@ -211,17 +257,17 @@ async function runRecoveryStep(
   context: StepContext,
 ): Promise<AuthenticatorResult> {
   const { subjectId } = context;
+  const locked = await refusedWhileLocked(tx, context, recoveryCodeOffered(input));
+  if (locked !== null) return locked;
   const codes = subjectId === null ? [] : await storedRecoveryCodesFor(tx, subjectId);
   const outcome = await recoveryStep(input, { subjectId, codes });
   if (outcome.kind === 'failure') {
-    return {
-      kind: 'failure',
-      reason: outcome.reason,
-      audit: {
-        reason: outcome.reason === 'already_used' ? 'already_used' : 'bad_credential',
-        subjectId,
-      },
-    };
+    return countSecondFactorFailure(
+      tx,
+      context,
+      outcome.reason === 'already_used' ? 'already_used' : 'bad_credential',
+      outcome.reason,
+    );
   }
   if (outcome.kind !== 'success') return outcome;
 
@@ -237,6 +283,7 @@ async function runRecoveryStep(
     subjectId: outcome.subjectId,
     commit: async () => {
       if (!(await credentialRepository(tx).spendRecoveryCode(credentialId, context.now))) {
+        await countSecondFactorFailure(tx, context, 'replayed');
         return false;
       }
       // Spending the last one is the moment the subject has no way back, so
@@ -922,6 +969,14 @@ export async function advance(
       subjectId,
       authenticators: [...new Set([...record.satisfied, authenticator])],
     };
+  }
+
+  // The run of failures ends when the sign-in that began with a password
+  // is complete, not when the password alone was right: a second factor's
+  // wrong guesses extend the same run. A locked account cannot get here,
+  // since every step refuses it.
+  if (outcome.kind === 'success' && outcome.authenticators.includes(PASSWORD)) {
+    await loginFailureRepository(tx).clear(subjectId);
   }
 
   // What a required-action submission is judged against, since it carries no
