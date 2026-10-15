@@ -28,7 +28,8 @@ export const EMPTY_DRAFT: Draft = {
   to: '',
 };
 
-const NAMES: Record<FilterName, string> = {
+// How a filter is called in a sentence.
+export const FILTER_LABELS: Record<FilterName, string> = {
   event_type: 'event type',
   action: 'action',
   outcome: 'outcome',
@@ -50,7 +51,7 @@ function shown(value: string): string {
 }
 
 function ignoredText(name: FilterName, value: string): string {
-  return `The address names a ${NAMES[name]} the trail cannot read (“${shown(value)}”), so it was ignored.`;
+  return `The address names a ${FILTER_LABELS[name]} the trail cannot read (“${shown(value)}”), so it was ignored.`;
 }
 
 function isInstant(value: string): boolean {
@@ -167,9 +168,28 @@ const UUID_PROBLEM = 'A subject id is a UUID, such as 0192f7a4-5c1e-7b3a-9d2e-6f
 const LENGTH_PROBLEM = 'At most 256 characters.';
 const RANGE_PROBLEM = 'To is before From. Choose an end after the start.';
 
-export function draftProblems(draft: Draft): DraftProblems {
+export type Unreadable = Partial<Record<'from' | 'to', string>>;
+
+export function withUnreadable(
+  held: Unreadable,
+  name: 'from' | 'to',
+  message: string | null,
+): Unreadable {
+  const rest = Object.fromEntries(Object.entries(held).filter(([each]) => each !== name));
+  return message === null ? rest : { ...rest, [name]: message };
+}
+
+// A date that is typed and reads as no instant narrows nothing, so applying
+// would leave the trail looking bounded by it when it is not.
+export function applyBlocked(unreadable: Unreadable): string | null {
+  return Object.keys(unreadable).length === 0
+    ? null
+    : 'Correct or clear the date and time marked invalid before applying: the trail is not narrowed by it until then.';
+}
+
+export function draftProblems(draft: Draft, unreadable: Unreadable = {}): DraftProblems {
   const held = filtersOf(draft);
-  const problems: DraftProblems = {};
+  const problems: DraftProblems = { ...unreadable };
   if (
     held.actor_subject_id !== undefined &&
     !SHAPE.actor_subject_id.safeParse(held.actor_subject_id).success

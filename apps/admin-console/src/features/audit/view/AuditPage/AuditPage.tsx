@@ -7,6 +7,7 @@ import {
   STALE_TEXT,
   STALE_TITLE,
   TITLE,
+  TOO_BROAD_TITLE,
 } from '#/features/audit/service';
 import { useAuditPage, type AuditPageState } from '#/features/audit/usecase/useAuditPage';
 import { AuditFilters } from '#/features/audit/view/AuditFilters';
@@ -62,6 +63,17 @@ function Body({ page }: { page: AuditPageState }) {
         action={<Button onPress={list.startAgain}>Start again</Button>}
       >
         {STALE_TEXT}
+      </EmptyState>
+    );
+  }
+  if (list.tooBroad) {
+    return (
+      <EmptyState
+        variant="failed"
+        title={TOO_BROAD_TITLE}
+        action={<Button onPress={page.tooBroad.searchLastDay}>Search the last 24 hours</Button>}
+      >
+        {page.tooBroad.advice}
       </EmptyState>
     );
   }

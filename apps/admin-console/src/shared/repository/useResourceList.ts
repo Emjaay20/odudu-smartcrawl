@@ -15,6 +15,7 @@ import {
   listToSearch,
   moreFailed,
   staleCursorOf,
+  firstPageFailureOf,
   type ListNarrowing,
   type ListPage,
   type ResourceListState,
@@ -69,6 +70,7 @@ export function useListPages<T>({
   return {
     ...listPagesState(pages.data, pages.error),
     staleCursor: staleCursorOf(pages.data, pages.error),
+    failure: firstPageFailureOf(pages.data, pages.error),
     loadingMore: pages.isFetchingNextPage,
     loadMoreFailed: moreFailed(pages.data !== undefined, pages.isFetchNextPageError),
     loadMore: () => {

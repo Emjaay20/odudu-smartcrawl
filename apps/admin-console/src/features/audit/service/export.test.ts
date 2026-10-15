@@ -50,6 +50,12 @@ describe('why an export did not happen', () => {
     expect(text).toMatch(/Narrow the filters/u);
   });
 
+  it('says a read the server stopped at its bound needs a time range', () => {
+    expect(
+      exportFailureText(problem(400, 'about:blank#audit-query-too-broad', 'x'), false),
+    ).toMatch(/could not be exported in time. Choose a time range/u);
+  });
+
   it("gives the server's words for another refusal", () => {
     expect(
       exportFailureText(problem(400, 'about:blank', 'resource_id requires resource_type'), false),

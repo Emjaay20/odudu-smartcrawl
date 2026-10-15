@@ -6,6 +6,7 @@ import { useUrlSearch } from '#/shared/repository/useUrlSearch';
 import {
   auditQuery,
   filtersToSearch,
+  isTooBroad,
   readFilters,
   type AuditFilters,
 } from '#/features/audit/service';
@@ -28,6 +29,8 @@ export interface AuditList {
   next: string | null;
   // The page asked for was a place in the trail that is no longer valid.
   staleCursor: boolean;
+  // The server stopped the read at its time bound.
+  tooBroad: boolean;
   loadingMore: boolean;
   loadMoreFailed: boolean;
   setTrail: (trail: CursorTrail) => void;
@@ -58,6 +61,7 @@ export function useAuditList(tenant: string): AuditList {
     trail,
     next: pages.next,
     staleCursor: pages.staleCursor,
+    tooBroad: isTooBroad(pages.failure),
     loadingMore: pages.loadingMore,
     loadMoreFailed: pages.loadMoreFailed,
     setTrail: (next) => {

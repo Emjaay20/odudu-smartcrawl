@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { AUDIT, auditRoutes, CLIENT_ID, GRACE_ID, TRAIL } from '#/testing/auditFixtures';
@@ -87,10 +87,9 @@ it('marks a caller from elsewhere and shows its id with the reason', async () =>
 it('links the resource to its record, and an actor of this tenant to its subject', async () => {
   renderConsoleAt(AT, auditRoutes());
   const first = at(await rowsOf(), 0);
-  expect(within(first).getByRole('link', { name: `client ${CLIENT_ID}` })).toHaveAttribute(
-    'href',
-    `/console/acme/clients/${CLIENT_ID}`,
-  );
+  expect(
+    within(first).getByRole('link', { name: new RegExp(`client ${CLIENT_ID}`, 'u') }),
+  ).toHaveAttribute('href', `/console/acme/clients/${CLIENT_ID}`);
   expect(within(first).getByRole('link', { name: 'grace, open the subject' })).toHaveAttribute(
     'href',
     `/console/acme/subjects/${GRACE_ID}`,
@@ -169,18 +168,23 @@ it('refuses an actor that is not a UUID, beside the field, and sends nothing', a
   expect(auditSent(sent)).toHaveLength(1);
 });
 
-async function fill(user: ReturnType<typeof userEvent.setup>, name: string, digits: string) {
-  const first = at(within(screen.getByRole('group', { name })).getAllByRole('spinbutton'), 0);
-  await user.click(first);
-  await user.keyboard(digits);
+function fill(name: string, local: string) {
+  fireEvent.input(screen.getByLabelText(name), { target: { value: local } });
+}
+
+// What a browser reports for a date it was given and could not complete.
+function fillUnreadable(name: string) {
+  const field = screen.getByLabelText(name);
+  Object.defineProperty(field, 'validity', { configurable: true, value: { badInput: true } });
+  fireEvent.input(field, { target: { value: '' } });
 }
 
 it('explains a range that ends before it starts, and sends nothing', async () => {
   const user = userEvent.setup();
   const { sent } = renderConsoleAt(AT, auditRoutes());
   await table();
-  await fill(user, 'From', '101220261200');
-  await fill(user, 'To', '101120261200');
+  fill('From', '2026-10-12T12:00');
+  fill('To', '2026-10-11T12:00');
   await user.click(screen.getByRole('button', { name: 'Apply filters' }));
   expect(await screen.findByText(/To is before From/u)).toBeVisible();
   expect(auditSent(sent)).toHaveLength(1);
@@ -190,8 +194,8 @@ it('sends a range in UTC, inclusive at both ends', async () => {
   const user = userEvent.setup();
   const { router } = renderConsoleAt(AT, auditRoutes());
   await table();
-  await fill(user, 'From', '101120261200');
-  await fill(user, 'To', '101220261200');
+  fill('From', '2026-10-11T12:00');
+  fill('To', '2026-10-12T12:00');
   await user.click(screen.getByRole('button', { name: 'Apply filters' }));
   await waitFor(() => {
     expect(router.state.location.search).toMatchObject({
@@ -378,6 +382,7 @@ it('passes axe in both themes: rows, empty, failed and refused', async () => {
     auditRoutes(undefined, { [`GET ${AUDIT}`]: offline() }),
     auditRoutes(undefined, { [`GET ${AUDIT}`]: problem(403) }),
     auditRoutes(['view-users']),
+    auditRoutes(undefined, { [`GET ${AUDIT}`]: TOO_BROAD }),
   ];
   for (const routes of states) {
     expect(
@@ -436,4 +441,65 @@ it('offers no export where the trail is refused', async () => {
   renderConsoleAt(AT, auditRoutes(undefined, { [`GET ${AUDIT}`]: problem(403) }));
   expect(await screen.findByText(/view-audit/u)).toBeVisible();
   expect(screen.queryByRole('button', { name: 'Export these events' })).toBeNull();
+});
+
+const TOO_BROAD: Answer = problem(400, 'about:blank#audit-query-too-broad', 'Bad Request', {
+  detail: 'these filters could not be searched within 5 seconds',
+});
+
+it('says the filters are too broad, which were on, and offers a time range', async () => {
+  const user = userEvent.setup();
+  const { router } = renderConsoleAt(
+    `${AT}?action=client.update&outcome=allowed`,
+    auditRoutes(undefined, { [`GET ${AUDIT}`]: TOO_BROAD }),
+  );
+  expect(
+    await screen.findByRole('heading', { name: 'These filters are too broad to search' }),
+  ).toBeVisible();
+  expect(screen.getByText(/with action and outcome/u)).toBeVisible();
+  expect(screen.getByText(/Choose a time range/u)).toBeVisible();
+  expect(screen.queryByRole('heading', { name: 'The audit trail could not be loaded' })).toBeNull();
+  await user.click(screen.getByRole('button', { name: 'Search the last 24 hours' }));
+  await waitFor(() => {
+    expect(router.state.location.search).toMatchObject({
+      action: 'client.update',
+      outcome: 'allowed',
+      from: expect.stringMatching(/:00\.000Z$/u) as unknown,
+      to: expect.stringMatching(/:59\.999Z$/u) as unknown,
+    });
+  });
+});
+
+it('asks for a narrower range when the filters already hold one', async () => {
+  renderConsoleAt(
+    `${AT}?action=client.update&from=2026-01-01T00:00:00.000Z`,
+    auditRoutes(undefined, { [`GET ${AUDIT}`]: TOO_BROAD }),
+  );
+  expect(await screen.findByText(/Narrow the range, or drop one of them/u)).toBeVisible();
+});
+
+it('names the same refusal when an export or a reload is too broad, not a generic failure', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, auditRoutes(undefined, { [`GET ${AUDIT}/export`]: TOO_BROAD }));
+  await table();
+  await user.click(screen.getByRole('button', { name: 'Export these events' }));
+  expect(
+    await screen.findByText(/could not be exported in time. Choose a time range/u),
+  ).toBeVisible();
+});
+
+it('never applies a date that reads as nothing: the field says so, Apply is held, nothing is sent', async () => {
+  const user = userEvent.setup();
+  const { sent, router } = renderConsoleAt(AT, auditRoutes());
+  await table();
+  fillUnreadable('From');
+  const apply = screen.getByRole('button', { name: 'Apply filters' });
+  expect(screen.getByLabelText('From')).toBeInvalid();
+  expect(apply).toBeDisabled();
+  expect(screen.getByText(/the trail is not narrowed by it until then/u)).toBeVisible();
+  await user.click(screen.getByRole('textbox', { name: 'Action' }));
+  expect(screen.getByLabelText('From')).toBeInvalid();
+  await user.keyboard('x{Enter}');
+  expect(auditSent(sent).filter((request) => request.search.has('action'))).toEqual([]);
+  expect(router.state.location.search).toEqual({});
 });

@@ -1,5 +1,6 @@
 import type { AuditEvent } from '@odudu/contracts/admin';
 import { Link } from 'react-aria-components';
+import { isElsewhere } from '#/shared/service/auditEvents';
 import { CopyValue } from '#/shared/view/CopyValue';
 import { StatusTag } from '#/shared/view/StatusTag';
 import styles from '#/shared/view/AuditActor/AuditActor.module.css';
@@ -12,7 +13,7 @@ type Actor = Pick<AuditEvent, 'actor_subject_id' | 'actor_name' | 'actor_origin'
 export function AuditActor({ event, href = null }: { event: Actor; href?: string | null }) {
   const id = event.actor_subject_id;
   if (id === null) return <span className={styles.none}>no subject</span>;
-  const elsewhere = event.actor_origin === 'system' || event.actor_origin === 'other-tenant';
+  const elsewhere = isElsewhere(event.actor_origin);
   let name = event.actor_name;
   if (event.actor_origin === 'system') name = 'a system administrator';
   if (event.actor_origin === 'other-tenant') name = "another tenant's caller";

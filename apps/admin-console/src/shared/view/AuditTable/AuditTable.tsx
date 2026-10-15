@@ -1,6 +1,6 @@
 import type { AuditEvent } from '@odudu/contracts/admin';
 import { useState } from 'react';
-import { Link } from 'react-aria-components';
+import { Link, VisuallyHidden } from 'react-aria-components';
 import {
   ELSEWHERE_NOTE,
   isElsewhere,
@@ -43,12 +43,9 @@ function Resource({ event, href }: { event: AuditEvent; href: string | null }) {
         <CopyValue label="resource id" value={id} short />
       ) : (
         <>
-          <Link
-            href={href}
-            className={styles.link ?? ''}
-            aria-label={`${event.resource_type} ${id}`}
-          >
+          <Link href={href} className={styles.link ?? ''}>
             <code>{id.length > 8 ? `${id.slice(0, 8)}…` : id}</code>
+            <VisuallyHidden elementType="span">{` ${event.resource_type} ${id}`}</VisuallyHidden>
           </Link>
           <CopyValue label="resource id" value={id} short />
         </>

@@ -1,4 +1,7 @@
 export {
+  applyBlocked,
+  withUnreadable,
+  type Unreadable,
   ANY,
   auditQuery,
   choiceOf,
@@ -40,3 +43,9 @@ export {
   exportFailureText,
   savedText,
 } from '#/features/audit/service/export';
+export {
+  isTooBroad,
+  lastDay,
+  tooBroadAdvice,
+  TOO_BROAD_TITLE,
+} from '#/features/audit/service/broad';

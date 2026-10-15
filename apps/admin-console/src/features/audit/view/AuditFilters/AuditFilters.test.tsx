@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
 import { EMPTY_DRAFT } from '#/features/audit/service';
@@ -11,6 +11,8 @@ function form(overrides: Partial<AuditFilterForm> = {}): AuditFilterForm {
     draft: EMPTY_DRAFT,
     problems: {},
     set: vi.fn(),
+    report: vi.fn(),
+    blocked: null,
     submit: vi.fn(),
     clear: vi.fn(),
     filtered: false,
@@ -27,7 +29,7 @@ it('offers every filter the API takes, each labelled', () => {
     expect(screen.getByRole('button', { name: new RegExp(name, 'u') })).toBeVisible();
   }
   for (const name of ['From', 'To']) {
-    expect(screen.getByRole('group', { name })).toBeVisible();
+    expect(screen.getByLabelText(name)).toBeVisible();
   }
 });
 
@@ -53,6 +55,25 @@ it('submits the form from the keyboard, and offers Clear only when there is some
   expect(held.submit).toHaveBeenCalledOnce();
   rerender(<AuditFilters form={form({ filtered: true })} />);
   expect(screen.getByRole('button', { name: 'Clear filters' })).toBeVisible();
+});
+
+it('holds Apply, with its reason, while a date typed reads as nothing', () => {
+  render(<AuditFilters form={form({ blocked: 'Correct or clear the date.' })} />);
+  const apply = screen.getByRole('button', { name: 'Apply filters' });
+  expect(apply).toBeDisabled();
+  expect(apply).toHaveAccessibleDescription('Correct or clear the date.');
+});
+
+it('tells the form what a date field cannot read', () => {
+  const held = form();
+  render(<AuditFilters form={held} />);
+  const field = screen.getByLabelText('From');
+  Object.defineProperty(field, 'validity', { configurable: true, value: { badInput: true } });
+  fireEvent.input(field, { target: { value: '' } });
+  expect(held.report).toHaveBeenCalledWith(
+    'from',
+    expect.stringMatching(/complete date and time/u),
+  );
 });
 
 it('puts each problem beside its field', () => {

@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { AuditFilterForm } from '#/features/audit/usecase/useAuditPage';
 import {
   choiceOf,
@@ -16,6 +17,7 @@ import styles from '#/features/audit/view/AuditFilters/AuditFilters.module.css';
 export function AuditFilters({ form }: { form: AuditFilterForm }) {
   const { draft, problems, set } = form;
   const hasType = hasResourceType(draft);
+  const blockedId = useId();
   return (
     <form
       role="search"
@@ -104,6 +106,9 @@ export function AuditFilters({ form }: { form: AuditFilterForm }) {
             edge="start"
             value={draft.from}
             error={problems.from}
+            onProblem={(message) => {
+              form.report('from', message);
+            }}
             onChange={(value) => {
               set('from', value);
             }}
@@ -116,6 +121,9 @@ export function AuditFilters({ form }: { form: AuditFilterForm }) {
             edge="end"
             value={draft.to}
             error={problems.to}
+            onProblem={(message) => {
+              form.report('to', message);
+            }}
             onChange={(value) => {
               set('to', value);
             }}
@@ -124,9 +132,19 @@ export function AuditFilters({ form }: { form: AuditFilterForm }) {
       </FieldGrid>
       <p className={styles.hint}>{NOT_FILTERS}</p>
       <div className={styles.actions}>
-        <Button type="submit" variant="primary">
+        <Button
+          type="submit"
+          variant="primary"
+          isDisabled={form.blocked !== null}
+          {...(form.blocked === null ? {} : { 'aria-describedby': blockedId })}
+        >
           Apply filters
         </Button>
+        {form.blocked === null ? null : (
+          <p id={blockedId} className={styles.blocked}>
+            {form.blocked}
+          </p>
+        )}
         {form.filtered ? (
           <Button variant="quiet" onPress={form.clear}>
             Clear filters

@@ -55,7 +55,7 @@ it('shows the resource with a link where there is a record to open', () => {
     />,
   );
   expect(screen.getByRole('columnheader', { name: 'Resource' })).toBeVisible();
-  expect(screen.getByRole('link', { name: /client c1/u })).toHaveAttribute(
+  expect(screen.getByRole('link', { name: /c1.*client c1/u })).toHaveAttribute(
     'href',
     '/console/acme/clients/c1',
   );

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ANY,
+  applyBlocked,
   auditQuery,
   choiceOf,
   isClean,
@@ -12,6 +13,7 @@ import {
   isFiltered,
   readFilters,
   withField,
+  withUnreadable,
   EMPTY_DRAFT,
 } from '#/features/audit/service/filters';
 
@@ -177,5 +179,28 @@ describe('the form as a draft of the filters', () => {
 
   it('is accepted with only one end of the range', () => {
     expect(draftProblems({ ...EMPTY_DRAFT, from: '2026-09-28T12:00:00.000Z' })).toEqual({});
+  });
+});
+
+describe('a date typed that no instant reads from', () => {
+  it('is held against its field, and lifted when it reads', () => {
+    const held = withUnreadable({}, 'from', 'That day does not exist.');
+    expect(held).toEqual({ from: 'That day does not exist.' });
+    expect(withUnreadable(held, 'to', 'Fill in every part.')).toEqual({
+      from: 'That day does not exist.',
+      to: 'Fill in every part.',
+    });
+    expect(withUnreadable(held, 'from', null)).toEqual({});
+  });
+
+  it('is a problem under its field, so the draft cannot be applied as if it were not there', () => {
+    const problems = draftProblems(EMPTY_DRAFT, { from: 'That day does not exist.' });
+    expect(problems.from).toBe('That day does not exist.');
+    expect(isClean(problems)).toBe(false);
+  });
+
+  it('blocks Apply with one line that says the trail is not narrowed by it', () => {
+    expect(applyBlocked({})).toBeNull();
+    expect(applyBlocked({ to: 'x' })).toMatch(/not narrowed by it/u);
   });
 });

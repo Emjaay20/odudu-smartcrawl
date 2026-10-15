@@ -11,22 +11,28 @@ import { useExportEvents, type ExportEvents } from '#/features/audit/usecase/use
 import {
   actorHref,
   auditQuery,
+  applyBlocked,
   draftOf,
   draftProblems,
   EMPTY_DRAFT,
   filtersOf,
   isClean,
   isFiltered,
+  lastDay,
+  tooBroadAdvice,
   loadedRange,
   resourceHref,
   shownProblems,
   withField,
+  withUnreadable,
   type Draft,
   type DraftProblems,
   type FilterName,
   type RecordPages,
+  type Unreadable,
 } from '#/features/audit/service';
 import { holds } from '#/shared/service/access';
+import { useNow } from '#/shared/usecase/useNow';
 import { localZone } from '#/shared/service/zones';
 import type { AuditHrefs } from '#/shared/view/AuditTable';
 
@@ -43,10 +49,20 @@ export interface AuditFilterForm {
   // Shown once the form has been submitted with them in it.
   problems: DraftProblems;
   set: (name: FilterName, value: string) => void;
+  // Told by a date field what is typed in it that no instant reads from.
+  report: (name: 'from' | 'to', message: string | null) => void;
+  // Why Apply is held, while a date is typed that reads as nothing.
+  blocked: string | null;
   submit: () => void;
   clear: () => void;
   // Whether there is anything to clear: a filter held, or typed.
   filtered: boolean;
+}
+
+export interface TooBroad {
+  advice: string;
+  // Reads again with the day up to now added to the filters held.
+  searchLastDay: () => void;
 }
 
 export interface AuditPageState {
@@ -54,6 +70,7 @@ export interface AuditPageState {
   form: AuditFilterForm;
   hrefs: AuditHrefs;
   exporting: ExportEvents;
+  tooBroad: TooBroad;
   // Whether the address holds any filter the trail can read.
   narrowed: boolean;
   // How far back the rows loaded reach, since the trail has no count.
@@ -65,22 +82,28 @@ function useFilterForm(list: AuditList): AuditFilterForm {
   const [synced, setSynced] = useState(held);
   const [draft, setDraft] = useState(() => draftOf(list.filters));
   const [attempted, setAttempted] = useState(false);
+  const [unreadable, setUnreadable] = useState<Unreadable>({});
   // Back, forward and a shared link change the address under the form.
   if (synced !== held) {
     setSynced(held);
     setDraft(draftOf(list.filters));
     setAttempted(false);
   }
-  const problems = draftProblems(draft);
+  const problems = draftProblems(draft, unreadable);
+  const blocked = applyBlocked(unreadable);
   return {
     draft,
     problems: shownProblems(problems, attempted),
+    blocked,
+    report: (name, message) => {
+      setUnreadable((was) => withUnreadable(was, name, message));
+    },
     set: (name, value) => {
       setDraft((was) => withField(was, name, value));
     },
     submit: () => {
       setAttempted(true);
-      if (isClean(problems)) list.apply(filtersOf(draft));
+      if (blocked === null && isClean(problems)) list.apply(filtersOf(draft));
     },
     clear: () => {
       setDraft(EMPTY_DRAFT);
@@ -95,11 +118,18 @@ export function useAuditPage(tenant: string): AuditPageState {
   const list = useAuditList(tenant);
   const form = useFilterForm(list);
   const exporting = useExportEvents(tenant, list.filters);
+  const now = useNow(60_000);
   const mayReadSubjects = holds(useAuthority(tenant), 'view-users');
   return {
     list,
     form,
     exporting,
+    tooBroad: {
+      advice: tooBroadAdvice(list.filters),
+      searchLastDay: () => {
+        list.apply({ ...list.filters, ...lastDay(now) });
+      },
+    },
     hrefs: {
       resource: (event: AuditEvent) =>
         resourceHref(tenant, event.resource_type, event.resource_id, RECORD_PAGES),

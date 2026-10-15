@@ -9,6 +9,7 @@ import {
   listStatusOf,
   listPagesState,
   staleCursorOf,
+  firstPageFailureOf,
   listToSearch,
   moreFailed,
   withDefaults,
@@ -182,5 +183,14 @@ describe('staleCursorOf', () => {
     expect(staleCursorOf({ pages: [{ items: [] }] }, stale)).toBe(false);
     expect(staleCursorOf(undefined, new ReadFailure({ ok: false, kind: 'network' }))).toBe(false);
     expect(staleCursorOf(undefined, null)).toBe(false);
+  });
+});
+
+describe('firstPageFailureOf', () => {
+  it('is what stopped the first page, and nothing once a page has been read', () => {
+    const failure = { ok: false, kind: 'network' } as const;
+    expect(firstPageFailureOf(undefined, new ReadFailure(failure))).toEqual(failure);
+    expect(firstPageFailureOf({ pages: [{ items: [] }] }, new ReadFailure(failure))).toBeNull();
+    expect(firstPageFailureOf(undefined, new Error('boom'))).toBeNull();
   });
 });

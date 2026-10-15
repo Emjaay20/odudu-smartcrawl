@@ -149,12 +149,20 @@ export function listPagesState<T>(
   };
 }
 
+// What stopped the first page, when it is what failed.
+export function firstPageFailureOf(
+  data: { pages: readonly unknown[] } | undefined,
+  error: unknown,
+): GatewayFailure | null {
+  return data === undefined ? readFailureOf(error) : null;
+}
+
 // The first page failed because the cursor it was asked from is no longer one.
 export function staleCursorOf(
   data: { pages: readonly unknown[] } | undefined,
   error: unknown,
 ): boolean {
-  return data === undefined && isStaleCursor(readFailureOf(error));
+  return isStaleCursor(firstPageFailureOf(data, error));
 }
 
 export function canLoadMore(hasNextPage: boolean, isFetching: boolean): boolean {
