@@ -107,7 +107,7 @@ function renderFormFields(
   // filling both spends the recovery code, which runs first.
   if (form === 'otp') {
     return `<label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"${focus}></label>
-  ${recoveryCodeField(focus)}`;
+  ${recoveryCodeField('')}`;
   }
   if (form === 'recovery-code') {
     return recoveryCodeField(focus);

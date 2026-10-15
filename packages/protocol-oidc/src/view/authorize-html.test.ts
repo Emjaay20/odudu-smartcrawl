@@ -209,6 +209,7 @@ describe('renderLoginForm', () => {
         username: 'ada',
       });
       expect(otp.body).toMatch(/name="code"[^>]*autofocus/u);
+      expect(otp.body.match(/autofocus/gu)).toHaveLength(1);
       expect(otp.body).not.toContain('ada');
       const recovery = renderLoginForm('acme', 'sid', 'recovery-code', false, false, refusal);
       expect(recovery.body).toMatch(/name="recovery_code"[^>]*autofocus/u);
