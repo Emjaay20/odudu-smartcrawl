@@ -75,12 +75,14 @@ people who run it.
   proposal, the owner confirms it.
 - A designer or the owner finishes the mark; the phase supplies it in SVG at
   the sizes the site, README, favicon and social image need.
-- **Not yet cleared.** Geometric marks in identity software overlap easily.
-  A trademark and design search is the owner's step before the mark is final.
-  Until it is done the release machinery is built and exercised with a
-  placeholder mark and pre-release tags (`-rc`) pushed to the registry; the
-  first non-pre-release tag and the social image wait for the cleared mark,
-  and the phase does not close before they exist.
+- **Risk accepted by the owner, 2026-10-15.** The owner believes the staff
+  mark is not in use by another product and chose not to wait for a formal
+  search. An informal web search the same day found no product, company or
+  trademark filing named Odudu in identity or software; it cannot compare
+  logos by eye, so this is not a clearance. A formal trademark and design
+  search stays an optional step for the owner before any commercial use, and
+  a change of mark after release means redoing the README, site, favicon,
+  image labels and social image.
 - Any glyph-like detail must be confirmed by someone who knows the Nsibidi
   tradition before use; nothing is copied from a real sign without that.
 
@@ -111,5 +113,5 @@ are page rendering and message catalogues; the bound is the same as today).
 ## Open for the owner
 
 - The domain for the site.
-- The trademark and design search result, and the finished mark.
+- The finished mark, drawn from the staff direction, as SVG.
 - Who confirms any Nsibidi-inspired detail.
