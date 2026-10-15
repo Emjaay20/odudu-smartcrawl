@@ -33,6 +33,7 @@ const EMITTABLE_PROBLEM_TYPES = new Set([
   'about:blank#forbidden',
   'about:blank#not-found',
   'about:blank#export-too-large',
+  'about:blank#audit-query-too-broad',
   'about:blank#last-administrator',
   'about:blank#no-email',
   'about:blank#no-mail-relay',

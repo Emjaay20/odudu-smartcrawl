@@ -1348,6 +1348,9 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     capability: 'view-audit',
     responseSchema: listAuditResponseSchema,
     querystringSchema: listAuditQuerySchema,
+    description:
+      'Every read here runs under a five second statement timeout. Two filters whose rows are each common but that few rows share (an action and an actor, say) make Postgres read all of the cheaper one, so past the bound the read is refused with `400` of type `about:blank#audit-query-too-broad`: narrow it with `from` and `to`, which lead the index, or drop a filter. `from` and `to` are instants from 1970 to 9999, refused with `400` otherwise. ' +
+      'Newest first, by an opaque cursor bound to the filters it was issued under.',
   },
   {
     method: 'GET',
@@ -1355,6 +1358,8 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     capability: 'view-audit',
     responseSchema: countResponseSchema,
     querystringSchema: countAuditQuerySchema,
+    description:
+      'Every read here runs under a five second statement timeout. Two filters whose rows are each common but that few rows share (an action and an actor, say) make Postgres read all of the cheaper one, so past the bound the read is refused with `400` of type `about:blank#audit-query-too-broad`: narrow it with `from` and `to`, which lead the index, or drop a filter. `from` and `to` are instants from 1970 to 9999, refused with `400` otherwise.',
   },
   {
     method: 'GET',
@@ -1364,6 +1369,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     successMediaType: AUDIT_EXPORT_MEDIA_TYPE,
     querystringSchema: exportAuditQuerySchema,
     description:
+      'Every read here runs under a five second statement timeout. Two filters whose rows are each common but that few rows share (an action and an actor, say) make Postgres read all of the cheaper one, so past the bound the read is refused with `400` of type `about:blank#audit-query-too-broad`: narrow it with `from` and `to`, which lead the index, or drop a filter. `from` and `to` are instants from 1970 to 9999, refused with `400` otherwise. ' +
       'Every row the same filters list, newest first, one JSON object per line, built in full ' +
       'before it is sent rather than streamed. Refused whole with `413` past 10,000 rows ' +
       'rather than cut short. Audited as `audit.export`.',

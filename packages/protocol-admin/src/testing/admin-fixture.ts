@@ -213,6 +213,8 @@ export interface AdminFixtureOptions {
   readonly deploymentSmtp?: boolean;
   /** Whether the deployment has a public base URL to put in a mailed link. */
   readonly publicBaseUrl?: boolean;
+  /** Shortens how long an audit read may run before it is refused as too broad. */
+  readonly auditReadTimeoutMs?: number;
 }
 
 export async function startAdminFixture(options: AdminFixtureOptions = {}): Promise<AdminFixture> {
@@ -274,6 +276,9 @@ export async function startAdminFixture(options: AdminFixtureOptions = {}): Prom
         claimMappers,
         deploymentSmtp: options.deploymentSmtp ?? false,
         outboxMaxAttempts: DEFAULT_OUTBOX_MAX_ATTEMPTS,
+        ...(options.auditReadTimeoutMs === undefined
+          ? {}
+          : { auditReadTimeoutMs: options.auditReadTimeoutMs }),
         retireResetLinks: (tx, subjectId) =>
           actionTokenRepository(tx).invalidateOutstandingPasswordLinks(subjectId),
         sendAccountLink: async (tx, request) => {

@@ -1,5 +1,6 @@
 import {
   AUDIT_EXPORT_CAP,
+  AUDIT_QUERY_TOO_BROAD,
   AUDIT_EXPORT_MEDIA_TYPE,
   countAuditQuerySchema,
   exportAuditQuerySchema,
@@ -10,7 +11,15 @@ import {
 import { type Database, type TenantScopedDatabase } from '@odudu/db';
 import { type AuditEventCriteria } from '@odudu/domain-audit';
 import { coerceLimit, nextPageUrl } from '#/service/cursor';
-import { countAudit, exportAudit, listAudit, type AuditExportAuditEvent } from '#/usecase/audit';
+import { isStatementTimeout } from '#/service/statement-timeout';
+import {
+  AUDIT_READ_TIMEOUT_MS,
+  boundAuditRead,
+  countAudit,
+  exportAudit,
+  listAudit,
+  type AuditExportAuditEvent,
+} from '#/usecase/audit';
 import { COUNT_CAP } from '#/usecase/counts';
 import { cursorProblem, problem, queryProblem, sendProblem } from '#/view/problem';
 import { adminTx } from '#/view/routes/admin-tx';
@@ -20,6 +29,8 @@ import { type AdminRouteHandler } from '#/view/routes/router';
 export interface AuditRouteDeps {
   readonly database: Database;
   readonly cursorKey: Uint8Array;
+  /** Defaults to `AUDIT_READ_TIMEOUT_MS`; a test shortens it. */
+  readonly readTimeoutMs?: number;
   readonly audit: (tx: TenantScopedDatabase, event: AuditExportAuditEvent) => Promise<void>;
   readonly callerCapabilities: (
     issuerTenantId: string,
@@ -30,6 +41,39 @@ export interface AuditRouteDeps {
 async function mayReadNames(deps: AuditRouteDeps, principal: AdminPrincipal): Promise<boolean> {
   const held = await deps.callerCapabilities(principal.issuerTenantId, principal.subjectId);
   return held.has('view-users');
+}
+
+const TOO_BROAD = Symbol('audit query too broad');
+
+function timeoutOf(deps: AuditRouteDeps): number {
+  return deps.readTimeoutMs ?? AUDIT_READ_TIMEOUT_MS;
+}
+
+// The read, under the bound, or `TOO_BROAD` when Postgres stopped it there.
+async function boundedRead<T>(
+  deps: AuditRouteDeps,
+  run: (tx: TenantScopedDatabase) => Promise<T>,
+  open: (fn: (tx: TenantScopedDatabase) => Promise<T>) => Promise<T>,
+): Promise<T | typeof TOO_BROAD> {
+  try {
+    return await open(async (tx) => {
+      await boundAuditRead(tx, timeoutOf(deps));
+      return run(tx);
+    });
+  } catch (error) {
+    if (isStatementTimeout(error)) return TOO_BROAD;
+    throw error;
+  }
+}
+
+function tooBroadProblem(deps: AuditRouteDeps) {
+  const seconds = timeoutOf(deps) / 1000;
+  return problem(
+    400,
+    AUDIT_QUERY_TOO_BROAD,
+    'Bad Request',
+    `these filters could not be searched within ${String(seconds)} seconds; narrow the time range with from and to, or drop a filter`,
+  );
 }
 
 function criteriaOf(query: CountAuditQuery): AuditEventCriteria {
@@ -49,9 +93,12 @@ export function countAuditHandler(deps: AuditRouteDeps): AdminRouteHandler {
   return async (request, reply, _principal, targetTenantId) => {
     const parsed = countAuditQuerySchema.safeParse(request.query);
     if (!parsed.success) return sendProblem(reply, request, queryProblem(parsed.error));
-    const counted = await adminTx(deps.database, request, targetTenantId, (tx) =>
-      countAudit(tx, criteriaOf(parsed.data), COUNT_CAP),
+    const counted = await boundedRead(
+      deps,
+      (tx) => countAudit(tx, criteriaOf(parsed.data), COUNT_CAP),
+      (fn) => adminTx(deps.database, request, targetTenantId, fn),
     );
+    if (counted === TOO_BROAD) return sendProblem(reply, request, tooBroadProblem(deps));
     return reply.code(200).send(counted);
   };
 }
@@ -61,21 +108,25 @@ export function exportAuditHandler(deps: AuditRouteDeps): AdminRouteHandler {
     const parsed = exportAuditQuerySchema.safeParse(request.query);
     if (!parsed.success) return sendProblem(reply, request, queryProblem(parsed.error));
     const revealNames = await mayReadNames(deps, principal);
-    const outcome = await adminTx(deps.database, request, targetTenantId, (tx) =>
-      exportAudit(
-        tx,
-        { audit: deps.audit },
-        {
-          tenantId: targetTenantId,
-          revealNames,
-          filters: criteriaOf(parsed.data),
-          cap: AUDIT_EXPORT_CAP,
-          actorSubjectId: principal.subjectId,
-          actorTenantId: principal.issuerTenantId,
-          actorClientId: principal.clientDbId,
-        },
-      ),
+    const outcome = await boundedRead(
+      deps,
+      (tx) =>
+        exportAudit(
+          tx,
+          { audit: deps.audit },
+          {
+            tenantId: targetTenantId,
+            revealNames,
+            filters: criteriaOf(parsed.data),
+            cap: AUDIT_EXPORT_CAP,
+            actorSubjectId: principal.subjectId,
+            actorTenantId: principal.issuerTenantId,
+            actorClientId: principal.clientDbId,
+          },
+        ),
+      (fn) => adminTx(deps.database, request, targetTenantId, fn),
     );
+    if (outcome === TOO_BROAD) return sendProblem(reply, request, tooBroadProblem(deps));
     if (outcome.kind === 'too_many') {
       return sendProblem(
         reply,
@@ -116,23 +167,29 @@ export function listAuditHandler(deps: AuditRouteDeps): AdminRouteHandler {
     const limit = coerceLimit(query.limit === undefined ? undefined : String(query.limit));
 
     const revealNames = await mayReadNames(deps, principal);
-    const outcome = await adminTx(deps.database, request, targetTenantId, (tx) =>
-      listAudit(tx, {
-        revealNames,
-        tenantId: targetTenantId,
-        limit,
-        cursor: query.cursor,
-        cursorKey: deps.cursorKey,
-        ...(query.event_type !== undefined ? { eventType: query.event_type } : {}),
-        ...(query.actor_subject_id !== undefined ? { actorSubjectId: query.actor_subject_id } : {}),
-        ...(query.resource_type !== undefined ? { resourceType: query.resource_type } : {}),
-        ...(query.resource_id !== undefined ? { resourceId: query.resource_id } : {}),
-        ...(query.action !== undefined ? { action: query.action } : {}),
-        ...(query.outcome !== undefined ? { outcome: query.outcome } : {}),
-        ...(parseDate(query.from) !== undefined ? { from: parseDate(query.from) } : {}),
-        ...(parseDate(query.to) !== undefined ? { to: parseDate(query.to) } : {}),
-      }),
+    const outcome = await boundedRead(
+      deps,
+      (tx) =>
+        listAudit(tx, {
+          revealNames,
+          tenantId: targetTenantId,
+          limit,
+          cursor: query.cursor,
+          cursorKey: deps.cursorKey,
+          ...(query.event_type !== undefined ? { eventType: query.event_type } : {}),
+          ...(query.actor_subject_id !== undefined
+            ? { actorSubjectId: query.actor_subject_id }
+            : {}),
+          ...(query.resource_type !== undefined ? { resourceType: query.resource_type } : {}),
+          ...(query.resource_id !== undefined ? { resourceId: query.resource_id } : {}),
+          ...(query.action !== undefined ? { action: query.action } : {}),
+          ...(query.outcome !== undefined ? { outcome: query.outcome } : {}),
+          ...(parseDate(query.from) !== undefined ? { from: parseDate(query.from) } : {}),
+          ...(parseDate(query.to) !== undefined ? { to: parseDate(query.to) } : {}),
+        }),
+      (fn) => adminTx(deps.database, request, targetTenantId, fn),
     );
+    if (outcome === TOO_BROAD) return sendProblem(reply, request, tooBroadProblem(deps));
     if (outcome.kind === 'invalid_cursor') {
       return sendProblem(reply, request, cursorProblem());
     }

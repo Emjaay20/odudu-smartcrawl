@@ -8,7 +8,7 @@ import {
 } from '@odudu/domain-audit';
 import { subjects, users } from '@odudu/domain-identity';
 import { clients, isSystemTenantId } from '@odudu/domain-tenant';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { decodeCursor, encodeCursor, filterDigest } from '#/service/cursor';
 
 const COLLECTION = 'audit';
@@ -66,6 +66,21 @@ export async function resolveActors(
     if (name !== null) names.set(row.id, name);
   }
   return names;
+}
+
+/**
+ * How long an audit read may run. The listing, its count and its export take
+ * the same filters and walk the one index that serves the most selective of
+ * them, filtering by the rest, so two filters whose intersection is empty
+ * read all of the cheaper one (3.6 s cold for 50,000 rows at three million,
+ * about 33 times that at the design volume). The bound turns that into a
+ * refusal a caller can act on rather than a held connection.
+ */
+export const AUDIT_READ_TIMEOUT_MS = 5_000;
+
+/** `SET LOCAL statement_timeout`, in its bindable form: it ends with the transaction. */
+export async function boundAuditRead(tx: TenantScopedDatabase, timeoutMs: number): Promise<void> {
+  await tx.execute(sql`select set_config('statement_timeout', ${String(timeoutMs)}, true)`);
 }
 
 function originOf(tenantId: string, row: AuditEventRecord): AuditEvent['actor_origin'] {

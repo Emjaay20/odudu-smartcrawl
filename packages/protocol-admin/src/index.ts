@@ -278,6 +278,9 @@ export interface AdminRoutesDeps {
   // `ODUDU_OUTBOX_MAX_ATTEMPTS`, the attempts the mail sender makes before it
   // stops offering a message: what `GET …/mail` reports as `failed`.
   outboxMaxAttempts: number;
+  // How long an audit read may run before it is refused as too broad;
+  // `AUDIT_READ_TIMEOUT_MS` unless a test shortens it.
+  auditReadTimeoutMs?: number;
 }
 
 export function adminRoutes(deps: AdminRoutesDeps): FastifyPluginAsync {
@@ -548,6 +551,7 @@ function buildAdminRoutes(
       cursorKey: deps.cursorKey,
       audit: recordAudit,
       callerCapabilities,
+      ...(deps.auditReadTimeoutMs === undefined ? {} : { readTimeoutMs: deps.auditReadTimeoutMs }),
     };
     const countsDeps: CountsRouteDeps = {
       database: deps.database.db,
