@@ -18,11 +18,9 @@ Every transcript below is captured output, under the same discipline as
 carries no language tag, a section whose output depends on the state of the
 stack says which state, and a precondition a refusal depends on is shown
 rather than asserted. `tests/docs/console-paths.test.ts` holds every
-`/console/` route this document names to the routes the server serves. The
-audit rows below that come from the earlier runs were captured before each row
-answered `actor_name` and `actor_origin` as well, resolved when it is read
-([Admin paths](admin-paths.md#get-audit)); every other field is as shown, and
-the seventh run's rows answer both.
+`/console/` route this document names to the routes the server serves. Every
+audit row below answers `actor_name` and `actor_origin` as well, resolved when
+it is read ([Admin paths](admin-paths.md#get-audit)).
 
 **The stack.** The `docker-odudu-1` container of `infra/docker/compose.yaml`,
 restarted on the existing database volume. For the first two runs its `odudu`
@@ -72,54 +70,42 @@ docker compose exec -T odudu node dist/main.js seed user --tenant console-paths 
 page. The sections are in the order they ran, one curl cookie jar (`jar`)
 throughout, so each section's cookies are the ones the section before it set.
 
-Four sections come from **a second run**, twenty minutes after the first, on
-the same container and tenant, with a new, empty `jar` and a new sign-in:
-the refused callbacks, the path that escapes `/admin/`, the refresh and the
-refresh that cannot take the lock, run in that order. Each says so in its
-first line. The first run had left the tenant no `console_sessions` row, as
-its last query shows.
+Two sections come from **a second run**, twenty minutes after the first, on
+the same container and tenant, with a new, empty `jar` and a new sign-in: the
+refused callbacks and the path that escapes `/admin/`. Each says so in its
+first line.
 
-Three sections come from **a third run**, at `6401476`, on the same tenant,
-with a new, empty `jar` and a new sign-in: the `PATCH`, the cross-site
-refusals and the refresh the server refuses. Each says so in its first line.
-Between the second and third runs the gateway changed in four ways. It now
-sends the console request's own `x-request-id` upstream. It answers its
-cross-site `403` with the admin API's `about:blank` type. It ends a session
-on any `401` the admin API answers, with no confirm against the session's
-own tenant. And it revokes the grant of a session it finds over. The first
-two runs' sections were not re-run at `6401476`. The only
-change in what they show would be the `request_id` in the refresh sections'
-audit rows, which predate the first change.
-
-One section comes from **a fourth run**, on a stack of its own: the
-`infra/docker` compose file as the project `odudu-fix-capture`, on
-`http://localhost:3080`, its `odudu` service built from the tree of commit
-`62e4734`, with a throwaway tenant, `principal-check`, holding `grace` as its
-administrator and `hopper` beside her. `grace` signed in through the same
-four steps the first run shows, with a new, empty `jar`. The seed printed:
+Three sections come from **an eighth run**, on a stack of its own built from
+the branch tip at the close of the console's features: the `infra/docker`
+compose file as the project `odudu-docs-18a`, on `http://localhost:3185`, its
+`odudu` service built from the tree the document describes, on an empty
+volume, with a console key made for it by `infra/docker/console-key.sh`.
+It is where the `PATCH`, the cross-site refusals and the principal refusal
+ran, one after another on one session, with a throwaway tenant,
+`console-paths`, holding `grace` as its administrator and `hopper` beside her.
+`grace` signed in through the same four steps the first run shows, with a new,
+empty `jar`. The seed printed:
 
 ```bash
-docker compose -p odudu-fix-capture exec -T odudu node dist/main.js seed tenant --name principal-check
-docker compose -p odudu-fix-capture exec -T odudu node dist/main.js seed user --tenant principal-check \
-  --username grace --password principal-check-throwaway --email grace@example.com
-docker compose -p odudu-fix-capture exec -T odudu node dist/main.js seed grant-role --tenant principal-check \
+docker compose -p odudu-docs-18a exec -T odudu node dist/main.js seed tenant --name console-paths
+docker compose -p odudu-docs-18a exec -T odudu node dist/main.js seed user --tenant console-paths \
+  --username grace --password console-paths-throwaway --email grace@example.com
+docker compose -p odudu-docs-18a exec -T odudu node dist/main.js seed grant-role --tenant console-paths \
   --username grace --role odudu-admin:tenant-admin
-docker compose -p odudu-fix-capture exec -T odudu node dist/main.js seed user --tenant principal-check \
-  --username hopper --password principal-check-throwaway-2 --email hopper@example.com
+docker compose -p odudu-docs-18a exec -T odudu node dist/main.js seed user --tenant console-paths \
+  --username hopper --password console-paths-throwaway-2 --email hopper@example.com
 ```
 
 ```
-{"command":"tenant","created":true,"tenant":"principal-check","tenantId":"01a0e95a-054b-71ee-ba7c-25720d128406"}
-{"command":"user","tenant":"principal-check","tenantId":"01a0e95a-054b-71ee-ba7c-25720d128406","username":"grace","userSubjectId":"01a0e95a-081b-76fa-af1b-6da2485d3057"}
-{"command":"grant-role","tenant":"principal-check","tenantId":"01a0e95a-054b-71ee-ba7c-25720d128406","username":"grace","role":"odudu-admin:tenant-admin"}
-{"command":"user","tenant":"principal-check","tenantId":"01a0e95a-054b-71ee-ba7c-25720d128406","username":"hopper","userSubjectId":"01a0e95a-0bcc-748d-a790-cb413990b992"}
+{"command":"tenant","created":true,"tenant":"console-paths","tenantId":"01a13ff2-eddb-7d89-8555-c32d1cd8acf9"}
+{"command":"user","tenant":"console-paths","tenantId":"01a13ff2-eddb-7d89-8555-c32d1cd8acf9","username":"grace","userSubjectId":"01a13ff2-eff9-746c-b8cb-e56af2072daa"}
+{"command":"grant-role","tenant":"console-paths","tenantId":"01a13ff2-eddb-7d89-8555-c32d1cd8acf9","username":"grace","role":"odudu-admin:tenant-admin"}
+{"command":"user","tenant":"console-paths","tenantId":"01a13ff2-eddb-7d89-8555-c32d1cd8acf9","username":"hopper","userSubjectId":"01a13ff2-f33a-79ce-a952-0aeec04a80d4"}
 ```
 
-Since that commit the gateway refuses a write naming no subject in
-`X-Odudu-Console-Subject`, so the earlier runs' writes, which send none,
-would each be answered `409` today; the fourth run's section shows that
-refusal and the same write forwarded once it names the session's subject.
-The earlier runs were not re-captured.
+The gateway refuses a write naming no subject in `X-Odudu-Console-Subject`, so
+every write in those three sections names `grace`'s, and the principal
+refusal shows the refusal beside the same write forwarded.
 
 One section comes from **a fifth run**, on a stack of its own, the project
 `odudu-signin` on `http://localhost:3082` at `0824c4e7`: the restarted
@@ -140,8 +126,7 @@ client](#the-gateway-is-a-confidential-client), the first block of the
 discovery read, [a refresh](#a-refresh), [a refresh that cannot take the
 lock](#a-refresh-that-cannot-take-the-lock), [a refresh the server
 refuses](#a-refresh-the-server-refuses), and the logout with the redirect it
-ends on. Their audit rows answer `actor_name` and `actor_origin`; the sections
-from earlier runs that show audit rows are labelled where they predate them.
+ends on. Their audit rows answer `actor_name` and `actor_origin`.
 
 ## `GET /console/auth/login`
 
@@ -1148,53 +1133,56 @@ Keep-Alive: timeout=72
 
 ## `PATCH /console/api/admin/tenants/{tenant}/subjects/{id}`
 
-From the third run, on its session. `If-Match` is one of the four request
-headers the proxy forwards. The `ETag` comes from a read.
+From the eighth run, on `grace`'s session. `If-Match` is one of the four
+request headers the proxy forwards, and every write names the session's
+subject in `X-Odudu-Console-Subject` ([below](#post-consoleapiadmintenantstenantsubjects-refused-for-another-principal)).
+The `ETag` comes from a read of `hopper`:
 
 ```bash
-curl -sS -D - -c jar -b jar \
-  http://localhost:3000/console/api/admin/tenants/console-paths/subjects/01a0e72d-7fc7-7950-a1e7-1d079588f8b4
+curl -sS -D - -c jar -b jar -H 'X-Odudu-Console-Subject: 01a13ff2-eff9-746c-b8cb-e56af2072daa' \
+  http://localhost:3185/console/api/admin/tenants/console-paths/subjects/01a13ff2-f33a-79ce-a952-0aeec04a80d4
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a0e77b-de54-75ca-b651-6963d6c13426
+x-request-id: 01a13ff3-38ca-7de2-b786-a50a8a02eaaa
 content-type: application/json; charset=utf-8
-etag: "219b14ef842053287d0395ac35365010a07eab13df970d5720b5e954e15d2a30"
+etag: "476c7432885859a0124f9b8bd8ec8e643c33a66caccf17b6d0cf940c01a49e51"
 cache-control: no-store
-content-length: 169
-Date: Mon, 28 Sep 2026 10:07:29 GMT
+content-length: 163
+Date: Thu, 15 Oct 2026 14:24:26 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"id":"01a0e72d-7fc7-7950-a1e7-1d079588f8b4","type":"user","username":"hopper","email":"grace.hopper@example.com","enabled":true,"created_at":"2026-09-28T08:41:53.858Z"}
+{"id":"01a13ff2-f33a-79ce-a952-0aeec04a80d4","type":"user","username":"hopper","email":"hopper@example.com","enabled":true,"created_at":"2026-10-15T14:24:09.013Z"}
 ```
 
 A write under `/console/api/` must carry the base's `Origin` and
-`X-Odudu-Console: 1` (see the next section). The first run had changed this
-address, so this write puts it back.
+`X-Odudu-Console: 1` (see the next section). This one changes `hopper`'s
+address, on that `ETag`:
 
 ```bash
 curl -sS -D - -c jar -b jar -X PATCH \
-  -H 'Origin: http://localhost:3000' -H 'X-Odudu-Console: 1' \
+  -H 'Origin: http://localhost:3185' -H 'X-Odudu-Console: 1' \
+  -H 'X-Odudu-Console-Subject: 01a13ff2-eff9-746c-b8cb-e56af2072daa' \
   -H 'Content-Type: application/json' \
-  -H 'If-Match: "219b14ef842053287d0395ac35365010a07eab13df970d5720b5e954e15d2a30"' \
-  -d '{"email":"hopper@example.com"}' \
-  http://localhost:3000/console/api/admin/tenants/console-paths/subjects/01a0e72d-7fc7-7950-a1e7-1d079588f8b4
+  -H 'If-Match: "476c7432885859a0124f9b8bd8ec8e643c33a66caccf17b6d0cf940c01a49e51"' \
+  -d '{"email":"grace.hopper@example.com"}' \
+  http://localhost:3185/console/api/admin/tenants/console-paths/subjects/01a13ff2-f33a-79ce-a952-0aeec04a80d4
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a0e77b-de8a-742b-b05b-bbadf4c187fe
+x-request-id: 01a13ff3-38fc-7a89-9c47-3fc41614c27a
 content-type: application/json; charset=utf-8
-etag: "e0e294cbbb3a1a76ae2d1962269e63e5016b9ac6c24613abe0a66c650dc679be"
+etag: "6ab600b1d9d162c013b0b39cbe7f171e9f564d1b29a03049f9480e8a144f372c"
 cache-control: no-store
-content-length: 163
-Date: Mon, 28 Sep 2026 10:07:29 GMT
+content-length: 169
+Date: Thu, 15 Oct 2026 14:24:26 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"id":"01a0e72d-7fc7-7950-a1e7-1d079588f8b4","type":"user","username":"hopper","email":"hopper@example.com","enabled":true,"created_at":"2026-09-28T08:41:53.858Z"}
+{"id":"01a13ff2-f33a-79ce-a952-0aeec04a80d4","type":"user","username":"hopper","email":"grace.hopper@example.com","enabled":true,"created_at":"2026-10-15T14:24:09.013Z"}
 ```
 
 The same `If-Match` again, which that write made stale. The `412` is the
@@ -1203,102 +1191,104 @@ the browser was answered with, because the gateway sends that id upstream:
 
 ```bash
 curl -sS -D - -c jar -b jar -X PATCH \
-  -H 'Origin: http://localhost:3000' -H 'X-Odudu-Console: 1' \
+  -H 'Origin: http://localhost:3185' -H 'X-Odudu-Console: 1' \
+  -H 'X-Odudu-Console-Subject: 01a13ff2-eff9-746c-b8cb-e56af2072daa' \
   -H 'Content-Type: application/json' \
-  -H 'If-Match: "219b14ef842053287d0395ac35365010a07eab13df970d5720b5e954e15d2a30"' \
+  -H 'If-Match: "476c7432885859a0124f9b8bd8ec8e643c33a66caccf17b6d0cf940c01a49e51"' \
   -d '{"enabled":false}' \
-  http://localhost:3000/console/api/admin/tenants/console-paths/subjects/01a0e72d-7fc7-7950-a1e7-1d079588f8b4
+  http://localhost:3185/console/api/admin/tenants/console-paths/subjects/01a13ff2-f33a-79ce-a952-0aeec04a80d4
 ```
 
 ```
 HTTP/1.1 412 Precondition Failed
-x-request-id: 01a0e77b-deb5-7134-a6c8-1564eed93a82
+x-request-id: 01a13ff3-3986-786b-8fac-4370a66c669f
 content-type: application/problem+json; charset=utf-8
 cache-control: no-store
 content-length: 153
-Date: Mon, 28 Sep 2026 10:07:29 GMT
+Date: Thu, 15 Oct 2026 14:24:27 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"type":"about:blank","title":"Precondition Failed","status":412,"detail":"If-Match no longer matches","instance":"01a0e77b-deb5-7134-a6c8-1564eed93a82"}
+{"type":"about:blank","title":"Precondition Failed","status":412,"detail":"If-Match no longer matches","instance":"01a13ff3-3986-786b-8fac-4370a66c669f"}
 ```
 
 The write's audit row, read through the proxy for the second in which the
-three requests ran, carries the `PATCH`'s own `x-request-id` as its
-`request_id`:
+three requests ran (`2026-10-15T14:24:26Z`, printed by `date -u` before the
+first), carries the `PATCH`'s own `x-request-id` as its `request_id`, and
+answers `actor_name` and `actor_origin`:
 
 ```bash
-curl -sS -D - -b jar \
-  'http://localhost:3000/console/api/admin/tenants/console-paths/audit?from=2026-09-28T10:07:29Z&to=2026-09-28T10:07:30Z'
+curl -sS -D - -b jar -H 'X-Odudu-Console-Subject: 01a13ff2-eff9-746c-b8cb-e56af2072daa' \
+  'http://localhost:3185/console/api/admin/tenants/console-paths/audit?from=2026-10-15T14:24:26Z&to=2026-10-15T14:24:27Z'
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a0e77c-115f-7f9a-a6b6-8402f7575e23
+x-request-id: 01a13ff3-4d78-7651-ae8c-911d67e5da32
 content-type: application/json; charset=utf-8
 cache-control: no-store
-content-length: 580
-Date: Mon, 28 Sep 2026 10:07:42 GMT
+content-length: 625
+Date: Thu, 15 Oct 2026 14:24:32 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"items":[{"id":"01a0e77b-dea5-777b-926e-7ef515714f64","occurred_at":"2026-09-28T10:07:29.949Z","event_type":"admin_mutation","action":"subject.amend","outcome":"allowed","actor_tenant_id":"01a0e72d-5927-73c3-b14d-a5b60d1ca9ad","actor_subject_id":"01a0e72d-5ba9-78cd-b877-7ea6d4076028","actor_client_id":"01a0e72d-599e-701c-87a2-7672d411bed2","resource_type":"subject","resource_id":"01a0e72d-7fc7-7950-a1e7-1d079588f8b4","request_id":"01a0e77b-de8a-742b-b05b-bbadf4c187fe","ip":"172.20.0.1","detail":{"email":{"after":"hopper@example.com","before":"grace.hopper@example.com"}}}]}
+{"items":[{"id":"01a13ff3-396e-72bc-b234-0c7b9ae6a6c6","occurred_at":"2026-10-15T14:24:26.970Z","event_type":"admin_mutation","action":"subject.amend","outcome":"allowed","actor_tenant_id":"01a13ff2-eddb-7d89-8555-c32d1cd8acf9","actor_subject_id":"01a13ff2-eff9-746c-b8cb-e56af2072daa","actor_client_id":"01a13ff2-ee18-7fab-b610-0fb99df8e511","actor_name":"grace","actor_origin":"tenant","resource_type":"subject","resource_id":"01a13ff2-f33a-79ce-a952-0aeec04a80d4","request_id":"01a13ff3-38fc-7a89-9c47-3fc41614c27a","ip":"172.20.0.1","detail":{"email":{"after":"grace.hopper@example.com","before":"hopper@example.com"}}}]}
 ```
-
-_(Captured before each audit row answered `actor_name` and `actor_origin`; not re-run, since the third run this section comes from cannot be repeated on one stack without the session, grants and timings it names. Every other field is as shown.)_
 
 ## `POST /console/api/admin/tenants/{tenant}/subjects`, refused as cross-site
 
-From the third run, on its session. A request to `/console/api/` or
+From the eighth run, on its session. A request to `/console/api/` or
 `/console/auth/` other than `GET`, `HEAD` or `OPTIONS` is refused `403`
 before anything else runs, unless it carries `Origin` equal to the base's
 origin and `X-Odudu-Console: 1`. The refusal has the admin API's own `403`
 type, `about:blank`, and says why in `detail`. All three requests below
-have the same valid session cookie and the same body. The first sends
-another origin:
+have the same valid session cookie, the same subject header and the same
+body. The first sends another origin:
 
 ```bash
 curl -sS -D - -c jar -b jar -X POST \
   -H 'Origin: https://evil.example' -H 'X-Odudu-Console: 1' \
+  -H 'X-Odudu-Console-Subject: 01a13ff2-eff9-746c-b8cb-e56af2072daa' \
   -H 'Content-Type: application/json' \
   -d '{"username":"babbage","email":"babbage@example.com"}' \
-  http://localhost:3000/console/api/admin/tenants/console-paths/subjects
+  http://localhost:3185/console/api/admin/tenants/console-paths/subjects
 ```
 
 ```
 HTTP/1.1 403 Forbidden
-x-request-id: 01a0e77c-1115-752e-ab58-bc1bf912de00
+x-request-id: 01a13ff3-6c8f-75c8-8cd7-2e257c06a71f
 content-type: application/problem+json; charset=utf-8
 cache-control: no-store
 content-length: 155
-Date: Mon, 28 Sep 2026 10:07:42 GMT
+Date: Thu, 15 Oct 2026 14:24:40 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"status":403,"type":"about:blank","title":"Forbidden","detail":"refused as cross-site: origin-mismatch","instance":"01a0e77c-1115-752e-ab58-bc1bf912de00"}
+{"status":403,"type":"about:blank","title":"Forbidden","detail":"refused as cross-site: origin-mismatch","instance":"01a13ff3-6c8f-75c8-8cd7-2e257c06a71f"}
 ```
 
 The second sends the right origin without the console's header:
 
 ```bash
 curl -sS -D - -c jar -b jar -X POST \
-  -H 'Origin: http://localhost:3000' \
+  -H 'Origin: http://localhost:3185' \
+  -H 'X-Odudu-Console-Subject: 01a13ff2-eff9-746c-b8cb-e56af2072daa' \
   -H 'Content-Type: application/json' \
   -d '{"username":"babbage","email":"babbage@example.com"}' \
-  http://localhost:3000/console/api/admin/tenants/console-paths/subjects
+  http://localhost:3185/console/api/admin/tenants/console-paths/subjects
 ```
 
 ```
 HTTP/1.1 403 Forbidden
-x-request-id: 01a0e77c-1122-7841-9077-d3d8d06c3f29
+x-request-id: 01a13ff3-6c9d-712c-8fb9-554b975b8841
 content-type: application/problem+json; charset=utf-8
 cache-control: no-store
 content-length: 162
-Date: Mon, 28 Sep 2026 10:07:42 GMT
+Date: Thu, 15 Oct 2026 14:24:40 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"status":403,"type":"about:blank","title":"Forbidden","detail":"refused as cross-site: console-header-missing","instance":"01a0e77c-1122-7841-9077-d3d8d06c3f29"}
+{"status":403,"type":"about:blank","title":"Forbidden","detail":"refused as cross-site: console-header-missing","instance":"01a13ff3-6c9d-712c-8fb9-554b975b8841"}
 ```
 
 The third sends both, and is forwarded. This shows the two refusals above
@@ -1306,28 +1296,30 @@ were the gateway's, not the admin API refusing the body or the session:
 
 ```bash
 curl -sS -D - -c jar -b jar -X POST \
-  -H 'Origin: http://localhost:3000' -H 'X-Odudu-Console: 1' \
+  -H 'Origin: http://localhost:3185' -H 'X-Odudu-Console: 1' \
+  -H 'X-Odudu-Console-Subject: 01a13ff2-eff9-746c-b8cb-e56af2072daa' \
   -H 'Content-Type: application/json' \
   -d '{"username":"babbage","email":"babbage@example.com"}' \
-  http://localhost:3000/console/api/admin/tenants/console-paths/subjects
+  http://localhost:3185/console/api/admin/tenants/console-paths/subjects
 ```
 
 ```
 HTTP/1.1 201 Created
-x-request-id: 01a0e77c-1133-763b-a47a-001dca14a43f
+x-request-id: 01a13ff3-6cab-7cd2-baa1-84186f702bbf
 content-type: application/json; charset=utf-8
+etag: "75ffef77024523cf6928e5a7089ef7e0173370b9713f0e77a01accf6611f60c1"
 cache-control: no-store
 content-length: 165
-Date: Mon, 28 Sep 2026 10:07:42 GMT
+Date: Thu, 15 Oct 2026 14:24:40 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"id":"01a0e77c-1143-7905-8e81-8c9b7d67635a","type":"user","username":"babbage","email":"babbage@example.com","enabled":true,"created_at":"2026-09-28T10:07:42.915Z"}
+{"id":"01a13ff3-6cc0-75d5-9765-a07ee40d3e06","type":"user","username":"babbage","email":"babbage@example.com","enabled":true,"created_at":"2026-10-15T14:24:40.127Z"}
 ```
 
 ## `POST /console/api/admin/tenants/{tenant}/subjects`, refused for another principal
 
-From the fourth run, on its own stack and tenant. Every tab of a browser
+From the eighth run, on the same tenant. Every tab of a browser
 shares the console cookie, so another tab's sign-in can replace the session
 under a page that still shows the old administrator. The console therefore
 names, on each admin request, the subject its tab believes is signed in, in
@@ -1335,24 +1327,24 @@ names, on each admin request, the subject its tab believes is signed in, in
 `grace`'s:
 
 ```bash
-curl -sS -D - -c jar -b jar http://localhost:3080/console/api/session
+curl -sS -D - -c jar -b jar http://localhost:3185/console/api/session
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a0e95a-6c11-74c9-b130-35dc74a68b8a
+x-request-id: 01a13ff3-8277-7d7b-a675-a2fce66260f9
 cache-control: no-store
 content-type: application/json; charset=utf-8
-content-length: 99
-Date: Mon, 28 Sep 2026 18:50:12 GMT
+content-length: 97
+Date: Thu, 15 Oct 2026 14:24:45 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"tenant":"principal-check","subject_id":"01a0e95a-081b-76fa-af1b-6da2485d3057","username":"grace"}
+{"tenant":"console-paths","subject_id":"01a13ff2-eff9-746c-b8cb-e56af2072daa","username":"grace"}
 ```
 
 The three writes below ran one after another, between
-`2026-09-28T18:50:12.410Z` and `2026-09-28T18:50:12.538Z` as
+`2026-10-15T14:24:45.738Z` and `2026-10-15T14:24:45.846Z` as
 `new Date().toISOString()` printed them before and after, with the same
 cookie and body. The first names `hopper`, another subject of the tenant, and is
 refused `409` with the gateway's own problem type. The session is live, so
@@ -1360,24 +1352,24 @@ the cookie is left alone:
 
 ```bash
 curl -sS -D - -c jar -b jar -X POST \
-  -H 'Origin: http://localhost:3080' -H 'X-Odudu-Console: 1' \
-  -H 'X-Odudu-Console-Subject: 01a0e95a-0bcc-748d-a790-cb413990b992' \
+  -H 'Origin: http://localhost:3185' -H 'X-Odudu-Console: 1' \
+  -H 'X-Odudu-Console-Subject: 01a13ff2-f33a-79ce-a952-0aeec04a80d4' \
   -H 'Content-Type: application/json' \
-  -d '{"username":"babbage","email":"babbage@example.com"}' \
-  http://localhost:3080/console/api/admin/tenants/principal-check/subjects
+  -d '{"username":"lovelace","email":"lovelace@example.com"}' \
+  http://localhost:3185/console/api/admin/tenants/console-paths/subjects
 ```
 
 ```
 HTTP/1.1 409 Conflict
-x-request-id: 01a0e95a-6c4b-7e13-a475-6eba0048593d
+x-request-id: 01a13ff3-82b7-7c08-9976-da2cd1906ab8
 content-type: application/problem+json; charset=utf-8
 cache-control: no-store
 content-length: 130
-Date: Mon, 28 Sep 2026 18:50:12 GMT
+Date: Thu, 15 Oct 2026 14:24:45 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"status":409,"type":"about:blank#console-principal-changed","title":"Conflict","instance":"01a0e95a-6c4b-7e13-a475-6eba0048593d"}
+{"status":409,"type":"about:blank#console-principal-changed","title":"Conflict","instance":"01a13ff3-82b7-7c08-9976-da2cd1906ab8"}
 ```
 
 The second names no subject. A write that does not say who it acts for is
@@ -1385,23 +1377,23 @@ refused the same way; a read that names nobody is still forwarded:
 
 ```bash
 curl -sS -D - -c jar -b jar -X POST \
-  -H 'Origin: http://localhost:3080' -H 'X-Odudu-Console: 1' \
+  -H 'Origin: http://localhost:3185' -H 'X-Odudu-Console: 1' \
   -H 'Content-Type: application/json' \
-  -d '{"username":"babbage","email":"babbage@example.com"}' \
-  http://localhost:3080/console/api/admin/tenants/principal-check/subjects
+  -d '{"username":"lovelace","email":"lovelace@example.com"}' \
+  http://localhost:3185/console/api/admin/tenants/console-paths/subjects
 ```
 
 ```
 HTTP/1.1 409 Conflict
-x-request-id: 01a0e95a-6c5a-78c9-b7db-e72cfd3f2a95
+x-request-id: 01a13ff3-82c7-70e7-ae4e-61259517bd0c
 content-type: application/problem+json; charset=utf-8
 cache-control: no-store
 content-length: 130
-Date: Mon, 28 Sep 2026 18:50:12 GMT
+Date: Thu, 15 Oct 2026 14:24:45 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"status":409,"type":"about:blank#console-principal-changed","title":"Conflict","instance":"01a0e95a-6c5a-78c9-b7db-e72cfd3f2a95"}
+{"status":409,"type":"about:blank#console-principal-changed","title":"Conflict","instance":"01a13ff3-82c7-70e7-ae4e-61259517bd0c"}
 ```
 
 The third names `grace`, and is forwarded. The refusals above were the
@@ -1409,48 +1401,47 @@ gateway's, not the admin API refusing the body:
 
 ```bash
 curl -sS -D - -c jar -b jar -X POST \
-  -H 'Origin: http://localhost:3080' -H 'X-Odudu-Console: 1' \
-  -H 'X-Odudu-Console-Subject: 01a0e95a-081b-76fa-af1b-6da2485d3057' \
+  -H 'Origin: http://localhost:3185' -H 'X-Odudu-Console: 1' \
+  -H 'X-Odudu-Console-Subject: 01a13ff2-eff9-746c-b8cb-e56af2072daa' \
   -H 'Content-Type: application/json' \
-  -d '{"username":"babbage","email":"babbage@example.com"}' \
-  http://localhost:3080/console/api/admin/tenants/principal-check/subjects
+  -d '{"username":"lovelace","email":"lovelace@example.com"}' \
+  http://localhost:3185/console/api/admin/tenants/console-paths/subjects
 ```
 
 ```
 HTTP/1.1 201 Created
-x-request-id: 01a0e95a-6c79-7552-8df2-d2de317ef73a
+x-request-id: 01a13ff3-82d7-7673-a308-c737b160a07e
 content-type: application/json; charset=utf-8
+etag: "a2ce5bf02107d3ac576007a7107ff7fd5fccf91e7d1e1c7c51376c48046f85f9"
 cache-control: no-store
-content-length: 165
-Date: Mon, 28 Sep 2026 18:50:12 GMT
+content-length: 167
+Date: Thu, 15 Oct 2026 14:24:45 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"id":"01a0e95a-6c92-7aa6-bf80-69f93079a62b","type":"user","username":"babbage","email":"babbage@example.com","enabled":true,"created_at":"2026-09-28T18:50:12.497Z"}
+{"id":"01a13ff3-82ec-7627-b426-616ba224159c","type":"user","username":"lovelace","email":"lovelace@example.com","enabled":true,"created_at":"2026-10-15T14:24:45.803Z"}
 ```
 
 The audit trail for that second, read through the proxy, holds one row,
 the third write's. The two refused writes reached nothing:
 
 ```bash
-curl -sS -D - -b jar -H 'X-Odudu-Console-Subject: 01a0e95a-081b-76fa-af1b-6da2485d3057' \
-  'http://localhost:3080/console/api/admin/tenants/principal-check/audit?from=2026-09-28T18:50:12Z&to=2026-09-28T18:50:13Z'
+curl -sS -D - -b jar -H 'X-Odudu-Console-Subject: 01a13ff2-eff9-746c-b8cb-e56af2072daa' \
+  'http://localhost:3185/console/api/admin/tenants/console-paths/audit?from=2026-10-15T14:24:45Z&to=2026-10-15T14:24:46Z'
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a0e95a-88e9-7d34-94e0-be4b07dbcc20
+x-request-id: 01a13ff3-90bc-7645-93c2-b50e860c88fb
 content-type: application/json; charset=utf-8
 cache-control: no-store
-content-length: 507
-Date: Mon, 28 Sep 2026 18:50:19 GMT
+content-length: 552
+Date: Thu, 15 Oct 2026 14:24:49 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"items":[{"id":"01a0e95a-6c98-7609-92cc-53689a8ccae6","occurred_at":"2026-09-28T18:50:12.497Z","event_type":"admin_mutation","action":"subject.create","outcome":"allowed","actor_tenant_id":"01a0e95a-054b-71ee-ba7c-25720d128406","actor_subject_id":"01a0e95a-081b-76fa-af1b-6da2485d3057","actor_client_id":"01a0e95a-05d4-790f-86b0-9cf1e44c3dd1","resource_type":"subject","resource_id":"01a0e95a-6c92-7aa6-bf80-69f93079a62b","request_id":"01a0e95a-6c79-7552-8df2-d2de317ef73a","ip":"172.21.0.1","detail":{}}]}
+{"items":[{"id":"01a13ff3-82f0-7a4e-aec6-f4859251f88e","occurred_at":"2026-10-15T14:24:45.803Z","event_type":"admin_mutation","action":"subject.create","outcome":"allowed","actor_tenant_id":"01a13ff2-eddb-7d89-8555-c32d1cd8acf9","actor_subject_id":"01a13ff2-eff9-746c-b8cb-e56af2072daa","actor_client_id":"01a13ff2-ee18-7fab-b610-0fb99df8e511","actor_name":"grace","actor_origin":"tenant","resource_type":"subject","resource_id":"01a13ff3-82ec-7627-b426-616ba224159c","request_id":"01a13ff3-82d7-7673-a308-c737b160a07e","ip":"172.20.0.1","detail":{}}]}
 ```
-
-_(Captured before each audit row answered `actor_name` and `actor_origin`; not re-run, since the fourth run this section comes from cannot be repeated on one stack without the session, grants and timings it names. Every other field is as shown.)_
 
 ## A path that escapes `/admin/`
 
