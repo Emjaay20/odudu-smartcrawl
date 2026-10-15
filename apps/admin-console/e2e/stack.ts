@@ -219,6 +219,22 @@ const seededSchema = z.object({
       fixed: account,
       fixedClientsOnly: account,
     }),
+    // One tenant per test that clears its lockouts, each holding locked subjects.
+    lockouts: z.object({
+      main: account,
+      keyed: account,
+      // Read only: a phone's page, and an operator holding manage-tenant alone.
+      fixed: account,
+      fixedTenantOnly: account,
+    }),
+    // One tenant per test that reads its mail, each with its outbox seeded.
+    mail: z.object({
+      main: account,
+      keyed: account,
+      // Read only: a phone's page, and an operator holding manage-tenant alone.
+      fixed: account,
+      fixedTenantOnly: account,
+    }),
   }),
   // A tenant of its own for the Audit tests, with its trail seeded.
   audit: z.object({

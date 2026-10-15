@@ -328,6 +328,59 @@ function seedConfig(config: Seeded['config']): void {
   grant(settings.fixedClientsOnly, 'odudu-admin:manage-clients');
   subject(email.fixedClientsOnly);
   grant(email.fixedClientsOnly, 'odudu-admin:manage-clients');
+  seedLockouts(config.lockouts);
+  seedMail(config.mail);
+}
+
+const LOCKED_SUBJECTS = 3;
+
+// Subjects with a run of failed sign-ins and a lockout still running.
+function seedLockouts(lockouts: Seeded['config']['lockouts']): void {
+  const { main, keyed, fixed, fixedTenantOnly } = lockouts;
+  for (const account of [main, keyed, fixed]) {
+    seed(['tenant', '--name', account.tenant]);
+    administrator(account);
+  }
+  subject(fixedTenantOnly);
+  grant(fixedTenantOnly, 'odudu-admin:manage-tenant');
+  for (const { tenant } of [main, keyed]) {
+    for (let n = 1; n <= LOCKED_SUBJECTS; n += 1) {
+      subject({ tenant, username: `locked-${String(n)}`, password: password() });
+    }
+    psql(
+      `insert into login_failures (tenant_id, subject_id, failure_count, first_failure_at, last_failure_at, locked_until) select tenant_id, subject_id, 6, now(), now(), now() + interval '1 hour' from users where tenant_id = ${inTenant(tenant)} and username like 'locked-%'`,
+    );
+  }
+}
+
+const MAIL_SENT = 40;
+
+// An outbox the sender leaves alone: sent mail, failures past their attempts
+// and messages whose next attempt is a day away.
+function seedMail(mail: Seeded['config']['mail']): void {
+  const { main, keyed, fixed, fixedTenantOnly } = mail;
+  for (const account of [main, keyed, fixed]) {
+    seed(['tenant', '--name', account.tenant]);
+    administrator(account);
+  }
+  subject(fixedTenantOnly);
+  grant(fixedTenantOnly, 'odudu-admin:manage-tenant');
+  for (const { tenant } of [main, keyed, fixed]) {
+    const at = inTenant(tenant);
+    const insert = `insert into email_outbox (id, tenant_id, to_address, subject, body_text, body_html, created_at, next_attempt_at, sent_at, attempts, last_error)`;
+    psql(
+      `${insert} select gen_random_uuid(), ${at}, 'sent-' || n || '@example.test', 'Verify your account', 'x', 'x', now() - (n || ' minutes')::interval, now(), now() - (n || ' minutes')::interval, 1, null from generate_series(1, ${String(MAIL_SENT)}) n`,
+    );
+    psql(
+      `${insert} select gen_random_uuid(), ${at}, 'failed-' || n || '@example.test', 'Reset your password', 'x', 'x', now() - interval '2 days' - (n || ' minutes')::interval, now() + interval '1 day', null, 99, 'connect ECONNREFUSED' from generate_series(1, 2) n`,
+    );
+    psql(
+      `${insert} select gen_random_uuid(), ${at}, 'retrying@example.test', 'Verify your account', 'x', 'x', now() - interval '3 days', now() + interval '1 day', null, 2, 'connection timed out'`,
+    );
+    psql(
+      `${insert} select gen_random_uuid(), ${at}, 'queued@example.test', 'Verify your account', 'x', 'x', now() - interval '4 days', now() + interval '1 day', null, 0, null`,
+    );
+  }
 }
 
 // Names are fresh each run, so a stack kept up between runs seeds again.
@@ -443,6 +496,18 @@ export default function globalSetup(): void {
       refused: { tenant: `${run}-m4`, username: 'baird', password: password() },
       fixed: { tenant: `${run}-m5`, username: 'hertz', password: password() },
       fixedClientsOnly: { tenant: `${run}-m5`, username: 'edison', password: password() },
+    },
+    lockouts: {
+      main: { tenant: `${run}-l1`, username: 'curie', password: password() },
+      keyed: { tenant: `${run}-l2`, username: 'bohm', password: password() },
+      fixed: { tenant: `${run}-l3`, username: 'planck', password: password() },
+      fixedTenantOnly: { tenant: `${run}-l3`, username: 'dirac', password: password() },
+    },
+    mail: {
+      main: { tenant: `${run}-o1`, username: 'shannon', password: password() },
+      keyed: { tenant: `${run}-o2`, username: 'ritchie', password: password() },
+      fixed: { tenant: `${run}-o3`, username: 'hamming', password: password() },
+      fixedTenantOnly: { tenant: `${run}-o3`, username: 'knuth', password: password() },
     },
   };
   const tenants = {
