@@ -21,9 +21,10 @@ const STALE = [
   ['list', 'system', 'tenants'],
   ['count', 'system', 'tenants', ''],
   ['list', 'system', 'audit'],
+  ['overview', 'system', 'tenants'],
 ] as const;
 
-it('deletes the tenant and reads the system lists of tenants, counts and audit again', async () => {
+it('deletes the tenant and reads the system lists of tenants, counts, audit and overview again', async () => {
   const { wrapper, queryClient, sent } = hookHarness({ [path]: gone });
   for (const key of STALE) queryClient.setQueryData(key, 'held');
   const { result } = renderHook(() => useTenantDeletion('acme'), { wrapper });
@@ -34,6 +35,7 @@ it('deletes the tenant and reads the system lists of tenants, counts and audit a
   expect(answer?.ok).toBe(true);
   expect(sent.map((s) => [s.method, s.search.toString()])).toEqual([['DELETE', 'confirm=acme']]);
   expect(STALE.map((key) => queryClient.getQueryState(key)?.isInvalidated)).toEqual([
+    true,
     true,
     true,
     true,
