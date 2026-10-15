@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { EndTenantSessionsResponse, TenantSession } from '@odudu/contracts/admin';
 import { useAuthority, usePrincipal, useRefusal } from '#/features/session';
 import { subjectHref } from '#/features/subjects';
@@ -9,6 +10,7 @@ import {
   endConsequence,
   endedText,
   endFailure,
+  endMoreText,
   subjectLinkOf,
 } from '#/features/tenant-sessions/service';
 import { useToast } from '#/shared/repository/useToasts';
@@ -23,6 +25,8 @@ export interface TenantSessionsPage {
   subjectLink: ((id: string) => string) | null;
   endAll: Confirming<'all'>;
   consequence: string;
+  // What stays beside the button while more sessions are live.
+  more: string | null;
 }
 
 export function useTenantSessionsPage(tenant: string): TenantSessionsPage {
@@ -30,6 +34,7 @@ export function useTenantSessionsPage(tenant: string): TenantSessionsPage {
   const toast = useToast();
   const principal = usePrincipal();
   const authority = useAuthority(tenant);
+  const [more, setMore] = useState<string | null>(null);
   return {
     list: useTenantSessionList(tenant),
     subjectLink: subjectLinkOf(holds(authority, 'view-users'), tenant, subjectHref),
@@ -40,8 +45,10 @@ export function useTenantSessionsPage(tenant: string): TenantSessionsPage {
       failureText: (failure) => endFailure(tenant, failure),
       done: (_all, answer) => {
         toast.succeeded(endedText(tenant, answer));
+        setMore(endMoreText(tenant, answer));
       },
     }),
     consequence: endConsequence(tenant, isOwnTenant(principal, tenant)),
+    more,
   };
 }

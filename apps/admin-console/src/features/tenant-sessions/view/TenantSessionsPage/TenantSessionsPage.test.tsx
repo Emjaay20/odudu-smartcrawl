@@ -93,6 +93,25 @@ it('ends every session once the tenant’s name is typed, and says what came of 
   expect(await screen.findByText('No sessions yet')).toBeVisible();
 });
 
+it('keeps saying to end again beside the button while more sessions are live', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(
+    AT,
+    sessionRoutes(undefined, {
+      [`DELETE ${SESSIONS}`]: json({ ended: 500, remaining: 12, beyond_ceiling: 0 }),
+    }),
+  );
+  await user.click(await screen.findByRole('button', { name: 'End every session' }));
+  const dialog = await screen.findByRole('alertdialog');
+  await user.type(within(dialog).getByRole('textbox'), 'acme{Enter}');
+  expect(
+    await screen.findByText(
+      'More sessions are still live in acme: end every session again to end the next 500.',
+    ),
+  ).toBeVisible();
+  expect(screen.queryByRole('alertdialog')).toBeNull();
+});
+
 it('keeps the dialog and says why when the server refuses', async () => {
   const user = userEvent.setup();
   renderConsoleAt(

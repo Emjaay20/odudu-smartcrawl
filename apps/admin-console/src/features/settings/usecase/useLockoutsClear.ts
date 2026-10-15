@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { useAuthority, useRefusal } from '#/features/session';
 import { useLockoutsClear } from '#/features/settings/repository/useLockoutsClear';
 import {
   clearConsequence,
   clearedText,
+  clearMoreText,
   clearFailure,
   lockoutClearState,
   LOCKOUTS_NEEDS,
@@ -14,11 +16,14 @@ import { useConfirmedRemoval, type Removal } from '#/shared/usecase/useConfirmed
 export interface LockoutsClear extends Removal {
   state: LockoutClearState;
   consequence: string;
+  // What stays beside the button while more lockouts are left.
+  more: string | null;
 }
 
 export function useLockoutsClearAction(tenant: string): LockoutsClear {
   const refusal = useRefusal(tenant);
   const toast = useToast();
+  const [more, setMore] = useState<string | null>(null);
   const removal = useConfirmedRemoval({
     refusal,
     capability: LOCKOUTS_NEEDS,
@@ -26,11 +31,13 @@ export function useLockoutsClearAction(tenant: string): LockoutsClear {
     failureText: (failure) => clearFailure(tenant, failure),
     done: (answer) => {
       toast.succeeded(clearedText(tenant, answer));
+      setMore(clearMoreText(tenant, answer));
     },
   });
   return {
     ...removal,
     state: lockoutClearState(useAuthority(tenant)),
     consequence: clearConsequence(tenant),
+    more,
   };
 }

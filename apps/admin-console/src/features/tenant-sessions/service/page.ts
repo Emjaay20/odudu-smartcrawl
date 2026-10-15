@@ -1,7 +1,7 @@
 import type { EndTenantSessionsResponse, TenantSession } from '@odudu/contracts/admin';
 import { tenantPage } from '#/shared/service/address';
 import { writeRefusal } from '#/shared/service/capabilities';
-import { CONSOLE_FAULT } from '#/shared/service/failure';
+import { writeFailureText } from '#/shared/service/failure';
 import { counted } from '#/shared/service/format';
 import type { GatewayFailure } from '#/shared/service/result';
 
@@ -62,18 +62,17 @@ export function endedText(tenant: string, answer: EndTenantSessionsResponse): st
   return `${ended}${more}${left}`;
 }
 
+// Kept beside the action, since the toast that says the same is gone in seconds.
+export function endMoreText(tenant: string, answer: EndTenantSessionsResponse): string | null {
+  if (answer.remaining <= 0) return null;
+  return `More sessions are still live in ${tenant}: end every session again to end the next ${String(END_LIMIT)}.`;
+}
+
 export function endFailure(tenant: string, failure: GatewayFailure): string {
-  switch (failure.kind) {
-    case 'network':
-      return `Could not confirm whether the sessions in ${tenant} ended. Nothing was sent again; the list shows what the server holds now.`;
-    case 'schema':
-      return `The sessions in ${tenant} may have ended, but the answer could not be read. The list shows what the server holds now.`;
-    case 'defect':
-      return `The console could not finish, so the sessions in ${tenant} were not ended. ${CONSOLE_FAULT}`;
-    case 'problem':
-      return (
-        writeRefusal(failure.problem, 'manage-sessions') ??
-        `Refused: ${failure.problem.detail ?? failure.problem.title}`
-      );
-  }
+  return writeFailureText(failure, {
+    name: `The end of every session in ${tenant}`,
+    verb: 'done',
+    lookAt: 'the sessions list',
+    refused: (problem) => writeRefusal(problem, 'manage-sessions'),
+  });
 }

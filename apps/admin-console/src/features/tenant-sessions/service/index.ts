@@ -2,6 +2,7 @@ export {
   endConsequence,
   endedText,
   endFailure,
+  endMoreText,
   NOTHING_YET,
   NOUN,
   PAGE_RULE,

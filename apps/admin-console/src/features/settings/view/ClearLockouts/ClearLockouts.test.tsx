@@ -49,6 +49,24 @@ it('clears once the tenant’s name is typed, and says how many accounts it clea
   expect(screen.queryByRole('alertdialog')).toBeNull();
 });
 
+it('keeps saying to clear again beside the button while more are left', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(
+    AT,
+    settingsRoutes(undefined, {
+      [LOCKOUTS]: json({ cleared: 10000, beyond_ceiling: 0, remaining: 40 }),
+    }),
+  );
+  await user.click(within(await zone()).getByRole('button', { name: 'Clear all lockouts' }));
+  const dialog = await screen.findByRole('alertdialog');
+  await user.type(within(dialog).getByRole('textbox'), 'acme{Enter}');
+  expect(
+    await within(await zone()).findByText(
+      'More failed sign-ins are left in acme: clear every lockout again to clear the next 10,000.',
+    ),
+  ).toBeVisible();
+});
+
 it('keeps the dialog and says why when the server refuses', async () => {
   const user = userEvent.setup();
   renderConsoleAt(

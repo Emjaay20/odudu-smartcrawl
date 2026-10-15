@@ -3,6 +3,7 @@ import {
   clearConsequence,
   clearFailure,
   clearedText,
+  clearMoreText,
   lockoutClearState,
 } from '#/features/settings/service/lockouts';
 import type { GatewayFailure } from '#/shared/service/result';
@@ -72,5 +73,14 @@ describe('when the clear fails', () => {
       'has not been sent again',
     );
     expect(clearFailure('acme', { ok: false, kind: 'defect' })).toContain('was not done');
+  });
+});
+
+describe('what stays beside the action while lockouts remain', () => {
+  it('says to clear again only while more are left, and is none otherwise', () => {
+    expect(clearMoreText('acme', { cleared: 10000, remaining: 40, beyond_ceiling: 0 })).toBe(
+      'More failed sign-ins are left in acme: clear every lockout again to clear the next 10,000.',
+    );
+    expect(clearMoreText('acme', { cleared: 3, remaining: 0, beyond_ceiling: 1 })).toBeNull();
   });
 });

@@ -21,6 +21,7 @@ export function ClearLockouts({ tenant }: { tenant: string }) {
               {CLEAR_HEADING}
             </Button>
           </div>
+          {clear.more === null ? null : <p role="status">{clear.more}</p>}
           <ConfirmDialog
             isOpen={clear.confirming}
             title={`${CLEAR_HEADING} in ${tenant}?`}

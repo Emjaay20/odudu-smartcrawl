@@ -99,6 +99,7 @@ function List({ tenant }: { tenant: string }) {
         rowKey={(session) => session.id}
         capability="manage-sessions"
         nothingYet={NOTHING_YET}
+        notice={page.more === null ? undefined : <p role="status">{page.more}</p>}
       />
       <ConfirmDialog
         isOpen={page.endAll.asking !== null}

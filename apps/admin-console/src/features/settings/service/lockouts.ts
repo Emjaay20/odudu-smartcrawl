@@ -49,6 +49,12 @@ export function clearedText(tenant: string, answer: ClearLockoutsResponse): stri
   return `${head}${more}${kept}`;
 }
 
+// Kept beside the action, since the toast that says the same is gone in seconds.
+export function clearMoreText(tenant: string, answer: ClearLockoutsResponse): string | null {
+  if (answer.remaining <= 0) return null;
+  return `More failed sign-ins are left in ${tenant}: clear every lockout again to clear the next ${CLEAR_LIMIT}.`;
+}
+
 export function clearFailure(tenant: string, failure: GatewayFailure): string {
   return writeFailureText(failure, {
     name: `The clearing of every lockout in ${tenant}`,

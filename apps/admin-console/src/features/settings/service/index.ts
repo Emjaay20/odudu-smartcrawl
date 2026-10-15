@@ -27,6 +27,7 @@ export {
   CLEAR_RULE,
   clearConsequence,
   clearedText,
+  clearMoreText,
   clearFailure,
   lockoutClearState,
   LOCKOUTS_NEEDS,

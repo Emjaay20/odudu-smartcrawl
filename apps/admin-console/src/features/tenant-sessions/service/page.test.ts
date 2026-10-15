@@ -3,6 +3,7 @@ import {
   endConsequence,
   endedText,
   endFailure,
+  endMoreText,
   sessionsHref,
   subjectLinkOf,
   subjectCell,
@@ -93,7 +94,17 @@ describe('what ending every session came to', () => {
 describe('when ending every session fails', () => {
   it('words a refusal, a lost answer and a console fault', () => {
     expect(endFailure('acme', refused(403))).toContain('manage-sessions');
-    expect(endFailure('acme', { ok: false, kind: 'network' })).toContain('Nothing was sent again');
-    expect(endFailure('acme', { ok: false, kind: 'defect' })).toContain('were not ended');
+    expect(endFailure('acme', { ok: false, kind: 'schema' })).toContain('may have been done');
+    expect(endFailure('acme', { ok: false, kind: 'network' })).toContain('has not been sent again');
+    expect(endFailure('acme', { ok: false, kind: 'defect' })).toContain('was not done');
+  });
+});
+
+describe('what stays beside the action while sessions remain', () => {
+  it('says to end again only while more are live, and is none otherwise', () => {
+    expect(endMoreText('acme', { ended: 500, remaining: 12, beyond_ceiling: 0 })).toBe(
+      'More sessions are still live in acme: end every session again to end the next 500.',
+    );
+    expect(endMoreText('acme', { ended: 3, remaining: 0, beyond_ceiling: 1 })).toBeNull();
   });
 });
