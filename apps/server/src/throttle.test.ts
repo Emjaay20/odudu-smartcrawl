@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_THROTTLE_KEYS, slidingWindow } from '#/throttle';
+import { MAX_THROTTLE_KEYS, slidingWindow, slidingWindowLog } from '#/throttle';
 
 function at(seconds: number): Date {
   return new Date(1_700_000_000_000 + seconds * 1000);
@@ -111,5 +111,26 @@ describe('slidingWindow', () => {
 
     expect(whileWarm).toBeGreaterThan(50);
     expect(window.size()).toBeLessThanOrEqual(2);
+  });
+});
+
+describe('slidingWindowLog', () => {
+  it('is what slidingWindow builds for the default budget', () => {
+    const options = { limit: 10, windowSeconds: 60, now: () => at(0) };
+    const built = slidingWindow(options);
+    const log = slidingWindowLog(options);
+
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      expect(built.check('198.51.100.7')).toEqual(log.check('198.51.100.7'));
+    }
+    expect(built.size()).toBe(log.size());
+  });
+
+  it('retains one timestamp per admitted request, and none for a refused one', () => {
+    const log = slidingWindowLog({ limit: 3, windowSeconds: 60, now: () => at(0) });
+    for (let attempt = 0; attempt < 8; attempt += 1) log.check('198.51.100.7');
+    log.check('203.0.113.9');
+
+    expect(log.retained()).toBe(4);
   });
 });

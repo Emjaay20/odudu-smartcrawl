@@ -38,7 +38,7 @@ import { type Logger as PinoLogger } from 'pino';
 import { createClientKeyRequest, defaultClientKeyLookup } from '#/client-key-transport';
 import { type ConsoleKeys, missingConsoleKey } from '#/console-key';
 import { registerHealth } from '#/health';
-import { slidingWindow } from '#/throttle';
+import { type RateLimiter, slidingWindow } from '#/throttle';
 
 export interface AppDeps {
   readonly database: DatabaseHandle;
@@ -166,12 +166,16 @@ export const AUDIT_REFUSAL_ROWS_PER_CLIENT = 20;
 export const AUDIT_REFUSAL_WINDOW_SECONDS = 60;
 
 export function auditRefusalBudget(now: () => Date): AuditRefusalBudget {
-  const rows = slidingWindow({
+  const rows: RateLimiter = slidingWindow({
     limit: AUDIT_REFUSAL_ROWS_PER_CLIENT - 1,
     windowSeconds: AUDIT_REFUSAL_WINDOW_SECONDS,
     now,
   });
-  const closing = slidingWindow({ limit: 1, windowSeconds: AUDIT_REFUSAL_WINDOW_SECONDS, now });
+  const closing: RateLimiter = slidingWindow({
+    limit: 1,
+    windowSeconds: AUDIT_REFUSAL_WINDOW_SECONDS,
+    now,
+  });
   return {
     take: (key) => {
       if (rows.check(key).allowed) return 'row';
@@ -237,7 +241,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     reply.header('x-request-id', request.id);
   });
 
-  const throttle = slidingWindow({
+  const throttle: RateLimiter = slidingWindow({
     ...(deps.throttle ?? DEFAULT_THROTTLE),
     now: () => new Date(),
   });
@@ -245,7 +249,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   // ADR 0023's client half. A distinct `slidingWindow` from `throttle`
   // above: same primitive, a different key and a different budget, so one
   // flood cannot spend the other's window.
-  const clientSecretLimiter = slidingWindow({
+  const clientSecretLimiter: RateLimiter = slidingWindow({
     ...(deps.clientSecretThrottle ?? DEFAULT_CLIENT_SECRET_THROTTLE),
     now: () => new Date(),
   });
