@@ -120,6 +120,25 @@ describe('the per-origin throttle keys an address by its network', () => {
     expect(await spend(app, '198.51.100.8')).not.toBe(429);
   });
 
+  it('ignores a forwarded address when the proxy is not trusted, so a client cannot pick its key', async () => {
+    const app = throttledApp(false);
+    for (const forwarded of ['203.0.113.1', '203.0.113.2', '203.0.113.3']) {
+      expect(await spend(app, '198.51.100.7', { 'x-forwarded-for': forwarded })).not.toBe(429);
+    }
+
+    expect(await spend(app, '198.51.100.7', { 'x-forwarded-for': '203.0.113.4' })).toBe(429);
+  });
+
+  it('keys by the forwarded address when the proxy is trusted, whatever the socket', async () => {
+    const app = throttledApp(true);
+    for (let n = 0; n < 8; n += 1) {
+      const forwarded = { 'x-forwarded-for': `203.0.113.${String(n)}` };
+      expect(await spend(app, '10.0.0.1', forwarded)).not.toBe(429);
+    }
+
+    expect(await spend(app, '10.0.0.1', { 'x-forwarded-for': '203.0.113.0' })).not.toBe(429);
+  });
+
   it('keys a forwarded address the same way, behind a trusted proxy', async () => {
     const app = throttledApp(true);
     const forwarded = (address: string) => ({ 'x-forwarded-for': address });
@@ -155,7 +174,7 @@ describe('the sign-in budget per address and username', () => {
     return { handle, database };
   }
 
-  function loginApp(database: DatabaseHandle, loginLimit = 3) {
+  function loginApp(database: DatabaseHandle, loginLimit = 3, trustProxy = false) {
     return buildApp({
       database,
       ownerDatabase: database,
@@ -163,6 +182,7 @@ describe('the sign-in budget per address and username', () => {
       logger: createLogger(config),
       throttle: { limit: 1000, windowSeconds: 60 },
       loginThrottle: { limit: loginLimit, windowSeconds: 60 },
+      trustProxy,
     });
   }
 
@@ -171,12 +191,13 @@ describe('the sign-in budget per address and username', () => {
     fields: Record<string, string>,
     remoteAddress = '198.51.100.7',
     url = AUTHENTICATE,
+    headers: Record<string, string> = {},
   ) {
     return app.inject({
       method: 'POST',
       url,
       payload: new URLSearchParams(fields).toString(),
-      headers: FORM,
+      headers: { ...FORM, ...headers },
       remoteAddress,
     });
   }
@@ -285,6 +306,49 @@ describe('the sign-in budget per address and username', () => {
           )
         ).statusCode,
       ).not.toBe(429);
+    }
+  });
+
+  it('ignores a forwarded address when the proxy is not trusted', async () => {
+    const app = loginApp(noSuchTenantDatabase, 3, false);
+    for (const forwarded of ['203.0.113.1', '203.0.113.2', '203.0.113.3']) {
+      const answer = await submit(
+        app,
+        { username: 'ada', password: 'x' },
+        '198.51.100.7',
+        AUTHENTICATE,
+        {
+          'x-forwarded-for': forwarded,
+        },
+      );
+      expect(answer.statusCode).not.toBe(429);
+    }
+
+    const refused = await submit(
+      app,
+      { username: 'ada', password: 'x' },
+      '198.51.100.7',
+      AUTHENTICATE,
+      {
+        'x-forwarded-for': '203.0.113.4',
+      },
+    );
+    expect(refused.statusCode).toBe(429);
+  });
+
+  it('keys by the forwarded address when the proxy is trusted, whatever the socket', async () => {
+    const app = loginApp(noSuchTenantDatabase, 3, true);
+    for (let n = 0; n < 8; n += 1) {
+      const answer = await submit(
+        app,
+        { username: 'ada', password: 'x' },
+        '10.0.0.1',
+        AUTHENTICATE,
+        {
+          'x-forwarded-for': `203.0.113.${String(n)}`,
+        },
+      );
+      expect(answer.statusCode).not.toBe(429);
     }
   });
 
