@@ -33,13 +33,19 @@ import {
   standardClaimMappers,
   type AuditRefusalBudget,
 } from '@odudu/protocol-oidc';
-import Fastify, { type FastifyInstance, type FastifyReply, type RawServerDefault } from 'fastify';
+import Fastify, {
+  type FastifyError,
+  type FastifyInstance,
+  type FastifyReply,
+  type RawServerDefault,
+} from 'fastify';
 import { type IncomingMessage, type ServerResponse } from 'node:http';
 import { type Logger as PinoLogger } from 'pino';
 import { createClientKeyRequest, defaultClientKeyLookup } from '#/client-key-transport';
 import { type ConsoleKeys, missingConsoleKey } from '#/console-key';
 import { registerHealth } from '#/health';
 import { type RateLimiter, slidingWindow } from '#/throttle';
+import { neutraliseRequestInput } from '#/input-hygiene';
 import { loginBudgetKey } from '#/login-throttle';
 import { throttleOrigin } from '#/throttle-origin';
 
@@ -267,6 +273,22 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     reply.header('x-request-id', request.id);
   });
 
+  // The root handler, for every route that has no scope of its own (the admin
+  // and console scopes keep theirs). A server error is a fixed document: the
+  // driver's message carries the query and its parameters, so it is logged by
+  // kind only and never sent. A client error keeps Fastify's own answer.
+  app.setErrorHandler<FastifyError>((error, request, reply) => {
+    const status = error.statusCode ?? 500;
+    if (status < 500) return reply.send(error);
+    request.log.error({ err: { type: error.name, code: error.code } }, 'request failed');
+    return reply.code(500).type('application/problem+json').send({
+      type: 'about:blank',
+      title: 'Internal Server Error',
+      status: 500,
+      instance: request.id,
+    });
+  });
+
   const throttle: RateLimiter = slidingWindow({
     ...(deps.throttle ?? DEFAULT_THROTTLE),
     now: () => new Date(),
@@ -313,6 +335,16 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     const decision = throttle.check(throttleOrigin(request.ip));
     if (decision.allowed) return;
     return refuse(reply, route, decision.retryAfterSeconds);
+  });
+
+  // Under /tenants, before anything reads a value: a NUL or a lone surrogate
+  // in a name, a form field, a query parameter or the tenant segment cannot
+  // be a database parameter, so it is made one no account answers to.
+  app.addHook('preValidation', (request, _reply, done) => {
+    if (request.routeOptions.url?.startsWith('/tenants/') === true) {
+      neutraliseRequestInput(request);
+    }
+    done();
   });
 
   // The composite budget needs the form, so it waits for the body parse —

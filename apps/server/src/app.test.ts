@@ -476,3 +476,57 @@ describe('auditRefusalBudget', () => {
     expect(budget.take('tenant:client')).toBe('row');
   });
 });
+
+describe('an unexpected failure', () => {
+  const LEAK = 'Failed query: select "secret_hash" from "sessions" params: hunter2';
+
+  function failingApp() {
+    const database = {
+      db: new Proxy(
+        {},
+        {
+          get: () => {
+            throw new Error(LEAK);
+          },
+        },
+      ),
+      sql: (() => Promise.resolve([{ ok: 1 }])) as unknown as DatabaseHandle['sql'],
+      close: () => Promise.resolve(),
+    } as unknown as DatabaseHandle;
+    return buildApp({
+      database,
+      ownerDatabase: database,
+      kek: config.ODUDU_KEK,
+      logger: createLogger(config),
+    });
+  }
+
+  it('answers a fixed problem document with no driver or SQL text', async () => {
+    const res = await failingApp().inject({
+      url: '/tenants/acme/.well-known/openid-configuration',
+    });
+
+    expect(res.statusCode).toBe(500);
+    expect(res.headers['content-type']).toContain('application/problem+json');
+    expect(res.body).not.toContain('Failed query');
+    expect(res.body).not.toContain('hunter2');
+    expect(res.json()).toEqual({
+      type: 'about:blank',
+      title: 'Internal Server Error',
+      status: 500,
+      instance: res.headers['x-request-id'],
+    });
+  });
+
+  it('still answers a client error in the shape Fastify gives it', async () => {
+    const res = await failingApp().inject({
+      method: 'POST',
+      url: '/tenants/acme/clients-registrations/openid-connect',
+      payload: '{not json',
+      headers: { 'content-type': 'application/json' },
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toMatchObject({ statusCode: 400, error: 'Bad Request' });
+  });
+});
