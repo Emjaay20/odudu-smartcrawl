@@ -65,6 +65,8 @@ interface PlanNode {
   readonly indexName: string | undefined;
   readonly indexCond: string | undefined;
   readonly filter: string | undefined;
+  readonly removedByFilter: number;
+  readonly actualRows: number;
   readonly children: readonly PlanNode[];
 }
 
@@ -74,7 +76,7 @@ let app: DatabaseHandle;
 let captured: Statement[] | undefined;
 let targetTenantId: string;
 let mostlySentTenantId: string;
-let mostlyUnsentTenantId: string;
+let relayDownTenantId: string;
 let scopedClientId: string;
 let busyGrantId: string;
 let heldRoleId: string;
@@ -103,10 +105,10 @@ beforeAll(async () => {
   const [target] = tenantIds;
   if (target === undefined) throw new Error('no target tenant');
   targetTenantId = target;
-  const [mostlySent, mostlyUnsent] = tenantIds.slice(1);
-  if (mostlySent === undefined || mostlyUnsent === undefined) throw new Error('no mail tenants');
+  const [mostlySent, relayDown] = tenantIds.slice(1);
+  if (mostlySent === undefined || relayDown === undefined) throw new Error('no mail tenants');
   mostlySentTenantId = mostlySent;
-  mostlyUnsentTenantId = mostlyUnsent;
+  relayDownTenantId = relayDown;
 
   await owner.sql`
     insert into tenants (id, name, display_name)
@@ -218,17 +220,19 @@ beforeAll(async () => {
            now() - interval '30 days' - (g || ' seconds')::interval,
            case g % 3 when 0 then 5 when 1 then 2 else 0 end,
            case g % 3 when 0 then 'refused' when 1 then 'timeout' end
-      from generate_series(1, 20) g`;
+      from generate_series(1, 60) g`;
   await owner.sql`
-    insert into email_outbox (id, tenant_id, to_address, subject, body_text, body_html, created_at)
-    select gen_random_uuid(), ${mostlyUnsentTenantId}, 'user' || g || '@example.com', 'Verify', 'x', 'x',
-           now() - (g || ' seconds')::interval
+    insert into email_outbox (id, tenant_id, to_address, subject, body_text, body_html, created_at, attempts, last_error)
+    select gen_random_uuid(), ${relayDownTenantId}, 'user' || g || '@example.com', 'Verify', 'x', 'x',
+           now() - (g || ' seconds')::interval, 2, 'timeout'
       from generate_series(1, ${ROWS}) g`;
   await owner.sql`
-    insert into email_outbox (id, tenant_id, to_address, subject, body_text, body_html, created_at, sent_at)
-    select gen_random_uuid(), ${mostlyUnsentTenantId}, 'early' || g || '@example.com', 'Verify', 'x', 'x',
-           now() - interval '30 days' - (g || ' seconds')::interval, now()
-      from generate_series(1, 20) g`;
+    insert into email_outbox (id, tenant_id, to_address, subject, body_text, body_html, created_at, sent_at, attempts, last_error)
+    select gen_random_uuid(), ${relayDownTenantId}, 'early' || g || '@example.com', 'Verify', 'x', 'x',
+           now() - interval '30 days' - (g || ' seconds')::interval,
+           case when g % 3 = 0 then now() end, case g % 3 when 0 then 1 when 1 then 5 else 0 end,
+           case g % 3 when 1 then 'refused' end
+      from generate_series(1, 60) g`;
   await owner.sql`
     insert into backchannel_logout_deliveries
       (id, tenant_id, client_id, session_id, endpoint, logout_token, created_at)
@@ -287,6 +291,8 @@ function planNode(value: unknown): PlanNode {
     indexName: optionalString(node['Index Name']),
     indexCond: optionalString(node['Index Cond']),
     filter: optionalString(node.Filter),
+    removedByFilter: Number(node['Rows Removed by Filter'] ?? 0),
+    actualRows: Number(node['Actual Rows'] ?? 0),
     children: Array.isArray(plans) ? plans.map(planNode) : [],
   };
 }
@@ -533,9 +539,13 @@ function combinedRolesCase(client: 'tenant' | 'scoped') {
     );
 }
 
-async function recordPlan(label: string, statement: Statement): Promise<void> {
+async function recordPlan(
+  label: string,
+  statement: Statement,
+  tenantId: string = targetTenantId,
+): Promise<void> {
   if (PLANS_OUT === undefined) return;
-  const text = await explained(app, statement, 'ANALYZE, BUFFERS', targetTenantId);
+  const text = await explained(app, statement, 'ANALYZE, BUFFERS', tenantId);
   appendFileSync(
     PLANS_OUT,
     [
@@ -1011,44 +1021,81 @@ const INDEXED_LISTINGS: readonly IndexedListing[] = [
 ];
 
 // A status the rows rarely hold must not be found by walking every newer
-// row of the tenant's outbox: the unsent statuses read an index of unsent
-// rows only, and sent reads the index of sent ones.
-const UNSENT_INDEXES = ['email_outbox_pending', 'email_outbox_unsent_recent'];
-const MAIL_BY_STATUS = [
-  { status: 'failed', tenant: () => mostlySentTenantId, indexes: UNSENT_INDEXES },
-  { status: 'queued', tenant: () => mostlySentTenantId, indexes: UNSENT_INDEXES },
-  { status: 'retrying', tenant: () => mostlySentTenantId, indexes: UNSENT_INDEXES },
-  { status: 'sent', tenant: () => mostlyUnsentTenantId, indexes: ['email_outbox_sent_recent'] },
-] as const;
+// row of the tenant's outbox. Two tenants: a healthy one (nearly all sent,
+// a few old rows of every other state) and one whose relay is down (nearly
+// all retrying, a few old rows of every other state). `sent` and `queued`
+// have an index of exactly their rows, so they read nothing else, in order,
+// on the first page and a later one. `failed` and `retrying` are bounded by
+// the tenant's unsent rows: they never read a sent row, but `failed` may read
+// `email_outbox_pending` and sorts them, which docs/NEXT.md records.
+const MAIL_LIMIT = 10;
+const EXACT_INDEX = {
+  sent: 'email_outbox_sent_recent',
+  queued: 'email_outbox_queued_recent',
+} as const;
 
-describe('the plan the mail listing is given for one status', () => {
-  it.each(MAIL_BY_STATUS)('$status reads $indexes, never the whole outbox', async (each) => {
-    const tenantId = each.tenant();
-    const { statement } = await issuedBy(async () => {
-      await withTenant(app.db, tenantId, (tx) =>
-        listMail(tx, {
-          tenantId,
-          status: each.status,
-          revealRecipients: true,
-          maxAttempts: 5,
-          limit: 50,
-          cursor: undefined,
-          cursorKey: CURSOR_KEY,
-        }),
-      );
-      return null;
+type MailStatus = 'sent' | 'queued' | 'retrying' | 'failed';
+
+async function mailPage(tenantId: string, status: MailStatus, cursor: string | undefined) {
+  const issued = await issuedBy(async () => {
+    const outcome = await withTenant(app.db, tenantId, (tx) =>
+      listMail(tx, {
+        tenantId,
+        status,
+        revealRecipients: true,
+        maxAttempts: 5,
+        limit: MAIL_LIMIT,
+        cursor,
+        cursorKey: CURSOR_KEY,
+      }),
+    );
+    return outcome.kind === 'ok' ? outcome.next : null;
+  });
+  const [json] = await explained(app, issued.statement, 'ANALYZE, FORMAT JSON', tenantId);
+  return { ...issued, nodes: allNodes(rootPlan(json)) };
+}
+
+const MAIL_CASES = ['healthy', 'relay down'] as const;
+const MAIL_PAGES = ['the first page', 'a later page'] as const;
+
+describe.each(MAIL_CASES)('the mail listing of a %s tenant, one status at a time', (kind) => {
+  const tenant = () => (kind === 'healthy' ? mostlySentTenantId : relayDownTenantId);
+
+  describe.each(['sent', 'queued'] as const)('%s', (status) => {
+    it.each(MAIL_PAGES)('reads only its own index, in order, with no sort, on %s', async (page) => {
+      const first = await mailPage(tenant(), status, undefined);
+      const read =
+        page === 'the first page'
+          ? first
+          : await mailPage(tenant(), status, first.next ?? undefined);
+      if (page !== 'the first page') expect(first.next).not.toBeNull();
+      const indexed = read.nodes.filter((node) => node.indexName !== undefined);
+      expect(indexed.map((node) => node.indexName)).toEqual([EXACT_INDEX[status]]);
+      expect(indexed.map((node) => node.removedByFilter)).toEqual([0]);
+      expect(read.nodes.map((node) => node.nodeType)).not.toContain('Sort');
+      expect(read.nodes.map((node) => node.nodeType)).not.toContain('Seq Scan');
+      await recordPlan(`mail ?status=${status}, ${kind}, ${page}`, read.statement, tenant());
     });
-    const [json] = await explained(app, statement, 'FORMAT JSON', tenantId);
-    const nodes = allNodes(rootPlan(json));
-    const indexes = nodes.map((node) => node.indexName);
-    expect(
-      indexes.some(
-        (name) => name !== undefined && (each.indexes as readonly string[]).includes(name),
-      ),
-    ).toBe(true);
-    expect(indexes).not.toContain('email_outbox_recent');
-    expect(nodes.map((node) => node.nodeType)).not.toContain('Seq Scan');
-    await recordPlan(`mail ?status=${each.status}`, statement);
+  });
+
+  describe.each(['retrying', 'failed'] as const)('%s', (status) => {
+    it.each(MAIL_PAGES)('never reads a sent row, on %s', async (page) => {
+      const first = await mailPage(tenant(), status, undefined);
+      const read =
+        page === 'the first page'
+          ? first
+          : await mailPage(tenant(), status, first.next ?? undefined);
+      const names = read.nodes.map((node) => node.indexName);
+      expect(names).not.toContain('email_outbox_recent');
+      expect(names).not.toContain('email_outbox_sent_recent');
+      expect(read.nodes.map((node) => node.nodeType)).not.toContain('Seq Scan');
+      const scanned = read.nodes
+        .filter((node) => node.indexName !== undefined)
+        .reduce((sum, node) => sum + node.actualRows + node.removedByFilter, 0);
+      expect(scanned).toBeLessThanOrEqual(ROWS + 100);
+      if (kind === 'healthy') expect(scanned).toBeLessThanOrEqual(100);
+      await recordPlan(`mail ?status=${status}, ${kind}, ${page}`, read.statement, tenant());
+    });
   });
 });
 

@@ -2253,7 +2253,9 @@ numbers as ceilings):
 A keystroke used to re-render the whole profile form, some 575 components;
 it now renders `ProfileTab`, `OwnDataFields` and `Account` and what they
 hand a changed value to. Paging renders rows that are new, so most of what
-remains is mounting.
+remains is mounting. The paging journey later measured 331, not 329: the
+Sessions area added a rail slot, and a slot costs two renders (its link) in the
+one commit where whoami answers. Expected, linear in the slots, ceilings unchanged.
 
 Bundle, from `pnpm --filter @odudu/admin-console build`: the entry chunk was
 428.60 kB, 137.80 kB gzipped by Vite (136,410 B by `gzip` at its default
@@ -2739,11 +2741,17 @@ capability note; a failed one the shared retry.
 **At scale.** The mail list is keyset-paged on `(created_at, id)` through
 `email_outbox_recent`. A status the rows rarely hold made that a walk of every
 newer row: a queued message among a million sent ones, or a sent one in a queue a
-down relay has filled. `0100_email_outbox_by_state.sql` adds one partial index per
-state, ending in the listing's order, and `list-plans.int.test.ts` holds each
-status to an index of its own state (it was red for `queued` and `sent` before).
-The failed and retrying statuses read `email_outbox_pending`, which already held
-only unsent rows. The lockout clear is bounded by its 10,000.
+down relay has filled. `0100_email_outbox_by_state.sql` adds three partial indexes ending in the
+listing's order: sent rows, unsent rows, and queued rows (unsent with no error).
+`list-plans.int.test.ts` holds `sent` and `queued` to their own index with no
+filtered-out row and no Sort, on a first and a later page, in a healthy tenant
+and in one whose relay is down; `failed` and `retrying` may never read a sent
+row. Dropping the predicate of any of the three turns the test red. The residual:
+`failed` differs from `retrying` only by `attempts >= max`, which no index can
+state, so its first page reads the tenant's unsent rows and sorts them (2.3 ms at
+30,000 unsent rows here; about 100 ms at 1,000,000, measured in review). A backlog
+that size is an incident, not a steady state, and it is bounded by the unsent set.
+The lockout clear is bounded by its 10,000.
 
 ### The VoiceOver pass
 
