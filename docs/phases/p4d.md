@@ -2656,16 +2656,14 @@ entry's gzip size to a budget.
 
 ### What building left that is a decision for the owner
 
-- **Six admin routes had no console screen; two now have, and four stay for
+- **Six admin routes had no console screen; four now have, and two stay for
   scripts by decision.** The owner chose on 2026-10-15 to build tenant
-  deletion and the tenant-wide sessions page, and to leave the rest to
-  scripts. Each of the four is named with its reason in
-  `tests/lint/console-covers-admin-routes.test.ts`, and §11's P4d criterion
-  names them: `POST /subjects/bulk` acts on up to 100 subjects in one call
-  and no console page has a multi-select; `DELETE /lockouts` clears every
-  lockout in a tenant, which the console does one subject at a time;
-  `GET /mail` is a monitoring read the Email page does not list; and the
-  audit trail has no count, by design.
+  deletion, the tenant-wide sessions page, the tenant-wide lockout clear and
+  the mail delivery panel, and to leave the rest to scripts. Each of the two
+  is named with its reason in `tests/lint/console-covers-admin-routes.test.ts`,
+  and §11's P4d criterion names them: `POST /subjects/bulk` acts on up to 100
+  subjects in one call and no console page has a multi-select; and the audit
+  trail has no count, by design.
 - **No composite index serves the two-filter audit reads** (an actor with a
   resource type, a type with an action). Bounded by a timeout rather than
   indexed, because a seventh and eighth index on a table of 100,000,000 rows
@@ -2701,6 +2699,51 @@ whether it is remembered; the API reports no expiry, so none is shown. Ending on
 session stays on the subject's page. "End every session" asks for the tenant's name
 and ends at most 500 per request, saying when more are live and how many were left
 alone for a capability the caller lacks.
+
+### The lockout clear and the mail delivery panel
+
+Both were built on the same decision of 2026-10-15.
+
+**Clear all lockouts.** An action below the Brute force section of Settings, not
+a setting: it calls `DELETE /lockouts` and uses none of the section-save
+machinery. It is offered for `manage-users`, the route's capability (a limited
+operator reads "Clearing every lockout needs the manage-users capability."), and
+asks for the tenant's name. What the route does, read before the text was
+written: `clearLockouts` deletes `login_failures` rows (`packages/protocol-admin/src/usecase/lockouts.ts`),
+at most 10,000 an account per call in id order, and answers `cleared`,
+`beyond_ceiling` and `remaining`. The table holds one row per subject and a wrong
+second factor is counted in the same row as a wrong password
+(`countSecondFactorFailure` in `packages/authn-flows/src/usecase/executor.ts` calls
+the same `recordFailure`), so the consequence text says it resets both, for locked
+accounts and for those still counting, and that every locked account can try again
+at once. A subject holding an admin capability the caller lacks keeps its row and is
+counted under `beyond_ceiling` (ADR 0040). The clear is recorded as
+`subject.lockouts_clear`. The result is a toast: how many accounts, "More are left"
+while `remaining > 0`, how many were kept. The per-subject clear stays on the
+subject's Credentials tab. After a clear every subject's lockout read
+(`['lockout', tenant]`) and the audit list are read again.
+
+**Delivery.** A panel on the Email page over `GET /mail`: one page of 20 at a time,
+a status filter, Load more and a manual Refresh; no polling. The response is a
+list of messages, not counts: it carries no count by status and no oldest-queued
+figure, so the panel states neither. Each row shows the recipient as the server
+returns it (shortened to its first letter unless the caller holds `view-users`,
+and the panel says so), the subject line (a fixed template naming the tenant), the
+status, the attempts, the relay's last error (masked by the server where it quotes
+the recipient), when it was queued and when it was sent or is next tried. Never a
+body, which the server does not return. "Oldest message still waiting" is shown
+only when every page has been read, as the last queued or retrying row; with pages
+unread it could be wrong, so nothing is said. A refused read is the shared
+capability note; a failed one the shared retry.
+
+**At scale.** The mail list is keyset-paged on `(created_at, id)` through
+`email_outbox_recent`. A status the rows rarely hold made that a walk of every
+newer row: a queued message among a million sent ones, or a sent one in a queue a
+down relay has filled. `0100_email_outbox_by_state.sql` adds one partial index per
+state, ending in the listing's order, and `list-plans.int.test.ts` holds each
+status to an index of its own state (it was red for `queued` and `sent` before).
+The failed and retrying statuses read `email_outbox_pending`, which already held
+only unsent rows. The lockout clear is bounded by its 10,000.
 
 ### The VoiceOver pass
 
@@ -2749,6 +2792,8 @@ Use `VO` for Control+Option; `VO+U` opens the rotor, and "Landmarks",
 | 16  | Sign-out and its pages | Press "Sign out" in the shell: the browser goes to the console's "Sign in" heading at once, even when the sign-in is older than the ID token's lifetime. The server's own confirmation page (heading "Sign out?", a sentence about ending the session for every application, button "Sign out") shows only when the hint names a different session: open the console in two tabs signed in as two people, sign out in the first, and read the page that follows. Then open a sign-in, wait until its row has expired and go Back: the page reloads itself, or reads "Start sign-in again" or "Return to the application".                                                                                                                                               |
 | 17  | Tenant delete          | As `ada`, open the record of a tenant that is enabled: heading is its name, region "Delete" says to disable it first, and there is no "Delete" button. Press "Disable" and the name: dialog "Disable name?", textbox "Type name to confirm", then focus lands on "Enable name". Region "Delete" now has button "Delete name": dialog "Delete name?" reads the consequence, naming subjects, clients, signing keys, settings and "its audit trail", and "This cannot be undone"; its button "Delete name" is read as dimmed until the name is typed. Confirm: heading "Tenants", status "name was deleted." Open the old address: heading "No such tenant". A refusal is read as an alert in the dialog. On `system`: the line "system cannot be deleted" and no button. |
 | 18  | Tenant sessions        | Rail link "Sessions" under Security, only with `manage-sessions`. Heading "Sessions", grid "Sessions" with columns Subject, Clients, Started, Last active and Remembered; each row has the link "username, open the subject" (with `view-users`) and the button "Copy subject id"; "Load more sessions" appends rows. Button "End every session": dialog "End every session in name?" reads that every live session ends, whoever holds it, and, in your own tenant, that "Your own console session is one of them". Its button is dimmed until the tenant's name is typed. Confirm: status "N sessions in name ended." Without the capability: the note "Sessions needs the manage-sessions capability." and no list.                                                  |
+| 19  | Clear all lockouts     | Open Settings. Region "Clear all lockouts", below "Brute force", says what it forgets and that one account is cleared on its own page. Button "Clear all lockouts": alert dialog "Clear all lockouts in name?" reads that every wrong password and every wrong second factor is cleared, that every locked account can try again at once, and that an account holding a capability you do not hold keeps its count. Its button is dimmed until the tenant's name is typed. Confirm: status "Cleared the failed sign-ins of N accounts in name." Without `manage-users`: the note "Clearing every lockout needs the manage-users capability." and no button.                                                                                                             |
+| 20  | Mail delivery          | Open Email. Region "Delivery" says what the list is and that no body is shown. Select "Show" (Any status, Queued, Retrying, Failed, Sent) and button "Refresh". Grid "Mail of name" with columns Recipient, Subject, Status, Attempts, Last error, Queued and Outcome; "Load more messages" appends rows. Recipients read shortened, with the line "Holding view-users shows them whole.", unless the caller holds `view-users`. A line reads "Oldest message still waiting was queued" once every page is read. An empty list reads "This tenant has no mail of that status."; a failed read "The mail could not be loaded" with "Try again".                                                                                                                          |
 
 Anything that is read as "button" with no name, a dialog that does not
 announce its title, a focus that lands on the page's top after a save, or a

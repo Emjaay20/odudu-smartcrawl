@@ -918,9 +918,11 @@ signed in to `system` also has System, with Tenants and System
 administrators; a tenant's record ends in a danger zone that deletes it,
 once it is disabled and its name is typed. What the rail lists, and what a
 page lets a caller change, follows `whoami`'s capabilities; the server still
-decides every request. Four admin routes have no screen, each by decision:
-`POST /subjects/bulk`, `DELETE /lockouts`, `GET /mail`, and
-`GET /audit/count` (the audit trail has no count).
+decides every request. Settings ends in "Clear all lockouts", which clears
+every failed-sign-in count in the tenant once its name is typed, and Email lists
+the tenant's latest mail and what became of it. Two admin routes have no screen,
+each by decision: `POST /subjects/bulk` and `GET /audit/count` (the audit trail
+has no count).
 `tests/lint/console-covers-admin-routes.test.ts`
 names each, so a new admin route with neither a screen nor a reason fails
 the build. The console's own sign-in, drafts and sections are described in
