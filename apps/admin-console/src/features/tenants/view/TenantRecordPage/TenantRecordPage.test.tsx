@@ -84,6 +84,7 @@ it('says so of a tenant that does not exist', async () => {
     [`GET ${ADMIN}/nope`]: problem(404, 'about:blank', 'Not Found'),
   });
   expect(await screen.findByRole('heading', { name: 'No such tenant' })).toBeVisible();
+  expect(screen.queryByText(/in this tenant/u)).toBeNull();
 });
 
 it('says so of a tenant the admin API answers with its plain 401, as it does one that was deleted', async () => {

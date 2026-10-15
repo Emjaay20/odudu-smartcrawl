@@ -77,7 +77,7 @@ export function RecordPage({
         <>
           {head(false)}
           <EmptyState variant="nothing-matches" title={`No such ${noun}`}>
-            {`There is no such ${noun} in this tenant. It may have been deleted.`}
+            It may have been deleted, or the address may be wrong.
           </EmptyState>
         </>
       );

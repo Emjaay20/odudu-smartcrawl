@@ -119,6 +119,8 @@ it('says it is loading, that the record is gone, or that it could not be read', 
 
   rerender(page(view({ status: 'missing' })));
   expect(screen.getByRole('heading', { name: 'No such client' })).toBeVisible();
+  expect(screen.getByText('It may have been deleted, or the address may be wrong.')).toBeVisible();
+  expect(screen.queryByText(/in this tenant/u)).toBeNull();
   expect(screen.queryByRole('button', { name: 'Open the audit trail' })).toBeNull();
 
   const failed = view({ status: 'failed' });
