@@ -69,6 +69,7 @@ it('names every kind of cached read by its kind, its tenant and what it reads', 
 });
 
 it('is a prefix of what it names when given no more than the tenant', () => {
+  expect(subjectReadKey('lockout', 'acme')).toEqual(['lockout', 'acme']);
   expect(listKey('acme')).toEqual(['list', 'acme']);
   expect(countKey('acme')).toEqual(['count', 'acme']);
   expect(holdersKey('acme')).toEqual(['holders', 'acme']);

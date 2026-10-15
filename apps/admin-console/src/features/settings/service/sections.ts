@@ -2,7 +2,7 @@ import { PLATFORM_SECTIONS } from '#/features/settings/service/platformSections'
 import { ACCESS_SECTIONS } from '#/features/settings/service/accessSections';
 import type { SettingsSection } from '#/features/settings/service/sectionTypes';
 
-export { GENERAL_SECTION } from '#/features/settings/service/accessSections';
+export { GENERAL_SECTION, LOCKOUT_SECTION } from '#/features/settings/service/accessSections';
 export type {
   SettingControl,
   SettingField,

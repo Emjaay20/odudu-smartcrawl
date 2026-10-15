@@ -2,6 +2,7 @@ export { disablesTenant } from '#/features/settings/service/general';
 export { fieldDescription, rangeRule } from '#/features/settings/service/notes';
 export {
   GENERAL_SECTION,
+  LOCKOUT_SECTION,
   PLACED_ELSEWHERE,
   sectionHeadingId,
   SETTINGS_SECTIONS,
@@ -21,3 +22,13 @@ export {
   type SettingEntry,
   type SettingValue,
 } from '#/features/settings/service/values';
+export {
+  CLEAR_HEADING,
+  CLEAR_RULE,
+  clearConsequence,
+  clearedText,
+  clearFailure,
+  lockoutClearState,
+  LOCKOUTS_NEEDS,
+  type LockoutClearState,
+} from '#/features/settings/service/lockouts';

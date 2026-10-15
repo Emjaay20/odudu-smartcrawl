@@ -1,10 +1,12 @@
 import type { Settings } from '@odudu/contracts/admin';
+import { Fragment } from 'react';
 import { AreaGate, areaAt } from '#/features/shell';
 import {
   booleanOf,
   fieldDescription,
   GENERAL_SECTION,
   listOf,
+  LOCKOUT_SECTION,
   numberOf,
   sectionHeadingId,
   SETTINGS_SECTIONS,
@@ -28,6 +30,7 @@ import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { ReadGate } from '#/shared/view/ReadGate';
 import { SaveSection } from '#/shared/view/SaveSection';
+import { ClearLockouts } from '#/features/settings/view/ClearLockouts';
 import styles from '#/features/settings/view/SettingsPage/SettingsPage.module.css';
 
 const TITLE = 'Settings';
@@ -237,14 +240,16 @@ function Sections({ tenant }: { tenant: string }) {
                 section={section}
               />
             ) : (
-              <Plain
-                key={section.id}
-                tenant={tenant}
-                data={data}
-                etag={etag}
-                gone={settings.gone}
-                section={section}
-              />
+              <Fragment key={section.id}>
+                <Plain
+                  tenant={tenant}
+                  data={data}
+                  etag={etag}
+                  gone={settings.gone}
+                  section={section}
+                />
+                {section.id === LOCKOUT_SECTION ? <ClearLockouts tenant={tenant} /> : null}
+              </Fragment>
             ),
           )}
         </div>

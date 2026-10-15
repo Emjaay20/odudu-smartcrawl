@@ -1,6 +1,7 @@
 import type { SettingsSection } from '#/features/settings/service/sectionTypes';
 
 export const GENERAL_SECTION = 'general';
+export const LOCKOUT_SECTION = 'brute-force';
 
 export const ACCESS_SECTIONS: readonly SettingsSection[] = [
   {
@@ -172,7 +173,7 @@ export const ACCESS_SECTIONS: readonly SettingsSection[] = [
     ],
   },
   {
-    id: 'brute-force',
+    id: LOCKOUT_SECTION,
     title: 'Brute force',
     description: 'When repeated wrong passwords lock an account, and for how long.',
     fields: [

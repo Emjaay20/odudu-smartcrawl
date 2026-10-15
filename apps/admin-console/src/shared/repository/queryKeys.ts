@@ -95,8 +95,12 @@ export function findKey(...what: readonly string[]) {
 }
 
 // The reads of one subject's sign-in state, each made stale by its own change.
-export function subjectReadKey(read: 'credentials' | 'lockout', tenant: string, id: string) {
-  return [read, tenant, id] as const;
+export function subjectReadKey(
+  read: 'credentials' | 'lockout',
+  tenant: string,
+  ...id: readonly string[]
+) {
+  return [read, tenant, ...id] as const;
 }
 
 // The ETag a copy's write waits on, read once and dropped.
