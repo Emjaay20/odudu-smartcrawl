@@ -7,7 +7,7 @@ import {
   type TenantScopedDatabase,
 } from '@odudu/db';
 import { auditRepository, type AuditReason, type RequestContext } from '@odudu/domain-audit';
-import { subjectRepository } from '@odudu/domain-identity';
+import { subjectIsEnabled, subjectRepository } from '@odudu/domain-identity';
 import { clientScopeRepository, type ClientRecord } from '@odudu/domain-tenant';
 import { type ClaimMapperRegistry, type Clock, newId } from '@odudu/kernel';
 import { type ClientKeySet } from '#/repository/client-keys';
@@ -349,6 +349,10 @@ async function redeemAuthorizationCode(
     codeVerifier: request.codeVerifier,
   });
   if (!decision.ok) throw invalidGrant();
+
+  // The code was issued to a subject who may have been disabled since; the
+  // answer is the one a spent code gets.
+  if (!subjectIsEnabled(await subjectRepository(tx).byId(record.subjectId))) throw invalidGrant();
 
   return record;
 }

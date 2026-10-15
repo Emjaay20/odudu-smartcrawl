@@ -1,3 +1,4 @@
+import { generateSigningKey, signingKeys } from '@odudu/crypto';
 import { hashPassword, subjectRepository, userCredentials, users } from '@odudu/domain-identity';
 import {
   createDatabase,
@@ -12,6 +13,7 @@ import { clients, provisionClientDefaults } from '@odudu/domain-tenant';
 import { newId } from '@odudu/kernel';
 import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/testkit';
 import formbody from '@fastify/formbody';
+import { createHash } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import Fastify, { type FastifyInstance, type LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -23,7 +25,8 @@ import { clientOidcConfigRepository } from '#/repository/client-oidc-config';
 import { UNLIMITED_AUDIT_REFUSAL_BUDGET } from '#/service/audit-refusal-budget';
 
 // A subject disabled after signing in must get no code from the SSO
-// session they left behind, at /authorize or at the account chooser.
+// session they left behind, at /authorize or at the account chooser, and a
+// code issued before the disable redeems for nothing.
 
 let containerHandle: TestDatabase | undefined;
 let ownerHandle: DatabaseHandle | undefined;
@@ -35,6 +38,7 @@ let owner: DatabaseHandle;
 let app: DatabaseHandle;
 let http: FastifyInstance;
 
+const KEK = Buffer.alloc(32, 9);
 const CLIENT_ID = 'disabled-reuse-client';
 const REDIRECT_URI = 'https://app.example/callback';
 const ALICE_USERNAME = 'alice';
@@ -76,6 +80,16 @@ async function setupTenant(name: string): Promise<{ tenantId: string }> {
       audiences: [],
       accessTokenTtlSeconds: 300,
       refreshTokenTtlSeconds: 1_209_600,
+    });
+    const key = await generateSigningKey('RS256', KEK);
+    await tx.insert(signingKeys).values({
+      id: newId(),
+      tenantId,
+      kid: key.kid,
+      alg: key.alg,
+      status: 'active',
+      publicJwk: key.publicJwk,
+      privateJwkEncrypted: key.privateJwkEncrypted,
     });
     for (const [username, password] of [
       [ALICE_USERNAME, ALICE_PASSWORD],
@@ -180,10 +194,11 @@ async function login(
   username: string,
   password: string,
   instance: FastifyInstance = http,
+  overrides: Record<string, string> = {},
 ): Promise<LightMyRequestResponse> {
   const cookie = cookieHeader(jar);
   const started = await instance.inject({
-    url: authorizeUrl(tenantName, { prompt: 'login' }),
+    url: authorizeUrl(tenantName, { prompt: 'login', ...overrides }),
     headers: cookie.length > 0 ? { cookie } : {},
   });
   if (started.statusCode !== 200) {
@@ -265,7 +280,7 @@ beforeAll(async () => {
     oidcRoutes({
       database: app,
       ownerDatabase: owner,
-      kek: Buffer.alloc(32, 9),
+      kek: KEK,
       clientSecretLimiter: UNLIMITED_CLIENT_SECRET_LIMITER,
       auditRefusalBudget: UNLIMITED_AUDIT_REFUSAL_BUDGET,
       clientKeySet: NO_CLIENT_KEY_FETCHER,
@@ -356,5 +371,54 @@ describe('a disabled subject at /authorize', () => {
     });
     expect(isLoginForm(chosen), chosen.body).toBe(true);
     expect(chosen.headers.location).toBeUndefined();
+  });
+});
+
+describe('a disabled subject at /token', () => {
+  const verifier = 'v'.repeat(64);
+  const challenge = createHash('sha256').update(verifier).digest('base64url');
+
+  async function issueCode(
+    tenantName: string,
+    username: string,
+    password: string,
+  ): Promise<string> {
+    const res = await login(tenantName, new Map(), username, password, http, {
+      code_challenge: challenge,
+    });
+    const code = new URL(locationHeader(res)).searchParams.get('code');
+    if (code === null) throw new Error('no code on the login redirect');
+    return code;
+  }
+
+  function redeem(tenantName: string, code: string) {
+    return http.inject({
+      method: 'POST',
+      url: `/tenants/${tenantName}/protocol/openid-connect/token`,
+      payload: new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: CLIENT_ID,
+        redirect_uri: REDIRECT_URI,
+        code,
+        code_verifier: verifier,
+      }).toString(),
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    });
+  }
+
+  it('redeems no code issued before the disable, and answers as for a spent one', async () => {
+    const tenantName = `disabled-reuse-token-${newId()}`;
+    const { tenantId } = await setupTenant(tenantName);
+    const aliceCode = await issueCode(tenantName, ALICE_USERNAME, ALICE_PASSWORD);
+    const bobCode = await issueCode(tenantName, BOB_USERNAME, BOB_PASSWORD);
+    const unknown = await redeem(tenantName, 'not-a-code');
+
+    await disable(tenantId, await subjectIdOf(tenantId, ALICE_USERNAME));
+
+    const refused = await redeem(tenantName, aliceCode);
+    expect(refused.statusCode).toBe(400);
+    expect(refused.json()).toEqual({ error: 'invalid_grant' });
+    expect(refused.body).toBe(unknown.body);
+    expect((await redeem(tenantName, bobCode)).statusCode).toBe(200);
   });
 });
