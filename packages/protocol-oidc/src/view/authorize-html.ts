@@ -51,8 +51,8 @@ export function renderEmailUnverifiedPage(hasEmail: boolean): RenderedPage {
 // One of the ten single-use codes a generate-recovery-codes page issued.
 // `autocomplete="off"`: a password manager holding the whole list would
 // offer to fill the same code every time, and each works once.
-const RECOVERY_CODE_FIELD =
-  '<label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>';
+const recoveryCodeField = (attributes: string): string =>
+  `<label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"${attributes}></label>`;
 
 // `form` names the authenticator to render fields for (an authn-flows
 // registry key, e.g. 'password') — not a fixed enum, so a new authenticator
@@ -63,11 +63,41 @@ const FORM_LABELS: Record<string, readonly [string, string]> = {
   'recovery-code': ['Enter a recovery code', 'Verify'],
 };
 
-function renderFormFields(form: string, loginWithEmail: boolean): string {
+// A username no account has is neither echoed nor truncated: half of a
+// 1 MB string is still reflected input, and the person is told nothing less
+// than the generic message already says.
+const MAX_ECHOED_USERNAME_LENGTH = 254;
+
+// What a refused step gives back to the person. Only the username ever
+// travels: a password, a code or a recovery code is never put back in a field.
+export interface LoginFormRefusal {
+  message: string;
+  username?: string;
+}
+
+// `autofocus` on the first field still to fill, so a re-rendered form puts
+// the cursor where the next keystroke belongs without a script.
+function renderFormFields(
+  form: string,
+  loginWithEmail: boolean,
+  refusal: LoginFormRefusal | undefined,
+): string {
+  const focus = refusal === undefined ? '' : ' autofocus';
   if (form === 'password') {
     const label = loginWithEmail ? 'Username or email' : 'Username';
-    return `<label>${label} <input type="text" name="username" autocomplete="username"></label>
-  <label>Password <input type="password" name="password" autocomplete="current-password"></label>`;
+    const echoed =
+      refusal?.username !== undefined &&
+      refusal.username.length > 0 &&
+      refusal.username.length <= MAX_ECHOED_USERNAME_LENGTH
+        ? refusal.username
+        : undefined;
+    const username =
+      echoed === undefined
+        ? `name="username" autocomplete="username"${focus}`
+        : `name="username" autocomplete="username" value="${escapeHtml(echoed)}"`;
+    const password = echoed === undefined ? '' : focus;
+    return `<label>${label} <input type="text" ${username}></label>
+  <label>Password <input type="password" name="password" autocomplete="current-password"${password}></label>`;
   }
   // No username: which account the code is checked against comes from the
   // authentication session the hidden field names, never from this form.
@@ -76,11 +106,11 @@ function renderFormFields(form: string, loginWithEmail: boolean): string {
   // thing the first field asks for. Filling either one is a submission;
   // filling both spends the recovery code, which runs first.
   if (form === 'otp') {
-    return `<label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
-  ${RECOVERY_CODE_FIELD}`;
+    return `<label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"${focus}></label>
+  ${recoveryCodeField(focus)}`;
   }
   if (form === 'recovery-code') {
-    return RECOVERY_CODE_FIELD;
+    return recoveryCodeField(focus);
   }
   // Unreachable today: the two authenticators with fields to render are
   // the two above, and a passkey has none — it is offered by
@@ -158,9 +188,9 @@ export function renderLoginForm(
   // same gate again when the form comes back, so nothing here needs to be
   // trusted for more than what to render.
   rememberMeAllowed = false,
-  // Shown above the fields when a refusal says something the person at the
-  // form can act on — see LoginSubmissionOutcome's `reject`.
-  error?: string,
+  // Shown above the fields after a refused step — see
+  // LoginSubmissionOutcome's `reject`.
+  refusal?: LoginFormRefusal,
   // The tenant's `login_with_email`: only the label changes, since the
   // field takes either and the server decides which it names.
   loginWithEmail = false,
@@ -173,7 +203,10 @@ export function renderLoginForm(
   // carry.
   const nonce = passkeyLogin && form === 'password' ? scriptNonce() : null;
   const passkey = nonce === null ? '' : renderPasskeyOption(tenant, authSessionId, nonce);
-  const message = error === undefined ? '' : `<p><strong>${escapeHtml(error)}</strong></p>\n`;
+  const message =
+    refusal === undefined
+      ? ''
+      : `<p role="alert"><strong>${escapeHtml(refusal.message)}</strong></p>\n`;
   // Never rendered at all when the tenant has not turned the setting on —
   // login-submission.ts's own gate is the one that matters, but a checkbox
   // this tenant could never honour is not offered in the first place.
@@ -186,7 +219,7 @@ export function renderLoginForm(
       title,
       `${message}<form method="post" action="${action}">
   <input type="hidden" name="auth_session_id" value="${escapeHtml(authSessionId)}">
-  ${renderFormFields(form, loginWithEmail)}
+  ${renderFormFields(form, loginWithEmail, refusal)}
   ${rememberMe}<button type="submit">${submit}</button>
 </form>${passkey}`,
     ),

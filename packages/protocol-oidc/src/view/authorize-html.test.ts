@@ -115,4 +115,108 @@ describe('renderLoginForm', () => {
     expect(page.body).toContain('&lt;script&gt;');
     expect(page.body).toContain('&quot;&gt;');
   });
+
+  describe('after a refusal', () => {
+    const refusal = { message: 'Sign-in failed. Check your details and try again.' };
+
+    it('puts the message in an alert above the form', () => {
+      const page = renderLoginForm('acme', 'session-id', 'password', false, false, refusal);
+      expect(page.body).toContain(
+        '<p role="alert"><strong>Sign-in failed. Check your details and try again.</strong></p>',
+      );
+      expect(page.body.indexOf('role="alert"')).toBeLessThan(page.body.indexOf('<form'));
+    });
+
+    it('shows no alert without a refusal', () => {
+      expect(renderLoginForm('acme', 'session-id', 'password').body).not.toContain('role="alert"');
+    });
+
+    it('escapes the message', () => {
+      const page = renderLoginForm('acme', 'sid', 'password', false, false, {
+        message: '<img src=x onerror=alert(1)>',
+      });
+      expect(page.body).not.toContain('<img');
+    });
+
+    it('gives the username back and moves focus to the empty password field', () => {
+      const page = renderLoginForm('acme', 'sid', 'password', false, false, {
+        ...refusal,
+        username: 'ada',
+      });
+      expect(page.body).toContain('name="username" autocomplete="username" value="ada"');
+      expect(page.body).toMatch(/name="password"[^>]*autofocus/u);
+      expect(page.body).not.toMatch(/name="username"[^>]*autofocus/u);
+    });
+
+    it('focuses the username when there is none to give back', () => {
+      const page = renderLoginForm('acme', 'sid', 'password', false, false, refusal);
+      expect(page.body).toMatch(/name="username"[^>]*autofocus/u);
+      expect(page.body).not.toContain('value=""');
+    });
+
+    it('never puts anything but the username into a value attribute', () => {
+      const page = renderLoginForm('acme', 'sid', 'password', false, true, {
+        ...refusal,
+        username: 'ada',
+      });
+      expect(page.body.match(/ value="[^"]*"/gu)).toEqual([
+        ' value="sid"',
+        ' value="ada"',
+        ' value="true"',
+      ]);
+    });
+
+    it.each([
+      ['a double quote', 'a"b'],
+      ['a single quote', "a'b"],
+      ['a tag', '<b>x</b>'],
+      ['an ampersand', 'a&amp;b'],
+      ['a closing script', '</script><script>alert(1)</script>'],
+      ['unicode', 'Zoë 名前 🙂'],
+      ['a bidi override', 'ada\u202Eevil'],
+    ])('escapes %s in the username it gives back', (_name, username) => {
+      const page = renderLoginForm('acme', 'sid', 'password', false, false, {
+        ...refusal,
+        username,
+      });
+      const echoed = /name="username"[^>]* value="([^"]*)"/u.exec(page.body)?.[1] ?? '';
+      expect(echoed).not.toMatch(/[<>"']/u);
+      expect(page.body).not.toContain('<script');
+      expect(page.body).not.toContain('<b>');
+      expect(
+        echoed
+          .replaceAll('&amp;', '&')
+          .replaceAll('&#39;', "'")
+          .replaceAll('&lt;', '<')
+          .replaceAll('&gt;', '>')
+          .replaceAll('&quot;', '"'),
+      ).toBe(username);
+    });
+
+    it('does not reflect a username longer than any account has', () => {
+      const page = renderLoginForm('acme', 'sid', 'password', false, false, {
+        ...refusal,
+        username: 'a'.repeat(1_000_000),
+      });
+      expect(page.html.length).toBeLessThan(5_000);
+      expect(page.body).toContain('role="alert"');
+      expect(page.body).toMatch(/name="username"[^>]*autofocus/u);
+    });
+
+    it('asks for a code with focus on the code field, and gives back nothing', () => {
+      const otp = renderLoginForm('acme', 'sid', 'otp', false, false, {
+        message: 'That code did not work. Check it and try again.',
+        username: 'ada',
+      });
+      expect(otp.body).toMatch(/name="code"[^>]*autofocus/u);
+      expect(otp.body).not.toContain('ada');
+      const recovery = renderLoginForm('acme', 'sid', 'recovery-code', false, false, refusal);
+      expect(recovery.body).toMatch(/name="recovery_code"[^>]*autofocus/u);
+    });
+
+    it('does not focus a field when nothing was refused', () => {
+      expect(renderLoginForm('acme', 'sid', 'password').body).not.toContain('autofocus');
+      expect(renderLoginForm('acme', 'sid', 'otp').body).not.toContain('autofocus');
+    });
+  });
 });

@@ -29,10 +29,11 @@ import { adminRoutes, composeUserSubject } from '@odudu/protocol-admin';
 import {
   clientKeySet,
   oidcRoutes,
+  sendThrottledPage,
   standardClaimMappers,
   type AuditRefusalBudget,
 } from '@odudu/protocol-oidc';
-import Fastify, { type FastifyInstance, type RawServerDefault } from 'fastify';
+import Fastify, { type FastifyInstance, type FastifyReply, type RawServerDefault } from 'fastify';
 import { type IncomingMessage, type ServerResponse } from 'node:http';
 import { type Logger as PinoLogger } from 'pino';
 import { createClientKeyRequest, defaultClientKeyLookup } from '#/client-key-transport';
@@ -207,10 +208,16 @@ export function auditRefusalBudget(now: () => Date): AuditRefusalBudget {
  */
 const SIGN_IN_POST = '/tenants/:tenant/login-actions/authenticate';
 
-const THROTTLED_POSTS: ReadonlySet<string> = new Set([
+// A person at a browser reads these refusals, so they answer with a page; the
+// admin routes below are called by a client and keep a bare 429.
+const PAGE_POSTS: ReadonlySet<string> = new Set([
   SIGN_IN_POST,
   '/tenants/:tenant/login-actions/registration',
   '/tenants/:tenant/login-actions/reset-password',
+]);
+
+const THROTTLED_POSTS: ReadonlySet<string> = new Set([
+  ...PAGE_POSTS,
   '/admin/tenants/:tenant/subjects/:id/password-reset',
   '/admin/tenants/:tenant/subjects/:id/verification',
   '/admin/tenants/:tenant/subjects/:id/actions-email',
@@ -241,6 +248,11 @@ async function createAccount(
     secret: { kind: 'password', hash: await hashPassword(input.password) },
   });
   return { subjectId };
+}
+
+function refuse(reply: FastifyReply, route: string, retryAfterSeconds: number): FastifyReply {
+  if (PAGE_POSTS.has(route)) return sendThrottledPage(reply, retryAfterSeconds);
+  return reply.header('retry-after', String(retryAfterSeconds)).code(429).send();
 }
 
 export function buildApp(deps: AppDeps): FastifyInstance {
@@ -300,8 +312,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     if (route === undefined || !THROTTLED_POSTS.has(route)) return;
     const decision = throttle.check(throttleOrigin(request.ip));
     if (decision.allowed) return;
-    reply.header('retry-after', String(decision.retryAfterSeconds));
-    return reply.code(429).send();
+    return refuse(reply, route, decision.retryAfterSeconds);
   });
 
   // The composite budget needs the form, so it waits for the body parse —
@@ -315,8 +326,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     if (key === undefined) return;
     const decision = loginLimiter.check(key);
     if (decision.allowed) return;
-    reply.header('retry-after', String(decision.retryAfterSeconds));
-    return reply.code(429).send();
+    return refuse(reply, SIGN_IN_POST, decision.retryAfterSeconds);
   });
 
   // Registered here rather than by a route: the token endpoint needs

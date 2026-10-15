@@ -208,15 +208,40 @@ describe('the sign-in budget per address and username', () => {
     }
   }
 
-  it('refuses the submission past the budget with 429, Retry-After and no body', async () => {
+  it('refuses the submission past the budget with a page and the Retry-After it names', async () => {
     const app = loginApp(noSuchTenantDatabase);
     await spendUsername(app, 'ada', 3);
 
     const refused = await submit(app, { username: 'ada', password: 'x' });
 
     expect(refused.statusCode).toBe(429);
-    expect(Number(refused.headers['retry-after'])).toBeGreaterThanOrEqual(1);
-    expect(Number(refused.headers['retry-after'])).toBeLessThanOrEqual(60);
+    const retryAfter = Number(refused.headers['retry-after']);
+    expect(retryAfter).toBeGreaterThanOrEqual(1);
+    expect(retryAfter).toBeLessThanOrEqual(60);
+    expect(refused.headers['content-type']).toContain('text/html');
+    expect(refused.headers['cache-control']).toBe('no-store');
+    expect(refused.headers['x-frame-options']).toBe('DENY');
+    expect(refused.headers['content-security-policy']).toContain("default-src 'none'");
+    expect(refused.body).toContain('Too many attempts');
+    expect(refused.body).toContain(`Try again in ${String(retryAfter)} second`);
+  });
+
+  it('keeps the machine routes on a bare 429', async () => {
+    const app = buildApp({
+      database: noSuchTenantDatabase,
+      ownerDatabase: noSuchTenantDatabase,
+      kek: config.ODUDU_KEK,
+      logger: createLogger(config),
+      throttle: { limit: 1, windowSeconds: 60 },
+    });
+    const url = '/admin/tenants/acme/subjects/00000000-0000-0000-0000-000000000000/password-reset';
+    await app.inject({ method: 'POST', url, remoteAddress: '198.51.100.7' });
+
+    const refused = await app.inject({ method: 'POST', url, remoteAddress: '198.51.100.7' });
+
+    expect(refused.statusCode).toBe(429);
+    expect(refused.headers['retry-after']).toBeDefined();
+    expect(refused.headers['content-type']).toBeUndefined();
     expect(refused.body).toBe('');
   });
 

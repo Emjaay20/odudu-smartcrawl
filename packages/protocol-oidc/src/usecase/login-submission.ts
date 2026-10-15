@@ -84,14 +84,16 @@ export async function issueAuthorizationCode(
   return { code };
 }
 
+export type LoginRefusal = 'rejected' | 'already_used';
+
 export type LoginSubmissionOutcome =
   | { kind: 'unauthenticated' }
-  // `reason` is present only where the refusal says something the person at
-  // the form can act on. A wrong password says nothing on purpose — which
-  // account exists is not theirs to learn — but a spent recovery code is
-  // their own credential, on an attempt already bound to them, and "try the
-  // next one" is the difference between that and abandoning the list.
-  | { kind: 'reject'; authSessionId: string; reason?: string }
+  // `refusal` is present when the step turned the attempt down, whatever
+  // the cause — a wrong password, an unknown name, a lockout and a disabled
+  // account are one value, so nothing downstream can tell them apart. Absent
+  // when the step only asks for more (the next factor, or a field left out).
+  // `username` is what was typed, for the form to give back.
+  | { kind: 'reject'; authSessionId: string; refusal?: LoginRefusal; username?: string }
   // The password was right, but the tenant requires a verified address and
   // this one is not yet. Nothing is established and no code is issued; the
   // authentication session is left unconsumed so the same session can
@@ -481,8 +483,13 @@ export async function completeAuthorizedLogin(
   // a retried POST — reaches here after everything upstream succeeds again;
   // completeLogin's atomic consume is what stops it from minting a second
   // SSO session and a second code for the same parked request.
-  if (completed.kind === 'already_consumed' || completed.kind === 'subject_disabled') {
+  if (completed.kind === 'already_consumed') {
     return { kind: 'unauthenticated' };
+  }
+  // Refused like a wrong password rather than as an expired sign-in, so the
+  // right password for a disabled account answers as any other refusal does.
+  if (completed.kind === 'subject_disabled') {
+    return { kind: 'reject', authSessionId, refusal: 'rejected' };
   }
   const { sessionId, code, entry: issued } = completed;
 
@@ -584,9 +591,10 @@ export async function handleLoginSubmission(
     return {
       kind: 'reject',
       authSessionId,
-      ...(result.kind === 'failure' && result.reason === 'already_used'
-        ? { reason: 'You have already used that recovery code. Try another one from your list.' }
+      ...(result.kind === 'failure'
+        ? { refusal: result.reason === 'already_used' ? 'already_used' : 'rejected' }
         : {}),
+      ...(input.username === undefined ? {} : { username: input.username }),
     };
   }
 
@@ -695,7 +703,7 @@ export async function handleLoginSubmission(
     };
   }
 
-  return completeAuthorizedLogin(
+  const completed = await completeAuthorizedLogin(
     deps,
     {
       id: tenant.id,
@@ -716,4 +724,9 @@ export async function handleLoginSubmission(
     header,
     remembered,
   );
+  if (completed.kind !== 'reject') return completed;
+  // The attempt stays bound to the account that was refused unless it is
+  // cleared, and the next try, by anybody, would then fail as a mismatch.
+  await deps.resetAuthenticationProgress(tenant.id, authSessionId);
+  return input.username === undefined ? completed : { ...completed, username: input.username };
 }

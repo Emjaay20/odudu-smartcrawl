@@ -296,6 +296,8 @@ describe('enrolling the second factor a tenant asked for', () => {
     // for a recovery code has already lost what the first field asks for.
     expect(secondFactor.body).toContain('name="recovery_code"');
     expect(secondFactor.body).not.toContain('name="username"');
+    // Asking for the next factor is progress, not a refusal.
+    expect(secondFactor.body).not.toContain('role="alert"');
 
     const sameStep = await login(tenantName, {
       auth_session_id: authSessionId,
@@ -303,6 +305,10 @@ describe('enrolling the second factor a tenant asked for', () => {
     });
     expect(sameStep.statusCode).toBe(200);
     expect(sameStep.headers.location).toBeUndefined();
+    expect(sameStep.body).toContain(
+      '<p role="alert"><strong>That code did not work. Check it and try again.</strong></p>',
+    );
+    expect(sameStep.body).toMatch(/name="code"[^>]*autofocus/u);
 
     clock.advance(31_000);
     const completed = await login(tenantName, {
@@ -455,6 +461,8 @@ describe('signing in with a recovery code instead of the second factor', () => {
     });
     expect(unknown.statusCode).toBe(200);
     expect(unknown.body).not.toContain('already used');
+    expect(unknown.body).toContain('That code did not work. Check it and try again.');
+    expect(unknown.body).not.toContain('ZZZZZ-ZZZZZ');
     expect(
       await withTenant(app.db, tenantId, (tx) =>
         credentialRepository(tx).listFor(subjectId, 'recovery-code'),

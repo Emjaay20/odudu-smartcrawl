@@ -3,6 +3,7 @@ import { type FastifyReply } from 'fastify';
 import { type LoginSubmissionOutcome } from '#/usecase/login-submission';
 import { renderEmailUnverifiedPage, renderLoginForm } from '#/view/authorize-html';
 import { renderConsentPage } from '#/view/consent-html';
+import { refusalMessage } from '#/view/login-messages';
 import { sendHtml } from '#/view/html-response';
 import { continuing } from '#/view/routes/continuation';
 import { sendSignInExpired } from '#/view/routes/expired-sign-in';
@@ -67,7 +68,12 @@ export async function sendLoginOutcome(
       form,
       deps.passkeyLogin ?? false,
       tenant?.rememberMeAllowed ?? false,
-      outcome.reason,
+      outcome.refusal === undefined
+        ? undefined
+        : {
+            message: refusalMessage(form, outcome.refusal),
+            ...(outcome.username === undefined ? {} : { username: outcome.username }),
+          },
       tenant?.loginWithEmail ?? false,
     );
     return sendHtml(reply, 200, await continuing(deps, tenantName, outcome.authSessionId, page));

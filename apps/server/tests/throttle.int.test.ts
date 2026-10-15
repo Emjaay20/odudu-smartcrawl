@@ -184,6 +184,8 @@ describe('the per-origin throttle on the routes that cost CPU', () => {
       expect(allowed).toEqual(Array.from({ length: DEFAULT_THROTTLE.limit }, () => 201));
       expect(refused.statusCode).toBe(429);
       expect(Number(refused.headers['retry-after'])).toBeGreaterThan(0);
+      expect(refused.headers['content-type']).toContain('text/html');
+      expect(refused.body).toContain('Too many attempts');
       expect(elsewhere.statusCode).toBe(201);
     } finally {
       await app.close();
@@ -286,6 +288,7 @@ describe('the per-origin throttle on the routes that cost CPU', () => {
       const unknown = await formPost(app, url, { email: 'nobody@example.test' }, ORIGIN);
 
       expect(known.statusCode).toBe(429);
+      expect(known.body).toContain('Too many attempts');
       expect(unknown.statusCode).toBe(known.statusCode);
       expect(unknown.body).toBe(known.body);
       // Both carry one, but not necessarily the same one: two requests
@@ -457,8 +460,9 @@ describe('the per-origin throttle on the routes that cost CPU', () => {
 
       expect(account.statusCode).toBe(429);
       expect(stranger.statusCode).toBe(429);
-      expect(stranger.body).toBe(account.body);
-      expect(stranger.body).toBe('');
+      const seconds = (body: string) => body.replace(/\d+ seconds?/u, 'N seconds');
+      expect(seconds(stranger.body)).toBe(seconds(account.body));
+      expect(account.body).toContain('Too many attempts');
       expect(stranger.headers['content-length']).toBe(account.headers['content-length']);
       expect(stranger.headers['content-type']).toBe(account.headers['content-type']);
       expect(

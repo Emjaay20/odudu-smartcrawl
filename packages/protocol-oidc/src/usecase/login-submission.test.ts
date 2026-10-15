@@ -439,8 +439,34 @@ describe('handleLoginSubmission — a failed attempt must not consume the sessio
       undefined,
     );
 
-    expect(outcome).toEqual({ kind: 'reject', authSessionId: AUTH_SESSION_ID });
+    expect(outcome).toEqual({
+      kind: 'reject',
+      authSessionId: AUTH_SESSION_ID,
+      refusal: 'rejected',
+      username: 'ada',
+    });
     expect(completeLogin).not.toHaveBeenCalled();
+  });
+
+  it('names a spent recovery code apart from every other refusal', async () => {
+    const { deps, advance } = harness();
+    advance.mockResolvedValue({ kind: 'failure', reason: 'already_used' });
+
+    const outcome = await handleLoginSubmission(
+      deps,
+      'acme',
+      'https://idp.example',
+      AUTH_SESSION_ID,
+      { recoveryCode: 'AAAAA-BBBBB' },
+      REQUEST,
+      undefined,
+    );
+
+    expect(outcome).toEqual({
+      kind: 'reject',
+      authSessionId: AUTH_SESSION_ID,
+      refusal: 'already_used',
+    });
   });
 
   it('returns unauthenticated on an expired session without calling completeLogin', async () => {
@@ -477,6 +503,23 @@ describe('handleLoginSubmission — a failed attempt must not consume the sessio
 
     expect(outcome).toEqual({ kind: 'reject', authSessionId: AUTH_SESSION_ID });
     expect(completeLogin).not.toHaveBeenCalled();
+  });
+
+  it('carries no refusal when the step only asked for more, so no failure is claimed', async () => {
+    const { deps, advance } = harness();
+    advance.mockResolvedValue({ kind: 'challenge', form: 'otp' });
+
+    const outcome = await handleLoginSubmission(
+      deps,
+      'acme',
+      'https://idp.example',
+      AUTH_SESSION_ID,
+      { username: 'ada', password: 'right' },
+      REQUEST,
+      undefined,
+    );
+
+    expect(outcome).toEqual({ kind: 'reject', authSessionId: AUTH_SESSION_ID, username: 'ada' });
   });
 });
 
