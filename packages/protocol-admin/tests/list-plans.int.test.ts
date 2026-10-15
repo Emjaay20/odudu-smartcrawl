@@ -73,6 +73,8 @@ let owner: DatabaseHandle;
 let app: DatabaseHandle;
 let captured: Statement[] | undefined;
 let targetTenantId: string;
+let mostlySentTenantId: string;
+let mostlyUnsentTenantId: string;
 let scopedClientId: string;
 let busyGrantId: string;
 let heldRoleId: string;
@@ -101,6 +103,10 @@ beforeAll(async () => {
   const [target] = tenantIds;
   if (target === undefined) throw new Error('no target tenant');
   targetTenantId = target;
+  const [mostlySent, mostlyUnsent] = tenantIds.slice(1);
+  if (mostlySent === undefined || mostlyUnsent === undefined) throw new Error('no mail tenants');
+  mostlySentTenantId = mostlySent;
+  mostlyUnsentTenantId = mostlyUnsent;
 
   await owner.sql`
     insert into tenants (id, name, display_name)
@@ -199,6 +205,30 @@ beforeAll(async () => {
     select gen_random_uuid(), ${targetTenantId}, 'user' || g || '@example.com', 'Verify', 'x', 'x',
            now() - (g || ' seconds')::interval
       from generate_series(1, ${ROWS}) g`;
+  // A healthy outbox is nearly all sent, with a few old failures a read of
+  // one status has to reach; a tenant whose relay is down is the reverse.
+  await owner.sql`
+    insert into email_outbox (id, tenant_id, to_address, subject, body_text, body_html, created_at, sent_at)
+    select gen_random_uuid(), ${mostlySentTenantId}, 'user' || g || '@example.com', 'Verify', 'x', 'x',
+           now() - (g || ' seconds')::interval, now()
+      from generate_series(1, ${ROWS}) g`;
+  await owner.sql`
+    insert into email_outbox (id, tenant_id, to_address, subject, body_text, body_html, created_at, attempts, last_error)
+    select gen_random_uuid(), ${mostlySentTenantId}, 'late' || g || '@example.com', 'Verify', 'x', 'x',
+           now() - interval '30 days' - (g || ' seconds')::interval,
+           case g % 3 when 0 then 5 when 1 then 2 else 0 end,
+           case g % 3 when 0 then 'refused' when 1 then 'timeout' end
+      from generate_series(1, 20) g`;
+  await owner.sql`
+    insert into email_outbox (id, tenant_id, to_address, subject, body_text, body_html, created_at)
+    select gen_random_uuid(), ${mostlyUnsentTenantId}, 'user' || g || '@example.com', 'Verify', 'x', 'x',
+           now() - (g || ' seconds')::interval
+      from generate_series(1, ${ROWS}) g`;
+  await owner.sql`
+    insert into email_outbox (id, tenant_id, to_address, subject, body_text, body_html, created_at, sent_at)
+    select gen_random_uuid(), ${mostlyUnsentTenantId}, 'early' || g || '@example.com', 'Verify', 'x', 'x',
+           now() - interval '30 days' - (g || ' seconds')::interval, now()
+      from generate_series(1, 20) g`;
   await owner.sql`
     insert into backchannel_logout_deliveries
       (id, tenant_id, client_id, session_id, endpoint, logout_token, created_at)
@@ -285,7 +315,9 @@ async function issuedBy(run: () => Promise<string | null>): Promise<{
   const next = await run();
   const statements = captured;
   captured = undefined;
-  const statement = statements.find((s) => /\border by\b/iu.test(s.query));
+  const statement = statements.find(
+    (s) => /\border by\b/iu.test(s.query) && !/\bpg_type\b/iu.test(s.query),
+  );
   if (statement === undefined) throw new Error('the listing issued no ordered select');
   return { statement, next };
 }
@@ -977,6 +1009,48 @@ const INDEXED_LISTINGS: readonly IndexedListing[] = [
       }),
   },
 ];
+
+// A status the rows rarely hold must not be found by walking every newer
+// row of the tenant's outbox: the unsent statuses read an index of unsent
+// rows only, and sent reads the index of sent ones.
+const UNSENT_INDEXES = ['email_outbox_pending', 'email_outbox_unsent_recent'];
+const MAIL_BY_STATUS = [
+  { status: 'failed', tenant: () => mostlySentTenantId, indexes: UNSENT_INDEXES },
+  { status: 'queued', tenant: () => mostlySentTenantId, indexes: UNSENT_INDEXES },
+  { status: 'retrying', tenant: () => mostlySentTenantId, indexes: UNSENT_INDEXES },
+  { status: 'sent', tenant: () => mostlyUnsentTenantId, indexes: ['email_outbox_sent_recent'] },
+] as const;
+
+describe('the plan the mail listing is given for one status', () => {
+  it.each(MAIL_BY_STATUS)('$status reads $indexes, never the whole outbox', async (each) => {
+    const tenantId = each.tenant();
+    const { statement } = await issuedBy(async () => {
+      await withTenant(app.db, tenantId, (tx) =>
+        listMail(tx, {
+          tenantId,
+          status: each.status,
+          revealRecipients: true,
+          maxAttempts: 5,
+          limit: 50,
+          cursor: undefined,
+          cursorKey: CURSOR_KEY,
+        }),
+      );
+      return null;
+    });
+    const [json] = await explained(app, statement, 'FORMAT JSON', tenantId);
+    const nodes = allNodes(rootPlan(json));
+    const indexes = nodes.map((node) => node.indexName);
+    expect(
+      indexes.some(
+        (name) => name !== undefined && (each.indexes as readonly string[]).includes(name),
+      ),
+    ).toBe(true);
+    expect(indexes).not.toContain('email_outbox_recent');
+    expect(nodes.map((node) => node.nodeType)).not.toContain('Seq Scan');
+    await recordPlan(`mail ?status=${each.status}`, statement);
+  });
+});
 
 describe('the plan each indexed listing is given', () => {
   it.each(INDEXED_LISTINGS)('$label reads its index in order, with no sort', async (listing) => {
