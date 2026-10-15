@@ -116,6 +116,13 @@ describe('renderLoginForm', () => {
     expect(page.body).toContain('&quot;&gt;');
   });
 
+  it('sets the passkey button in a paragraph, clear of the sign-in button', () => {
+    const page = renderLoginForm('acme', 'sid', 'password', true);
+    expect(page.body).toContain(
+      '<p><button type="submit" id="passkey-submit">Sign in with a passkey</button></p>',
+    );
+  });
+
   describe('after a refusal', () => {
     const refusal = { message: 'Sign-in failed. Check your details and try again.' };
 

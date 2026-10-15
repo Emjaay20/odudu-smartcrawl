@@ -66,9 +66,12 @@ async function attempt(
 }
 
 // The refusal page carries the form's own auth_session_id, which differs per
-// attempt and is the only thing that may.
+// attempt, and gives back the login that was typed; those two are the only
+// things that may differ.
 function refusalOf(res: LightMyRequestResponse): string {
-  return res.body.replace(/name="auth_session_id" value="[^"]*"/u, '');
+  return res.body
+    .replace(/name="auth_session_id" value="[^"]*"/u, '')
+    .replace(/(name="username"[^>]*) value="[^"]*"/u, '$1');
 }
 
 function subOf(tokens: Record<string, unknown>): unknown {

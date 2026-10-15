@@ -126,12 +126,13 @@ function renderFormFields(
 // whichever one answers. The challenge is issued per click rather than with
 // the page, so a form left open overnight still gets a live one.
 function renderPasskeyOption(tenant: string, authSessionId: string, nonce: string): string {
+  // The <p> keeps the button clear of the sign-in one (WCAG 2.2 target size).
   const escaped = escapeHtml(tenant);
   return `
 <form method="post" action="/tenants/${escaped}/login-actions/authenticate" id="passkey-form">
   <input type="hidden" name="auth_session_id" value="${escapeHtml(authSessionId)}">
   <input type="hidden" name="assertion" id="passkey-assertion">
-  <button type="submit" id="passkey-submit">Sign in with a passkey</button>
+  <p><button type="submit" id="passkey-submit">Sign in with a passkey</button></p>
 </form>
 <p id="passkey-error" hidden></p>
 <noscript><p>Signing in with a passkey needs JavaScript, because only the browser can talk to your authenticator. Use your username and password above.</p></noscript>

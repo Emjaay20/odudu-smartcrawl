@@ -42,9 +42,7 @@ test('a tenant administrator signs in from the console and changes a forced pass
   await expectAccessible(page);
 });
 
-test.fixme('the tenant sign-in pages pass axe', async ({ page }) => {
-  // Unstyled, their buttons fall short of WCAG 2.2's 24px target size
-  // (target-size, on #passkey-submit) until the server's pages are themed.
+test('the tenant sign-in pages pass axe', async ({ page }) => {
   await page.goto(`/console/${admin.tenant}`);
   await expect(page.getByLabel('Username')).toBeVisible();
   await expectAccessible(page);
