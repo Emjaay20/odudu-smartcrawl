@@ -273,14 +273,14 @@ another person's password.
 
 Placed elsewhere, each against the phase whose topic covers it:
 
-| #   | Item                                                                                                                            | Phase                                       |
-| --- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| 14  | Renaming a role, group, scope or tenant                                                                                         | decision, §4.7                              |
-| 15  | TOTP policy, WebAuthn policy and recovery-code count per tenant                                                                 | **P4f**                                     |
-| 16  | Email templates                                                                                                                 | **P4b**                                     |
-| 17  | Operator-supplied claim mappers and authenticators                                                                              | **P10**                                     |
-| 18  | Identity providers                                                                                                              | **P6**                                      |
-| 19  | `apps/server/src/app.ts:91-92` names `ODUDU_CLIENT_SECRET_THROTTLE_*`, which does not exist; the limiter is fixed at 5 per 60 s | **P11**, whose criterion names that limiter |
+| #   | Item                                                                                                                            | Phase                                                                                                                                          |
+| --- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 14  | Renaming a role, group, scope or tenant                                                                                         | decision, §4.7                                                                                                                                 |
+| 15  | TOTP policy, WebAuthn policy and recovery-code count per tenant                                                                 | **P4f**                                                                                                                                        |
+| 16  | Email templates                                                                                                                 | **P4b**                                                                                                                                        |
+| 17  | Operator-supplied claim mappers and authenticators                                                                              | **P10**                                                                                                                                        |
+| 18  | Identity providers                                                                                                              | **P6**                                                                                                                                         |
+| 19  | `apps/server/src/app.ts:91-92` names `ODUDU_CLIENT_SECRET_THROTTLE_*`, which does not exist; the limiter is fixed at 5 per 60 s | Closed in P4d: `ODUDU_CLIENT_SECRET_THROTTLE_*` is read by the configuration, and the limiter's bound is stated in ADR 0023's second amendment |
 
 Deployment-wide settings — retention windows, workers, the SMTP fallback,
 proxy and TLS — stay environment variables. They configure an installation,

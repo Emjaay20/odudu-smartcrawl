@@ -2456,3 +2456,27 @@ dropping partitions, which no migration of this increment does. The retention
 deletes are one statement per tenant per table, unbatched by row count; at
 the design volume a batch size is P11's. Both are named in P11's row of the
 design spec.
+
+## Part 4 — the rate limiter, hardened
+
+ADR 0023's second amendment has the decisions; what building it found.
+
+- **`ODUDU_CLIENT_SECRET_THROTTLE_*` did not exist.** A comment in `app.ts`
+  and a "has no env var yet" sentence in `docs/request-paths.md` both said
+  so; the limiter was fixed at 5 per 60 s. The two variables now exist and
+  P11's criterion that named the gap is removed.
+- **`request.ip` is text, not an address.** A dual-stack listener reports an
+  IPv4 peer as `::ffff:a.b.c.d`, and a trusted `X-Forwarded-For` token passes
+  through in any spelling, zone id included, so the same client was several
+  keys and an IPv6 client was one key per address. The throttle now keys by
+  `throttleOrigin`.
+- **The composite budget meant three stacks needed a raise.** The e2e suite
+  signs in as one user hundreds of times from one address, and the
+  conformance suite and the documentation walkthrough do the same, so each
+  sets `ODUDU_LOGIN_THROTTLE_LIMIT` as it already set
+  `ODUDU_THROTTLE_LIMIT`. Nothing was raised for the defaults.
+- **A property test is only as steady as its stream.** The counter and the
+  log disagree wildly, in timing, on a stream far over budget (the log
+  re-admits a whole burst when the previous one expires, the counter spreads
+  it), so the stated error is on the admission threshold for a steady
+  stream, not on each decision of an overloaded one.

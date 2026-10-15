@@ -223,6 +223,141 @@ the budget it bounds is a different one.
 narrative called it `deferred: P3a` before this amendment, a drift between
 that file and the table this closes rather than corrects.
 
+## Amendment, 2026-10-15 — the limiter made safe to configure, before production
+
+Nothing above changes: the account is Postgres's, the CPU is the process's,
+and the refusal is decided before anything account-dependent. What changes
+is what an operator can do to the process's own memory with the settings
+this ADR told them to raise, and which addresses count as one.
+
+**One interface, two implementations.** `RateLimiter`
+(`apps/server/src/rate-limiter.ts`: `check(key)` and `size()`) is all
+`app.ts` depends on. `slidingWindow` stays the factory and picks
+`slidingWindowLog` (the exact window above, one timestamp per admitted
+request) up to `COUNTER_THRESHOLD` = 100, and `slidingWindowCounter` above
+it. A shared-store limiter — GCRA or a token bucket in Redis or Postgres,
+once P11 has replicas to share it between — is a third implementation
+behind the same interface, and is P11's, as the per-instance limit above
+already was.
+
+**Why a counter above 100.** Measured 2026-10-13 and again 2026-10-15 on the
+real limiters, 60 s window, clock frozen, 10,000 keys each spending the
+whole budget. The log holds `limit` timestamps per key whatever the request
+rate, since a refused request is not recorded:
+
+| Limiter | limit |                   heap at 10,000 keys |
+| ------- | ----: | ------------------------------------: |
+| log     |    10 |                                3.3 MB |
+| log     |   100 |                                9.8 MB |
+| log     |  1000 | ~105 MB (2,000 keys measured, scaled) |
+| counter |   any |                                1.9 MB |
+
+A check costs under ten microseconds in every row. Nothing bounded
+`ODUDU_THROTTLE_LIMIT` below a million, so an operator following "raise it
+for a large NAT" could have asked the log for a gigabyte. 100 is the largest
+limit whose log stays under about 10 MB per budget at the key cap; below it
+the exact answer costs almost nothing, and above it the counter's constant
+three numbers per key are worth an approximation that, at a budget that
+size, is small next to the budget. The number is a judgement on those
+measurements, not a knee in them.
+
+**What the counter assumes, and what that costs.** It keeps the current and
+the previous fixed window's counts and estimates the trailing window as
+`previous × (1 − elapsed fraction) + current`, admitting a request while that
+estimate plus one is within the limit. The assumption is that the previous
+window's requests were spread evenly across it. For a **steady stream** that
+holds, and the estimate is within two requests of the exact count, so the
+counter admits a stream two or more under the budget and refuses one two or
+more over it exactly as the log does (`throttle-counter.test.ts`, a seeded
+property test over 200 limits, windows and rates). For **traffic timed
+against a window boundary** it does not: a burst at the end of one window
+and another at the start of the next can be admitted up to just under twice
+the limit inside one trailing window, and a burst early in the previous
+window can make the counter refuse up to `limit` requests the log would
+have admitted. Both are bounded by the limit itself, which is the right
+size of error for a CPU allowance and the wrong one for a guarantee; the
+budgets that guard a credential (the client secret budget and the
+per-username budget, at their defaults of 5) are below the threshold and
+exact. `Retry-After` for the counter is an estimate of when the
+weighted count next admits a request, rounded up: never zero when refused,
+and capped at one window, which can be shorter than the true wait when the
+current window is already spent.
+
+**The settings are bounded.** `ODUDU_THROTTLE_LIMIT`,
+`ODUDU_CLIENT_SECRET_THROTTLE_LIMIT` and `ODUDU_LOGIN_THROTTLE_LIMIT` refuse
+to boot above 10,000, naming the variable: ten thousand a window is two
+hundred Argon2id verifications a second from one origin, which no process
+runs, so a larger budget protects nothing, and it is the figure at which the
+log would have cost a gigabyte. The windows refuse past 3,600 seconds: a
+refusal telling a caller to return in over an hour is a lockout, and the
+account lockout is the mechanism for that. Both bounds used to be a million
+and a day; the e2e stack's 10,000 and the conformance stack's 5,000 sit
+inside the new ones. `ODUDU_CLIENT_SECRET_THROTTLE_LIMIT` and
+`_WINDOW_SECONDS` are new: the amendment above built that limiter at a
+hard-coded five per sixty seconds and a comment naming settings nothing
+read.
+
+**IPv6 is keyed by its /64.** `request.ip` is the socket's peer address as
+Fastify reports it, or, with `ODUDU_TRUST_PROXY` on, the leftmost
+`X-Forwarded-For` token as the proxy wrote it — verified 2026-10-15 by
+listening on `::` under Fastify 5.12.5 with trusting on and off, and
+sending an IPv4 and an IPv6 peer and six spellings in the header. Findings:
+a dual-stack listener reports every IPv4 peer as `::ffff:a.b.c.d`; a trusted
+header passes through whatever it says, upper case, zero-expanded forms, a
+zone id (`fe80::1%eth0`) and text that is no address at all; and every
+spelling is a different key. Each IPv6 address was therefore its own budget,
+and one home or hosting allocation is a /64 holding 2^64 addresses, so an
+attacker anywhere inside it never saw a refusal. `throttleOrigin`
+(`apps/server/src/throttle-origin.ts`) now keys an IPv6 address by its
+first four groups, an IPv4-mapped one as the IPv4 address it carries, drops
+a zone id and reads every spelling the same way; text that is no address
+passes through cut to 64 characters, so a client-controlled header still
+cannot grow a key. The cost is that two unrelated hosts in one /64 share
+a budget, the way two behind one NAT do, and the remedy is the same
+setting. The trust rule is unchanged: behind a proxy that appends rather than
+overwrites, the key is client text and the throttle decorative.
+
+**A second budget on sign-in, keyed by address and username.** The
+per-origin budget cannot tell one account being attacked from a shared
+address being busy, and the account lockout cannot refuse before it has paid
+for the verification. The sign-in submission alone now also spends a budget
+keyed `origin|tenant|username`, `ODUDU_LOGIN_THROTTLE_LIMIT` (default 5) per
+`ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS` (default 60): the lockout's five, and
+half the per-origin ten, so one name cannot take an address's whole budget.
+Credential stuffing against one account from one address is refused after
+five, and the rest of a NAT is not touched.
+
+It keeps the first property above intact. The username is read from the
+submitted form and nothing else, so the decision cannot depend on whether
+the account exists; it is folded (compatibility normalisation, trimmed,
+lower-cased) so case and padding do not buy a fresh key, and cut to 128
+characters with the tenant to 64, so the key set is bounded by
+`MAX_THROTTLE_KEYS` like the others. It runs in `preHandler` rather than
+`onRequest`, because the form is not parsed until then; that is still before
+the route, so before any lookup or Argon2id verification, and it answers the
+same `429`, `Retry-After` and empty body as the per-origin refusal. Tests
+establish both halves: the refusal happens with the database untouched
+(`app.test.ts`), and a username that is an account and one that is not
+are refused in the same bytes against a real database
+(`tests/throttle.int.test.ts`). A submission that names no username — the
+second-factor and passkey steps carry the authentication session instead —
+spends nothing here, and registration and the reset request are not covered:
+neither verifies a password, and the per-origin budget still bounds them.
+Per-origin runs first, so a request the username budget refuses has already
+spent an origin slot, which keeps the two within each other's bounds.
+
+**What stays per instance.** All of it. Five budgets now live in one
+process's memory (origin, username, client secret and the two audit refusal
+windows); each is capped at `MAX_THROTTLE_KEYS` keys, at most about 10 MB
+for the exact log at its largest and 2 MB for the counter, and none touches
+the database, so nothing here depends on 1,000,000 subjects, 10,000 clients
+or 10,000 tenants except that the key spaces they are drawn from (origins,
+usernames, client ids) are larger than the cap and evict by recency as
+above. A check is a map operation and a filter over at most 100 entries, or
+constant. N replicas admit N times every budget, and P11's criterion that
+every in-process bound is shared or documented as multiplied by the replica
+count covers these three new settings as it covers the older ones.
+
 ## Alternatives rejected
 
 - **(a) Both halves in Postgres, keyed by origin.** Globally true, and it
