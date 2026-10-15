@@ -23,6 +23,22 @@ export function assertProductionAppDatabaseUrl(config: Config): void {
 }
 
 /**
+ * The `ODUDU_KEK` in `infra/docker/.env.example` is published, and the KEK
+ * wraps every signing key and console session token and keys pagination
+ * cursors, so a deployment that copied the example holds secrets anybody
+ * can unwrap.
+ */
+export function assertProductionKekNotExample(config: Config): void {
+  if (config.NODE_ENV === 'production' && config.ODUDU_KEK.equals(Buffer.alloc(32, 0x2a))) {
+    throw new OduduError(
+      'config_invalid',
+      'ODUDU_KEK is the throwaway value infra/docker/.env.example ships, which is public. ' +
+        'Generate one: node -e "console.log(require(\'node:crypto\').randomBytes(32).toString(\'base64\'))"',
+    );
+  }
+}
+
+/**
  * Every credential this server issues or accepts is a plaintext string that
  * TLS alone protects. RFC 6749 §3.1, §3.2 and §10.11 require the
  * authorization server to require TLS; Odudu terminates none, so the most it

@@ -763,7 +763,8 @@ node -e "console.log('ODUDU_KEK=' + require('node:crypto').randomBytes(32).toStr
 ```
 
 Changing this value later makes every private signing key already wrapped
-with the old one unreadable.
+with the old one unreadable. That example value is public, so a server with
+`NODE_ENV=production` refuses to boot while `ODUDU_KEK` is exactly it.
 
 **The console's key.** While the console is on, which is the default, the
 server also refuses to boot without `ODUDU_CONSOLE_CLIENT_KEY`, naming it: the

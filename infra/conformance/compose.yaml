@@ -33,7 +33,9 @@ services:
       ODUDU_DATABASE_URL: postgres://odudu:odudu@postgres:5432/odudu
       ODUDU_APP_DATABASE_URL: postgres://odudu_svc:odudu_svc@postgres:5432/odudu
       ODUDU_LOG_LEVEL: info
-      ODUDU_KEK: KioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKio=
+      # Not the compose stack's example key: this stack runs production, which
+      # refuses that one.
+      ODUDU_KEK: KysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKys=
       # Made for each run by the script that starts it
       # (../docker/console-key.sh): a private key is never committed.
       ODUDU_CONSOLE_CLIENT_KEY: ${ODUDU_CONSOLE_CLIENT_KEY:?start this stack with a run-*.sh script}

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   assertConsoleConfigured,
   assertProductionAppDatabaseUrl,
+  assertProductionKekNotExample,
   assertProductionNoPrivateClientUrls,
   assertProductionPasskeyRelyingParty,
   assertProductionTls,
@@ -307,5 +308,30 @@ describe('warnIfConsoleCookieFallback', () => {
     warnIfConsoleCookieFallback(config, log);
 
     expect(log).not.toHaveBeenCalled();
+  });
+});
+
+describe('assertProductionKekNotExample', () => {
+  const example = 'KioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKio=';
+
+  it('throws when NODE_ENV is production and ODUDU_KEK is the value infra/docker/.env.example ships', () => {
+    const config = loadConfig({ ...base, NODE_ENV: 'production', ODUDU_KEK: example });
+    expect(() => {
+      assertProductionKekNotExample(config);
+    }).toThrow(/ODUDU_KEK/);
+  });
+
+  it('does not throw for any other key in production', () => {
+    const config = loadConfig({ ...base, NODE_ENV: 'production' });
+    expect(() => {
+      assertProductionKekNotExample(config);
+    }).not.toThrow();
+  });
+
+  it('does not throw outside production, where the compose stack uses it', () => {
+    const config = loadConfig({ ...base, NODE_ENV: 'development', ODUDU_KEK: example });
+    expect(() => {
+      assertProductionKekNotExample(config);
+    }).not.toThrow();
   });
 });

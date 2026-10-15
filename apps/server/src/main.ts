@@ -12,6 +12,7 @@ import { resolveSeedInvocation } from '#/cli/seed-invocation';
 import {
   assertConsoleConfigured,
   assertProductionAppDatabaseUrl,
+  assertProductionKekNotExample,
   assertProductionNoPrivateClientUrls,
   assertProductionPasskeyRelyingParty,
   assertProductionTls,
@@ -99,6 +100,7 @@ const config = loadConfig();
 const logger = createLogger(config);
 
 assertProductionAppDatabaseUrl(config);
+assertProductionKekNotExample(config);
 assertProductionTls(config);
 assertProductionPasskeyRelyingParty(config);
 assertProductionNoPrivateClientUrls(config);
