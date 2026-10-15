@@ -57,7 +57,7 @@ describe('[OIDC-DISCOVERY-3-01] the discovery document', () => {
     expect(doc.grant_types_supported).toContain('urn:ietf:params:oauth:grant-type:token-exchange');
   });
 
-  // tls_client_auth is excluded by default: docs/superpowers/specs/2026-09-18-p3a-clients-registration-consent-design.md:596-598
+  // tls_client_auth is excluded by default: docs/archive/specs/2026-09-18-p3a-clients-registration-consent-design.md:596-598
   // decides that an unset ODUDU_TRUST_PROXY means the method is
   // unavailable, so discovery must not name it either.
   it('advertises exactly the four client authentication methods the token endpoint honours with no trusted proxy', () => {

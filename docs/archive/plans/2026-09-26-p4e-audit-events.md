@@ -17,7 +17,7 @@ sibling transaction from the route's `catch`.
 **Tech Stack:** TypeScript 6, Fastify, Drizzle over PostgreSQL, Vitest with
 Testcontainers, pnpm + Turborepo.
 
-**Spec:** `docs/superpowers/specs/2026-09-26-p4e-audit-events-design.md`
+**Spec:** `docs/archive/specs/2026-09-26-p4e-audit-events-design.md`
 
 ## Global Constraints
 

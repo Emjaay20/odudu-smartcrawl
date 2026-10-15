@@ -77,7 +77,7 @@ export interface DiscoveryDocumentOptions {
   readonly clientRegistrationEnabled?: boolean;
   // Whether `ODUDU_TRUST_PROXY` is on. Unset means `tls_client_auth` is
   // unavailable, so it must not be advertised either
-  // (docs/superpowers/specs/2026-09-18-p3a-clients-registration-consent-design.md:596-598).
+  // (docs/archive/specs/2026-09-18-p3a-clients-registration-consent-design.md:596-598).
   readonly tlsClientAuthEnabled?: boolean;
 }
 

@@ -4,7 +4,7 @@ What the phase found, in the shape `docs/phases/p2b.md` established: this
 file is the running record the spec, the plan and the umbrella spec's close
 note do not keep — what was discovered while building, and especially what
 turned out to be wrong. The phase's own argument is in
-[its spec](../superpowers/specs/2026-09-24-p4c-admin-api-design.md); what it
+[its spec](../archive/specs/2026-09-24-p4c-admin-api-design.md); what it
 built is in [docs/admin-paths.md](../admin-paths.md).
 
 Three shapes recur below, each often enough to be worth naming before the

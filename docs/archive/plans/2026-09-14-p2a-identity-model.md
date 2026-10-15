@@ -8,7 +8,7 @@
 
 **Tech Stack:** Node 24, TypeScript 6.0.3, Fastify 5.12.3, PostgreSQL 17, Drizzle ORM 0.45.2, Zod 4.6.1, Vitest 5.0.0, Testcontainers 12.1.0, jose 6.2.12, @node-rs/argon2 2.2.1. Two candidate additions, each gated by a spike: a CORS mechanism (Task 1) and an SMTP client (Task 14).
 
-**Spec:** `docs/superpowers/specs/2026-09-14-p2a-identity-model-design.md`
+**Spec:** `docs/archive/specs/2026-09-14-p2a-identity-model-design.md`
 
 **Umbrella spec:** `docs/superpowers/specs/2026-09-10-odudu-design.md`
 

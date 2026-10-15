@@ -510,7 +510,7 @@ describe('tls_client_auth at /token', () => {
     expect(res.statusCode).toBe(200);
   });
 
-  // docs/superpowers/specs/2026-09-18-p3a-clients-registration-consent-design.md:596-598:
+  // docs/archive/specs/2026-09-18-p3a-clients-registration-consent-design.md:596-598:
   // registration is refused too, not only authentication — the untrusted
   // server never advertises the method, but a client could still try to
   // register one directly.

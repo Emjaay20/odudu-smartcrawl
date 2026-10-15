@@ -29,7 +29,7 @@ verified: `npm view <pkg> version time --json` for each on 2026-09-28
 (facts file; re-run at install, and take a newer version only if it too is
 ≥ 24 h old).
 
-**Spec:** `docs/superpowers/specs/2026-09-26-p4d-admin-console-design.md`
+**Spec:** `docs/archive/specs/2026-09-26-p4d-admin-console-design.md`
 §6 (application), §7 (UX rules), §8 (Instrument), §9 (testing, `e2e`),
 §12 item 4. Gateway contract: `docs/console-paths.md` and `docs/NEXT.md`
 "P4d's Part 3 inherits the gateway".

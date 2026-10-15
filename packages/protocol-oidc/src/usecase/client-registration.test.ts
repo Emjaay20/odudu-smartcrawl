@@ -150,7 +150,7 @@ describe('registerClient — metadata validation', () => {
     }
   });
 
-  // docs/superpowers/specs/2026-09-18-p3a-clients-registration-consent-design.md:596-598:
+  // docs/archive/specs/2026-09-18-p3a-clients-registration-consent-design.md:596-598:
   // a deployment with ODUDU_TRUST_PROXY off must refuse a tls_client_auth
   // registration outright, the registration half of the same decision
   // /token's own trustProxy gate is the authentication half of.

@@ -8,7 +8,7 @@ what shipped is in the exit criterion, and what it means for the next phase
 is in [docs/NEXT.md](../NEXT.md).
 
 The phase's own argument is in
-[its spec](../superpowers/specs/2026-09-19-p3b-sessions-logout-token-surface-design.md);
+[its spec](../archive/specs/2026-09-19-p3b-sessions-logout-token-surface-design.md);
 section 11 of [the umbrella spec](../superpowers/specs/2026-09-10-odudu-design.md)
 carries the roadmap-level amendments.
 

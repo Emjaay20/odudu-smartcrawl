@@ -74,7 +74,7 @@ WebKit, which `packages/console-gateway/src/view/react-aria-style.test.ts`
 recomputes from the pinned source. So it sets that fixed policy itself
 rather than through `pageHeaders`, whose policy describes a markup-only
 page. The two-wrapper rule above covers server-rendered pages; design spec
-§5.4 (`docs/superpowers/specs/2026-09-26-p4d-admin-console-design.md`)
+§5.4 (`docs/archive/specs/2026-09-26-p4d-admin-console-design.md`)
 gives the shell's policy.
 
 ## Amendment — 2026-10-14 — a form left open, and Back

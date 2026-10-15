@@ -395,7 +395,7 @@ Either way, the token must carry an `aud` naming this admin API,
 protocol surface does not authorize anything here — and the request is refused if the grant behind the token
 has been revoked, its session has ended, its client has since been
 disabled, or its subject has. A `client_credentials` token has no session
-behind it, and is refused only on the other three counts. `docs/superpowers/specs/2026-09-24-p4c-admin-api-design.md`
+behind it, and is refused only on the other three counts. `docs/archive/specs/2026-09-24-p4c-admin-api-design.md`
 section 7 has the full authentication and authorization sequence;
 [README.md](../README.md) explains why the built-in admin client is shaped
 the way it is, and "Getting the token" below is the run every transcript

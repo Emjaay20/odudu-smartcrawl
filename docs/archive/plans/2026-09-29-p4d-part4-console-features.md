@@ -19,7 +19,7 @@ surfaces and the transport. A coverage test holds the console to the whole
 Playwright 1.63.0, axe), plus the admin API (Fastify 5, Zod 4) and the console
 gateway.
 
-**Spec:** `docs/superpowers/specs/2026-09-26-p4d-admin-console-design.md`
+**Spec:** `docs/archive/specs/2026-09-26-p4d-admin-console-design.md`
 §7 (UX), §8, §9 (including the accessibility checklist and e2e duties) and
 §12 item 5 (features and owed work).
 

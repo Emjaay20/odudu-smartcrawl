@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript (no `any`), Fastify, Drizzle over PostgreSQL with row-level security, `jose`, Vitest with Testcontainers.
 
-**Spec:** `docs/superpowers/specs/2026-09-19-p3b-sessions-logout-token-surface-design.md`
+**Spec:** `docs/archive/specs/2026-09-19-p3b-sessions-logout-token-surface-design.md`
 
 ## Global Constraints
 
@@ -876,13 +876,13 @@ git commit -m "Route every session cookie through one authority"
 git push -u origin p3b-sessions-logout-token-surface
 gh pr create --draft --base main --head p3b-sessions-logout-token-surface \
   --title "P3b — sessions, logout and the token surface" \
-  --body "Implements docs/superpowers/specs/2026-09-19-p3b-sessions-logout-token-surface-design.md. Increments merge into this branch one pull request at a time."
+  --body "Implements docs/archive/specs/2026-09-19-p3b-sessions-logout-token-surface-design.md. Increments merge into this branch one pull request at a time."
 
 # This increment's own pull request.
 git push -u origin p3b/1-session-set
 gh pr create --base p3b-sessions-logout-token-surface --head p3b/1-session-set \
   --title "P3b increment 1 — the cookie authority and the session set" \
-  --body "Tasks 1-5 of docs/superpowers/plans/2026-09-19-p3b-sessions-logout-token-surface.md."
+  --body "Tasks 1-5 of docs/archive/plans/2026-09-19-p3b-sessions-logout-token-surface.md."
 gh pr checks --watch
 ```
 

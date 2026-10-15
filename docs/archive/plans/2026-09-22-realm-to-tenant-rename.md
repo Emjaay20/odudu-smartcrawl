@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript, Fastify, Drizzle ORM, PostgreSQL with row-level security, Vitest with Testcontainers, hand-authored SQL migrations.
 
-**Spec:** `docs/superpowers/specs/2026-09-22-realm-to-tenant-rename-design.md`
+**Spec:** `docs/archive/specs/2026-09-22-realm-to-tenant-rename-design.md`
 
 ## Global Constraints
 

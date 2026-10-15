@@ -94,7 +94,7 @@ one function, called from `completeLogin`
 Eviction reads `sessionRepository(tx).liveByEntries` against the entries
 the browser's own cookies already present (`admitSession`'s
 `browserSessions`; each entry is an id with its secret, spec §16 of
-`docs/superpowers/specs/2026-09-26-p4e-audit-events-design.md`), never a
+`docs/archive/specs/2026-09-26-p4e-audit-events-design.md`), never a
 subject- or tenant-wide scan. The cap is `max_sessions_per_browser`,
 not per subject: a browser can hold sessions for more than one subject at
 once — the case `prompt=select_account` (a later increment) exists to

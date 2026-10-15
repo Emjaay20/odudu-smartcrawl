@@ -4,8 +4,8 @@ What the phase found, in the shape `docs/phases/p2b.md` established: this
 file is the running record the spec, the plan and the umbrella spec's close
 note do not keep — what was discovered while building, especially what
 turned out to be wrong. The phase's own argument is in
-[its spec](../superpowers/specs/2026-09-23-p4a-token-exchange-design.md) and
-[its plan](../superpowers/plans/2026-09-23-p4a-token-exchange.md); the
+[its spec](../archive/specs/2026-09-23-p4a-token-exchange-design.md) and
+[its plan](../archive/plans/2026-09-23-p4a-token-exchange.md); the
 task-by-task ledger was a working file in the git-ignored `.superpowers/`
 directory and was never committed. What survives of the execution is the
 commit history and the review threads on

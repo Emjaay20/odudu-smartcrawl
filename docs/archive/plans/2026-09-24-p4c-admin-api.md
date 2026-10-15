@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript (no `any`), Fastify 5.12.3, Drizzle over PostgreSQL with row-level security, Zod 4.6.1 with `z.toJSONSchema()`, ajv 8, `jose`, Vitest with Testcontainers.
 
-**Spec:** `docs/superpowers/specs/2026-09-24-p4c-admin-api-design.md`
+**Spec:** `docs/archive/specs/2026-09-24-p4c-admin-api-design.md`
 
 ## Global Constraints
 

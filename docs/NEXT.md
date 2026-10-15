@@ -11,13 +11,13 @@ whole-branch review and awaits the merge into `main`. P4 has been split five way
 The order is **P4a → P4c → P4e → P4d → P4g → P4f → P4b → P4h**, and the letters deliberately
 do not read in execution order, because `P4b` was spent on theming before P4
 split and an accepted ADR cites it. P4a was token exchange
-([spec](superpowers/specs/2026-09-23-p4a-token-exchange-design.md)); P4c was
+([spec](archive/specs/2026-09-23-p4a-token-exchange-design.md)); P4c was
 the admin API
-([spec](superpowers/specs/2026-09-24-p4c-admin-api-design.md)); P4e was
+([spec](archive/specs/2026-09-24-p4c-admin-api-design.md)); P4e was
 authentication and token audit events
-([spec](superpowers/specs/2026-09-26-p4e-audit-events-design.md)); **P4d**,
+([spec](archive/specs/2026-09-26-p4e-audit-events-design.md)); **P4d**,
 the admin console and the admin API it needs
-([spec](superpowers/specs/2026-09-26-p4d-admin-console-design.md)); **P4f**,
+([spec](archive/specs/2026-09-26-p4d-admin-console-design.md)); **P4f**,
 self-service through a "me" API and application-initiated actions, replaced
 the account console; P4b stays theming; **P4h**, console localization, follows it ([ADR 0043](adr/0043-localization-is-a-catalogue-a-negotiation-and-a-set-of-owners.md)).
 
@@ -334,7 +334,7 @@ a phase note.
 
 ### Recorded judgements, where the code stands and nothing is owed
 
-- Six migration-filename citations under `docs/superpowers/plans/` are off
+- Six migration-filename citations under `docs/archive/plans/` are off
   by one: each plan predicted a number, another migration landed first, and
   everything shifted. `0009_token_grants.sql` is `0010_token_grants.sql` on
   disk, and the other five the same way — the descriptive name is right in
