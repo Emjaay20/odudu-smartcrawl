@@ -66,6 +66,19 @@ describe('the detail as readable entries', () => {
     ]);
   });
 
+  it('reads a pair with anything beside it as nested keys, so nothing is lost', () => {
+    expect(
+      detailEntries({ enabled: { before: true, after: false, extra: 'kept' } }).entries,
+    ).toEqual([
+      { path: 'enabled.before', text: 'true', change: false },
+      { path: 'enabled.after', text: 'false', change: false },
+      { path: 'enabled.extra', text: 'kept', change: false },
+    ]);
+    expect(detailEntries({ enabled: { before: true } }).entries).toEqual([
+      { path: 'enabled.before', text: 'true', change: false },
+    ]);
+  });
+
   it('names nested keys by their path and lists arrays', () => {
     expect(
       detailEntries({ denied: ['manage-tenant', 'view-users'], counts: { roles: 2 } }).entries,

@@ -296,6 +296,17 @@ describe('isStaleCursor', () => {
     expect(isStaleCursor(problem(400, { detail: 'resource_id requires resource_type' }))).toBe(
       false,
     );
+    const other: GatewayFailure = {
+      ok: false,
+      kind: 'problem',
+      problem: {
+        type: 'about:blank',
+        title: 'Bad Request',
+        status: 400,
+        errors: [{ path: 'from', message: 'must be an instant from 1970 to 9999' }],
+      },
+    };
+    expect(isStaleCursor(other)).toBe(false);
     expect(isStaleCursor(problem(403))).toBe(false);
     expect(isStaleCursor(NETWORK)).toBe(false);
     expect(isStaleCursor(null)).toBe(false);
