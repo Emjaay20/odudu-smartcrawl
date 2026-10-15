@@ -5,12 +5,21 @@ import {
   type RequiredAction,
   type SessionRecord,
 } from '@odudu/authn-flows';
-import { verifyJwt, TYP_ABSENT, type ExpectedAudience, type SigningKeyRecord } from '@odudu/crypto';
+import {
+  verifyJwt,
+  AUDIENCE_UNCHECKED,
+  EXPIRY_NOT_ENFORCED,
+  TYP_ABSENT,
+  type ExpectedAudience,
+  type ExpiryPolicy,
+  type SigningKeyRecord,
+} from '@odudu/crypto';
 import { type ClientRecord } from '@odudu/domain-tenant';
 import { isUuid } from '@odudu/kernel';
 import { type ClientOidcConfig } from '#/schema/client-oidc-config';
 import { type TenantLookup } from '#/repository/tenant-lookup';
 import {
+  requestedScopeTokens,
   validateAuthorizationRequest,
   type AuthorizeOutcome,
 } from '#/service/authorize-validation';
@@ -24,6 +33,8 @@ import { parseResource } from '#/service/resource-indicator';
 import {
   decideConsentGate,
   refusedForUnverifiedEmail,
+  type ClientPages,
+  type ScopeLabels,
   type ConsentGateDeps,
   type LoginSubmissionDeps,
 } from '#/usecase/login-submission';
@@ -35,7 +46,13 @@ export type AuthorizationRequestOutcome =
   // `form` names what the rendered login page should ask for first —
   // whatever the tenant's flow would offer nobody has submitted anything
   // yet (authn-flows' initialChallenge).
-  | { kind: 'started'; authSessionId: string; form: string; rememberMeAllowed: boolean }
+  | {
+      kind: 'started';
+      authSessionId: string;
+      form: string;
+      rememberMeAllowed: boolean;
+      loginWithEmail: boolean;
+    }
   // Session reuse: a code issued with no page ever rendered and no fresh
   // authentication session started. Carries exactly what the form-POST
   // success redirect carries, because the client cannot tell the two apart.
@@ -51,6 +68,8 @@ export type AuthorizationRequestOutcome =
       kind: 'consent';
       authSessionId: string;
       clientName: string;
+      clientPages: ClientPages;
+      scopeLabels: ScopeLabels;
       defaultScopes: string[];
       optionalScopes: string[];
       alreadyGranted: string[];
@@ -127,9 +146,10 @@ export interface AuthorizeUsecaseDeps extends ConsentGateDeps {
   // Scoped to the resolved tenant by the caller composing this dependency
   // (index.ts), the same way listPublishableKeys is for the JWKS route.
   resolveClient(tenantId: string, oauthClientId: string): Promise<ResolvedClient>;
-  // Shared with the discovery usecase, so a scope this endpoint accepts is
-  // one the discovery document advertises and vice versa.
-  scopesForTenant(tenantId: string): Promise<readonly string[]>;
+  // The names, of those given, that the tenant defines as scopes: the same
+  // vocabulary discovery advertises, asked about only the scopes a request
+  // names.
+  scopesNamed(tenantId: string, names: readonly string[]): Promise<readonly string[]>;
   startAuthentication(
     tenantId: string,
     request: Extract<AuthorizeOutcome, { kind: 'ok' }>['request'],
@@ -173,6 +193,18 @@ export interface AuthorizeUsecaseDeps extends ConsentGateDeps {
   // issueAuthorizationCode the form path uses, wrapped with the touch in
   // one transaction the way completeLogin wraps its own two writes.
   completeReuse(input: CompleteReuseInput): Promise<{ code: string }>;
+  // Whether `authenticators` leave `subjectId` nothing to pass under the
+  // flow as it stands now. A reused session that does not is not reused:
+  // the login form asks for what it lacks, as `prompt=login` does.
+  sessionMeetsFlow(
+    tenantId: string,
+    subjectId: string,
+    authenticators: readonly string[],
+  ): Promise<boolean>;
+  // Which of `subjectIds` are enabled. A session of a subject disabled since
+  // it was made is not reused and not offered by the chooser: the login form
+  // is, and refuses them there.
+  enabledSubjects(tenantId: string, subjectIds: readonly string[]): Promise<ReadonlySet<string>>;
   // Starts a fresh authentication session already bound and authenticated
   // for `subjectId`, with `authenticators` as its satisfied set — the
   // reuse path's way of giving a consent decision something to park the
@@ -294,7 +326,7 @@ export async function handleAuthorizationRequest(
     params,
     resolved.client,
     resolved.config,
-    new Set(await deps.scopesForTenant(tenant.id)),
+    new Set(await deps.scopesNamed(tenant.id, requestedScopeTokens(params.scope))),
     new Set(resolved.scopes),
     repeatedKey,
   );
@@ -320,6 +352,10 @@ export async function handleAuthorizationRequest(
   if (resourceOutcome.kind === 'invalid_target') return reject('invalid_target');
   const audience = resourceOutcome.audience;
 
+  // OIDC Dynamic Client Registration §2: a request's own `max_age` wins,
+  // and the client's `default_max_age` stands in where it carries none.
+  const maxAge = outcome.maxAge ?? resolved.config?.defaultMaxAge ?? null;
+
   // OIDC Core §5.5. Parsed below the §4.1.2.1 boundary, same as `resource`
   // above: a malformed parameter is reported at the client's own
   // redirect_uri, not rendered.
@@ -330,7 +366,7 @@ export async function handleAuthorizationRequest(
   // asks one question (`token-issuance.ts` excludes `auth_time` from what
   // this synthesis could otherwise narrow away).
   const claims: ClaimsRequest =
-    outcome.maxAge === null
+    maxAge === null
       ? claimsOutcome.request
       : {
           ...claimsOutcome.request,
@@ -351,7 +387,7 @@ export async function handleAuthorizationRequest(
     // against: the client making this very request. A hint minted for
     // another client is refused here even though its signature and issuer
     // are this tenant's own.
-    const hint = await subjectOfIdTokenHint(
+    const hint = await subjectOfAuthorizeHint(
       deps,
       tenant.id,
       issuer,
@@ -378,7 +414,13 @@ export async function handleAuthorizationRequest(
     },
     header,
   );
-  const resolvedSessions = sessions.map(toReusableSession);
+  const enabled = await deps.enabledSubjects(
+    tenant.id,
+    sessions.map((session) => session.subjectId),
+  );
+  const resolvedSessions = sessions
+    .filter((session) => enabled.has(session.subjectId))
+    .map(toReusableSession);
   // A hint, or a `claims` request's `sub`, names one subject, so only that
   // subject's sessions are reusable or offered by the chooser — both
   // constraints apply together when both are present. The chooser POST's
@@ -391,17 +433,27 @@ export async function handleAuthorizationRequest(
   const decision = decideReuse({
     sessions: candidateSessions,
     prompts: outcome.prompts,
-    maxAge: outcome.maxAge,
+    maxAge,
     now: deps.now(),
   });
 
   if (decision.kind === 'refuse') return reject(decision.error);
 
-  if (decision.kind === 'reuse') {
-    const resolvedSession = resolvedSessions.find((s) => s.id === decision.sessionId);
-    if (resolvedSession === undefined) {
-      throw new Error('unreachable: decideReuse reused a session outside the resolved set');
-    }
+  const reusedSession =
+    decision.kind === 'reuse'
+      ? resolvedSessions.find((s) => s.id === decision.sessionId)
+      : undefined;
+  if (decision.kind === 'reuse' && reusedSession === undefined) {
+    throw new Error('unreachable: decideReuse reused a session outside the resolved set');
+  }
+  const reuseIsStale =
+    decision.kind === 'reuse' &&
+    reusedSession !== undefined &&
+    !(await deps.sessionMeetsFlow(tenant.id, decision.subjectId, reusedSession.authenticators));
+  if (reuseIsStale && outcome.prompts.has('none')) return reject('login_required');
+
+  if (decision.kind === 'reuse' && reusedSession !== undefined && !reuseIsStale) {
+    const resolvedSession = reusedSession;
     if (resolved.client === null) {
       throw new Error('unreachable: validateAuthorizationRequest succeeded with a null client');
     }
@@ -491,6 +543,8 @@ export async function handleAuthorizationRequest(
         kind: 'consent',
         authSessionId,
         clientName: gate.clientName,
+        clientPages: gate.clientPages,
+        scopeLabels: gate.scopeLabels,
         defaultScopes: gate.defaultScopes,
         optionalScopes: gate.optionalScopes,
         alreadyGranted: gate.alreadyGranted,
@@ -527,7 +581,7 @@ export async function handleAuthorizationRequest(
       ...(claimsSubject !== null ? { claimsSubject } : {}),
       // Re-checked against whichever session is posted back — see
       // handleSelectAccountSubmission's own withinMaxAge call.
-      ...(outcome.maxAge !== null ? { maxAge: outcome.maxAge } : {}),
+      ...(maxAge !== null ? { maxAge } : {}),
       resource: [...audience],
       claims,
     });
@@ -568,6 +622,9 @@ export async function handleAuthorizationRequest(
     // which is the login submission, so it travels with the parked request.
     ...(hintSubject !== null ? { idTokenHintSubject: hintSubject } : {}),
     ...(claimsSubject !== null ? { claimsSubject } : {}),
+    // Parked on this branch too, so a restart link rebuilt from it asks for
+    // the same freshness instead of being answered from an older session.
+    ...(maxAge !== null ? { maxAge } : {}),
     // Carried forward so handleLoginSubmission's own consent gate, once
     // this login completes, still sees `prompt=consent` the way it would
     // have at the moment this request first arrived.
@@ -580,6 +637,7 @@ export async function handleAuthorizationRequest(
     authSessionId,
     form: initial.form,
     rememberMeAllowed: tenant.rememberMeAllowed,
+    loginWithEmail: tenant.loginWithEmail,
   };
 }
 
@@ -624,7 +682,10 @@ export async function handleSelectAccountSubmission(
     return { kind: 'unauthenticated' };
   }
 
-  if (answer.useOther) {
+  // The same parked authentication session, not a fresh one: nobody was
+  // ever bound to it, so the ordinary login form resumes it exactly as if
+  // it had rendered that form to begin with.
+  const startedLogin = async (): Promise<SelectAccountOutcome> => {
     const initial = await deps.initialChallenge(tenant.id);
     if (initial.kind !== 'challenge') {
       if (initial.kind === 'success') {
@@ -637,16 +698,16 @@ export async function handleSelectAccountSubmission(
         state: pending.state,
       };
     }
-    // The same parked authentication session, not a fresh one: nobody was
-    // ever bound to it, so the ordinary login form resumes it exactly as if
-    // it had rendered that form to begin with.
     return {
       kind: 'started',
       authSessionId,
       form: initial.form,
       rememberMeAllowed: tenant.rememberMeAllowed,
+      loginWithEmail: tenant.loginWithEmail,
     };
-  }
+  };
+
+  if (answer.useOther) return startedLogin();
 
   const tenantShape = {
     id: tenant.id,
@@ -698,6 +759,13 @@ export async function handleSelectAccountSubmission(
   );
   if (refusal !== null) return reject('login_required');
 
+  if (!(await deps.enabledSubjects(tenant.id, [chosen.subjectId])).has(chosen.subjectId)) {
+    return startedLogin();
+  }
+  if (!(await deps.sessionMeetsFlow(tenant.id, chosen.subjectId, chosen.authenticators))) {
+    return startedLogin();
+  }
+
   const action = nextRequiredAction(await deps.pendingActions(tenant.id, chosen.subjectId));
   if (action !== null) {
     await deps.markAuthenticated(tenant.id, authSessionId, chosen.subjectId, chosen.authenticators);
@@ -719,6 +787,8 @@ export async function handleSelectAccountSubmission(
       kind: 'consent',
       authSessionId,
       clientName: gate.clientName,
+      clientPages: gate.clientPages,
+      scopeLabels: gate.scopeLabels,
       defaultScopes: gate.defaultScopes,
       optionalScopes: gate.optionalScopes,
       alreadyGranted: gate.alreadyGranted,
@@ -782,19 +852,13 @@ function audiencesOf(claim: unknown): readonly string[] {
   return claim.filter((value): value is string => typeof value === 'string');
 }
 
-// OIDC Core §3.1.2.2: "the OP MUST validate that it was the issuer of the ID
-// Token" — a signature made by one of this tenant's keys, over a payload whose
-// `iss` is this tenant; `exp` is enforced by verifyJwt too. Returns the
-// claims it carries, or null for a hint this server cannot recognise as its
-// own. `audience` is a parameter, not a constant — callers differ on
-// whether they check it; see docs/protocols/oidc-core.md's reading note.
-// Exported for `#/usecase/logout.ts`, which shares this check.
-export async function subjectOfIdTokenHint(
+async function verifiedHint(
   deps: Pick<AuthorizeUsecaseDeps, 'listPublishableKeys'>,
   tenantId: string,
   issuer: string,
   hint: string,
   audience: ExpectedAudience,
+  expiry: ExpiryPolicy | undefined,
 ): Promise<IdTokenHintClaims | null> {
   const keys = await deps.listPublishableKeys(tenantId);
   try {
@@ -808,6 +872,7 @@ export async function subjectOfIdTokenHint(
       // server had already made once; `TYP_ABSENT` closes the shape rather
       // than the instance (docs/protocols/oidc-core.md's reading note).
       typ: TYP_ABSENT,
+      ...(expiry === undefined ? {} : { expiry }),
     });
     if (typeof payload.sub !== 'string' || payload.sub.length === 0) return null;
     return {
@@ -820,4 +885,50 @@ export async function subjectOfIdTokenHint(
   } catch {
     return null;
   }
+}
+
+// OIDC Core §3.1.2.2: "the OP MUST validate that it was the issuer of the ID
+// Token" — a signature made by one of this tenant's keys, over a payload whose
+// `iss` is this tenant; `exp` is enforced by verifyJwt too. Returns the
+// claims it carries, or null for a hint this server cannot recognise as its
+// own. `audience` is a parameter, not a constant — callers differ on
+// whether they check it; see docs/protocols/oidc-core.md's reading note.
+// Strict about `exp`: the reader for token exchange.
+export function subjectOfIdTokenHint(
+  deps: Pick<AuthorizeUsecaseDeps, 'listPublishableKeys'>,
+  tenantId: string,
+  issuer: string,
+  hint: string,
+  audience: ExpectedAudience,
+): Promise<IdTokenHintClaims | null> {
+  return verifiedHint(deps, tenantId, issuer, hint, audience, undefined);
+}
+
+// The same checks with `exp` left unjudged, for the logout endpoint alone:
+// RP-Initiated Logout 1.0 §2 has the OP accept an ID Token "even when the
+// `exp` time has passed". What bounds it is the session the hint's `sid`
+// must name, not the clock (docs/protocols/oidc-rpinitiated.md).
+export function subjectOfLogoutHint(
+  deps: Pick<AuthorizeUsecaseDeps, 'listPublishableKeys'>,
+  tenantId: string,
+  issuer: string,
+  hint: string,
+): Promise<IdTokenHintClaims | null> {
+  return verifiedHint(deps, tenantId, issuer, hint, AUDIENCE_UNCHECKED, EXPIRY_NOT_ENFORCED);
+}
+
+// OIDC Core §3.1.2.2 asks the OP to accept a hint "even when the `exp` time
+// has passed". Here the hint only constrains: it filters the candidate
+// sessions and forces the login to be its subject, and authenticates
+// nobody, so a lapsed one is read with `aud` pinned to the requesting
+// client. Token exchange, which turns a hint into a credential, keeps
+// `subjectOfIdTokenHint`.
+export function subjectOfAuthorizeHint(
+  deps: Pick<AuthorizeUsecaseDeps, 'listPublishableKeys'>,
+  tenantId: string,
+  issuer: string,
+  hint: string,
+  clientId: string,
+): Promise<IdTokenHintClaims | null> {
+  return verifiedHint(deps, tenantId, issuer, hint, clientId, EXPIRY_NOT_ENFORCED);
 }

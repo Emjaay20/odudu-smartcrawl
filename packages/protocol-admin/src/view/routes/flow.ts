@@ -1,7 +1,14 @@
 import { replaceExecutionsRequestSchema } from '@odudu/contracts/admin';
 import { type Database } from '@odudu/db';
 import { listFlow, replaceFlow, type Audit, type ReplaceFlowOutcome } from '#/usecase/flow';
-import { ifMatchRequired, ifMatchStale, problem, sendProblem } from '#/view/problem';
+import {
+  fieldProblem,
+  ifMatchRequired,
+  ifMatchStale,
+  problem,
+  sendProblem,
+  type Problem,
+} from '#/view/problem';
 import { adminTx } from '#/view/routes/admin-tx';
 import { type AdminRequest, type AdminRouteHandler } from '#/view/routes/router';
 
@@ -21,11 +28,21 @@ export function listFlowHandler(deps: FlowRouteDeps): AdminRouteHandler {
       listFlow(tx, targetTenantId),
     );
     reply.header('etag', flow.etag);
-    return reply.code(200).send({ items: flow.items });
+    return reply.code(200).send({ items: flow.items, available: flow.available });
   };
 }
 
-function replaceFlowProblem(outcome: Exclude<ReplaceFlowOutcome, { kind: 'ok' }>) {
+// The step a refusal is about, by its index in the request: the one naming
+// `name`, or, for a repeat, the first after the one that came before it.
+function stepPath(steps: readonly { authenticator: string }[], name: string, nth: number): string {
+  const indices = steps.flatMap((step, index) => (step.authenticator === name ? [index] : []));
+  return `[${String(indices[nth] ?? indices[0] ?? 0)}].authenticator`;
+}
+
+function replaceFlowProblem(
+  outcome: Exclude<ReplaceFlowOutcome, { kind: 'ok' }>,
+  steps: readonly { authenticator: string }[],
+): Problem {
   switch (outcome.kind) {
     case 'precondition_required':
       return ifMatchRequired('a tenant\u2019s authentication flow');
@@ -34,35 +51,33 @@ function replaceFlowProblem(outcome: Exclude<ReplaceFlowOutcome, { kind: 'ok' }>
     case 'empty':
       return problem(
         400,
-        'about:blank',
+        'about:blank#flow-empty',
         'Bad Request',
         'a flow needs at least one step; a tenant with no flow cannot be logged into',
       );
     case 'unresolvable_authenticator':
-      return problem(
-        400,
-        'about:blank',
-        'Bad Request',
+      return fieldProblem(
+        [{ path: stepPath(steps, outcome.name, 0), message: 'is not a registered authenticator' }],
         `unknown authenticator ${JSON.stringify(outcome.name)}; expected one of ${outcome.known.join(', ')}`,
+        'about:blank#flow-unknown-authenticator',
       );
     case 'duplicate_authenticator':
-      return problem(
-        400,
-        'about:blank',
-        'Bad Request',
+      return fieldProblem(
+        [{ path: stepPath(steps, outcome.name, 1), message: 'repeats an earlier step' }],
         `authenticator ${JSON.stringify(outcome.name)} appears more than once; a step is addressed by its authenticator, so a repeat has no unambiguous meaning`,
+        'about:blank#flow-duplicate-authenticator',
       );
     case 'no_enabled_step':
       return problem(
         400,
-        'about:blank',
+        'about:blank#flow-no-enabled-step',
         'Bad Request',
         'every step is disabled; a tenant with no enabled step cannot be logged into',
       );
     case 'no_step_runnable_at_start':
       return problem(
         400,
-        'about:blank',
+        'about:blank#flow-no-first-challenge',
         'Bad Request',
         'no step would run at the start of a login, when no subject is bound yet; ' +
           'a tenant whose flow begins this way cannot be logged into',
@@ -90,9 +105,9 @@ export function replaceFlowHandler(deps: FlowRouteDeps): AdminRouteHandler {
     );
 
     if (outcome.kind !== 'ok') {
-      return sendProblem(reply, request, replaceFlowProblem(outcome));
+      return sendProblem(reply, request, replaceFlowProblem(outcome, steps));
     }
     reply.header('etag', outcome.etag);
-    return reply.code(200).send({ items: outcome.items });
+    return reply.code(200).send({ items: outcome.items, available: outcome.available });
   };
 }

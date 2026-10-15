@@ -1,3 +1,5 @@
+import { scriptNonce } from '#/ids';
+
 // What a rendered page needs allowed, when it needs anything beyond
 // markup. Returned by the renderer rather than decided by the caller, so
 // the page and the policy sent with it cannot disagree — a Content
@@ -26,6 +28,33 @@ export interface RenderedPage {
   // embed, nor refuse one it does — the failure mode ADR 0018's amendment
   // describes for scripts, which is silent for frames in the same way.
   frames: readonly string[];
+  // The validated redirect_uri of the authorization request this page's
+  // form continues. Its POST can answer 302 there, and Chromium holds that
+  // redirect to `form-action` too, so the policy names its origin.
+  redirectsTo?: string;
+}
+
+const ORIGIN_SOURCE = /^https?:\/\/[a-z0-9.-]+(?::\d{1,5})?$/u;
+const SCHEME_SOURCE = /^[a-z][a-z0-9+.-]*:$/u;
+// Schemes a redirect_uri never legitimately uses, which a scheme-source
+// would license wholesale.
+const UNSAFE_SCHEMES = new Set(['javascript:', 'data:', 'blob:', 'file:', 'filesystem:', 'about:']);
+
+// The source expression for where a redirect URI points: its origin, or
+// for a private-use scheme (RFC 8252 §7.1), which has no origin, the scheme
+// itself. Anything not expressible exactly as one adds nothing.
+function formActionSource(redirectUri: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(redirectUri);
+  } catch {
+    return null;
+  }
+  if (url.protocol === 'http:' || url.protocol === 'https:') {
+    return ORIGIN_SOURCE.test(url.origin) ? url.origin : null;
+  }
+  if (UNSAFE_SCHEMES.has(url.protocol)) return null;
+  return SCHEME_SOURCE.test(url.protocol) ? url.protocol : null;
 }
 
 // RFC 6749 §10.13's framing defence for the pages rendered to an end-user.
@@ -34,12 +63,15 @@ export interface RenderedPage {
 // X-Frame-Options: DENY rides alongside `frame-ancestors 'none'` for agents
 // with no CSP at all, and may only stay while the two agree. ADR 0018 has
 // the reasoning for each directive and for the pairing.
-const BASE_DIRECTIVES = [
-  "default-src 'none'",
-  "frame-ancestors 'none'",
-  "form-action 'self'",
-  "base-uri 'none'",
-];
+function baseDirectives(page: RenderedPage): string[] {
+  const source = page.redirectsTo === undefined ? null : formActionSource(page.redirectsTo);
+  return [
+    "default-src 'none'",
+    "frame-ancestors 'none'",
+    source === null ? "form-action 'self'" : `form-action 'self' ${source}`,
+    "base-uri 'none'",
+  ];
+}
 
 // A WebAuthn page is the exception (ADR 0018's amendment): only a script
 // can reach an authenticator, and `default-src 'none'` blocks an inline one
@@ -48,11 +80,12 @@ const BASE_DIRECTIVES = [
 // beside it, which is how a header and an element come to disagree.
 function policyFor(page: RenderedPage): string {
   const script = page.script;
+  const base = baseDirectives(page);
   const directives =
     script === null
-      ? [...BASE_DIRECTIVES]
+      ? base
       : [
-          ...BASE_DIRECTIVES,
+          ...base,
           `script-src 'nonce-${script.nonce}'`,
           // Only for a script that actually makes a request. A page handed
           // its options inline asks for nothing, and a directive licensing
@@ -62,10 +95,18 @@ function policyFor(page: RenderedPage): string {
   // Two clients may register a logout URI on the same host, and the list is
   // built per relying party, so a duplicate origin is expected rather than
   // exceptional.
-  const framed = [...new Set(page.frames)];
+  const framed = [...new Set(page.frames.filter((origin) => ORIGIN_SOURCE.test(origin)))];
   if (framed.length > 0) directives.push(`frame-src ${framed.join(' ')}`);
   return directives.join('; ');
 }
+
+// Every page is bound to a browser's own attempt: a form carrying an
+// `auth_session_id`, a token in a query string, a session that was just
+// ended. `no-store` (RFC 9111 §5.2.2.5) is the one directive that keeps such a
+// page out of every cache. `Pragma` is not sent: RFC 9111 §5.4 deprecates it,
+// and `no-cache` and `Expires: 0` only add what `no-store` already says.
+// ADR 0029's amendment has what this does and does not stop.
+const PAGE_CACHE_CONTROL = 'no-store';
 
 // The one authority for the headers every rendered page carries, so a
 // package's reply wrapper is two lines that spread this and cannot
@@ -82,5 +123,31 @@ export function pageHeaders(page: RenderedPage): readonly (readonly [string, str
     // carry: default-src already stops a subresource leaking one via
     // Referer, but a link a user clicks away from is not a subresource.
     ['referrer-policy', 'no-referrer'],
+    ['cache-control', PAGE_CACHE_CONTROL],
   ];
+}
+
+// A page restored from the back/forward cache is the DOM it was left with,
+// so a form bound to an authentication session that has since expired comes
+// back looking alive. `pageshow` with `persisted` is the one signal a
+// restore gives; reloading re-requests the GET that started the attempt.
+// The restored form shows for a moment first, which is acceptable for a
+// form and would not be for a secret (ADR 0029's amendment). Apply it only
+// to a page that answered a GET: a reload re-sends a POST.
+const RELOAD_ON_RESTORE =
+  "window.addEventListener('pageshow', function (event) { if (event.persisted) location.reload(); });";
+
+export function reloadOnRestore(page: RenderedPage): RenderedPage {
+  const nonce = page.script?.nonce ?? scriptNonce();
+  const element = `<script nonce="${nonce}">${RELOAD_ON_RESTORE}</script>`;
+  const end = page.html.lastIndexOf('</body>');
+  return {
+    ...page,
+    html:
+      end === -1
+        ? `${page.html}\n${element}`
+        : `${page.html.slice(0, end)}${element}\n${page.html.slice(end)}`,
+    body: `${page.body}\n${element}`,
+    script: page.script ?? { nonce, fetchesSameOrigin: false },
+  };
 }

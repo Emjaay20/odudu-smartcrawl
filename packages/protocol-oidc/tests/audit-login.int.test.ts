@@ -229,13 +229,22 @@ async function auditStatementsFor(attempt: Attempt): Promise<number> {
   return rows?.[0]?.count ?? -1;
 }
 
-function comparable(res: LightMyRequestResponse): unknown {
+// The form gives back the username that was typed, so that value is masked
+// and the content-length is compared without the length of what was echoed.
+function comparable(res: LightMyRequestResponse, typed: string): unknown {
   const headers = Object.fromEntries(
     Object.entries(res.headers).filter(
       ([name]) => !['date', 'x-request-id'].includes(name.toLowerCase()),
     ),
   );
-  return { statusCode: res.statusCode, headers, body: res.body };
+  return {
+    statusCode: res.statusCode,
+    headers: {
+      ...headers,
+      'content-length': Number(res.headers['content-length']) - Buffer.byteLength(typed),
+    },
+    body: res.body.replaceAll(`value="${typed}"`, 'value="TYPED"'),
+  };
 }
 
 beforeAll(async () => {
@@ -423,8 +432,8 @@ describe('the lockout', () => {
     });
 
     expect(wrong.res.statusCode).toBe(200);
-    expect(comparable(unknown.res)).toEqual(comparable(wrong.res));
-    expect(comparable(locked.res)).toEqual(comparable(wrong.res));
+    expect(comparable(unknown.res, 'nobody-at-all')).toEqual(comparable(wrong.res, 'dave'));
+    expect(comparable(locked.res, 'mallory')).toEqual(comparable(wrong.res, 'dave'));
 
     const reasons = await Promise.all(
       [wrong, unknown, locked].map(async (attempt) => {
@@ -487,7 +496,7 @@ describe('an audit table that refuses the write', () => {
     );
 
     expect(ordinary.res.statusCode).toBe(200);
-    expect(comparable(unrecorded.res)).toEqual(comparable(ordinary.res));
+    expect(comparable(unrecorded.res, 'wanda')).toEqual(comparable(ordinary.res, 'victor'));
     expect(await failureCountOf(passwordTenant, 'wanda')).toBe(1);
     expect(await rowsFor(passwordTenant, unrecorded)).toEqual([]);
     const logged = errorLog.map((line) => JSON.parse(line) as unknown);

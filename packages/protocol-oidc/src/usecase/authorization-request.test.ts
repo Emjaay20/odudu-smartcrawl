@@ -6,7 +6,7 @@ import {
   signJwt,
   type SigningKeyRecord,
 } from '@odudu/crypto';
-import { subjectOfIdTokenHint } from '#/usecase/authorization-request';
+import { subjectOfIdTokenHint, subjectOfLogoutHint } from '#/usecase/authorization-request';
 
 const KEK = new Uint8Array(32).fill(3);
 const ISS = 'https://issuer.example';
@@ -118,5 +118,68 @@ describe('subjectOfIdTokenHint refuses a signed UserInfo response', () => {
     );
 
     expect(result).toBeNull();
+  });
+});
+
+// RP-Initiated Logout 1.0 §2: the logout door alone reads a hint whose
+// `exp` has passed. Every other claim is judged as `subjectOfIdTokenHint`
+// judges it, and that function itself keeps refusing the same token.
+describe('subjectOfLogoutHint reads a lapsed hint', () => {
+  const YEARS_AGO = Math.floor(Date.now() / 1000) - 3 * 365 * 24 * 3600;
+
+  async function lapsed(
+    key: SigningKeyRecord,
+    claims: Record<string, unknown> = {},
+    typ?: string,
+  ): Promise<string> {
+    return signJwt(
+      { sub: 'user-9', sid: 'sid-9', iss: ISS, aud: CLIENT_ID, exp: YEARS_AGO, ...claims },
+      { key, kek: KEK, ...(typ === undefined ? {} : { typ }) },
+    );
+  }
+
+  const read = (key: SigningKeyRecord, token: string) =>
+    subjectOfLogoutHint({ listPublishableKeys: () => Promise.resolve([key]) }, 't', ISS, token);
+
+  it('returns the claims of a hint that expired years ago', async () => {
+    const key = await makeKey();
+    expect(await read(key, await lapsed(key))).toEqual({
+      subject: 'user-9',
+      sid: 'sid-9',
+      audiences: [CLIENT_ID],
+      mayAct: undefined,
+      expiresAt: new Date(YEARS_AGO * 1000),
+    });
+  });
+
+  it('is the only reader that does: subjectOfIdTokenHint refuses the same token', async () => {
+    const key = await makeKey();
+    const token = await lapsed(key);
+    const result = await subjectOfIdTokenHint(
+      { listPublishableKeys: () => Promise.resolve([key]) },
+      't',
+      ISS,
+      token,
+      AUDIENCE_UNCHECKED,
+    );
+    expect(result).toBeNull();
+  });
+
+  it.each([
+    ['a wrong issuer', (key: SigningKeyRecord) => lapsed(key, { iss: 'https://other.example' })],
+    ['an explicit typ', (key: SigningKeyRecord) => lapsed(key, {}, 'at+jwt')],
+    ['no sub', (key: SigningKeyRecord) => lapsed(key, { sub: undefined })],
+    ['an empty sub', (key: SigningKeyRecord) => lapsed(key, { sub: '' })],
+    ['no exp', (key: SigningKeyRecord) => lapsed(key, { exp: undefined })],
+    ['alg none', () => Promise.resolve(encodeUnsecuredJwt({ sub: 'u', iss: ISS, exp: 1 }))],
+  ])('refuses a lapsed hint with %s', async (_name, make) => {
+    const key = await makeKey();
+    expect(await read(key, await make(key))).toBeNull();
+  });
+
+  it('refuses a lapsed hint signed by a key this tenant does not publish', async () => {
+    const key = await makeKey();
+    const stranger = await makeKey();
+    expect(await read(key, await lapsed(stranger))).toBeNull();
   });
 });

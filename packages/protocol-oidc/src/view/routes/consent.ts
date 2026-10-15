@@ -2,7 +2,8 @@ import { sessionCookies } from '@odudu/authn-flows';
 import { requestContextFrom } from '@odudu/domain-audit';
 import { type FastifyInstance } from 'fastify';
 import { handleConsentSubmission, type ConsentSubmissionDeps } from '#/usecase/consent-submission';
-import { renderAuthorizeErrorPage, renderEmailUnverifiedPage } from '#/view/authorize-html';
+import { renderEmailUnverifiedPage } from '#/view/authorize-html';
+import { sendSignInExpired } from '#/view/routes/expired-sign-in';
 import { sendHtml } from '#/view/html-response';
 import { issuerBaseFor } from '#/view/issuer';
 import {
@@ -57,14 +58,7 @@ export function registerConsentRoute(app: FastifyInstance, deps: ConsentRouteDep
     );
 
     if (outcome.kind === 'unauthenticated') {
-      return sendHtml(
-        reply,
-        400,
-        renderAuthorizeErrorPage(
-          'invalid_request',
-          'This sign-in attempt is no longer valid. Go back and start again.',
-        ),
-      );
+      return sendSignInExpired(reply, deps, request.params.tenant, authSessionId);
     }
 
     // No set-cookie on 'error_redirect': nothing was established to carry

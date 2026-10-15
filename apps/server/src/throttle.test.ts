@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_THROTTLE_KEYS, slidingWindow } from '#/throttle';
+import { MAX_THROTTLE_KEYS, slidingWindow, slidingWindowLog } from '#/throttle';
 
 function at(seconds: number): Date {
   return new Date(1_700_000_000_000 + seconds * 1000);
@@ -111,5 +111,56 @@ describe('slidingWindow', () => {
 
     expect(whileWarm).toBeGreaterThan(50);
     expect(window.size()).toBeLessThanOrEqual(2);
+  });
+});
+
+describe('slidingWindowLog', () => {
+  it('is what slidingWindow builds for the default budget', () => {
+    const options = { limit: 10, windowSeconds: 60, now: () => at(0) };
+    const built = slidingWindow(options);
+    const log = slidingWindowLog(options);
+
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      expect(built.check('198.51.100.7')).toEqual(log.check('198.51.100.7'));
+    }
+    expect(built.size()).toBe(log.size());
+  });
+
+  it('retains one timestamp per admitted request, and none for a refused one', () => {
+    const log = slidingWindowLog({ limit: 3, windowSeconds: 60, now: () => at(0) });
+    for (let attempt = 0; attempt < 8; attempt += 1) log.check('198.51.100.7');
+    log.check('203.0.113.9');
+
+    expect(log.retained()).toBe(4);
+  });
+});
+
+describe('a clock that steps backwards', () => {
+  it('never tells the log’s caller to wait longer than one window', () => {
+    let seconds = 0;
+    const log = slidingWindowLog({ limit: 2, windowSeconds: 60, now: () => at(seconds) });
+    seconds = 200;
+    log.check('k');
+    log.check('k');
+
+    seconds = 80;
+    const refused = log.check('k');
+
+    expect(refused.allowed).toBe(false);
+    expect(refused.retryAfterSeconds).toBeLessThanOrEqual(60);
+    expect(refused.retryAfterSeconds).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('the log at the edges of its window', () => {
+  it('counts a request exactly one window old as already out of it', () => {
+    let seconds = 0;
+    const log = slidingWindowLog({ limit: 1, windowSeconds: 60, now: () => at(seconds) });
+    log.check('k');
+
+    seconds = 59.999;
+    expect(log.check('k').allowed).toBe(false);
+    seconds = 60;
+    expect(log.check('k').allowed).toBe(true);
   });
 });

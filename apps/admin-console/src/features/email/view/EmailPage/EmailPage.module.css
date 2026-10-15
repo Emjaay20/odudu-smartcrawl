@@ -1,0 +1,27 @@
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+}
+
+.effective {
+  margin: 0;
+  max-inline-size: 72ch;
+}
+
+.test {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3);
+}
+
+.outcome {
+  margin: 0;
+  max-inline-size: 72ch;
+  overflow-wrap: anywhere;
+}
+
+.outcome[data-tone='error'] {
+  color: var(--signal-danger-ink);
+}

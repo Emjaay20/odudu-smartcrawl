@@ -73,6 +73,14 @@ export class ClaimMapperRegistry<Ctx> {
     return [...this.#mappers.keys()];
   }
 
+  // The mappers a scope with no binding falls back to: those that declare
+  // it, which is what `assemble` runs for it when `bindings` has no entry.
+  declaredFor(scopeName: string): readonly string[] {
+    return [...this.#mappers.values()]
+      .filter((mapper) => mapper.scopes.includes(scopeName))
+      .map((mapper) => mapper.name);
+  }
+
   // The full set of claim names this registry can ever produce, across
   // every registered mapper regardless of scope — what `claims_supported`
   // is built from, so it can never diverge from what `assemble` actually

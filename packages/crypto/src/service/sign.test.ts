@@ -4,6 +4,8 @@ import { generateSigningKey } from '#/service/generate';
 import { type SigningKeyRecord } from '#/schema/signing-keys';
 import {
   AUDIENCE_UNCHECKED,
+  EXPIRY_NOT_ENFORCED,
+  TYP_ABSENT,
   TYP_UNCHECKED,
   encodeUnsecuredJwt,
   signJwt,
@@ -341,6 +343,99 @@ describe('[JOSE-4.1-03] a token is not accepted at or after the time in exp', ()
         audience: AUDIENCE_UNCHECKED,
         typ: TYP_UNCHECKED,
       }),
+    ).rejects.toThrow(/exp/i);
+  });
+});
+
+describe('EXPIRY_NOT_ENFORCED reads a token whose exp has passed', () => {
+  const years = 3 * 365 * 24 * 3600;
+
+  async function verifyLapsed(
+    token: string,
+    key: SigningKeyRecord,
+    overrides: { issuer?: string } = {},
+  ): Promise<unknown> {
+    return verifyJwt(token, {
+      keys: [key],
+      issuer: overrides.issuer ?? ISS,
+      audience: AUDIENCE_UNCHECKED,
+      typ: TYP_ABSENT,
+      expiry: EXPIRY_NOT_ENFORCED,
+    });
+  }
+
+  it('accepts a token that expired years ago', async () => {
+    const key = await makeKey('ES256');
+    const token = await signJwt(
+      { sub: 'u', iss: ISS, exp: nowSeconds() - years },
+      { key, kek: KEK },
+    );
+    await expect(verifyLapsed(token, key)).resolves.toMatchObject({ sub: 'u' });
+  });
+
+  it('still refuses a token carrying no exp at all', async () => {
+    const key = await makeKey('ES256');
+    const token = await signJwt({ sub: 'u', iss: ISS }, { key, kek: KEK });
+    await expect(verifyLapsed(token, key)).rejects.toThrow(/exp/i);
+  });
+
+  it('still refuses a wrong issuer', async () => {
+    const key = await makeKey('ES256');
+    const token = await signJwt({ sub: 'u', iss: 'https://other', exp: 1 }, { key, kek: KEK });
+    await expect(verifyLapsed(token, key)).rejects.toThrow(/iss/i);
+  });
+
+  it('still refuses a signature made by another key under the same kid', async () => {
+    const key = await makeKey('ES256');
+    const forger = { ...(await makeKey('ES256')), kid: key.kid };
+    const token = await signJwt({ sub: 'u', iss: ISS, exp: 1 }, { key: forger, kek: KEK });
+    await expect(verifyLapsed(token, key)).rejects.toThrow();
+  });
+
+  it('still refuses an explicit typ when typ must be absent', async () => {
+    const key = await makeKey('ES256');
+    const token = await signJwt({ sub: 'u', iss: ISS, exp: 1 }, { key, kek: KEK, typ: 'at+jwt' });
+    await expect(verifyLapsed(token, key)).rejects.toThrow(/typ/i);
+  });
+
+  it('refuses a token carrying nbf, which the epoch clock would place in the future', async () => {
+    const key = await makeKey('ES256');
+    const token = await signJwt(
+      { sub: 'u', iss: ISS, nbf: nowSeconds() - years - 60, exp: nowSeconds() - years },
+      { key, kek: KEK },
+    );
+    await expect(verifyLapsed(token, key)).rejects.toThrow(/nbf/i);
+  });
+
+  it('still refuses alg none', async () => {
+    const key = await makeKey('ES256');
+    await expect(
+      verifyLapsed(encodeUnsecuredJwt({ sub: 'u', iss: ISS, exp: 1 }), key),
+    ).rejects.toThrow();
+  });
+
+  it('still checks audience when one is named', async () => {
+    const key = await makeKey('ES256');
+    const token = await signJwt({ sub: 'u', iss: ISS, aud: 'a', exp: 1 }, { key, kek: KEK });
+    await expect(
+      verifyJwt(token, {
+        keys: [key],
+        issuer: ISS,
+        audience: 'b',
+        typ: TYP_ABSENT,
+        expiry: EXPIRY_NOT_ENFORCED,
+      }),
+    ).rejects.toThrow(/aud/i);
+  });
+
+  it('leaves the default untouched: an expired token is refused without it', async () => {
+    const key = await makeKey('ES256');
+    const token = await signJwt(
+      { sub: 'u', iss: ISS, exp: nowSeconds() - years },
+      { key, kek: KEK },
+    );
+    await expect(
+      verifyJwt(token, { keys: [key], issuer: ISS, audience: AUDIENCE_UNCHECKED, typ: TYP_ABSENT }),
     ).rejects.toThrow(/exp/i);
   });
 });

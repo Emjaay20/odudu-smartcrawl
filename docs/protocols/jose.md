@@ -84,3 +84,15 @@ and not `jose`'s:
 | RFC7519-7.2                        | MUST   | if any JWT validation step fails, the JWT is rejected outright                                                                                        | `JOSE-7.2-01`   | covered                                       |
 | RFC7519-7.2                        | SHOULD | a JWT that decodes and validates structurally is nonetheless rejected unless its algorithm is one the verifying call site accepts                     | `JOSE-5.2-01`   | covered                                       |
 | RFC7515/7517/7518/7519 (remainder) | MUST   | every other provision of JSON Web Signature, JSON Web Key, JSON Web Algorithms, and JSON Web Token                                                    | —               | n/a: implemented by jose 6.2.12, not by Odudu |
+
+## Reading note
+
+`JOSE-4.1-03` holds for every caller of `verifyJwt` but two that name
+`expiry: EXPIRY_NOT_ENFORCED`: the logout endpoint's and `/authorize`'s
+`id_token_hint`, where RP-Initiated Logout 1.0 §2 and OIDC Core §3.1.2.2 ask
+the OP to accept an ID Token "even when the `exp` time has passed"
+(`docs/protocols/oidc-rpinitiated.md`, `docs/protocols/oidc-core.md`). jose has no
+option that drops only the `exp` check, so the option reads the clock as
+the epoch; `exp` stays required, and `iss`, `aud`, `typ`, the algorithm and
+the signature are still checked. A token carrying `nbf` is refused under it.
+`sign.test.ts` pins each of those.

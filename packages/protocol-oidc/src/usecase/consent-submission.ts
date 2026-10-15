@@ -208,8 +208,10 @@ export async function handleConsentSubmission(
   // completeAuthorizedLogin's return type covers every LoginSubmissionOutcome
   // member for the form path's sake; from here it can only ever produce
   // 'unauthenticated' (an already-consumed session) or 'redirect'; see the
-  // module comment on ConsentSubmissionOutcome.
-  return completeAuthorizedLogin(
+  // module comment on ConsentSubmissionOutcome. A subject disabled since the
+  // consent screen is refused as 'reject', which has no form to return to
+  // here, so it is the expired answer it always was.
+  const completed = await completeAuthorizedLogin(
     deps,
     {
       id: tenant.id,
@@ -233,5 +235,7 @@ export async function handleConsentSubmission(
     // 'consent' branch already gated and parked on the request is what
     // decides — see PendingRequest.rememberMe.
     pending.rememberMe ?? false,
-  ) as Promise<ConsentSubmissionOutcome>;
+  );
+  if (completed.kind === 'reject') return { kind: 'unauthenticated' };
+  return completed as ConsentSubmissionOutcome;
 }

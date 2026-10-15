@@ -1,7 +1,18 @@
+import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/.turbo/**', '**/coverage/**', 'tests/boundaries/fixtures/**'] },
+  {
+    ignores: [
+      '**/dist/**',
+      '**/.turbo/**',
+      '**/coverage/**',
+      '**/playwright-report/**',
+      '**/test-results/**',
+      'tests/boundaries/fixtures/**',
+      'tests/lint/fixtures/**',
+    ],
+  },
   // A disable comment that no longer suppresses anything is a claim about the
   // code that has quietly stopped being true; failing on it keeps the small
   // number of live suppressions honest and reviewable.
@@ -32,7 +43,16 @@ export default tseslint.config(
           // so that `await app.register(...)` can force plugin readiness.
           // Registration itself is deferred until listen()/ready(), so leaving
           // the call unawaited is the ordinary usage, not a dropped promise.
-          allowForKnownSafeCalls: [{ from: 'package', package: 'fastify', name: 'register' }],
+          //
+          // QueryClient.invalidateQueries (@tanstack/query-core 5.104.0) resolves
+          // once the refetch settles and never rejects on a query's failure
+          // unless throwOnError is set: refetchQueries puts promise.catch(noop)
+          // on each fetch (build/modern/queryClient.js, lines 331-341). The
+          // console passes none, so leaving it unawaited drops no error.
+          allowForKnownSafeCalls: [
+            { from: 'package', package: 'fastify', name: 'register' },
+            { from: 'package', package: '@tanstack/query-core', name: 'invalidateQueries' },
+          ],
         },
       ],
       '@typescript-eslint/no-misused-promises': 'error',
@@ -44,11 +64,28 @@ export default tseslint.config(
     extends: [tseslint.configs.disableTypeChecked],
   },
   {
+    files: ['apps/admin-console/**/*.{ts,tsx}'],
+    extends: [reactHooks.configs.flat.recommended],
+    // `eslint .` passes on a warning, so a finding at warning severity would ship.
+    rules: {
+      'react-hooks/exhaustive-deps': 'error',
+      'react-hooks/incompatible-library': 'error',
+      'react-hooks/unsupported-syntax': 'error',
+    },
+  },
+  {
+    // A usecase or repository decides nothing (ADR 0010's amendment), and a
+    // function this branchy is deciding: the decision is a service function.
+    files: ['apps/admin-console/src/**/{usecase,repository}/**/*.ts'],
+    ignores: ['**/*.test.ts'],
+    rules: { complexity: ['error', 8] },
+  },
+  {
     files: [
-      'packages/*/src/**/*.ts',
-      'apps/*/src/**/*.ts',
-      'packages/*/tests/**/*.ts',
-      'apps/*/tests/**/*.ts',
+      'packages/*/src/**/*.{ts,tsx}',
+      'apps/*/src/**/*.{ts,tsx}',
+      'packages/*/tests/**/*.{ts,tsx}',
+      'apps/*/tests/**/*.{ts,tsx}',
     ],
     rules: {
       'no-restricted-imports': [

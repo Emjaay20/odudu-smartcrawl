@@ -1,18 +1,29 @@
 import { type TenantScopedDatabase } from '@odudu/db';
 import { type AuditEvent } from '@odudu/contracts/admin';
-import { auditRepository, type AuditEventRecord, type AuditEventType } from '@odudu/domain-audit';
-import { decodeCursor, encodeCursor } from '#/service/cursor';
+import {
+  auditRepository,
+  type AuditEventCriteria,
+  type AuditEventRecord,
+  type AuditEventType,
+} from '@odudu/domain-audit';
+import { subjects, users } from '@odudu/domain-identity';
+import { clients, isSystemTenantId } from '@odudu/domain-tenant';
+import { eq, inArray, sql } from 'drizzle-orm';
+import { decodeCursor, encodeCursor, filterDigest } from '#/service/cursor';
 
 const COLLECTION = 'audit';
 
 export interface ListAuditInput {
   readonly tenantId: string;
+  /** Whether the caller may read subjects, and so the names of actors. */
+  readonly revealNames: boolean;
   readonly limit: number;
   readonly cursor: string | undefined;
   readonly cursorKey: Uint8Array;
   readonly eventType?: AuditEventType | undefined;
   readonly actorSubjectId?: string | undefined;
   readonly resourceType?: string | undefined;
+  readonly resourceId?: string | undefined;
   readonly action?: string | undefined;
   readonly outcome?: 'allowed' | 'refused' | 'failed' | undefined;
   readonly from?: Date | undefined;
@@ -22,7 +33,64 @@ export interface ListAuditInput {
 export type ListAuditOutcome =
   { kind: 'invalid_cursor' } | { kind: 'ok'; items: readonly AuditEvent[]; next: string | null };
 
-function toWireShape(row: AuditEventRecord): AuditEvent {
+type ActorNames = ReadonlyMap<string, string>;
+
+/**
+ * The name of each actor of `tenantId`'s own that is still there to name:
+ * a user's username, or the `client_id` of the client a service account
+ * belongs to. Read under the row's own tenant, so an actor of any other
+ * tenant never resolves, whatever its id.
+ */
+export async function resolveActors(
+  tx: TenantScopedDatabase,
+  tenantId: string,
+  rows: readonly { actorSubjectId: string | null; actorTenantId: string | null }[],
+): Promise<Map<string, string>> {
+  const ids = [
+    ...new Set(
+      rows.flatMap((row) =>
+        row.actorSubjectId !== null && row.actorTenantId === tenantId ? [row.actorSubjectId] : [],
+      ),
+    ),
+  ];
+  if (ids.length === 0) return new Map();
+  const found = await tx
+    .select({ id: subjects.id, username: users.username, clientKey: clients.clientId })
+    .from(subjects)
+    .leftJoin(users, eq(users.subjectId, subjects.id))
+    .leftJoin(clients, eq(clients.serviceSubjectId, subjects.id))
+    .where(inArray(subjects.id, ids));
+  const names = new Map<string, string>();
+  for (const row of found) {
+    const name = row.username ?? row.clientKey;
+    if (name !== null) names.set(row.id, name);
+  }
+  return names;
+}
+
+/**
+ * How long an audit read may run. The listing, its count and its export take
+ * the same filters and walk the one index that serves the most selective of
+ * them, filtering by the rest, so two filters whose intersection is empty
+ * read all of the cheaper one (3.6 s cold for 50,000 rows at three million,
+ * about 33 times that at the design volume). The bound turns that into a
+ * refusal a caller can act on rather than a held connection.
+ */
+export const AUDIT_READ_TIMEOUT_MS = 5_000;
+
+/** `SET LOCAL statement_timeout`, in its bindable form: it ends with the transaction. */
+export async function boundAuditRead(tx: TenantScopedDatabase, timeoutMs: number): Promise<void> {
+  await tx.execute(sql`select set_config('statement_timeout', ${String(timeoutMs)}, true)`);
+}
+
+function originOf(tenantId: string, row: AuditEventRecord): AuditEvent['actor_origin'] {
+  if (row.actorSubjectId === null || row.actorTenantId === null) return null;
+  if (row.actorTenantId === tenantId) return 'tenant';
+  return isSystemTenantId(row.actorTenantId) ? 'system' : 'other-tenant';
+}
+
+function toWireShape(tenantId: string, names: ActorNames, row: AuditEventRecord): AuditEvent {
+  const origin = originOf(tenantId, row);
   return {
     id: row.id,
     occurred_at: row.occurredAt.toISOString(),
@@ -32,12 +100,32 @@ function toWireShape(row: AuditEventRecord): AuditEvent {
     actor_tenant_id: row.actorTenantId,
     actor_subject_id: row.actorSubjectId,
     actor_client_id: row.actorClientId,
+    actor_name:
+      origin === 'tenant' && row.actorSubjectId !== null
+        ? (names.get(row.actorSubjectId) ?? null)
+        : null,
+    actor_origin: origin,
     resource_type: row.resourceType,
     resource_id: row.resourceId,
     request_id: row.requestId,
     ip: row.ip,
     detail: row.detail as Record<string, unknown>,
   };
+}
+
+/**
+ * Rows as the wire carries them, their actors named by `resolveActors` for a
+ * caller who may read subjects (`revealNames`), since a username is subject
+ * data; `actor_origin` is answered either way.
+ */
+export async function auditWireShapes(
+  tx: TenantScopedDatabase,
+  tenantId: string,
+  rows: readonly AuditEventRecord[],
+  revealNames: boolean,
+): Promise<AuditEvent[]> {
+  const names = revealNames ? await resolveActors(tx, tenantId, rows) : new Map<string, string>();
+  return rows.map((row) => toWireShape(tenantId, names, row));
 }
 
 // `after` packs the composite key the repository's own tuple comparison
@@ -57,9 +145,25 @@ export async function listAudit(
   tx: TenantScopedDatabase,
   input: ListAuditInput,
 ): Promise<ListAuditOutcome> {
+  const filters = filterDigest({
+    event_type: input.eventType,
+    actor_subject_id: input.actorSubjectId,
+    resource_type: input.resourceType,
+    resource_id: input.resourceId,
+    action: input.action,
+    outcome: input.outcome,
+    from: input.from?.toISOString(),
+    to: input.to?.toISOString(),
+  });
   let after: { occurredAt: Date; id: string } | undefined;
   if (input.cursor !== undefined) {
-    const decoded = decodeCursor(input.cursorKey, COLLECTION, input.tenantId, input.cursor);
+    const decoded = decodeCursor(
+      input.cursorKey,
+      COLLECTION,
+      input.tenantId,
+      filters,
+      input.cursor,
+    );
     if (decoded.kind === 'invalid') return { kind: 'invalid_cursor' };
     const parsed = cursorAfter(decoded.after);
     if (parsed === null) return { kind: 'invalid_cursor' };
@@ -70,6 +174,7 @@ export async function listAudit(
     ...(input.eventType !== undefined ? { eventType: input.eventType } : {}),
     ...(input.actorSubjectId !== undefined ? { actorSubjectId: input.actorSubjectId } : {}),
     ...(input.resourceType !== undefined ? { resourceType: input.resourceType } : {}),
+    ...(input.resourceId !== undefined ? { resourceId: input.resourceId } : {}),
     ...(input.action !== undefined ? { action: input.action } : {}),
     ...(input.outcome !== undefined ? { outcome: input.outcome } : {}),
     ...(input.from !== undefined ? { from: input.from } : {}),
@@ -87,8 +192,71 @@ export async function listAudit(
           after: `${last.occurredAt.toISOString()}|${last.id}`,
           collection: COLLECTION,
           tenantId: input.tenantId,
+          filters,
         })
       : null;
 
-  return { kind: 'ok', items: page.map(toWireShape), next };
+  return {
+    kind: 'ok',
+    items: await auditWireShapes(tx, input.tenantId, page, input.revealNames),
+    next,
+  };
+}
+
+export async function countAudit(
+  tx: TenantScopedDatabase,
+  criteria: AuditEventCriteria,
+  cap: number,
+): Promise<{ count: number; capped: boolean }> {
+  return auditRepository(tx).count(criteria, cap);
+}
+
+export interface AuditExportAuditEvent {
+  readonly action: 'audit.export';
+  readonly resourceType: 'tenant';
+  readonly resourceId: string;
+  readonly actorSubjectId: string;
+  readonly actorTenantId: string;
+  readonly actorClientId: string;
+  readonly outcome: 'allowed';
+  readonly detail: Record<string, unknown>;
+}
+
+export interface ExportAuditInput {
+  readonly tenantId: string;
+  readonly revealNames: boolean;
+  readonly filters: AuditEventCriteria;
+  readonly cap: number;
+  readonly actorSubjectId: string;
+  readonly actorTenantId: string;
+  readonly actorClientId: string;
+}
+
+export type ExportAuditOutcome =
+  { kind: 'too_many'; cap: number } | { kind: 'ok'; items: readonly AuditEvent[] };
+
+// Every matching row or none: an export cut off at a limit would read as
+// the whole trail. It is itself audited, as a tenant export is, since it
+// hands the trail over in bulk.
+export async function exportAudit(
+  tx: TenantScopedDatabase,
+  deps: {
+    readonly audit: (tx: TenantScopedDatabase, event: AuditExportAuditEvent) => Promise<void>;
+  },
+  input: ExportAuditInput,
+): Promise<ExportAuditOutcome> {
+  const rows = await auditRepository(tx).list({ ...input.filters, limit: input.cap + 1 });
+  if (rows.length > input.cap) return { kind: 'too_many', cap: input.cap };
+  const items = await auditWireShapes(tx, input.tenantId, rows, input.revealNames);
+  await deps.audit(tx, {
+    action: 'audit.export',
+    resourceType: 'tenant',
+    resourceId: input.tenantId,
+    actorSubjectId: input.actorSubjectId,
+    actorTenantId: input.actorTenantId,
+    actorClientId: input.actorClientId,
+    outcome: 'allowed',
+    detail: { exported: items.length },
+  });
+  return { kind: 'ok', items };
 }

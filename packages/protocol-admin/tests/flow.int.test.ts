@@ -119,6 +119,26 @@ async function loginWithAssertionOnly(
   );
 }
 
+describe('the authenticators a flow can name', () => {
+  it('come with the flow, on a read and on a write, from the registry itself', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-tenant']);
+
+    const read = await getFlow(token, t.name);
+    expect(read.json<{ available: string[] }>().available).toEqual([
+      ...registeredAuthenticatorNames(),
+    ]);
+
+    const written = await putFlow(token, t.name, [
+      { authenticator: 'password', requirement: 'required' },
+    ]);
+    expect(written.statusCode, written.body).toBe(200);
+    expect(written.json<{ available: string[] }>().available).toEqual([
+      ...registeredAuthenticatorNames(),
+    ]);
+  });
+});
+
 describe('GET /admin/tenants/{t}/flow/executions', () => {
   it('returns the ordered list a newly provisioned tenant carries', async () => {
     const t = await fixture.createTenant(`acme-${newId()}`);
@@ -219,6 +239,38 @@ describe('PUT /admin/tenants/{t}/flow/executions', () => {
     for (const name of registeredAuthenticatorNames()) {
       expect(body.detail).toContain(name);
     }
+    expect(body.detail).toMatch(/^unknown authenticator "bogus"; expected one of /u);
+  });
+
+  // The console tells the five refusals apart by type, and reads the step at
+  // fault from `errors[]` for the two that name one.
+  it('gives each refusal its own type, with the detail and errors as before', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-tenant']);
+    const refusal = async (steps: { authenticator: string; requirement: string }[]) =>
+      (await putFlow(token, t.name, steps)).json<{
+        type: string;
+        detail: string;
+        errors?: { path: string; message: string }[];
+      }>();
+
+    expect((await refusal([])).type).toBe('about:blank#flow-empty');
+    expect((await refusal([{ authenticator: 'password', requirement: 'disabled' }])).type).toBe(
+      'about:blank#flow-no-enabled-step',
+    );
+    expect((await refusal([{ authenticator: 'passkey', requirement: 'required' }])).type).toBe(
+      'about:blank#flow-no-first-challenge',
+    );
+    const unknown = await refusal([{ authenticator: 'bogus', requirement: 'required' }]);
+    expect(unknown.type).toBe('about:blank#flow-unknown-authenticator');
+    expect(unknown.errors?.[0]?.path).toBe('[0].authenticator');
+    expect(unknown.detail).toMatch(/^unknown authenticator "bogus"; expected one of /u);
+    const repeated = await refusal([
+      { authenticator: 'password', requirement: 'required' },
+      { authenticator: 'password', requirement: 'required' },
+    ]);
+    expect(repeated.type).toBe('about:blank#flow-duplicate-authenticator');
+    expect(repeated.errors?.[0]?.path).toBe('[1].authenticator');
   });
 
   it('400s an empty list, since a tenant with no flow cannot be logged into', async () => {

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { loadConfig } from '../../packages/kernel/src/config.js';
+import {
+  loadConfig,
+  MAX_THROTTLE_LIMIT,
+  MAX_THROTTLE_WINDOW_SECONDS,
+} from '../../packages/kernel/src/config.js';
 import { MAX_PASSWORD_LENGTH } from '../../packages/kernel/src/password-field.js';
 import { MAX_SUBJECT_LENGTH } from '../../tools/commit-message/src/check.js';
 import { loadDocument } from './markdown.js';
@@ -32,6 +36,30 @@ describe('the throttle numbers the documents state are the numbers the code uses
     expect(statedDefault(name, 'ODUDU_THROTTLE_WINDOW_SECONDS')).toBe(
       String(defaults.ODUDU_THROTTLE_WINDOW_SECONDS),
     );
+  });
+
+  it('README.md states the client secret budget the config schema defaults to', () => {
+    expect(statedDefault('README.md', 'ODUDU_CLIENT_SECRET_THROTTLE_LIMIT')).toBe(
+      String(defaults.ODUDU_CLIENT_SECRET_THROTTLE_LIMIT),
+    );
+    expect(statedDefault('README.md', 'ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS')).toBe(
+      String(defaults.ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS),
+    );
+  });
+
+  it.each(DOCUMENTS)('%s states the sign-in budget the config schema defaults to', (name) => {
+    expect(statedDefault(name, 'ODUDU_LOGIN_THROTTLE_LIMIT')).toBe(
+      String(defaults.ODUDU_LOGIN_THROTTLE_LIMIT),
+    );
+    expect(statedDefault(name, 'ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS')).toBe(
+      String(defaults.ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS),
+    );
+  });
+
+  it('README.md states the ceilings the server refuses to boot past', () => {
+    const text = loadDocument('README.md').lines.join('\n');
+    expect(text).toContain(`at most \`${String(MAX_THROTTLE_LIMIT)}\``);
+    expect(text).toContain(`at most \`${String(MAX_THROTTLE_WINDOW_SECONDS)}\` seconds`);
   });
 
   // Every number these files state next to "character", against the constant

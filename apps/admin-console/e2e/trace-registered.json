@@ -1,0 +1,34 @@
+[
+  {
+    "id": "17a: sign-in pages are sent no-store",
+    "kind": "registered",
+    "why": "pageHeaders adds cache-control: no-store to every page the server renders, so a Back to a login form is fetched again",
+    "area": "requests",
+    "type": "changed",
+    "line": "^(GET|POST) /tenants/",
+    "adds": "cache=no-store"
+  },
+  {
+    "id": "benign: the drafts key is removed once or twice when a session ends",
+    "kind": "benign",
+    "why": "two reads answer 401 and each ends the session; whether the second lands after the first handler ran is a race, and the base differs from itself in the same way",
+    "test": "^signin\\.spec\\.ts > a session that ends on the server",
+    "area": "storage",
+    "line": "^session remove odudu\\.console\\.drafts$"
+  },
+  {
+    "id": "benign: the unsaved-changes dialog is on screen for a frame after a save",
+    "kind": "benign",
+    "why": "the guard asks about a section the save has just made clean and closes the question itself; the dialog was seen on both builds, and where focus lands in it is a matter of timing",
+    "test": "^subject-access\\.spec\\.ts > a subject's groups and roles change",
+    "area": "focus"
+  },
+  {
+    "id": "benign: the focus returned to a trigger as a test ends is recorded or not",
+    "kind": "benign",
+    "why": "the last focus event of these two tests (the dialog closing, the focus going back to its button) races the end of the test; the base lacks it in some runs and has it in others",
+    "test": "^(shell\\.spec\\.ts > on a phone > shows the top bar|subjects\\.spec\\.ts > a lockout is shown and cleared)",
+    "area": "focus",
+    "type": "added"
+  }
+]

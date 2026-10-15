@@ -43,7 +43,9 @@ package everything depends on.
 `content-security-policy`, `x-frame-options` or `referrer-policy` — except
 the two files that spread `pageHeaders`' result. A lint test that only
 knows a name is present cannot verify a _value_, but a third hand-copy
-cannot appear undetected either.
+cannot appear undetected either. `cache-control` joined the set in the
+amendment below, and is guarded by a page being sent beside it rather than
+by its name, since tokens, JSON and redirects set it legitimately.
 
 ## Consequences
 
@@ -58,6 +60,111 @@ cannot appear undetected either.
 - `kernel` stays transport-free. Every future header this policy needs
   (a new directive, a new page-level default) is a change to one function,
   reachable from every package without a new dependency edge.
+
+## Amendment — 2026-09-28 — the console shell
+
+The administration console's shell,
+`packages/console-gateway/src/view/spa.ts`, is the one static-serving
+exception, and the third file `html-response.test.ts` lets name a page
+header. It serves a built single-page app, not a server-rendered page: it
+has no inline script and no per-request nonce, and its policy licenses a
+self-hosted script and two style hashes: the `<style>` elements React
+Aria's `usePress` injects everywhere and `usePreventScroll` injects on iOS
+WebKit, which `packages/console-gateway/src/view/react-aria-style.test.ts`
+recomputes from the pinned source. So it sets that fixed policy itself
+rather than through `pageHeaders`, whose policy describes a markup-only
+page. The two-wrapper rule above covers server-rendered pages; design spec
+§5.4 (`docs/superpowers/specs/2026-09-26-p4d-admin-console-design.md`)
+gives the shell's policy.
+
+## Amendment — 2026-10-14 — a form left open, and Back
+
+A login form was restored by the browser's Back button with its typed
+username and a dead `auth_session_id`, and every resubmit failed the same
+way. No page carried a `Cache-Control` header, so the browser showed its own
+copy rather than asking `/authorize` for a fresh session.
+
+**What the standards say** (checked 2026-10-13, cited by title because
+numbering differs by version). No OAuth or OIDC specification requires a
+cache header on the interactive login page; RFC 9700 gives no such rule
+either, and this ADR does not claim one. `no-store` is normative on token
+responses (RFC 6749 §5.1, OIDC Core §3.1.3.3) and a SHOULD on the logout
+endpoints (OIDC Back-Channel Logout §2.8, Front-Channel Logout §2). The
+recommendation for pages carrying session-bound state is anti-caching headers:
+OWASP ASVS's anti-caching requirement (V8.2.1 in 4.0.x, V9.4 in 5.0) and the
+OWASP Session Management and Web Cache Security cheat sheets. Mature
+providers restart an expired sign-in instead of dead-ending (Keycloak's
+timeout page links back to the start); that is practice, not a specification.
+Chrome (developer.chrome.com/docs/web-platform/bfcache-ccns, 2025-09) now
+restores `no-store` pages from the back/forward cache for up to three minutes
+unless cookies change, so the header alone does not stop a restored dead form;
+its advice is to reload on `pageshow` with `event.persisted`.
+
+**Three layers, each needed.**
+
+1. `pageHeaders` adds `cache-control: no-store` to every page it covers. One
+   directive, not OWASP's cross-browser set: `Pragma` is deprecated
+   (RFC 9111 §5.4), and `no-cache` and `Expires: 0` add nothing to a
+   `no-store` that every current browser honours. Verified in Chromium:
+   `apps/admin-console/e2e/restart-sign-in.spec.ts` goes Back from the refusal
+   and gets a form under a new `auth_session_id`.
+2. `reloadOnRestore` (`@odudu/kernel`) adds one `pageshow` script, on the
+   page's own nonce so `script-src` is derived from the return value as
+   above, reloading when `event.persisted`. Verified in Chrome: a form was
+   restored from the cache with `persisted` true and its stale id, then
+   reloaded under a new one. It is applied to the login form, account chooser
+   and consent page when `/authorize` answers a GET, and nowhere else: a page
+   that answers a POST would be re-sent by a reload, and the required-action
+   pages issue secrets when rendered. The restored form shows for a moment
+   before the reload, acceptable for a form and not for a secret. Playwright's
+   Chromium has no back/forward cache, so this layer is covered by markup and
+   policy tests and by the manual run above.
+3. A submission whose authentication session is expired, consumed or unknown
+   answers with the same refusal as before; when the row still exists (the
+   reaper keeps it `ODUDU_RETENTION_AUTHENTICATION_SESSION_SECONDS`, an hour
+   by default, past expiry) the page adds "Start sign-in again", a path on this
+   server rebuilt from the parked request, which `/authorize` validates
+   afresh. The row authenticates nothing. `/authorize` now parks `max_age` on
+   the fresh-login branch too: it had parked it only for the account chooser,
+   so a rebuilt link lost it and was answered from an old session the
+   original had refused. Every parameter `/authorize` acts on is rebuilt
+   (`prompt`, `max_age`, the resolved `resource`, `claims`, `state`, `nonce`,
+   PKCE); the server reads no other (`response_mode` other than `query` is
+   refused, `request` and `request_uri` are refused), so none is dropped.
+   A consumed session also yields the link, and that is safe: the id is the
+   holder's own, the link carries only what the holder's own authorize URL
+   already carried, and `/authorize` revalidates it.
+4. A request that carried an `id_token_hint` or a `claims` `sub` cannot be
+   rebuilt (the hint token is not stored, and a request without it is no
+   longer tied to one subject), so the page offers "Return to the
+   application" instead: an error redirect to the parked `redirect_uri`
+   with `error=access_denied`, `state` and `iss`, built by the same
+   `errorRedirect` the endpoint uses for its other refusals. RFC 6749
+   §4.1.2.1 and OIDC Core §3.1.2.6 allow `access_denied` where the
+   authorization server denied the request; the sign-in was not completed and
+   nothing was granted. `login_required` is defined for a request that
+   forbids interaction, which this was not. The relying party restarts with a
+   hint of its own. It is offered only while the client is enabled and still
+   registers that `redirect_uri`, so the target is validated twice, and never
+   a URL the parked row did not carry. `response_mode` needs no handling:
+   only `query` is accepted.
+
+**A restored form reloading `/authorize`.** The reload re-requests the GET
+that began the attempt. With a live SSO session that answers `302` to the
+relying party again with the same `state`, issuing a new code. That is
+acceptable: it is exactly what navigating to that URL does, the relying party
+already handles a repeated callback (its `state` is spent), and nothing is
+issued that the holder of the session could not obtain by opening the link.
+Chrome also drops a `no-store` page from the cache when cookies change, which
+a sign-in does, so the case is rare.
+
+**What `no-store` costs.** Back to a sign-in page is a request, not a cache
+hit: a person who goes Back sees a form fetched again and a new authentication
+session row. Rows are reaped, so the cost is a write per visit on a path that
+already writes one. Nothing hashed is affected: the console's assets under
+`/console/assets/` stay cacheable. The console shell's `index.html` already
+sent `no-store` and keeps setting it in `spa.ts` beside its own policy; that
+file does not spread `pageHeaders`, so nothing changed there.
 
 ## Alternatives rejected
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { loadConfig } from '#/config';
+import { consoleBaseUrl, DEFAULT_CONSOLE_DIR, loadConfig } from '#/config';
 import { OduduError } from '#/errors';
 
 const VALID_KEK = Buffer.alloc(32, 9).toString('base64');
@@ -113,6 +113,68 @@ describe('loadConfig', () => {
 
   it('refuses a throttle limit of zero rather than reading it as off', () => {
     expect(() => loadConfig({ ...minimal, ODUDU_THROTTLE_LIMIT: '0' })).toThrow(/THROTTLE_LIMIT/u);
+  });
+
+  it('accepts a throttle limit up to the ceiling and names the variable past it', () => {
+    expect(loadConfig({ ...minimal, ODUDU_THROTTLE_LIMIT: '10000' }).ODUDU_THROTTLE_LIMIT).toBe(
+      10_000,
+    );
+    expect(() => loadConfig({ ...minimal, ODUDU_THROTTLE_LIMIT: '10001' })).toThrow(
+      /ODUDU_THROTTLE_LIMIT: .*10000/u,
+    );
+  });
+
+  it('bounds the throttle window at an hour', () => {
+    expect(
+      loadConfig({ ...minimal, ODUDU_THROTTLE_WINDOW_SECONDS: '3600' })
+        .ODUDU_THROTTLE_WINDOW_SECONDS,
+    ).toBe(3600);
+    expect(() => loadConfig({ ...minimal, ODUDU_THROTTLE_WINDOW_SECONDS: '3601' })).toThrow(
+      /ODUDU_THROTTLE_WINDOW_SECONDS: .*3600/u,
+    );
+  });
+
+  it('reads the per-client secret budget, five a minute by default, under the same bounds', () => {
+    const defaults = loadConfig(minimal);
+    expect(defaults.ODUDU_CLIENT_SECRET_THROTTLE_LIMIT).toBe(5);
+    expect(defaults.ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS).toBe(60);
+
+    const raised = loadConfig({
+      ...minimal,
+      ODUDU_CLIENT_SECRET_THROTTLE_LIMIT: '20',
+      ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS: '120',
+    });
+    expect(raised.ODUDU_CLIENT_SECRET_THROTTLE_LIMIT).toBe(20);
+    expect(raised.ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS).toBe(120);
+
+    for (const bad of ['0', '10001']) {
+      expect(() => loadConfig({ ...minimal, ODUDU_CLIENT_SECRET_THROTTLE_LIMIT: bad })).toThrow(
+        /ODUDU_CLIENT_SECRET_THROTTLE_LIMIT/u,
+      );
+    }
+    expect(() =>
+      loadConfig({ ...minimal, ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS: '3601' }),
+    ).toThrow(/ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS/u);
+  });
+
+  it('reads the sign-in budget per address and username, five a minute by default', () => {
+    const defaults = loadConfig(minimal);
+    expect(defaults.ODUDU_LOGIN_THROTTLE_LIMIT).toBe(5);
+    expect(defaults.ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS).toBe(60);
+
+    const raised = loadConfig({
+      ...minimal,
+      ODUDU_LOGIN_THROTTLE_LIMIT: '50',
+      ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS: '300',
+    });
+    expect(raised.ODUDU_LOGIN_THROTTLE_LIMIT).toBe(50);
+    expect(raised.ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS).toBe(300);
+    expect(() => loadConfig({ ...minimal, ODUDU_LOGIN_THROTTLE_LIMIT: '10001' })).toThrow(
+      /ODUDU_LOGIN_THROTTLE_LIMIT/u,
+    );
+    expect(() => loadConfig({ ...minimal, ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS: '0' })).toThrow(
+      /ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS/u,
+    );
   });
 
   it('schedules the retention pass hourly by default', () => {
@@ -267,6 +329,47 @@ describe('loadConfig', () => {
       expect(error).toBeInstanceOf(OduduError);
       expect((error as OduduError).message).toContain('ODUDU_SMTP_FROM');
     }
+  });
+
+  it('serves the console by default, from DEFAULT_CONSOLE_DIR', () => {
+    const config = loadConfig(minimal);
+    expect(config.ODUDU_CONSOLE).toBe(true);
+    expect(DEFAULT_CONSOLE_DIR).toBe('/app/console');
+    expect(config.ODUDU_CONSOLE_DIR).toBe(DEFAULT_CONSOLE_DIR);
+  });
+
+  it('turns the console off only on the literal string false', () => {
+    expect(loadConfig({ ...minimal, ODUDU_CONSOLE: 'false' }).ODUDU_CONSOLE).toBe(false);
+    expect(loadConfig({ ...minimal, ODUDU_CONSOLE: 'true' }).ODUDU_CONSOLE).toBe(true);
+    expect(() => loadConfig({ ...minimal, ODUDU_CONSOLE: 'off' })).toThrow(/ODUDU_CONSOLE/u);
+  });
+
+  it('reads a console directory out of the environment, refusing a blank one', () => {
+    expect(loadConfig({ ...minimal, ODUDU_CONSOLE_DIR: '/srv/console' }).ODUDU_CONSOLE_DIR).toBe(
+      '/srv/console',
+    );
+    expect(() => loadConfig({ ...minimal, ODUDU_CONSOLE_DIR: '' })).toThrow(/ODUDU_CONSOLE_DIR/u);
+  });
+
+  it('registers the console against the public base only while the console is on', () => {
+    const base = { ...minimal, ODUDU_PUBLIC_BASE_URL: 'https://idp.example.test' };
+    expect(consoleBaseUrl(loadConfig(base))).toBe('https://idp.example.test');
+    expect(consoleBaseUrl(loadConfig({ ...base, ODUDU_CONSOLE: 'false' }))).toBeUndefined();
+    expect(consoleBaseUrl(loadConfig(minimal))).toBeUndefined();
+  });
+
+  it("carries the console's client key and the key it replaces, both optional", () => {
+    const config = loadConfig({
+      ...minimal,
+      ODUDU_CONSOLE_CLIENT_KEY: '{"a":1}',
+      ODUDU_CONSOLE_CLIENT_KEY_PREVIOUS: '{"b":2}',
+    });
+    expect(config.ODUDU_CONSOLE_CLIENT_KEY).toBe('{"a":1}');
+    expect(config.ODUDU_CONSOLE_CLIENT_KEY_PREVIOUS).toBe('{"b":2}');
+    expect(loadConfig(minimal).ODUDU_CONSOLE_CLIENT_KEY).toBeUndefined();
+    expect(() => loadConfig({ ...minimal, ODUDU_CONSOLE_CLIENT_KEY: '' })).toThrow(
+      /ODUDU_CONSOLE_CLIENT_KEY/u,
+    );
   });
 
   it('leaves ODUDU_PUBLIC_BASE_URL unset by default', () => {

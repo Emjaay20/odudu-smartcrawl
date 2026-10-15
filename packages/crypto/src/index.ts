@@ -14,10 +14,12 @@ export {
   AUDIENCE_UNCHECKED,
   TYP_UNCHECKED,
   TYP_ABSENT,
+  EXPIRY_NOT_ENFORCED,
+  type ExpiryPolicy,
   type ExpectedAudience,
   type ExpectedTyp,
 } from '#/service/sign';
-export { verifyJwtAgainstJwkSet } from '#/service/jwk-set-verify';
+export { verifyJwtAgainstJwkSet, verifyJwtClaims } from '#/service/jwk-set-verify';
 export {
   encryptCompact,
   selectEncryptionKey,
@@ -31,3 +33,11 @@ export {
   verifyTotp,
   type TotpAlgorithm,
 } from '#/service/totp';
+export {
+  generateClientKey,
+  loadClientKey,
+  loadRetiredClientKey,
+  registeredClientJwks,
+  signClientAssertion,
+  type ClientKey,
+} from '#/service/client-key';

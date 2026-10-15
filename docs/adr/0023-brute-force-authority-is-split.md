@@ -46,7 +46,8 @@ memory. An `onRequest` hook in `apps/server/src/app.ts` applies it, keyed on
 `POST /tenants/{tenant}/login-actions/authenticate`, `…/registration` and
 `…/reset-password`. `ODUDU_THROTTLE_LIMIT` (default `10`) and
 `ODUDU_THROTTLE_WINDOW_SECONDS` (default `60`) are the budget. A refused
-request answers `429` with `Retry-After` and no body.
+request answers `429` with `Retry-After` and no body (a page, on the routes
+a browser submits from — see the last amendment).
 
 Three properties this shape is chosen for:
 
@@ -180,8 +181,9 @@ subjects.
 real one does, and is refused in the same bytes — not in the same time.**
 The key is the presented `client_id` itself, so nothing about which
 failure occurred changes what gets counted or how the refusal reads once
-the budget is spent (`429`, `Retry-After`, no body, mirroring this
-throttle's own). That is as far as the claim goes: an unknown `client_id`
+the budget is spent (`429`, `Retry-After`, no body: a program reads this
+one, and the origin throttle's own refusal is a page on the routes a
+browser submits from, see the last amendment). That is as far as the claim goes: an unknown `client_id`
 returns at the client lookup, before `verifyClientSecret` runs, while a
 wrong secret against a real client pays the Argon2id comparison first, so
 the two answer at different speeds even though their bytes and their
@@ -223,6 +225,256 @@ the budget it bounds is a different one.
 narrative called it `deferred: P3a` before this amendment, a drift between
 that file and the table this closes rather than corrects.
 
+## Amendment, 2026-10-15 — the limiter made safe to configure, before production
+
+Nothing above changes: the account is Postgres's, the CPU is the process's,
+and the refusal is decided before anything account-dependent. What changes
+is what an operator can do to the process's own memory with the settings
+this ADR told them to raise, and which addresses count as one.
+
+**One interface, two implementations.** `RateLimiter`
+(`apps/server/src/rate-limiter.ts`: `check(key)` and `size()`) is all
+`app.ts` depends on. `slidingWindow` stays the factory and picks
+`slidingWindowLog` (the exact window above, one timestamp per admitted
+request) up to `COUNTER_THRESHOLD` = 100, and `slidingWindowCounter` above
+it. A shared-store limiter — GCRA or a token bucket in Redis or Postgres,
+once P11 has replicas to share it between — is a third implementation
+behind the same interface, and is P11's, as the per-instance limit above
+already was.
+
+**Why a counter above 100.** Measured 2026-10-13 and again 2026-10-15 on the
+real limiters, 60 s window, clock frozen, 10,000 keys each spending the
+whole budget. The log holds `limit` timestamps per key whatever the request
+rate, since a refused request is not recorded:
+
+| Limiter | limit |                   heap at 10,000 keys |
+| ------- | ----: | ------------------------------------: |
+| log     |    10 |                                3.3 MB |
+| log     |   100 |                                9.8 MB |
+| log     |  1000 | ~105 MB (2,000 keys measured, scaled) |
+| counter |   any |                                1.9 MB |
+
+A check costs under ten microseconds in every row. Nothing bounded
+`ODUDU_THROTTLE_LIMIT` below a million, so an operator following "raise it
+for a large NAT" could have asked the log for a gigabyte. 100 is the largest
+limit whose log stays under about 10 MB per budget at the key cap; below it
+the exact answer costs almost nothing, and above it the counter's constant
+three numbers per key are worth an approximation that, at a budget that
+size, is small next to the budget. The number is a judgement on those
+measurements, not a knee in them. The figures exclude the key strings: the
+per-origin key is under 70 bytes, but the sign-in budget's keys run to about
+260 characters, which adds up to a few megabytes more per full map.
+
+**What the counter assumes, and what that costs.** It keeps the current and
+the previous fixed window's counts and estimates the trailing window as
+`previous × (1 − elapsed fraction) + current`, admitting a request while that
+estimate plus one is within the limit. The assumption is that the previous
+window's requests were spread evenly across it. For a **steady stream** that
+holds, and the estimate is within two requests of the exact count, so the
+counter admits a stream two or more under the budget and refuses one two or
+more over it exactly as the log does (`throttle-counter.test.ts`, a seeded
+property test over 200 limits, windows and rates). For **traffic timed
+against a window boundary** it does not: a burst at the end of one window
+and another at the start of the next can be admitted up to just under twice
+the limit inside one trailing window, and a burst early in the previous
+window can make the counter refuse up to `limit` requests the log would
+have admitted. Both are bounded by the limit itself, which is the right
+size of error for a CPU allowance and the wrong one for a guarantee; the
+budgets that guard a credential (the client secret budget and the
+per-username budget, at their defaults of 5) are below the threshold and
+exact. `Retry-After` for the counter is an estimate of when the
+weighted count next admits a request, rounded up: never zero when refused,
+and capped at one window, which can be shorter than the true wait when the
+current window is already spent.
+
+**The settings are bounded.** `ODUDU_THROTTLE_LIMIT`,
+`ODUDU_CLIENT_SECRET_THROTTLE_LIMIT` and `ODUDU_LOGIN_THROTTLE_LIMIT` refuse
+to boot above 10,000, naming the variable: at the default
+sixty-second window, ten thousand is about 170 Argon2id verifications a
+second from one origin, past what one process runs, and it is the figure at
+which the exact log would have cost a gigabyte. That is the whole of the
+claim: at a one-second window the same ceiling admits ten thousand a second,
+so the ceiling bounds memory and is not a CPU-rate bound, which stays the
+operator's to choose with the window. The windows refuse past 3,600 seconds: a
+refusal telling a caller to return in over an hour is a lockout, and the
+account lockout is the mechanism for that. Both bounds used to be a million
+and a day; the e2e stack's 10,000 and the conformance stack's 5,000 sit
+inside the new ones. `ODUDU_CLIENT_SECRET_THROTTLE_LIMIT` and
+`_WINDOW_SECONDS` are new: the amendment above built that limiter at a
+hard-coded five per sixty seconds and a comment naming settings nothing
+read.
+
+**IPv6 is keyed by its /64.** `request.ip` is the socket's peer address as
+Fastify reports it, or, with `ODUDU_TRUST_PROXY` on, the leftmost
+`X-Forwarded-For` token as the proxy wrote it — verified 2026-10-15 by
+listening on `::` under Fastify 5.12.5 with trusting on and off, and
+sending an IPv4 and an IPv6 peer and six spellings in the header. Findings:
+a dual-stack listener reports every IPv4 peer as `::ffff:a.b.c.d`; a trusted
+header passes through whatever it says, upper case, zero-expanded forms, a
+zone id (`fe80::1%eth0`) and text that is no address at all; and every
+spelling is a different key. Each IPv6 address was therefore its own budget,
+and one home or hosting allocation is a /64 holding 2^64 addresses, so an
+attacker anywhere inside it never saw a refusal. `throttleOrigin`
+(`apps/server/src/throttle-origin.ts`) now keys an IPv6 address by its
+first four groups, an IPv4-mapped one as the IPv4 address it carries, drops
+a zone id and reads every spelling the same way; text that is no address
+passes through cut to 64 characters, so a client-controlled header still
+cannot grow a key. The cost is that two unrelated hosts in one /64 share
+a budget, the way two behind one NAT do, and the remedy is the same
+setting. An attacker holding a /56 or a /48, which is what a residential or hosting
+customer is typically given, holds 256 or 65,536 /64s and so that many
+budgets: the rotation defence is partial, and keying by a shorter prefix
+would throttle unrelated customers of one provider together. Some forms
+are reachable only through a trusted `X-Forwarded-For`, since a translator
+does not sit in front of this listener: `::`, `::1`, an IPv4-compatible
+`::a.b.c.d` and an SIIT `::ffff:0:a.b.c.d` all collapse to the one key
+`0:0:0:0::/64`; NAT64 (`64:ff9b::/96`) collapses every embedded IPv4 address
+to one key; 6to4 (`2002:aabb:ccdd::/48`) splits one site into 65,536 keys;
+and Teredo clients of one server share one. None of that is new exposure —
+the same header already chose the key — and all of it is accepted for the
+same reason. The trust rule is unchanged: behind a proxy that appends rather
+than overwrites, the key is client text and the throttle decorative.
+
+**A second budget on sign-in, keyed by address and username.** The
+per-origin budget cannot tell one account being attacked from a shared
+address being busy, and the account lockout cannot refuse before it has paid
+for the verification. The sign-in submission alone now also spends a budget
+keyed `origin|tenant|username`, `ODUDU_LOGIN_THROTTLE_LIMIT` (default 5) per
+`ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS` (default 60): the lockout's five, and
+half the per-origin ten, so one name cannot take an address's whole budget.
+Credential stuffing against one account from one address is refused after
+five, and the rest of a NAT is not touched.
+
+It keeps the first property above intact. The username is read from the
+submitted form and nothing else, so the decision cannot depend on whether
+the account exists; it is folded (compatibility normalisation, trimmed,
+lower-cased) so case and padding do not buy a fresh key, and cut to 128
+characters with the tenant to 64, so the key set is bounded by
+`MAX_THROTTLE_KEYS` like the others. It runs in `preHandler` rather than
+`onRequest`, because the form is not parsed until then; that is still before
+the route, so before any lookup or Argon2id verification, and it answers the
+same `429`, `Retry-After` and body as the per-origin refusal (a page since
+the last amendment; empty when this ADR was written). Tests
+establish both halves: the refusal happens with the database untouched
+(`app.test.ts`), and a username that is an account and one that is not
+are refused in the same bytes against a real database
+(`tests/throttle.int.test.ts`). A submission that names no username — the
+second-factor steps carry the authentication session instead — spends
+nothing here, and registration and the reset request are not covered:
+neither verifies a password, and the per-origin budget still bounds them.
+The second factor is bounded per account instead (below). The key is the
+origin, the tenant and the folded name as a JSON array, so no tenant or
+username can make two different triples one key.
+
+The cost is a denial of service on one pair: whoever shares the victim's
+address, or can choose a trusted `X-Forwarded-For`, can spend that address's
+budget for that username and lock it out of signing in for a minute. A
+victim on another address is unaffected, and the account lockout's own
+any-origin version of this is unchanged.
+Per-origin runs first, so a request the username budget refuses has already
+spent an origin slot, which keeps the two within each other's bounds.
+
+**Second-factor guessing is bounded per account, by the lockout.** The
+per-origin budget bounds guesses per address, and an attacker who holds a
+password has six-digit codes to find from as many addresses as they own, so
+that was never a bound on the account. A wrong TOTP code, a wrong recovery
+code and a replay of a code already used now each count against the same
+`login_failures` row as a wrong password, under the tenant's own threshold,
+doubling and ceiling (`packages/authn-flows/src/usecase/executor.ts`); the
+counter moves with the same compare-and-swap the password path uses, so
+guesses in parallel are all counted rather than racing under the threshold.
+A correct password no longer ends the run of failures on its own: the run is
+cleared when the whole sign-in that began with a password completes, so
+wrong codes after a right password accumulate. A locked account refuses the
+second-factor step without the code being looked at, and still counts the
+attempt, as a password attempt during a lockout does; the answer is the one
+a wrong code gets, so the refusal says nothing about whether a guess was
+right. What is observable is only what the session already told its holder:
+the account exists, because the password was right, and a recovery code on a
+locked account is not hashed and so answers sooner. A replay counts because
+it is a presented credential that must not work, which is the case the rule
+exists for; the price is that a double-submitted correct code can leave one
+failure on record when the sign-in it belonged to still completes and clears
+it. A passkey assertion is not counted: a signature is not guessable, and
+the step's failures are a different mechanism. The per-origin budget remains
+the bound on the rate; the lockout is the bound on the account.
+
+**A clock that steps back.** Both implementations read an injected clock. The
+log caps `Retry-After` at one window, so a backward step cannot ask a caller
+to wait longer than the window; the counter, after a backward step of two
+windows or more, gives a key a fresh budget. Clamping to the last instant seen
+would remove that and was rejected, because it would hold every window shut
+for as long as an equal forward jump had lasted. Fail-open for a stepped clock
+is the same posture as eviction.
+
+**Upgrading.** The ceilings tightened from 1,000,000 requests and 86,400
+seconds to 10,000 and 3,600, and the settings that were unbounded are now
+checked at boot: a deployment configured above them fails to start with a
+message naming the variable, and takes the new ceiling or a lower value. No
+migration is involved. The project has been a hard cutover while nothing was
+deployed, so this is the place the change is recorded.
+
+**What stays per instance.** All of it. Five budgets now live in one
+process's memory (origin, username, client secret and the two audit refusal
+windows); each is capped at `MAX_THROTTLE_KEYS` keys, at most about 10 MB
+for the exact log at its largest and 2 MB for the counter, and none touches
+the database, so nothing here depends on 1,000,000 subjects, 10,000 clients
+or 10,000 tenants except that the key spaces they are drawn from (origins,
+usernames, client ids) are larger than the cap and evict by recency as
+above. A check is a map operation and a filter over at most 100 entries, or
+constant. N replicas admit N times every budget, and P11's criterion that
+every in-process bound is shared or documented as multiplied by the replica
+count covers these three new settings as it covers the older ones.
+
+## Amendment, 2026-10-15 — a refusal a person reads is a page
+
+The `429` above answered with no body. On the three routes a browser submits
+from (`…/authenticate`, `…/registration`, `…/reset-password`) that put a blank
+white page in front of a person who had done nothing but type a password
+again. Those answers now carry a short page, `Too many attempts`, saying
+`Try again in N seconds`, with `N` the `Retry-After` value rounded up and the
+header unchanged. It goes through the same page machinery as every other
+rendered page (`RenderedPage`, `pageHeaders`, `no-store`) and carries no
+script and no form.
+
+**Why a page is safe.** It is decided exactly where the empty body was,
+before any account is looked up: `onRequest` for the per-origin budget,
+`preHandler` after the body parse for the per-username one. It is rendered
+from the wait alone, so it is identical for both budgets and for an account
+that exists and one that does not, apart from the seconds. The existing
+tests that compared the empty bodies compare these instead, with the seconds
+masked (`tests/throttle.int.test.ts`).
+
+**No link back.** A link to restart the sign-in would need the parked request
+read from the database for every refused request, which is a lookup a flood
+must not cost and which the per-origin refusal, decided before the body is
+parsed, has no session id to make. The page says to go back instead; the form
+behind it is `no-store`, so Back fetches a fresh one.
+
+**What keeps the bare answer.** The admin mail sends, and `/token`,
+`/revoke` and `/introspect`, are called by programs, which read a status and a
+header and gain nothing from markup. The set of page routes is `PAGE_POSTS`
+in `apps/server/src/app.ts`; a route is a page route only by being listed.
+
+**What a holder of the right password can still observe.** The refusal is
+the same whatever the cause for anyone who does not hold the account's
+password, and, since the check follows the factors directly, for the right
+password of a disabled account too, on the form and, because a disabled
+account never reaches the consent page, at the consent POST. Three things
+remain, each reachable only with the right password. An account that needs
+a second factor answers the right password with the code form and a wrong
+one with the password form, as it did before. A disabled account's right
+password takes about 15 ms longer than a wrong one (an extra read and the
+progress write; a review measured 52 against 37 ms, and about 10 ms on the
+base commit): accepted, because the right password is already the proof of
+who the account is, and equalising would mean doing the same writes for a
+wrong password. A subject disabled between the consent page and the consent
+POST is refused as an expired sign-in (400), which is the page any expired
+session gets. Values are neutralised before any of this (a NUL or a lone
+surrogate in a name or form field becomes U+FFFD) and a server error never
+carries driver text, so the sign-in route has no input that answers
+differently from an unknown name.
+
 ## Alternatives rejected
 
 - **(a) Both halves in Postgres, keyed by origin.** Globally true, and it
@@ -251,7 +503,9 @@ that file and the table this closes rather than corrects.
 - **`preHandler` rather than `onRequest`.** Both precede the Argon2id cost,
   which is the expensive part. `onRequest` additionally precedes the body
   parse, and there is nothing in the decision that needs the body.
-- **A `429` carrying a rendered page.** These three routes serve HTML to
-  browsers, so a page would be friendlier. An empty body is chosen because
+- **A `429` carrying a rendered page.** (Adopted for these three routes in
+  the last amendment, once a page could be rendered from the wait alone.)
+  These routes serve HTML to
+  browsers, so a page would be friendlier. An empty body was chosen because
   the refusal must be identical for every request that reaches it, and
   rendering is where per-tenant and per-request variation creeps in.

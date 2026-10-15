@@ -1,0 +1,12 @@
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.id {
+  font-family: var(--font-mono);
+  font-size: var(--type-13);
+  overflow-wrap: anywhere;
+}

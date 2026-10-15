@@ -2,6 +2,7 @@ import { signingKeyRepository, signingKeys } from '@odudu/crypto';
 import { withTenant, type TenantScopedDatabase } from '@odudu/db';
 import { TENANT_CAPABILITIES } from '@odudu/domain-tenant';
 import { newId } from '@odudu/kernel';
+import { type LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startAdminFixture, type AdminFixture } from '#/testing/admin-fixture';
 import {
@@ -179,6 +180,7 @@ describe('POST /admin/tenants/{t}/keys/{id}/promote', () => {
           { audit },
           {
             keyId,
+            ifMatch: undefined,
             actorSubjectId: newId(),
             actorTenantId: 'test-tenant',
             actorClientId: 'test-client',
@@ -236,6 +238,7 @@ describe('POST /admin/tenants/{t}/keys/{id}/retire', () => {
     const res = await retireKey(t.name, token, active.id);
     expect(res.statusCode).toBe(409);
     expect(res.json<{ detail: string }>().detail).toMatch(/active/u);
+    expect(res.json<{ type: string }>().type).toBe('about:blank#key-active');
   });
 
   it("refuses to retire a key whose algorithm a client's userinfo_signed_response_alg still needs", async () => {
@@ -261,7 +264,38 @@ describe('POST /admin/tenants/{t}/keys/{id}/retire', () => {
     const detail = res.json<{ detail: string }>().detail;
     expect(detail).toContain('userinfo_signed_response_alg');
     expect(detail).toContain(dependent.clientId);
+    expect(res.json<{ type: string }>().type).toBe('about:blank#key-algorithm-needed');
+    expect(res.json<{ errors: unknown }>().errors).toEqual([
+      { path: 'clients', message: dependent.clientId },
+    ]);
   });
+
+  it('names at most twenty clients, and counts the rest, however many need the algorithm', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    await openRegistration(t.name);
+    const token = await fixture.adminToken(t.name, ['manage-keys']);
+    const original = await activeKeyOf(t.id);
+    const staged = await stageKey(t.name, token, 'RS256');
+    await promoteKeyHttp(t.name, token, staged.id);
+    for (let made = 0; made < 22; made += 1) {
+      await fixture.registerClientWithUserinfoAlg(t.name, original.alg);
+    }
+
+    const res = await retireKey(t.name, token, original.id);
+    expect(res.statusCode).toBe(409);
+    const body = res.json<{
+      detail: string;
+      errors: { path: string; message: string }[];
+    }>();
+    const named = body.errors.filter((error) => error.path === 'clients');
+    expect(named).toHaveLength(20);
+    expect(named.map((error) => error.message)).toEqual(named.map((error) => error.message).sort());
+    expect(body.errors.filter((error) => error.path === 'clients.more')).toEqual([
+      { path: 'clients.more', message: '2' },
+    ]);
+    expect(body.detail).toMatch(/ and 2 more$/u);
+    expect(body.detail.split(',').length).toBeLessThanOrEqual(21);
+  }, 120_000);
 
   it('retires once the last client on that algorithm has moved', async () => {
     const t = await fixture.createTenant(`acme-${newId()}`);
@@ -284,6 +318,20 @@ describe('POST /admin/tenants/{t}/keys/{id}/retire', () => {
     const res = await retireKey(t.name, token, original.id);
     expect(res.statusCode).toBe(200);
     expect(res.json<{ status: string }>().status).toBe('retired');
+  });
+
+  it('answers a delete of a key that is not retired with a type of its own', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-keys']);
+    const staged = await stageKey(t.name, token, 'RS256');
+
+    const res = await fixture.http.inject({
+      method: 'DELETE',
+      url: `${keysUrl(t.name)}/${staged.id}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(res.statusCode).toBe(409);
+    expect(res.json<{ type: string }>().type).toBe('about:blank#key-not-retired');
   });
 
   it('answers 404 for an unknown key id', async () => {
@@ -463,6 +511,7 @@ describe('audit', () => {
         { audit: ok.audit },
         {
           keyId: staged.id,
+          ifMatch: undefined,
           actorSubjectId: 'test',
           actorTenantId: 'test-tenant',
           actorClientId: 'test-client',
@@ -480,6 +529,7 @@ describe('audit', () => {
         { audit: refused.audit },
         {
           keyId: newId(),
+          ifMatch: undefined,
           actorSubjectId: 'test',
           actorTenantId: 'test-tenant',
           actorClientId: 'test-client',
@@ -514,6 +564,7 @@ describe('audit', () => {
         { audit: refusedActive.audit },
         {
           keyId: active.id,
+          ifMatch: undefined,
           actorSubjectId: 'test',
           actorTenantId: 'test-tenant',
           actorClientId: 'test-client',
@@ -530,6 +581,7 @@ describe('audit', () => {
         { audit: refusedNotFound.audit },
         {
           keyId: newId(),
+          ifMatch: undefined,
           actorSubjectId: 'test',
           actorTenantId: 'test-tenant',
           actorClientId: 'test-client',
@@ -546,6 +598,7 @@ describe('audit', () => {
         { audit: ok.audit },
         {
           keyId: staged.id,
+          ifMatch: undefined,
           actorSubjectId: 'test',
           actorTenantId: 'test-tenant',
           actorClientId: 'test-client',
@@ -555,5 +608,98 @@ describe('audit', () => {
     expect(retired.kind).toBe('ok');
     expect(ok.events).toHaveLength(1);
     expect(ok.events[0]?.action).toBe('key.retire');
+  });
+});
+
+async function listKeysAt(tenantName: string, query: string): Promise<LightMyRequestResponse> {
+  const token = await fixture.adminToken(tenantName, ['manage-keys']);
+  return fixture.http.inject({
+    method: 'GET',
+    url: `${keysUrl(tenantName)}?${query}`,
+    headers: { authorization: `Bearer ${token}` },
+  });
+}
+
+function keyIdsOf(res: LightMyRequestResponse): string[] {
+  return res.json<{ items: { id: string }[] }>().items.map((key) => key.id);
+}
+
+describe('GET /admin/tenants/{t}/keys — filters', () => {
+  it('filters by ?status= and ?alg=, ANDed with each other', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-keys']);
+    const active = await activeKeyOf(t.id);
+    const activeAlg = active.alg === 'ES256' ? 'ES256' : 'RS256';
+    const other = activeAlg === 'ES256' ? 'RS256' : 'ES256';
+    const staged = await stageKey(t.name, token, other);
+    const retired = await stageKey(t.name, token, activeAlg);
+    expect((await retireKey(t.name, token, retired.id)).statusCode).toBe(200);
+
+    expect(keyIdsOf(await listKeysAt(t.name, 'status=active'))).toEqual([active.id]);
+    expect(keyIdsOf(await listKeysAt(t.name, 'status=rotating'))).toEqual([staged.id]);
+    expect(keyIdsOf(await listKeysAt(t.name, 'status=retired'))).toEqual([retired.id]);
+    expect(keyIdsOf(await listKeysAt(t.name, `alg=${other}`))).toEqual([staged.id]);
+    expect(keyIdsOf(await listKeysAt(t.name, `alg=${active.alg}`))).toEqual(
+      [active.id, retired.id].sort(),
+    );
+    expect(keyIdsOf(await listKeysAt(t.name, `status=retired&alg=${active.alg}`))).toEqual([
+      retired.id,
+    ]);
+    expect(keyIdsOf(await listKeysAt(t.name, `status=retired&alg=${other}`))).toEqual([]);
+  });
+
+  it('refuses a status or alg outside its enum, and an unknown parameter, naming it', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const status = await listKeysAt(t.name, 'status=pending');
+    expect(status.statusCode).toBe(400);
+    expect(status.json<{ detail: string }>().detail).toContain('querystring/status');
+    const alg = await listKeysAt(t.name, 'alg=HS256');
+    expect(alg.statusCode).toBe(400);
+    expect(alg.json<{ detail: string }>().detail).toContain('querystring/alg');
+    const unknown = await listKeysAt(t.name, 'kid=x');
+    expect(unknown.statusCode).toBe(400);
+    expect(unknown.json<{ detail: string }>().detail).toContain('kid');
+  });
+
+  it.each([
+    ['a filter added', 'limit=1', 'status=rotating&limit=1'],
+    ['a filter dropped', 'alg=RS256&limit=1', 'limit=1'],
+    ['another filter', 'alg=RS256&limit=1', 'alg=ES256&limit=1'],
+  ])('refuses a cursor replayed under %s', async (_label, minted, replayedUnder) => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-keys']);
+    for (const alg of ['RS256', 'RS256', 'ES256', 'ES256'] as const) {
+      await stageKey(t.name, token, alg);
+    }
+
+    const first = await listKeysAt(t.name, minted);
+    const next = first.json<{ next?: string }>().next;
+    if (next === undefined) throw new Error('expected a next cursor');
+
+    const replayed = await listKeysAt(
+      t.name,
+      `${replayedUnder}&cursor=${encodeURIComponent(next)}`,
+    );
+    expect(replayed.statusCode).toBe(400);
+    expect(replayed.json<{ detail: string }>().detail).toBe('cursor is invalid or expired');
+  });
+
+  it('pages a filtered listing, each match once', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-keys']);
+    const staged: string[] = [];
+    for (let i = 0; i < 3; i += 1) staged.push((await stageKey(t.name, token, 'ES256')).id);
+
+    const seen: string[] = [];
+    let query = 'status=rotating&limit=1';
+    for (let page = 0; page < 5; page += 1) {
+      const res = await listKeysAt(t.name, query);
+      expect(res.statusCode).toBe(200);
+      const body = res.json<{ items: { id: string }[]; next?: string }>();
+      seen.push(...body.items.map((key) => key.id));
+      if (body.next === undefined) break;
+      query = `status=rotating&limit=1&cursor=${encodeURIComponent(body.next)}`;
+    }
+    expect(seen).toEqual([...staged].sort());
   });
 });

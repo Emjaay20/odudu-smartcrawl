@@ -46,6 +46,8 @@ const CLIENT_ID = 'login-adversarial-client';
 const CLIENT_SECRET = 'login-adversarial-secret';
 const REDIRECT_URI = 'https://app.example/callback';
 const USERNAME = 'ada';
+// As long as USERNAME, so a refusal's length does not tell the two apart.
+const UNKNOWN_USERNAME = 'zed';
 const PASSWORD = 'correct horse battery staple';
 // A second End-User in every tenant, so "the End-User who authenticated" can
 // be told apart from "some other End-User of the same tenant".
@@ -622,6 +624,8 @@ describe('failed and abandoned logins', () => {
       csrf: authSessionId,
     });
     expect(res.statusCode).toBe(400);
+    expect(res.body).toContain('This sign-in attempt is no longer valid. Go back and start again.');
+    expect(res.headers.location).toBeUndefined();
     expect(await countAuthorizationCodes(tenantName)).toBe(0);
   });
 });
@@ -1012,11 +1016,17 @@ describe('[RFC6749-2.3.1-03] a locked account is refused in bytes nothing can be
   // the one header that cannot match and the one that carries nothing: it
   // is on the successful responses too and reflects the clock rather than
   // the account.
-  function comparable(res: LightMyRequestResponse): unknown {
+  // The username the form gives back is the one typed, so it is masked: the
+  // names compared are the same length, which keeps content-length equal.
+  function comparable(res: LightMyRequestResponse, typed: string): unknown {
     const headers = Object.fromEntries(
       Object.entries(res.headers).filter(([name]) => name.toLowerCase() !== 'date'),
     );
-    return { statusCode: res.statusCode, headers, body: res.body };
+    return {
+      statusCode: res.statusCode,
+      headers,
+      body: res.body.replaceAll(`value="${typed}"`, 'value="TYPED"'),
+    };
   }
 
   // One parked request for every attempt in a case, the way a browser
@@ -1027,7 +1037,7 @@ describe('[RFC6749-2.3.1-03] a locked account is refused in bytes nothing can be
   ): Promise<(credentials: { username: string; password: string }) => Promise<unknown>> {
     const csrf = await startAuthSession(http, tenantName);
     return async (credentials) =>
-      comparable(await submitLogin({ ...credentials, tenantName, csrf }));
+      comparable(await submitLogin({ ...credentials, tenantName, csrf }), credentials.username);
   }
 
   // Five, and not a number this tenant was configured with: the default is
@@ -1052,12 +1062,12 @@ describe('[RFC6749-2.3.1-03] a locked account is refused in bytes nothing can be
     const attempt = await attemptsAgainstOneSession(tenantName);
 
     const wrongPassword = await attempt({ username: USERNAME, password: 'wrong' });
-    expect(await attempt({ username: 'nobody-here', password: 'wrong' })).toEqual(wrongPassword);
+    expect(await attempt({ username: UNKNOWN_USERNAME, password: 'wrong' })).toEqual(wrongPassword);
 
     for (let i = 0; i < 4; i++) await attempt({ username: USERNAME, password: 'wrong' });
 
     expect(await attempt({ username: USERNAME, password: 'wrong' })).toEqual(wrongPassword);
-    expect(await attempt({ username: 'nobody-here', password: 'wrong' })).toEqual(wrongPassword);
+    expect(await attempt({ username: UNKNOWN_USERNAME, password: 'wrong' })).toEqual(wrongPassword);
   });
 
   // Nothing is issued, which is the half a page comparison cannot see: a

@@ -4,18 +4,22 @@ import {
   signingKeys,
   type SigningKeyRecord,
 } from '@odudu/crypto';
-import { type SigningKey, type SigningKeyAlg } from '@odudu/contracts/admin';
+import { type ListKeysQuery, type SigningKey, type SigningKeyAlg } from '@odudu/contracts/admin';
 import { type TenantScopedDatabase } from '@odudu/db';
 import { clients } from '@odudu/domain-tenant';
 import { clientOidcConfig } from '@odudu/protocol-oidc';
 import { newId } from '@odudu/kernel';
-import { and, asc, eq, gt, ne } from 'drizzle-orm';
-import { decodeCursor, encodeCursor } from '#/service/cursor';
+import { and, asc, count, eq, gt, ne, or } from 'drizzle-orm';
+import { decodeCursor, encodeCursor, filterDigest } from '#/service/cursor';
+import { etagOf, matches } from '#/service/etag';
 
 const COLLECTION = 'keys';
 
+/** The most clients a refusal names; the rest are counted. */
+export const NAMED_CLIENTS_MAX = 20;
+
 export interface KeyAuditEvent {
-  readonly action: 'key.create' | 'key.promote' | 'key.retire';
+  readonly action: 'key.create' | 'key.promote' | 'key.retire' | 'key.delete';
   readonly resourceType: 'signing_key';
   readonly resourceId: string;
   readonly actorSubjectId: string;
@@ -58,11 +62,15 @@ function toSigningKeyRecord(row: typeof signingKeys.$inferSelect): SigningKeyRec
   };
 }
 
+/** Every `listKeysQuerySchema` parameter except the page controls. */
+export type KeyFilters = Omit<ListKeysQuery, 'cursor' | 'limit'>;
+
 export interface ListKeysInput {
   readonly limit: number;
   readonly cursor: string | undefined;
   readonly cursorKey: Uint8Array;
   readonly tenantId: string;
+  readonly filters: KeyFilters;
 }
 
 export type ListKeysOutcome =
@@ -72,17 +80,31 @@ export async function listKeys(
   tx: TenantScopedDatabase,
   input: ListKeysInput,
 ): Promise<ListKeysOutcome> {
+  const filters = filterDigest(input.filters);
   let after: string | undefined;
   if (input.cursor !== undefined) {
-    const decoded = decodeCursor(input.cursorKey, COLLECTION, input.tenantId, input.cursor);
+    const decoded = decodeCursor(
+      input.cursorKey,
+      COLLECTION,
+      input.tenantId,
+      filters,
+      input.cursor,
+    );
     if (decoded.kind === 'invalid') return { kind: 'invalid_cursor' };
     after = decoded.after;
   }
 
+  // A tenant holds a handful of keys, so these filters read the table
+  // rather than an index of their own.
+  const conditions = [
+    ...(input.filters.status === undefined ? [] : [eq(signingKeys.status, input.filters.status)]),
+    ...(input.filters.alg === undefined ? [] : [eq(signingKeys.alg, input.filters.alg)]),
+    ...(after === undefined ? [] : [gt(signingKeys.id, after)]),
+  ];
   const rows = await tx
     .select()
     .from(signingKeys)
-    .where(after === undefined ? undefined : gt(signingKeys.id, after))
+    .where(conditions.length === 0 ? undefined : and(...conditions))
     .orderBy(asc(signingKeys.id))
     .limit(input.limit + 1);
 
@@ -97,6 +119,7 @@ export async function listKeys(
           after: last.id,
           collection: COLLECTION,
           tenantId: input.tenantId,
+          filters,
         })
       : null;
 
@@ -153,6 +176,7 @@ export async function createKey(
 
 export interface PromoteKeyInput {
   readonly keyId: string;
+  readonly ifMatch: string | undefined;
   readonly actorSubjectId: string;
   readonly actorTenantId: string;
   readonly actorClientId: string;
@@ -162,7 +186,8 @@ export interface PromoteKeyDeps {
   readonly audit: Audit;
 }
 
-export type PromoteKeyOutcome = { kind: 'not_found' } | { kind: 'ok'; key: SigningKey };
+export type PromoteKeyOutcome =
+  { kind: 'not_found' } | { kind: 'precondition_failed' } | { kind: 'ok'; key: SigningKey };
 
 // The atomicity itself — no window with two actives or none — lives in
 // `signingKeyRepository(tx).promote` (@odudu/crypto): `signing_keys_one_active`
@@ -174,6 +199,19 @@ export async function promoteKey(
   deps: PromoteKeyDeps,
   input: PromoteKeyInput,
 ): Promise<PromoteKeyOutcome> {
+  // The target row first, as `promote` itself locks it, so the comparison
+  // describes the key this write changes.
+  const current = await tx
+    .select()
+    .from(signingKeys)
+    .where(eq(signingKeys.id, input.keyId))
+    .for('update');
+  const row = current[0];
+  if (row === undefined) return { kind: 'not_found' };
+  if (matches(input.ifMatch, etagOf(keyWireShape(toSigningKeyRecord(row)))) === 'mismatch') {
+    return { kind: 'precondition_failed' };
+  }
+
   const promoted = await signingKeyRepository(tx).promote(input.keyId);
   if (promoted === null) return { kind: 'not_found' };
 
@@ -192,6 +230,7 @@ export async function promoteKey(
 
 export interface RetireKeyInput {
   readonly keyId: string;
+  readonly ifMatch: string | undefined;
   readonly actorSubjectId: string;
   readonly actorTenantId: string;
   readonly actorClientId: string;
@@ -203,8 +242,9 @@ export interface RetireKeyDeps {
 
 export type RetireKeyOutcome =
   | { kind: 'not_found' }
+  | { kind: 'precondition_failed' }
   | { kind: 'active' }
-  | { kind: 'algorithm_needed'; alg: string; clientIds: readonly string[] }
+  | { kind: 'algorithm_needed'; alg: string; clientIds: readonly string[]; total: number }
   | { kind: 'ok'; key: SigningKey };
 
 // Every non-retired key of the target's algorithm, not just the target:
@@ -248,6 +288,9 @@ export async function retireKey(
 ): Promise<RetireKeyOutcome> {
   const locked = await lockKeyForRetire(tx, input.keyId);
   if (locked === null) return { kind: 'not_found' };
+  if (matches(input.ifMatch, etagOf(keyWireShape(toSigningKeyRecord(locked)))) === 'mismatch') {
+    return { kind: 'precondition_failed' };
+  }
   if (locked.status === 'active') return { kind: 'active' };
   if (locked.status === 'retired') {
     // Idempotent: the caller asked for the key retired and it is, so this
@@ -271,16 +314,24 @@ export async function retireKey(
   const stillProduced = new Set(survivors.map((row) => row.alg));
 
   if (!stillProduced.has(locked.alg)) {
+    const needs = or(
+      eq(clientOidcConfig.userinfoSignedResponseAlg, locked.alg),
+      eq(clientOidcConfig.idTokenSignedResponseAlg, locked.alg),
+    );
     const offending = await tx
       .select({ oauthClientId: clients.clientId })
       .from(clientOidcConfig)
       .innerJoin(clients, eq(clients.id, clientOidcConfig.clientId))
-      .where(eq(clientOidcConfig.userinfoSignedResponseAlg, locked.alg));
+      .where(needs)
+      .orderBy(asc(clients.clientId))
+      .limit(NAMED_CLIENTS_MAX);
     if (offending.length > 0) {
+      const [counted] = await tx.select({ total: count() }).from(clientOidcConfig).where(needs);
       return {
         kind: 'algorithm_needed',
         alg: locked.alg,
         clientIds: offending.map((row) => row.oauthClientId),
+        total: counted?.total ?? offending.length,
       };
     }
   }
@@ -301,4 +352,44 @@ export async function retireKey(
   });
 
   return { kind: 'ok', key: keyWireShape(retired) };
+}
+
+export type DeleteKeyOutcome =
+  | { kind: 'not_found' }
+  | { kind: 'precondition_failed' }
+  | { kind: 'not_retired'; status: string }
+  | { kind: 'deleted' };
+
+// Only a retired key: it is published nowhere and signs nothing, so nothing
+// a relying party holds can still need it. An active or rotating key is
+// retired first, through the door that checks what still depends on it.
+export async function deleteKey(
+  tx: TenantScopedDatabase,
+  deps: RetireKeyDeps,
+  input: RetireKeyInput,
+): Promise<DeleteKeyOutcome> {
+  const rows = await tx
+    .select()
+    .from(signingKeys)
+    .where(eq(signingKeys.id, input.keyId))
+    .for('update');
+  const row = rows[0];
+  if (row === undefined) return { kind: 'not_found' };
+  if (matches(input.ifMatch, etagOf(keyWireShape(toSigningKeyRecord(row)))) === 'mismatch') {
+    return { kind: 'precondition_failed' };
+  }
+  if (row.status !== 'retired') return { kind: 'not_retired', status: row.status };
+
+  await tx.delete(signingKeys).where(eq(signingKeys.id, row.id));
+  await deps.audit(tx, {
+    action: 'key.delete',
+    resourceType: 'signing_key',
+    resourceId: row.id,
+    actorSubjectId: input.actorSubjectId,
+    actorTenantId: input.actorTenantId,
+    actorClientId: input.actorClientId,
+    outcome: 'allowed',
+    detail: { kid: row.kid },
+  });
+  return { kind: 'deleted' };
 }

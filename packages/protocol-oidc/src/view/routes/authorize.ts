@@ -1,3 +1,4 @@
+import { reloadOnRestore, type RenderedPage } from '@odudu/kernel';
 import { type FastifyInstance, type FastifyReply } from 'fastify';
 import { FORM_MEDIA_TYPE } from '#/service/media-type';
 import {
@@ -11,6 +12,8 @@ import { renderConsentPage } from '#/view/consent-html';
 import { sendHtml } from '#/view/html-response';
 import { tenantIssuerFor } from '#/view/issuer';
 import { namesUnsupportedRepresentation } from '#/view/media-type';
+import { continuing } from '#/view/routes/continuation';
+import { sendSignInExpired } from '#/view/routes/expired-sign-in';
 import {
   sendRequiredActionPage,
   type RequiredActionResponseDeps,
@@ -41,7 +44,11 @@ async function renderAuthorizationOutcome(
   issuer: string,
   outcome: AuthorizationRequestOutcome,
   reply: FastifyReply,
+  // Whether the response answers a GET, the only kind of page a reload can
+  // safely re-request; see reloadOnRestore.
+  reloadable: boolean,
 ): Promise<FastifyReply> {
+  const form = (page: RenderedPage): RenderedPage => (reloadable ? reloadOnRestore(page) : page);
   if (outcome.kind === 'render') {
     return sendHtml(reply, 400, renderAuthorizeErrorPage(outcome.error, outcome.description));
   }
@@ -87,46 +94,41 @@ async function renderAuthorizationOutcome(
   // asked with prompt=select_account. The chooser's own POST resumes the
   // authentication session parked here.
   if (outcome.kind === 'select') {
-    return sendHtml(
-      reply,
-      200,
-      renderSelectAccountPage({
-        tenant,
-        authSessionId: outcome.authSessionId,
-        accounts: outcome.accounts,
-      }),
-    );
+    const page = renderSelectAccountPage({
+      tenant,
+      authSessionId: outcome.authSessionId,
+      accounts: outcome.accounts,
+    });
+    return sendHtml(reply, 200, await continuing(deps, tenant, outcome.authSessionId, form(page)));
   }
 
   // A reused session that still needs consent: the same page the form path
   // renders once its own gate asks, on a freshly started authentication
   // session the reuse path bound and authenticated for the reused subject.
   if (outcome.kind === 'consent') {
-    return sendHtml(
-      reply,
-      200,
-      renderConsentPage({
-        tenant,
-        authSessionId: outcome.authSessionId,
-        clientName: outcome.clientName,
-        defaultScopes: outcome.defaultScopes,
-        optionalScopes: outcome.optionalScopes,
-        alreadyGranted: outcome.alreadyGranted,
-      }),
-    );
+    const page = renderConsentPage({
+      tenant,
+      authSessionId: outcome.authSessionId,
+      clientName: outcome.clientName,
+      clientPages: outcome.clientPages,
+      scopeLabels: outcome.scopeLabels,
+      defaultScopes: outcome.defaultScopes,
+      optionalScopes: outcome.optionalScopes,
+      alreadyGranted: outcome.alreadyGranted,
+    });
+    return sendHtml(reply, 200, await continuing(deps, tenant, outcome.authSessionId, form(page)));
   }
 
-  return sendHtml(
-    reply,
-    200,
-    renderLoginForm(
-      tenant,
-      outcome.authSessionId,
-      outcome.form,
-      deps.passkeyLogin ?? false,
-      outcome.rememberMeAllowed,
-    ),
+  const page = renderLoginForm(
+    tenant,
+    outcome.authSessionId,
+    outcome.form,
+    deps.passkeyLogin ?? false,
+    outcome.rememberMeAllowed,
+    undefined,
+    outcome.loginWithEmail,
   );
+  return sendHtml(reply, 200, await continuing(deps, tenant, outcome.authSessionId, form(page)));
 }
 
 // OIDC Core §3.1.2 requires both methods; they differ only in where the
@@ -145,9 +147,10 @@ async function respondToAuthorizationRequest(
   // for no header itself.
   header: string | undefined,
   reply: FastifyReply,
+  reloadable: boolean,
 ): Promise<FastifyReply> {
   const outcome = await handleAuthorizationRequest(deps, tenant, params, issuer, header);
-  return renderAuthorizationOutcome(deps, tenant, issuer, outcome, reply);
+  return renderAuthorizationOutcome(deps, tenant, issuer, outcome, reply, reloadable);
 }
 
 function firstString(value: string | string[] | undefined): string | undefined {
@@ -182,14 +185,7 @@ async function respondToSelectAccountSubmission(
   );
 
   if (outcome.kind === 'unauthenticated') {
-    return sendHtml(
-      reply,
-      400,
-      renderAuthorizeErrorPage(
-        'invalid_request',
-        'This sign-in attempt is no longer valid. Go back and start again.',
-      ),
-    );
+    return sendSignInExpired(reply, deps, tenant, firstString(fields.auth_session_id));
   }
 
   // The security case: the posted session_id names no member of the set
@@ -207,7 +203,7 @@ async function respondToSelectAccountSubmission(
     );
   }
 
-  return renderAuthorizationOutcome(deps, tenant, issuer, outcome, reply);
+  return renderAuthorizationOutcome(deps, tenant, issuer, outcome, reply, false);
 }
 
 export function registerAuthorizeRoute(app: FastifyInstance, deps: AuthorizeRouteDeps): void {
@@ -219,6 +215,7 @@ export function registerAuthorizeRoute(app: FastifyInstance, deps: AuthorizeRout
       tenantIssuerFor(request, request.params.tenant),
       request.headers.cookie,
       reply,
+      true,
     ),
   );
 
@@ -253,6 +250,7 @@ export function registerAuthorizeRoute(app: FastifyInstance, deps: AuthorizeRout
         tenantIssuerFor(request, request.params.tenant),
         request.headers.cookie,
         reply,
+        false,
       ),
   );
 

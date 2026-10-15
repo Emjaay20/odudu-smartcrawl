@@ -8,6 +8,15 @@ bootstrap and a full authorization-code exchange were additionally run in
 each of the other two ways of running the server, which
 [Pick how you are running it](#pick-how-you-are-running-it) sets out.
 
+Every command is written against `http://localhost:3000`, the port the compose
+file publishes by default. A block that was captured on a stack publishing
+another port says so in the command itself, and the port in its output is that
+stack's: the blocks re-run for the sign-in refusal message, the passkey
+button's spacing and the throttle page ran on the project `odudu-17h` on port
+`3171`, built from the branch commit `a92240a1` plus the documentation, started
+with `ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000` unless a
+block says otherwise.
+
 Values that change on every run — authorization codes, tokens, `jti`,
 session ids, timestamps — are shortened or truncated where they appear, and
 that is said each time. Nothing here is reconstructed from what the code
@@ -24,10 +33,12 @@ stack it ran against **says which state** — [Retention](#retention-what-odudu-
 the second [lockout](#brute-force-lockout) run and
 [the throttle](#the-per-origin-throttle) each do. Everything else was run in
 the order it appears, front to back, against one stack started with
-`ODUDU_THROTTLE_LIMIT=1000`: a scripted walkthrough of a whole document
-sends more requests a minute than the budget a person needs
-([the per-origin throttle](#the-per-origin-throttle)), and every transcript
-past the tenth would otherwise be a `429`.
+`ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000`: a scripted
+walkthrough of a whole document sends more requests a minute than the budget
+a person needs ([the per-origin throttle](#the-per-origin-throttle), and
+[the per-username one](#the-per-username-budget-on-sign-in) for one user
+signing in again and again), and every transcript past the tenth would
+otherwise be a `429`.
 
 ## The shape of it
 
@@ -36,32 +47,32 @@ isolated in the database by PostgreSQL row-level security (ADR 0009). Every
 protocol endpoint lives under `/tenants/{tenant}/`, so the tenant is chosen by
 the URL and never by a header or a parameter.
 
-| Method | Path                                                         | What it is                                                  |
-| ------ | ------------------------------------------------------------ | ----------------------------------------------------------- |
-| `GET`  | `/tenants/{tenant}/.well-known/openid-configuration`         | Discovery document                                          |
-| `GET`  | `/tenants/{tenant}/protocol/openid-connect/certs`            | JWKS (public signing keys)                                  |
-| `GET`  | `/tenants/{tenant}/protocol/openid-connect/auth`             | Authorization endpoint                                      |
-| `POST` | `/tenants/{tenant}/protocol/openid-connect/auth`             | Authorization endpoint (form)                               |
-| `POST` | `/tenants/{tenant}/login-actions/authenticate`               | Login form submission                                       |
-| `POST` | `/tenants/{tenant}/login-actions/consent`                    | Consent screen submission (allow/deny)                      |
-| `POST` | `/tenants/{tenant}/login-actions/select-account`             | Account chooser submission                                  |
-| `POST` | `/tenants/{tenant}/login-actions/required-action`            | Complete a pending required action (enrolment, password)    |
-| `POST` | `/tenants/{tenant}/login-actions/passkey-challenge`          | Request options for a usernameless passkey assertion        |
-| `GET`  | `/tenants/{tenant}/login-actions/registration`               | Self-registration form                                      |
-| `POST` | `/tenants/{tenant}/login-actions/registration`               | Self-registration submission                                |
-| `GET`  | `/tenants/{tenant}/login-actions/action-token`               | Redeem a mailed action token (verify email, reset password) |
-| `POST` | `/tenants/{tenant}/login-actions/action-token`               | Submit a new password against a reset-password token        |
-| `GET`  | `/tenants/{tenant}/login-actions/reset-password`             | Password reset request form                                 |
-| `POST` | `/tenants/{tenant}/login-actions/reset-password`             | Password reset request submission                           |
-| `POST` | `/tenants/{tenant}/protocol/openid-connect/token`            | Token endpoint                                              |
-| `POST` | `/tenants/{tenant}/protocol/openid-connect/token/introspect` | Token introspection (RFC 7662)                              |
-| `POST` | `/tenants/{tenant}/protocol/openid-connect/revoke`           | Token revocation (RFC 7009)                                 |
-| `GET`  | `/tenants/{tenant}/protocol/openid-connect/userinfo`         | UserInfo                                                    |
-| `POST` | `/tenants/{tenant}/protocol/openid-connect/userinfo`         | UserInfo (form)                                             |
-| `GET`  | `/tenants/{tenant}/protocol/openid-connect/logout`           | RP-initiated logout (`end_session_endpoint`)                |
-| `POST` | `/tenants/{tenant}/protocol/openid-connect/logout`           | RP-initiated logout (form-serialized), confirmation form    |
-| `POST` | `/tenants/{tenant}/clients-registrations/openid-connect`     | Dynamic client registration (RFC 7591)                      |
-| `GET`  | `/health/live`, `/health/ready`                              | Liveness, readiness                                         |
+| Method | Path                                                         | What it is                                                                    |
+| ------ | ------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| `GET`  | `/tenants/{tenant}/.well-known/openid-configuration`         | Discovery document                                                            |
+| `GET`  | `/tenants/{tenant}/protocol/openid-connect/certs`            | JWKS (public signing keys)                                                    |
+| `GET`  | `/tenants/{tenant}/protocol/openid-connect/auth`             | Authorization endpoint                                                        |
+| `POST` | `/tenants/{tenant}/protocol/openid-connect/auth`             | Authorization endpoint (form)                                                 |
+| `POST` | `/tenants/{tenant}/login-actions/authenticate`               | Login form submission                                                         |
+| `POST` | `/tenants/{tenant}/login-actions/consent`                    | Consent screen submission (allow/deny)                                        |
+| `POST` | `/tenants/{tenant}/login-actions/select-account`             | Account chooser submission                                                    |
+| `POST` | `/tenants/{tenant}/login-actions/required-action`            | Complete a pending required action (enrolment, password)                      |
+| `POST` | `/tenants/{tenant}/login-actions/passkey-challenge`          | Request options for a usernameless passkey assertion                          |
+| `GET`  | `/tenants/{tenant}/login-actions/registration`               | Self-registration form                                                        |
+| `POST` | `/tenants/{tenant}/login-actions/registration`               | Self-registration submission                                                  |
+| `GET`  | `/tenants/{tenant}/login-actions/action-token`               | Redeem a mailed action token (verify email, reset password, required actions) |
+| `POST` | `/tenants/{tenant}/login-actions/action-token`               | Submit a new password, or the required actions, against a token               |
+| `GET`  | `/tenants/{tenant}/login-actions/reset-password`             | Password reset request form                                                   |
+| `POST` | `/tenants/{tenant}/login-actions/reset-password`             | Password reset request submission                                             |
+| `POST` | `/tenants/{tenant}/protocol/openid-connect/token`            | Token endpoint                                                                |
+| `POST` | `/tenants/{tenant}/protocol/openid-connect/token/introspect` | Token introspection (RFC 7662)                                                |
+| `POST` | `/tenants/{tenant}/protocol/openid-connect/revoke`           | Token revocation (RFC 7009)                                                   |
+| `GET`  | `/tenants/{tenant}/protocol/openid-connect/userinfo`         | UserInfo                                                                      |
+| `POST` | `/tenants/{tenant}/protocol/openid-connect/userinfo`         | UserInfo (form)                                                               |
+| `GET`  | `/tenants/{tenant}/protocol/openid-connect/logout`           | RP-initiated logout (`end_session_endpoint`)                                  |
+| `POST` | `/tenants/{tenant}/protocol/openid-connect/logout`           | RP-initiated logout (form-serialized), confirmation form                      |
+| `POST` | `/tenants/{tenant}/clients-registrations/openid-connect`     | Dynamic client registration (RFC 7591)                                        |
+| `GET`  | `/health/live`, `/health/ready`                              | Liveness, readiness                                                           |
 
 `/login-actions/authenticate` is deliberately outside the
 `/protocol/openid-connect/` namespace: that namespace is the OIDC wire
@@ -394,10 +405,21 @@ curl -sS -o /dev/null -w '%{http_code}\n' \
 200
 ```
 
+Registration accepts, beside the redirect and authentication metadata the
+transcripts below register, RFC 7591's `client_uri`, `policy_uri` and
+`tos_uri` (absolute https, or http on a loopback host, no fragment — the
+consent screen links them, [The client's own pages](#the-clients-own-pages))
+and OpenID Connect Dynamic Client Registration §2's
+`id_token_signed_response_alg` (an algorithm a non-retired key of the tenant
+produces), `default_max_age` and `require_auth_time`; a response echoes each
+one registered, and none that was not. No transcript here registers them;
+`packages/protocol-admin/tests/client-metadata.int.test.ts` and
+`client-id-token-settings.int.test.ts` do.
+
 `client_registration_policy` is `disabled` on every tenant by default (ADR
 0026). Registering before it is opened, or against a tenant that does not
 exist, answers the same way — an enumeration oracle costs nothing to close
-here, the same reasoning discovery and JWKS already apply to a disabled
+here, the same reasoning `/token` and `/userinfo` apply to a disabled
 tenant. The discovery `200` above is what tells the two apart: the first
 refusal below is the closed policy, not an absent tenant.
 
@@ -496,7 +518,10 @@ www-authenticate: Bearer realm="client-registration"
 in seconds, and both are required since the schema has no default for
 either. Every other seed subcommand answers with a line of JSON; this one
 answers with the token alone, so `TOKEN=$(odudu seed registration-token …)`
-captures exactly the credential and nothing else.
+captures exactly the credential and nothing else. The admin API mints the
+same way, for an operator who would rather not shell into the container:
+`POST /admin/tenants/{tenant}/registration-tokens` (`manage-clients`),
+documented in [docs/admin-paths.md](admin-paths.md).
 
 ```bash
 TOKEN=$(odudu seed registration-token --tenant reg-demo --uses 1 --ttl 3600)
@@ -620,6 +645,23 @@ curl -sS -X POST http://localhost:3000/tenants/reg-demo/clients-registrations/op
 }
 ```
 
+A client holds at most 200 redirect URIs, the bound every list on a client
+shares ([docs/admin-paths.md](admin-paths.md#patch-clientsid)); a longer list is
+refused with the count and the limit, and 200 exactly is registered. Captured
+on the stack `docs/admin-paths.md` calls its fifteenth, in the tenant
+`client-reach-demo`, with registration opened:
+
+```bash
+curl -sS -X POST http://localhost:3082/tenants/client-reach-demo/clients-registrations/openid-connect \
+  -H 'content-type: application/json' -d @reg-over.json
+```
+
+`reg-over.json` held 201 URIs, `https://rp.example/cb/0` to `…/cb/200`:
+
+```
+{"error":"invalid_redirect_uri","error_description":"redirect_uris holds 201 entries, at most 200"}
+```
+
 `frontchannel_logout_uri` gets the same https/absolute/no-fragment policy
 `backchannel_logout_uri` already had — it is the `src` of an iframe the
 logout page now renders
@@ -683,6 +725,39 @@ curl -sS -X POST http://localhost:3000/tenants/reg-demo/clients-registrations/op
 }
 ```
 
+A registered `jwks` carries public keys only. A key holding any private
+member — `d`, `p`, `q`, `dp`, `dq`, `qi` or `k` — is refused, on
+registration here and on `POST` and `PATCH /admin/tenants/{tenant}/clients`
+alike, since all three validate through the same client metadata check: a
+stored private half would be handed back by every read and export of the
+client. These three calls were captured later than the rest of this
+section, against a different stack: a compose project of their own,
+published on port 3080 and built from the branch that made an admin `400`
+name its field under `errors`, in a tenant `jwks-demo` created through
+`POST /admin/tenants` with `client_registration_policy` set to `open`
+through `PATCH /settings`, so the refusal is the key's and not the
+policy's. That stack was torn down afterwards. A private key is refused
+by registration and by the admin API, and the first key without its private
+member then registers:
+
+```bash
+curl -sS -X POST http://localhost:3080/tenants/jwks-demo/clients-registrations/openid-connect \
+  -H 'content-type: application/json' \
+  -d '{"redirect_uris":["https://rp.example/cb"],"token_endpoint_auth_method":"private_key_jwt","jwks":{"keys":[{"kty":"EC","crv":"P-256","x":"f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU","y":"x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0","d":"jpsQnnGQmL-YBIffH1136cspYG6-0iY7X1fCE9-E9LI"}]}}'
+curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
+  -d '{"client_id":"signer-app","grant_types":["client_credentials"],"token_endpoint_auth_method":"private_key_jwt","jwks":{"keys":[{"kty":"oct","k":"c3ltbWV0cmljLXNlY3JldA"}]}}' \
+  http://localhost:3080/admin/tenants/jwks-demo/clients
+curl -sS -X POST http://localhost:3080/tenants/jwks-demo/clients-registrations/openid-connect \
+  -H 'content-type: application/json' \
+  -d '{"redirect_uris":["https://rp.example/cb"],"token_endpoint_auth_method":"private_key_jwt","jwks":{"keys":[{"kty":"EC","crv":"P-256","x":"f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU","y":"x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0"}]}}'
+```
+
+```
+{"error":"invalid_client_metadata","error_description":"jwks.keys[0] carries the private member d; register public keys only"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"jwks.keys[0] carries the private member k; register public keys only","errors":[{"path":"jwks","message":"jwks.keys[0] carries the private member k; register public keys only"}],"instance":"01a0ea63-bbfe-7bcd-9234-5a96705e5f51"}
+{"client_id":"01a0ea63-bc2e-76fa-b646-56b5121f644e","client_id_issued_at":1790638799,"client_secret":"_YZPORl5uy3NcYXEzMq8PSjdCnddn4XutbW7T4-QR4Y","client_secret_expires_at":0,"redirect_uris":["https://rp.example/cb"],"grant_types":["authorization_code"],"token_endpoint_auth_method":"private_key_jwt","jwks":{"keys":[{"kty":"EC","crv":"P-256","x":"f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU","y":"x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0"}]}}
+```
+
 ## Path A: authorization code with PKCE
 
 The full interactive flow. Every client uses PKCE, public and confidential
@@ -740,11 +815,13 @@ curl -sS http://localhost:3000/tenants/demo/.well-known/openid-configuration
   "introspection_endpoint_auth_methods_supported": [
     "client_secret_basic",
     "client_secret_post",
+    "private_key_jwt",
     "none"
   ],
   "revocation_endpoint_auth_methods_supported": [
     "client_secret_basic",
     "client_secret_post",
+    "private_key_jwt",
     "none"
   ],
   "authorization_response_iss_parameter_supported": true,
@@ -873,32 +950,40 @@ curl -sS -D - --get \
   --data-urlencode 'nonce=n-0S6_WzA2Mj' \
   --data-urlencode "code_challenge=$CHALLENGE" \
   --data-urlencode 'code_challenge_method=S256' \
-  'http://localhost:3000/tenants/demo/protocol/openid-connect/auth'
+  'http://localhost:3171/tenants/demo/protocol/openid-connect/auth'
 ```
 
 ```
 HTTP/1.1 200 OK
+x-request-id: 01a13fbd-81c1-7294-9818-8d28aade3532
 content-type: text/html
-content-length: 2372
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-Wl0HqPsMni5vrqbjy4QgLg=='; connect-src 'self'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+content-length: 2528
+Date: Thu, 15 Oct 2026 13:25:46 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 <!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"><title>Sign in</title></head>
 <body>
 <form method="post" action="/tenants/demo/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a0cb08-f324-…">
+  <input type="hidden" name="auth_session_id" value="01a13fbd-81d7-7035-a05f-3ed8c91cac49">
   <label>Username <input type="text" name="username" autocomplete="username"></label>
   <label>Password <input type="password" name="password" autocomplete="current-password"></label>
   <button type="submit">Sign in</button>
 </form>
 <form method="post" action="/tenants/demo/login-actions/authenticate" id="passkey-form">
-  <input type="hidden" name="auth_session_id" value="01a0cb08-f324-…">
+  <input type="hidden" name="auth_session_id" value="01a13fbd-81d7-7035-a05f-3ed8c91cac49">
   <input type="hidden" name="assertion" id="passkey-assertion">
-  <button type="submit" id="passkey-submit">Sign in with a passkey</button>
+  <p><button type="submit" id="passkey-submit">Sign in with a passkey</button></p>
 </form>
 <p id="passkey-error" hidden></p>
 <noscript><p>Signing in with a passkey needs JavaScript, because only the browser can talk to your authenticator. Use your username and password above.</p></noscript>
-<script nonce="JGsq3onA180fWL9O8001pg==">
+<script nonce="Wl0HqPsMni5vrqbjy4QgLg==">
 const form = document.getElementById('passkey-form');
 const field = document.getElementById('passkey-assertion');
 const failure = document.getElementById('passkey-error');
@@ -928,13 +1013,13 @@ form.addEventListener('submit', async (event) => {
   }
 });
 </script>
+<script nonce="Wl0HqPsMni5vrqbjy4QgLg==">window.addEventListener('pageshow', function (event) { if (event.persisted) location.reload(); });</script>
 </body>
 </html>
 ```
 
 (`auth_session_id`, the script's `nonce`, and the `x-request-id` and `Date`
-headers differ per run. The `Content-Security-Policy` and `X-Frame-Options`
-headers are elided above and shown below.)
+headers differ per run.)
 
 The second form is the passkey one, and it has no username field of its
 own: see [Signing in with a passkey](#signing-in-with-a-passkey-and-no-username).
@@ -949,10 +1034,19 @@ page and the passkey enrolment page are the two whose policy is not
 `connect-src 'self'`, since its script fetches the challenge:
 
 ```
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'; script-src 'nonce-JGsq3onA180fWL9O8001pg=='; connect-src 'self'
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-uYonuarTnJ+02aAWxgis8g=='; connect-src 'self'
 ```
 
-That `nonce` is the one on the `<script>` element in the body above, minted
+(Captured on its own stack, the project `odudu-t8d` on
+`http://localhost:3086` at commit `511db0fd`, for the same `demo-spa`
+request.) `form-action` names `http://localhost:8080` beside `'self'`: the
+form's answer is a `302` to this request's `redirect_uri`, and a browser
+holds the redirect a form submission follows to the directive too. The
+origin comes from the request `/authorize` parked, never from the
+submission ([ADR 0018](adr/0018-framing-defence-on-rendered-pages.md)'s
+second amendment).
+
+That `nonce` is the one on the `<script>` element of the page it came with, minted
 per response by whatever renders the page, so the header and the element
 cannot name different values. `'unsafe-inline'` is deliberately absent: an
 injected script on this page still runs nowhere. `connect-src 'self'` is
@@ -968,7 +1062,8 @@ it is also where the request is parked: the scope, `redirect_uri`, `state`,
 `nonce` and `code_challenge` are stored server-side against it and read back
 from there, never from the form submission. Resubmitting a wider scope or a
 different redirect URI with the login POST changes nothing. The
-authentication session lives 30 minutes.
+authentication session lives for the tenant's `login_ttl_seconds` (default
+`1800`, thirty minutes).
 
 `POST` is accepted at the same endpoint with the parameters form-encoded
 (OIDC Core §3.1.2.1), and answers identically:
@@ -1027,7 +1122,9 @@ the other case.
 Three things in that response:
 
 - **`code`** — 32 random bytes, base64url. Only its SHA-256 hash is stored.
-  It lives **60 seconds** and can be redeemed once.
+  It lives for the tenant's `authorization_code_ttl_seconds` — **60
+  seconds** by default, ten minutes at most (RFC 6749 §4.1.2) — and can be
+  redeemed once.
 - **`state`** — echoed back exactly as sent. The client compares it to what
   it sent and abandons the response if it differs.
 - **`iss`** — RFC 9207 §2. The client checks it names the server it started
@@ -1048,12 +1145,143 @@ decides whether that is allowed: see
 **What the client does next:** verify `state` and `iss`, then redeem the
 code. Immediately: it expires in a minute.
 
+#### A refused login says so
+
+A password the server turns down answers `200` with the form again, and the
+form says so. The run below is against `demo` and `ada` as
+[Bootstrap](#a-public-client-with-a-user) seeded them, on a stack started
+with `ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000`;
+`$AUTH_SESSION_ID` is the `auth_session_id` of a fresh `/authorize` form and
+`$LOGIN` the login endpoint, `http://localhost:3171/tenants/demo/login-actions/authenticate`.
+The response is shortened at the passkey script, which is the one
+[the login page](#2-authorize) prints in full:
+
+```bash
+curl -sS -i \
+  --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
+  --data-urlencode 'username=ada' \
+  --data-urlencode 'password=wrong-password' \
+  "$LOGIN" | tr -d '\r' > /tmp/refused-wrong-password.txt
+```
+
+```
+HTTP/1.1 200 OK
+x-request-id: 01a13fbd-b4de-707d-9c69-765926abc2e3
+content-type: text/html
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-kwGGd/DNU6OyCipi1Taykw=='; connect-src 'self'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+content-length: 2488
+Date: Thu, 15 Oct 2026 13:25:59 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Sign in</title></head>
+<body>
+<p role="alert"><strong>Sign-in failed. Check your details and try again.</strong></p>
+<form method="post" action="/tenants/demo/login-actions/authenticate">
+  <input type="hidden" name="auth_session_id" value="01a13fbd-b4cc-7f45-a470-fe600d127131">
+  <label>Username <input type="text" name="username" autocomplete="username" value="ada"></label>
+  <label>Password <input type="password" name="password" autocomplete="current-password" autofocus></label>
+  <button type="submit">Sign in</button>
+</form>
+<form method="post" action="/tenants/demo/login-actions/authenticate" id="passkey-form">
+  <input type="hidden" name="auth_session_id" value="01a13fbd-b4cc-7f45-a470-fe600d127131">
+  <input type="hidden" name="assertion" id="passkey-assertion">
+  <p><button type="submit" id="passkey-submit">Sign in with a passkey</button></p>
+</form>
+<p id="passkey-error" hidden></p>
+<noscript><p>Signing in with a passkey needs JavaScript, because only the browser can talk to your authenticator. Use your username and password above.</p></noscript>
+<script nonce="kwGGd/DNU6OyCipi1Taykw==">…</script>
+</body>
+</html>
+```
+
+The same request for a name nobody holds, compared with that file line by
+line:
+
+```bash
+curl -sS -i \
+  --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
+  --data-urlencode 'username=nobody' \
+  --data-urlencode 'password=wrong-password' \
+  "$LOGIN" | tr -d '\r' > /tmp/refused-unknown-user.txt
+diff /tmp/refused-wrong-password.txt /tmp/refused-unknown-user.txt
+```
+
+```
+2c2
+< x-request-id: 01a13fbd-b4de-707d-9c69-765926abc2e3
+---
+> x-request-id: 01a13fbd-b521-70cb-b665-17c89a7337a4
+4c4
+< content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-kwGGd/DNU6OyCipi1Taykw=='; connect-src 'self'
+---
+> content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-JH3t1PMcC0g+CoWx0yazjg=='; connect-src 'self'
+8c8
+< content-length: 2488
+---
+> content-length: 2491
+20c20
+<   <label>Username <input type="text" name="username" autocomplete="username" value="ada"></label>
+---
+>   <label>Username <input type="text" name="username" autocomplete="username" value="nobody"></label>
+31c31
+< <script nonce="kwGGd/DNU6OyCipi1Taykw==">
+---
+> <script nonce="JH3t1PMcC0g+CoWx0yazjg==">
+```
+
+Five lines differ: the request id, the script nonce (in the header and on
+the element), the length that follows the typed name, and the typed name
+itself. Nothing says whether the account exists.
+
+- **One message per step, whatever the cause.** The password step says
+  `Sign-in failed. Check your details and try again.` for a wrong password,
+  an unknown username, a locked account, a disabled account and an assertion
+  that did not verify alike; the code form says `That code did not work.
+Check it and try again.` for a wrong or replayed code and for a recovery
+  code no list holds; a form that asks only for a recovery code says `That
+recovery code did not work. Check it and try again.` The one message that
+  says more is a recovery code the list **did** hold and the person has
+  already spent ([below](#the-same-code-again-is-refused-as-a-used-code)),
+  because that is their own credential on an attempt already bound to them.
+  A form that only asks for the next factor, or that was submitted with a
+  field missing, claims no failure and carries no message.
+- **The message is an alert and moves focus without a script.** It is
+  `<p role="alert">` above the form, and the first field still to fill
+  carries `autofocus`: the password when the username is given back, the
+  username otherwise, the code on the code form.
+- **The username comes back, nothing else does.** It is escaped like any
+  other interpolated value, and given back only on the password form: a
+  password, a code or a recovery code is never put into a field. A name
+  of more than 254 code points is not reflected at all, and the field comes
+  back empty with the same message, so a megabyte of input is not a
+  megabyte of output.
+- **The page stays at the POST URL.** The address bar shows
+  `/login-actions/authenticate`, not the `/authorize` URL the form came from.
+  A reload asks the browser to confirm re-sending the form, and a confirmed
+  one is another attempt — it counts towards the lockout and the throttle
+  like any other. Back works because every page here is `no-store`
+  ([how Back is handled](#a-login-posted-after-its-authentication-session-expired)):
+  the browser fetches the `/authorize` form again rather than showing a stale
+  one. A redirect to a `GET` that restored the URL was weighed and not
+  built. The session id must stay out of a URL, since the hidden field is the
+  form's whole CSRF defence, so the message could only reach the second page
+  through server-side state keyed to the session, which is a new table to
+  write, expire and read for a cosmetic gain; and the page at the POST URL
+  already carries everything the person needs to try again.
+
 #### What a refused login leaves behind
 
 Every password submitted writes one `login.password` row, accepted or not,
 in the transaction that checked it. The two refusals below both answer
-`200`, in bytes [Brute-force lockout](#brute-force-lockout) shows are
-identical by hash; the rows are where they differ.
+`200`, in bytes that differ only in the name typed, which
+[Brute-force lockout](#brute-force-lockout) shows are identical by hash
+once that is set aside; the rows are where they differ.
 Each carries its own `x-request-id`, which the server adopts as the request
 id and binds into the row, so the query that reads them back is scoped to
 these two requests and to nothing else this document has done. The first
@@ -1186,6 +1414,377 @@ session it establishes lands in the ephemeral cookie exactly as the
 ordinary transcript above shows, with the persistent cookie still sent but
 cleared, `Max-Age=0` — ticking a box the login page never even offered
 (since the checkbox itself is gated on the same setting) changes nothing.
+
+#### A login posted after its authentication session expired
+
+The parked request lives for the tenant's `login_ttl_seconds`, 30 minutes
+by default. A login form left open longer and then submitted is refused with
+nothing issued: no code and no redirect back to the client. The refusal page
+offers **Start sign-in again** when it can rebuild the request, and says only
+"Go back and start again" when it cannot.
+
+Every sign-in page is also sent `cache-control: no-store`, so Back to the form
+that preceded the refusal asks the server for it again rather than showing the
+form with its dead `auth_session_id`. A page restored from a browser's
+back/forward cache is the one case headers do not reach, so a form served to a
+GET carries a small script that reloads it on `pageshow` when
+`event.persisted` is true; a page that answers a POST carries none, because a
+reload would send the POST again. ADR 0029's amendment has the reasoning.
+
+Captured on its own stack, not the one above: the `infra/docker` compose file
+as the project `odudu-17a` on `http://localhost:3094`, built from commit
+`a29df187`, with `demo` seeded as [Bootstrap](#bootstrap) does. A form fetched
+from the authorization endpoint parked the request as
+`01a137db-8c45-74c1-94ea-205ea7fded94`. The row, as stored, then the same row expired with
+`psql` and shown to be (the `-x` listing and the header spaces trimmed):
+
+```sql
+select expires_at - created_at as lifetime, pending_request from authentication_sessions
+  where id = '01a137db-8c45-74c1-94ea-205ea7fded94';
+update authentication_sessions set expires_at = now() - interval '1 second'
+  where id = '01a137db-8c45-74c1-94ea-205ea7fded94';
+select expires_at < now() as expired from authentication_sessions
+  where id = '01a137db-8c45-74c1-94ea-205ea7fded94';
+```
+
+```
+-[ RECORD 1 ]---+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+lifetime        | 00:30:00.00075
+pending_request | {"nonce": null, "scope": "openid", "state": "demo-state", "claims": {"idToken": {}, "userinfo": {}}, "prompt": [], "clientId": "demo-spa", "resource": [], "redirectUri": "http://localhost:8080/callback", "codeChallenge": "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", "codeChallengeMethod": "S256"}
+
+UPDATE 1
+ expired
+---------
+ t
+(1 row)
+```
+
+The tenant's codes at this point, so that nothing below can be said to have
+issued one:
+
+```sql
+select count(*) as codes from authorization_codes
+  where tenant_id = (select id from tenants where name = 'demo');
+```
+
+```
+ codes
+-------
+     4
+(1 row)
+```
+
+The right password, posted against the expired row:
+
+```bash
+curl -sS -D - -X POST \
+  --data-urlencode auth_session_id=01a137db-8c45-74c1-94ea-205ea7fded94 \
+  --data-urlencode username=ada \
+  --data-urlencode password=correct-horse-battery \
+  http://localhost:3094/tenants/demo/login-actions/authenticate
+```
+
+```
+HTTP/1.1 400 Bad Request
+x-request-id: 01a137db-8e6b-77ac-b25e-37ce7a4452eb
+content-type: text/html
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+content-length: 570
+Date: Wed, 14 Oct 2026 00:41:38 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Sign-in error</title></head>
+<body>
+<h1>Can't continue</h1>
+<p>This sign-in attempt is no longer valid. Go back and start again.</p>
+<p><a href="/tenants/demo/protocol/openid-connect/auth?response_type=code&amp;client_id=demo-spa&amp;redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&amp;scope=openid&amp;code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&amp;code_challenge_method=S256&amp;state=demo-state">Start sign-in again</a></p>
+<p><small>invalid_request</small></p>
+</body>
+</html>
+```
+
+The link is this server's own authorization endpoint, rebuilt from the request
+`/authorize` parked and validated, which the `pending_request` above shows:
+`client_id`, `redirect_uri`, `scope`, `state` and the PKCE challenge are its
+`clientId`, `redirectUri`, `scope`, `state` and `codeChallenge`. `/authorize`
+validates it again from scratch when it is followed. The row authenticated
+nothing: it was read only for those parameters, and it is still there because
+the reaper keeps an expired one for
+`ODUDU_RETENTION_AUTHENTICATION_SESSION_SECONDS` (an hour by default) after it
+expires. A request that carried an `id_token_hint`, or a `claims` `sub`, is not
+rebuilt, since the hint token itself is not stored and a request without it
+would no longer be tied to one subject; it is handed back to its client
+instead, in [Returning to the application](#returning-to-the-application)
+below.
+
+Following the link, with its `&amp;` read as `&`:
+
+```bash
+curl -sS -D - 'http://localhost:3171/tenants/demo/protocol/openid-connect/auth?response_type=code&client_id=demo-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&state=demo-state'
+```
+
+The response is `200` with the login form under a new `auth_session_id`
+(`01a13fbe-5249-763c-b2e5-d2f276d734a5`), these headers, and, after the form, the reload script on the
+same nonce the policy names:
+
+```
+HTTP/1.1 200 OK
+x-request-id: 01a13fbe-5240-7c96-8789-6be19bcf58ab
+content-type: text/html
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-A4EUaub9ChHrn95wQwVmDg=='; connect-src 'self'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+content-length: 2528
+Date: Thu, 15 Oct 2026 13:26:39 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+```
+
+```
+<script nonce="A4EUaub9ChHrn95wQwVmDg==">window.addEventListener('pageshow', function (event) { if (event.persisted) location.reload(); });</script>
+```
+
+Then the reaper's work, which is what makes the link impossible: with the row
+deleted, the same post has nothing to rebuild from and the page has no link.
+The deletion, then the post:
+
+```sql
+delete from authentication_sessions where id = '01a137db-8c45-74c1-94ea-205ea7fded94';
+```
+
+```
+DELETE 1
+```
+
+```
+HTTP/1.1 400 Bad Request
+x-request-id: 01a137db-8fa1-7f47-be66-a008a108cfbf
+content-type: text/html
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+content-length: 254
+Date: Wed, 14 Oct 2026 00:41:38 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Sign-in error</title></head>
+<body>
+<h1>Can't continue</h1>
+<p>This sign-in attempt is no longer valid. Go back and start again.</p>
+<p><small>invalid_request</small></p>
+</body>
+</html>
+```
+
+An `auth_session_id` that names nothing at all
+(`00000000-0000-4000-8000-000000000000`, which no row holds) is answered by the same page:
+
+```bash
+curl -sS -D - -X POST \
+  --data-urlencode auth_session_id=00000000-0000-4000-8000-000000000000 \
+  --data-urlencode username=ada \
+  --data-urlencode password=correct-horse-battery \
+  http://localhost:3094/tenants/demo/login-actions/authenticate
+```
+
+```
+HTTP/1.1 400 Bad Request
+x-request-id: 01a137db-facc-7f29-86ed-3823793412ee
+content-type: text/html
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+content-length: 254
+Date: Wed, 14 Oct 2026 00:42:05 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Sign-in error</title></head>
+<body>
+<h1>Can't continue</h1>
+<p>This sign-in attempt is no longer valid. Go back and start again.</p>
+<p><small>invalid_request</small></p>
+</body>
+</html>
+```
+
+No code was issued by any of it, which the count shows against the one read
+before:
+
+```sql
+select count(*) as codes from authorization_codes
+  where tenant_id = (select id from tenants where name = 'demo');
+```
+
+```
+ codes
+-------
+     4
+(1 row)
+```
+
+The 30 minutes are the tenant's `login_ttl_seconds`, which
+`PATCH /admin/tenants/{tenant}/settings` amends between `60` and `86400`
+([Admin paths](admin-paths.md#get-settings-and-patch-settings)).
+
+#### Returning to the application
+
+A request that carried an `id_token_hint`, or a `claims` parameter whose
+`id_token` names a `sub`, parks the subject it names with the request, and a
+rebuilt authorization request could not carry that constraint (the hint token
+is not stored). Its refusal offers **Return to the application** instead: an
+error redirect to the `redirect_uri` the request was validated with, built by
+the same `errorRedirect` the endpoint uses for its other refusals, with
+`error=access_denied` (RFC 6749 section 4.1.2.1, OIDC Core section 3.1.2.6: the
+sign-in was not completed and nothing was granted), the request's `state` and
+the issuer as `iss`. The relying party restarts with a hint of its own. It is
+offered only while the client is enabled and still registers that
+`redirect_uri`. Same stack as above, a request naming `ada` as the `sub`
+(`01a137d6-bf12-771f-81fb-97620b5fd349`), its row, expired, then the right password:
+
+```bash
+curl -sS -G 'http://localhost:3094/tenants/demo/protocol/openid-connect/auth' \
+  --data-urlencode response_type=code --data-urlencode client_id=demo-spa \
+  --data-urlencode redirect_uri=http://localhost:8080/callback \
+  --data-urlencode scope=openid --data-urlencode state=demo-state \
+  --data-urlencode code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM \
+  --data-urlencode code_challenge_method=S256 \
+  --data-urlencode 'claims={"id_token":{"sub":{"value":"01a137d6-bf12-771f-81fb-97620b5fd349"}}}'
+```
+
+The form it rendered parked the request as `01a137db-f90d-7fad-a999-84eb2dd317cb`, and the row holds the
+constraint as `claimsSubject`:
+
+```sql
+select pending_request from authentication_sessions
+  where id = '01a137db-f90d-7fad-a999-84eb2dd317cb';
+update authentication_sessions set expires_at = now() - interval '1 second'
+  where id = '01a137db-f90d-7fad-a999-84eb2dd317cb';
+```
+
+```
+-[ RECORD 1 ]---+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+pending_request | {"nonce": null, "scope": "openid", "state": "demo-state", "claims": {"idToken": {"sub": {"value": "01a137d6-bf12-771f-81fb-97620b5fd349", "essential": false}}, "userinfo": {}}, "prompt": [], "clientId": "demo-spa", "resource": [], "redirectUri": "http://localhost:8080/callback", "claimsSubject": "01a137d6-bf12-771f-81fb-97620b5fd349", "codeChallenge": "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", "codeChallengeMethod": "S256"}
+UPDATE 1
+```
+
+```bash
+curl -sS -D - -X POST \
+  --data-urlencode auth_session_id=01a137db-f90d-7fad-a999-84eb2dd317cb \
+  --data-urlencode username=ada \
+  --data-urlencode password=correct-horse-battery \
+  http://localhost:3094/tenants/demo/login-actions/authenticate
+```
+
+```
+HTTP/1.1 400 Bad Request
+x-request-id: 01a137db-fa94-75e9-bec9-c11977da9446
+content-type: text/html
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+content-length: 428
+Date: Wed, 14 Oct 2026 00:42:05 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Sign-in error</title></head>
+<body>
+<h1>Can't continue</h1>
+<p>This sign-in attempt is no longer valid. Go back and start again.</p>
+<p><a href="http://localhost:8080/callback?error=access_denied&amp;state=demo-state&amp;iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo">Return to the application</a></p>
+<p><small>invalid_request</small></p>
+</body>
+</html>
+```
+
+The link is the client's own callback, carrying the error and the `state` the
+client sent, so the client can tell which of its requests ended and start the
+next one.
+
+#### Signing in with an email address
+
+A tenant whose `login_with_email` is on (default `false`,
+[Admin paths](admin-paths.md#lifetimes-and-signing-in-with-an-email-address))
+takes a verified email address in the same field as a username, matched
+without regard to case. An input carrying `@` names the subject whose
+verified address it is before any subject whose username it is, since
+anybody may choose a username that copies an address but only its owner
+verified it; an address nobody holds, one that is not verified, and one two
+subjects hold in different cases all answer exactly as an unknown username
+does, through the same statements, so the form says nothing about which
+addresses exist. A wrong password counts towards the lockout of the
+subject the address resolves to.
+
+Captured on the project `odudu-17h` on `http://localhost:3171`, in a tenant `email-demo` seeded for it with
+`odudu seed --tenant email-demo --client email-spa --redirect-uri http://localhost:8080/callback --user grace --password correct-horse-battery --email Grace@Example.com`,
+the setting turned on with
+`odudu seed tenant --name email-demo --set login_with_email=true`, and the
+address marked verified directly, with
+`update users set email_verified = true where email = 'Grace@Example.com'`
+in that tenant, in place of the admin API's profile `PATCH`. The form names
+the field for both, and the address signs in typed in another case:
+
+```bash
+AUTHORIZE='http://localhost:3171/tenants/email-demo/protocol/openid-connect/auth?response_type=code&client_id=email-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&state=s&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'
+PAGE=$(curl -sS "$AUTHORIZE")
+echo "$PAGE" | grep -o '<label>[^<]*<input type="text"[^>]*>'
+AUTH_SESSION_ID=$(echo "$PAGE" | sed -n 's/.*name="auth_session_id" value="\([^"]*\)".*/\1/p' | head -1)
+curl -sS -D - -o /dev/null \
+  --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
+  --data-urlencode 'username=GRACE@example.com' \
+  --data-urlencode 'password=correct-horse-battery' \
+  http://localhost:3171/tenants/email-demo/login-actions/authenticate \
+  | tr -d '\r' | grep -E '^HTTP|^location'
+```
+
+```
+<label>Username or email <input type="text" name="username" autocomplete="username">
+HTTP/1.1 302 Found
+location: http://localhost:8080/callback?code=m_AGVWoDQOIiXXSQXiBjo6AdthcOo__zmLqpnJLKmFU&state=s&iss=http%3A%2F%2Flocalhost%3A3171%2Ftenants%2Femail-demo
+```
+
+A wrong password for the held address and any password for an address
+nobody holds return byte-identical pages, once the three values that differ
+— the form's own `auth_session_id`, the passkey script's nonce, and the
+address typed, which the form gives back — are set aside:
+
+```bash
+for login in nobody@example.com grace@example.com; do
+  PAGE=$(curl -sS "$AUTHORIZE")
+  AUTH_SESSION_ID=$(echo "$PAGE" | sed -n 's/.*name="auth_session_id" value="\([^"]*\)".*/\1/p' | head -1)
+  curl -sS -w '%{http_code} ' \
+    --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
+    --data-urlencode "username=$login" \
+    --data-urlencode 'password=wrong-password' \
+    http://localhost:3171/tenants/email-demo/login-actions/authenticate \
+    | sed -e "s/$AUTH_SESSION_ID/AUTH_SESSION_ID/g" -e 's/nonce="[^"]*"/nonce="NONCE"/' \
+          -e "s/value=\"$login\"/value=\"LOGIN\"/" \
+    | shasum -a 256
+done
+```
+
+```
+dd856882a68ba289d87a9a1d39efefb1c8bc6679b6364e198c464e280fa529a0  -
+dd856882a68ba289d87a9a1d39efefb1c8bc6679b6364e198c464e280fa529a0  -
+```
 
 ### 4. `/token`
 
@@ -1589,7 +2188,10 @@ through the group) onto the same access token:
 own membership is `/engineering/backend`, not `/engineering` too — but
 `roles` carries what those memberships and their ancestors reach, which is
 why `engineering-lead` appears even though nothing ever joined `ada` to
-`/engineering` itself.
+`/engineering` itself. `seed join-group` is one way in; the admin API's
+`PUT /admin/tenants/{tenant}/subjects/:id/groups` is the other, and refuses
+a membership whose roles reach past its caller's own
+([docs/admin-paths.md](admin-paths.md)).
 
 ### 5. `/userinfo`
 
@@ -2565,7 +3167,10 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 ```
 
 The subject, the `users` row, the password credential and the tenant's
-default roles are all created in one transaction, and the `verify_email`
+default roles and groups — those `PUT /admin/tenants/{tenant}/roles/{id}/default`
+and `PUT /admin/tenants/{tenant}/groups/{id}/default` mark, none of which may
+reach an admin capability ([docs/admin-paths.md](admin-paths.md)) — are all
+created in one transaction, and the `verify_email`
 token is issued inside that same transaction — the mail goes out only after
 it commits, the same ordering [Address verification](#address-verification)
 establishes. With `ODUDU_SMTP_HOST` unset, the link lands in the container's
@@ -2954,13 +3559,13 @@ subject with no TOTP credential is given the `configure-totp` required
 action at their next login, and the login does not complete until they have
 enrolled.
 
-Every command and response below was executed against the compose stack,
-and the HTML bodies are the bytes it served: line breaks, indentation and
-all. They were line-wrapped for readability until 2026-09-17, which turned
-out to mean Prettier had been rewriting them — `<meta charset="utf-8">`
-became `<meta charset="utf-8" />`, and the markup a reader saw was the
-formatter's rather than the server's. A fenced response block carries no
-language tag for that reason.
+Captured on a stack of its own: the `infra/docker` compose file as the
+project `odudu-17a` on `http://localhost:3094`, its `odudu` service built
+from commit `a29df187`, started on an empty volume, with this section, the
+`otp-demo` half of [Recovery codes](#recovery-codes) and its `rc8-demo` half
+run front to back against it. The HTML
+bodies are the bytes it served, line breaks, indentation and all. A fenced
+response block carries no language tag, so Prettier leaves them alone.
 
 `otp_required` is a tenant setting, which `seed tenant --set` applies:
 
@@ -2973,8 +3578,8 @@ odudu seed tenant --name otp-demo --set otp_required=true
 ```
 
 ```
-{"created":true,"tenant":"otp-demo","tenantId":"01a0cb14-…","clientId":"otp-spa","userSubjectId":"01a0cb14-…"}
-{"command":"tenant","created":false,"tenant":"otp-demo","tenantId":"01a0cb14-17d8-7995-8f18-71f5eee33e91","settings":["otp_required"]}
+{"created":true,"tenant":"otp-demo","tenantId":"01a137d3-\u2026","clientId":"otp-spa","userSubjectId":"01a137d3-\u2026"}
+{"command":"tenant","created":false,"tenant":"otp-demo","tenantId":"01a137d3-93e5-7a35-b789-277980331f13","settings":["otp_required"]}
 ```
 
 `created` is `false` because the line above it made the tenant: `seed tenant`
@@ -2989,18 +3594,18 @@ second factor is decided before somebody has said who they are, because
 which account a code belongs to is not knowable until then.
 
 ```bash
-curl -sS 'http://localhost:3000/tenants/otp-demo/protocol/openid-connect/auth?response_type=code&client_id=otp-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'
+curl -sS 'http://localhost:3094/tenants/otp-demo/protocol/openid-connect/auth?response_type=code&client_id=otp-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'
 ```
 
-The `auth_session_id` in that form — `01a0cb14-1a09-7646-a2be-19b4aff8effe`
+The `auth_session_id` in that form — `01a137d3-98b1-7904-aeda-9a6709b81b53`
 in this run — is what every request below carries. Posting the correct
 password answers 200 with an enrolment page rather than 302 with a code:
 the password was accepted, and the pending action is what stops the login
 from completing (no `set-cookie`, no `code`).
 
 ```bash
-curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a0cb14-1a09-7646-a2be-19b4aff8effe' \
+curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a137d3-98b1-7904-aeda-9a6709b81b53' \
   --data-urlencode 'username=ada' \
   --data-urlencode 'password=correct-horse-battery'
 ```
@@ -3013,11 +3618,11 @@ curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authentica
 <h1>Set up your authenticator</h1>
 <p>Scan this with your authenticator app, or enter the key by hand.</p>
 <svg …>…</svg>
-<p><code>otpauth://totp/otp-demo:ada?secret=4KF3RKE7EPG5TSMGXTHTXPNVN2P3NPP2&amp;issuer=otp-demo&amp;algorithm=SHA1&amp;digits=6&amp;period=30</code></p>
-<p>Key: <code>4KF3RKE7EPG5TSMGXTHTXPNVN2P3NPP2</code></p>
+<p><code>otpauth://totp/otp-demo:ada?secret=BYIQDMIGLQSMNOGKTZMVAGWBLWEOE7ZY&amp;issuer=otp-demo&amp;algorithm=SHA1&amp;digits=6&amp;period=30</code></p>
+<p>Key: <code>BYIQDMIGLQSMNOGKTZMVAGWBLWEOE7ZY</code></p>
 <form method="post" action="/tenants/otp-demo/login-actions/required-action?action=configure-totp">
-  <input type="hidden" name="auth_session_id" value="01a0cb14-1a09-7646-a2be-19b4aff8effe">
-  <input type="hidden" name="secret" value="4KF3RKE7EPG5TSMGXTHTXPNVN2P3NPP2">
+  <input type="hidden" name="auth_session_id" value="01a137d3-98b1-7904-aeda-9a6709b81b53">
+  <input type="hidden" name="secret" value="BYIQDMIGLQSMNOGKTZMVAGWBLWEOE7ZY">
   <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
   <button type="submit">Confirm</button>
 </form>
@@ -3038,77 +3643,7 @@ The submission that proves a code also writes the one `credential` audit
 row, `otp.enrolled`, naming the subject; a wrong code writes none
 (`packages/protocol-oidc/tests/audit-credentials.int.test.ts`).
 
-### Confirming the secret enrols it
-
-```bash
-curl -sS -X POST \
-  'http://localhost:3000/tenants/otp-demo/login-actions/required-action?action=configure-totp' \
-  --data-urlencode 'auth_session_id=01a0cb14-1a09-7646-a2be-19b4aff8effe' \
-  --data-urlencode 'secret=4KF3RKE7EPG5TSMGXTHTXPNVN2P3NPP2' \
-  --data-urlencode 'code=515303'
-```
-
-```
-<!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Sign in</title></head>
-<body>
-<form method="post" action="/tenants/otp-demo/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a0cb14-1a09-7646-a2be-19b4aff8effe">
-  <label>Username <input type="text" name="username" autocomplete="username"></label>
-  <label>Password <input type="password" name="password" autocomplete="current-password"></label>
-  <button type="submit">Sign in</button>
-</form>
-<form method="post" action="/tenants/otp-demo/login-actions/authenticate" id="passkey-form">
-  <input type="hidden" name="auth_session_id" value="01a0cb14-1a09-7646-a2be-19b4aff8effe">
-  <input type="hidden" name="assertion" id="passkey-assertion">
-  <button type="submit" id="passkey-submit">Sign in with a passkey</button>
-</form>
-<p id="passkey-error" hidden></p>
-<noscript><p>Signing in with a passkey needs JavaScript, because only the browser can talk to your authenticator. Use your username and password above.</p></noscript>
-<script nonce="dKVAxRYqmhdOX9rznIsqXQ==">
-const form = document.getElementById('passkey-form');
-const field = document.getElementById('passkey-assertion');
-const failure = document.getElementById('passkey-error');
-const fromBase64Url = (value) =>
-  Uint8Array.from(atob(value.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
-form.addEventListener('submit', async (event) => {
-  if (field.value !== '') return;
-  event.preventDefault();
-  failure.hidden = true;
-  try {
-    const offered = await fetch('/tenants/otp-demo/login-actions/passkey-challenge', {
-      method: 'POST',
-      headers: { 'content-type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ auth_session_id: form.auth_session_id.value }),
-    });
-    if (!offered.ok) throw new Error('this server is not offering passkeys');
-    const options = await offered.json();
-    const assertion = await navigator.credentials.get({
-      publicKey: { ...options, challenge: fromBase64Url(options.challenge) },
-    });
-    field.value = JSON.stringify(assertion.toJSON());
-    form.submit();
-  } catch (caught) {
-    failure.textContent =
-      'Your device did not finish signing in — ' + (caught && caught.message ? caught.message : 'the request was cancelled') + '. You can try again.';
-    failure.hidden = false;
-  }
-});
-</script>
-</body>
-</html>
-```
-
-The parked request survives the detour — same `auth_session_id` — and the
-login form comes back, passkey button and all
-([Signing in with a passkey](#signing-in-with-a-passkey-and-no-username));
-the `nonce` differs per run. The password is asked for again because nothing
-was
-written down for it: a factor that finishes a login is deliberately not
-recorded, so that a login refused after authentication (an `id_token_hint`
-naming somebody else, an unverified address) cannot be retried with the
-factor already ticked off.
+### Confirming the secret enrols it, and is the login's second factor
 
 This run generated its codes with the algorithm's own implementation rather
 than a phone:
@@ -3116,19 +3651,139 @@ than a phone:
 ```bash
 node --input-type=module -e "
 import { totpCode, totpCounter } from './packages/crypto/src/service/totp.ts';
-console.log(totpCode('4KF3RKE7EPG5TSMGXTHTXPNVN2P3NPP2', totpCounter(new Date())));
+console.log(totpCode('BYIQDMIGLQSMNOGKTZMVAGWBLWEOE7ZY', totpCounter(new Date())));
 "
 ```
 
 ```
-515303
+474168
 ```
 
-### The same password now answers with a code form
+```bash
+curl -sS -i -X POST \
+  'http://localhost:3094/tenants/otp-demo/login-actions/required-action?action=configure-totp' \
+  --data-urlencode 'auth_session_id=01a137d3-98b1-7904-aeda-9a6709b81b53' \
+  --data-urlencode 'secret=BYIQDMIGLQSMNOGKTZMVAGWBLWEOE7ZY' \
+  --data-urlencode 'code=474168'
+```
+
+```
+HTTP/1.1 200 OK
+x-request-id: 01a137d3-99f5-7c70-ba82-a75606f1c447
+content-type: text/html
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+content-length: 1078
+Date: Wed, 14 Oct 2026 00:32:57 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Save your recovery codes</title></head>
+<body>
+<h1>Save your recovery codes</h1>
+<p>Each of these signs you in once, in place of your second factor, if you lose it. <strong>This is the only time they are shown.</strong> Print them or put them in a password manager before you continue — nobody, including an administrator, can show them to you again.</p>
+<ol>
+  <li><code>TKBYN-J8QGH</code></li>
+  <li><code>NMFNF-273QV</code></li>
+  <li><code>WMTKH-5WFJ9</code></li>
+  <li><code>AWXJH-9Q43E</code></li>
+  <li><code>NTPYA-9GJNJ</code></li>
+  <li><code>NS5BM-Z503B</code></li>
+  <li><code>40HQS-ZTRXC</code></li>
+  <li><code>STXZG-CGAQF</code></li>
+  <li><code>TFF63-YK29X</code></li>
+  <li><code>TGGRZ-1EF3V</code></li>
+</ol>
+<form method="post" action="/tenants/otp-demo/login-actions/required-action?action=generate-recovery-codes">
+  <input type="hidden" name="auth_session_id" value="01a137d3-98b1-7904-aeda-9a6709b81b53">
+  <button type="submit">I have saved these codes</button>
+</form>
+</body>
+</html>
+```
+
+The parked request survives the detour — same `auth_session_id` — and it
+does not go back to the login form. The code that proved the authenticator
+is a one-time password verified in this authentication session, so it is
+recorded as the session's `otp` factor: the flow, re-read for ada now that
+she holds a TOTP credential, asks for a password and a code, and both are
+already satisfied here. Nothing is asked twice, and nothing waits for the
+next 30-second step.
+
+What the login still owes is the recovery path the enrolment created, and
+that page is [Recovery codes](#recovery-codes), below — the ten codes above
+are the set it prints. The page's policy names `http://localhost:8080`
+beside `'self'` in `form-action`: its form's answer is the `302` to this
+request's client, and a browser holds that redirect to the directive too
+([ADR 0018](adr/0018-framing-defence-on-rendered-pages.md)'s second
+amendment). Acknowledging it finishes the login:
 
 ```bash
-curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a0cb14-1a09-7646-a2be-19b4aff8effe' \
+curl -sS -i -X POST \
+  'http://localhost:3094/tenants/otp-demo/login-actions/required-action?action=generate-recovery-codes' \
+  --data-urlencode 'auth_session_id=01a137d3-98b1-7904-aeda-9a6709b81b53'
+```
+
+```
+HTTP/1.1 302 Found
+x-request-id: 01a137d3-9aef-775e-a7a6-a250bd854b55
+set-cookie: otp-demo-session=01a137d3-9b25-7358-b71d-b4293a769a47:57eh4x7sl2aNGrjf91JFD2mnXWmy-ktG6t0dz5uTDfA; HttpOnly; SameSite=Lax; Path=/
+set-cookie: otp-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+location: http://localhost:8080/callback?code=TS_QW6o-8Y1kzRj1_rRh2hQ4FbtDaLhFaz9tBf5F6sw&state=xyz&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fotp-demo
+content-length: 0
+Date: Wed, 14 Oct 2026 00:32:57 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+```
+
+One password and one code, and the browser is at the client with a code and
+a session cookie of the form `<session id>:<secret>`.
+
+### What two factors do to the ID token
+
+```bash
+curl -sS -X POST http://localhost:3094/tenants/otp-demo/protocol/openid-connect/token \
+  -d grant_type=authorization_code \
+  -d code=TS_QW6o-8Y1kzRj1_rRh2hQ4FbtDaLhFaz9tBf5F6sw \
+  -d client_id=otp-spa \
+  --data-urlencode 'redirect_uri=http://localhost:8080/callback' \
+  -d code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
+```
+
+The ID token's payload (decoded; `id_token` itself is the usual three
+base64url segments):
+
+```json
+{
+  "sub": "01a137d3-946e-727f-91c9-3c754e9981c3",
+  "iss": "http://localhost:3094/tenants/otp-demo",
+  "aud": "otp-spa",
+  "iat": 1791937977,
+  "exp": 1791938277,
+  "sid": "01a137d3-9b25-7358-b71d-b4293a769a47",
+  "amr": ["otp", "pwd"],
+  "acr": "2"
+}
+```
+
+`amr` names both factors, in RFC 8176's registry spellings rather than this
+server's internal authenticator names, and `acr` is `"2"` — a statement
+about this login, recorded on the session when it was established, not
+re-derived at issuance from what the subject happens to have enrolled by
+then. The enrolment's code is the `otp` in it.
+
+### The next login answers the password with a code form
+
+A fresh attempt, parked by the same `/authorize` as above, for a new
+`auth_session_id`, `01a137d3-9bc1-7987-8c23-f806ce89510f`:
+
+```bash
+curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a137d3-9bc1-7987-8c23-f806ce89510f' \
   --data-urlencode 'username=ada' \
   --data-urlencode 'password=correct-horse-battery'
 ```
@@ -3136,13 +3791,13 @@ curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authentica
 ```
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><title>Sign in</title></head>
+<head><meta charset="utf-8"><title>Enter your authentication code</title></head>
 <body>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a0cb14-1a09-7646-a2be-19b4aff8effe">
+  <input type="hidden" name="auth_session_id" value="01a137d3-9bc1-7987-8c23-f806ce89510f">
   <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
   <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>
-  <button type="submit">Sign in</button>
+  <button type="submit">Verify</button>
 </form>
 </body>
 </html>
@@ -3160,103 +3815,59 @@ form that named the account would let a second factor answer for somebody
 who never passed the first one.
 
 Submitting the code that confirmed the enrolment does **not** work — it
-answers with the same form again:
+answers with the same form again, saying so. (This one and the two recovery
+code refusals below were captured again on the project `odudu-17g` on
+`http://localhost:3000`, built from commit `7fc38b58`, where the enrolment's
+code was `380681`, once a refusal began to carry a message.)
 
 ```bash
-curl -sS -o /dev/null -w '%{http_code}\n' -X POST \
-  http://localhost:3000/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a0cb14-1a09-7646-a2be-19b4aff8effe' \
-  --data-urlencode 'code=515303'
+curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a13f65-6fc2-798d-b022-fab2a73714f1' \
+  --data-urlencode 'code=380681'
 ```
 
 ```
-200
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Enter your authentication code</title></head>
+<body>
+<p role="alert"><strong>That code did not work. Check it and try again.</strong></p>
+<form method="post" action="/tenants/otp-demo/login-actions/authenticate">
+  <input type="hidden" name="auth_session_id" value="01a13f65-6fc2-798d-b022-fab2a73714f1">
+  <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" autofocus></label>
+  <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>
+  <button type="submit">Verify</button>
+</form>
+</body>
+</html>
 ```
+
+The message is the one a wrong code gets, whether the code was replayed,
+mistyped or never valid; the code field is the one that takes focus, and the
+recovery field beside it does not.
 
 RFC 6238 §5.2: a verifier must not accept an OTP twice. The credential
 stores the time step of the last code it accepted, and the enrolment's own
-code spent that step when it created the credential. The next one is
-accepted — and the login still does not finish, because enrolling the
-factor owed a recovery path for it:
+code spent that step when it created the credential. A code from the next
+step is accepted, and with nothing owed any more it finishes the login:
 
 ```bash
-curl -sS -i -X POST http://localhost:3000/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a0cb14-1a09-7646-a2be-19b4aff8effe' \
-  --data-urlencode 'code=520954'
-```
-
-```
-HTTP/1.1 200 OK
-content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
-x-frame-options: DENY
-content-length: 1078
-```
-
-That page is [Recovery codes](#recovery-codes), which is the rest of this
-walkthrough. Acknowledging it puts the parked login back where it was —
-waiting for a code, with the password it already accepted not asked for
-again — and the next code finishes it:
-
-```bash
-curl -sS -i -X POST http://localhost:3000/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a0cb14-1a09-7646-a2be-19b4aff8effe' \
-  --data-urlencode 'code=950997'
+curl -sS -i -X POST http://localhost:3094/tenants/otp-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a137d3-9bc1-7987-8c23-f806ce89510f' \
+  --data-urlencode 'code=164806'
 ```
 
 ```
 HTTP/1.1 302 Found
-set-cookie: otp-demo-session=01a0cb14-c112-717a-afc9-6d13c1581528; HttpOnly; SameSite=Lax; Path=/
+x-request-id: 01a137d3-9cf6-70e7-9bec-7754f5fb6e3d
+set-cookie: otp-demo-session=01a137d3-9d0a-760c-aa16-a26add0afde0:zTqnr3XE8dypwf4XLpxGBiuJ2OHjtAiWDmJs-tLj3Wk; HttpOnly; SameSite=Lax; Path=/
 set-cookie: otp-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-location: http://localhost:8080/callback?code=qLJc6jy_z9EFISBTU4WLjujP498MmuZ_TvPtCfq9YqQ&state=xyz&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fotp-demo
-```
-
-Run again from an empty volume after the session cookie gained its secret
-(`0071_session_secret.sql`), the same steps end in this — that run's own
-values throughout, the cookie now `<session id>:<secret>`:
-
-```
-HTTP/1.1 302 Found
-set-cookie: otp-demo-session=01a0de16-cef0-7a20-8596-48316e1ddd13:G4JLrmZkQCpvIOgXn4ZtyaaOE3l3HEz_aVEdA2-w3RM; HttpOnly; SameSite=Lax; Path=/
-set-cookie: otp-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-location: http://localhost:8080/callback?code=GpmtUiLT0pnxZ09_veMPvNmiOCwffRqGvK4mn8WT7sU&state=xyz&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fotp-demo
+location: http://localhost:8080/callback?code=REWfO6a8FMPFBqjUJBmd7EFLtUciTh0GfCLSyFWNwl4&state=xyz&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fotp-demo
 content-length: 0
+Date: Wed, 14 Oct 2026 00:32:57 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 ```
-
-The rest of this section and the next continue the first run.
-
-### What two factors do to the ID token
-
-```bash
-curl -sS -X POST http://localhost:3000/tenants/otp-demo/protocol/openid-connect/token \
-  -d grant_type=authorization_code \
-  -d code=qLJc6jy_z9EFISBTU4WLjujP498MmuZ_TvPtCfq9YqQ \
-  -d client_id=otp-spa \
-  --data-urlencode 'redirect_uri=http://localhost:8080/callback' \
-  -d code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
-```
-
-The ID token's payload (decoded; `id_token` itself is the usual three
-base64url segments):
-
-```json
-{
-  "sub": "01a0cb14-181a-702c-91b0-644f2a59e9e4",
-  "iss": "http://localhost:3000/tenants/otp-demo",
-  "aud": "otp-spa",
-  "iat": 1790113562,
-  "exp": 1790113862,
-  "sid": "01a0cb14-c112-717a-afc9-6d13c1581528",
-  "amr": ["otp", "pwd"],
-  "acr": "2"
-}
-```
-
-`amr` names both factors, in RFC 8176's registry spellings rather than this
-server's internal authenticator names, and `acr` is `"2"` — a statement
-about this login, recorded on the session when it was established, not
-re-derived at issuance from what the subject happens to have enrolled by
-then.
 
 ## Recovery codes
 
@@ -3273,43 +3884,14 @@ Every render of the page writes one `credential` audit row,
 forced first set included, and again for each set a re-render issues in
 its place. The row carries no code.
 
-Every command and response below was executed against the compose stack,
-continuing the same `otp-demo` tenant and the same `auth_session_id`.
+Every command and response below continues the same stack, the same
+`otp-demo` tenant and, to begin with, the same `auth_session_id`.
 
 ### The one time the codes are shown
 
-```bash
-curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a0cb14-1a09-7646-a2be-19b4aff8effe' \
-  --data-urlencode 'code=520954'
-```
-
-```
-<!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Save your recovery codes</title></head>
-<body>
-<h1>Save your recovery codes</h1>
-<p>Each of these signs you in once, in place of your second factor, if you lose it. <strong>This is the only time they are shown.</strong> Print them or put them in a password manager before you continue — nobody, including an administrator, can show them to you again.</p>
-<ol>
-  <li><code>B0GFJ-TN627</code></li>
-  <li><code>5K5SK-JJQAD</code></li>
-  <li><code>TX5Y1-AGVHE</code></li>
-  <li><code>2BAEP-FG8H4</code></li>
-  <li><code>58JZS-YMN95</code></li>
-  <li><code>RJ311-Z6554</code></li>
-  <li><code>ZS2KM-WSTXK</code></li>
-  <li><code>DE59V-HMS1Y</code></li>
-  <li><code>TZTD3-1QVP7</code></li>
-  <li><code>6Q9ZN-8QQSZ</code></li>
-</ol>
-<form method="post" action="/tenants/otp-demo/login-actions/required-action?action=generate-recovery-codes">
-  <input type="hidden" name="auth_session_id" value="01a0cb14-1a09-7646-a2be-19b4aff8effe">
-  <button type="submit">I have saved these codes</button>
-</form>
-</body>
-</html>
-```
+The page is the response to the enrolment's own submission, printed in full
+under [Confirming the secret enrols it](#confirming-the-secret-enrols-it-and-is-the-logins-second-factor)
+above.
 
 Ten characters each from Crockford's 32-character base32 alphabet, printed
 as two groups of five: 32^10, which is 2^50 per code. The alphabet's
@@ -3323,7 +3905,7 @@ hash with the same parameters as a password — nothing anywhere holds the
 plaintext, so no later page and no administrator can print these again:
 
 ```bash
-docker compose -f infra/docker/compose.yaml exec -T postgres \
+docker compose -p odudu-17a -f infra/docker/compose.yaml exec -T postgres \
   psql -U odudu -d odudu -c \
   "SELECT type, left(secret_data->>'hash', 30) AS hash_prefix,
           secret_data->>'usedAt' AS used_at
@@ -3356,57 +3938,22 @@ set instead would cost less and be worse: a second render of a live secret
 is the one thing this page must not do.
 
 The acknowledgement carries no code back — only the session id. It says the
-page was read, and it is what completes the action:
-
-```bash
-curl -sS -X POST \
-  'http://localhost:3000/tenants/otp-demo/login-actions/required-action?action=generate-recovery-codes' \
-  --data-urlencode 'auth_session_id=01a0cb14-1a09-7646-a2be-19b4aff8effe'
-```
-
-```
-<!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Sign in</title></head>
-<body>
-<form method="post" action="/tenants/otp-demo/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a0cb14-1a09-7646-a2be-19b4aff8effe">
-  <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
-  <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>
-  <button type="submit">Sign in</button>
-</form>
-</body>
-</html>
-```
-
-The password is not asked for again, unlike the return from the TOTP
-enrolment page above: that enrolment finished the login's first factor and a
-factor that finishes a login is not written down, whereas here the password
-had a second factor after it and therefore was.
+page was read, and it is what completes the action. With nothing else owed,
+it is also what finishes the login: its response is the `302` shown at the
+end of [Confirming the secret](#confirming-the-secret-enrols-it-and-is-the-logins-second-factor).
 
 ### Signing in with one, in place of the second factor
 
 A fresh attempt, and this time the authenticator is gone. The request is
 parked and the password form rendered exactly as
 [Path A](#path-a-authorization-code-with-pkce) shows, for a new
-`auth_session_id`:
+`auth_session_id`, `01a137d3-9df0-76d0-b626-fe71c6edce91`. The password step runs as always, and answers
+with the code form — the same two fields, because nothing about this
+submission says the authenticator is gone:
 
 ```bash
-curl -sS 'http://localhost:3000/tenants/otp-demo/protocol/openid-connect/auth?response_type=code&client_id=otp-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256' \
-  | sed -n '/name="auth_session_id"/{s/.*value="\([^"]*\)".*/\1/p;q;}'
-```
-
-```
-01a0cb15-3f15-7d90-ae60-849e9cb1e156
-```
-
-The password step runs as always, and answers with the code form — the same
-two fields, because nothing about this submission says the authenticator is
-gone:
-
-```bash
-curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a0cb15-3f15-7d90-ae60-849e9cb1e156' \
+curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a137d3-9df0-76d0-b626-fe71c6edce91' \
   --data-urlencode 'username=ada' \
   --data-urlencode 'password=correct-horse-battery'
 ```
@@ -3414,13 +3961,13 @@ curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authentica
 ```
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><title>Sign in</title></head>
+<head><meta charset="utf-8"><title>Enter your authentication code</title></head>
 <body>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a0cb15-3f15-7d90-ae60-849e9cb1e156">
+  <input type="hidden" name="auth_session_id" value="01a137d3-9df0-76d0-b626-fe71c6edce91">
   <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
   <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>
-  <button type="submit">Sign in</button>
+  <button type="submit">Verify</button>
 </form>
 </body>
 </html>
@@ -3429,28 +3976,21 @@ curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authentica
 The second field is what gets filled:
 
 ```bash
-curl -sS -i -X POST http://localhost:3000/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a0cb15-3f15-7d90-ae60-849e9cb1e156' \
-  --data-urlencode 'recovery_code=B0GFJ-TN627'
+curl -sS -i -X POST http://localhost:3094/tenants/otp-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a137d3-9df0-76d0-b626-fe71c6edce91' \
+  --data-urlencode 'recovery_code=TKBYN-J8QGH'
 ```
 
 ```
 HTTP/1.1 302 Found
-set-cookie: otp-demo-session=01a0cb15-3fb1-77be-bcfd-3f9ca32ae70a; HttpOnly; SameSite=Lax; Path=/
+x-request-id: 01a137d3-9ea5-72a6-b4d1-3d451af1a220
+set-cookie: otp-demo-session=01a137d3-9ee4-774c-a1f0-7b51a53740c3:j1qO2TJFYsDsCP29koTcK5BgwzgDtSYtdpuBiFsEXD4; HttpOnly; SameSite=Lax; Path=/
 set-cookie: otp-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-location: http://localhost:8080/callback?code=zOxWHDFwzAqNIzzrBtz_NYjiMNrYEdqfJtQEYA-92yY&state=xyz&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fotp-demo
-```
-
-Run again from an empty volume after the session cookie gained its secret
-(`0071_session_secret.sql`), the same steps end in this — that run's own
-values throughout, the cookie now `<session id>:<secret>`:
-
-```
-HTTP/1.1 302 Found
-set-cookie: otp-demo-session=01a0de16-cf8a-7f82-8d04-2f218f9f5247:LMW3RRiOwkBfRlbtm4WMasLE6ZjAJqjvXg2s6V0wero; HttpOnly; SameSite=Lax; Path=/
-set-cookie: otp-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-location: http://localhost:8080/callback?code=QROXhrX5sUTvoQ51M80dT_N7LABiXqyLkjDuSQCqwts&state=xyz&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fotp-demo
+location: http://localhost:8080/callback?code=5I3UGs_lZLJ8IzO16HHeB478eel2UUMkRKTQ7rbbDQs&state=xyz&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fotp-demo
 content-length: 0
+Date: Wed, 14 Oct 2026 00:32:58 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 ```
 
 The same success a password-and-code login gets: a session cookie and a code
@@ -3463,12 +4003,12 @@ The ID token says less about this login than the two-factor one above:
 
 ```json
 {
-  "sub": "01a0cb14-181a-702c-91b0-644f2a59e9e4",
-  "iss": "http://localhost:3000/tenants/otp-demo",
+  "sub": "01a137d3-946e-727f-91c9-3c754e9981c3",
+  "iss": "http://localhost:3094/tenants/otp-demo",
   "aud": "otp-spa",
-  "iat": 1790113562,
-  "exp": 1790113862,
-  "sid": "01a0cb15-3fb1-77be-bcfd-3f9ca32ae70a",
+  "iat": 1791937978,
+  "exp": 1791938278,
+  "sid": "01a137d3-9ee4-774c-a1f0-7b51a53740c3",
   "amr": ["pwd"],
   "acr": "2"
 }
@@ -3485,14 +4025,12 @@ mislabelling is not.
 ### The same code again is refused _as_ a used code
 
 A third attempt, opened the same way as the one above — a `/authorize` that
-parks the request, then the password, which answers 200 with the code form.
-Both were run; only the session id differs from the two responses just
-shown, so they are not repeated here.
+parks the request, then the password, which answers 200 with the code form:
 
 ```bash
 curl -sS -o /dev/null -w '%{http_code}\n' -X POST \
   http://localhost:3000/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a0cb15-4003-7130-90bd-48389128b119' \
+  --data-urlencode 'auth_session_id=01a13f65-709f-77fd-916a-4dde358b7bbc' \
   --data-urlencode 'username=ada' \
   --data-urlencode 'password=correct-horse-battery'
 ```
@@ -3506,21 +4044,21 @@ space where the hyphen was:
 
 ```bash
 curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a0cb15-4003-7130-90bd-48389128b119' \
-  --data-urlencode 'recovery_code=b0gfj tn627'
+  --data-urlencode 'auth_session_id=01a13f65-709f-77fd-916a-4dde358b7bbc' \
+  --data-urlencode 'recovery_code=75nft 0nhhg'
 ```
 
 ```
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><title>Sign in</title></head>
+<head><meta charset="utf-8"><title>Enter your authentication code</title></head>
 <body>
-<p><strong>You have already used that recovery code. Try another one from your list.</strong></p>
+<p role="alert"><strong>You have already used that recovery code. Try another one from your list.</strong></p>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a0cb15-4003-7130-90bd-48389128b119">
-  <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
+  <input type="hidden" name="auth_session_id" value="01a13f65-709f-77fd-916a-4dde358b7bbc">
+  <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" autofocus></label>
   <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>
-  <button type="submit">Sign in</button>
+  <button type="submit">Verify</button>
 </form>
 </body>
 </html>
@@ -3534,27 +4072,28 @@ which a wrong code does not:
 
 ```bash
 curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a0cb15-4003-7130-90bd-48389128b119' \
+  --data-urlencode 'auth_session_id=01a13f65-709f-77fd-916a-4dde358b7bbc' \
   --data-urlencode 'recovery_code=ZZZZZ-ZZZZZ'
 ```
 
 ```
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><title>Sign in</title></head>
+<head><meta charset="utf-8"><title>Enter your authentication code</title></head>
 <body>
+<p role="alert"><strong>That code did not work. Check it and try again.</strong></p>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a0cb15-4003-7130-90bd-48389128b119">
-  <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
+  <input type="hidden" name="auth_session_id" value="01a13f65-709f-77fd-916a-4dde358b7bbc">
+  <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" autofocus></label>
   <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>
-  <button type="submit">Sign in</button>
+  <button type="submit">Verify</button>
 </form>
 </body>
 </html>
 ```
 
-The same form, and no message: which codes a list holds is not something a
-wrong guess gets told. The distinction is safe in the other direction
+The generic message, the one a wrong app code gets: which codes a list
+holds is not something a wrong guess gets told. The distinction is safe in the other direction
 because a recovery code is a _second_ factor — by the time one is presented
 the attempt is already bound to a subject, so "you have used that one"
 tells that subject about their own credential and nobody else anything at
@@ -3565,7 +4104,7 @@ What makes the refusal possible is that the row survives its use, marked
 rather than deleted:
 
 ```bash
-docker compose -f infra/docker/compose.yaml exec -T postgres \
+docker compose -p odudu-17a -f infra/docker/compose.yaml exec -T postgres \
   psql -U odudu -d odudu -c \
   "SELECT count(*) AS codes, count(secret_data->>'usedAt') AS spent
      FROM user_credentials WHERE type = 'recovery-code';"
@@ -3589,44 +4128,39 @@ both would succeed.
 A list that runs out is the lockout recovery codes exist to prevent, so
 spending the last one owes `generate-recovery-codes` again — in the login
 that spent it, not the next one. The section below was captured against a
-tenant of its own, `rc8-demo`, with a fresh set of ten spent one login at a
-time; the numbers above belong to `otp-demo` and are untouched by it.
+tenant of its own, `rc8-demo`, on the stack named above, with
+`otp_required` on: ada
+enrolled through the same two pages as above, acknowledged her ten, and then
+spent them one login at a time, each a fresh `/authorize` and the password
+first. The numbers above belong to `otp-demo` and are untouched by it.
 
 The ninth code signs in the way every earlier one did, with one still
 unspent behind it:
 
 ```bash
-curl -sS -i -X POST http://localhost:3000/tenants/rc8-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a0cb17-133e-7710-823e-6c395791f86b' \
-  --data-urlencode 'recovery_code=WPXMH-0CYZ8'
+curl -sS -i -X POST http://localhost:3094/tenants/rc8-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a137d4-5cca-713b-903c-d3ce599a19c2' \
+  --data-urlencode 'recovery_code=ZBA0Z-8N4XS'
 ```
 
 ```
 HTTP/1.1 302 Found
-set-cookie: rc8-demo-session=01a0cb17-13e1-7bfb-baad-1fa67310afd0; HttpOnly; SameSite=Lax; Path=/
+x-request-id: 01a137d4-5d60-7709-a701-0194a352560d
+set-cookie: rc8-demo-session=01a137d4-5e4e-7a32-826d-3d83b7545e54:-Z5iI7GF488P51f-1HRCTMKKXHGGsUyCG8mZF2ES0Ao; HttpOnly; SameSite=Lax; Path=/
 set-cookie: rc8-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-location: http://localhost:8080/callback?code=LQElc84DzT7Xd0vWaaaeQSNYLHTcq-Wo6vSUVa0t71Y&state=xyz&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Frc8-demo
+location: http://localhost:8080/callback?code=4ClFExsSD-g_CG_ClPjfnaN3kBwgHoorQMiZiJELTvE&state=xyz&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Frc8-demo
 content-length: 0
-```
-
-Run again from an empty volume after the session cookie gained its secret
-(`0071_session_secret.sql`), the same steps end in this — that run's own
-values throughout, the cookie now `<session id>:<secret>`:
-
-```
-HTTP/1.1 302 Found
-set-cookie: rc8-demo-session=01a0de1a-490d-773e-9b5e-cdedbb1afa25:eke56OH4KHliq1WIn0oZuIeDoxFbXUoWoQUStHr0Dcc; HttpOnly; SameSite=Lax; Path=/
-set-cookie: rc8-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-location: http://localhost:8080/callback?code=RtDYxF3GaEyctUrlTnkoTjXiHQLPbRPJBsT1dvv_9K8&state=xyz&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Frc8-demo
-content-length: 0
+Date: Wed, 14 Oct 2026 00:33:47 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 ```
 
 The tenth authenticates just as well, and does not redirect:
 
 ```bash
-curl -sS -i -X POST http://localhost:3000/tenants/rc8-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a0cb17-4aaa-76f4-b2b4-bc0ebf3f8f58' \
-  --data-urlencode 'recovery_code=5CTVS-N5WEE'
+curl -sS -i -X POST http://localhost:3094/tenants/rc8-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a137d4-5f25-7dd5-b54e-f530dd226d0d' \
+  --data-urlencode 'recovery_code=W7762-A4QFZ'
 ```
 
 The codes themselves are elided here — the set shown above is the one this
@@ -3635,10 +4169,16 @@ one:
 
 ```
 HTTP/1.1 200 OK
+x-request-id: 01a137d4-5faf-7d4c-867b-86e075e0ac38
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'
 x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
 content-length: 1166
+Date: Wed, 14 Oct 2026 00:33:47 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 <!doctype html>
 <html lang="en">
@@ -3651,7 +4191,7 @@ content-length: 1166
   …ten of them…
 </ol>
 <form method="post" action="/tenants/rc8-demo/login-actions/required-action?action=generate-recovery-codes">
-  <input type="hidden" name="auth_session_id" value="01a0cb17-4aaa-76f4-b2b4-bc0ebf3f8f58">
+  <input type="hidden" name="auth_session_id" value="01a137d4-5f25-7dd5-b54e-f530dd226d0d">
   <button type="submit">I have saved these codes</button>
 </form>
 </body>
@@ -3660,13 +4200,31 @@ content-length: 1166
 
 It is the same page the enrolment showed, carrying the extra line it renders
 when it is replacing a set rather than issuing a first one. Acknowledging it
-finishes the login, exactly as it did there.
-
-What the two responses did to the account, read either side of the last
-code:
+finishes the login, exactly as it did there:
 
 ```bash
-docker compose -f infra/docker/compose.yaml exec -T postgres \
+curl -sS -i -X POST \
+  'http://localhost:3094/tenants/rc8-demo/login-actions/required-action?action=generate-recovery-codes' \
+  --data-urlencode 'auth_session_id=01a137d4-5f25-7dd5-b54e-f530dd226d0d'
+```
+
+```
+HTTP/1.1 302 Found
+x-request-id: 01a137d4-6212-702f-98e3-e260b931935c
+set-cookie: rc8-demo-session=01a137d4-6228-72ef-acce-7825c414d1ce:s-AxqiUj8ccFNiWeaAltx-kfFz_ZHL4TTnKs6mn1xvk; HttpOnly; SameSite=Lax; Path=/
+set-cookie: rc8-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+location: http://localhost:8080/callback?code=0X0v6AqfNZkZMfluApYongAIiQ1N0ovrRGryRx984X0&state=xyz&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Frc8-demo
+content-length: 0
+Date: Wed, 14 Oct 2026 00:33:48 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+```
+
+What the two responses did to the account, read after the ninth code and
+again after the tenth:
+
+```bash
+docker compose -p odudu-17a -f infra/docker/compose.yaml exec -T postgres \
   psql -U odudu -d odudu -c \
   "SELECT count(*) FILTER (WHERE secret_data->>'usedAt' IS NULL) AS unspent
      FROM user_credentials
@@ -3674,10 +4232,24 @@ docker compose -f infra/docker/compose.yaml exec -T postgres \
       AND tenant_id = (SELECT id FROM tenants WHERE name = 'rc8-demo');"
 ```
 
+```
+ unspent
+---------
+       1
+(1 row)
+```
+
+```
+ unspent
+---------
+      10
+(1 row)
+```
+
 After the ninth that is `1`, and the login redirected. After the tenth it is
 `10` — the page had already issued the replacement set by the time the query
-ran — and `user_required_actions` holds `generate-recovery-codes` until the
-acknowledgement clears it.
+ran — and `user_required_actions` held `generate-recovery-codes` until the
+acknowledgement cleared it.
 
 The guard behind this counts **unspent** rows rather than rows, and that
 distinction is the whole of it. Spent codes are kept so a replay can be
@@ -3688,12 +4260,14 @@ setup at the same moment, for the same reason.
 
 Two ways out that this does not provide, both needing a page this server does
 not have yet: asking for a fresh set _before_ running out, and a warning as
-the list gets short. Both are the account console, which is **P4d**'s.
+the list gets short. Both are self-service, which is **P4f**'s: an
+application-initiated action for the fresh set, and the "me" API's count for
+the warning.
 
 ### Where the step sits in the flow
 
 ```bash
-docker compose -f infra/docker/compose.yaml exec -T postgres \
+docker compose -p odudu-17a -f infra/docker/compose.yaml exec -T postgres \
   psql -U odudu -d odudu -c \
   "SELECT index, authenticator, requirement FROM authentication_executions e
      JOIN tenants r ON r.id = e.tenant_id WHERE r.name = 'otp-demo' ORDER BY index;"
@@ -3759,7 +4333,10 @@ What the flow is, stated rather than shown:
    registration, and its transports. The `configure-passkey` action is
    cleared last, so a refused ceremony leaves it owed, and one `credential`
    audit row, `passkey.enrolled`, is written in the same transaction; a
-   refused ceremony writes none.
+   refused ceremony writes none. The parked login then resumes: the
+   recovery codes the enrolment owes come next, and acknowledging them
+   answers the `302` to the client, with no second password
+   (`packages/protocol-oidc/tests/required-action-resume.int.test.ts`).
 5. The page's script is inline, because only a script can reach an
    authenticator. The response's `Content-Security-Policy` names a
    per-response `nonce` and that script carries it — not `unsafe-inline`, so
@@ -3778,9 +4355,9 @@ Refused, each for its own reason:
   pending set in the order `update-password`, `configure-totp`,
   `configure-passkey`, `generate-recovery-codes`, whatever the form says.
 - A submission against a session whose authentication has not finished — a
-  password passed and a second factor still outstanding — or one already
-  spent on a sign-in. A required action blocks a login's completion, not its
-  factors.
+  password passed and a second factor still outstanding, including one the
+  subject enrolled in another attempt since — or one already spent on a
+  sign-in. A required action blocks a login's completion, not its factors.
 - Any enrolment at all on a deployment with no `ODUDU_PUBLIC_BASE_URL`. The
   relying party id comes from that value and nowhere else, and the page
   reports the action as one that cannot be completed rather than binding a
@@ -3794,9 +4371,9 @@ beside the password fields, and pressing it asks for nothing typed:
 
 ```
 <form method="post" action="/tenants/demo/login-actions/authenticate" id="passkey-form">
-  <input type="hidden" name="auth_session_id" value="01a0cb08-f324-…">
+  <input type="hidden" name="auth_session_id" value="01a13fbd-81d7-…">
   <input type="hidden" name="assertion" id="passkey-assertion">
-  <button type="submit" id="passkey-submit">Sign in with a passkey</button>
+  <p><button type="submit" id="passkey-submit">Sign in with a passkey</button></p>
 </form>
 <p id="passkey-error" hidden></p>
 <noscript><p>Signing in with a passkey needs JavaScript, because only the browser can talk to your authenticator. Use your username and password above.</p></noscript>
@@ -3915,8 +4492,8 @@ odudu seed tenant --name reset-demo --set reset_password_allowed=true
 {"command":"tenant","created":false,"tenant":"reset-demo","tenantId":"01a0cb18-11ed-76ca-b9fc-f5244493d7c2","settings":["reset_password_allowed"]}
 ```
 
-The token a request mints is valid for five minutes
-(`RESET_PASSWORD_TTL_SECONDS`, `packages/account/src/usecase/verify-email.ts`
+The token a request mints is valid for the tenant's
+`reset_password_ttl_seconds` (five minutes by default
 — Keycloak's own default for a password-reset action token, chosen because
 the window it opens is an account-takeover window). Run the rest of this
 section within that window, or the link expires and every `curl` past that
@@ -4164,8 +4741,9 @@ curl -sS -o /dev/null -w '%{http_code}\n' -X POST http://localhost:3000/tenants/
 400
 ```
 
-A completed reset also retires every other outstanding reset-password link
-for the same subject, not only the one just spent — a second mailed link
+A completed reset also retires every other outstanding link that can set the
+same subject's password — reset links, and [required-actions links](#following-a-required-actions-link)
+naming `update-password` — not only the one just spent — a second mailed link
 from an earlier request the user forgot about, or one an attacker
 triggered, dies the moment the legitimate one is redeemed rather than
 staying valid for its own five minutes. And turning `reset_password_allowed`
@@ -4300,6 +4878,134 @@ Six requests, one row. The last query reads every audit row this stack
 holds, in every tenant, as text: none carries the password that was set or
 the key that set it.
 
+## Following a required-actions link
+
+An administrator's `POST /admin/tenants/{tenant}/subjects/{id}/actions-email`
+([docs/admin-paths.md](admin-paths.md)) mails a link to the same
+`/login-actions/action-token` endpoint a reset link uses, carrying the
+actions it was sent for. Opening it renders the actions and consumes
+nothing, so a mail scanner's `GET` does not spend it; the form carries a
+password field only when `update-password` is among them. Submitting it
+sets that password under the reset link's rules — the tenant's policy, the
+previous password refused, every outstanding password-setting link retired, a
+`password.reset` row in the trail — and **owes every other action rather
+than doing it**: enrolling a TOTP secret, a passkey or recovery codes still
+takes a sign-in with the password and any factor the subject already holds,
+which then runs each in turn and finishes, as it does for one an
+administrator set — one password, then the enrolment, then the code issued
+to the client. A link
+that sets a password is stopped by `reset_password_allowed` the way a reset
+link is, and every link is spent once.
+
+Against a stack of its own, the compose project `odudu-17a` on
+`http://localhost:3094` built from commit `a29df187`, started on an empty volume
+with `ODUDU_OUTBOX_ENABLED=false`, `ODUDU_REAP_ENABLED=false` and
+`ODUDU_ALLOW_PRIVATE_SMTP_HOSTS=true`, with `seed admin --username ada` run
+against it and `$ADMIN_TOKEN` got the way
+[Admin paths](admin-paths.md#getting-the-token) shows. Its tenant
+`required-actions-demo` came from `odudu seed --tenant required-actions-demo
+--client actions-app --redirect-uri https://app.example/callback --user seeder
+--password correct-horse-battery`, a relay at the `postgres` container's port
+25 was set with `PUT /smtp`, `grace` was made with an address and no password,
+and the link was mailed by `POST /subjects/:id/actions-email` for
+`configure-totp` and `update-password` and read from `email_outbox`. The link
+there is that run's own, not the one [Admin paths](admin-paths.md)'s section
+shows. Its page, the
+submission, then what `grace` now owes, read through the admin API with
+`$ADMIN_TOKEN` as there, and the same submission again — its page is the
+spent-link one, not the missing- or weak-password one the same endpoint
+also answers `400` with:
+
+```bash
+curl -sS -D - \
+  'http://localhost:3094/tenants/required-actions-demo/login-actions/action-token?key=ZPLLKU68CFpPmla3ybn_vHhlGZIfv0LxQOgMkCaLO1M'
+```
+
+```
+HTTP/1.1 200 OK
+x-request-id: 01a137d6-0294-7385-8d89-25ff1b96ce96
+content-type: text/html
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+content-length: 595
+Date: Wed, 14 Oct 2026 00:35:34 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Update your account</title></head>
+<body>
+<h1>Update your account</h1>
+<p>Your administrator asks you to:</p>
+<ul>
+<li>Choose a new password</li>
+<li>Set up an authenticator app</li>
+</ul>
+<form method="post" action="/tenants/required-actions-demo/login-actions/action-token">
+  <input type="hidden" name="key" value="ZPLLKU68CFpPmla3ybn_vHhlGZIfv0LxQOgMkCaLO1M">
+  <label>New password <input type="password" name="password" autocomplete="new-password"></label>
+  <button type="submit">Continue</button>
+</form>
+</body>
+</html>
+```
+
+```bash
+curl -sS -D - -X POST http://localhost:3094/tenants/required-actions-demo/login-actions/action-token \
+  --data-urlencode 'key=ZPLLKU68CFpPmla3ybn_vHhlGZIfv0LxQOgMkCaLO1M' \
+  --data-urlencode 'password=a-new-passphrase-for-ops'
+```
+
+```
+HTTP/1.1 200 OK
+x-request-id: 01a137d6-02c7-7996-9fc9-0c51ccac9243
+content-type: text/html
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+content-length: 247
+Date: Wed, 14 Oct 2026 00:35:34 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Account updated</title></head>
+<body>
+<h1>Your account is updated</h1>
+<p>Sign in to the application to finish:</p>
+<ul>
+<li>Set up an authenticator app</li>
+</ul>
+</body>
+</html>
+```
+
+```bash
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
+  http://localhost:3094/admin/tenants/required-actions-demo/subjects/01a137d6-00b4-7bdc-a5f0-449c5f9c5dbb/required-actions; echo
+curl -sS -w '\n' -X POST \
+  http://localhost:3094/tenants/required-actions-demo/login-actions/action-token \
+  --data-urlencode 'key=ZPLLKU68CFpPmla3ybn_vHhlGZIfv0LxQOgMkCaLO1M' \
+  --data-urlencode 'password=another-passphrase-for-ops'
+```
+
+```
+{"actions":["configure-totp"]}
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Can&#39;t use this link</title></head>
+<body>
+<h1>This link can't be used</h1>
+<p>It may have already been used or expired. Request a new one and try again.</p>
+</body>
+</html>
+```
+
 ## Password expiry, and changing a password
 
 A tenant's `password_max_age_days` ages a password out. An expired password
@@ -4311,7 +5017,9 @@ to move along.
 
 The policy is two tenant settings, so `seed tenant --set` carries both. The
 `psql` that follows has no alternative and never will: nothing can make a
-password ninety days old in less than ninety days.
+password ninety days old in less than ninety days. Captured on its own
+stack, the project `odudu-t8d` on `http://localhost:3086` at commit
+`511db0fd`:
 
 ```bash
 odudu seed \
@@ -4320,7 +5028,7 @@ odudu seed \
   --user ada --password correct-horse-battery --email ada@example.com
 odudu seed tenant --name expiry-demo \
   --set password_max_age_days=90 --set password_history_depth=2
-docker compose -f infra/docker/compose.yaml exec -T postgres \
+docker compose -p odudu-t8d -f infra/docker/compose.yaml exec -T postgres \
   psql -U odudu -d odudu -c \
   "UPDATE user_credentials SET created_at = now() - interval '100 days'
      WHERE type = 'password'
@@ -4328,21 +5036,21 @@ docker compose -f infra/docker/compose.yaml exec -T postgres \
 ```
 
 ```
-{"created":true,"tenant":"expiry-demo","tenantId":"01a0cb18-…","clientId":"expiry-spa","userSubjectId":"01a0cb18-…"}
-{"command":"tenant","created":false,"tenant":"expiry-demo","tenantId":"01a0cb18-dfa9-793d-8839-2241dbc0272b","settings":["password_max_age_days","password_history_depth"]}
+{"created":true,"tenant":"expiry-demo","tenantId":"01a10b6c-\u2026","clientId":"expiry-spa","userSubjectId":"01a10b6c-\u2026"}
+{"command":"tenant","created":false,"tenant":"expiry-demo","tenantId":"01a10b6c-99d6-7be3-8938-3d002dc8dc15","settings":["password_max_age_days","password_history_depth"]}
 UPDATE 1
 ```
 
 `/authorize` parks the request and renders the ordinary password form; the
-`auth_session_id` in it — `01a0cb18-e2cb-74a6-935d-8cd50e7ff249` in this
+`auth_session_id` in it — `01a10b6c-9d41-75c4-85f5-e18615bcb162` in this
 run — is what every request below carries. The correct password answers
 `200` with a change-password form rather than `302` with a code: it was
 accepted, and the pending action is what holds the login (no `set-cookie`,
 no `code`).
 
 ```bash
-curl -sS -X POST http://localhost:3000/tenants/expiry-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a0cb18-e2cb-74a6-935d-8cd50e7ff249' \
+curl -sS -X POST http://localhost:3086/tenants/expiry-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a10b6c-9d41-75c4-85f5-e18615bcb162' \
   --data-urlencode 'username=ada' \
   --data-urlencode 'password=correct-horse-battery'
 ```
@@ -4355,7 +5063,7 @@ curl -sS -X POST http://localhost:3000/tenants/expiry-demo/login-actions/authent
 <h1>Change your password</h1>
 <p>This account needs a new password before you can continue.</p>
 <form method="post" action="/tenants/expiry-demo/login-actions/required-action?action=update-password">
-  <input type="hidden" name="auth_session_id" value="01a0cb18-e2cb-74a6-935d-8cd50e7ff249">
+  <input type="hidden" name="auth_session_id" value="01a10b6c-9d41-75c4-85f5-e18615bcb162">
   <label>New password <input type="password" name="password" autocomplete="new-password"></label>
   <button type="submit">Update password</button>
 </form>
@@ -4369,8 +5077,8 @@ bound by — `400`, with every rule it broke:
 
 ```bash
 curl -sS -X POST \
-  'http://localhost:3000/tenants/expiry-demo/login-actions/required-action?action=update-password' \
-  --data-urlencode 'auth_session_id=01a0cb18-e2cb-74a6-935d-8cd50e7ff249' \
+  'http://localhost:3086/tenants/expiry-demo/login-actions/required-action?action=update-password' \
+  --data-urlencode 'auth_session_id=01a10b6c-9d41-75c4-85f5-e18615bcb162' \
   --data-urlencode 'password=short'
 ```
 
@@ -4390,8 +5098,8 @@ it is reported as a policy violation like the rest:
 
 ```bash
 curl -sS -X POST \
-  'http://localhost:3000/tenants/expiry-demo/login-actions/required-action?action=update-password' \
-  --data-urlencode 'auth_session_id=01a0cb18-e2cb-74a6-935d-8cd50e7ff249' \
+  'http://localhost:3086/tenants/expiry-demo/login-actions/required-action?action=update-password' \
+  --data-urlencode 'auth_session_id=01a10b6c-9d41-75c4-85f5-e18615bcb162' \
   --data-urlencode 'password=correct-horse-battery'
 ```
 
@@ -4409,16 +5117,16 @@ wrong answer.)
 
 A candidate that satisfies the policy replaces the password, retires the
 one it displaces as a `password-history` credential, and completes the
-action — which sends the browser back to the login form, because nothing
-was persisted for the factor that authenticated the parked attempt and it
-has to run again:
+action. The parked login then resumes where it stopped: the password it
+already accepted is not asked for again, nothing else is owed, and the
+answer is the code issued to the client:
 
 ```bash
-curl -sS -o /dev/null -w '%{http_code}\n' -X POST \
-  'http://localhost:3000/tenants/expiry-demo/login-actions/required-action?action=update-password' \
-  --data-urlencode 'auth_session_id=01a0cb18-e2cb-74a6-935d-8cd50e7ff249' \
+curl -sS -D - -o /dev/null -X POST \
+  'http://localhost:3086/tenants/expiry-demo/login-actions/required-action?action=update-password' \
+  --data-urlencode 'auth_session_id=01a10b6c-9d41-75c4-85f5-e18615bcb162' \
   --data-urlencode 'password=a-brand-new-passphrase'
-docker compose -f infra/docker/compose.yaml exec -T postgres \
+docker compose -p odudu-t8d -f infra/docker/compose.yaml exec -T postgres \
   psql -U odudu -d odudu -c \
   "SELECT type, created_at FROM user_credentials
      WHERE tenant_id = (SELECT id FROM tenants WHERE name = 'expiry-demo')
@@ -4426,45 +5134,27 @@ docker compose -f infra/docker/compose.yaml exec -T postgres \
 ```
 
 ```
-200
+HTTP/1.1 302 Found
+x-request-id: 01a10b6c-9e27-7704-bf0a-d87e1a580945
+set-cookie: expiry-demo-session=01a10b6c-9e9a-7e01-94c9-b3e323ac2827:jzvh-oA-g-vYo4to48WNw7BB9g3eY-gyZlK_yf-MBHY; HttpOnly; SameSite=Lax; Path=/
+set-cookie: expiry-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+location: http://localhost:8080/callback?code=Z2mgP39xHfH1nMBDl2Zo2TrkJU-AP0cnUHW85P-dS8E&state=xyz&iss=http%3A%2F%2Flocalhost%3A3086%2Ftenants%2Fexpiry-demo
+content-length: 0
+Date: Mon, 05 Oct 2026 09:37:10 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
        type       |          created_at
 ------------------+-------------------------------
- password         | 2026-09-22 21:50:01.042495+00
- password-history | 2026-09-22 21:50:01.042495+00
+ password         | 2026-10-05 09:37:10.190521+00
+ password-history | 2026-10-05 09:37:10.190521+00
 (2 rows)
 ```
 
 `created_at` moved with the hash. One row holds a subject's password for
 the life of the account, so it dates the password rather than the row —
 left alone, the new password would still be a hundred days old and the
-action would be owed again on the very next login. The same session now
-completes:
-
-```bash
-curl -sS -D - -o /dev/null -X POST http://localhost:3000/tenants/expiry-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a0cb18-e2cb-74a6-935d-8cd50e7ff249' \
-  --data-urlencode 'username=ada' \
-  --data-urlencode 'password=a-brand-new-passphrase'
-```
-
-```
-HTTP/1.1 302 Found
-set-cookie: expiry-demo-session=01a0cb18-e445-708f-9919-67965d9af518; HttpOnly; SameSite=Lax; Path=/
-set-cookie: expiry-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-location: http://localhost:8080/callback?code=P1ZeKGbV9OteeKbw_gRs-D5IIiwuRjYVTnOaUOxxTqY&state=xyz&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fexpiry-demo
-```
-
-Run again from an empty volume after the session cookie gained its secret
-(`0071_session_secret.sql`), the same steps end in this — that run's own
-values throughout, the cookie now `<session id>:<secret>`:
-
-```
-HTTP/1.1 302 Found
-set-cookie: expiry-demo-session=01a0de1b-17be-7fb4-b28e-d0248b3ce0b5:f_omtnt8VhDKR0eHmE9yeUUTnRnC2Uwa0HvZRi0eQC4; HttpOnly; SameSite=Lax; Path=/
-set-cookie: expiry-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-location: http://localhost:8080/callback?code=vSlHGH12cPSAt-UQ2VJTNdhRu_YE5ScUWM5wOi64xZk&state=xyz&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fexpiry-demo
-content-length: 0
-```
+action would be owed again on the very next login.
 
 Reset redemption shares only half of this. It refuses the password in
 force — otherwise a mailed link would restart the clock on an expired
@@ -4482,8 +5172,8 @@ nothing but a reuse check — the old password is simply wrong now, against a
 fresh authentication session:
 
 ```bash
-curl -sS -D - -o /dev/null -X POST http://localhost:3000/tenants/expiry-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a0cb18-e459-7763-81cd-d40da1538347' \
+curl -sS -D - -o /dev/null -X POST http://localhost:3086/tenants/expiry-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a10b6c-9f33-7c8c-9899-50a2af0044d4' \
   --data-urlencode 'username=ada' \
   --data-urlencode 'password=correct-horse-battery'
 ```
@@ -4501,7 +5191,8 @@ answers no decision.
 
 ## Brute-force lockout
 
-Five consecutive wrong passwords lock an account, and the tenant ships that
+Five consecutive wrong credentials lock an account — passwords, and after a
+correct one the codes of a second factor ([below](#a-wrong-second-factor-code-counts-too)) — and the tenant ships that
 way: the four columns behind it are on in every tenant, unlike every other
 credential setting on this page.
 
@@ -4527,34 +5218,44 @@ and counting starts again from one.
 both that the account exists and that somebody is attacking it — a worse
 oracle than the username enumeration the rest of this document works to
 close. So a locked account is refused with the response a wrong password
-gets. Below, eight submissions against one parked request: five wrong
-passwords, a sixth after the lockout has begun, the _right_ password, and a
-username nobody holds. The hash is of the whole response — status line,
-headers and body — with four per-response values normalised out: `date`,
-`x-request-id`, the CSP script nonce the login page mints for its passkey
-button (which appears both in the header and in the markup), and the
-`auth_session_id` the re-rendered form carries, so the digest is the same
-value for any parked request rather than one nobody else can reproduce.
+gets, and the response it gets is the page's one message for a refused
+password step (`Sign-in failed. Check your details and try again.`), which
+names no cause. Below, eight submissions against one parked request: five
+wrong passwords, a sixth after the lockout has begun, the _right_ password,
+and a username nobody holds. The hash is of the whole response — status
+line, headers and body — with six per-response values normalised out:
+`date`, `x-request-id`, the CSP script nonce the login page mints for its
+passkey button (which appears both in the header and in the markup), the
+`auth_session_id` the re-rendered form carries, the username the form gives
+back, which is the one typed, and the `content-length` that follows its
+length — so the digest is the same value for any parked request rather than
+one nobody else can reproduce.
 
 `$SID` is the `auth_session_id` the rendered form carries, taken from the
 `/authorize` response the way [the login POST](#3-the-login-post) does.
+`ada` had no failures when this began — the tenant's `login_failures` rows
+were deleted first, on a stack where the transcripts before it had already
+run, so the count below starts from zero.
 
 One thing about reproducing it: eight submissions in a minute from one
 address is past the [per-origin throttle](#the-per-origin-throttle) below,
 so the runs in this section were captured against a stack started with
-`ODUDU_THROTTLE_LIMIT=1000 docker compose up -d` — at the default of ten,
-the later submissions answer `429` and never reach the lockout at all.
+`ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000 docker compose up -d`
+— at the defaults, the later submissions answer `429` (the per-origin budget
+at ten, the per-username one at five) and never reach the lockout at all.
 
 ```bash
 post() {
   curl -sS -D /tmp/h.txt -o /tmp/b.txt \
     --data-urlencode "auth_session_id=$SID" \
     --data-urlencode "username=$1" --data-urlencode "password=$2" \
-    'http://localhost:3000/tenants/demo/login-actions/authenticate' >/dev/null
+    'http://localhost:3171/tenants/demo/login-actions/authenticate' >/dev/null
   cat /tmp/h.txt /tmp/b.txt | tr -d '\r' \
     | grep -iv '^date:' | grep -iv '^x-request-id:' \
     | sed 's/nonce-[A-Za-z0-9+/=]*/nonce-NONCE/; s/nonce="[^"]*"/nonce="NONCE"/
-           s/auth_session_id" value="[^"]*"/auth_session_id" value="SID"/g' \
+           s/auth_session_id" value="[^"]*"/auth_session_id" value="SID"/g
+           s/name="username" autocomplete="username" value="[^"]*"/name="username" autocomplete="username" value="USER"/
+           s/^content-length: .*/content-length: N/' \
     | shasum -a 256 | cut -c1-32
 }
 
@@ -4564,20 +5265,121 @@ echo "8  unknown username  $(post nobody wrong-password)"
 ```
 
 ```
-1  wrong password    67fa63f64b43d44caf3b7bf853e11cf6
-2  wrong password    67fa63f64b43d44caf3b7bf853e11cf6
-3  wrong password    67fa63f64b43d44caf3b7bf853e11cf6
-4  wrong password    67fa63f64b43d44caf3b7bf853e11cf6
-5  wrong password    67fa63f64b43d44caf3b7bf853e11cf6
-6  wrong password    67fa63f64b43d44caf3b7bf853e11cf6
-7  right password    67fa63f64b43d44caf3b7bf853e11cf6
-8  unknown username  67fa63f64b43d44caf3b7bf853e11cf6
+1  wrong password    afb5a54113c56b88e7f98987507863c2
+2  wrong password    afb5a54113c56b88e7f98987507863c2
+3  wrong password    afb5a54113c56b88e7f98987507863c2
+4  wrong password    afb5a54113c56b88e7f98987507863c2
+5  wrong password    afb5a54113c56b88e7f98987507863c2
+6  wrong password    afb5a54113c56b88e7f98987507863c2
+7  right password    afb5a54113c56b88e7f98987507863c2
+8  unknown username  afb5a54113c56b88e7f98987507863c2
 ```
 
-The four normalised values vary between responses — `date`, the request id
-and the nonce between any two, the session id between any two parked
-requests — so none of them distinguishes an account that exists from one
-that does not, or a locked account from a wrong password.
+The normalised values vary between responses — `date`, the request id and
+the nonce between any two, the session id between any two parked requests,
+and the typed name and the length that follows it between two submissions
+that typed different names — so none of them distinguishes an account that
+exists from one that does not, or a locked account from a wrong password.
+`packages/protocol-oidc/tests/login-refusal.int.test.ts` makes the same comparison against a real
+database for four causes at once — a wrong password, an unknown name, a
+locked account and a disabled one — with the typed name masked.
+
+### A wrong second-factor code counts too
+
+A wrong password is not the only guess an attacker can make: whoever holds
+the password still has a six-digit code to find. A wrong TOTP code, a wrong
+recovery code and a replay of a code already used all count against the same
+`login_failures` row as a wrong password, under the same tenant policy, and
+the sign-in's correct password does **not** clear the row — only a sign-in
+that completes does. Once the account is locked the second-factor step is
+refused without the code being looked at, so a locked account cannot say
+whether a guess was right, and the refusal is the answer a wrong code gets:
+the code form again, with `That code did not work. Check it and try again.`
+
+What is observable is what the session already told its holder: the account
+exists, because the password was right. The refusal does not say the account
+is locked, and the lockout applies whichever session the guess arrives
+through; a recovery code checked against a locked account is not hashed, so
+it answers faster than one that is, which tells a holder of the password
+nothing the lockout's own effect does not.
+
+The run below was captured on a stack of its own: the `infra/docker` compose
+file as the project `odudu-17g` on `http://localhost:3000`, its `odudu`
+service built from commit `7fc38b58`, started on an empty volume with
+`ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000` so no throttle
+refuses first. It uses a tenant and a user nothing else in this document
+holds, since the run ends with the account locked: `otp-lock` and `grace`,
+enrolled for a second factor the way
+[Two-factor authentication with TOTP](#two-factor-authentication-with-totp)
+shows, and the `tenants` row at its defaults (five failures, a minute).
+`$SID` is an `auth_session_id` whose password step has just passed, and
+`$RIGHT` is the code the authenticator would show now, made with the same
+implementation that section used:
+
+```bash
+post_code() {
+  curl -sS -D /tmp/h.txt -o /tmp/b.txt \
+    --data-urlencode "auth_session_id=$SID" --data-urlencode "code=$1" \
+    'http://localhost:3000/tenants/otp-lock/login-actions/authenticate' >/dev/null
+  cat /tmp/h.txt /tmp/b.txt | tr -d '\r' \
+    | grep -iv '^date:' | grep -iv '^x-request-id:' \
+    | sed 's/nonce-[A-Za-z0-9+/=]*/nonce-NONCE/; s/nonce="[^"]*"/nonce="NONCE"/
+           s/auth_session_id" value="[^"]*"/auth_session_id" value="SID"/g' \
+    | shasum -a 256 | cut -c1-32
+}
+for n in 1 2 3 4 5; do echo "$n  wrong code      $(post_code 00000$n)"; done
+echo "6  right code      $(post_code $RIGHT)"
+```
+
+```
+1  wrong code      3b07878ffadaacfa12b3ad3f7811beb6
+2  wrong code      3b07878ffadaacfa12b3ad3f7811beb6
+3  wrong code      3b07878ffadaacfa12b3ad3f7811beb6
+4  wrong code      3b07878ffadaacfa12b3ad3f7811beb6
+5  wrong code      3b07878ffadaacfa12b3ad3f7811beb6
+6  right code      3b07878ffadaacfa12b3ad3f7811beb6
+```
+
+The sixth, the right code, is the same bytes as the five wrong ones. The row
+shows why, and that the sixth was counted as well — a refused attempt during
+a lockout still counts, as it does for a password:
+
+```bash
+docker compose exec -T postgres psql -U odudu -d odudu -c \
+  "select u.username, f.failure_count, f.locked_until is not null as locked
+     from login_failures f
+     join users u on u.subject_id = f.subject_id
+     join tenants t on t.id = f.tenant_id
+    where t.name = 'otp-lock';"
+```
+
+```
+ username | failure_count | locked
+----------+---------------+--------
+ grace    |             6 | t
+(1 row)
+```
+
+And the password, right this time, in a fresh sign-in, does not get further
+than the sign-in form either — the account is locked at the first step too:
+
+```bash
+curl -sS -D - -o /tmp/b.txt -X POST \
+  'http://localhost:3000/tenants/otp-lock/login-actions/authenticate' \
+  --data-urlencode "auth_session_id=$SID2" \
+  --data-urlencode 'username=grace' --data-urlencode 'password=correct-horse-battery' \
+  | tr -d '\r' | grep -iE '^(HTTP|location)'
+grep -o '<title>[^<]*</title>' /tmp/b.txt
+```
+
+```
+HTTP/1.1 200 OK
+<title>Sign in</title>
+```
+
+(`$SID2` is a fresh `/authorize` session; no `location` header, so no code.
+The lockout and the per-origin throttle are separate: a `429` is the
+throttle, and nothing here was refused by it.)
 The counter is keyed by **subject**, never by the submitted name — a name
 the account no longer answers to would otherwise lock it out, and one it
 answers to by email would miss it — which is why the eighth submission above
@@ -4592,11 +5394,11 @@ docker compose exec -T postgres psql -U odudu -d odudu -x -c \
 
 ```
 -[ RECORD 1 ]----+-------------------------------------
-subject_id       | 01a0cb07-4e76-7fbe-8d86-b7c083319ef0
+subject_id       | 01a13fbd-8144-74d4-891f-4e35e203f63c
 failure_count    | 7
-first_failure_at | 2026-09-22 21:50:31.894+00
-last_failure_at  | 2026-09-22 21:50:32.303+00
-locked_until     | 2026-09-22 21:54:32.303+00
+first_failure_at | 2026-10-15 13:26:00.007+00
+last_failure_at  | 2026-10-15 13:26:00.405+00
+locked_until     | 2026-10-15 13:30:00.405+00
 ```
 
 One row for `ada`, none for the username nobody holds — and seven failures,
@@ -4606,8 +5408,11 @@ count reached seven: a minute at five, two at six, four at seven.
 The tenant in that `where` clause is not decoration either. `login_failures`
 holds a row per subject across every tenant, and the sections above this one
 leave their own behind — the password expiry walkthrough ends on a
-deliberately wrong password, and nothing clears a row but a successful login
-or the [retention pass](#retention-what-odudu-reap-removes). An unscoped
+deliberately wrong password, and nothing clears a row but a successful login,
+the [retention pass](#retention-what-odudu-reap-removes), or an operator —
+[`DELETE …/subjects/{id}/lockout`](admin-paths.md#delete-subjectsidlockout)
+and `POST …/subjects/{id}/password`, beside the
+[`GET …/lockout`](admin-paths.md#get-subjectsidlockout) that reads it. An unscoped
 `select` here would print whatever the rest of this document happened to
 do first, which is not a claim about the lockout.
 
@@ -4679,7 +5484,8 @@ below is for.
 Three unauthenticated submissions each cost real work: the sign-in POST runs
 an Argon2id verification, registration runs an Argon2id **hash**, and the
 reset request does a lookup and a mail send. They share one budget per
-client address — `ODUDU_THROTTLE_LIMIT` (default `10`) requests per
+client address (an IPv6 client by its /64; an IPv4-mapped one as its IPv4
+address) — `ODUDU_THROTTLE_LIMIT` (default `10`) requests per
 `ODUDU_THROTTLE_WINDOW_SECONDS` (default `60`) — and nothing else on this
 page is throttled. ADR 0023 is why it is a window in this process's memory
 rather than a row.
@@ -4702,11 +5508,11 @@ for n in $(seq 1 10); do
     --data-urlencode 'email=ada@example.test' "$RESET"
 done
 echo '--- the eleventh, from the same address ---'
-curl -sS -D - -o /dev/null --data-urlencode 'email=ada@example.test' "$RESET" \
-  | tr -d '\r' | grep -iE '^(HTTP|retry-after|content-length)'
+curl -sS -D - --data-urlencode 'email=ada@example.test' "$RESET" | tr -d '\r'
+echo
 echo '--- an address this tenant has never seen, still throttled ---'
 curl -sS -D - -o /dev/null --data-urlencode 'email=nobody@example.test' "$RESET" \
-  | tr -d '\r' | grep -iE '^(HTTP|retry-after|content-length)'
+  | tr -d '\r' | grep -iE '^(HTTP|retry-after|content-type|content-length)'
 ```
 
 ```
@@ -4722,17 +5528,44 @@ request 9: 200
 request 10: 200
 --- the eleventh, from the same address ---
 HTTP/1.1 429 Too Many Requests
+x-request-id: 01a13f69-ab71-78df-86cd-aad092231823
 retry-after: 60
-content-length: 0
+content-type: text/html
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+content-length: 239
+Date: Thu, 15 Oct 2026 11:54:12 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Too many attempts</title></head>
+<body>
+<h1>Too many attempts</h1>
+<p>Try again in 60 seconds.</p>
+<p>Go back to the previous page when the time is up.</p>
+</body>
+</html>
 --- an address this tenant has never seen, still throttled ---
 HTTP/1.1 429 Too Many Requests
 retry-after: 60
-content-length: 0
+content-type: text/html
+content-length: 239
 ```
 
-Empty body, and the same one either way: the refusal is decided before the
-body is parsed or any account looked up, so it cannot say whether the
-address was one this tenant knows. The budget is shared across the three
+A page rather than a bare status, because a person at a browser who submitted
+one of these three forms would otherwise be looking at a blank tab. The wait
+it names is the `retry-after` header's value, rounded up, and it is the same
+page either way: the refusal is decided before the body is parsed or any
+account looked up, so it cannot say whether the address was one this tenant
+knows, and it offers no link back, since building one would mean reading the
+parked sign-in for every refused request. The administrator's three mail
+sends (`…/password-reset`, `…/verification`, `…/actions-email`) are called by
+programs and keep the empty body, as do `/token`, `/revoke` and
+`/introspect`. The budget is shared across the three
 routes rather than one per route, the rendered forms are not throttled, and
 neither is `/token` — this one, by origin, is not where `/token`'s own
 budget lives; [the client_secret budget](#the-client_secret-budget-at-token)
@@ -4760,7 +5593,7 @@ done
 ```
 --- the sign-in submission shares the same budget ---
 HTTP/1.1 429 Too Many Requests
-retry-after: 60
+retry-after: 53
 ```
 
 ```
@@ -4773,7 +5606,8 @@ token request 3: 400
 ```
 
 `retry-after` is what is left of the oldest counted request's minute,
-rounded up to a second — `60` after a burst this fast, and lower after a
+rounded up to a second — `60` after a burst this fast (the sign-in refusal
+above came a few seconds later and says `53`), and lower after a
 slower one, since the window slides rather than resetting. The three `400`s
 are `invalid_grant` on a code that never existed — an OAuth refusal, which
 is the point.
@@ -4794,6 +5628,82 @@ comes from `X-Forwarded-For`: a proxy that appends rather than overwrites
 that header leaves the key client-controlled. Both are in
 [README.md](../README.md) as deployment requirements.
 
+### The per-username budget on sign-in
+
+Beside the per-origin budget, the sign-in submission alone carries a second
+one, keyed by the address, the tenant and the username as submitted —
+`ODUDU_LOGIN_THROTTLE_LIMIT` (default `5`) submissions per
+`ODUDU_LOGIN_THROTTLE_WINDOW_SECONDS` (default `60`). One account tried over
+and over from one address is refused after five, while the rest of a shared
+address is left its ten. The username is read from the form after it is
+parsed and before any account is looked up, folded for case, padding and
+Unicode compatibility forms, so nothing a lookup could say reaches the
+decision, and the refusal is the same `429`, `Retry-After` and page as
+the per-origin one. A submission that names no username — the second-factor
+and passkey steps carry only the authentication session — is not counted
+here, and neither are registration or the reset request. A wrong second-factor
+code is bounded per account instead, by the lockout
+([a wrong second-factor code counts too](#a-wrong-second-factor-code-counts-too)).
+
+The run below was captured on a stack of its own: the `infra/docker` compose
+file as the project `odudu-17h` on `http://localhost:3171`, its `odudu`
+service started with
+`ODUDU_THROTTLE_LIMIT=1000` and the login budget left at its default, so the
+only budget in play is this one. It needs a user nothing else in this
+document uses, because the fifth wrong password also locks the account:
+`lena`, in the `demo` tenant, seeded for this run alone (`demo` already held
+`demo-spa` and `ada`, and `seed` does not add a user to an existing client,
+so it is `seed user`).
+
+```bash
+odudu seed user --tenant demo --username lena \
+  --password correct-horse-battery --email lena@example.com
+```
+
+`$SID` is an `auth_session_id` taken from the `/authorize` form. Five wrong
+passwords for `lena` are answered with the form, and the sixth is refused;
+then the same for a name nobody holds, which is refused in the same bytes:
+
+```bash
+attempt() {
+  curl -sS -D - -o /dev/null \
+    --data-urlencode "auth_session_id=$SID" \
+    --data-urlencode "username=$1" --data-urlencode 'password=wrong-password' \
+    'http://localhost:3171/tenants/demo/login-actions/authenticate' \
+    | tr -d '\r' | grep -iE '^(HTTP|retry-after|content-length)' | tr '\n' ' '
+  echo
+}
+for n in 1 2 3 4 5; do echo "lena, submission $n: $(attempt lena)"; done
+echo '--- the sixth, for lena ---'; attempt lena
+echo '--- a username nobody holds, after five of its own ---'
+for n in 1 2 3 4 5; do attempt nobody >/dev/null; done; attempt nobody
+echo '--- lena again, in other letters ---'; attempt ' LENA '
+echo '--- another username, same address ---'; attempt grace
+```
+
+```
+lena, submission 1: HTTP/1.1 200 OK content-length: 2489
+lena, submission 2: HTTP/1.1 200 OK content-length: 2489
+lena, submission 3: HTTP/1.1 200 OK content-length: 2489
+lena, submission 4: HTTP/1.1 200 OK content-length: 2489
+lena, submission 5: HTTP/1.1 200 OK content-length: 2489
+--- the sixth, for lena ---
+HTTP/1.1 429 Too Many Requests retry-after: 60 content-length: 239
+--- a username nobody holds, after five of its own ---
+HTTP/1.1 429 Too Many Requests retry-after: 60 content-length: 239
+--- lena again, in other letters ---
+HTTP/1.1 429 Too Many Requests retry-after: 60 content-length: 239
+--- another username, same address ---
+HTTP/1.1 200 OK content-length: 2490
+```
+
+The fifth wrong password also starts the account lockout, and its answer is
+still the form: the `200`s say nothing about which mechanism will refuse
+next, which is the point. The budget does not replace the lockout. The
+lockout is keyed by the account, holds across addresses and replicas, and
+refuses a correct password too; this one is keyed by address and username,
+per instance, and costs an attacker nothing but time.
+
 ### The `client_secret` budget at `/token`
 
 RFC 6749 §2.3.1's brute-force MUST is client authentication too, and the
@@ -4802,9 +5712,9 @@ subject, which a client is not, and the throttle's key is one address for
 every request a server-side client will ever make. `/token` gets a third,
 separate budget instead — a `slidingWindow` of its own, keyed by
 `client_id` — consulted only when a `client_secret_basic` or
-`client_secret_post` attempt fails. `ODUDU_CLIENT_SECRET_THROTTLE` has no
-env var yet; the default is five attempts per sixty seconds, mirroring the
-account lockout's own defaults. ADR 0023's amendment has the design.
+`client_secret_post` attempt fails. `ODUDU_CLIENT_SECRET_THROTTLE_LIMIT`
+(default `5`) attempts per `ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS`
+(default `60`), mirroring the account lockout's own defaults. ADR 0023's amendment has the design.
 
 A client of its own for this run, so its budget starts clean regardless of
 what earlier sections in this document did to `demo-backend`'s:
@@ -5401,15 +6311,18 @@ a freshly built compose stack, `demo` seeded as [Bootstrap](#bootstrap)
 seeds it, one login, one code redeemed, one refresh rotated, and nothing
 else. Following this document end to end instead leaves dozens of sessions
 and grants behind, and a pass over those reports numbers that say nothing
-about which rule kept which row. Run against that minimal stack, the pass
-removes nothing at all:
+about which rule kept which row. Every report below was captured once the
+pass reported `cleared` too, against such a stack built from this branch —
+compose project `odudu-t8c2`, on port 3082, brought up from an empty volume
+with `ODUDU_REAP_ENABLED=false` so that no pass but these ran, and torn down
+afterwards. Run against that minimal stack, the pass removes nothing at all:
 
 ```bash
 odudu reap
 ```
 
 ```
-{"ran":true,"deleted":{"refresh_tokens":0,"authorization_codes":0,"token_grants":0,"authentication_sessions":0,"action_tokens":0,"client_registration_tokens":0,"login_failures":0,"email_outbox":0,"backchannel_logout_deliveries":0,"client_assertion_jti":0,"sessions":0,"audit_events":0}}
+{"ran":true,"deleted":{"refresh_tokens":0,"authorization_codes":0,"token_grants":0,"authentication_sessions":0,"action_tokens":0,"client_registration_tokens":0,"login_failures":0,"email_outbox":0,"backchannel_logout_deliveries":0,"client_assertion_jti":0,"console_sessions":0,"console_logins":0,"sessions":0,"audit_events":0},"cleared":{"client_previous_secrets":0}}
 ```
 
 Those zeros are the point. By this stage the database holds a consumed
@@ -5446,15 +6359,11 @@ and a replayed spent one are refused identically — so
 `ODUDU_RETENTION_ACTION_TOKEN_SECONDS`) is a courtesy window for an operator
 to read, not a bound ADR 0021's detection-window argument requires.
 
-`audit_events` reports `0` in every count below, in both passes. That is
-not this section's own capture — it was re-verified on a separate, minimal
-stack (seed a tenant, run `odudu reap`, confirm `audit_events` is `0` and
-last in `REAP_ORDER`'s order) rather than by re-walking the whole of
-[Path A](#path-a-authorization-code-with-pkce) — but it holds by
-construction regardless: the rows this walkthrough does write there — one
-per login step — are minutes old, and `audit_events`' own retention rule
-(`audit_retention_days`, 90 by default and unrelated to any window above)
-deletes nothing younger than a day.
+`audit_events` reports `0` in every count below, in both passes. The rows
+this walkthrough writes there, one per login step, are minutes old, and
+`audit_events`' own retention rule (`audit_retention_days`, 90 by default
+and unrelated to any window above) deletes nothing younger than a day. The
+forty-day backdate below does not touch that table.
 
 What makes a row deletable is the **grant family** being past retention,
 which is seven days for a session-bound family and thirty for an offline
@@ -5473,7 +6382,7 @@ odudu reap
 ```
 
 ```
-{"ran":true,"deleted":{"refresh_tokens":2,"authorization_codes":1,"token_grants":1,"authentication_sessions":1,"action_tokens":0,"client_registration_tokens":0,"login_failures":0,"email_outbox":0,"backchannel_logout_deliveries":0,"client_assertion_jti":0,"sessions":1,"audit_events":0}}
+{"ran":true,"deleted":{"refresh_tokens":2,"authorization_codes":1,"token_grants":1,"authentication_sessions":1,"action_tokens":0,"client_registration_tokens":0,"login_failures":0,"email_outbox":0,"backchannel_logout_deliveries":0,"client_assertion_jti":0,"console_sessions":0,"console_logins":0,"sessions":1,"audit_events":0},"cleared":{"client_previous_secrets":0}}
 ```
 
 Both refresh tokens of the family, the code that produced it, the grant
@@ -5492,8 +6401,47 @@ odudu reap
 ```
 
 ```
-{"ran":true,"deleted":{"refresh_tokens":0,"authorization_codes":0,"token_grants":0,"authentication_sessions":0,"action_tokens":0,"client_registration_tokens":0,"login_failures":0,"email_outbox":0,"backchannel_logout_deliveries":0,"client_assertion_jti":0,"sessions":0,"audit_events":0}}
+{"ran":true,"deleted":{"refresh_tokens":0,"authorization_codes":0,"token_grants":0,"authentication_sessions":0,"action_tokens":0,"client_registration_tokens":0,"login_failures":0,"email_outbox":0,"backchannel_logout_deliveries":0,"client_assertion_jti":0,"console_sessions":0,"console_logins":0,"sessions":0,"audit_events":0},"cleared":{"client_previous_secrets":0}}
 ```
+
+`console_sessions` and `console_logins` report `0` in every capture in this
+section so far, because nothing in this walkthrough signs in to the admin
+console. To see their rules work, insert rows directly into the same
+stack, right after the second run above: three console sessions for `ada`
+(idle for 31 minutes, past its own `expires_at`, and live) and two pending
+logins (expired, and live):
+
+```bash
+docker compose exec -T postgres psql -U odudu -d odudu -q -c "
+INSERT INTO console_sessions (id, tenant_id, subject_id, secret_hash, access_token_wrapped, refresh_token_wrapped, id_token_wrapped, access_expires_at, created_at, last_seen_at, expires_at)
+SELECT gen_random_uuid(), u.tenant_id, u.subject_id, sha256(gen_random_uuid()::text::bytea), 'a', 'r', 'i', now(), now() - s.age, now() - s.idle, now() + s.remaining
+  FROM users u JOIN tenants t ON t.id = u.tenant_id,
+       (VALUES (interval '1 hour', interval '31 minutes', interval '11 hours'),
+               (interval '13 hours', interval '1 minute', interval '-1 hour'),
+               (interval '1 hour', interval '1 minute', interval '11 hours')) AS s(age, idle, remaining)
+ WHERE t.name = 'demo' AND u.username = 'ada';
+INSERT INTO console_logins (id, tenant_id, state_hash, verifier_wrapped, nonce, return_to, expires_at)
+SELECT gen_random_uuid(), t.id, sha256(gen_random_uuid()::text::bytea), 'v', 'n', '/console/', now() + l.remaining
+  FROM tenants t, (VALUES (interval '-1 minute'), (interval '5 minutes')) AS l(remaining)
+ WHERE t.name = 'demo';
+"
+odudu reap
+```
+
+```
+{"ran":true,"deleted":{"refresh_tokens":0,"authorization_codes":0,"token_grants":0,"authentication_sessions":0,"action_tokens":0,"client_registration_tokens":0,"login_failures":0,"email_outbox":0,"backchannel_logout_deliveries":0,"client_assertion_jti":0,"console_sessions":2,"console_logins":1,"sessions":0,"audit_events":0},"cleared":{"client_previous_secrets":0}}
+```
+
+The idle session and the expired one are removed, and so is the expired
+login. The live session and the live login remain. A console session ends
+after thirty minutes idle or at its own `expires_at`, whichever comes first.
+A pending login ends at its `expires_at`. Neither table keeps a row past
+that point, because a row past either bound cannot be used again, so
+keeping it would serve no detection. The pass revokes no grant with the
+row: a console session's grant is bound to the tenant's SSO session, and
+its refresh token answers `invalid_grant` once that session idles out
+(`apps/server/tests/console-session.int.test.ts`). The gateway itself
+revokes the grant when a request finds the session over.
 
 ### When the pass refuses, or finds nothing to look at
 
@@ -5828,7 +6776,9 @@ this browser's own resolved set — stale, or another browser's — is treated
 as a hint that names nothing usable: confirmation falls back to whichever
 of this browser's own sessions was most recently active, and the
 confirmation page names that session, not the one the `sid` asked for, so
-nobody is misled about which session confirming will end. The refresh
+nobody is misled about which session confirming will end. A hint past its
+`exp` is read the same way ([below](#an-id-token-past-its-exp-sent-as-the-hint)).
+The refresh
 token this session's grant issued is now refused:
 
 ```bash
@@ -5842,6 +6792,248 @@ curl -sS \
 ```json
 { "error": "invalid_grant" }
 ```
+
+### An ID token past its `exp`, sent as the hint
+
+A hint is usually older than five minutes by the time a client sends it —
+the console's own sign-out sends the ID token it stored at sign-in — so
+RP-Initiated Logout §2 and OIDC Core §3.1.2.2 both ask the OP to accept one
+"even when the `exp` time has passed". At the logout endpoint what bounds
+that is the session the hint's `sid` names, not the clock: the `sid` has to
+equal a session still live in this browser's own cookies. At `/authorize`
+the hint only constrains the request; it authenticates nobody.
+
+This section ran against a fresh stack of its own (compose project
+`odudu-17e2`, `ODUDU_REAP_ENABLED=false`) published on **port 3172**, so
+every URL below is the port it ran on, seeded only with `demo`, `demo-spa`
+and `ada` as [Bootstrap](#bootstrap) does. The redirect list from the
+section above is in place, and `demo-spa`'s ID token lifetime is lowered to
+its minimum of five seconds, so a hint can be shown past its `exp` in the
+time it takes to run the next block. `psql` is a function for the compose
+stack's database, the way `odudu` is for its CLI:
+
+```bash
+psql() { docker compose -f infra/docker/compose.yaml exec -T postgres psql -U odudu -d odudu "$@"; }
+BASE=http://localhost:3172/tenants/demo/protocol/openid-connect
+LOGIN=http://localhost:3172/tenants/demo/login-actions/authenticate
+psql -c "UPDATE client_oidc_config SET id_token_ttl_seconds = 5
+  FROM clients WHERE clients.id = client_oidc_config.client_id AND clients.client_id = 'demo-spa';"
+```
+
+```
+UPDATE 1
+```
+
+Two sign-ins, each from its own browser (its own cookie jar), each
+redeemed for an ID token. `signin` is [the shell variables
+section](#the-shell-variables-the-rest-of-this-document-uses)'s sequence
+with a cookie jar added; `claims` prints what a token says about itself and
+`sid_of` reads its `sid`. Seven seconds later both tokens are past their
+`exp`:
+
+```bash
+signin() { # $1 = cookie jar; sets ID_TOKEN
+  VERIFIER=$(openssl rand -hex 32)
+  CHALLENGE=$(printf '%s' "$VERIFIER" | openssl dgst -binary -sha256 | openssl base64 | tr '+/' '-_' | tr -d '=')
+  AUTH_SESSION_ID=$(curl -sS --get --data-urlencode 'response_type=code' --data-urlencode 'client_id=demo-spa' \
+    --data-urlencode 'redirect_uri=http://localhost:8080/callback' --data-urlencode 'scope=openid' \
+    --data-urlencode 'state=s' --data-urlencode "code_challenge=$CHALLENGE" --data-urlencode 'code_challenge_method=S256' \
+    "$BASE/auth" | sed -n '/name="auth_session_id"/{s/.*value="\([^"]*\)".*/\1/p;q;}')
+  CODE=$(curl -sS -c "$1" -D - -o /dev/null --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
+    --data-urlencode 'username=ada' --data-urlencode 'password=correct-horse-battery' "$LOGIN" \
+    | sed -n 's/.*[?&]code=\([^&[:space:]]*\).*/\1/p' | tr -d '\r')
+  ID_TOKEN=$(curl -sS --data-urlencode 'grant_type=authorization_code' --data-urlencode "code=$CODE" \
+    --data-urlencode 'redirect_uri=http://localhost:8080/callback' --data-urlencode 'client_id=demo-spa' \
+    --data-urlencode "code_verifier=$VERIFIER" "$BASE/token" | sed -n 's/.*"id_token":"\([^"]*\)".*/\1/p')
+}
+sid_of() { claims "$1" | python3 -c "import json,sys; print(json.load(sys.stdin)['sid'])"; }
+claims() { python3 - "$1" <<'PY'
+import sys,json,base64
+p=sys.argv[1].split('.')[1]; p+='='*(-len(p)%4)
+c=json.loads(base64.urlsafe_b64decode(p))
+print(json.dumps({k:c[k] for k in ('iat','exp','sid') if k in c}))
+PY
+}
+signin jarA.txt; TOKEN_A=$ID_TOKEN; claims "$TOKEN_A"
+signin jarB.txt; TOKEN_B=$ID_TOKEN; claims "$TOKEN_B"
+sleep 7; date -u +%s
+SID_A=$(sid_of "$TOKEN_A"); SID_B=$(sid_of "$TOKEN_B")
+echo "SID_A=$SID_A"; echo "SID_B=$SID_B"
+```
+
+```
+{"iat": 1792007015, "exp": 1792007020, "sid": "01a13bf1-0b5a-735c-befe-804b753cb023"}
+{"iat": 1792007015, "exp": 1792007020, "sid": "01a13bf1-0c1c-7870-b1df-00462a5f5400"}
+1792007022
+SID_A=01a13bf1-0b5a-735c-befe-804b753cb023
+SID_B=01a13bf1-0c1c-7870-b1df-00462a5f5400
+```
+
+The precondition that makes the next calls safe is the session, not the
+clock, and it is shown rather than asserted: both sessions are live, and
+`post_logout_redirect_uris` is what `demo-spa` may be sent to:
+
+```bash
+LIVE="select id, expires_at > now() as live from sessions where id in ('$SID_A','$SID_B') order by created_at;"
+psql -c "$LIVE"
+psql -c "select c.client_id, o.post_logout_redirect_uris, o.id_token_ttl_seconds
+  from client_oidc_config o join clients c on c.id = o.client_id where c.client_id = 'demo-spa';"
+```
+
+```
+                  id                  | live
+--------------------------------------+------
+ 01a13bf1-0b5a-735c-befe-804b753cb023 | t
+ 01a13bf1-0c1c-7870-b1df-00462a5f5400 | t
+(2 rows)
+
+ client_id |     post_logout_redirect_uris      | id_token_ttl_seconds
+-----------+------------------------------------+----------------------
+ demo-spa  | {http://localhost:8080/logged-out} |                    5
+(1 row)
+```
+
+First the cases that still ask. Browser B presents the hint of session A:
+that `sid` names a session B's cookie does not hold, so the token does not
+belong to the current session and §2's confirmation fires. A hint with the
+last character of its signature changed (`$FORGED`) is no hint at all,
+however its `exp` reads. And a request with no session cookie has no
+session to end, so it gets the no-session page. The pipe prints each
+answer's status line, any `location` or `set-cookie`, and the page's
+`<title>`:
+
+```bash
+FORGED="${TOKEN_A%?}$([ "${TOKEN_A: -1}" = A ] && echo B || echo A)"
+curl -sS -b jarB.txt -D - --get --data-urlencode "id_token_hint=$TOKEN_A" \
+  --data-urlencode 'client_id=demo-spa' --data-urlencode 'post_logout_redirect_uri=http://localhost:8080/logged-out' \
+  --data-urlencode 'state=xyz-bye' "$BASE/logout" | grep -iE '^HTTP|^location|^set-cookie|<title>'
+echo ---
+curl -sS -b jarA.txt -D - --get --data-urlencode "id_token_hint=$FORGED" \
+  --data-urlencode 'client_id=demo-spa' --data-urlencode 'post_logout_redirect_uri=http://localhost:8080/logged-out' \
+  --data-urlencode 'state=xyz-bye' "$BASE/logout" | grep -iE '^HTTP|^location|^set-cookie|<title>'
+echo ---
+curl -sS -D - --get --data-urlencode "id_token_hint=$TOKEN_A" --data-urlencode 'client_id=demo-spa' "$BASE/logout" \
+  | grep -iE '^HTTP|^location|^set-cookie|<title>'
+```
+
+```
+HTTP/1.1 200 OK
+<head><meta charset="utf-8"><title>Sign out?</title></head>
+---
+HTTP/1.1 200 OK
+<head><meta charset="utf-8"><title>Sign out?</title></head>
+---
+HTTP/1.1 200 OK
+<head><meta charset="utf-8"><title>Already signed out</title></head>
+```
+
+The first two are the confirmation form and the third the no-session page;
+none carries a `location` or a `set-cookie`. Neither session ended:
+
+```bash
+psql -c "$LIVE"
+```
+
+```
+                  id                  | live
+--------------------------------------+------
+ 01a13bf1-0b5a-735c-befe-804b753cb023 | t
+ 01a13bf1-0c1c-7870-b1df-00462a5f5400 | t
+(2 rows)
+```
+
+`/authorize` reads the same lapsed hint as a constraint. Browser B's
+session is live and it is the hint's subject, so a code is issued; with
+`prompt=none` and no session cookie there is nobody to answer for, so
+`login_required` comes back as for a request with no hint; and a lapsed
+hint with its signature changed is `invalid_request`, as an unexpired one
+would be (the code is shortened to `…`):
+
+```bash
+AUTH=(--get --data-urlencode 'response_type=code' --data-urlencode 'client_id=demo-spa'
+  --data-urlencode 'redirect_uri=http://localhost:8080/callback' --data-urlencode 'scope=openid'
+  --data-urlencode 'state=xyz-auth' --data-urlencode "code_challenge=$CHALLENGE"
+  --data-urlencode 'code_challenge_method=S256')
+echo "# lapsed hint, live session of its subject"
+curl -sS -b jarB.txt -D - -o /dev/null "${AUTH[@]}" --data-urlencode "id_token_hint=$TOKEN_B" "$BASE/auth" \
+  | grep -iE '^HTTP|^location' | sed 's/code=[^&]*/code=…/'
+echo "# lapsed hint, prompt=none, no session cookie"
+curl -sS -D - -o /dev/null "${AUTH[@]}" --data-urlencode 'prompt=none' --data-urlencode "id_token_hint=$TOKEN_B" "$BASE/auth" \
+  | grep -iE '^HTTP|^location'
+echo "# forged lapsed hint, live session"
+curl -sS -b jarB.txt -D - -o /dev/null "${AUTH[@]}" \
+  --data-urlencode "id_token_hint=${TOKEN_B%?}$([ "${TOKEN_B: -1}" = A ] && echo B || echo A)" "$BASE/auth" \
+  | grep -iE '^HTTP|^location'
+```
+
+```
+# lapsed hint, live session of its subject
+HTTP/1.1 302 Found
+location: http://localhost:8080/callback?code=…&state=xyz-auth&iss=http%3A%2F%2Flocalhost%3A3172%2Ftenants%2Fdemo
+# lapsed hint, prompt=none, no session cookie
+HTTP/1.1 302 Found
+location: http://localhost:8080/callback?error=login_required&state=xyz-auth&iss=http%3A%2F%2Flocalhost%3A3172%2Ftenants%2Fdemo
+# forged lapsed hint, live session
+HTTP/1.1 302 Found
+location: http://localhost:8080/callback?error=invalid_request&state=xyz-auth&iss=http%3A%2F%2Flocalhost%3A3172%2Ftenants%2Fdemo
+```
+
+Now browser A presents the hint of its own session at the logout
+endpoint, more than five seconds past its `exp`. The `sid` equals a live
+session in this browser, so the OP asks nothing and redirects:
+
+```bash
+curl -sS -b jarA.txt -D - -o /dev/null --get --data-urlencode "id_token_hint=$TOKEN_A" \
+  --data-urlencode 'client_id=demo-spa' --data-urlencode 'post_logout_redirect_uri=http://localhost:8080/logged-out' \
+  --data-urlencode 'state=xyz-bye' "$BASE/logout"
+```
+
+```
+HTTP/1.1 302 Found
+x-request-id: 01a13bf1-29e7-7950-b253-0b1614d3b01f
+set-cookie: demo-session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+set-cookie: demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+cache-control: no-store
+location: http://localhost:8080/logged-out?state=xyz-bye
+content-length: 0
+Date: Wed, 14 Oct 2026 19:43:43 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+```
+
+Session A is ended and B untouched, and the audit trail records the end
+exactly as it does for an unexpired hint — `session.ended` with
+`via: logout`; the audit vocabulary has no member for the hint's outcome:
+
+```bash
+psql -c "$LIVE"
+psql -c "select action, outcome, detail from audit_events where resource_id = '$SID_A' order by occurred_at;"
+```
+
+```
+                  id                  | live
+--------------------------------------+------
+ 01a13bf1-0b5a-735c-befe-804b753cb023 | f
+ 01a13bf1-0c1c-7870-b1df-00462a5f5400 | t
+(2 rows)
+
+     action      | outcome |      detail
+-----------------+---------+-------------------
+ session.created | allowed | {}
+ session.ended   | allowed | {"via": "logout"}
+(2 rows)
+```
+
+That is the bound at the logout endpoint: a lapsed hint is good for as long
+as the session it names is live and in the presenting browser's cookies,
+and for nothing else. What it widens is the exposure of a leaked ID token:
+it used to be usable for a logout for the token's lifetime and now is for
+the session's, and what it can do in that time is end the one session it
+names. `OIDC-RPINITIATED-2-05` holds the rest of the matrix to the same
+answer. At `/authorize` the equivalent is `OIDC-CORE-3.1.2.2-08`: a lapsed
+hint with a live session of another subject is still `login_required`
+under `prompt=none` and still gets the login form otherwise. Token
+exchange does not read a lapsed `subject_token`.
 
 ### Token introspection and revocation
 
@@ -6042,21 +7234,21 @@ nothing:
 
 ```bash
 SID2=$(curl -sS -b cookies2.txt \
-  "http://localhost:3000/tenants/demo/protocol/openid-connect/logout" \
+  "http://localhost:3094/tenants/demo/protocol/openid-connect/logout" \
   | sed -n 's/.*name="session_id" value="\([^"]*\)".*/\1/p')
 
 curl -sS -b cookies2.txt -D - -X POST \
   --data-urlencode "session_id=$SID2" \
-  "http://localhost:3000/tenants/demo/protocol/openid-connect/logout"
+  "http://localhost:3094/tenants/demo/protocol/openid-connect/logout"
 ```
 
 ```
 HTTP/1.1 400 Bad Request
-cache-control: no-store
 content-type: text/html
 content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
+cache-control: no-store
 content-length: 220
 
 <!doctype html>
@@ -6071,7 +7263,10 @@ content-length: 220
 
 (`x-request-id`, `Date` and the keep-alive headers are omitted. This page
 and the refusal were captured after the form gained its token, against a
-fresh sign-in into `cookies2.txt` on the same stack.)
+fresh sign-in into `cookies2.txt`, on the project `odudu-17a` at
+`http://localhost:3094`, built from commit `a29df187`, with `demo` seeded as
+[Bootstrap](#bootstrap) does. `cache-control` comes last of the page
+headers, where `pageHeaders` puts it.)
 
 A `post_logout_redirect_uri` that is not an exact match to a registered
 value — a trailing slash, a query string, a different host — is refused,
@@ -6388,18 +7583,18 @@ now frames `reports-widget`:
 ```bash
 curl -sS -b cookies.txt --get \
   --data-urlencode "id_token_hint=$ID_TOKEN" \
-  "http://localhost:3000/tenants/demo/protocol/openid-connect/logout"
+  "http://localhost:3094/tenants/demo/protocol/openid-connect/logout"
 ```
 
 ```
 HTTP/1.1 200 OK
 set-cookie: demo-session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 set-cookie: demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-cache-control: no-store
 content-type: text/html
 content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'; frame-src http://localhost:9100
 x-frame-options: DENY
 referrer-policy: no-referrer
+cache-control: no-store
 content-length: 318
 ```
 
@@ -6410,13 +7605,15 @@ content-length: 318
 <body>
 <h1>Signed out</h1>
 <p>You have been signed out.</p>
-<iframe src="http://localhost:9100/logout?iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fdemo&amp;sid=01a0cb20-97a7-…"></iframe>
+<iframe src="http://localhost:9100/logout?iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo&amp;sid=01a137d7-eae6-…"></iframe>
 </body>
 </html>
 ```
 
 (`sid` shortened; it is the id half of the session cookie's entry, and `iss`
-is this tenant's issuer.) `sid` is present because `reports-widget`
+is this tenant's issuer. Captured on the same `odudu-17a` stack at
+`http://localhost:3094`, with the two commands above run against it and
+`x-request-id`, `Date` and the keep-alive headers omitted.) `sid` is present because `reports-widget`
 registered `frontchannel_logout_session_required`; a client that had not
 would be framed with `iss` alone. `demo-spa` itself is not framed here — it
 registered no `frontchannel_logout_uri` at all, and §2's own rule is that a
@@ -6481,15 +7678,24 @@ Querying the same row again shows why, in the queue's own words:
 ```
    client_id    |              endpoint              | attempts | delivered_at |               last_error
 ----------------+------------------------------------+----------+--------------+-----------------------------------------
- reports-widget | https://127.0.0.1:9443/backchannel |        2 |              | address 127.0.0.1 is a loopback address
+ reports-widget | https://127.0.0.1:9443/backchannel |        1 |              | address 127.0.0.1 is a loopback address
 (1 row)
 ```
 
 `assertPublicAddress` (`packages/protocol-oidc/src/service/remote-address.ts`)
 refuses `127.0.0.0/8` unconditionally, ahead of any override — the same
 guard `clientKeySet`'s `jwks_uri` fetch uses (ADR 0028). `attempts` reads
-`2`, not `1`, because `claimDue` spends one optimistically at the claim
-and `markFailed` spends a second recording the outcome.
+`1`: `claimDue` spends the attempt when it claims the row, and `markFailed`
+records only the error and when the row is next due, so
+`BACKCHANNEL_LOGOUT_MAX_ATTEMPTS` is the number of times a token is really
+offered. The pass and this second query were recaptured against the tenth
+stack of [docs/admin-paths.md](admin-paths.md) once `markFailed` stopped
+spending a second attempt: `reports-widget` created in its `demo` through
+`POST /clients` with this back-channel URI, `ada` signed in through it and
+signed out through the confirmation page, as
+[One sign-in's audit trail](#one-sign-ins-audit-trail-read-through-the-admin-api)
+does, then the same query, which answered the first query's row above byte
+for byte, the same pass and the same query again.
 
 **A private-range address is a different branch of that same guard, and
 one an operator can open.** `ODUDU_ALLOW_PRIVATE_CLIENT_URLS` — already
@@ -6563,8 +7769,8 @@ docker compose -f infra/docker/compose.yaml exec -T postgres \
 (1 row)
 ```
 
-`attempts` reads `1` here, not `2`: `markDelivered` records success without
-touching `attempts` the way `markFailed` does.
+`attempts` reads `1` here, the one offer that was delivered: the claim spends
+the attempt, and `markDelivered` records the success.
 
 Discovery now advertises `backchannel_logout_supported`,
 `backchannel_logout_session_supported`, `frontchannel_logout_supported`
@@ -6790,7 +7996,10 @@ second case. An offline grant has neither: no session to end, and no idle
 window to outlive, so it is bounded only by its own
 `refresh_token_ttl_seconds` and by retention (see [What is not
 implemented](#what-is-not-implemented)) — nothing about ending a session
-ages it out early. A client is only handed this scope if the tenant's
+ages it out early. An administrator revokes one with
+`DELETE /admin/tenants/{tenant}/subjects/{id}/grants/{clientId}`, or every
+grant a client holds with `DELETE /admin/tenants/{tenant}/clients/{id}/grants`
+([Admin paths](admin-paths.md#get-subjectsidgrants-and-delete-subjectsidgrantsclientid)). A client is only handed this scope if the tenant's
 operator assigned it — `demo-spa` has it because `odudu seed` assigns every
 default scope, `offline_access` included, though `'optional'` rather than
 `'default'`; a request for it from a client whose assignment was withdrawn
@@ -6803,23 +8012,26 @@ unassigned scope gets (see [Discovery](#1-discovery) above).
 
 ### The consent screen
 
+The scopes it lists are ordered by each scope's `display_order`, then its
+name, and each is shown by the scope's `consent_text` where an
+administrator gave it one ([docs/admin-paths.md](admin-paths.md), under
+`PATCH /scopes/:id`); the scopes below have neither, so they show by name.
+
 `demo-spa`'s own `consent_required` is `false`, so nothing above ever saw
 this screen. It exists for a client whose `consent_required` is `true` —
 every anonymously self-registered client (`consent_required` defaults
 `true` there, per [Dynamic client registration](#dynamic-client-registration)
 and ADR 0027) — and for `prompt=consent` on any client at all.
 
-This section continues the same `demo` tenant [Bootstrap](#bootstrap) seeded
-and the sections since have been building on, on a stack brought up with
-`docker compose down -v` then `up -d --build` and nothing else — `ada`
-already verified ([Address verification](#address-verification) above) and
-already the subject of an SSO session or two, none of which this section's
-own requests touch. `client_registration_policy` is `disabled` on `demo` by
-default, the same as every tenant, so the anonymously self-registered client
-this section needs it open — asserted again here rather than assumed from
-[the encrypted UserInfo transcript](#encrypted-and-nested-userinfo-responses)
-that first opened it, since seeding a setting already at that value reports
-it unchanged rather than refusing:
+The screen and the reuse and `prompt=none` answers below were captured on a
+stack of its own: the project `odudu-17a` on `http://localhost:3094`, built
+from commit `a29df187` and started on an empty volume, with `demo` seeded the
+way [Bootstrap](#bootstrap) seeds it. The subsections from "The client's own
+pages" on keep the earlier stack they name, `odudu-t8d` at `511db0fd`, whose
+transcripts show no response header.
+`client_registration_policy` is `disabled` on `demo` by default, the same as
+every tenant, so the anonymously self-registered client this section needs
+it open:
 
 ```bash
 odudu seed tenant --name demo --set client_registration_policy=open
@@ -6830,7 +8042,7 @@ odudu seed tenant --name demo --set client_registration_policy=open
   "command": "tenant",
   "created": false,
   "tenant": "demo",
-  "tenantId": "01a0cb07-…",
+  "tenantId": "01a137d6-\u2026",
   "settings": ["client_registration_policy"]
 }
 ```
@@ -6839,16 +8051,16 @@ Then the client itself, with no credential presented — `registration_origin`
 is `'anonymous'` and `consent_required` defaults `true` on the row it wrote:
 
 ```bash
-curl -sS -X POST http://localhost:3000/tenants/demo/clients-registrations/openid-connect \
+curl -sS -X POST http://localhost:3094/tenants/demo/clients-registrations/openid-connect \
   -H 'content-type: application/json' \
   -d '{"redirect_uris":["https://rp.example/cb"],"client_name":"Example RP"}'
 ```
 
 ```json
 {
-  "client_id": "01a0cb24-1680-…",
-  "client_id_issued_at": 1790114534,
-  "client_secret": "cZoyBuOje15jvYKEatsOI31DSO4rcPH03I-tRB6_aj8",
+  "client_id": "01a137d6-c1b7-76fa-92b1-bb33828ae56f",
+  "client_id_issued_at": 1791938183,
+  "client_secret": "zEOnBPiO5AnubSnAQ3nQTq_DHRsIvOd4cXTTXEGp-lw",
   "client_secret_expires_at": 0,
   "redirect_uris": ["https://rp.example/cb"],
   "grant_types": ["authorization_code"],
@@ -6862,20 +8074,29 @@ that would otherwise complete the login have been accepted — after the
 same required-action gate `/authorize`'s form path always enforced, and
 before a code is ever issued. PKCE and the parked request are the same
 shape [the login POST](#3-the-login-post) uses, against this new client and
-`scope=openid profile offline_access`:
+`scope=openid profile offline_access`, with `state=xyz-123` and a cookie jar,
+`cookies-consent.txt`, kept from `/authorize` onward:
 
 ```bash
-curl -sS -D - \
+curl -sS -D - -c cookies-consent.txt -b cookies-consent.txt \
   --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
   --data-urlencode 'username=ada' \
   --data-urlencode 'password=correct-horse-battery' \
-  'http://localhost:3000/tenants/demo/login-actions/authenticate'
+  'http://localhost:3094/tenants/demo/login-actions/authenticate'
 ```
 
 ```
 HTTP/1.1 200 OK
+x-request-id: 01a137d6-c260-716b-9777-461155c440c8
 content-type: text/html
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' https://rp.example; base-uri 'none'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
 content-length: 664
+Date: Wed, 14 Oct 2026 00:36:23 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 <!doctype html>
 <html lang="en">
@@ -6883,7 +8104,7 @@ content-length: 664
 <body>
 <h1>Example RP is asking for access</h1>
 <form method="post" action="/tenants/demo/login-actions/consent">
-  <input type="hidden" name="auth_session_id" value="01a0cb24-16e3-…">
+  <input type="hidden" name="auth_session_id" value="01a137d6-c22e-791c-9097-e8d295b70e7f">
   <ul>
   <li>openid</li>
   <li>profile</li>
@@ -6900,7 +8121,9 @@ No `set-cookie`, no `location`: nothing is established and no code is
 issued until the form below is answered. `offline_access` is the one scope
 here that carries the explanatory clause OIDC Core §16.18 asks for — every
 default scope (`openid`, `profile`) needs no box at all, since the client
-was already assigned it without asking.
+was already assigned it without asking. The page's `form-action` names the
+client's `https://rp.example` because answering it ends in the redirect
+there.
 
 Declining the optional scope narrows what the eventual token carries —
 `scope` in the token response omits `offline_access`, not merely "the flow
@@ -6909,39 +8132,80 @@ request does not ask again. Leaving the checkbox unticked and pressing
 Allow:
 
 ```bash
-curl -sS -D - \
+curl -sS -D - -c cookies-consent.txt -b cookies-consent.txt \
   --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
   --data-urlencode 'decision=allow' \
-  'http://localhost:3000/tenants/demo/login-actions/consent'
+  'http://localhost:3094/tenants/demo/login-actions/consent'
 ```
 
 ```
 HTTP/1.1 302 Found
-set-cookie: demo-session=01a0cb24-173d-…; HttpOnly; SameSite=Lax; Path=/
+x-request-id: 01a137d6-c2c7-78cf-8e8d-1b9762557de3
+set-cookie: demo-session=01a137d6-c2e4-7f70-8fc3-6dbee704dde9:a-7981Ir1Wexv7gTDwGcUtsV2iJBTzlNF6CaRh_DHds; HttpOnly; SameSite=Lax; Path=/
 set-cookie: demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-location: https://rp.example/cb?code=dt04gc43VMf7…&state=xyz-123&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fdemo
+location: https://rp.example/cb?code=NreYk9SzpC5ttZWW-ylIReNrfpOulmUMp4DXbH8_JDk&state=xyz-123&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo
 content-length: 0
+Date: Wed, 14 Oct 2026 00:36:23 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 ```
 
-(Captured before the session cookie carried a secret, so the cookie shown
-is a truncated bare id; it is now `<session id>:<secret>`.)
+The ID token that code redeems for says how ada authenticated, exactly as a
+login with no consent screen would. The consent door reads the factors the
+login recorded on its authentication session, and the password that finished
+it is one of them:
+
+```bash
+curl -sS -X POST http://localhost:3094/tenants/demo/protocol/openid-connect/token \
+  -u "$CLIENT_ID:$CLIENT_SECRET" \
+  -d grant_type=authorization_code \
+  -d code=NreYk9SzpC5ttZWW-ylIReNrfpOulmUMp4DXbH8_JDk \
+  --data-urlencode 'redirect_uri=https://rp.example/cb' \
+  -d code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
+```
+
+The `id_token`'s payload, decoded:
+
+```json
+{
+  "sub": "01a137d6-bf12-771f-81fb-97620b5fd349",
+  "name": "ada",
+  "preferred_username": "ada",
+  "iss": "http://localhost:3094/tenants/demo",
+  "aud": "01a137d6-c1b7-76fa-92b1-bb33828ae56f",
+  "iat": 1791938184,
+  "exp": 1791938484,
+  "sid": "01a137d6-c2e4-7f70-8fc3-6dbee704dde9",
+  "amr": ["pwd"],
+  "acr": "1"
+}
+```
+
+Until 2026-10-05 a login through this screen issued neither claim, because
+the factor that finished it was never written down for the consent POST to
+read.
 
 Pressing Deny instead answers exactly where a client-side `access_denied`
 always does — the request's own `redirect_uri`, not a page — with nothing
-established and no code issued. (A fresh parked request, logged in the same
-way as above — the one that redeemed a code cannot answer twice.)
+established and no code issued. (A fresh parked request, `state=xyz-deny`,
+logged in the same way as above — the one that redeemed a code cannot
+answer twice.)
 
 ```bash
 curl -sS -D - \
   --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
   --data-urlencode 'decision=deny' \
-  'http://localhost:3000/tenants/demo/login-actions/consent'
+  'http://localhost:3094/tenants/demo/login-actions/consent'
 ```
 
 ```
 HTTP/1.1 302 Found
-location: https://rp.example/cb?error=access_denied&state=xyz-deny&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fdemo
+x-request-id: 01a137d6-c44e-771e-81f8-36db32b150f1
+location: https://rp.example/cb?error=access_denied&state=xyz-deny&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo
 content-length: 0
+Date: Wed, 14 Oct 2026 00:36:24 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 ```
 
 The gate applies to a live SSO session exactly as it does to a fresh
@@ -6965,13 +8229,21 @@ curl -sS -D - -b cookies-consent.txt --get \
   --data-urlencode 'state=xyz-reuse' \
   --data-urlencode "code_challenge=$CHALLENGE" \
   --data-urlencode 'code_challenge_method=S256' \
-  'http://localhost:3000/tenants/demo/protocol/openid-connect/auth'
+  'http://localhost:3094/tenants/demo/protocol/openid-connect/auth'
 ```
 
 ```
 HTTP/1.1 200 OK
+x-request-id: 01a137d6-c485-73aa-b3c3-824d47fe7178
 content-type: text/html
-content-length: 664
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' https://rp.example; base-uri 'none'; script-src 'nonce-RGkC4LknpA2uMvjtQxZIHg=='
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+content-length: 813
+Date: Wed, 14 Oct 2026 00:36:24 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 <!doctype html>
 <html lang="en">
@@ -6979,7 +8251,7 @@ content-length: 664
 <body>
 <h1>Example RP is asking for access</h1>
 <form method="post" action="/tenants/demo/login-actions/consent">
-  <input type="hidden" name="auth_session_id" value="01a0cb24-17c0-…">
+  <input type="hidden" name="auth_session_id" value="01a137d6-c495-744e-aefc-7c457bb799de">
   <ul>
   <li>openid</li>
   <li>profile</li>
@@ -6988,13 +8260,18 @@ content-length: 664
   <button type="submit" name="decision" value="allow">Allow</button>
   <button type="submit" name="decision" value="deny">Deny</button>
 </form>
+<script nonce="RGkC4LknpA2uMvjtQxZIHg==">window.addEventListener('pageshow', function (event) { if (event.persisted) location.reload(); });</script>
 </body>
 </html>
 ```
 
-(Same markup GET produced above, byte-for-byte other than the fresh
-`auth_session_id` — a second `/authorize`, not a POST, is what got here,
-because the SSO cookie skipped the login form entirely.) Under
+(The same form the login POST produced above under a fresh
+`auth_session_id`, with two differences that come from this being a GET: the
+policy gains `script-src` naming a nonce, and the one `<script>` carrying it
+follows the form, reloading the page if a browser restores it from its cache
+— a reload would re-send the POST that produced the page above, so that
+page has none. A second `/authorize`, not a POST, is what got here, because
+the SSO cookie skipped the login form entirely.) Under
 `prompt=none`, that same reused-but-under-consented session is refused
 rather than asked, since `prompt=none` forbids the interaction a consent
 screen is:
@@ -7009,13 +8286,54 @@ curl -sS -D - -b cookies-consent.txt --get \
   --data-urlencode 'prompt=none' \
   --data-urlencode "code_challenge=$CHALLENGE" \
   --data-urlencode 'code_challenge_method=S256' \
-  'http://localhost:3000/tenants/demo/protocol/openid-connect/auth'
+  'http://localhost:3094/tenants/demo/protocol/openid-connect/auth'
 ```
 
 ```
 HTTP/1.1 302 Found
-location: https://rp.example/cb?error=consent_required&state=xyz-reuse&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fdemo
+x-request-id: 01a137d6-c4cb-7d96-a306-9101560c4c46
+location: https://rp.example/cb?error=consent_required&state=xyz-reuse&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo
 content-length: 0
+Date: Wed, 14 Oct 2026 00:36:24 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+```
+
+#### The client's own pages
+
+A client that registered RFC 7591's `client_uri`, `policy_uri` or `tos_uri`
+has each linked under its name, so the End-User can read them before
+answering. Every link is escaped through the renderer's own `escapeHtml`,
+attribute and text alike, and the page's policy is the one every
+continuing page sends: a link is a navigation, which `default-src 'none'`
+does not govern. Captured on the earlier stack named above (`odudu-t8d`),
+with a tenant of its own, `email-demo`, holding `grace`
+(`odudu seed tenant --name email-demo`, then `odudu seed user` with an
+address), `$ADMIN_TOKEN` got the way [docs/admin-paths.md](admin-paths.md#getting-the-token)
+shows, and a public client created through the admin API for it:
+
+```bash
+curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H 'Content-Type: application/json' \
+  -d '{"client_id": "billing-spa", "name": "Billing & Co", "token_endpoint_auth_method": "none", "redirect_uris": ["http://localhost:8080/callback"], "consent_required": true, "client_uri": "https://billing.example/about?from=consent&lang=en", "policy_uri": "https://billing.example/privacy", "tos_uri": "https://billing.example/terms"}' \
+  http://localhost:3086/admin/tenants/email-demo/clients \
+  | jq -c '{client_id, name, consent_required, client_uri, policy_uri, tos_uri}'
+PAGE=$(curl -sS 'http://localhost:3086/tenants/email-demo/protocol/openid-connect/auth?response_type=code&client_id=billing-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&state=s&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256')
+AUTH_SESSION_ID=$(echo "$PAGE" | sed -n 's/.*name="auth_session_id" value="\([^"]*\)".*/\1/p' | head -1)
+curl -sS -D - \
+  --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
+  --data-urlencode 'username=grace' \
+  --data-urlencode 'password=correct-horse-battery' \
+  http://localhost:3086/tenants/email-demo/login-actions/authenticate \
+  | tr -d '\r' | sed -n '1p;/^content-security-policy/p;/<h1>/,/<form/p'
+```
+
+```
+{"client_id":"billing-spa","name":"Billing & Co","consent_required":true,"client_uri":"https://billing.example/about?from=consent&lang=en","policy_uri":"https://billing.example/privacy","tos_uri":"https://billing.example/terms"}
+HTTP/1.1 200 OK
+content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'
+<h1>Billing &amp; Co is asking for access</h1>
+<p><a href="https://billing.example/about?from=consent&amp;lang=en">About Billing &amp; Co</a> · <a href="https://billing.example/privacy">Privacy policy</a> · <a href="https://billing.example/terms">Terms of service</a></p>
+<form method="post" action="/tenants/email-demo/login-actions/consent">
 ```
 
 ## Path C: `client_credentials`
@@ -7615,6 +8933,199 @@ refusal above](#impersonation-gated-by-a-column-no-flag-sets) covers
 `unauthorized_client`'s own oracle: by calling `resolveExchangeToken`
 itself rather than through the client-authentication gate in front of it.
 
+### A subject disabled after a token was issued to it
+
+The same five calls again, for the other half of the same question:
+disabling a **subject** ends nothing it holds either — its grants, its
+session and its client are all untouched — so each of `/userinfo`,
+`/introspect` and the exchange grant reads the token's subject beside its
+client (`subjectIsEnabled`, `packages/domain-identity/src/service/subject-enabled.ts`,
+the same predicate the refresh grant and the admin API ask). Captured
+against a stack of its own: compose project `odudu-t8c` on port 3080,
+built from this branch and brought up from an empty volume, torn down with
+`docker compose down -v` afterwards. Its tenant `subjdoc` is set up exactly
+as `disableddoc` is above, under its own names — `subjdoc-spa`,
+`subjdoc-reader` with secret `subjdoc-reader-secret`, the audience
+`https://api.subjdoc.example`, and `ada` — and `$ACCESS_TOKEN`,
+`$REFRESH_TOKEN` and `$ID_TOKEN` come from one sign-in the same way. The
+`Date`, `Connection` and `Keep-Alive` lines are left out of each header
+block, and each issued `access_token` is cut after its first bytes.
+
+While `ada` is enabled, all five succeed. `/userinfo`, `/introspect`, the
+access-token exchange, the refresh-token exchange and the `id_token`
+self-exchange, in that order:
+
+```bash
+curl -sS -D - -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "http://localhost:3080/tenants/subjdoc/protocol/openid-connect/userinfo"
+```
+
+```
+HTTP/1.1 200 OK
+x-request-id: 01a0ed77-6862-70c5-a810-a69d1250e153
+vary: Origin
+content-type: application/json; charset=utf-8
+content-length: 46
+
+{"sub":"01a0ed76-cc3a-7f71-a4ac-2c62b3c966fc"}
+```
+
+```bash
+curl -sS -u subjdoc-reader:subjdoc-reader-secret \
+  -X POST "http://localhost:3080/tenants/subjdoc/protocol/openid-connect/token/introspect" \
+  --data-urlencode "token=$ACCESS_TOKEN"
+```
+
+```
+{"active":true,"scope":"openid offline_access","client_id":"subjdoc-spa","sub":"01a0ed76-cc3a-7f71-a4ac-2c62b3c966fc","aud":["https://api.subjdoc.example","http://localhost:3080/tenants/subjdoc"],"token_type":"Bearer","exp":1790690705,"iat":1790690405}
+```
+
+```bash
+curl -sS -D - -u subjdoc-reader:subjdoc-reader-secret \
+  --data-urlencode 'grant_type=urn:ietf:params:oauth:grant-type:token-exchange' \
+  --data-urlencode "subject_token=$ACCESS_TOKEN" \
+  --data-urlencode 'subject_token_type=urn:ietf:params:oauth:token-type:access_token' \
+  --data-urlencode 'resource=https://api.subjdoc.example' \
+  'http://localhost:3080/tenants/subjdoc/protocol/openid-connect/token'
+```
+
+```
+HTTP/1.1 200 OK
+x-request-id: 01a0ed77-68f2-7692-b732-1bdd74b33fda
+vary: Origin
+cache-control: no-store
+pragma: no-cache
+content-type: application/json; charset=utf-8
+content-length: 1082
+
+{"access_token":"eyJhbGciOiJSUzI1NiI…","token_type":"Bearer","expires_in":284,"scope":"openid offline_access","issued_token_type":"urn:ietf:params:oauth:token-type:access_token"}
+```
+
+```bash
+curl -sS -D - -u subjdoc-reader:subjdoc-reader-secret \
+  --data-urlencode 'grant_type=urn:ietf:params:oauth:grant-type:token-exchange' \
+  --data-urlencode "subject_token=$REFRESH_TOKEN" \
+  --data-urlencode 'subject_token_type=urn:ietf:params:oauth:token-type:refresh_token' \
+  --data-urlencode 'resource=https://api.subjdoc.example' \
+  'http://localhost:3080/tenants/subjdoc/protocol/openid-connect/token'
+```
+
+```
+HTTP/1.1 200 OK
+x-request-id: 01a0ed77-6943-7205-a3ad-1c3345ce296f
+vary: Origin
+cache-control: no-store
+pragma: no-cache
+content-type: application/json; charset=utf-8
+content-length: 1082
+
+{"access_token":"eyJhbGciOiJSUzI1NiI…","token_type":"Bearer","expires_in":300,"scope":"openid offline_access","issued_token_type":"urn:ietf:params:oauth:token-type:access_token"}
+```
+
+```bash
+curl -sS -D - \
+  --data-urlencode 'grant_type=urn:ietf:params:oauth:grant-type:token-exchange' \
+  --data-urlencode 'client_id=subjdoc-spa' \
+  --data-urlencode "subject_token=$ID_TOKEN" \
+  --data-urlencode 'subject_token_type=urn:ietf:params:oauth:token-type:id_token' \
+  'http://localhost:3080/tenants/subjdoc/protocol/openid-connect/token'
+```
+
+```
+HTTP/1.1 200 OK
+x-request-id: 01a0ed77-6980-7459-9d28-6a9447d257e4
+vary: Origin
+cache-control: no-store
+pragma: no-cache
+content-type: application/json; charset=utf-8
+content-length: 1029
+
+{"access_token":"eyJhbGciOiJSUzI1NiI…","token_type":"Bearer","expires_in":284,"scope":"","issued_token_type":"urn:ietf:params:oauth:token-type:access_token"}
+```
+
+Disabling `ada` — the precondition every refusal below depends on, shown
+rather than asserted; `PATCH /admin/tenants/subjdoc/subjects/{id}` with
+`{"enabled":false}` writes the same column:
+
+```bash
+docker compose -f infra/docker/compose.yaml exec -T postgres \
+  psql -U odudu -d odudu -c "
+    UPDATE subjects SET disabled_at = now() WHERE id = '01a0ed76-cc3a-7f71-a4ac-2c62b3c966fc';
+    SELECT s.id, u.username, s.disabled_at IS NOT NULL AS disabled FROM subjects s JOIN users u ON u.subject_id = s.id WHERE s.id = '01a0ed76-cc3a-7f71-a4ac-2c62b3c966fc';
+  "
+```
+
+```
+                  id                  | username | disabled
+--------------------------------------+----------+----------
+ 01a0ed76-cc3a-7f71-a4ac-2c62b3c966fc | ada      | t
+(1 row)
+```
+
+The client is still enabled, the grant still live and the session still
+open. The identical five requests now refuse, each the way that door
+already refuses a revoked grant: `/userinfo` with RFC 6750 §3.1's
+`invalid_token`,
+
+```
+HTTP/1.1 401 Unauthorized
+x-request-id: 01a0ed77-6a0e-7eaa-b525-1ca619886b84
+vary: Origin
+www-authenticate: Bearer realm="userinfo", error="invalid_token"
+content-length: 0
+```
+
+`/introspect` with RFC 7662 §2.2's bare `{"active":false}`,
+
+```
+{"active":false}
+```
+
+and each exchange with the `invalid_request` RFC 8693 §2.2.2 gives an
+unacceptable `subject_token` — the access token,
+
+```
+HTTP/1.1 400 Bad Request
+x-request-id: 01a0ed77-6a54-7a80-bcf5-e0c47d10c6bb
+vary: Origin
+cache-control: no-store
+pragma: no-cache
+content-type: application/json; charset=utf-8
+content-length: 27
+
+{"error":"invalid_request"}
+```
+
+the refresh token,
+
+```
+HTTP/1.1 400 Bad Request
+x-request-id: 01a0ed77-6a88-770c-90a3-bf9abb37c569
+vary: Origin
+cache-control: no-store
+pragma: no-cache
+content-type: application/json; charset=utf-8
+content-length: 27
+
+{"error":"invalid_request"}
+```
+
+and the `id_token`, which, unlike the disabled-client case above, reaches
+the resolver: `subjdoc-spa` still authenticates, so this refusal is the
+subject check's own.
+
+```
+HTTP/1.1 400 Bad Request
+x-request-id: 01a0ed77-6ab7-7f76-85b8-66552b24f99d
+vary: Origin
+cache-control: no-store
+pragma: no-cache
+content-type: application/json; charset=utf-8
+content-length: 27
+
+{"error":"invalid_request"}
+```
+
 ## CORS: the preflight and the request differ
 
 A browser single-page client is the reader `## Path A` above walks through,
@@ -7632,30 +9143,69 @@ belongs to a different client in the same tenant is, correctly, withheld on
 the real request — no status code or body changes, the header is just
 absent, and the browser discards the response on its own.
 
+The tenant's union is one index probe, not a read of every client: the
+server keeps a `client_origins` row for each `web_origins` entry (and each
+`redirect_uris` origin, where `+` asks for them) whenever it writes those lists,
+with the same normaliser the request side uses, so the preflight asks whether
+one origin is registered and a tenant with ten thousand clients pays what a
+tenant with one does. A list edited in SQL empties that client's rows, so the
+origin is refused until the client is amended through the server (`PATCH`, or
+`seed client --web-origin`), never left allowed after it was removed.
+
 `/certs` and `/.well-known/openid-configuration` are unauthenticated public
 documents: every origin gets `Access-Control-Allow-Origin: *` and no `Vary`.
 `/authorize` and `/login-actions/*` are top-level navigations and get no
 CORS treatment of any kind — a header there would hand a script read access
 to the login page.
 
-`seed client --web-origin` registers origins as it creates a client, but
-the bootstrap `seed` form that also creates a user carries no such flag,
-and neither will add an origin to a client that already exists — so the
-three clients below were seeded normally and then given their origins with
-two direct `UPDATE`s against `client_oidc_config` — the commands after them
-are otherwise
-exactly what `## Path A` already used, against a second tenant seeded for
-this section (`cors-demo`, with clients `demo-spa` at
-`https://demo-spa.example`, `other-app` at `https://other-app.example`, and
-`spa-with-user` — also at `https://demo-spa.example` — carrying the user
-that signs in below).
+The origins are registered through the server, which is what keeps the
+preflight's table in step with them: `demo-spa` and `other-app` with `odudu
+seed client --public --web-origin`, and `spa-with-user`, created by the
+bootstrap `seed` form that carries no such flag, with a `PATCH` of its
+`web_origins` through the admin API. (An `UPDATE` in `psql` would empty a
+client's origins, not add one.) The tenant is `cors-demo`, on a stack of its
+own listening on port 3092, so the URLs below say `localhost:3092`; its
+clients are `demo-spa` at `https://demo-spa.example`, `other-app` at
+`https://other-app.example`, and `spa-with-user` — also at
+`https://demo-spa.example` — carrying the user `ada` that signs in below.
+Headers that differ on every run (`x-request-id`, `date`, `connection`,
+`keep-alive`) are left out of each response.
+
+```bash
+odudu seed tenant --name cors-demo
+odudu seed client --tenant cors-demo --client-id demo-spa --public \
+  --redirect-uri http://localhost:8080/callback --web-origin https://demo-spa.example
+odudu seed client --tenant cors-demo --client-id other-app --public \
+  --redirect-uri http://localhost:8080/callback --web-origin https://other-app.example
+odudu seed --tenant cors-demo --client spa-with-user \
+  --redirect-uri http://localhost:8080/callback \
+  --user ada --password correct-horse-battery --email ada@example.com
+curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "If-Match: $ETAG" \
+  -H 'content-type: application/json' -d '{"web_origins":["https://demo-spa.example"]}' \
+  http://localhost:3092/admin/tenants/cors-demo/clients/$SPA_WITH_USER_ID
+```
+
+What that left, read with `psql` (the precondition of every answer below):
+
+```bash
+psql -c "select c.client_id, o.origin from client_origins o join clients c on c.id = o.client_id order by 1"
+```
+
+```
+   client_id   |          origin
+---------------+---------------------------
+ demo-spa      | https://demo-spa.example
+ other-app     | https://other-app.example
+ spa-with-user | https://demo-spa.example
+(3 rows)
+```
 
 A preflight for `/token`, from an origin that belongs to `other-app`, not to
 the client the real request below will name:
 
 ```bash
 curl -sS -D - -o /dev/null -X OPTIONS \
-  http://localhost:3000/tenants/cors-demo/protocol/openid-connect/token \
+  http://localhost:3092/tenants/cors-demo/protocol/openid-connect/token \
   -H "Origin: https://other-app.example" \
   -H "Access-Control-Request-Method: POST"
 ```
@@ -7677,7 +9227,7 @@ simply absent from a response that is otherwise unchanged:
 
 ```bash
 curl -sS -D - -o /dev/null -X POST \
-  http://localhost:3000/tenants/cors-demo/protocol/openid-connect/token \
+  http://localhost:3092/tenants/cors-demo/protocol/openid-connect/token \
   -H "Origin: https://other-app.example" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   --data "grant_type=refresh_token&refresh_token=bogus&client_id=demo-spa"
@@ -7689,6 +9239,7 @@ vary: Origin
 cache-control: no-store
 pragma: no-cache
 content-type: application/json; charset=utf-8
+content-length: 25
 ```
 
 (`access-control-allow-origin` does not appear in that response at all —
@@ -7704,6 +9255,7 @@ access-control-allow-origin: https://demo-spa.example
 cache-control: no-store
 pragma: no-cache
 content-type: application/json; charset=utf-8
+content-length: 25
 ```
 
 `/userinfo` takes the same split from the other side: the client comes from
@@ -7714,10 +9266,10 @@ header:
 
 ```bash
 curl -sS -D - -o /dev/null \
-  http://localhost:3000/tenants/cors-demo/protocol/openid-connect/userinfo \
+  http://localhost:3092/tenants/cors-demo/protocol/openid-connect/userinfo \
   -H "Authorization: Bearer $ACCESS_TOKEN" -H "Origin: https://demo-spa.example"
 curl -sS -D - -o /dev/null \
-  http://localhost:3000/tenants/cors-demo/protocol/openid-connect/userinfo \
+  http://localhost:3092/tenants/cors-demo/protocol/openid-connect/userinfo \
   -H "Authorization: Bearer $ACCESS_TOKEN" -H "Origin: https://other-app.example"
 ```
 
@@ -7726,22 +9278,24 @@ HTTP/1.1 200 OK
 vary: Origin
 access-control-allow-origin: https://demo-spa.example
 content-type: application/json; charset=utf-8
+content-length: 135
 ```
 
 ```
 HTTP/1.1 200 OK
 vary: Origin
 content-type: application/json; charset=utf-8
+content-length: 135
 ```
 
 The two public documents, from an origin nothing registered:
 
 ```bash
 curl -sS -D - -o /dev/null \
-  http://localhost:3000/tenants/cors-demo/protocol/openid-connect/certs \
+  http://localhost:3092/tenants/cors-demo/protocol/openid-connect/certs \
   -H "Origin: https://anything.example"
 curl -sS -D - -o /dev/null \
-  http://localhost:3000/tenants/cors-demo/.well-known/openid-configuration \
+  http://localhost:3092/tenants/cors-demo/.well-known/openid-configuration \
   -H "Origin: https://anything.example"
 ```
 
@@ -7749,12 +9303,14 @@ curl -sS -D - -o /dev/null \
 HTTP/1.1 200 OK
 access-control-allow-origin: *
 content-type: application/json; charset=utf-8
+content-length: 455
 ```
 
 ```
 HTTP/1.1 200 OK
 access-control-allow-origin: *
 content-type: application/json; charset=utf-8
+content-length: 2300
 ```
 
 (no `Vary` on either — a fixed wildcard has nothing to vary the response
@@ -7762,7 +9318,7 @@ on). And `/authorize`, which gets nothing:
 
 ```bash
 curl -sS -D - -o /dev/null -X OPTIONS \
-  http://localhost:3000/tenants/cors-demo/protocol/openid-connect/auth \
+  http://localhost:3092/tenants/cors-demo/protocol/openid-connect/auth \
   -H "Origin: https://other-app.example" \
   -H "Access-Control-Request-Method: GET"
 ```
@@ -7770,7 +9326,7 @@ curl -sS -D - -o /dev/null -X OPTIONS \
 ```
 HTTP/1.1 404 Not Found
 vary: Origin
-content-type: application/json; charset=utf-8
+content-type: application/problem+json; charset=utf-8
 ```
 
 No `access-control-allow-origin` — the browser gets nothing to read this
@@ -7796,8 +9352,8 @@ other traffic in `demo`; the request id on each row is what shows that held
 here:
 
 ```bash
-BASE=http://localhost:3000/tenants/demo/protocol/openid-connect
-LOGIN=http://localhost:3000/tenants/demo/login-actions/authenticate
+BASE=http://localhost:3082/tenants/demo/protocol/openid-connect
+LOGIN=http://localhost:3082/tenants/demo/login-actions/authenticate
 SINCE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 VERIFIER=$(openssl rand -hex 32)
@@ -7847,7 +9403,7 @@ for EVENT_TYPE in token session; do
   curl -sS -G -H "Authorization: Bearer $ADMIN_TOKEN" \
     --data-urlencode "event_type=$EVENT_TYPE" \
     --data-urlencode "from=$SINCE" \
-    http://localhost:3000/admin/tenants/demo/audit
+    http://localhost:3082/admin/tenants/demo/audit
   echo
 done
 ```
@@ -7858,15 +9414,16 @@ The refresh's status, the logout's, then the `token` page and the
 ```
 200
 200
-{"items":[{"id":"01a0de57-47f6-75ee-bd0c-397d8c07d8c1","occurred_at":"2026-09-26T15:30:57.138Z","event_type":"token","action":"token.refresh","outcome":"allowed","actor_tenant_id":"01a0db22-1c32-7d17-b351-697d7911033c","actor_subject_id":"01a0db22-1c92-7730-9d37-4085f28eca2c","actor_client_id":"01a0db22-1c61-714b-be3a-3d5234477dff","resource_type":"grant","resource_id":"01a0de57-47d6-7a12-9446-5170a97d2ebd","request_id":"trail-refresh","ip":"172.20.0.1","detail":{"scope":"openid"}},{"id":"01a0de57-47de-7930-ae5b-63f55f8c41ab","occurred_at":"2026-09-26T15:30:57.100Z","event_type":"token","action":"token.issue","outcome":"allowed","actor_tenant_id":"01a0db22-1c32-7d17-b351-697d7911033c","actor_subject_id":"01a0db22-1c92-7730-9d37-4085f28eca2c","actor_client_id":"01a0db22-1c61-714b-be3a-3d5234477dff","resource_type":"grant","resource_id":"01a0de57-47d6-7a12-9446-5170a97d2ebd","request_id":"trail-code","ip":"172.20.0.1","detail":{"scope":"openid","grant_type":"authorization_code"}}]}
-{"items":[{"id":"01a0de57-4822-7f4d-866e-9bc1eb70258c","occurred_at":"2026-09-26T15:30:57.185Z","event_type":"session","action":"session.ended","outcome":"allowed","actor_tenant_id":"01a0db22-1c32-7d17-b351-697d7911033c","actor_subject_id":"01a0db22-1c92-7730-9d37-4085f28eca2c","actor_client_id":null,"resource_type":"session","resource_id":"01a0de57-47b6-73c8-ac09-420a582bac8e","request_id":"trail-logout","ip":"172.20.0.1","detail":{"via":"logout"}},{"id":"01a0de57-47b7-79a8-99b2-d2ba39295b21","occurred_at":"2026-09-26T15:30:57.077Z","event_type":"session","action":"session.created","outcome":"allowed","actor_tenant_id":"01a0db22-1c32-7d17-b351-697d7911033c","actor_subject_id":"01a0db22-1c92-7730-9d37-4085f28eca2c","actor_client_id":"01a0db22-1c61-714b-be3a-3d5234477dff","resource_type":"session","resource_id":"01a0de57-47b6-73c8-ac09-420a582bac8e","request_id":"trail-sign-in","ip":"172.20.0.1","detail":{}}]}
+{"items":[{"id":"01a0ee96-87dd-7f97-b784-a892d1af681b","occurred_at":"2026-09-29T19:13:57.706Z","event_type":"token","action":"token.refresh","outcome":"allowed","actor_tenant_id":"01a0ee8f-032e-718b-b030-be2b154a9e99","actor_subject_id":"01a0ee96-6112-7cc3-a854-5f4ba72b225c","actor_client_id":"01a0ee96-84ed-7dd5-9923-92767eef6df0","actor_name":"ada","actor_origin":"tenant","resource_type":"grant","resource_id":"01a0ee96-8791-7f44-8bae-5ec847f7a4c2","request_id":"trail-refresh","ip":"172.22.0.1","detail":{"scope":"openid"}},{"id":"01a0ee96-8798-708b-bf8c-d732e7e83210","occurred_at":"2026-09-29T19:13:57.630Z","event_type":"token","action":"token.issue","outcome":"allowed","actor_tenant_id":"01a0ee8f-032e-718b-b030-be2b154a9e99","actor_subject_id":"01a0ee96-6112-7cc3-a854-5f4ba72b225c","actor_client_id":"01a0ee96-84ed-7dd5-9923-92767eef6df0","actor_name":"ada","actor_origin":"tenant","resource_type":"grant","resource_id":"01a0ee96-8791-7f44-8bae-5ec847f7a4c2","request_id":"trail-code","ip":"172.22.0.1","detail":{"scope":"openid","grant_type":"authorization_code"}}]}
+{"items":[{"id":"01a0ee96-885c-7fc5-aef6-3fd42f3b388f","occurred_at":"2026-09-29T19:13:57.851Z","event_type":"session","action":"session.ended","outcome":"allowed","actor_tenant_id":"01a0ee8f-032e-718b-b030-be2b154a9e99","actor_subject_id":"01a0ee96-6112-7cc3-a854-5f4ba72b225c","actor_client_id":null,"actor_name":"ada","actor_origin":"tenant","resource_type":"session","resource_id":"01a0ee96-874e-7f1b-a875-ff5846806788","request_id":"trail-logout","ip":"172.22.0.1","detail":{"via":"logout"}},{"id":"01a0ee96-8750-7584-aab5-50435e2d0819","occurred_at":"2026-09-29T19:13:57.577Z","event_type":"session","action":"session.created","outcome":"allowed","actor_tenant_id":"01a0ee8f-032e-718b-b030-be2b154a9e99","actor_subject_id":"01a0ee96-6112-7cc3-a854-5f4ba72b225c","actor_client_id":"01a0ee96-84ed-7dd5-9923-92767eef6df0","actor_name":"ada","actor_origin":"tenant","resource_type":"session","resource_id":"01a0ee96-874e-7f1b-a875-ff5846806788","request_id":"trail-sign-in","ip":"172.22.0.1","detail":{}}]}
 ```
 
-Captured against the same stack as
-[what a refused login leaves behind](#what-a-refused-login-leaves-behind),
-with the image rebuilt from the current tree after the logout confirmation
-gained its `csrf` token, which the logout above reads off the page it
-fetched and posts back. The ids the rows name:
+Recaptured against the tenth stack
+([docs/admin-paths.md](admin-paths.md)), after `demo-spa`
+was created in its `demo` through `POST /clients` as a public client and
+`ada` seeded there with `odudu seed user`, so each row answers `actor_name`
+and `actor_origin` as well; the ids are that run's.
+The ids the rows name:
 
 ```bash
 docker compose exec -T postgres psql -U odudu -d odudu -c \
@@ -7880,7 +9437,7 @@ docker compose exec -T postgres psql -U odudu -d odudu -c \
 ```
                  demo                 |               demo_spa               |                 ada
 --------------------------------------+--------------------------------------+--------------------------------------
- 01a0db22-1c32-7d17-b351-697d7911033c | 01a0db22-1c61-714b-be3a-3d5234477dff | 01a0db22-1c92-7730-9d37-4085f28eca2c
+ 01a0ee8f-032e-718b-b030-be2b154a9e99 | 01a0ee96-84ed-7dd5-9923-92767eef6df0 | 01a0ee96-6112-7cc3-a854-5f4ba72b225c
 (1 row)
 ```
 
@@ -8748,17 +10305,18 @@ client is told.
 
 ### The login POST
 
-| Request                                      | Answer                                         | Why                                                                                                                                                                                      |
-| -------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Wrong password                               | 200, the sign-in form again, same session id   | The session is live and can be retried; nothing is consumed                                                                                                                              |
-| Unknown username                             | 200, the sign-in form again                    | Indistinguishable from a wrong password, and the credential query is still issued so the timing matches                                                                                  |
-| Any password, while the account is locked    | 200, the sign-in form again                    | Byte-identical to a wrong password, and reached after the same verification, so neither the page nor the timing says the account is locked ([Brute-force lockout](#brute-force-lockout)) |
-| A password over 256 characters               | 400, "Password must be at most 256 characters" | Refused at the read, before the Argon2id verification, so it costs nothing and counts no failure against the account                                                                     |
-| Any submission over the per-origin budget    | 429, `Retry-After`, empty body                 | Decided before the body is parsed, so it is the same refusal whatever was submitted ([The per-origin throttle](#the-per-origin-throttle))                                                |
-| No `auth_session_id`                         | 400, "This sign-in attempt is no longer valid" | That field is the form's CSRF defence; a submission without it is not a submission from the form                                                                                         |
-| Unknown or expired `auth_session_id`         | 400, same page                                 | Folded together deliberately: neither names a live parked request                                                                                                                        |
-| A second submit of a consumed session        | 400, same page                                 | The atomic consume is what stops a back-button press minting a second session and a second code                                                                                          |
-| Right password, wrong `id_token_hint`ed user | 302 `error=login_required` to the client       | A positive response is for the end user the hint identifies. The session is left unconsumed, so the right user can still sign in against the same parked request                         |
+| Request                                                               | Answer                                         | Why                                                                                                                                                                                                                      |
+| --------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Wrong password                                                        | 200, the sign-in form again, same session id   | The session is live and can be retried; nothing is consumed                                                                                                                                                              |
+| Unknown username                                                      | 200, the sign-in form again                    | Indistinguishable from a wrong password, and the credential query is still issued so the timing matches                                                                                                                  |
+| Any password, while the account is locked                             | 200, the sign-in form again                    | Byte-identical to a wrong password, and reached after the same verification, so neither the page nor the timing says the account is locked ([Brute-force lockout](#brute-force-lockout))                                 |
+| A password over 256 characters                                        | 400, "Password must be at most 256 characters" | Refused at the read, before the Argon2id verification, so it costs nothing and counts no failure against the account                                                                                                     |
+| Any submission over the per-origin budget                             | 429, `Retry-After`, a page naming the wait     | Decided before the body is parsed, so it is the same refusal whatever was submitted ([The per-origin throttle](#the-per-origin-throttle))                                                                                |
+| Sign-in submissions for one username over its budget from one address | 429, `Retry-After`, a page naming the wait     | Decided from the submitted form before any account is looked up, so it is the same refusal for a name that is an account and one that is not ([The per-username budget on sign-in](#the-per-username-budget-on-sign-in)) |
+| No `auth_session_id`                                                  | 400, "This sign-in attempt is no longer valid" | That field is the form's CSRF defence; a submission without it is not a submission from the form                                                                                                                         |
+| Unknown or expired `auth_session_id`                                  | 400, same page                                 | Folded together deliberately: neither names a live parked request                                                                                                                                                        |
+| A second submit of a consumed session                                 | 400, same page                                 | The atomic consume is what stops a back-button press minting a second session and a second code                                                                                                                          |
+| Right password, wrong `id_token_hint`ed user                          | 302 `error=login_required` to the client       | A positive response is for the end user the hint identifies. The session is left unconsumed, so the right user can still sign in against the same parked request                                                         |
 
 The last one, both halves, run against one parked request:
 
@@ -8816,6 +10374,15 @@ getting `invalid_request` rather than `invalid_client`.
 | An empty `client_id` from a public client                                                                                                                    | 401    | `invalid_client`         |
 | `GET` instead of `POST`                                                                                                                                      | 404    | —                        |
 
+`/revoke` and `/introspect` read the same client authentication as `/token`: a
+`private_key_jwt` assertion, whose `aud` is this tenant's `/token` URL at all
+three endpoints, a `tls_client_auth` certificate subject under the same
+`ODUDU_TRUST_PROXY` rule, or either password method, and refuse a failed one
+with the same `401` and `invalid_client`.
+The built-in `odudu-admin` client is one that authenticates this way, and the
+console's refusals and acceptances at `/token` and `/revoke` are transcripts in
+[Console paths](console-paths.md#the-gateway-is-a-confidential-client).
+
 Every 401 carries `WWW-Authenticate: Basic realm="token"`. Every response,
 success or failure, carries `cache-control: no-store` and `pragma:
 no-cache`.
@@ -8836,6 +10403,169 @@ unavailable end to end, not only at `/token`: discovery's
 either — off on this stack, which is why the transcript above does not
 list it — and registering a client for it is itself `invalid_client_metadata`,
 the same as an unknown `token_endpoint_auth_method` would be.
+
+`/revoke` and `/introspect` take the same certificate subject under the same
+rule, from the same header, and discovery lists the method for both exactly
+when it lists it for `/token`. Captured on a stack of its own, the project
+`odudu-docs-12b` on `http://localhost:3082` at `b4efbb72` plus this change, with
+`ODUDU_TRUST_PROXY=true` added by a compose override (`ODUDU_TLS_CLIENT_CERT_HEADER`
+left at its default). A tenant, `tls-demo`, with registration open, and a client
+registered dynamically for `tls_client_auth` with the subject `CN=tls-demo-client,O=Example`:
+
+```bash
+docker compose exec -T odudu node dist/main.js seed tenant --name tls-demo --set client_registration_policy=open
+curl -sS -X POST http://localhost:3082/tenants/tls-demo/clients-registrations/openid-connect \
+  -H 'content-type: application/json' \
+  -d '{"client_name":"tls-demo-client","grant_types":["client_credentials"],"token_endpoint_auth_method":"tls_client_auth","tls_client_auth_subject_dn":"CN=tls-demo-client,O=Example"}'
+```
+
+```
+{"command":"tenant","created":true,"tenant":"tls-demo","tenantId":"01a1209c-e194-785e-82e5-4f027cdb9022","settings":["client_registration_policy"]}
+```
+
+```
+{"client_id":"01a1209c-e2f4-7913-adce-9c43e5cdeef2","client_id_issued_at":1791548514,"client_secret":"Lgpir8vBpe8TIXObBxvxdGrP3P5YNl2rFe4sUgil8kk","client_secret_expires_at":0,"redirect_uris":[],"grant_types":["client_credentials"],"token_endpoint_auth_method":"tls_client_auth","client_name":"tls-demo-client","tls_client_auth_subject_dn":"CN=tls-demo-client,O=Example"}
+```
+
+The client's token, with the header a proxy would set from the certificate it
+verified (`$CID` is the `client_id` above). The status line and headers are as
+sent; the body below is **not the bytes on the wire**: it is the response read
+back by `python3` and printed with the access token cut to its first 24
+characters and an ellipsis, so its quotes and spacing are Python's:
+
+```bash
+curl -sS -D - -H 'x-ssl-client-s-dn: CN=tls-demo-client,O=Example' \
+  --data-urlencode grant_type=client_credentials --data-urlencode client_id=$CID \
+  http://localhost:3082/tenants/tls-demo/protocol/openid-connect/token
+```
+
+```
+HTTP/1.1 200 OK
+x-request-id: 01a1209d-0501-742a-8c1d-4c4b577f8641
+vary: Origin
+cache-control: no-store
+pragma: no-cache
+content-type: application/json; charset=utf-8
+content-length: 957
+Date: Fri, 09 Oct 2026 12:22:03 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+{"access_token": "eyJhbGciOiJSUzI1NiIsImtp…", "token_type": "Bearer", "expires_in": 300, "scope": ""}
+```
+
+The subject must match. A different one is refused at `/introspect`, the same
+`invalid_client` as at `/token`; the matching one is answered (`active` is
+`false` because this client is not among the token's audiences, which
+[the introspection section](#token-introspection-and-revocation) explains):
+
+```bash
+curl -sS -D - -H 'x-ssl-client-s-dn: CN=someone-else' \
+  --data-urlencode "token=$ACCESS" --data-urlencode client_id=$CID \
+  http://localhost:3082/tenants/tls-demo/protocol/openid-connect/token/introspect
+curl -sS -D - -H 'x-ssl-client-s-dn: CN=tls-demo-client,O=Example' \
+  --data-urlencode "token=$ACCESS" --data-urlencode client_id=$CID \
+  http://localhost:3082/tenants/tls-demo/protocol/openid-connect/token/introspect
+```
+
+```
+HTTP/1.1 401 Unauthorized
+x-request-id: 01a1209d-05e9-79ae-962b-6f2f25031314
+www-authenticate: Basic realm="token"
+cache-control: no-store
+content-type: application/json; charset=utf-8
+content-length: 26
+Date: Fri, 09 Oct 2026 12:22:04 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+{"error":"invalid_client"}
+```
+
+```
+HTTP/1.1 200 OK
+x-request-id: 01a1209d-0614-7dc3-b275-228300d01cb2
+cache-control: no-store
+content-type: application/json; charset=utf-8
+content-length: 16
+Date: Fri, 09 Oct 2026 12:22:04 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+{"active":false}
+```
+
+At `/revoke`, the header sent twice is refused, never read as one value:
+
+```bash
+curl -sS -D - -H 'x-ssl-client-s-dn: CN=tls-demo-client,O=Example' \
+  -H 'x-ssl-client-s-dn: CN=tls-demo-client,O=Example' \
+  --data-urlencode "token=$ACCESS" --data-urlencode client_id=$CID \
+  http://localhost:3082/tenants/tls-demo/protocol/openid-connect/revoke
+```
+
+```
+HTTP/1.1 401 Unauthorized
+x-request-id: 01a1209d-0649-7872-8a47-0908b65b9b53
+www-authenticate: Basic realm="token"
+cache-control: no-store
+content-type: application/json; charset=utf-8
+content-length: 26
+Date: Fri, 09 Oct 2026 12:22:04 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+{"error":"invalid_client"}
+```
+
+And a revocation is shown to revoke or not, by the grant's own row, scoped to the
+grant the token names (`grant_id`, read from the token's payload): a new token, the
+state, a revocation under the wrong subject and the state, a revocation under the
+right one and the state:
+
+```sql
+select revoked_at is not null as revoked from token_grants where id = '01a1209d-52ee-708b-a0d7-849089601673';
+```
+
+```
+ revoked
+---------
+ f
+(1 row)
+```
+
+```
+401
+```
+
+```
+ revoked
+---------
+ f
+(1 row)
+```
+
+```
+200
+```
+
+```
+ revoked
+---------
+ t
+(1 row)
+```
+
+(The two status codes are curl's `-w "%{http_code}"` of the wrong-subject and the
+matching revocation.) With this stack's `ODUDU_TRUST_PROXY=true`, the three
+`*_auth_methods_supported` members of `tls-demo`'s discovery document read, one
+per line as `python3` printed them:
+
+```
+token_endpoint_auth_methods_supported ["client_secret_basic", "client_secret_post", "none", "private_key_jwt", "tls_client_auth"]
+introspection_endpoint_auth_methods_supported ["client_secret_basic", "client_secret_post", "private_key_jwt", "tls_client_auth", "none"]
+revocation_endpoint_auth_methods_supported ["client_secret_basic", "client_secret_post", "private_key_jwt", "tls_client_auth", "none"]
+```
 
 RFC 6749 §2.3.1 puts both halves of the `Basic` payload through
 `application/x-www-form-urlencoded` before the base64, which is what lets a
@@ -9075,9 +10805,70 @@ do not, and its page is the same "Unknown or disabled client" a live tenant
 shows for a `client_id` it does not know — so a probe cannot tell a missing
 tenant from a missing client.
 
-A disabled tenant takes the same branch in the same lookup, so it is never
-distinguishable from one that never existed; that half was not exercised
-here, because nothing can disable a tenant yet.
+A disabled tenant is refused everywhere an unknown one is but two places:
+its discovery document and `/certs` still answer `200`. Public keys are not
+secret, and the relying parties the disable queued Back-Channel Logout Tokens
+for need them to validate those tokens (Back-Channel Logout 1.0 §2.6); a
+tenant that stopped publishing its keys at the moment it queued them would
+have every one rejected. Deleting the tenant removes its keys, and both then
+answer `404`. Everything else — `/token`, `/userinfo`, and `/authorize`'s
+rendered page — cannot tell a disabled tenant from one that never existed.
+Captured on 2026-09-29 from the repository root against compose project
+`odudu-t8b2` on port 3082, its image built from this branch at `cd930b59` and
+brought up from an empty volume for
+[docs/admin-paths.md](admin-paths.md)'s `DELETE /admin/tenants/{tenant}`. A
+tenant `lapsed` is seeded and answers, then is disabled through `psql`, in
+the column `PATCH /admin/tenants/{tenant}` with `enabled: false` and the
+console's Disable both write, and is asked again beside `nope`. The `diff`
+compares `lapsed`'s and `nope`'s rendered `/auth` page, headers included but
+for `date` and `x-request-id`; it printed nothing and exited 0. The last
+line counts the keys `lapsed` still publishes:
+
+```bash
+export COMPOSE_PROJECT_NAME=odudu-t8b2
+odudu() { docker compose -f infra/docker/compose.yaml exec -T odudu node dist/main.js "$@"; }
+pg() { docker compose -f infra/docker/compose.yaml exec -T postgres psql -U odudu -d odudu -tA -c "$1"; }
+ask() {
+  for p in "$@"; do
+    printf '%-50s %s\n' "/tenants/$t/$p" \
+      "$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:3082/tenants/$t/$p")"
+  done
+}
+odudu seed tenant --name lapsed
+t=lapsed ask .well-known/openid-configuration protocol/openid-connect/certs
+pg "update tenants set enabled = false where name = 'lapsed' returning name, enabled"
+for t in lapsed nope; do
+  ask .well-known/openid-configuration protocol/openid-connect/{certs,token,userinfo,auth}
+done
+answer() { curl -s -D - "http://localhost:3082/tenants/$1/$2" | grep -iv '^date:\|^x-request-id:'; }
+diff <(answer lapsed protocol/openid-connect/auth) <(answer nope protocol/openid-connect/auth)
+echo "diff exit $?"
+curl -s http://localhost:3082/tenants/lapsed/protocol/openid-connect/certs \
+  | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["keys"]), "key")'
+```
+
+```
+{"command":"tenant","created":true,"tenant":"lapsed","tenantId":"01a0ef23-23c9-791b-9733-189c42be5382"}
+/tenants/lapsed/.well-known/openid-configuration   200
+/tenants/lapsed/protocol/openid-connect/certs      200
+lapsed|f
+UPDATE 1
+/tenants/lapsed/.well-known/openid-configuration   200
+/tenants/lapsed/protocol/openid-connect/certs      200
+/tenants/lapsed/protocol/openid-connect/token      404
+/tenants/lapsed/protocol/openid-connect/userinfo   404
+/tenants/lapsed/protocol/openid-connect/auth       400
+/tenants/nope/.well-known/openid-configuration     404
+/tenants/nope/protocol/openid-connect/certs        404
+/tenants/nope/protocol/openid-connect/token        404
+/tenants/nope/protocol/openid-connect/userinfo     404
+/tenants/nope/protocol/openid-connect/auth         400
+diff exit 0
+1 key
+```
+
+`odudu seed` also wrote Node's `ExperimentalWarning` for Web Crypto to
+stderr, which is left out above.
 
 Tenant isolation goes further than the URL, and the credentials prove it:
 an authorization code, a refresh token, an access token and an
@@ -9106,7 +10897,8 @@ retrying unchanged produces the same answer.
 
 **From a `code`.** Verify `state` and `iss` first. Then redeem it at
 `/token` with the same `redirect_uri` and the `code_verifier` you kept,
-within 60 seconds, exactly once. Do not retry a redemption that returned
+within the tenant's code lifetime (60 seconds by default), exactly once. Do
+not retry a redemption that returned
 `invalid_grant` — if it succeeded once, retrying revokes the grant you just
 received.
 
@@ -9142,6 +10934,9 @@ like the wrong secret.
 [docs/admin-paths.md](admin-paths.md) documents the admin API — the
 endpoints under `/admin/tenants/{tenant}/` — separately from this document,
 because it serves an operator rather than an application integrator.
+[docs/console-paths.md](console-paths.md) documents the console gateway
+under `/console`, which signs an administrator in and forwards the console's
+calls to that API.
 
 ## What is not implemented
 
@@ -9165,7 +10960,10 @@ session lifecycle. A citation of either half here means that half.
   ordinary login form. A decision, not a gap: OIDC Core §15.1 asks of
   `display` that "the minimum level of support required for this parameter
   is simply that its use must not result in an error", and says the same of
-  `ui_locales` and `claims_locales`. `login_hint` is OPTIONAL in §3.1.2.1
+  `ui_locales` and `claims_locales`. `ui_locales` starts choosing a page's
+  language in **P4g**, and `claims_locales` stays ignored by decision, both per
+  [ADR 0043](adr/0043-localization-is-a-catalogue-a-negotiation-and-a-set-of-owners.md).
+  `login_hint` is OPTIONAL in §3.1.2.1
   and prefills a form this server does not prefill. `prompt` is deliberately
   not treated this way, because it is the one that changes whether the end
   user is asked anything at all.
@@ -9235,29 +11033,6 @@ session lifecycle. A citation of either half here means that half.
 
 **Login**
 
-- **Password, TOTP, passkey and recovery codes all sign somebody in.**
-  The executor runs a tenant's own ordered `authentication_executions`
-  (REQUIRED/ALTERNATIVE/CONDITIONAL/DISABLED) through a registry keyed by
-  authenticator name, and a login resumes across steps rather than
-  restarting — a satisfied authenticator is never asked for twice, even
-  across a rejected attempt at whatever comes after it. `otp` runs for any
-  subject holding a TOTP credential
-  ([Two-factor authentication with TOTP](#two-factor-authentication-with-totp)),
-  and `passkey` signs a subject in with no username at all
-  ([Signing in with a passkey](#signing-in-with-a-passkey-and-no-username)).
-  `passkey` and `password` share an ALTERNATIVE group and a group offers one
-  form at a time, so the passkey step is applicable to a submission that
-  actually carries an assertion; with nothing submitted the group falls
-  through to the password, whose page is what offers the passkey button.
-  `recovery-code` is applicable on the same terms — only to a submission
-  carrying one — which is how it substitutes for the OTP step instead of
-  competing with it ([Recovery codes](#recovery-codes)).
-  `GET`/`PUT /admin/tenants/{tenant}/flow/executions`
-  ([Admin paths](admin-paths.md#get-flowexecutions-and-put-flowexecutions))
-  now reads and replaces the ordered list wholesale — `authentication_executions`
-  is no longer insert-only, so the rows `provisionBrowserFlow` writes are a
-  starting point rather than what a tenant has for good. What is not there:
-  a UI to drive it, which is **P4d**'s.
 - **Recovery codes are issued once and shown once.** Ten per subject, each
   Argon2id-hashed in its own credential row, offered by the
   `generate-recovery-codes` required action that enrolling either second
@@ -9267,7 +11042,8 @@ session lifecycle. A citation of either half here means that half.
   so a list runs out into a fresh set rather than into a lockout.
   What is not there yet: no way for a subject to ask for a fresh set _before_
   they run out, and no warning as the list gets short — self-service
-  credential management is the account console, which is **P4d**'s. And **no rate
+  credential management is **P4f**'s "me" API and application-initiated
+  actions. And **no rate
   limit on re-issuing**: while the action is owed, each login submission
   with a valid password renders the page again, which costs ten Argon2id
   hashes and eleven row writes. Bounded by holding the password and by
@@ -9276,33 +11052,20 @@ session lifecycle. A citation of either half here means that half.
   and the per-origin throttle is what bounds both — ten submissions a
   minute per client address, which is a budget on the multiplier rather
   than a fix for it.
-- **The account-lifecycle flows exist, and none of them mails on the
-  request path.** Address verification
-  (`GET /tenants/{tenant}/login-actions/action-token`,
-  [Address verification](#address-verification)), self-registration
-  (`GET`/`POST /tenants/{tenant}/login-actions/registration`,
-  [Self-registration](#self-registration)) and password reset
-  (`GET`/`POST /tenants/{tenant}/login-actions/reset-password`,
-  [Password reset](#password-reset)) all exist now, gated by their own
-  tenant setting, each off by default. A tenant with `verify_email` on
-  refuses to complete a login for a self-registered address until it is
-  verified — no authorization code, not just a page saying so. Each queues
-  its mail in `email_outbox` and answers; a pass of its own sends it
-  ([Sending queued mail](#sending-queued-mail-odudu-send-mail)), which is
-  what closed the reset endpoint's timing oracle. Per-tenant SMTP is no
-  longer missing: `GET`/`PUT /admin/tenants/{tenant}/smtp` configures a
-  tenant's own transport and `POST /admin/tenants/{tenant}/smtp/test` sends
-  one message through it
-  ([Admin paths](admin-paths.md#get-smtp-put-smtp-and-post-smtptest)), with
-  the password behind the same key-encryption interface §5 puts a signing
-  key behind, and `resolveSender` falling back to the deployment's own
-  `ODUDU_SMTP_*` where a tenant configures none. What is not there yet: a UI
-  to configure it, which is **P4d**'s.
+- **A password change or reset leaves every other session alive.** Neither
+  the `update-password` action nor a redeemed reset link ends the subject's
+  other sessions, and neither offers to — ASVS V3.3.3 asks that a subject be
+  given that option after changing their password. Planned: **P4f**, whose
+  self-service password change and "me" session list are where the offer
+  belongs. An administrator can already end them all with
+  `DELETE /admin/tenants/{tenant}/subjects/{id}/sessions`
+  ([Admin paths](admin-paths.md#delete-subjectsidsessions)).
 
 - **Every page this server renders is hardcoded HTML**, dependency-free with
-  every interpolated value escaped: twelve `*-html.ts` renderers across the
-  `view` layers of `packages/protocol-oidc`, `packages/authn-flows` and
-  `packages/account`, from the sign-in form to the logged-out page. Theming
+  every interpolated value escaped: fifteen `*-html.ts` renderers across the
+  `view` layers of `packages/protocol-oidc`, `packages/authn-flows`,
+  `packages/account` and `packages/console-gateway`, from the sign-in form
+  to the logged-out page and the console's refusal page. Theming
   and per-client branding are **P4b**, split out of P10 on 2026-09-17 because
   P10's criterion tested provider loading and would have passed with no
   theming at all. Its criterion names every renderer rather than a list of
@@ -9334,21 +11097,22 @@ session lifecycle. A citation of either half here means that half.
   included. **P13**, as above: the FAPI 2.0 plan cannot pass without one of
   them.
 
-**`/introspect` and `/revoke`**
+**Client authentication**
 
-- **A `private_key_jwt` or `tls_client_auth` client can never call either
-  endpoint.** Both authenticate through `authenticateClient` alone, which
-  only reads a Basic header or a body `client_secret`; a client registered
-  for either assertion-based method presents neither and is refused every
-  time. `private_key_jwt` introduced the gap; `tls_client_auth` inherited
-  it. A decision, not a gap in either RFC: neither requires a particular
-  set of client-authentication methods, and closing it extends `/token`'s
-  assertion and certificate dispatch to two more routes rather than
-  changing introspection or revocation — `rfc7662.md`'s "Only the two
-  password methods reach this endpoint" carries the reasoning. **P13** closes
-  it, whose criterion now names both methods at both endpoints: it is a
-  client-authentication change, and P13 is the phase that reworks client
-  authentication for FAPI 2.0.
+- **No `client_secret_jwt`.** OIDC Core §9's HMAC-signed assertion is not
+  accepted at `/token`, `/revoke` or `/introspect`, and is not a registrable
+  `token_endpoint_auth_method`. **P13**, whose criterion is that every
+  client authentication method in OIDC Core §9 and RFC 8705 is accepted at
+  every authenticated endpoint. Verifying one needs the secret readable,
+  where Odudu stores a hash only, so P13's spec decides its storage; the
+  likely answer is that secret alone, encrypted at rest. Under P13's FAPI
+  profile it is refused for a FAPI client and a FAPI tenant's discovery omits
+  it.
+- **No `self_signed_tls_client_auth`.** RFC 8705 §2.2's variant, where the
+  certificate is matched to a key registered in the client's `jwks` rather
+  than to a subject DN, is not accepted anywhere. **P13**, for the same
+  criterion; the console's Advanced tab offers it there. Under the FAPI
+  profile it is refused too, and a FAPI tenant's discovery omits it.
 
 **`/userinfo`**
 
@@ -9390,16 +11154,19 @@ session lifecycle. A citation of either half here means that half.
 
 **The admin API**
 
-- **The audit trail has one reader, the admin API, and no destination
-  outside the database.** Every kind of row the vocabulary names is
-  written — [one sign-in's trail](#one-sign-ins-audit-trail-read-through-the-admin-api)
-  reads two of them back through `GET /admin/tenants/{tenant}/audit` — but
-  nothing shows it except that endpoint: a console is **P4d**'s, whose
-  criterion shows the audit trail, and an `EventListener` delivering a
-  tenant's events to a SIEM or a webhook is **P10**'s, whose criterion
-  names one. A successful `/introspect` or `/userinfo` call writes no row,
-  which is a decision (the P4e spec's §2): each is a read a resource server
-  makes per request, and the grant it reads was recorded when it was
+- **The audit trail has two readers, the admin API and the console's Audit
+  trail area, and no destination outside the database.** Every kind of row
+  the vocabulary names is written —
+  [one sign-in's trail](#one-sign-ins-audit-trail-read-through-the-admin-api)
+  reads two of them back through `GET /admin/tenants/{tenant}/audit` — and
+  the console shows them filtered, one page at a time, with the NDJSON
+  export (`GET …/audit/export`,
+  [Admin paths](admin-paths.md#get-auditcount-and-get-auditexport)) beside
+  them. Nothing hands them to anything unasked: an `EventListener`
+  delivering a tenant's events to a SIEM or a webhook is **P10**'s, whose
+  criterion names one. A successful `/introspect` or `/userinfo` call writes
+  no row, which is a decision (the P4e spec's §2): each is a read a resource
+  server makes per request, and the grant it reads was recorded when it was
   issued.
 - **A refused credential or session change writes no row.** A spent,
   expired or unknown reset or verification link, a password the policy
@@ -9481,11 +11248,12 @@ session lifecycle. A citation of either half here means that half.
   `/userinfo` — between a resource server's request and its answer. **P11**,
   whose criterion documents a p99 for those two paths and so cannot be met
   while an unbounded lookup sits on either.
-- **No published image, no release process, no secret store beyond the
-  process environment, and no backup or restore guidance.** **P12**,
-  Operational readiness, appended on 2026-09-14 because none of it had a
-  phase. Its position in the table is not a dependency: publishing an image
-  waits on nothing, and `README.md` says what can be pulled forward.
+- **No published image or release process.** **P4g**, Public release (moved
+  there from P12 on 2026-10-09). Publishing an image waits on nothing, and
+  `README.md` says what can be pulled forward.
+- **No secret store beyond the process environment, and no backup or restore
+  guidance.** **P12**, Operational readiness, appended on 2026-09-14 because
+  none of it had a phase.
 - **Expired state is deleted, on a window per table, by one pass** —
   `odudu reap`, on the server's own schedule or as a command
   ([Retention](#retention-what-odudu-reap-removes)). What is not there yet:
@@ -9497,3 +11265,27 @@ session lifecycle. A citation of either half here means that half.
   row-level security learns about it from an hourly log line — a decision
   rather than an oversight, and ADR 0024 records it as the one precondition
   bought at that price to keep the loop free of logic.
+
+**Administrative capabilities placed by the P4d gap audit**
+
+An audit of Odudu's admin API against Keycloak's, Auth0's and Okta's
+operator surfaces found capabilities the server does not have yet, and no
+phase owned them. Each is now named in its phase's exit criterion in design
+spec §11. `tests/docs/gap-audit-placement.test.ts` fails the build when an
+item here names a phase whose §11 criterion does not name it too. The audit
+also found admin routes and configuration for features the server already
+has; those are P4d's own work and are not listed here.
+
+- **more required actions (verify email, update profile, accept terms)**:
+  P4f.
+- **several sign-in flows with a per-client override**: P4f.
+- **per-step authenticator configuration**: P4f.
+- **a password blocklist and breach check**: P4f.
+- **translated pages and mail**: P4b, which ships the locales; the catalogues they fill are P4g's, and the console's are P4h's (ADR 0043).
+- **custom subject attributes and a declarative user profile**: P7.
+- **fine-grained admin permissions**: P9.
+- **per-client dedicated mappers**: P10.
+- **a metrics endpoint**: P11.
+- **key import, encryption keys and scheduled key rotation**: P12.
+- **client registration policies and client policies**: P13.
+- **admin impersonation**: P13, with its own threat model.

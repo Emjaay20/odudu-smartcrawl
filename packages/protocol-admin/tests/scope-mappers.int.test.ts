@@ -56,7 +56,8 @@ describe('GET /admin/tenants/{t}/scopes/{id}/mappers', () => {
 
     const before = await readMappers(token, t.name, scopeId);
     expect(before.statusCode).toBe(200);
-    const beforeBody = before.json<{ available: string[]; bound: string[] }>();
+    const beforeBody = before.json<{ available: string[]; bound: string[]; declared: string[] }>();
+    expect(beforeBody.declared).toEqual([]);
     expect(beforeBody.available).toContain('sub');
     expect(beforeBody.available).toContain('profile');
     expect(beforeBody.bound).toEqual([]);
@@ -67,6 +68,32 @@ describe('GET /admin/tenants/{t}/scopes/{id}/mappers', () => {
 
     const after = await readMappers(token, t.name, scopeId);
     expect(after.json<{ bound: string[] }>().bound).toEqual(['sub']);
+  });
+
+  it('names the mappers that declare the scope, bound or not, without moving the ETag', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-tenant']);
+    // Every tenant is provisioned with the standard scopes, so `email` exists.
+    const found = await fixture.http.inject({
+      method: 'GET',
+      url: `/admin/tenants/${t.name}/scopes?name=email`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    const scopeId = found
+      .json<{ items: { id: string; name: string }[] }>()
+      .items.find((scope) => scope.name === 'email')?.id;
+    if (scopeId === undefined) throw new Error('the email scope was not provisioned');
+
+    const before = await readMappers(token, t.name, scopeId);
+    expect(before.json<{ declared: string[] }>().declared).toEqual(['email']);
+    const put = await putMappers(token, t.name, scopeId, ['sub']);
+    expect(put.json<{ bound: string[]; declared: string[] }>()).toMatchObject({
+      bound: ['sub'],
+      declared: ['email'],
+    });
+    const after = await readMappers(token, t.name, scopeId);
+    expect(after.json<{ declared: string[] }>().declared).toEqual(['email']);
+    expect(after.headers.etag).toBe(put.headers.etag);
   });
 
   it('404s for a scope id that belongs to a different tenant', async () => {

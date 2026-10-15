@@ -1,6 +1,10 @@
 import cookie from '@fastify/cookie';
 import formbody from '@fastify/formbody';
 import {
+  actionTokenRepository,
+  enqueueActionsLink,
+  enqueueResetLink,
+  enqueueVerificationLink,
   tenantSettingsRepository,
   registerActionTokenRoute,
   registerRegistrationRoute,
@@ -10,28 +14,40 @@ import {
 } from '@odudu/account';
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { requiredActionRepository } from '@odudu/authn-flows';
+import { consoleGateway } from '@odudu/console-gateway';
 import {
   credentialRepository,
   evaluatePassword,
   hashPassword,
   REUSED_PASSWORD,
+  subjectRepository,
   userRepository,
   verifyPassword,
 } from '@odudu/domain-identity';
-import { newId } from '@odudu/kernel';
+import { DEFAULT_CONSOLE_DIR, DEFAULT_OUTBOX_MAX_ATTEMPTS, newId } from '@odudu/kernel';
 import { adminRoutes, composeUserSubject } from '@odudu/protocol-admin';
 import {
   clientKeySet,
   oidcRoutes,
+  sendThrottledPage,
   standardClaimMappers,
   type AuditRefusalBudget,
 } from '@odudu/protocol-oidc';
-import Fastify, { type FastifyInstance, type RawServerDefault } from 'fastify';
+import Fastify, {
+  type FastifyError,
+  type FastifyInstance,
+  type FastifyReply,
+  type RawServerDefault,
+} from 'fastify';
 import { type IncomingMessage, type ServerResponse } from 'node:http';
 import { type Logger as PinoLogger } from 'pino';
 import { createClientKeyRequest, defaultClientKeyLookup } from '#/client-key-transport';
+import { type ConsoleKeys, missingConsoleKey } from '#/console-key';
 import { registerHealth } from '#/health';
-import { slidingWindow } from '#/throttle';
+import { type RateLimiter, slidingWindow } from '#/throttle';
+import { neutraliseRequestInput } from '#/input-hygiene';
+import { loginBudgetKey } from '#/login-throttle';
+import { throttleOrigin } from '#/throttle-origin';
 
 export interface AppDeps {
   readonly database: DatabaseHandle;
@@ -63,6 +79,27 @@ export interface AppDeps {
    */
   readonly publicBaseUrl?: string;
   /**
+   * `publicBaseUrl` while the console is on, and unset while it is off: a
+   * tenant created through the admin API is registered the console's
+   * redirect and post-logout URIs under it.
+   */
+  readonly consoleBaseUrl?: string | undefined;
+  /**
+   * The key the gateway authenticates with as every tenant's admin client,
+   * and the public set a tenant created through the admin API registers.
+   * Required with `consoleBaseUrl`: a console that cannot authenticate
+   * would fail every sign-in rather than the boot.
+   */
+  readonly consoleKeys?: ConsoleKeys | undefined;
+  /**
+   * `ODUDU_CONSOLE_DIR`: the built single-page app the gateway serves under
+   * `/console/*`. Defaults to the same path the config schema does, so a
+   * caller with no reason to move it can leave it unset.
+   */
+  readonly consoleDir?: string;
+  /** The console gateway's clock, so a test can age a pending sign-in. */
+  readonly consoleNow?: () => Date;
+  /**
    * Whether to trust `X-Forwarded-*` headers when deriving `request.ip`.
    * Defaults to `false`: with no reverse proxy in front of the server,
    * those headers are client-controlled, and `request.ip` will later feed
@@ -93,6 +130,14 @@ export interface AppDeps {
    */
   readonly clientSecretThrottle?: ThrottleSettings;
   /**
+   * The budget per address and username on the sign-in submission alone,
+   * beside the per-origin one: credential stuffing against one account
+   * from one address is refused sooner without punishing a whole NAT.
+   * Defaults to `DEFAULT_LOGIN_THROTTLE`; `main.ts` passes what
+   * `ODUDU_LOGIN_THROTTLE_*` says.
+   */
+  readonly loginThrottle?: ThrottleSettings;
+  /**
    * ADR 0028's escape hatch for a `jwks_uri` resolving to a private or
    * loopback address — the same flag `main.ts` already passes to the
    * back-channel logout transport, reused here for `private_key_jwt`'s
@@ -108,6 +153,13 @@ export interface AppDeps {
    * `jwks_uri` is not. Defaults `false`; loopback stays refused either way.
    */
   readonly allowPrivateSmtpHosts?: boolean;
+  /**
+   * Whether the deployment has an SMTP sender of its own, which a tenant
+   * with no relay of its own falls back to. Defaults `false`.
+   */
+  readonly deploymentSmtp?: boolean;
+  /** `ODUDU_OUTBOX_MAX_ATTEMPTS`, what the admin API's mail listing calls `failed`. */
+  readonly outboxMaxAttempts?: number;
 }
 
 export interface ThrottleSettings {
@@ -116,6 +168,8 @@ export interface ThrottleSettings {
 }
 
 export const DEFAULT_THROTTLE: ThrottleSettings = { limit: 10, windowSeconds: 60 };
+
+export const DEFAULT_LOGIN_THROTTLE: ThrottleSettings = { limit: 5, windowSeconds: 60 };
 
 // Mirrors the account lockout's own defaults (brute_force_max_failures,
 // brute_force_lockout_seconds — packages/db/drizzle/0041_login_failures.sql):
@@ -131,12 +185,16 @@ export const AUDIT_REFUSAL_ROWS_PER_CLIENT = 20;
 export const AUDIT_REFUSAL_WINDOW_SECONDS = 60;
 
 export function auditRefusalBudget(now: () => Date): AuditRefusalBudget {
-  const rows = slidingWindow({
+  const rows: RateLimiter = slidingWindow({
     limit: AUDIT_REFUSAL_ROWS_PER_CLIENT - 1,
     windowSeconds: AUDIT_REFUSAL_WINDOW_SECONDS,
     now,
   });
-  const closing = slidingWindow({ limit: 1, windowSeconds: AUDIT_REFUSAL_WINDOW_SECONDS, now });
+  const closing: RateLimiter = slidingWindow({
+    limit: 1,
+    windowSeconds: AUDIT_REFUSAL_WINDOW_SECONDS,
+    now,
+  });
   return {
     take: (key) => {
       if (rows.check(key).allowed) return 'row';
@@ -154,10 +212,21 @@ export function auditRefusalBudget(now: () => Date): AuditRefusalBudget {
  * budget is `clientSecretThrottle` below, keyed by client and consulted
  * inside `authenticateClient`, not here.
  */
-const THROTTLED_POSTS: ReadonlySet<string> = new Set([
-  '/tenants/:tenant/login-actions/authenticate',
+const SIGN_IN_POST = '/tenants/:tenant/login-actions/authenticate';
+
+// A person at a browser reads these refusals, so they answer with a page; the
+// admin routes below are called by a client and keep a bare 429.
+const PAGE_POSTS: ReadonlySet<string> = new Set([
+  SIGN_IN_POST,
   '/tenants/:tenant/login-actions/registration',
   '/tenants/:tenant/login-actions/reset-password',
+]);
+
+const THROTTLED_POSTS: ReadonlySet<string> = new Set([
+  ...PAGE_POSTS,
+  '/admin/tenants/:tenant/subjects/:id/password-reset',
+  '/admin/tenants/:tenant/subjects/:id/verification',
+  '/admin/tenants/:tenant/subjects/:id/actions-email',
 ]);
 
 // The composition-root half of self-registration: @odudu/account never
@@ -187,6 +256,11 @@ async function createAccount(
   return { subjectId };
 }
 
+function refuse(reply: FastifyReply, route: string, retryAfterSeconds: number): FastifyReply {
+  if (PAGE_POSTS.has(route)) return sendThrottledPage(reply, retryAfterSeconds);
+  return reply.header('retry-after', String(retryAfterSeconds)).code(429).send();
+}
+
 export function buildApp(deps: AppDeps): FastifyInstance {
   const app = Fastify<RawServerDefault, IncomingMessage, ServerResponse>({
     loggerInstance: deps.logger,
@@ -199,7 +273,23 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     reply.header('x-request-id', request.id);
   });
 
-  const throttle = slidingWindow({
+  // The root handler, for every route that has no scope of its own (the admin
+  // and console scopes keep theirs). A server error is a fixed document: the
+  // driver's message carries the query and its parameters, so it is logged by
+  // kind only and never sent. A client error keeps Fastify's own answer.
+  app.setErrorHandler<FastifyError>((error, request, reply) => {
+    const status = error.statusCode ?? 500;
+    if (status < 500) return reply.send(error);
+    request.log.error({ err: { type: error.name, code: error.code } }, 'request failed');
+    return reply.code(500).type('application/problem+json').send({
+      type: 'about:blank',
+      title: 'Internal Server Error',
+      status: 500,
+      instance: request.id,
+    });
+  });
+
+  const throttle: RateLimiter = slidingWindow({
     ...(deps.throttle ?? DEFAULT_THROTTLE),
     now: () => new Date(),
   });
@@ -207,8 +297,13 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   // ADR 0023's client half. A distinct `slidingWindow` from `throttle`
   // above: same primitive, a different key and a different budget, so one
   // flood cannot spend the other's window.
-  const clientSecretLimiter = slidingWindow({
+  const clientSecretLimiter: RateLimiter = slidingWindow({
     ...(deps.clientSecretThrottle ?? DEFAULT_CLIENT_SECRET_THROTTLE),
+    now: () => new Date(),
+  });
+
+  const loginLimiter: RateLimiter = slidingWindow({
+    ...(deps.loginThrottle ?? DEFAULT_LOGIN_THROTTLE),
     now: () => new Date(),
   });
 
@@ -237,10 +332,33 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     if (request.method !== 'POST') return;
     const route = request.routeOptions.url;
     if (route === undefined || !THROTTLED_POSTS.has(route)) return;
-    const decision = throttle.check(request.ip);
+    const decision = throttle.check(throttleOrigin(request.ip));
     if (decision.allowed) return;
-    reply.header('retry-after', String(decision.retryAfterSeconds));
-    return reply.code(429).send();
+    return refuse(reply, route, decision.retryAfterSeconds);
+  });
+
+  // Under /tenants, before anything reads a value: a NUL or a lone surrogate
+  // in a name, a form field, a query parameter or the tenant segment cannot
+  // be a database parameter, so it is made one no account answers to.
+  app.addHook('preValidation', (request, _reply, done) => {
+    if (request.routeOptions.url?.startsWith('/tenants/') === true) {
+      neutraliseRequestInput(request);
+    }
+    done();
+  });
+
+  // The composite budget needs the form, so it waits for the body parse —
+  // still before the route runs, so before any account lookup or Argon2id
+  // verification — and answers the same bytes the per-origin refusal does.
+  app.addHook('preHandler', async (request, reply) => {
+    if (request.method !== 'POST') return;
+    if (request.routeOptions.url !== SIGN_IN_POST) return;
+    const params = request.params as { tenant?: string };
+    const key = loginBudgetKey(throttleOrigin(request.ip), params.tenant ?? '', request.body);
+    if (key === undefined) return;
+    const decision = loginLimiter.check(key);
+    if (decision.allowed) return;
+    return refuse(reply, SIGN_IN_POST, decision.retryAfterSeconds);
   });
 
   // Registered here rather than by a route: the token endpoint needs
@@ -250,6 +368,20 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   app.register(cookie);
 
   registerHealth(app, deps);
+  if (deps.consoleBaseUrl !== undefined) {
+    if (deps.consoleKeys === undefined) throw missingConsoleKey();
+    app.register(
+      consoleGateway({
+        database: deps.database,
+        ownerDatabase: deps.ownerDatabase,
+        kek: deps.kek,
+        publicBaseUrl: deps.consoleBaseUrl,
+        clientKey: deps.consoleKeys.key,
+        consoleDir: deps.consoleDir ?? DEFAULT_CONSOLE_DIR,
+        ...(deps.consoleNow === undefined ? {} : { now: deps.consoleNow }),
+      }),
+    );
+  }
   app.register(
     adminRoutes({
       database: deps.database,
@@ -257,9 +389,24 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       logger: deps.logger,
       cursorKey: deps.kek,
       kek: deps.kek,
+      consoleBaseUrl: deps.consoleBaseUrl,
+      consoleClientJwks: deps.consoleKeys?.jwks,
       trustProxy: deps.trustProxy ?? false,
       claimMappers,
       allowPrivateSmtpHosts: deps.allowPrivateSmtpHosts ?? false,
+      deploymentSmtp: deps.deploymentSmtp ?? false,
+      outboxMaxAttempts: deps.outboxMaxAttempts ?? DEFAULT_OUTBOX_MAX_ATTEMPTS,
+      retireResetLinks: (tx, subjectId) =>
+        actionTokenRepository(tx).invalidateOutstandingPasswordLinks(subjectId),
+      sendAccountLink: async (tx, request) => {
+        if (deps.publicBaseUrl === undefined) return 'unavailable';
+        const tenant = { ...request, issuerBase: deps.publicBaseUrl };
+        if (request.kind === 'reset_password') await enqueueResetLink(tx, tenant, request);
+        else if (request.kind === 'verify_email')
+          await enqueueVerificationLink(tx, tenant, request);
+        else await enqueueActionsLink(tx, tenant, request, request);
+        return 'queued';
+      },
     }),
   );
   app.register(
@@ -292,8 +439,23 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     markVerified: async (tx, subjectId) => {
       await userRepository(tx).markEmailVerified(subjectId);
     },
+    // A subject an administrator created has no password until a link gives
+    // it its first, the way `POST …/subjects/:id/password` creates one.
     setPassword: async (tx, subjectId, password) => {
-      await credentialRepository(tx).setPassword(subjectId, await hashPassword(password));
+      const credentials = credentialRepository(tx);
+      const hash = await hashPassword(password);
+      if ((await credentials.passwordFor(subjectId)) !== null) {
+        await credentials.setPassword(subjectId, hash);
+        return;
+      }
+      const subject = await subjectRepository(tx).byId(subjectId);
+      if (subject === null) throw new Error(`no subject ${subjectId}`);
+      await credentials.insert({
+        tenantId: subject.tenantId,
+        subjectId,
+        type: 'password',
+        secret: { kind: 'password', hash },
+      });
     },
     getUsername: async (tx, subjectId) => {
       const user = await userRepository(tx).bySubjectId(subjectId);
@@ -310,6 +472,11 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     },
     clearPasswordUpdateAction: (tx, subjectId) =>
       requiredActionRepository(tx).complete(subjectId, 'update-password'),
+    addRequiredActions: async (tx, tenantId, subjectId, actions) => {
+      for (const action of actions) {
+        await requiredActionRepository(tx).add(tenantId, subjectId, action);
+      }
+    },
   });
 
   registerRegistrationRoute(app, {

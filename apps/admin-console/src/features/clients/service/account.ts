@@ -1,0 +1,88 @@
+import type { Role, SetRolesResponse } from '@odudu/contracts/admin';
+import { lacking } from '#/shared/service/access';
+import { beyondCaller, isAdminRole } from '#/shared/service/capabilities';
+import { andList, counted } from '#/shared/service/format';
+import { assignmentsOf, byNameThenClient, type AssignedRole } from '#/shared/service/mappedRoles';
+import type { AdminCapability, Authority } from '#/shared/service/principal';
+
+export const SERVICE_CAPABILITY: AdminCapability = 'manage-users';
+
+// The record the service account's own page reads, so the two stay in step.
+export function serviceRolesRecord(subjectId: string): string {
+  return `subjects/${subjectId}/roles`;
+}
+
+// The record the account's roles are saved on, or none for a client with no account.
+export function serviceRolesRecordOf(
+  client: { service_subject_id: string | null } | undefined,
+): string | null {
+  const subject = client?.service_subject_id ?? null;
+  return subject === null ? null : serviceRolesRecord(subject);
+}
+
+export const SERVICE_RULE =
+  'The roles the client holds when it signs in as itself with the client credentials grant. A token it is given carries these, mapped through the scopes it asks for.';
+
+export const NO_ACCOUNT =
+  'This client has no service account: only a confidential client is given one, and a public client signs nobody in as itself.';
+
+export const ROLES_LABEL = 'Roles';
+
+export interface Split {
+  // The roles this tab edits.
+  roleIds: string[];
+  // The admin capabilities, kept as they were by every save here.
+  adminIds: string[];
+}
+
+export function splitAssigned(items: SetRolesResponse['items']): Split {
+  return {
+    roleIds: items.filter((role) => !isAdminRole(role)).map((role) => role.id),
+    adminIds: items.filter((role) => isAdminRole(role)).map((role) => role.id),
+  };
+}
+
+export function heldCapabilitiesText(items: SetRolesResponse['items']): string | null {
+  const names = items.filter((role) => isAdminRole(role)).map((role) => role.name);
+  return names.length === 0
+    ? null
+    : `It also holds ${andList(names)}, which are set on its own record and kept as they are by a save here.`;
+}
+
+// Why a role cannot be given here: an admin capability has its own place,
+// and one reaching a capability the caller lacks is beyond the ceiling (ADR 0040).
+export function roleUnavailable(
+  role: Pick<Role, 'name' | 'client_key' | 'admin_reach'>,
+  caller: readonly AdminCapability[],
+): string | null {
+  if (isAdminRole(role)) return 'an admin capability, set on the service account itself';
+  const beyond = beyondCaller(role.admin_reach, caller);
+  return beyond.length === 0 ? null : `reaches ${andList(beyond)}, which you do not hold`;
+}
+
+export function assignedCount(count: number): string {
+  return `${counted(count, 'role', 'roles')} assigned.`;
+}
+
+export const NO_ROLES = 'The service account holds no role other than its admin capabilities.';
+
+export function assignedRoles(
+  ids: readonly string[],
+  known: ReadonlyMap<string, AssignedRole>,
+): AssignedRole[] {
+  return byNameThenClient(assignmentsOf(ids, known));
+}
+
+// Whether the tab can say anything of the account: there is one, and the
+// caller may read and set its roles. Until whoami answers nothing is ruled out.
+export type ServiceAccess =
+  { status: 'none' } | { status: 'denied' } | { status: 'ready'; subjectId: string };
+
+export function serviceAccess(
+  client: { service_subject_id: string | null },
+  authority: Authority | undefined,
+): ServiceAccess {
+  if (client.service_subject_id === null) return { status: 'none' };
+  if (lacking(authority, [SERVICE_CAPABILITY]).length > 0) return { status: 'denied' };
+  return { status: 'ready', subjectId: client.service_subject_id };
+}

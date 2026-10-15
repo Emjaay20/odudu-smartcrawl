@@ -360,7 +360,9 @@ each a two-line wrapper because `FastifyReply` cannot live in the
 transport-free `kernel` package. A route never sets `content-type`,
 `content-security-policy`, `x-frame-options` or `referrer-policy` itself;
 `html-response.test.ts` holds every package's view layer to naming none of
-those itself outside the two files that spread `pageHeaders`.
+those itself outside those two files and the console shell's `spa.ts`,
+which sets its own fixed policy (ADR 0029's amendment); any other wrapper
+gets them only by spreading `pageHeaders`.
 
 **A page that needs a script says so in its return value**, as a
 `RenderedPage` carrying the nonce its own markup used, and `pageHeaders`
@@ -370,6 +372,16 @@ such a page looks broken rather than refused, and a nonce named in a header
 that the markup does not carry fails exactly the same way. ADR 0018's
 amendment has the reasoning. Every interpolated value passes through the
 renderer's own `escapeHtml`, tenant names and secrets included.
+
+**A user-facing string is an entry in one flat record keyed by a stable
+ID, never a literal in the markup or a hook.** On the server that is a
+`messages.ts` beside the renderer; in the console, the wording constants a
+`service` already holds, with a count still written through `counted()` and
+`plural()`, which the extraction replaces. Pages and mail will read those
+records from per-locale catalogues (ADR 0043). **Nothing enforces this yet**:
+the fifteen `*-html.ts` renderers still hold their text inline. P4g adds the
+lint for the server and P4h for the console, each with the extraction it
+follows, so until then this is a rule somebody has to follow.
 
 ## Layering
 
@@ -394,8 +406,56 @@ Permitted imports:
 Features expose one `index.ts`. No feature reaches into another's
 internals.
 
+In the consoles an import never carries a `.ts` or `.tsx` extension:
+`'#/shared/service/chunkLoad'`, not `'…/chunkLoad.ts'`.
+`tests/lint/console-imports-no-extension.test.ts` fails the build on one.
+
+**Reuse before writing.** Before adding a function, hook, adapter, view or
+wording constant to a console feature, search `shared/` and the sibling
+features for an equivalent by behaviour, not only by name. If one exists,
+import it; a feature reaches another only through its `index.ts`. If two
+features need the same thing, move it to `shared/` (any layer) in its own
+commit and repoint both. A task's report says what was searched and what was
+reused or moved. Do not merge things that merely look alike and change for
+different reasons: feature-specific wording stays in its feature. Each
+of these is a lint with no allowlist, so resolving a finding means changing the
+code, and each header lists the forms it cannot see, so a green
+lint speaks only for the rest: `console-no-duplicate-exports` fails a
+declaration copied between features, `shared`, `app` or the e2e files;
+`console-no-module-state` module-scope state (a `let`, a mutated collection, a
+class's statics, a counter or setter kept by a factory); `console-store-access`
+a store action called through `getState()` in a hook or component, a
+`setState()` or a whole-store subscription; `console-query-keys` a hand-typed
+cache key; `console-css-vars-defined` and `console-css-module-classes-defined`
+a custom property or class nothing defines, and a class nothing uses.
+
+**"No business logic" in a usecase or repository means none, however small
+it looks.** A usecase wires hooks, state and calls together; a repository
+holds queries, mutations and cache keys. Neither decides anything, and
+neither phrases or formats anything. A rule, a message, a failure-to-copy
+mapping and a formatter are each a pure `service` function, and one shared
+by two features lives once in `shared/service`. ADR 0010's amendment has
+the reasoning, and `tests/lint/console-usecase-integration-only.test.ts`
+fails the build on the constructs it can see, a ternary in a hook's returned
+object and a spread merging two objects among them, as ESLint's `complexity`
+holds each usecase and repository function to 8. A construct they cannot see
+is still a breach.
+
 Domain packages never import protocol packages. Protocol packages never
 import each other.
+
+## Performance and scale
+
+Every increment is designed for one volume: 1,000,000 subjects and 10,000
+clients in a tenant, 10,000 tenants, 100,000,000 audit events. A phase spec
+says how each path it adds behaves there. On the server a collection read is
+bounded under `MAX_LIMIT`, a list or search is served by an index, a list
+endpoint makes a constant number of queries, and an in-process structure
+states its bound. In the console the React Compiler is on, nothing renders
+an unbounded collection, and hand-written `useMemo`, `useCallback` or
+`React.memo` appears only where a measurement asks for it. ADR 0041 has the
+reasoning; P11 still owns replicas, load and p99. Quote these rules in a
+brief, as the layering rules are.
 
 ## Non-negotiables
 

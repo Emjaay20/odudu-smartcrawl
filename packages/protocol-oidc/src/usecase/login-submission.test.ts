@@ -20,6 +20,7 @@ const TENANT = {
   ssoSessionMaxSeconds: 36_000,
   ssoSessionIdleSeconds: 1_800,
   rememberMeAllowed: true,
+  loginWithEmail: false,
   rememberMeIdleSeconds: 604_800,
   rememberMeMaxSeconds: 2_592_000,
   maxSessionsPerBrowser: 25,
@@ -50,6 +51,7 @@ interface Harness {
   pendingActions: Mock;
   resetAuthenticationProgress: Mock;
   recordRememberMe: Mock;
+  subjectEnabled: Mock;
 }
 
 function harness(): Harness {
@@ -63,6 +65,7 @@ function harness(): Harness {
   const pendingActions = vi.fn().mockResolvedValue([]);
   const resetAuthenticationProgress = vi.fn().mockResolvedValue(undefined);
   const recordRememberMe = vi.fn().mockResolvedValue(undefined);
+  const subjectEnabled = vi.fn().mockResolvedValue(true);
   const deps: LoginSubmissionDeps = {
     findTenant: vi.fn().mockResolvedValue(TENANT),
     advance,
@@ -72,6 +75,7 @@ function harness(): Harness {
     pendingActions,
     resetAuthenticationProgress,
     recordRememberMe,
+    subjectEnabled,
     completeLogin,
     // consentRequired: false is 'not_required' unconditionally — none of
     // this file's cases are about consent, so the gate stays a no-op here;
@@ -96,6 +100,7 @@ function harness(): Harness {
     pendingActions,
     resetAuthenticationProgress,
     recordRememberMe,
+    subjectEnabled,
   };
 }
 
@@ -438,8 +443,34 @@ describe('handleLoginSubmission — a failed attempt must not consume the sessio
       undefined,
     );
 
-    expect(outcome).toEqual({ kind: 'reject', authSessionId: AUTH_SESSION_ID });
+    expect(outcome).toEqual({
+      kind: 'reject',
+      authSessionId: AUTH_SESSION_ID,
+      refusal: 'rejected',
+      username: 'ada',
+    });
     expect(completeLogin).not.toHaveBeenCalled();
+  });
+
+  it('names a spent recovery code apart from every other refusal', async () => {
+    const { deps, advance } = harness();
+    advance.mockResolvedValue({ kind: 'failure', reason: 'already_used' });
+
+    const outcome = await handleLoginSubmission(
+      deps,
+      'acme',
+      'https://idp.example',
+      AUTH_SESSION_ID,
+      { recoveryCode: 'AAAAA-BBBBB' },
+      REQUEST,
+      undefined,
+    );
+
+    expect(outcome).toEqual({
+      kind: 'reject',
+      authSessionId: AUTH_SESSION_ID,
+      refusal: 'already_used',
+    });
   });
 
   it('returns unauthenticated on an expired session without calling completeLogin', async () => {
@@ -475,6 +506,58 @@ describe('handleLoginSubmission — a failed attempt must not consume the sessio
     );
 
     expect(outcome).toEqual({ kind: 'reject', authSessionId: AUTH_SESSION_ID });
+    expect(completeLogin).not.toHaveBeenCalled();
+  });
+
+  it('carries no refusal when the step only asked for more, so no failure is claimed', async () => {
+    const { deps, advance } = harness();
+    advance.mockResolvedValue({ kind: 'challenge', form: 'otp' });
+
+    const outcome = await handleLoginSubmission(
+      deps,
+      'acme',
+      'https://idp.example',
+      AUTH_SESSION_ID,
+      { username: 'ada', password: 'right' },
+      REQUEST,
+      undefined,
+    );
+
+    expect(outcome).toEqual({ kind: 'reject', authSessionId: AUTH_SESSION_ID, username: 'ada' });
+  });
+});
+
+describe('handleLoginSubmission — a disabled subject who passed the factors', () => {
+  it('is refused as a wrong password is, before any later gate speaks', async () => {
+    const {
+      deps,
+      subjectEnabled,
+      resetAuthenticationProgress,
+      checkEmailVerification,
+      pendingActions,
+      completeLogin,
+    } = harness();
+    subjectEnabled.mockResolvedValue(false);
+
+    const outcome = await handleLoginSubmission(
+      deps,
+      'acme',
+      'https://idp.example',
+      AUTH_SESSION_ID,
+      { username: 'ada', password: 'right' },
+      REQUEST,
+      undefined,
+    );
+
+    expect(outcome).toEqual({
+      kind: 'reject',
+      authSessionId: AUTH_SESSION_ID,
+      refusal: 'rejected',
+      username: 'ada',
+    });
+    expect(resetAuthenticationProgress).toHaveBeenCalledWith('tenant-1', AUTH_SESSION_ID);
+    expect(checkEmailVerification).not.toHaveBeenCalled();
+    expect(pendingActions).not.toHaveBeenCalled();
     expect(completeLogin).not.toHaveBeenCalled();
   });
 });
