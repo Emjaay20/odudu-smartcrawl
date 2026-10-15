@@ -8,7 +8,7 @@
 
 **Tech Stack:** Node 24, TypeScript 6.0.3, Fastify 5.12.3, PostgreSQL 17, Drizzle ORM 0.45.2, Zod 4.6.1, Vitest 5.0.0, Testcontainers 12.1.0, jose 6.2.12, @node-rs/argon2 2.2.1. Two candidate additions, each gated by a spike: a WebAuthn server library (Task 17) and a QR encoder confined to the view layer (Task 16).
 
-**Spec:** `docs/superpowers/specs/2026-09-15-p2b-credentials-mfa-sessions-design.md`
+**Spec:** `docs/archive/specs/2026-09-15-p2b-credentials-mfa-sessions-design.md`
 
 **Umbrella spec:** `docs/superpowers/specs/2026-09-10-odudu-design.md`
 
@@ -395,7 +395,7 @@ git add -A
 git commit -m "Link a token grant to the SSO session it was issued under"
 git push -u origin p2b-credentials-mfa-sessions
 gh pr create --draft --title "P2b: credentials, MFA and the session lifecycle" \
-  --body "Implements docs/superpowers/specs/2026-09-15-p2b-credentials-mfa-sessions-design.md. Draft for the phase; CI runs per increment.
+  --body "Implements docs/archive/specs/2026-09-15-p2b-credentials-mfa-sessions-design.md. Draft for the phase; CI runs per increment.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)"
 ```
@@ -3399,7 +3399,7 @@ gh pr checks --watch
 - Modify: `README.md`, `docs/request-paths.md`, `docs/NEXT.md`
 - Modify: `docs/superpowers/specs/2026-09-10-odudu-design.md`
 - Modify: `CLAUDE.md`
-- Modify: `docs/superpowers/specs/2026-09-15-p2b-credentials-mfa-sessions-design.md`
+- Modify: `docs/archive/specs/2026-09-15-p2b-credentials-mfa-sessions-design.md`
 
 - [ ] **Step 1: Re-run every transcript in `docs/request-paths.md`**
 

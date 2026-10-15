@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript (no `any`), Fastify, Drizzle over PostgreSQL with row-level security, `jose`, Vitest with Testcontainers.
 
-**Spec:** `docs/superpowers/specs/2026-09-23-p4a-token-exchange-design.md`
+**Spec:** `docs/archive/specs/2026-09-23-p4a-token-exchange-design.md`
 
 ## Global Constraints
 

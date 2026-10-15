@@ -7,8 +7,8 @@ note do not keep — what was discovered while building, especially what
 turned out to be wrong.
 
 The phase's own argument is in
-[its spec](../superpowers/specs/2026-09-18-p3a-clients-registration-consent-design.md)
-and [its plan](../superpowers/plans/2026-09-18-p3a-clients-registration-consent.md);
+[its spec](../archive/specs/2026-09-18-p3a-clients-registration-consent-design.md)
+and [its plan](../archive/plans/2026-09-18-p3a-clients-registration-consent.md);
 section 11 of [the umbrella spec](../superpowers/specs/2026-09-10-odudu-design.md)
 carries the roadmap-level amendments. The task-by-task ledger, with every
 review verdict and ruling, was a working file in the git-ignored

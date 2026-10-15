@@ -19,7 +19,7 @@ by the deployment KEK.
 `@odudu/crypto` (`wrapSecret`, JWKS verification over `jose`), Zod 4,
 Vitest + Testcontainers.
 
-**Spec:** `docs/superpowers/specs/2026-09-26-p4d-admin-console-design.md` §5
+**Spec:** `docs/archive/specs/2026-09-26-p4d-admin-console-design.md` §5
 (gateway), §7 (edge cases the gateway answers) and §9 (testing). The
 repository facts this plan relies on are verified at the point each one is
 used, and each carries its command.

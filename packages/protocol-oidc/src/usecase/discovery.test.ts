@@ -221,7 +221,7 @@ describe('resolveDiscoveryDocument', () => {
   );
 
   // The design decision this pins:
-  // docs/superpowers/specs/2026-09-18-p3a-clients-registration-consent-design.md:596-598 —
+  // docs/archive/specs/2026-09-18-p3a-clients-registration-consent-design.md:596-598 —
   // unset ODUDU_TRUST_PROXY means tls_client_auth is unavailable, so
   // discovery must not name it either.
   it.each([false, true])(

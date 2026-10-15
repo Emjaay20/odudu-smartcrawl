@@ -452,7 +452,7 @@ describe('[RFC8705-2.1.2-01] a tls_client_auth registration requires its subject
   });
 });
 
-// docs/superpowers/specs/2026-09-18-p3a-clients-registration-consent-design.md:596-598:
+// docs/archive/specs/2026-09-18-p3a-clients-registration-consent-design.md:596-598:
 // "unset means the method is unavailable and a client registering
 // tls_client_auth is refused" — the half of that decision `/token`'s own
 // gate (ODUDU_TRUST_PROXY) does not reach, since registration and

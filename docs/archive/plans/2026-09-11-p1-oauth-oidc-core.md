@@ -8,7 +8,7 @@
 
 **Tech Stack:** Node 24, TypeScript 6.0.3, Fastify 5.12.3, PostgreSQL 17, Drizzle ORM 0.45.2, Zod 4.6.1, Vitest 5.0.0, Testcontainers 12.1.0, jose 6.2.12, @node-rs/argon2 2.2.1, @fastify/formbody 9.0.0, @fastify/cookie 11.1.2, Stryker 10.0.0.
 
-**Spec:** `docs/superpowers/specs/2026-09-11-p1-oauth-oidc-core-design.md`
+**Spec:** `docs/archive/specs/2026-09-11-p1-oauth-oidc-core-design.md`
 
 **Umbrella spec:** `docs/superpowers/specs/2026-09-10-odudu-design.md`
 
@@ -727,7 +727,7 @@ The longest read in the phase. Scope it: only the clauses reachable from the aut
 
 Cover sections 2 (ID Token), 3.1 (Authorization Code Flow) in full, 5.1–5.4 (claims, scopes, UserInfo), 15.1 (mandatory-to-implement features), and 16 (security considerations).
 
-Sections 3.2 (Implicit) and 3.3 (Hybrid) get `n/a` rows: `n/a: response types not supported — see docs/superpowers/specs/2026-09-11-p1-oauth-oidc-core-design.md §1`.
+Sections 3.2 (Implicit) and 3.3 (Hybrid) get `n/a` rows: `n/a: response types not supported — see docs/archive/specs/2026-09-11-p1-oauth-oidc-core-design.md §1`.
 
 Rows that P1 defers rather than omits — `prompt`, `max_age`, `acr_values`, `request` objects, `claims` parameter, pairwise subject identifiers — get `deferred:` rows naming the phase and reason, for example:
 

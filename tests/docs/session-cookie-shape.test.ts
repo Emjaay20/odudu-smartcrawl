@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { loadDocument } from './markdown.js';
 
 // A session cookie entry is `<session id>:<secret>` (spec §16 of
-// docs/superpowers/specs/2026-09-26-p4e-audit-events-design.md). A
+// docs/archive/specs/2026-09-26-p4e-audit-events-design.md). A
 // transcript showing a bare id as the cookie shows the defect that shape
 // closed, so it passes only as a capture older than the secret, and only
 // with the re-run naming the migration placed right after it.

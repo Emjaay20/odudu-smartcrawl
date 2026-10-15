@@ -68,7 +68,7 @@ use a recursive CTE over `role_composites`, whose only cycle guard is
 not a longer cycle. Does `UNION` (duplicate-eliminating) terminate on a
 cyclic composite-role graph where `UNION ALL` does not? Verified against
 PostgreSQL 17 (the version the project runs;
-`docs/superpowers/plans/2026-09-14-p2a-identity-model.md`'s example command
+`docs/archive/plans/2026-09-14-p2a-identity-model.md`'s example command
 also names `postgres:17`), not asserted from documentation.
 
 Container:

@@ -4,7 +4,7 @@ What the phase found, in the shape `docs/phases/p2b.md` established: this
 file is the running record the spec, the plan and the umbrella spec's close
 note do not keep — what was discovered while building, and especially what
 turned out to be wrong. The phase's own argument is in
-[its spec](../superpowers/specs/2026-09-26-p4e-audit-events-design.md) and
+[its spec](../archive/specs/2026-09-26-p4e-audit-events-design.md) and
 [ADR 0037](../adr/0037-refusal-rows-are-bounded-by-the-principal-they-name.md);
 what it built is shown door by door in
 [docs/request-paths.md](../request-paths.md) and, for the admin rows, in

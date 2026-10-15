@@ -286,7 +286,7 @@ export function parseClientMetadata(
       'token_endpoint_auth_method',
     );
   }
-  // docs/superpowers/specs/2026-09-18-p3a-clients-registration-consent-design.md:596-598:
+  // docs/archive/specs/2026-09-18-p3a-clients-registration-consent-design.md:596-598:
   // "unset means the method is unavailable and a client registering
   // tls_client_auth is refused" — a registration nobody could ever
   // authenticate with is worse than none, since it looks configured.

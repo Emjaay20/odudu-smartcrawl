@@ -5,8 +5,8 @@ What the phase found, in the order it found it (newest first). Split out of
 where the project actually stands had become three per cent of it.
 
 The phase's own argument is in
-[its spec](../superpowers/specs/2026-09-15-p2b-credentials-mfa-sessions-design.md)
-and [its plan](../superpowers/plans/2026-09-15-p2b-credentials-mfa-sessions.md);
+[its spec](../archive/specs/2026-09-15-p2b-credentials-mfa-sessions-design.md)
+and [its plan](../archive/plans/2026-09-15-p2b-credentials-mfa-sessions.md);
 section 11 of [the umbrella spec](../superpowers/specs/2026-09-10-odudu-design.md)
 carries the close note. This file is the running record those three do not keep:
 what was discovered while building, including the things that turned out to be
@@ -795,12 +795,12 @@ anything that authenticates should use, `byId` stays liveness-blind for the
 reaper and a future session list, and `establishSession` now takes the
 ceiling as a `maxSeconds` parameter instead of a fixed 12-hour constant. The
 plan is
-[2026-09-15-p2b-credentials-mfa-sessions.md](../superpowers/plans/2026-09-15-p2b-credentials-mfa-sessions.md)
+[2026-09-15-p2b-credentials-mfa-sessions.md](../archive/plans/2026-09-15-p2b-credentials-mfa-sessions.md)
 — 29 tasks, 211 steps, 95–125 h, three spike gates (Tasks 11, 17, 24), and
 fourteen migrations numbered 0026–0039 in the table at its end, which
 supersedes the spec's section 4 numbering. The
 phase spec is
-[2026-09-15-p2b-credentials-mfa-sessions-design.md](../superpowers/specs/2026-09-15-p2b-credentials-mfa-sessions-design.md),
+[2026-09-15-p2b-credentials-mfa-sessions-design.md](../archive/specs/2026-09-15-p2b-credentials-mfa-sessions-design.md),
 on branch `p2b-credentials-mfa-sessions`. It settles nine design decisions
 against stated alternatives — a flat per-tenant flow, `jsonb` credentials
 with a `lookup_key` index, `session_id` on the existing `token_grants`,

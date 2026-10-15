@@ -46,8 +46,8 @@ const RECORDS: readonly string[] = [
   // before 0057 renames it; `meta/` records each one by its filename.
   'packages/db/drizzle/',
   // The account of this rename: its design, its plan and its spike.
-  `docs/superpowers/specs/2026-09-22-${WORD}-to-tenant-rename-design.md`,
-  `docs/superpowers/plans/2026-09-22-${WORD}-to-tenant-rename.md`,
+  `docs/archive/specs/2026-09-22-${WORD}-to-tenant-rename-design.md`,
+  `docs/archive/plans/2026-09-22-${WORD}-to-tenant-rename.md`,
   'docs/superpowers/rename-spike-postgres.md',
   // Dated OIDF runs, paired with log exports the suite signs; the README
   // quotes the same runs' output.

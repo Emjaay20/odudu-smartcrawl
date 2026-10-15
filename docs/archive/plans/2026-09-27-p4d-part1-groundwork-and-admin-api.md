@@ -19,7 +19,7 @@ is what registers a route with both.
 **Tech Stack:** TypeScript 6, Fastify 5, Drizzle over PostgreSQL 17, Zod 4,
 Vitest 5 with Testcontainers, pnpm 12 and Turborepo 2.
 
-**Spec:** `docs/superpowers/specs/2026-09-26-p4d-admin-console-design.md`.
+**Spec:** `docs/archive/specs/2026-09-26-p4d-admin-console-design.md`.
 This is Part 1 of four. Part 2 (the console gateway), Part 3 (the console
 foundation) and Part 4 (the console's features) are written when Task 3's
 spikes have answered what they depend on, so that no library behaviour is
