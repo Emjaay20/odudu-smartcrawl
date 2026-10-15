@@ -54,7 +54,7 @@ it('is busy from the press until the server answers', async () => {
   });
 });
 
-it('leaves what it holds alone when the server refuses, and answers the refusal', async () => {
+it('reads only the tenant’s own record again when the server refuses, and answers the refusal', async () => {
   const { wrapper, queryClient } = hookHarness({
     [path]: problem(409, 'about:blank#tenant-enabled', 'Conflict'),
   });
@@ -67,9 +67,9 @@ it('leaves what it holds alone when the server refuses, and answers the refusal'
   });
   expect(answer?.ok).toBe(false);
   unmount();
-  expect(held.map((key) => queryClient.getQueryState(key)?.isInvalidated)).toEqual(
-    held.map(() => false),
-  );
+  expect(
+    held.map((key) => [key.join('/'), queryClient.getQueryState(key)?.isInvalidated === true]),
+  ).toEqual(held.map((key) => [key.join('/'), key.join('/') === 'record/system/tenants/acme']));
 });
 
 it('counts a tenant already gone as deleted, and drops its entries once the page is left', async () => {
