@@ -10960,7 +10960,10 @@ session lifecycle. A citation of either half here means that half.
   ordinary login form. A decision, not a gap: OIDC Core §15.1 asks of
   `display` that "the minimum level of support required for this parameter
   is simply that its use must not result in an error", and says the same of
-  `ui_locales` and `claims_locales`. `login_hint` is OPTIONAL in §3.1.2.1
+  `ui_locales` and `claims_locales`. `ui_locales` starts choosing a page's
+  language in **P4g**, and `claims_locales` stays ignored by decision, both per
+  [ADR 0043](adr/0043-localization-is-a-catalogue-a-negotiation-and-a-set-of-owners.md).
+  `login_hint` is OPTIONAL in §3.1.2.1
   and prefills a form this server does not prefill. `prompt` is deliberately
   not treated this way, because it is the one that changes whether the end
   user is asked anything at all.
@@ -11337,7 +11340,7 @@ here.
 - **several sign-in flows with a per-client override**: P4f.
 - **per-step authenticator configuration**: P4f.
 - **a password blocklist and breach check**: P4f.
-- **translated pages and mail**: P4b.
+- **translated pages and mail**: P4b, which ships the locales; the catalogues they fill are P4g's, and the console's are P4h's (ADR 0043).
 - **custom subject attributes and a declarative user profile**: P7.
 - **fine-grained admin permissions**: P9.
 - **per-client dedicated mappers**: P10.

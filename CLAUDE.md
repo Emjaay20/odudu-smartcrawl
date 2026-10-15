@@ -373,6 +373,16 @@ that the markup does not carry fails exactly the same way. ADR 0018's
 amendment has the reasoning. Every interpolated value passes through the
 renderer's own `escapeHtml`, tenant names and secrets included.
 
+**A user-facing string is an entry in one flat record keyed by a stable
+ID, never a literal in the markup or a hook.** On the server that is a
+`messages.ts` beside the renderer; in the console, the wording constants a
+`service` already holds, with a count still written through `counted()` and
+`plural()`, which the extraction replaces. Pages and mail will read those
+records from per-locale catalogues (ADR 0043). **Nothing enforces this yet**:
+the fifteen `*-html.ts` renderers still hold their text inline. P4g adds the
+lint for the server and P4h for the console, each with the extraction it
+follows, so until then this is a rule somebody has to follow.
+
 ## Layering
 
 Five functional layers, in the consoles and on the server alike:
