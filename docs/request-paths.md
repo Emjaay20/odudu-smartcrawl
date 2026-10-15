@@ -5202,7 +5202,8 @@ below is for.
 Three unauthenticated submissions each cost real work: the sign-in POST runs
 an Argon2id verification, registration runs an Argon2id **hash**, and the
 reset request does a lookup and a mail send. They share one budget per
-client address — `ODUDU_THROTTLE_LIMIT` (default `10`) requests per
+client address (an IPv6 client by its /64; an IPv4-mapped one as its IPv4
+address) — `ODUDU_THROTTLE_LIMIT` (default `10`) requests per
 `ODUDU_THROTTLE_WINDOW_SECONDS` (default `60`) — and nothing else on this
 page is throttled. ADR 0023 is why it is a window in this process's memory
 rather than a row.

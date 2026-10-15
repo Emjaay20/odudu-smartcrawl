@@ -391,7 +391,9 @@ for the walkthrough.
 password tried against a thousand accounts leaves every counter at one, and
 registration needs no account at all, so the three unauthenticated routes
 that each cost an Argon2id hash or a mail send — the sign-in submission,
-registration and the reset request — share a budget per client address:
+registration and the reset request — share a budget per client address
+(an IPv6 client by its /64, the size of one home or hosting allocation, and
+an IPv4-mapped IPv6 peer as the IPv4 address it carries):
 `ODUDU_THROTTLE_LIMIT` (default `10`) requests per
 `ODUDU_THROTTLE_WINDOW_SECONDS` (default `60`). Over budget answers `429`
 with `Retry-After` and an empty body, decided before the body is parsed or

@@ -74,6 +74,62 @@ describe('trustProxy', () => {
   });
 });
 
+// The throttle runs at onRequest, before the tenant is looked up, so a
+// database with no tenants is enough to see which requests it refuses.
+describe('the per-origin throttle keys an address by its network', () => {
+  const RESET = '/tenants/acme/login-actions/reset-password';
+
+  function throttledApp(trustProxy = false) {
+    return buildApp({
+      database: noSuchTenantDatabase,
+      ownerDatabase: noSuchTenantDatabase,
+      kek: config.ODUDU_KEK,
+      logger: createLogger(config),
+      trustProxy,
+      throttle: { limit: 3, windowSeconds: 60 },
+    });
+  }
+
+  async function spend(
+    app: ReturnType<typeof throttledApp>,
+    remoteAddress: string,
+    headers: Record<string, string> = {},
+  ): Promise<number> {
+    const response = await app.inject({ method: 'POST', url: RESET, remoteAddress, headers });
+    return response.statusCode;
+  }
+
+  it('shares one budget across every address in an IPv6 /64', async () => {
+    const app = throttledApp();
+    for (const address of ['2001:db8:1:2::1', '2001:db8:1:2::2', '2001:db8:1:2:ffff::3']) {
+      expect(await spend(app, address)).not.toBe(429);
+    }
+
+    expect(await spend(app, '2001:db8:1:2:abcd::4')).toBe(429);
+    expect(await spend(app, '2001:db8:1:3::1')).not.toBe(429);
+  });
+
+  it('counts an IPv4-mapped IPv6 peer against its IPv4 address', async () => {
+    const app = throttledApp();
+    expect(await spend(app, '198.51.100.7')).not.toBe(429);
+    expect(await spend(app, '::ffff:198.51.100.7')).not.toBe(429);
+    expect(await spend(app, '198.51.100.7')).not.toBe(429);
+
+    expect(await spend(app, '::ffff:198.51.100.7')).toBe(429);
+    expect(await spend(app, '198.51.100.8')).not.toBe(429);
+  });
+
+  it('keys a forwarded address the same way, behind a trusted proxy', async () => {
+    const app = throttledApp(true);
+    const forwarded = (address: string) => ({ 'x-forwarded-for': address });
+    for (const address of ['2001:db8:9:9::1', '2001:DB8:9:9:0:0:0:2', '2001:db8:9:9::3']) {
+      expect(await spend(app, '10.0.0.1', forwarded(address))).not.toBe(429);
+    }
+
+    expect(await spend(app, '10.0.0.1', forwarded('2001:db8:9:9::4'))).toBe(429);
+  });
+});
+
 describe('the console', () => {
   it('refuses to build with a base URL and no client key, naming the variable', () => {
     expect(() =>

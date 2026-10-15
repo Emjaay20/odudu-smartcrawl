@@ -39,6 +39,7 @@ import { createClientKeyRequest, defaultClientKeyLookup } from '#/client-key-tra
 import { type ConsoleKeys, missingConsoleKey } from '#/console-key';
 import { registerHealth } from '#/health';
 import { type RateLimiter, slidingWindow } from '#/throttle';
+import { throttleOrigin } from '#/throttle-origin';
 
 export interface AppDeps {
   readonly database: DatabaseHandle;
@@ -279,7 +280,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     if (request.method !== 'POST') return;
     const route = request.routeOptions.url;
     if (route === undefined || !THROTTLED_POSTS.has(route)) return;
-    const decision = throttle.check(request.ip);
+    const decision = throttle.check(throttleOrigin(request.ip));
     if (decision.allowed) return;
     reply.header('retry-after', String(decision.retryAfterSeconds));
     return reply.code(429).send();
