@@ -731,6 +731,8 @@ of the framed page.
 
 - [Design specification](docs/superpowers/specs/2026-09-10-odudu-design.md) —
   what this is, and every phase with its exit criterion
+- [Documentation index](docs/README.md) — what each directory holds, and
+  where to start
 - [Architecture decision records](docs/adr/) — the decisions, several with
   dated corrections recording what turned out wrong
 - [Decision log](docs/superpowers/p0-decision-log.md) — judgement calls made

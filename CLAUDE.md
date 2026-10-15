@@ -3,7 +3,7 @@
 Read `docs/superpowers/specs/2026-09-10-odudu-design.md` first. Decisions
 and their rejected alternatives are in `docs/adr/`. Current position is in
 `docs/NEXT.md`, and what each finished phase found while building it is in
-`docs/phases/`.
+`docs/phases/`. `docs/README.md` indexes the rest.
 
 ## How a phase is run
 
@@ -22,7 +22,9 @@ The sequence, in order:
 3. **Execute** (`superpowers:subagent-driven-development`) — a fresh
    implementer per task, then a review of spec compliance _and_ quality,
    with a fix loop until clean. A whole-branch review closes the phase.
-4. **Finish** (`superpowers:finishing-a-development-branch`).
+4. **Finish** (`superpowers:finishing-a-development-branch`). The phase's
+   spec and plan then move with `git mv` to `docs/archive/specs/` and
+   `docs/archive/plans/`, where they record how it was planned.
 
 Work happens on a branch; `main` is protected and requires `verify`,
 `container` and `commit-messages` to pass.
@@ -233,7 +235,7 @@ the grep goes in the plan beside it.** Each of the fifteen would have been
 caught by a command that takes seconds; none was caught by review, because
 a confident sentence about your own codebase reads exactly like a true one.
 Section 17 of
-`docs/superpowers/specs/2026-09-15-p2b-credentials-mfa-sessions-design.md`
+`docs/archive/specs/2026-09-15-p2b-credentials-mfa-sessions-design.md`
 lists them.
 
 ## Comments
