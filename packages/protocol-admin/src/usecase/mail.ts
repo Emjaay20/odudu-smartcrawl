@@ -52,17 +52,31 @@ function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
 }
 
-// A relay may quote the address back in any case, or name its local part
-// against another domain, so both are masked wherever they appear.
+// The shortest local part masked on its own: shorter ones are common words.
+const BARE_LOCAL_MIN = 3;
+
+// A relay may quote the address back in any case, percent-encoded in a URL,
+// or name its local part alone or against another domain, so each form is
+// masked wherever it appears.
 export function maskIn(text: string, address: string): string {
   const masked = maskAddress(address);
   const at = address.lastIndexOf('@');
-  const whole = text.replace(new RegExp(escapeRegExp(address), 'giu'), masked);
+  const forms = [address, address.replace('@', '%40'), encodeURIComponent(address)];
+  const whole = forms.reduce(
+    (out, form) => out.replace(new RegExp(escapeRegExp(form), 'giu'), masked),
+    text,
+  );
   if (at <= 0) return whole;
   const local = address.slice(0, at);
-  return whole.replace(
-    new RegExp(`(?<![\\w.+-])${escapeRegExp(local)}@`, 'giu'),
-    `${masked.slice(0, masked.indexOf('@'))}@`,
+  const hidden = masked.slice(0, masked.indexOf('@'));
+  const quotedWithAt = whole.replace(
+    new RegExp(`(?<![\\w.+-])${escapeRegExp(local)}(?:@|%40)`, 'giu'),
+    `${hidden}@`,
+  );
+  if (local.length < BARE_LOCAL_MIN) return quotedWithAt;
+  return quotedWithAt.replace(
+    new RegExp(`(?<![\\w.+-])${escapeRegExp(local)}(?![\\w+-]|\\.\\w)`, 'giu'),
+    hidden,
   );
 }
 
