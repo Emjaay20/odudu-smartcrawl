@@ -71,3 +71,38 @@ the prefixed built site, this repository's ESLint and `tsc` over an Rspress
 app, the canonical `<link>` through the `head` option, and the landing's
 fallback in a browser without `animation-timeline` (Playwright's Firefox and
 WebKit builds were not installed).
+
+### The site: search metadata and Lighthouse, scratch run
+
+Added 2026-10-16 with the requirement that the public site be found and
+fast. Run in a scratch directory (`@rspress/core` and
+`@rspress/plugin-sitemap` 2.0.23, `@lhci/cli` 0.15.1, Playwright's Chromium).
+
+- **Head.** Rspress writes `<html lang="en">`, a per-page title, meta
+  description and `og:title`/`og:description` from front matter. A `head`
+  function of `{ routePath }` emits a per-page canonical and `og:url`, and
+  returning `undefined` omits the tag, which is how the image build gets
+  `noindex` and no canonical. Rspress emits no canonical itself. JSON-LD
+  returned from `head` arrives intact; the same string in front matter arrives
+  as an empty script, so JSON-LD goes through `head`.
+- **Sitemap.** `@rspress/plugin-sitemap` writes root-relative `<loc>` unless
+  the top-level `siteOrigin` is set, then absolute; `lastmod` is the file's
+  mtime. `siteOrigin` also builds `hreflang` alternates (code read, not run).
+- **Lighthouse.** `lhci autorun` against `rspress preview` collects and
+  asserts; its default is the throttled mobile profile. A stock page scored
+  performance 0.99, accessibility 0.89, best practices 0.96, SEO 1.00, LCP
+  1,954 ms, CLS 0, TBT 0. The accessibility loss is the stock theme
+  (`aria-hidden-focus` on the heading anchor, `color-contrast`) and the
+  best-practices loss a `404` for `/favicon.ico`: the gate fails on the stock
+  theme until the site fixes them. `rspress preview` does not compress.
+- **Custom pages.** A `pageType: custom` landing is server-rendered: its
+  headline, command and links are in the built HTML with scripts stripped.
+- **GitHub Pages.** A `CNAME` file is ignored when a workflow publishes the
+  site, so a domain swap adds none. The apex and `www` DNS values are in the
+  plan. GitHub's custom-domain page does not say the old `github.io` URL
+  redirects; that stays an assumption until the swap is run.
+
+Carried by the plan as assumptions: the `hreflang` alternates for a page in two
+languages, a Chrome on `ubuntu-latest`, the theme change that clears
+`aria-hidden-focus`, `releases/latest/download` resolving to the newest
+non-prerelease asset, and the PNG social image reading well in link previews.

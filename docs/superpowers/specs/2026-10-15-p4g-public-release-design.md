@@ -91,6 +91,43 @@ because it is easy to read past.
   console shell is (ADR 0029's amendment), and the image grows by the size
   of the built site only. The landing page itself is not in the image.
 
+## The public site is found, fast and addressed from one place
+
+A site nobody finds, or that is slow on a phone, does not do the work of a
+front door. These are requirements of the phase, each held by a check
+rather than by an instruction to keep it so.
+
+- **Indexable.** Every page of the landing and the docs is pre-rendered
+  static HTML with its headings and links in the markup; nothing a page says
+  exists only after JavaScript runs, and a test over the built HTML holds it.
+  Each page has its own `<title>` and meta description, a canonical URL,
+  Open Graph and Twitter card tags with the social image, and an entry in
+  `sitemap.xml`; the site has a `robots.txt`. The landing page carries
+  JSON-LD for `SoftwareApplication` and `Organization`, docs pages carry
+  breadcrumbs, and `<html lang>` is correct (`en` now) so a language added as
+  a directory per ADR 0043 row 8 gets its own `lang` and alternates.
+- **Fast.** Fonts are self-hosted with `font-display`, images carry their
+  width and height and ship in a modern format, and nothing render-blocking
+  comes from another origin. Lighthouse CI enforces Core Web Vitals and
+  category minimums in CI on a throttled mobile profile against the landing
+  page and a sample of docs pages (LCP under 2.5 s, CLS under 0.1, total
+  blocking time as the lab proxy for INP), and an axe pass holds the landing
+  page's accessibility. The numbers and why are in the plan, Task 31b.
+- **The image's copy is never indexed.** The docs inside the image say
+  `noindex` in their markup and in an `X-Robots-Tag` header, so a private
+  installation never competes with the public site.
+- **One address.** The site runs on the default `github.io` project path
+  until the owner buys a domain. Its address and base path live in one file,
+  and the canonical and Open Graph URLs, the sitemap and the Pages build all
+  derive from it, so moving to a domain is one value, a rebuild and a Search
+  Console step, written into `RELEASING.md`. A test holds that the address
+  appears nowhere else. GitHub ignores a `CNAME` file when a workflow
+  publishes the site, so the swap adds none (verified against GitHub's
+  documentation, plan "Verified and assumed"). Vercel and Cloudflare Pages
+  are named as alternative deploy targets with no commitment; as the owner
+  understands it Vercel's free tier restricts commercial use, to be checked
+  before relying on it.
+
 ## Brand
 
 - The owner chose the **staff** direction from two rounds of sketches: a
@@ -114,19 +151,20 @@ because it is easy to read past.
 
 ## Decisions made while brainstorming
 
-| Decision                           | Call                                                                                                                                                                                                                                                                                                                    | By                               |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| Hosted, paid service               | Not in P4g; landing page says it is planned; placed after P5                                                                                                                                                                                                                                                            | owner                            |
-| Brand direction                    | Staff mark; monospace wordmark proposed                                                                                                                                                                                                                                                                                 | owner (mark), builder (wordmark) |
-| Documentation framework            | Rspress (React), chosen over VitePress because the owner wants React, not Vue, with the Vue docs' look and feel                                                                                                                                                                                                         | owner                            |
-| Landing page and docs are one site | Rspress with the landing as a React home component, one source, one deploy                                                                                                                                                                                                                                              | my call                          |
-| Where the site is served           | GitHub Pages from the release workflow, on a domain the owner supplies                                                                                                                                                                                                                                                  | my call                          |
-| Motion                             | CSS only, respects `prefers-reduced-motion`                                                                                                                                                                                                                                                                             | my call                          |
-| Roadmap                            | the hosted service gets an unnumbered placeholder row after P5 in section 11, in the first increment of this phase, so nothing is renumbered                                                                                                                                                                            | my call                          |
-| Repository                         | already public; GHCR package visibility, Pages and private vulnerability reporting are switched on by the owner when each increment needs them                                                                                                                                                                          | fact                             |
-| Site URL until a domain exists     | the default `github.io` project path; the domain is a one-line change to the Rspress `base` and canonical URL                                                                                                                                                                                                           | my call                          |
-| Guide commands in CI               | run against the one-file compose quickstart and the published image, the same job that proves the ten-minute claim                                                                                                                                                                                                      | my call                          |
-| Instrument on server pages         | a stylesheet the server serves from its own origin, generated from the console's tokens, with a CSP `style-src 'self'` amendment to ADR 0029; no inline CSS, no remote fonts; the "does Instrument reach every renderer" check sits beside `html-response.test.ts`; the builder decides the details inside those limits | my call                          |
+| Decision                            | Call                                                                                                                                                                                                                                                                                                                    | By                               |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| Hosted, paid service                | Not in P4g; landing page says it is planned; placed after P5                                                                                                                                                                                                                                                            | owner                            |
+| Brand direction                     | Staff mark; monospace wordmark proposed                                                                                                                                                                                                                                                                                 | owner (mark), builder (wordmark) |
+| Documentation framework             | Rspress (React), chosen over VitePress because the owner wants React, not Vue, with the Vue docs' look and feel                                                                                                                                                                                                         | owner                            |
+| Landing page and docs are one site  | Rspress with the landing as a React home component, one source, one deploy                                                                                                                                                                                                                                              | my call                          |
+| Where the site is served            | GitHub Pages from the release workflow, on a domain the owner supplies                                                                                                                                                                                                                                                  | my call                          |
+| Search and speed of the public site | Required, and held by CI: built-HTML SEO tests and a Lighthouse CI budget (above); the image's copy is `noindex`; the address is one file                                                                                                                                                                               | owner                            |
+| Motion                              | CSS only, respects `prefers-reduced-motion`                                                                                                                                                                                                                                                                             | my call                          |
+| Roadmap                             | the hosted service gets an unnumbered placeholder row after P5 in section 11, in the first increment of this phase, so nothing is renumbered                                                                                                                                                                            | my call                          |
+| Repository                          | already public; GHCR package visibility, Pages and private vulnerability reporting are switched on by the owner when each increment needs them                                                                                                                                                                          | fact                             |
+| Site URL until a domain exists      | the default `github.io` project path; the address and base path are one file, and the domain is a change to its two values                                                                                                                                                                                              | my call                          |
+| Guide commands in CI                | run against the one-file compose quickstart and the published image, the same job that proves the ten-minute claim                                                                                                                                                                                                      | my call                          |
+| Instrument on server pages          | a stylesheet the server serves from its own origin, generated from the console's tokens, with a CSP `style-src 'self'` amendment to ADR 0029; no inline CSS, no remote fonts; the "does Instrument reach every renderer" check sits beside `html-response.test.ts`; the builder decides the details inside those limits | my call                          |
 
 ## Left to the builder
 
@@ -139,6 +177,8 @@ are page rendering and message catalogues; the bound is the same as today).
 
 ## Open for the owner
 
-- The domain for the site.
+- The domain for the site, wanted early (by the docs increment, not the
+  deploy): canonical URLs, sitemap entries and inbound links accumulate on the
+  address in use, and an owned domain is the better one to build them on.
 - Approval of the finished mark, which the phase draws from the staff direction.
 - Who confirms any Nsibidi-inspired detail.
