@@ -151,6 +151,28 @@ Estimated hours per increment; the design's whole-phase estimate is **86 to 137 
 | 36  | Close                                                  | 3-5         |
 |     | **Total**                                              | **145-199** |
 
+## Execution method
+
+Subagent-driven, tuned for quality at lower usage (owner's choice, 2026-10-16).
+
+- **Full loop** (a fresh implementer per task, an independent review of spec
+  compliance and quality, a fix round): increments 1 to 21, 23, 34 and 35.
+  These are server code, security policy, the release and signing workflow,
+  licensing and the CLA, the catalogues across every server page, and the
+  citation retirement. A mistake there ships to strangers.
+- **Light loop** (an implementer per increment, one independent review per
+  increment, and the CI checks doing most of the verification): increments 22,
+  24 to 33. These are guides, concepts, the console tour, examples, the README,
+  community files, the mark and the landing page. The command runner, link
+  check, built-HTML tests and the Lighthouse gate verify them. The landing
+  page and the mark also stop at an owner gate.
+- A task that touches a security or CSP path inside a light-loop increment is
+  promoted to the full loop for that task.
+- Every implementer and reviewer runs on Sonnet; the whole-branch review at
+  the close is the one place to ask before using a larger model.
+- Between increments: check weekly usage, push at the green point, and pause
+  there if the margin is thin, with the position saved in `docs/phases/p4g.md`.
+
 ## Owner steps
 
 Plain steps the owner performs; each increment that needs one says so and waits. Step 7 (the domain) is needed by Increment 18, not by the deploy: see its reason.
