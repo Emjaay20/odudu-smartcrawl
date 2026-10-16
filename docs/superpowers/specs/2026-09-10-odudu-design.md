@@ -454,7 +454,7 @@ Implementation follows test-driven development.
 
 Total: roughly 1756–2562 hours.
 
-After P4b, at roughly 1004–1430 hours, an application can adopt Odudu: every
+After P4f, at roughly 1063–1492 hours, an application can adopt Odudu: every
 page its users are shown can be branded, every session it opens can be
 ended, and every surface it needs for the account lifecycle exists. What
 remains before an **operator** can run that in production is P11's replica
