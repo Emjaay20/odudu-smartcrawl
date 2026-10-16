@@ -91,3 +91,13 @@ Dependabot's version bumps.
   it would rule out the commercial licence.
 - **No contribution terms until they are needed.** Retrofitting them means
   contacting every past contributor.
+
+## Amendment 2026-10-16: the MCP server is open
+
+An MCP server that exposes the admin API to a person's own assistant (Claude,
+Cursor and others) is part of the open product. It is a door onto the open
+admin API, held to the same capability ceiling, and the agent layer (P5)
+supplies its guardrails; it is phase P5a. What stays paid is the hosted
+service's own assistance: natural-language administration inside the console,
+configuration review, audit anomaly explanation and policy suggestions. The
+paid layer may use the MCP server's tools; the open server never depends on it.

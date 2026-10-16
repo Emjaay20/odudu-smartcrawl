@@ -771,7 +771,7 @@ Sizes (`wc -l`): `docs/request-paths.md` 11,291, `docs/admin-paths.md` 10,172, `
 
 ## Increment 24: Introduction, quick start, the four integration guides (4 to 6 h)
 
-Content written against what exists. Every command is a runnable block (Task 21) or tagged `text`. Written for a reader who reaches a working sign-in before a concept (§11).
+Content written against what exists, including a guide "Protect an MCP server with Odudu" (`guides/mcp-server.md`: the authorization-server metadata, dynamic client registration and PKCE flow an MCP client uses, run against the quick-start stack). Every command is a runnable block (Task 21) or tagged `text`. Written for a reader who reaches a working sign-in before a concept (§11).
 
 ### Task 24: The first ten minutes
 
