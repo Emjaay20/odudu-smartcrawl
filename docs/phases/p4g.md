@@ -374,3 +374,130 @@ gzip'` settles it.
   `../README.md` and `request-paths.md#…` as written. Plan change: agent copies
   are only as correct as the source's links, so the base-prefix and the
   absolute-URL rewrites belong to the content, not to the plugin.
+
+### The stack and the pages: spikes
+
+2026-10-19. Docker 29.8.2, Compose v5.6.0, the current `infra/docker/Dockerfile`
+built as `odudu:spike`, Postgres 17-alpine, host port 3220, no Postgres port
+published, project `odudu-spike`, removed with `down -v` (no stack of the
+`odudu-try` project was touched). Each line is a command that was run unless
+marked `assumption:`.
+
+**S6, the one-file compose.** Two scratch files, `postgres` + `setup` +
+`odudu`, differing only in how the roles appear.
+
+- (a) verified: `configs: roles: content: |` with the role SQL, mounted on
+  `postgres` at `/docker-entrypoint-initdb.d/01-roles.sql`, creates the file in
+  the service (`docker compose exec postgres cat …`) and Postgres runs it:
+  `\du` lists `odudu_app` and `odudu_svc`, `/health/ready` answers 200.
+  Roles through the owner connection instead (a one-shot `roles` service,
+  `psql postgres://odudu:…@postgres/odudu` with an `IF NOT EXISTS` `DO` block
+  and `GRANT odudu_app TO odudu_svc`, `odudu` depending on it with
+  `service_completed_successfully`) also boots the server, and re-running it is
+  harmless (`NOTICE … already been granted`). Which is simpler: the `configs:`
+  form is four lines on `postgres` and nothing to order, but it runs only when
+  Postgres initialises an empty data directory, so it cannot serve a database
+  that already exists and changing the password later does nothing; the owner
+  route is a separate step of about fifteen lines in compose, and zero lines
+  once `odudu init` does it through the same owner connection the server
+  already uses for migrations. The `odudu` image has no `psql` and the `postgres`
+  driver is bundled, not installed, so the compose form of the owner route needs
+  a Postgres image to run `psql` in; only a command inside the server bundle
+  avoids it. Plan change: ship the `configs:` form in the one-file compose, and
+  make `init` the owner-connection path that also serves an existing database.
+- (b) verified: `command: ["node","--env-file=/var/lib/odudu/quickstart.env",
+"dist/main.js"]` reads a file another service wrote into a shared named
+  volume, and `depends_on: setup: condition: service_completed_successfully`
+  held `odudu` back until `setup` exited 0 (`ps -a`: `setup exited 0`,
+  `odudu running`, `curl /health/ready` 200); `restart odudu` keeps working
+  from the same volume. **Two defects the first attempt hit, both of which go
+  into the plan:**
+  - **A named volume on a path the image does not have is root-owned**, so the
+    `odudu` user (uid 100) cannot write the file: `can't create
+/var/lib/odudu/quickstart.env: Permission denied`. The runtime stage needs
+    `mkdir /var/lib/odudu && chown odudu:odudu /var/lib/odudu` before
+    `USER odudu`, because a new volume copies the ownership of an existing image
+    path. verified: a derived image doing exactly that, rebuilt `up`, and the file
+    was written.
+  - **A failed redirect did not fail the `setup` service.** `sh -c` with
+    `set -eu` and `{ … } > "$f"` printed the error and the script still ended
+    on a successful command, so `setup` exited 0 with no file and `odudu` then
+    died with `node: /var/lib/odudu/quickstart.env: not found`.
+    `service_completed_successfully` only asserts the exit code, so the
+    command that writes the file is a real subcommand that exits non-zero when
+    it cannot, or ends with `test -s`.
+- `odudu console keygen` already prints the whole line
+  `ODUDU_CONSOLE_CLIENT_KEY=<base64>`; appending it as is works, prefixing it
+  again produced `the key is not base64-encoded JSON` and a boot failure. The
+  image's `node:24-alpine` is Node 24.21.0 (this host is 24.15.0) and prints
+  two `ExperimentalWarning`s to stderr for the Web Crypto call; `NODE_NO_WARNINGS=1`
+  silenced them.
+- (c) verified: inside `setup`, `[ -t 0 ]` is false under `docker compose up`
+  (also under `script`, so a pseudo-terminal on the caller does not give a
+  service one), false under `docker compose run --rm setup` when the caller's
+  stdin is not a terminal (even without `-T`), and true under
+  `script -q /dev/null docker compose run --rm setup`. A human's terminal
+  gives the same as `script`'s pseudo-terminal: assumption (not run in an
+  interactive session here). So a prompt in `setup` is reachable only through
+  `run` from a terminal, and `up` has to take every value from the
+  environment.
+- (d) verified on macOS (BSD `script`, Darwin arm64): `script -q /dev/null
+docker compose run --rm setup` gives `tty=yes`. **The form is not portable**:
+  util-linux `script` on ubuntu-latest takes the command as
+  `script -q -e -c "docker compose run --rm setup" /dev/null`, and the BSD
+  form there would start a shell. assumption: that ubuntu form, not run; a
+  throwaway-branch run settles it, and the plan's CI step must name it, not
+  the macOS one.
+- (e) verified: `docker compose config` with `ODUDU_PORT` unset shows
+  `published: "3000"` and `ODUDU_PUBLIC_BASE_URL: http://localhost:3000`; with
+  `ODUDU_PORT=3220` both read 3220. The one variable feeds the mapping and the
+  public URL; `ps` shows `5432/tcp` only for `postgres` (nothing published).
+
+**S7, the Instrument stylesheet under the page policy.** `tokens.css` and
+`fonts.css` concatenated (fonts rewritten from the `@fontsource` package paths
+to `/instrument/fonts/<file>`), served from a throwaway Fastify route, linked
+from the existing `renderLoginForm` page under `default-src 'none'; style-src
+'self'; font-src 'self'; img-src 'self'; form-action 'self'; base-uri 'none';
+frame-ancestors 'none'`.
+
+- verified: Chromium (Playwright 1.63.0), light and dark: zero
+  `securitypolicyviolation` events and zero console CSP messages; the
+  stylesheet and `ibm-plex-sans-latin-400-normal.woff2` return 200 and
+  `document.fonts.check('400 16px "IBM Plex Sans"')` is true.
+- verified: `light-dark()` follows `prefers-color-scheme` through
+  `--surface-page` (`rgb(231, 234, 233)` light, `rgb(21, 26, 25)` dark) and
+  `--ink-primary`.
+- verified: size. The stylesheet is 7,679 bytes plain and 1,581 gzip against a
+  12 KB / 64 KB budget; it declares 12 `@font-face` rules (Sans and Mono, latin
+  and latin-ext at 400, 500, 600) and a page that uses only the latin 400 face
+  downloads one file, because `unicode-range` makes the others lazy. The
+  twelve woff2 files total 206,232 bytes but are never loaded together. So no
+  `latin-ext` face has to be dropped, and `font-display: swap` is already in
+  `fonts.css`.
+- Not covered: the base styles a real stylesheet adds (the spike appended one
+  rule that uses the tokens, because the login markup has no styles of its
+  own); the budget has to be re-read with them.
+
+**S8, ICU in the bundle.** `intl-messageformat` 12.1.3 in a scratch tsup
+project with `apps/server/tsup.config.ts`'s `noExternal`/`external` shape
+(copied), `import en from './en.json' with { type: 'json' }`.
+
+- verified: `npx tsup` builds `dist/main.js` (67.11 KB) in 8 ms; `node
+dist/main.js` under Node 24.15.0 prints `Hello`, then `2 seconds` and
+  `1 second` for the plural message; the JSON is inlined (it runs with no
+  `en.json` beside it) and the bundle has no `require(` of a missing file.
+- verified: `ar` with all six categories returns the right branch for
+  `n` = 0 (zero), 1 (one), 2 (two), 3 (few), 11 (many), 100 (other), from
+  `Intl.PluralRules`, so no locale data is bundled.
+- verified: size for the console. esbuild, `--bundle --minify --platform=browser
+--target=es2023`, a module that only constructs and formats an
+  `IntlMessageFormat`: 33,533 bytes, **9,900 bytes gzip** (9,818 at `-9`).
+  Against `tests/lint/console-phone-chunk.test.ts`: the entry is budgeted
+  153,000 B on a measured 145,018 B (headroom 7,982 B) and the first load
+  242,000 B on 229,800 B (headroom 12,200 B). The formatter alone is over the
+  entry's headroom and inside the first-load's. Decision for P4h, which owns
+  the console: either raise the entry budget by about 10 KB (6.8 per cent) with
+  the reason beside it, as the file's own comment requires, or keep ICU out of
+  the entry (a plural-only formatter, or a lazy chunk loaded with the first
+  non-English catalogue). The server side has no such constraint: the 67 KB
+  bundle above is the whole cost.
