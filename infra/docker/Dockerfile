@@ -2,7 +2,8 @@
 # `packageManager` rather than on every edit to the root package.json. The
 # version is never written down twice: package.json is the only place it
 # appears.
-FROM node:24-alpine AS pnpm-version
+# digest of the multi-arch index; Dependabot moves it
+FROM node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f AS pnpm-version
 WORKDIR /pin
 COPY package.json ./
 RUN node -p "require('./package.json').packageManager" > /pnpm-version
@@ -22,7 +23,7 @@ RUN node -p "require('./package.json').packageManager" > /pnpm-version
 # which is half the problem unfixed. COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 # answers the confirmation corepack would otherwise put to a tty that is not
 # there.
-FROM node:24-alpine AS pnpm
+FROM node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f AS pnpm
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable
 COPY --from=pnpm-version /pnpm-version /pnpm-version
@@ -60,7 +61,7 @@ COPY apps apps
 # lifecycle scripts does not leave it half-installed.
 RUN pnpm install --frozen-lockfile --prod --ignore-scripts
 
-FROM node:24-alpine AS runtime
+FROM node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f AS runtime
 RUN addgroup -S odudu && adduser -S -G odudu odudu
 WORKDIR /app
 COPY --from=build --chown=odudu:odudu /app/apps/server/dist ./dist

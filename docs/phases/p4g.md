@@ -501,3 +501,28 @@ dist/main.js` under Node 24.15.0 prints `Hello`, then `2 seconds` and
   the entry (a plural-only formatter, or a lazy chunk loaded with the first
   non-English catalogue). The server side has no such constraint: the 67 KB
   bundle above is the whole cost.
+
+### Base images by digest
+
+2026-10-19. Every `FROM` and `image:` under `infra/` carries `tag@sha256:`, the
+index digest, so one pin serves both architectures;
+`tests/lint/base-images-pinned.test.ts` keeps it so for `infra`, `examples`
+and `quickstart`.
+
+- verified: `docker buildx imagetools inspect <image> | sed -n 's/^Digest: *//p'`
+  for `node:24-alpine`, `postgres:17-alpine`, `axllent/mailpit:v1.31.5`,
+  `swaggerapi/swagger-ui:v5.33.0`, `nginx:1.27-alpine` and `mongo:6.0.13` gave
+  the digests now in the files; the first four match the plan's values.
+- The plan listed five images; the sweep found two more. `mongo:6.0.13`
+  (`infra/conformance/suite-compose.yaml`) and a second `postgres:17-alpine`
+  (`infra/conformance/compose.yaml`) were unpinned. The echo image in
+  `compose.try.yaml` was pinned by digest alone, which Dependabot cannot read:
+  verified: the Docker Hub tags API lists `42` and `latest` at that digest, so
+  it is now `mendhak/http-https-echo:42@sha256:a265f5...`.
+- verified: `docker build -f infra/docker/Dockerfile -t odudu:p4g-pin .` exits 0
+  and `./infra/docker/smoke.sh` ends with `smoke: the console shell and
+/console/assets/index-L9KvWCs0.js are served from the image`.
+- `.github/dependabot.yml` gains `docker` (`/infra/docker`,
+  `/infra/conformance/proxy`) and `docker-compose` (`/infra/docker`,
+  `/infra/conformance`) in one `base-images` group each, using `directories`;
+  `/quickstart` joins with its compose file.

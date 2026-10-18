@@ -1,0 +1,5 @@
+services:
+  database:
+    image: postgres:17-alpine
+  cache:
+    image: redis:7-alpine@sha256:0000000000000000000000000000000000000000000000000000000000000000

@@ -20,3 +20,23 @@ updates:
     directory: /
     schedule:
       interval: weekly
+  # Base images are pinned by digest (tests/lint/base-images-pinned.test.ts);
+  # Dependabot moves the tag and the digest together.
+  - package-ecosystem: docker
+    directories:
+      - /infra/docker
+      - /infra/conformance/proxy
+    schedule:
+      interval: weekly
+    groups:
+      base-images:
+        patterns: ['*']
+  - package-ecosystem: docker-compose
+    directories:
+      - /infra/docker
+      - /infra/conformance
+    schedule:
+      interval: weekly
+    groups:
+      base-images:
+        patterns: ['*']

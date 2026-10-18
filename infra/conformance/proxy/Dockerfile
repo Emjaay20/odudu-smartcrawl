@@ -6,7 +6,8 @@
 # The certificate is self-signed and baked in at build time: it is
 # throwaway, valid only for the lifetime of this conformance run, and
 # never used outside this compose stack.
-FROM nginx:1.27-alpine
+# digest of the multi-arch index; Dependabot moves it
+FROM nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
 RUN apk add --no-cache openssl \
   && openssl req -x509 -nodes -newkey rsa:2048 -days 3650 \
        -keyout /etc/nginx/conformance.key \
