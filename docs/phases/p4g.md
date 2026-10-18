@@ -542,7 +542,9 @@ served from the image` (the asset it names is content-hashed).
   `/(docker-)?compose(-[\w]+)?(?>\.[\w-]+)?\.ya?ml/i`
   (`gh api repos/dependabot/dependabot-core/contents/docker/lib/dependabot/docker_compose/file_fetcher.rb`),
   so `suite-compose.yaml` matches on its `compose.yaml` suffix and needs no
-  rename; the docker fetcher takes any name matching `/dockerfile|containerfile/i`.
+  rename. verified: `gh api repos/dependabot/dependabot-core/contents/docker/lib/dependabot/docker/file_fetcher.rb -q .content | base64 -d | grep DOCKER_REGEXP`
+  gives `DOCKER_REGEXP = /dockerfile|containerfile/i`, so the docker fetcher
+  takes any name containing either word.
 - The image gains `ARG ODUDU_REVISION` and the `revision` label; `compose.yaml`
   passes `${ODUDU_REVISION:-unknown}` and the `container` and `e2e` jobs set it
   to `github.sha`. `smoke.sh` asserts the label. The conformance rig's own

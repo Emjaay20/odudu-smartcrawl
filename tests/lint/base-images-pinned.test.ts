@@ -106,16 +106,19 @@ function withoutTag(refs: readonly Reference[]): string[] {
   return refs.filter((ref) => !TAG_BESIDE_DIGEST.test(ref.image)).map(describeReference);
 }
 
-function shippedReferences(): Reference[] {
+function shippedFiles(): string[] {
   const skip = (name: string): boolean => name === 'node_modules' || name === 'dist';
-  const files = [
+  return [
     ...globSync('{infra,examples,quickstart}/**/*', { cwd: REPO_ROOT, exclude: skip }).filter(
       (file) => DOCKERFILE_NAME.test(path.basename(file)) || /\.ya?ml$/.test(file),
     ),
     ...globSync('.github/**/*.{yml,yaml}', { cwd: REPO_ROOT }),
     ...globSync('{packages,apps}/**/*.ts', { cwd: REPO_ROOT, exclude: skip }),
   ];
-  return files.flatMap((file) =>
+}
+
+function shippedReferences(): Reference[] {
+  return shippedFiles().flatMap((file) =>
     imageReferences(file, readFileSync(path.join(REPO_ROOT, file), 'utf8')),
   );
 }
@@ -131,6 +134,10 @@ describe('base images', () => {
 
   it('names a tag beside the digest', () => {
     expect(withoutTag(shippedReferences())).toEqual([]);
+  });
+
+  it('collects the workflow files', () => {
+    expect(shippedFiles()).toContain('.github/workflows/verify.yml');
   });
 
   it('reads workflows and Testcontainers constructors', () => {

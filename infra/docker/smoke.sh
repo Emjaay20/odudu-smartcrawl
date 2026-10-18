@@ -214,4 +214,3 @@ test "$ACTUAL_REVISION" = "$EXPECTED_REVISION" || {
 echo "smoke: the image carries the revision label $ACTUAL_REVISION"
 
 exit 0
-
