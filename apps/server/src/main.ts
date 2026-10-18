@@ -34,14 +34,19 @@ import { reapModule } from '#/modules/reap';
 
 const firstArgument = process.argv[2];
 
+function refuseUnknownCommand(message: string): never {
+  console.error(`${message}\n`);
+  process.stderr.write(renderHelp(CLI_COMMANDS, []));
+  process.exit(2);
+}
+
 if (firstArgument === 'help') {
   try {
     process.stdout.write(renderHelp(CLI_COMMANDS, process.argv.slice(3)));
-    process.exit(0);
   } catch (err) {
-    console.error(err instanceof Error ? err.message : String(err));
-    process.exit(2);
+    refuseUnknownCommand(err instanceof Error ? err.message : String(err));
   }
+  process.exit(0);
 }
 
 if (firstArgument === '--help' || firstArgument === '-h') {
@@ -58,9 +63,7 @@ if (
   firstArgument !== undefined &&
   !CLI_COMMANDS.some((command) => command.name === firstArgument)
 ) {
-  console.error(`unknown command ${JSON.stringify(firstArgument)}\n`);
-  process.stderr.write(renderHelp(CLI_COMMANDS, []));
-  process.exit(2);
+  refuseUnknownCommand(`unknown command ${JSON.stringify(firstArgument)}`);
 }
 
 if (process.argv[2] === 'reap') {

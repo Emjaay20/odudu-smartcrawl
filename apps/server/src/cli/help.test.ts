@@ -36,6 +36,10 @@ describe('renderHelp', () => {
     expect(text).toContain('accepts --public or --client-secret, not both');
   });
 
+  it('marks a required option', () => {
+    expect(renderHelp(CLI_COMMANDS, ['seed', 'tenant'])).toContain('--name <value> (required)');
+  });
+
   it('lists the subcommands of a command that has them', () => {
     const text = renderHelp(CLI_COMMANDS, ['seed']);
 

@@ -49,6 +49,10 @@ function optionLabel(option: CliOption): string {
   return option.type === 'string' ? `--${option.name} <value>` : `--${option.name}`;
 }
 
+function optionHeading(option: CliOption): string {
+  return option.required ? `${optionLabel(option)} (required)` : optionLabel(option);
+}
+
 function optionSummary(option: CliOption): string {
   return option.repeatable ? `${option.summary} (repeatable)` : option.summary;
 }
@@ -86,7 +90,7 @@ export function renderHelp(commands: readonly CliCommand[], path: readonly strin
   if (command.options.length > 0) {
     lines.push('Options:');
     for (const option of command.options) {
-      lines.push(`  ${optionLabel(option)}`, ...indented(optionSummary(option), 6));
+      lines.push(`  ${optionHeading(option)}`, ...indented(optionSummary(option), 6));
     }
     lines.push('');
   }
@@ -101,7 +105,9 @@ function markdownSection(command: CliCommand, path: readonly string[], depth: nu
   lines.push('```', `odudu ${full.join(' ')} ${usage}`, '```', '');
   if (command.options.length > 0) {
     for (const option of command.options) {
-      lines.push(`- \`${optionLabel(option)}\`: ${optionSummary(option)}`);
+      lines.push(
+        `- \`${optionLabel(option)}\`${option.required ? ' (required)' : ''}: ${optionSummary(option)}`,
+      );
     }
     lines.push('');
   }

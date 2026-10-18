@@ -9,6 +9,7 @@ import {
   tenantLookupRepository,
 } from '@odudu/protocol-oidc';
 import { parseArgs } from 'node:util';
+import { text } from '#/cli/command-types';
 import { assertConsoleConfigured } from '#/config-guard';
 import { consoleProvisioning, loadConsoleKeys } from '#/console-key';
 
@@ -49,6 +50,10 @@ export async function provisionConsole(
   return visited;
 }
 
+export const ASSERTION_OPTIONS = {
+  tenant: text('Name of the tenant whose token endpoint it is for.', true),
+} as const;
+
 // `odudu console assertion --tenant <name>` prints a one-minute assertion
 // that authenticates `odudu-admin` at that tenant's token endpoint, for an
 // administrator redeeming a code without the console: only the holder of the
@@ -56,7 +61,7 @@ export async function provisionConsole(
 // key is equivalent to running this, so the command asks nothing more of the
 // operator; it records that it ran, against the tenant, and names no secret.
 async function assertionFor(argv: readonly string[]): Promise<string> {
-  const { values } = parseArgs({ args: [...argv], options: { tenant: { type: 'string' } } });
+  const { values } = parseArgs({ args: [...argv], options: ASSERTION_OPTIONS });
   if (values.tenant === undefined) {
     throw new OduduError('console_invalid_options', 'console assertion requires --tenant');
   }

@@ -1,5 +1,5 @@
 import { parseArgs } from 'node:util';
-import { flagOption, repeatableOption, stringOption, type CliOption } from '#/cli/command-types';
+import { cliOptions, flag, text, texts, type CliOption } from '#/cli/command-types';
 import { CLIENT_LIST_LIMIT, listLimitProblem } from '@odudu/contracts/admin';
 import { tenantSettingsRepository, sendVerificationEmail } from '@odudu/account';
 import { provisionTenant, requiredActionRepository } from '@odudu/authn-flows';
@@ -960,7 +960,7 @@ async function runTenantCommand(
 ): Promise<TenantCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: { name: { type: 'string' }, set: { type: 'string', multiple: true } },
+    options: TENANT_OPTIONS,
   });
   if (values.name === undefined) {
     throw new OduduError('seed_invalid_options', 'seed tenant requires --name');
@@ -1107,17 +1107,7 @@ async function runClientCommand(
 ): Promise<ClientCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      'client-id': { type: 'string' },
-      public: { type: 'boolean' },
-      'client-secret': { type: 'string' },
-      'token-endpoint-auth-method': { type: 'string' },
-      'redirect-uri': { type: 'string', multiple: true },
-      'post-logout-redirect-uri': { type: 'string', multiple: true },
-      'web-origin': { type: 'string', multiple: true },
-      'grant-type': { type: 'string', multiple: true },
-    },
+    options: CLIENT_OPTIONS,
   });
 
   if (values.tenant === undefined || values['client-id'] === undefined) {
@@ -1254,13 +1244,7 @@ async function runUserCommand(
 ): Promise<UserCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      username: { type: 'string' },
-      password: { type: 'string' },
-      email: { type: 'string' },
-      'require-password-change': { type: 'boolean' },
-    },
+    options: USER_OPTIONS,
   });
 
   if (
@@ -1326,11 +1310,7 @@ async function runRoleCommand(
 ): Promise<RoleCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      name: { type: 'string' },
-      'client-id': { type: 'string' },
-    },
+    options: ROLE_OPTIONS,
   });
 
   if (values.tenant === undefined || values.name === undefined) {
@@ -1369,11 +1349,7 @@ async function runGroupCommand(
 ): Promise<GroupCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      name: { type: 'string' },
-      parent: { type: 'string' },
-    },
+    options: GROUP_OPTIONS,
   });
 
   if (values.tenant === undefined || values.name === undefined) {
@@ -1407,13 +1383,7 @@ async function runScopeCommand(
 ): Promise<ScopeCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      name: { type: 'string' },
-      description: { type: 'string' },
-      'include-in-id-token': { type: 'string' },
-      'include-in-access-token': { type: 'string' },
-    },
+    options: SCOPE_OPTIONS,
   });
 
   if (values.tenant === undefined || values.name === undefined) {
@@ -1459,12 +1429,7 @@ async function runAssignScopeCommand(
 ): Promise<AssignScopeCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      'client-id': { type: 'string' },
-      scope: { type: 'string' },
-      assignment: { type: 'string' },
-    },
+    options: ASSIGN_SCOPE_OPTIONS,
   });
 
   if (
@@ -1518,11 +1483,7 @@ async function runMapRoleCommand(
 ): Promise<MapRoleCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      scope: { type: 'string' },
-      role: { type: 'string' },
-    },
+    options: MAP_ROLE_OPTIONS,
   });
 
   if (values.tenant === undefined || values.scope === undefined || values.role === undefined) {
@@ -1553,11 +1514,7 @@ async function runGrantRoleCommand(
 ): Promise<GrantRoleCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      username: { type: 'string' },
-      role: { type: 'string' },
-    },
+    options: GRANT_ROLE_OPTIONS,
   });
 
   if (values.tenant === undefined || values.username === undefined || values.role === undefined) {
@@ -1596,11 +1553,7 @@ async function runMapGroupRoleCommand(
 ): Promise<MapGroupRoleCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      group: { type: 'string' },
-      role: { type: 'string' },
-    },
+    options: MAP_GROUP_ROLE_OPTIONS,
   });
 
   if (values.tenant === undefined || values.group === undefined || values.role === undefined) {
@@ -1637,11 +1590,7 @@ async function runJoinGroupCommand(
 ): Promise<JoinGroupCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      username: { type: 'string' },
-      group: { type: 'string' },
-    },
+    options: JOIN_GROUP_OPTIONS,
   });
 
   if (values.tenant === undefined || values.username === undefined || values.group === undefined) {
@@ -1672,31 +1621,7 @@ async function runProfileCommand(
 ): Promise<ProfileCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      username: { type: 'string' },
-      name: { type: 'string' },
-      'given-name': { type: 'string' },
-      'family-name': { type: 'string' },
-      'middle-name': { type: 'string' },
-      nickname: { type: 'string' },
-      'preferred-username': { type: 'string' },
-      profile: { type: 'string' },
-      picture: { type: 'string' },
-      website: { type: 'string' },
-      gender: { type: 'string' },
-      birthdate: { type: 'string' },
-      zoneinfo: { type: 'string' },
-      locale: { type: 'string' },
-      'phone-number': { type: 'string' },
-      'phone-number-verified': { type: 'boolean' },
-      'address-formatted': { type: 'string' },
-      'address-street': { type: 'string' },
-      'address-locality': { type: 'string' },
-      'address-region': { type: 'string' },
-      'address-postal-code': { type: 'string' },
-      'address-country': { type: 'string' },
-    },
+    options: PROFILE_OPTIONS,
   });
 
   if (values.tenant === undefined || values.username === undefined) {
@@ -1767,11 +1692,7 @@ async function runRegistrationTokenCommand(
 ): Promise<RegistrationTokenCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      uses: { type: 'string' },
-      ttl: { type: 'string' },
-    },
+    options: REGISTRATION_TOKEN_OPTIONS,
   });
 
   if (values.tenant === undefined || values.uses === undefined || values.ttl === undefined) {
@@ -1800,7 +1721,7 @@ async function runRegistrationTokenCommand(
 // Printed directly rather than folded into main.ts's JSON report: this is
 // the one subcommand whose result is a credential nobody can retrieve again.
 async function runAdminCommand(argv: readonly string[]): Promise<AdminCommandResult> {
-  const { values } = parseArgs({ args: [...argv], options: { username: { type: 'string' } } });
+  const { values } = parseArgs({ args: [...argv], options: ADMIN_OPTIONS });
   if (values.username === undefined) {
     throw new OduduError('seed_invalid_options', 'seed admin requires --username');
   }
@@ -1839,115 +1760,138 @@ export const SEED_COMMANDS = [
 
 type SeedCommand = (typeof SEED_COMMANDS)[number];
 
-const TENANT = stringOption('tenant', 'Name of the tenant the command acts in.');
-const CLIENT_ID = stringOption('client-id', 'The client_id of the client the command acts on.');
-const USERNAME = stringOption('username', 'Username of the user the command acts on.');
-const ROLE = stringOption('role', 'Role name, qualified by its client for a client role.');
+const TENANT = text('Name of the tenant the command acts in.', true);
+const CLIENT_ID = text('The client_id of the client the command acts on.', true);
+const USERNAME = text('Username of the user the command acts on.', true);
+const ROLE = text('Role name, qualified by its client for a client role.', true);
 
-// The options each subcommand's parseArgs table accepts, worded for `odudu
-// help`. A test holds the subcommand names to SEED_COMMANDS; the option
-// names are kept in step with the tables below by hand.
+const TENANT_OPTIONS = {
+  name: text('Name of the tenant to create, or to update when it exists.', true),
+  set: texts('A tenant setting as name=value.'),
+} as const;
+
+const CLIENT_OPTIONS = {
+  tenant: TENANT,
+  'client-id': text('The client_id to create or update.', true),
+  public: flag('Register a public client; accepts --public or --client-secret, not both.'),
+  'client-secret': text('Register a confidential client with this secret instead.'),
+  'token-endpoint-auth-method': text(
+    'client_secret_basic or client_secret_post, for a confidential client.',
+  ),
+  'redirect-uri': texts('A redirect URI the client may use.'),
+  'post-logout-redirect-uri': texts('A URI the client may send users to after logout.'),
+  'web-origin': texts('A browser origin allowed to call the endpoints.'),
+  'grant-type': texts('A grant type the client may use.'),
+} as const;
+
+const USER_OPTIONS = {
+  tenant: TENANT,
+  username: text('Username of the user to create.', true),
+  password: text('The initial password; it must satisfy the tenant policy.', true),
+  email: text('The email address of the user.'),
+  'require-password-change': flag('Make the user choose a new password at first login.'),
+} as const;
+
+const ROLE_OPTIONS = {
+  tenant: TENANT,
+  name: text('Name of the role to create.', true),
+  'client-id': text('Make this a client role owned by that client.'),
+} as const;
+
+const GROUP_OPTIONS = {
+  tenant: TENANT,
+  name: text('Name of the group to create.', true),
+  parent: text('Path of the parent group; omit for a top-level group.'),
+} as const;
+
+const SCOPE_OPTIONS = {
+  tenant: TENANT,
+  name: text('Name of the client scope to create or update.', true),
+  description: text('A description of the scope.'),
+  'include-in-id-token': text('true or false: put the scope claims in the ID token.'),
+  'include-in-access-token': text('true or false: put the scope claims in the access token.'),
+} as const;
+
+const ASSIGN_SCOPE_OPTIONS = {
+  tenant: TENANT,
+  'client-id': CLIENT_ID,
+  scope: text('Name of the client scope to assign.', true),
+  assignment: text('default or optional.', true),
+} as const;
+
+const MAP_ROLE_OPTIONS = {
+  tenant: TENANT,
+  scope: text('Name of the client scope whose tokens carry the role.', true),
+  role: ROLE,
+} as const;
+
+const GRANT_ROLE_OPTIONS = { tenant: TENANT, username: USERNAME, role: ROLE } as const;
+
+const MAP_GROUP_ROLE_OPTIONS = {
+  tenant: TENANT,
+  group: text('Path of the group that receives the role.', true),
+  role: ROLE,
+} as const;
+
+const JOIN_GROUP_OPTIONS = {
+  tenant: TENANT,
+  username: USERNAME,
+  group: text('Path of the group to join.', true),
+} as const;
+
+const PROFILE_OPTIONS = {
+  tenant: TENANT,
+  username: USERNAME,
+  name: text('Full name of the user.'),
+  'given-name': text('Given name of the user.'),
+  'family-name': text('Family name of the user.'),
+  'middle-name': text('Middle name of the user.'),
+  nickname: text('Nickname of the user.'),
+  'preferred-username': text('The preferred_username claim of the user.'),
+  profile: text('URL of the profile page of the user.'),
+  picture: text('URL of the picture of the user.'),
+  website: text('URL of the website of the user.'),
+  gender: text('Gender of the user.'),
+  birthdate: text('Birthdate of the user, as YYYY-MM-DD.'),
+  zoneinfo: text('Time zone of the user, such as Europe/Berlin.'),
+  locale: text('Locale of the user, such as de-DE.'),
+  'phone-number': text('Phone number of the user.'),
+  'phone-number-verified': flag('Record the phone number as verified.'),
+  'address-formatted': text('The whole postal address as one string.'),
+  'address-street': text('Street part of the postal address.'),
+  'address-locality': text('City part of the postal address.'),
+  'address-region': text('State or region part of the postal address.'),
+  'address-postal-code': text('Postal code part of the postal address.'),
+  'address-country': text('Country part of the postal address.'),
+} as const;
+
+const REGISTRATION_TOKEN_OPTIONS = {
+  tenant: TENANT,
+  uses: text('How many registrations the token may authorise.', true),
+  ttl: text('How long the token is valid, in seconds.', true),
+} as const;
+
+const ADMIN_OPTIONS = {
+  username: text('Username of the system-tenant administrator.', true),
+} as const;
+
+// Each subcommand's option table is the one its runner hands to parseArgs,
+// worded for `odudu help`.
 export const SEED_COMMAND_OPTIONS: Record<SeedCommand, readonly CliOption[]> = {
-  tenant: [
-    stringOption('name', 'Name of the tenant to create, or to update when it exists.'),
-    repeatableOption('set', 'A tenant setting as name=value.'),
-  ],
-  client: [
-    TENANT,
-    stringOption('client-id', 'The client_id to create or update.'),
-    flagOption(
-      'public',
-      'Register a public client; accepts --public or --client-secret, not both.',
-    ),
-    stringOption('client-secret', 'Register a confidential client with this secret instead.'),
-    stringOption(
-      'token-endpoint-auth-method',
-      'client_secret_basic or client_secret_post, for a confidential client.',
-    ),
-    repeatableOption('redirect-uri', 'A redirect URI the client may use.'),
-    repeatableOption(
-      'post-logout-redirect-uri',
-      'A URI the client may send users to after logout.',
-    ),
-    repeatableOption('web-origin', 'A browser origin allowed to call the endpoints.'),
-    repeatableOption('grant-type', 'A grant type the client may use.'),
-  ],
-  user: [
-    TENANT,
-    stringOption('username', 'Username of the user to create.'),
-    stringOption('password', 'The initial password; it must satisfy the tenant policy.'),
-    stringOption('email', 'The email address of the user.'),
-    flagOption('require-password-change', 'Make the user choose a new password at first login.'),
-  ],
-  role: [
-    TENANT,
-    stringOption('name', 'Name of the role to create.'),
-    stringOption('client-id', 'Make this a client role owned by that client.'),
-  ],
-  group: [
-    TENANT,
-    stringOption('name', 'Name of the group to create.'),
-    stringOption('parent', 'Path of the parent group; omit for a top-level group.'),
-  ],
-  scope: [
-    TENANT,
-    stringOption('name', 'Name of the client scope to create or update.'),
-    stringOption('description', 'A description of the scope.'),
-    stringOption('include-in-id-token', 'true or false: put the scope claims in the ID token.'),
-    stringOption(
-      'include-in-access-token',
-      'true or false: put the scope claims in the access token.',
-    ),
-  ],
-  'assign-scope': [
-    TENANT,
-    CLIENT_ID,
-    stringOption('scope', 'Name of the client scope to assign.'),
-    stringOption('assignment', 'default or optional.'),
-  ],
-  'map-role': [
-    TENANT,
-    stringOption('scope', 'Name of the client scope whose tokens carry the role.'),
-    ROLE,
-  ],
-  'grant-role': [TENANT, USERNAME, ROLE],
-  'map-group-role': [
-    TENANT,
-    stringOption('group', 'Path of the group that receives the role.'),
-    ROLE,
-  ],
-  'join-group': [TENANT, USERNAME, stringOption('group', 'Path of the group to join.')],
-  profile: [
-    TENANT,
-    USERNAME,
-    stringOption('name', 'Full name of the user.'),
-    stringOption('given-name', 'Given name of the user.'),
-    stringOption('family-name', 'Family name of the user.'),
-    stringOption('middle-name', 'Middle name of the user.'),
-    stringOption('nickname', 'Nickname of the user.'),
-    stringOption('preferred-username', 'The preferred_username claim of the user.'),
-    stringOption('profile', 'URL of the profile page of the user.'),
-    stringOption('picture', 'URL of the picture of the user.'),
-    stringOption('website', 'URL of the website of the user.'),
-    stringOption('gender', 'Gender of the user.'),
-    stringOption('birthdate', 'Birthdate of the user, as YYYY-MM-DD.'),
-    stringOption('zoneinfo', 'Time zone of the user, such as Europe/Berlin.'),
-    stringOption('locale', 'Locale of the user, such as de-DE.'),
-    stringOption('phone-number', 'Phone number of the user.'),
-    flagOption('phone-number-verified', 'Record the phone number as verified.'),
-    stringOption('address-formatted', 'The whole postal address as one string.'),
-    stringOption('address-street', 'Street part of the postal address.'),
-    stringOption('address-locality', 'City part of the postal address.'),
-    stringOption('address-region', 'State or region part of the postal address.'),
-    stringOption('address-postal-code', 'Postal code part of the postal address.'),
-    stringOption('address-country', 'Country part of the postal address.'),
-  ],
-  'registration-token': [
-    TENANT,
-    stringOption('uses', 'How many registrations the token may authorise.'),
-    stringOption('ttl', 'How long the token is valid, in seconds.'),
-  ],
-  admin: [stringOption('username', 'Username of the system-tenant administrator.')],
+  tenant: cliOptions(TENANT_OPTIONS),
+  client: cliOptions(CLIENT_OPTIONS),
+  user: cliOptions(USER_OPTIONS),
+  role: cliOptions(ROLE_OPTIONS),
+  group: cliOptions(GROUP_OPTIONS),
+  scope: cliOptions(SCOPE_OPTIONS),
+  'assign-scope': cliOptions(ASSIGN_SCOPE_OPTIONS),
+  'map-role': cliOptions(MAP_ROLE_OPTIONS),
+  'grant-role': cliOptions(GRANT_ROLE_OPTIONS),
+  'map-group-role': cliOptions(MAP_GROUP_ROLE_OPTIONS),
+  'join-group': cliOptions(JOIN_GROUP_OPTIONS),
+  profile: cliOptions(PROFILE_OPTIONS),
+  'registration-token': cliOptions(REGISTRATION_TOKEN_OPTIONS),
+  admin: cliOptions(ADMIN_OPTIONS),
 };
 
 function isSeedCommand(value: string): value is SeedCommand {

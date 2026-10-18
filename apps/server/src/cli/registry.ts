@@ -1,5 +1,7 @@
-import { flagOption, stringOption, type CliCommand, type CliOption } from '#/cli/command-types';
+import { cliOptions, type CliCommand } from '#/cli/command-types';
+import { ASSERTION_OPTIONS } from '#/cli/console';
 import { SEED_COMMAND_OPTIONS, SEED_COMMANDS } from '#/cli/seed';
+import { SEED_BOOTSTRAP_HELP } from '#/cli/seed-invocation';
 
 export type { CliCommand, CliOption } from '#/cli/command-types';
 
@@ -41,25 +43,6 @@ const SEED_EXAMPLES: Record<(typeof SEED_COMMANDS)[number], string> = {
   admin: 'odudu seed admin --username root',
 };
 
-const SEED_BOOTSTRAP_OPTIONS: readonly CliOption[] = [
-  stringOption('tenant', 'Name of the tenant to create the client in.'),
-  stringOption('client', 'The client_id to create.'),
-  stringOption('client-secret', 'Register a confidential client with this secret.'),
-  stringOption(
-    'token-endpoint-auth-method',
-    'client_secret_basic or client_secret_post, for a confidential client.',
-  ),
-  {
-    ...stringOption('redirect-uri', 'A redirect URI the client may use.'),
-    repeatable: true,
-  },
-  stringOption('user', 'Username of a user to create with the client.'),
-  stringOption('password', 'The password of that user.'),
-  stringOption('email', 'The email address of that user.'),
-  flagOption('send-verification-email', 'Queue a verification email for that user.'),
-  stringOption('issuer-base', 'Base URL to print the issuer under, in place of the default.'),
-];
-
 const SEED_SUBCOMMANDS: readonly CliCommand[] = SEED_COMMANDS.map((name) => ({
   name,
   summary: SEED_SUMMARIES[name],
@@ -69,6 +52,20 @@ const SEED_SUBCOMMANDS: readonly CliCommand[] = SEED_COMMANDS.map((name) => ({
 }));
 
 export const CLI_COMMANDS: readonly CliCommand[] = [
+  {
+    name: '--version',
+    summary: 'Print the version of this build, or dev outside a release image.',
+    options: [],
+    subcommands: NONE,
+    example: 'odudu --version',
+  },
+  {
+    name: 'help',
+    summary: 'Print the commands, or the options of one command. Also --help and -h.',
+    options: [],
+    subcommands: NONE,
+    example: 'odudu help seed client',
+  },
   {
     name: 'reap',
     summary:
@@ -114,7 +111,7 @@ export const CLI_COMMANDS: readonly CliCommand[] = [
       {
         name: 'assertion',
         summary: 'Print a one-minute client assertion that authenticates the console client.',
-        options: [stringOption('tenant', 'Name of the tenant whose token endpoint it is for.')],
+        options: cliOptions(ASSERTION_OPTIONS),
         subcommands: NONE,
         example: 'odudu console assertion --tenant acme',
       },
@@ -141,7 +138,7 @@ export const CLI_COMMANDS: readonly CliCommand[] = [
     summary:
       'Create tenants, clients, users, roles, groups and scopes. Without a subcommand it ' +
       'creates a client in one call.',
-    options: SEED_BOOTSTRAP_OPTIONS,
+    options: SEED_BOOTSTRAP_HELP,
     subcommands: SEED_SUBCOMMANDS,
     example: 'odudu seed tenant --name acme',
   },
