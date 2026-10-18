@@ -7,102 +7,136 @@ and [its plan](../superpowers/plans/2026-10-15-p4g-public-release.md).
 
 ## Spikes
 
-### The site: Rspress, first pass in a scratch directory
+### Rspress was evaluated and dropped
 
-The owner chose a React documentation framework over VitePress on
-2026-10-16. Rspress 2.0.23 was installed outside the repository
-(`pnpm add -E @rspress/core@2.0.23 react@19.3.0 react-dom@19.3.0`, Node
-24.15.0, pnpm 12.3.4, Playwright 1.63.0 on its cached Chromium) and each
-claim the plan depends on was run there. The plan's Task 1 repeats them inside
-a worktree of this workspace; what follows is what the scratch run
-established.
+Rspress 2.0.23 was run in a scratch directory on 2026-10-16 (build, base paths,
+CSP inventory, search, custom home, `light-dark()`, head, sitemap, Lighthouse)
+and worked: one search index, one inline script, a hashed policy with no
+violation, a stock page at performance 0.99. It was chosen for a Vue-docs look
+and dropped on 2026-10-19 for **adoption**: the community, the plugin and theme
+ecosystem and the number of people who already know the framework are small
+next to Docusaurus, and the owner's look requirement is only clean, smooth,
+searchable and mobile-first. Where it differed from Docusaurus: its CSS
+pipeline downlevelled `light-dark()` into a hack that ignored the theme toggle
+(Docusaurus's does not, below), it injected three run-time `<style>` elements
+(Docusaurus injects none), it has local search built in (Docusaurus needs a
+plugin) and I recall it having LLM-oriented output built in, which I did not
+verify.
 
-- **Version and engines.** `npm view @rspress/core version` is `2.0.23`
-  (published 2026-09-29; `2.1.0-beta.1` is the newest beta; the unscoped
-  `rspress` package is the 1.x line). Node `^20.19.0 || >=22.12.0`, React
-  `^19.2.8` as a dependency. A scratch workspace with this repository's
-  `minimumReleaseAge: 1440`, `engine-strict=true` and `allowBuilds`
-  installed it with one `react` (19.3.0, the console's pin), no `vite` and no
-  build-script warning.
-- **Base.** `rspress build --base ./` emits `/./static/...`, so a relative
-  base does not exist and the site is built twice (`--base /odudu/`,
-  `--base /docs/`). The persistent build cache is not keyed by base: a
-  `/docs/` build after a `/odudu/` build still said `/odudu/` until
-  `builderConfig.performance.buildCache` was `false`; four alternating
-  builds were then each correct.
-- **Inline script and style.** One inline `<script>` per page (520 bytes,
-  identical on every page). Over the three path documents (1,408 code blocks),
-  20 distinct `style=""` values. Three `<style>` elements are injected in the
-  browser (empty, medium-zoom's, the mobile menu's body lock). Under
-  `default-src 'self'; script-src 'self' <hash>; style-src 'self' <3 hashes>;
-style-src-attr 'unsafe-hashes' <20 hashes>; connect-src 'self'` a
-  Chromium walk (search, theme toggle, code copy, mobile menu at 390 px)
-  reported no violation. The hashed policy stands.
-- **Markdown.** In `.md`, `{{ }}` and `{ }` are literal; a real HTML tag in
-  prose is parsed (a `<script>` in prose becomes a live inline script).
-  All 1,408 fenced blocks of the three documents rendered byte for byte.
-  The three documents build as single pages in 4.7 s (2.5 MB, 2.5 MB and
-  0.55 MB of HTML), so the split by section is required.
-- **Links.** A dead page link fails the build by default; with
-  `markdown.link.checkAnchors` a dead anchor does too.
-- **Search.** Built in, one same-origin `search_index.<lang>.<hash>.json`
-  (1.28 MB for the three documents); nine hits for a term, no request to
-  another origin.
-- **Home and theme.** `pageType: custom` renders the nav, search and theme
-  switch around an MDX-imported React component. `--rp-*` overrides apply,
-  and the console's `tokens.css` imports by relative path from outside the
-  site's root. Under `prefers-reduced-motion: reduce` a gated reveal computes
-  `animation-name: none`. Without `output.overrideBrowserslist` set to modern
-  browsers, Rspress's CSS pipeline rewrites `light-dark()` into a
-  `prefers-color-scheme` hack that ignores the theme toggle; with it all four
-  system/toggle combinations follow the toggle.
-- **First-load JavaScript** is about 172 KB gzip plus 12 KB of CSS, over the
-  150 KB the landing spec first assumed; the budget is 200 KB.
-- **Languages and images.** `content/en/` builds at `/`; an added
-  `content/fr/` with a `locales` entry builds `/fr/` with its own search
-  index and a switcher; `content/public/` reaches the site root;
-  `route.exclude` plus a plugin's `addPages({ routePath: '/' })` gives the
-  image a plain documentation home with no landing text in its output; a
-  `?raw` import with `CodeBlockRuntime` renders an example file byte for
-  byte.
+### The site: Docusaurus, scratch run
 
-Not verified in scratch, and carried by the plan as assumptions: lychee over
-the prefixed built site, this repository's ESLint and `tsc` over an Rspress
-app, the canonical `<link>` through the `head` option, and the landing's
-fallback in a browser without `animation-timeline` (Playwright's Firefox and
-WebKit builds were not installed).
+2026-10-19. `@docusaurus/core`, `preset-classic`, `faster` 3.10.2 (latest
+stable, published 2026-07-10; `next` 3.0.0-rc.1, `canary` 4.0.0-canary-6985),
+React 19.3.0, pnpm 12.3.4, Node 24.15.0, Playwright 1.63.0 on its cached
+Chromium 1217, `@lhci/cli` 0.15.1, in a scratch workspace with this
+repository's `.npmrc` and `pnpm-workspace.yaml` settings. Every line is a
+command that was run; `assumption:` marks what was not.
 
-### The site: search metadata and Lighthouse, scratch run
+- **Install.** Node `>=20.0`; React `^18 || ^19`, `react-dom` and
+  `@mdx-js/react ^3` are peers the app installs. `minimumReleaseAge` and
+  `engine-strict` did not refuse it; pnpm raised `ERR_PNPM_IGNORED_BUILDS`
+  until `allowBuilds` named `@swc/core` and `core-js`, both `false` (the build
+  does not need either postinstall). One `react` (19.3.0), no `vite`; the
+  `react` pin is by convention, since no lint holds it. `tsc --noEmit` with
+  `@docusaurus/tsconfig` is clean. A late `pnpm add` left a dangling
+  `node_modules` link (pnpm 12.3.4) until the lockfile was regenerated.
+  `docusaurus --version` fails without a site; `docusaurus build --help`
+  works.
+- **Two contradictions of the Rspress-era plan, both small.** A
+  `"type": "module"` package fails the build (`require.resolveWeak is not a
+function`), so the docs package is CommonJS. `future: { faster: true }`
+  alone is refused; `future: { v4: true }` is what selects rspack.
+- **Base.** `baseUrl` is a build input and the persistent cache is keyed by
+  it: five alternating builds (`/odudu/`, `/docs/`, `/odudu/`, `/docs/`, `/`)
+  on one cache each emitted only their own base. The cache is **not** keyed by
+  environment-driven config: `markdown.format` changed from `detect` to `mdx`
+  served the old compile until `docusaurus clear`. Root-relative Markdown links
+  (`/intro/`) get the base prefix and are checked.
+- **Inline script and style, strict CSP.** One executable inline `<script>`
+  per page (626 bytes), `application/ld+json` blocks (not executed), no
+  `<style>` element, and 12 distinct `style=` values over the site plus the
+  three path documents (code-block theme colours). `baseUrlIssueBanner: false`
+  removes a second script and six values from `index.html`. A Chromium walk
+  (mobile menu, theme toggle, search, code copy, landing) under a policy of
+  `script-src` one hash, `style-src 'self'` and `style-src-attr 'unsafe-hashes'`
+  with the 12 hashes reported zero violations and no external request; without
+  the style hashes it reported violations. Docusaurus is not strict-CSP clean; the
+  hashed design stands, smaller than the Rspress one.
+- **Search.** None built in. `@easyops-cn/docusaurus-search-local` 0.55.3
+  (published 2026-07-29; peers `theme-common ^2 || ^3`, React to 19) installs,
+  builds one same-origin `search-index.json` (4.1 MB raw, 1.09 MB gzip over the
+  unsplit documents) and a `/search/` page that the sitemap includes until
+  excluded; 18 suggestions for a term, no external request. It declares no
+  Docusaurus 4 range, and `hashed: true` left the index unhashed. Offline use
+  with the network disabled was not run: assumption.
+- **Markdown.** Under `markdown.format: 'detect'` all 1,408 fenced blocks of the
+  three path documents render byte for byte (trailing newline aside); `{{ }}`
+  and `{ }` are literal in `.md`; a bare `<tenant>` in prose is parsed as HTML
+  and a `<script>` in prose is live; `.mdx` evaluates braces and rejects
+  `<!--`. The three documents hold 32 Markdown links to files outside the docs
+  plugin (`../README.md`, `adr/…`) that fail the build.
+- **Build size and time.** The whole scratch site with the three documents and
+  search builds in 4 to 7 s. `request-paths` is 1.38 MB of HTML (183 KB gzip),
+  `admin-paths` 1.26 MB (191 KB), `console-paths` 0.29 MB (35 KB), and a page
+  that size loads a 157 KB content chunk on top: 332 KB of JavaScript, so the
+  split by section stays required.
+- **Home.** `src/pages/index.tsx` coexists with the docs plugin at
+  `routeBasePath: '/'` and keeps the navbar, search and theme toggle. For the
+  image the pages plugin's `path` points at `src/image-pages`; without a page at
+  `/` the image has no `index.html`, and `plugin-client-redirects` as a
+  substitute adds an inline script.
+- **Tokens.** The console's `tokens.css` imports by relative path and Infima's
+  `--ifm-*` are set from it. All eight {system light, system dark} x {initial,
+  three toggle clicks} states followed the toggle with the default
+  `browserslist` (lightningcss emitted its fallbacks and was still correct) and
+  with a modern one (native `light-dark()`, 82.7 KB of CSS against 90.6 KB).
+  On a phone the colour toggle is in the mobile menu.
+- **Head, sitemap, languages.** The theme emits `<html lang>`, title,
+  description, `og:*`, canonical, `hreflang` with `x-default` and a
+  `BreadcrumbList` per docs page itself; `og:type`, `og:site_name`, `og:image`
+  and `twitter:image` it does not (the last two from `themeConfig.image`:
+  assumption). The minifier strips attribute quotes, so tests parse HTML. The
+  sitemap is absolute from `url` + `baseUrl`, per locale (the root one lists no
+  `/fr/` URL). `i18n/fr/docusaurus-plugin-content-docs/current/` builds `/fr/`
+  with `lang="fr"`, alternates on both languages' pages and its own index;
+  untranslated pages appear in English. A `robots.txt` under `/odudu/` is not
+  read by crawlers. The image build keeps canonical, `hreflang`, `og:url` and
+  JSON-LD whatever the config says; a 12-line `postBuild` plugin removes them
+  (verified).
+- **Raw imports and fence meta.** `!!raw-loader!` fails under rspack even with
+  `raw-loader` installed; `?raw` with a 6-line `configureWebpack` rule
+  (`resourceQuery: /raw/, type: 'asset/source'`) renders a file outside the
+  docs root byte for byte. A fence's `{run expect="…"}` builds and is not
+  rendered; `title="…"` is used. A generated `.md` page in a routed directory
+  needs no registration.
+- **Agent copies.** `docusaurus-plugin-llms` 0.6.1 (published 2026-10-03,
+  peer `@docusaurus/core ^3`) writes `llms.txt` (absolute links from the site
+  address; origin-relative with `useRelativeUrls` for the image),
+  `llms-full.txt` and one `.md` per page. An `.mdx` page's copy is not rendered
+  (imports stay, components vanish); `llms-full.txt` leaves relative links.
+- **Lighthouse, 3 runs per URL, median, mobile profile.** Against
+  `docusaurus serve` (uncompressed, and it answers `/robots.txt` with HTML):
+  performance 0.82, LCP 4.8 s, SEO 0.92. Against a compressing static server:
+  landing performance 0.98, accessibility 1.00, best practices 1.00, SEO 1.00,
+  LCP 2,332 ms, CLS 0, TBT 31 ms; stock docs pages performance 0.98 to 0.99,
+  LCP 1,923 to 2,377 ms, TBT 71 to 74 ms; the unsplit `console-paths` page
+  0.96, LCP 2,523 ms. Accessibility was 0.92 to 0.96 before two
+  configuration fixes (`--ifm-link-decoration: underline`, `prism` themes
+  `github` and `dracula`) and an opacity reveal measured as contrast 1.16, so
+  the reveal is transform only. First-load JavaScript: 161.7 KB gzip on the
+  landing page, 179.8 KB on a docs page, plus 16.2 KB of CSS, so the 200 KB
+  budget holds. The LCP headroom on the landing page is 168 ms, the real
+  Core Web Vitals risk. lhci's `startServerReadyPattern` did not match
+  `docusaurus serve` and it left that server running.
+- **Swizzling.** None was needed for anything above: navbar, footer, colours,
+  fonts, code themes and the accessibility fixes are configuration or CSS. The
+  places a swizzle would appear are the code block (inline styles, if the CSP
+  is ever made strict) and `@theme/SiteMetadata`.
 
-Added 2026-10-16 with the requirement that the public site be found and
-fast. Run in a scratch directory (`@rspress/core` and
-`@rspress/plugin-sitemap` 2.0.23, `@lhci/cli` 0.15.1, Playwright's Chromium).
-
-- **Head.** Rspress writes `<html lang="en">`, a per-page title, meta
-  description and `og:title`/`og:description` from front matter. A `head`
-  function of `{ routePath }` emits a per-page canonical and `og:url`, and
-  returning `undefined` omits the tag, which is how the image build gets
-  `noindex` and no canonical. Rspress emits no canonical itself. JSON-LD
-  returned from `head` arrives intact; the same string in front matter arrives
-  as an empty script, so JSON-LD goes through `head`.
-- **Sitemap.** `@rspress/plugin-sitemap` writes root-relative `<loc>` unless
-  the top-level `siteOrigin` is set, then absolute; `lastmod` is the file's
-  mtime. `siteOrigin` also builds `hreflang` alternates (code read, not run).
-- **Lighthouse.** `lhci autorun` against `rspress preview` collects and
-  asserts; its default is the throttled mobile profile. A stock page scored
-  performance 0.99, accessibility 0.89, best practices 0.96, SEO 1.00, LCP
-  1,954 ms, CLS 0, TBT 0. The accessibility loss is the stock theme
-  (`aria-hidden-focus` on the heading anchor, `color-contrast`) and the
-  best-practices loss a `404` for `/favicon.ico`: the gate fails on the stock
-  theme until the site fixes them. `rspress preview` does not compress.
-- **Custom pages.** A `pageType: custom` landing is server-rendered: its
-  headline, command and links are in the built HTML with scripts stripped.
-- **GitHub Pages.** A `CNAME` file is ignored when a workflow publishes the
-  site, so a domain swap adds none. The apex and `www` DNS values are in the
-  plan. GitHub's custom-domain page does not say the old `github.io` URL
-  redirects; that stays an assumption until the swap is run.
-
-Carried by the plan as assumptions: the `hreflang` alternates for a page in two
-languages, a Chrome on `ubuntu-latest`, the theme change that clears
-`aria-hidden-focus`, `releases/latest/download` resolving to the newest
-non-prerelease asset, and the PNG social image reading well in link previews.
+Not verified, carried by the plan as assumptions: offline search with the
+network off, `themeConfig.image`'s tags, `staticDirectories` per target,
+`llms-full.txt` link rewriting, the docs plugin ignoring `.ts` files, a Chrome
+on `ubuntu-latest`, Pages compressing responses, Firefox and WebKit with
+`animation-timeline`, reduced-motion computed styles re-run on this stack,
+`releases/latest/download` resolving to the newest non-prerelease asset and the
+PNG social image reading well in link previews.
