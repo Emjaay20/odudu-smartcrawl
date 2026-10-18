@@ -62,8 +62,13 @@ COPY apps apps
 RUN pnpm install --frozen-lockfile --prod --ignore-scripts
 
 FROM node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f AS runtime
+ARG ODUDU_VERSION=dev
+LABEL org.opencontainers.image.source="https://github.com/wizzywit/odudu" \
+      org.opencontainers.image.licenses="AGPL-3.0-only" \
+      org.opencontainers.image.version=$ODUDU_VERSION
 RUN addgroup -S odudu && adduser -S -G odudu odudu
 WORKDIR /app
+COPY --chmod=0755 infra/docker/odudu /usr/local/bin/odudu
 COPY --from=build --chown=odudu:odudu /app/apps/server/dist ./dist
 COPY --from=build --chown=odudu:odudu /app/packages/db/drizzle ./drizzle
 # The console is a static build the gateway reads once at boot. Every
@@ -87,7 +92,8 @@ COPY --from=build --chown=odudu:odudu /app/apps/admin-console/dist ./console
 # devDependencies (tsup, vitest, eslint, typescript, turbo,
 # dependency-cruiser, stryker, ...).
 COPY --from=prod-deps --chown=odudu:odudu /app/node_modules ./node_modules
-ENV NODE_ENV=production \
+ENV ODUDU_VERSION=$ODUDU_VERSION \
+    NODE_ENV=production \
     ODUDU_MIGRATIONS_DIR=/app/drizzle \
     ODUDU_CONSOLE_DIR=/app/console \
     ODUDU_HTTP_HOST=0.0.0.0 \

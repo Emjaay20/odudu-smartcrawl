@@ -526,3 +526,15 @@ and `quickstart`.
   `/infra/conformance/proxy`) and `docker-compose` (`/infra/docker`,
   `/infra/conformance`) in one `base-images` group each, using `directories`;
   `/quickstart` joins with its compose file.
+
+### `odudu` as a command in the image
+
+- `/usr/local/bin/odudu` is a two-line shim over `node /app/dist/main.js`;
+  `CMD` is unchanged and no `ENTRYPOINT` is added, so the node base image's
+  `docker-entrypoint.sh` still wraps both.
+- `ARG`/`ENV ODUDU_VERSION` (default `dev`) and the OCI `source`, `licenses`
+  and `version` labels are set in the runtime stage. Built with
+  `--build-arg ODUDU_VERSION=1.2.3`, `docker inspect` showed the labels and
+  `echo $ODUDU_VERSION` printed `1.2.3`.
+- `smoke.sh` runs `docker compose exec -T odudu odudu reap` and requires a
+  JSON report; before the shim it failed at that line, after it passes.

@@ -196,4 +196,10 @@ printf '%s' "$ASSET_HEADERS" | grep -i '^cache-control:.*immutable' > /dev/null 
 
 echo "smoke: the console shell and $ASSET are served from the image"
 
+# `odudu` is the image's command, so an operator runs `docker compose exec
+# odudu odudu reap` rather than naming the bundle. It prints one JSON report.
+REAP_REPORT=$(docker compose exec -T odudu odudu reap) || { echo "smoke: odudu reap failed inside the image" >&2; exit 1; }
+printf '%s' "$REAP_REPORT" | grep -q '^{' || { echo "smoke: odudu reap printed no JSON report: $REAP_REPORT" >&2; exit 1; }
+echo "smoke: odudu reap ran as a command and printed a report"
+
 exit 0
