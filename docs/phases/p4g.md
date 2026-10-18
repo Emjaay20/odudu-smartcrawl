@@ -520,8 +520,8 @@ and `quickstart`.
   verified: the Docker Hub tags API lists `42` and `latest` at that digest, so
   it is now `mendhak/http-https-echo:42@sha256:a265f5...`.
 - verified: `docker build -f infra/docker/Dockerfile -t odudu:p4g-pin .` exits 0
-  and `./infra/docker/smoke.sh` ends with `smoke: the console shell and
-/console/assets/index-L9KvWCs0.js are served from the image`.
+  and `./infra/docker/smoke.sh` ends with `smoke: the console shell is
+served from the image` (the asset it names is content-hashed).
 - `.github/dependabot.yml` gains `docker` (`/infra/docker`,
   `/infra/conformance/proxy`) and `docker-compose` (`/infra/docker`,
   `/infra/conformance`) in one `base-images` group each, using `directories`;
@@ -538,3 +538,16 @@ and `quickstart`.
   `echo $ODUDU_VERSION` printed `1.2.3`.
 - `smoke.sh` runs `docker compose exec -T odudu odudu reap` and requires a
   JSON report; before the shim it failed at that line, after it passes.
+- verified: Dependabot's compose fetcher selects files with the unanchored
+  `/(docker-)?compose(-[\w]+)?(?>\.[\w-]+)?\.ya?ml/i`
+  (`gh api repos/dependabot/dependabot-core/contents/docker/lib/dependabot/docker_compose/file_fetcher.rb`),
+  so `suite-compose.yaml` matches on its `compose.yaml` suffix and needs no
+  rename; the docker fetcher takes any name matching `/dockerfile|containerfile/i`.
+- The image gains `ARG ODUDU_REVISION` and the `revision` label; `compose.yaml`
+  passes `${ODUDU_REVISION:-unknown}` and the `container` and `e2e` jobs set it
+  to `github.sha`. `smoke.sh` asserts the label. The conformance rig's own
+  build is not a distributed image and is left unlabelled.
+- `base-images-pinned.test.ts` now also reads `.github/**/*.{yml,yaml}`
+  (`image:`, scalar `container:`, `docker://`), Dockerfile continuations,
+  `Dockerfile.*` names, `COPY --from` and `RUN --mount from=`, and
+  Testcontainers constructor literals, which are now pinned.

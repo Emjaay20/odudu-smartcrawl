@@ -202,4 +202,16 @@ REAP_REPORT=$(docker compose exec -T odudu odudu reap) || { echo "smoke: odudu r
 printf '%s' "$REAP_REPORT" | grep -q '^{' || { echo "smoke: odudu reap printed no JSON report: $REAP_REPORT" >&2; exit 1; }
 echo "smoke: odudu reap ran as a command and printed a report"
 
+# The revision label is the commit the image was built from, which CI passes
+# as ODUDU_REVISION; a local build without it is labelled "unknown".
+EXPECTED_REVISION="${ODUDU_REVISION:-unknown}"
+ACTUAL_REVISION=$(docker inspect "$(docker compose ps -q odudu)" \
+  --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')
+test "$ACTUAL_REVISION" = "$EXPECTED_REVISION" || {
+  echo "smoke: the revision label was '$ACTUAL_REVISION', expected '$EXPECTED_REVISION'" >&2
+  exit 1
+}
+echo "smoke: the image carries the revision label $ACTUAL_REVISION"
+
 exit 0
+

@@ -1498,8 +1498,13 @@ the command is the same one:
 
 ```bash
 node --env-file=.env apps/server/src/main.ts reap     # on the host
-docker compose exec -T odudu node dist/main.js reap   # in the compose stack
+docker compose exec -T odudu odudu reap               # in the compose stack
 ```
+
+In the image `odudu` is a command on `PATH`: `odudu reap`, `odudu seed ...` and
+the rest are the same subcommands as `node dist/main.js <subcommand>`. The image
+carries the `org.opencontainers.image.source`, `licenses`, `version` and
+`revision` labels, and `ODUDU_VERSION` in its environment.
 
 Captured with the second, against a compose stack built from this branch and
 driven through one sign-in, one code redemption and one refresh rotation:

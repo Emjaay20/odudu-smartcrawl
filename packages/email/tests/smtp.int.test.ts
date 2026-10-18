@@ -18,7 +18,9 @@ const mailpitMessages = z.object({
 let container: StartedTestContainer;
 
 beforeAll(async () => {
-  container = await new GenericContainer('axllent/mailpit')
+  container = await new GenericContainer(
+    'axllent/mailpit:v1.31.5@sha256:94f6b70c1436defae6799d9ac7ff0eeff9540465b842026d5cdb018f1c0234ea',
+  )
     .withExposedPorts(SMTP_PORT, HTTP_PORT)
     .withWaitStrategy(Wait.forListeningPorts())
     .start();

@@ -31,6 +31,8 @@ services:
     build:
       context: ../..
       dockerfile: infra/docker/Dockerfile
+      args:
+        ODUDU_REVISION: ${ODUDU_REVISION:-unknown}
     environment:
       # The image sets NODE_ENV=production; this stack serves plain HTTP on
       # loopback, so it says otherwise rather than setting ODUDU_TLS=true and

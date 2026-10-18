@@ -109,6 +109,8 @@ jobs:
 
       - name: Build and smoke-test the stack
         run: ./infra/docker/smoke.sh
+        env:
+          ODUDU_REVISION: ${{ github.sha }}
 
   # The console's flows in Chromium against the built image, signed in
   # through the gateway. e2e/run.sh is the whole of it, locally as here.
@@ -138,6 +140,8 @@ jobs:
 
       - name: Run the console in a browser against the image
         run: ./apps/admin-console/e2e/run.sh
+        env:
+          ODUDU_REVISION: ${{ github.sha }}
 
       - name: Upload the Playwright report
         if: failure()
