@@ -1801,6 +1801,4 @@ file is not boilerplate.
 
 ## License
 
-[Apache-2.0](LICENSE). The patent grant is deliberate: identity
-infrastructure is exactly the kind of thing an organisation's legal team
-asks about before adopting.
+AGPL-3.0 for the server and Apache-2.0 for the examples and site prose; [`LICENSING.md`](LICENSING.md) says which covers what.

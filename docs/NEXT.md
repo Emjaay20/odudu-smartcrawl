@@ -8,6 +8,9 @@ whole-branch review and awaits the merge into `main`. P4 has been split five way
 [the umbrella spec](superpowers/specs/2026-09-10-odudu-design.md), whose
 "P4 became four phases, then five" subsection has the reasoning.
 
+**P4g, the public release, is in progress on `p4g-public-release`:** its notes are in
+[`docs/phases/p4g.md`](phases/p4g.md) and the licences are `LICENSING.md`.
+
 The order is **P4a → P4c → P4e → P4d → P4g → P4b → P5a → P4f → P4h**, and the letters deliberately
 do not read in execution order, because `P4b` was spent on theming before P4
 split and an accepted ADR cites it. P4a was token exchange
