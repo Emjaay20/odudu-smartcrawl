@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { globSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { globSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { REPO_ROOT, loadDocument, tableWithHeadings } from '../docs/markdown.js';
@@ -20,7 +20,8 @@ function assignedLicences(): Map<string, string> {
 
 function manifests(): string[] {
   return [
-    ...globSync('{apps,packages,tools}/*/package.json', { cwd: REPO_ROOT }),
+    'package.json',
+    ...globSync('{apps,packages,tools,examples}/*/package.json', { cwd: REPO_ROOT }),
     'tests/package.json',
   ].sort();
 }
@@ -49,9 +50,34 @@ describe('licence fields', () => {
     expect(uncovered).toEqual([]);
   });
 
-  it('ships both licence texts', () => {
-    expect(read('LICENSE').trimStart()).toMatch(/^GNU AFFERO GENERAL PUBLIC LICENSE/u);
-    expect(read('LICENSES/Apache-2.0.txt').trimStart()).toMatch(/^Apache License/u);
+  it('ships both licence texts unaltered', () => {
+    const digest = (relative: string) =>
+      createHash('sha256')
+        .update(readFileSync(path.join(REPO_ROOT, relative)))
+        .digest('hex');
+    expect(read('LICENSE').length).toBe(34523);
+    expect(digest('LICENSE')).toBe(
+      '0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0',
+    );
+    expect(read('LICENSES/Apache-2.0.txt').length).toBe(11358);
+    expect(digest('LICENSES/Apache-2.0.txt')).toBe(
+      'cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30',
+    );
+  });
+
+  it('licenses any package under the Apache directories as Apache-2.0', () => {
+    const found = globSync('{examples,apps/docs/content}/**/package.json', {
+      cwd: REPO_ROOT,
+      exclude: (name) => name === 'node_modules',
+    });
+    for (const manifest of found) {
+      const parsed: unknown = JSON.parse(read(manifest));
+      const field =
+        typeof parsed === 'object' && parsed !== null && 'license' in parsed
+          ? parsed.license
+          : undefined;
+      expect(field, manifest).toBe('Apache-2.0');
+    }
   });
 
   it('keeps the name and mark out of both licences', () => {
