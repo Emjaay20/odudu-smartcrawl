@@ -23,6 +23,8 @@ export type ErrorCode =
   | 'seed_unknown_setting'
   | 'seed_unknown_grant_type'
   | 'seed_admin_exists'
+  | 'init_invalid_options'
+  | 'init_roles_without_secrets'
   | 'seed_system_tenant_conflict'
   | 'admin_client_not_builtin'
   | 'admin_client_list_full'

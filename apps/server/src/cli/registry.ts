@@ -1,5 +1,6 @@
 import { cliOptions, type CliCommand } from '#/cli/command-types';
 import { ASSERTION_OPTIONS } from '#/cli/console';
+import { INIT_OPTIONS } from '#/cli/init';
 import { SEED_COMMAND_OPTIONS, SEED_COMMANDS } from '#/cli/seed';
 import { SEED_BOOTSTRAP_HELP } from '#/cli/seed-invocation';
 
@@ -65,6 +66,15 @@ export const CLI_COMMANDS: readonly CliCommand[] = [
     options: [],
     subcommands: NONE,
     example: 'odudu help seed client',
+  },
+  {
+    name: 'init',
+    summary:
+      'Create the database roles, migrate, create the system tenant and the first ' +
+      'administrator, and write quickstart.env. Safe to run again.',
+    options: cliOptions(INIT_OPTIONS),
+    subcommands: NONE,
+    example: 'odudu init --admin-email ada@example.com',
   },
   {
     name: 'reap',

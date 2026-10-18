@@ -4,6 +4,7 @@ import closeWithGrace from 'close-with-grace';
 import { buildApp } from '#/app';
 import { clientOriginsCommand } from '#/cli/client-origins';
 import { renderHelp } from '#/cli/help';
+import { initCommand } from '#/cli/init';
 import { CLI_COMMANDS } from '#/cli/registry';
 import { consoleCommand } from '#/cli/console';
 import { reapCommand } from '#/cli/reap';
@@ -64,6 +65,16 @@ if (
   !CLI_COMMANDS.some((command) => command.name === firstArgument)
 ) {
   refuseUnknownCommand(`unknown command ${JSON.stringify(firstArgument)}`);
+}
+
+if (process.argv[2] === 'init') {
+  try {
+    await initCommand(process.argv.slice(3));
+    process.exit(0);
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : String(err));
+    process.exit(1);
+  }
 }
 
 if (process.argv[2] === 'reap') {

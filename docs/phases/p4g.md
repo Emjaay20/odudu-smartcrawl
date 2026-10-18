@@ -553,3 +553,16 @@ served from the image` (the asset it names is content-hashed).
   (`image:`, scalar `container:`, `docker://`), Dockerfile continuations,
   `Dockerfile.*` names, `COPY --from` and `RUN --mount from=`, and
   Testcontainers constructor literals, which are now pinned.
+
+## odudu init
+
+- verified: `node_modules/.bin/vitest run --project integration apps/server/src/cli/init.int.test.ts`:
+  `CREATE ROLE ... PASSWORD $1` is refused by Postgres (utility statements take
+  no bind parameters), so `init` has the server build the statement with
+  `select format('CREATE ROLE odudu_svc LOGIN PASSWORD %L', $1::text)`, the
+  password bound to `format()`, and runs the returned text.
+- `init` refuses an existing `odudu_svc` role when `quickstart.env` is absent:
+  the role's password is unknown and resetting it would break whatever uses it.
+- The prompt for an interactive password is not wired: `odudu init` passes
+  `interactive: false`, so a password comes from `ODUDU_ADMIN_PASSWORD` or is
+  generated.

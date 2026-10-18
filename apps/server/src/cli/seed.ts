@@ -296,7 +296,10 @@ interface ResolvedTenant {
 // it here would force a password policy onto fakes that have nothing to do
 // with one. The seed CLI is the one caller in this file that writes a
 // password, so it is the one that needs this column set.
-async function passwordPolicyFor(ownerDb: Database, tenantId: string): Promise<PasswordPolicy> {
+async function passwordPolicyFor(
+  ownerDb: Database | TenantScopedDatabase,
+  tenantId: string,
+): Promise<PasswordPolicy> {
   const rows = await ownerDb
     .select({
       passwordMinLength: tenants.passwordMinLength,
@@ -597,12 +600,17 @@ async function ensureSigningKey(
 
 export interface SeedAdminOptions {
   readonly username: string;
+  readonly email?: string;
+  // A chosen password is bound by the system tenant's policy and owes no
+  // change at first sign-in. Left out, one is generated and must be changed.
+  readonly password?: string;
 }
 
 export interface SeededAdmin {
   readonly tenantId: string;
   readonly subjectId: string;
-  readonly password: string;
+  // Present only when it was generated here; a chosen password is never echoed.
+  readonly password: string | undefined;
 }
 
 // Keyed on the id throughout, because a lookup by name and an insert by id
@@ -644,6 +652,10 @@ async function insertSystemTenant(tx: TenantScopedDatabase): Promise<boolean> {
 // which is what a FORCE-RLS insert needs (see SYSTEM_TENANT_ID). Idempotent
 // throughout: a re-run with a different username reuses the same tenant,
 // client and roles, and only adds the new subject.
+export async function seedAdmin(
+  options: SeedAdminOptions & { readonly password?: undefined },
+): Promise<SeededAdmin & { readonly password: string }>;
+export async function seedAdmin(options: SeedAdminOptions): Promise<SeededAdmin>;
 export async function seedAdmin(options: SeedAdminOptions): Promise<SeededAdmin> {
   const config = loadConfig();
   const consoleOptions = await consoleProvisioning(config);
@@ -674,12 +686,22 @@ export async function seedAdmin(options: SeedAdminOptions): Promise<SeededAdmin>
         );
       }
 
-      const password = generateOneTimePassword();
+      const generated = options.password === undefined;
+      const password = options.password ?? generateOneTimePassword();
+      if (options.password !== undefined) {
+        assertPasswordSatisfiesPolicy(
+          await passwordPolicyFor(tx, tenantId),
+          options.username,
+          options.email,
+          options.password,
+        );
+      }
       const subject = await subjectRepository(tx).create({ tenantId, type: 'user' });
       await userRepository(tx).create({
         subjectId: subject.id,
         tenantId,
         username: options.username,
+        ...(options.email !== undefined ? { email: options.email } : {}),
       });
       await grantNewSubjectDefaults(tx, subject.id);
       await credentialRepository(tx).insert({
@@ -694,9 +716,11 @@ export async function seedAdmin(options: SeedAdminOptions): Promise<SeededAdmin>
         throw new OduduError('role_not_found', 'tenant-admin was not provisioned');
       }
       await roleRepository(tx).assignToSubject(subject.id, admin.id);
-      await requiredActionRepository(tx).add(tenantId, subject.id, 'update-password');
+      if (generated) {
+        await requiredActionRepository(tx).add(tenantId, subject.id, 'update-password');
+      }
 
-      return { tenantId, subjectId: subject.id, password };
+      return { tenantId, subjectId: subject.id, password: generated ? password : undefined };
     });
   } finally {
     if (runtime !== owner) await runtime.close();
