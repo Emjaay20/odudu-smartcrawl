@@ -303,7 +303,7 @@ clear` between: every absolute `href`/`src` on `<a>`, `<link>`, `<script>` and
 `<img>` (325 per output, parsed, not grepped) starts with its own base, and the
 `baseUrl:"…"` literal in `main.*.js` matches (`/odudu/`, `/docs/`). 10 MB on
 disk each. A root-relative Markdown link `/request-paths/` becomes
-`/odudu/request-paths` and `/docs/request-paths`; `[dead](/nope/)` is reported
+`/odudu/request-paths` and `/docs/request-paths`; a Markdown link to `/nope/` is reported
 as `/odudu/nope/` under `onBrokenLinks: throw`. The unresolved relative
 `.md` links from the moved documents are the only absolute hrefs outside the
 base (`/README.md`): they escape the base, which is the same defect as above. In
