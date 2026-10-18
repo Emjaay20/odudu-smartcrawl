@@ -3,6 +3,8 @@ import { consoleBaseUrl, loadConfig, ModuleRegistry, systemClock } from '@odudu/
 import closeWithGrace from 'close-with-grace';
 import { buildApp } from '#/app';
 import { clientOriginsCommand } from '#/cli/client-origins';
+import { renderHelp } from '#/cli/help';
+import { CLI_COMMANDS } from '#/cli/registry';
 import { consoleCommand } from '#/cli/console';
 import { reapCommand } from '#/cli/reap';
 import { sendLogoutsCommand } from '#/cli/send-logouts';
@@ -29,6 +31,37 @@ import { httpModule } from '#/modules/http';
 import { logoutSenderModule } from '#/modules/logout-sender';
 import { outboxModule } from '#/modules/outbox';
 import { reapModule } from '#/modules/reap';
+
+const firstArgument = process.argv[2];
+
+if (firstArgument === 'help') {
+  try {
+    process.stdout.write(renderHelp(CLI_COMMANDS, process.argv.slice(3)));
+    process.exit(0);
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : String(err));
+    process.exit(2);
+  }
+}
+
+if (firstArgument === '--help' || firstArgument === '-h') {
+  process.stdout.write(renderHelp(CLI_COMMANDS, []));
+  process.exit(0);
+}
+
+if (firstArgument === '--version') {
+  console.log(process.env.ODUDU_VERSION ?? 'dev');
+  process.exit(0);
+}
+
+if (
+  firstArgument !== undefined &&
+  !CLI_COMMANDS.some((command) => command.name === firstArgument)
+) {
+  console.error(`unknown command ${JSON.stringify(firstArgument)}\n`);
+  process.stderr.write(renderHelp(CLI_COMMANDS, []));
+  process.exit(2);
+}
 
 if (process.argv[2] === 'reap') {
   try {

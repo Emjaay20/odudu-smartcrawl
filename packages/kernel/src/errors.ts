@@ -42,6 +42,7 @@ export type ErrorCode =
   | 'console_unknown_command'
   | 'console_invalid_options'
   | 'client_origins_unknown_command'
+  | 'cli_unknown_command'
   | 'smtp_destination_refused'
   | 'outbox_cannot_enumerate_tenants'
   | 'outbox_requires_app_database_url'

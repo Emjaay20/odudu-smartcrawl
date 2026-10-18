@@ -1505,6 +1505,10 @@ In the image `odudu` is a command on `PATH`: `odudu reap`, `odudu seed ...` and
 the rest are the same subcommands as `node dist/main.js <subcommand>`. The image
 carries the `org.opencontainers.image.source`, `licenses`, `version` and
 `revision` labels, and `ODUDU_VERSION` in its environment.
+`odudu help [command]` lists the subcommands and their options, `odudu
+--version` prints `ODUDU_VERSION` (`dev` outside the image), and a first
+argument that names no subcommand prints the help to stderr and exits 2 rather
+than starting the server.
 
 Captured with the second, against a compose stack built from this branch and
 driven through one sign-in, one code redemption and one refresh rotation:

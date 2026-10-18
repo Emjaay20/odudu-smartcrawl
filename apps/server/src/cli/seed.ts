@@ -1,4 +1,5 @@
 import { parseArgs } from 'node:util';
+import { flagOption, repeatableOption, stringOption, type CliOption } from '#/cli/command-types';
 import { CLIENT_LIST_LIMIT, listLimitProblem } from '@odudu/contracts/admin';
 import { tenantSettingsRepository, sendVerificationEmail } from '@odudu/account';
 import { provisionTenant, requiredActionRepository } from '@odudu/authn-flows';
@@ -1837,6 +1838,117 @@ export const SEED_COMMANDS = [
 ] as const;
 
 type SeedCommand = (typeof SEED_COMMANDS)[number];
+
+const TENANT = stringOption('tenant', 'Name of the tenant the command acts in.');
+const CLIENT_ID = stringOption('client-id', 'The client_id of the client the command acts on.');
+const USERNAME = stringOption('username', 'Username of the user the command acts on.');
+const ROLE = stringOption('role', 'Role name, qualified by its client for a client role.');
+
+// The options each subcommand's parseArgs table accepts, worded for `odudu
+// help`. A test holds the subcommand names to SEED_COMMANDS; the option
+// names are kept in step with the tables below by hand.
+export const SEED_COMMAND_OPTIONS: Record<SeedCommand, readonly CliOption[]> = {
+  tenant: [
+    stringOption('name', 'Name of the tenant to create, or to update when it exists.'),
+    repeatableOption('set', 'A tenant setting as name=value.'),
+  ],
+  client: [
+    TENANT,
+    stringOption('client-id', 'The client_id to create or update.'),
+    flagOption(
+      'public',
+      'Register a public client; accepts --public or --client-secret, not both.',
+    ),
+    stringOption('client-secret', 'Register a confidential client with this secret instead.'),
+    stringOption(
+      'token-endpoint-auth-method',
+      'client_secret_basic or client_secret_post, for a confidential client.',
+    ),
+    repeatableOption('redirect-uri', 'A redirect URI the client may use.'),
+    repeatableOption(
+      'post-logout-redirect-uri',
+      'A URI the client may send users to after logout.',
+    ),
+    repeatableOption('web-origin', 'A browser origin allowed to call the endpoints.'),
+    repeatableOption('grant-type', 'A grant type the client may use.'),
+  ],
+  user: [
+    TENANT,
+    stringOption('username', 'Username of the user to create.'),
+    stringOption('password', 'The initial password; it must satisfy the tenant policy.'),
+    stringOption('email', 'The email address of the user.'),
+    flagOption('require-password-change', 'Make the user choose a new password at first login.'),
+  ],
+  role: [
+    TENANT,
+    stringOption('name', 'Name of the role to create.'),
+    stringOption('client-id', 'Make this a client role owned by that client.'),
+  ],
+  group: [
+    TENANT,
+    stringOption('name', 'Name of the group to create.'),
+    stringOption('parent', 'Path of the parent group; omit for a top-level group.'),
+  ],
+  scope: [
+    TENANT,
+    stringOption('name', 'Name of the client scope to create or update.'),
+    stringOption('description', 'A description of the scope.'),
+    stringOption('include-in-id-token', 'true or false: put the scope claims in the ID token.'),
+    stringOption(
+      'include-in-access-token',
+      'true or false: put the scope claims in the access token.',
+    ),
+  ],
+  'assign-scope': [
+    TENANT,
+    CLIENT_ID,
+    stringOption('scope', 'Name of the client scope to assign.'),
+    stringOption('assignment', 'default or optional.'),
+  ],
+  'map-role': [
+    TENANT,
+    stringOption('scope', 'Name of the client scope whose tokens carry the role.'),
+    ROLE,
+  ],
+  'grant-role': [TENANT, USERNAME, ROLE],
+  'map-group-role': [
+    TENANT,
+    stringOption('group', 'Path of the group that receives the role.'),
+    ROLE,
+  ],
+  'join-group': [TENANT, USERNAME, stringOption('group', 'Path of the group to join.')],
+  profile: [
+    TENANT,
+    USERNAME,
+    stringOption('name', 'Full name of the user.'),
+    stringOption('given-name', 'Given name of the user.'),
+    stringOption('family-name', 'Family name of the user.'),
+    stringOption('middle-name', 'Middle name of the user.'),
+    stringOption('nickname', 'Nickname of the user.'),
+    stringOption('preferred-username', 'The preferred_username claim of the user.'),
+    stringOption('profile', 'URL of the profile page of the user.'),
+    stringOption('picture', 'URL of the picture of the user.'),
+    stringOption('website', 'URL of the website of the user.'),
+    stringOption('gender', 'Gender of the user.'),
+    stringOption('birthdate', 'Birthdate of the user, as YYYY-MM-DD.'),
+    stringOption('zoneinfo', 'Time zone of the user, such as Europe/Berlin.'),
+    stringOption('locale', 'Locale of the user, such as de-DE.'),
+    stringOption('phone-number', 'Phone number of the user.'),
+    flagOption('phone-number-verified', 'Record the phone number as verified.'),
+    stringOption('address-formatted', 'The whole postal address as one string.'),
+    stringOption('address-street', 'Street part of the postal address.'),
+    stringOption('address-locality', 'City part of the postal address.'),
+    stringOption('address-region', 'State or region part of the postal address.'),
+    stringOption('address-postal-code', 'Postal code part of the postal address.'),
+    stringOption('address-country', 'Country part of the postal address.'),
+  ],
+  'registration-token': [
+    TENANT,
+    stringOption('uses', 'How many registrations the token may authorise.'),
+    stringOption('ttl', 'How long the token is valid, in seconds.'),
+  ],
+  admin: [stringOption('username', 'Username of the system-tenant administrator.')],
+};
 
 function isSeedCommand(value: string): value is SeedCommand {
   return (SEED_COMMANDS as readonly string[]).includes(value);
