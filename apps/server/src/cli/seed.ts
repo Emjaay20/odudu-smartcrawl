@@ -1369,11 +1369,11 @@ async function runGroupCommand(
   });
 }
 
-function parseIncludeFlag(value: string | undefined, flag: string): boolean | undefined {
+function parseIncludeFlag(value: string | undefined, option: string): boolean | undefined {
   if (value === undefined) return undefined;
   if (value === 'true') return true;
   if (value === 'false') return false;
-  throw new OduduError('seed_invalid_options', `${flag} must be true or false, got ${value}`);
+  throw new OduduError('seed_invalid_options', `${option} must be true or false, got ${value}`);
 }
 
 async function runScopeCommand(
@@ -1677,10 +1677,10 @@ async function runProfileCommand(
   return { command: 'profile', tenant: tenantName, tenantId, username };
 }
 
-function parsePositiveInteger(raw: string, flag: string): number {
+function parsePositiveInteger(raw: string, option: string): number {
   const value = Number.parseInt(raw, 10);
   if (!Number.isInteger(value) || value < 1 || String(value) !== raw) {
-    throw new OduduError('seed_invalid_options', `${flag} must be a positive integer`);
+    throw new OduduError('seed_invalid_options', `${option} must be a positive integer`);
   }
   return value;
 }

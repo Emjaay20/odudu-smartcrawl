@@ -1,4 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { CLI_COMMANDS } from '#/cli/registry';
 import { SEED_COMMANDS } from '#/cli/seed';
@@ -72,13 +73,40 @@ describe('option metadata', () => {
   it('is the table parseArgs reads, never an inline copy', () => {
     let calls = 0;
     for (const { file, text } of sources()) {
-      for (const match of text.matchAll(/parseArgs\(\{/g)) {
-        calls += 1;
-        const call = text.slice(match.index, match.index + 120);
-        expect(call, `${file}: ${call}`).toMatch(/options:\s*[A-Z][A-Z_]*_OPTIONS\b/);
-      }
+      const tree = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
+      const visit = (node: ts.Node): void => {
+        if (
+          ts.isCallExpression(node) &&
+          ts.isIdentifier(node.expression) &&
+          node.expression.text === 'parseArgs'
+        ) {
+          calls += 1;
+          const config = node.arguments[0];
+          const options =
+            config && ts.isObjectLiteralExpression(config)
+              ? config.properties.find(
+                  (p): p is ts.PropertyAssignment =>
+                    ts.isPropertyAssignment(p) && p.name.getText() === 'options',
+                )
+              : undefined;
+          expect(options?.initializer.getText() ?? '', `${file}: ${node.getText()}`).toMatch(
+            /^[A-Z][A-Z_]*_OPTIONS$/,
+          );
+        }
+        ts.forEachChild(node, visit);
+      };
+      visit(tree);
     }
     expect(calls).toBeGreaterThan(10);
+  });
+
+  it('recognises every shape of requires message the CLI emits', () => {
+    const known = /^requires (--[a-z]|either --|ODUDU_|an email address|a client secret)/;
+    for (const { file, text } of sources()) {
+      for (const match of text.matchAll(/requires [^\n]{0,24}/g)) {
+        expect(match[0], file).toMatch(known);
+      }
+    }
   });
 
   it('marks required exactly the options the command refuses to run without', () => {
