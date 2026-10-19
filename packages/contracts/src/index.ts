@@ -13,3 +13,11 @@ export {
   isValidProfileUrl,
   isValidZoneinfo,
 } from '#/profile-claims';
+export {
+  BIDI_FREE_PATTERN,
+  BIDI_REFUSED,
+  BIDI_REFUSED_MESSAGE,
+  containsBidiControl,
+  noBidiControls,
+  stripBidiControls,
+} from '#/bidi';
