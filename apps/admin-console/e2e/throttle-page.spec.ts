@@ -1,4 +1,5 @@
-import { expect, expectAccessible, test } from './fixtures';
+import { expect, test } from './fixtures';
+import { inspect } from './page-inspection';
 import { startThrottledServer, stopThrottledServer } from './stack';
 
 const PORT = 3981;
@@ -35,8 +36,11 @@ test('the throttled sign-in page names the wait and passes axe in both themes', 
   expect(refused.status()).toBe(429);
   expect(refused.headers()['cache-control']).toBe('no-store');
   const wait = Number(refused.headers()['retry-after']);
-  await page.setContent(await refused.text());
+  // Served the way the server sent it, so the stylesheet its policy allows loads.
+  const view = `${ORIGIN}/throttled-view`;
+  await page.route(view, (route) => route.fulfill({ response: refused }));
+  await page.goto(view);
   await expect(page.getByRole('heading', { level: 1, name: 'Too many attempts' })).toBeVisible();
   await expect(page.getByText(`Try again in ${String(wait)} seconds.`)).toBeVisible();
-  await expectAccessible(page);
+  await inspect(page, 'throttle');
 });

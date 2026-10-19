@@ -1,0 +1,361 @@
+import { createHmac, randomBytes } from 'node:crypto';
+import { expect, test, type Problem } from './fixtures';
+import { inspect } from './page-inspection';
+import { inTenant, psql, seed, sqlText } from './stack';
+import type { Page } from '@playwright/test';
+
+// Every page the server renders, reached the way a person reaches it, held to
+// axe in both themes, to the phone's width, and to one card width. With
+// PAGE_SHOTS_DIR set it also saves each page in both themes at three widths.
+
+const run = randomBytes(3).toString('hex');
+const PASSWORD = `Visual-${randomBytes(9).toString('base64url')}`;
+const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
+// A path the stack answers, so a finished sign-in lands somewhere that loads.
+const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3080';
+const LANDING = `${BASE}/health/ready`;
+const LONG_NAME =
+  'The International Consortium of Extraordinarily Long Named Organisations and Their Subsidiary Applications Incorporated';
+const LONG_SCOPE_TEXT =
+  'Read every report your organisation has ever produced, including the confidential quarterly summaries and the attachments beneath them, for as long as you remain employed';
+
+const main = `pages-${run}`;
+const otp = `pages-otp-${run}`;
+const open = `pages-open-${run}`;
+
+function authorize(tenant: string, client: string, extra: Record<string, string> = {}): string {
+  const query = new URLSearchParams({
+    response_type: 'code',
+    client_id: client,
+    redirect_uri: LANDING,
+    scope: 'openid profile',
+    state: 'xyz',
+    code_challenge: CHALLENGE,
+    code_challenge_method: 'S256',
+    ...extra,
+  });
+  return `/tenants/${tenant}/protocol/openid-connect/auth?${query.toString()}`;
+}
+
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+// RFC 6238 with the SHA-1, six digits and thirty seconds the enrolment page asks for.
+function totp(secret: string, at = Date.now()): string {
+  const bits = [...secret].map((c) => ALPHABET.indexOf(c).toString(2).padStart(5, '0')).join('');
+  const key = Buffer.from((bits.match(/.{8}/gu) ?? []).map((byte) => parseInt(byte, 2)));
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(Math.floor(at / 30_000)));
+  const hash = createHmac('sha1', key).update(counter).digest();
+  const offset = (hash[19] ?? 0) & 15;
+  return String((hash.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).padStart(6, '0');
+}
+
+async function signIn(page: Page, username: string, password = PASSWORD): Promise<void> {
+  await page.getByLabel(/^Username/u).fill(username);
+  await page.getByLabel('Password').fill(password);
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+}
+
+function client(tenant: string, id: string, name: string): void {
+  seed(['client', '--tenant', tenant, '--client-id', id, '--public', '--redirect-uri', LANDING]);
+  psql(
+    `update clients set name = ${sqlText(name)} where client_id = ${sqlText(id)} and tenant_id = ${inTenant(tenant)}`,
+  );
+}
+
+function mailKey(tenant: string, to: string): string {
+  return psql(
+    `select substring(o.body_text from 'key=([A-Za-z0-9_-]+)') from email_outbox o where o.tenant_id = ${inTenant(tenant)} and o.to_address = ${sqlText(to)} order by o.created_at desc limit 1`,
+  );
+}
+
+// These pages refuse on purpose, with a 4xx the browser logs; a refusal is the
+// page under test, so that line is taken back and any other problem still fails.
+function forgiveRefusals(problems: Problem[]): void {
+  const kept = problems.filter(
+    (problem) =>
+      !problem.text.startsWith('Failed to load resource: the server responded with a status of 4'),
+  );
+  problems.splice(0, problems.length, ...kept);
+}
+
+test.describe.configure({ mode: 'serial' });
+
+test.beforeAll(() => {
+  seed(['tenant', '--name', main]);
+  for (const username of ['alice', 'forced', 'passkey', 'recovery']) {
+    seed([
+      'user',
+      '--tenant',
+      main,
+      '--username',
+      username,
+      `--password=${PASSWORD}`,
+      ...(username === 'forced' ? ['--require-password-change'] : []),
+    ]);
+  }
+  psql(
+    `insert into user_required_actions (tenant_id, subject_id, action) select u.tenant_id, u.subject_id, '${'configure-passkey'}' from users u where u.tenant_id = ${inTenant(main)} and u.username = 'passkey'`,
+  );
+  psql(
+    `insert into user_required_actions (tenant_id, subject_id, action) select u.tenant_id, u.subject_id, 'generate-recovery-codes' from users u where u.tenant_id = ${inTenant(main)} and u.username = 'recovery'`,
+  );
+  client(main, 'portal', 'Acme Reporting Portal');
+  client(main, 'longco', LONG_NAME);
+  client(main, 'plain', 'Plain application');
+  psql(
+    `update client_oidc_config set consent_required = true, client_uri = '${BASE}/about', policy_uri = '${BASE}/privacy', tos_uri = '${BASE}/terms' where client_id in (select id from clients where tenant_id = ${inTenant(main)} and client_id in ('portal', 'longco'))`,
+  );
+  psql(
+    `update client_oidc_config set frontchannel_logout_uri = '${LANDING}', post_logout_redirect_uris = '{${LANDING}}' where client_id in (select id from clients where tenant_id = ${inTenant(main)} and client_id = 'plain')`,
+  );
+  seed(['scope', '--tenant', main, '--name', 'reports', '--description', LONG_SCOPE_TEXT]);
+  seed([
+    'scope',
+    '--tenant',
+    main,
+    '--name',
+    'segment'.repeat(12),
+    '--description',
+    'unbroken'.repeat(14),
+  ]);
+  for (const id of ['portal', 'longco']) {
+    for (const [scope, assignment] of [
+      ['profile', 'default'],
+      ['reports', 'default'],
+      ['email', 'optional'],
+      ['offline_access', 'optional'],
+      ['segment'.repeat(12), 'optional'],
+    ] as const) {
+      seed([
+        'assign-scope',
+        '--tenant',
+        main,
+        '--client-id',
+        id,
+        '--scope',
+        scope,
+        '--assignment',
+        assignment,
+      ]);
+    }
+  }
+
+  seed(['tenant', '--name', otp, '--set', 'otp_required=true']);
+  client(otp, 'otpapp', 'Authenticator demo');
+  seed(['user', '--tenant', otp, '--username', 'bob', `--password=${PASSWORD}`]);
+
+  seed(['tenant', '--name', open]);
+  seed([
+    'tenant',
+    '--name',
+    open,
+    '--set',
+    'registration_allowed=true',
+    '--set',
+    'verify_email=true',
+    '--set',
+    'reset_password_allowed=true',
+  ]);
+  client(open, 'openapp', 'Open application');
+  seed([
+    'user',
+    '--tenant',
+    open,
+    '--username',
+    'unverified',
+    `--password=${PASSWORD}`,
+    '--email',
+    `unverified-${run}@example.test`,
+  ]);
+  seed([
+    'user',
+    '--tenant',
+    open,
+    '--username',
+    'resetter',
+    `--password=${PASSWORD}`,
+    '--email',
+    `resetter-${run}@example.test`,
+  ]);
+});
+
+test('the sign-in form, its refusal and the second-factor pages', async ({ page }) => {
+  await page.goto(authorize(main, 'portal'));
+  await expect(page.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible();
+  await expect(page.getByText('to continue to Acme Reporting Portal')).toBeVisible();
+  await expect(page.locator('.tenant')).toHaveText(main);
+  await inspect(page, 'signin-empty');
+
+  await signIn(page, 'alice', 'not the password');
+  await expect(page.getByRole('alert')).toContainText('Sign-in failed');
+  await expect(page.getByLabel('Username')).toHaveValue('alice');
+  await expect(page.getByText('to continue to Acme Reporting Portal')).toBeVisible();
+  await inspect(page, 'signin-error-echo');
+
+  await page.goto(authorize(otp, 'otpapp'));
+  await signIn(page, 'bob');
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Set up your authenticator' }),
+  ).toBeVisible();
+  await page.getByLabel('Code from your app').fill('000000');
+  await page.getByRole('button', { name: 'Confirm' }).click();
+  await expect(page.getByRole('alert')).toBeVisible();
+  const secret = (await page.getByText('Key:').locator('code').innerText()).trim();
+  await inspect(page, 'totp-enrolment');
+
+  await page.getByLabel('Code from your app').fill(totp(secret));
+  await page.getByRole('button', { name: 'Confirm' }).click();
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Save your recovery codes' }),
+  ).toBeVisible();
+  await inspect(page, 'recovery-codes');
+  await page.getByRole('button', { name: 'I have saved these codes' }).click();
+  await expect(page).toHaveURL(/\/health\/ready/u);
+
+  await page.goto(authorize(otp, 'otpapp', { prompt: 'login' }));
+  await signIn(page, 'bob');
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Enter your authentication code' }),
+  ).toBeVisible();
+  await inspect(page, 'second-factor-totp');
+  await page.getByLabel('Code from your app').fill('000000');
+  await page.getByRole('button', { name: 'Verify' }).click();
+  await expect(page.getByRole('alert')).toContainText('That code did not work');
+  await inspect(page, 'second-factor-totp-error');
+});
+
+test('the required-action pages: password change, passkey enrolment', async ({
+  page,
+  problems,
+}) => {
+  await page.goto(authorize(main, 'plain'));
+  await signIn(page, 'forced');
+  await expect(page.getByRole('heading', { level: 1, name: 'Change your password' })).toBeVisible();
+  await inspect(page, 'update-password');
+  await page.getByLabel('New password').fill('a');
+  await page.getByRole('button', { name: 'Update password' }).click();
+  await expect(page.getByRole('alert')).toContainText('Password must');
+  await inspect(page, 'update-password-violations');
+
+  await page.goto(authorize(main, 'plain', { prompt: 'login' }));
+  await signIn(page, 'passkey');
+  await expect(page.getByRole('heading', { level: 1, name: 'Add a passkey' })).toBeVisible();
+  await inspect(page, 'passkey-enrolment');
+  forgiveRefusals(problems);
+});
+
+test('consent, the account chooser and signing out', async ({ page }) => {
+  await page.goto(authorize(main, 'portal'));
+  await signIn(page, 'alice');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('is asking for access');
+  await inspect(page, 'consent');
+
+  await page.goto(authorize(main, 'longco', { prompt: 'login' }));
+  await signIn(page, 'alice');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText(LONG_NAME);
+  await inspect(page, 'consent-long-names');
+  await page.getByRole('button', { name: 'Allow' }).click();
+  await expect(page).toHaveURL(/\/health\/ready/u);
+
+  await page.goto(authorize(main, 'plain', { prompt: 'select_account' }));
+  await expect(page.getByRole('heading', { level: 1, name: 'Choose an account' })).toBeVisible();
+  await inspect(page, 'select-account');
+
+  await page.goto(`/tenants/${main}/protocol/openid-connect/logout?client_id=plain`);
+  await expect(page.getByRole('heading', { level: 1, name: 'Sign out?' })).toBeVisible();
+  await inspect(page, 'logout-confirm');
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Signed out' })).toBeVisible();
+  await inspect(page, 'logout-done');
+
+  await page.goto(`/tenants/${main}/protocol/openid-connect/logout`);
+  await expect(page.getByRole('heading', { level: 1, name: 'Already signed out' })).toBeVisible();
+  await inspect(page, 'logout-no-session');
+});
+
+test('the error pages', async ({ page, problems }) => {
+  await page.goto(authorize(main, 'portal', { redirect_uri: 'https://nowhere.example/cb' }));
+  await expect(page.getByRole('heading', { level: 1, name: "Can't continue" })).toBeVisible();
+  await inspect(page, 'error');
+
+  // The first refusal restarts the sign-in once; the one inside that minute is shown.
+  await page.goto('/console/auth/callback?code=forged&state=forged');
+  await page.goto('/console/auth/callback?code=forged&state=forged');
+  await expect(page.getByRole('heading', { level: 1, name: 'Sign-in failed' })).toBeVisible();
+  await inspect(page, 'console-refusal');
+  forgiveRefusals(problems);
+});
+
+test('registration, the unverified account, password reset and their links', async ({
+  page,
+  problems,
+}) => {
+  await page.goto(`/tenants/${open}/login-actions/registration`);
+  await expect(page.getByRole('heading', { level: 1, name: 'Create account' })).toBeVisible();
+  await inspect(page, 'registration');
+
+  await page.getByLabel('Username').fill('newcomer');
+  await page.getByLabel('Email').fill(`newcomer-${run}@example.test`);
+  await page.getByLabel('Password').fill('a');
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await expect(
+    page.getByRole('heading', { level: 1, name: "Can't create this account" }),
+  ).toBeVisible();
+  await inspect(page, 'registration-failed');
+
+  await page.goto(`/tenants/${open}/login-actions/registration`);
+  await page.getByLabel('Username').fill('newcomer');
+  await page.getByLabel('Email').fill(`newcomer-${run}@example.test`);
+  await page.getByLabel('Password').fill(PASSWORD);
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Account created' })).toBeVisible();
+  await inspect(page, 'registration-succeeded');
+
+  const key = mailKey(open, `newcomer-${run}@example.test`);
+  await page.goto(`/tenants/${open}/login-actions/action-token?key=${key}`);
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('verified');
+  await inspect(page, 'verification-ok');
+  await page.goto(`/tenants/${open}/login-actions/action-token?key=${key}`);
+  await expect(page.getByRole('heading', { level: 1 })).toContainText("can't be used");
+  await inspect(page, 'verification-failed');
+
+  await page.goto(authorize(open, 'openapp'));
+  await signIn(page, 'unverified');
+  await expect(page.getByRole('heading', { level: 1, name: "Can't sign in yet" })).toBeVisible();
+  await inspect(page, 'email-unverified');
+
+  await page.goto(`/tenants/${open}/login-actions/reset-password`);
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Forgot your password?' }),
+  ).toBeVisible();
+  await inspect(page, 'reset-request');
+  await page.getByLabel('Email').fill(`resetter-${run}@example.test`);
+  await page.getByRole('button', { name: 'Send reset link' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Check your email' })).toBeVisible();
+  await inspect(page, 'reset-sent');
+
+  const reset = mailKey(open, `resetter-${run}@example.test`);
+  await page.goto(`/tenants/${open}/login-actions/action-token?key=${reset}`);
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Choose a new password' }),
+  ).toBeVisible();
+  await inspect(page, 'reset-new-password');
+  await page.getByLabel('New password').fill('a');
+  await page.getByRole('button', { name: 'Reset password' }).click();
+  await expect(
+    page.getByRole('heading', { level: 1, name: "Can't reset your password" }),
+  ).toBeVisible();
+  await inspect(page, 'reset-weak');
+  await page.goto(`/tenants/${open}/login-actions/action-token?key=${reset}`);
+  await page.getByLabel('New password').fill(`${PASSWORD}-reset`);
+  await page.getByRole('button', { name: 'Reset password' }).click();
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Your password has been reset' }),
+  ).toBeVisible();
+  await inspect(page, 'reset-done');
+  await page.goto(`/tenants/${open}/login-actions/action-token?key=${reset}`);
+  await expect(page.getByRole('heading', { level: 1 })).toContainText("can't be used");
+  await inspect(page, 'reset-link-failed');
+  forgiveRefusals(problems);
+});

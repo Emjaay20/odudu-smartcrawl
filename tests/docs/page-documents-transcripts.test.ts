@@ -371,7 +371,7 @@ const RENDER_BACK: Record<string, (body: string) => string> = {
       {
         tenant: first(body, /action="\/tenants\/([^/"]*)\//u),
         authSessionId: first(body, /name="auth_session_id" value="([^"]*)"/u),
-        accounts: [...body.matchAll(/name="session_id" value="([^"]*)"><bdi>(.*?)<\/bdi>/gu)].map(
+        accounts: [...body.matchAll(/name="session_id" value="([^"]*)"[^>]*><bdi>(.*?)<\/bdi>/gu)].map(
           (m) => ({ sessionId: unescaped(m[1] ?? ''), displayName: unescaped(m[2] ?? '') }),
         ),
       },

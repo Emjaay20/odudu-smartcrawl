@@ -230,9 +230,9 @@ export function renderLoginForm(
   // The tenant's `login_with_email`: only the label changes, since the
   // field takes either and the server decides which it names.
   loginWithEmail = false,
-  locale: PageLocale,
   // The name of the client the parked request is for, when there is one.
-  clientName?: string,
+  clientName: string | undefined,
+  locale: PageLocale,
 ): RenderedPage {
   const action = `/tenants/${escapeHtml(tenant)}/login-actions/authenticate`;
   // Beside the password and nowhere else: a passkey is an alternative to

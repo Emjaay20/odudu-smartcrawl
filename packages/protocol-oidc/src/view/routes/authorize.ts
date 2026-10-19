@@ -159,8 +159,8 @@ async function renderAuthorizationOutcome(
     outcome.rememberMeAllowed,
     undefined,
     outcome.loginWithEmail,
-    locale,
     await clientName(),
+    locale,
   );
   return sendHtml(reply, 200, continuing(form(page)));
 }

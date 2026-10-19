@@ -83,8 +83,8 @@ export async function sendLoginOutcome(
             ...(outcome.username === undefined ? {} : { username: outcome.username }),
           },
       tenant?.loginWithEmail ?? false,
-      locale,
       await clientName(),
+      locale,
     );
     return sendHtml(reply, 200, continuing(page));
   }

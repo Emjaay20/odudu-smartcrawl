@@ -134,6 +134,7 @@ describe('renderLoginForm', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
       DEFAULT_PAGE_LOCALE,
     );
     expect(page.title).toBe('Sign in');
@@ -153,6 +154,7 @@ describe('renderLoginForm', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
       DEFAULT_PAGE_LOCALE,
     );
     expect(otp.title).toBe('Enter your authentication code');
@@ -163,6 +165,7 @@ describe('renderLoginForm', () => {
       'acme',
       'session-id',
       'recovery-code',
+      undefined,
       undefined,
       undefined,
       undefined,
@@ -182,6 +185,7 @@ describe('renderLoginForm', () => {
       true,
       undefined,
       undefined,
+      undefined,
       DEFAULT_PAGE_LOCALE,
     );
     expect(page.body).toContain(
@@ -197,6 +201,7 @@ describe('renderLoginForm', () => {
       'password',
       false,
       false,
+      undefined,
       undefined,
       undefined,
       DEFAULT_PAGE_LOCALE,
@@ -219,6 +224,7 @@ describe('renderLoginForm', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
       DEFAULT_PAGE_LOCALE,
     );
     expect(page.body).not.toContain('<script>');
@@ -232,6 +238,7 @@ describe('renderLoginForm', () => {
       'sid',
       'password',
       true,
+      undefined,
       undefined,
       undefined,
       undefined,
@@ -251,6 +258,7 @@ describe('renderLoginForm', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
       DEFAULT_PAGE_LOCALE,
     ).body;
     expect(body.startsWith('<header class="intro">\n<h1>Enter your authentication code</h1>')).toBe(
@@ -262,17 +270,8 @@ describe('renderLoginForm', () => {
 
   describe('naming the client the request is for', () => {
     const render = (client: string | undefined, locale: typeof FRENCH = DEFAULT_PAGE_LOCALE) =>
-      renderLoginForm(
-        'acme',
-        'sid',
-        'password',
-        false,
-        false,
-        undefined,
-        false,
-        locale,
-        client,
-      ).body;
+      renderLoginForm('acme', 'sid', 'password', false, false, undefined, false, client, locale)
+        .body;
 
     it('says where the person is going, isolated, between the heading and the tenant', () => {
       const body = render('Acme Portal');
@@ -310,6 +309,7 @@ describe('renderLoginForm', () => {
         false,
         refusal,
         undefined,
+        undefined,
         DEFAULT_PAGE_LOCALE,
       );
       expect(page.body).toContain(
@@ -328,6 +328,7 @@ describe('renderLoginForm', () => {
           undefined,
           undefined,
           undefined,
+          undefined,
           DEFAULT_PAGE_LOCALE,
         ).body,
       ).not.toContain('role="alert"');
@@ -335,7 +336,17 @@ describe('renderLoginForm', () => {
 
     it('reads the message from the catalogue by its id, in the language of the page', () => {
       const render = (locale: typeof FRENCH) =>
-        renderLoginForm('acme', 'sid', 'password', false, false, refusal, undefined, locale);
+        renderLoginForm(
+          'acme',
+          'sid',
+          'password',
+          false,
+          false,
+          refusal,
+          undefined,
+          undefined,
+          locale,
+        );
       expect(render(DEFAULT_PAGE_LOCALE).body).toContain(
         `<p class="alert" role="alert">${en['login.refusal.signInFailed']}</p>`,
       );
@@ -356,6 +367,7 @@ describe('renderLoginForm', () => {
           username: 'ada',
         },
         undefined,
+        undefined,
         DEFAULT_PAGE_LOCALE,
       );
       expect(page.body).toContain('name="username" autocomplete="username" value="ada"');
@@ -371,6 +383,7 @@ describe('renderLoginForm', () => {
         false,
         false,
         refusal,
+        undefined,
         undefined,
         DEFAULT_PAGE_LOCALE,
       );
@@ -389,6 +402,7 @@ describe('renderLoginForm', () => {
           ...refusal,
           username: 'ada',
         },
+        undefined,
         undefined,
         DEFAULT_PAGE_LOCALE,
       );
@@ -418,6 +432,7 @@ describe('renderLoginForm', () => {
           ...refusal,
           username,
         },
+        undefined,
         undefined,
         DEFAULT_PAGE_LOCALE,
       );
@@ -452,6 +467,7 @@ describe('renderLoginForm', () => {
           username,
         },
         undefined,
+        undefined,
         DEFAULT_PAGE_LOCALE,
       );
       expect(page.body.includes(`value="${username}"`)).toBe(echoed);
@@ -468,6 +484,7 @@ describe('renderLoginForm', () => {
           ...refusal,
           username: '',
         },
+        undefined,
         undefined,
         DEFAULT_PAGE_LOCALE,
       );
@@ -486,6 +503,7 @@ describe('renderLoginForm', () => {
           ...refusal,
           username: 'a'.repeat(1_000_000),
         },
+        undefined,
         undefined,
         DEFAULT_PAGE_LOCALE,
       );
@@ -506,6 +524,7 @@ describe('renderLoginForm', () => {
           username: 'ada',
         },
         undefined,
+        undefined,
         DEFAULT_PAGE_LOCALE,
       );
       expect(otp.body).toMatch(/name="code"[^>]*autofocus/u);
@@ -518,6 +537,7 @@ describe('renderLoginForm', () => {
         false,
         false,
         refusal,
+        undefined,
         undefined,
         DEFAULT_PAGE_LOCALE,
       );
@@ -534,6 +554,7 @@ describe('renderLoginForm', () => {
           undefined,
           undefined,
           undefined,
+          undefined,
           DEFAULT_PAGE_LOCALE,
         ).body,
       ).not.toContain('autofocus');
@@ -542,6 +563,7 @@ describe('renderLoginForm', () => {
           'acme',
           'sid',
           'otp',
+          undefined,
           undefined,
           undefined,
           undefined,
@@ -555,7 +577,7 @@ describe('renderLoginForm', () => {
 
 describe('the text of the sign-in pages', () => {
   const login = (form: string, locale: typeof FRENCH, passkey = false) =>
-    renderLoginForm('acme', 'sid', form, passkey, true, undefined, true, locale);
+    renderLoginForm('acme', 'sid', form, passkey, true, undefined, true, undefined, locale);
 
   it('keeps the English markup of the password form', () => {
     expect(login('password', DEFAULT_PAGE_LOCALE).body).toBe(
@@ -595,7 +617,8 @@ describe('the text of the sign-in pages', () => {
     expect(page.html).toContain('<html lang="fr" dir="ltr">');
     expect(page.title).toBe('Se connecter');
     expect(
-      renderLoginForm('acme', 'sid', 'password', false, false, undefined, false, FRENCH).body,
+      renderLoginForm('acme', 'sid', 'password', false, false, undefined, false, undefined, FRENCH)
+        .body,
     ).toContain('<label>Nom d’utilisateur <input');
     expect(page.body).toContain('Se souvenir de moi</label>');
     expect(page.body).toContain('<button type="submit">Se connecter</button>');
@@ -675,6 +698,7 @@ describe('the text of the sign-in pages', () => {
         false,
         false,
         { messageId: 'login.refusal.signInFailed', username: hostile },
+        undefined,
         undefined,
         locale,
       );
