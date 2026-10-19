@@ -9,6 +9,7 @@ const HTTP_PORT = 8025;
 const mailpitMessages = z.object({
   messages: z.array(
     z.object({
+      ID: z.string(),
       To: z.array(z.object({ Address: z.string() })),
       Subject: z.string(),
     }),
@@ -55,5 +56,32 @@ describe('smtpSender', () => {
     const messages = await listMessages();
     expect(messages).toHaveLength(1);
     expect(messages[0]?.To[0]?.Address).toBe('ada@example.test');
+  });
+
+  it('carries the mark as an inline image the markup can name by content id', async () => {
+    const sender = smtpSender({
+      host: container.getHost(),
+      port: container.getMappedPort(SMTP_PORT),
+      from: 'odudu@example.test',
+    });
+    await sender.send({
+      to: 'grace@example.test',
+      subject: 'With a mark',
+      text: 'text',
+      html: '<img src="cid:odudu-mark" width="40" height="40" alt="odudu">',
+    });
+
+    const sent = (await listMessages()).find((message) => message.Subject === 'With a mark');
+    const origin = `http://${container.getHost()}:${String(container.getMappedPort(HTTP_PORT))}`;
+    const detail = z
+      .object({
+        Inline: z.array(
+          z.object({ ContentID: z.string(), ContentType: z.string(), Size: z.number() }),
+        ),
+      })
+      .parse(await (await fetch(`${origin}/api/v1/message/${sent?.ID ?? ''}`)).json());
+    expect(detail.Inline).toHaveLength(1);
+    expect(detail.Inline[0]?.ContentID).toBe('odudu-mark');
+    expect(detail.Inline[0]?.ContentType).toBe('image/png');
   });
 });

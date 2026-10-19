@@ -9,6 +9,8 @@ export interface SendVerificationEmailDeps {
   readonly tenantName: string;
   readonly tenantDisplayName: string;
   readonly issuerBase: string;
+  // The send time of the mail, from the caller's clock.
+  readonly now: () => Date;
 }
 
 export interface SendVerificationEmailInput {
@@ -54,6 +56,7 @@ export async function enqueueVerificationLink(
       to: input.email,
       link,
       tenantDisplayName: tenant.tenantDisplayName,
+      now: tenant.now(),
       locale: input.locale,
     }),
   });

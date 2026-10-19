@@ -1,5 +1,6 @@
 import { isIP } from 'node:net';
 import { createTransport } from 'nodemailer';
+import { markAttachment } from '#/service/mark';
 import type { EmailMessage, EmailSender } from '#/service/sender';
 
 export interface SmtpConfig {
@@ -68,18 +69,35 @@ export function transportOptions(config: SmtpConfig): SmtpTransportOptions {
   };
 }
 
+export interface MailOptions {
+  readonly from: string;
+  readonly to: string;
+  readonly subject: string;
+  readonly text: string;
+  readonly html: string;
+  readonly attachments: NonNullable<ReturnType<typeof markAttachment>>[];
+}
+
+// The sending address is the one configured, as it always was; the only thing
+// added to a message is the mark its markup refers to.
+export function mailOptions(config: SmtpConfig, message: EmailMessage): MailOptions {
+  const mark = markAttachment(message.html);
+  return {
+    from: config.from,
+    to: message.to,
+    subject: message.subject,
+    text: message.text,
+    html: message.html,
+    attachments: mark === null ? [] : [mark],
+  };
+}
+
 export function smtpSender(config: SmtpConfig): EmailSender {
   const transporter = createTransport({ ...transportOptions(config) });
 
   return {
     async send(message: EmailMessage): Promise<void> {
-      await transporter.sendMail({
-        from: config.from,
-        to: message.to,
-        subject: message.subject,
-        text: message.text,
-        html: message.html,
-      });
+      await transporter.sendMail(mailOptions(config, message));
     },
   };
 }

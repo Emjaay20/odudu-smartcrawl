@@ -1,6 +1,6 @@
 import { isIP } from 'node:net';
 import { describe, expect, it } from 'vitest';
-import { transportOptions } from '#/adapter/smtp';
+import { mailOptions, transportOptions } from '#/adapter/smtp';
 import { OUTBOX_CLAIM_LEASE_SECONDS } from '#/usecase/send-pending';
 
 const BASE = { host: 'smtp.example.test', port: 587, from: 'noreply@example.test' };
@@ -68,5 +68,27 @@ describe('transportOptions, given a host that is already an address', () => {
 
     expect(options.host).toBe('203.0.113.10');
     expect(options.servername).toBeUndefined();
+  });
+});
+
+describe('mailOptions', () => {
+  const message = { to: 'ada@example.test', subject: 's', text: 't', html: '<p>h</p>' };
+
+  it('sends a message that names no image without attachments', () => {
+    expect(mailOptions(BASE, message).attachments).toEqual([]);
+  });
+
+  it('attaches the mark inline, under the id the markup names, when the markup names it', () => {
+    const options = mailOptions(BASE, { ...message, html: '<img src="cid:odudu-mark" alt="">' });
+    expect(options.attachments).toHaveLength(1);
+    const [mark] = options.attachments;
+    expect(mark?.cid).toBe('odudu-mark');
+    expect(mark?.contentDisposition).toBe('inline');
+    expect(mark?.contentType).toBe('image/png');
+    expect(mark?.content.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
+  });
+
+  it('leaves the sending address as configured', () => {
+    expect(mailOptions(BASE, message).from).toBe('noreply@example.test');
   });
 });

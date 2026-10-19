@@ -5,30 +5,54 @@ import { escapeHtml } from '#/service/escape';
 // complete; another locale may omit a key and shows English for it. A message
 // is plain text: markup stays in the template, and the link is never a message.
 export const en = {
+  'mail.brand': 'odudu',
+  'mail.copyright': '\u00a9 {year} Odudu',
+  'mail.poweredBy': 'Powered by odudu',
+  'mail.linkFallback': 'If the button does not work, copy this link into your browser:',
   'mail.notRequested': 'If you did not request this, you can ignore this message.',
   'verify.subject': 'Verify your {tenant} account',
+  'verify.heading': 'Verify your email address',
   'verify.text': 'Confirm your email address for {tenant} by visiting this link:',
-  'verify.html': 'Confirm your email address for {tenant} by visiting {link}.',
+  'verify.body': 'Confirm that this is your email address for your {tenant} account.',
+  'verify.button': 'Verify email',
+  'verify.reason':
+    'You received this because this email address was used to create or update an account at {tenant}.',
   'reset.subject': 'Reset your {tenant} password',
+  'reset.heading': 'Reset your password',
   'reset.text': 'Reset your password for {tenant} by visiting this link:',
-  'reset.html': 'Reset your password for {tenant} by visiting {link}.',
+  'reset.body': 'We received a request to reset your password for {tenant}.',
+  'reset.button': 'Reset password',
+  'reset.reason':
+    'You received this because a password reset was requested for this email address at {tenant}.',
   'actions.subject': 'Update your {tenant} account',
+  'actions.heading': 'Update your account',
   'actions.text': 'Your administrator asks you to update your {tenant} account:',
   'actions.textLink': 'Do so by visiting this link:',
-  'actions.html': 'Do so by visiting {link}.',
+  'actions.button': 'Update account',
   'actions.ignore': 'If you were not expecting this, you can ignore this message.',
+  'actions.reason':
+    'You received this because an administrator at {tenant} asked you to update your account.',
   'notice.contact': 'If you did not expect this, contact your administrator.',
   'factorRemoved.subject': 'A sign-in method was removed from your {tenant} account',
+  'factorRemoved.heading': 'A sign-in method was removed',
   'factorRemoved.totp':
     'An administrator removed the authenticator app from your {tenant} account.',
   'factorRemoved.webauthn': 'An administrator removed a passkey from your {tenant} account.',
   'factorRemoved.codes': 'Your recovery codes were removed with it, and no longer work.',
+  'factorRemoved.reason':
+    'You received this because a sign-in method on your account at {tenant} was changed.',
   'recoveryRevoked.subject': 'Your {tenant} recovery codes were revoked',
+  'recoveryRevoked.heading': 'Your recovery codes were revoked',
   'recoveryRevoked.text':
     'An administrator revoked the recovery codes on your {tenant} account. The old codes no longer work.',
   'recoveryRevoked.newSet': 'You will be asked to save a new set the next time you sign in.',
+  'recoveryRevoked.reason':
+    'You received this because the recovery codes on your account at {tenant} were changed.',
   'smtpTest.subject': 'Odudu SMTP test',
+  'smtpTest.heading': 'SMTP test',
   'smtpTest.text': 'This is a test message from Odudu.',
+  'smtpTest.reason':
+    'You received this because a test message was sent from the mail settings of {tenant}.',
   'action.update-password': 'Choose a new password',
   'action.configure-totp': 'Set up an authenticator app',
   'action.configure-passkey': 'Register a passkey',

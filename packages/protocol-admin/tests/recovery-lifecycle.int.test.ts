@@ -373,6 +373,7 @@ describe('the removal of the last TOTP against a set being issued', () => {
         tx,
         { audit: () => Promise.resolve() },
         {
+          now: new Date(),
           tenantId: s.tenant.id,
           subjectId: s.subjectId,
           credentialId: s.totpId ?? '',

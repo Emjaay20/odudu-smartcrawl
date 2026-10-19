@@ -20,6 +20,8 @@ export interface RequestPasswordResetDeps {
   // #/view/routes/registration.ts for why a request header cannot be
   // trusted with the contents of a mail sent to a third party.
   readonly issuerBase: string | undefined;
+  // The send time of the mail, from the caller's clock.
+  readonly now: () => Date;
   // Injected for the reason completePasswordReset's setPassword is:
   // @odudu/account depends on neither @odudu/domain-identity nor
   // @odudu/domain-authz, so the composition root wires the actual lookup.
@@ -67,6 +69,8 @@ export interface ActionLinkTenant {
   readonly tenantName: string;
   readonly tenantDisplayName: string;
   readonly issuerBase: string;
+  // The send time of the mail, from the caller's clock.
+  readonly now: () => Date;
 }
 
 /**
@@ -98,6 +102,7 @@ export async function enqueueResetLink(
       to: user.email,
       link,
       tenantDisplayName: tenant.tenantDisplayName,
+      now: tenant.now(),
       locale: user.locale,
     }),
   });

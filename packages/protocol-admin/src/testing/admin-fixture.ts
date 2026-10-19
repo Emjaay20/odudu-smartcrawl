@@ -283,7 +283,11 @@ export async function startAdminFixture(options: AdminFixtureOptions = {}): Prom
           actionTokenRepository(tx).invalidateOutstandingPasswordLinks(subjectId),
         sendAccountLink: async (tx, request) => {
           if (options.publicBaseUrl === false) return 'unavailable';
-          const tenant = { ...request, issuerBase: FIXTURE_CONSOLE_BASE_URL };
+          const tenant = {
+            ...request,
+            issuerBase: FIXTURE_CONSOLE_BASE_URL,
+            now: () => new Date(),
+          };
           if (request.kind === 'reset_password') await enqueueResetLink(tx, tenant, request);
           else if (request.kind === 'verify_email') {
             await enqueueVerificationLink(tx, tenant, request);

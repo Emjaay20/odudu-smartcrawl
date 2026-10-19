@@ -427,7 +427,9 @@ async function renderers(): Promise<string[]> {
   for (const file of candidates) {
     const source = await readFile(path.join(REPO_ROOT, file), 'utf8');
     if (path.basename(file) === 'messages.ts') continue;
-    if (file.endsWith('-html.ts') || carriesMarkup(source)) found.push(file);
+    if (file.endsWith('-html.ts') || file.endsWith('/templates.ts') || carriesMarkup(source)) {
+      found.push(file);
+    }
   }
   return found;
 }
@@ -441,6 +443,7 @@ describe('the server renderers and mail templates', () => {
         'packages/authn-flows/src/view/refusal.ts',
         'packages/protocol-oidc/src/view/document.ts',
         'packages/email/src/service/templates.ts',
+        'packages/email/src/service/shell.ts',
       ]),
     );
     expect(files.length).toBeGreaterThan(18);

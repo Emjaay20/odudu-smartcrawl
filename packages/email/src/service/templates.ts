@@ -1,13 +1,15 @@
-import { randomUUID } from 'node:crypto';
 import { stripBidiControls } from '@odudu/contracts';
 import { negotiateLocale, type PageLocale } from '@odudu/i18n';
 import { bdi, catalogue, en, t, tHtml, type MessageId } from '#/service/messages';
+import { renderShell, safeHref, sendYear, type Block } from '#/service/shell';
 import { type EmailMessage } from '#/service/sender';
 
 interface MailInput {
   readonly to: string;
   readonly link: string;
   readonly tenantDisplayName: string;
+  // The send time, from the caller's clock: the footer's year is its UTC year.
+  readonly now: Date;
   // The recipient's own `locale` where the sender knows it, else the tenant's
   // default, else none: the mail is then English. A tag this build holds no
   // catalogue for is reduced to the nearest one it does, as a page's is.
@@ -28,11 +30,6 @@ const PDI = '\u2069';
 // C0 and C1 controls, which include CR, LF and NEL, and the Unicode line and
 // paragraph separators.
 const LINE_CONTROLS = /[\u0000-\u001F\u007F-\u009F\u2028\u2029]+/gu;
-
-// The link is HTML the template builds around a value it is handed already
-// formed; a message names it `{link}` and the one anchor replaces this token,
-// which no tenant name can spell because it is drawn at start-up.
-const LINK_SLOT = `link-${randomUUID()}`;
 
 function mailLocale(requested: string | null | undefined): PageLocale {
   return negotiateLocale({
@@ -58,14 +55,6 @@ function inText(name: string): string {
   return `${FSI}${stripBidiControls(name).replace(LINE_CONTROLS, ' ')}${PDI}`;
 }
 
-function anchor(link: string): string {
-  return `<a href="${link}">${link}</a>`;
-}
-
-function withLink(html: string, link: string): string {
-  return html.split(LINK_SLOT).join(anchor(link));
-}
-
 function actionId(code: string): MessageId | null {
   const id = `action.${code}`;
   return Object.hasOwn(en, id) ? (id as MessageId) : null;
@@ -81,53 +70,108 @@ function actionHtml(locale: PageLocale, code: string): string {
   return id === null ? bdi(stripBidiControls(code)) : tHtml(locale, id);
 }
 
-export function renderVerifyEmail(input: VerifyEmailInput): EmailMessage {
-  const locale = mailLocale(input.locale);
-  const tenant = input.tenantDisplayName;
+const SIGNATURE_RULE = '--';
+const DOT = ' · ';
+
+// What the HTML footer says, for the reader of the plain-text part.
+function textFooter(locale: PageLocale, reason: MessageId, tenant: string, now: Date): string {
+  const year = String(sendYear(now));
+  return [
+    SIGNATURE_RULE,
+    t(locale, reason, { tenant: inText(tenant) }),
+    `${t(locale, 'mail.copyright', { year })}${DOT}${t(locale, 'mail.poweredBy')}`,
+  ].join('\n');
+}
+
+const paragraph = (html: string): Block => ({ kind: 'paragraph', html });
+
+interface Page {
+  readonly locale: PageLocale;
+  readonly tenant: string;
+  readonly now: Date;
+  readonly heading: MessageId;
+  readonly reason: MessageId;
+}
+
+function page(
+  spec: Page,
+): Pick<Parameters<typeof renderShell>[0], 'locale' | 'tenant' | 'now' | 'heading' | 'reason'> {
   return {
-    to: input.to,
-    subject: t(locale, 'verify.subject', { tenant: inSubject(tenant) }),
-    text: `${t(locale, 'verify.text', { tenant: inText(tenant) })}\n\n${input.link}\n\n${t(locale, 'mail.notRequested')}`,
-    html: `<p>${withLink(
-      tHtml(locale, 'verify.html', { link: LINK_SLOT }, { tenant: stripBidiControls(tenant) }),
-      input.link,
-    )}</p><p>${tHtml(locale, 'mail.notRequested')}</p>`,
+    locale: spec.locale,
+    tenant: stripBidiControls(spec.tenant),
+    now: spec.now,
+    heading: t(spec.locale, spec.heading),
+    reason: tHtml(spec.locale, spec.reason, {}, { tenant: stripBidiControls(spec.tenant) }),
   };
 }
 
-export function renderResetPassword(input: ResetPasswordInput): EmailMessage {
+interface Linked {
+  readonly kind: 'verify' | 'reset';
+  readonly input: MailInput;
+}
+
+function renderLinked({ kind, input }: Linked): EmailMessage {
   const locale = mailLocale(input.locale);
   const tenant = input.tenantDisplayName;
+  const link = safeHref(input.link);
   return {
     to: input.to,
-    subject: t(locale, 'reset.subject', { tenant: inSubject(tenant) }),
-    text: `${t(locale, 'reset.text', { tenant: inText(tenant) })}\n\n${input.link}\n\n${t(locale, 'mail.notRequested')}`,
-    html: `<p>${withLink(
-      tHtml(locale, 'reset.html', { link: LINK_SLOT }, { tenant: stripBidiControls(tenant) }),
-      input.link,
-    )}</p><p>${tHtml(locale, 'mail.notRequested')}</p>`,
+    subject: t(locale, `${kind}.subject`, { tenant: inSubject(tenant) }),
+    text: `${t(locale, `${kind}.text`, { tenant: inText(tenant) })}\n\n${link}\n\n${t(locale, 'mail.notRequested')}\n\n${textFooter(locale, `${kind}.reason`, tenant, input.now)}`,
+    html: renderShell({
+      ...page({
+        locale,
+        tenant,
+        now: input.now,
+        heading: `${kind}.heading`,
+        reason: `${kind}.reason`,
+      }),
+      blocks: [paragraph(tHtml(locale, `${kind}.body`, {}, { tenant: stripBidiControls(tenant) }))],
+      action: { label: t(locale, `${kind}.button`), href: link },
+      closing: [tHtml(locale, 'mail.notRequested')],
+    }),
   };
+}
+
+export function renderVerifyEmail(input: VerifyEmailInput): EmailMessage {
+  return renderLinked({ kind: 'verify', input });
+}
+
+export function renderResetPassword(input: ResetPasswordInput): EmailMessage {
+  return renderLinked({ kind: 'reset', input });
 }
 
 export function renderRequiredActions(input: RequiredActionsInput): EmailMessage {
   const locale = mailLocale(input.locale);
   const tenant = input.tenantDisplayName;
+  const link = safeHref(input.link);
   const listed = input.actions.map((code) => `- ${actionText(locale, code)}`).join('\n');
-  const items = input.actions.map((code) => `<li>${actionHtml(locale, code)}</li>`).join('');
   return {
     to: input.to,
     subject: t(locale, 'actions.subject', { tenant: inSubject(tenant) }),
-    text: `${t(locale, 'actions.text', { tenant: inText(tenant) })}\n\n${listed}\n\n${t(locale, 'actions.textLink')}\n\n${input.link}\n\n${t(locale, 'actions.ignore')}`,
-    html: `<p>${tHtml(locale, 'actions.text', {}, { tenant: stripBidiControls(tenant) })}</p><ul>${items}</ul><p>${withLink(
-      tHtml(locale, 'actions.html', { link: LINK_SLOT }),
-      input.link,
-    )}</p><p>${tHtml(locale, 'actions.ignore')}</p>`,
+    text: `${t(locale, 'actions.text', { tenant: inText(tenant) })}\n\n${listed}\n\n${t(locale, 'actions.textLink')}\n\n${link}\n\n${t(locale, 'actions.ignore')}\n\n${textFooter(locale, 'actions.reason', tenant, input.now)}`,
+    html: renderShell({
+      ...page({
+        locale,
+        tenant,
+        now: input.now,
+        heading: 'actions.heading',
+        reason: 'actions.reason',
+      }),
+      blocks: [
+        paragraph(tHtml(locale, 'actions.text', {}, { tenant: stripBidiControls(tenant) })),
+        { kind: 'list', items: input.actions.map((code) => actionHtml(locale, code)) },
+      ],
+      action: { label: t(locale, 'actions.button'), href: link },
+      closing: [tHtml(locale, 'actions.ignore')],
+    }),
   };
 }
 
 interface NoticeInput {
   readonly to: string;
   readonly tenantDisplayName: string;
+  readonly now: Date;
   readonly locale?: string | null | undefined;
 }
 
@@ -142,68 +186,87 @@ export interface RecoveryCodesRevokedInput extends NoticeInput {
   readonly newSet: boolean;
 }
 
+interface Notice {
+  readonly input: NoticeInput;
+  readonly subject: MessageId;
+  readonly heading: MessageId;
+  readonly reason: MessageId;
+  // The sentences of the notice, the first naming the tenant.
+  readonly lines: readonly MessageId[];
+}
+
 // Said to the address on file after an administrator changes how the
 // subject recovers or proves who they are. Never a link, a code or a secret:
 // whoever reads it may not be the subject, and nothing in it helps them.
-export function renderSecondFactorRemoved(input: SecondFactorRemovedInput): EmailMessage {
+function renderNotice({ input, subject, heading, reason, lines }: Notice): EmailMessage {
   const locale = mailLocale(input.locale);
   const tenant = input.tenantDisplayName;
-  const lines = [
-    (html: boolean) =>
-      html
-        ? tHtml(locale, `factorRemoved.${input.factor}`, {}, { tenant: stripBidiControls(tenant) })
-        : t(locale, `factorRemoved.${input.factor}`, { tenant: inText(tenant) }),
-    ...(input.codes
-      ? [
-          (html: boolean) =>
-            html ? tHtml(locale, 'factorRemoved.codes') : t(locale, 'factorRemoved.codes'),
-        ]
-      : []),
-    (html: boolean) => (html ? tHtml(locale, 'notice.contact') : t(locale, 'notice.contact')),
-  ];
+  const sentences = lines.map((id) => ({
+    text: t(locale, id, { tenant: inText(tenant) }),
+    html: tHtml(locale, id, {}, { tenant: stripBidiControls(tenant) }),
+  }));
   return {
     to: input.to,
-    subject: t(locale, 'factorRemoved.subject', { tenant: inSubject(tenant) }),
-    text: lines.map((line) => line(false)).join('\n\n'),
-    html: lines.map((line) => `<p>${line(true)}</p>`).join(''),
+    subject: t(locale, subject, { tenant: inSubject(tenant) }),
+    text: [
+      ...sentences.map((line) => line.text),
+      t(locale, 'notice.contact'),
+      textFooter(locale, reason, tenant, input.now),
+    ].join('\n\n'),
+    html: renderShell({
+      ...page({ locale, tenant, now: input.now, heading, reason }),
+      blocks: sentences.map((line) => paragraph(line.html)),
+      closing: [tHtml(locale, 'notice.contact')],
+    }),
   };
 }
 
+export function renderSecondFactorRemoved(input: SecondFactorRemovedInput): EmailMessage {
+  return renderNotice({
+    input,
+    subject: 'factorRemoved.subject',
+    heading: 'factorRemoved.heading',
+    reason: 'factorRemoved.reason',
+    lines: [
+      `factorRemoved.${input.factor}`,
+      ...(input.codes ? (['factorRemoved.codes'] as const) : []),
+    ],
+  });
+}
+
 export function renderRecoveryCodesRevoked(input: RecoveryCodesRevokedInput): EmailMessage {
-  const locale = mailLocale(input.locale);
-  const tenant = input.tenantDisplayName;
-  const lines = [
-    (html: boolean) =>
-      html
-        ? tHtml(locale, 'recoveryRevoked.text', {}, { tenant: stripBidiControls(tenant) })
-        : t(locale, 'recoveryRevoked.text', { tenant: inText(tenant) }),
-    ...(input.newSet
-      ? [
-          (html: boolean) =>
-            html ? tHtml(locale, 'recoveryRevoked.newSet') : t(locale, 'recoveryRevoked.newSet'),
-        ]
-      : []),
-    (html: boolean) => (html ? tHtml(locale, 'notice.contact') : t(locale, 'notice.contact')),
-  ];
-  return {
-    to: input.to,
-    subject: t(locale, 'recoveryRevoked.subject', { tenant: inSubject(tenant) }),
-    text: lines.map((line) => line(false)).join('\n\n'),
-    html: lines.map((line) => `<p>${line(true)}</p>`).join(''),
-  };
+  return renderNotice({
+    input,
+    subject: 'recoveryRevoked.subject',
+    heading: 'recoveryRevoked.heading',
+    reason: 'recoveryRevoked.reason',
+    lines: ['recoveryRevoked.text', ...(input.newSet ? (['recoveryRevoked.newSet'] as const) : [])],
+  });
 }
 
 export interface SmtpTestInput {
   readonly to: string;
+  readonly tenantDisplayName: string;
+  readonly now: Date;
   readonly locale?: string | null | undefined;
 }
 
 export function renderSmtpTest(input: SmtpTestInput): EmailMessage {
   const locale = mailLocale(input.locale);
+  const tenant = input.tenantDisplayName;
   return {
     to: input.to,
     subject: t(locale, 'smtpTest.subject'),
-    text: t(locale, 'smtpTest.text'),
-    html: `<p>${tHtml(locale, 'smtpTest.text')}</p>`,
+    text: `${t(locale, 'smtpTest.text')}\n\n${textFooter(locale, 'smtpTest.reason', tenant, input.now)}`,
+    html: renderShell({
+      ...page({
+        locale,
+        tenant,
+        now: input.now,
+        heading: 'smtpTest.heading',
+        reason: 'smtpTest.reason',
+      }),
+      blocks: [paragraph(tHtml(locale, 'smtpTest.text'))],
+    }),
   };
 }

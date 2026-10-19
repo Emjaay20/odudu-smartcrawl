@@ -88,6 +88,21 @@
       "outputs": ["trace-report.json"],
       "env": ["ODUDU_TEST_SHARD"]
     },
+    "@odudu/email#test": {
+      "dependsOn": ["^typecheck"],
+      "inputs": [
+        "src/**",
+        "tests/**",
+        "scripts/**",
+        "drizzle/**",
+        "package.json",
+        "tsconfig.json",
+        "$TURBO_ROOT$/apps/admin-console/src/shared/view/tokens.css",
+        "$TURBO_ROOT$/packages/instrument/src/mark.svg"
+      ],
+      "outputs": ["trace-report.json"],
+      "env": ["ODUDU_TEST_SHARD"]
+    },
     "@odudu/instrument#build": {
       "dependsOn": ["^build"],
       "inputs": [

@@ -32,19 +32,18 @@ describe('sendTestMessage', () => {
       { ...RECORD, port: 70_000 },
       KEK,
       admitting('203.0.113.10'),
-      'ops@example.test',
+      { to: 'ops@example.test', tenantDisplayName: 'Demo', now: new Date() },
     );
 
     expect(outcome.kind).toBe('send_failed');
   });
 
   it('refuses a loopback host before any transport exists to report on', async () => {
-    const outcome = await sendTestMessage(
-      { ...RECORD, host: '127.0.0.1' },
-      KEK,
-      admitting(),
-      'ops@example.test',
-    );
+    const outcome = await sendTestMessage({ ...RECORD, host: '127.0.0.1' }, KEK, admitting(), {
+      to: 'ops@example.test',
+      tenantDisplayName: 'Demo',
+      now: new Date(),
+    });
 
     expect(outcome).toEqual({
       kind: 'refused_destination',
@@ -57,7 +56,7 @@ describe('sendTestMessage', () => {
       { ...RECORD, host: 'metadata.internal' },
       KEK,
       admitting('169.254.169.254'),
-      'ops@example.test',
+      { to: 'ops@example.test', tenantDisplayName: 'Demo', now: new Date() },
     );
 
     expect(outcome.kind).toBe('refused_destination');

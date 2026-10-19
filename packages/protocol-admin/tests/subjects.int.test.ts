@@ -1664,6 +1664,7 @@ describe('audit', () => {
         tx,
         { audit: ok.audit },
         {
+          now: new Date(),
           tenantId: t.id,
           callerCapabilities: new Set<string>(),
           subjectId: id,
@@ -1683,6 +1684,7 @@ describe('audit', () => {
         tx,
         { audit: refused.audit },
         {
+          now: new Date(),
           tenantId: t.id,
           callerCapabilities: new Set<string>(),
           subjectId: id,

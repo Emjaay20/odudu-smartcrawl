@@ -23,7 +23,7 @@ export type CredentialNotice =
 // caller's transaction, so a change that rolls back sends nothing.
 export async function enqueueCredentialNotice(
   tx: TenantScopedDatabase,
-  input: { readonly tenantId: string; readonly subjectId: string },
+  input: { readonly tenantId: string; readonly subjectId: string; readonly now: Date },
   notice: CredentialNotice,
 ): Promise<'queued' | 'no_address'> {
   const [user] = await tx
@@ -39,6 +39,7 @@ export async function enqueueCredentialNotice(
     to: user.email,
     tenantDisplayName: tenant?.displayName ?? tenant?.name ?? '',
     locale: user.locale,
+    now: input.now,
   };
   const message =
     notice.kind === 'second_factor_removed'

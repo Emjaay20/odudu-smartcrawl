@@ -621,6 +621,7 @@ export function deleteCredentialHandler(
             tenantId: targetTenantId,
             subjectId: id,
             credentialId,
+            now: deps.now(),
             callerCapabilities,
             ...actor,
           },

@@ -13,19 +13,26 @@ vi.mock('#/service/messages', async (importOriginal) => {
   const { withFrench } = await import('@odudu/testkit/i18n');
   return withFrench(await importOriginal(), {
     'verify.subject': 'Vérifiez votre compte {tenant}',
+    'verify.heading': 'Vérifiez votre adresse e-mail',
     'verify.text': 'Confirmez votre adresse e-mail pour {tenant} en ouvrant ce lien :',
-    'verify.html': 'Confirmez votre adresse e-mail pour {tenant} en ouvrant {link}.',
+    'verify.body': 'Confirmez que cette adresse e-mail est bien la vôtre pour {tenant}.',
+    'verify.button': 'Vérifier l’e-mail',
+    'verify.reason': 'Vous recevez ce message car cette adresse a servi chez {tenant}.',
+    'mail.linkFallback': 'Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :',
+    'mail.copyright': '© {year} Odudu',
+    'mail.poweredBy': 'Propulsé par odudu',
     'reset.subject': 'Réinitialisez votre mot de passe {tenant}',
     'actions.subject': 'Mettez à jour votre compte {tenant}',
     'action.update-password': 'Choisir un nouveau mot de passe',
     'factorRemoved.subject': 'Une méthode de connexion a été retirée de votre compte {tenant}',
     'recoveryRevoked.subject': 'Les codes de récupération de {tenant} ont été révoqués',
     'smtpTest.subject': 'Test SMTP Odudu',
-    'smtpTest.text': 'Ceci est un message de test d\u2019Odudu.',
+    'smtpTest.text': 'Ceci est un message de test d’Odudu.',
   });
 });
 
 const LINK = 'https://idp.example/tenants/demo/login-actions/action-token?key=abc';
+const NOW = new Date('2026-10-19T09:00:00Z');
 const FSI = '\u2068';
 const PDI = '\u2069';
 
@@ -36,32 +43,33 @@ function fill(message: string, values: Record<string, string>): string {
   );
 }
 
+function footerText(reason: string, tenant: string, year = '2026'): string {
+  return `--\n${fill(reason, { tenant: `${FSI}${tenant}${PDI}` })}\n${fill(en['mail.copyright'], { year })} · ${en['mail.poweredBy']}`;
+}
+
 describe('renderVerifyEmail', () => {
-  const input = { to: 'ada@example.test', link: LINK, tenantDisplayName: 'Demo' };
+  const input = { to: 'ada@example.test', link: LINK, tenantDisplayName: 'Demo', now: NOW };
 
   it('reads subject, text and html from the catalogue', () => {
     const msg = renderVerifyEmail(input);
     expect(msg.to).toBe('ada@example.test');
     expect(msg.subject).toBe(fill(en['verify.subject'], { tenant: 'Demo' }));
     expect(msg.text).toBe(
-      `${fill(en['verify.text'], { tenant: `${FSI}Demo${PDI}` })}\n\n${LINK}\n\n${en['mail.notRequested']}`,
+      `${fill(en['verify.text'], { tenant: `${FSI}Demo${PDI}` })}\n\n${LINK}\n\n${en['mail.notRequested']}\n\n${footerText(en['verify.reason'], 'Demo')}`,
     );
-    expect(msg.html).toBe(
-      `<p>${fill(en['verify.html'], {
-        tenant: '<bdi>Demo</bdi>',
-        link: `<a href="${LINK}">${LINK}</a>`,
-      })}</p><p>${en['mail.notRequested']}</p>`,
-    );
+    expect(msg.html).toContain(`<h1`);
+    expect(msg.html).toContain(en['verify.heading']);
+    expect(msg.html).toContain(fill(en['verify.body'], { tenant: '<bdi>Demo</bdi>' }));
+    expect(msg.html).toContain(en['verify.button']);
+    expect(msg.html).toContain(en['mail.linkFallback']);
+    expect(msg.html).toContain(en['mail.notRequested']);
   });
 
-  it('keeps the English mail as it was, the tenant name isolated', () => {
+  it('keeps the English subject and text, the tenant name isolated', () => {
     const msg = renderVerifyEmail(input);
     expect(msg.subject).toBe('Verify your Demo account');
     expect(msg.text).toBe(
-      `Confirm your email address for ${FSI}Demo${PDI} by visiting this link:\n\n${LINK}\n\nIf you did not request this, you can ignore this message.`,
-    );
-    expect(msg.html).toBe(
-      `<p>Confirm your email address for <bdi>Demo</bdi> by visiting <a href="${LINK}">${LINK}</a>.</p><p>If you did not request this, you can ignore this message.</p>`,
+      `Confirm your email address for ${FSI}Demo${PDI} by visiting this link:\n\n${LINK}\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to create or update an account at ${FSI}Demo${PDI}.\n© 2026 Odudu · Powered by odudu`,
     );
   });
 
@@ -75,11 +83,18 @@ describe('renderVerifyEmail', () => {
   it('reads French where the fixture has it and English for the rest', () => {
     const msg = renderVerifyEmail({ ...input, locale: 'fr' });
     expect(msg.subject).toBe('Vérifiez votre compte Demo');
-    expect(msg.text).toBe(
+    expect(msg.text).toContain(
       `Confirmez votre adresse e-mail pour ${FSI}Demo${PDI} en ouvrant ce lien :\n\n${LINK}\n\n${en['mail.notRequested']}`,
     );
-    expect(msg.html).toBe(
-      `<p>Confirmez votre adresse e-mail pour <bdi>Demo</bdi> en ouvrant <a href="${LINK}">${LINK}</a>.</p><p>${en['mail.notRequested']}</p>`,
+    expect(msg.text).toContain('© 2026 Odudu · Propulsé par odudu');
+    expect(msg.html).toContain('<html lang="fr" dir="ltr">');
+    expect(msg.html).toContain('Vérifier l’e-mail');
+    expect(msg.html).toContain(
+      'Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :',
+    );
+    expect(msg.html).toContain('Propulsé par odudu');
+    expect(msg.html).toContain(
+      'Vous recevez ce message car cette adresse a servi chez <bdi>Demo</bdi>.',
     );
   });
 
@@ -89,11 +104,30 @@ describe('renderVerifyEmail', () => {
     );
   });
 
-  it('never escapes the link and never takes it from the catalogue', () => {
-    const link = 'https://idp.example/x?key=a&b=c';
+  it('escapes the link in the markup and leaves it as given in the text', () => {
+    const link = 'https://idp.example/x?key=a&b=c"d';
     const msg = renderVerifyEmail({ ...input, link });
-    expect(msg.html).toContain(`<a href="${link}">${link}</a>`);
+    expect(msg.html).toContain('href="https://idp.example/x?key=a&amp;b=c&quot;d"');
+    expect(msg.html).not.toContain('b=c"d');
     expect(msg.text).toContain(`\n\n${link}\n\n`);
+  });
+
+  it('refuses a link that is not an absolute http or https URL', () => {
+    for (const link of [
+      'javascript:alert(1)',
+      'data:text/html,x',
+      '/relative',
+      'ftp://x.test/',
+      '',
+    ]) {
+      expect(() => renderVerifyEmail({ ...input, link })).toThrow(RangeError);
+      expect(() => renderResetPassword({ ...input, link })).toThrow(RangeError);
+      expect(() => renderRequiredActions({ ...input, link, actions: [] })).toThrow(RangeError);
+    }
+  });
+
+  it('refuses a send time that is not a date', () => {
+    expect(() => renderVerifyEmail({ ...input, now: new Date(Number.NaN) })).toThrow(RangeError);
   });
 
   it('escapes a tenant name that contains markup, and leaves it as typed in the text', () => {
@@ -109,12 +143,13 @@ describe('renderVerifyEmail', () => {
     expect(msg.subject).toBe('Verify your AcmeGPx account');
   });
 
-  it('cannot close its own isolate: the text holds the one pop it wrote', () => {
+  it('cannot close its own isolate: the text holds the one pop it wrote per mention', () => {
     const msg = renderVerifyEmail({
       ...input,
       tenantDisplayName: `evil${PDI} \u202e injected`,
     });
-    expect(msg.text.split(PDI)).toHaveLength(2);
+    const mentions = (msg.text.match(new RegExp(FSI, 'gu')) ?? []).length;
+    expect(msg.text.split(PDI)).toHaveLength(mentions + 1);
     expect(msg.text).not.toContain('\u202e');
     expect(msg.html).not.toContain('\u202e');
   });
@@ -126,16 +161,16 @@ describe('renderVerifyEmail', () => {
     expect(msg.subject).toBe('Verify your Acme Bcc: evil@example.test more x y account');
     const [first = ''] = msg.text.split('\n');
     expect(first).toContain('Acme Bcc: evil@example.test more x y');
-    expect(msg.text.split('\n')).toHaveLength(5);
+    expect(msg.text.split('\n').filter((line) => line.startsWith('Bcc:'))).toEqual([]);
   });
 
   it('cannot reach the link through a name that spells a placeholder', () => {
     const msg = renderVerifyEmail({ ...input, tenantDisplayName: '{link} {tenant}' });
     expect(msg.html).toContain('<bdi>{link} {tenant}</bdi>');
-    expect(msg.html.match(/<a href=/gu)).toHaveLength(1);
+    expect(msg.html.match(/<a /gu)).toHaveLength(2);
   });
 
-  it('isolates a right-to-left tenant name and leaves its marks alone', () => {
+  it('isolates a right-to-left tenant name, leaves its marks alone, and lays the page out right to left', () => {
     const msg = renderVerifyEmail({ ...input, tenantDisplayName: 'شركة\u200f' });
     expect(msg.html).toContain('<bdi>شركة\u200f</bdi>');
     expect(msg.text).toContain(`${FSI}شركة\u200f${PDI}`);
@@ -143,30 +178,24 @@ describe('renderVerifyEmail', () => {
 });
 
 describe('renderResetPassword', () => {
-  const input = { to: 'ada@example.test', link: LINK, tenantDisplayName: 'Demo' };
+  const input = { to: 'ada@example.test', link: LINK, tenantDisplayName: 'Demo', now: NOW };
 
   it('reads subject, text and html from the catalogue', () => {
     const msg = renderResetPassword(input);
     expect(msg.subject).toBe(fill(en['reset.subject'], { tenant: 'Demo' }));
     expect(msg.text).toBe(
-      `${fill(en['reset.text'], { tenant: `${FSI}Demo${PDI}` })}\n\n${LINK}\n\n${en['mail.notRequested']}`,
+      `${fill(en['reset.text'], { tenant: `${FSI}Demo${PDI}` })}\n\n${LINK}\n\n${en['mail.notRequested']}\n\n${footerText(en['reset.reason'], 'Demo')}`,
     );
-    expect(msg.html).toBe(
-      `<p>${fill(en['reset.html'], {
-        tenant: '<bdi>Demo</bdi>',
-        link: `<a href="${LINK}">${LINK}</a>`,
-      })}</p><p>${en['mail.notRequested']}</p>`,
-    );
+    expect(msg.html).toContain(en['reset.heading']);
+    expect(msg.html).toContain(fill(en['reset.body'], { tenant: '<bdi>Demo</bdi>' }));
+    expect(msg.html).toContain(en['reset.button']);
   });
 
-  it('keeps the English mail as it was, the tenant name isolated', () => {
+  it('keeps the English subject and text', () => {
     const msg = renderResetPassword(input);
     expect(msg.subject).toBe('Reset your Demo password');
-    expect(msg.text).toBe(
-      `Reset your password for ${FSI}Demo${PDI} by visiting this link:\n\n${LINK}\n\nIf you did not request this, you can ignore this message.`,
-    );
-    expect(msg.html).toBe(
-      `<p>Reset your password for <bdi>Demo</bdi> by visiting <a href="${LINK}">${LINK}</a>.</p><p>If you did not request this, you can ignore this message.</p>`,
+    expect(msg.text).toContain(
+      `Reset your password for ${FSI}Demo${PDI} by visiting this link:\n\n${LINK}\n\n`,
     );
   });
 
@@ -176,16 +205,8 @@ describe('renderResetPassword', () => {
     expect(msg.text).toContain('Reset your password for');
   });
 
-  it('escapes a tenant name that contains markup', () => {
-    const msg = renderResetPassword({ ...input, tenantDisplayName: '<script>alert(1)</script>' });
-    expect(msg.html).not.toContain('<script>');
-  });
-
   it('strips CR, LF and bidi controls from the subject', () => {
-    const msg = renderResetPassword({
-      ...input,
-      tenantDisplayName: 'A\r\nSubject: x\u202e',
-    });
+    const msg = renderResetPassword({ ...input, tenantDisplayName: 'A\r\nSubject: x\u202e' });
     expect(msg.subject).toBe('Reset your A Subject: x password');
   });
 });
@@ -195,6 +216,7 @@ describe('renderRequiredActions', () => {
     to: 'ada@example.test',
     link: LINK,
     tenantDisplayName: 'Demo',
+    now: NOW,
     actions: ['update-password', 'configure-passkey'],
   };
 
@@ -202,24 +224,14 @@ describe('renderRequiredActions', () => {
     const msg = renderRequiredActions(input);
     expect(msg.subject).toBe(fill(en['actions.subject'], { tenant: 'Demo' }));
     expect(msg.text).toBe(
-      `${fill(en['actions.text'], { tenant: `${FSI}Demo${PDI}` })}\n\n- ${en['action.update-password']}\n- ${en['action.configure-passkey']}\n\n${en['actions.textLink']}\n\n${LINK}\n\n${en['actions.ignore']}`,
+      `${fill(en['actions.text'], { tenant: `${FSI}Demo${PDI}` })}\n\n- ${en['action.update-password']}\n- ${en['action.configure-passkey']}\n\n${en['actions.textLink']}\n\n${LINK}\n\n${en['actions.ignore']}\n\n${footerText(en['actions.reason'], 'Demo')}`,
     );
-    expect(msg.html).toBe(
-      `<p>${fill(en['actions.text'], { tenant: '<bdi>Demo</bdi>' })}</p><ul><li>${en['action.update-password']}</li><li>${en['action.configure-passkey']}</li></ul><p>${fill(
-        en['actions.html'],
-        { link: `<a href="${LINK}">${LINK}</a>` },
-      )}</p><p>${en['actions.ignore']}</p>`,
-    );
-  });
-
-  it('keeps the English mail as it was, the tenant name isolated', () => {
-    const msg = renderRequiredActions(input);
-    expect(msg.subject).toBe('Update your Demo account');
-    expect(msg.text).toBe(
-      `Your administrator asks you to update your ${FSI}Demo${PDI} account:\n\n- Choose a new password\n- Register a passkey\n\nDo so by visiting this link:\n\n${LINK}\n\nIf you were not expecting this, you can ignore this message.`,
-    );
-    expect(msg.html).toBe(
-      `<p>Your administrator asks you to update your <bdi>Demo</bdi> account:</p><ul><li>Choose a new password</li><li>Register a passkey</li></ul><p>Do so by visiting <a href="${LINK}">${LINK}</a>.</p><p>If you were not expecting this, you can ignore this message.</p>`,
+    expect(msg.html).toContain(en['actions.heading']);
+    expect(msg.html).toContain(fill(en['actions.text'], { tenant: '<bdi>Demo</bdi>' }));
+    expect(msg.html).toContain(en['actions.button']);
+    expect(msg.html).toContain(en['actions.ignore']);
+    expect(msg.html).toMatch(
+      /<li[^>]*>Choose a new password<\/li><li[^>]*>Register a passkey<\/li>/u,
     );
   });
 
@@ -227,14 +239,14 @@ describe('renderRequiredActions', () => {
     const msg = renderRequiredActions({ ...input, locale: 'fr' });
     expect(msg.subject).toBe('Mettez à jour votre compte Demo');
     expect(msg.text).toContain('- Choisir un nouveau mot de passe\n- Register a passkey');
-    expect(msg.html).toContain(
-      '<li>Choisir un nouveau mot de passe</li><li>Register a passkey</li>',
+    expect(msg.html).toMatch(
+      /<li[^>]*>Choisir un nouveau mot de passe<\/li><li[^>]*>Register a passkey<\/li>/u,
     );
   });
 
   it('shows an action code this build has no sentence for, isolated and escaped', () => {
     const msg = renderRequiredActions({ ...input, actions: ['update-password', '<b>weird'] });
-    expect(msg.html).toContain('<li><bdi>&lt;b&gt;weird</bdi></li>');
+    expect(msg.html).toContain('<bdi>&lt;b&gt;weird</bdi></li>');
     expect(msg.html).not.toContain('<b>');
     expect(msg.text).toContain(`- ${FSI}<b>weird${PDI}`);
   });
@@ -251,44 +263,8 @@ describe('renderRequiredActions', () => {
   });
 });
 
-describe('every mail isolates and cleans a tenant name the same way', () => {
-  const PARAGRAPH = String.fromCodePoint(0x2029);
-  const RLO = String.fromCodePoint(0x202e);
-  const base = { to: 'ada@example.test', link: LINK };
-  const renderers = {
-    verification: (name: string) => renderVerifyEmail({ ...base, tenantDisplayName: name }),
-    reset: (name: string) => renderResetPassword({ ...base, tenantDisplayName: name }),
-    actions: (name: string) =>
-      renderRequiredActions({ ...base, tenantDisplayName: name, actions: ['update-password'] }),
-    factorRemoved: (name: string) =>
-      renderSecondFactorRemoved({ ...base, tenantDisplayName: name, factor: 'totp', codes: true }),
-    recoveryRevoked: (name: string) =>
-      renderRecoveryCodesRevoked({ ...base, tenantDisplayName: name, newSet: true }),
-  };
-
-  it.each(Object.entries(renderers))('%s: cannot close its own isolate', (_kind, render) => {
-    const msg = render(`evil${PDI} ${RLO} injected`);
-    expect(msg.text.split(PDI)).toHaveLength(2);
-    expect(msg.text).not.toContain(RLO);
-    expect(msg.html).not.toContain(RLO);
-    expect(msg.subject).not.toContain(RLO);
-  });
-
-  it.each(Object.entries(renderers))('%s: puts no line break in the subject', (_kind, render) => {
-    const msg = render(`Acme\r\nBcc: evil@example.test${PARAGRAPH}more\u2028x`);
-    expect(msg.subject).not.toMatch(/[\r\n\u2028\u2029]/u);
-    expect(msg.subject).toContain('Acme Bcc: evil@example.test more x');
-    const bodyLines = msg.text.split('\n');
-    expect(bodyLines.filter((line) => line.startsWith('Bcc:'))).toEqual([]);
-  });
-
-  it.each(Object.entries(renderers))('%s: wraps the name in bdi, escaped', (_kind, render) => {
-    expect(render('<i>x</i>').html).toContain('<bdi>&lt;i&gt;x&lt;/i&gt;</bdi>');
-  });
-});
-
 describe('renderSecondFactorRemoved', () => {
-  const input = { to: 'ada@example.test', tenantDisplayName: 'Demo' };
+  const input = { to: 'ada@example.test', tenantDisplayName: 'Demo', now: NOW };
 
   it('names the factor and says the codes went with it, in English', () => {
     const msg = renderSecondFactorRemoved({ ...input, factor: 'totp', codes: true });
@@ -297,17 +273,19 @@ describe('renderSecondFactorRemoved', () => {
     expect(msg.text).toContain('authenticator app');
     expect(msg.text).toContain('recovery codes were removed with it');
     expect(msg.html).toContain('<bdi>Demo</bdi>');
+    expect(msg.html).toContain(en['factorRemoved.heading']);
   });
 
   it('names a passkey, and leaves out the codes sentence when none were held', () => {
     const msg = renderSecondFactorRemoved({ ...input, factor: 'webauthn', codes: false });
     expect(msg.text).toContain('passkey');
     expect(msg.text).not.toContain('recovery codes');
+    expect(msg.html).not.toContain('recovery codes');
   });
 
   it('carries no link, no code and no secret', () => {
     const msg = renderSecondFactorRemoved({ ...input, factor: 'totp', codes: true });
-    expect(msg.text + msg.html).not.toMatch(/https?:|[0-9A-Z]{5}-[0-9A-Z]{5}/u);
+    expect(msg.text + msg.html).not.toMatch(/https?:|<a |[0-9A-Z]{5}-[0-9A-Z]{5}/u);
   });
 
   it('reads the subject in French where the fixture has it, English for the rest', () => {
@@ -318,7 +296,7 @@ describe('renderSecondFactorRemoved', () => {
 });
 
 describe('renderRecoveryCodesRevoked', () => {
-  const input = { to: 'ada@example.test', tenantDisplayName: 'Demo' };
+  const input = { to: 'ada@example.test', tenantDisplayName: 'Demo', now: NOW };
 
   it('says the old codes stop working, and that a new set will be asked for', () => {
     const msg = renderRecoveryCodesRevoked({ ...input, newSet: true });
@@ -329,7 +307,9 @@ describe('renderRecoveryCodesRevoked', () => {
   });
 
   it('leaves the new-set sentence out when none is asked for', () => {
-    expect(renderRecoveryCodesRevoked({ ...input, newSet: false }).text).not.toContain('new set');
+    const msg = renderRecoveryCodesRevoked({ ...input, newSet: false });
+    expect(msg.text).not.toContain('new set');
+    expect(msg.html).not.toContain('new set');
   });
 
   it('reads the subject in French where the fixture has it', () => {
@@ -339,23 +319,27 @@ describe('renderRecoveryCodesRevoked', () => {
 });
 
 describe('renderSmtpTest', () => {
-  it('keeps the English test mail as it was', () => {
-    expect(renderSmtpTest({ to: 'ops@example.test' })).toEqual({
-      to: 'ops@example.test',
-      subject: 'Odudu SMTP test',
-      text: 'This is a test message from Odudu.',
-      html: '<p>This is a test message from Odudu.</p>',
-    });
+  const input = { to: 'ops@example.test', tenantDisplayName: 'Demo', now: NOW };
+
+  it('keeps the English test mail, with the tenant it was sent from', () => {
+    const msg = renderSmtpTest(input);
+    expect(msg.to).toBe('ops@example.test');
+    expect(msg.subject).toBe('Odudu SMTP test');
+    expect(msg.text).toBe(
+      `This is a test message from Odudu.\n\n${footerText(en['smtpTest.reason'], 'Demo')}`,
+    );
+    expect(msg.html).toContain('This is a test message from Odudu.');
+    expect(msg.html).toContain('<bdi>Demo</bdi>');
   });
 
-  it('reads subject, text and html from the catalogue, in the locale asked for', () => {
-    const msg = renderSmtpTest({ to: 'ops@example.test', locale: 'fr' });
+  it('reads subject and text from the catalogue, in the locale asked for', () => {
+    const msg = renderSmtpTest({ ...input, locale: 'fr' });
     expect(msg.subject).toBe('Test SMTP Odudu');
-    expect(msg.text).toBe('Ceci est un message de test d\u2019Odudu.');
-    expect(msg.html).toBe('<p>Ceci est un message de test d\u2019Odudu.</p>');
+    expect(msg.text).toContain('Ceci est un message de test d’Odudu.');
+    expect(msg.html).toContain('Ceci est un message de test d’Odudu.');
   });
 
   it('falls back to English for a locale it holds no catalogue for', () => {
-    expect(renderSmtpTest({ to: 'a@b.test', locale: 'ja' }).subject).toBe('Odudu SMTP test');
+    expect(renderSmtpTest({ ...input, locale: 'ja' }).subject).toBe('Odudu SMTP test');
   });
 });

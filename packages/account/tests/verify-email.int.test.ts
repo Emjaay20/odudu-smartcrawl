@@ -183,6 +183,7 @@ beforeEach(async () => {
     tenantName,
     tenantDisplayName: 'Ada Test Tenant',
     issuerBase: 'https://idp.example.test',
+    now: () => new Date(),
   };
   httpApp = await buildHttpApp();
 });
@@ -218,6 +219,17 @@ describe('address verification', () => {
     expect(await rawSelectAllActionTokens(tenantId)).toHaveLength(1);
     expect(await outboxRows()).toHaveLength(1);
     expect(sender.sent).toHaveLength(0);
+  });
+
+  it('stamps the queued mail with the year of the clock it was given, not of the machine', async () => {
+    await sendVerificationEmail(
+      { ...deps, now: () => new Date('2031-01-01T00:00:00Z') },
+      { subjectId: subject, email: 'ada@example.test' },
+    );
+
+    const [queued] = await outboxRows();
+    expect(queued?.bodyHtml).toContain('\u00a9 2031 Odudu');
+    expect(queued?.bodyText).toContain('\u00a9 2031 Odudu');
   });
 
   it('keeps the queued message, with its error, when the transport refuses it', async () => {
@@ -277,6 +289,7 @@ describe('address verification', () => {
       tenantName: other.tenantName,
       tenantDisplayName: 'Other Tenant',
       issuerBase: 'https://idp.example.test',
+      now: () => new Date(),
     };
 
     await sendVerificationEmail(otherDeps, {

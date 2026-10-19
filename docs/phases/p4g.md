@@ -1757,3 +1757,103 @@ as a footer `html` item because the theme's own icon has an `aria-label` on an
   `test` (209 passed) and `test:browser` (19 passed, the image CSP walk
   among them); screenshots by Playwright Chromium at 1440, 768 and 390, light
   and dark, home and `/reference/`.
+
+## The mail shell
+
+2026-10-19. Every mail was `<p>` tags and a link: the owner's complaint was that it
+looked nothing like the pages or the console. Every mail kind now goes through one
+shell, `renderShell` in `packages/email/src/service/shell.ts` (verification, password
+reset, required-actions link, the second-factor-removed and recovery-codes-revoked
+notices, the SMTP test). A grep of the six `render…` names finds every call site, and
+`outboxRepository(...).enqueue` and `sender.send` are the only two doors a message leaves by.
+
+- **Layout.** Presentation tables (`role="presentation"`), 560px at most, a ghost table for
+  Outlook's Word engine, `table-layout: fixed`, every style inline, a system font stack
+  with no family name that contains a space (the server literal lint reads one as a
+  sentence), no script, no remote stylesheet, no `url()`, no web font. A name or an address
+  with no break opportunity wraps (`overflow-wrap: anywhere`) instead of widening the page:
+  checked in Chromium at 600, 375 and 320px for every kind, including a 300-character name.
+- **Header.** The tenant's display name beside the Odudu mark (controller ruling: the
+  tenant is the sender identity; `odudu` is a quiet signature). Powered-by and the year are
+  in the footer, as muted text with no link. The mail does not name a client: no flow that
+  sends a mail carries one today, so there is nothing to put in a body.
+- **Button.** The label comes from the catalogue (`Verify email`, `Reset password`,
+  `Update account`); the padding is on the cell (12px 24px around a 20px line is 44px),
+  with `mso-padding-alt` for Outlook, no VML. The same address is written out under it in
+  a monospace box, `word-break: break-all`, as an anchor with the whole link; the
+  plain-text part has the link on a line of its own. A link that is not an absolute
+  `http(s)` URL is refused (`RangeError`), so `javascript:` cannot reach an `href`.
+- **Footer.** The reason the mail was sent, per kind, then `© {year} Odudu · Powered by
+odudu`. The year is the UTC year of an injected `now`: each usecase takes it from the
+  caller's clock (`deps.now`, `systemClock` at the composition root, a route's `now` in
+  protocol-admin), tested at 2026-12-31T23:59:59Z, 2027-01-01T00:00:00Z and across a
+  time zone's New Year. The plain-text part ends the same way after a `--` line.
+- **Escaping.** Unchanged and extended to the shell: every value through `escapeHtml`, the
+  tenant in `<bdi>`, FSI/PDI in text, nothing that can start a line in the subject. The
+  link is now escaped in the markup (it was inserted raw) and stays raw in the text.
+  `templates.test.ts` and `shell.test.ts` run the hostile-name cases (script, bidi
+  controls, CRLF, a long name, an RTL name, emoji) over every kind.
+- **Colours.** `packages/email/scripts/generate-assets.ts` compiles the tokens to hex
+  (`palette.generated.ts`, from `apps/admin-console/src/shared/view/tokens.css`) and
+  draws the mark. `palette.test.ts` fails when the committed palette is not what the
+  tokens compile to, and `shell.test.ts` fails on any colour in a mail that is not in it
+  (no `rgb()`, `var()` or `light-dark()`). `palette.test.ts` also holds the text pairs to 4.5:1
+  in both palettes: the console's own pairs, with the button on `--ink-primary`, as the
+  server pages' buttons are.
+- **The mark.** A 80x80 PNG (shown at 40x40), the staff in `--ink-rail` on a `--surface-rail` rounded
+  tile, so one image reads on either palette. It is rasterised from `mark.svg` by a small
+  anti-aliasing drawer in the package (`mark-png.ts`; the committed bytes are compared pixel for
+  pixel with a fresh drawing, not byte for byte, so a different zlib cannot fail it).
+  It travels as an inline `cid:odudu-mark` part: `smtpSender` adds the attachment to any message
+  whose markup names it, so a self-hosted install needs no public asset URL and nothing is fetched
+  when the mail is opened. `alt="odudu"` shows where images are blocked.
+
+verified: `node_modules/.bin/vitest run --project integration packages/email/tests/smtp.int.test.ts`
+(Mailpit v1.31.5: the message arrives with one inline part, `ContentID` `odudu-mark`, `image/png`), and on the stack
+`odudu-p4g-mail` a tenant relay at a Mailpit container delivered the required-actions mail, whose
+Mailpit page (`/view/<id>.html`) drew the shell with the mark.
+
+### What the clients do, and what degrades
+
+Relied on, from the clients' documented behaviour and not tried in them (only Chromium was
+run here, on the real messages and on Mailpit's rendering): table layout and inline style
+everywhere; `<style>` in the head, which Gmail (web and apps), Apple Mail, Outlook 2019+/365
+and Yahoo keep and old Gmail variants and some webmail strip; `max-width` on a table, which
+the Word-engine Outlooks ignore, hence the ghost table; padding on a cell, which every client
+honours, where padding on the anchor is ignored by the Word engine.
+
+Dark mode is partial. A client that reads `prefers-color-scheme` (Apple Mail, iOS Mail,
+Outlook for Mac and the new Outlook, Thunderbird, Fastmail) gets the dark palette. Gmail's apps
+darken a light mail by inverting its colours themselves, so the light palette is what they
+transform; the Outlook.com and Outlook-on-Windows dark modes rewrite colours too and may
+differ from the palette. A client that does neither gets the light version, which is the one
+every text pair is checked against and is fully readable. The corners round in clients that
+honour `border-radius` and are square in the Word engine. The mark's tile is dark in both
+schemes by design, so it needs no variant.
+
+Per-tenant mail theming (the tenant's own colours and logo in the shell) stays with **P4b**,
+whose criterion already names the verification and reset mail rendered under a tenant's theme;
+the shell takes its colours from one palette object, which is what that phase replaces.
+
+### Mail gallery
+
+Chromium, every kind rendered by `packages/email/scripts/preview.ts` (the inline mark swapped for a
+data URI so the file opens alone), light and dark, 600px and 375px, cropped to the message.
+The gallery holds twelve of the thirty-two views; the rest were looked at.
+
+- ![verification, light, 600px](p4g-mails/verification-light-600.webp) `verification-light-600`: the verification mail.
+- ![verification, dark, 600px](p4g-mails/verification-dark-600.webp) `verification-dark-600`: the same, the dark palette.
+- ![verification, light, 375px](p4g-mails/verification-light-375.webp) `verification-light-375`: the same at phone width.
+- ![verification, dark, 375px](p4g-mails/verification-dark-375.webp) `verification-dark-375`: dark, phone width.
+- ![password reset, light, 600px](p4g-mails/password-reset-light-600.webp) `password-reset-light-600`: the reset mail.
+- ![required actions, light, 600px](p4g-mails/required-actions-light-600.webp) `required-actions-light-600`: the required-actions link with its list.
+- ![required actions, dark, 375px](p4g-mails/required-actions-dark-375.webp) `required-actions-dark-375`: the same, dark, phone width.
+- ![second factor removed, light, 600px](p4g-mails/factor-removed-light-600.webp) `factor-removed-light-600`: the notice, no button and no link.
+- ![recovery codes revoked, dark, 600px](p4g-mails/recovery-revoked-dark-600.webp) `recovery-revoked-dark-600`: the other notice, dark.
+- ![SMTP test, light, 375px](p4g-mails/smtp-test-light-375.webp) `smtp-test-light-375`: the SMTP test mail.
+- ![a very long tenant name](p4g-mails/verification-long-name-light-375.webp) `verification-long-name-light-375`: a 190-character name with an unbroken run, wrapping inside the card.
+- ![a right-to-left tenant name](p4g-mails/verification-rtl-light-375.webp) `verification-rtl-light-375`: an Arabic name in an English mail, isolated.
+
+What the first look found and was fixed: a long name with no break widened the page past the
+phone (every text block now wraps anywhere), the footer sat 4px inside the card's edge, and the
+mark was small in its tile.

@@ -36,6 +36,9 @@ export interface RegisterDeps {
   // building a link some other way.
   readonly issuerBase: string | undefined;
   readonly verifyEmailEnabled: boolean;
+  // The send time of the mail, from the caller's clock.
+  readonly now: () => Date;
+
   // Injected for the same reason verify-email.ts's getCurrentEmail and
   // markVerified are: @odudu/account depends on neither
   // @odudu/domain-identity (subjects, users, credentials) nor
@@ -162,6 +165,7 @@ export async function register(
             to: input.email,
             link,
             tenantDisplayName: deps.tenantDisplayName,
+            now: deps.now(),
           }),
         });
         return { subjectId: account.subjectId };

@@ -4914,7 +4914,16 @@ ines@example.test|A sign-in method was removed from your recovery-life account|A
 Your recovery codes were removed with it, and no longer work.
 
 If you did not expect this, contact your administrator.
+
+--
+You received this because a sign-in method on your account at ⁨recovery-life⁩ was changed.
+© 2026 Odudu · Powered by odudu
 ```
+
+The mail block above was captured again on 2026-10-19, after the mail got its
+designed shell, on a stack of its own, the compose project `odudu-p4g-mail`,
+with the same tenant name, subject name and steps, so it names no id from the
+run above; its footer year is that of the moment the mail was queued.
 
 Ending the sessions with the removal was captured on the same project after it
 was rebuilt from the commit that made it one request, on a fresh volume, with
@@ -5080,7 +5089,15 @@ olga@example.test|Your recovery-life recovery codes were revoked|An administrato
 You will be asked to save a new set the next time you sign in.
 
 If you did not expect this, contact your administrator.
+
+--
+You received this because the recovery codes on your account at ⁨recovery-life⁩ were changed.
+© 2026 Odudu · Powered by odudu
 ```
+
+The mail above, for `olga`, was captured the same way, on the same project
+`odudu-p4g-mail`, with `olga` seeded with `seed user` and given a TOTP
+credential and ten recovery-code rows as `ines` was.
 
 `noor` is revoked with `require_new_set=false`, after a value that is neither
 `true` nor `false` was refused and the ten codes counted to show it changed
@@ -5842,15 +5859,38 @@ Update your required-actions-demo account|Your administrator asks you to update 
 
 Do so by visiting this link:
 
-http://localhost:3086/tenants/required-actions-demo/login-actions/action-token?key=_rt1ViHEsgUP9YYb_k-e_wCJkNdECOnTOYReAUa-uXQ
+http://localhost:3000/tenants/required-actions-demo/login-actions/action-token?key=4zSeBj8AeoVl6hBnud6z6BvOaY40VCaHkMzrcbde2bI
 
 If you were not expecting this, you can ignore this message.
+
+--
+You received this because an administrator at ⁨required-actions-demo⁩ asked you to update your account.
+© 2026 Odudu · Powered by odudu
 ```
 
 The mail text is the mail package's catalogue, with the tenant name inside
-Unicode isolates (U+2068 and U+2069, invisible here), so the block above was
-rewritten from the earlier run's by that one change; the same mail rendered
-through `renderRequiredActions` with these inputs gives exactly these bytes.
+Unicode isolates (U+2068 and U+2069, invisible here), and after the `--` line
+the reason it was sent and the footer, whose year is that of the moment it was
+queued. The block above was captured again on 2026-10-19, after the mail got
+its designed shell, on a stack of its own, the compose project
+`odudu-p4g-mail` (tenant `required-actions-demo`, `grace`, the same request),
+so its link is that run's, on `localhost:3000` because the server there was
+told that was its public base URL, and names nothing from the run above. Its
+relay was a Mailpit container, so the message was delivered as well as queued,
+and Mailpit shows what arrived: the mark is an inline image, which the SMTP
+sender attaches because the markup names it `cid:odudu-mark` (`ID` is the
+message's id in Mailpit's list):
+
+```bash
+curl -s "http://localhost:18925/api/v1/message/$ID" | jq -c '{To: [.To[].Address], From: .From.Address, Subject, Inline: [.Inline[] | {FileName, ContentType, ContentID, Size}]}'
+```
+
+```
+{"To":["grace@example.test"],"From":"odudu@actions.test","Subject":"Update your required-actions-demo account","Inline":[{"FileName":"odudu.png","ContentType":"image/png","ContentID":"odudu-mark","Size":707}]}
+```
+
+The same mail rendered through `renderRequiredActions` with these inputs gives
+exactly the bytes of the block above.
 
 What following it does is under [Following a required-actions link](request-paths.md#following-a-required-actions-link).
 

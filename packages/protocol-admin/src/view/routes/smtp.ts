@@ -31,6 +31,7 @@ export interface SmtpRouteDeps {
   readonly smtpDestination: SmtpDestinationPolicy;
   /** Whether the deployment has a sender of its own, which a tenant without one falls back to. */
   readonly deploymentSmtp: boolean;
+  readonly now: () => Date;
 }
 
 export function readSmtpHandler(deps: SmtpRouteDeps): AdminRouteHandler {
@@ -184,12 +185,11 @@ export function testSmtpHandler(deps: SmtpRouteDeps): AdminRouteHandler {
       );
     }
 
-    const sendOutcome = await sendTestMessage(
-      readOutcome.record,
-      deps.kek,
-      deps.smtpDestination,
-      body.to,
-    );
+    const sendOutcome = await sendTestMessage(readOutcome.record, deps.kek, deps.smtpDestination, {
+      to: body.to,
+      tenantDisplayName: readOutcome.tenantDisplayName,
+      now: deps.now(),
+    });
     switch (sendOutcome.kind) {
       case 'refused_destination':
         await record('refused_destination');

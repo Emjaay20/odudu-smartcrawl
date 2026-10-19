@@ -430,6 +430,7 @@ function buildAdminRoutes(
         resolve: resolveHostAddresses,
       },
       deploymentSmtp: deps.deploymentSmtp ?? false,
+      now: () => clock.now(),
     };
     const tenantsDeps: TenantsRouteDeps = {
       database: deps.database.db,

@@ -3249,15 +3249,44 @@ reader without a mail server gets the link:
   "level": 30,
   "to": "ada@example.com",
   "subject": "Verify your demo account",
-  "text": "Confirm your email address for ⁨demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/demo/login-actions/action-token?key=9qsTxZgVlA_N8dHLuijG5l7UUex8F4HwGJEanfGXYCk\n\nIf you did not request this, you can ignore this message.",
-  "html": "<p>Confirm your email address for <bdi>demo</bdi> by visiting <a href=\"…\">…</a>.</p><p>If you did not request this, you can ignore this message.</p>",
+  "text": "Confirm your email address for ⁨demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/demo/login-actions/action-token?key=kaAlzyKyr9spRjlMg6V20eGCBHjFkaxD-Zk_kzhIYUc\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to create or update an account at ⁨demo⁩.\n© 2026 Odudu · Powered by odudu",
+  "html": "<!doctype html><html lang=\"en\" dir=\"ltr\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta name=\"color-scheme\" content=\"light dark\">…",
   "msg": "captured email — no SMTP host configured"
 }
 ```
 
 (One line of a larger pino JSON object, reduced to the fields that matter
-here; the key is shortened nowhere else in this document because a reader
-needs the whole thing to follow the link.)
+here. `html` is cut after the head's colour-scheme declaration, at the
+ellipsis, because the whole document is five kilobytes; the key is shortened
+nowhere else in this document because a reader needs the whole thing to
+follow the link.)
+
+The `html` part is a designed message, not bare markup: table-based and
+560px wide, every style inline, the colours the console's own tokens compile
+to, a light palette that stands alone and a dark one a `prefers-color-scheme`
+block swaps in where the client reads it. It carries the tenant's display
+name beside the Odudu mark (an inline image the SMTP sender attaches, named
+`cid:odudu-mark`, with the word `odudu` as its alt text), a heading, the
+sentence, a button, the same address written out under it, a muted line on
+why the message was sent, and a footer whose year is the UTC year of the
+moment the message was written. The button and the written-out address are the
+only two anchors in it, and both carry the whole link; the command reads them
+from the log of the run above:
+
+```bash
+docker compose logs --no-log-prefix odudu | grep 'captured email' | grep 'Verify your demo' \
+  | jq -r .html | grep -o '<a [^>]*>[^<]*</a>'
+```
+
+```
+<a class="m-button-link" href="http://localhost:3000/tenants/demo/login-actions/action-token?key=kaAlzyKyr9spRjlMg6V20eGCBHjFkaxD-Zk_kzhIYUc" target="_blank" style="display:inline-block;font:600 15px/20px system-ui,-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;color:#ffffff;text-decoration:none;mso-line-height-rule:exactly">Verify email</a>
+<a class="m-link" href="http://localhost:3000/tenants/demo/login-actions/action-token?key=kaAlzyKyr9spRjlMg6V20eGCBHjFkaxD-Zk_kzhIYUc" target="_blank" style="color:#0a6344;text-decoration:underline;word-break:break-all">http://localhost:3000/tenants/demo/login-actions/action-token?key=kaAlzyKyr9spRjlMg6V20eGCBHjFkaxD-Zk_kzhIYUc</a>
+```
+
+The plain-text part carries the link on a line of its own, then the same
+reason line and footer after a `--` line. The mails as a mail client draws
+them, in both palettes, at 600px and 375px, are in the
+[mail gallery](phases/p4g.md#mail-gallery).
 
 The text of every mail comes from the mail package's own message catalogue
 (`en` today), in the language of the recipient's `locale` where the sender
@@ -3266,11 +3295,13 @@ the plain-text part wraps it in Unicode isolates (U+2068 before it and U+2069
 after, invisible in most viewers but present in the captures on this page),
 the HTML part in `<bdi>`, and the subject carries it with bidirectional
 controls and line breaks removed, since a header can hold neither. The four
-mail captures in this document were updated by transformation from earlier
-runs, and the shape was checked against a live run of the same three mails on
-the project `odudu-p4g-17` (`demo`, `register-demo` and `reset-demo`, on port
-`3197`, so their links named that port and their own keys); the keys the
-sections below follow are the earlier run's.
+mail captures in this document were taken on 2026-10-19 from a live run of
+the same three mails (`demo`, `register-demo` and `reset-demo`) on the compose
+project `odudu-p4g-mail`, published on a port of its own with
+`ODUDU_PUBLIC_BASE_URL` set to `http://localhost:3000` so the links read as
+the rest of this document's do. Their keys are that run's, so the commands
+below that follow a link follow the keys of the earlier run they were
+captured against, not these.
 
 Before following it, `ada`'s ID token still reads the way every one earlier
 in this document does:
@@ -3407,10 +3438,12 @@ log instead of an inbox:
   "level": 30,
   "to": "ada@example.com",
   "subject": "Verify your register-demo account",
-  "text": "Confirm your email address for ⁨register-demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/register-demo/login-actions/action-token?key=6AkQjYEkoqMGiYpFx63UGAuvitBIEjmNyDMd6w2uN2Y\n\nIf you did not request this, you can ignore this message.",
+  "text": "Confirm your email address for ⁨register-demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/register-demo/login-actions/action-token?key=UOsLZ2p25jj6wWYEJIlEFH239txOSNvBlBWFMxUfwWM\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to create or update an account at ⁨register-demo⁩.\n© 2026 Odudu · Powered by odudu",
   "msg": "captured email — no SMTP host configured"
 }
 ```
+
+(Captured on the project `odudu-p4g-mail` the section above names, so its key is that run's, not the one the commands below follow.)
 
 A username holding a bidirectional control character, one that would reorder
 the text around it wherever it is shown (U+202A to U+202E or U+2066 to U+2069),
@@ -3494,7 +3527,7 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
   "level": 30,
   "to": "grace@example.com",
   "subject": "Verify your register-demo account",
-  "text": "Confirm your email address for ⁨register-demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/register-demo/login-actions/action-token?key=QSamH8NlNKgEIxjr7XbuIOZ7fTPqCf6uxDtFZeEIf9E\n\nIf you did not request this, you can ignore this message.",
+  "text": "Confirm your email address for ⁨register-demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/register-demo/login-actions/action-token?key=ImiqkiAvo0CyLJGuTgZKQVaaqEQzhaO8u1-0yI-3R7Q\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to create or update an account at ⁨register-demo⁩.\n© 2026 Odudu · Powered by odudu",
   "msg": "captured email — no SMTP host configured"
 }
 ```
@@ -5059,16 +5092,17 @@ moment after both answers had gone out, and there exactly once:
   "level": 30,
   "to": "ada@example.com",
   "subject": "Reset your reset-demo password",
-  "text": "Reset your password for ⁨reset-demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/reset-demo/login-actions/action-token?key=iad4k852Rw6VvCK8djwZSvU0dzcPMvNXXM3-UjOeRkk\n\nIf you did not request this, you can ignore this message.",
-  "html": "<p>Reset your password for <bdi>reset-demo</bdi> by visiting <a href=\"…\">…</a>.</p><p>If you did not request this, you can ignore this message.</p>",
+  "text": "Reset your password for ⁨reset-demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/reset-demo/login-actions/action-token?key=cpXWtqhtPO_453HSJu9d-uEGcqayipJrw4CdRSV_XLk\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because a password reset was requested for this email address at ⁨reset-demo⁩.\n© 2026 Odudu · Powered by odudu",
+  "html": "<!doctype html><html lang=\"en\" dir=\"ltr\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta name=\"color-scheme\" content=\"light dark\">…",
   "msg": "captured email — no SMTP host configured"
 }
 ```
 
 (Reduced to the fields that matter, the same way
-[Address verification](#address-verification) reduces its own capture; the
-key is shortened nowhere in this section because a reader needs the whole
-thing to follow the link.) The link's host is `ODUDU_PUBLIC_BASE_URL`, never
+[Address verification](#address-verification) reduces its own capture, `html`
+included; the key is shortened nowhere in this section because a reader needs
+the whole thing to follow the link. It was captured on the project
+`odudu-p4g-mail` that section names, so its key is that run's.) The link's host is `ODUDU_PUBLIC_BASE_URL`, never
 the request's `Host` header — the same rule and the same reasoning
 [Self-registration](#self-registration) establishes for the verification
 link, and unset it refuses the request the same way: 500, logged as a

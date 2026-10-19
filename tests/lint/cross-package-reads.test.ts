@@ -83,6 +83,14 @@ const READS: readonly { file: string; targets: readonly string[] }[] = [
     targets: ['apps/admin-console/src/shared/view/*.css'],
   },
   {
+    file: 'packages/email/src/service/palette.test.ts',
+    targets: ['apps/admin-console/src/shared/view/tokens.css'],
+  },
+  {
+    file: 'packages/email/src/service/mark-png.test.ts',
+    targets: ['packages/instrument/src/mark.svg'],
+  },
+  {
     file: 'packages/console-gateway/src/view/react-aria-style.test.ts',
     targets: ['apps/admin-console/package.json'],
   },

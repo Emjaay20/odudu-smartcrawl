@@ -12,8 +12,10 @@
   },
   "main": "./src/index.ts",
   "scripts": {
+    "generate": "node scripts/generate-assets.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run --config ../../vitest.config.ts --reporter=default --reporter=json --outputFile=trace-report.json"
+    "test": "vitest run --config ../../vitest.config.ts --reporter=default --reporter=json --outputFile=trace-report.json",
+    "preview": "node scripts/preview.ts"
   },
   "dependencies": {
     "@odudu/contracts": "workspace:*",

@@ -172,6 +172,8 @@ export type RevokeRecoveryCodesOutcome =
 export interface RevokeRecoveryCodesInput extends AccountRecoveryInput {
   /** Whether the subject's next sign-in asks for a new set; true when the request says nothing. */
   readonly requireNewSet: boolean;
+  /** The time the notice mail is sent at. */
+  readonly now: Date;
 }
 
 // Spent codes go too: ADR 0021 keeps a spent code's row, and a set that is

@@ -905,6 +905,8 @@ export interface DeleteCredentialInput {
   readonly tenantId: string;
   readonly subjectId: string;
   readonly credentialId: string;
+  /** The time the notice mail is sent at. */
+  readonly now: Date;
   readonly callerCapabilities: ReadonlySet<string>;
   readonly actorSubjectId: string;
   readonly actorTenantId: string;

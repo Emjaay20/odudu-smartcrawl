@@ -129,6 +129,7 @@ async function mail(seeded: Seeded, actions: readonly string[]): Promise<string>
       tenantName: seeded.tenantName,
       tenantDisplayName: seeded.tenantName,
       issuerBase: 'https://idp.example.test',
+      now: () => new Date(),
     };
     const user = { subjectId: seeded.subjectId, email: 'ada@example.test' };
     await enqueueActionsLink(tx, tenant, user, { actions });
@@ -181,6 +182,7 @@ describe('a link that takes its subject through required actions', () => {
           tenantName: seeded.tenantName,
           tenantDisplayName: 'x',
           issuerBase: 'https://idp.example.test',
+          now: () => new Date(),
         },
         { subjectId: seeded.subjectId, email: 'ada@example.test' },
       );
@@ -221,6 +223,7 @@ describe('a link that takes its subject through required actions', () => {
         tenantName: seeded.tenantName,
         tenantDisplayName: 'Acme <Co>',
         issuerBase: 'https://idp.example.test',
+        now: () => new Date(),
       };
       for (const locale of [null, 'de-CH', 'not a tag']) {
         const user = { subjectId: seeded.subjectId, email: 'ada@example.test', locale };
@@ -234,8 +237,8 @@ describe('a link that takes its subject through required actions', () => {
     for (const row of rows) {
       expect(row.subject).toBe('Update your Acme <Co> account');
       expect(row.bodyText).toContain('- Choose a new password\n- Set up an authenticator app\n');
-      expect(row.bodyHtml).toContain(
-        '<li>Choose a new password</li><li>Set up an authenticator app</li>',
+      expect(row.bodyHtml).toMatch(
+        /<li[^>]*>Choose a new password<\/li><li[^>]*>Set up an authenticator app<\/li>/u,
       );
       expect(row.bodyHtml).toContain('<bdi>Acme &lt;Co&gt;</bdi>');
     }
@@ -345,6 +348,7 @@ async function mailReset(seeded: Seeded): Promise<string> {
         tenantName: seeded.tenantName,
         tenantDisplayName: seeded.tenantName,
         issuerBase: 'https://idp.example.test',
+        now: () => new Date(),
       },
       { subjectId: seeded.subjectId, email: 'ada@example.test' },
     );

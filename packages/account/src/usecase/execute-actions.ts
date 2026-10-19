@@ -44,6 +44,7 @@ export async function enqueueActionsLink(
       to: user.email,
       link: url,
       tenantDisplayName: tenant.tenantDisplayName,
+      now: tenant.now(),
       actions,
       locale: user.locale,
     }),

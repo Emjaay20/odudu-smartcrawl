@@ -157,6 +157,7 @@ export function revokeRecoveryCodesHandler(deps: AccountRecoveryRouteDeps): Admi
           tenantId: targetTenantId,
           subjectId: id,
           requireNewSet: query.require_new_set !== 'false',
+          now: deps.now(),
           callerCapabilities,
           actorSubjectId: principal.subjectId,
           actorTenantId: principal.issuerTenantId,

@@ -30,6 +30,7 @@ import {
   DEFAULT_INSTRUMENT_DIR,
   DEFAULT_OUTBOX_MAX_ATTEMPTS,
   newId,
+  systemClock,
 } from '@odudu/kernel';
 import { adminRoutes, composeUserSubject } from '@odudu/protocol-admin';
 import {
@@ -425,7 +426,11 @@ export function buildApp(deps: AppDeps): FastifyInstance {
         actionTokenRepository(tx).invalidateOutstandingPasswordLinks(subjectId),
       sendAccountLink: async (tx, request) => {
         if (deps.publicBaseUrl === undefined) return 'unavailable';
-        const tenant = { ...request, issuerBase: deps.publicBaseUrl };
+        const tenant = {
+          ...request,
+          issuerBase: deps.publicBaseUrl,
+          now: () => systemClock.now(),
+        };
         if (request.kind === 'reset_password') await enqueueResetLink(tx, tenant, request);
         else if (request.kind === 'verify_email')
           await enqueueVerificationLink(tx, tenant, request);

@@ -63,7 +63,7 @@ import {
   tenantSettingProblems,
   type TenantSettingValue,
 } from '@odudu/domain-tenant';
-import { loadConfig, newId, OduduError, refuseBidiControls } from '@odudu/kernel';
+import { loadConfig, newId, OduduError, refuseBidiControls, systemClock } from '@odudu/kernel';
 import {
   clientOidcConfigRepository,
   GRANT_TYPES_PERMITTED,
@@ -582,6 +582,7 @@ async function seedClientBootstrap(opts: SeedOptions): Promise<SeedResult> {
           tenantName: result.tenant,
           tenantDisplayName: tenant?.displayName ?? result.tenant,
           issuerBase: opts.issuerBase ?? `http://localhost:${String(config.ODUDU_HTTP_PORT)}`,
+          now: () => systemClock.now(),
         },
         { subjectId: userSubjectId, email: opts.email },
       );

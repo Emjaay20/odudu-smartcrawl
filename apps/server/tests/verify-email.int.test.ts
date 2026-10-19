@@ -211,6 +211,7 @@ describe('address verification, through the real composition root', () => {
           tenantName,
           tenantDisplayName: tenantName,
           issuerBase: 'https://idp.example.test',
+          now: () => new Date(),
         },
         { subjectId: userSubjectId, email: EMAIL },
       );
