@@ -12,7 +12,15 @@ export {
   type RenderedPage,
   pageHeaders,
   reloadOnRestore,
+  withPageTheme,
 } from '#/page';
+export {
+  PAGE_THEME_COOKIE,
+  PAGE_THEMES,
+  type PageTheme,
+  isPageTheme,
+  pageThemeFromCookies,
+} from '#/page-theme';
 export {
   MAX_PASSWORD_LENGTH,
   PASSWORD_TOO_LONG,

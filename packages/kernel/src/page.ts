@@ -1,4 +1,5 @@
 import { scriptNonce } from '#/ids';
+import { isPageTheme, pageThemeFromCookies, type PageTheme } from '#/page-theme';
 
 // What a rendered page needs allowed, when it needs anything beyond
 // markup. Returned by the renderer rather than decided by the caller, so
@@ -20,9 +21,20 @@ export interface PageScript {
 export interface PageLocale {
   readonly tag: string;
   readonly dir: 'ltr' | 'rtl';
+  // The light or dark choice the person made in the console, when they made
+  // one; absent means follow the operating system.
+  readonly theme?: PageTheme;
 }
 
 export const DEFAULT_PAGE_LOCALE: PageLocale = { tag: 'en', dir: 'ltr' };
+
+// A page's theme rides with its negotiated language because every renderer
+// already takes that value as its last argument, so a route cannot render a
+// page without having been asked for both.
+export function withPageTheme(locale: PageLocale, cookieHeader: unknown): PageLocale {
+  const theme = pageThemeFromCookies(cookieHeader);
+  return theme === undefined ? locale : { ...locale, theme };
+}
 
 export interface RenderedPage {
   // The whole document, as the server sends it today.
@@ -147,6 +159,9 @@ const SAFE_TAG = /^[A-Za-z0-9-]{1,35}$/u;
 export function pageHeaders(page: RenderedPage): readonly (readonly [string, string])[] {
   if (!SAFE_TAG.test(page.locale.tag) || !DIRECTIONS.has(page.locale.dir)) {
     throw new Error('refusing to send an unvalidated locale');
+  }
+  if (page.locale.theme !== undefined && !isPageTheme(page.locale.theme)) {
+    throw new Error('refusing to send an unvalidated theme');
   }
   return [
     ['content-security-policy', policyFor(page)],
