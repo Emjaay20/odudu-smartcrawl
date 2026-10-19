@@ -3,6 +3,7 @@ import { auditRepository, type RequestContext } from '@odudu/domain-audit';
 import { outboxRepository, renderRequiredActions } from '@odudu/email';
 import { actionTokenRepository } from '#/repository/action-tokens';
 import { type PasswordPolicy, type PolicyViolation } from '#/repository/tenant-settings';
+import { withMinimum } from '#/service/password-violations';
 import { actionLabel, orderedActions, type LinkedRequiredAction } from '#/service/required-actions';
 import { type ActionLinkTenant } from '#/usecase/reset-password';
 
@@ -114,7 +115,12 @@ export async function completeRequiredActions(
           username,
           email: peeked.email,
         });
-        if (violations.length > 0) return { kind: 'invalid_password', violations };
+        if (violations.length > 0) {
+          return {
+            kind: 'invalid_password',
+            violations: withMinimum(violations, deps.passwordPolicy.minLength),
+          };
+        }
         const unchanged = await deps.unchangedPasswordViolations(tx, peeked.subjectId, newPassword);
         if (unchanged.length > 0) return { kind: 'invalid_password', violations: unchanged };
       }

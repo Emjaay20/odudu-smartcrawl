@@ -3,6 +3,7 @@ import { auditRepository, type RequestContext } from '@odudu/domain-audit';
 import { outboxRepository, renderVerifyEmail } from '@odudu/email';
 import { OduduError } from '@odudu/kernel';
 import { actionTokenRepository } from '#/repository/action-tokens';
+import { withMinimum } from '#/service/password-violations';
 import { type PasswordPolicy, type PolicyViolation } from '#/repository/tenant-settings';
 
 // Re-exported so the view layer can reach these without importing the
@@ -112,7 +113,10 @@ export async function register(
     email: input.email,
   });
   if (violations.length > 0) {
-    return { kind: 'invalid_password', violations };
+    return {
+      kind: 'invalid_password',
+      violations: withMinimum(violations, deps.passwordPolicy.minLength),
+    };
   }
 
   let created: { subjectId: string };

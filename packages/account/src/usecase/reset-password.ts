@@ -3,6 +3,7 @@ import { auditRepository, type RequestContext } from '@odudu/domain-audit';
 import { outboxRepository, renderResetPassword } from '@odudu/email';
 import { actionTokenRepository } from '#/repository/action-tokens';
 import { type PasswordPolicy, type PolicyViolation } from '#/repository/tenant-settings';
+import { withMinimum } from '#/service/password-violations';
 
 // Re-exported so the view layer can reach these without importing the
 // repository directly (no-view-to-repository, .dependency-cruiser.cjs):
@@ -165,7 +166,12 @@ export async function completePasswordReset(
         username,
         email: peeked.email,
       });
-      if (violations.length > 0) return { kind: 'invalid_password', violations };
+      if (violations.length > 0) {
+        return {
+          kind: 'invalid_password',
+          violations: withMinimum(violations, deps.passwordPolicy.minLength),
+        };
+      }
 
       // Before the link is spent, for the same reason the rules above are:
       // setting the password already in force restarts the tenant's

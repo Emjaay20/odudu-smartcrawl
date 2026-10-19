@@ -110,7 +110,7 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
       return sendVerificationHtml(
         reply,
         400,
-        renderRegistrationFailedPage([PASSWORD_TOO_LONG.message], locale),
+        renderRegistrationFailedPage({ violations: [PASSWORD_TOO_LONG] }, locale),
       );
     }
     const password =
@@ -121,7 +121,7 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
       return sendVerificationHtml(
         reply,
         400,
-        renderRegistrationFailedPage(['Username, email and password are all required.'], locale),
+        renderRegistrationFailedPage({ refusal: 'fields_required' }, locale),
       );
     }
 
@@ -145,31 +145,28 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
       return sendVerificationHtml(
         reply,
         400,
-        renderRegistrationFailedPage(
-          outcome.violations.map((v) => v.message),
-          locale,
-        ),
+        renderRegistrationFailedPage({ violations: outcome.violations }, locale),
       );
     }
     if (outcome.kind === 'email_taken') {
       return sendVerificationHtml(
         reply,
         400,
-        renderRegistrationFailedPage(['That email address is already registered.'], locale),
+        renderRegistrationFailedPage({ refusal: 'email_taken' }, locale),
       );
     }
     if (outcome.kind === 'username_taken') {
       return sendVerificationHtml(
         reply,
         400,
-        renderRegistrationFailedPage(['That username is already taken.'], locale),
+        renderRegistrationFailedPage({ refusal: 'username_taken' }, locale),
       );
     }
     if (outcome.kind === 'invalid_email') {
       return sendVerificationHtml(
         reply,
         400,
-        renderRegistrationFailedPage(['That is not an address the email claim may carry.'], locale),
+        renderRegistrationFailedPage({ refusal: 'invalid_email' }, locale),
       );
     }
     if (outcome.kind === 'misconfigured') {
@@ -180,10 +177,7 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
       return sendVerificationHtml(
         reply,
         500,
-        renderRegistrationFailedPage(
-          ['Registration is temporarily unavailable. Try again later.'],
-          locale,
-        ),
+        renderRegistrationFailedPage({ refusal: 'unavailable' }, locale),
       );
     }
 

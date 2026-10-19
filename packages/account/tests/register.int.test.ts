@@ -280,6 +280,51 @@ describe('self-registration', () => {
     expect(notCreated).toBeNull();
   });
 
+  it('words each broken rule from the catalogue by its code, never the domain sentence', async () => {
+    const { tenantName } = await seedTenant(`tenant-${newId()}`, { registrationAllowed: true });
+    const instance = Fastify();
+    instance.register(formbody);
+    registerRegistrationRoute(instance, {
+      database: app,
+      findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
+      publicBaseUrl,
+      createAccount,
+      evaluatePassword: () => [
+        { rule: 'min-length', message: 'DOMAIN-SENTENCE-ONE' },
+        { rule: 'require-digit', message: 'DOMAIN-SENTENCE-TWO' },
+      ],
+    });
+    const res = await instance.inject({
+      method: 'POST',
+      url: `/tenants/${tenantName}/login-actions/registration`,
+      payload: new URLSearchParams({
+        username: 'ada',
+        email: 'ada@example.test',
+        password: 'x',
+      }).toString(),
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    });
+    await instance.close();
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toContain('<li>Password must be at least 8 characters long.</li>');
+    expect(res.body).toContain('<li>Password must contain a digit.</li>');
+    expect(res.body).not.toContain('DOMAIN-SENTENCE');
+  });
+
+  it('words a too-long password from the catalogue, with the limit it was refused at', async () => {
+    const { tenantName } = await seedTenant(`tenant-${newId()}`, { registrationAllowed: true });
+
+    const res = await submitRegistration(tenantName, {
+      username: 'ada',
+      email: 'ada@example.test',
+      password: 'x'.repeat(300),
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toContain('<li>Password must be at most 256 characters long.</li>');
+  });
+
   it('refuses an address another user in the tenant already holds', async () => {
     const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {
       registrationAllowed: true,

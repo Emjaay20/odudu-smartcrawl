@@ -23,6 +23,8 @@ export interface PasswordPolicy {
 export interface PolicyViolation {
   rule: string;
   message: string;
+  // Set on the minimum-length rule, whose sentence states the number.
+  minLength?: number;
 }
 
 export interface TenantSettings {

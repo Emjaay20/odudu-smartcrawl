@@ -12,6 +12,31 @@ export const en = {
   'verification.failed.heading': "This link can't be used",
   'verification.failed.reason':
     'It may have already been used, expired, or no longer matches your email address. Request a new verification email and try again.',
+  'registration.title': 'Create account',
+  'registration.username': 'Username',
+  'registration.email': 'Email',
+  'registration.password': 'Password',
+  'registration.submit': 'Create account',
+  'registration.failed.title': "Can't create this account",
+  'registration.refusal.fieldsRequired': 'Username, email and password are all required.',
+  'registration.refusal.emailTaken': 'That email address is already registered.',
+  'registration.refusal.usernameTaken': 'That username is already taken.',
+  'registration.refusal.invalidEmail': 'That is not an address the email claim may carry.',
+  'registration.refusal.unavailable': 'Registration is temporarily unavailable. Try again later.',
+  'registration.succeeded.title': 'Account created',
+  'registration.succeeded.verify':
+    'Check your email for a link to verify your address before you can sign in.',
+  'registration.succeeded.signIn': 'You can now sign in.',
+  'password.rule.minLength':
+    'Password must be at least {min, number, ::group-off} characters long.',
+  'password.rule.maxLength': 'Password must be at most {max, number, ::group-off} characters long.',
+  'password.rule.requireDigit': 'Password must contain a digit.',
+  'password.rule.requireUppercase': 'Password must contain an uppercase letter.',
+  'password.rule.requireLowercase': 'Password must contain a lowercase letter.',
+  'password.rule.requireSpecial': 'Password must contain a special character.',
+  'password.rule.notUsername': 'Password must not contain the username.',
+  'password.rule.notEmail': 'Password must not contain the email address.',
+  'password.rule.notReused': 'Password must not be one you have used before.',
 };
 
 export type MessageId = keyof typeof en;
