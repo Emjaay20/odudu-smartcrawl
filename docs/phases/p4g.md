@@ -1532,3 +1532,50 @@ error and config tables from `@odudu/kernel`, the audit vocabulary from
   The documentation packages' prose (`CONFIG_DOCS`, `ERROR_DOCS`, `ADMIN_PROBLEM_TYPES`, `OAUTH_ERROR_DOCS`, the audit
   tables) moved to a `./docs` subpath of each package for the same reason: verified by building the server, whose bundle
   carried that prose before the move and does not after (`grep` for a sentence of each in `apps/server/dist`).
+
+## Increment 20: the documentation inside the image
+
+`/docs` is served by `@odudu/web-assets` (`docsRoutes`, `docsPolicy`) from the built `apps/docs/dist/image`,
+copied to `/app/docs`; ADR 0029's second amendment has the design.
+
+- **Size.** verified: `du -sk /app/docs` in the image is 6,184 KB over 135 files (`dist/image`, 134 plus the
+  `csp.json` the build writes), against the route's bound of 5,000 files and 64 MiB. The built site is the
+  `search-index.json` (1.1 MB), `openapi/admin.json` (985 KB), `llms-full.txt` (306 KB) and the pages; it is
+  read into memory once at boot, so the server holds about 6 MB more resident. The pages are not compressed
+  by the server (the largest, `reference/generated/admin-api/subjects`, is 156 KB): a reverse proxy does that.
+- **The runtime image was 1.26 GB before this increment and is 383 MB now, for a reason that is not the docs.**
+  verified: `docker image inspect odudu-p4g-docs-odudu --format '{{.Size}}'` gave 1,262,971,531 with the docs
+  stage added and the old `prod-deps` stage; `/app/node_modules/.pnpm` held 1,722 packages (788 MB: vitest,
+  typescript, eslint, Docusaurus, `@rspack`, turbo). Since `pnpm fetch` is the first layer (ADR 0044), pnpm
+  12.3.4 materialises the whole virtual store in `node_modules/.pnpm` and runs install scripts there; the
+  later `pnpm install --prod --offline` unlinks the devDependencies from the top level and leaves their
+  directories. `rm -rf node_modules` before that install takes the image to 383,096,741 bytes with 252 packages
+  and none of those (`ls /app/node_modules/.pnpm | grep -cE '^(vitest|typescript|@docusaurus)'` prints 0), and
+  `import('@node-rs/argon2')` still resolves from `/app`. The docs add about 6 MB of that. The old
+  `odudu-e2e-odudu` image, built before the fetch layer, was 372,632,477.
+- **Policy.** `dist/image/csp.json` holds 1 script hash and 7 style-attribute hashes (the seven values are listed
+  in the amendment). The scratch finding (12 values, two locales) is smaller because the image has one locale
+  and no landing page. verified: mutations, each failing and passing after the restore. A hash removed from
+  `csp.json` fails `csp.test.ts` ("names the hash of every executable inline script and style attribute") and
+  the Chromium walk (84 `style-src-attr` violations reported); an inline `<script>window.x=1</script>` added to a
+  built page with `csp.json` regenerated to include it fails "exactly one executable inline script per page";
+  `scripts/csp.test.ts` refuses a `<style>`, an `on*` attribute and a `javascript:` URL.
+- **The walk is `tests/csp.browser.test.ts`**, not `csp.test.ts`: the root `unit` project has no Chromium, so it
+  is a `*.browser.test.ts` and runs where Chromium is installed, in the `docs` job's `test:browser` step.
+  It serves the image through the real `docsRoutes` on an ephemeral port, so the header under test is the one the
+  server sends. It covers navigation, the colour toggle three times, a search that fetches
+  `/docs/search-index.json` from the same origin, Enter in the box, code copy on the CLI reference (the first page
+  with a code block; `quick-start` has none while its section is a stub), and the mobile menu with the toggle in
+  it at 390 px; a last case injects a script and a style attribute and expects both violations, so a silent
+  pass is not a broken listener.
+- **The CLI reference names `http://localhost:3000`**, the address `odudu` serves on by default, and the build
+  renders it as an anchor. `csp.test.ts` allows that one value as an absolute anchor and nothing else; the
+  build's placeholder `url` (`http://localhost`, no port) is checked absent from every page and agent copy.
+- **Path prefix.** The README's Deploying list says the site must sit at the root of `ODUDU_PUBLIC_BASE_URL`.
+  The operating section's Deploying page (Task 27) is not written, so the ADR names the README for now; that
+  page states it with its own test, as the plan's Task 27 already lists.
+- **Not done here, and where it goes.** The server does not compress, which a reverse proxy
+  normally does; P11's load work owns measuring it. `OPTIONS` and writes under `/docs/` answer Fastify's `404`
+  without the docs headers, as `/console/*` does: they carry no document.
+- **The `docs` and `container` jobs** run this on push: `docs` runs `test:browser` (the walk), `container` runs the
+  smoke additions. Nothing here has been seen green in CI yet.
