@@ -1,7 +1,11 @@
-import { AUDIT_ACTIONS, AUDIT_EVENT_TYPES, AUDIT_REASONS } from '@odudu/domain-audit';
-import { ADMIN_MUTATION_ACTIONS } from '@odudu/protocol-admin';
+import {
+  ADMIN_MUTATION_ACTIONS,
+  AUDIT_ACTIONS,
+  AUDIT_EVENT_TYPES,
+  AUDIT_REASONS,
+} from '@odudu/domain-audit';
 import { describe, expect, it } from 'vitest';
-import { renderEventsPage } from '#docs/scripts/events-page.ts';
+import { renderEventsPage } from './events-page.ts';
 
 const text = renderEventsPage();
 
@@ -25,8 +29,7 @@ describe('the audit events reference', () => {
   });
 
   it('lists every admin mutation and every reason', () => {
-    for (const action of Object.keys(ADMIN_MUTATION_ACTIONS))
-      expect(has(action), action).toBe(true);
+    for (const action of ADMIN_MUTATION_ACTIONS) expect(has(action), action).toBe(true);
     for (const reason of AUDIT_REASONS) expect(has(reason), reason).toBe(true);
   });
 });

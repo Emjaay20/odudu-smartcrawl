@@ -12,7 +12,7 @@
     "build:pages": "pnpm generate && docusaurus clear && docusaurus build --out-dir dist/pages",
     "build:image": "pnpm generate && docusaurus clear && DOCS_TARGET=image docusaurus build --out-dir dist/image",
     "serve": "node scripts/serve.mjs",
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p scripts/tsconfig.json",
     "test": "vitest run --config ../../vitest.config.ts --project unit --reporter=default --reporter=json --outputFile=trace-report.json",
     "test:browser": "vitest run --config ../../vitest.config.ts --project browser"
   },

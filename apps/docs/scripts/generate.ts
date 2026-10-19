@@ -1,9 +1,10 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { ADMIN_ROUTES, buildAdminOpenApiDocument } from '@odudu/protocol-admin';
+import { ADMIN_ROUTES } from '@odudu/protocol-admin';
+import { buildAdminOpenApiDocument } from '@odudu/protocol-admin/docs';
 import { CLI_COMMANDS } from '@odudu/server/src/cli/registry.ts';
-import { servedEndpoints, servingApp } from '@odudu/server/src/served-routes.ts';
+import { servingApp } from '@odudu/server/src/testing/served-routes.ts';
 import { renderCliPage } from './cli-page.ts';
 import { renderConfigPage } from './config-page.ts';
 import { renderEndpointsPage } from './endpoints-page.ts';
@@ -45,10 +46,10 @@ export interface Source {
 }
 
 async function endpointsPage(): Promise<string> {
-  const app = await servingApp();
+  const { app, endpoints } = await servingApp();
   try {
     return renderEndpointsPage({
-      served: servedEndpoints(app),
+      served: endpoints,
       adminOperations: new Set(ADMIN_ROUTES.map((route) => `${route.method} ${route.pattern}`)),
     });
   } finally {

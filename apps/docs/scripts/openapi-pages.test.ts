@@ -1,11 +1,8 @@
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { describe, expect, it } from 'vitest';
-import {
-  ADMIN_ROUTES,
-  buildAdminOpenApiDocument,
-  type OpenApiDocument,
-} from '@odudu/protocol-admin';
-import { renderOpenApiPages } from '#docs/scripts/openapi-pages.ts';
+import { ADMIN_ROUTES } from '@odudu/protocol-admin';
+import { buildAdminOpenApiDocument, type OpenApiDocument } from '@odudu/protocol-admin/docs';
+import { renderOpenApiPages } from './openapi-pages.ts';
 
 const document = buildAdminOpenApiDocument();
 const pages = renderOpenApiPages(document);
@@ -48,6 +45,30 @@ function hostile(): OpenApiDocument {
                   },
                 },
               },
+            },
+          },
+        },
+      },
+    },
+  };
+}
+
+// A document of the whoami operation whose success body is the given schema.
+function hostileWith(schema: Record<string, unknown>): OpenApiDocument {
+  const doc = hostile();
+  const path = '/admin/tenants/{tenant}/whoami';
+  const operation = doc.paths[path]?.get;
+  if (operation === undefined) throw new Error('whoami is gone');
+  return {
+    ...doc,
+    paths: {
+      [path]: {
+        get: {
+          ...operation,
+          responses: {
+            '200': {
+              description: 'OK',
+              content: { 'application/json': { schema } },
             },
           },
         },
@@ -134,6 +155,39 @@ describe('the admin API reference pages', () => {
     }
     const row = text.split('\n').find((line) => line.startsWith('| `note` |')) ?? '';
     expect(row).toContain('A \\| pipe, a &lt;b&gt;tag&lt;/b&gt; and {braces} across two lines');
+  });
+
+  it('says constraints in words: plurals, known patterns and formats, and never a raw expression it knows', () => {
+    const text = allText();
+    expect(text).not.toContain('at least 1 characters');
+    expect(text).not.toContain('^[^\\u0000]*$');
+    expect(text).not.toContain('[0-9a-fA-F]{8}');
+    expect(text).toContain('at least 1 character');
+    expect(text).toContain('no bidirectional control characters');
+    expect(text).toContain('a UUID');
+  });
+
+  it('shows a pattern it cannot put in words in a collapsed block after the operation', () => {
+    const doc = hostileWith({ type: 'string', pattern: '^[a-z]{3}-\\d+$' });
+    const text = [...renderOpenApiPages(doc).values()].join('\n');
+    expect(text).toContain('matching a pattern, listed below');
+    expect(text).toContain('<details>');
+    expect(text).toContain('<code>^[a-z]{3}-\\d+$</code>');
+  });
+
+  it('says when it stops expanding a deeply nested schema, and where the rest is', () => {
+    let nested: Record<string, unknown> = { type: 'string', description: 'The bottom.' };
+    for (let level = 0; level < 8; level += 1) {
+      nested = { type: 'object', properties: { inner: nested }, required: ['inner'] };
+    }
+    const text = [...renderOpenApiPages(hostileWith(nested)).values()].join('\n');
+    expect(text).toContain('The fields inside are not listed here');
+    expect(text).toContain('[OpenAPI document](pathname:///openapi/admin.json)');
+  });
+
+  it('prints how much of each area\u2019s request and response fields carry a description', () => {
+    const clients = pages.get('admin-api/clients.md') ?? '';
+    expect(clients).toMatch(/\nDocumentation coverage: \d+ of \d+ fields described \(\d+%\)\.\n$/u);
   });
 
   it('is deterministic', () => {

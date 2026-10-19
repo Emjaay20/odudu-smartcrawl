@@ -1,8 +1,15 @@
 import { ERROR_CODES } from '@odudu/kernel';
-import { ADMIN_PROBLEM_TYPES, problemTypeUri } from '@odudu/protocol-admin';
-import { OAUTH_ERROR_DOCS } from '@odudu/protocol-oidc';
+import { ADMIN_PROBLEM_TYPES, problemTypeUri } from '@odudu/protocol-admin/docs';
+import { OAUTH_ERROR_DOCS, surfacesOf, type OAuthErrorCode } from '@odudu/protocol-oidc/docs';
 import { describe, expect, it } from 'vitest';
-import { renderErrorsPage } from '#docs/scripts/errors-page.ts';
+import { renderErrorsPage } from './errors-page.ts';
+
+const LABELS = {
+  authorization: 'authorization endpoint',
+  token: 'token endpoint',
+  userinfo: 'UserInfo endpoint',
+  registration: 'client registration',
+} as const;
 
 const text = renderErrorsPage();
 
@@ -20,10 +27,11 @@ describe('the error code reference', () => {
   });
 
   it('lists every OAuth and OpenID Connect error with where it is answered', () => {
-    for (const [code, docs] of Object.entries(OAUTH_ERROR_DOCS)) {
+    for (const code of Object.keys(OAUTH_ERROR_DOCS) as OAuthErrorCode[]) {
       const row = rows().find((line) => line.startsWith(`| \`${code}\` |`));
       expect(row, code).toBeDefined();
-      if (docs.surfaces.includes('token')) expect(row, code).toContain('token endpoint');
+      for (const surface of surfacesOf(code))
+        expect(row, `${code} ${surface}`).toContain(LABELS[surface]);
     }
   });
 

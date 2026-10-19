@@ -1,5 +1,14 @@
-import type { OpenApiDocument } from '@odudu/protocol-admin';
-import { cell, code, codeCell, escapeProse, frontMatter, table, titleCase } from './markdown.ts';
+import type { OpenApiDocument } from '@odudu/protocol-admin/docs';
+import {
+  cell,
+  code,
+  codeCell,
+  codeHtml,
+  escapeProse,
+  frontMatter,
+  table,
+  titleCase,
+} from './markdown.ts';
 
 type Json = Readonly<Record<string, unknown>>;
 
@@ -32,6 +41,7 @@ interface Row {
   readonly type: string;
   readonly required: boolean;
   readonly details: string;
+  readonly described: boolean;
 }
 
 function typeOf(schema: Json): string {
@@ -50,16 +60,44 @@ function variantsOf(schema: Json): readonly Json[] {
   });
 }
 
-function bound(label: string, value: unknown): string[] {
-  return typeof value === 'number' && Math.abs(value) < SAFE_INTEGER
-    ? [`${label} ${String(value)}`]
-    : [];
+function bound(label: string, value: unknown, unit?: string): string[] {
+  if (typeof value !== 'number' || Math.abs(value) >= SAFE_INTEGER) return [];
+  const noun = unit === undefined ? '' : ` ${value === 1 ? unit : `${unit}s`}`;
+  return [`${label} ${String(value)}${noun}`];
 }
 
-function constraints(schema: Json): string[] {
+// What a pattern says in words, for the patterns the contracts use. A pattern
+// that is not here is printed as written, in a block after the operation.
+const PATTERN_WORDS: readonly (readonly [test: (pattern: string) => boolean, words: string])[] = [
+  [(pattern) => pattern === '^[^\\u0000]*$', ''],
+  [
+    (pattern) => pattern === '^[^\\u202A-\\u202E\\u2066-\\u2069]*$',
+    'no bidirectional control characters',
+  ],
+  [(pattern) => /^\^\(?\[0-9a-fA-F\]\{8\}-/u.test(pattern), 'a UUID'],
+  [(pattern) => pattern.startsWith('^(?:(?:\\d\\d[2468]'), 'an ISO 8601 date and time'],
+];
+
+const FORMAT_WORDS: Readonly<Record<string, string>> = {
+  uuid: 'a UUID',
+  'date-time': 'an ISO 8601 date and time',
+  uri: 'an absolute URL',
+  email: 'an email address',
+};
+
+function constraints(schema: Json, unknown: string[]): string[] {
   const found: string[] = [];
   const format = str(schema.format);
-  if (format !== undefined) found.push(`format ${code(format)}`);
+  const pattern = str(schema.pattern);
+  const words = pattern === undefined ? undefined : PATTERN_WORDS.find(([test]) => test(pattern));
+  const formatWords = format === undefined ? undefined : FORMAT_WORDS[format];
+  if (format !== undefined && formatWords !== undefined) found.push(formatWords);
+  else if (format !== undefined) found.push(`format ${code(format)}`);
+  if (words !== undefined && words[1] !== '' && words[1] !== formatWords) found.push(words[1]);
+  if (pattern !== undefined && words === undefined) {
+    unknown.push(pattern);
+    found.push('matching a pattern, listed below');
+  }
   if (schema.enum !== undefined) {
     found.push(
       `one of ${list(schema.enum)
@@ -69,15 +107,13 @@ function constraints(schema: Json): string[] {
   }
   if (schema.const !== undefined) found.push(`always ${code(scalar(schema.const))}`);
   found.push(
-    ...bound('minimum', schema.minimum),
-    ...bound('maximum', schema.maximum),
-    ...bound('at least', schema.minLength).map((text) => `${text} characters`),
-    ...bound('at most', schema.maxLength).map((text) => `${text} characters`),
-    ...bound('at least', schema.minItems).map((text) => `${text} items`),
-    ...bound('at most', schema.maxItems).map((text) => `${text} items`),
+    ...bound('at least', schema.minimum),
+    ...bound('at most', schema.maximum),
+    ...bound('at least', schema.minLength, 'character'),
+    ...bound('at most', schema.maxLength, 'character'),
+    ...bound('at least', schema.minItems, 'item'),
+    ...bound('at most', schema.maxItems, 'item'),
   );
-  const pattern = str(schema.pattern);
-  if (pattern !== undefined) found.push(`pattern ${code(pattern)}`);
   if (schema.default !== undefined) found.push(`default ${code(scalar(schema.default))}`);
   if (schema.additionalProperties === true || record(schema.additionalProperties) !== undefined) {
     const extra = record(schema.additionalProperties);
@@ -86,14 +122,22 @@ function constraints(schema: Json): string[] {
   return found;
 }
 
-function detailsOf(schema: Json): string {
+const OPENAPI_LINK = '[OpenAPI document](pathname:///openapi/admin.json)';
+
+function sentence(text: string): string {
+  return /[.!?:)`]$/u.test(text) ? text : `${text}.`;
+}
+
+function detailsOf(schema: Json, unknown: string[], truncated = false): string {
   const description = str(schema.description);
+  const limits = constraints(schema, unknown);
   const parts = [
-    ...(description === undefined ? [] : [escapeProse(description)]),
-    ...constraints(schema),
+    ...(description === undefined ? [] : [sentence(escapeProse(description.trim()))]),
+    ...(limits.length === 0 ? [] : [`Constraints: ${limits.join(', ')}.`]),
+    ...(truncated ? [`The fields inside are not listed here; the ${OPENAPI_LINK} has them.`] : []),
   ];
   return parts
-    .join('. ')
+    .join(' ')
     .replace(/\s*\n\s*/gu, ' ')
     .replaceAll('|', '\\|');
 }
@@ -134,6 +178,7 @@ function collect(
   depth: number,
   rows: Row[],
   root: OpenApiDocument,
+  unknown: string[],
 ): void {
   const resolved = resolveRef(schema, root);
   const { schema: inner, nullable } = unwrapNullable(resolved);
@@ -141,12 +186,16 @@ function collect(
   const items = record(inner.items);
   const isObject = properties !== undefined;
 
+  const hasChildren =
+    isObject || (items !== undefined && record(resolveRef(items, root).properties) !== undefined);
+  const truncated = depth >= MAX_DEPTH && hasChildren;
   if (path !== '' || !isObject) {
     rows.push({
       path: path === '' ? '(body)' : path,
       type: describeType(inner, nullable),
       required,
-      details: detailsOf(inner),
+      details: detailsOf(inner, unknown, truncated),
+      described: (str(inner.description) ?? '').trim() !== '',
     });
   }
   if (depth >= MAX_DEPTH) return;
@@ -161,10 +210,11 @@ function collect(
         depth + 1,
         rows,
         root,
+        unknown,
       );
     }
   } else if (items !== undefined && record(resolveRef(items, root).properties) !== undefined) {
-    collect(items, `${path === '' ? '' : path}[]`, true, depth + 1, rows, root);
+    collect(items, `${path === '' ? '' : path}[]`, true, depth + 1, rows, root, unknown);
   }
 }
 
@@ -176,9 +226,14 @@ function resolveRef(schema: Json, root: OpenApiDocument): Json {
   return target ?? schema;
 }
 
-function schemaTable(schema: Json, root: OpenApiDocument): string {
+export function fieldRows(schema: Json, root: OpenApiDocument, unknown: string[]): Row[] {
   const rows: Row[] = [];
-  collect(schema, '', true, 0, rows, root);
+  collect(schema, '', true, 0, rows, root, unknown);
+  return rows;
+}
+
+function schemaTable(schema: Json, root: OpenApiDocument, unknown: string[]): string {
+  const rows = fieldRows(schema, root, unknown);
   return table(
     ['Field', 'Type', 'Required', 'Details'],
     rows.map((row) => [
@@ -198,7 +253,7 @@ interface Parameter {
   readonly schema: Json;
 }
 
-function parametersOf(operation: Json, root: OpenApiDocument): Parameter[] {
+export function parametersOf(operation: Json, root: OpenApiDocument): Parameter[] {
   return list(operation.parameters).flatMap((entry) => {
     const found = record(entry);
     if (found === undefined) return [];
@@ -222,15 +277,18 @@ function parametersOf(operation: Json, root: OpenApiDocument): Parameter[] {
   });
 }
 
-function parameterTable(parameters: readonly Parameter[]): string {
+function parameterTable(parameters: readonly Parameter[], unknown: string[]): string {
   return table(
     ['Name', 'Type', 'Required', 'Details'],
     parameters.map((parameter) => {
       const { schema, nullable } = unwrapNullable(parameter.schema);
-      const details = detailsOf({
-        ...schema,
-        ...(parameter.description === undefined ? {} : { description: parameter.description }),
-      });
+      const details = detailsOf(
+        {
+          ...schema,
+          ...(parameter.description === undefined ? {} : { description: parameter.description }),
+        },
+        unknown,
+      );
       return [
         codeCell(parameter.name),
         cell(describeType(schema, nullable)),
@@ -258,6 +316,7 @@ function mediaBlock(
   media: Json,
   root: OpenApiDocument,
   problemLink: string,
+  unknown: string[],
 ): string[] {
   if (mediaType === 'application/problem+json') {
     return [
@@ -267,12 +326,17 @@ function mediaBlock(
   const schema = record(media.schema);
   return [
     `Body: ${code(mediaType)}`,
-    ...(schema === undefined ? [] : ['', schemaTable(schema, root)]),
+    ...(schema === undefined ? [] : ['', schemaTable(schema, root, unknown)]),
     ...examplesOf(media).flatMap((example) => ['', example]),
   ];
 }
 
-function responseBlocks(operation: Json, root: OpenApiDocument, problemLink: string): string[] {
+function responseBlocks(
+  operation: Json,
+  root: OpenApiDocument,
+  problemLink: string,
+  unknown: string[],
+): string[] {
   const lines: string[] = [];
   for (const [status, response] of Object.entries(record(operation.responses) ?? {})) {
     const found = record(response) ?? {};
@@ -281,10 +345,22 @@ function responseBlocks(operation: Json, root: OpenApiDocument, problemLink: str
     const content = Object.entries(record(found.content) ?? {});
     if (content.length === 0) lines.push('No body.', '');
     for (const [mediaType, media] of content) {
-      lines.push(...mediaBlock(mediaType, record(media) ?? {}, root, problemLink), '');
+      lines.push(...mediaBlock(mediaType, record(media) ?? {}, root, problemLink, unknown), '');
     }
   }
   return lines;
+}
+
+// A pattern the generator cannot put in words is shown as the contract states it.
+function patternBlock(patterns: readonly string[]): string {
+  const items = [...new Set(patterns)].map((pattern) => `<li>${codeHtml(pattern)}</li>`);
+  return [
+    '<details>',
+    '<summary>Patterns this operation applies</summary>',
+    `<ul>${items.join('')}</ul>`,
+    '</details>',
+    '',
+  ].join('\n');
 }
 
 function operationSection(
@@ -294,6 +370,7 @@ function operationSection(
   root: OpenApiDocument,
   problemLink: string,
 ): string {
+  const unknown: string[] = [];
   const lines = [`## ${method.toUpperCase()} ${path}`, ''];
   const summary = str(operation.summary);
   if (summary !== undefined) lines.push(escapeProse(summary), '');
@@ -306,19 +383,73 @@ function operationSection(
     ['query', 'Query parameters'],
   ] as const) {
     const ofPlace = parameters.filter((parameter) => parameter.in === place);
-    if (ofPlace.length > 0) lines.push(`### ${label}`, '', parameterTable(ofPlace), '');
+    if (ofPlace.length > 0) lines.push(`### ${label}`, '', parameterTable(ofPlace, unknown), '');
   }
 
   const body = record(operation.requestBody);
   if (body !== undefined) {
     lines.push('### Request body', '');
     for (const [mediaType, media] of Object.entries(record(body.content) ?? {})) {
-      lines.push(...mediaBlock(mediaType, record(media) ?? {}, root, problemLink), '');
+      lines.push(...mediaBlock(mediaType, record(media) ?? {}, root, problemLink, unknown), '');
     }
   }
 
-  lines.push('### Responses', '', ...responseBlocks(operation, root, problemLink));
+  lines.push('### Responses', '', ...responseBlocks(operation, root, problemLink, unknown));
+  if (unknown.length > 0) lines.push(patternBlock(unknown));
   return lines.join('\n').replace(/\n+$/u, '\n');
+}
+
+export interface Coverage {
+  readonly described: number;
+  readonly total: number;
+}
+
+// The fields a reader of an operation meets: its query parameters, its request
+// body and the body of its success response, and how many carry a description.
+function coverageOf(operation: Json, root: OpenApiDocument): Coverage {
+  const rows: boolean[] = [];
+  const sink: string[] = [];
+  for (const parameter of parametersOf(operation, root)) {
+    if (parameter.in !== 'query') continue;
+    rows.push((parameter.description ?? str(parameter.schema.description) ?? '').trim() !== '');
+  }
+  const schemas: Json[] = [];
+  for (const media of Object.values(record(record(operation.requestBody)?.content) ?? {})) {
+    const schema = record(record(media)?.schema);
+    if (schema !== undefined) schemas.push(schema);
+  }
+  for (const [status, response] of Object.entries(record(operation.responses) ?? {})) {
+    if (!status.startsWith('2')) continue;
+    for (const [mediaType, media] of Object.entries(record(record(response)?.content) ?? {})) {
+      const schema = record(record(media)?.schema);
+      if (schema !== undefined && mediaType !== 'application/problem+json') schemas.push(schema);
+    }
+  }
+  for (const schema of schemas) {
+    for (const row of fieldRows(schema, root, sink)) {
+      if (row.path !== '(body)' && !row.path.endsWith('[]')) rows.push(row.described);
+    }
+  }
+  return { described: rows.filter(Boolean).length, total: rows.length };
+}
+
+export function coverageOfArea(
+  operations: readonly { readonly operation: Json }[],
+  root: OpenApiDocument,
+): Coverage {
+  return operations.reduce<Coverage>(
+    (sum, { operation }) => {
+      const found = coverageOf(operation, root);
+      return { described: sum.described + found.described, total: sum.total + found.total };
+    },
+    { described: 0, total: 0 },
+  );
+}
+
+export function coverageLine(coverage: Coverage): string {
+  const percent =
+    coverage.total === 0 ? 100 : Math.floor((100 * coverage.described) / coverage.total);
+  return `Documentation coverage: ${String(coverage.described)} of ${String(coverage.total)} fields described (${String(percent)}%).`;
 }
 
 export function areaOf(path: string): string {
@@ -339,7 +470,7 @@ interface Operation {
   readonly operation: Json;
 }
 
-function operationsOf(doc: OpenApiDocument): Map<string, Operation[]> {
+export function operationsOf(doc: OpenApiDocument): Map<string, Operation[]> {
   const areas = new Map<string, Operation[]>();
   for (const [path, methods] of Object.entries(doc.paths)) {
     const ordered = Object.entries(methods).sort(
@@ -359,17 +490,19 @@ function operationsOf(doc: OpenApiDocument): Map<string, Operation[]> {
 function areaPage(area: string, operations: readonly Operation[], doc: OpenApiDocument): string {
   const label = titleCase(area);
   const noun = operations.length === 1 ? 'operation' : 'operations';
+  const subject = area.replaceAll('-', ' ');
   const description =
-    `${String(operations.length)} ${noun} of the Odudu admin API on ${area.replaceAll('-', ' ')}, ` +
+    `${String(operations.length)} ${noun} of the Odudu admin API on ${subject}, ` +
     'each with its method, path, required capability, parameters, request body and responses.';
   const intro =
-    `The ${doc.info.title} ${area.replaceAll('-', ' ')} operations, one section each. ` +
+    `Operations on ${subject} in the ${doc.info.title}, one section each. ` +
     'Every request carries a bearer token; the [index](./index.md) says which audience it needs ' +
     'and how a refusal is shaped.';
   const sections = operations.map(({ method, path, operation }) =>
     operationSection(method, path, operation, doc, './index.md#problem-details'),
   );
-  return `${frontMatter(`Admin API: ${label}`, description)}\n# Admin API: ${label}\n\n${intro}\n\n${sections.join('\n')}`;
+  const footer = coverageLine(coverageOfArea(operations, doc));
+  return `${frontMatter(`Admin API: ${label}`, description)}\n# Admin API: ${label}\n\n${intro}\n\n${sections.join('\n')}\n${footer}\n`;
 }
 
 function indexPage(areas: ReadonlyMap<string, readonly Operation[]>, doc: OpenApiDocument): string {
@@ -383,7 +516,7 @@ function indexPage(areas: ReadonlyMap<string, readonly Operation[]>, doc: OpenAp
     ),
     '# Admin API',
     '',
-    `${escapeProse(doc.info.title)}, version ${escapeProse(doc.info.version)}. Every operation is a JSON request ` +
+    `${escapeProse(doc.info.title)}. Every operation is a JSON request ` +
       `under \`/admin/tenants\`. The pages are generated from the OpenAPI document the server ` +
       `itself serves at \`/admin/openapi.json\`, so they list exactly the routes the build serves.`,
     '',
@@ -392,6 +525,8 @@ function indexPage(areas: ReadonlyMap<string, readonly Operation[]>, doc: OpenAp
     escapeProse(str(scheme?.description) ?? 'Send a bearer token.'),
     '',
     `Each operation names the capability it needs. A caller without it is refused with \`403\`; a missing or wrong token with \`401\`.`,
+    '',
+    'Text values in a request may not contain the NUL character.',
     '',
     '## The tenant in the path',
     '',
@@ -408,7 +543,7 @@ function indexPage(areas: ReadonlyMap<string, readonly Operation[]>, doc: OpenAp
     '',
     'A refusal is an `application/problem+json` document (RFC 9457) with these fields.',
     '',
-    schemaTable(record(doc.components.schemas.ProblemDetails) ?? {}, doc),
+    schemaTable(record(doc.components.schemas.ProblemDetails) ?? {}, doc, []),
     '',
   ];
   return lines.join('\n');

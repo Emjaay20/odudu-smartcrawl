@@ -1,4 +1,9 @@
-import { CONFIG_GROUPS, configReference, type ConfigReference } from '@odudu/kernel';
+import {
+  CONFIG_GROUPS,
+  configReference,
+  OUTSIDE_LOADER_ENV,
+  type ConfigReference,
+} from '@odudu/kernel/docs';
 import { cell, codeCell, page, table } from './markdown.ts';
 
 const THOUSANDS = new Intl.NumberFormat('en-US');
@@ -26,6 +31,7 @@ function typeCell(row: ConfigReference): string {
 
 function defaultCell(row: ConfigReference): string {
   if (row.required) return 'required';
+  if (row.requiredWhen !== undefined) return `none; required when ${row.requiredWhen}`;
   return row.default === undefined ? 'none' : codeCell(row.default);
 }
 
@@ -41,15 +47,31 @@ export function renderConfigPage(rows: readonly ConfigReference[] = configRefere
     ]);
     return [`## ${group}`, table(['Variable', 'Type', 'Default', 'Description'], lines)];
   });
+  const always = rows.filter((row) => row.required).map((row) => `\`${row.name}\``);
+  const conditional = rows.flatMap((row) =>
+    row.requiredWhen === undefined ? [] : [`- \`${row.name}\`, when ${row.requiredWhen}.`],
+  );
+  const outside = Object.entries(OUTSIDE_LOADER_ENV).map(([name, summary]) => [
+    codeCell(name),
+    cell(summary),
+  ]);
   const body = [
     'Odudu is configured by environment variables, read once when the server or a command starts. A ' +
       'value that does not fit its type or bounds stops it from starting, and the message names the ' +
       'variable. A variable marked secret holds a credential: keep it out of images, logs and source control.',
+    '## What you must set\n\n' +
+      `The server does not start without ${always.join(' and ')}. The console is on by default, so by ` +
+      'default it also needs the variables below; set `ODUDU_CONSOLE=false` to run without it.\n\n' +
+      conditional.join('\n'),
     ...sections,
+    '## Read by commands and the image\n\nThese are read from the environment by a command or the ' +
+      'release image rather than by the server\u2019s configuration, so a mistake in them does not ' +
+      'stop the server.\n\n' +
+      table(['Variable', 'Description'], outside),
   ].join('\n\n');
   return page(
     'Configuration',
-    'Every environment variable the Odudu server reads, with its type, bounds, default and what it does.',
+    'Every environment variable the Odudu server and its commands read, with type, bounds, default, which are required and what each does.',
     body,
   );
 }

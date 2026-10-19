@@ -1,7 +1,9 @@
 import { execFileSync } from 'node:child_process';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { GENERATED_DIRS } from '#docs/scripts/generate.ts';
-import { DOCS_ROOT } from '#docs/tests/support/dist.ts';
+import { GENERATED_DIRS } from './generate.ts';
+
+const DOCS_ROOT = path.resolve(import.meta.dirname, '..');
 
 function git(...args: string[]): string {
   return execFileSync('git', args, { cwd: DOCS_ROOT, encoding: 'utf8' });

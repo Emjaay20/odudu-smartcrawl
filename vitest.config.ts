@@ -30,7 +30,12 @@ function globs(): { unit: string[]; integration: string[]; dom: string[]; plans:
   }
   if (scope === 'tests') return { unit: ['**/*.test.ts'], integration: [], dom: [], plans: [] };
   if (scope === 'apps/docs') {
-    return { unit: ['tests/**/*.test.ts'], integration: [], dom: [], plans: [] };
+    return {
+      unit: ['tests/**/*.test.ts', 'scripts/**/*.test.ts'],
+      integration: [],
+      dom: [],
+      plans: [],
+    };
   }
   if (scope === CONSOLE) {
     return { unit: [], integration: [], dom: ['src/**/*.test.{ts,tsx}'], plans: [] };

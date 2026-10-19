@@ -1,9 +1,10 @@
-import { ENDPOINT_DOCS, endpointKey } from '@odudu/server/src/endpoint-docs.ts';
-import type { ServedEndpoint } from '@odudu/server/src/served-routes.ts';
+import {
+  ENDPOINT_DOCS,
+  endpointKey,
+  NOT_LISTED,
+  type ServedEndpoint,
+} from '@odudu/server/src/endpoint-docs.ts';
 import { cell, codeCell, page, table } from './markdown.ts';
-
-// The plumbing around the endpoints, not an endpoint a client calls.
-const NOT_LISTED = new Set(['OPTIONS *']);
 
 function inPlaceholders(url: string): string {
   return url.replace(/:(\w+)/gu, '{$1}');
@@ -46,12 +47,13 @@ export function renderEndpointsPage({ served, adminOperations }: EndpointsInput)
   const body = [
     'Everything the server serves, apart from the admin API’s operations. `{tenant}` is the name ' +
       'of the tenant; every tenant has its own issuer, keys and clients under `/tenants/{tenant}`.',
-    '## Protocol and sign-in endpoints',
+    '## Endpoints',
     table(['Method', 'Path', 'Authentication', 'Purpose'], rows),
     '## The admin API',
-    `The admin API has ${String(adminOperations.size)} operations under \`/admin/tenants\`. Each ` +
+    `The admin API has ${String(adminOperations.size)} operations, all under \`/admin\`. Each ` +
       'needs an access token for the admin audience and names the capability it requires; they ' +
-      'are listed, with their parameters and bodies, in the [admin API reference](./admin-api/index.md).',
+      'are listed, with their parameters and bodies, in the [admin API reference](./admin-api/index.md). ' +
+      'A path under `/console/auth` or `/console/api` that is not listed answers `404`.',
   ].join('\n\n');
   return page(
     'Endpoints',

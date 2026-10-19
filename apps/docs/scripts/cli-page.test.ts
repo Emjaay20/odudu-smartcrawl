@@ -1,7 +1,7 @@
 import { renderHelp } from '@odudu/server/src/cli/help.ts';
 import { CLI_COMMANDS, type CliCommand } from '@odudu/server/src/cli/registry.ts';
 import { describe, expect, it } from 'vitest';
-import { renderCliPage } from '#docs/scripts/cli-page.ts';
+import { renderCliPage } from './cli-page.ts';
 
 const text = renderCliPage(CLI_COMMANDS);
 

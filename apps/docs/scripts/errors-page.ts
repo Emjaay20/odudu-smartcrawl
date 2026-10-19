@@ -1,10 +1,16 @@
-import { ERROR_DOCS, ERROR_GROUPS, type ErrorCode } from '@odudu/kernel';
-import { OAUTH_ERROR_DOCS, type OAuthSurface } from '@odudu/protocol-oidc';
+import { ERROR_DOCS, ERROR_GROUPS } from '@odudu/kernel/docs';
+import type { ErrorCode } from '@odudu/kernel';
+import {
+  OAUTH_ERROR_DOCS,
+  surfacesOf,
+  type OAuthErrorCode,
+  type OAuthSurface,
+} from '@odudu/protocol-oidc/docs';
 import {
   ADMIN_PROBLEM_TYPES,
   GENERIC_PROBLEM_SUMMARY,
   problemTypeUri,
-} from '@odudu/protocol-admin';
+} from '@odudu/protocol-admin/docs';
 import { cell, codeCell, escapeProse, page, table } from './markdown.ts';
 
 const SURFACE_LABELS: Record<OAuthSurface, string> = {
@@ -38,7 +44,11 @@ function oauthSection(): string {
     .sort(([a], [b]) => (a < b ? -1 : 1))
     .map(([code, docs]) => [
       codeCell(code),
-      cell(docs.surfaces.map((surface) => SURFACE_LABELS[surface]).join(', ')),
+      cell(
+        surfacesOf(code as OAuthErrorCode)
+          .map((surface) => SURFACE_LABELS[surface])
+          .join(', '),
+      ),
       cell(docs.summary),
     ]);
   return [

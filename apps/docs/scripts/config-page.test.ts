@@ -1,6 +1,6 @@
-import { configReference, CONFIG_DOCS, type ConfigReference } from '@odudu/kernel';
+import { configReference, CONFIG_DOCS, type ConfigReference } from '@odudu/kernel/docs';
 import { describe, expect, it } from 'vitest';
-import { renderConfigPage } from '#docs/scripts/config-page.ts';
+import { renderConfigPage } from './config-page.ts';
 
 const rows = configReference();
 const text = renderConfigPage();

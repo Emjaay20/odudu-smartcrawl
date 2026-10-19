@@ -1,11 +1,26 @@
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { buildAdminOpenApiDocument } from '@odudu/protocol-admin';
-import { MACHINE_READABLE_REFERENCES } from '#docs/nav.ts';
-import { GENERATED_DIRS, generatedFiles, writeGenerated } from '#docs/scripts/generate.ts';
-import { DOCS_ROOT, walk } from '#docs/tests/support/dist.ts';
+import { buildAdminOpenApiDocument } from '@odudu/protocol-admin/docs';
+import { GENERATED_DIRS, generatedFiles, writeGenerated } from './generate.ts';
+
+const DOCS_ROOT = path.resolve(import.meta.dirname, '..');
+
+function walk(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(dir, entry.name);
+    return entry.isDirectory() ? walk(full) : [full];
+  });
+}
 
 const COMMIT = 'abc1234';
 const files = await generatedFiles(COMMIT);
@@ -58,9 +73,7 @@ describe('writing the generated reference', () => {
   });
 
   it('writes every machine-readable reference the site lists, and the admin OpenAPI document is the one the server builds', () => {
-    for (const reference of MACHINE_READABLE_REFERENCES) {
-      expect(files.has(`static/${reference.file}`), reference.file).toBe(true);
-    }
+    expect(files.has('static/openapi/admin.json')).toBe(true);
     const written = JSON.parse(files.get('static/openapi/admin.json') ?? 'null') as unknown;
     expect(written).toEqual(JSON.parse(JSON.stringify(buildAdminOpenApiDocument())));
   });

@@ -1449,7 +1449,86 @@ error and config tables from `@odudu/kernel`, the audit vocabulary from
   an `about:blank#…` literal removed from `keys.ts` (the problem-type test fails); a code removed from
   `ERROR_CODES` (a compile error and the code test); an audit action added without a sentence; a route
   removed from the app; an OAuth error replaced in the source.
-- **`pnpm lint` needed more memory.** verified: `eslint .` over the whole repository with `apps/docs` ignored peaks at
-  4.3 GB resident and passes at Node's default heap; with the docs app's scripts and tests importing the
-  workspace sources (a second typed program over them) it ran out of heap (a V8 stack dump, exit non-zero).
-  `NODE_OPTIONS=--max-old-space-size=8192 eslint .` passes in 2 min 24 s. The `lint` script sets it.
+- **`pnpm lint` needed more memory, and the cause was the docs app's typed program.** verified:
+  with the generator and its tests in `apps/docs/tsconfig.json` (Docusaurus options) the typed
+  program over the workspace sources was a second, unshared one, and `eslint .` ran out of heap
+  (a V8 stack dump). The generator, its renderers and their tests now live under `apps/docs/scripts/`
+  with their own `tsconfig.json` extending `tsconfig.base.json`; `vitest.config.ts` takes
+  `scripts/**/*.test.ts` into the docs scope. `/usr/bin/time -l node_modules/.bin/eslint .` at the
+  default heap passes: 4.5 GB peak resident (4.3 GB with `apps/docs` ignored), 2 min 33 s. The
+  `--max-old-space-size` flag is gone from the `lint` script.
+
+### Increment 19, fix round
+
+- **A cached build keeps the generated pages.** `@odudu/docs#build` lists `content/en/reference/generated/**`
+  and `static/openapi/**` as outputs and `ODUDU_COMMIT` as an env input (the commit the banner names). verified:
+  `ODUDU_COMMIT=aaa111 pnpm turbo run build --filter=@odudu/docs` is a miss, the next run a hit, and after
+  deleting both generated directories a third run is a hit that restores them (the banner still says `aaa111`);
+  `ODUDU_COMMIT=bbb222` is a miss and rewrites the banners. The root `test` and `verify` scripts export it from
+  `git rev-parse`. A workflow that calls `turbo` directly has to export it too (`ODUDU_COMMIT: ${{ github.sha }}`
+  is one line in the `docs` job); without it the banner names the commit at generation time and a cache hit can carry
+  an older one. Package tests are excluded from the inputs and the packages' `package.json` files are in.
+- **Admin mutation actions are typed.** `ADMIN_MUTATION_ACTIONS` is a tuple in `domain-audit` and
+  `AdminMutationInput.action` is its union, so `recordAudit`, `auditRepository.record` and the CLI refuse an unlisted
+  action at typecheck. Making it compile found four the literal scan could not see: `console.assertion` and the three
+  `subject.*_send` actions, whose union types span lines. `tests/docs/audit-actions.test.ts` scans every production
+  source as a second check.
+- **Variables outside the loader** (`ODUDU_ADMIN_EMAIL`, `ODUDU_ADMIN_PASSWORD`, `ODUDU_VERSION`) are a second table
+  on the configuration page, and `tests/docs/env-reads.test.ts` fails on any `env.ODUDU_*` read in a production
+  source that is neither a loader key nor in it. `requiredWhen` on five keys says what the server cannot start without
+  (the console, on by default, needs `ODUDU_PUBLIC_BASE_URL` and `ODUDU_CONSOLE_CLIENT_KEY`);
+  `apps/server/src/config-required.test.ts` holds each claim to its guard.
+- **The endpoint listing is exact.** `buildApp` takes an `onRoute` hook, and `servingApp()` (now in
+  `apps/server/src/testing/`, which the bundle never imports) builds the app with the console, a generated console
+  key and a stylesheet directory, so `/console/*` and `/instrument/*` are listed. The old `printRoutes` parser is gone;
+  it showed wildcards under the wrong prefix. The routes that only answer `404` for an unclaimed path under
+  `/console/auth` and `/console/api`, and the CORS preflight, are `NOT_LISTED`, and the page says so. The admin
+  sentence says "under `/admin`", asserted over `ADMIN_ROUTES`.
+- **OAuth error codes are typed per surface.** `AUTHORIZATION_ERRORS`, `TOKEN_ERRORS`, `USERINFO_ERRORS` and
+  `REGISTRATION_ERRORS` are tuples; the authorization outcomes, `errorRedirect`, the userinfo and registration
+  challenges take their unions, and `surfacesOf(code)` reads where a code is answered from them. A test checks each list
+  against the modules of its surface. (The earlier check searched the whole source tree for `'code'`, which a
+  documentation table in the same tree satisfied.)
+- **Readability.** Known patterns and formats are put in words (a UUID, an ISO 8601 date and time, no bidirectional
+  control characters), a pattern the generator does not know is listed after the operation in a collapsed
+  `<details>` block, plurals are right, a table that stops at the depth limit says so and links the OpenAPI document,
+  and every area page ends with `Documentation coverage: n of m fields described`. Descriptions are written in
+  `packages/contracts/src/admin/docs.ts`, apart from the schemas, and five request or response bodies carry an example (create client, create user,
+  set required actions, a page of audit events, create tenant; settings has one too).
+  `apps/docs/scripts/coverage-ratchet.test.ts` holds each area to the baseline below; an area new to the API must be added.
+  The areas below 50% (`groups`, `roles`, `mail`, `smtp`, `whoami`, which share shapes with ones that are done) belong to the guides increments (24 to 27), which
+  write for those areas as they describe them.
+
+#### Admin API documentation coverage
+
+| Area                  | Described | Fields |
+| --------------------- | --------- | ------ |
+| `audit`               | 60        | 60     |
+| `clients`             | 277       | 288    |
+| `flow`                | 12        | 12     |
+| `groups`              | 16        | 67     |
+| `keys`                | 30        | 31     |
+| `lockouts`            | 3         | 3      |
+| `mail`                | 4         | 15     |
+| `registration-tokens` | 14        | 14     |
+| `roles`               | 7         | 65     |
+| `scopes`              | 78        | 85     |
+| `sessions`            | 17        | 18     |
+| `settings`            | 0         | 0      |
+| `smtp`                | 5         | 24     |
+| `subjects`            | 201       | 229    |
+| `tenants`             | 165       | 202    |
+| `whoami`              | 0         | 4      |
+
+- The `generate.test.ts` comparison of the files on disk with a fresh generation guards a stale local tree; in CI
+  the build regenerates just before the tests run, so it is not a drift check there. What keeps the reference from
+  drifting is derivation, and the typed tables above.
+
+- **Descriptions are kept out of the console's bundle.** verified: writing them with `.describe()` on the contract
+  schemas took the console's first load to 246,513 B gzipped against a budget of 242,000
+  (`tests/lint/console-phone-chunk.test.ts` failed), because the console imports the same schemas to validate.
+  `docs.ts` holds them instead, found by field names and applied by `documentedJsonSchema` when the OpenAPI document is
+  built (a shape is matched when it makes up four fifths or more of an object's fields); the console never imports it.
+  The documentation packages' prose (`CONFIG_DOCS`, `ERROR_DOCS`, `ADMIN_PROBLEM_TYPES`, `OAUTH_ERROR_DOCS`, the audit
+  tables) moved to a `./docs` subpath of each package for the same reason: verified by building the server, whose bundle
+  carried that prose before the move and does not after (`grep` for a sentence of each in `apps/server/dist`).

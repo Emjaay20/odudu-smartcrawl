@@ -9,7 +9,8 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./admin": "./src/admin/index.ts"
+    "./admin": "./src/admin/index.ts",
+    "./admin/docs": "./src/admin/docs.ts"
   },
   "main": "./src/index.ts",
   "scripts": {

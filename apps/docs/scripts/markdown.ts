@@ -56,6 +56,11 @@ export function code(text: string): string {
   return `${fence}${padded}${fence}`;
 }
 
+// Inline code inside a raw HTML block, where Markdown does not apply.
+export function codeHtml(text: string): string {
+  return `<code>${text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')}</code>`;
+}
+
 export function codeCell(text: string): string {
   return code(text).replaceAll('|', '\\|');
 }

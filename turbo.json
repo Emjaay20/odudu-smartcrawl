@@ -109,7 +109,11 @@
         "plugins/**",
         "scripts/**",
         "$TURBO_ROOT$/packages/*/src/**",
+        "!$TURBO_ROOT$/packages/*/src/**/*.test.ts",
+        "$TURBO_ROOT$/packages/*/package.json",
         "$TURBO_ROOT$/apps/server/src/**",
+        "!$TURBO_ROOT$/apps/server/src/**/*.test.ts",
+        "$TURBO_ROOT$/apps/server/package.json",
         "nav.ts",
         "sidebars.ts",
         "seo.ts",
@@ -119,8 +123,8 @@
         "tsconfig.json",
         "$TURBO_ROOT$/apps/admin-console/src/shared/view/*.css"
       ],
-      "env": ["DOCS_SITE_ORIGIN", "DOCS_BASE", "DOCS_CONTENT"],
-      "outputs": ["dist/**"]
+      "env": ["DOCS_SITE_ORIGIN", "DOCS_BASE", "DOCS_CONTENT", "ODUDU_COMMIT"],
+      "outputs": ["dist/**", "content/en/reference/generated/**", "static/openapi/**"]
     },
     "@odudu/docs#test": {
       "dependsOn": ["^typecheck", "@odudu/docs#build"],
@@ -140,7 +144,12 @@
         "tsconfig.json",
         "$TURBO_ROOT$/apps/admin-console/src/shared/view/*.css",
         "$TURBO_ROOT$/packages/*/src/**",
+        "!$TURBO_ROOT$/packages/*/src/**/*.test.ts",
+        "$TURBO_ROOT$/packages/*/package.json",
         "$TURBO_ROOT$/apps/server/src/**",
+        "!$TURBO_ROOT$/apps/server/src/**/*.test.ts",
+        "$TURBO_ROOT$/apps/server/package.json",
+        "$TURBO_ROOT$/docs/phases/p4g.md",
         "scripts/**",
         "tests/**"
       ],

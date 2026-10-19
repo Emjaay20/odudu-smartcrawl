@@ -1,13 +1,11 @@
+import { AUDIT_ACTIONS, AUDIT_EVENT_TYPES, type VocabularyEventType } from '@odudu/domain-audit';
 import {
+  ADMIN_MUTATION_ACTION_DOCS,
   AUDIT_ACTION_DOCS,
-  AUDIT_ACTIONS,
   AUDIT_EVENT_TYPE_DOCS,
-  AUDIT_EVENT_TYPES,
   AUDIT_OUTCOME_DOCS,
   AUDIT_REASON_DOCS,
-  type VocabularyEventType,
-} from '@odudu/domain-audit';
-import { ADMIN_MUTATION_ACTIONS } from '@odudu/protocol-admin';
+} from '@odudu/domain-audit/docs';
 import { cell, codeCell, page, table } from './markdown.ts';
 
 function actionRows(type: VocabularyEventType): string[][] {
@@ -27,7 +25,7 @@ export function renderEventsPage(): string {
     `### ${type}`,
     table(['Action', 'Meaning'], actionRows(type)),
   ]);
-  const mutations = Object.entries(ADMIN_MUTATION_ACTIONS)
+  const mutations = Object.entries(ADMIN_MUTATION_ACTION_DOCS)
     .sort(([a], [b]) => (a < b ? -1 : 1))
     .map(([action, summary]) => [codeCell(action), cell(summary)]);
   const body = [
