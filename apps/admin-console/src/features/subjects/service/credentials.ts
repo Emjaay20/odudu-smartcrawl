@@ -172,6 +172,11 @@ export function credentialFailureText(what: string, failure: GatewayFailure): st
       return COULD_NOT_FINISH;
     case 'problem':
       if (failure.problem.status === 403) {
+        // The one refusal that is the caller's own: ending sessions needs a
+        // capability the removal itself does not.
+        if (failure.problem.detail?.includes('manage-sessions') === true) {
+          return `Refused: ${subjectRefusal('the subject', 'manage-sessions')}`;
+        }
         return `Refused: ${subjectRefusal('the subject', 'manage-users')}`;
       }
       return `Refused: ${failure.problem.detail ?? failure.problem.title}`;

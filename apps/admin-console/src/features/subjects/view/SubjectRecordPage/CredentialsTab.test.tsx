@@ -177,7 +177,6 @@ it('offers to end the sessions only when the last factor goes, unticked, and end
     subjectRoutes(undefined, {
       [`GET ${C}/credentials`]: json(only),
       [`DELETE ${C}/credentials/c-totp`]: noContent(),
-      [`DELETE ${C}/sessions`]: json({ ended: 2 }),
     }),
   );
   await user.click(
@@ -192,8 +191,11 @@ it('offers to end the sessions only when the last factor goes, unticked, and end
   await user.click(box);
   await user.click(within(dialog).getByRole('button', { name: 'Remove' }));
   await waitFor(() => {
-    expect(sent.some((s) => s.method === 'DELETE' && s.path === `${C}/sessions`)).toBe(true);
+    expect(sent.find((s) => s.path === `${C}/credentials/c-totp`)?.search.toString()).toBe(
+      'end_sessions=true',
+    );
   });
+  expect(sent.some((s) => s.path === `${C}/sessions`)).toBe(false);
 });
 
 it('offers no session choice while another second factor remains', async () => {

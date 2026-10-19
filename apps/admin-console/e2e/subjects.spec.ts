@@ -429,6 +429,10 @@ test('removing the last second factor revokes the recovery codes with it, and of
     dialog.getByRole('checkbox', { name: `Also end ${username}’s sessions` }),
   ).not.toBeChecked();
   await expectAccessible(page);
+  await dialog.getByText(`Also end ${username}’s sessions`).click();
+  await expect(
+    dialog.getByRole('checkbox', { name: `Also end ${username}’s sessions` }),
+  ).toBeChecked();
   await dialog.getByRole('button', { name: 'Remove' }).click();
   await expect(dialog).toBeHidden();
   await expect(page.getByText(/has no authenticator app or passkey enrolled/u)).toBeVisible();

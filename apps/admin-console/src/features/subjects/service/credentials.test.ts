@@ -169,6 +169,14 @@ describe('credential changes', () => {
     expect(credentialFailureText('The change', refusal(403))).toBe(
       'Refused: it needs the manage-users capability, or the subject holds an admin capability you do not.',
     );
+    expect(
+      credentialFailureText(
+        'The change',
+        refusal(403, { detail: 'end_sessions needs manage-sessions' }),
+      ),
+    ).toBe(
+      'Refused: it needs the manage-sessions capability, or the subject holds an admin capability you do not.',
+    );
     expect(credentialFailureText('The change', refusal(500, { detail: 'boom' }))).toBe(
       'Refused: boom',
     );
