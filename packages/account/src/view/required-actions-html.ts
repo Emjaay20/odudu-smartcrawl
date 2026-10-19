@@ -1,5 +1,24 @@
 import { type PageLocale, type RenderedPage } from '@odudu/kernel';
+import { type LinkedRequiredAction } from '#/usecase/action-token';
 import { escapeHtml, page } from '#/view/document';
+import { bdi, t, tHtml, type MessageId } from '#/view/messages';
+
+const ACTION_MESSAGE: Readonly<Record<LinkedRequiredAction, MessageId>> = {
+  'update-password': 'requiredActions.action.updatePassword',
+  'configure-totp': 'requiredActions.action.configureTotp',
+  'configure-passkey': 'requiredActions.action.configurePasskey',
+  'generate-recovery-codes': 'requiredActions.action.generateRecoveryCodes',
+};
+
+// An action this build has no wording for shows its code, isolated, rather
+// than nothing.
+function listHtml(actions: readonly LinkedRequiredAction[], locale: PageLocale): string {
+  const items = actions.map(
+    (action) =>
+      `<li>${Object.hasOwn(ACTION_MESSAGE, action) ? tHtml(locale, ACTION_MESSAGE[action]) : bdi(action)}</li>`,
+  );
+  return `<ul>\n${items.join('\n')}\n</ul>`;
+}
 
 // An actions link's own page, shown before anything is consumed: a link
 // scanner's GET must not spend it. A password field only where the link
@@ -7,25 +26,22 @@ import { escapeHtml, page } from '#/view/document';
 export function renderRequiredActionsForm(
   tenant: string,
   key: string,
-  actionLabels: readonly string[],
+  actions: readonly LinkedRequiredAction[],
   setsPassword: boolean,
   locale: PageLocale,
 ): RenderedPage {
   const action = `/tenants/${escapeHtml(tenant)}/login-actions/action-token`;
-  const items = actionLabels.map((label) => `<li>${escapeHtml(label)}</li>`).join('\n');
   const password = setsPassword
-    ? '\n  <label>New password <input type="password" name="password" autocomplete="new-password"></label>'
+    ? `\n  <label>${tHtml(locale, 'requiredActions.newPassword')} <input type="password" name="password" autocomplete="new-password"></label>`
     : '';
   return page(
-    'Update your account',
-    `<h1>Update your account</h1>
-<p>Your administrator asks you to:</p>
-<ul>
-${items}
-</ul>
+    t(locale, 'requiredActions.title'),
+    `<h1>${tHtml(locale, 'requiredActions.title')}</h1>
+<p>${tHtml(locale, 'requiredActions.intro')}</p>
+${listHtml(actions, locale)}
 <form method="post" action="${action}">
   <input type="hidden" name="key" value="${escapeHtml(key)}">${password}
-  <button type="submit">Continue</button>
+  <button type="submit">${tHtml(locale, 'requiredActions.continue')}</button>
 </form>`,
     null,
     [],
@@ -34,19 +50,17 @@ ${items}
 }
 
 export function renderRequiredActionsSucceededPage(
-  remaining: readonly string[],
+  remaining: readonly LinkedRequiredAction[],
   locale: PageLocale,
 ): RenderedPage {
   const rest =
     remaining.length === 0
-      ? '<p>You can close this page and sign in to the application.</p>'
-      : `<p>Sign in to the application to finish:</p>
-<ul>
-${remaining.map((label) => `<li>${escapeHtml(label)}</li>`).join('\n')}
-</ul>`;
+      ? `<p>${tHtml(locale, 'requiredActions.succeeded.close')}</p>`
+      : `<p>${tHtml(locale, 'requiredActions.succeeded.finish')}</p>
+${listHtml(remaining, locale)}`;
   return page(
-    'Account updated',
-    `<h1>Your account is updated</h1>
+    t(locale, 'requiredActions.succeeded.title'),
+    `<h1>${tHtml(locale, 'requiredActions.succeeded.heading')}</h1>
 ${rest}`,
     null,
     [],

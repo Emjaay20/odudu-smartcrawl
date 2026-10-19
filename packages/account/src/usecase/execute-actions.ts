@@ -80,7 +80,7 @@ export interface CompleteRequiredActionsDeps {
 }
 
 export type CompleteRequiredActionsResult =
-  | { kind: 'done'; remaining: readonly string[] }
+  | { kind: 'done'; remaining: readonly LinkedRequiredAction[] }
   | { kind: 'invalid' }
   | { kind: 'password_required' }
   | { kind: 'invalid_password'; violations: PolicyViolation[] };
@@ -144,7 +144,7 @@ export async function completeRequiredActions(
       const remaining = actions.filter((action) => action !== 'update-password');
       if (remaining.length > 0)
         await deps.addRequiredActions(tx, deps.tenantId, record.subjectId, remaining);
-      return { kind: 'done', remaining: remaining.map(actionLabel) };
+      return { kind: 'done', remaining };
     },
     deps.request,
   );

@@ -58,6 +58,18 @@ export const en = {
     'It may have already been used or expired. Request a new one and try again.',
   'reset.cannotReset.title': "Can't reset your password",
   'reset.required.reason': 'A new password is required.',
+  'requiredActions.title': 'Update your account',
+  'requiredActions.intro': 'Your administrator asks you to:',
+  'requiredActions.newPassword': 'New password',
+  'requiredActions.continue': 'Continue',
+  'requiredActions.action.updatePassword': 'Choose a new password',
+  'requiredActions.action.configureTotp': 'Set up an authenticator app',
+  'requiredActions.action.configurePasskey': 'Register a passkey',
+  'requiredActions.action.generateRecoveryCodes': 'Save a set of recovery codes',
+  'requiredActions.succeeded.title': 'Account updated',
+  'requiredActions.succeeded.heading': 'Your account is updated',
+  'requiredActions.succeeded.close': 'You can close this page and sign in to the application.',
+  'requiredActions.succeeded.finish': 'Sign in to the application to finish:',
 };
 
 export type MessageId = keyof typeof en;

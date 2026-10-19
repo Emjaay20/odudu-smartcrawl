@@ -205,7 +205,7 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
         renderRequiredActionsForm(
           request.params.tenant,
           key,
-          peeked.actionLabels,
+          peeked.actions,
           peeked.setsPassword,
           locale,
         ),

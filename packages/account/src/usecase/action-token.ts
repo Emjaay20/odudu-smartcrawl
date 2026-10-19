@@ -1,7 +1,9 @@
 import { withTenant, type DatabaseHandle } from '@odudu/db';
 import { actionTokenRepository } from '#/repository/action-tokens';
 import { type ActionTokenType } from '#/schema/action-tokens';
-import { actionLabel, orderedActions } from '#/service/required-actions';
+import { orderedActions, type LinkedRequiredAction } from '#/service/required-actions';
+
+export type { LinkedRequiredAction };
 
 export interface PeekActionTokenDeps {
   readonly database: DatabaseHandle;
@@ -12,8 +14,8 @@ export type PeekActionTokenResult =
   | {
       kind: 'usable';
       type: ActionTokenType;
-      /** An actions link's actions, as a subject reads them; empty for any other link. */
-      actionLabels: readonly string[];
+      /** An actions link's actions, in the order they are asked; empty for any other link. */
+      actions: readonly LinkedRequiredAction[];
       /** Whether an actions link asks for a new password. */
       setsPassword: boolean;
     }
@@ -36,7 +38,7 @@ export async function peekActionToken(
   return {
     kind: 'usable',
     type: peeked.type,
-    actionLabels: actions.map(actionLabel),
+    actions,
     setsPassword: actions.includes('update-password'),
   };
 }
