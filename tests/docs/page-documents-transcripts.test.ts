@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_PAGE_LOCALE as LOCALE } from '../../packages/kernel/src/index.js';
+import {
+  renderAuthorizeErrorPage,
+  type WayOn,
+} from '../../packages/protocol-oidc/src/view/authorize-html.js';
+import { renderConsentPage } from '../../packages/protocol-oidc/src/view/consent-html.js';
 import { page } from '../../packages/protocol-oidc/src/view/document.js';
+import {
+  renderLoggedOutPage,
+  renderLogoutConfirmationPage,
+  renderLogoutUnauthenticatedPage,
+  renderNoActiveSessionPage,
+} from '../../packages/protocol-oidc/src/view/logout-html.js';
+import { renderSelectAccountPage } from '../../packages/protocol-oidc/src/view/select-account-html.js';
+import { renderThrottledPage } from '../../packages/protocol-oidc/src/view/throttled-html.js';
 import { loadDocument, scanFences } from './markdown.js';
 
 // A recorded page response is a claim about bytes: its `content-length` is
@@ -97,6 +111,140 @@ describe('the page documents the guides record', () => {
           text.slice(titleEnd + BETWEEN.length, text.length - AFTER_BODY.length),
         ).html === text;
       return ok ? [] : [block.where];
+    });
+    expect(drift).toEqual([]);
+  });
+});
+
+// The page's own markup, as recorded: what sits between the shell's mark and
+// its closing `</main>`.
+function bodyOf(block: Recorded): string {
+  const text = documentOf(block).join('\n').replace(RELOAD_ON_RESTORE, '\n</body>');
+  const titleEnd = text.indexOf(BETWEEN, BEFORE_TITLE.length);
+  return text.slice(titleEnd + BETWEEN.length, text.length - AFTER_BODY.length);
+}
+
+const titleOf = (block: Recorded): string =>
+  unescaped(/<title>([^<]*)<\/title>/u.exec(documentOf(block).join('\n'))?.[1] ?? '');
+const first = (text: string, pattern: RegExp): string => unescaped(pattern.exec(text)?.[1] ?? '');
+const all = (text: string, pattern: RegExp): string[] =>
+  [...text.matchAll(pattern)].map((m) => unescaped(m[1] ?? ''));
+
+// What the recorded markup says its inputs were, put back through the real
+// renderer: a page whose text or markup the server no longer produces for the
+// same inputs is named here. It cannot see a branch no recording takes, the
+// login forms (too many inputs to read back), the pages of authn-flows,
+// account or the console, or a value the markup does not show.
+const RENDER_BACK: Record<string, (body: string) => string> = {
+  'Allow access?': (body) => {
+    const link = (label: RegExp): string | null => {
+      const href = /<a href="([^"]*)">/u;
+      const found = new RegExp(`<a href="[^"]*">${label.source}</a>`, 'u').exec(body);
+      return found === null ? null : first(found[0], href);
+    };
+    const optional = [
+      ...body.matchAll(
+        /<label><input type="checkbox" name="scope" value="([^"]*)"( checked)?> <bdi>([^<]*)<\/bdi>/gu,
+      ),
+    ];
+    return renderConsentPage(
+      {
+        tenant: first(body, /action="\/tenants\/([^/"]*)\//u),
+        authSessionId: first(body, /name="auth_session_id" value="([^"]*)"/u),
+        clientName: first(body, /<h1><bdi>(.*?)<\/bdi> is asking/u),
+        clientPages: {
+          clientUri: link(/About <bdi>.*?<\/bdi>/u),
+          policyUri: link(/Privacy policy/u),
+          tosUri: link(/Terms of service/u),
+        },
+        defaultScopes: all(body.slice(body.indexOf('<ul>')), /^ {2}<li><bdi>(.*)<\/bdi><\/li>$/gmu),
+        optionalScopes: optional.map((m) => unescaped(m[1] ?? '')),
+        alreadyGranted: optional
+          .filter((m) => m[2] !== undefined)
+          .map((m) => unescaped(m[1] ?? '')),
+        scopeLabels: Object.fromEntries(
+          optional.map((m) => [unescaped(m[1] ?? ''), unescaped(m[3] ?? '')]),
+        ),
+      },
+      LOCALE,
+    ).body;
+  },
+  'Choose an account': (body) =>
+    renderSelectAccountPage(
+      {
+        tenant: first(body, /action="\/tenants\/([^/"]*)\//u),
+        authSessionId: first(body, /name="auth_session_id" value="([^"]*)"/u),
+        accounts: [...body.matchAll(/name="session_id" value="([^"]*)"><bdi>(.*?)<\/bdi>/gu)].map(
+          (m) => ({ sessionId: unescaped(m[1] ?? ''), displayName: unescaped(m[2] ?? '') }),
+        ),
+      },
+      LOCALE,
+    ).body,
+  'Sign-in error': (body) => {
+    const href = /<p><a href="([^"]*)">([^<]*)<\/a><\/p>/u.exec(body);
+    const wayOn: WayOn | undefined =
+      href === null
+        ? undefined
+        : {
+            kind: href[2] === 'Start sign-in again' ? 'restart' : 'return',
+            href: unescaped(href[1] ?? ''),
+          };
+    return renderAuthorizeErrorPage(
+      first(body, /<small>(.*)<\/small>/u),
+      first(body, /<p><bdi>(.*)<\/bdi><\/p>/u),
+      wayOn,
+      LOCALE,
+    ).body;
+  },
+  'Sign out?': (body) =>
+    renderLogoutConfirmationPage(
+      first(body, /action="\/tenants\/([^/"]*)\//u),
+      first(body, /name="session_id" value="([^"]*)"/u),
+      first(body, /name="csrf" value="([^"]*)"/u),
+      {
+        clientId: /name="client_id" value="([^"]*)"/u.test(body)
+          ? first(body, /name="client_id" value="([^"]*)"/u)
+          : null,
+        postLogoutRedirectUri: body.includes('name="post_logout_redirect_uri"')
+          ? first(body, /name="post_logout_redirect_uri" value="([^"]*)"/u)
+          : null,
+        state: body.includes('name="state"') ? first(body, /name="state" value="([^"]*)"/u) : null,
+      },
+      LOCALE,
+    ).body,
+  "Can't sign out": () => renderLogoutUnauthenticatedPage(LOCALE).body,
+  'Already signed out': () => renderNoActiveSessionPage(LOCALE).body,
+  'Too many attempts': (body) =>
+    renderThrottledPage(Number(first(body, /Try again in (\d+) second/u)), LOCALE).body,
+  'Signed out': (body) => {
+    const frames = all(body, /<iframe src="([^"]*)"><\/iframe>/gu);
+    return renderLoggedOutPage(frames, LOCALE).body;
+  },
+};
+
+// Every complete document in the guides, with or without the response head
+// above it.
+function documents(): Recorded[] {
+  return GUIDES.flatMap((guide) =>
+    scanFences(loadDocument(guide)).spans.flatMap((span) =>
+      span.body.includes('<!doctype html>')
+        ? [{ where: `${guide}:${String(span.startLine)}`, lines: span.body }]
+        : [],
+    ),
+  ).filter((block) => !isPartial(block));
+}
+
+describe('the pages the guides record are what the renderers produce for the same inputs', () => {
+  it('covers a consent screen, so an empty scan cannot pass', () => {
+    expect(documents().some((block) => titleOf(block) === 'Allow access?')).toBe(true);
+  });
+
+  it('renders each recorded body back to the same markup', () => {
+    const drift = documents().flatMap((block) => {
+      const render = RENDER_BACK[titleOf(block)];
+      if (render === undefined) return [];
+      const body = bodyOf(block);
+      return render(body) === body ? [] : [block.where];
     });
     expect(drift).toEqual([]);
   });

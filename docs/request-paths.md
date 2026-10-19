@@ -51,7 +51,12 @@ registration), the account chooser and the unverified-email page were
 each run again on the project `odudu-p4g-14`; every changed line and every
 changed `content-length` in the recorded blocks is the byte-for-byte result of
 that change, checked against those runs, and the blocks were not replayed end
-to end. The sign-in refusal comparison under
+to end. The two consent screens in [docs/admin-paths.md](admin-paths.md) were
+re-run the same way on that project, and `tests/docs/page-documents-transcripts.test.ts`
+now renders each recorded consent, chooser, error, logout and throttle body back
+through the real renderer. Every sentence from the catalogue sits in `<bdi>` on
+the error page too, not only text somebody typed, since the page cannot tell them
+apart. The sign-in refusal comparison under
 [A refused login says so](#a-refused-login-says-so) is a fresh run.
 
 Values that change on every run — authorization codes, tokens, `jti`,

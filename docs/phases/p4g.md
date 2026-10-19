@@ -739,10 +739,20 @@ semver tag there.
 - The login refusal constants are catalogue ids; `refusalMessage` returns an id
   and the page formats it. The page is still no oracle: one id per step.
 - Literals that stay: the protocol `error_description` an authorization error
-  passes through (`outcome.description`, the `415` media-type sentence and
-  `PASSWORD_TOO_LONG.message` from the kernel, which the account pages share)
-  are developer-facing text under ADR 0043 and are isolated in `<bdi>`, not
-  translated; the `·` between a client's links; the `<small>` error code;
-  a value attribute that echoes the username (an attribute is its own isolation).
-- Owner: the kernel's `PASSWORD_TOO_LONG.message` is user-visible in two
-  packages and moves with increment 16 (account), where its other reader is.
+  passes through (`outcome.description`) and the `415` media-type sentence are
+  developer-facing under ADR 0043 and are isolated in `<bdi>`, not translated;
+  the `·` between a client's links; the `<small>` error code; a value attribute
+  that echoes the username (an attribute is its own isolation).
+- Password-policy sentences: the kernel's `PASSWORD_TOO_LONG.message` and the
+  rule messages in `packages/domain-identity/src/service/password-policy.ts`
+  (lines 55 to 110) stay developer-facing English, because domain packages hold
+  no catalogue. Every **view** that shows one to a person maps the rule code to
+  a catalogue id of its own package, with the limit as an ICU argument
+  (`error.passwordTooLong` takes `{max}`). protocol-oidc does it now
+  (`routes/login.ts`, `routes/required-action.ts`); the other sites are named in
+  the plan under Tasks 15, 16 and 17c.
+- The passkey script swaps `{reason}` with a replacer function, so a browser
+  reason holding `$&` is not interpreted; `throttled.retryAfter` formats with
+  `::group-off`, so 3600 seconds reads `3600`, as before. The
+  `page-documents-transcripts` test now renders each recorded consent, chooser,
+  error, logout and throttle body back through the real renderer.

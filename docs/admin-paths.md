@@ -4930,13 +4930,13 @@ the one box the subject can grant:
 <body>
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<h1>consents-demo-app2 is asking for access</h1>
+<h1><bdi>consents-demo-app2</bdi> is asking for access</h1>
 <form method="post" action="/tenants/consents-demo2/login-actions/consent">
   <input type="hidden" name="auth_session_id" value="01a0e558-b0a9-763b-84f8-f348efaacd53">
   <ul>
-  <li>openid</li>
+  <li><bdi>openid</bdi></li>
   </ul>
-  <label><input type="checkbox" name="scope" value="offline_access"> offline_access — grants ongoing access, even while you are not present</label>
+  <label><input type="checkbox" name="scope" value="offline_access"> <bdi>offline_access</bdi> — grants ongoing access, even while you are not present</label>
   <button type="submit" name="decision" value="allow">Allow</button>
   <button type="submit" name="decision" value="deny">Deny</button>
 </form>
@@ -7940,7 +7940,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 1286
+content-length: 1341
 Date: Wed, 14 Oct 2026 00:41:01 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -7958,15 +7958,15 @@ Keep-Alive: timeout=72
 <body>
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<h1>Consent &lt;Portal&gt; is asking for access</h1>
+<h1><bdi>Consent &lt;Portal&gt;</bdi> is asking for access</h1>
 <form method="post" action="/tenants/demo/login-actions/consent">
   <input type="hidden" name="auth_session_id" value="01a137da-fe1b-73d0-adb7-877a0657f131">
   <ul>
-  <li>openid</li>
-  <li>Your name &amp; &lt;picture&gt;</li>
+  <li><bdi>openid</bdi></li>
+  <li><bdi>Your name &amp; &lt;picture&gt;</bdi></li>
   </ul>
-  <label><input type="checkbox" name="scope" value="offline_access"> offline_access — grants ongoing access, even while you are not present</label>
-  <label><input type="checkbox" name="scope" value="billing"> See and pay your invoices</label>
+  <label><input type="checkbox" name="scope" value="offline_access"> <bdi>offline_access</bdi> — grants ongoing access, even while you are not present</label>
+  <label><input type="checkbox" name="scope" value="billing"> <bdi>See and pay your invoices</bdi></label>
   <button type="submit" name="decision" value="allow">Allow</button>
   <button type="submit" name="decision" value="deny">Deny</button>
 </form>
