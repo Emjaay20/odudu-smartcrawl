@@ -274,6 +274,9 @@ importers:
       '@odudu/server':
         specifier: workspace:*
         version: link:../server
+      '@odudu/web-assets':
+        specifier: workspace:*
+        version: link:../../packages/web-assets
       '@playwright/test':
         specifier: 1.63.0
         version: 1.63.0
@@ -286,6 +289,9 @@ importers:
       docusaurus-plugin-llms:
         specifier: 0.6.1
         version: 0.6.1(@docusaurus/core@3.10.2(@docusaurus/faster@3.10.2(@docusaurus/types@3.10.2(@swc/core@1.16.18(@swc/helpers@0.5.23))(@swc/html@1.16.18)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.28))(csso@5.0.5)(esbuild@0.28.2)(html-minifier-terser@7.2.0)(lightningcss@1.33.0)(postcss@8.5.28)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@7.2.0)(svgo@3.3.5))(@swc/helpers@0.5.23)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.28))(csso@5.0.5)(esbuild@0.28.2)(html-minifier-terser@7.2.0)(postcss@8.5.28)(svgo@3.3.5))(@mdx-js/react@3.1.1(@types/react@19.3.0)(react@19.3.0))(@rspack/core@1.7.12(@swc/helpers@0.5.23))(@swc/core@1.16.18(@swc/helpers@0.5.23))(@swc/html@1.16.18)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.28))(csso@5.0.5)(debug@4.4.3(supports-color@7.2.0))(esbuild@0.28.2)(html-minifier-terser@7.2.0)(lightningcss@1.33.0)(postcss@8.5.28)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@7.2.0)(svgo@3.3.5)(typescript@6.0.3))
+      fastify:
+        specifier: 5.12.5
+        version: 5.12.5
       mdast-util-from-markdown:
         specifier: 2.1.0
         version: 2.1.0(supports-color@7.2.0)
