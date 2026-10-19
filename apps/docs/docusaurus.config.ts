@@ -3,6 +3,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 import { themes } from 'prism-react-renderer';
 import path from 'node:path';
 import agentCopies from './plugins/agent-copies';
+import { contentDir } from './plugins/content-dir';
 import { requireDescriptions } from './plugins/descriptions';
 import imageStrip from './plugins/image-strip';
 import robots from './plugins/robots';
@@ -10,8 +11,8 @@ import { NAVBAR_ROUTES, REPOSITORY_URL, SECTIONS } from './nav';
 import { siteHeadTags } from './seo';
 import { PAGES_BASE, SITE_ORIGIN } from './site.config';
 
-const CONTENT = process.env.DOCS_CONTENT ?? 'content/en';
-requireDescriptions(path.resolve(CONTENT));
+const CONTENT = contentDir(process.env.DOCS_CONTENT);
+requireDescriptions(path.resolve(__dirname, CONTENT));
 
 const DESCRIPTION =
   'Odudu is a self-hosted OpenID Connect and OAuth 2.0 identity provider. Each page below is plain Markdown.';

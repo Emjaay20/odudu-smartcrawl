@@ -157,14 +157,18 @@ describe('the Pages build is indexable HTML', () => {
     expect(existsSync(path.join(distDir('pages'), 'brand/social.png'))).toBe(true);
   });
 
-  it('names a locale alternate for the page and no other language yet', () => {
+  it('names the page and the default as its only alternates while English is the only language', () => {
     expect(
       violations((page) => {
         const alternates = page
           .$('head link[rel="alternate"][hreflang]')
           .map((_, element) => page.$(element).attr('hreflang') ?? '')
           .get();
-        return alternates.includes('en') ? null : `hreflang ${alternates.join(',')}`;
+        const wanted = ['en', 'x-default'];
+        return alternates.length === wanted.length &&
+          wanted.every((tag) => alternates.includes(tag))
+          ? null
+          : `hreflang ${alternates.join(',')}`;
       }),
     ).toEqual([]);
   });
@@ -248,7 +252,17 @@ describe('the Pages build is indexable HTML', () => {
         .map((page) => `${SITE_ORIGIN}${page.route}`)
         .sort(),
     );
-    expect(locs.filter((loc) => /404|search/u.test(loc))).toEqual([]);
+    const excluded = ['404.html', 'search/'].map((route) => `${SITE_ORIGIN}${BASE}${route}`);
+    expect(locs.filter((loc) => excluded.includes(loc))).toEqual([]);
+  });
+
+  it('says nothing to keep a page out of an index', () => {
+    expect(
+      violations((page) => {
+        const robots = meta(page, 'name', 'robots');
+        return robots.length === 0 ? null : `robots ${robots.join(',')}`;
+      }),
+    ).toEqual([]);
   });
 
   it('points robots.txt at the sitemap and disallows nothing', () => {

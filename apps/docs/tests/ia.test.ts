@@ -103,6 +103,11 @@ describe('the stub pages', () => {
     expect(marked.filter((file) => !unfilled.includes(file))).toEqual([]);
   });
 
+  // Set by the step that closes the documentation, where no page may remain a stub.
+  it.runIf(process.env.DOCS_REQUIRE_FILLED === '1')('lists no page at all', () => {
+    expect(unfilled).toEqual([]);
+  });
+
   it('lists only pages that still carry the marker', () => {
     const stale = unfilled.filter((file) => {
       const full = path.join(CONTENT, file);

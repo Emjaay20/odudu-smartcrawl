@@ -1165,6 +1165,16 @@ image` (0 then 9 per index part). The test now asserts the nine sections are in 
   plan's text still says `dist-pages` and `dist-image` (D4, Task 31b, Task 35's guard b);
   the output is `dist/pages` and `dist/image`.
 
+- **Two console tests fail when run alone under the root `dom` project.**
+  `apps/admin-console/src/shared/transport/gateway.test.ts` ("refuses a path
+  that would leave /console/api/") and
+  `apps/admin-console/src/shared/repository/useWrite.test.tsx` ("throws a
+  rejection from a plain write...") fail with an empty message under
+  `vitest run --project dom <file>`, and pass under the package's own `pnpm test`,
+  which is what CI runs. Confirmed unrelated to the theme work on 16cdf4e9,
+  before it. Cause not found. Owner: the CI-speed task, which changes how the
+  console's tests are run and has to settle one way of running them.
+
 ### Increment 18b: SEO and metadata
 
 - The tests are `tests/seo.test.ts` (pure units), `tests/seo-html.test.ts` (both builds,
@@ -1201,16 +1211,6 @@ underline`, the prism themes) were already in place from the shell; Lighthouse i
 - turbo: `seo.ts` joins the docs build and test inputs (hash `48780ee17da6bae9` becomes
   `e716fd6beeb52b3c` after a line is appended).
 
-- **Two console tests fail when run alone under the root `dom` project.**
-  `apps/admin-console/src/shared/transport/gateway.test.ts` ("refuses a path
-  that would leave /console/api/") and
-  `apps/admin-console/src/shared/repository/useWrite.test.tsx` ("throws a
-  rejection from a plain write...") fail with an empty message under
-  `vitest run --project dom <file>`, and pass under the package's own `pnpm test`,
-  which is what CI runs. Confirmed unrelated to the theme work on 16cdf4e9,
-  before it. Cause not found. Owner: the CI-speed task, which changes how the
-  console's tests are run and has to settle one way of running them.
-
 ### Increment 18c: readable by agents
 
 - `docusaurus-plugin-llms` 0.6.1 is pinned exactly. verified: `pnpm view
@@ -1246,3 +1246,66 @@ docusaurus-plugin-llms@0.6.1 license` prints `MIT`, a dev-only dependency that n
   (listing test, Pages), `keepFrontMatter` set (copy keeps front matter), the image built
   with `useRelativeUrls: false` (names `http://localhost`), the base dropped from a rewritten
   link (unit and generated-page tests).
+
+### CI runs what a change can affect
+
+ADR 0044 has the design. Findings that belong to this phase:
+
+- **The `docs` job's timeout was a hang, not a slow build.** verified: `gh run view --job
+118032200829 --log` shows `pnpm --filter @odudu/docs test` running the `browser` project
+  before Chromium was installed, then `[vitest-pool]: Timeout terminating forks worker`
+  and nothing more until cancellation. `afterAll` called `browser.close()` on `undefined`
+  before `server.kill()`, so the `serve.mjs` child held the worker open. Reproduced
+  locally with `PLAYWRIGHT_BROWSERS_PATH=/nonexistent`: the old file hung until
+  killed (exit 142 from a 60 s alarm), the new one fails in under a second.
+  The same hang followed `protocol-admin`'s tests at the end of the cancelled `verify`.
+- The docs `test` script now runs `--project unit`; `test:browser` runs after
+  Chromium is installed. The build lock in `tests/support/lock.ts` steals a lock whose
+  owner is gone or that is older than its deadline, releases in `finally`, and is per
+  checkout; builds have a timeout.
+- verified: `ODUDU_TEST_SHARD=1/2 turbo run test --filter=@odudu/kernel` then `2/2` then
+  unset give three different task hashes while `@odudu/contracts:typecheck` keeps one
+  (`cache hit`); a `--shard` argument after `--` changed the typecheck hash too.
+- verified: `turbo run test --affected --dry=json` with the base at `HEAD~1`, where the
+  commit touched only `docs/phases/p4g.md`, lists no test task, though
+  `tests/docs` reads that directory. `--affected` is not used.
+- The two console dom tests the notes above recorded as failing alone did not fail on
+  2026-10-19: `vitest run --project dom <both files>`, each file alone, and
+  `vitest run <both files>` all passed. Left open in `docs/NEXT.md`.
+- assumption: GitHub reports a skipped job as passing for a required check, and
+  `actions/cache/save@v6` on an existing key warns rather than fails. Look at the first
+  docs-only run and at a rerun of one commit.
+
+### Increment 18c, fix round
+
+- **The rewrite is tested against hand-written expectations**, one row per link form for
+  both bases (`agent-links.test.ts`): inline links and images with titles, fragments and
+  queries, balanced parentheses in a URL, `<...>` destinations, reference definitions, raw
+  `<a href>`/`<img src>` with quoted attributes, and the forms that must be left alone
+  (autolinks, other hosts, fences, inline code). Raw HTML is read one line at a time and
+  only with quoted attributes; the plugin drops raw tags from its copies anyway, so a raw
+  anchor does not survive into one.
+- **Every reference in a copy is checked by a CommonMark parser**, `mdast-util-from-markdown`
+  2.1.0 (already in the tree through Docusaurus's MDX stack; pinned directly because the
+  tests import it): links, images, definitions, autolinks and raw HTML attributes must be
+  fragments, external, or under the build's prefix and resolve to a file the build wrote.
+  The body of a copy is compared with its source by node type and text, ignoring
+  addresses, so the rewriter is not on both sides of the comparison.
+- **Slugs.** A page with a front-matter `slug` has a copy named by its route, which no
+  source file matches, so the build fails with `No source page for the Markdown copy`
+  (tested). Authors of pages, generated ones included, must not set `slug`, a numeric
+  file-name prefix, or a `dir/dir.md` index until the copy is mapped by the page's route.
+- **`---js` front matter** (and any other language tag) is refused by
+  `plugins/descriptions.ts`: the front-matter reader evaluates it, so the documentation
+  is trusted to be authored by maintainers only. `description: ""` counts as missing and
+  a file or directory starting with `_` is skipped, as Docusaurus skips it.
+- **`DOCS_CONTENT`** is refused unless it names a directory under `node_modules/.cache/`
+  (`plugins/content-dir.ts`), so a deploy that inherits it cannot publish a fixture.
+- **Closing the stubs.** `tests/unfilled.json` is already held both ways by `ia.test.ts`.
+  With `DOCS_REQUIRE_FILLED=1` a further test requires it to be `[]`; the step that closes
+  the documentation sets it for the docs tests (turbo does not hash it, so that step runs
+  vitest directly or with the cache bypassed).
+- Smaller: `stripForImage` reads `rel` as a token list; the `llms.txt` line parser keeps a
+  `]` inside a title; the seo tests assert the hreflang set exactly, the sitemap's excluded
+  routes exactly, and that Pages pages carry no robots meta (the image test already asserts
+  noindex on every image page).

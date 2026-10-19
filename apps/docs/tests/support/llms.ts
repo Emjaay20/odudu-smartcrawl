@@ -18,7 +18,7 @@ export function addressPrefix(target: Target): string {
 
 export function entriesOf(llmsTxt: string): Entry[] {
   return llmsTxt.split('\n').flatMap((line) => {
-    const match = /^- \[([^\]]+)\]\((\S+)\)(?:: (.*))?$/u.exec(line);
+    const match = /^- \[(.+)\]\((\S+?)\)(?:: (.*))?$/u.exec(line);
     return match === null
       ? []
       : [{ title: match[1] ?? '', url: match[2] ?? '', description: match[3] ?? '' }];

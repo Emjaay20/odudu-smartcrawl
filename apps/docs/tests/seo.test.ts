@@ -3,7 +3,11 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { landingJsonLd, siteHeadTags, stripForImage } from '#docs/seo.ts';
-import { missingDescriptions, requireDescriptions } from '#docs/plugins/descriptions.ts';
+import {
+  codeFrontMatter,
+  missingDescriptions,
+  requireDescriptions,
+} from '#docs/plugins/descriptions.ts';
 import { expectLandingNodes, jsonLdNodes } from '#docs/tests/support/jsonld.ts';
 import { DOCS_ROOT } from '#docs/tests/support/dist.ts';
 
@@ -43,6 +47,7 @@ describe('stripping the public signals for the private image', () => {
     '<link data-rh=true rel=canonical href=https://a.test/x/ />',
     '<link data-rh="true" rel="alternate" href="https://a.test/x/" hreflang="en"/>',
     '<link data-rh=true rel=alternate href=https://a.test/x/ hreflang=x-default />',
+    '<link rel="alternate stylesheet" href="/a-alt.css">',
     '<meta data-rh=true property=og:url content=https://a.test/x/ />',
     '<meta data-rh="true" property="og:url" content="https://a.test/x/"/>',
     '<script data-rh=true type=application/ld+json>{"@type":"BreadcrumbList"}</script>',
@@ -54,6 +59,9 @@ describe('stripping the public signals for the private image', () => {
     '<link rel=stylesheet href=/docs/a.css />',
     '<script src=/docs/a.js defer></script>',
     '<meta name=robots content=noindex>',
+    '<link rel=canonicalised href=/kept-a />',
+    '<link data-rel=canonical href=/kept-b />',
+    '<link rel="preload canonicals" href="/kept-c">',
   ];
 
   it('removes canonical, alternate, og:url and JSON-LD, quoted or not, and nothing else', () => {
@@ -93,9 +101,35 @@ describe('the front-matter description check', () => {
       'd.md': '---\ntitle: D\ndescription:\n---\n\n# D\n',
       'e.md': '---\ndescription: >\n  Folded onto the next line.\n---\n\n# E\n',
       'f.md': '---\ndescription: "Quoted."\n---\n\n# F\n',
+      'g.md': '---\ndescription: ""\n---\n\n# G\n',
+      'h.md': "---\ndescription: ''\n---\n\n# H\n",
+      'i.md': '---\ndescription: "   "\n---\n\n# I\n',
+      '_ignored.md': '# Docusaurus ignores a file that starts with an underscore\n',
+      '_dir/j.md': '# Nor a directory\n',
       'notes.txt': 'not a page',
     });
-    expect(missingDescriptions(dir)).toEqual(['b/index.md', 'c.mdx', 'd.md']);
+    expect(missingDescriptions(dir)).toEqual([
+      'b/index.md',
+      'c.mdx',
+      'd.md',
+      'g.md',
+      'h.md',
+      'i.md',
+    ]);
+  });
+
+  it('refuses front matter in a language that runs code', () => {
+    const dir = content({
+      'a.md': '---\ndescription: Fine.\n---\n',
+      'js.md': '---js\n{ description: "evaluated" }\n---\n',
+      'javascript.md': '---javascript\n{ description: "evaluated" }\n---\n',
+      'json.md': '---json\n{ "description": "x" }\n---\n',
+      'sub/toml.md': '---toml\ndescription = "x"\n---\n',
+    });
+    expect(codeFrontMatter(dir)).toEqual(['javascript.md', 'js.md', 'json.md', 'sub/toml.md']);
+    expect(() => {
+      requireDescriptions(dir);
+    }).toThrow(/front matter that is not plain YAML.*js\.md/su);
   });
 
   it('throws naming the pages, and is silent when every page has one', () => {

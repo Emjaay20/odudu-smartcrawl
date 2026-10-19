@@ -45,12 +45,20 @@ export function landingJsonLd(siteUrl: string): string {
 // The theme emits these whatever the configuration says, and a private
 // installation's copy of the pages must carry none of them. The build's
 // minifier may have dropped the attribute quotes.
+const LINK_TAG = /<link\b[^>]*>/gu;
+const REL = /\srel=(?:"([^"]*)"|'([^']*)'|([^\s>"']+))/u;
 const PUBLIC_SIGNALS = [
-  /<link\b[^>]*\brel="?(?:canonical|alternate)"?[^>]*>/gu,
   /<meta\b[^>]*\bproperty="?og:url"?[^>]*>/gu,
   /<script\b[^>]*\btype="?application\/ld\+json"?[^>]*>[\s\S]*?<\/script>/gu,
 ];
 
+function isPublicLink(tag: string): boolean {
+  const match = REL.exec(tag);
+  const tokens = (match?.[1] ?? match?.[2] ?? match?.[3] ?? '').split(/\s+/u);
+  return tokens.includes('canonical') || tokens.includes('alternate');
+}
+
 export function stripForImage(html: string): string {
-  return PUBLIC_SIGNALS.reduce((text, pattern) => text.replace(pattern, ''), html);
+  const links = html.replace(LINK_TAG, (tag) => (isPublicLink(tag) ? '' : tag));
+  return PUBLIC_SIGNALS.reduce((text, pattern) => text.replace(pattern, ''), links);
 }

@@ -5,7 +5,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PAGES_BASE, SITE_ORIGIN } from '#docs/site.config.ts';
 import { buildSite } from '#docs/tests/support/build.ts';
 import { DOCS_ROOT } from '#docs/tests/support/dist.ts';
-import { CONTENT_DIR, entriesOf } from '#docs/tests/support/llms.ts';
+import { CONTENT_DIR, addressPrefix, entriesOf } from '#docs/tests/support/llms.ts';
+import { referencesOf, unresolved } from '#docs/tests/support/links.ts';
 
 const EXAMPLE = `---
 title: Example
@@ -15,6 +16,10 @@ description: A generated page.
 # Example
 
 See [the intro](../../introduction/index.md), [a section](/quick-start/), [here](#here), [out](https://example.com/x), [next](./other.md#there) and ![icon](/brand/favicon.svg).
+
+A [reference link][ref], an autolink <https://example.com/auto>.
+
+[ref]: ../../concepts/index.md "Concepts"
 
 ## Here
 
@@ -81,6 +86,8 @@ describe('a generated page added to the documentation', () => {
       `[next](${site}reference/generated/other/#there)`,
       `![icon](${site}brand/favicon.svg)`,
       '[left alone](/quick-start/)',
+      `[ref]: ${site}concepts/ "Concepts"`,
+      '<https://example.com/auto>',
     ];
     const copy = read(pagesOut, 'reference/generated/example.md');
     const full = read(pagesOut, 'llms-full.txt');
@@ -100,4 +107,46 @@ describe('a generated page added to the documentation', () => {
     );
     expect(copy).not.toContain(new URL(SITE_ORIGIN).host);
   });
+
+  it.each([
+    ['pages', 'pagesOut'],
+    ['image', 'imageOut'],
+  ] as const)('points every reference of the %s build at something it wrote', (target, which) => {
+    const dir = which === 'pagesOut' ? pagesOut : imageOut;
+    const prefix = addressPrefix(target);
+    const stray = [
+      'reference/generated/example.md',
+      'reference/generated/other.md',
+      'llms-full.txt',
+    ].flatMap((file) => unresolved(read(dir, file), dir, prefix));
+    expect(stray).toEqual([]);
+    const all = referencesOf(read(dir, 'reference/generated/example.md'));
+    expect(all.filter((address) => address.startsWith('/') && !address.startsWith(prefix))).toEqual(
+      [],
+    );
+    expect(all.some((address) => address.endsWith('concepts/'))).toBe(true);
+  });
+});
+
+// A copy is named by its page's route and mapped back to its source by file name,
+// so a page whose route is not its path has no source to resolve its links against.
+describe('a page whose route is not its file path', () => {
+  it('fails the build, naming the copy that has no source', async () => {
+    const work = mkdtempSync(path.join(tmpdir(), 'odudu-docs-slug-'));
+    const relative = path.join('node_modules/.cache', `odudu-docs-slug-${String(process.pid)}`);
+    const dir = path.join(DOCS_ROOT, relative);
+    try {
+      cpSync(CONTENT_DIR, dir, { recursive: true });
+      writeFileSync(
+        path.join(dir, 'reference/slugged.md'),
+        '---\ntitle: Slugged\ndescription: A page with its own route.\nslug: /renamed\n---\n\n# Slugged\n',
+      );
+      await expect(buildSite(path.join(work, 'out'), { DOCS_CONTENT: relative })).rejects.toThrow(
+        /No source page for the Markdown copy renamed\.md/u,
+      );
+    } finally {
+      rmSync(work, { recursive: true, force: true });
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 300_000);
 });

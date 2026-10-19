@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { linkTargets, rewriteLinks } from '#docs/plugins/agent-links.ts';
 import { MACHINE_READABLE_REFERENCES } from '#docs/nav.ts';
 import { PAGES_BASE, SITE_ORIGIN } from '#docs/site.config.ts';
 import {
@@ -24,6 +23,7 @@ import {
   routeOfCopy,
   sourceOf,
 } from '#docs/tests/support/llms.ts';
+import { shapeOf, unresolved } from '#docs/tests/support/links.ts';
 
 const TARGETS: Target[] = ['pages', 'image'];
 
@@ -64,13 +64,9 @@ describe.each(TARGETS)('the agent copies of the %s build', (target) => {
         continue;
       }
       const written = readFileSync(path.join(distDir(target), copy), 'utf8');
-      const expected = rewriteLinks(readSource(CONTENT_DIR, source), source, {
-        base: baseOf(target),
-        origin: target === 'pages' ? SITE_ORIGIN : null,
-      });
-      if (normalised(written, entry.description) !== normalised(expected, entry.description)) {
-        wrong.push(copy);
-      }
+      const copyShape = shapeOf(normalised(written, entry.description));
+      const sourceShape = shapeOf(normalised(readSource(CONTENT_DIR, source), entry.description));
+      if (copyShape.join('\n') !== sourceShape.join('\n')) wrong.push(copy);
       if (written.startsWith('---')) wrong.push(`${copy}: keeps its front matter`);
     }
     expect(wrong).toEqual([]);
@@ -84,16 +80,12 @@ describe.each(TARGETS)('the agent copies of the %s build', (target) => {
     expect(missing).toEqual([]);
   });
 
-  it('resolves every link of every copy under the build', () => {
+  it('points every link of every copy at something the build wrote', () => {
     const prefix = addressPrefix(target);
-    const files = ['llms-full.txt', ...entries.map((entry) => copyPath(entry, target))];
+    const dir = distDir(target);
+    const files = ['llms.txt', 'llms-full.txt', ...entries.map((entry) => copyPath(entry, target))];
     const stray = files.flatMap((file) =>
-      linkTargets(read(target, file))
-        .filter(
-          (link) =>
-            !link.startsWith('#') && !/^(?:https?|mailto):/u.test(link) && !link.startsWith(prefix),
-        )
-        .map((link) => `${file}: ${link}`),
+      unresolved(read(target, file), dir, prefix).map((address) => `${file}: ${address}`),
     );
     expect(stray).toEqual([]);
   });

@@ -6,7 +6,13 @@ export interface LinkTarget {
 }
 
 const NOT_A_SITE_PATH = /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/iu;
-const LINK = /(!?\[[^\]\n]*\]\()([^)\s]+)((?:\s+"[^"\n]*")?\))/gu;
+// A destination is either `<...>` or a run that may hold one level of balanced parentheses.
+const DESTINATION = String.raw`<[^>\n]*>|(?:[^()\s]|\([^()\s]*\))+`;
+const TITLE = String.raw`(?:\s+(?:"[^"\n]*"|'[^'\n]*'|\([^)\n]*\)))?`;
+const LINK = new RegExp(String.raw`(!?\[[^\]\n]*\]\()(${DESTINATION})(${TITLE}\s*\))`, 'gu');
+const DEFINITION = new RegExp(String.raw`^(\s{0,3}\[[^\]\n]+\]:\s*)(${DESTINATION})`, 'u');
+// Raw HTML is read one line at a time and only for quoted attributes.
+const HTML_REFERENCE = /(<(?:a|img)\b[^>]*?\s(?:href|src)=)(?:"([^"]*)"|'([^']*)')/giu;
 const INLINE_CODE = /(`+[^`]*`+)/u;
 const FENCE = /^\s*(`{3,}|~{3,})/u;
 
@@ -33,16 +39,35 @@ function rewriteTarget(raw: string, source: string, target: LinkTarget): string 
   return `${target.origin ?? ''}${target.base}${sitePath.slice(1)}${rest}`;
 }
 
+function inBrackets(destination: string, replace: (raw: string) => string): string {
+  return destination.startsWith('<') && destination.endsWith('>')
+    ? `<${replace(destination.slice(1, -1))}>`
+    : replace(destination);
+}
+
 function mapLine(line: string, replace: (raw: string) => string): string {
-  return line
+  const defined = line.replace(
+    DEFINITION,
+    (_, open: string, destination: string) => `${open}${inBrackets(destination, replace)}`,
+  );
+  return defined
     .split(INLINE_CODE)
     .map((part, index) =>
       index % 2 === 1
         ? part
-        : part.replace(
-            LINK,
-            (_, open: string, raw: string, close: string) => `${open}${replace(raw)}${close}`,
-          ),
+        : part
+            .replace(
+              LINK,
+              (_, open: string, destination: string, close: string) =>
+                `${open}${inBrackets(destination, replace)}${close}`,
+            )
+            .replace(
+              HTML_REFERENCE,
+              (_, open: string, double: string | undefined, single: string | undefined) => {
+                const quote = double === undefined ? "'" : '"';
+                return `${open}${quote}${replace(double ?? single ?? '')}${quote}`;
+              },
+            ),
     )
     .join('');
 }
@@ -69,13 +94,4 @@ function mapLinks(markdown: string, replace: (raw: string) => string): string {
 
 export function rewriteLinks(markdown: string, source: string, target: LinkTarget): string {
   return mapLinks(markdown, (raw) => rewriteTarget(raw, source, target));
-}
-
-export function linkTargets(markdown: string): string[] {
-  const targets: string[] = [];
-  mapLinks(markdown, (raw) => {
-    targets.push(raw);
-    return raw;
-  });
-  return targets;
 }

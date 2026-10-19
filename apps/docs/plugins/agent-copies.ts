@@ -4,6 +4,7 @@ import path from 'node:path';
 import type { LoadContext, Plugin } from '@docusaurus/types';
 import llms from 'docusaurus-plugin-llms';
 import { MACHINE_READABLE_REFERENCES } from '../nav';
+import { parseEntries } from './agent-entries';
 import { rewriteLinks, type LinkTarget } from './agent-links';
 import { appendReferences } from './agent-references';
 
@@ -14,7 +15,6 @@ export interface AgentCopiesOptions {
   description: string;
 }
 
-const ENTRY = /^- \[([^\]]+)\]\((\S+)\)/u;
 const SECTION_BREAK = /\n\n---\n\n(?=## )/u;
 const FIRST_SECTION = /\n\n(?=## )/u;
 
@@ -51,12 +51,9 @@ export default function agentCopies(
 
       const llmsFile = path.join(outDir, 'llms.txt');
       const llmsText = await readFile(llmsFile, 'utf8');
-      const copies = llmsText.split('\n').flatMap((line) => {
-        const match = ENTRY.exec(line);
-        const url = match?.[2];
-        if (match === null || url === undefined) return [];
+      const copies = parseEntries(llmsText).map(({ title, url }) => {
         if (!url.startsWith(prefix)) throw new Error(`llms.txt lists ${url} outside ${prefix}`);
-        return [{ title: match[1] ?? '', copy: url.slice(prefix.length) }];
+        return { title, copy: url.slice(prefix.length) };
       });
 
       const sources = new Map(copies.map(({ copy }) => [copy, sourceOf(docsRoot, copy)]));
