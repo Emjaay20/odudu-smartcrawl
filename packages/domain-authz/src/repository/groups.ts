@@ -1,5 +1,5 @@
 import { type TenantScopedDatabase } from '@odudu/db';
-import { newId, OduduError } from '@odudu/kernel';
+import { newId, OduduError, refuseBidiControls } from '@odudu/kernel';
 import { asc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { groupRoles, groups, subjectGroups, type GroupRecord } from '#/schema/groups';
@@ -153,6 +153,7 @@ export function groupRepository(tx: TenantScopedDatabase) {
     // `/${name}`, and a child's path is its parent's path with `/${name}`
     // appended, computed here rather than trusted from the caller.
     async create(input: NewGroup): Promise<GroupRecord> {
+      refuseBidiControls('name', input.name);
       const path =
         input.parentId === null
           ? `/${input.name}`

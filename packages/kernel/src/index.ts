@@ -1,5 +1,6 @@
 export { KERNEL_VERSION } from '#/version';
 export { OduduError, type ErrorCode } from '#/errors';
+export { BIDI_REFUSED, BidiControlError, containsBidiControl, refuseBidiControls } from '#/bidi';
 export { type Clock, systemClock, FakeClock } from '#/clock';
 export { isUuid, newId, scriptNonce } from '#/ids';
 export {

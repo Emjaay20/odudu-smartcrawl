@@ -1,9 +1,13 @@
+import { BIDI_REFUSED, BIDI_REFUSED_MESSAGE } from '@odudu/contracts';
+import { BidiControlError } from '@odudu/kernel';
+import Fastify from 'fastify';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { fieldPath } from '#/service/field-path';
 import {
   ceilingProblem,
   fieldProblem,
+  installProblemDetailsHandler,
   problem,
   queryProblem,
   refusalDetail,
@@ -158,5 +162,21 @@ describe('validationErrors', () => {
       message: 'must be object',
     });
     expect(validationErrors(error)).toEqual([]);
+  });
+});
+
+describe('a bidirectional control a repository refused after every schema let it by', () => {
+  it('is answered as a 400 naming the field, never a 500', async () => {
+    const app = Fastify();
+    installProblemDetailsHandler(app);
+    app.get('/x', () => {
+      throw new BidiControlError('username');
+    });
+    const res = await app.inject({ method: 'GET', url: '/x' });
+    expect(res.statusCode).toBe(400);
+    expect(res.json<{ errors: unknown[] }>().errors).toEqual([
+      { path: 'username', message: BIDI_REFUSED_MESSAGE, code: BIDI_REFUSED },
+    ]);
+    await app.close();
   });
 });

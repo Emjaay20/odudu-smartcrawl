@@ -1,4 +1,5 @@
 import { tenants, type Database } from '@odudu/db';
+import { refuseBidiControls } from '@odudu/kernel';
 import { eq } from 'drizzle-orm';
 
 export interface TenantLookup {
@@ -82,6 +83,7 @@ export function tenantLookupRepository(db: Database) {
     // tenant context can exist before a tenant is resolved, and creating one
     // is the other side of that same gap.
     async create(input: NewTenant): Promise<TenantLookup> {
+      refuseBidiControls('display_name', input.displayName);
       const rows = await db
         .insert(tenants)
         .values({ id: input.id, name: input.name, displayName: input.displayName ?? null })

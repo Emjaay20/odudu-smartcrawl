@@ -4,7 +4,7 @@ import {
   defaultScopeLimitMessage,
 } from '@odudu/contracts/admin';
 import { tenants, type TenantScopedDatabase } from '@odudu/db';
-import { newId, OduduError } from '@odudu/kernel';
+import { newId, OduduError, refuseBidiControls } from '@odudu/kernel';
 import { and, count, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import {
   clientScopeAssignments,
@@ -232,6 +232,7 @@ export function clientScopeRepository(tx: TenantScopedDatabase) {
     },
 
     async create(input: NewClientScope): Promise<ClientScopeRecord> {
+      refuseBidiControls('name', input.name);
       if (input.defaultClientAssignment !== undefined && input.defaultClientAssignment !== null) {
         await refuseWhenDefaultsAreFull(input.tenantId);
       }

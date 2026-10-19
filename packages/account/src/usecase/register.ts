@@ -1,7 +1,7 @@
 import { withTenant, type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { auditRepository, type RequestContext } from '@odudu/domain-audit';
 import { outboxRepository, renderVerifyEmail } from '@odudu/email';
-import { OduduError } from '@odudu/kernel';
+import { BidiControlError, containsBidiControl, OduduError } from '@odudu/kernel';
 import { actionTokenRepository } from '#/repository/action-tokens';
 import { type PasswordPolicy, type PolicyViolation } from '#/repository/tenant-settings';
 import { withMinimum } from '#/service/password-violations';
@@ -64,6 +64,9 @@ export type RegisterOutcome =
   | { kind: 'email_taken' }
   | { kind: 'username_taken' }
   | { kind: 'invalid_email' }
+  // A bidirectional control in the username: refused, not stripped, because
+  // stripping would let two different usernames collide.
+  | { kind: 'invalid_username' }
   // The tenant's password policy — read from the tenant, never defaulted
   // here — refused the candidate before any write was attempted.
   | { kind: 'invalid_password'; violations: PolicyViolation[] }
@@ -73,7 +76,8 @@ export type RegisterOutcome =
   // creating an account nothing can ever verify.
   | { kind: 'misconfigured' };
 
-type AccountCreationFailure = 'email_taken' | 'username_taken' | 'invalid_email';
+type AccountCreationFailure =
+  'email_taken' | 'username_taken' | 'invalid_email' | 'invalid_username';
 
 // `users_email_unique` (0023) and `users_username_unique` (0005) are what
 // actually refuse a duplicate; this only recognizes the refusal after the
@@ -84,6 +88,7 @@ type AccountCreationFailure = 'email_taken' | 'username_taken' | 'invalid_email'
 // throws OduduError('invalid_email', …) before the row-level CHECK is even
 // reached, for the same malformed-address case.
 function classifyAccountCreationError(err: unknown): AccountCreationFailure | null {
+  if (err instanceof BidiControlError && err.field === 'username') return 'invalid_username';
   if (err instanceof OduduError && err.code === 'invalid_email') return 'invalid_email';
   if (!(err instanceof Error)) return null;
   const cause = err.cause;
@@ -107,6 +112,7 @@ export async function register(
   if (deps.verifyEmailEnabled && deps.issuerBase === undefined) {
     return { kind: 'misconfigured' };
   }
+  if (containsBidiControl(input.username)) return { kind: 'invalid_username' };
 
   const violations = deps.evaluatePassword(input.password, deps.passwordPolicy, {
     username: input.username,

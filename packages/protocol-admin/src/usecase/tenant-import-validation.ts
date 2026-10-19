@@ -1,4 +1,5 @@
 import { startsALogin } from '@odudu/authn-flows';
+import { BIDI_REFUSED, BIDI_REFUSED_MESSAGE } from '@odudu/contracts';
 import {
   ASSIGNMENT_LIMIT,
   CLIENT_SCOPE_LIMIT,
@@ -99,7 +100,9 @@ function metadataInput(client: ExportedClient): Record<string, unknown> {
 class Problems {
   readonly list: ImportError[] = [];
   add(path: string, message: string): void {
-    this.list.push({ path, message });
+    this.list.push(
+      message === BIDI_REFUSED_MESSAGE ? { path, message, code: BIDI_REFUSED } : { path, message },
+    );
   }
 }
 

@@ -22,13 +22,14 @@ import {
   type EmailSender,
   type SendPendingOptions,
 } from '@odudu/email';
-import { newId } from '@odudu/kernel';
+import { BidiControlError, newId } from '@odudu/kernel';
 import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/testkit';
 import formbody from '@fastify/formbody';
 import { eq } from 'drizzle-orm';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { tenantSettingsRepository } from '#/repository/tenant-settings';
+import { en } from '#/view/messages';
 import { actionTokens } from '#/schema/action-tokens';
 import { type CreateAccountResult, type NewAccountInput } from '#/usecase/register';
 import { registerRegistrationRoute } from '#/view/routes/registration';
@@ -478,6 +479,73 @@ describe('self-registration', () => {
       userRepository(tx).byUsername('ada'),
     );
     expect(stillNone).toBeNull();
+  });
+
+  it('refuses a bidirectional control in a username with its own sentence, and creates nothing', async () => {
+    const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {
+      registrationAllowed: true,
+    });
+    const usernames = [0x202e, 0x2066, 0x2069].map((cp) => `ada${String.fromCodePoint(cp)}`);
+    for (const username of usernames) {
+      const res = await submitRegistration(tenantName, {
+        username,
+        email: 'ada@example.test',
+        password: 'correct horse battery',
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toContain(en['registration.refusal.invalidUsername']);
+    }
+    for (const username of usernames) {
+      const found = await withTenant(app.db, tenantId, (tx) =>
+        userRepository(tx).byUsername(username),
+      );
+      expect(found).toBeNull();
+    }
+    expect(await outboxRows(tenantId)).toHaveLength(0);
+  });
+
+  it('answers the same when the repository is what refuses the control', async () => {
+    const { tenantName } = await seedTenant(`tenant-${newId()}`, { registrationAllowed: true });
+    const refusing = Fastify();
+    refusing.register(formbody);
+    registerRegistrationRoute(refusing, {
+      database: app,
+      findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
+      publicBaseUrl,
+      createAccount: () => Promise.reject(new BidiControlError('username')),
+      evaluatePassword,
+    });
+    const res = await refusing.inject({
+      method: 'POST',
+      url: `/tenants/${tenantName}/login-actions/registration`,
+      payload: new URLSearchParams({
+        username: 'ada',
+        email: 'ada@example.test',
+        password: 'correct horse battery',
+      }).toString(),
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toContain(en['registration.refusal.invalidUsername']);
+  });
+
+  it('registers right-to-left usernames, which then sign in by lookup', async () => {
+    const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {
+      registrationAllowed: true,
+    });
+    for (const [username, email] of [
+      ['مستخدم', 'ar@example.test'],
+      ['עברית', 'he@example.test'],
+      [`فارسی${String.fromCodePoint(0x200f)}`, 'fa@example.test'],
+    ] as const) {
+      const res = await submitRegistration(tenantName, {
+        username,
+        email,
+        password: 'correct horse battery',
+      });
+      expect(res.statusCode, username).toBe(201);
+      expect(await subjectIdForUsername(tenantId, username)).toBeDefined();
+    }
   });
 
   it('refuses a username another user in the tenant already holds, as a 400', async () => {

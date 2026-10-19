@@ -4,7 +4,12 @@ import { t, tHtml, type MessageId } from '#/view/messages';
 import { ruleListHtml, type PasswordViolation } from '#/view/password-rules';
 
 export type RegistrationRefusal =
-  'fields_required' | 'email_taken' | 'username_taken' | 'invalid_email' | 'unavailable';
+  | 'fields_required'
+  | 'email_taken'
+  | 'username_taken'
+  | 'invalid_email'
+  | 'invalid_username'
+  | 'unavailable';
 
 // Why the submission was refused: one reason the person can act on, or every
 // rule the password broke, listed at once so a policy with four rules does
@@ -17,6 +22,7 @@ const REFUSAL_MESSAGE: Readonly<Record<RegistrationRefusal, MessageId>> = {
   email_taken: 'registration.refusal.emailTaken',
   username_taken: 'registration.refusal.usernameTaken',
   invalid_email: 'registration.refusal.invalidEmail',
+  invalid_username: 'registration.refusal.invalidUsername',
   unavailable: 'registration.refusal.unavailable',
 };
 

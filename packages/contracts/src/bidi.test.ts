@@ -33,7 +33,7 @@ describe('containsBidiControl', () => {
 
   it('sees a control that normalisation would leave alone and one it would not create', () => {
     for (const form of ['NFC', 'NFD', 'NFKC', 'NFKD'] as const) {
-      const hostile = 'ada‮b'.normalize(form);
+      const hostile = 'ada\u202Eb'.normalize(form);
       expect(containsBidiControl(hostile)).toBe(true);
     }
   });
@@ -42,7 +42,7 @@ describe('containsBidiControl', () => {
 describe('stripBidiControls', () => {
   it('removes the nine and keeps the marks', () => {
     const all = REFUSED_CODE_POINTS.map((cp) => String.fromCodePoint(cp)).join('');
-    expect(stripBidiControls(`a${all}b‏c`)).toBe('ab‏c');
+    expect(stripBidiControls(`a${all}b\u200Fc`)).toBe('ab\u200Fc');
   });
 });
 

@@ -1,7 +1,8 @@
 import { z } from 'zod';
+import { noBidiControls } from '#/bidi';
 import { clientTypeSchema, registrationOriginSchema } from '#/admin/clients';
 import { executionRequirementSchema } from '#/admin/flow';
-import { profileSchema } from '#/admin/profile';
+import { nameClaims, profileSchema } from '#/admin/profile';
 import { clientScopeAssignmentSchema } from '#/admin/scopes';
 import {
   ASSIGNMENT_LIMIT,
@@ -48,7 +49,7 @@ const count = z.number().int();
 // map by tenant-document-settings-parity.test.ts in @odudu/protocol-admin,
 // since this package may not import it.
 export const tenantSettingsDocumentSchema = z.strictObject({
-  display_name: z.string().nullable(),
+  display_name: noBidiControls(z.string()).nullable(),
   enabled: z.boolean(),
   reset_password_allowed: z.boolean(),
   sso_session_idle_seconds: count,
@@ -122,7 +123,7 @@ function clientList() {
 
 export const exportedClientSchema = z.strictObject({
   client_id: z.string(),
-  name: z.string(),
+  name: noBidiControls(z.string()),
   description: z.string().nullable(),
   type: clientTypeSchema,
   enabled: z.boolean(),
@@ -166,7 +167,7 @@ export type ExportedClient = z.infer<typeof exportedClientSchema>;
 // capability roles on `odudu-admin` and the default scopes — so an import
 // can merge onto them rather than create a second copy.
 export const exportedRoleSchema = z.strictObject({
-  name: z.string(),
+  name: noBidiControls(z.string()),
   client: z.string().nullable(),
   description: z.string().nullable(),
   default_for_new_subjects: z.boolean(),
@@ -176,7 +177,7 @@ export const exportedRoleSchema = z.strictObject({
 export type ExportedRole = z.infer<typeof exportedRoleSchema>;
 
 export const exportedGroupSchema = z.strictObject({
-  path: z.string(),
+  path: noBidiControls(z.string()),
   description: z.string().nullable(),
   default_for_new_subjects: z.boolean(),
   roles: assignmentSet(roleReferenceSchema),
@@ -210,10 +211,13 @@ export const exportedSmtpSchema = z.strictObject({
 export type ExportedSmtp = z.infer<typeof exportedSmtpSchema>;
 
 export const exportedSubjectSchema = z.strictObject({
-  username: z.string(),
+  username: noBidiControls(z.string()),
   email: z.string().nullable(),
   enabled: z.boolean(),
-  profile: z.strictObject(profileSchema.omit({ profile_updated_at: true }).shape),
+  profile: z.strictObject({
+    ...profileSchema.omit({ profile_updated_at: true }).shape,
+    ...nameClaims,
+  }),
   roles: assignmentSet(roleReferenceSchema),
   groups: assignmentSet(z.string()),
   required_actions: z.array(requiredActionSchema),
@@ -247,7 +251,7 @@ export const TENANT_IMPORT_BODY_LIMIT = 16 * 1024 * 1024;
 // the first one a schema validator stops at.
 export const importTenantRequestSchema = z.object({
   name: z.string().min(1),
-  display_name: z.string().min(1).optional(),
+  display_name: noBidiControls(z.string().min(1)).optional(),
   document: z
     .unknown()
     .describe('A tenant document, as GET /admin/tenants/{tenant}/export answers it.'),

@@ -1,5 +1,5 @@
 import { type TenantScopedDatabase } from '@odudu/db';
-import { newId, OduduError } from '@odudu/kernel';
+import { newId, OduduError, refuseBidiControls } from '@odudu/kernel';
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
@@ -115,6 +115,7 @@ export function roleRepository(tx: TenantScopedDatabase) {
     },
 
     async create(input: NewRole): Promise<RoleRecord> {
+      refuseBidiControls('name', input.name);
       const rows = await tx
         .insert(roles)
         .values({

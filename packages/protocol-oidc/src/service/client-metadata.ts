@@ -9,6 +9,7 @@ import {
   USERINFO_ENCRYPTION_ENCS,
   USERINFO_SIGNING_ALGS,
 } from '@odudu/contracts/admin';
+import { noBidiControls } from '@odudu/contracts';
 import { z } from 'zod';
 import { JWE_ALGS_PERMITTED, PRIVATE_JWK_MEMBERS } from '@odudu/crypto';
 import { assertFetchableUrl, RemoteAddressRefused } from '#/service/remote-address';
@@ -220,7 +221,7 @@ const metadataShape = z.object({
   redirect_uris: z.array(z.string()).optional(),
   grant_types: z.array(z.string()).optional(),
   token_endpoint_auth_method: z.string().optional(),
-  client_name: z.string().optional(),
+  client_name: noBidiControls(z.string()).optional(),
   jwks: jwkSetShape.optional(),
   jwks_uri: z.string().optional(),
   frontchannel_logout_uri: z.string().optional(),

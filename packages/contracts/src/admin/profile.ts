@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { noBidiControls } from '#/bidi';
 
 // PostgreSQL's `text` cannot hold a NUL byte (see `searchPrefixSchema`,
 // #/admin/shared.ts): every claim column is `text`, so the same guard
@@ -8,6 +9,20 @@ const claim = z
   .string()
   .regex(/^[^\u0000]*$/)
   .nullable();
+
+// A claim that names a person is written without a bidirectional control,
+// which would reorder the text around it wherever it is shown. A value a row
+// already holds is read back as it is, so only the write shape carries this.
+const nameClaim = noBidiControls(z.string().regex(/^[^\u0000]*$/)).nullable();
+
+export const nameClaims = {
+  name: nameClaim,
+  given_name: nameClaim,
+  family_name: nameClaim,
+  middle_name: nameClaim,
+  nickname: nameClaim,
+  preferred_username: nameClaim,
+};
 
 // Every OIDC Core §5.1 claim column on `users`, in the snake_case a wire
 // shape carries — `username_search`/`email_search` (packages/db/drizzle/
@@ -49,12 +64,12 @@ export type Profile = z.infer<typeof profileSchema>;
 // refuse each by name, pointing at the route that actually owns it,
 // instead of ajv's generic "additional property" message.
 export const amendProfileRequestSchema = z.object({
-  name: claim.optional(),
-  given_name: claim.optional(),
-  family_name: claim.optional(),
-  middle_name: claim.optional(),
-  nickname: claim.optional(),
-  preferred_username: claim.optional(),
+  name: nameClaim.optional(),
+  given_name: nameClaim.optional(),
+  family_name: nameClaim.optional(),
+  middle_name: nameClaim.optional(),
+  nickname: nameClaim.optional(),
+  preferred_username: nameClaim.optional(),
   profile: claim.optional(),
   picture: claim.optional(),
   website: claim.optional(),

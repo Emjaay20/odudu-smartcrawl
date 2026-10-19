@@ -63,7 +63,7 @@ import {
   tenantSettingProblems,
   type TenantSettingValue,
 } from '@odudu/domain-tenant';
-import { loadConfig, newId, OduduError } from '@odudu/kernel';
+import { loadConfig, newId, OduduError, refuseBidiControls } from '@odudu/kernel';
 import {
   clientOidcConfigRepository,
   GRANT_TYPES_PERMITTED,
@@ -1014,6 +1014,11 @@ async function runTenantCommand(
   // Parsed before the tenant is touched, so a typo in the third --set does
   // not leave the first two applied.
   const settings = parseSettings(values.set ?? []);
+  for (const { column, value } of settings) {
+    if (column === 'displayName' && typeof value === 'string') {
+      refuseBidiControls('display_name', value);
+    }
+  }
   await refuseOutOfRangeSettings(ownerDb, tenantName, settings);
 
   const { tenantId, created } = await resolveTenantId(ownerDb, tenantName);

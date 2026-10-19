@@ -78,6 +78,9 @@ export const enabledFilterSchema = z.enum(['true', 'false']);
 export const fieldErrorSchema = z.strictObject({
   path: z.string(),
   message: z.string(),
+  // Present where the refusal has a stable name a client can act on without
+  // reading the message: `bidi_control_refused` today.
+  code: z.string().optional(),
 });
 export type FieldError = z.infer<typeof fieldErrorSchema>;
 

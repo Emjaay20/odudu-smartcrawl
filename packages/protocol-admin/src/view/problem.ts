@@ -1,4 +1,6 @@
+import { BIDI_FREE_PATTERN, BIDI_REFUSED, BIDI_REFUSED_MESSAGE } from '@odudu/contracts';
 import { type FieldError, type ProblemDetails } from '@odudu/contracts/admin';
+import { BidiControlError } from '@odudu/kernel';
 import {
   type FastifyError,
   type FastifyInstance,
@@ -27,7 +29,16 @@ export function fieldProblem(
   type = 'about:blank',
 ): Problem {
   const prose = detail ?? errors.map((error) => `${error.path}: ${error.message}`).join('; ');
-  return { ...problem(400, type, 'Bad Request', prose), errors };
+  return { ...problem(400, type, 'Bad Request', prose), errors: errors.map(withCode) };
+}
+
+// The one refusal that carries a code today is a bidirectional control in a
+// typed field; every door words it with `BIDI_REFUSED_MESSAGE`, so the code
+// follows the sentence wherever the refusal was found.
+function withCode(error: FieldError): FieldError {
+  return error.code === undefined && error.message === BIDI_REFUSED_MESSAGE
+    ? { ...error, code: BIDI_REFUSED }
+    : error;
 }
 
 /** A query a Zod schema refused, its first message as the detail. */
@@ -122,7 +133,13 @@ function pointerSegments(pointer: string): (string | number)[] {
 export function validationErrors(
   error: Pick<FastifyError, 'message' | 'validation'>,
 ): readonly FieldError[] {
-  return (error.validation ?? []).flatMap((entry) => {
+  const entries = error.validation ?? [];
+  // A nullable field is an `anyOf`, so a refused string arrives with the
+  // branch that wanted `null` and the union's own failure beside it: the
+  // pattern is the one that says what was wrong.
+  const refusedHere = new Set(entries.filter(isBidiRefusal).map((entry) => entry.instancePath));
+  return entries.flatMap((entry) => {
+    if (refusedHere.has(entry.instancePath) && !isBidiRefusal(entry)) return [];
     const segments = pointerSegments(entry.instancePath);
     const named: unknown =
       entry.keyword === 'additionalProperties'
@@ -132,13 +149,28 @@ export function validationErrors(
           : undefined;
     if (typeof named === 'string') segments.push(named);
     const path = fieldPath(segments);
-    return path === '' ? [] : [{ path, message: entry.message ?? error.message }];
+    if (path === '') return [];
+    return isBidiRefusal(entry)
+      ? [{ path, message: BIDI_REFUSED_MESSAGE, code: BIDI_REFUSED }]
+      : [{ path, message: entry.message ?? error.message }];
   });
+}
+
+function isBidiRefusal(entry: { keyword: string; params: Record<string, unknown> }): boolean {
+  return entry.keyword === 'pattern' && entry.params.pattern === BIDI_FREE_PATTERN.source;
 }
 
 /** Scoped to this plugin's encapsulation context, never the root instance, so RFC 6749 error bodies on the OIDC routes are untouched. */
 export function installProblemDetailsHandler(app: FastifyInstance): void {
   app.setErrorHandler<FastifyError>((error, request, reply) => {
+    if (error instanceof BidiControlError) {
+      sendProblem(
+        reply,
+        request,
+        fieldProblem([{ path: error.field, message: BIDI_REFUSED_MESSAGE }]),
+      );
+      return;
+    }
     const status = typeof error.statusCode === 'number' ? error.statusCode : 500;
     if (status >= 500) {
       sendProblem(reply, request, problem(status, 'about:blank', 'Internal Server Error'));

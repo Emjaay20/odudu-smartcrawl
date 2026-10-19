@@ -169,6 +169,13 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
         renderRegistrationFailedPage({ refusal: 'invalid_email' }, locale),
       );
     }
+    if (outcome.kind === 'invalid_username') {
+      return sendVerificationHtml(
+        reply,
+        400,
+        renderRegistrationFailedPage({ refusal: 'invalid_username' }, locale),
+      );
+    }
     if (outcome.kind === 'misconfigured') {
       request.log.error(
         { tenant: tenant.name },

@@ -22,6 +22,8 @@ export const en = {
   'registration.refusal.emailTaken': 'That email address is already registered.',
   'registration.refusal.usernameTaken': 'That username is already taken.',
   'registration.refusal.invalidEmail': 'That is not an address the email claim may carry.',
+  'registration.refusal.invalidUsername':
+    'That username contains a character that changes the direction of text, which is not allowed.',
   'registration.refusal.unavailable': 'Registration is temporarily unavailable. Try again later.',
   'registration.succeeded.title': 'Account created',
   'registration.succeeded.verify':

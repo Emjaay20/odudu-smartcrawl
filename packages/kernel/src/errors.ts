@@ -16,6 +16,7 @@ export type ErrorCode =
   | 'jwe_alg_unsupported'
   | 'claim_mapper_duplicate'
   | 'invalid_email'
+  | 'bidi_control_refused'
   | 'seed_invalid_options'
   | 'seed_conflict'
   | 'seed_not_found'

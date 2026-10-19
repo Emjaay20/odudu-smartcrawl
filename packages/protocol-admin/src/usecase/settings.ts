@@ -1,3 +1,4 @@
+import { BIDI_REFUSED_MESSAGE, containsBidiControl } from '@odudu/contracts';
 import { type TenantScopedDatabase } from '@odudu/db';
 import {
   isSystemTenantId,
@@ -146,6 +147,20 @@ export async function amendSettings(
 ): Promise<AmendSettingsOutcome> {
   const coerced = coerceAll(input.values);
   if (coerced.kind !== 'ok') return coerced;
+
+  const bidi = coerced.settings.filter(
+    (setting) =>
+      setting.column === 'displayName' &&
+      typeof setting.value === 'string' &&
+      containsBidiControl(setting.value),
+  );
+  if (bidi.length > 0) {
+    return {
+      kind: 'out_of_range',
+      problems: [{ name: 'display_name', message: BIDI_REFUSED_MESSAGE }],
+      ranged: false,
+    };
+  }
 
   // The same refusal `amendTenant` gives, because this route writes the same
   // `tenants.enabled` column through a different door.

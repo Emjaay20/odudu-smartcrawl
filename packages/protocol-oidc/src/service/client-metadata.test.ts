@@ -545,3 +545,28 @@ describe('the algorithms the contracts offer a console', () => {
     expect([...USERINFO_ENCRYPTION_ALGS]).toEqual([...JWE_ALGS_PERMITTED]);
   });
 });
+
+// A client's name is what a consent screen shows beside "wants access to your
+// account", so a control that reorders the text around it is refused where a
+// client names itself, which any caller of dynamic registration may do.
+describe('client_name', () => {
+  const RLO = String.fromCodePoint(0x202e);
+  const RLM = String.fromCodePoint(0x200f);
+
+  it.each([RLO, String.fromCodePoint(0x2066), String.fromCodePoint(0x2069)])(
+    'refuses a bidirectional control (U+%s) as invalid_client_metadata naming the field',
+    (control) => {
+      expect(
+        parseClientMetadata(ok({ client_name: `Bank${control}` }), { tlsClientAuthEnabled: false }),
+      ).toMatchObject({ kind: 'invalid', error: 'invalid_client_metadata', field: 'client_name' });
+    },
+  );
+
+  it('accepts right-to-left text and the marks it carries', () => {
+    for (const name of ['مصرف', 'בנק', `بنك${RLM}`]) {
+      expect(
+        parseClientMetadata(ok({ client_name: name }), { tlsClientAuthEnabled: false }).kind,
+      ).toBe('ok');
+    }
+  });
+});

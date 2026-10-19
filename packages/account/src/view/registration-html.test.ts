@@ -103,6 +103,7 @@ describe('renderRegistrationFailedPage', () => {
       email_taken: en['registration.refusal.emailTaken'],
       username_taken: en['registration.refusal.usernameTaken'],
       invalid_email: en['registration.refusal.invalidEmail'],
+      invalid_username: en['registration.refusal.invalidUsername'],
       unavailable: en['registration.refusal.unavailable'],
     } as const;
     for (const [refusal, text] of Object.entries(wording)) {

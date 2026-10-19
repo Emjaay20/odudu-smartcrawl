@@ -1,5 +1,5 @@
 import { isUniqueViolation, tenants, type TenantScopedDatabase } from '@odudu/db';
-import { newId } from '@odudu/kernel';
+import { newId, refuseBidiControls } from '@odudu/kernel';
 import { count, eq, lte, sql } from 'drizzle-orm';
 import { clients, type ClientRecord } from '#/schema/clients';
 
@@ -90,6 +90,7 @@ export function clientRepository(tx: TenantScopedDatabase) {
     // client resolution reads them back alongside their OIDC config, so an
     // insert path belongs here rather than only in a migration.
     async create(input: NewClient): Promise<ClientRecord> {
+      refuseBidiControls('name', input.name);
       let rows: (typeof clients.$inferSelect)[];
       try {
         rows = await tx
@@ -134,6 +135,7 @@ export function clientRepository(tx: TenantScopedDatabase) {
         >
       >,
     ): Promise<ClientRecord> {
+      refuseBidiControls('name', patch.name);
       const rows = await tx.update(clients).set(patch).where(eq(clients.id, id)).returning();
       const row = rows[0];
       if (row === undefined) {

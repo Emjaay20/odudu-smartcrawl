@@ -1,3 +1,4 @@
+import { BIDI_REFUSED_MESSAGE, containsBidiControl } from '@odudu/contracts';
 import {
   type ADMIN_CAPABILITIES,
   CLIENT_LIST_LIMIT,
@@ -963,6 +964,7 @@ function checkedAdminFields(
   if ('name' in values) {
     const checked = checkedString('name', values.name);
     if (isFieldError(checked)) return checked;
+    if (containsBidiControl(checked)) return { field: 'name', description: BIDI_REFUSED_MESSAGE };
     client.name = checked;
   }
   if ('description' in values) {

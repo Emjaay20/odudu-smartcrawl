@@ -1,4 +1,5 @@
 import { liveSessionCondition, provisionTenant, sessions } from '@odudu/authn-flows';
+import { BIDI_REFUSED_MESSAGE, containsBidiControl } from '@odudu/contracts';
 import { type ListTenantsQuery, type Tenant } from '@odudu/contracts/admin';
 import { generateSigningKey, signingKeyRepository } from '@odudu/crypto';
 import {
@@ -16,7 +17,7 @@ import {
   SYSTEM_TENANT_NAME,
   normalizeDisplayName,
 } from '@odudu/domain-tenant';
-import { newId } from '@odudu/kernel';
+import { newId, refuseBidiControls } from '@odudu/kernel';
 import {
   backchannelLogoutDeliveries,
   BACKCHANNEL_LOGOUT_MAX_ATTEMPTS,
@@ -150,6 +151,7 @@ export async function insertProvisionedTenant(
     readonly clientJwks: ClientJwks | undefined;
   },
 ): Promise<TenantRecord> {
+  refuseBidiControls('display_name', row.displayName);
   let rows: TenantRecord[];
   try {
     rows = await tx.insert(tenants).values(row).returning(TENANT_COLUMNS);
@@ -450,6 +452,9 @@ export async function amendTenant(
         field: 'display_name',
         description: 'display_name must be a string or null',
       };
+    }
+    if (value !== null && containsBidiControl(value)) {
+      return { kind: 'invalid_value', field: 'display_name', description: BIDI_REFUSED_MESSAGE };
     }
     patch.displayName = normalizeDisplayName(value);
   }
