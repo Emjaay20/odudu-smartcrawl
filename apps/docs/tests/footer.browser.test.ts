@@ -1,6 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import path from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
+import type { Result } from 'axe-core';
 import { chromium, type Browser } from '@playwright/test';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PAGES_BASE } from '#docs/site.config.ts';
@@ -63,7 +64,7 @@ describe('the footer in a browser', () => {
           const page = await context.newPage();
           await page.goto(`${origins[target] ?? ''}${BASES[target]}${route}`);
           const results = await new AxeBuilder({ page }).include('footer').analyze();
-          expect(results.violations.map((violation) => violation.id)).toEqual([]);
+          expect(results.violations.map((violation: Result) => violation.id)).toEqual([]);
           await context.close();
         });
       }
