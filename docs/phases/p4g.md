@@ -837,3 +837,14 @@ used`); the required-actions, registration success and form pages are
   account and refusal pages; `tests/docs/password-policy.test.ts` reads the
   recorded violation sentences from the real renderers instead of a regular
   expression over a route.
+- Left inline in console-gateway, on purpose: the API problem-details strings in
+  `view/problem.ts`, `view/api.ts`, `view/csrf-guard.ts`, `view/routes/proxy.ts`
+  and `view/routes/logout.ts` (`'Unauthorized'`, `'Not Found'`, `STATUS_CODES[status]`,
+  `refused as cross-site: ...`). They are RFC 9457 values for a program, not
+  pages; the console words what a person reads from the problem's code. The
+  server-literal lint (plan Task 17c) covers `*-html.ts` and the mail
+  templates only, and its plan text now says so.
+- The nine `password.rule.*` sentences exist in the account and authn-flows
+  catalogues. They are pinned equal by `tests/lint/password-rule-wording.test.ts`
+  rather than shared: each package's catalogue is flat and its own (ADR 0043),
+  and no package both may import owns text.

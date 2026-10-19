@@ -3,8 +3,8 @@ import { auditRepository, type RequestContext } from '@odudu/domain-audit';
 import { outboxRepository, renderVerifyEmail } from '@odudu/email';
 import { OduduError } from '@odudu/kernel';
 import { actionTokenRepository } from '#/repository/action-tokens';
-import { withMinimum } from '#/service/password-violations';
 import { type PasswordPolicy, type PolicyViolation } from '#/repository/tenant-settings';
+import { withMinimum } from '#/service/password-violations';
 
 // Re-exported so the view layer can reach these without importing the
 // repository directly (no-view-to-repository, .dependency-cruiser.cjs):
