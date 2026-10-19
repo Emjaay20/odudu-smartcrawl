@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { classifyChanges } from '#/changes';
 
-const EVERYTHING = { server: true, global: true, buildImage: true, docsOnly: false };
+const EVERYTHING = { server: true, buildImage: true, docsOnly: false };
 
 describe('classifyChanges', () => {
   it('runs everything when there is nothing to compare against', () => {
@@ -16,11 +16,11 @@ describe('classifyChanges', () => {
     expect(
       classifyChanges([
         'docs/phases/p4g.md',
-        'docs/adr/0044-x.md',
+        'docs/adr/0044-ci-runs-what-a-change-can-affect.md',
         'README.md',
         'apps/docs/content/guides/a.md',
       ]),
-    ).toEqual({ server: false, global: false, buildImage: true, docsOnly: true });
+    ).toEqual({ server: false, buildImage: true, docsOnly: true });
   });
 
   it('does not build the image for prose outside the docs app', () => {
@@ -38,13 +38,12 @@ describe('classifyChanges', () => {
   it('runs the server side for a change in one package, without calling it global', () => {
     expect(classifyChanges(['packages/protocol-oidc/src/a.ts'])).toEqual({
       server: true,
-      global: false,
       buildImage: true,
       docsOnly: false,
     });
   });
 
-  it('marks the lockfile, a workflow and a tool as global', () => {
+  it('runs everything for the lockfile, a workflow, a tool and a root config', () => {
     for (const file of [
       'pnpm-lock.yaml',
       'package.json',
@@ -71,5 +70,26 @@ describe('classifyChanges', () => {
     expect(classifyChanges(['apps/docs-extra/src/a.ts']).server).toBe(true);
     expect(classifyChanges(['packages/x/docs/a.ts']).server).toBe(true);
     expect(classifyChanges(['docs/../packages/x/a.ts']).server).toBe(true);
+  });
+
+  it('runs everything for a file nothing classifies, dotfiles and licences included', () => {
+    for (const file of [
+      '.gitignore',
+      '.nvmrc',
+      'LICENSE',
+      'LICENSES/AGPL.txt',
+      'quickstart/compose.yaml',
+    ]) {
+      expect(classifyChanges([file]), file).toEqual(EVERYTHING);
+    }
+  });
+
+  it('does not take a file under docs/ that is not Markdown for prose', () => {
+    expect(classifyChanges(['docs/archive/plans/data.json']).server).toBe(true);
+    expect(classifyChanges(['docs/img/diagram.png']).server).toBe(true);
+  });
+
+  it('treats the docs app manifest as the docs app, not as the root manifest', () => {
+    expect(classifyChanges(['apps/docs/package.json']).docsOnly).toBe(true);
   });
 });

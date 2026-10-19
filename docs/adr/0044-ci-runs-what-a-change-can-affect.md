@@ -26,7 +26,9 @@ Turborepo.
 ## Decision
 
 - **Cut the work by what changed.** A `changes` job classifies the files a pull
-  request touches (`tools/ci/src/changes.ts`, unit-tested). A change confined
+  request touches (`tools/ci/src/changes.ts`, unit-tested). The diff lists both
+  sides of a rename and is NUL-separated, so a source file moved into `docs/`
+  still counts, and only Markdown under `docs/` is prose. A change confined
   to prose and the docs app skips `e2e`, `conformance`, `query-plans` and the
   heavy test slices. Anything not recognised as prose, including every
   workflow, tool, lockfile and root config, runs everything, as does a push to
@@ -41,18 +43,27 @@ Turborepo.
   tasks too. The other packages share one job. `docs` is its own job.
 - **The trace check runs after the slices.** Each leg uploads its
   `trace-report.json`; `trace` joins the slices of a package
-  (`tools/ci merge-reports`) and runs `pnpm trace` unchanged.
+  (`tools/ci merge-reports`) and runs `pnpm trace` unchanged. Each report is
+  uploaded beside a `trace-shard` file holding the `i/n` its leg ran; the merge
+  fails on a missing, repeated or differently counted slice, and the uploads
+  fail on a missing file, so a lost slice cannot pass as a smaller package.
 - **Save the Turborepo cache on a red run.** `actions/cache/restore`, then
   `actions/cache/save` with `always() && !cancelled()`. The prune step runs
   only on success: a failed run's summary omits the tasks it never reached, and
   pruning to it would discard exactly the entries the next run needs. Each leg
   has its own key prefix.
 - **One check to require: `gate`.** It needs every other job and fails on a
-  failed or cancelled one; a skipped job passes. A required check that is
-  itself skipped blocks a merge forever, so requiring individual
-  conditional jobs does not work; requiring `gate` does. `verify` stays as the
-  aggregate of `static`, `test`, `test-rest` and `trace`, so a branch
-  protection rule that names it keeps working.
+  failed or cancelled one, or if `changes` wrote no outputs (every skip would
+  then be nobody's decision); a skipped job passes. GitHub's documentation
+  says a job skipped by a job-level `if` reports success, so a required check
+  that is skipped does not block a merge; only a workflow-level `paths` filter
+  leaves a required check pending forever, and this workflow has none. That is
+  documentation read, not behaviour observed here: the first validation run
+  (a prose-only pull request, docs/phases/p4g.md) confirms it before any
+  required check is removed. `gate` makes the rule independent of the answer:
+  one check that is always reported. `verify` stays as the aggregate of
+  `static`, `test`, `test-rest` and `trace`, so a branch protection rule that
+  names it keeps working.
 - **Slow steps carry their own limit** (the docs tests 8 minutes, the browser
   test 4), so a hang fails in the step that hung, and the cache-saving step
   after it still runs. Chromium is cached by Playwright version.
@@ -66,11 +77,27 @@ replays its report, which the trace check needs. A task skipped by
 
 ## Consequences
 
-- Slice counts (3, 3, 2, 1 and a rest job) are a first guess from one
-  contended run; adjust them from the per-job times of the first runs.
-- A new job must be added to `gate`'s `needs`; the lint test enforces it.
+- Slice counts (`protocol-oidc` 3, `protocol-admin` 4, `admin-console` 2,
+  `server` 2, plus a rest job) follow the cold run's per-package times
+  (1273, 1054, 960 and 505 s, four packages sharing one runner), aiming at
+  about five minutes a leg. vitest cuts slices by file hash, not duration, and
+  integration files are the slow ones, so legs will not be equal; adjust from
+  the per-job times of the first runs.
+- Cache volume: a run writes about 14 caches (`static`, 11 test legs,
+  `test-rest`, `docs`), most of them kilobytes (test tasks output one report;
+  the builds and the docs site are the large ones), expected under 250 MB a
+  run. GitHub's limit is 10 GB per repository with least-recently-used
+  eviction, so a busy week could evict main's entries, which are the ones a new
+  branch restores. The prune step stays: it holds a cache to what its run
+  names. Check the cache list after about five runs. A red run saves unpruned,
+  bounded by one run's growth.
+- A new job must be added to `gate`'s `needs`; the lint test enforces it, with
+  the other structural rules of the workflow.
 - A prose-only pull request still runs `static`, `docs`, the repository checks
   and `commit-messages`.
+- `concurrency` cancels an earlier run of `main` when two merges land close
+  together, so that commit's `gate` reads cancelled. It was so before; read
+  main's state from the newest run.
 - Docker layer caching of the image build (`container`, `e2e`) is not done.
 
 ## Alternatives rejected

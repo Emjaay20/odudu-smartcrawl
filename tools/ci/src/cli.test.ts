@@ -16,10 +16,11 @@ function git(cwd: string, ...args: string[]): void {
   execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd });
 }
 
-function repoWithChange(changed: string): string {
+function repoWithChange(changed: string, setup: (cwd: string) => void = () => undefined): string {
   dir = mkdtempSync(join(tmpdir(), 'odudu-ci-changes-'));
   git(dir, 'init', '-q', '-b', 'main');
   writeFileSync(join(dir, 'README.md'), 'a');
+  setup(dir);
   git(dir, 'add', '.');
   git(dir, 'commit', '-q', '-m', 'base');
   git(dir, 'checkout', '-q', '-b', 'feature');
@@ -41,9 +42,9 @@ describe('the changes command', () => {
     expect(out).toContain('server=false');
   });
 
-  it('reports a workflow change as global', () => {
+  it('runs everything for a workflow change', () => {
     const out = run(repoWithChange('.github/workflows/verify.yml'), 'changes', 'main');
-    expect(out).toContain('global=true');
+    expect(out).toContain('server=true');
     expect(out).toContain('docsOnly=false');
   });
 
@@ -65,6 +66,53 @@ describe('the changes command', () => {
     });
     const written = execFileSync('cat', [file], { encoding: 'utf8' });
     expect(written).toContain('server=true');
-    expect(written).toContain('global=false');
+    expect(written).toContain('docsOnly=false');
+  });
+
+  it('counts the old path of a file moved into docs/, so a moved source file runs everything', () => {
+    const cwd = repoWithChange('docs/NEXT.md', (repo) => {
+      mkdirSync(join(repo, 'packages/x/src'), { recursive: true });
+      writeFileSync(join(repo, 'packages/x/src/a.ts'), 'export const a = 1;\n'.repeat(20));
+    });
+    mkdirSync(join(cwd, 'docs/phases'), { recursive: true });
+    git(cwd, 'mv', 'packages/x/src/a.ts', 'docs/phases/p4g.md');
+    git(cwd, 'commit', '-q', '-m', 'move');
+    const out = run(cwd, 'changes', 'main');
+    expect(out).toContain('server=true');
+    expect(out).toContain('docsOnly=false');
+  });
+
+  it('counts a deleted file', () => {
+    const cwd = repoWithChange('docs/NEXT.md', (repo) => {
+      writeFileSync(join(repo, 'tool.sh'), 'x');
+    });
+    git(cwd, 'rm', '-q', 'tool.sh');
+    git(cwd, 'commit', '-q', '-m', 'delete');
+    expect(run(cwd, 'changes', 'main')).toContain('server=true');
+  });
+
+  it('runs everything for a path git would quote', () => {
+    const out = run(repoWithChange('docs/é.md'), 'changes', 'main');
+    expect(out).toContain('docsOnly=true');
+    expect(run(repoWithChange('packages/é/src/a.ts'), 'changes', 'main')).toContain('server=true');
+  });
+
+  it('runs everything for a root dotfile', () => {
+    expect(run(repoWithChange('.nvmrc'), 'changes', 'main')).toContain('server=true');
+  });
+
+  it('runs everything when the branch shares no history with the base', () => {
+    const cwd = repoWithChange('docs/NEXT.md');
+    git(cwd, 'checkout', '-q', '--orphan', 'unrelated');
+    writeFileSync(join(cwd, 'x.md'), 'x');
+    git(cwd, 'add', '.');
+    git(cwd, 'commit', '-q', '-m', 'unrelated');
+    expect(run(cwd, 'changes', 'main')).toContain('server=true');
+  });
+
+  it('runs everything when the branch adds nothing to the base', () => {
+    const cwd = repoWithChange('docs/NEXT.md');
+    git(cwd, 'checkout', '-q', 'main');
+    expect(run(cwd, 'changes', 'main')).toContain('server=true');
   });
 });

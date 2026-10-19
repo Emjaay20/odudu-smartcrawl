@@ -53,4 +53,38 @@ describe('the CI workflow', () => {
       expect(indexes.sort(), pkg).toEqual(Array.from({ length: count }, (_, i) => i + 1));
     }
   });
+
+  it('runs the gate whatever happened upstream, and fails it when changes decided nothing', async () => {
+    const workflow = await read('.github/workflows/verify.yml');
+    const gate = workflow.slice(workflow.indexOf('\n  gate:\n'));
+    expect(gate).toMatch(/^ {4}if: always\(\)$/mu);
+    expect(gate).toContain('needs.changes.outputs.server');
+    expect(gate).toContain('changes wrote no outputs');
+  });
+
+  it('has verify wait for each of its parts', async () => {
+    const workflow = await read('.github/workflows/verify.yml');
+    const verify = workflow.slice(workflow.indexOf('\n  verify:\n'));
+    expect(verify).toMatch(/needs: \[static, test, test-rest, trace\]/u);
+    expect(verify).toMatch(/^ {4}if: always\(\)$/mu);
+  });
+
+  it('leaves test-rest exactly the packages the matrix and the docs job do not run', async () => {
+    const workflow = await read('.github/workflows/verify.yml');
+    const sliced = new Set(
+      [...workflow.matchAll(/package: '([^']+)', shard:/gu)].map((m) => m[1] ?? ''),
+    );
+    const filter = /FILTER: .*&& '([^']+)' \|\|/u.exec(workflow)?.[1] ?? '';
+    const excluded = [...filter.matchAll(/--filter=!(\S+)/gu)].map((m) => m[1] ?? '');
+    expect(excluded.sort()).toEqual([...sliced, '@odudu/docs'].sort());
+  });
+
+  it('fails an upload of a test report that finds no file', async () => {
+    const workflow = await read('.github/workflows/verify.yml');
+    const uploads = [...workflow.matchAll(/name: trace-[^\n]*\n(?: {10}[^\n]*\n)+/gu)];
+    expect(uploads.length).toBe(3);
+    for (const [upload] of uploads) {
+      expect(upload).toContain('if-no-files-found: error');
+    }
+  });
 });

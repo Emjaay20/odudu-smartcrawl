@@ -1309,3 +1309,37 @@ ADR 0044 has the design. Findings that belong to this phase:
   `]` inside a title; the seo tests assert the hreflang set exactly, the sitemap's excluded
   routes exactly, and that Pages pages carry no robots meta (the image test already asserts
   noindex on every image page).
+
+#### Validating the CI restructure
+
+Run on a throwaway branch with a draft pull request into the phase branch, never
+`main`, with the `gate` job from this branch present. Each scenario is a push;
+read the run's job list and the merge box. Nothing below has been observed yet.
+
+1. **A prose-only line.** Append one line to `docs/NEXT.md`.
+   - `changes` prints `server=false`, `buildImage=false`, `docsOnly=true`.
+   - The test matrix, `trace`, `e2e`, `conformance`, `query-plans` and `container`
+     show skipped. `static`, `docs`, `test-rest` (which runs only `repo-checks`),
+     `verify`, `commit-messages` and `gate` are green.
+   - The merge box counts the skipped required checks (`container`, `query-plans`) as
+     passing. This settles whether a job-level skip satisfies a required check; until it
+     is seen, keep `gate` beside the old names rather than instead of them.
+2. **Code, then a move into `docs/`.** First change one line in a package source
+   file and push; everything runs and `server=true`. Then, as a separate push,
+   `git mv` of a package source file to a Markdown name under `docs/`.
+   - `changes` still prints `server=true`, `docsOnly=false`: the old path counts.
+   - The matrix, `trace`, `e2e` and the rest all run; `gate` is red for the real
+     failure the move causes (the package no longer builds), not for skipping.
+3. **A failing slice.** Add a failing assertion to one `protocol-oidc` test file
+   and push.
+   - That leg is red, and its collect and upload steps are skipped (`if: success()`);
+     its "Save the Turborepo cache" step still runs.
+   - The other legs finish; `trace` is skipped; `verify` and `gate` are red.
+   - Revert and push: the next run restores the previous caches (`cached` counts in each
+     leg's turbo summary) and is faster than the first.
+4. **Also check** while those run: the Chromium step in `docs` hits its cache on the
+   second run; `gate` fails when you cancel a run midway; and the Actions cache list
+   holds about 14 entries per run, not hundreds.
+
+Only after 1 to 3 behave as written, require `gate` on `main`, and later drop
+`verify`, `container` and `query-plans` from the required list.

@@ -7,11 +7,15 @@ const [command, ...args] = process.argv.slice(2);
 
 function filesChangedSince(base: string): string[] | undefined {
   try {
-    const out = execFileSync('git', ['diff', '--name-only', `${base}...HEAD`], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-    return out.split('\n').filter((line) => line !== '');
+    const out = execFileSync(
+      'git',
+      ['diff', '--name-only', '--no-renames', '-z', `${base}...HEAD`],
+      {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    );
+    return out.split('\0').filter((line) => line !== '');
   } catch (error) {
     console.error(`git diff against ${base} failed, running everything: ${String(error)}`);
     return undefined;
