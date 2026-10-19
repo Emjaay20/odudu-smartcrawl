@@ -11,6 +11,12 @@ import { emailOutbox } from '@odudu/email';
 import { newId } from '@odudu/kernel';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startAdminFixture, type AdminFixture } from '#/testing/admin-fixture';
+import {
+  createPasswordSubject,
+  createSignInClient,
+  refresh,
+  signInForRefreshToken,
+} from '#/testing/sign-in';
 
 let fixtureHandle: AdminFixture | undefined;
 let fixture: AdminFixture;
@@ -233,3 +239,96 @@ describe('DELETE …/recovery-codes with a second factor remaining', () => {
     expect(await standing(s)).toMatchObject({ held: 2 });
   });
 });
+
+describe('end_sessions on DELETE …/credentials/{id}', () => {
+  const PASSWORD = 'correct horse battery staple';
+
+  async function signedInWithTotp() {
+    const t = await fixture.createTenant(`ends-${newId()}`);
+    const client = await createSignInClient(fixture, t.id);
+    const username = `sia-${newId()}`;
+    const subjectId = await createPasswordSubject(fixture, t.id, username, PASSWORD);
+    const refreshToken = await signInForRefreshToken(fixture, t.name, client, username, PASSWORD);
+    const totpId = await withTenant(fixture.app.db, t.id, async (tx) => {
+      await credentialRepository(tx).insert({
+        tenantId: t.id,
+        subjectId,
+        type: 'totp',
+        secret: { kind: 'totp', secret: 'GEZDGNBVGY3TQOJQ', digits: 6, lastStep: 0 },
+      });
+      const [row] = await credentialRepository(tx).listFor(subjectId, 'totp');
+      return row?.id ?? '';
+    });
+    const seeded: Seeded = { tenant: t, subjectId, totpId, passkeyId: null };
+    return { seeded, client, refreshToken };
+  }
+
+  async function removeTotp(seeded: Seeded, query: string, capabilities: string[]) {
+    const token = await fixture.adminToken(seeded.tenant.name, capabilities);
+    return fixture.http.inject({
+      method: 'DELETE',
+      url: `/admin/tenants/${seeded.tenant.name}/subjects/${seeded.subjectId}/credentials/${seeded.totpId ?? ''}${query}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+  }
+
+  it('ends the subject’s sessions in the same request, and records how many', async () => {
+    const { seeded, client, refreshToken } = await signedInWithTotp();
+
+    const res = await removeTotp(seeded, '?end_sessions=true', ['manage-users', 'manage-sessions']);
+
+    expect(res.statusCode).toBe(204);
+    expect((await refresh(fixture, seeded.tenant.name, client, refreshToken)).statusCode).toBe(400);
+    expect(await audits(seeded, 'subject.credential_delete')).toEqual([{ ended_sessions: 1 }]);
+    expect(await credentialCount(seeded, 'totp')).toBe(0);
+  });
+
+  it('leaves the sessions alone by default', async () => {
+    const { seeded, client, refreshToken } = await signedInWithTotp();
+    expect((await removeTotp(seeded, '', ['manage-users'])).statusCode).toBe(204);
+    expect((await refresh(fixture, seeded.tenant.name, client, refreshToken)).statusCode).toBe(200);
+    expect(await audits(seeded, 'subject.credential_delete')).toEqual([{}]);
+  });
+
+  it('refuses without manage-sessions, and removes nothing', async () => {
+    const { seeded, client, refreshToken } = await signedInWithTotp();
+    const res = await removeTotp(seeded, '?end_sessions=true', ['manage-users']);
+    expect(res.statusCode).toBe(403);
+    expect(await credentialCount(seeded, 'totp')).toBe(1);
+    expect((await refresh(fixture, seeded.tenant.name, client, refreshToken)).statusCode).toBe(200);
+  });
+
+  it('refuses a value that is not true or false, and removes nothing', async () => {
+    const { seeded } = await signedInWithTotp();
+    const res = await removeTotp(seeded, '?end_sessions=maybe', [
+      'manage-users',
+      'manage-sessions',
+    ]);
+    expect(res.statusCode).toBe(400);
+    expect(await credentialCount(seeded, 'totp')).toBe(1);
+  });
+
+  it('ends nothing when the credential is not one it may remove', async () => {
+    const { seeded, client, refreshToken } = await signedInWithTotp();
+    const password = await withTenant(fixture.app.db, seeded.tenant.id, async (tx) => {
+      const [row] = await credentialRepository(tx).listFor(seeded.subjectId, 'password');
+      return row?.id ?? '';
+    });
+    const token = await fixture.adminToken(seeded.tenant.name, ['manage-users', 'manage-sessions']);
+    const res = await fixture.http.inject({
+      method: 'DELETE',
+      url: `/admin/tenants/${seeded.tenant.name}/subjects/${seeded.subjectId}/credentials/${password}?end_sessions=true`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(res.statusCode).toBe(409);
+    expect((await refresh(fixture, seeded.tenant.name, client, refreshToken)).statusCode).toBe(200);
+  });
+});
+
+function credentialCount(seeded: Seeded, type: 'totp' | 'webauthn'): Promise<number> {
+  return withTenant(
+    fixture.app.db,
+    seeded.tenant.id,
+    async (tx) => (await credentialRepository(tx).listFor(seeded.subjectId, type)).length,
+  );
+}

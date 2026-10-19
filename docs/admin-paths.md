@@ -4835,9 +4835,21 @@ them revokes. The subject is also mailed, at the address on file whether or
 not it is verified, saying which factor was removed and, if it happened, that
 the codes went with it; it carries no link, no code and nothing about the
 factor. A subject with no address is not mailed, and the delete is
-unaffected. Nothing ends the subject's sessions: the console's removal
-dialog offers that as a separate, unticked choice that calls
-[`DELETE /subjects/:id/sessions`](#delete-subjectsidsessions).
+unaffected; the mail goes to the address on file whether or not it is
+verified, because it says nothing a stranger could use.
+
+**Sessions end only when asked, and then in the same transaction.**
+`?end_sessions=true` ends every live session of the subject, with their grants
+revoked and their back-channel logouts queued, through the same usecase
+[`DELETE /subjects/:id/sessions`](#delete-subjectsidsessions) calls, before the
+removal commits: the two succeed or fail together, so a removal can never be
+reported as failed after the factor is gone. It needs `manage-sessions` as well
+as `manage-users` (`403` otherwise, nothing removed), takes only `true` or
+`false` (`400` otherwise), and defaults to `false`: whether the factor was lost
+or stolen is something only the operator knows. The `subject.credential_delete`
+audit row then carries `detail.ended_sessions`, the count, and the sessions
+end through their own `session.end_all` and `session.ended` rows. The console's
+removal dialog offers it, unticked, when the factor is the last one.
 
 Captured on 2026-10-19 against a stack of its own, project
 `odudu-p4g-recovery`, built from this branch on an empty volume, with
@@ -4900,6 +4912,53 @@ Your recovery codes were removed with it, and no longer work.
 
 If you did not expect this, contact your administrator.
 ```
+
+Ending the sessions with the removal was captured on the same project after it
+was rebuilt from the commit that made it one request, on a fresh volume, with
+the same names (`seed admin --username rae`, tenant `recovery-life`, public
+client `life-app`) and so ids of that run, not those above: `ines` signed in
+once with her password (a `302` carrying a code, which left one live session),
+and was then given, as the database owner, a TOTP credential and ten
+recovery-code rows. `INES=01a15574-77e8-7b37-9d44-350fca4ada8c` and
+`TOTP=55284e9a-8ea8-40ff-878b-5ea7f2957653`. Her sessions first, a value that
+is not `true` or `false` (refused, so nothing changed), the removal with the
+sessions ended, her sessions again, and the audit rows for her, cut to
+`action`, `outcome` and `detail` by the filter in the command:
+
+```bash
+S=http://localhost:3187/admin/tenants/recovery-life/subjects
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$INES/sessions" |
+  python3 -c "import json,sys;d=json.load(sys.stdin);print(len(d['items']),'session(s); client_ids',d['items'][0]['client_ids'])"
+curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$INES/credentials/$TOTP?end_sessions=maybe"
+curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$INES/credentials/$TOTP?end_sessions=true"
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$INES/sessions"; echo
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://localhost:3187/admin/tenants/recovery-life/audit?resource_type=subject&resource_id=$INES" |
+  python3 -c "
+import json,sys
+for r in json.load(sys.stdin)['items']: print(json.dumps({k:r[k] for k in ('action','outcome','detail')}))"
+```
+
+The captured run printed only the status line and body of the `400` (the
+`grep -E '^HTTP|^\{' | cut -c1-200` it was piped through is not shown above), and dropped
+the `date`, `connection` and keep-alive lines of the `204`:
+
+```
+1 session(s); client_ids []
+HTTP/1.1 400 Bad Request
+{"type":"about:blank","title":"Error","status":400,"detail":"querystring/end_sessions must be equal to one of the allowed values","errors":[{"path":"end_sessions","message":"must be equal to one of th
+HTTP/1.1 204 No Content
+x-request-id: 01a15574-986f-7acd-b2fd-3e31164a4c33
+cache-control: no-store
+
+{"items":[]}
+{"action": "subject.recovery_codes_revoke", "outcome": "allowed", "detail": {"reason": "last_factor_removed", "revoked": 10}}
+{"action": "subject.credential_delete", "outcome": "allowed", "detail": {"ended_sessions": 1}}
+{"action": "session.end_all", "outcome": "allowed", "detail": {"ended": 1}}
+```
+
+The one session was `session.end_all`'s, and the count is on the removal's own
+row as `ended_sessions`. The `400` line is cut at 200 characters in the capture (`cut -c1-200`).
 
 ## `DELETE /subjects/:id/recovery-codes`
 

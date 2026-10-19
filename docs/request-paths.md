@@ -4300,6 +4300,10 @@ the whole set with it, spent rows included: a code only stands in for a
 factor, and a set that outlived it would work again after a re-enrolment. The
 admin side, with its transcripts, is
 [`DELETE /subjects/:id/recovery-codes`](admin-paths.md#delete-subjectsidrecovery-codes).
+Issuing takes the subject's row lock, the one a removal holds, and is refused
+while no second factor is held: a set never outlives the last factor, even for
+a person regenerating at the instant it is removed. The page then answers as an
+expired sign-in and the owed action is cleared, so signing in again goes on.
 
 Every render of the page writes one `credential` audit row,
 `recovery_codes.issued`, in the transaction that stores the hashes — the

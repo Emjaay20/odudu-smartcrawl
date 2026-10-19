@@ -71,7 +71,12 @@ interface Seeded {
 }
 
 async function seed(
-  options: { owes?: RequiredAction[]; holdsTotp?: boolean; rememberMe?: boolean } = {},
+  options: {
+    owes?: RequiredAction[];
+    holdsTotp?: boolean;
+    holdsPasskey?: boolean;
+    rememberMe?: boolean;
+  } = {},
 ): Promise<Seeded> {
   const tenantName = `resume-${newId()}`;
   const tenantId = newId();
@@ -128,6 +133,16 @@ async function seed(
         subjectId: subject.id,
         type: 'recovery-code',
         secret: { kind: 'recovery-code', hash: await hashPassword('saved-code') },
+      });
+    }
+    if (options.holdsPasskey === true) {
+      // A second factor a password sign-in never asserts: it lets a set be issued.
+      await credentialRepository(tx).insert({
+        tenantId,
+        subjectId: subject.id,
+        type: 'webauthn',
+        secret: { kind: 'webauthn', publicKey: 'AAAA', counter: 0, transports: [] },
+        lookupKey: `key-${newId()}`,
       });
     }
     for (const action of options.owes ?? []) {
@@ -344,7 +359,7 @@ describe('a finished required action resumes the login that owed it', () => {
   });
 
   it('generate-recovery-codes for a password-only subject: one password form', async () => {
-    const { tenantName } = await seed({ owes: ['generate-recovery-codes'] });
+    const { tenantName } = await seed({ owes: ['generate-recovery-codes'], holdsPasskey: true });
     const run = await walk(tenantName);
     expect(run.pages).toEqual(['password', 'generate-recovery-codes']);
     expect(run.passwordForms).toBe(1);

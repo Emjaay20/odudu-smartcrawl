@@ -1657,11 +1657,16 @@ increments; this section is its source, and the heading below is the one they fi
   existed and every one revoked with `require_new_set=false`, is now asked for a set at their next sign-in. That is the
   point; one existing integration test (`subjects.int.test.ts`, the TOTP removal) seeded such a subject and now seeds a
   saved code, the state an ordinary enrolment leaves.
-- **Known gap, placed.** A subject who regenerates codes in the instant an administrator removes their last factor can
-  end with a set and no factor: the issuing page does not take the subject lock, and refusing it when no factor is held
-  would break the tests that seed codes first. The window needs an authenticated session and the codes then stand in
-  for nothing (a tenant that requires a second factor owes the enrolment). P4f's explicit regenerate action is where the
-  lock and the refusal belong.
+- **Issuing is serialised with removal.** `beginRecoveryCodes` takes the subject row lock (`subjectRepository.lock`, which
+  `lockSubjectRow` in protocol-admin now delegates to) and issues only while a second factor is held; otherwise it clears
+  the owed `generate-recovery-codes` action and answers `{kind: 'no_second_factor'}`, which both page doors turn into the
+  expired-sign-in page. A set therefore never exists for a subject with no factor. verified: the interleaving test in
+  `recovery-lifecycle.int.test.ts` ("never leaves a set behind a removed last factor") holds the issuing transaction open
+  while the removal starts on a second connection; removing the lock from `beginRecoveryCodes` fails it.
+- **End sessions is part of the removal.** `DELETE …/credentials/{id}?end_sessions=true` calls `endAllSessions` inside the
+  removal's transaction (`DeleteCredentialDeps.endSessions`, injected because the sessions usecase imports the subjects
+  one), needs `manage-sessions` too, and records `detail.ended_sessions` on `subject.credential_delete`. The console makes
+  one request.
 
 ### What NIST requires of look-up secrets
 
@@ -1684,7 +1689,8 @@ Where Odudu stands: ten characters from a 32-character alphabet are 50 bits, far
 under-112-bit rule is met; single use is a conditional `UPDATE`; failures count against the tenant's second-factor
 lockout, whose threshold is a tenant setting that a CHECK holds to at most 100 and that defaults to 5; the codes page is reached only through a
 completed sign-in. Revocation on compromise was the gap (an operator could not tell the server a factor was lost without
-orphaning its set), now closed by the removal rule; the notice for an administrator's change is added here. Not met, and
+orphaning its set), now closed by the removal rule; the notice for an administrator's change is added here (to the address on file, verified or not, since
+it carries nothing a stranger could use). Not met, and
 placed: a notice when the subject's own enrolment or regeneration changes their authenticators, which is **P4f** (the
 design spec's P4f criterion and `docs/request-paths.md`'s "What is not implemented" now name it).
 

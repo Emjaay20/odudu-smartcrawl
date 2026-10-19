@@ -59,7 +59,7 @@ interface SeededTenant {
 
 async function seedTenant(
   prefix: string,
-  settings: { otpRequired?: boolean; owes?: RequiredAction } = {},
+  settings: { otpRequired?: boolean; owes?: RequiredAction; withoutFactor?: boolean } = {},
 ): Promise<SeededTenant> {
   const name = `${prefix}-${newId()}`;
   const id = newId();
@@ -93,6 +93,17 @@ async function seedTenant(
       type: 'password',
       secret: { kind: 'password', hash: await hashPassword(PASSWORD) },
     });
+    if (settings.owes === 'generate-recovery-codes' && settings.withoutFactor !== true) {
+      // A set is only issued to somebody who holds a second factor. A passkey
+      // row leaves a password sign-in as it was: nothing here asserts it.
+      await credentialRepository(tx).insert({
+        tenantId: id,
+        subjectId: subject.id,
+        type: 'webauthn',
+        secret: { kind: 'webauthn', publicKey: 'AAAA', counter: 0, transports: [] },
+        lookupKey: `key-${newId()}`,
+      });
+    }
     if (settings.owes !== undefined) {
       await requiredActionRepository(tx).add(id, subject.id, settings.owes);
     }
@@ -281,6 +292,20 @@ describe('enrolling a TOTP app, then being shown recovery codes', () => {
 });
 
 describe('recovery codes', () => {
+  it('issues no set to a subject with no second factor, clears the action, and lets the next sign-in through', async () => {
+    const tenant = await seedTenant('audit-nofactor', {
+      owes: 'generate-recovery-codes',
+      withoutFactor: true,
+    });
+
+    const refused = await passwordStep(tenant, await startAuthSession(tenant));
+    expect(refused.res.body).not.toContain('Save your recovery codes');
+    expect(refused.res.statusCode).toBe(400);
+
+    const next = await passwordStep(tenant, await startAuthSession(tenant));
+    expect(next.res.statusCode).toBe(302);
+  });
+
   it('writes recovery_codes.issued for every set shown, the forced first one included', async () => {
     const tenant = await seedTenant('audit-codes', { owes: 'generate-recovery-codes' });
     const authSessionId = await startAuthSession(tenant);

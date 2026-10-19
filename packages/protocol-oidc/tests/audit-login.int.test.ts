@@ -596,10 +596,10 @@ describe('second factors', () => {
   it('records a recovery code spent twice as already_used the second time', async () => {
     await enrolTotp(otpTenant, 'rita');
     const rita = subjectOf(otpTenant, 'rita');
-    const offer = await withTenant(app.db, otpTenant.id, (tx) =>
+    const outcome = await withTenant(app.db, otpTenant.id, (tx) =>
       beginRecoveryCodes(tx, { tenantId: otpTenant.id, subjectId: rita }),
     );
-    const recoveryCode = offer.codes[0] ?? '';
+    const recoveryCode = outcome.kind === 'issued' ? (outcome.offer.codes[0] ?? '') : '';
 
     const first = await startAuthSession(otpTenant);
     await submit(otpTenant, { auth_session_id: first, username: 'rita', password: PASSWORD });
