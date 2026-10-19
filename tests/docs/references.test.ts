@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, globSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { plannedGenerated, underGenerated } from './generated-links.js';
 import { loadDocument, REPO_ROOT, scanFences, type Document } from './markdown.js';
 
 // How many of each kind of reference each document carried when these checks
@@ -192,6 +193,12 @@ const NOT_OURS = new Set(['node_modules', 'dist', 'coverage', '.git', '.superpow
 // checks their links itself, and a checkout that has not built has none.
 const GENERATED = 'apps/docs/content/en/reference/generated';
 
+// A link into a generated directory has no file to find in a checkout that has not built; the
+// docs build checks it as a route, and here it must be a page the generator plans to write.
+export function linkResolves(absolute: string, planned: ReadonlySet<string>): boolean {
+  return underGenerated(absolute) ? planned.has(absolute) : existsSync(absolute);
+}
+
 function everyDocument(): string[] {
   return globSync('**/*.md', {
     cwd: REPO_ROOT,
@@ -207,7 +214,8 @@ describe('every link in every document resolves', () => {
     expect(documents.length).toBeGreaterThan(80);
   });
 
-  it('resolves each relative link against the file that makes it', () => {
+  it('resolves each relative link against the file that makes it', async () => {
+    const planned = await plannedGenerated();
     let links = 0;
     const broken: string[] = [];
     for (const name of documents) {
@@ -215,12 +223,35 @@ describe('every link in every document resolves', () => {
       const from = path.dirname(path.join(REPO_ROOT, name));
       for (const target of linkTargets(document)) {
         links += 1;
-        if (!existsSync(path.resolve(from, target))) broken.push(`${name} -> ${target}`);
+        if (!linkResolves(path.resolve(from, target), planned)) broken.push(`${name} -> ${target}`);
       }
     }
 
     expect(links, 'the link extractor has stopped recognising links').toBeGreaterThan(50);
     expect(broken, 'links to files that are not in this repository').toEqual([]);
+  });
+});
+
+describe('a link into the generated reference', () => {
+  const root = path.join(REPO_ROOT, 'apps/docs/content/en/reference/generated');
+
+  it('passes when it names a page the generator plans, on a tree that has not built', async () => {
+    const planned = await plannedGenerated();
+    expect(planned.has(path.join(root, 'configuration.md'))).toBe(true);
+    expect(linkResolves(path.join(root, 'configuration.md'), planned)).toBe(true);
+    expect(linkResolves(path.join(root, 'admin-api/subjects.md'), planned)).toBe(true);
+  });
+
+  it('fails when it names a generated page nothing plans', async () => {
+    const planned = await plannedGenerated();
+    expect(linkResolves(path.join(root, 'configuraton.md'), planned)).toBe(false);
+    expect(linkResolves(path.join(root, 'admin-api/nothing.md'), planned)).toBe(false);
+  });
+
+  it('leaves a link outside the generated directories to the file system', async () => {
+    const planned = await plannedGenerated();
+    expect(linkResolves(path.join(REPO_ROOT, 'README.md'), planned)).toBe(true);
+    expect(linkResolves(path.join(REPO_ROOT, 'no-such-file.md'), planned)).toBe(false);
   });
 });
 
