@@ -158,6 +158,15 @@ export const ENDPOINT_DOCS: Readonly<Record<string, EndpointDoc>> = {
     auth: 'None',
     purpose: 'The stylesheet, mark and fonts every server-rendered page links.',
   },
+  'GET /docs': {
+    auth: 'None',
+    purpose: 'Redirects to `/docs/`, the documentation that ships with the server.',
+  },
+  'GET /docs/*': {
+    auth: 'None',
+    purpose:
+      'The documentation built into the image: its pages, search index and Markdown copies. Off with `ODUDU_DOCS=false`.',
+  },
   'GET /console': {
     auth: 'None',
     purpose: 'Redirects to `/console/`, the admin console.',

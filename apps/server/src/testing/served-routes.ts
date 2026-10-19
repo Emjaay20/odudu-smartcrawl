@@ -20,10 +20,11 @@ const database: DatabaseHandle = {
   close: () => Promise.resolve(),
 };
 
-// The app as a deployment with everything on serves it: the console gateway
-// and the stylesheet routes are registered only when their inputs exist, so a
-// probe base address, a generated console key and a directory holding a
-// stylesheet stand in for them. Nothing here is ever contacted.
+// The app as a deployment with everything on serves it: the console gateway,
+// the stylesheet routes and the documentation are registered only when their
+// inputs exist, so a probe base address, a generated console key and
+// directories holding a stylesheet and a built site stand in for them.
+// Nothing here is ever contacted.
 export async function servingApp(): Promise<{
   readonly app: FastifyInstance;
   readonly endpoints: readonly ServedEndpoint[];
@@ -31,6 +32,12 @@ export async function servingApp(): Promise<{
   const endpoints: ServedEndpoint[] = [];
   const instrumentDir = mkdtempSync(path.join(tmpdir(), 'odudu-instrument-'));
   writeFileSync(path.join(instrumentDir, 'instrument.css'), '');
+  const docsDir = mkdtempSync(path.join(tmpdir(), 'odudu-docs-'));
+  writeFileSync(path.join(docsDir, 'index.html'), '');
+  writeFileSync(
+    path.join(docsDir, 'csp.json'),
+    JSON.stringify({ scriptHashes: [], styleAttributeHashes: [] }),
+  );
   const config = loadConfig({
     ODUDU_DATABASE_URL: 'postgres://u:p@localhost:5432/odudu',
     ODUDU_KEK: Buffer.alloc(32, 9).toString('base64'),
@@ -44,6 +51,7 @@ export async function servingApp(): Promise<{
     kek: config.ODUDU_KEK,
     logger: createLogger(config),
     instrumentDir,
+    docsDir,
     consoleBaseUrl: 'http://localhost:3000',
     consoleKeys: await loadConsoleKeys(config),
     onRoute: (route: RouteOptions) => {

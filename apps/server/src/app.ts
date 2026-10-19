@@ -39,6 +39,7 @@ import {
   standardClaimMappers,
   type AuditRefusalBudget,
 } from '@odudu/protocol-oidc';
+import { docsRoutes } from '@odudu/web-assets';
 import Fastify, {
   type FastifyError,
   type FastifyInstance,
@@ -109,6 +110,12 @@ export interface AppDeps {
    * page links, read once at registration.
    */
   readonly instrumentDir?: string;
+  /**
+   * `ODUDU_DOCS_DIR` while `ODUDU_DOCS` is on: the built documentation served
+   * under `/docs`. Unset registers nothing, so `/docs` is as unknown as any
+   * other path.
+   */
+  readonly docsDir?: string | undefined;
   /** The console gateway's clock, so a test can age a pending sign-in. */
   readonly consoleNow?: () => Date;
   /** Called with every route as it is registered, for a tool that lists what the app serves. */
@@ -385,6 +392,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
 
   registerHealth(app, deps);
   app.register(instrumentRoutes(deps.instrumentDir ?? DEFAULT_INSTRUMENT_DIR));
+  if (deps.docsDir !== undefined) app.register(docsRoutes(deps.docsDir));
   if (deps.consoleBaseUrl !== undefined) {
     if (deps.consoleKeys === undefined) throw missingConsoleKey();
     app.register(

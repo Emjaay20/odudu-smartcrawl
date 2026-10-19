@@ -358,6 +358,9 @@ importers:
       '@odudu/protocol-oidc':
         specifier: workspace:*
         version: link:../../packages/protocol-oidc
+      '@odudu/web-assets':
+        specifier: workspace:*
+        version: link:../../packages/web-assets
       close-with-grace:
         specifier: 2.5.0
         version: 2.5.0
