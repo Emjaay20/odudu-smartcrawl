@@ -1031,7 +1031,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 3170
+content-length: 3417
 Date: Thu, 15 Oct 2026 13:25:46 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -1048,7 +1048,12 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<header class="intro">
+<h1>Sign in</h1>
+<p class="context">to continue to <bdi>demo-spa</bdi></p>
+<p class="tenant"><bdi>demo</bdi></p>
+</header>
 <form method="post" action="/tenants/demo/login-actions/authenticate">
   <input type="hidden" name="auth_session_id" value="01a13fbd-81d7-7035-a05f-3ed8c91cac49">
   <label>Username <input type="text" name="username" autocomplete="username"></label>
@@ -1058,9 +1063,9 @@ Keep-Alive: timeout=72
 <form method="post" action="/tenants/demo/login-actions/authenticate" id="passkey-form" data-failed="Your device did not finish signing in — {reason}. You can try again." data-cancelled="the request was cancelled" data-not-offered="this server is not offering passkeys">
   <input type="hidden" name="auth_session_id" value="01a13fbd-81d7-7035-a05f-3ed8c91cac49">
   <input type="hidden" name="assertion" id="passkey-assertion">
-  <p><button type="submit" id="passkey-submit">Sign in with a passkey</button></p>
+  <p><button type="submit" id="passkey-submit" class="secondary">Sign in with a passkey</button></p>
 </form>
-<p id="passkey-error" hidden></p>
+<p id="passkey-error" class="alert" role="alert" hidden></p>
 <noscript><p>Signing in with a passkey needs JavaScript, because only the browser can talk to your authenticator. Use your username and password above.</p></noscript>
 <script nonce="Wl0HqPsMni5vrqbjy4QgLg==">
 const form = document.getElementById('passkey-form');
@@ -1254,7 +1259,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 3130
+content-length: 3374
 Date: Thu, 15 Oct 2026 13:25:59 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -1271,8 +1276,13 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<p role="alert"><strong>Sign-in failed. Check your details and try again.</strong></p>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<header class="intro">
+<h1>Sign in</h1>
+<p class="context">to continue to <bdi>demo-spa</bdi></p>
+<p class="tenant"><bdi>demo</bdi></p>
+</header>
+<p class="alert" role="alert">Sign-in failed. Check your details and try again.</p>
 <form method="post" action="/tenants/demo/login-actions/authenticate">
   <input type="hidden" name="auth_session_id" value="01a13fbd-b4cc-7f45-a470-fe600d127131">
   <label>Username <input type="text" name="username" autocomplete="username" value="ada"></label>
@@ -1282,9 +1292,9 @@ Keep-Alive: timeout=72
 <form method="post" action="/tenants/demo/login-actions/authenticate" id="passkey-form" data-failed="Your device did not finish signing in — {reason}. You can try again." data-cancelled="the request was cancelled" data-not-offered="this server is not offering passkeys">
   <input type="hidden" name="auth_session_id" value="01a13fbd-b4cc-7f45-a470-fe600d127131">
   <input type="hidden" name="assertion" id="passkey-assertion">
-  <p><button type="submit" id="passkey-submit">Sign in with a passkey</button></p>
+  <p><button type="submit" id="passkey-submit" class="secondary">Sign in with a passkey</button></p>
 </form>
-<p id="passkey-error" hidden></p>
+<p id="passkey-error" class="alert" role="alert" hidden></p>
 <noscript><p>Signing in with a passkey needs JavaScript, because only the browser can talk to your authenticator. Use your username and password above.</p></noscript>
 <script nonce="kwGGd/DNU6OyCipi1Taykw==">…</script>
 </main>
@@ -1586,7 +1596,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 1075
+content-length: 1131
 Date: Wed, 14 Oct 2026 00:41:38 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -1603,7 +1613,7 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t continue</h1>
 <p><bdi>This sign-in attempt is no longer valid. Go back and start again.</bdi></p>
 <p><a href="/tenants/demo/protocol/openid-connect/auth?response_type=code&amp;client_id=demo-spa&amp;redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&amp;scope=openid&amp;code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&amp;code_challenge_method=S256&amp;state=demo-state">Start sign-in again</a></p>
@@ -1679,7 +1689,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 759
+content-length: 815
 Date: Wed, 14 Oct 2026 00:41:38 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -1696,7 +1706,7 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t continue</h1>
 <p><bdi>This sign-in attempt is no longer valid. Go back and start again.</bdi></p>
 <p><small>invalid_request</small></p>
@@ -1726,7 +1736,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 759
+content-length: 815
 Date: Wed, 14 Oct 2026 00:42:05 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -1743,7 +1753,7 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t continue</h1>
 <p><bdi>This sign-in attempt is no longer valid. Go back and start again.</bdi></p>
 <p><small>invalid_request</small></p>
@@ -1830,7 +1840,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 933
+content-length: 989
 Date: Wed, 14 Oct 2026 00:42:05 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -1847,7 +1857,7 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t continue</h1>
 <p><bdi>This sign-in attempt is no longer valid. Go back and start again.</bdi></p>
 <p><a href="http://localhost:8080/callback?error=access_denied&amp;state=demo-state&amp;iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo">Return to the application</a></p>
@@ -3323,7 +3333,7 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Account created</h1>
 <p>Check your email for a link to verify your address before you can sign in.</p>
 </main>
@@ -3375,7 +3385,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 777
+content-length: 833
 Date: Mon, 19 Oct 2026 06:38:14 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -3392,7 +3402,7 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t create this account</h1>
 <ul>
 <li>That username contains a character that changes the direction of text, which is not allowed.</li>
@@ -3484,7 +3494,7 @@ content-type: text/html
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t sign in yet</h1>
 <p>You need to verify your email address before you can sign in. We sent a link to the address on this account — follow it, then sign in again.</p>
 </main>
@@ -3559,7 +3569,7 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t create this account</h1>
 <ul>
 <li>That email address is already registered.</li>
@@ -3600,7 +3610,7 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t create this account</h1>
 <ul>
 <li>Password must be at least 8 characters long.</li>
@@ -3628,7 +3638,7 @@ same short password now lists all three:
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t create this account</h1>
 <ul>
 <li>Password must be at least 8 characters long.</li>
@@ -3670,7 +3680,7 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t create this account</h1>
 <ul>
 <li>Password must not contain the username.</li>
@@ -3705,7 +3715,7 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t create this account</h1>
 <ul>
 <li>Password must not contain the email address.</li>
@@ -3772,7 +3782,7 @@ curl -sS -w '\n%{http_code}\n' \
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t create this account</h1>
 <ul>
 <li>That email address is already registered.</li>
@@ -3917,8 +3927,11 @@ curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authentica
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<header class="intro">
 <h1>Set up your authenticator</h1>
+<p class="tenant"><bdi>otp-demo</bdi></p>
+</header>
 <p>Scan this with your authenticator app, or enter the key by hand.</p>
 <svg …>…</svg>
 <p><bdi dir="ltr"><code>otpauth://totp/otp-demo:ada?secret=BYIQDMIGLQSMNOGKTZMVAGWBLWEOE7ZY&amp;issuer=otp-demo&amp;algorithm=SHA1&amp;digits=6&amp;period=30</code></bdi></p>
@@ -3981,7 +3994,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 1778
+content-length: 1909
 Date: Wed, 14 Oct 2026 00:32:57 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -3998,8 +4011,11 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<header class="intro">
 <h1>Save your recovery codes</h1>
+<p class="tenant"><bdi>otp-demo</bdi></p>
+</header>
 <p>Each of these signs you in once, in place of your second factor, if you lose it. <strong>This is the only time they are shown.</strong> Print them or put them in a password manager before you continue — nobody, including an administrator, can show them to you again.</p>
 <ol>
   <li><bdi dir="ltr"><code>TKBYN-J8QGH</code></bdi></li>
@@ -4117,7 +4133,12 @@ curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authentica
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<header class="intro">
+<h1>Enter your authentication code</h1>
+<p class="context">to continue to <bdi>otp-spa</bdi></p>
+<p class="tenant"><bdi>otp-demo</bdi></p>
+</header>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
   <input type="hidden" name="auth_session_id" value="01a137d3-9bc1-7987-8c23-f806ce89510f">
   <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
@@ -4165,8 +4186,13 @@ curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authentica
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<p role="alert"><strong>That code did not work. Check it and try again.</strong></p>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<header class="intro">
+<h1>Enter your authentication code</h1>
+<p class="context">to continue to <bdi>otp-spa</bdi></p>
+<p class="tenant"><bdi>otp-demo</bdi></p>
+</header>
+<p class="alert" role="alert">That code did not work. Check it and try again.</p>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
   <input type="hidden" name="auth_session_id" value="01a13f65-6fc2-798d-b022-fab2a73714f1">
   <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" autofocus></label>
@@ -4307,7 +4333,12 @@ curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authentica
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<header class="intro">
+<h1>Enter your authentication code</h1>
+<p class="context">to continue to <bdi>otp-spa</bdi></p>
+<p class="tenant"><bdi>otp-demo</bdi></p>
+</header>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
   <input type="hidden" name="auth_session_id" value="01a137d3-9df0-76d0-b626-fe71c6edce91">
   <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
@@ -4407,8 +4438,13 @@ curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authentica
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<p role="alert"><strong>You have already used that recovery code. Try another one from your list.</strong></p>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<header class="intro">
+<h1>Enter your authentication code</h1>
+<p class="context">to continue to <bdi>otp-spa</bdi></p>
+<p class="tenant"><bdi>otp-demo</bdi></p>
+</header>
+<p class="alert" role="alert">You have already used that recovery code. Try another one from your list.</p>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
   <input type="hidden" name="auth_session_id" value="01a13f65-709f-77fd-916a-4dde358b7bbc">
   <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" autofocus></label>
@@ -4445,8 +4481,13 @@ curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authentica
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<p role="alert"><strong>That code did not work. Check it and try again.</strong></p>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<header class="intro">
+<h1>Enter your authentication code</h1>
+<p class="context">to continue to <bdi>otp-spa</bdi></p>
+<p class="tenant"><bdi>otp-demo</bdi></p>
+</header>
+<p class="alert" role="alert">That code did not work. Check it and try again.</p>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
   <input type="hidden" name="auth_session_id" value="01a13f65-709f-77fd-916a-4dde358b7bbc">
   <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" autofocus></label>
@@ -4543,7 +4584,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 1866
+content-length: 1997
 Date: Wed, 14 Oct 2026 00:33:47 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -4560,8 +4601,11 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<header class="intro">
 <h1>Save your recovery codes</h1>
+<p class="tenant"><bdi>rc8-demo</bdi></p>
+</header>
 <p>Each of these signs you in once, in place of your second factor, if you lose it. <strong>This is the only time they are shown.</strong> Print them or put them in a password manager before you continue — nobody, including an administrator, can show them to you again.</p>
 <p>These replace the codes issued to this account before now, which no longer work.</p>
 <ol>
@@ -4903,7 +4947,7 @@ curl -sS -X POST http://localhost:3000/tenants/reset-demo/login-actions/reset-pa
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Check your email</h1>
 <p>If that address has an account, we&#39;ve sent a link to reset its password.</p>
 </main>
@@ -4921,7 +4965,7 @@ curl -sS -X POST http://localhost:3000/tenants/reset-demo/login-actions/reset-pa
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Check your email</h1>
 <p>If that address has an account, we&#39;ve sent a link to reset its password.</p>
 </main>
@@ -4982,7 +5026,11 @@ curl -sS 'http://localhost:3000/tenants/reset-demo/login-actions/action-token?ke
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<header class="intro">
+<h1>Choose a new password</h1>
+<p class="tenant"><bdi>reset-demo</bdi></p>
+</header>
 <form method="post" action="/tenants/reset-demo/login-actions/action-token">
   <input type="hidden" name="key" value="iad4k852Rw6VvCK8djwZSvU0dzcPMvNXXM3-UjOeRkk">
   <label>New password <input type="password" name="password" autocomplete="new-password"></label>
@@ -5017,7 +5065,7 @@ curl -sS -X POST http://localhost:3000/tenants/reset-demo/login-actions/action-t
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t reset your password</h1>
 <ul>
 <li>Password must be at least 8 characters long.</li>
@@ -5047,7 +5095,7 @@ curl -sS -i -X POST http://localhost:3000/tenants/reset2-demo/login-actions/acti
 ```
 HTTP/1.1 400 Bad Request
 content-type: text/html
-content-length: 731
+content-length: 787
 
 <!doctype html>
 <html lang="en" dir="ltr">
@@ -5061,7 +5109,7 @@ content-length: 731
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t reset your password</h1>
 <ul>
 <li>Password must not be one you have used before.</li>
@@ -5099,7 +5147,7 @@ curl -sS -X POST http://localhost:3000/tenants/reset-demo/login-actions/action-t
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Your password has been reset</h1>
 <p>You can close this page and sign in with your new password.</p>
 </main>
@@ -5369,7 +5417,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 1085
+content-length: 1229
 Date: Wed, 14 Oct 2026 00:35:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -5386,8 +5434,11 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<header class="intro">
 <h1>Update your account</h1>
+<p class="tenant"><bdi>required-actions-demo</bdi></p>
+</header>
 <p>Your administrator asks you to:</p>
 <ul>
 <li>Choose a new password</li>
@@ -5419,7 +5470,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 737
+content-length: 793
 Date: Wed, 14 Oct 2026 00:35:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -5436,7 +5487,7 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Your account is updated</h1>
 <p>Sign in to the application to finish:</p>
 <ul>
@@ -5470,7 +5521,7 @@ curl -sS -w '\n' -X POST \
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>This link can&#39;t be used</h1>
 <p>It may have already been used or expired. Request a new one and try again.</p>
 </main>
@@ -5540,8 +5591,11 @@ curl -sS -X POST http://localhost:3086/tenants/expiry-demo/login-actions/authent
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<header class="intro">
 <h1>Change your password</h1>
+<p class="tenant"><bdi>expiry-demo</bdi></p>
+</header>
 <p>This account needs a new password before you can continue.</p>
 <form method="post" action="/tenants/expiry-demo/login-actions/required-action?action=update-password">
   <input type="hidden" name="auth_session_id" value="01a10b6c-9d41-75c4-85f5-e18615bcb162">
@@ -6019,7 +6073,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 729
+content-length: 785
 Date: Thu, 15 Oct 2026 11:54:12 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -6036,7 +6090,7 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Too many attempts</h1>
 <p>Try again in 60 seconds.</p>
 <p>Go back to the previous page when the time is up.</p>
@@ -7706,7 +7760,7 @@ curl -sS -b cookies2.txt \
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Sign out?</h1>
 <p>Signing out ends this session for every application that uses it.</p>
 <form method="post" action="/tenants/demo/protocol/openid-connect/logout">
@@ -7755,7 +7809,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 714
+content-length: 770
 
 <!doctype html>
 <html lang="en" dir="ltr">
@@ -7769,7 +7823,7 @@ content-length: 714
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t sign out</h1>
 <p>This sign-out attempt is no longer valid. Go back and try again.</p>
 </main>
@@ -7998,7 +8052,7 @@ curl -sS -b cookies-aud.txt -X POST \
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Sign out?</h1>
 <p>Signing out ends this session for every application that uses it.</p>
 <form method="post" action="/tenants/demo/protocol/openid-connect/logout">
@@ -8139,7 +8193,7 @@ content-length: 318
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Signed out</h1>
 <p>You have been signed out.</p>
 <iframe src="http://localhost:9100/logout?iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo&amp;sid=01a137d7-eae6-…"></iframe>
@@ -8463,7 +8517,7 @@ curl -sS -b cookies-offline.txt "http://localhost:3000/tenants/demo/protocol/ope
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Sign out?</h1>
 <p>Signing out ends this session for every application that uses it.</p>
 <form method="post" action="/tenants/demo/protocol/openid-connect/logout">
@@ -8501,7 +8555,7 @@ cache-control: no-store
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Signed out</h1>
 <p>You have been signed out.</p>
 
@@ -8653,7 +8707,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 1198
+content-length: 1343
 Date: Wed, 14 Oct 2026 00:36:23 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -8670,8 +8724,11 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<header class="intro">
 <h1><bdi>Example RP</bdi> is asking for access</h1>
+<p class="tenant"><bdi>demo</bdi></p>
+</header>
 <form method="post" action="/tenants/demo/login-actions/consent">
   <input type="hidden" name="auth_session_id" value="01a137d6-c22e-791c-9097-e8d295b70e7f">
   <ul>
@@ -8680,7 +8737,7 @@ Keep-Alive: timeout=72
   </ul>
   <label><input type="checkbox" name="scope" value="offline_access"> <bdi>offline_access</bdi> — grants ongoing access, even while you are not present</label>
   <button type="submit" name="decision" value="allow">Allow</button>
-  <button type="submit" name="decision" value="deny">Deny</button>
+  <button type="submit" name="decision" value="deny" class="secondary">Deny</button>
 </form>
 </main>
 </body>
@@ -8812,7 +8869,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 1347
+content-length: 1492
 Date: Wed, 14 Oct 2026 00:36:24 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -8829,8 +8886,11 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<header class="intro">
 <h1><bdi>Example RP</bdi> is asking for access</h1>
+<p class="tenant"><bdi>demo</bdi></p>
+</header>
 <form method="post" action="/tenants/demo/login-actions/consent">
   <input type="hidden" name="auth_session_id" value="01a137d6-c495-744e-aefc-7c457bb799de">
   <ul>
@@ -8839,7 +8899,7 @@ Keep-Alive: timeout=72
   </ul>
   <label><input type="checkbox" name="scope" value="offline_access"> <bdi>offline_access</bdi> — grants ongoing access, even while you are not present</label>
   <button type="submit" name="decision" value="allow">Allow</button>
-  <button type="submit" name="decision" value="deny">Deny</button>
+  <button type="submit" name="decision" value="deny" class="secondary">Deny</button>
 </form>
 </main>
 <script nonce="RGkC4LknpA2uMvjtQxZIHg==">window.addEventListener('pageshow', function (event) { if (event.persisted) location.reload(); });</script>
@@ -10080,7 +10140,7 @@ content-type: text/html
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t continue</h1>
 <p><bdi>Unknown or disabled client</bdi></p>
 <p><small>invalid_client</small></p>
@@ -10187,7 +10247,7 @@ curl -sS -D - -X POST -H 'content-type: application/json' \
 ```
 HTTP/1.1 415 Unsupported Media Type
 content-type: text/html
-content-length: 777
+content-length: 833
 
 <!doctype html>
 <html lang="en" dir="ltr">
@@ -10201,7 +10261,7 @@ content-length: 777
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t continue</h1>
 <p><bdi>Authorization request parameters must be sent as application/x-www-form-urlencoded.</bdi></p>
 <p><small>invalid_request</small></p>
@@ -10705,13 +10765,16 @@ cat chooser.html
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<header class="intro">
 <h1>Choose an account</h1>
+<p class="tenant"><bdi>demo</bdi></p>
+</header>
 <form method="post" action="/tenants/demo/login-actions/select-account">
   <input type="hidden" name="auth_session_id" value="01a0cb29-6541-7948-968b-a0a487e699f8">
-  <button type="submit" name="session_id" value="01a0cb29-64de-7524-9fa8-6010a80148bb"><bdi>ada</bdi></button>
-  <button type="submit" name="session_id" value="01a0cb29-652b-7714-9d32-50e37b35e21a"><bdi>carol</bdi></button>
-  <button type="submit" name="use_other" value="1">Use another account</button>
+  <button type="submit" name="session_id" value="01a0cb29-64de-7524-9fa8-6010a80148bb" class="secondary choice"><bdi>ada</bdi></button>
+  <button type="submit" name="session_id" value="01a0cb29-652b-7714-9d32-50e37b35e21a" class="secondary choice"><bdi>carol</bdi></button>
+  <button type="submit" name="use_other" value="1" class="quiet">Use another account</button>
 </form>
 </main>
 </body>

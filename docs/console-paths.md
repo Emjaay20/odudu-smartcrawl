@@ -207,7 +207,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 3038
+content-length: 3252
 Date: Wed, 14 Oct 2026 00:39:57 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -224,7 +224,12 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<header class="intro">
+<h1>Sign in</h1>
+<p class="context">to continue to <bdi>odudu-admin</bdi></p>
+<p class="tenant"><bdi>console-paths</bdi></p>
+</header>
 <form method="post" action="/tenants/console-paths/login-actions/authenticate">
   <input type="hidden" name="auth_session_id" value="01a137da-0690-7e7c-b322-b21a3a5e09ee">
   <label>Username <input type="text" name="username" autocomplete="username"></label>
@@ -559,7 +564,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 722
+content-length: 778
 Date: Mon, 19 Oct 2026 02:02:53 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -576,7 +581,7 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Sign-in failed</h1>
 <p>The sign-in could not be completed.</p>
 <p><a href="/console/">Sign in again</a></p>
@@ -654,7 +659,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 722
+content-length: 778
 Date: Mon, 19 Oct 2026 02:02:53 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -671,7 +676,7 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Sign-in failed</h1>
 <p>The sign-in could not be completed.</p>
 <p><a href="/console/">Sign in again</a></p>
@@ -864,7 +869,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 722
+content-length: 778
 Date: Wed, 14 Oct 2026 00:39:03 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -881,7 +886,7 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Sign-in failed</h1>
 <p>The sign-in could not be completed.</p>
 <p><a href="/console/">Sign in again</a></p>
@@ -1021,7 +1026,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 722
+content-length: 778
 Date: Wed, 14 Oct 2026 00:39:04 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -1038,7 +1043,7 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
 <h1>Sign-in failed</h1>
 <p>The sign-in could not be completed.</p>
 <p><a href="/console/">Sign in again</a></p>

@@ -730,8 +730,11 @@ the change-password page, `change.html`, whose form carries the same
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<header class="intro">
 <h1>Change your password</h1>
+<p class="tenant"><bdi>system</bdi></p>
+</header>
 <p>This account needs a new password before you can continue.</p>
 <form method="post" action="/tenants/system/login-actions/required-action?action=update-password">
   <input type="hidden" name="auth_session_id" value="01a1203b-3d92-7736-aa5e-d291255eace5">
@@ -4964,8 +4967,11 @@ the one box the subject can grant:
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<header class="intro">
 <h1><bdi>consents-demo-app2</bdi> is asking for access</h1>
+<p class="tenant"><bdi>consents-demo2</bdi></p>
+</header>
 <form method="post" action="/tenants/consents-demo2/login-actions/consent">
   <input type="hidden" name="auth_session_id" value="01a0e558-b0a9-763b-84f8-f348efaacd53">
   <ul>
@@ -4973,7 +4979,7 @@ the one box the subject can grant:
   </ul>
   <label><input type="checkbox" name="scope" value="offline_access"> <bdi>offline_access</bdi> — grants ongoing access, even while you are not present</label>
   <button type="submit" name="decision" value="allow">Allow</button>
-  <button type="submit" name="decision" value="deny">Deny</button>
+  <button type="submit" name="decision" value="deny" class="secondary">Deny</button>
 </form>
 </main>
 </body>
@@ -7980,7 +7986,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 1341
+content-length: 1486
 Date: Wed, 14 Oct 2026 00:41:01 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -7997,8 +8003,11 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<header class="intro">
 <h1><bdi>Consent &lt;Portal&gt;</bdi> is asking for access</h1>
+<p class="tenant"><bdi>demo</bdi></p>
+</header>
 <form method="post" action="/tenants/demo/login-actions/consent">
   <input type="hidden" name="auth_session_id" value="01a137da-fe1b-73d0-adb7-877a0657f131">
   <ul>
@@ -8008,7 +8017,7 @@ Keep-Alive: timeout=72
   <label><input type="checkbox" name="scope" value="offline_access"> <bdi>offline_access</bdi> — grants ongoing access, even while you are not present</label>
   <label><input type="checkbox" name="scope" value="billing"> <bdi>See and pay your invoices</bdi></label>
   <button type="submit" name="decision" value="allow">Allow</button>
-  <button type="submit" name="decision" value="deny">Deny</button>
+  <button type="submit" name="decision" value="deny" class="secondary">Deny</button>
 </form>
 </main>
 </body>
