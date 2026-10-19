@@ -5,7 +5,7 @@ import {
   renderTotpEnrolmentPage,
   renderUpdatePasswordPage,
   type PasskeyEnrolmentOffer,
-  type RecoveryCodesOffer,
+  type BeginRecoveryCodesOutcome,
   type RequiredAction,
   type TotpEnrolmentOffer,
 } from '@odudu/authn-flows';
@@ -39,7 +39,7 @@ export interface RequiredActionResponseDeps extends ContinuationDeps {
     tenantId: string,
     subjectId: string,
     request: RequestContext,
-  ): Promise<RecoveryCodesOffer>;
+  ): Promise<BeginRecoveryCodesOutcome>;
 }
 
 // The one place a 'required_action' outcome becomes a response, so login.ts,
@@ -75,12 +75,19 @@ export async function sendRequiredActionPage(
       if ((await deps.authenticatedSubject(tenant.id, authSessionId)) !== subjectId) {
         return sendSignInExpired(reply, deps, tenantName, authSessionId);
       }
-      const offer = await deps.beginRecoveryCodes(
+      const issued = await deps.beginRecoveryCodes(
         tenant.id,
         subjectId,
         requestContextFrom(reply.request),
       );
-      return send(renderRecoveryCodesPage(tenantName, authSessionId, offer, undefined, locale));
+      // The set was refused because no second factor is held any more, and the
+      // action is cleared: signing in again goes on without it.
+      if (issued.kind === 'no_second_factor') {
+        return sendSignInExpired(reply, deps, tenantName, authSessionId);
+      }
+      return send(
+        renderRecoveryCodesPage(tenantName, authSessionId, issued.offer, undefined, locale),
+      );
     }
   }
   if (action === 'update-password') {

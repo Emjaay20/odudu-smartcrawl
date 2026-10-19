@@ -1,6 +1,6 @@
 import { type TenantScopedDatabase } from '@odudu/db';
 import { auditRepository } from '@odudu/domain-audit';
-import { credentialRepository, hashPassword } from '@odudu/domain-identity';
+import { credentialRepository, hashPassword, subjectRepository } from '@odudu/domain-identity';
 import { requiredActionRepository } from '#/repository/required-actions';
 import { generateRecoveryCodes, normaliseRecoveryCode } from '#/service/authenticators/recovery';
 import { type RecoveryCodesOffer } from '#/view/recovery-codes-html';
@@ -10,15 +10,27 @@ export interface IssueRecoveryCodes {
   subjectId: string;
 }
 
-// Returns the plaintext codes exactly once, to the page that shows them.
-// Nothing else ever holds them: one Argon2id hash per code is written, the
-// array below is the only copy of the plaintext that exists, and the page
-// that renders it is not re-renderable — a reload re-enters this function
-// and issues a different ten, replacing the set it just displayed.
+export type BeginRecoveryCodesOutcome =
+  { kind: 'issued'; offer: RecoveryCodesOffer } | { kind: 'no_second_factor' };
+
+// Returns the plaintext codes exactly once, to the page that shows them:
+// one Argon2id hash per code is stored, and a reload issues a different ten,
+// replacing the set it just displayed.
+//
+// Taken under the subject's row lock, the one a factor removal holds, and
+// only while a second factor is held: a set that raced the removal of the
+// last factor is refused, and the action it was owed for is cleared.
 export async function beginRecoveryCodes(
   tx: TenantScopedDatabase,
   input: IssueRecoveryCodes,
-): Promise<RecoveryCodesOffer> {
+): Promise<BeginRecoveryCodesOutcome> {
+  const held = await subjectRepository(tx).lock(input.subjectId);
+  const standing = held ? await credentialRepository(tx).recoveryStanding(input.subjectId) : null;
+  if (!standing?.hasSecondFactor) {
+    await requiredActionRepository(tx).complete(input.subjectId, 'generate-recovery-codes');
+    return { kind: 'no_second_factor' };
+  }
+
   const codes = generateRecoveryCodes();
   const hashes = await Promise.all(codes.map((code) => hashPassword(normaliseRecoveryCode(code))));
 
@@ -43,7 +55,7 @@ export async function beginRecoveryCodes(
     resourceType: 'subject',
     resourceId: input.subjectId,
   });
-  return { codes, replaced: replaced > 0 };
+  return { kind: 'issued', offer: { codes, replaced: replaced > 0 } };
 }
 
 export type RecoveryCodesOutcome =

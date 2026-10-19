@@ -156,12 +156,21 @@ export function registerRequiredActionRoute(
     );
 
     if (outcome.action === 'generate-recovery-codes') {
-      const offer = await deps.beginRecoveryCodes(tenant.id, outcome.subjectId, context);
+      const issued = await deps.beginRecoveryCodes(tenant.id, outcome.subjectId, context);
+      if (issued.kind === 'no_second_factor') {
+        return sendSignInExpired(reply, deps, tenantName, outcome.authSessionId);
+      }
       return sendHtml(
         reply,
         200,
         continuing(
-          renderRecoveryCodesPage(tenantName, outcome.authSessionId, offer, outcome.reason, locale),
+          renderRecoveryCodesPage(
+            tenantName,
+            outcome.authSessionId,
+            issued.offer,
+            outcome.reason,
+            locale,
+          ),
         ),
       );
     }

@@ -111,11 +111,25 @@ async function seedAccount(factors: { totp: boolean; passkey: boolean }): Promis
   return { tenantId, subjectId };
 }
 
+// Ten rows with no second factor behind them, which issuing a set now refuses.
+function holdCodes(account: Account, count = 10): Promise<void> {
+  return withTenant(app.db, account.tenantId, async (tx) => {
+    for (let n = 0; n < count; n += 1) {
+      await credentialRepository(tx).insert({
+        ...account,
+        type: 'recovery-code',
+        secret: { kind: 'recovery-code', hash: await hashPassword(`held-${String(n)}`) },
+      });
+    }
+  });
+}
+
 function issueCodes(account: Account): Promise<readonly string[]> {
   return withTenant(app.db, account.tenantId, async (tx) => {
-    const offer = await beginRecoveryCodes(tx, account);
+    const outcome = await beginRecoveryCodes(tx, account);
+    if (outcome.kind !== 'issued') throw new Error('expected a set to be issued');
     await requiredActionRepository(tx).complete(account.subjectId, 'generate-recovery-codes');
-    return offer.codes;
+    return outcome.offer.codes;
   });
 }
 
@@ -194,9 +208,9 @@ describe('onSecondFactorRemoved', () => {
 
   it('does not count a recovery code as a second factor', async () => {
     const account = await seedAccount({ totp: false, passkey: false });
-    await issueCodes(account);
+    await holdCodes(account, 3);
     const { outcome } = await removeAndNotify(account, 'totp');
-    expect(outcome).toEqual({ recoveryCodesRevoked: 10 });
+    expect(outcome).toEqual({ recoveryCodesRevoked: 3 });
   });
 
   it('writes nothing for a subject that holds no codes', async () => {
@@ -209,7 +223,7 @@ describe('onSecondFactorRemoved', () => {
 
   it("deletes nothing under a foreign tenant's context", async () => {
     const account = await seedAccount({ totp: false, passkey: false });
-    await issueCodes(account);
+    await holdCodes(account);
     const foreign = newId();
 
     const outcome = await withTenant(app.db, foreign, (tx) =>
@@ -338,5 +352,86 @@ describe('re-enrolling after the factor was removed', () => {
     expect(await pending(account)).toContain('generate-recovery-codes');
     expect(await standing(account)).toMatchObject({ held: 0 });
     expect(old).toHaveLength(10);
+  });
+});
+
+describe('issuing a set', () => {
+  it('is refused for a subject with no second factor, clears the owed action, and writes nothing', async () => {
+    const account = await seedAccount({ totp: false, passkey: false });
+    await withTenant(app.db, account.tenantId, (tx) =>
+      requiredActionRepository(tx).add(
+        account.tenantId,
+        account.subjectId,
+        'generate-recovery-codes',
+      ),
+    );
+
+    const outcome = await withTenant(app.db, account.tenantId, (tx) =>
+      beginRecoveryCodes(tx, account),
+    );
+
+    expect(outcome).toEqual({ kind: 'no_second_factor' });
+    expect(await standing(account)).toMatchObject({ held: 0 });
+    expect(await pending(account)).toEqual([]);
+  });
+
+  it('is refused for a subject that does not exist in the tenant', async () => {
+    const account = await seedAccount({ totp: true, passkey: false });
+    const outcome = await withTenant(app.db, newId(), (tx) =>
+      beginRecoveryCodes(tx, { tenantId: account.tenantId, subjectId: account.subjectId }),
+    );
+    expect(outcome).toEqual({ kind: 'no_second_factor' });
+  });
+
+  // The issue holds the subject lock while its set is uncommitted; the removal
+  // of the last factor, started meanwhile, waits for it and then finds the set
+  // and revokes it. Without the lock the removal checks before the set is
+  // visible, finds nothing to revoke, and both commit.
+  it('never leaves a set behind a removed last factor, whichever starts first', async () => {
+    for (let round = 0; round < 3; round += 1) {
+      const account = await seedAccount({ totp: true, passkey: false });
+      let releaseIssue: () => void = () => undefined;
+      const hold = new Promise<void>((resolve) => {
+        releaseIssue = resolve;
+      });
+      let issuedSet: () => void = () => undefined;
+      const issuedAlready = new Promise<void>((resolve) => {
+        issuedSet = resolve;
+      });
+
+      const issue = withTenant(app.db, account.tenantId, async (tx) => {
+        const outcome = await beginRecoveryCodes(tx, account);
+        issuedSet();
+        await hold;
+        return outcome.kind;
+      });
+      await issuedAlready;
+      const removal = withTenant(app.db, account.tenantId, async (tx) => {
+        await tx.execute(
+          sql`select id from subjects where id = ${account.subjectId} for no key update`,
+        );
+        for (const id of await credentialIds(account, 'totp')) {
+          await credentialRepository(tx).deleteOne(id);
+        }
+        return onSecondFactorRemoved(tx, { subjectId: account.subjectId }, () => Promise.resolve());
+      });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      releaseIssue();
+
+      expect(await issue).toBe('issued');
+      expect(await removal).toEqual({ recoveryCodesRevoked: 10 });
+      expect(await standing(account)).toEqual({ unspent: 0, held: 0, hasSecondFactor: false });
+    }
+  });
+
+  it('is refused when the removal commits first', async () => {
+    const account = await seedAccount({ totp: true, passkey: false });
+    await issueCodes(account);
+    await removeAndNotify(account, 'totp');
+    const outcome = await withTenant(app.db, account.tenantId, (tx) =>
+      beginRecoveryCodes(tx, account),
+    );
+    expect(outcome).toEqual({ kind: 'no_second_factor' });
+    expect(await standing(account)).toMatchObject({ held: 0 });
   });
 });

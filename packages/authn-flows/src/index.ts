@@ -65,6 +65,7 @@ export {
 } from '#/service/authenticators/recovery';
 export {
   beginRecoveryCodes,
+  type BeginRecoveryCodesOutcome,
   completeRecoveryCodes,
   type RecoveryCodesOutcome,
 } from '#/usecase/recovery-codes';
