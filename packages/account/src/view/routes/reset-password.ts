@@ -7,6 +7,7 @@ import {
   renderResetRequestForm,
   sendResetHtml,
 } from '#/view/reset-html';
+import { requestLocale } from '#/view/request-locale';
 
 export interface ResetPasswordTenantLookup {
   readonly id: string;
@@ -17,6 +18,8 @@ export interface ResetPasswordTenantLookup {
 }
 
 export interface ResetPasswordRouteDeps {
+  // The tags a page can be shown in; defaults to what the server ships.
+  pageLocales?: readonly string[];
   readonly database: DatabaseHandle;
   readonly findTenant: (name: string) => Promise<ResetPasswordTenantLookup | null>;
   // Operator configuration (ODUDU_PUBLIC_BASE_URL), never anything read off
@@ -56,11 +59,12 @@ export function registerResetPasswordRoute(
   app.get<{ Params: { tenant: string } }>(
     '/tenants/:tenant/login-actions/reset-password',
     async (request, reply) => {
+      const locale = requestLocale(request, deps);
       const tenant = await deps.findTenant(request.params.tenant);
       if (!tenantIsOpenForReset(tenant)) {
         return reply.code(404).send();
       }
-      return sendResetHtml(reply, 200, renderResetRequestForm(request.params.tenant));
+      return sendResetHtml(reply, 200, renderResetRequestForm(request.params.tenant, locale));
     },
   );
 
@@ -68,6 +72,7 @@ export function registerResetPasswordRoute(
     Params: { tenant: string };
     Body: Record<string, string | string[] | undefined>;
   }>('/tenants/:tenant/login-actions/reset-password', async (request, reply) => {
+    const locale = requestLocale(request, deps);
     const tenant = await deps.findTenant(request.params.tenant);
     if (!tenantIsOpenForReset(tenant)) {
       return reply.code(404).send();
@@ -75,7 +80,7 @@ export function registerResetPasswordRoute(
 
     const email = firstNonEmptyString(request.body.email);
     if (email === undefined) {
-      return sendResetHtml(reply, 400, renderResetRequestFailedPage('Email is required.'));
+      return sendResetHtml(reply, 400, renderResetRequestFailedPage('Email is required.', locale));
     }
 
     // Composed before the lookup happens, and reached whether or not the
@@ -102,10 +107,13 @@ export function registerResetPasswordRoute(
       return sendResetHtml(
         reply,
         500,
-        renderResetRequestFailedPage('Password reset is temporarily unavailable. Try again later.'),
+        renderResetRequestFailedPage(
+          'Password reset is temporarily unavailable. Try again later.',
+          locale,
+        ),
       );
     }
 
-    return sendResetHtml(reply, 200, renderResetRequestedPage());
+    return sendResetHtml(reply, 200, renderResetRequestedPage(locale));
   });
 }

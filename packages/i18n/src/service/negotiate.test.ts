@@ -50,6 +50,12 @@ describe('negotiateLocale', () => {
     expect(negotiateLocale(input({ acceptLanguage: 'fr;q=0, de;q=abc, ar;q=0.1' })).tag).toBe('ar');
   });
 
+  it('keeps an Accept-Language entry whose parameter is not q, and ignores the parameter', () => {
+    expect(negotiateLocale(input({ acceptLanguage: 'fr;level=1' })).tag).toBe('fr');
+    expect(negotiateLocale(input({ acceptLanguage: 'de;level=1;q=0.2, fr;q=0.5' })).tag).toBe('fr');
+    expect(negotiateLocale(input({ acceptLanguage: 'fr;q=0' })).tag).toBe('en');
+  });
+
   it('looks up by truncation: zh-Hant-TW tries zh-Hant-TW, zh-Hant, zh', () => {
     expect(negotiateLocale(input({ uiLocales: ['zh-Hant-TW'] })).tag).toBe('zh-Hant');
     expect(negotiateLocale(input({ uiLocales: ['zh-Hans-CN'] })).tag).toBe('zh');

@@ -78,8 +78,12 @@ function acceptedTags(header: string | null): string[] {
     const tag = rawTag.trim();
     if (tag === '' || tag === '*') return;
     let quality = 1;
+    // RFC 9110 §12.5.4 allows other parameters; only `q` ranks, and a
+    // malformed `q` discards the entry.
     for (const param of params) {
-      const parsed = QUALITY.exec(param.trim());
+      const trimmed = param.trim();
+      if (!/^q=/iu.test(trimmed)) continue;
+      const parsed = QUALITY.exec(trimmed.toLowerCase());
       if (parsed === null) return;
       quality = Number(parsed[1]);
     }

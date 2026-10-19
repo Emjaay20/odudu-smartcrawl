@@ -29,6 +29,7 @@ import {
   renderVerificationSucceededPage,
   sendVerificationHtml,
 } from '#/view/verification-html';
+import { requestLocale } from '#/view/request-locale';
 
 export interface ActionTokenTenantLookup {
   readonly id: string;
@@ -43,6 +44,8 @@ export interface ActionTokenTenantLookup {
 }
 
 export interface ActionTokenRouteDeps {
+  // The tags a page can be shown in; defaults to what the server ships.
+  pageLocales?: readonly string[];
   readonly database: DatabaseHandle;
   readonly findTenant: (name: string) => Promise<ActionTokenTenantLookup | null>;
   readonly getCurrentEmail: (tx: TenantScopedDatabase, subjectId: string) => Promise<string | null>;
@@ -99,15 +102,16 @@ async function completeActionsLink(
   key: string,
   setsPassword: boolean,
 ): Promise<FastifyReply> {
+  const locale = requestLocale(request, deps);
   if (setsPassword && !tenant.resetPasswordAllowed) {
-    return sendVerificationHtml(reply, 400, renderResetLinkFailedPage());
+    return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(locale));
   }
   const candidate = readPasswordField(request.body.password);
   if (candidate.kind === 'too_long') {
     return sendVerificationHtml(
       reply,
       400,
-      renderResetPasswordWeakPage([PASSWORD_TOO_LONG.message]),
+      renderResetPasswordWeakPage([PASSWORD_TOO_LONG.message], locale),
     );
   }
   const password =
@@ -131,17 +135,24 @@ async function completeActionsLink(
   );
   switch (result.kind) {
     case 'invalid':
-      return sendVerificationHtml(reply, 400, renderResetLinkFailedPage());
+      return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(locale));
     case 'password_required':
-      return sendVerificationHtml(reply, 400, renderResetPasswordRequiredPage());
+      return sendVerificationHtml(reply, 400, renderResetPasswordRequiredPage(locale));
     case 'invalid_password':
       return sendVerificationHtml(
         reply,
         400,
-        renderResetPasswordWeakPage(result.violations.map((violation) => violation.message)),
+        renderResetPasswordWeakPage(
+          result.violations.map((violation) => violation.message),
+          locale,
+        ),
       );
     case 'done':
-      return sendVerificationHtml(reply, 200, renderRequiredActionsSucceededPage(result.remaining));
+      return sendVerificationHtml(
+        reply,
+        200,
+        renderRequiredActionsSucceededPage(result.remaining, locale),
+      );
   }
 }
 
@@ -152,6 +163,7 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
     Params: { tenant: string };
     Querystring: Record<string, string | string[] | undefined>;
   }>('/tenants/:tenant/login-actions/action-token', async (request, reply) => {
+    const locale = requestLocale(request, deps);
     const key = firstString(request.query.key);
     const tenant = key === undefined ? null : await deps.findTenant(request.params.tenant);
 
@@ -160,7 +172,7 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
     // that tenant's users table, and disabling a tenant is meant to stop all
     // of those, not just the ones a client can see.
     if (key === undefined || !tenant?.enabled) {
-      return sendVerificationHtml(reply, 400, renderVerificationFailedPage());
+      return sendVerificationHtml(reply, 400, renderVerificationFailedPage(locale));
     }
 
     // A read, not a redemption: a reset-password link needs a page shown
@@ -170,21 +182,25 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
     // it never changes the verify-email one's behaviour.
     const peeked = await peekActionToken({ database: deps.database, tenantId: tenant.id }, key);
     if (peeked.kind === 'invalid') {
-      return sendVerificationHtml(reply, 400, renderVerificationFailedPage());
+      return sendVerificationHtml(reply, 400, renderVerificationFailedPage(locale));
     }
 
     if (peeked.type === 'reset_password') {
       if (!tenant.resetPasswordAllowed) {
-        return sendVerificationHtml(reply, 400, renderResetLinkFailedPage());
+        return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(locale));
       }
-      return sendVerificationHtml(reply, 200, renderResetPasswordForm(request.params.tenant, key));
+      return sendVerificationHtml(
+        reply,
+        200,
+        renderResetPasswordForm(request.params.tenant, key, locale),
+      );
     }
 
     // A link that sets a password is a reset link, and the reset kill switch
     // stops it the same way.
     if (peeked.type === 'execute_actions') {
       if (peeked.setsPassword && !tenant.resetPasswordAllowed) {
-        return sendVerificationHtml(reply, 400, renderResetLinkFailedPage());
+        return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(locale));
       }
       return sendVerificationHtml(
         reply,
@@ -194,6 +210,7 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
           key,
           peeked.actionLabels,
           peeked.setsPassword,
+          locale,
         ),
       );
     }
@@ -210,22 +227,23 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
     );
 
     if (result.kind === 'invalid') {
-      return sendVerificationHtml(reply, 400, renderVerificationFailedPage());
+      return sendVerificationHtml(reply, 400, renderVerificationFailedPage(locale));
     }
-    return sendVerificationHtml(reply, 200, renderVerificationSucceededPage());
+    return sendVerificationHtml(reply, 200, renderVerificationSucceededPage(locale));
   });
 
   app.post<{
     Params: { tenant: string };
     Body: Record<string, string | string[] | undefined>;
   }>('/tenants/:tenant/login-actions/action-token', async (request, reply) => {
+    const locale = requestLocale(request, deps);
     const body = request.body;
     const key = firstNonEmptyString(body.key);
     const candidate = readPasswordField(body.password);
     const tenant = key === undefined ? null : await deps.findTenant(request.params.tenant);
 
     if (key === undefined || !tenant?.enabled) {
-      return sendVerificationHtml(reply, 400, renderResetLinkFailedPage());
+      return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(locale));
     }
 
     const peeked = await peekActionToken({ database: deps.database, tenantId: tenant.id }, key);
@@ -233,7 +251,7 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
       return completeActionsLink(request, reply, deps, tenant, key, peeked.setsPassword);
     }
     if (!tenant.resetPasswordAllowed) {
-      return sendVerificationHtml(reply, 400, renderResetLinkFailedPage());
+      return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(locale));
     }
 
     // Listed as a rule of the policy, because to the person typing it that
@@ -243,7 +261,7 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
       return sendVerificationHtml(
         reply,
         400,
-        renderResetPasswordWeakPage([PASSWORD_TOO_LONG.message]),
+        renderResetPasswordWeakPage([PASSWORD_TOO_LONG.message], locale),
       );
     }
     const password =
@@ -256,7 +274,7 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
     // used" here would be false — it is a missing field, not a spent or
     // expired token.
     if (password === undefined) {
-      return sendVerificationHtml(reply, 400, renderResetPasswordRequiredPage());
+      return sendVerificationHtml(reply, 400, renderResetPasswordRequiredPage(locale));
     }
 
     const result = await completePasswordReset(
@@ -279,12 +297,15 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
       return sendVerificationHtml(
         reply,
         400,
-        renderResetPasswordWeakPage(result.violations.map((v) => v.message)),
+        renderResetPasswordWeakPage(
+          result.violations.map((v) => v.message),
+          locale,
+        ),
       );
     }
     if (result.kind === 'invalid') {
-      return sendVerificationHtml(reply, 400, renderResetLinkFailedPage());
+      return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(locale));
     }
-    return sendVerificationHtml(reply, 200, renderResetPasswordSucceededPage());
+    return sendVerificationHtml(reply, 200, renderResetPasswordSucceededPage(locale));
   });
 }

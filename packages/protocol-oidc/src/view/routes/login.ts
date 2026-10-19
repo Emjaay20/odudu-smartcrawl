@@ -5,6 +5,7 @@ import { type FastifyInstance } from 'fastify';
 import { handleLoginSubmission, type LoginSubmissionDeps } from '#/usecase/login-submission';
 import { renderAuthorizeErrorPage } from '#/view/authorize-html';
 import { sendHtml } from '#/view/html-response';
+import { requestLocale } from '#/view/routes/continuation';
 import { issuerBaseFor } from '#/view/issuer';
 import { sendLoginOutcome, type LoginResponseDeps } from '#/view/routes/login-response';
 
@@ -89,7 +90,12 @@ export function registerLoginRoute(app: FastifyInstance, deps: LoginRouteDeps): 
       return sendHtml(
         reply,
         400,
-        renderAuthorizeErrorPage('invalid_request', PASSWORD_TOO_LONG.message),
+        renderAuthorizeErrorPage(
+          'invalid_request',
+          PASSWORD_TOO_LONG.message,
+          undefined,
+          requestLocale(reply, deps),
+        ),
       );
     }
     const password = candidate.kind === 'present' ? candidate.password : undefined;

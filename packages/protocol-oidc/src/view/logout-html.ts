@@ -1,4 +1,4 @@
-import { type RenderedPage } from '@odudu/kernel';
+import { DEFAULT_PAGE_LOCALE, type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { escapeHtml, page } from '#/view/document';
 
 function hiddenField(name: string, value: string | null): string {
@@ -24,6 +24,7 @@ export function renderLogoutConfirmationPage(
   sessionId: string,
   csrf: string,
   fields: LogoutConfirmationFields,
+  locale: PageLocale = DEFAULT_PAGE_LOCALE,
 ): RenderedPage {
   const action = `/tenants/${escapeHtml(tenant)}/protocol/openid-connect/logout`;
   return page(
@@ -35,17 +36,23 @@ export function renderLogoutConfirmationPage(
   <input type="hidden" name="csrf" value="${escapeHtml(csrf)}">
   ${hiddenField('client_id', fields.clientId)}${hiddenField('post_logout_redirect_uri', fields.postLogoutRedirectUri)}${hiddenField('state', fields.state)}<button type="submit">Sign out</button>
 </form>`,
+    null,
+    [],
+    locale,
   );
 }
 
 // Reached when there is no live session to end at all — a missing or
 // expired cookie, or one scoped to a different tenant. Nothing to confirm,
 // so no form: confirming would end nothing anyway.
-export function renderNoActiveSessionPage(): RenderedPage {
+export function renderNoActiveSessionPage(locale: PageLocale = DEFAULT_PAGE_LOCALE): RenderedPage {
   return page(
     'Already signed out',
     `<h1>Already signed out</h1>
 <p>There is no active session to end.</p>`,
+    null,
+    [],
+    locale,
   );
 }
 
@@ -57,7 +64,10 @@ export function renderNoActiveSessionPage(): RenderedPage {
 // cookie behaviour decides whether a framed RP ever sees the request (see
 // docs/superpowers/p3b-spike-frontchannel.md), which this function cannot
 // know and does not claim to.
-export function renderLoggedOutPage(frontChannelLogoutUrls: readonly string[] = []): RenderedPage {
+export function renderLoggedOutPage(
+  frontChannelLogoutUrls: readonly string[] = [],
+  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+): RenderedPage {
   const iframes = frontChannelLogoutUrls
     .map((url) => `<iframe src="${escapeHtml(url)}"></iframe>`)
     .join('\n');
@@ -68,6 +78,7 @@ export function renderLoggedOutPage(frontChannelLogoutUrls: readonly string[] = 
 ${iframes}`,
     null,
     frontChannelLogoutUrls.map((url) => new URL(url).origin),
+    locale,
   );
 }
 
@@ -79,6 +90,7 @@ ${iframes}`,
 // than redirecting, so the same iframe opportunity applies.
 export function renderLogoutRedirectRefusedPage(
   frontChannelLogoutUrls: readonly string[] = [],
+  locale: PageLocale = DEFAULT_PAGE_LOCALE,
 ): RenderedPage {
   const iframes = frontChannelLogoutUrls
     .map((url) => `<iframe src="${escapeHtml(url)}"></iframe>`)
@@ -91,16 +103,22 @@ not one this client has registered, so it has not been used.</p>
 ${iframes}`,
     null,
     frontChannelLogoutUrls.map((url) => new URL(url).origin),
+    locale,
   );
 }
 
 // The confirmation form's CSRF defence failed — the hidden session id does
 // not name the session the cookie itself resolves to. Nothing was ended;
 // see #/usecase/logout.ts's `unauthenticated` outcome.
-export function renderLogoutUnauthenticatedPage(): RenderedPage {
+export function renderLogoutUnauthenticatedPage(
+  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+): RenderedPage {
   return page(
     "Can't sign out",
     `<h1>Can't sign out</h1>
 <p>This sign-out attempt is no longer valid. Go back and try again.</p>`,
+    null,
+    [],
+    locale,
   );
 }

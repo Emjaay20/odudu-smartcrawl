@@ -676,18 +676,32 @@ semver tag there.
   shape and the lookup are `negotiateLocale`'s. A tag outside the shipped list
   never reaches `<html lang>` or `Content-Language`: output is always an entry
   of the supported list.
-- Negotiation happens in `continuing()`, the one place a protocol-oidc page
-  already loads the parked request, then `withLocale()` (kernel) rewrites the
-  document element and the page's `locale`. Pages with no parked request (the
-  error pages, logout, throttle, and every account page) carry the default `en`.
-  Wiring Accept-Language negotiation into those, and the subject's own
-  `locale` once authenticated, belongs to the increments that move each
-  package's page text into catalogues (14 to 17); until a second locale ships
-  every answer is `en`.
-- `pageLocales` (defaults to `SHIPPED_LOCALES` of `@odudu/i18n`) is what both
-  negotiation and discovery's `ui_locales_supported` read, so they cannot
-  disagree. The integration test sets it to `['en', 'fr']`; there is no `fr`
-  catalogue file yet, only the supported-tag list.
+- The language is negotiated before a renderer runs. `negotiatePageLocale`
+  (`@odudu/i18n`, every input optional, never throws) is the one helper. Every
+  `render*` takes a trailing `locale` and hands it to its package's `page()`,
+  which writes `<html lang dir>`; `Content-Language` is `page.locale.tag`.
+  `tests/lint/page-routes-negotiate-locale.test.ts` fails on a route call to a
+  renderer that does not end with a locale. Pages with a parked request
+  negotiate through `continuation()` (`ui_locales`, then the subject's `locale`,
+  then `Accept-Language`); every other page (authorize error, logout, throttle,
+  account pages, console refusal) negotiates on `Accept-Language` alone.
+- ADR 0043 step 2: `users.locale` exists, and `continuation()` reads it
+  through `subjectLocale` once a subject is known: required-action pages
+  (first factor verified) pass their subject, consent after login and the
+  reuse path pass `'authenticated'`. The login form, the account chooser and
+  the refusal page never pass a subject. A required-action page re-rendered
+  before the flow is finished falls back to `ui_locales`/`Accept-Language`,
+  since the session reports no finished authentication yet.
+- ADR 0043 step 3: the tenant default is `null` everywhere. P4b's row names
+  it ("a tenant's supported-locales list, default locale and per-locale
+  message overrides"); the helper already accepts `tenantDefault`.
+- `SHIPPED_LOCALES` (`@odudu/i18n`) feeds negotiation and discovery.
+  `tests/lint/shipped-locales.test.ts` finds every module that calls
+  `createCatalogue`, requires its exports' `locales` to include `en` and to be
+  within `SHIPPED_LOCALES`, and requires every shipped tag to be held once any
+  catalogue exists, so increment 14 only has to export its catalogue.
+- `createCatalogue` refuses a message containing a tag (`<b>`), `Accept-Language`
+  keeps an entry whose parameter is not `q`, `parseUiLocales` reads lazily.
 - `execute-actions.int.test.ts` asserted the page carried no `href`, which the
   Instrument shell's stylesheet link broke; it now asserts no anchor.
 - `content-language: en` was added to every recorded page header block in the

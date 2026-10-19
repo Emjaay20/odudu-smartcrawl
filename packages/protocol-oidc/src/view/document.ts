@@ -1,4 +1,5 @@
 import {
+  DEFAULT_PAGE_LOCALE,
   INSTRUMENT_STYLESHEET,
   type PageLocale,
   type PageScript,
@@ -16,8 +17,6 @@ export function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
-const DEFAULT_LOCALE: PageLocale = { tag: 'en', dir: 'ltr' };
-
 // A plain ring on a shaft in `currentColor`, so the page's own ink colours
 // it in either theme, with no inline style for the policy to refuse.
 const MARK =
@@ -34,7 +33,7 @@ export function page(
   body: string,
   script: PageScript | null = null,
   frames: readonly string[] = [],
-  locale: PageLocale = DEFAULT_LOCALE,
+  locale: PageLocale = DEFAULT_PAGE_LOCALE,
 ): RenderedPage {
   return {
     title,

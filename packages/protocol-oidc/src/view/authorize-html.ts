@@ -1,4 +1,9 @@
-import { scriptNonce, type RenderedPage } from '@odudu/kernel';
+import {
+  DEFAULT_PAGE_LOCALE,
+  type PageLocale,
+  scriptNonce,
+  type RenderedPage,
+} from '@odudu/kernel';
 import { escapeHtml, page } from '#/view/document';
 
 // Where an expired sign-in can go on from. Both hrefs are built from a
@@ -18,6 +23,7 @@ export function renderAuthorizeErrorPage(
   error: string,
   description: string,
   wayOn?: WayOn,
+  locale: PageLocale = DEFAULT_PAGE_LOCALE,
 ): RenderedPage {
   const link =
     wayOn === undefined
@@ -28,6 +34,9 @@ export function renderAuthorizeErrorPage(
     `<h1>Can't continue</h1>
 <p>${escapeHtml(description)}</p>${link}
 <p><small>${escapeHtml(error)}</small></p>`,
+    null,
+    [],
+    locale,
   );
 }
 
@@ -37,7 +46,10 @@ export function renderAuthorizeErrorPage(
 // tenant turning verify_email on locks these accounts out with nothing they
 // can do about it, so the page says that rather than claiming a mail it
 // never sent.
-export function renderEmailUnverifiedPage(hasEmail: boolean): RenderedPage {
+export function renderEmailUnverifiedPage(
+  hasEmail: boolean,
+  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+): RenderedPage {
   const detail = hasEmail
     ? 'We sent a link to the address on this account — follow it, then sign in again.'
     : 'This account has no email address on file, so there is nothing to verify yet. Contact an administrator.';
@@ -45,6 +57,9 @@ export function renderEmailUnverifiedPage(hasEmail: boolean): RenderedPage {
     'Verify your email',
     `<h1>Can't sign in yet</h1>
 <p>You need to verify your email address before you can sign in. ${detail}</p>`,
+    null,
+    [],
+    locale,
   );
 }
 
@@ -213,6 +228,7 @@ export function renderLoginForm(
   // The tenant's `login_with_email`: only the label changes, since the
   // field takes either and the server decides which it names.
   loginWithEmail = false,
+  locale: PageLocale = DEFAULT_PAGE_LOCALE,
 ): RenderedPage {
   const action = `/tenants/${escapeHtml(tenant)}/login-actions/authenticate`;
   // Beside the password and nowhere else: a passkey is an alternative to
@@ -241,6 +257,9 @@ export function renderLoginForm(
   ${renderFormFields(form, loginWithEmail, refusal)}
   ${rememberMe}<button type="submit">${submit}</button>
 </form>${passkey}`,
+      null,
+      [],
+      locale,
     ),
     script: nonce === null ? null : { nonce, fetchesSameOrigin: true },
   };

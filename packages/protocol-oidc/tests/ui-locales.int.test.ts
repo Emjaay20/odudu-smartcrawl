@@ -188,6 +188,33 @@ describe('[ODUDU-UI-LOCALES-01] ui_locales chooses the language of the sign-in',
   });
 });
 
+describe('[ODUDU-UI-LOCALES-03] a page with no parked request follows Accept-Language', () => {
+  it('shows the authorize error page in the browser language', async () => {
+    const res = await authorize({ client_id: 'no-such-client' }, { 'accept-language': 'fr-CA' });
+    expect(res.statusCode).toBe(400);
+    expect(documentLanguage(res)).toBe('fr');
+    expect(res.headers['content-language']).toBe('fr');
+  });
+
+  it('shows the signed-out page in the browser language', async () => {
+    const res = await http.inject({
+      url: `/tenants/${TENANT}/protocol/openid-connect/logout`,
+      headers: { 'accept-language': 'de;q=0.9, fr;q=0.8' },
+    });
+    expect(documentLanguage(res)).toBe('fr');
+    expect(res.headers['content-language']).toBe('fr');
+  });
+
+  it('survives a hostile header', async () => {
+    const res = await authorize(
+      { client_id: 'no-such-client' },
+      { 'accept-language': `${'x,'.repeat(3000)};;q=zz,*` },
+    );
+    expect(res.statusCode).toBe(400);
+    expect(documentLanguage(res)).toBe('en');
+  });
+});
+
 describe('[ODUDU-UI-LOCALES-02] discovery advertises the shipped locales', () => {
   it('lists ui_locales_supported and omits claims_locales_supported', async () => {
     const res = await http.inject({ url: `/tenants/${TENANT}/.well-known/openid-configuration` });

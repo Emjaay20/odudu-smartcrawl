@@ -1,0 +1,88 @@
+import { type PendingRequest } from '@odudu/authn-flows';
+import Fastify from 'fastify';
+import { describe, expect, it } from 'vitest';
+import { continuation, type ContinuationDeps, type PageSubject } from '#/view/routes/continuation';
+import { page } from '#/view/document';
+
+const PENDING: PendingRequest = {
+  clientId: 'c',
+  redirectUri: 'https://app.example/cb',
+  scope: 'openid',
+  state: null,
+  nonce: null,
+  codeChallenge: 'x'.repeat(43),
+  codeChallengeMethod: 'S256',
+  uiLocales: ['de', 'fr'],
+};
+
+function deps(overrides: Partial<ContinuationDeps> = {}): ContinuationDeps {
+  return {
+    findTenant: () => Promise.resolve({ id: 't1' }),
+    loadPendingRequest: () => Promise.resolve(PENDING),
+    recoverPendingRequest: () => Promise.resolve(PENDING),
+    redirectStillRegistered: () => Promise.resolve(true),
+    pageLocales: ['en', 'fr', 'es'],
+    subjectLocale: () => Promise.resolve('es'),
+    authenticatedSubject: () => Promise.resolve('s1'),
+    ...overrides,
+  };
+}
+
+// The reply carries the request whose Accept-Language is negotiated.
+async function localeFor(
+  acceptLanguage: string | undefined,
+  d: ContinuationDeps,
+  who?: PageSubject,
+): Promise<string> {
+  const app = Fastify();
+  let tag = '';
+  app.get('/', async (request, reply) => {
+    const { locale, continuing } = await continuation(d, 'acme', 'a1', reply, who);
+    tag = locale.tag;
+    expect(continuing(page('t', 'b', null, [], locale)).redirectsTo).toBe('https://app.example/cb');
+    return reply.send('ok');
+  });
+  await app.inject({
+    url: '/',
+    ...(acceptLanguage === undefined ? {} : { headers: { 'accept-language': acceptLanguage } }),
+  });
+  await app.close();
+  return tag;
+}
+
+describe('continuation', () => {
+  it('negotiates ui_locales ahead of Accept-Language', async () => {
+    expect(await localeFor('es', deps())).toBe('fr');
+  });
+
+  it('does not read the subject locale before the first factor is verified', async () => {
+    expect(
+      await localeFor(
+        'es',
+        deps({ loadPendingRequest: () => Promise.resolve({ ...PENDING, uiLocales: [] }) }),
+      ),
+    ).toBe('es');
+    const withoutHeader = await localeFor(
+      undefined,
+      deps({ loadPendingRequest: () => Promise.resolve({ ...PENDING, uiLocales: [] }) }),
+    );
+    expect(withoutHeader).toBe('en');
+  });
+
+  it('uses the subject locale once the subject is known, after ui_locales', async () => {
+    const noPreference = deps({
+      loadPendingRequest: () => Promise.resolve({ ...PENDING, uiLocales: [] }),
+    });
+    expect(await localeFor(undefined, noPreference, { subject: 's1' })).toBe('es');
+    expect(await localeFor(undefined, noPreference, 'authenticated')).toBe('es');
+    expect(await localeFor(undefined, deps(), { subject: 's1' })).toBe('fr');
+  });
+
+  it('asks for no locale when no subject was bound', async () => {
+    const noSubject = deps({
+      loadPendingRequest: () => Promise.resolve({ ...PENDING, uiLocales: [] }),
+      authenticatedSubject: () => Promise.resolve(null),
+    });
+    expect(await localeFor(undefined, noSubject, 'authenticated')).toBe('en');
+  });
+});

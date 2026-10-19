@@ -19,9 +19,11 @@ const REGISTRATION_ROUTE = 'packages/account/src/view/routes/registration.ts';
 function registrationRefusals(): Set<string> {
   const source = readFileSync(path.join(REPO_ROOT, REGISTRATION_ROUTE), 'utf8');
   const messages = new Set(
-    [...source.matchAll(/renderRegistrationFailedPage\(\['(?<message>[^']+)'\]\)/gu)].flatMap(
-      (match) => (match.groups?.message === undefined ? [] : [match.groups.message]),
-    ),
+    [
+      ...source.matchAll(
+        /renderRegistrationFailedPage\(\s*\['(?<message>[^']+)'\]\s*,\s*locale\s*,?\s*\)/gu,
+      ),
+    ].flatMap((match) => (match.groups?.message === undefined ? [] : [match.groups.message])),
   );
   if (messages.size === 0) {
     throw new Error(

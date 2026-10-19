@@ -12,7 +12,7 @@ import { renderConsentPage } from '#/view/consent-html';
 import { sendHtml } from '#/view/html-response';
 import { tenantIssuerFor } from '#/view/issuer';
 import { namesUnsupportedRepresentation } from '#/view/media-type';
-import { continuing } from '#/view/routes/continuation';
+import { continuation, requestLocale } from '#/view/routes/continuation';
 import { sendSignInExpired } from '#/view/routes/expired-sign-in';
 import {
   sendRequiredActionPage,
@@ -50,7 +50,16 @@ async function renderAuthorizationOutcome(
 ): Promise<FastifyReply> {
   const form = (page: RenderedPage): RenderedPage => (reloadable ? reloadOnRestore(page) : page);
   if (outcome.kind === 'render') {
-    return sendHtml(reply, 400, renderAuthorizeErrorPage(outcome.error, outcome.description));
+    return sendHtml(
+      reply,
+      400,
+      renderAuthorizeErrorPage(
+        outcome.error,
+        outcome.description,
+        undefined,
+        requestLocale(reply, deps),
+      ),
+    );
   }
 
   if (outcome.kind === 'redirect') {
@@ -94,39 +103,48 @@ async function renderAuthorizationOutcome(
   // asked with prompt=select_account. The chooser's own POST resumes the
   // authentication session parked here.
   if (outcome.kind === 'select') {
-    const page = renderSelectAccountPage({
-      tenant,
-      authSessionId: outcome.authSessionId,
-      accounts: outcome.accounts,
-    });
-    return sendHtml(
-      reply,
-      200,
-      await continuing(deps, tenant, outcome.authSessionId, form(page), reply),
+    // Nobody is identified yet, so no subject locale applies.
+    const { locale, continuing } = await continuation(deps, tenant, outcome.authSessionId, reply);
+    const page = renderSelectAccountPage(
+      {
+        tenant,
+        authSessionId: outcome.authSessionId,
+        accounts: outcome.accounts,
+      },
+      locale,
     );
+    return sendHtml(reply, 200, continuing(form(page)));
   }
 
   // A reused session that still needs consent: the same page the form path
   // renders once its own gate asks, on a freshly started authentication
   // session the reuse path bound and authenticated for the reused subject.
   if (outcome.kind === 'consent') {
-    const page = renderConsentPage({
+    const { locale, continuing } = await continuation(
+      deps,
       tenant,
-      authSessionId: outcome.authSessionId,
-      clientName: outcome.clientName,
-      clientPages: outcome.clientPages,
-      scopeLabels: outcome.scopeLabels,
-      defaultScopes: outcome.defaultScopes,
-      optionalScopes: outcome.optionalScopes,
-      alreadyGranted: outcome.alreadyGranted,
-    });
-    return sendHtml(
+      outcome.authSessionId,
       reply,
-      200,
-      await continuing(deps, tenant, outcome.authSessionId, form(page), reply),
+      'authenticated',
     );
+    const page = renderConsentPage(
+      {
+        tenant,
+        authSessionId: outcome.authSessionId,
+        clientName: outcome.clientName,
+        clientPages: outcome.clientPages,
+        scopeLabels: outcome.scopeLabels,
+        defaultScopes: outcome.defaultScopes,
+        optionalScopes: outcome.optionalScopes,
+        alreadyGranted: outcome.alreadyGranted,
+      },
+      locale,
+    );
+    return sendHtml(reply, 200, continuing(form(page)));
   }
 
+  // The login form precedes the first factor: ui_locales, then the browser.
+  const { locale, continuing } = await continuation(deps, tenant, outcome.authSessionId, reply);
   const page = renderLoginForm(
     tenant,
     outcome.authSessionId,
@@ -135,12 +153,9 @@ async function renderAuthorizationOutcome(
     outcome.rememberMeAllowed,
     undefined,
     outcome.loginWithEmail,
+    locale,
   );
-  return sendHtml(
-    reply,
-    200,
-    await continuing(deps, tenant, outcome.authSessionId, form(page), reply),
-  );
+  return sendHtml(reply, 200, continuing(form(page)));
 }
 
 // OIDC Core §3.1.2 requires both methods; they differ only in where the
@@ -211,6 +226,8 @@ async function respondToSelectAccountSubmission(
       renderAuthorizeErrorPage(
         'invalid_request',
         'That account is not one this browser is currently signed in to.',
+        undefined,
+        requestLocale(reply, deps),
       ),
     );
   }
@@ -249,6 +266,8 @@ export function registerAuthorizeRoute(app: FastifyInstance, deps: AuthorizeRout
             renderAuthorizeErrorPage(
               'invalid_request',
               `Authorization request parameters must be sent as ${FORM_MEDIA_TYPE}.`,
+              undefined,
+              requestLocale(reply, deps),
             ),
           );
         }

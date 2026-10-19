@@ -5,7 +5,7 @@ import { renderEmailUnverifiedPage, renderLoginForm } from '#/view/authorize-htm
 import { renderConsentPage } from '#/view/consent-html';
 import { refusalMessage } from '#/view/login-messages';
 import { sendHtml } from '#/view/html-response';
-import { continuing } from '#/view/routes/continuation';
+import { continuation, requestLocale } from '#/view/routes/continuation';
 import { sendSignInExpired } from '#/view/routes/expired-sign-in';
 import {
   sendRequiredActionPage,
@@ -62,6 +62,14 @@ export async function sendLoginOutcome(
     const pending =
       tenant === null ? null : await deps.pendingChallenge(tenant.id, outcome.authSessionId);
     const form = pending?.kind === 'challenge' ? pending.form : FALLBACK_FORM;
+    // Before the first factor is verified: the subject's own locale must not
+    // choose the language, or it would say whether the account exists.
+    const { locale, continuing } = await continuation(
+      deps,
+      tenantName,
+      outcome.authSessionId,
+      reply,
+    );
     const page = renderLoginForm(
       tenantName,
       outcome.authSessionId,
@@ -75,18 +83,19 @@ export async function sendLoginOutcome(
             ...(outcome.username === undefined ? {} : { username: outcome.username }),
           },
       tenant?.loginWithEmail ?? false,
+      locale,
     );
-    return sendHtml(
-      reply,
-      200,
-      await continuing(deps, tenantName, outcome.authSessionId, page, reply),
-    );
+    return sendHtml(reply, 200, continuing(page));
   }
 
   // No location header and no code: the assertion this state exists to
   // make true is that nothing was issued, not that the page says something.
   if (outcome.kind === 'unverified') {
-    return sendHtml(reply, 200, renderEmailUnverifiedPage(outcome.hasEmail));
+    return sendHtml(
+      reply,
+      200,
+      renderEmailUnverifiedPage(outcome.hasEmail, requestLocale(reply, deps)),
+    );
   }
 
   // Same reasoning as 'unverified': no location header and no code, since
@@ -105,21 +114,27 @@ export async function sendLoginOutcome(
   // Same reasoning as 'unverified' and 'required_action': no location
   // header and no code, since nothing was established or issued.
   if (outcome.kind === 'consent') {
-    const page = renderConsentPage({
-      tenant: tenantName,
-      authSessionId: outcome.authSessionId,
-      clientName: outcome.clientName,
-      clientPages: outcome.clientPages,
-      scopeLabels: outcome.scopeLabels,
-      defaultScopes: outcome.defaultScopes,
-      optionalScopes: outcome.optionalScopes,
-      alreadyGranted: outcome.alreadyGranted,
-    });
-    return sendHtml(
+    const { locale, continuing } = await continuation(
+      deps,
+      tenantName,
+      outcome.authSessionId,
       reply,
-      200,
-      await continuing(deps, tenantName, outcome.authSessionId, page, reply),
+      'authenticated',
     );
+    const page = renderConsentPage(
+      {
+        tenant: tenantName,
+        authSessionId: outcome.authSessionId,
+        clientName: outcome.clientName,
+        clientPages: outcome.clientPages,
+        scopeLabels: outcome.scopeLabels,
+        defaultScopes: outcome.defaultScopes,
+        optionalScopes: outcome.optionalScopes,
+        alreadyGranted: outcome.alreadyGranted,
+      },
+      locale,
+    );
+    return sendHtml(reply, 200, continuing(page));
   }
 
   const written = sessionCookies({

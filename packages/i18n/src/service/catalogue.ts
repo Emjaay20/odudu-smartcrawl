@@ -13,12 +13,30 @@ export interface Catalogue<T extends Record<string, string>> {
 }
 
 const SOURCE = 'en';
+// ADR 0043: no message carries markup, and ICU would parse this as a rich-text
+// tag that `format()` strips or throws on, so it is refused where it is written.
+const TAG = /<\/?[A-Za-z]/u;
+
+function refuseRichText(
+  byLocale: Readonly<Record<string, Readonly<Record<string, string | undefined>>>>,
+): void {
+  for (const [locale, messages] of Object.entries(byLocale)) {
+    for (const [id, message] of Object.entries(messages)) {
+      if (message !== undefined && TAG.test(message)) {
+        throw new Error(
+          `message ${id} in ${locale} contains a tag: catalogue messages are plain text, never markup`,
+        );
+      }
+    }
+  }
+}
 
 // `en` is the source: a locale that lacks a key, or is not held at all, shows
 // the English text, formatted under English rules so its plural arms apply.
 export function createCatalogue<T extends Record<string, string>>(
   byLocale: Messages<T>,
 ): Catalogue<T> {
+  refuseRichText(byLocale);
   const formatters = new Map<string, IntlMessageFormat>();
 
   function formatterFor(locale: string, id: string): IntlMessageFormat {

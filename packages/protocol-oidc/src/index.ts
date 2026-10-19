@@ -316,6 +316,14 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
     // without it there is nothing behind one.
     const passkeyLogin = { passkeyLogin: deps.publicBaseUrl !== undefined };
     const pageLocales = deps.pageLocales ?? SHIPPED_LOCALES;
+    // Read only for a page shown after the first factor was verified, and
+    // through the tenant context like every other tenant row.
+    const subjectLocale = (tenantId: string, subjectId: string) =>
+      withTenant(
+        deps.database.db,
+        tenantId,
+        async (tx) => (await userRepository(tx).bySubjectId(subjectId))?.locale ?? null,
+      );
 
     // One definition for every door that can issue a code: the form path,
     // the consent POST, and (via completeAuthorizedLogin) whichever of the
@@ -653,6 +661,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       tls,
       ...passkeyLogin,
       pageLocales,
+      subjectLocale,
       listPublishableKeys,
       scopesNamed,
       resolveClient: (tenantId, oauthClientId) =>
@@ -758,6 +767,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       tls,
       ...passkeyLogin,
       pageLocales,
+      subjectLocale,
       beginTotpEnrolment: startTotpEnrolment,
       beginRecoveryCodes: startRecoveryCodes,
       ...passkeyEnrolment,
@@ -842,6 +852,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       beginRecoveryCodes: startRecoveryCodes,
       ...passkeyEnrolment,
       pageLocales,
+      subjectLocale,
       resolveClientId,
       consentContext,
       recordConsent: (tenantId, subjectId, clientId, scopeIds) =>
@@ -854,6 +865,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
     registerLogoutRoute(app, {
       findTenant,
       tls,
+      pageLocales,
       listPublishableKeys,
       now: () => clock.now(),
       // Resolved from the OAuth client_id to that client's own registered

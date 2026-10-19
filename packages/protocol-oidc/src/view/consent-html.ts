@@ -1,4 +1,4 @@
-import { type RenderedPage } from '@odudu/kernel';
+import { DEFAULT_PAGE_LOCALE, type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { escapeHtml, page } from '#/view/document';
 
 export interface ConsentPageInput {
@@ -67,7 +67,10 @@ function renderPageLinks(pages: ConsentPageInput['clientPages'], clientName: str
 // session is refused, and that protects the endpoint rather than any one
 // control. There is no script on this page, so `script` is null and
 // `default-src 'none'` describes it exactly.
-export function renderConsentPage(input: ConsentPageInput): RenderedPage {
+export function renderConsentPage(
+  input: ConsentPageInput,
+  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+): RenderedPage {
   const action = `/tenants/${escapeHtml(input.tenant)}/login-actions/consent`;
   const granted = new Set(input.alreadyGranted);
   const defaultList = input.defaultScopes
@@ -88,5 +91,8 @@ export function renderConsentPage(input: ConsentPageInput): RenderedPage {
   <button type="submit" name="decision" value="allow">Allow</button>
   <button type="submit" name="decision" value="deny">Deny</button>
 </form>`,
+    null,
+    [],
+    locale,
   );
 }

@@ -13,7 +13,8 @@ export const MAX_UI_LOCALES = 16;
 export function parseUiLocales(raw: string | undefined): string[] {
   if (raw === undefined) return [];
   const tags: string[] = [];
-  for (const candidate of raw.split(' ')) {
+  // Lazily, so a long value is read only as far as the sixteenth tag.
+  for (const [candidate] of raw.matchAll(/[^ ]+/gu)) {
     if (tags.length === MAX_UI_LOCALES) break;
     if (TAG.test(candidate) && !tags.includes(candidate)) tags.push(candidate);
   }

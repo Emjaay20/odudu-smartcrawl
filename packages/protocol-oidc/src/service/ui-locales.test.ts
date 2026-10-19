@@ -12,7 +12,7 @@ describe('parseUiLocales', () => {
     expect(parseUiLocales('   ')).toEqual([]);
   });
 
-  it('drops a value that could not be a language tag rather than refusing the request', () => {
+  it('drops a value outside the tag alphabet or length rather than refusing the request, and keeps words that merely look like tags', () => {
     expect(parseUiLocales('../../etc fr "><script> en\tx zz_ZZ')).toEqual(['fr']);
     expect(parseUiLocales('not a language tag at all')).toEqual([
       'not',
@@ -35,5 +35,12 @@ describe('parseUiLocales', () => {
 
   it('lists a tag once', () => {
     expect(parseUiLocales('fr en fr')).toEqual(['fr', 'en']);
+  });
+});
+
+describe('parseUiLocales on a very long value', () => {
+  it('stops reading at the sixteenth tag', () => {
+    const huge = `${Array.from({ length: 16 }, (_, i) => `a${String(i)}`).join(' ')} ${'z '.repeat(500_000)}`;
+    expect(parseUiLocales(huge)).toHaveLength(MAX_UI_LOCALES);
   });
 });

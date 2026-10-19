@@ -22,6 +22,8 @@ export interface PageLocale {
   readonly dir: 'ltr' | 'rtl';
 }
 
+export const DEFAULT_PAGE_LOCALE: PageLocale = { tag: 'en', dir: 'ltr' };
+
 export interface RenderedPage {
   // The whole document, as the server sends it today.
   html: string;
@@ -134,7 +136,12 @@ const PAGE_CACHE_CONTROL = 'no-store';
 // diverge from another package's. Every renderer returns a RenderedPage —
 // the nonce its own markup used travels with it, so the policy sent with a
 // page can never name a script the page does not carry.
+// What may reach a header: a tag negotiated from the shipped list has this
+// shape already, so anything else is a bug, never input.
+const SAFE_TAG = /^[A-Za-z0-9-]{1,35}$/u;
+
 export function pageHeaders(page: RenderedPage): readonly (readonly [string, string])[] {
+  if (!SAFE_TAG.test(page.locale.tag)) throw new Error('refusing to send an unvalidated locale');
   return [
     ['content-security-policy', policyFor(page)],
     // Governs this page being framed, not this page framing others — that
@@ -174,28 +181,5 @@ export function reloadOnRestore(page: RenderedPage): RenderedPage {
         : `${page.html.slice(0, end)}${element}\n${page.html.slice(end)}`,
     body: `${page.body}\n${element}`,
     script: page.script ?? { nonce, fetchesSameOrigin: false },
-  };
-}
-
-// What may reach an attribute and a header: a tag from the negotiated list
-// has this shape already, and a value that does not is a bug, not input.
-const DIRECTIONS: ReadonlySet<string> = new Set(['ltr', 'rtl']);
-const SAFE_TAG = /^[A-Za-z0-9-]{1,35}$/u;
-const DOCUMENT_ELEMENT = /^(<!doctype html>\n)<html lang="[^"]*" dir="[^"]*">/u;
-
-// Re-targets a rendered page at the locale negotiated for this response. The
-// renderers know no request, so a page is built in the default locale and
-// the route that negotiated says which one it was shown in.
-export function withLocale(page: RenderedPage, locale: PageLocale): RenderedPage {
-  if (!SAFE_TAG.test(locale.tag) || !DIRECTIONS.has(locale.dir)) {
-    throw new Error('refusing to render an unvalidated locale');
-  }
-  if (!DOCUMENT_ELEMENT.test(page.html)) {
-    throw new Error('the page has no document element to localise');
-  }
-  return {
-    ...page,
-    locale,
-    html: page.html.replace(DOCUMENT_ELEMENT, `$1<html lang="${locale.tag}" dir="${locale.dir}">`),
   };
 }

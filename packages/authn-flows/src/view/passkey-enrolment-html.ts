@@ -1,4 +1,9 @@
-import { scriptNonce, type RenderedPage } from '@odudu/kernel';
+import {
+  DEFAULT_PAGE_LOCALE,
+  type PageLocale,
+  scriptNonce,
+  type RenderedPage,
+} from '@odudu/kernel';
 import { escapeHtml, page } from '#/view/document';
 import { type PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/server';
 
@@ -36,6 +41,7 @@ export function renderPasskeyEnrolmentPage(
   authSessionId: string,
   offer: PasskeyEnrolmentOffer,
   error?: string,
+  locale: PageLocale = DEFAULT_PAGE_LOCALE,
 ): RenderedPage {
   // Minted here and handed back with the markup that carries it, so the
   // policy served with this page cannot name a different value — a refused
@@ -91,5 +97,5 @@ form.addEventListener('submit', async (event) => {
   }
 });
 </script>`;
-  return page(title, body, { nonce, fetchesSameOrigin: false });
+  return page(title, body, { nonce, fetchesSameOrigin: false }, [], locale);
 }

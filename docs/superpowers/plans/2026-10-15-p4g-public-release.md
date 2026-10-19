@@ -561,6 +561,8 @@ export function createCatalogue<T extends Record<string, string>>(
 
 ## Increment 14: protocol-oidc pages (5 to 6 h)
 
+**Locale plumbing already exists** (fix round of increment 13): every `render*` takes a trailing `locale: PageLocale`, every route negotiates it before the renderer runs through `negotiatePageLocale` (`@odudu/i18n`), `continuation()` in `packages/protocol-oidc/src/view/routes/continuation.ts` gives pages with a parked request `ui_locales`, the subject's own `locale` once the first factor is verified, then `Accept-Language`, and pages without one use `Accept-Language` alone. Each renderer in this increment therefore takes its text with `t(locale, id)` from the `locale` it was already handed, and its test asserts that `lang`, `dir` and `Content-Language` follow `Accept-Language` for a catalogue fixture locale (`fr`, test-only). The tenant default is `null` until P4b stores one.
+
 Six renderers and one messages file: `authorize-html.ts`, `consent-html.ts`, `logout-html.ts`, `select-account-html.ts`, `throttled-html.ts` and `login-messages.ts` (`ls packages/protocol-oidc/src/view`; `wc -l` of the renderers is 1,035 across all fifteen, `cat packages/*/src/view/*-html.ts | wc -l`).
 
 ### Task 14: Extract the text, isolate user text, one renderer at a time
@@ -576,6 +578,8 @@ Six renderers and one messages file: `authorize-html.ts`, `consent-html.ts`, `lo
 
 ## Increment 15: authn-flows pages (4 to 5 h)
 
+**Each renderer takes `locale` already** (see increment 14): this increment reads text with `t(locale, id)`, and its tests assert that `lang`/`Content-Language` follow `Accept-Language` for a catalogue fixture locale. Pages shown after the first factor (TOTP, passkey, recovery codes, update-password) are negotiated with the subject's `locale` by the protocol-oidc routes that call them.
+
 Five renderers: `passkey-enrolment-html.ts`, `recovery-codes-html.ts`, `required-action-html.ts`, `totp-enrolment-html.ts`, `update-password-html.ts`. `update-password-html.ts` has **no test** (`ls packages/authn-flows/src/view`), which Task 12's reach check reports.
 
 ### Task 15: The same cycle, plus the missing test
@@ -588,6 +592,8 @@ Five renderers: `passkey-enrolment-html.ts`, `recovery-codes-html.ts`, `required
 ---
 
 ## Increment 16: account and console-gateway pages (4 to 5 h)
+
+**Each renderer takes `locale` already** (see increment 14): account routes negotiate on `Accept-Language` alone through `requestLocale`, console-gateway's refusal likewise; this increment reads text with `t(locale, id)`, and its tests assert that `lang`/`Content-Language` follow `Accept-Language` for a catalogue fixture locale.
 
 Four account renderers (`registration-html.ts`, `required-actions-html.ts`, `reset-html.ts`, `verification-html.ts`) and `packages/console-gateway/src/view/refusal-html.ts`. `console-gateway` is allowlisted to a short list of packages (`.dependency-cruiser.cjs` rule `console-gateway-allowlist`); Task 13a added `i18n`.
 

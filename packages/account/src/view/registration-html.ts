@@ -1,7 +1,10 @@
-import { type RenderedPage } from '@odudu/kernel';
+import { DEFAULT_PAGE_LOCALE, type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { escapeHtml, page } from '#/view/document';
 
-export function renderRegistrationForm(tenant: string): RenderedPage {
+export function renderRegistrationForm(
+  tenant: string,
+  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+): RenderedPage {
   const action = `/tenants/${escapeHtml(tenant)}/login-actions/registration`;
   return page(
     'Create account',
@@ -11,13 +14,19 @@ export function renderRegistrationForm(tenant: string): RenderedPage {
   <label>Password <input type="password" name="password" autocomplete="new-password"></label>
   <button type="submit">Create account</button>
 </form>`,
+    null,
+    [],
+    locale,
   );
 }
 
 // Every reason the submission was refused is listed, not just the first: a
 // password policy with four rules should not take four submissions to
 // satisfy.
-export function renderRegistrationFailedPage(messages: readonly string[]): RenderedPage {
+export function renderRegistrationFailedPage(
+  messages: readonly string[],
+  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+): RenderedPage {
   const items = messages.map((message) => `<li>${escapeHtml(message)}</li>`).join('\n');
   return page(
     "Can't create this account",
@@ -25,13 +34,19 @@ export function renderRegistrationFailedPage(messages: readonly string[]): Rende
 <ul>
 ${items}
 </ul>`,
+    null,
+    [],
+    locale,
   );
 }
 
 // The word "verify" only appears here when the tenant actually requires it —
 // the whole point is that an unverified account cannot sign in yet, so the
 // page must not claim otherwise.
-export function renderRegistrationSucceededPage(verifyEmailRequired: boolean): RenderedPage {
+export function renderRegistrationSucceededPage(
+  verifyEmailRequired: boolean,
+  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+): RenderedPage {
   const next = verifyEmailRequired
     ? '<p>Check your email for a link to verify your address before you can sign in.</p>'
     : '<p>You can now sign in.</p>';
@@ -39,5 +54,8 @@ export function renderRegistrationSucceededPage(verifyEmailRequired: boolean): R
     'Account created',
     `<h1>Account created</h1>
 ${next}`,
+    null,
+    [],
+    locale,
   );
 }

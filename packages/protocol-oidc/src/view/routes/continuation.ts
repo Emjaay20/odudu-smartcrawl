@@ -1,6 +1,6 @@
 import { type PendingRequest } from '@odudu/authn-flows';
-import { negotiateLocale, SHIPPED_LOCALES } from '@odudu/i18n';
-import { withLocale, type RenderedPage } from '@odudu/kernel';
+import { negotiatePageLocale } from '@odudu/i18n';
+import { type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { type FastifyReply } from 'fastify';
 
 export interface ContinuationDeps {
@@ -20,33 +20,74 @@ export interface ContinuationDeps {
   ): Promise<boolean>;
   // The tags a page can be shown in; defaults to what the server ships.
   pageLocales?: readonly string[];
+  // The `locale` attribute of a subject, read only for a page shown after
+  // the first factor was verified (ADR 0043, step 2).
+  subjectLocale?(tenantId: string, subjectId: string): Promise<string | null>;
+  // Whom a finished authentication bound to this session, for pages shown
+  // once it is finished.
+  authenticatedSubject?(tenantId: string, authSessionId: string): Promise<string | null>;
 }
 
-// A page whose form continues a parked authorization request can be answered
-// with a 302 to that request's client, so it names the client's redirect_uri
-// for `pageHeaders` to license (ADR 0018). The value is the one /authorize
-// validated and parked, never anything the browser submitted. The same
-// parked request carries `ui_locales`, so this is also where the page's
-// language is negotiated, once per response (ADR 0043). The subject's own
-// locale joins the order once a page after the first factor has text to
-// translate; until then it would change nothing a person could see.
-export async function continuing(
+// The language a page without a parked request is shown in: the browser's
+// preference alone, since nothing else about the request is known.
+export function requestLocale(
+  reply: FastifyReply,
+  deps: { pageLocales?: readonly string[] | undefined } = {},
+): PageLocale {
+  return negotiatePageLocale({
+    acceptLanguage: reply.request.headers['accept-language'],
+    ...(deps.pageLocales === undefined ? {} : { supported: deps.pageLocales }),
+  });
+}
+
+// Who is asking for the page, as far as the language may use it. `subject`
+// names a subject whose first factor is verified; `authenticated` asks the
+// session which one a finished authentication bound.
+export type PageSubject = { readonly subject: string } | 'authenticated';
+
+export interface PageContinuation {
+  // Negotiated before the renderer runs, so the text and the `lang` it is
+  // sent under come from one value (ADR 0043).
+  readonly locale: PageLocale;
+  // A page whose form continues a parked authorization request can be
+  // answered with a 302 to that request's client, so it names the client's
+  // redirect_uri for `pageHeaders` to license (ADR 0018). The value is the
+  // one /authorize validated and parked, never anything the browser posted.
+  readonly continuing: (page: RenderedPage) => RenderedPage;
+}
+
+// Loads the parked request once and answers both questions that need it: the
+// page's language (`ui_locales`, then the subject's own locale once they are
+// known, then Accept-Language) and the redirect its form may follow.
+export async function continuation(
   deps: ContinuationDeps,
   tenantName: string,
   authSessionId: string,
-  page: RenderedPage,
   reply: FastifyReply,
-): Promise<RenderedPage> {
+  who?: PageSubject,
+): Promise<PageContinuation> {
   const tenant = await deps.findTenant(tenantName);
   const pending = tenant === null ? null : await deps.loadPendingRequest(tenant.id, authSessionId);
-  const locale = negotiateLocale({
+  let subjectId: string | null = null;
+  if (tenant !== null && who !== undefined) {
+    subjectId =
+      who === 'authenticated'
+        ? ((await deps.authenticatedSubject?.(tenant.id, authSessionId)) ?? null)
+        : who.subject;
+  }
+  const subjectLocale =
+    tenant !== null && subjectId !== null
+      ? ((await deps.subjectLocale?.(tenant.id, subjectId)) ?? null)
+      : null;
+  const locale = negotiatePageLocale({
     uiLocales: pending?.uiLocales ?? [],
-    subjectLocale: null,
-    authenticated: false,
-    tenantDefault: null,
-    acceptLanguage: reply.request.headers['accept-language'] ?? null,
-    supported: deps.pageLocales ?? SHIPPED_LOCALES,
+    subjectLocale,
+    authenticated: subjectId !== null,
+    acceptLanguage: reply.request.headers['accept-language'],
+    ...(deps.pageLocales === undefined ? {} : { supported: deps.pageLocales }),
   });
-  const localized = withLocale(page, locale);
-  return pending === null ? localized : { ...localized, redirectsTo: pending.redirectUri };
+  return {
+    locale,
+    continuing: (page) => (pending === null ? page : { ...page, redirectsTo: pending.redirectUri }),
+  };
 }

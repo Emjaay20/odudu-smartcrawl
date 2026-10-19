@@ -1,4 +1,4 @@
-import { type RenderedPage } from '@odudu/kernel';
+import { DEFAULT_PAGE_LOCALE, type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { escapeHtml, page } from '#/view/document';
 
 // An actions link's own page, shown before anything is consumed: a link
@@ -9,6 +9,7 @@ export function renderRequiredActionsForm(
   key: string,
   actionLabels: readonly string[],
   setsPassword: boolean,
+  locale: PageLocale = DEFAULT_PAGE_LOCALE,
 ): RenderedPage {
   const action = `/tenants/${escapeHtml(tenant)}/login-actions/action-token`;
   const items = actionLabels.map((label) => `<li>${escapeHtml(label)}</li>`).join('\n');
@@ -26,10 +27,16 @@ ${items}
   <input type="hidden" name="key" value="${escapeHtml(key)}">${password}
   <button type="submit">Continue</button>
 </form>`,
+    null,
+    [],
+    locale,
   );
 }
 
-export function renderRequiredActionsSucceededPage(remaining: readonly string[]): RenderedPage {
+export function renderRequiredActionsSucceededPage(
+  remaining: readonly string[],
+  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+): RenderedPage {
   const rest =
     remaining.length === 0
       ? '<p>You can close this page and sign in to the application.</p>'
@@ -41,5 +48,8 @@ ${remaining.map((label) => `<li>${escapeHtml(label)}</li>`).join('\n')}
     'Account updated',
     `<h1>Your account is updated</h1>
 ${rest}`,
+    null,
+    [],
+    locale,
   );
 }

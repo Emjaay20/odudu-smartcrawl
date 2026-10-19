@@ -1,4 +1,5 @@
 import { type FastifyReply } from 'fastify';
+import { requestLocale } from '#/view/routes/continuation';
 import { sendHtml } from '#/view/html-response';
 import { renderThrottledPage } from '#/view/throttled-html';
 
@@ -8,6 +9,6 @@ export function sendThrottledPage(reply: FastifyReply, retryAfterSeconds: number
   return sendHtml(
     reply.header('retry-after', String(retryAfterSeconds)),
     429,
-    renderThrottledPage(retryAfterSeconds),
+    renderThrottledPage(retryAfterSeconds, requestLocale(reply)),
   );
 }

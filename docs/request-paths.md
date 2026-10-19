@@ -11457,7 +11457,10 @@ session lifecycle. A citation of either half here means that half.
   `ui_locales` is not ignored: its tags that could be language tags (the first
   sixteen; anything else is dropped) are parked with the
   request and every page of the sign-in negotiates its language from them,
-  then the browser's `Accept-Language`, then `en`; the answer is always one
+  then (once the subject's first factor is verified) the subject's own
+  `locale`, then the browser's `Accept-Language`, then `en`; a page with no
+  parked request (an error page, the logout pages, the account pages) uses
+  `Accept-Language` alone; the answer is always one
   of the tags the server ships (`ui_locales_supported` in discovery), so a tag
   nobody ships changes nothing and refuses nothing. `<html lang>`, `dir` and
   `Content-Language` carry the negotiated tag, and a restart link rebuilds

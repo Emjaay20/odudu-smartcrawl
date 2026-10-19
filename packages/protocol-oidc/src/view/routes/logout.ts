@@ -16,12 +16,14 @@ import {
   renderNoActiveSessionPage,
 } from '#/view/logout-html';
 import { sendHtml } from '#/view/html-response';
+import { requestLocale } from '#/view/routes/continuation';
 import { tenantIssuerFor } from '#/view/issuer';
 
 const PATH = '/tenants/:tenant/protocol/openid-connect/logout';
 
 export interface LogoutRouteDeps extends LogoutUsecaseDeps {
   tls: boolean;
+  pageLocales?: readonly string[];
 }
 
 // A parameter sent twice arrives as an array, and is dropped rather than
@@ -39,24 +41,32 @@ async function respondToOutcome(
   tenant: string,
   tls: boolean,
   reply: FastifyReply,
+  pageLocales?: readonly string[],
 ): Promise<FastifyReply> {
+  const locale = requestLocale(reply, { pageLocales });
   if (outcome.kind === 'not_found') {
     return reply.code(404).send();
   }
 
   if (outcome.kind === 'unauthenticated') {
-    return sendHtml(reply, 400, renderLogoutUnauthenticatedPage());
+    return sendHtml(reply, 400, renderLogoutUnauthenticatedPage(locale));
   }
 
   if (outcome.kind === 'confirm') {
     if (outcome.sessionId === null || outcome.csrf === null) {
-      return sendHtml(reply, 200, renderNoActiveSessionPage());
+      return sendHtml(reply, 200, renderNoActiveSessionPage(locale));
     }
-    const page = renderLogoutConfirmationPage(tenant, outcome.sessionId, outcome.csrf, {
-      clientId: outcome.clientId,
-      postLogoutRedirectUri: outcome.postLogoutRedirectUri,
-      state: outcome.state,
-    });
+    const page = renderLogoutConfirmationPage(
+      tenant,
+      outcome.sessionId,
+      outcome.csrf,
+      {
+        clientId: outcome.clientId,
+        postLogoutRedirectUri: outcome.postLogoutRedirectUri,
+        state: outcome.state,
+      },
+      locale,
+    );
     return sendHtml(
       reply,
       200,
@@ -79,14 +89,18 @@ async function respondToOutcome(
   }
 
   if (outcome.kind === 'render') {
-    return sendHtml(reply, 400, renderLogoutRedirectRefusedPage(outcome.frontChannelLogoutUrls));
+    return sendHtml(
+      reply,
+      400,
+      renderLogoutRedirectRefusedPage(outcome.frontChannelLogoutUrls, locale),
+    );
   }
 
   // RP-Initiated Logout §3's redirect, carrying state the same way RFC
   // 9207 has /authorize carry iss on every response — this is not an
   // authorization response, so no `iss` parameter of its own applies here.
   if (outcome.redirectTo === null) {
-    return sendHtml(reply, 200, renderLoggedOutPage(outcome.frontChannelLogoutUrls));
+    return sendHtml(reply, 200, renderLoggedOutPage(outcome.frontChannelLogoutUrls, locale));
   }
   const target = new URL(outcome.redirectTo);
   if (outcome.state !== null) target.searchParams.set('state', outcome.state);
@@ -124,7 +138,7 @@ async function respondToLogoutRequest(
     params,
     requestContextFrom(request),
   );
-  return respondToOutcome(outcome, tenant, deps.tls, reply);
+  return respondToOutcome(outcome, tenant, deps.tls, reply, deps.pageLocales);
 }
 
 export function registerLogoutRoute(app: FastifyInstance, deps: LogoutRouteDeps): void {
@@ -163,6 +177,6 @@ export function registerLogoutRoute(app: FastifyInstance, deps: LogoutRouteDeps)
       },
       requestContextFrom(request),
     );
-    return respondToOutcome(outcome, request.params.tenant, deps.tls, reply);
+    return respondToOutcome(outcome, request.params.tenant, deps.tls, reply, deps.pageLocales);
   });
 }

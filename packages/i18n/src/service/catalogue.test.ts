@@ -101,3 +101,19 @@ describe('createCatalogue', () => {
     expect(constructions.count).toBe(3);
   });
 });
+
+describe('createCatalogue rich text', () => {
+  it('refuses a message that carries a tag, naming the locale and the id', () => {
+    expect(() => createCatalogue({ en: { bold: 'a <b>x</b> b' } })).toThrow(/en.*bold|bold.*en/u);
+    expect(() => createCatalogue({ en: { ok: 'fine' }, fr: { ok: '<a href="x">y</a>' } })).toThrow(
+      /fr/u,
+    );
+    expect(() => createCatalogue({ en: { self: 'a <br/> b' } })).toThrow();
+  });
+
+  it('allows a bare less-than that is not a tag', () => {
+    expect(createCatalogue({ en: { cmp: '1 < 2 and {n}' } }).format('en', 'cmp', { n: 3 })).toBe(
+      '1 < 2 and 3',
+    );
+  });
+});

@@ -178,6 +178,7 @@ function buildHttpApp(): FastifyInstance {
     publicBaseUrl,
     createAccount,
     evaluatePassword,
+    pageLocales: ['en', 'fr'],
   });
   return instance;
 }
@@ -223,6 +224,19 @@ describe('self-registration', () => {
     const res = await httpApp.inject({ url: `/tenants/${tenantName}/login-actions/registration` });
 
     expect(res.statusCode).toBe(404);
+  });
+
+  it('shows the form in the browser language, in the markup and in Content-Language', async () => {
+    const { tenantName } = await seedTenant(`tenant-${newId()}`, { registrationAllowed: true });
+    const url = `/tenants/${tenantName}/login-actions/registration`;
+
+    const french = await httpApp.inject({ url, headers: { 'accept-language': 'de, fr;q=0.8' } });
+    expect(french.body).toContain('<html lang="fr" dir="ltr">');
+    expect(french.headers['content-language']).toBe('fr');
+
+    const none = await httpApp.inject({ url });
+    expect(none.body).toContain('<html lang="en" dir="ltr">');
+    expect(none.headers['content-language']).toBe('en');
   });
 
   it('rejects a request naming a tenant that does not exist', async () => {

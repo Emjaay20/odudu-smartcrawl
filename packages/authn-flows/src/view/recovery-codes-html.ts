@@ -1,4 +1,4 @@
-import { type RenderedPage } from '@odudu/kernel';
+import { DEFAULT_PAGE_LOCALE, type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { escapeHtml, page } from '#/view/document';
 
 // What the page has to show: the codes in plaintext, and whether they
@@ -18,6 +18,7 @@ export function renderRecoveryCodesPage(
   authSessionId: string,
   offer: RecoveryCodesOffer,
   error?: string,
+  locale: PageLocale = DEFAULT_PAGE_LOCALE,
 ): RenderedPage {
   const target = `/tenants/${escapeHtml(tenant)}/login-actions/required-action?action=generate-recovery-codes`;
   const message = error === undefined ? '' : `<p><strong>${escapeHtml(error)}</strong></p>\n`;
@@ -37,5 +38,5 @@ ${items}
 </form>`;
   // No script: nothing on this page talks to an authenticator or fetches
   // anything, so the base content-security policy describes it exactly.
-  return page(title, body);
+  return page(title, body, null, [], locale);
 }

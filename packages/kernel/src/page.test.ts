@@ -1,6 +1,6 @@
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
-import { INSTRUMENT_STYLESHEET, pageHeaders, reloadOnRestore, withLocale } from '#/page';
+import { INSTRUMENT_STYLESHEET, pageHeaders, reloadOnRestore } from '#/page';
 
 const headerMap = (page: Parameters<typeof pageHeaders>[0]): Record<string, string> =>
   Object.fromEntries(pageHeaders(page).map(([name, value]) => [name, value]));
@@ -308,26 +308,10 @@ describe('what the reload script does when run', () => {
   });
 });
 
-describe('withLocale', () => {
-  const rendered = {
-    ...MARKUP_ONLY_PAGE,
-    html: '<!doctype html>\n<html lang="en" dir="ltr">\n<head></head>\n<body></body>\n</html>',
-  };
-
-  it('rewrites the document element and the page locale together', () => {
-    const localized = withLocale(rendered, { tag: 'ar', dir: 'rtl' });
-    expect(localized.locale).toEqual({ tag: 'ar', dir: 'rtl' });
-    expect(localized.html).toContain('<html lang="ar" dir="rtl">');
-    expect(localized.html).not.toContain('lang="en"');
-  });
-
-  it('refuses a tag that could break out of the attribute or the header', () => {
-    for (const tag of ['en"><script>', 'en\r\nX: y', '', 'x'.repeat(36)]) {
-      expect(() => withLocale(rendered, { tag, dir: 'ltr' })).toThrow();
+describe('the locale a page is sent under', () => {
+  it('refuses a tag that could break out of the header', () => {
+    for (const tag of ['en\r\nX: y', 'en"><script>', '', 'x'.repeat(36)]) {
+      expect(() => pageHeaders({ ...MARKUP_ONLY_PAGE, locale: { tag, dir: 'ltr' } })).toThrow();
     }
-  });
-
-  it('refuses a page whose document element it cannot find', () => {
-    expect(() => withLocale(MARKUP_ONLY_PAGE, { tag: 'fr', dir: 'ltr' })).toThrow();
   });
 });

@@ -15,6 +15,7 @@ import {
   renderRegistrationSucceededPage,
 } from '#/view/registration-html';
 import { sendVerificationHtml } from '#/view/verification-html';
+import { requestLocale } from '#/view/request-locale';
 
 export interface RegistrationTenantLookup {
   readonly id: string;
@@ -27,6 +28,8 @@ export interface RegistrationTenantLookup {
 }
 
 export interface RegistrationRouteDeps {
+  // The tags a page can be shown in; defaults to what the server ships.
+  pageLocales?: readonly string[];
   readonly database: DatabaseHandle;
   readonly findTenant: (name: string) => Promise<RegistrationTenantLookup | null>;
   // Operator configuration (ODUDU_PUBLIC_BASE_URL), never anything read off
@@ -76,11 +79,16 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
   app.get<{ Params: { tenant: string } }>(
     '/tenants/:tenant/login-actions/registration',
     async (request, reply) => {
+      const locale = requestLocale(request, deps);
       const tenant = await deps.findTenant(request.params.tenant);
       if (!tenantIsOpenForRegistration(tenant)) {
         return reply.code(404).send();
       }
-      return sendVerificationHtml(reply, 200, renderRegistrationForm(request.params.tenant));
+      return sendVerificationHtml(
+        reply,
+        200,
+        renderRegistrationForm(request.params.tenant, locale),
+      );
     },
   );
 
@@ -88,6 +96,7 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
     Params: { tenant: string };
     Body: Record<string, string | string[] | undefined>;
   }>('/tenants/:tenant/login-actions/registration', async (request, reply) => {
+    const locale = requestLocale(request, deps);
     const tenant = await deps.findTenant(request.params.tenant);
     if (!tenantIsOpenForRegistration(tenant)) {
       return reply.code(404).send();
@@ -101,7 +110,7 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
       return sendVerificationHtml(
         reply,
         400,
-        renderRegistrationFailedPage([PASSWORD_TOO_LONG.message]),
+        renderRegistrationFailedPage([PASSWORD_TOO_LONG.message], locale),
       );
     }
     const password =
@@ -112,7 +121,7 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
       return sendVerificationHtml(
         reply,
         400,
-        renderRegistrationFailedPage(['Username, email and password are all required.']),
+        renderRegistrationFailedPage(['Username, email and password are all required.'], locale),
       );
     }
 
@@ -136,28 +145,31 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
       return sendVerificationHtml(
         reply,
         400,
-        renderRegistrationFailedPage(outcome.violations.map((v) => v.message)),
+        renderRegistrationFailedPage(
+          outcome.violations.map((v) => v.message),
+          locale,
+        ),
       );
     }
     if (outcome.kind === 'email_taken') {
       return sendVerificationHtml(
         reply,
         400,
-        renderRegistrationFailedPage(['That email address is already registered.']),
+        renderRegistrationFailedPage(['That email address is already registered.'], locale),
       );
     }
     if (outcome.kind === 'username_taken') {
       return sendVerificationHtml(
         reply,
         400,
-        renderRegistrationFailedPage(['That username is already taken.']),
+        renderRegistrationFailedPage(['That username is already taken.'], locale),
       );
     }
     if (outcome.kind === 'invalid_email') {
       return sendVerificationHtml(
         reply,
         400,
-        renderRegistrationFailedPage(['That is not an address the email claim may carry.']),
+        renderRegistrationFailedPage(['That is not an address the email claim may carry.'], locale),
       );
     }
     if (outcome.kind === 'misconfigured') {
@@ -168,10 +180,17 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
       return sendVerificationHtml(
         reply,
         500,
-        renderRegistrationFailedPage(['Registration is temporarily unavailable. Try again later.']),
+        renderRegistrationFailedPage(
+          ['Registration is temporarily unavailable. Try again later.'],
+          locale,
+        ),
       );
     }
 
-    return sendVerificationHtml(reply, 201, renderRegistrationSucceededPage(tenant.verifyEmail));
+    return sendVerificationHtml(
+      reply,
+      201,
+      renderRegistrationSucceededPage(tenant.verifyEmail, locale),
+    );
   });
 }

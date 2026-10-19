@@ -14,7 +14,7 @@ import { type RenderedPage } from '@odudu/kernel';
 import { type FastifyReply } from 'fastify';
 import { sendHtml } from '#/view/html-response';
 import { sendSignInExpired } from '#/view/routes/expired-sign-in';
-import { continuing, type ContinuationDeps } from '#/view/routes/continuation';
+import { continuation, type ContinuationDeps } from '#/view/routes/continuation';
 
 // What every route that can produce a 'required_action' outcome needs to
 // render the page for it — login.ts's own form submission and
@@ -53,14 +53,18 @@ export async function sendRequiredActionPage(
   subjectId: string,
   action: RequiredAction,
 ): Promise<FastifyReply> {
-  const send = async (page: RenderedPage) =>
-    sendHtml(reply, 200, await continuing(deps, tenantName, authSessionId, page, reply));
+  // The first factor is verified by the time an action is owed, so the
+  // subject's own locale may choose the page's language.
+  const { locale, continuing } = await continuation(deps, tenantName, authSessionId, reply, {
+    subject: subjectId,
+  });
+  const send = (page: RenderedPage) => sendHtml(reply, 200, continuing(page));
   const beginPasskey = deps.beginPasskeyEnrolment?.bind(deps);
   if (action === 'configure-passkey' && beginPasskey !== undefined) {
     const tenant = await deps.findTenant(tenantName);
     if (tenant !== null) {
       const offer = await beginPasskey(tenantName, tenant.id, subjectId, authSessionId);
-      return send(renderPasskeyEnrolmentPage(tenantName, authSessionId, offer));
+      return send(renderPasskeyEnrolmentPage(tenantName, authSessionId, offer, undefined, locale));
     }
   }
   if (action === 'generate-recovery-codes') {
@@ -76,19 +80,19 @@ export async function sendRequiredActionPage(
         subjectId,
         requestContextFrom(reply.request),
       );
-      return send(renderRecoveryCodesPage(tenantName, authSessionId, offer));
+      return send(renderRecoveryCodesPage(tenantName, authSessionId, offer, undefined, locale));
     }
   }
   if (action === 'update-password') {
-    return send(renderUpdatePasswordPage(tenantName, authSessionId));
+    return send(renderUpdatePasswordPage(tenantName, authSessionId, [], locale));
   }
   if (action !== 'configure-totp') {
-    return sendHtml(reply, 200, renderRequiredActionPage(action));
+    return sendHtml(reply, 200, renderRequiredActionPage(action, locale));
   }
   const tenant = await deps.findTenant(tenantName);
   if (tenant === null) {
-    return sendHtml(reply, 200, renderRequiredActionPage(action));
+    return sendHtml(reply, 200, renderRequiredActionPage(action, locale));
   }
   const offer = await deps.beginTotpEnrolment(tenantName, tenant.id, subjectId);
-  return send(renderTotpEnrolmentPage(tenantName, authSessionId, offer));
+  return send(renderTotpEnrolmentPage(tenantName, authSessionId, offer, undefined, locale));
 }

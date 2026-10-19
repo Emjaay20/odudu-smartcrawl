@@ -1,4 +1,4 @@
-import { type RenderedPage } from '@odudu/kernel';
+import { DEFAULT_PAGE_LOCALE, type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { type RequiredAction } from '#/schema/required-action';
 import { escapeHtml, page } from '#/view/document';
 
@@ -8,11 +8,17 @@ import { escapeHtml, page } from '#/view/document';
 // at all: no relying party id, and so no passkey to enrol. The form carries
 // nothing to submit, because there is nothing this browser could send that
 // would complete it.
-export function renderRequiredActionPage(action: RequiredAction): RenderedPage {
+export function renderRequiredActionPage(
+  action: RequiredAction,
+  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+): RenderedPage {
   return page(
     'One more step',
     `<h1>One more step</h1>
 <p>This account has a pending action (${escapeHtml(action)}) that cannot be completed here yet.</p>
 <p>Ask an administrator to finish setting up this account.</p>`,
+    null,
+    [],
+    locale,
   );
 }

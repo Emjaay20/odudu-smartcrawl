@@ -1,4 +1,4 @@
-import { type RenderedPage } from '@odudu/kernel';
+import { DEFAULT_PAGE_LOCALE, type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { escapeHtml, page } from '#/view/document';
 
 export interface SelectAccountEntry {
@@ -22,7 +22,10 @@ function renderAccount(account: SelectAccountEntry): string {
 // is: a submission whose auth_session_id does not name a live authentication
 // session is refused, and that protects the endpoint rather than any one
 // control. There is no script on this page, so `script` is null.
-export function renderSelectAccountPage(input: SelectAccountInput): RenderedPage {
+export function renderSelectAccountPage(
+  input: SelectAccountInput,
+  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+): RenderedPage {
   const action = `/tenants/${escapeHtml(input.tenant)}/login-actions/select-account`;
   const accountList = input.accounts.map(renderAccount).join('\n  ');
   return page(
@@ -33,5 +36,8 @@ export function renderSelectAccountPage(input: SelectAccountInput): RenderedPage
   ${accountList}
   <button type="submit" name="use_other" value="1">Use another account</button>
 </form>`,
+    null,
+    [],
+    locale,
   );
 }
