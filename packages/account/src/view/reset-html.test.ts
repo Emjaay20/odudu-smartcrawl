@@ -47,8 +47,7 @@ describe('renderResetRequestForm', () => {
   });
 
   it('keeps the English markup exactly', () => {
-    expect(renderResetRequestForm('acme', EN).body)
-      .toBe(`<header class="intro">
+    expect(renderResetRequestForm('acme', EN).body).toBe(`<header class="intro">
 <h1>Forgot your password?</h1>
 <p class="tenant"><bdi>acme</bdi></p>
 </header>
@@ -125,8 +124,7 @@ describe('renderResetPasswordForm', () => {
   });
 
   it('keeps the English markup exactly', () => {
-    expect(renderResetPasswordForm('acme', 'token-key', EN).body)
-      .toBe(`<header class="intro">
+    expect(renderResetPasswordForm('acme', 'token-key', EN).body).toBe(`<header class="intro">
 <h1>Choose a new password</h1>
 <p class="tenant"><bdi>acme</bdi></p>
 </header>

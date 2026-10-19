@@ -37,8 +37,7 @@ describe('renderRegistrationForm', () => {
   });
 
   it('keeps the English markup exactly', () => {
-    expect(renderRegistrationForm('acme', DEFAULT_PAGE_LOCALE).body)
-      .toBe(`<header class="intro">
+    expect(renderRegistrationForm('acme', DEFAULT_PAGE_LOCALE).body).toBe(`<header class="intro">
 <h1>Create account</h1>
 <p class="tenant"><bdi>acme</bdi></p>
 </header>

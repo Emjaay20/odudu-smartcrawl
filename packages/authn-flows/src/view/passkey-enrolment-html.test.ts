@@ -168,7 +168,9 @@ describe('renderPasskeyEnrolmentPage', () => {
     const page = renderPasskeyEnrolmentPage('acme', 's1', OFFER, 'passkey_not_added', FRENCH);
     expect(page.html).toContain('<html lang="fr" dir="ltr">');
     expect(page.title).toBe('Ajouter une clé d’accès');
-    expect(page.body).toContain('<p class="alert" role="alert">Cette clé n’a pas pu être ajoutée.</p>');
+    expect(page.body).toContain(
+      '<p class="alert" role="alert">Cette clé n’a pas pu être ajoutée.</p>',
+    );
     expect(page.body).toContain('<label>Nommez cette clé <input');
     expect(page.body).toContain('placeholder="Clé d’accès"');
     expect(page.body).toContain('>Ajouter</button>');
