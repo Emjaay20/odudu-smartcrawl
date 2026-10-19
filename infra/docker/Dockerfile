@@ -63,6 +63,9 @@ RUN pnpm install --frozen-lockfile --prod --ignore-scripts
 
 FROM node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f AS runtime
 RUN addgroup -S odudu && adduser -S -G odudu odudu
+# A named volume mounted here takes this directory's owner and mode, so
+# odudu init, which runs as the odudu user, can write quickstart.env into it.
+RUN mkdir -m 0700 /var/lib/odudu && chown odudu:odudu /var/lib/odudu
 WORKDIR /app
 COPY --chmod=0755 infra/docker/odudu /usr/local/bin/odudu
 COPY --from=build --chown=odudu:odudu /app/apps/server/dist ./dist

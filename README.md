@@ -1272,7 +1272,7 @@ connection, `ODUDU_DATABASE_URL`, and it is safe to run again.
 
 | Input                        | Meaning                                                                                                                        |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `--admin-email`              | The administrator's address; it is also the username they sign in with.                                                        |
+| `--admin-email`              | The administrator's address; it is also the username they sign in with. Default `ODUDU_ADMIN_EMAIL`.                           |
 | `--state-dir`                | Where `quickstart.env` goes. Default `/var/lib/odudu`, created `0700`; an existing one writable by group or others is refused. |
 | `--public-base-url`          | Where the server will be reached. Default `ODUDU_PUBLIC_BASE_URL`, then `http://localhost:3000`.                               |
 | `--add-admin`                | Add a second administrator. Without it a different `--admin-email` is refused.                                                 |
@@ -1282,7 +1282,8 @@ connection, `ODUDU_DATABASE_URL`, and it is safe to run again.
 overwritten: it holds the owner and service database URLs, `ODUDU_KEK`, the
 console's client key and the base URL, so a second run reuses the same KEK
 instead of rotating it. Two runs at once are serialised by a Postgres advisory
-lock. A generated password is printed once and must be changed at first
+lock. On a terminal, `init` asks for the password, twice and without echoing it, when none
+is given; otherwise a generated password is printed once and must be changed at first
 sign-in; a chosen one is checked against the system tenant's password policy,
 never printed, and not forced to change. A run against an administrator that
 already exists changes nothing. If its password is lost, `odudu seed admin
@@ -1304,10 +1305,18 @@ show the shell's exit status:
 
 ```
 $ odudu init --state-dir ./state --admin-email ada@example.com
-Console: http://localhost:3000/console/
-Administrator: ada@example.com
-One-time password: <generated>
-It is shown once and must be changed at first sign-in.
+
+Odudu is ready.
+
+ console:  http://localhost:3000/console/
+ email:    ada@example.com
+ password: <generated>
+
+The password is shown once and must be changed at first sign-in.
+To remove it from the setup container log afterwards, run:
+
+  docker compose rm -f setup
+
 $ node -e 'for (const f of ["state", "state/quickstart.env"]) console.log((fs.statSync(f).mode & 0o7777).toString(8).padStart(4, "0"), f)'; cut -d= -f1 state/quickstart.env
 0700 state
 0600 state/quickstart.env
@@ -1324,8 +1333,13 @@ $ odudu init --state-dir ./state --admin-email grace@example.com; echo "exit $?"
 the system tenant already has an administrator and grace@example.com is not it; pass --add-admin to add another
 exit 1
 $ ODUDU_ADMIN_PASSWORD=<chosen> odudu init --state-dir ./state --admin-email grace@example.com --add-admin
-Console: http://localhost:3000/console/
-Administrator: grace@example.com
+
+Odudu is ready.
+
+ console:  http://localhost:3000/console/
+ email:    grace@example.com
+
+Sign in with the password you chose.
 $ odudu init --state-dir ./state --public-base-url https://id.example.com --admin-email ada@example.com; echo "exit $?"
 ODUDU_PUBLIC_BASE_URL is "https://id.example.com", which is not a loopback address: odudu init is for a machine you are sitting at and serves over plain http on localhost. To run on a public address, configure the server yourself: see the README's Deploying section
 exit 1

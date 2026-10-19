@@ -5,34 +5,39 @@ import { parseArgs } from 'node:util';
 import { generateClientKey } from '@odudu/crypto';
 import { createDatabase, MIGRATIONS_DIR, runMigrations, withTenant } from '@odudu/db';
 import { SYSTEM_TENANT_ID } from '@odudu/domain-tenant';
-import { isEmailAddress, userRepository } from '@odudu/domain-identity';
+import {
+  evaluatePassword,
+  isEmailAddress,
+  userRepository,
+  type PasswordPolicy,
+} from '@odudu/domain-identity';
 import { OduduError } from '@odudu/kernel';
 import { sql } from 'drizzle-orm';
+import { renderBanner } from '#/cli/banner';
 import { flag, text } from '#/cli/command-types';
 import {
   assertLoopbackBase,
   DEFAULT_PUBLIC_BASE_URL,
   planInit,
   type InitInput,
+  type InitReport,
 } from '#/cli/init-plan';
+import { promptAdmin, type AdminAnswer, type PromptIo } from '#/cli/prompt';
 import { seedAdmin } from '#/cli/seed';
 
-export type { InitInput } from '#/cli/init-plan';
+export type { InitInput, InitReport } from '#/cli/init-plan';
 
 export interface InitIo {
   /** The owner connection: it creates roles, runs migrations and sees every tenant. */
   readonly databaseUrl: string;
   readonly out: (line: string) => void;
-  readonly promptPassword?: () => Promise<string>;
+  /** Present on a terminal: asks for what the options and environment did not give. */
+  readonly promptAdmin?: (
+    validate: (password: string) => string | null,
+    presetEmail?: string,
+  ) => Promise<AdminAnswer>;
   /** How long to wait for another init on the same database. Default 60 seconds. */
   readonly lockWaitMs?: number;
-}
-
-export interface InitReport {
-  readonly consoleUrl: string;
-  readonly adminEmail: string;
-  readonly generatedPassword?: string;
-  readonly created: boolean;
 }
 
 type Handle = ReturnType<typeof createDatabase>;
@@ -63,6 +68,36 @@ export function existingAdministratorMessage(email: string, consoleUrl: string):
     `The administrator ${email} already exists. Console: ${consoleUrl}\n` +
     'If you cannot sign in, `odudu seed admin --username <name>` creates another.'
   );
+}
+
+// The tenants table's password column defaults, which the system tenant is
+// created with. It only spares a person a failed run: seedAdmin checks the stored
+// policy and has the last word.
+const SYSTEM_TENANT_POLICY: PasswordPolicy = {
+  minLength: 8,
+  requireDigit: false,
+  requireUppercase: false,
+  requireLowercase: false,
+  requireSpecial: false,
+  notUsername: true,
+  notEmail: true,
+  historyDepth: 0,
+  maxAgeDays: 0,
+};
+
+// With no email yet, the rules that compare against one are left to seedAdmin.
+function policyRefusal(email: string | undefined): (password: string) => string | null {
+  return (password) => {
+    const subject = email === undefined ? null : { username: email, email };
+    const policy =
+      subject === null
+        ? { ...SYSTEM_TENANT_POLICY, notUsername: false, notEmail: false }
+        : SYSTEM_TENANT_POLICY;
+    const violations = evaluatePassword(password, policy, subject ?? { username: '', email: null });
+    return violations.length === 0
+      ? null
+      : violations.map((violation) => violation.message).join(' ');
+  };
 }
 
 const LOCK_HELD_MESSAGE =
@@ -252,12 +287,13 @@ async function chosenPassword(
   source: 'prompt' | 'env',
   input: InitInput,
   io: InitIo,
+  email: string,
 ): Promise<string> {
   if (source === 'env' && input.adminPassword !== undefined) return input.adminPassword;
-  if (io.promptPassword === undefined) {
+  if (io.promptAdmin === undefined) {
     throw new OduduError('init_invalid_options', 'there is no terminal to ask for a password on');
   }
-  return io.promptPassword();
+  return (await io.promptAdmin(policyRefusal(email), email)).password;
 }
 
 // Idempotent: every step looks before it writes. Runs are serialised by an
@@ -266,15 +302,23 @@ async function chosenPassword(
 // or the administrator.
 export async function init(input: InitInput, io: InitIo): Promise<InitReport> {
   assertLoopbackBase(input.publicBaseUrl);
-  const email = input.adminEmail;
+  let resolved = input;
+  if (input.adminEmail === undefined && input.interactive && io.promptAdmin !== undefined) {
+    const answer = await io.promptAdmin(policyRefusal(undefined));
+    resolved = { ...input, adminEmail: answer.email, adminPassword: answer.password };
+  }
+  const email = resolved.adminEmail;
   if (email === undefined || !isEmailAddress(email)) {
-    throw new OduduError('init_invalid_options', 'init needs --admin-email, an email address');
+    throw new OduduError(
+      'init_invalid_options',
+      'init needs --admin-email or ODUDU_ADMIN_EMAIL, an email address',
+    );
   }
 
   const owner = createDatabase(io.databaseUrl, { max: 1 });
   try {
     await takeLock(owner, io.lockWaitMs ?? LOCK_WAIT_MS);
-    return await initLocked(input, io, owner, email);
+    return await initLocked(resolved, io, owner, email);
   } finally {
     await owner.close();
   }
@@ -339,22 +383,27 @@ async function initLocked(
 
   if (plan.passwordSource === 'generated') {
     const admin = await seedAdmin({ username: email, email });
-    io.out(`Console: ${consoleUrl}`);
-    io.out(`Administrator: ${email}`);
-    io.out(`One-time password: ${admin.password}`);
-    io.out('It is shown once and must be changed at first sign-in.');
-    return { consoleUrl, adminEmail: email, generatedPassword: admin.password, created: true };
+    const report = {
+      consoleUrl,
+      adminEmail: email,
+      generatedPassword: admin.password,
+      created: true,
+    };
+    io.out(renderBanner(report));
+    return report;
   }
 
-  const password = await chosenPassword(plan.passwordSource, input, io);
+  const password = await chosenPassword(plan.passwordSource, input, io, email);
   await seedAdmin({ username: email, email, password });
-  io.out(`Console: ${consoleUrl}`);
-  io.out(`Administrator: ${email}`);
-  return { consoleUrl, adminEmail: email, created: true };
+  const report = { consoleUrl, adminEmail: email, created: true };
+  io.out(renderBanner(report));
+  return report;
 }
 
 export const INIT_OPTIONS = {
-  'admin-email': text('Email address of the first administrator, who signs in with it.'),
+  'admin-email': text(
+    'Email address of the first administrator, who signs in with it. Defaults to ODUDU_ADMIN_EMAIL.',
+  ),
   'state-dir': text('Directory that holds quickstart.env. Defaults to ' + DEFAULT_STATE_DIR + '.'),
   'add-admin': flag(
     'Add an administrator when the system tenant already has one; without it a ' +
@@ -369,26 +418,35 @@ export const INIT_OPTIONS = {
 } as const;
 
 // A blank ${ODUDU_ADMIN_PASSWORD:-} in a compose file is unset, not a password.
+function blankAsUnset(value: string | undefined): string | undefined {
+  return value === '' ? undefined : value;
+}
+
 export function adminPasswordFromEnv(env: NodeJS.ProcessEnv): string | undefined {
-  const value = env.ODUDU_ADMIN_PASSWORD;
-  return value === undefined || value === '' ? undefined : value;
+  return blankAsUnset(env.ODUDU_ADMIN_PASSWORD);
 }
 
 // The administrator's own password comes from ODUDU_ADMIN_PASSWORD, never an
 // option, so it does not sit in the process list.
-export async function initCommand(argv: readonly string[]): Promise<void> {
+export async function initCommand(
+  argv: readonly string[],
+  terminal: PromptIo | null = process.stdin.isTTY
+    ? { input: process.stdin, output: process.stdout }
+    : null,
+): Promise<void> {
   const { values } = parseArgs({ args: [...argv], options: INIT_OPTIONS });
   const databaseUrl = process.env.ODUDU_DATABASE_URL;
   if (databaseUrl === undefined || databaseUrl === '') {
     throw new OduduError('init_invalid_options', 'init needs ODUDU_DATABASE_URL, the owner URL');
   }
   const adminPassword = adminPasswordFromEnv(process.env);
+  const adminEmail = values['admin-email'] ?? blankAsUnset(process.env.ODUDU_ADMIN_EMAIL);
   await init(
     {
-      ...(values['admin-email'] !== undefined ? { adminEmail: values['admin-email'] } : {}),
+      ...(adminEmail !== undefined ? { adminEmail } : {}),
       ...(adminPassword !== undefined ? { adminPassword } : {}),
       additionalAdmin: values['add-admin'] === true,
-      interactive: false,
+      interactive: terminal !== null,
       publicBaseUrl:
         values['public-base-url'] ?? process.env.ODUDU_PUBLIC_BASE_URL ?? DEFAULT_PUBLIC_BASE_URL,
       stateDir: values['state-dir'] ?? DEFAULT_STATE_DIR,
@@ -398,6 +456,9 @@ export async function initCommand(argv: readonly string[]): Promise<void> {
       out: (line) => {
         console.log(line);
       },
+      ...(terminal !== null
+        ? { promptAdmin: (validate, presetEmail) => promptAdmin(terminal, validate, presetEmail) }
+        : {}),
     },
   );
 }

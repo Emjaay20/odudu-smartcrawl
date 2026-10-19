@@ -563,9 +563,8 @@ served from the image` (the asset it names is content-hashed).
   password bound to `format()`, and runs the returned text.
 - `init` refuses an existing `odudu_svc` role when `quickstart.env` is absent:
   the role's password is unknown and resetting it would break whatever uses it.
-- The prompt for an interactive password is not wired: `odudu init` passes
-  `interactive: false`, so a password comes from `ODUDU_ADMIN_PASSWORD` or is
-  generated.
+- A password comes from `ODUDU_ADMIN_PASSWORD`, else the terminal prompt when
+  stdin is a terminal, else it is generated (see the quickstart compose file).
 - `init` creates `odudu_svc` from a SCRAM-SHA-256 verifier computed with
   `node:crypto` (no dependency), so the plaintext never reaches
   `log_statement=ddl` or `pg_stat_statements`. verified: the integration test
@@ -573,3 +572,28 @@ served from the image` (the asset it names is content-hashed).
 - Runs are serialised by `pg_advisory_lock(hashtext('odudu_init'), 0)` held on
   the owner connection, and `quickstart.env` is published by link from a
   mode-0600 temp file; verified by the two-concurrent-runs test.
+
+## The quickstart compose file
+
+- verified: `docker compose -f quickstart/compose.yaml up -d` with a locally
+  built image (`ODUDU_PORT=3250`): `setup` exited 0 after printing the banner
+  once, `odudu` was healthy, `/health/ready` answered, `/console/` answered 200,
+  `ps` showed `5432/tcp` only for `postgres`, and a second `up -d` ran `setup`
+  again to "already exists" with the server unharmed.
+- **`stdin_open: true` with `tty: true` on `setup` makes `up` interactive.**
+  Stdin is then a pseudo-terminal under `up -d` (`ls -l /proc/1/fd` shows
+  `/dev/pts/0`), so `init` waited for a password nobody could type and `odudu`
+  never started. Contradicts the spike line above that a prompt is reachable
+  only through `run`; the compose file sets neither key, and `docker compose
+run --rm setup` allocates the terminal itself. verified: `script -q
+/dev/null docker compose run --rm setup` on macOS prompted for the password
+  twice, refused a short one with the policy message, echoed nothing typed,
+  and printed the banner without a password.
+- The roles are created by `init`, not by a `configs:` script on `postgres`: a
+  role created that way would make `init` refuse (`odudu_svc` exists, no
+  `quickstart.env`).
+- The image gains `/var/lib/odudu`, `0700`, owned by `odudu`; a named volume
+  copies both. verified: `init` wrote `quickstart.env` into the fresh volume.
+- `ODUDU_ADMIN_EMAIL` is read by `init` when no `--admin-email` is given.
+- `base-images-pinned.test.ts` exempts the one interpolation
+  `${ODUDU_IMAGE:-ghcr.io/wizzywit/odudu:<tag>}`, the project's own image.

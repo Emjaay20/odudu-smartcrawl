@@ -67,12 +67,19 @@ const YAML_PATTERNS: readonly RegExp[] = [
   /^\s*(?:-\s+)?uses:\s*['"]?docker:\/\/([^\s'"#]+)/,
 ];
 
+// The quickstart compose file installs this project's own image, chosen by a
+// variable and defaulting to the latest release; every image it builds on is
+// pinned in the Dockerfile that makes it.
+const OWN_IMAGE = /^\$\{ODUDU_IMAGE:-ghcr\.io\/wizzywit\/odudu:[\w.-]+\}$/;
+
 function yamlReferences(file: string, text: string): Reference[] {
   const found: Reference[] = [];
   text.split('\n').forEach((raw, index) => {
     for (const pattern of YAML_PATTERNS) {
       const match = pattern.exec(raw);
-      if (match?.[1] !== undefined) found.push({ file, line: index + 1, image: match[1] });
+      if (match?.[1] !== undefined && !OWN_IMAGE.test(match[1])) {
+        found.push({ file, line: index + 1, image: match[1] });
+      }
     }
   });
   return found;
@@ -170,6 +177,22 @@ describe('base images', () => {
       'Dockerfile.dev:5 busybox:1',
       'Dockerfile.dev:6 nginx:1',
       'Dockerfile.dev:7 ${BASE}',
+    ]);
+  });
+
+  it('exempts only the own-image variable, ODUDU_IMAGE', () => {
+    const text = [
+      'services:',
+      '  a:',
+      '    image: ${ODUDU_IMAGE:-ghcr.io/wizzywit/odudu:latest}',
+      '  b:',
+      '    image: ${OTHER:-ghcr.io/wizzywit/odudu:latest}',
+      '  c:',
+      '    image: ${ODUDU_IMAGE:-ghcr.io/someone/else:latest}',
+    ].join('\n');
+    expect(unpinned(imageReferences('quickstart/compose.yaml', text))).toEqual([
+      'quickstart/compose.yaml:5 ${OTHER:-ghcr.io/wizzywit/odudu:latest}',
+      'quickstart/compose.yaml:7 ${ODUDU_IMAGE:-ghcr.io/someone/else:latest}',
     ]);
   });
 

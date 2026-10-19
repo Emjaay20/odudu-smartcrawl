@@ -265,6 +265,58 @@ describe('odudu init', () => {
     expect(first.get('ODUDU_CONSOLE_CLIENT_KEY')).toBeTruthy();
   }, 120_000);
 
+  it('asks for the password on a terminal, checks it, and never prints it', async () => {
+    const { io, out } = capture();
+    const asked: (string | undefined)[] = [];
+
+    const report = await init(inputWith({ interactive: true }), {
+      ...io,
+      promptAdmin: (validate, presetEmail) => {
+        asked.push(presetEmail);
+        expect(validate('short')).toMatch(/at least 8/u);
+        return Promise.resolve({ email: presetEmail ?? '', password: 'Typed-Passw0rd!77' });
+      },
+    });
+
+    expect(asked).toEqual([EMAIL]);
+    expect(report.generatedPassword).toBeUndefined();
+    expect(await signIn(EMAIL, 'Typed-Passw0rd!77')).toBe('signed-in');
+    expect(out.join('\n')).not.toContain('Typed-Passw0rd!77');
+    expect(out.join('\n')).toContain(EMAIL);
+  }, 120_000);
+
+  it('asks for the email too when none was given', async () => {
+    const { io } = capture();
+
+    const report = await init(
+      { interactive: true, publicBaseUrl: BASE, stateDir },
+      {
+        ...io,
+        promptAdmin: () =>
+          Promise.resolve({ email: 'grace@example.com', password: 'Typed-Passw0rd!77' }),
+      },
+    );
+
+    expect(report.adminEmail).toBe('grace@example.com');
+    expect(await signIn('grace@example.com', 'Typed-Passw0rd!77')).toBe('signed-in');
+  }, 120_000);
+
+  it('does not prompt when the administrator already exists', async () => {
+    await init(inputWith(), capture().io);
+    const { io } = capture();
+    let prompted = false;
+
+    await init(inputWith({ interactive: true }), {
+      ...io,
+      promptAdmin: () => {
+        prompted = true;
+        return Promise.reject(new Error('should not ask'));
+      },
+    });
+
+    expect(prompted).toBe(false);
+  }, 120_000);
+
   it('refuses to run against a non-loopback public base URL', async () => {
     await expect(
       init(inputWith({ publicBaseUrl: 'https://id.example.com' }), capture().io),
@@ -366,23 +418,38 @@ describe('odudu init as a command', () => {
     process.env.ODUDU_DATABASE_URL = database.adminUrl;
     process.env.ODUDU_ADMIN_PASSWORD = '';
     try {
-      await initCommand(['--state-dir', stateDir, '--admin-email', EMAIL]);
-      const generated = /One-time password: (\S+)/u.exec(printed.join('\n'))?.[1] ?? '';
+      await initCommand(['--state-dir', stateDir, '--admin-email', EMAIL], null);
+      const generated = /^ password: (\S+)$/mu.exec(printed.join('\n'))?.[1] ?? '';
       expect(await signIn(EMAIL, generated)).toBe('change-password');
 
       await expect(
-        initCommand(['--state-dir', stateDir, '--admin-email', 'grace@example.com']),
+        initCommand(['--state-dir', stateDir, '--admin-email', 'grace@example.com'], null),
       ).rejects.toThrow(/--add-admin/u);
       process.env.ODUDU_ADMIN_PASSWORD = 'Chosen-Passw0rd!42';
-      await initCommand([
-        '--state-dir',
-        stateDir,
-        '--admin-email',
-        'grace@example.com',
-        '--add-admin',
-      ]);
+      await initCommand(
+        ['--state-dir', stateDir, '--admin-email', 'grace@example.com', '--add-admin'],
+        null,
+      );
       expect(await signIn('grace@example.com', 'Chosen-Passw0rd!42')).toBe('signed-in');
     } finally {
+      log.mockRestore();
+    }
+  }, 120_000);
+
+  it('takes the administrator from ODUDU_ADMIN_EMAIL when no option names one', async () => {
+    const printed: string[] = [];
+    const log = vi.spyOn(console, 'log').mockImplementation((line: unknown) => {
+      printed.push(String(line));
+    });
+    process.env.ODUDU_DATABASE_URL = database.adminUrl;
+    delete process.env.ODUDU_ADMIN_PASSWORD;
+    process.env.ODUDU_ADMIN_EMAIL = 'env-admin@example.com';
+    try {
+      await initCommand(['--state-dir', stateDir], null);
+
+      expect(printed.join('\n')).toContain('env-admin@example.com');
+    } finally {
+      delete process.env.ODUDU_ADMIN_EMAIL;
       log.mockRestore();
     }
   }, 120_000);

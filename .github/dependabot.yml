@@ -35,6 +35,7 @@ updates:
     directories:
       - /infra/docker
       - /infra/conformance
+      - /quickstart
     schedule:
       interval: weekly
     groups:

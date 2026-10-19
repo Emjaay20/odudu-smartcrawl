@@ -9,6 +9,13 @@ export interface InitInput {
   readonly stateDir: string;
 }
 
+export interface InitReport {
+  readonly consoleUrl: string;
+  readonly adminEmail: string;
+  readonly generatedPassword?: string;
+  readonly created: boolean;
+}
+
 export interface InitPlan {
   readonly secrets: 'generate' | 'reuse';
   readonly admin: 'create' | 'exists';
