@@ -21,3 +21,4 @@ test-results/
 
 # Throwaway certificate for the try stack (infra/docker/try-certs.sh)
 infra/docker/try-certs/
+.docusaurus

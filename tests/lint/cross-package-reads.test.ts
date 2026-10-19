@@ -28,6 +28,10 @@ const READS: readonly { file: string; targets: readonly string[] }[] = [
     file: 'packages/protocol-oidc/src/view/routes/session-cookie-authority.test.ts',
     targets: ['packages/protocol-oidc/src/view/routes/*'],
   },
+  {
+    file: 'apps/docs/tests/support/dist.ts',
+    targets: ['apps/docs/content/**', 'apps/docs/src/**'],
+  },
   { file: 'packages/db/src/migrate.ts', targets: ['packages/db/drizzle/**'] },
   {
     file: 'apps/admin-console/src/shared/view/shadows.test.ts',

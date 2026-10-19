@@ -5,6 +5,7 @@ export default tseslint.config(
   {
     ignores: [
       '**/dist/**',
+      '**/.docusaurus/**',
       '**/.turbo/**',
       '**/coverage/**',
       '**/playwright-report/**',
@@ -27,7 +28,9 @@ export default tseslint.config(
             '*.config.js',
             '*.config.ts',
             'packages/*/*.config.ts',
-            'apps/*/*.config.ts',
+            // site.config.ts is imported by the docs app's tests, so the project
+            // service already owns it; matching it here too is a parse error.
+            'apps/*/!(site).config.ts',
             '.dependency-cruiser.cjs',
           ],
           defaultProject: 'tsconfig.base.json',
@@ -60,7 +63,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['**/*.js'],
+    files: ['**/*.js', '**/*.mjs'],
     extends: [tseslint.configs.disableTypeChecked],
   },
   {

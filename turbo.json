@@ -92,6 +92,42 @@
       ],
       "outputs": ["dist/**"]
     },
+    "@odudu/docs#build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "content/**",
+        "src/**",
+        "static/**",
+        "plugins/**",
+        "nav.ts",
+        "sidebars.ts",
+        "site.config.ts",
+        "docusaurus.config.ts",
+        "package.json",
+        "tsconfig.json",
+        "$TURBO_ROOT$/apps/admin-console/src/shared/view/*.css"
+      ],
+      "env": ["DOCS_SITE_ORIGIN", "DOCS_BASE"],
+      "outputs": ["dist/**"]
+    },
+    "@odudu/docs#test": {
+      "dependsOn": ["^typecheck", "@odudu/docs#build"],
+      "inputs": [
+        "content/**",
+        "src/**",
+        "static/**",
+        "plugins/**",
+        "nav.ts",
+        "sidebars.ts",
+        "site.config.ts",
+        "docusaurus.config.ts",
+        "package.json",
+        "tsconfig.json",
+        "$TURBO_ROOT$/apps/admin-console/src/shared/view/*.css",
+        "tests/**"
+      ],
+      "outputs": ["trace-report.json"]
+    },
     "@odudu/repo-checks#test": {
       "cache": false,
       "dependsOn": ["^typecheck", "@odudu/admin-console#build"]

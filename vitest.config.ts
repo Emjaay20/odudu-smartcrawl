@@ -19,6 +19,7 @@ function globs(): { unit: string[]; integration: string[]; dom: string[]; plans:
         '{packages,apps}/*/src/**/*.test.{ts,tsx}',
         'tools/*/src/**/*.test.ts',
         'tests/**/*.test.ts',
+        'apps/docs/tests/**/*.test.ts',
       ],
       integration: [
         '{packages,apps}/*/tests/**/*.int.test.ts',
@@ -29,6 +30,9 @@ function globs(): { unit: string[]; integration: string[]; dom: string[]; plans:
     };
   }
   if (scope === 'tests') return { unit: ['**/*.test.ts'], integration: [], dom: [], plans: [] };
+  if (scope === 'apps/docs') {
+    return { unit: ['tests/**/*.test.ts'], integration: [], dom: [], plans: [] };
+  }
   if (scope === CONSOLE) {
     return { unit: [], integration: [], dom: ['src/**/*.test.{ts,tsx}'], plans: [] };
   }
@@ -57,6 +61,7 @@ export default defineConfig({
             '**/dist/**',
             '**/fixtures/**',
             '**/*.int.test.ts',
+            '**/*.browser.test.ts',
             `${CONSOLE}/**`,
           ],
           environment: 'node',

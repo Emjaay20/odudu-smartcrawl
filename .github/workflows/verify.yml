@@ -153,6 +153,42 @@ jobs:
             apps/admin-console/e2e/test-results
           retention-days: 14
 
+  # The documentation site, built for both targets from one commit. The builds
+  # check every internal link and anchor themselves (onBrokenLinks and
+  # onBrokenAnchors are 'throw'); the tests then walk the built HTML.
+  docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build the site for GitHub Pages
+        run: pnpm --filter @odudu/docs build:pages
+
+      - name: Build the copy that ships in the image
+        run: pnpm --filter @odudu/docs build:image
+
+      - name: Check the built site
+        run: node_modules/.bin/vitest run --project unit apps/docs
+
+      - name: Install Chromium and its system libraries
+        run: pnpm --filter @odudu/docs exec playwright install --with-deps chromium
+
+      - name: Check the colour mode in a browser
+        run: pnpm --filter @odudu/docs test:browser
+
   conformance:
     runs-on: ubuntu-latest
     timeout-minutes: 45
