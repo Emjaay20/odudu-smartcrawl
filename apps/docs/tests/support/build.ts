@@ -1,44 +1,31 @@
-import { spawnSync } from 'node:child_process';
-import { mkdirSync, rmSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { DOCS_ROOT } from '#docs/tests/support/dist.ts';
+import { runWithTimeout, withLock } from '#docs/tests/support/lock.ts';
 
-const LOCK = path.join(tmpdir(), 'odudu-docs-build.lock');
-const STALE_AFTER_MS = 5 * 60_000;
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+// One lock per checkout: a second worktree builds into its own directory.
+const LOCK = path.join(
+  tmpdir(),
+  `odudu-docs-build-${createHash('sha1').update(DOCS_ROOT).digest('hex').slice(0, 12)}.lock`,
+);
+const BUILD_TIMEOUT_MS = 120_000;
+// Shorter than the longest hook that waits on it, longer than one build.
+const STALE_AFTER_MS = 150_000;
 
 // Every docusaurus build writes the app's `.docusaurus` directory, so builds
 // started by different test files take turns.
-async function acquire(): Promise<void> {
-  const deadline = Date.now() + STALE_AFTER_MS;
-  for (;;) {
-    try {
-      mkdirSync(LOCK);
-      return;
-    } catch {
-      if (Date.now() > deadline) {
-        rmSync(LOCK, { recursive: true, force: true });
-      } else {
-        await sleep(250);
-      }
-    }
-  }
-}
-
 export async function buildSite(out: string, env: Record<string, string>): Promise<void> {
-  await acquire();
-  try {
-    const build = spawnSync(
-      path.join(DOCS_ROOT, 'node_modules/.bin/docusaurus'),
-      ['build', '--out-dir', out],
-      { cwd: DOCS_ROOT, env: { ...process.env, DOCS_TARGET: '', ...env }, encoding: 'utf8' },
-    );
-    if (build.status !== 0) throw new Error(`build failed:\n${build.stdout}\n${build.stderr}`);
-  } finally {
-    rmSync(LOCK, { recursive: true, force: true });
-  }
+  await withLock(
+    LOCK,
+    () => {
+      runWithTimeout(
+        path.join(DOCS_ROOT, 'node_modules/.bin/docusaurus'),
+        ['build', '--out-dir', out],
+        { cwd: DOCS_ROOT, env: { ...process.env, DOCS_TARGET: '', ...env } },
+        BUILD_TIMEOUT_MS,
+      );
+    },
+    { staleAfterMs: STALE_AFTER_MS, pollMs: 250 },
+  );
 }

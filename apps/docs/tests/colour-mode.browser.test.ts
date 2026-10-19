@@ -5,8 +5,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PAGES_BASE } from '#docs/site.config.ts';
 import { DOCS_ROOT, distDir } from '#docs/tests/support/dist.ts';
 
-let server: ChildProcess;
-let browser: Browser;
+let server: ChildProcess | undefined;
+let browser: Browser | undefined;
 let origin = '';
 
 beforeAll(async () => {
@@ -22,8 +22,12 @@ beforeAll(async () => {
     ],
     { stdio: ['ignore', 'pipe', 'inherit'] },
   );
-  origin = await new Promise<string>((resolve) => {
-    server.stdout?.on('data', (chunk: Buffer) => {
+  const serving = server;
+  origin = await new Promise<string>((resolve, reject) => {
+    serving.once('exit', () => {
+      reject(new Error('the docs server exited before it was serving'));
+    });
+    serving.stdout?.on('data', (chunk: Buffer) => {
       const match = /Serving (http:\/\/127\.0\.0\.1:\d+)/u.exec(chunk.toString());
       if (match?.[1] !== undefined) resolve(match[1]);
     });
@@ -31,14 +35,17 @@ beforeAll(async () => {
   browser = await chromium.launch();
 });
 
+// The server is killed first and whatever else fails, because a child left
+// running holds the test worker open and the run hangs instead of failing.
 afterAll(async () => {
-  await browser.close();
-  server.kill();
+  server?.kill();
+  await browser?.close();
 });
 
 describe('the colour mode', () => {
   for (const system of ['light', 'dark'] as const) {
     it(`starts in the system's ${system} and follows the toggle`, async () => {
+      if (browser === undefined) throw new Error('the browser did not launch');
       const context = await browser.newContext({ colorScheme: system });
       const page = await context.newPage();
       await page.goto(`${origin}${PAGES_BASE}`);
