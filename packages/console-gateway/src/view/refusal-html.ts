@@ -1,13 +1,17 @@
 import { type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { page } from '#/view/document';
-
-const TITLE = 'Sign-in failed';
-const BODY = `<h1>Sign-in failed</h1>
-<p>The sign-in could not be completed.</p>
-<p><a href="/console/">Sign in again</a></p>`;
+import { t, tHtml } from '#/view/messages';
 
 // Deliberately the same page for every refusal, so a response says nothing
 // about which check a forged or stale callback failed.
 export function renderSignInRefused(locale: PageLocale): RenderedPage {
-  return page(TITLE, BODY, null, [], locale);
+  return page(
+    t(locale, 'refusal.title'),
+    `<h1>${tHtml(locale, 'refusal.title')}</h1>
+<p>${tHtml(locale, 'refusal.reason')}</p>
+<p><a href="/console/">${tHtml(locale, 'refusal.again')}</a></p>`,
+    null,
+    [],
+    locale,
+  );
 }
