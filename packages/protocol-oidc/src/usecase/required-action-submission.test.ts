@@ -416,8 +416,12 @@ describe('handleRequiredActionSubmission — changing an owed password', () => {
     completeUpdatePassword.mockResolvedValue({
       kind: 'rejected',
       violations: [
-        'Password must be at least 8 characters long.',
-        'Password must contain a digit.',
+        {
+          rule: 'min-length',
+          message: 'Password must be at least 8 characters long.',
+          minLength: 8,
+        },
+        { rule: 'require-digit', message: 'Password must contain a digit.' },
       ],
     });
 
@@ -436,8 +440,12 @@ describe('handleRequiredActionSubmission — changing an owed password', () => {
       kind: 'password_rejected',
       authSessionId: AUTH_SESSION_ID,
       violations: [
-        'Password must be at least 8 characters long.',
-        'Password must contain a digit.',
+        {
+          rule: 'min-length',
+          message: 'Password must be at least 8 characters long.',
+          minLength: 8,
+        },
+        { rule: 'require-digit', message: 'Password must contain a digit.' },
       ],
     });
   });
@@ -461,7 +469,11 @@ describe('handleRequiredActionSubmission — changing an owed password', () => {
       REQUEST,
     );
 
-    expect(outcome).toMatchObject({ kind: 'password_rejected', authSessionId: AUTH_SESSION_ID });
+    expect(outcome).toMatchObject({
+      kind: 'password_rejected',
+      authSessionId: AUTH_SESSION_ID,
+      violations: [{ rule: 'superseded' }],
+    });
     expect(outcome).not.toMatchObject({ kind: 'completed' });
   });
 

@@ -1,6 +1,8 @@
 import {
   nextRequiredAction,
+  SUPERSEDED_PASSWORD,
   type PasskeyEnrolmentOutcome,
+  type PasswordViolation,
   type RecoveryCodesOutcome,
   type RequiredAction,
   type TotpEnrolmentOutcome,
@@ -30,7 +32,7 @@ export type RequiredActionOutcome =
   // The candidate password did not satisfy the tenant's policy. Every rule
   // it broke is carried, not just the first, so the form it goes back to
   // can list them at once.
-  | { kind: 'password_rejected'; authSessionId: string; violations: readonly string[] }
+  | { kind: 'password_rejected'; authSessionId: string; violations: readonly PasswordViolation[] }
   | {
       kind: 'rejected';
       authSessionId: string;
@@ -177,10 +179,7 @@ export async function handleRequiredActionSubmission(
       return {
         kind: 'password_rejected',
         authSessionId,
-        violations: [
-          'Your password was changed somewhere else before this form was submitted. ' +
-            'Sign in again with the password you set there.',
-        ],
+        violations: [SUPERSEDED_PASSWORD],
       };
     }
     return { kind: 'password_rejected', authSessionId, violations: changed.violations };

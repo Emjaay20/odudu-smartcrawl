@@ -1,5 +1,29 @@
-import { type PageLocale, type RenderedPage } from '@odudu/kernel';
+import { MAX_PASSWORD_LENGTH, type PageLocale, type RenderedPage } from '@odudu/kernel';
+import { type PasswordViolation } from '#/schema/password-violation';
 import { escapeHtml, page } from '#/view/document';
+import { bdi, t, tHtml, type MessageId } from '#/view/messages';
+
+// Every rule a violation can name, by the code the domain reports it under.
+const RULE_MESSAGE: Readonly<Record<string, MessageId>> = {
+  'min-length': 'updatePassword.rule.minLength',
+  'max-length': 'updatePassword.rule.maxLength',
+  'require-digit': 'updatePassword.rule.requireDigit',
+  'require-uppercase': 'updatePassword.rule.requireUppercase',
+  'require-lowercase': 'updatePassword.rule.requireLowercase',
+  'require-special': 'updatePassword.rule.requireSpecial',
+  'not-username': 'updatePassword.rule.notUsername',
+  'not-email': 'updatePassword.rule.notEmail',
+  'not-reused': 'updatePassword.rule.notReused',
+  superseded: 'updatePassword.rule.superseded',
+};
+
+// The domain's sentences are developer-facing English, so a rule this build
+// has no entry for shows that sentence, isolated, rather than nothing.
+function ruleHtml(violation: PasswordViolation, locale: PageLocale): string {
+  const id = Object.hasOwn(RULE_MESSAGE, violation.rule) ? RULE_MESSAGE[violation.rule] : undefined;
+  if (id === undefined) return bdi(violation.message);
+  return tHtml(locale, id, { min: violation.minLength ?? 0, max: MAX_PASSWORD_LENGTH });
+}
 
 // The page a login parks on while `update-password` is owed, and the page a
 // refused candidate comes back to. `violations` is every rule the tenant's
@@ -10,21 +34,21 @@ import { escapeHtml, page } from '#/view/document';
 export function renderUpdatePasswordPage(
   tenant: string,
   authSessionId: string,
-  violations: readonly string[] = [],
+  violations: readonly PasswordViolation[] = [],
   locale: PageLocale,
 ): RenderedPage {
   const target = `/tenants/${escapeHtml(tenant)}/login-actions/required-action?action=update-password`;
   const listed =
     violations.length === 0
       ? ''
-      : `<ul>\n${violations.map((message) => `<li>${escapeHtml(message)}</li>`).join('\n')}\n</ul>\n`;
-  const title = 'Change your password';
-  const body = `<h1>Change your password</h1>
-<p>This account needs a new password before you can continue.</p>
+      : `<ul>\n${violations.map((violation) => `<li>${ruleHtml(violation, locale)}</li>`).join('\n')}\n</ul>\n`;
+  const title = t(locale, 'updatePassword.title');
+  const body = `<h1>${tHtml(locale, 'updatePassword.title')}</h1>
+<p>${tHtml(locale, 'updatePassword.intro')}</p>
 ${listed}<form method="post" action="${target}">
   <input type="hidden" name="auth_session_id" value="${escapeHtml(authSessionId)}">
-  <label>New password <input type="password" name="password" autocomplete="new-password"></label>
-  <button type="submit">Update password</button>
+  <label>${tHtml(locale, 'updatePassword.newPassword')} <input type="password" name="password" autocomplete="new-password"></label>
+  <button type="submit">${tHtml(locale, 'updatePassword.submit')}</button>
 </form>`;
   // No script: nothing on this page fetches anything, so the base
   // content-security policy describes it exactly.

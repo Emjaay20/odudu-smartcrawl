@@ -10,6 +10,7 @@ import {
   verifyPassword,
 } from '@odudu/domain-identity';
 import { OduduError, systemClock, type Clock } from '@odudu/kernel';
+import { type PasswordViolation } from '#/schema/password-violation';
 import { tenantSettingsRepository } from '#/repository/tenant-settings';
 import { requiredActionRepository } from '#/repository/required-actions';
 
@@ -18,12 +19,21 @@ export type UpdatePasswordOutcome =
   // Every message the tenant's policy produced for this candidate, for the
   // page to list at once: a form that reports one rule at a time takes as
   // many attempts as there are rules.
-  | { kind: 'rejected'; violations: readonly string[] }
+  | { kind: 'rejected'; violations: readonly PasswordViolation[] }
   // Some other transaction set a password for this subject first, so the
   // candidate this submission carried was never stored. Distinct from
   // 'updated' because the person at the form would otherwise be told their
   // password is one it is not.
   | { kind: 'superseded' };
+
+// What the form owes a person whose password was set elsewhere between the
+// page being rendered and submitted; shown as a rule so one page lists it.
+export const SUPERSEDED_PASSWORD: PasswordViolation = {
+  rule: 'superseded',
+  message:
+    'Your password was changed somewhere else before this form was submitted. ' +
+    'Sign in again with the password you set there.',
+};
 
 export interface UpdatePassword {
   tenantId: string;
@@ -84,7 +94,12 @@ export async function completeUpdatePassword(
     email: user.email,
   });
   if (violations.length > 0) {
-    return { kind: 'rejected', violations: violations.map((violation) => violation.message) };
+    return {
+      kind: 'rejected',
+      violations: violations.map(({ rule, message }) =>
+        rule === 'min-length' ? { rule, message, minLength: policy.minLength } : { rule, message },
+      ),
+    };
   }
 
   // Nothing in the tenant holds a password for this subject, so there is
@@ -103,7 +118,7 @@ export async function completeUpdatePassword(
   // re-settable. Above zero the tenant remembers that many retired
   // passwords, and refuses the one in force as well — which needs no row.
   if (policy.historyDepth > 0 && (await reusesAKnownPassword(input.password, state))) {
-    return { kind: 'rejected', violations: [REUSED_PASSWORD.message] };
+    return { kind: 'rejected', violations: [{ ...REUSED_PASSWORD }] };
   }
 
   const rotated = await credentialRepository(tx).rotatePassword(

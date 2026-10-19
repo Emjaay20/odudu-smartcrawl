@@ -225,15 +225,21 @@ describe('the tenant password history refuses a password the subject has had', (
 
     expect(await change(account, 'third passphrase here')).toEqual({
       kind: 'rejected',
-      violations: ['Password must not be one you have used before.'],
+      violations: [
+        { rule: 'not-reused', message: 'Password must not be one you have used before.' },
+      ],
     });
     expect(await change(account, 'second passphrase here')).toEqual({
       kind: 'rejected',
-      violations: ['Password must not be one you have used before.'],
+      violations: [
+        { rule: 'not-reused', message: 'Password must not be one you have used before.' },
+      ],
     });
     expect(await change(account, PASSWORD)).toEqual({
       kind: 'rejected',
-      violations: ['Password must not be one you have used before.'],
+      violations: [
+        { rule: 'not-reused', message: 'Password must not be one you have used before.' },
+      ],
     });
   });
 
@@ -292,7 +298,13 @@ describe('the tenant password policy binds the change-password action', () => {
 
     expect(await change(account, 'short')).toEqual({
       kind: 'rejected',
-      violations: ['Password must be at least 12 characters long.'],
+      violations: [
+        {
+          rule: 'min-length',
+          message: 'Password must be at least 12 characters long.',
+          minLength: 12,
+        },
+      ],
     });
   });
 
@@ -301,7 +313,13 @@ describe('the tenant password policy binds the change-password action', () => {
 
     expect(await change(account, '')).toEqual({
       kind: 'rejected',
-      violations: ['Password must be at least 8 characters long.'],
+      violations: [
+        {
+          rule: 'min-length',
+          message: 'Password must be at least 8 characters long.',
+          minLength: 8,
+        },
+      ],
     });
   });
 
@@ -311,8 +329,12 @@ describe('the tenant password policy binds the change-password action', () => {
     expect(await change(account, 'ada')).toEqual({
       kind: 'rejected',
       violations: [
-        'Password must be at least 20 characters long.',
-        'Password must not contain the username.',
+        {
+          rule: 'min-length',
+          message: 'Password must be at least 20 characters long.',
+          minLength: 20,
+        },
+        { rule: 'not-username', message: 'Password must not contain the username.' },
       ],
     });
   });

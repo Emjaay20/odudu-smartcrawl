@@ -73,8 +73,10 @@ export { renderUpdatePasswordPage } from '#/view/update-password-html';
 export {
   completeUpdatePassword,
   recordPasswordExpiryIfOwed,
+  SUPERSEDED_PASSWORD,
   type UpdatePasswordOutcome,
 } from '#/usecase/update-password';
+export { type PasswordViolation } from '#/schema/password-violation';
 export { renderTotpEnrolmentPage, type TotpEnrolmentOffer } from '#/view/totp-enrolment-html';
 export {
   beginPasskeyEnrolment,
