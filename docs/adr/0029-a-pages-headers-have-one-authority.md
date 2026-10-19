@@ -64,8 +64,8 @@ by its name, since tokens, JSON and redirects set it legitimately.
 ## Amendment — 2026-09-28 — the console shell
 
 The administration console's shell,
-`packages/console-gateway/src/view/spa.ts`, is the one static-serving
-exception, and the third file `html-response.test.ts` lets name a page
+`packages/console-gateway/src/view/spa.ts`, is a static-serving
+exception (the documentation is a second, below), and the third file `html-response.test.ts` lets name a page
 header. It serves a built single-page app, not a server-rendered page: it
 has no inline script and no per-request nonce, and its policy licenses a
 self-hosted script and two style hashes: the `<style>` elements React
@@ -216,6 +216,73 @@ bounded by `readStaticTree`'s limits.
 and the console shell, its assets and `/instrument/*` send it too: a response
 is the type it was served as, which matters once a stylesheet and fonts are
 fetched from the same origin as the markup.
+
+## Amendment — 2026-10-19 — the built documentation
+
+`packages/web-assets/src/view/docs-routes.ts` is the second static-serving
+exception and the fourth file `html-response.test.ts` lets name a page
+header. It serves the built documentation (`apps/docs`, image target, base
+`/docs/`) from the server's own origin at `/docs/`, read once at boot into a
+manifest the way `spa.ts` reads the console: a path that is not an exact key
+is `404`, so traversal, encoded separators, NUL and symlinks all end at the
+same lookup, and a tree past 5,000 files or 64 MiB makes `/docs/*` answer
+`503` with a log line naming `ODUDU_DOCS_DIR` and `ODUDU_DOCS=false`.
+
+**The policy is computed at build time, not by `pageHeaders`.** The site is
+Docusaurus, which is not strict-CSP clean: each page carries one inline
+script (the colour-mode initialiser, the same on every page of a build) and a
+few `style=` attributes (the code blocks' theme colours and a hidden icon
+sprite), and no `<style>` element. `apps/docs/scripts/csp.ts` hashes each
+inline script and each style attribute value into `csp.json` beside the site,
+and `docsPolicy` (`packages/web-assets/src/service/docs-policy.ts`, pure)
+makes the policy from it:
+
+```
+default-src 'self'; script-src 'self' <script hash>; style-src 'self';
+style-src-attr 'unsafe-hashes' <style attribute hashes>; img-src 'self' data:;
+font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self';
+form-action 'none'
+```
+
+**Why `'unsafe-hashes'`, and what it licenses.** A style attribute is
+licensed only by a hash with `'unsafe-hashes'`, and only `style-src-attr`
+carries it: a `<style>` element or an `@import` stays under `style-src
+'self'`, and `'unsafe-inline'` is nowhere. The seven values are the
+Prism code-block colours (`color:#393A34`, `--prism-color:…;--prism-background-color:…`,
+`color:#393A34;background-color:#f6f8fa`, `color:#36acaa`, `color:#e3116c`),
+`display:inline-block` and the theme's `display: none;` on its icon sprite;
+each hash licenses that exact string on any element, which is why the list is
+short and why `csp.ts` refuses a page with a `<style>` element, an `on*`
+attribute or a `javascript:` URL, which no hash in this policy covers.
+`img-src data:` is the theme's chevron, menu and copy-button icons.
+`csp.test.ts` recomputes both lists from the HTML, and a Chromium walk under
+the header the route sends (navigation, search, the colour toggle, code copy,
+the mobile menu at 390 px) fails on any `securitypolicyviolation`, because a
+style or script made at run time is in the JavaScript and not the HTML.
+
+**The route says noindex on every response.** `x-robots-tag: noindex,
+nofollow` on the page, a hashed asset, a `404`, a `308`, the search index, the
+Markdown copies and `llms.txt`, beside `x-content-type-options: nosniff`,
+`x-frame-options: DENY`, `referrer-policy: no-referrer` and `content-language`.
+A private install never competes with the public site; the build's own
+`<meta name="robots">` is an independent second signal. The fixed policy is on
+every response, not only on HTML, so an SVG opened as a document is held too.
+Pages and unhashed files revalidate by etag (`no-cache`); a file named by its
+content under `assets/` is `immutable`.
+
+**A path prefix is unsupported.** The site's links name `/docs/` and its
+search index is fetched from `/docs/search-index.json`, so the server must be
+at the root of the origin `ODUDU_PUBLIC_BASE_URL` names. A reverse proxy that
+mounts it under `/idp/` breaks every link and asset of the documentation (and,
+for the same reason, the console and the issuer). The README's Deploying section says so, and the
+operating section's Deploying page will state it with a test beside it.
+The route never builds an address from `Host` or a forwarded header, and a
+test holds that no response names one.
+
+**Two copies, two versions.** The hosted copy under `/odudu/` is built from
+the latest release; the image's copy is built from the commit the image is,
+and matches its version. The image's pages link to neither the hosted copy nor
+any origin but the repository.
 
 ## Alternatives rejected
 

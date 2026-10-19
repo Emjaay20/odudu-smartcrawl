@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SHELL_CSP } from '../../packages/console-gateway/src/view/spa.js';
 import { pageHeaders, type RenderedPage } from '../../packages/kernel/src/index.js';
+import { docsPolicy, UNAVAILABLE_POLICY } from '../../packages/web-assets/src/index.js';
 import { loadDocument } from './markdown.js';
 
 // A recorded `content-security-policy` is a claim about what the server sends.
@@ -71,8 +72,16 @@ function otherHeaders(page: RenderedPage): string[] {
 const NONCE = /^'nonce-[A-Za-z0-9+/]{22}=='$/u;
 const ORIGIN = /^https?:\/\/[a-z0-9.-]+(?::\d{1,5})?$/u;
 
+// The built documentation answers under a policy of its own, and says noindex
+// in a header no page of the server sends. Its recordings are checked below.
+function isDocs(line: Recorded): boolean {
+  return line.following.includes('x-robots-tag: noindex, nofollow');
+}
+
 describe('the content-security-policy lines the guides record', () => {
-  const lines = recorded();
+  const everything = recorded();
+  const lines = everything.filter((line) => !isDocs(line));
+  const docs = everything.filter(isDocs);
 
   it('finds a recorded policy in each guide, so an empty scan cannot pass', () => {
     for (const guide of GUIDES) {
@@ -161,5 +170,43 @@ describe('the content-security-policy lines the guides record', () => {
         !line.policy.startsWith("default-src 'self'"),
     );
     expect(other.map((line) => line.where)).toEqual([]);
+  });
+
+  it('shows the documentation policy as docsPolicy makes it from the hashes the line names', () => {
+    const served = docs.filter((line) => line.policy.startsWith("default-src 'self'"));
+    expect(served.length).toBeGreaterThan(0);
+    const hashes = (name: string, policy: string): string[] =>
+      (sources(policy.split('; '), name) ?? []).filter((source) => source.startsWith("'sha256-"));
+    const unquote = (list: string[]): string[] => list.map((hash) => hash.slice(1, -1));
+    const drift = served
+      .filter(
+        (line) =>
+          docsPolicy({
+            scriptHashes: unquote(hashes('script-src', line.policy)),
+            styleAttributeHashes: unquote(hashes('style-src-attr', line.policy)),
+          }) !== line.policy,
+      )
+      .map((line) => line.where);
+    expect(drift).toEqual([]);
+    expect(served.filter((line) => /unsafe-inline|unsafe-eval/u.test(line.policy))).toEqual([]);
+  });
+
+  it('shows a documentation response with no page to load as the unavailable policy', () => {
+    const bare = docs.filter((line) => line.policy.startsWith("default-src 'none'"));
+    expect(bare.length).toBeGreaterThan(0);
+    expect(bare.filter((line) => line.policy !== UNAVAILABLE_POLICY).map((l) => l.where)).toEqual(
+      [],
+    );
+  });
+
+  it('records the documentation headers beside its policy whole', () => {
+    const whole = docs.filter((line) => line.following.includes('x-frame-options: DENY'));
+    expect(whole.length).toBeGreaterThan(0);
+    const drift = whole.flatMap((line) =>
+      ['referrer-policy: no-referrer', 'x-content-type-options: nosniff', 'content-language: en']
+        .filter((header) => !line.following.includes(header))
+        .map((header) => `${line.where}: missing ${header}`),
+    );
+    expect(drift).toEqual([]);
   });
 });

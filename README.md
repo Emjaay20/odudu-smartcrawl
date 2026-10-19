@@ -1938,6 +1938,20 @@ A real deployment today looks like:
    directory, `/app/console` by default. Run
    `node dist/main.js console provision` once after changing the base or
    the key.
+10. **The documentation is served at `/docs/`** from the server's own origin
+    (`ODUDU_DOCS=true`, the default), the copy built into the image at the
+    version the image is. It is the installation's own copy, so every
+    response carries `x-robots-tag: noindex, nofollow` and its pages say
+    noindex: a private install never competes with the public site. Pages
+    run under a fixed policy computed when the image is built from the hash
+    of the one inline script and the style attributes they carry
+    (`csp.json` beside the site), and a directory without it, or one that is
+    not the build, makes `/docs/*` answer `503` and the log name
+    `ODUDU_DOCS_DIR` while the rest of the server starts. The documentation
+    must sit at the root of the address `ODUDU_PUBLIC_BASE_URL` names: a
+    reverse proxy that mounts the server under a path prefix is not
+    supported, because the site's links name `/docs/`. Set `ODUDU_DOCS=false`
+    to serve none; `ODUDU_DOCS_DIR` names the build, `/app/docs` by default.
 
 ### What is not built yet
 
