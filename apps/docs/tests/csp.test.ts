@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { docsPolicy, parseDocsCsp } from '@odudu/web-assets';
 import { describe, expect, it } from 'vitest';
 import { REPOSITORY_URL } from '#docs/nav.ts';
 import { distDir, htmlFiles, load, walk } from '#docs/tests/support/dist.ts';
@@ -10,8 +9,23 @@ function sha256(text: string): string {
   return `sha256-${createHash('sha256').update(text).digest('base64')}`;
 }
 
-function csp(dir: string) {
-  return parseDocsCsp(JSON.parse(readFileSync(path.join(dir, 'csp.json'), 'utf8')));
+interface Hashes {
+  scriptHashes: string[];
+  styleAttributeHashes: string[];
+}
+
+function csp(dir: string): Hashes {
+  const parsed: unknown = JSON.parse(readFileSync(path.join(dir, 'csp.json'), 'utf8'));
+  const lists = (key: string): string[] => {
+    const value: unknown =
+      typeof parsed === 'object' && parsed !== null ? Reflect.get(parsed, key) : null;
+    if (!Array.isArray(value)) throw new Error(`csp.json has no ${key} list`);
+    return value.map(String);
+  };
+  return {
+    scriptHashes: lists('scriptHashes'),
+    styleAttributeHashes: lists('styleAttributeHashes'),
+  };
 }
 
 // Read from the bytes of the file, not through the parser the build used, so
@@ -101,12 +115,6 @@ describe('the policy computed from the image build', () => {
       return found.map((what) => `${path.relative(dir, file)}: ${what}`);
     });
     expect(offenders).toEqual([]);
-  });
-
-  it('makes a policy the server accepts, with no unsafe source', () => {
-    const policy = docsPolicy(hashes);
-    expect(policy).toContain(hashes.scriptHashes[0] ?? 'missing');
-    expect(policy).not.toMatch(/unsafe-inline|unsafe-eval/u);
   });
 
   it('has no landing page in the image build', () => {

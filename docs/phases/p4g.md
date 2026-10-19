@@ -1560,8 +1560,13 @@ copied to `/app/docs`; ADR 0029's second amendment has the design.
   the Chromium walk (84 `style-src-attr` violations reported); an inline `<script>window.x=1</script>` added to a
   built page with `csp.json` regenerated to include it fails "exactly one executable inline script per page";
   `scripts/csp.test.ts` refuses a `<style>`, an `on*` attribute and a `javascript:` URL.
-- **The walk is `tests/csp.browser.test.ts`**, not `csp.test.ts`: the root `unit` project has no Chromium, so it
-  is a `*.browser.test.ts` and runs where Chromium is installed, in the `docs` job's `test:browser` step.
+- **The walk is `scripts/csp.browser.test.ts`**, not `tests/csp.test.ts`: the root `unit` project has no Chromium, so
+  it is a `*.browser.test.ts` (the `browser` glob now takes `scripts/` too) and runs where Chromium is installed, in
+  the `docs` job's `test:browser` step. It sits in `scripts/` because it imports `@odudu/web-assets` and `fastify`,
+  and a workspace import from `tests/` joins the Docusaurus-options program, the unshared second program that ran
+  `eslint .` out of memory in Increment 19; `scripts/` extends `tsconfig.base.json` (plus the `dom` lib, for the
+  callbacks `page.evaluate` runs in the page). `tests/csp.test.ts` imports no workspace package for the same reason,
+  and the check that `csp.json` is accepted by the server is in `scripts/csp.test.ts`.
   It serves the image through the real `docsRoutes` on an ephemeral port, so the header under test is the one the
   server sends. It covers navigation, the colour toggle three times, a search that fetches
   `/docs/search-index.json` from the same origin, Enter in the box, code copy on the CLI reference (the first page
@@ -1579,3 +1584,10 @@ copied to `/app/docs`; ADR 0029's second amendment has the design.
   without the docs headers, as `/console/*` does: they carry no document.
 - **The `docs` and `container` jobs** run this on push: `docs` runs `test:browser` (the walk), `container` runs the
   smoke additions. Nothing here has been seen green in CI yet.
+- **`pnpm lint` runs out of memory at Node's default heap on this machine, at the commit before this increment
+  too.** verified: `pnpm lint` at `77812712` in a fresh worktree ends `FATAL ERROR: Ineffective mark-compacts near
+heap limit` at 4.56 GB resident; with `NODE_OPTIONS=--max-old-space-size=8192` it passes, 5.29 GB peak, 2 min 27 s,
+  and the same run on this increment passes at 5.01 GB. So the increment adds nothing measurable, and the margin
+  Increment 19 recorded ("4.5 GB peak resident at the default heap passes") is gone on Node 24.15.0 and macOS arm64.
+  The `static` job runs `pnpm lint` with no `NODE_OPTIONS`; whether ubuntu-latest passes is unobserved. If it does
+  not, the `lint` script takes the flag back or the typed program shrinks again; that decision is the controller's.

@@ -1,8 +1,18 @@
 import { chromium, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import { docsRoutes } from '@odudu/web-assets';
 import Fastify, { type FastifyInstance } from 'fastify';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { distDir } from '#docs/tests/support/dist.ts';
+
+const IMAGE = path.resolve(import.meta.dirname, '../dist/image');
+
+function builtImage(): string {
+  if (!existsSync(path.join(IMAGE, 'csp.json'))) {
+    throw new Error(`${IMAGE} is not built: run pnpm --filter @odudu/docs build:image`);
+  }
+  return IMAGE;
+}
 
 let server: FastifyInstance | undefined;
 let browser: Browser | undefined;
@@ -12,7 +22,7 @@ let origin = '';
 // the server sends and not a copy of it.
 beforeAll(async () => {
   const instance = Fastify();
-  await instance.register(docsRoutes(distDir('image')));
+  await instance.register(docsRoutes(builtImage()));
   origin = await instance.listen({ port: 0, host: '127.0.0.1' });
   server = instance;
   browser = await chromium.launch();

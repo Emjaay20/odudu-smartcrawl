@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import { docsPolicy, parseDocsCsp } from '@odudu/web-assets';
 import { computeCsp, writeCsp } from './csp.ts';
 
 const dirs: string[] = [];
@@ -105,5 +106,19 @@ describe('writeCsp', () => {
       scriptHashes: [sha256('go()')],
       styleAttributeHashes: [sha256('top:0')],
     });
+  });
+});
+
+// The file the image build wrote is what the server reads at boot, so it has to
+// be what the server accepts: a malformed hash would make /docs/* answer 503.
+describe('the image build’s csp.json', () => {
+  const built = path.resolve(import.meta.dirname, '../dist/image/csp.json');
+
+  it('is accepted by the server and makes a policy with no unsafe source', async () => {
+    const hashes = parseDocsCsp(JSON.parse(await readFile(built, 'utf8')));
+    const policy = docsPolicy(hashes);
+    expect(hashes.scriptHashes).toHaveLength(1);
+    expect(policy).toContain(hashes.scriptHashes[0] ?? 'missing');
+    expect(policy).not.toMatch(/unsafe-inline|unsafe-eval/u);
   });
 });

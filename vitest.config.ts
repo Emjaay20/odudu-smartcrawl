@@ -51,7 +51,8 @@ function globs(): { unit: string[]; integration: string[]; dom: string[]; plans:
 const { unit, integration, dom, plans } = globs();
 // Drives Chromium against the built site, so only the docs app's own
 // `test:browser` runs it.
-const browser = scope === 'apps/docs' ? ['tests/**/*.browser.test.ts'] : [];
+const browser =
+  scope === 'apps/docs' ? ['tests/**/*.browser.test.ts', 'scripts/**/*.browser.test.ts'] : [];
 // The query-plan check seeds millions of rows and takes minutes, so it runs
 // only where it is asked for (`pnpm test:plans`), in a job of its own.
 const planFiles = process.env.ODUDU_QUERY_PLANS === '1' ? plans : [];
