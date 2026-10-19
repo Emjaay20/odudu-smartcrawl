@@ -576,9 +576,15 @@ importers:
 
   packages/email:
     dependencies:
+      '@odudu/contracts':
+        specifier: workspace:*
+        version: link:../contracts
       '@odudu/db':
         specifier: workspace:*
         version: link:../db
+      '@odudu/i18n':
+        specifier: workspace:*
+        version: link:../i18n
       '@odudu/kernel':
         specifier: workspace:*
         version: link:../kernel
