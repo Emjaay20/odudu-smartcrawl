@@ -69,6 +69,28 @@
       ],
       "outputs": ["trace-report.json"]
     },
+    "@odudu/instrument#test": {
+      "dependsOn": ["^typecheck"],
+      "inputs": [
+        "src/**",
+        "tests/**",
+        "drizzle/**",
+        "package.json",
+        "tsconfig.json",
+        "$TURBO_ROOT$/apps/admin-console/src/shared/view/*.css"
+      ],
+      "outputs": ["trace-report.json"]
+    },
+    "@odudu/instrument#build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "$TURBO_ROOT$/apps/admin-console/src/shared/view/*.css"
+      ],
+      "outputs": ["dist/**"]
+    },
     "@odudu/repo-checks#test": {
       "cache": false,
       "dependsOn": ["^typecheck", "@odudu/admin-console#build"]

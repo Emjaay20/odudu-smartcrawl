@@ -15,6 +15,7 @@ import {
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { requiredActionRepository } from '@odudu/authn-flows';
 import { consoleGateway } from '@odudu/console-gateway';
+import { instrumentRoutes } from '@odudu/instrument';
 import {
   credentialRepository,
   evaluatePassword,
@@ -24,7 +25,12 @@ import {
   userRepository,
   verifyPassword,
 } from '@odudu/domain-identity';
-import { DEFAULT_CONSOLE_DIR, DEFAULT_OUTBOX_MAX_ATTEMPTS, newId } from '@odudu/kernel';
+import {
+  DEFAULT_CONSOLE_DIR,
+  DEFAULT_INSTRUMENT_DIR,
+  DEFAULT_OUTBOX_MAX_ATTEMPTS,
+  newId,
+} from '@odudu/kernel';
 import { adminRoutes, composeUserSubject } from '@odudu/protocol-admin';
 import {
   clientKeySet,
@@ -97,6 +103,11 @@ export interface AppDeps {
    * caller with no reason to move it can leave it unset.
    */
   readonly consoleDir?: string;
+  /**
+   * `ODUDU_INSTRUMENT_DIR`: the built stylesheet and fonts every rendered
+   * page links, read once at registration.
+   */
+  readonly instrumentDir?: string;
   /** The console gateway's clock, so a test can age a pending sign-in. */
   readonly consoleNow?: () => Date;
   /**
@@ -368,6 +379,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   app.register(cookie);
 
   registerHealth(app, deps);
+  app.register(instrumentRoutes(deps.instrumentDir ?? DEFAULT_INSTRUMENT_DIR));
   if (deps.consoleBaseUrl !== undefined) {
     if (deps.consoleKeys === undefined) throw missingConsoleKey();
     app.register(

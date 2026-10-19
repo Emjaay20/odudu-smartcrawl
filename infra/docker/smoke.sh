@@ -196,6 +196,26 @@ printf '%s' "$ASSET_HEADERS" | grep -i '^cache-control:.*immutable' > /dev/null 
 
 echo "smoke: the console shell and $ASSET are served from the image"
 
+# Every rendered page links the same-origin stylesheet, and the stylesheet
+# names the fonts it needs: the sheet revalidates, a font never does.
+SHEET_HEADERS="$(mktemp)"
+SHEET=$(curl -sS -D "$SHEET_HEADERS" "$BASE/instrument/instrument.css")
+SHEET_STATUS=$(sed -n '1s/^HTTP\/[0-9.]* \([0-9]*\).*/\1/p' "$SHEET_HEADERS")
+test "$SHEET_STATUS" = "200" || { echo "smoke: GET /instrument/instrument.css answered $SHEET_STATUS, expected 200" >&2; exit 1; }
+grep -i '^content-type: *text/css' "$SHEET_HEADERS" > /dev/null || {
+  echo "smoke: /instrument/instrument.css was not served as text/css" >&2
+  exit 1
+}
+rm -f "$SHEET_HEADERS"
+FONT=$(printf '%s' "$SHEET" | sed -n "s/.*url('\(\/instrument\/fonts\/[^']*\)').*/\1/p" | sed -n 1p)
+test -n "$FONT" || { echo "smoke: the stylesheet names no /instrument/fonts/ font" >&2; exit 1; }
+FONT_HEADERS=$(curl -sS -D - -o /dev/null "$BASE$FONT")
+printf '%s' "$FONT_HEADERS" | grep -i '^cache-control:.*immutable' > /dev/null || {
+  echo "smoke: $FONT is not cached as immutable" >&2
+  exit 1
+}
+echo "smoke: the instrument stylesheet and $FONT are served from the image"
+
 # `odudu` is the image's command, so an operator runs `docker compose exec
 # odudu odudu reap` rather than naming the bundle. It prints one JSON report.
 REAP_REPORT=$(docker compose exec -T odudu odudu reap) || { echo "smoke: odudu reap failed inside the image" >&2; exit 1; }

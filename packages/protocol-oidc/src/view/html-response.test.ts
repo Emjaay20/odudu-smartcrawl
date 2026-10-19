@@ -190,6 +190,24 @@ describe('[ODUDU-VIEW-HTML-01] an HTML response cannot leave without its framing
     expect(offenders).toEqual([]);
   });
 
+  // The policy is assembled in one place. A package that names a directive
+  // in code, comments aside, is building a second policy beside pageHeaders
+  // that can disagree with it, silently, in a real browser only.
+  it('names no Content-Security-Policy directive outside pageHeaders and the console shell', async () => {
+    const directive =
+      /\b(?:default|style|font|img|script|connect|frame|media|object|child|worker)-src\b|\bform-action\b|\bframe-ancestors\b|\bbase-uri\b/u;
+    const offenders = (await viewSources())
+      .map((f) => ({ ...f, path: f.path.slice(REPO_ROOT.length + 1) }))
+      .filter((f) => f.path !== 'packages/console-gateway/src/view/spa.ts')
+      .filter((f) =>
+        f.text
+          .split('\n')
+          .some((line) => !/^\s*(?:\/\/|\*|\/\*)/u.test(line) && directive.test(line)),
+      )
+      .map((f) => f.path);
+    expect(offenders).toEqual([]);
+  });
+
   // pageHeaders supplies `cache-control` for every page, so a page sender
   // setting its own beside the call is a second authority that can drift.
   it('lets no page be sent with a cache-control of its own', async () => {

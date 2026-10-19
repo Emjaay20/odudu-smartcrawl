@@ -49,6 +49,10 @@ const READS: readonly { file: string; targets: readonly string[] }[] = [
     targets: ['packages/console-gateway/tests/fixtures/**'],
   },
   {
+    file: 'packages/instrument/src/service/build.test.ts',
+    targets: ['apps/admin-console/src/shared/view/*.css'],
+  },
+  {
     file: 'packages/console-gateway/src/view/react-aria-style.test.ts',
     targets: ['apps/admin-console/package.json'],
   },

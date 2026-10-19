@@ -49,6 +49,7 @@ COPY apps apps
 RUN pnpm install --frozen-lockfile --ignore-scripts
 RUN pnpm --filter @odudu/server build
 RUN pnpm --filter @odudu/admin-console build
+RUN pnpm --filter @odudu/instrument build
 
 FROM pnpm AS prod-deps
 WORKDIR /app
@@ -74,6 +75,8 @@ COPY --from=build --chown=odudu:odudu /app/packages/db/drizzle ./drizzle
 # package it is built from is a devDependency of @odudu/admin-console, so
 # the prod-deps stage carries none of them.
 COPY --from=build --chown=odudu:odudu /app/apps/admin-console/dist ./console
+# The stylesheet and fonts every rendered page links, read once at boot.
+COPY --from=build --chown=odudu:odudu /app/packages/instrument/dist ./instrument
 # @node-rs/argon2 is marked external to the tsup bundle (a native .node
 # binary cannot be inlined into an ESM bundle), so its resolved package has
 # to ride along explicitly. It's a dependency of packages/domain-identity,
@@ -103,6 +106,7 @@ ENV ODUDU_VERSION=$ODUDU_VERSION \
     NODE_ENV=production \
     ODUDU_MIGRATIONS_DIR=/app/drizzle \
     ODUDU_CONSOLE_DIR=/app/console \
+    ODUDU_INSTRUMENT_DIR=/app/instrument \
     ODUDU_HTTP_HOST=0.0.0.0 \
     ODUDU_HTTP_PORT=3000
 USER odudu

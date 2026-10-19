@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { consoleBaseUrl, DEFAULT_CONSOLE_DIR, loadConfig } from '#/config';
+import { consoleBaseUrl, DEFAULT_CONSOLE_DIR, DEFAULT_INSTRUMENT_DIR, loadConfig } from '#/config';
 import { OduduError } from '#/errors';
 
 const VALID_KEK = Buffer.alloc(32, 9).toString('base64');
@@ -405,6 +405,17 @@ describe('loadConfig', () => {
   it('rejects a value that is not a URL at all', () => {
     expect(() => loadConfig({ ...minimal, ODUDU_PUBLIC_BASE_URL: 'not a url' })).toThrow(
       OduduError,
+    );
+  });
+
+  it('serves the pages stylesheet from DEFAULT_INSTRUMENT_DIR unless told otherwise', () => {
+    expect(DEFAULT_INSTRUMENT_DIR).toBe('/app/instrument');
+    expect(loadConfig(minimal).ODUDU_INSTRUMENT_DIR).toBe(DEFAULT_INSTRUMENT_DIR);
+    expect(
+      loadConfig({ ...minimal, ODUDU_INSTRUMENT_DIR: '/srv/instrument' }).ODUDU_INSTRUMENT_DIR,
+    ).toBe('/srv/instrument');
+    expect(() => loadConfig({ ...minimal, ODUDU_INSTRUMENT_DIR: '' })).toThrow(
+      /ODUDU_INSTRUMENT_DIR/u,
     );
   });
 });

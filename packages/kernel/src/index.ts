@@ -2,7 +2,13 @@ export { KERNEL_VERSION } from '#/version';
 export { OduduError, type ErrorCode } from '#/errors';
 export { type Clock, systemClock, FakeClock } from '#/clock';
 export { isUuid, newId, scriptNonce } from '#/ids';
-export { type PageScript, type RenderedPage, pageHeaders, reloadOnRestore } from '#/page';
+export {
+  INSTRUMENT_STYLESHEET,
+  type PageScript,
+  type RenderedPage,
+  pageHeaders,
+  reloadOnRestore,
+} from '#/page';
 export {
   MAX_PASSWORD_LENGTH,
   PASSWORD_TOO_LONG,
@@ -13,6 +19,7 @@ export {
   type Config,
   consoleBaseUrl,
   DEFAULT_CONSOLE_DIR,
+  DEFAULT_INSTRUMENT_DIR,
   DEFAULT_OUTBOX_MAX_ATTEMPTS,
   loadConfig,
 } from '#/config';

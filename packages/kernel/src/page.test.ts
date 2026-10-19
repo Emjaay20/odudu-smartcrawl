@@ -1,6 +1,6 @@
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
-import { pageHeaders, reloadOnRestore } from '#/page';
+import { INSTRUMENT_STYLESHEET, pageHeaders, reloadOnRestore } from '#/page';
 
 const headerMap = (page: Parameters<typeof pageHeaders>[0]): Record<string, string> =>
   Object.fromEntries(pageHeaders(page).map(([name, value]) => [name, value]));
@@ -18,6 +18,45 @@ describe('the headers every rendered page carries', () => {
     const csp = headerMap(MARKUP_ONLY_PAGE)['content-security-policy'];
     expect(csp).toContain("default-src 'none'");
     expect(csp).not.toContain('script-src');
+  });
+
+  it('licenses a same-origin stylesheet, font and image on every page', () => {
+    const csp = headerMap(MARKUP_ONLY_PAGE)['content-security-policy'] ?? '';
+    const directives = csp.split('; ');
+    expect(directives).toContain("style-src 'self'");
+    expect(directives).toContain("font-src 'self'");
+    expect(directives).toContain("img-src 'self'");
+    expect(directives).toContain("default-src 'none'");
+    expect(csp).not.toContain('unsafe-inline');
+    expect(csp).not.toContain('unsafe-eval');
+  });
+
+  it('names the stylesheet the pages link', () => {
+    expect(INSTRUMENT_STYLESHEET).toBe('/instrument/instrument.css');
+  });
+
+  it('sends exactly four headers, the policy being the only one that grew', () => {
+    const headers = headerMap(MARKUP_ONLY_PAGE);
+    expect(headers['content-security-policy']).toBe(
+      [
+        "default-src 'none'",
+        "style-src 'self'",
+        "font-src 'self'",
+        "img-src 'self'",
+        "frame-ancestors 'none'",
+        "form-action 'self'",
+        "base-uri 'none'",
+      ].join('; '),
+    );
+    expect(Object.keys(headers).sort()).toEqual([
+      'cache-control',
+      'content-security-policy',
+      'referrer-policy',
+      'x-frame-options',
+    ]);
+    expect(headers['x-frame-options']).toBe('DENY');
+    expect(headers['referrer-policy']).toBe('no-referrer');
+    expect(headers['cache-control']).toBe('no-store');
   });
 
   it('carries the framing defence and the referrer policy on every page', () => {

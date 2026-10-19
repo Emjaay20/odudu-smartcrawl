@@ -66,6 +66,7 @@ const app = buildApp({
   consoleBaseUrl: consoleBaseUrl(config),
   consoleKeys,
   consoleDir: config.ODUDU_CONSOLE_DIR,
+  instrumentDir: config.ODUDU_INSTRUMENT_DIR,
   trustProxy: config.ODUDU_TRUST_PROXY,
   tlsClientCertHeader: config.ODUDU_TLS_CLIENT_CERT_HEADER,
   ...throttleSettingsFrom(config),

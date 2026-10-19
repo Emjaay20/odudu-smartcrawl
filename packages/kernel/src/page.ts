@@ -57,9 +57,16 @@ function formActionSource(redirectUri: string): string | null {
   return SCHEME_SOURCE.test(url.protocol) ? url.protocol : null;
 }
 
+// The one stylesheet every page links, served by @odudu/instrument. A page
+// reads no other style, font or image, and a path in a header could not be
+// told apart from a typo in a link, so both name this constant.
+export const INSTRUMENT_STYLESHEET = '/instrument/instrument.css';
+
 // RFC 6749 §10.13's framing defence for the pages rendered to an end-user.
-// Almost all of these pages are markup only — no script, stylesheet, image
-// or frame of their own — so `default-src 'none'` describes them exactly.
+// Almost all of these pages are markup only — no script or frame of their
+// own — and take a style, font and image only from their own origin, so
+// `default-src 'none'` plus three same-origin directives describes them
+// exactly. Nothing inline, nothing remote (ADR 0029's amendment).
 // X-Frame-Options: DENY rides alongside `frame-ancestors 'none'` for agents
 // with no CSP at all, and may only stay while the two agree. ADR 0018 has
 // the reasoning for each directive and for the pairing.
@@ -67,6 +74,9 @@ function baseDirectives(page: RenderedPage): string[] {
   const source = page.redirectsTo === undefined ? null : formActionSource(page.redirectsTo);
   return [
     "default-src 'none'",
+    "style-src 'self'",
+    "font-src 'self'",
+    "img-src 'self'",
     "frame-ancestors 'none'",
     source === null ? "form-action 'self'" : `form-action 'self' ${source}`,
     "base-uri 'none'",

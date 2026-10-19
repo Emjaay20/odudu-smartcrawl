@@ -79,6 +79,8 @@ export const DEFAULT_OUTBOX_MAX_ATTEMPTS = 5;
 
 export const DEFAULT_CONSOLE_DIR = '/app/console';
 
+export const DEFAULT_INSTRUMENT_DIR = '/app/instrument';
+
 // Ten thousand a window is two hundred Argon2id verifications a second from
 // one origin, past what a process can run, so a larger budget protects
 // nothing; and the exact window log it would otherwise need holds a
@@ -316,6 +318,8 @@ const schema = z.object({
   ODUDU_CONSOLE_CLIENT_KEY_PREVIOUS: z.string().min(1).optional(),
   // The built console's static files, as the container image lays them out.
   ODUDU_CONSOLE_DIR: z.string().min(1).default(DEFAULT_CONSOLE_DIR),
+  // The built stylesheet and fonts every rendered page links.
+  ODUDU_INSTRUMENT_DIR: z.string().min(1).default(DEFAULT_INSTRUMENT_DIR),
   // Lets a bounded address-checked fetch — the JWKS fetcher
   // (@odudu/protocol-oidc's client-keys repository) or the back-channel
   // logout transport (apps/server/src/logout-delivery-transport.ts) —
