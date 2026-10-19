@@ -329,6 +329,21 @@ export const CONFIG_DOCS: Record<ConfigKey, ConfigDoc> = {
     summary: 'The directory of the stylesheet and fonts every server-rendered page links.',
     secret: false,
   },
+  ODUDU_DOCS: {
+    group: 'Server',
+    summary:
+      'Whether the server serves its documentation under `/docs`, on its own address. Set ' +
+      '`false` to turn the route off; `/docs` then answers `404`.',
+    secret: false,
+  },
+  ODUDU_DOCS_DIR: {
+    group: 'Server',
+    summary:
+      'The directory of the built documentation, as the release image lays it out. A ' +
+      'directory with no build, or one that is not the build, makes `/docs/*` answer `503` ' +
+      'and the log names this variable; the rest of the server starts.',
+    secret: false,
+  },
   ODUDU_ALLOW_PRIVATE_CLIENT_URLS: {
     group: 'Outbound requests',
     summary:

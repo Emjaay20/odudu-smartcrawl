@@ -81,6 +81,8 @@ export const DEFAULT_CONSOLE_DIR = '/app/console';
 
 export const DEFAULT_INSTRUMENT_DIR = '/app/instrument';
 
+export const DEFAULT_DOCS_DIR = '/app/docs';
+
 // Ten thousand a window is two hundred Argon2id verifications a second from
 // one origin, past what a process can run, so a larger budget protects
 // nothing; and the exact window log it would otherwise need holds a
@@ -320,6 +322,11 @@ export const configSchema = z.object({
   ODUDU_CONSOLE_DIR: z.string().min(1).default(DEFAULT_CONSOLE_DIR),
   // The built stylesheet and fonts every rendered page links.
   ODUDU_INSTRUMENT_DIR: z.string().min(1).default(DEFAULT_INSTRUMENT_DIR),
+  // The documentation under /docs. On unless turned off; a private install
+  // that does not want it served says `false`.
+  ODUDU_DOCS: enabledEnvVar,
+  // The built documentation, as the container image lays it out.
+  ODUDU_DOCS_DIR: z.string().min(1).default(DEFAULT_DOCS_DIR),
   // Lets a bounded address-checked fetch — the JWKS fetcher
   // (@odudu/protocol-oidc's client-keys repository) or the back-channel
   // logout transport (apps/server/src/logout-delivery-transport.ts) —

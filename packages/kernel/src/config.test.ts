@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { consoleBaseUrl, DEFAULT_CONSOLE_DIR, DEFAULT_INSTRUMENT_DIR, loadConfig } from '#/config';
+import {
+  consoleBaseUrl,
+  DEFAULT_CONSOLE_DIR,
+  DEFAULT_DOCS_DIR,
+  DEFAULT_INSTRUMENT_DIR,
+  loadConfig,
+} from '#/config';
 import { OduduError } from '#/errors';
 
 const VALID_KEK = Buffer.alloc(32, 9).toString('base64');
@@ -417,5 +423,19 @@ describe('loadConfig', () => {
     expect(() => loadConfig({ ...minimal, ODUDU_INSTRUMENT_DIR: '' })).toThrow(
       /ODUDU_INSTRUMENT_DIR/u,
     );
+  });
+
+  it('serves the documentation from DEFAULT_DOCS_DIR, on unless ODUDU_DOCS is false', () => {
+    expect(DEFAULT_DOCS_DIR).toBe('/app/docs');
+    const config = loadConfig(minimal);
+    expect(config.ODUDU_DOCS).toBe(true);
+    expect(config.ODUDU_DOCS_DIR).toBe(DEFAULT_DOCS_DIR);
+    expect(loadConfig({ ...minimal, ODUDU_DOCS: 'false' }).ODUDU_DOCS).toBe(false);
+    expect(loadConfig({ ...minimal, ODUDU_DOCS: 'true' }).ODUDU_DOCS).toBe(true);
+    expect(loadConfig({ ...minimal, ODUDU_DOCS_DIR: '/srv/docs' }).ODUDU_DOCS_DIR).toBe(
+      '/srv/docs',
+    );
+    expect(() => loadConfig({ ...minimal, ODUDU_DOCS: 'off' })).toThrow(/ODUDU_DOCS/u);
+    expect(() => loadConfig({ ...minimal, ODUDU_DOCS_DIR: '' })).toThrow(/ODUDU_DOCS_DIR/u);
   });
 });
