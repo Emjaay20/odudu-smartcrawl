@@ -4036,6 +4036,27 @@ curl -sS -X POST \
 {"type":"about:blank","title":"Conflict","status":409,"detail":"the username \"ada\" is already in use","instance":"01a0ea54-2532-7ded-a4a1-78972123db93"}
 ```
 
+A username holding a bidirectional control character (U+202A to U+202E or
+U+2066 to U+2069) is refused the same way, by the generated schema, and the
+field error carries a `code` a client can act on without reading the message.
+The same rule, with the same message and code, holds for a profile name
+(`name`, `given_name`, `family_name`, `middle_name`, `nickname`,
+`preferred_username`), a tenant's `display_name` (create, import, `PATCH` and
+settings), a client's `name` and `client_name`, and a role or group `name`;
+inside an import document each is reported at its path. LRM, RLM and ALM, which
+Persian and Arabic text uses, and plain Arabic or Hebrew, are accepted. Only
+what is typed is refused: a row that already holds one is neither rewritten nor
+barred from signing in. These two answers came from the integration suite's own
+app (`packages/protocol-admin/tests/bidi-controls.int.test.ts` makes the
+requests), not from a compose stack, because minting an admin token takes the
+loopback flow above; `POST` a username ending in U+202E, then `PATCH` a
+profile's `given_name` to a value ending in U+2066:
+
+```
+{"type":"about:blank","title":"Error","status":400,"detail":"body/username must match pattern \"^[^\\u202A-\\u202E\\u2066-\\u2069]*$\"","errors":[{"path":"username","message":"must not contain bidirectional control characters (U+202A to U+202E, U+2066 to U+2069)","code":"bidi_control_refused"}],"instance":"01a152e2-efeb-7800-a8f0-b4644e344a18"}
+{"type":"about:blank","title":"Error","status":400,"detail":"body/given_name must match pattern \"^[^\\u202A-\\u202E\\u2066-\\u2069]*$\", body/given_name must be null, body/given_name must match a schema in anyOf","errors":[{"path":"given_name","message":"must not contain bidirectional control characters (U+202A to U+202E, U+2066 to U+2069)","code":"bidi_control_refused"}],"instance":"01a152e2-f005-7d1c-98f1-331c56c62435"}
+```
+
 ## `GET /subjects/username-policy`
 
 Requires `view-users`. Whether this tenant accepts a rename — its
@@ -5513,7 +5534,7 @@ docker compose exec -T postgres psql -U odudu -d odudu -At -c \
 ```
 
 ```
-Update your required-actions-demo account|Your administrator asks you to update your required-actions-demo account:
+Update your required-actions-demo account|Your administrator asks you to update your ⁨required-actions-demo⁩ account:
 
 - Choose a new password
 - Set up an authenticator app
@@ -5524,6 +5545,11 @@ http://localhost:3086/tenants/required-actions-demo/login-actions/action-token?k
 
 If you were not expecting this, you can ignore this message.
 ```
+
+The mail text is the mail package's catalogue, with the tenant name inside
+Unicode isolates (U+2068 and U+2069, invisible here), so the block above was
+rewritten from the earlier run's by that one change; the same mail rendered
+through `renderRequiredActions` with these inputs gives exactly these bytes.
 
 What following it does is under [Following a required-actions link](request-paths.md#following-a-required-actions-link).
 

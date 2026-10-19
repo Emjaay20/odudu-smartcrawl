@@ -18,6 +18,7 @@ const REFUSALS: readonly RegistrationRefusal[] = [
   'email_taken',
   'username_taken',
   'invalid_email',
+  'invalid_username',
   'unavailable',
 ];
 

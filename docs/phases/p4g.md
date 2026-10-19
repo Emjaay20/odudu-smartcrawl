@@ -848,3 +848,44 @@ used`); the required-actions, registration success and form pages are
   catalogues. They are pinned equal by `tests/lint/password-rule-wording.test.ts`
   rather than shared: each package's catalogue is flat and its own (ADR 0043),
   and no package both may import owns text.
+
+## Increment 17: mail text in a catalogue, bidi controls refused in typed fields
+
+- Mail: `packages/email/src/service/messages.ts` (15 entries, TS like the page
+  catalogues; running total 174) and `templates.ts`. The mail locale is the
+  recipient's `users.locale`, else the tenant default (none exists until P4b),
+  else `en`, reduced to a shipped catalogue by `negotiateLocale` over
+  `catalogue.locales`; an unknown or malformed tag is English. `locale` is passed
+  by the self-service reset (`findByEmail`) and the admin account-email route;
+  registration and the seed command have no locale to give.
+- Required actions travel as codes (`action.<code>` ids); `actionLabel` is gone.
+  An unknown code shows in an isolate. The link is never catalogued: a message
+  names it `{link}` and the one anchor replaces a per-process token.
+- Tenant name: `<bdi>` in HTML, U+2068/U+2069 in text (with bidi controls and line
+  breaks stripped so it cannot close its isolate or start a line), and in the
+  subject stripped of bidi controls and every C0/C1 control and U+2028/9.
+- Bidi rule: the list is ADR 0043's nine code points (U+202A-202E, U+2066-2069).
+  LRM, RLM and ALM are accepted because Persian and Arabic text uses them.
+  Detection and the field rule live in `@odudu/contracts` (`bidi.ts`), not kernel:
+  the console imports contracts and kernel carries node-only modules. Kernel adds
+  `BidiControlError` and `refuseBidiControls`, the guard every repository applies.
+- The admin API validates a body through `z.toJSONSchema`, which drops a `refine`,
+  so the rule is a negative `regex` (a JSON Schema `pattern`); a refinement would
+  have been silently unenforced there. Open-record bodies (client, tenant patch,
+  settings, import) are checked in their usecases; every repository guards as a
+  backstop and the problem handler answers a `BidiControlError` as a 400.
+- `fieldErrorSchema` gains optional `code` (P4h generalises it to `code` and
+  `params`); the first value is `bidi_control_refused`.
+- Entry paths: admin subject create/patch/profile, tenant create/patch/settings/
+  import (document names too), client create/patch and `client_name`, role and
+  group create, dynamic registration, self-registration, `odudu seed` (user,
+  bootstrap, profile, role, group, tenant `--set display_name`, admin). Email is
+  ASCII by its CHECK; scope and tenant names are ASCII by theirs. Unchanged:
+  descriptions, consent text, `client_id`, SCIM (future). A value an existing row
+  holds is never rewritten and its owner still signs in; `updateProfile` refuses
+  only a name that differs from the stored one.
+- No Unicode normalisation form produces a control from another code point
+  (checked over every code point in `bidi.test.ts`), so checking raw input is
+  checking the normalised input.
+- Mail transcripts were rewritten by transformation and checked against a live
+  run on `odudu-p4g-17`; the admin API refusals come from the integration suite.

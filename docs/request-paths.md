@@ -3188,8 +3188,8 @@ reader without a mail server gets the link:
   "level": 30,
   "to": "ada@example.com",
   "subject": "Verify your demo account",
-  "text": "Confirm your email address for demo by visiting this link:\n\nhttp://localhost:3000/tenants/demo/login-actions/action-token?key=9qsTxZgVlA_N8dHLuijG5l7UUex8F4HwGJEanfGXYCk\n\nIf you did not request this, you can ignore this message.",
-  "html": "<p>Confirm your email address for demo by visiting <a href=\"…\">…</a>.</p><p>If you did not request this, you can ignore this message.</p>",
+  "text": "Confirm your email address for ⁨demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/demo/login-actions/action-token?key=9qsTxZgVlA_N8dHLuijG5l7UUex8F4HwGJEanfGXYCk\n\nIf you did not request this, you can ignore this message.",
+  "html": "<p>Confirm your email address for <bdi>demo</bdi> by visiting <a href=\"…\">…</a>.</p><p>If you did not request this, you can ignore this message.</p>",
   "msg": "captured email — no SMTP host configured"
 }
 ```
@@ -3197,6 +3197,19 @@ reader without a mail server gets the link:
 (One line of a larger pino JSON object, reduced to the fields that matter
 here; the key is shortened nowhere else in this document because a reader
 needs the whole thing to follow the link.)
+
+The text of every mail comes from the mail package's own message catalogue
+(`en` today), in the language of the recipient's `locale` where the sender
+knows it and in English otherwise. A tenant name is somebody else's text, so
+the plain-text part wraps it in Unicode isolates (U+2068 before it and U+2069
+after, invisible in most viewers but present in the captures on this page),
+the HTML part in `<bdi>`, and the subject carries it with bidirectional
+controls and line breaks removed, since a header can hold neither. The four
+mail captures in this document were updated by transformation from earlier
+runs, and the shape was checked against a live run of the same three mails on
+the project `odudu-p4g-17` (`demo`, `register-demo` and `reset-demo`, on port
+`3197`, so their links named that port and their own keys); the keys the
+sections below follow are the earlier run's.
 
 Before following it, `ada`'s ID token still reads the way every one earlier
 in this document does:
@@ -3333,10 +3346,68 @@ log instead of an inbox:
   "level": 30,
   "to": "ada@example.com",
   "subject": "Verify your register-demo account",
-  "text": "Confirm your email address for register-demo by visiting this link:\n\nhttp://localhost:3000/tenants/register-demo/login-actions/action-token?key=6AkQjYEkoqMGiYpFx63UGAuvitBIEjmNyDMd6w2uN2Y\n\nIf you did not request this, you can ignore this message.",
+  "text": "Confirm your email address for ⁨register-demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/register-demo/login-actions/action-token?key=6AkQjYEkoqMGiYpFx63UGAuvitBIEjmNyDMd6w2uN2Y\n\nIf you did not request this, you can ignore this message.",
   "msg": "captured email — no SMTP host configured"
 }
 ```
+
+A username holding a bidirectional control character, one that would reorder
+the text around it wherever it is shown (U+202A to U+202E or U+2066 to U+2069),
+is refused on its own sentence and nothing is created, the form's other fields
+being as valid as they were. It is refused rather than stripped, because
+stripping would let two different usernames collide. Captured on the project
+`odudu-p4g-17`, port `3197`, posting `ada` followed by U+202E:
+
+```bash
+curl -sS -D - -X POST http://localhost:3197/tenants/register-demo/login-actions/registration \
+  --data-urlencode "username=$(printf 'ada\xe2\x80\xae')" \
+  --data-urlencode 'email=grace@example.com' \
+  --data-urlencode 'password=correct-horse-battery'
+```
+
+```
+HTTP/1.1 400 Bad Request
+x-request-id: 01a152e1-d4aa-7c81-84d1-edb5e5da5b71
+content-type: text/html
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+x-content-type-options: nosniff
+content-language: en
+content-length: 777
+Date: Mon, 19 Oct 2026 06:38:14 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Can&#39;t create this account</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
+<body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
+<h1>Can&#39;t create this account</h1>
+<ul>
+<li>That username contains a character that changes the direction of text, which is not allowed.</li>
+</ul>
+</main>
+</body>
+</html>
+```
+
+The same refusal holds for every other door: the admin API's field error carries
+the code `bidi_control_refused` ([POST /subjects](admin-paths.md#post-subjects)),
+and `odudu seed` stops with a `BidiControlError` naming the field, in the way
+its other refusals stop. Arabic and Hebrew usernames, with or without LRM and
+RLM, are accepted: `odudu seed user --username مستخدم` created the account on
+the same stack.
 
 That link's host, `localhost:3000`, comes from `ODUDU_PUBLIC_BASE_URL`
 (`compose.yaml` sets it to match the port published above) — never from the
@@ -3361,7 +3432,7 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
   "level": 30,
   "to": "grace@example.com",
   "subject": "Verify your register-demo account",
-  "text": "Confirm your email address for register-demo by visiting this link:\n\nhttp://localhost:3000/tenants/register-demo/login-actions/action-token?key=QSamH8NlNKgEIxjr7XbuIOZ7fTPqCf6uxDtFZeEIf9E\n\nIf you did not request this, you can ignore this message.",
+  "text": "Confirm your email address for ⁨register-demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/register-demo/login-actions/action-token?key=QSamH8NlNKgEIxjr7XbuIOZ7fTPqCf6uxDtFZeEIf9E\n\nIf you did not request this, you can ignore this message.",
   "msg": "captured email — no SMTP host configured"
 }
 ```
@@ -4872,8 +4943,8 @@ moment after both answers had gone out, and there exactly once:
   "level": 30,
   "to": "ada@example.com",
   "subject": "Reset your reset-demo password",
-  "text": "Reset your password for reset-demo by visiting this link:\n\nhttp://localhost:3000/tenants/reset-demo/login-actions/action-token?key=iad4k852Rw6VvCK8djwZSvU0dzcPMvNXXM3-UjOeRkk\n\nIf you did not request this, you can ignore this message.",
-  "html": "<p>Reset your password for reset-demo by visiting <a href=\"…\">…</a>.</p><p>If you did not request this, you can ignore this message.</p>",
+  "text": "Reset your password for ⁨reset-demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/reset-demo/login-actions/action-token?key=iad4k852Rw6VvCK8djwZSvU0dzcPMvNXXM3-UjOeRkk\n\nIf you did not request this, you can ignore this message.",
+  "html": "<p>Reset your password for <bdi>reset-demo</bdi> by visiting <a href=\"…\">…</a>.</p><p>If you did not request this, you can ignore this message.</p>",
   "msg": "captured email — no SMTP host configured"
 }
 ```
