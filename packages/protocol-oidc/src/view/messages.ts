@@ -10,6 +10,15 @@ export const en = {
   'throttled.retryAfter': 'Try again in {seconds, plural, one {# second} other {# seconds}}.',
   'throttled.goBack': 'Go back to the previous page when the time is up.',
 
+  'consent.title': 'Allow access?',
+  'consent.heading': '{client} is asking for access',
+  'consent.link.about': 'About {client}',
+  'consent.link.privacy': 'Privacy policy',
+  'consent.link.terms': 'Terms of service',
+  'consent.scope.offlineAccess': '{label} — grants ongoing access, even while you are not present',
+  'consent.allow': 'Allow',
+  'consent.deny': 'Deny',
+
   'selectAccount.title': 'Choose an account',
   'selectAccount.useOther': 'Use another account',
 };
