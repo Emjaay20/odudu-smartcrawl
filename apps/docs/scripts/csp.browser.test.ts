@@ -157,7 +157,7 @@ describe('the image build under the policy the server sends', () => {
     }
     expect(seen).toEqual([]);
     expect(watched.foreign).toEqual([]);
-    expect(watched.failures.filter((line) => !/status of 404/u.test(line))).toEqual([]);
+    expect(watched.failures.filter((line) => !line.includes('status of 404'))).toEqual([]);
     await context.close();
   });
 
