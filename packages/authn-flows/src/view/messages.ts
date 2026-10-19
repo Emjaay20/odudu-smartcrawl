@@ -10,7 +10,17 @@ export const en = {
   'totp.key': 'Key:',
   'totp.codeLabel': 'Code from your app',
   'totp.confirm': 'Confirm',
+  'passkey.title': 'Add a passkey',
+  'passkey.intro': 'Your device will ask you to confirm. Nothing is stored until it does.',
+  'passkey.nameLabel': 'Name this passkey',
+  'passkey.namePlaceholder': 'Passkey',
+  'passkey.submit': 'Add passkey',
+  'passkey.needsScript':
+    'Adding a passkey needs JavaScript, because only the browser can talk to your authenticator.',
+  'passkey.failed': 'Your device did not finish adding the passkey — {reason}. You can try again.',
+  'passkey.cancelled': 'the request was cancelled',
   'refusal.codeMismatch': 'That code did not match. Try the next one your app shows.',
+  'refusal.passkeyNotAdded': 'That passkey could not be added. Try again.',
 
   'updatePassword.title': 'Change your password',
   'updatePassword.intro': 'This account needs a new password before you can continue.',

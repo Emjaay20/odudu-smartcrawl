@@ -46,7 +46,7 @@ export type RequiredActionOutcome =
       authSessionId: string;
       subjectId: string;
       action: 'configure-passkey';
-      reason: string;
+      reason: EnrolmentRefusal;
     }
   | {
       kind: 'rejected';
@@ -280,6 +280,6 @@ async function completePasskey(
     authSessionId,
     subjectId,
     action: 'configure-passkey',
-    reason: 'That passkey could not be added. Try again.',
+    reason: 'passkey_not_added',
   };
 }

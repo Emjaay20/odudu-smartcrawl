@@ -4,6 +4,7 @@ import { tHtml, type MessageId } from '#/view/messages';
 
 const REFUSAL_MESSAGE: Readonly<Record<EnrolmentRefusal, MessageId>> = {
   code_mismatch: 'refusal.codeMismatch',
+  passkey_not_added: 'refusal.passkeyNotAdded',
 };
 
 // The line above the form that says why it is back, or nothing on a first visit.

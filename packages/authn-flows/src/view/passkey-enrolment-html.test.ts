@@ -1,9 +1,24 @@
 import { DEFAULT_PAGE_LOCALE } from '@odudu/kernel';
-import { describe, expect, it } from 'vitest';
+import { runInNewContext } from 'node:vm';
+import { describe, expect, it, vi } from 'vitest';
+import { en } from '#/view/messages';
 import {
   renderPasskeyEnrolmentPage,
   type PasskeyEnrolmentOffer,
 } from '#/view/passkey-enrolment-html';
+import { ARABIC, FRENCH } from '#test/fr-catalogue';
+
+vi.mock('#/view/messages', async (importOriginal) => {
+  const { withFrench } = await import('#test/fr-catalogue');
+  return withFrench(await importOriginal(), {
+    'passkey.title': 'Ajouter une clé d’accès',
+    'passkey.nameLabel': 'Nommez cette clé',
+    'passkey.namePlaceholder': 'Clé d’accès',
+    'passkey.submit': 'Ajouter',
+    'passkey.failed': 'Votre appareil n’a pas terminé l’ajout : {reason}. Réessayez.',
+    'refusal.passkeyNotAdded': 'Cette clé n’a pas pu être ajoutée.',
+  });
+});
 
 const OFFER: PasskeyEnrolmentOffer = {
   options: {
@@ -101,18 +116,125 @@ describe('renderPasskeyEnrolmentPage', () => {
     expect(page).toContain('maxlength="64"');
   });
 
-  it('escapes the tenant, the session id and an error message', () => {
+  it('escapes the tenant and the session id', () => {
     const { html: page } = renderPasskeyEnrolmentPage(
       'acme"><script>',
       'session"><script>',
       OFFER,
-      'refused <code>',
+      undefined,
       DEFAULT_PAGE_LOCALE,
     );
 
     expect(page).not.toContain('"><script>');
     expect(page).toContain('&lt;script&gt;');
-    expect(page).toContain('refused &lt;code&gt;');
+  });
+
+  it('keeps the English markup exactly, apart from the script, which is checked below', () => {
+    const { body } = renderPasskeyEnrolmentPage(
+      'acme',
+      'sess-1',
+      OFFER,
+      'passkey_not_added',
+      DEFAULT_PAGE_LOCALE,
+    );
+    expect(body.slice(0, body.indexOf('<script'))).toBe(`<h1>Add a passkey</h1>
+<p><strong>That passkey could not be added. Try again.</strong></p>
+<p>Your device will ask you to confirm. Nothing is stored until it does.</p>
+<form method="post" action="/tenants/acme/login-actions/required-action?action=configure-passkey" id="passkey-form" data-failed="Your device did not finish adding the passkey — {reason}. You can try again." data-cancelled="the request was cancelled">
+  <input type="hidden" name="auth_session_id" value="sess-1">
+  <input type="hidden" name="credential" id="passkey-credential">
+  <label>Name this passkey <input type="text" name="label" placeholder="Passkey" maxlength="64"></label>
+  <button type="submit" id="passkey-submit">Add passkey</button>
+</form>
+<p id="passkey-error" hidden></p>
+<noscript><p>Adding a passkey needs JavaScript, because only the browser can talk to your authenticator.</p></noscript>
+`);
+  });
+
+  it('reads French where the fixture has it and English for the rest', () => {
+    const page = renderPasskeyEnrolmentPage('acme', 's1', OFFER, 'passkey_not_added', FRENCH);
+    expect(page.html).toContain('<html lang="fr" dir="ltr">');
+    expect(page.title).toBe('Ajouter une clé d’accès');
+    expect(page.body).toContain('<p><strong>Cette clé n’a pas pu être ajoutée.</strong></p>');
+    expect(page.body).toContain('<label>Nommez cette clé <input');
+    expect(page.body).toContain('placeholder="Clé d’accès"');
+    expect(page.body).toContain('>Ajouter</button>');
+    expect(page.body).toContain(`<p>${en['passkey.intro']}</p>`);
+    expect(page.script).toMatchObject({ fetchesSameOrigin: false });
+  });
+
+  it('writes lang and dir for a right-to-left locale', () => {
+    expect(renderPasskeyEnrolmentPage('a', 's', OFFER, undefined, ARABIC).html).toContain(
+      '<html lang="ar" dir="rtl">',
+    );
+  });
+
+  it('holds a hostile tenant or session id inside its attribute, in both languages', () => {
+    for (const locale of [DEFAULT_PAGE_LOCALE, FRENCH]) {
+      const { body } = renderPasskeyEnrolmentPage(
+        '"><img src=x onerror=1>',
+        '"><img src=x onerror=1>',
+        OFFER,
+        undefined,
+        locale,
+      );
+      expect(body.slice(0, body.indexOf('<script'))).not.toContain('<img');
+    }
+  });
+
+  describe('the script, run against a stand-in page', () => {
+    // Runs the rendered script, presses the button and lets the browser
+    // refuse with `thrown`; answers what the person is then told.
+    async function failureShown(locale: typeof FRENCH, thrown: Error): Promise<string> {
+      const { body } = renderPasskeyEnrolmentPage('acme', 'sid', OFFER, undefined, locale);
+      const code = /<script nonce="[^"]*">([\s\S]*?)<\/script>/u.exec(body)?.[1] ?? '';
+      const data = (name: string): string =>
+        new RegExp(`${name}="([^"]*)"`, 'u').exec(body)?.[1]?.replaceAll('&#39;', "'") ?? '';
+      const failure = { textContent: '', hidden: true };
+      const handlers: ((event: { preventDefault(): void }) => Promise<void>)[] = [];
+      const form = {
+        dataset: { failed: data('data-failed'), cancelled: data('data-cancelled') },
+        addEventListener: (_: string, handler: (typeof handlers)[number]) => handlers.push(handler),
+        submit: () => undefined,
+      };
+      const elements: Record<string, unknown> = {
+        'passkey-form': form,
+        'passkey-credential': { value: '' },
+        'passkey-error': failure,
+      };
+      runInNewContext(code, {
+        document: { getElementById: (id: string) => elements[id] },
+        atob,
+        Uint8Array,
+        navigator: { credentials: { create: () => Promise.reject(thrown) } },
+      });
+      await handlers[0]?.({ preventDefault: () => undefined });
+      return failure.textContent;
+    }
+
+    it('says the sentence with the browser reason in it', async () => {
+      expect(await failureShown(DEFAULT_PAGE_LOCALE, new Error('timed out'))).toBe(
+        'Your device did not finish adding the passkey — timed out. You can try again.',
+      );
+    });
+
+    it('says the page-language sentence, and the cancelled reason when there is none', async () => {
+      expect(await failureShown(FRENCH, new Error(''))).toBe(
+        'Votre appareil n’a pas terminé l’ajout : the request was cancelled. Réessayez.',
+      );
+    });
+
+    it('cannot be mangled by a reason holding replacement patterns', async () => {
+      expect(await failureShown(DEFAULT_PAGE_LOCALE, new Error("$& $1 $' $`"))).toBe(
+        "Your device did not finish adding the passkey — $& $1 $' $`. You can try again.",
+      );
+    });
+
+    it('holds no sentence of its own', () => {
+      const { body } = renderPasskeyEnrolmentPage('a', 's', OFFER, undefined, DEFAULT_PAGE_LOCALE);
+      const script = body.slice(body.indexOf('<script'));
+      expect(script).not.toMatch(/Your device|request was cancelled|try again/iu);
+    });
   });
 
   // HTML escaping does not apply inside a <script>, where the parser reads
