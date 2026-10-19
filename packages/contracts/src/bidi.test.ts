@@ -4,6 +4,7 @@ import {
   BIDI_REFUSED_MESSAGE,
   containsBidiControl,
   noBidiControls,
+  refusesBidi,
   stripBidiControls,
 } from '#/bidi';
 
@@ -77,5 +78,23 @@ describe('noBidiControls', () => {
         }
       }
     }
+  });
+});
+
+describe('refusesBidi', () => {
+  const held = `old${String.fromCodePoint(0x202e)}name`;
+
+  it('refuses a control that is being added', () => {
+    expect(refusesBidi(`x${String.fromCodePoint(0x2066)}`, 'x')).toBe(true);
+    expect(refusesBidi(held, 'other')).toBe(true);
+    expect(refusesBidi(held)).toBe(true);
+    expect(refusesBidi(held, null)).toBe(true);
+  });
+
+  it('lets the stored value stand, and takes absent, null and plain values', () => {
+    expect(refusesBidi(held, held)).toBe(false);
+    expect(refusesBidi(null, held)).toBe(false);
+    expect(refusesBidi(undefined, held)).toBe(false);
+    expect(refusesBidi('plain', held)).toBe(false);
   });
 });

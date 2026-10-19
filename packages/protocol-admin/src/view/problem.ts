@@ -177,7 +177,14 @@ export function installProblemDetailsHandler(app: FastifyInstance): void {
       return;
     }
     const errors = status === 400 ? validationErrors(error) : [];
-    const body = problem(status, 'about:blank', error.name, refusalDetail(error));
+    // The schema's own text for this refusal is a regular expression: the
+    // detail says which field and why, in the words every door uses.
+    const refused = errors.filter((entry) => entry.code === BIDI_REFUSED);
+    const detail =
+      refused.length > 0
+        ? refused.map((entry) => `${entry.path}: ${entry.message}`).join('; ')
+        : refusalDetail(error);
+    const body = problem(status, 'about:blank', error.name, detail);
     sendProblem(reply, request, errors.length === 0 ? body : { ...body, errors });
   });
 

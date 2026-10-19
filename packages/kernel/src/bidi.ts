@@ -1,4 +1,4 @@
-import { BIDI_REFUSED_MESSAGE, containsBidiControl } from '@odudu/contracts';
+import { BIDI_REFUSED_MESSAGE, refusesBidi } from '@odudu/contracts';
 import { OduduError } from '#/errors';
 
 export { BIDI_REFUSED, containsBidiControl } from '@odudu/contracts';
@@ -15,9 +15,15 @@ export class BidiControlError extends OduduError {
   }
 }
 
-/** The guard every repository applies to a typed identity or name field before it writes one. */
-export function refuseBidiControls(field: string, value: string | null | undefined): void {
-  if (value !== null && value !== undefined && containsBidiControl(value)) {
-    throw new BidiControlError(field);
-  }
+/**
+ * The guard every repository applies to a typed identity, name or display text
+ * field before it writes one. A write that leaves the stored `current` value as
+ * it is passes, so a row from before the rule is never blocked or rewritten.
+ */
+export function refuseBidiControls(
+  field: string,
+  value: string | null | undefined,
+  current?: string | null,
+): void {
+  if (refusesBidi(value, current)) throw new BidiControlError(field);
 }

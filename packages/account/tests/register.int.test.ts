@@ -504,6 +504,39 @@ describe('self-registration', () => {
     expect(await outboxRows(tenantId)).toHaveLength(0);
   });
 
+  it('refuses before the password is evaluated or an account is attempted', async () => {
+    const { tenantName } = await seedTenant(`tenant-${newId()}`, { registrationAllowed: true });
+    let evaluated = 0;
+    let attempted = 0;
+    const counting = Fastify();
+    counting.register(formbody);
+    registerRegistrationRoute(counting, {
+      database: app,
+      findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
+      publicBaseUrl,
+      createAccount: (tx, tenantId, input) => {
+        attempted += 1;
+        return createAccount(tx, tenantId, input);
+      },
+      evaluatePassword: (...args) => {
+        evaluated += 1;
+        return evaluatePassword(...args);
+      },
+    });
+    const res = await counting.inject({
+      method: 'POST',
+      url: `/tenants/${tenantName}/login-actions/registration`,
+      payload: new URLSearchParams({
+        username: `ada${String.fromCodePoint(0x202e)}`,
+        email: 'ada@example.test',
+        password: 'correct horse battery',
+      }).toString(),
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect({ evaluated, attempted }).toEqual({ evaluated: 0, attempted: 0 });
+  });
+
   it('answers the same when the repository is what refuses the control', async () => {
     const { tenantName } = await seedTenant(`tenant-${newId()}`, { registrationAllowed: true });
     const refusing = Fastify();

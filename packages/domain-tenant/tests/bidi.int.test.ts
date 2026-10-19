@@ -8,6 +8,7 @@ import {
 } from '@odudu/db';
 import { BidiControlError, newId } from '@odudu/kernel';
 import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/testkit';
+import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { clientRepository } from '#/repository/clients';
 import { clientScopeRepository } from '#/repository/client-scopes';
@@ -108,5 +109,88 @@ describe('a bidirectional control in a name a tenant package writes', () => {
       tenantSettingsRepository(tx).byId(tenantId),
     );
     expect(stored?.display_name).toBe('Acme');
+  });
+
+  it('is refused in a client_id, a client description, a scope description and consent text', async () => {
+    const tenantId = await tenant();
+    const client = {
+      tenantId,
+      clientId: 'app',
+      name: 'App',
+      type: 'public',
+      secretHash: null,
+    } as const;
+    await expect(
+      withTenant(app.db, tenantId, (tx) =>
+        clientRepository(tx).create({ ...client, clientId: `app${RLO}` }),
+      ),
+    ).rejects.toMatchObject({ field: 'client_id' });
+    await expect(
+      withTenant(app.db, tenantId, (tx) =>
+        clientRepository(tx).create({ ...client, description: `d${RLO}` }),
+      ),
+    ).rejects.toMatchObject({ field: 'description' });
+    await expect(
+      withTenant(app.db, tenantId, (tx) =>
+        clientScopeRepository(tx).create({ tenantId, name: 'orders', description: `d${RLO}` }),
+      ),
+    ).rejects.toMatchObject({ field: 'description' });
+    await expect(
+      withTenant(app.db, tenantId, (tx) =>
+        clientScopeRepository(tx).create({ tenantId, name: 'orders', consentText: `c${RLO}` }),
+      ),
+    ).rejects.toMatchObject({ field: 'consent_text' });
+  });
+
+  it('lets a stored name, description, consent text and display name stand while another field changes', async () => {
+    const tenantId = await tenant();
+    const legacy = `old${RLO}text`;
+    const client = await withTenant(app.db, tenantId, (tx) =>
+      clientRepository(tx).create({
+        tenantId,
+        clientId: 'app',
+        name: 'App',
+        description: 'D',
+        type: 'public',
+        secretHash: null,
+      }),
+    );
+    const scope = await withTenant(app.db, tenantId, (tx) =>
+      clientScopeRepository(tx).create({
+        tenantId,
+        name: 'orders',
+        description: 'D',
+        consentText: 'C',
+      }),
+    );
+    await owner.db.execute(
+      sql`update clients set name = ${legacy}, description = ${legacy} where id = ${client.id}`,
+    );
+    await owner.db.execute(
+      sql`update client_scopes set description = ${legacy}, consent_text = ${legacy} where id = ${scope.id}`,
+    );
+    await owner.db.execute(sql`update tenants set display_name = ${legacy} where id = ${tenantId}`);
+
+    const updated = await withTenant(app.db, tenantId, (tx) =>
+      clientRepository(tx).update(client.id, { name: legacy, description: legacy, enabled: false }),
+    );
+    expect(updated.name).toBe(legacy);
+    const amended = await withTenant(app.db, tenantId, (tx) =>
+      clientScopeRepository(tx).amend(scope.id, {
+        description: legacy,
+        consentText: legacy,
+        displayOrder: 3,
+      }),
+    );
+    expect(amended.consentText).toBe(legacy);
+    const settings = await withTenant(app.db, tenantId, (tx) =>
+      tenantSettingsRepository(tx).amend(tenantId, { displayName: legacy, enabled: true }),
+    );
+    expect(settings.display_name).toBe(legacy);
+    await expect(
+      withTenant(app.db, tenantId, (tx) =>
+        clientScopeRepository(tx).amend(scope.id, { consentText: `${legacy}!` }),
+      ),
+    ).rejects.toMatchObject({ field: 'consent_text' });
   });
 });

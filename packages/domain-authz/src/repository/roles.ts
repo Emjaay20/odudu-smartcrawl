@@ -86,6 +86,10 @@ export function roleRepository(tx: TenantScopedDatabase) {
     },
 
     async amend(id: string, patch: RolePatch): Promise<RoleRecord> {
+      if (patch.description !== undefined) {
+        const held = await tx.select().from(roles).where(eq(roles.id, id));
+        refuseBidiControls('description', patch.description, held[0]?.description);
+      }
       const rows = await tx.update(roles).set(patch).where(eq(roles.id, id)).returning();
       const row = rows[0];
       if (row === undefined) {
@@ -116,6 +120,7 @@ export function roleRepository(tx: TenantScopedDatabase) {
 
     async create(input: NewRole): Promise<RoleRecord> {
       refuseBidiControls('name', input.name);
+      refuseBidiControls('description', input.description);
       const rows = await tx
         .insert(roles)
         .values({

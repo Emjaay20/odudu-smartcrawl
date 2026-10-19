@@ -10,9 +10,10 @@ const claim = z
   .regex(/^[^\u0000]*$/)
   .nullable();
 
-// A claim that names a person is written without a bidirectional control,
-// which would reorder the text around it wherever it is shown. A value a row
-// already holds is read back as it is, so only the write shape carries this.
+// A claim that names a person, as an imported document carries it: a creation,
+// so it holds no bidirectional control, which would reorder the text around it
+// wherever it is shown. The PATCH body takes the plain claim instead, because
+// an amendment is judged against the stored value (usecase/profile.ts).
 const nameClaim = noBidiControls(z.string().regex(/^[^\u0000]*$/)).nullable();
 
 export const nameClaims = {
@@ -64,12 +65,12 @@ export type Profile = z.infer<typeof profileSchema>;
 // refuse each by name, pointing at the route that actually owns it,
 // instead of ajv's generic "additional property" message.
 export const amendProfileRequestSchema = z.object({
-  name: nameClaim.optional(),
-  given_name: nameClaim.optional(),
-  family_name: nameClaim.optional(),
-  middle_name: nameClaim.optional(),
-  nickname: nameClaim.optional(),
-  preferred_username: nameClaim.optional(),
+  name: claim.optional(),
+  given_name: claim.optional(),
+  family_name: claim.optional(),
+  middle_name: claim.optional(),
+  nickname: claim.optional(),
+  preferred_username: claim.optional(),
   profile: claim.optional(),
   picture: claim.optional(),
   website: claim.optional(),

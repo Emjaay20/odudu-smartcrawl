@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { noBidiControls } from '#/bidi';
 
 export const DEFAULT_LIMIT = 50;
 export const MAX_LIMIT = 200;
@@ -109,4 +110,4 @@ export const etagSchema = z.string();
 /** The longest description a group, role or client holds, by its CHECK. */
 export const DESCRIPTION_MAX = 1000;
 
-export const descriptionSchema = z.string().min(1).max(DESCRIPTION_MAX);
+export const descriptionSchema = noBidiControls(z.string().min(1).max(DESCRIPTION_MAX));

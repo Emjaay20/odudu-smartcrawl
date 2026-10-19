@@ -118,6 +118,10 @@ export type UsernamePolicy = z.infer<typeof usernamePolicySchema>;
 // Uniqueness is the `users_username_unique` constraint, which compares
 // exactly; the console shows the rule in these words before it asks.
 export const usernameSchema = noBidiControls(z.string().min(1));
+
+// What a rename is read as before the rule is applied: it is checked against
+// the stored username, so one a row already holds is not refused.
+export const usernameShapeSchema = z.string().min(1);
 export const USERNAME_RULE =
   'a username must be at least one character, hold no bidirectional control character, and no ' +
   'other subject in the tenant may hold it: case counts, so Ada and ada are different usernames';
@@ -136,7 +140,7 @@ export type CreateSubjectRequest = z.infer<typeof createSubjectRequestSchema>;
 // `username` is accepted only where the tenant's `username_editable` is on,
 // and then only under `If-Match` (docs/admin-paths.md).
 export const amendSubjectRequestSchema = z.object({
-  username: usernameSchema.optional(),
+  username: usernameShapeSchema.optional(),
   email: z.string().min(1).nullable().optional(),
   enabled: z.boolean().optional(),
 });

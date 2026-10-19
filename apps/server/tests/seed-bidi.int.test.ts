@@ -4,6 +4,7 @@ import { newId } from '@odudu/kernel';
 import { tenantLookupRepository } from '@odudu/protocol-oidc';
 import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/testkit';
 import { and, eq } from 'drizzle-orm';
+import { spawnSync } from 'node:child_process';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { seed } from '#/cli/seed';
 
@@ -117,5 +118,32 @@ describe('the seed CLI refuses a bidirectional control', () => {
       .from(users)
       .where(and(eq(users.tenantId, tenant.tenantId), eq(users.username, 'مستخدم')));
     expect(rows[0]?.givenName).toBe('שלום');
+  });
+
+  it('stops the command with one line on stderr and exit status 1, not a stack', async () => {
+    const tenantName = `bidi-${newId()}`;
+    await seed(['tenant', '--name', tenantName]);
+    const run = spawnSync(
+      process.execPath,
+      [
+        'src/main.ts',
+        'seed',
+        'user',
+        '--tenant',
+        tenantName,
+        '--username',
+        `ada${RLO}`,
+        '--password',
+        PASSWORD,
+      ],
+      { cwd: new URL('..', import.meta.url).pathname, env: process.env, encoding: 'utf8' },
+    );
+    expect(run.status).toBe(1);
+    const lines = run.stderr
+      .split('\n')
+      .filter((line) => !/ExperimentalWarning|trace-warnings/u.test(line) && line !== '');
+    expect(lines).toEqual([
+      'error: username must not contain bidirectional control characters (U+202A to U+202E, U+2066 to U+2069)',
+    ]);
   });
 });

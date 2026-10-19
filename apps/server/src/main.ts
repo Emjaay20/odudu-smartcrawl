@@ -101,8 +101,17 @@ if (process.argv[2] === 'seed') {
   const { seed } = await import('#/cli/seed');
   const { resolveSeedInvocation } = await import('#/cli/seed-invocation');
   const invocation = resolveSeedInvocation(process.argv.slice(3));
-  const result =
-    invocation.kind === 'command' ? await seed(invocation.argv) : await seed(invocation.options);
+  const { BidiControlError } = await import('@odudu/kernel');
+  let result;
+  try {
+    result =
+      invocation.kind === 'command' ? await seed(invocation.argv) : await seed(invocation.options);
+  } catch (err) {
+    // A refused value is the operator's to correct, so it is one line, not a stack.
+    if (!(err instanceof BidiControlError)) throw err;
+    console.error(`error: ${err.message}`);
+    process.exit(1);
+  }
   // An initial access token is a bearer credential a shell is meant to
   // capture (`TOKEN=$(odudu seed registration-token …)`), so it leaves
   // alone on stdout rather than wrapped in the JSON report every other

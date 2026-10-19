@@ -122,9 +122,9 @@ function clientList() {
 }
 
 export const exportedClientSchema = z.strictObject({
-  client_id: z.string(),
+  client_id: noBidiControls(z.string()),
   name: noBidiControls(z.string()),
-  description: z.string().nullable(),
+  description: noBidiControls(z.string()).nullable(),
   type: clientTypeSchema,
   enabled: z.boolean(),
   full_scope_allowed: z.boolean(),
@@ -169,7 +169,7 @@ export type ExportedClient = z.infer<typeof exportedClientSchema>;
 export const exportedRoleSchema = z.strictObject({
   name: noBidiControls(z.string()),
   client: z.string().nullable(),
-  description: z.string().nullable(),
+  description: noBidiControls(z.string()).nullable(),
   default_for_new_subjects: z.boolean(),
   builtin: z.boolean(),
   composites: assignmentSet(roleReferenceSchema),
@@ -178,7 +178,7 @@ export type ExportedRole = z.infer<typeof exportedRoleSchema>;
 
 export const exportedGroupSchema = z.strictObject({
   path: noBidiControls(z.string()),
-  description: z.string().nullable(),
+  description: noBidiControls(z.string()).nullable(),
   default_for_new_subjects: z.boolean(),
   roles: assignmentSet(roleReferenceSchema),
 });
@@ -186,11 +186,11 @@ export type ExportedGroup = z.infer<typeof exportedGroupSchema>;
 
 export const exportedScopeSchema = z.strictObject({
   name: z.string(),
-  description: z.string().nullable(),
+  description: noBidiControls(z.string()).nullable(),
   include_in_id_token: z.boolean(),
   include_in_access_token: z.boolean(),
   default_client_assignment: clientScopeAssignmentSchema.nullable(),
-  consent_text: z.string().nullable(),
+  consent_text: noBidiControls(z.string()).nullable(),
   display_order: z.number().int(),
   builtin: z.boolean(),
   roles: assignmentSet(roleReferenceSchema),

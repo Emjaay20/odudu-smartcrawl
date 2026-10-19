@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 const READS: readonly { file: string; targets: readonly string[] }[] = [
   { file: 'apps/server/src/cli/registry.test.ts', targets: ['apps/server/src/**'] },
   { file: 'apps/server/src/cli/unknown-command.test.ts', targets: ['apps/server/src/main.ts'] },
+  { file: 'apps/server/tests/seed-bidi.int.test.ts', targets: ['apps/server/src/**'] },
   { file: 'packages/db/tests/schema-drift.int.test.ts', targets: ['packages/*/src/schema/**'] },
   {
     file: 'packages/protocol-oidc/src/view/html-response.test.ts',

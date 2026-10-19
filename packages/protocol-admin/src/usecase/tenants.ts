@@ -1,5 +1,5 @@
 import { liveSessionCondition, provisionTenant, sessions } from '@odudu/authn-flows';
-import { BIDI_REFUSED_MESSAGE, containsBidiControl } from '@odudu/contracts';
+import { BIDI_REFUSED_MESSAGE, refusesBidi } from '@odudu/contracts';
 import { type ListTenantsQuery, type Tenant } from '@odudu/contracts/admin';
 import { generateSigningKey, signingKeyRepository } from '@odudu/crypto';
 import {
@@ -453,7 +453,7 @@ export async function amendTenant(
         description: 'display_name must be a string or null',
       };
     }
-    if (value !== null && containsBidiControl(value)) {
+    if (refusesBidi(value, current.displayName)) {
       return { kind: 'invalid_value', field: 'display_name', description: BIDI_REFUSED_MESSAGE };
     }
     patch.displayName = normalizeDisplayName(value);

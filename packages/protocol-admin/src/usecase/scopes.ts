@@ -1,3 +1,4 @@
+import { BIDI_REFUSED_MESSAGE, refusesBidi } from '@odudu/contracts';
 import {
   type AssignScopeToClientResponse,
   type ClientScope,
@@ -391,6 +392,9 @@ export async function amendScope(
         description: 'description must be a string or null',
       };
     }
+    if (refusesBidi(value, locked.description)) {
+      return { kind: 'invalid_value', field: 'description', description: BIDI_REFUSED_MESSAGE };
+    }
     patch.description = { value };
   }
   if ('include_in_id_token' in input.values) {
@@ -429,7 +433,7 @@ export async function amendScope(
   }
 
   if ('consent_text' in input.values) {
-    const checked = checkConsentText(input.values.consent_text);
+    const checked = checkConsentText(input.values.consent_text, locked.consentText);
     if (checked.kind === 'invalid') {
       return { kind: 'invalid_value', field: 'consent_text', description: checked.message };
     }

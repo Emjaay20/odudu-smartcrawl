@@ -90,7 +90,9 @@ export function clientRepository(tx: TenantScopedDatabase) {
     // client resolution reads them back alongside their OIDC config, so an
     // insert path belongs here rather than only in a migration.
     async create(input: NewClient): Promise<ClientRecord> {
+      refuseBidiControls('client_id', input.clientId);
       refuseBidiControls('name', input.name);
+      refuseBidiControls('description', input.description);
       let rows: (typeof clients.$inferSelect)[];
       try {
         rows = await tx
@@ -135,7 +137,11 @@ export function clientRepository(tx: TenantScopedDatabase) {
         >
       >,
     ): Promise<ClientRecord> {
-      refuseBidiControls('name', patch.name);
+      if (patch.name !== undefined || patch.description !== undefined) {
+        const held = await tx.select().from(clients).where(eq(clients.id, id));
+        refuseBidiControls('name', patch.name, held[0]?.name);
+        refuseBidiControls('description', patch.description, held[0]?.description);
+      }
       const rows = await tx.update(clients).set(patch).where(eq(clients.id, id)).returning();
       const row = rows[0];
       if (row === undefined) {

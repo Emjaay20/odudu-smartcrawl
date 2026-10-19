@@ -134,4 +134,20 @@ describe('a bidirectional control in an identity or name field', () => {
     );
     expect(hebrew.username).toBe('עברית');
   });
+
+  it('lets a rename leave a stored username as it is, and refuses a changed one', async () => {
+    const tenantId = await tenant();
+    const subjectId = await withTenant(app.db, tenantId, (tx) => createUser(tx, tenantId, 'ada'));
+    const legacy = `old${RLO}name`;
+    await owner.db.update(users).set({ username: legacy }).where(eq(users.subjectId, subjectId));
+    const same = await withTenant(app.db, tenantId, (tx) =>
+      userRepository(tx).updateUsername(subjectId, legacy),
+    );
+    expect(same.username).toBe(legacy);
+    await expect(
+      withTenant(app.db, tenantId, (tx) =>
+        userRepository(tx).updateUsername(subjectId, `${legacy}!`),
+      ),
+    ).rejects.toMatchObject({ code: 'bidi_control_refused', field: 'username' });
+  });
 });

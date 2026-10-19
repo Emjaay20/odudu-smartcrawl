@@ -1,6 +1,7 @@
 import { BIDI_REFUSED, BIDI_REFUSED_MESSAGE } from '@odudu/contracts';
 import { tenantDocumentSchema } from '@odudu/contracts/admin';
 import { newId } from '@odudu/kernel';
+import { sql } from 'drizzle-orm';
 import { type LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startAdminFixture, type AdminFixture } from '#/testing/admin-fixture';
@@ -109,7 +110,8 @@ describe('the admin API refuses a bidirectional control in a typed identity or n
 
   it('when a subject is renamed, leaving the name as it was', async () => {
     const t = await fixture.createTenant(`bidi-${newId()}`);
-    const token = await fixture.adminToken(t.name, ['manage-users', 'view-users']);
+    const token = await fixture.adminToken(t.name, ['manage-users', 'view-users', 'manage-tenant']);
+    await send('PATCH', `/admin/tenants/${t.name}/settings`, token, { username_editable: true });
     const id = await subject(t.name, token);
     const url = `/admin/tenants/${t.name}/subjects/${id}`;
     const before = await etagOf(url, token);
@@ -278,5 +280,163 @@ describe('the admin API refuses a bidirectional control in a typed identity or n
       'document.subjects[0].username',
     ]);
     expect(refused.every((error) => error.code === BIDI_REFUSED)).toBe(true);
+  });
+});
+
+describe('display text a person later reads is held to the same rule', () => {
+  it('on a role, group and scope being created, and a client being created', async () => {
+    const t = await fixture.createTenant(`bidi-${newId()}`);
+    const admin = await fixture.adminToken(t.name, ['manage-tenant', 'manage-clients']);
+    const base = `/admin/tenants/${t.name}`;
+    expectRefused(
+      await send('POST', `${base}/roles`, admin, { name: 'r', description: `d${RLO}` }),
+      'description',
+    );
+    expectRefused(
+      await send('POST', `${base}/groups`, admin, { name: 'g', description: `d${RLO}` }),
+      'description',
+    );
+    expectRefused(
+      await send('POST', `${base}/scopes`, admin, { name: 'orders', description: `d${RLO}` }),
+      'description',
+    );
+    expectRefused(
+      await send('POST', `${base}/scopes`, admin, { name: 'orders', consent_text: `c${RLO}` }),
+      'consent_text',
+    );
+    const client = {
+      redirect_uris: ['https://app.example/callback'],
+      token_endpoint_auth_method: 'none',
+    };
+    expectRefused(
+      await send('POST', `${base}/clients`, admin, { client_id: `app${RLO}`, ...client }),
+      'client_id',
+    );
+    expectRefused(
+      await send('POST', `${base}/clients`, admin, {
+        client_id: `app-${newId()}`,
+        description: `d${RLO}`,
+        ...client,
+      }),
+      'description',
+    );
+  });
+
+  it('says which field and why, without the schema regular expression, in `detail`', async () => {
+    const t = await fixture.createTenant(`bidi-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-users']);
+    const res = await send('POST', `/admin/tenants/${t.name}/subjects`, token, {
+      username: `ada${RLO}`,
+    });
+    expect(res.json<{ detail: string }>().detail).toBe(`username: ${BIDI_REFUSED_MESSAGE}`);
+  });
+});
+
+describe('a value stored before the rule never blocks an unrelated edit', () => {
+  const legacy = `old${RLO}name`;
+
+  it('on a client: its name and description stand, anything else changes, a new control is refused', async () => {
+    const t = await fixture.createTenant(`bidi-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-clients']);
+    const created = await send('POST', `/admin/tenants/${t.name}/clients`, token, {
+      client_id: `app-${newId()}`,
+      name: 'Bank',
+      description: 'D',
+      redirect_uris: ['https://app.example/callback'],
+      token_endpoint_auth_method: 'none',
+    });
+    const id = created.json<{ id: string }>().id;
+    await fixture.owner.db.execute(
+      sql`update clients set name = ${legacy}, description = ${legacy} where id = ${id}`,
+    );
+    const url = `/admin/tenants/${t.name}/clients/${id}`;
+    const resent = await send(
+      'PATCH',
+      url,
+      token,
+      { name: legacy, description: legacy, enabled: false },
+      await etagOf(url, token),
+    );
+    expect(resent.statusCode, resent.payload).toBe(200);
+    expectRefused(
+      await send('PATCH', url, token, { name: `${legacy}!` }, await etagOf(url, token)),
+      'name',
+    );
+  });
+
+  it('on a tenant display name and a profile name', async () => {
+    const t = await fixture.createTenant(`bidi-${newId()}`);
+    const own = await fixture.adminToken(t.name, ['manage-tenant', 'manage-users', 'view-users']);
+    await fixture.owner.db.execute(
+      sql`update tenants set display_name = ${legacy} where name = ${t.name}`,
+    );
+    const url = `/admin/tenants/${t.name}`;
+    const same = await send(
+      'PATCH',
+      url,
+      own,
+      { display_name: legacy, enabled: true },
+      await etagOf(url, own),
+    );
+    expect(same.statusCode, same.payload).toBe(200);
+    const settings = await send('PATCH', `${url}/settings`, own, { display_name: legacy });
+    expect(settings.statusCode, settings.payload).toBe(200);
+    expectRefused(
+      await send('PATCH', url, own, { display_name: `${legacy}!` }, await etagOf(url, own)),
+      'display_name',
+    );
+
+    const id = await subject(t.name, own);
+    await fixture.owner.db.execute(
+      sql`update users set given_name = ${legacy} where subject_id = ${id}`,
+    );
+    const profile = `${url}/subjects/${id}/profile`;
+    const ok = await send('PATCH', profile, own, { given_name: legacy, nickname: 'ada' });
+    expect(ok.statusCode, ok.payload).toBe(200);
+    expectRefused(await send('PATCH', profile, own, { given_name: `${legacy}!` }), 'given_name');
+  });
+
+  it('on a username re-sent unchanged with another field, and on a group description', async () => {
+    const t = await fixture.createTenant(`bidi-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-users', 'manage-tenant']);
+    await send('PATCH', `/admin/tenants/${t.name}/settings`, token, { username_editable: true });
+    const id = await subject(t.name, token);
+    await fixture.owner.db.execute(
+      sql`update users set username = ${legacy} where subject_id = ${id}`,
+    );
+    const url = `/admin/tenants/${t.name}/subjects/${id}`;
+    const ok = await send(
+      'PATCH',
+      url,
+      token,
+      { username: legacy, enabled: false },
+      await etagOf(url, token),
+    );
+    expect(ok.statusCode, ok.payload).toBe(200);
+
+    const group = await send('POST', `/admin/tenants/${t.name}/groups`, token, { name: 'staff' });
+    const groupId = group.json<{ id: string }>().id;
+    await fixture.owner.db.execute(
+      sql`update groups set description = ${legacy} where id = ${groupId}`,
+    );
+    const groupUrl = `/admin/tenants/${t.name}/groups/${groupId}`;
+    const same = await send(
+      'PATCH',
+      groupUrl,
+      token,
+      { description: legacy },
+      await etagOf(groupUrl, token),
+    );
+    expect(same.statusCode, same.payload).toBe(200);
+    expectRefused(
+      await send(
+        'PATCH',
+        groupUrl,
+        token,
+        { description: `${legacy}!` },
+        await etagOf(groupUrl, token),
+      ),
+      'description',
+    );
   });
 });

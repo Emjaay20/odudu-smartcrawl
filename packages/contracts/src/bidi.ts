@@ -22,6 +22,15 @@ export function containsBidiControl(value: string): boolean {
   return CONTROL.test(value);
 }
 
+/**
+ * Whether writing `next` over `current` is refused: it holds a control and is
+ * not exactly what is already stored. A value a row held before the rule
+ * existed never blocks an unrelated edit, and is never rewritten.
+ */
+export function refusesBidi(next: string | null | undefined, current?: string | null): boolean {
+  return typeof next === 'string' && next !== current && containsBidiControl(next);
+}
+
 export function stripBidiControls(value: string): string {
   return value.replace(CONTROLS_GLOBAL, '');
 }

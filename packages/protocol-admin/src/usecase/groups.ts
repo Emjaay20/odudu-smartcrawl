@@ -335,7 +335,7 @@ async function amendGroupUnguarded(
 
   let description: { value: string | null } | undefined;
   if ('description' in input.values) {
-    const checked = checkDescription(input.values.description);
+    const checked = checkDescription(input.values.description, locked.description);
     if (checked.kind === 'invalid') {
       return { kind: 'invalid_value', field: 'description', description: checked.message };
     }

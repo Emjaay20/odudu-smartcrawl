@@ -315,7 +315,11 @@ export function userRepository(tx: TenantScopedDatabase) {
     // holds, as a raw driver error the caller maps: it has already aborted
     // the transaction, so there is no outcome left to return from here.
     async updateUsername(subjectId: string, username: string): Promise<UserRecord> {
-      refuseBidiControls('username', username);
+      const held = await tx
+        .select({ username: users.username })
+        .from(users)
+        .where(eq(users.subjectId, subjectId));
+      refuseBidiControls('username', username, held[0]?.username);
       const rows = await tx
         .update(users)
         .set({ username })

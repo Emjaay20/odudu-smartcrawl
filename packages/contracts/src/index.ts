@@ -19,5 +19,6 @@ export {
   BIDI_REFUSED_MESSAGE,
   containsBidiControl,
   noBidiControls,
+  refusesBidi,
   stripBidiControls,
 } from '#/bidi';

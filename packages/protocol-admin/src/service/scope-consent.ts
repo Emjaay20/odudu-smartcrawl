@@ -1,3 +1,4 @@
+import { BIDI_REFUSED_MESSAGE, refusesBidi } from '@odudu/contracts';
 import { CONSENT_TEXT_MAX } from '@odudu/contracts/admin';
 
 export type Checked<T> = { kind: 'ok'; value: T } | { kind: 'invalid'; message: string };
@@ -5,11 +6,12 @@ export type Checked<T> = { kind: 'ok'; value: T } | { kind: 'invalid'; message: 
 const INTEGER_CEILING = 2_147_483_647;
 
 /** A scope's consent text, held to `client_scopes_consent_text_length` (0090). */
-export function checkConsentText(value: unknown): Checked<string | null> {
+export function checkConsentText(value: unknown, current?: string | null): Checked<string | null> {
   if (value === null) return { kind: 'ok', value: null };
   if (typeof value !== 'string' || value.length === 0) {
     return { kind: 'invalid', message: 'consent_text must be a non-empty string or null' };
   }
+  if (refusesBidi(value, current)) return { kind: 'invalid', message: BIDI_REFUSED_MESSAGE };
   return value.length > CONSENT_TEXT_MAX
     ? {
         kind: 'invalid',

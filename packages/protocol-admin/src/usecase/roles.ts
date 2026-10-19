@@ -374,7 +374,7 @@ export async function amendRole(
   // `patch`, never `input.values` again.
   const patch: RolePatchInput = {};
   if ('description' in input.values) {
-    const checked = checkDescription(input.values.description);
+    const checked = checkDescription(input.values.description, locked.description);
     if (checked.kind === 'invalid') {
       return { kind: 'invalid_value', field: 'description', description: checked.message };
     }

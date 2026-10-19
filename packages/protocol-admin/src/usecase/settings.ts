@@ -1,4 +1,4 @@
-import { BIDI_REFUSED_MESSAGE, containsBidiControl } from '@odudu/contracts';
+import { BIDI_REFUSED_MESSAGE, refusesBidi } from '@odudu/contracts';
 import { type TenantScopedDatabase } from '@odudu/db';
 import {
   isSystemTenantId,
@@ -148,20 +148,6 @@ export async function amendSettings(
   const coerced = coerceAll(input.values);
   if (coerced.kind !== 'ok') return coerced;
 
-  const bidi = coerced.settings.filter(
-    (setting) =>
-      setting.column === 'displayName' &&
-      typeof setting.value === 'string' &&
-      containsBidiControl(setting.value),
-  );
-  if (bidi.length > 0) {
-    return {
-      kind: 'out_of_range',
-      problems: [{ name: 'display_name', message: BIDI_REFUSED_MESSAGE }],
-      ranged: false,
-    };
-  }
-
   // The same refusal `amendTenant` gives, because this route writes the same
   // `tenants.enabled` column through a different door.
   const disabling = coerced.settings.find(
@@ -192,6 +178,23 @@ export async function amendSettings(
   );
   if (matches(input.ifMatch, current.etag) === 'mismatch') {
     return { kind: 'precondition_failed' };
+  }
+
+  const storedName = current.settings.display_name;
+  const bidi = coerced.settings.some(
+    ({ column, value }) =>
+      column === 'displayName' &&
+      refusesBidi(
+        typeof value === 'string' ? value : null,
+        typeof storedName === 'string' ? storedName : null,
+      ),
+  );
+  if (bidi) {
+    return {
+      kind: 'out_of_range',
+      problems: [{ name: 'display_name', message: BIDI_REFUSED_MESSAGE }],
+      ranged: false,
+    };
   }
 
   // The request schema admits `{}` and Drizzle refuses an empty `set`, so a

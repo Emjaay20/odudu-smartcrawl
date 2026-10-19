@@ -239,3 +239,35 @@ describe('renderRequiredActions', () => {
     expect(msg.subject).toBe('Update your Demo <Co> account');
   });
 });
+
+describe('every mail isolates and cleans a tenant name the same way', () => {
+  const PARAGRAPH = String.fromCodePoint(0x2029);
+  const RLO = String.fromCodePoint(0x202e);
+  const base = { to: 'ada@example.test', link: LINK };
+  const renderers = {
+    verification: (name: string) => renderVerifyEmail({ ...base, tenantDisplayName: name }),
+    reset: (name: string) => renderResetPassword({ ...base, tenantDisplayName: name }),
+    actions: (name: string) =>
+      renderRequiredActions({ ...base, tenantDisplayName: name, actions: ['update-password'] }),
+  };
+
+  it.each(Object.entries(renderers))('%s: cannot close its own isolate', (_kind, render) => {
+    const msg = render(`evil${PDI} ${RLO} injected`);
+    expect(msg.text.split(PDI)).toHaveLength(2);
+    expect(msg.text).not.toContain(RLO);
+    expect(msg.html).not.toContain(RLO);
+    expect(msg.subject).not.toContain(RLO);
+  });
+
+  it.each(Object.entries(renderers))('%s: puts no line break in the subject', (_kind, render) => {
+    const msg = render(`Acme\r\nBcc: evil@example.test${PARAGRAPH}more\u2028x`);
+    expect(msg.subject).not.toMatch(/[\r\n\u2028\u2029]/u);
+    expect(msg.subject).toContain('Acme Bcc: evil@example.test more x');
+    const bodyLines = msg.text.split('\n');
+    expect(bodyLines.filter((line) => line.startsWith('Bcc:'))).toEqual([]);
+  });
+
+  it.each(Object.entries(renderers))('%s: wraps the name in bdi, escaped', (_kind, render) => {
+    expect(render('<i>x</i>').html).toContain('<bdi>&lt;i&gt;x&lt;/i&gt;</bdi>');
+  });
+});

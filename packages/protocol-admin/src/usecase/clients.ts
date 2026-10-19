@@ -1,4 +1,4 @@
-import { BIDI_REFUSED_MESSAGE, containsBidiControl } from '@odudu/contracts';
+import { BIDI_REFUSED_MESSAGE, refusesBidi } from '@odudu/contracts';
 import {
   type ADMIN_CAPABILITIES,
   CLIENT_LIST_LIMIT,
@@ -893,8 +893,8 @@ function checkedStringArray(field: string, value: unknown): string[] | FieldErro
     : value;
 }
 
-function checkedDescription(value: unknown): string | null | FieldError {
-  const checked = checkDescription(value);
+function checkedDescription(value: unknown, current?: string | null): string | null | FieldError {
+  const checked = checkDescription(value, current);
   return checked.kind === 'ok'
     ? checked.value
     : { field: 'description', description: checked.message };
@@ -957,6 +957,7 @@ const TOKEN_TTL_FIELDS = [
 
 function checkedAdminFields(
   values: Readonly<Record<string, unknown>>,
+  stored?: { readonly name: string; readonly description: string | null },
 ): AdminFieldPatches | FieldError {
   const client: AdminFieldPatches['client'] = {};
   const config: AdminFieldPatches['config'] = {};
@@ -964,11 +965,13 @@ function checkedAdminFields(
   if ('name' in values) {
     const checked = checkedString('name', values.name);
     if (isFieldError(checked)) return checked;
-    if (containsBidiControl(checked)) return { field: 'name', description: BIDI_REFUSED_MESSAGE };
+    if (refusesBidi(checked, stored?.name)) {
+      return { field: 'name', description: BIDI_REFUSED_MESSAGE };
+    }
     client.name = checked;
   }
   if ('description' in values) {
-    const checked = checkedDescription(values.description);
+    const checked = checkedDescription(values.description, stored?.description);
     if (isFieldError(checked)) return checked;
     client.description = checked;
   }
@@ -1129,7 +1132,7 @@ export async function amendClient(
     throw new Error(`client ${input.clientDbId} has no client_oidc_config row`);
   }
 
-  const admin = checkedAdminFields(input.values);
+  const admin = checkedAdminFields(input.values, clientRow);
   if (isFieldError(admin)) return { kind: 'invalid_value', ...admin };
   const clientPatch = admin.client;
   const configPatch: Partial<Omit<typeof clientOidcConfig.$inferInsert, 'clientId' | 'tenantId'>> =

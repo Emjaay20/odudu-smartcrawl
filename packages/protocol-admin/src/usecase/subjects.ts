@@ -1,8 +1,9 @@
+import { BIDI_REFUSED_MESSAGE, refusesBidi } from '@odudu/contracts';
 import { requiredActionRepository, type RequiredAction } from '@odudu/authn-flows';
 import {
   heldAdminCapabilitySchema,
   SUBJECT_SEARCH_FIELDS,
-  usernameSchema,
+  usernameShapeSchema,
   type Credential,
   type GroupFields,
   type ListSubjectsQuery,
@@ -662,7 +663,7 @@ async function amendSubjectUnguarded(
   // without going through this validation first.
   const patch: SubjectPatch = {};
   if ('username' in input.values) {
-    const parsed = usernameSchema.safeParse(input.values.username);
+    const parsed = usernameShapeSchema.safeParse(input.values.username);
     if (!parsed.success) {
       return {
         kind: 'invalid_value',
@@ -676,6 +677,9 @@ async function amendSubjectUnguarded(
         field: 'username',
         description: `subject ${input.subjectId} has no user profile to carry a username`,
       };
+    }
+    if (refusesBidi(parsed.data, locked.user.username)) {
+      return { kind: 'invalid_value', field: 'username', description: BIDI_REFUSED_MESSAGE };
     }
     if (parsed.data !== locked.user.username) patch.username = { value: parsed.data };
   }

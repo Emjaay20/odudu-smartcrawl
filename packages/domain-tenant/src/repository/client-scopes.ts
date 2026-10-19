@@ -176,6 +176,11 @@ export function clientScopeRepository(tx: TenantScopedDatabase) {
     },
 
     async amend(id: string, patch: ClientScopePatch): Promise<ClientScopeRecord> {
+      if (patch.description !== undefined || patch.consentText !== undefined) {
+        const held = await tx.select().from(clientScopes).where(eq(clientScopes.id, id));
+        refuseBidiControls('description', patch.description, held[0]?.description);
+        refuseBidiControls('consent_text', patch.consentText, held[0]?.consentText);
+      }
       if (patch.defaultClientAssignment !== undefined && patch.defaultClientAssignment !== null) {
         const current = await tx
           .select({ marked: clientScopes.defaultClientAssignment, tenantId: clientScopes.tenantId })
@@ -233,6 +238,8 @@ export function clientScopeRepository(tx: TenantScopedDatabase) {
 
     async create(input: NewClientScope): Promise<ClientScopeRecord> {
       refuseBidiControls('name', input.name);
+      refuseBidiControls('description', input.description);
+      refuseBidiControls('consent_text', input.consentText);
       if (input.defaultClientAssignment !== undefined && input.defaultClientAssignment !== null) {
         await refuseWhenDefaultsAreFull(input.tenantId);
       }

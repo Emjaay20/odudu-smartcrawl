@@ -154,6 +154,7 @@ export function groupRepository(tx: TenantScopedDatabase) {
     // appended, computed here rather than trusted from the caller.
     async create(input: NewGroup): Promise<GroupRecord> {
       refuseBidiControls('name', input.name);
+      refuseBidiControls('description', input.description);
       const path =
         input.parentId === null
           ? `/${input.name}`
@@ -178,6 +179,8 @@ export function groupRepository(tx: TenantScopedDatabase) {
     },
 
     async setDescription(groupId: string, description: string | null): Promise<void> {
+      const held = await tx.select().from(groups).where(eq(groups.id, groupId));
+      refuseBidiControls('description', description, held[0]?.description);
       const rows = await tx
         .update(groups)
         .set({ description })

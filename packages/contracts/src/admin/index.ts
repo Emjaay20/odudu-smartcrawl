@@ -160,6 +160,7 @@ export {
   listSubjectsResponseSchema,
   type ListSubjectsResponse,
   usernameSchema,
+  usernameShapeSchema,
   USERNAME_RULE,
   usernamePolicySchema,
   type UsernamePolicy,

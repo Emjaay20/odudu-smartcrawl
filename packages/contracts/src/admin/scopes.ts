@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { noBidiControls } from '#/bidi';
 import { adminReachSchema } from '#/admin/roles';
 import { roleAssignmentSchema } from '#/admin/subjects';
 import {
@@ -13,7 +14,7 @@ export const clientScopeAssignmentSchema = z.enum(['default', 'optional']);
 
 /** The longest consent text a scope holds, by its CHECK. */
 export const CONSENT_TEXT_MAX = 500;
-export const consentTextSchema = z.string().min(1).max(CONSENT_TEXT_MAX);
+export const consentTextSchema = noBidiControls(z.string().min(1).max(CONSENT_TEXT_MAX));
 export const displayOrderSchema = z.number().int().min(0).max(2_147_483_647);
 
 // `default_client_assignment` is how a client created afterwards is assigned
@@ -49,7 +50,7 @@ export type ListScopesResponse = z.infer<typeof listScopesResponseSchema>;
 
 export const createScopeRequestSchema = z.object({
   name: z.string().min(1),
-  description: z.string().min(1).nullable().optional(),
+  description: noBidiControls(z.string().min(1)).nullable().optional(),
   include_in_id_token: z.boolean().optional(),
   include_in_access_token: z.boolean().optional(),
   default_client_assignment: clientScopeAssignmentSchema.nullable().optional(),

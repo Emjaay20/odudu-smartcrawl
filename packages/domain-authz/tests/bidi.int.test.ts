@@ -8,6 +8,7 @@ import {
 } from '@odudu/db';
 import { BidiControlError, newId } from '@odudu/kernel';
 import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/testkit';
+import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { groupRepository } from '#/repository/groups';
 import { roleRepository } from '#/repository/roles';
@@ -64,5 +65,45 @@ describe('a bidirectional control in a role or group name', () => {
     );
     expect(role.name).toBe('مدير');
     expect(group.path).toBe('/צוות');
+  });
+
+  it('is refused in a description, except the stored one', async () => {
+    const tenantId = await tenant();
+    await expect(
+      withTenant(app.db, tenantId, (tx) =>
+        roleRepository(tx).create({ tenantId, name: 'r', description: `d${RLO}` }),
+      ),
+    ).rejects.toMatchObject({ field: 'description' });
+    await expect(
+      withTenant(app.db, tenantId, (tx) =>
+        groupRepository(tx).create({ tenantId, name: 'g', description: `d${RLO}`, parentId: null }),
+      ),
+    ).rejects.toMatchObject({ field: 'description' });
+
+    const legacy = `old${RLO}text`;
+    const role = await withTenant(app.db, tenantId, (tx) =>
+      roleRepository(tx).create({ tenantId, name: 'r2', description: 'D' }),
+    );
+    const group = await withTenant(app.db, tenantId, (tx) =>
+      groupRepository(tx).create({ tenantId, name: 'g2', description: 'D', parentId: null }),
+    );
+    await owner.db.execute(sql`update roles set description = ${legacy} where id = ${role.id}`);
+    await owner.db.execute(sql`update groups set description = ${legacy} where id = ${group.id}`);
+    await withTenant(app.db, tenantId, (tx) =>
+      roleRepository(tx).amend(role.id, { description: legacy }),
+    );
+    await withTenant(app.db, tenantId, (tx) =>
+      groupRepository(tx).setDescription(group.id, legacy),
+    );
+    await expect(
+      withTenant(app.db, tenantId, (tx) =>
+        groupRepository(tx).setDescription(group.id, `${legacy}!`),
+      ),
+    ).rejects.toMatchObject({ field: 'description' });
+    await expect(
+      withTenant(app.db, tenantId, (tx) =>
+        roleRepository(tx).amend(role.id, { description: `${legacy}!` }),
+      ),
+    ).rejects.toMatchObject({ field: 'description' });
   });
 });
