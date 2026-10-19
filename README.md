@@ -1270,13 +1270,13 @@ the migrations, creates the `system` tenant and one administrator, and writes
 `quickstart.env` for the server to start from. It needs only the owner
 connection, `ODUDU_DATABASE_URL`, and it is safe to run again.
 
-| Input                        | Meaning                                                                                          |
-| ---------------------------- | ------------------------------------------------------------------------------------------------ |
-| `--admin-email`              | The administrator's address; it is also the username they sign in with.                          |
-| `--state-dir`                | Where `quickstart.env` goes. Default `/var/lib/odudu`, created `0700`.                           |
-| `--public-base-url`          | Where the server will be reached. Default `ODUDU_PUBLIC_BASE_URL`, then `http://localhost:3000`. |
-| `--add-admin`                | Add a second administrator. Without it a different `--admin-email` is refused.                   |
-| `ODUDU_ADMIN_PASSWORD` (env) | A password to use instead of a generated one; never an option, so not in `ps`. Empty is unset.   |
+| Input                        | Meaning                                                                                                                        |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `--admin-email`              | The administrator's address; it is also the username they sign in with.                                                        |
+| `--state-dir`                | Where `quickstart.env` goes. Default `/var/lib/odudu`, created `0700`; an existing one writable by group or others is refused. |
+| `--public-base-url`          | Where the server will be reached. Default `ODUDU_PUBLIC_BASE_URL`, then `http://localhost:3000`.                               |
+| `--add-admin`                | Add a second administrator. Without it a different `--admin-email` is refused.                                                 |
+| `ODUDU_ADMIN_PASSWORD` (env) | A password to use instead of a generated one; never an option, so not in `ps`. Empty is unset.                                 |
 
 `quickstart.env` is created `0600`, complete or not at all, and never
 overwritten: it holds the owner and service database URLs, `ODUDU_KEK`, the
@@ -1299,7 +1299,8 @@ Run against an empty `postgres:17-alpine` (project `odudu-p4g-init`, the owner
 `odudu`, nothing else run before it), from the repository root with
 `NODE_NO_WARNINGS=1 ODUDU_DATABASE_URL=postgres://odudu:…@127.0.0.1:54733/odudu`;
 the generated password is replaced by `<generated>` and the chosen one by
-`<chosen>`:
+`<chosen>`. Output is exactly as printed; `echo "exit $?"` is typed after a refusal to
+show the shell's exit status:
 
 ```
 $ odudu init --state-dir ./state --admin-email ada@example.com
@@ -1307,8 +1308,9 @@ Console: http://localhost:3000/console/
 Administrator: ada@example.com
 One-time password: <generated>
 It is shown once and must be changed at first sign-in.
-$ ls -l state; cut -d= -f1 state/quickstart.env
--rw------- 1  670 Oct 19 02:00 quickstart.env
+$ stat -f '%Sp %N' state state/quickstart.env; cut -d= -f1 state/quickstart.env
+drwx------ state
+-rw------- state/quickstart.env
 ODUDU_KEK
 ODUDU_CONSOLE_CLIENT_KEY
 ODUDU_DATABASE_URL
@@ -1318,16 +1320,18 @@ ODUDU_CONSOLE
 $ odudu init --state-dir ./state --admin-email ada@example.com
 The administrator ada@example.com already exists. Console: http://localhost:3000/console/
 If you cannot sign in, `odudu seed admin --username <name>` creates another.
-$ odudu init --state-dir ./state --admin-email grace@example.com
+$ odudu init --state-dir ./state --admin-email grace@example.com; echo "exit $?"
 the system tenant already has an administrator and grace@example.com is not it; pass --add-admin to add another
 exit 1
 $ ODUDU_ADMIN_PASSWORD=<chosen> odudu init --state-dir ./state --admin-email grace@example.com --add-admin
 Console: http://localhost:3000/console/
 Administrator: grace@example.com
-$ odudu init --public-base-url https://id.example.com --admin-email ada@example.com
+$ odudu init --state-dir ./state --public-base-url https://id.example.com --admin-email ada@example.com; echo "exit $?"
 ODUDU_PUBLIC_BASE_URL is "https://id.example.com", which is not a loopback address: odudu init is for a machine you are sitting at and serves over plain http on localhost. To run on a public address, configure the server yourself: see the README's Deploying section
-$ mv state/quickstart.env state/old.env; odudu init --state-dir ./state --admin-email ada@example.com
+exit 1
+$ mv state/quickstart.env state/old.env; odudu init --state-dir ./state --admin-email ada@example.com; echo "exit $?"
 the odudu_svc role exists but state/quickstart.env does not, so its password is unknown; restore the file, or drop the role if this database is disposable
+exit 1
 ```
 
 **Bootstrap the first administrator.** `odudu seed admin` creates the

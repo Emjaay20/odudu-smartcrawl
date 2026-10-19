@@ -1,4 +1,4 @@
-import { mkdtemp, readdir, readFile, rm, stat, unlink } from 'node:fs/promises';
+import { chmod, mkdtemp, readdir, readFile, rm, stat, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createDatabase, type DatabaseHandle } from '@odudu/db';
@@ -7,9 +7,9 @@ import { loadConfig } from '@odudu/kernel';
 import { startTestDatabase, type TestDatabase } from '@odudu/testkit';
 import { sql } from 'drizzle-orm';
 import { type FastifyInstance, type LightMyRequestResponse } from 'fastify';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildApp } from '#/app';
-import { init, type InitInput, type InitIo } from '#/cli/init';
+import { init, initCommand, type InitInput, type InitIo } from '#/cli/init';
 import { createLogger } from '#/logger';
 
 const ENV_KEYS = [
@@ -19,6 +19,7 @@ const ENV_KEYS = [
   'ODUDU_CONSOLE',
   'ODUDU_CONSOLE_CLIENT_KEY',
   'ODUDU_PUBLIC_BASE_URL',
+  'ODUDU_ADMIN_PASSWORD',
 ];
 const REDIRECT_URI = 'http://127.0.0.1:8080/callback';
 const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
@@ -300,5 +301,72 @@ describe('odudu init', () => {
     await expect(init(inputWith(), capture().io)).rejects.toMatchObject({
       code: 'init_roles_without_secrets',
     });
+  }, 120_000);
+
+  it('refuses a state directory others can write to, and accepts one they can only read', async () => {
+    await chmod(stateDir, 0o755);
+    await init(inputWith(), capture().io);
+    await unlink(join(stateDir, 'quickstart.env'));
+    await chmod(stateDir, 0o777);
+
+    await expect(init(inputWith(), capture().io)).rejects.toThrow(/writable/u);
+  }, 120_000);
+
+  it('gives up waiting for another init after the lock wait, naming it', async () => {
+    const holder = createDatabase(database.adminUrl, { max: 1 });
+    await holder.sql`select pg_advisory_lock(hashtext('odudu_init'), 0)`;
+    try {
+      const { io } = capture();
+      await expect(init(inputWith(), { ...io, lockWaitMs: 400 })).rejects.toThrow(
+        /another odudu init/u,
+      );
+      await expect(stat(join(stateDir, 'quickstart.env'))).rejects.toThrow();
+    } finally {
+      await holder.close();
+    }
+  }, 120_000);
+
+  it.skipIf(process.getuid?.() === 0)(
+    'leaves nothing behind when the secrets cannot be written',
+    async () => {
+      await chmod(stateDir, 0o500);
+
+      await expect(init(inputWith(), capture().io)).rejects.toThrow(/EACCES|permission/iu);
+
+      await chmod(stateDir, 0o700);
+      expect(await readdir(stateDir)).toEqual([]);
+    },
+    120_000,
+  );
+});
+
+describe('odudu init as a command', () => {
+  it('reads --add-admin and treats an empty ODUDU_ADMIN_PASSWORD as unset', async () => {
+    const printed: string[] = [];
+    const log = vi.spyOn(console, 'log').mockImplementation((line: unknown) => {
+      printed.push(String(line));
+    });
+    process.env.ODUDU_DATABASE_URL = database.adminUrl;
+    process.env.ODUDU_ADMIN_PASSWORD = '';
+    try {
+      await initCommand(['--state-dir', stateDir, '--admin-email', EMAIL]);
+      const generated = /One-time password: (\S+)/u.exec(printed.join('\n'))?.[1] ?? '';
+      expect(await signIn(EMAIL, generated)).toBe('change-password');
+
+      await expect(
+        initCommand(['--state-dir', stateDir, '--admin-email', 'grace@example.com']),
+      ).rejects.toThrow(/--add-admin/u);
+      process.env.ODUDU_ADMIN_PASSWORD = 'Chosen-Passw0rd!42';
+      await initCommand([
+        '--state-dir',
+        stateDir,
+        '--admin-email',
+        'grace@example.com',
+        '--add-admin',
+      ]);
+      expect(await signIn('grace@example.com', 'Chosen-Passw0rd!42')).toBe('signed-in');
+    } finally {
+      log.mockRestore();
+    }
   }, 120_000);
 });

@@ -1,5 +1,5 @@
 import { createHash, createHmac, pbkdf2Sync, randomBytes } from 'node:crypto';
-import { link, mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
+import { link, mkdir, readFile, stat, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { generateClientKey } from '@odudu/crypto';
@@ -9,7 +9,12 @@ import { isEmailAddress, userRepository } from '@odudu/domain-identity';
 import { OduduError } from '@odudu/kernel';
 import { sql } from 'drizzle-orm';
 import { flag, text } from '#/cli/command-types';
-import { assertLoopbackBase, planInit, type InitInput } from '#/cli/init-plan';
+import {
+  assertLoopbackBase,
+  DEFAULT_PUBLIC_BASE_URL,
+  planInit,
+  type InitInput,
+} from '#/cli/init-plan';
 import { seedAdmin } from '#/cli/seed';
 
 export type { InitInput } from '#/cli/init-plan';
@@ -19,6 +24,8 @@ export interface InitIo {
   readonly databaseUrl: string;
   readonly out: (line: string) => void;
   readonly promptPassword?: () => Promise<string>;
+  /** How long to wait for another init on the same database. Default 60 seconds. */
+  readonly lockWaitMs?: number;
 }
 
 export interface InitReport {
@@ -31,6 +38,35 @@ export interface InitReport {
 type Handle = ReturnType<typeof createDatabase>;
 
 const SECRETS_FILE = 'quickstart.env';
+export const SECRETS_FILE_MODE = 0o600;
+export const STATE_DIR_MODE = 0o700;
+export const DEFAULT_STATE_DIR = '/var/lib/odudu';
+const LOCK_WAIT_MS = 60_000;
+const LOCK_POLL_MS = 200;
+
+export function rolesWithoutSecretsMessage(path: string): string {
+  return (
+    `the ${SERVICE_ROLE} role exists but ${path} does not, so its password is unknown; ` +
+    'restore the file, or drop the role if this database is disposable'
+  );
+}
+
+export function secondAdministratorMessage(email: string): string {
+  return (
+    `the system tenant already has an administrator and ${email} is not it; ` +
+    'pass --add-admin to add another'
+  );
+}
+
+export function existingAdministratorMessage(email: string, consoleUrl: string): string {
+  return (
+    `The administrator ${email} already exists. Console: ${consoleUrl}\n` +
+    'If you cannot sign in, `odudu seed admin --username <name>` creates another.'
+  );
+}
+
+const LOCK_HELD_MESSAGE =
+  'another odudu init is running against this database; wait for it to finish and run this again';
 const APP_ROLE = 'odudu_app';
 const SERVICE_ROLE = 'odudu_svc';
 const REQUIRED_KEYS = [
@@ -176,11 +212,39 @@ async function administratorState(appUrl: string, email: string): Promise<Admini
 // existing file is never replaced.
 async function publishSecrets(path: string, content: string): Promise<void> {
   const staging = `${path}.${randomBytes(6).toString('hex')}.tmp`;
-  await writeFile(staging, content, { mode: 0o600, flag: 'wx' });
   try {
+    await writeFile(staging, content, { mode: SECRETS_FILE_MODE, flag: 'wx' });
     await link(staging, path);
+  } catch (error) {
+    if (sqlState(error) === 'EEXIST') {
+      throw new OduduError('init_invalid_options', `${path} appeared while init was running`);
+    }
+    throw error;
   } finally {
-    await unlink(staging);
+    await unlink(staging).catch(() => undefined);
+  }
+}
+
+// Anyone who can write here can swap the file the server starts from.
+async function assertStateDirNotWritableByOthers(dir: string): Promise<void> {
+  const mode = (await stat(dir)).mode;
+  if ((mode & 0o022) !== 0) {
+    throw new OduduError(
+      'init_invalid_options',
+      `${dir} is writable by group or others; chmod it to ${STATE_DIR_MODE.toString(8)} or pick another --state-dir`,
+    );
+  }
+}
+
+async function takeLock(owner: Handle, waitMs: number): Promise<void> {
+  const deadline = Date.now() + waitMs;
+  for (;;) {
+    const rows = await owner.sql<
+      { locked: boolean }[]
+    >`select pg_try_advisory_lock(hashtext('odudu_init'), 0) as locked`;
+    if (rows[0]?.locked === true) return;
+    if (Date.now() >= deadline) throw new OduduError('init_invalid_options', LOCK_HELD_MESSAGE);
+    await new Promise((resolve) => setTimeout(resolve, LOCK_POLL_MS));
   }
 }
 
@@ -196,8 +260,6 @@ async function chosenPassword(
   return io.promptPassword();
 }
 
-const LOCK_KEY = sql`select pg_advisory_lock(hashtext('odudu_init'), 0)`;
-
 // Idempotent: every step looks before it writes. Runs are serialised by an
 // advisory lock held on the owner connection until it closes, so two
 // replicas starting together cannot both create the roles, the secrets file
@@ -211,7 +273,7 @@ export async function init(input: InitInput, io: InitIo): Promise<InitReport> {
 
   const owner = createDatabase(io.databaseUrl, { max: 1 });
   try {
-    await owner.db.execute(LOCK_KEY);
+    await takeLock(owner, io.lockWaitMs ?? LOCK_WAIT_MS);
     return await initLocked(input, io, owner, email);
   } finally {
     await owner.close();
@@ -228,19 +290,17 @@ async function initLocked(
   const existing = await readSecrets(path);
   let secrets: Map<string, string>;
   if (existing === null) {
+    await mkdir(input.stateDir, { recursive: true, mode: STATE_DIR_MODE });
+    await assertStateDirNotWritableByOthers(input.stateDir);
     if (await roleExists(owner, SERVICE_ROLE)) {
-      throw new OduduError(
-        'init_roles_without_secrets',
-        `the ${SERVICE_ROLE} role exists but ${path} does not, so its password is unknown; ` +
-          'restore the file, or drop the role if this database is disposable',
-      );
+      throw new OduduError('init_roles_without_secrets', rolesWithoutSecretsMessage(path));
     }
     secrets = await newSecrets(
       io.databaseUrl,
       input.publicBaseUrl,
       randomBytes(24).toString('hex'),
     );
-    await mkdir(input.stateDir, { recursive: true, mode: 0o700 });
+
     await publishSecrets(path, serialise(secrets));
   } else {
     if (!sameDatabase(existing.get('ODUDU_DATABASE_URL') ?? '', io.databaseUrl)) {
@@ -269,18 +329,11 @@ async function initLocked(
     adminExists: state.emailExists,
   });
   if (plan.admin === 'exists') {
-    io.out(
-      `The administrator ${email} already exists. Console: ${consoleUrl}\n` +
-        'If you cannot sign in, `odudu seed admin --username <name>` creates another.',
-    );
+    io.out(existingAdministratorMessage(email, consoleUrl));
     return { consoleUrl, adminEmail: email, created: false };
   }
   if (state.anyUser && input.additionalAdmin !== true) {
-    throw new OduduError(
-      'init_invalid_options',
-      `the system tenant already has an administrator and ${email} is not it; ` +
-        'pass --add-admin to add another',
-    );
+    throw new OduduError('init_invalid_options', secondAdministratorMessage(email));
   }
 
   if (plan.passwordSource === 'generated') {
@@ -301,14 +354,16 @@ async function initLocked(
 
 export const INIT_OPTIONS = {
   'admin-email': text('Email address of the first administrator, who signs in with it.'),
-  'state-dir': text('Directory that holds quickstart.env. Defaults to /var/lib/odudu.'),
+  'state-dir': text('Directory that holds quickstart.env. Defaults to ' + DEFAULT_STATE_DIR + '.'),
   'add-admin': flag(
     'Add an administrator when the system tenant already has one; without it a ' +
       'different --admin-email is refused.',
   ),
   'public-base-url': text(
     'Address the server is reached at, loopback only. Defaults to ODUDU_PUBLIC_BASE_URL, ' +
-      'then http://localhost:3000.',
+      'then ' +
+      DEFAULT_PUBLIC_BASE_URL +
+      '.',
   ),
 } as const;
 
@@ -334,8 +389,8 @@ export async function initCommand(argv: readonly string[]): Promise<void> {
       additionalAdmin: values['add-admin'] === true,
       interactive: false,
       publicBaseUrl:
-        values['public-base-url'] ?? process.env.ODUDU_PUBLIC_BASE_URL ?? 'http://localhost:3000',
-      stateDir: values['state-dir'] ?? '/var/lib/odudu',
+        values['public-base-url'] ?? process.env.ODUDU_PUBLIC_BASE_URL ?? DEFAULT_PUBLIC_BASE_URL,
+      stateDir: values['state-dir'] ?? DEFAULT_STATE_DIR,
     },
     {
       databaseUrl,
