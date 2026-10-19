@@ -1,5 +1,8 @@
+import Head from '@docusaurus/Head';
 import Link from '@docusaurus/Link';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
+import { landingJsonLd } from '@site/seo';
 import SectionGrid from '@site/src/components/SectionGrid';
 import type { ReactNode } from 'react';
 import styles from '@site/src/pages/index.module.css';
@@ -7,11 +10,17 @@ import styles from '@site/src/pages/index.module.css';
 // A plain home until the landing page replaces it: the name, the one
 // sentence, the first step and every section.
 export default function Home(): ReactNode {
+  const { siteConfig } = useDocusaurusContext();
   return (
     <Layout
       title="Odudu documentation"
       description="Odudu is an OpenID Connect identity provider you run yourself. Start with the quick start, then read the guides, concepts, reference and operating notes."
     >
+      <Head>
+        <script type="application/ld+json">
+          {landingJsonLd(`${siteConfig.url}${siteConfig.baseUrl}`)}
+        </script>
+      </Head>
       <header className={styles.hero} data-page="landing">
         <div className="container">
           <h1 className={styles.title}>Odudu</h1>

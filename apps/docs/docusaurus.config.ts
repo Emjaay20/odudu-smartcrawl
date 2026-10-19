@@ -1,9 +1,15 @@
 import type { Config } from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 import { themes } from 'prism-react-renderer';
+import path from 'node:path';
+import { requireDescriptions } from './plugins/descriptions';
 import imageStrip from './plugins/image-strip';
+import robots from './plugins/robots';
 import { NAVBAR_ROUTES, REPOSITORY_URL, SECTIONS } from './nav';
+import { siteHeadTags } from './seo';
 import { PAGES_BASE, SITE_ORIGIN } from './site.config';
+
+requireDescriptions(path.resolve('content/en'));
 
 const image = process.env.DOCS_TARGET === 'image';
 
@@ -16,6 +22,8 @@ const preset: Preset.Options = {
 };
 
 const themeConfig: Preset.ThemeConfig = {
+  // The image names no public address, so it has no social image to link.
+  ...(image ? {} : { image: 'brand/social.png' }),
   navbar: {
     title: 'Odudu',
     items: [
@@ -56,7 +64,12 @@ const config: Config = {
   future: { v4: true },
   markdown: { format: 'detect', hooks: { onBrokenMarkdownLinks: 'throw' } },
   i18n: { defaultLocale: 'en', locales: ['en'] },
-  headTags: image ? [{ tagName: 'meta', attributes: { name: 'robots', content: 'noindex' } }] : [],
+  headTags: [
+    ...siteHeadTags(),
+    ...(image
+      ? [{ tagName: 'meta' as const, attributes: { name: 'robots', content: 'noindex' } }]
+      : []),
+  ],
   themes: [
     [
       '@easyops-cn/docusaurus-search-local',
@@ -72,7 +85,7 @@ const config: Config = {
       },
     ],
   ],
-  plugins: image ? [imageStrip] : [],
+  plugins: image ? [imageStrip, robots] : [robots],
   presets: [['classic', preset]],
   themeConfig,
 };
