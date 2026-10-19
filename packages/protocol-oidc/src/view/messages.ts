@@ -19,6 +19,18 @@ export const en = {
   'consent.allow': 'Allow',
   'consent.deny': 'Deny',
 
+  'logout.confirm.title': 'Sign out?',
+  'logout.confirm.body': 'Signing out ends this session for every application that uses it.',
+  'logout.confirm.submit': 'Sign out',
+  'logout.noSession.title': 'Already signed out',
+  'logout.noSession.body': 'There is no active session to end.',
+  'logout.done.title': 'Signed out',
+  'logout.done.body': 'You have been signed out.',
+  'logout.redirectRefused.body':
+    'You have been signed out, but the address given to return to afterward is not one this client has registered, so it has not been used.',
+  'logout.unauthenticated.title': "Can't sign out",
+  'logout.unauthenticated.body': 'This sign-out attempt is no longer valid. Go back and try again.',
+
   'selectAccount.title': 'Choose an account',
   'selectAccount.useOther': 'Use another account',
 };
