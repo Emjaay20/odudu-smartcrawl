@@ -20,12 +20,22 @@ import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/test
 import formbody from '@fastify/formbody';
 import { eq } from 'drizzle-orm';
 import Fastify, { type FastifyInstance } from 'fastify';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { tenantSettingsRepository } from '#/repository/tenant-settings';
 import { actionTokens } from '#/schema/action-tokens';
 import { enqueueActionsLink } from '#/usecase/execute-actions';
 import { enqueueResetLink } from '#/usecase/reset-password';
 import { registerActionTokenRoute } from '#/view/routes/action-token';
+
+vi.mock('#/view/messages', async (importOriginal) => {
+  const { withFrench } = await import('@odudu/testkit/i18n');
+  return withFrench(await importOriginal(), {
+    'password.rule.minLength':
+      'Le mot de passe doit comporter au moins {min, number, ::group-off} caractères.',
+    'password.rule.maxLength':
+      'Le mot de passe ne doit pas dépasser {max, number, ::group-off} caractères.',
+  });
+});
 
 let containerHandle: TestDatabase | undefined;
 let ownerHandle: DatabaseHandle | undefined;
@@ -71,6 +81,7 @@ beforeAll(async () => {
       owed.push({ subjectId, actions });
       return Promise.resolve();
     },
+    pageLocales: ['en', 'fr'],
   });
   await http.ready();
 }, 120_000);
@@ -137,7 +148,7 @@ function open(link: string) {
   return http.inject({ method: 'GET', url: `${url.pathname}${url.search}` });
 }
 
-function submit(seeded: Seeded, key: string, password?: string) {
+function submit(seeded: Seeded, key: string, password?: string, language?: string) {
   return http.inject({
     method: 'POST',
     url: `/tenants/${seeded.tenantName}/login-actions/action-token`,
@@ -145,7 +156,10 @@ function submit(seeded: Seeded, key: string, password?: string) {
       key,
       ...(password === undefined ? {} : { password }),
     }).toString(),
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    headers: {
+      'content-type': 'application/x-www-form-urlencoded',
+      ...(language === undefined ? {} : { 'accept-language': language }),
+    },
   });
 }
 
@@ -224,6 +238,37 @@ describe('a link that takes its subject through required actions', () => {
     const weak = await submit(seeded, keyOf(link), 'short');
     expect(weak.statusCode).toBe(400);
     expect((await submit(seeded, keyOf(link), NEW_PASSWORD)).statusCode).toBe(200);
+  });
+
+  it('words a weak password from the catalogue with the tenant minimum, in the page language', async () => {
+    const seeded = await seed(true);
+    const link = await mail(seeded, ['update-password']);
+
+    const english = await submit(seeded, keyOf(link), 'short');
+    expect(english.statusCode).toBe(400);
+    expect(english.body).toContain('<li>Password must be at least 8 characters long.</li>');
+    expect(english.body).not.toContain('<bdi>');
+
+    const french = await submit(seeded, keyOf(link), 'short', 'fr');
+    expect(french.headers['content-language']).toBe('fr');
+    expect(french.body).toContain('<li>Le mot de passe doit comporter au moins 8 caractères.</li>');
+    expect(french.body).not.toContain('<bdi>');
+  });
+
+  it('refuses a too-long password on an actions link and on a reset link, with the limit', async () => {
+    const seeded = await seed(true);
+    const long = 'x'.repeat(300);
+    const actions = await mail(seeded, ['update-password']);
+    const reset = await mailReset(seeded);
+    for (const link of [actions, reset]) {
+      const refused = await submit(seeded, keyOf(link), long, 'fr');
+      expect(refused.statusCode).toBe(400);
+      expect(refused.body).toContain(
+        '<li>Le mot de passe ne doit pas dépasser 256 caractères.</li>',
+      );
+      expect(refused.body).not.toContain('<bdi>');
+    }
+    expect((await submit(seeded, keyOf(actions), NEW_PASSWORD)).statusCode).toBe(200);
   });
 
   it('is stopped by the reset kill switch when it sets a password', async () => {
