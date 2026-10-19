@@ -1,3 +1,4 @@
+import { type MessageValues } from '@odudu/i18n';
 import { type FastifyReply } from 'fastify';
 import { renderAuthorizeErrorPage } from '#/view/authorize-html';
 import { sendHtml } from '#/view/html-response';
@@ -11,11 +12,12 @@ export function sendRequestError(
   deps: { pageLocales?: readonly string[] | undefined },
   status: number,
   messageId: MessageId,
+  values?: MessageValues,
 ): FastifyReply {
   const locale = requestLocale(reply, deps);
   return sendHtml(
     reply,
     status,
-    renderAuthorizeErrorPage('invalid_request', t(locale, messageId), undefined, locale),
+    renderAuthorizeErrorPage('invalid_request', t(locale, messageId, values), undefined, locale),
   );
 }

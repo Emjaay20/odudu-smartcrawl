@@ -1,7 +1,7 @@
 import { DEFAULT_PAGE_LOCALE } from '@odudu/kernel';
 import { describe, expect, it, vi } from 'vitest';
 import { renderConsentPage } from '#/view/consent-html';
-import { en } from '#/view/messages';
+import { en, t } from '#/view/messages';
 import { ARABIC, FRENCH } from '#test/fr-catalogue';
 
 vi.mock('#/view/messages', async (importOriginal) => {
@@ -179,7 +179,7 @@ describe('renderConsentPage', () => {
     expect(page.body).toContain(`>${en['consent.allow']}</button>`);
     expect(page.body).toContain(`>${en['consent.deny']}</button>`);
     expect(page.body).toContain(
-      `<bdi>offline_access</bdi> ${en['consent.scope.offlineAccess'].replace('{label} ', '')}`,
+      `<bdi>offline_access</bdi>${t(DEFAULT_PAGE_LOCALE, 'consent.scope.offlineAccess', { label: 'offline_access' }).slice('offline_access'.length)}`,
     );
   });
 

@@ -6,7 +6,7 @@ import {
   renderUpdatePasswordPage,
 } from '@odudu/authn-flows';
 import { requestContextFrom } from '@odudu/domain-audit';
-import { PASSWORD_TOO_LONG, readPasswordField } from '@odudu/kernel';
+import { MAX_PASSWORD_LENGTH, readPasswordField } from '@odudu/kernel';
 import { type FastifyInstance } from 'fastify';
 import { handleLoginSubmission, type LoginSubmissionDeps } from '#/usecase/login-submission';
 import {
@@ -14,6 +14,7 @@ import {
   type RequiredActionSubmissionDeps,
 } from '#/usecase/required-action-submission';
 import { sendSignInExpired } from '#/view/routes/expired-sign-in';
+import { t } from '#/view/messages';
 import { sendHtml } from '#/view/html-response';
 import { sendRequestError } from '#/view/routes/request-error';
 import { issuerBaseFor } from '#/view/issuer';
@@ -70,7 +71,12 @@ export function registerRequiredActionRoute(
         reply,
         400,
         continuing(
-          renderUpdatePasswordPage(tenantName, authSessionId, [PASSWORD_TOO_LONG.message], locale),
+          renderUpdatePasswordPage(
+            tenantName,
+            authSessionId,
+            [t(locale, 'error.passwordTooLong', { max: MAX_PASSWORD_LENGTH })],
+            locale,
+          ),
         ),
       );
     }

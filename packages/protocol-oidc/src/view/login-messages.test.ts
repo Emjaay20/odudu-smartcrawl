@@ -13,7 +13,6 @@ describe('refusalMessage', () => {
   it('names one message per step, whatever the cause: the same id for every rejection', () => {
     for (const form of ['password', 'otp', 'recovery-code', 'something-new']) {
       const id = refusalMessage(form, 'rejected');
-      expect(id).toBe(refusalMessage(form, 'rejected'));
       expect([SIGN_IN_FAILED, CODE_FAILED, RECOVERY_CODE_FAILED]).toContain(id);
       expect(t(DEFAULT_PAGE_LOCALE, id)).not.toMatch(
         /exist|locked|disabled|unknown|not found|too many/iu,

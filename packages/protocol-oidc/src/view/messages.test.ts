@@ -26,15 +26,15 @@ describe('tHtml', () => {
     expect(out).toBe('<bdi>&lt;i&gt;&amp;&quot;&#39;</bdi> is asking for access');
   });
 
-  it('cannot be made to open an isolated value by a value that holds the marker', () => {
+  it('keeps a plain value from naming an isolated slot', () => {
     const out = tHtml(
       DEFAULT_PAGE_LOCALE,
       'login.unsupportedStep',
-      { form: 'client' },
+      { form: '\uE000client\uE001' },
       { client: 'x' },
     );
-    expect(out).not.toContain('');
-    expect(out.match(/<bdi>/gu)?.length ?? 0).toBeLessThanOrEqual(1);
+    expect(out).toBe('Unsupported sign-in step: client');
+    expect(out).not.toContain('<bdi>');
   });
 
   it('formats plain text for a title without escaping it', () => {

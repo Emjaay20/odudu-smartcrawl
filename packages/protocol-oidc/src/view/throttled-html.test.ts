@@ -7,7 +7,8 @@ vi.mock('#/view/messages', async (importOriginal) => {
   const { withFrench } = await import('#test/fr-catalogue');
   return withFrench(await importOriginal(), {
     'throttled.title': 'Trop de tentatives',
-    'throttled.retryAfter': 'Réessayez dans {seconds, plural, one {# seconde} other {# secondes}}.',
+    'throttled.retryAfter':
+      'Réessayez dans {seconds, plural, one {{seconds, number, ::group-off} seconde} other {{seconds, number, ::group-off} secondes}}.',
   });
 });
 
@@ -28,6 +29,13 @@ describe('renderThrottledPage', () => {
 
   it('says one second in the singular', () => {
     expect(renderThrottledPage(1, DEFAULT_PAGE_LOCALE).body).toContain('Try again in 1 second.');
+  });
+
+  it('writes a long wait without a thousands separator, as it always did', () => {
+    expect(renderThrottledPage(3600, DEFAULT_PAGE_LOCALE).body).toContain(
+      'Try again in 3600 seconds.',
+    );
+    expect(renderThrottledPage(3600, FRENCH).body).toContain('Réessayez dans 3600 secondes.');
   });
 
   it('rounds a fraction up, never to a time that is still too soon', () => {

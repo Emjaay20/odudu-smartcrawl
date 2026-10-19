@@ -7,7 +7,8 @@ import { escapeHtml } from '#/view/document';
 // for it. A message is plain text: markup stays in the renderer.
 export const en = {
   'throttled.title': 'Too many attempts',
-  'throttled.retryAfter': 'Try again in {seconds, plural, one {# second} other {# seconds}}.',
+  'throttled.retryAfter':
+    'Try again in {seconds, plural, one {{seconds, number, ::group-off} second} other {{seconds, number, ::group-off} seconds}}.',
   'throttled.goBack': 'Go back to the previous page when the time is up.',
 
   'error.title': 'Sign-in error',
@@ -17,6 +18,7 @@ export const en = {
   'error.signInExpired': 'This sign-in attempt is no longer valid. Go back and start again.',
   'error.noPendingAction': 'This account has no such pending action.',
   'error.pendingActionNotReady': 'That pending action cannot be completed here yet.',
+  'error.passwordTooLong': 'Password must be at most {max, number, ::group-off} characters long.',
   'error.unknownTenant': 'Unknown tenant.',
   'error.accountNotSignedIn': 'That account is not one this browser is currently signed in to.',
 
@@ -89,6 +91,17 @@ const OPEN = '';
 const CLOSE = '';
 const MARKER = /([^]*)/gu;
 
+// A plain value is never allowed to carry the markers, so it cannot name an
+// isolated slot of its own.
+function withoutMarkers(values: MessageValues): MessageValues {
+  return Object.fromEntries(
+    Object.entries(values).map(([name, value]) => [
+      name,
+      typeof value === 'string' ? value.replace(/[\uE000\uE001]/gu, '') : value,
+    ]),
+  );
+}
+
 export interface Translators {
   readonly catalogue: Catalogue<typeof en>;
   readonly t: (locale: PageLocale, id: MessageId, values?: MessageValues) => string;
@@ -107,7 +120,7 @@ export function translators(byLocale: Messages<typeof en>): Translators {
     const markers = Object.fromEntries(
       Object.keys(isolated).map((name) => [name, `${OPEN}${name}${CLOSE}`]),
     );
-    return escapeHtml(t(locale, id, { ...values, ...markers })).replace(
+    return escapeHtml(t(locale, id, { ...withoutMarkers(values), ...markers })).replace(
       MARKER,
       (_, name: string) => (Object.hasOwn(isolated, name) ? bdi(isolated[name] ?? '') : ''),
     );

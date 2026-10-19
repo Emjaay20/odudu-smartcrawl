@@ -1,4 +1,5 @@
 import { DEFAULT_PAGE_LOCALE } from '@odudu/kernel';
+import { runInNewContext } from 'node:vm';
 import { describe, expect, it, vi } from 'vitest';
 import {
   renderAuthorizeErrorPage,
@@ -541,7 +542,6 @@ describe('the text of the sign-in pages', () => {
     expect(en1.body).toContain('data-not-offered="this server is not offering passkeys"');
     const script = en1.body.slice(en1.body.indexOf('<script'));
     expect(script).not.toMatch(/Your device|request was cancelled|not offering/u);
-    expect(script).toContain('form.dataset.failed.replace(');
     const fr = login('password', FRENCH, true).body;
     expect(fr).toContain(
       'data-failed="Votre appareil n’a pas terminé la connexion : {reason}. Réessayez."',
@@ -610,5 +610,67 @@ describe('the text of the sign-in pages', () => {
       expect(page.html).not.toContain('<img');
       expect(page.html).toContain('value="&quot;&gt;&lt;img src=x onerror=1&gt;\u202e\u2066"');
     }
+  });
+
+  describe('the passkey script, run against a stand-in page', () => {
+    interface Failure {
+      textContent: string;
+      hidden: boolean;
+    }
+
+    // Runs the rendered script, presses the button and lets the browser
+    // refuse with `thrown`; answers what the person is then told.
+    async function failureShown(locale: typeof FRENCH, thrown: Error): Promise<string> {
+      const body = login('password', locale, true).body;
+      const code = /<script nonce="[^"]*">([\s\S]*?)<\/script>/u.exec(body)?.[1] ?? '';
+      const data = (name: string): string =>
+        new RegExp(`${name}="([^"]*)"`, 'u').exec(body)?.[1]?.replaceAll('&#39;', "'") ?? '';
+      const failure: Failure = { textContent: '', hidden: true };
+      const handlers: ((event: { preventDefault(): void }) => Promise<void>)[] = [];
+      const form = {
+        dataset: {
+          failed: data('data-failed'),
+          cancelled: data('data-cancelled'),
+          notOffered: data('data-not-offered'),
+        },
+        auth_session_id: { value: 'sid' },
+        addEventListener: (_: string, handler: (typeof handlers)[number]) => handlers.push(handler),
+        submit: () => undefined,
+      };
+      const elements: Record<string, unknown> = {
+        'passkey-form': form,
+        'passkey-assertion': { value: '' },
+        'passkey-error': failure,
+      };
+      runInNewContext(code, {
+        document: { getElementById: (id: string) => elements[id] },
+        atob,
+        Uint8Array,
+        URLSearchParams,
+        fetch: () =>
+          Promise.resolve({ ok: true, json: () => Promise.resolve({ challenge: 'AA' }) }),
+        navigator: { credentials: { get: () => Promise.reject(thrown) } },
+      });
+      await handlers[0]?.({ preventDefault: () => undefined });
+      return failure.textContent;
+    }
+
+    it('says the sentence with the browser reason in it', async () => {
+      expect(await failureShown(DEFAULT_PAGE_LOCALE, new Error('timed out'))).toBe(
+        'Your device did not finish signing in — timed out. You can try again.',
+      );
+    });
+
+    it('says the page-language sentence, and the cancelled reason when there is none', async () => {
+      expect(await failureShown(FRENCH, new Error(''))).toBe(
+        'Votre appareil n’a pas terminé la connexion : the request was cancelled. Réessayez.',
+      );
+    });
+
+    it('cannot be mangled by a reason holding replacement patterns', async () => {
+      expect(await failureShown(DEFAULT_PAGE_LOCALE, new Error("$& $1 $' $`"))).toBe(
+        "Your device did not finish signing in — $& $1 $' $`. You can try again.",
+      );
+    });
   });
 });

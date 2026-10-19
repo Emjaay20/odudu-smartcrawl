@@ -53,8 +53,6 @@ describe('the error pages of a request with no parked sign-in', () => {
     expect(request.headers['content-language']).toBe('fr');
     expect(request.body).toContain('<html lang="fr" dir="ltr">');
     expect(request.body).toContain('<p><bdi>Locataire inconnu.</bdi></p>');
-    expect(expired.body).toContain(
-      '<bdi>Cette tentative de connexion n&#39;est plus valide.</bdi>'.replace('&#39;', '’'),
-    );
+    expect(expired.body).toContain('<bdi>Cette tentative de connexion n’est plus valide.</bdi>');
   });
 });

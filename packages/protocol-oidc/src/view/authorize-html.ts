@@ -196,7 +196,7 @@ form.addEventListener('submit', async (event) => {
     form.submit();
   } catch (caught) {
     const reason = caught && caught.message ? caught.message : form.dataset.cancelled;
-    failure.textContent = form.dataset.failed.replace('${REASON}', reason);
+    failure.textContent = form.dataset.failed.replace('${REASON}', () => reason);
     failure.hidden = false;
   }
 });

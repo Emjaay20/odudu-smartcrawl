@@ -1,12 +1,10 @@
 import { type PasskeyAuthenticationOffer } from '@odudu/authn-flows';
 import { requestContextFrom } from '@odudu/domain-audit';
-import { isUuid, PASSWORD_TOO_LONG, readPasswordField } from '@odudu/kernel';
+import { isUuid, MAX_PASSWORD_LENGTH, readPasswordField } from '@odudu/kernel';
 import { type FastifyInstance } from 'fastify';
 import { handleLoginSubmission, type LoginSubmissionDeps } from '#/usecase/login-submission';
-import { renderAuthorizeErrorPage } from '#/view/authorize-html';
-import { sendHtml } from '#/view/html-response';
-import { requestLocale } from '#/view/routes/continuation';
 import { issuerBaseFor } from '#/view/issuer';
+import { sendRequestError } from '#/view/routes/request-error';
 import { sendLoginOutcome, type LoginResponseDeps } from '#/view/routes/login-response';
 
 // Omits LoginResponseDeps's own `findTenant`: LoginSubmissionDeps declares
@@ -87,16 +85,9 @@ export function registerLoginRoute(app: FastifyInstance, deps: LoginRouteDeps): 
     // verification is: this is the one password route that verifies rather
     // than evaluates, so nothing downstream would bound the length.
     if (candidate.kind === 'too_long') {
-      return sendHtml(
-        reply,
-        400,
-        renderAuthorizeErrorPage(
-          'invalid_request',
-          PASSWORD_TOO_LONG.message,
-          undefined,
-          requestLocale(reply, deps),
-        ),
-      );
+      return sendRequestError(reply, deps, 400, 'error.passwordTooLong', {
+        max: MAX_PASSWORD_LENGTH,
+      });
     }
     const password = candidate.kind === 'present' ? candidate.password : undefined;
     const code = firstString(body.code);
