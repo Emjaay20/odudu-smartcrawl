@@ -894,12 +894,20 @@ used`); the required-actions, registration success and form pages are
   authenticator names (transport and registry identifiers no person reads as
   text), and SCIM (P7 builds inbound provisioning and applies the rule there).
   A confusable-character policy is P7's, per ADR 0043 row 7.
-- One rule for a value a row already holds: a write is refused only when it
-  adds a control, so the stored value may be sent back with an unrelated edit
-  and is never rewritten. Creation is checked by the generated schema (so the
+- One rule for a value a row already holds: a write that changes a value is
+  refused whenever the new value holds a control; the stored value may be kept
+  byte-identical, so it can be sent back with an unrelated edit and is never
+  rewritten, but a legacy value cannot be edited while its control stays.
+  Exporting a tenant that holds one and importing it elsewhere is refused at
+  the import document schema, at the field's path (an import is a creation);
+  the operator fixes the source or edits the export first. Creation is checked by the generated schema (so the
   admin API's JSON Schema enforces it); an amendment is checked by its usecase
   against the stored value, with every repository applying the same comparison
-  as a backstop. The sign-in path never checks.
+  as a backstop. The sign-in path never checks. The usecase checks stay because
+  they answer a returned field outcome before any write or audit row, where the
+  repository throws out of a half-done transaction; `bidi-usecases.int.test.ts`
+  fails for each site if its check is deleted (mutation-checked for the role,
+  group, scope, tenant, settings, subject, profile and client sites).
 - `odudu seed` prints `error: <field> must not contain ...` and exits 1 for a
   refused value, with no stack.
 - No Unicode normalisation form produces a control from another code point

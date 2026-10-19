@@ -283,6 +283,46 @@ describe('the admin API refuses a bidirectional control in a typed identity or n
   });
 });
 
+describe('a tenant exported with a legacy value cannot be imported until the value is fixed', () => {
+  it('is refused at the document path of the client_id and the description', async () => {
+    const token = await fixture.systemAdminToken(['manage-tenants', 'tenant-admin']);
+    const source = await fixture.createTenant(`bidi-${newId()}`);
+    const own = await fixture.adminToken(source.name, ['manage-clients']);
+    const made = await send('POST', `/admin/tenants/${source.name}/clients`, own, {
+      client_id: `app-${newId()}`,
+      redirect_uris: ['https://app.example/callback'],
+      token_endpoint_auth_method: 'none',
+    });
+    expect(made.statusCode, made.payload).toBe(201);
+    const exported = await fixture.http.inject({
+      method: 'GET',
+      url: `/admin/tenants/${source.name}/export`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    const document = tenantDocumentSchema.parse(JSON.parse(exported.payload));
+    const [first] = document.clients;
+    if (first === undefined) throw new Error('the export holds no client');
+    const legacy = {
+      ...document,
+      clients: [
+        { ...first, client_id: `${first.client_id}${RLO}`, description: `d${RLO}` },
+        ...document.clients.slice(1),
+      ],
+    };
+    const res = await send('POST', '/admin/tenant-imports', token, {
+      name: `bidi-${newId()}`,
+      document: legacy,
+    });
+    expect(res.statusCode).toBe(400);
+    const paths = res
+      .json<{ errors: { path: string; message: string; code?: string }[] }>()
+      .errors.filter((error) => error.code === BIDI_REFUSED)
+      .map((error) => error.path)
+      .sort();
+    expect(paths).toEqual(['document.clients[0].client_id', 'document.clients[0].description']);
+  });
+});
+
 describe('display text a person later reads is held to the same rule', () => {
   it('on a role, group and scope being created, and a client being created', async () => {
     const t = await fixture.createTenant(`bidi-${newId()}`);

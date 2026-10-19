@@ -2024,7 +2024,13 @@ content-length: 218
 new tenant, from a document `GET /export` answered. The body is
 `{"name": …, "display_name": …, "document": …}`; `display_name` is optional,
 and without it the document's own `settings.display_name` is used. Merging
-into an existing tenant is not offered.
+into an existing tenant is not offered. An import is a creation, so a document
+holding a name, `client_id`, description or consent text with a bidirectional
+control (U+202A to U+202E, U+2066 to U+2069), as an export of a tenant with a
+legacy value does, is refused at the document schema, at that field's path and
+with the code `bidi_control_refused` (`document.clients[0].client_id`). Fix the
+value in the source tenant first, or remove the control from the exported
+document, then import it.
 
 The whole request is validated before anything is written, and every
 problem is answered together in one `400` whose `errors` lists each with
@@ -4047,9 +4053,11 @@ tenant's `display_name` (create, import, `PATCH` and settings), a client's
 `client_id`, `name`, `client_name` and `description`, a role's or group's `name`
 and `description`, and a scope's `description` and `consent_text`; inside an
 import document each is reported at its path. LRM, RLM and ALM, which Persian and
-Arabic text uses, and plain Arabic or Hebrew, are accepted. Only a write that
-adds a control is refused: a value a row already holds can be sent back
-unchanged with an unrelated edit, and is never rewritten. A creation is checked
+Arabic text uses, and plain Arabic or Hebrew, are accepted. A write that changes a
+value is refused whenever the new value holds a control; the stored value may
+be kept byte-identical, so it can be sent back unchanged with an unrelated
+edit, and it is never rewritten. Editing a legacy value while leaving its
+control in place is refused: take the control out, or leave the field alone. A creation is checked
 by the generated schema, an amendment against the stored value by the usecase.
 What is not covered, and why, is in `docs/phases/p4g.md`. These two answers
 came from the integration suite's own app
