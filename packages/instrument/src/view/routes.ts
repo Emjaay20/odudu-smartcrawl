@@ -59,7 +59,9 @@ export function instrumentRoutes(dir: string): FastifyPluginAsync {
       const path = request.params['*'];
       const file = tree.get(path);
       const etag = etags.get(path);
-      if (file === undefined || etag === undefined) return reply.code(404).send();
+      if (file === undefined || etag === undefined) {
+        return reply.code(404).header('x-content-type-options', 'nosniff').send();
+      }
       const immutable = CONTENT_HASHED_FONT.test(path);
       reply
         .header('etag', etag)

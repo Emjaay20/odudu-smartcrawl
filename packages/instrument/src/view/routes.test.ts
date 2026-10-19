@@ -105,6 +105,8 @@ describe('instrumentRoutes', () => {
       const response = await server.inject(path);
       expect(response.statusCode, path).toBe(404);
     }
+    const missing = await server.inject('/instrument/missing.css');
+    expect(missing.headers['x-content-type-options']).toBe('nosniff');
   });
 
   it('warns and answers 404 when the directory is missing, rather than throwing', async () => {

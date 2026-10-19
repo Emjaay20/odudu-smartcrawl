@@ -109,7 +109,9 @@ export function spaRoutes(consoleDir: string): FastifyPluginAsync {
 
     fastify.get<{ Params: { '*': string } }>('/console/assets/*', (request, reply) => {
       const asset = assets.get(request.params['*']);
-      if (asset === undefined) return reply.code(404).send();
+      if (asset === undefined) {
+        return reply.code(404).header('x-content-type-options', 'nosniff').send();
+      }
       const cacheControl = CONTENT_HASHED_NAME.test(request.params['*'])
         ? 'public, max-age=31536000, immutable'
         : 'no-cache';

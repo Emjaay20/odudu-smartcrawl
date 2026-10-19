@@ -17,7 +17,11 @@ const READS: readonly { file: string; targets: readonly string[] }[] = [
   },
   {
     file: 'packages/protocol-oidc/src/view/instrument-reach.test.ts',
-    targets: ['packages/*/src/view/**', 'tests/lint/fixtures/renderer-without-shell/*'],
+    targets: [
+      'packages/*/src/view/**',
+      'apps/*/src/**',
+      'tests/lint/fixtures/renderer-without-shell/**',
+    ],
   },
   {
     file: 'packages/protocol-oidc/src/view/routes/session-cookie-authority.test.ts',

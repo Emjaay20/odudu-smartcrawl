@@ -130,6 +130,7 @@ describe('the console shell', () => {
     const res = await server.inject({ url: '/console/assets/does-not-exist.js' });
 
     expect(res.statusCode).toBe(404);
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
   });
 
   it.each([
