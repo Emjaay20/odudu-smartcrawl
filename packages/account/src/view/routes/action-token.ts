@@ -111,7 +111,7 @@ async function completeActionsLink(
     return sendVerificationHtml(
       reply,
       400,
-      renderResetPasswordWeakPage([PASSWORD_TOO_LONG.message], locale),
+      renderResetPasswordWeakPage([PASSWORD_TOO_LONG], locale),
     );
   }
   const password =
@@ -142,10 +142,7 @@ async function completeActionsLink(
       return sendVerificationHtml(
         reply,
         400,
-        renderResetPasswordWeakPage(
-          result.violations.map((violation) => violation.message),
-          locale,
-        ),
+        renderResetPasswordWeakPage(result.violations, locale),
       );
     case 'done':
       return sendVerificationHtml(
@@ -261,7 +258,7 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
       return sendVerificationHtml(
         reply,
         400,
-        renderResetPasswordWeakPage([PASSWORD_TOO_LONG.message], locale),
+        renderResetPasswordWeakPage([PASSWORD_TOO_LONG], locale),
       );
     }
     const password =
@@ -297,10 +294,7 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
       return sendVerificationHtml(
         reply,
         400,
-        renderResetPasswordWeakPage(
-          result.violations.map((v) => v.message),
-          locale,
-        ),
+        renderResetPasswordWeakPage(result.violations, locale),
       );
     }
     if (result.kind === 'invalid') {

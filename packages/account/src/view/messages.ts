@@ -37,6 +37,27 @@ export const en = {
   'password.rule.notUsername': 'Password must not contain the username.',
   'password.rule.notEmail': 'Password must not contain the email address.',
   'password.rule.notReused': 'Password must not be one you have used before.',
+  'reset.request.title': 'Forgot your password?',
+  'reset.request.email': 'Email',
+  'reset.request.submit': 'Send reset link',
+  'reset.requested.title': 'Check your email',
+  'reset.requested.next':
+    "If that address has an account, we've sent a link to reset its password.",
+  'reset.requestFailed.title': "Can't send a reset link",
+  'reset.requestFailed.emailRequired': 'Email is required.',
+  'reset.requestFailed.unavailable': 'Password reset is temporarily unavailable. Try again later.',
+  'reset.form.title': 'Choose a new password',
+  'reset.form.newPassword': 'New password',
+  'reset.form.submit': 'Reset password',
+  'reset.succeeded.title': 'Password reset',
+  'reset.succeeded.heading': 'Your password has been reset',
+  'reset.succeeded.next': 'You can close this page and sign in with your new password.',
+  'reset.linkFailed.title': "Can't use this link",
+  'reset.linkFailed.heading': "This link can't be used",
+  'reset.linkFailed.reason':
+    'It may have already been used or expired. Request a new one and try again.',
+  'reset.cannotReset.title': "Can't reset your password",
+  'reset.required.reason': 'A new password is required.',
 };
 
 export type MessageId = keyof typeof en;

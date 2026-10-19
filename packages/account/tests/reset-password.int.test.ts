@@ -311,6 +311,46 @@ describe('password reset', () => {
     expect(known.statusCode).toBe(200);
   });
 
+  it('answers a known and an unknown address identically in every page locale, headers included', async () => {
+    const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {
+      resetPasswordAllowed: true,
+    });
+    await seedAda(tenantId);
+    const instance = Fastify();
+    await instance.register(formbody);
+    registerResetPasswordRoute(instance, {
+      database: app,
+      findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
+      publicBaseUrl: 'https://idp.example.test',
+      findByEmail,
+      pageLocales: ['en', 'fr'],
+    });
+    await instance.ready();
+
+    async function submit(email: string, language: string) {
+      const res = await instance.inject({
+        method: 'POST',
+        url: `/tenants/${tenantName}/login-actions/reset-password`,
+        payload: new URLSearchParams({ email }).toString(),
+        headers: {
+          'content-type': 'application/x-www-form-urlencoded',
+          'accept-language': language,
+        },
+      });
+      return { statusCode: res.statusCode, body: res.body, headers: res.headers };
+    }
+
+    for (const language of ['en', 'fr', 'ar;q=0.1, fr']) {
+      const known = await submit('ada@example.test', language);
+      const unknown = await submit('nobody@example.test', language);
+      expect(unknown.statusCode, language).toBe(known.statusCode);
+      expect(unknown.body, language).toBe(known.body);
+      expect(unknown.headers['content-language'], language).toBe(known.headers['content-language']);
+      expect(unknown.headers['content-length'], language).toBe(known.headers['content-length']);
+    }
+    await instance.close();
+  });
+
   it('sends mail only for the address that exists', async () => {
     const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {
       resetPasswordAllowed: true,
@@ -376,7 +416,7 @@ describe('password reset', () => {
 
     const rejected = await submitNewPassword(link, 'short');
     expect(rejected.statusCode).toBe(400);
-    expect(rejected.body).toContain('at least');
+    expect(rejected.body).toContain('<li>Password must be at least 8 characters long.</li>');
     expect(await passwordWorksFor(tenantId, 'ada', 'correct horse battery')).toBe(true);
 
     // The link is still the same unconsumed token: a compliant password on

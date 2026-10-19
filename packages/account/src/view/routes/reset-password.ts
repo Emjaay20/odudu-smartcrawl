@@ -80,7 +80,7 @@ export function registerResetPasswordRoute(
 
     const email = firstNonEmptyString(request.body.email);
     if (email === undefined) {
-      return sendResetHtml(reply, 400, renderResetRequestFailedPage('Email is required.', locale));
+      return sendResetHtml(reply, 400, renderResetRequestFailedPage('email_required', locale));
     }
 
     // Composed before the lookup happens, and reached whether or not the
@@ -104,14 +104,7 @@ export function registerResetPasswordRoute(
         { tenant: request.params.tenant },
         'password reset refused: ODUDU_PUBLIC_BASE_URL is unset',
       );
-      return sendResetHtml(
-        reply,
-        500,
-        renderResetRequestFailedPage(
-          'Password reset is temporarily unavailable. Try again later.',
-          locale,
-        ),
-      );
+      return sendResetHtml(reply, 500, renderResetRequestFailedPage('unavailable', locale));
     }
 
     return sendResetHtml(reply, 200, renderResetRequestedPage(locale));
