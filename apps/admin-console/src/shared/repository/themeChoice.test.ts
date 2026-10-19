@@ -8,6 +8,7 @@ afterEach(() => {
   vi.restoreAllMocks();
   localStorage.clear();
   delete root.dataset.theme;
+  document.cookie = 'odudu-theme=; Path=/; Max-Age=0';
 });
 
 describe('the remembered theme', () => {
@@ -65,5 +66,25 @@ describe('the remembered theme', () => {
       rememberThemeChoice('light');
     }).not.toThrow();
     expect(root.dataset.theme).toBe('light');
+  });
+
+  it('hands the choice to the server-rendered pages as a cookie', () => {
+    rememberThemeChoice('dark');
+    expect(document.cookie).toContain('odudu-theme=dark');
+    rememberThemeChoice('system');
+    expect(document.cookie).not.toContain('odudu-theme');
+  });
+
+  it('gives a returning user the cookie on start without picking again', () => {
+    localStorage.setItem('odudu.console.theme', 'light');
+    expect(document.cookie).not.toContain('odudu-theme');
+    applyRememberedTheme();
+    expect(document.cookie).toContain('odudu-theme=light');
+  });
+
+  it('removes a cookie left behind when the remembered choice is the system', () => {
+    document.cookie = 'odudu-theme=dark; Path=/';
+    applyRememberedTheme();
+    expect(document.cookie).not.toContain('odudu-theme');
   });
 });
