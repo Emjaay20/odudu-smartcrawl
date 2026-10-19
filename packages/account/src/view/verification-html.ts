@@ -1,6 +1,7 @@
 import { type PageLocale, pageHeaders, type RenderedPage } from '@odudu/kernel';
 import { type FastifyReply } from 'fastify';
 import { page } from '#/view/document';
+import { t, tHtml } from '#/view/messages';
 
 export function sendVerificationHtml(
   reply: FastifyReply,
@@ -16,9 +17,9 @@ export function sendVerificationHtml(
 
 export function renderVerificationSucceededPage(locale: PageLocale): RenderedPage {
   return page(
-    'Email verified',
-    `<h1>Your email address is verified</h1>
-<p>You can close this page and sign in.</p>`,
+    t(locale, 'verification.succeeded.title'),
+    `<h1>${tHtml(locale, 'verification.succeeded.heading')}</h1>
+<p>${tHtml(locale, 'verification.succeeded.next')}</p>`,
     null,
     [],
     locale,
@@ -27,9 +28,9 @@ export function renderVerificationSucceededPage(locale: PageLocale): RenderedPag
 
 export function renderVerificationFailedPage(locale: PageLocale): RenderedPage {
   return page(
-    "Can't verify this link",
-    `<h1>This link can't be used</h1>
-<p>It may have already been used, expired, or no longer matches your email address. Request a new verification email and try again.</p>`,
+    t(locale, 'verification.failed.title'),
+    `<h1>${tHtml(locale, 'verification.failed.heading')}</h1>
+<p>${tHtml(locale, 'verification.failed.reason')}</p>`,
     null,
     [],
     locale,
