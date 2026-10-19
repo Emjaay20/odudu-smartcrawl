@@ -1,16 +1,5 @@
 import { type RenderedPage } from '@odudu/kernel';
-
-// Minimal, dependency-free HTML, the same choice #/view/recovery-codes-html.ts
-// makes: every interpolated value passes through escapeHtml so neither the
-// tenant name nor a policy message opens a reflected-XSS hole.
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+import { escapeHtml, page } from '#/view/document';
 
 // The page a login parks on while `update-password` is owed, and the page a
 // refused candidate comes back to. `violations` is every rule the tenant's
@@ -38,17 +27,5 @@ ${listed}<form method="post" action="${target}">
 </form>`;
   // No script: nothing on this page fetches anything, so the base
   // content-security policy describes it exactly.
-  return {
-    script: null,
-    frames: [],
-    title,
-    body,
-    html: `<!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>${escapeHtml(title)}</title></head>
-<body>
-${body}
-</body>
-</html>`,
-  };
+  return page(title, body);
 }

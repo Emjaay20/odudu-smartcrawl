@@ -1,4 +1,4 @@
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { buildInstrument } from '#/service/build';
@@ -39,6 +39,7 @@ const { css, fonts } = buildInstrument({
 await rm(DIST, { recursive: true, force: true });
 await mkdir(join(DIST, 'fonts'), { recursive: true });
 await writeFile(join(DIST, 'instrument.css'), css);
+await copyFile(join(PACKAGE, 'src/mark.svg'), join(DIST, 'mark.svg'));
 await Promise.all(
   [...fonts].map(([file, content]) => writeFile(join(DIST, 'fonts', file), content)),
 );

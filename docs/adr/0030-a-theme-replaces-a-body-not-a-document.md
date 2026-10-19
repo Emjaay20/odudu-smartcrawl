@@ -66,6 +66,17 @@ guess before eight renderers, then more, depend on it.
   start rather than assembling a document by hand, the same way ADR 0029
   put the header set behind one function instead of a second hand-copy.
 
+## Amendment — 2026-10-19 — what the shell owns
+
+The shell now carries the stylesheet link, the favicon, the viewport and
+colour-scheme metas, `lang` and `dir`, the Instrument mark and one `<main>`
+around the page. `body` is what a renderer passed in, not everything the
+document's `<body>` holds: a theme replacing it keeps the shell's chrome
+and styling, and never receives a `<link>`, `<html>` or the mark to drop.
+Every package's `page()` has this shape, and
+`packages/protocol-oidc/src/view/instrument-reach.test.ts` fails the build
+on a `*-html.ts` that builds a document of its own.
+
 ## Alternatives rejected
 
 - **A theme replaces the whole document.** Rejected: P4b's criterion is

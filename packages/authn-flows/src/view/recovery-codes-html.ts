@@ -1,4 +1,5 @@
 import { type RenderedPage } from '@odudu/kernel';
+import { escapeHtml, page } from '#/view/document';
 
 // What the page has to show: the codes in plaintext, and whether they
 // displace a set the subject was issued earlier — a page that silently
@@ -6,18 +7,6 @@ import { type RenderedPage } from '@odudu/kernel';
 export interface RecoveryCodesOffer {
   codes: readonly string[];
   replaced: boolean;
-}
-
-// Minimal, dependency-free HTML, the same choice #/view/totp-enrolment-html.ts
-// makes: every interpolated value passes through escapeHtml so neither the
-// tenant name nor a code opens a reflected-XSS hole.
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 // The one render of these codes there will ever be. They are hashed in the
@@ -48,17 +37,5 @@ ${items}
 </form>`;
   // No script: nothing on this page talks to an authenticator or fetches
   // anything, so the base content-security policy describes it exactly.
-  return {
-    script: null,
-    frames: [],
-    title,
-    body,
-    html: `<!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>${escapeHtml(title)}</title></head>
-<body>
-${body}
-</body>
-</html>`,
-  };
+  return page(title, body);
 }

@@ -4,11 +4,7 @@ import { seeded } from './stack';
 const { admin } = seeded();
 const STYLESHEET = '/instrument/instrument.css';
 
-// The sign-in markup carries no link to the stylesheet of its own, so this
-// proves the page's policy admits the sheet, the fonts and the font stack, not
-// that a page links them. Once the shell links it the added tag is skipped, and
-// the assertions then cover the shipped markup.
-test('the sign-in page policy admits the Instrument stylesheet and font from its own origin', async ({
+test('the sign-in page links the Instrument stylesheet, favicon and mark, and its policy admits them', async ({
   page,
 }) => {
   const refusals: string[] = [];
@@ -20,12 +16,18 @@ test('the sign-in page policy admits the Instrument stylesheet and font from its
 
   await page.goto(`/console/${admin.tenant}`);
   await expect(page.getByLabel('Username')).toBeVisible();
-  if ((await page.locator(`link[rel="stylesheet"][href="${STYLESHEET}"]`).count()) === 0) {
-    await page.addStyleTag({ url: STYLESHEET });
-  }
+  await expect(page.locator(`link[rel="stylesheet"][href="${STYLESHEET}"]`)).toHaveCount(1);
+  await expect(page.locator('link[rel="icon"][href="/instrument/mark.svg"]')).toHaveCount(1);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+  await expect(page.locator('main.page svg.mark')).toHaveCount(1);
   const response = await stylesheet;
   expect(response.status()).toBe(200);
   expect(response.headers()['content-type']).toBe('text/css; charset=utf-8');
+
+  const mark = await page.request.get('/instrument/mark.svg');
+  expect(mark.status()).toBe(200);
+  expect(mark.headers()['content-type']).toBe('image/svg+xml');
 
   const family = await page.evaluate(() => getComputedStyle(document.body).fontFamily);
   expect(family.startsWith('"IBM Plex Sans"')).toBe(true);

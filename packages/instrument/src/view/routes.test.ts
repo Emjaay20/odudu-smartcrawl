@@ -21,6 +21,7 @@ async function builtDir(): Promise<string> {
   dirs.push(dir);
   await mkdir(join(dir, 'fonts'));
   await writeFile(join(dir, 'instrument.css'), 'body{margin:0}');
+  await writeFile(join(dir, 'mark.svg'), '<svg xmlns="http://www.w3.org/2000/svg"/>');
   await writeFile(join(dir, 'fonts', FONT), 'woff2-bytes');
   await writeFile(join(dir, 'fonts', '.hidden.woff2'), 'x');
   await writeFile(join(dir, 'notes.txt'), 'not a served type');
@@ -80,6 +81,15 @@ describe('instrumentRoutes', () => {
     expect(response.headers['cache-control']).toBe('public, max-age=31536000, immutable');
   });
 
+  it('serves the mark as an svg image that cannot be sniffed as anything else', async () => {
+    const server = await served(await builtDir());
+    const response = await server.inject('/instrument/mark.svg');
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-type']).toBe('image/svg+xml');
+    expect(response.headers['x-content-type-options']).toBe('nosniff');
+    expect(response.headers['cache-control']).toBe('no-cache');
+  });
+
   it('refuses a path outside the manifest', async () => {
     const server = await served(await builtDir());
     for (const path of [
@@ -133,6 +143,16 @@ describe('instrumentRoutes', () => {
     expect(text).toContain('ODUDU_INSTRUMENT_DIR');
     expect(text).toContain('more than');
     expect(text).not.toContain('no built stylesheet');
+  });
+
+  it('refuses a directory of many entries of no served type, long before a build is that big', async () => {
+    const dir = await builtDir();
+    for (let i = 0; i < 130; i++) await writeFile(join(dir, `note${String(i)}.txt`), 'x');
+    const logs: string[] = [];
+    const server = await served(dir, logs);
+
+    expect((await server.inject('/instrument/instrument.css')).statusCode).toBe(404);
+    expect(logs.join('')).toContain('more than 128 entries');
   });
 
   it('says the stylesheet is missing, not too large, when the directory is absent', async () => {
