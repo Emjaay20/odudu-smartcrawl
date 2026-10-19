@@ -1,0 +1,37 @@
+.hero {
+  border-bottom: var(--hairline);
+  padding: var(--space-8) 0;
+}
+
+.title {
+  font-size: var(--type-28);
+  margin-bottom: var(--space-2);
+}
+
+.tagline {
+  color: var(--ink-muted);
+  font-size: var(--type-20);
+  line-height: 1.5;
+  margin-bottom: var(--space-6);
+  max-width: 40rem;
+}
+
+.sections {
+  padding-bottom: var(--space-8);
+  padding-top: var(--space-6);
+}
+
+.heading {
+  font-size: var(--type-20);
+  margin-bottom: var(--space-4);
+}
+
+@media (min-width: 997px) {
+  .hero {
+    padding: calc(var(--space-8) * 2) 0;
+  }
+
+  .title {
+    font-size: 3rem;
+  }
+}

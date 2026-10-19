@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "license": "AGPL-3.0-only",
+  "imports": {
+    "#docs/*": "./*"
+  },
   "scripts": {
     "build": "pnpm build:pages && pnpm build:image",
     "build:pages": "docusaurus clear && docusaurus build --out-dir dist/pages",
@@ -10,7 +13,7 @@
     "serve": "node scripts/serve.mjs",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run --config ../../vitest.config.ts --reporter=default --reporter=json --outputFile=trace-report.json",
-    "test:browser": "vitest run --config vitest.browser.config.ts"
+    "test:browser": "vitest run browser.test --testTimeout 60000 --hookTimeout 60000"
   },
   "browserslist": {
     "production": [

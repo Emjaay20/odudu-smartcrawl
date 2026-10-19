@@ -1,0 +1,118 @@
+@import '../../../admin-console/src/shared/view/tokens.css';
+@import '../../../admin-console/src/shared/view/fonts.css';
+
+/*
+ * Infima's variables, set from Instrument's tokens so the site and the product
+ * share one palette. light-dark() follows the colour-mode toggle through
+ * <html data-theme>, so no dark-mode block is needed.
+ */
+:root {
+  --ifm-color-primary: var(--signal-active-ink);
+  --ifm-color-primary-dark: color-mix(in srgb, var(--signal-active-ink) 92%, black);
+  --ifm-color-primary-darker: color-mix(in srgb, var(--signal-active-ink) 85%, black);
+  --ifm-color-primary-darkest: color-mix(in srgb, var(--signal-active-ink) 70%, black);
+  --ifm-color-primary-light: color-mix(in srgb, var(--signal-active-ink) 90%, white);
+  --ifm-color-primary-lighter: color-mix(in srgb, var(--signal-active-ink) 80%, white);
+  --ifm-color-primary-lightest: color-mix(in srgb, var(--signal-active-ink) 60%, white);
+  --ifm-font-color-base-inverse: light-dark(#fff, #0b0e0d);
+
+  --ifm-background-color: var(--surface-panel);
+  --ifm-background-surface-color: var(--surface-sunken);
+  --ifm-font-color-base: var(--ink-primary);
+  --ifm-font-color-secondary: var(--ink-muted);
+  --ifm-navbar-background-color: var(--surface-panel);
+  --ifm-navbar-shadow: none;
+  --ifm-toc-border-color: var(--border);
+  --ifm-color-emphasis-200: var(--border);
+  --ifm-color-emphasis-300: var(--border-strong);
+  --ifm-color-emphasis-600: var(--ink-muted);
+  --ifm-color-emphasis-700: var(--ink-muted);
+  --ifm-color-emphasis-800: var(--ink-primary);
+  --ifm-navbar-search-input-background-color: var(--surface-sunken);
+  --ifm-navbar-search-input-color: var(--ink-primary);
+  --ifm-navbar-search-input-placeholder-color: var(--ink-muted);
+
+  --ifm-font-family-base: var(--font-sans);
+  --ifm-font-family-monospace: var(--font-mono);
+  --ifm-font-size-base: 100%;
+  --ifm-line-height-base: 1.65;
+  --ifm-heading-font-weight: 600;
+  --ifm-font-weight-semibold: 600;
+  --ifm-h1-font-size: 2rem;
+  --ifm-h2-font-size: 1.5rem;
+  --ifm-h3-font-size: 1.25rem;
+  --ifm-code-font-size: 90%;
+  --ifm-global-radius: var(--radius-m);
+  --ifm-link-decoration: underline;
+  --ifm-link-hover-decoration: underline;
+  --ifm-menu-color-active: var(--signal-active-ink);
+  --ifm-menu-color-background-active: var(--signal-active);
+  --ifm-menu-color-background-hover: var(--surface-sunken);
+  --docusaurus-highlighted-code-line-bg: light-dark(rgb(17 21 20 / 8%), rgb(255 255 255 / 10%));
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.navbar {
+  border-bottom: var(--hairline);
+}
+
+.navbar__title {
+  font-weight: 600;
+}
+
+/* Docusaurus sets the dark footer's colours on the class, which beats :root. */
+.footer--dark {
+  --ifm-footer-background-color: var(--surface-rail);
+  --ifm-footer-color: var(--ink-rail-muted);
+  --ifm-footer-title-color: var(--ink-rail);
+  --ifm-footer-link-color: var(--ink-rail-muted);
+  --ifm-footer-link-hover-color: var(--ink-rail);
+}
+
+.navbar__search-input {
+  border: var(--hairline);
+}
+
+/* Underline marks a link inside running text; chrome that is plainly a link stays plain. */
+.navbar a,
+.menu a,
+.footer a,
+.breadcrumbs a,
+.pagination-nav a,
+.table-of-contents a,
+.button,
+a.button:hover {
+  text-decoration: none;
+}
+
+.navbar a:hover,
+.menu a:hover,
+.footer a:hover,
+.pagination-nav a:hover,
+.table-of-contents a:hover {
+  text-decoration: underline;
+}
+
+.menu__link--active:not(.menu__link--sublist) {
+  font-weight: 600;
+}
+
+.theme-doc-markdown :not(pre) > code {
+  background: var(--surface-sunken);
+  border: var(--hairline);
+}
+
+.theme-doc-markdown {
+  max-width: 46rem;
+}
+
+@media (min-width: 997px) {
+  :root {
+    --ifm-h1-font-size: 2.5rem;
+    --ifm-h2-font-size: 1.75rem;
+  }
+}

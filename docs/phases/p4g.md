@@ -1035,3 +1035,51 @@ desktop layout.
   fallback.
 - assumption: Safari versions older than 15.4 lack `:has()`; there the checkbox sits
   inline before its text, which still reads.
+
+## Increment 18: the documentation app
+
+`apps/docs` is Docusaurus 3.10.2 with `@easyops-cn/docusaurus-search-local` 0.55.3,
+built twice from one commit: `build:pages` (base from `site.config.ts`) and
+`build:image` (`DOCS_TARGET=image`, base `/docs/`, noindex). The spike findings held;
+what the build of the real workspace added or changed:
+
+- verified: `pnpm add` with every dependency in one call, then the two `allowBuilds`
+  entries edited over pnpm's `set this to true or false` placeholders, left no dangling
+  link (`ls apps/docs/node_modules/@docusaurus/module-type-aliases` populated). The
+  lockfile diff is the new importer and its tree: a comparison of the `packages:` keys
+  of the second document finds 815 before, 1,876 after and none removed.
+- verified: the output goes to `dist/pages` and `dist/image`, not `dist-pages`; the
+  existing `dist` rules in `.gitignore`, `.prettierignore` and eslint cover them, and
+  turbo's `build` output `dist/**` already names them. `.docusaurus` joins the three
+  ignore lists.
+- **Tests under `apps/docs/tests` cannot import by relative path** (the
+  no-relative-imports lint covers `apps/*/tests/**`), and `#/` is the Docusaurus build's
+  failure. `package.json` `imports` maps `#docs/*` to `./*`, which only Node, vitest
+  and tsc read; nothing the bundler compiles imports through it. verified:
+  `docusaurus build` with the field present, and `vitest run --project unit apps/docs`.
+- **`site.config.ts` matched eslint's `apps/*/*.config.ts` default-project glob** while
+  also being in the project service through the tests' import, which is a parse error.
+  The glob is now `apps/*/!(site).config.ts` (comment in `eslint.config.js`).
+  `docusaurus.config.ts` stays out of the tsconfig `include` for the same reason.
+- verified: a plugin in TypeScript imported by the config (`plugins/image-strip.ts`,
+  passed as `plugins: [imageStrip]`) replaces the planned `image-strip.js`: a CommonJS
+  `.js` plugin needs `require`, which `no-require-imports` forbids.
+- verified: the console's `fonts.css` imports by relative path from `custom.css`; its
+  `url('@fontsource/…')` resolves from that file, so the docs app lists no font package
+  and the build emits the same hashed Plex files under `assets/fonts`.
+- verified: `docusaurus.config.ts`'s search options need `docsDir: 'content/en'`; without
+  it the plugin warns `docsDir doesn't exist: …/docs`.
+- The unit project's globs gain `apps/docs/tests/**/*.test.ts` and, run from
+  `apps/docs`, `tests/**/*.test.ts`; `*.browser.test.ts` is excluded from unit and run by
+  `pnpm --filter @odudu/docs test:browser`, which needs Chromium. The root `verify` job
+  does not install one, so the browser test lives in the `docs` job.
+- turbo: `@odudu/docs#build` and `#test` list their inputs explicitly (the content, the
+  config files and the console's `tokens.css` and `fonts.css`, which the build imports), and
+  `build` names `DOCS_SITE_ORIGIN` and `DOCS_BASE` as environment. The test task depends
+  on the build because the tests read `dist/`. `cross-package-reads.test.ts` lists
+  `tests/support/dist.ts`.
+- verified: a mutation of the colour-mode test. With `respectPrefersColorScheme: false`
+  the dark-system case fails (`expected 'light' to be 'dark'`); with it on, both pass.
+- Local cost of the added build: `pnpm --filter @odudu/docs build` runs both builds in 7 s on a warm install
+  (cold cache each, `docusaurus clear` between). The minutes the `docs` job adds to CI are recorded from its
+  first run on the pushed branch.
