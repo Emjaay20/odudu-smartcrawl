@@ -1,0 +1,32 @@
+name: Install Chromium for Playwright
+description: Chromium cached by the Playwright version a package resolves; the system libraries are installed on every run, as they are not part of the cache.
+
+inputs:
+  package:
+    description: The workspace package whose Playwright version decides the cache key.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve the Playwright version
+      id: version
+      shell: bash
+      run: echo "version=$(pnpm --filter "${{ inputs.package }}" exec playwright --version | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
+
+    - name: Restore Chromium
+      id: browsers
+      uses: actions/cache@v6
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-chromium-${{ steps.version.outputs.version }}
+
+    - name: Download Chromium and install its system libraries
+      if: steps.browsers.outputs.cache-hit != 'true'
+      shell: bash
+      run: pnpm --filter "${{ inputs.package }}" exec playwright install --with-deps chromium
+
+    - name: Install the system libraries only
+      if: steps.browsers.outputs.cache-hit == 'true'
+      shell: bash
+      run: pnpm --filter "${{ inputs.package }}" exec playwright install-deps chromium

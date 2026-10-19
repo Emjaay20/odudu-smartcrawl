@@ -30,8 +30,8 @@ answers the `authorization_code` (PKCE mandatory, no exception),
 `client_credentials` grants. That sits on the P0 foundation: the monorepo and
 its single `pnpm verify` gate, machine-checked architectural boundaries, the
 kernel primitives, one ordered migration timeline with PostgreSQL row-level
-security, and a container CI builds and boots on every pull request and on
-every merge to `main` — a branch push with no pull request open runs
+security, and a container CI builds and boots on every pull request that changes more than
+prose and on every merge to `main` — a branch push with no pull request open runs
 nothing, by design (`.github/workflows/verify.yml`).
 
 **P3a** adds clients, dynamic registration (RFC 7591) and a consent screen.

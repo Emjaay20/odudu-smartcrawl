@@ -18,7 +18,8 @@
     "test": {
       "dependsOn": ["^typecheck"],
       "inputs": ["src/**", "tests/**", "drizzle/**", "package.json", "tsconfig.json"],
-      "outputs": ["trace-report.json"]
+      "outputs": ["trace-report.json"],
+      "env": ["ODUDU_TEST_SHARD"]
     },
     "@odudu/db#test": {
       "dependsOn": ["^typecheck"],
@@ -30,7 +31,8 @@
         "tsconfig.json",
         "$TURBO_ROOT$/packages/*/src/schema/**"
       ],
-      "outputs": ["trace-report.json"]
+      "outputs": ["trace-report.json"],
+      "env": ["ODUDU_TEST_SHARD"]
     },
     "@odudu/protocol-oidc#test": {
       "dependsOn": ["^typecheck"],
@@ -44,7 +46,8 @@
         "$TURBO_ROOT$/apps/*/src/**",
         "$TURBO_ROOT$/tests/lint/fixtures/renderer-without-shell/**"
       ],
-      "outputs": ["trace-report.json"]
+      "outputs": ["trace-report.json"],
+      "env": ["ODUDU_TEST_SHARD"]
     },
     "@odudu/server#test": {
       "dependsOn": ["^typecheck"],
@@ -56,7 +59,8 @@
         "tsconfig.json",
         "$TURBO_ROOT$/packages/console-gateway/tests/fixtures/**"
       ],
-      "outputs": ["trace-report.json"]
+      "outputs": ["trace-report.json"],
+      "env": ["ODUDU_TEST_SHARD"]
     },
     "@odudu/console-gateway#test": {
       "dependsOn": ["^typecheck"],
@@ -68,7 +72,8 @@
         "tsconfig.json",
         "$TURBO_ROOT$/apps/admin-console/package.json"
       ],
-      "outputs": ["trace-report.json"]
+      "outputs": ["trace-report.json"],
+      "env": ["ODUDU_TEST_SHARD"]
     },
     "@odudu/instrument#test": {
       "dependsOn": ["^typecheck"],
@@ -80,7 +85,8 @@
         "tsconfig.json",
         "$TURBO_ROOT$/apps/admin-console/src/shared/view/*.css"
       ],
-      "outputs": ["trace-report.json"]
+      "outputs": ["trace-report.json"],
+      "env": ["ODUDU_TEST_SHARD"]
     },
     "@odudu/instrument#build": {
       "dependsOn": ["^build"],
@@ -129,11 +135,13 @@
         "scripts/**",
         "tests/**"
       ],
-      "outputs": ["trace-report.json"]
+      "outputs": ["trace-report.json"],
+      "env": ["ODUDU_TEST_SHARD"]
     },
     "@odudu/repo-checks#test": {
       "cache": false,
-      "dependsOn": ["^typecheck", "@odudu/admin-console#build"]
+      "dependsOn": ["^typecheck", "@odudu/admin-console#build"],
+      "env": ["ODUDU_TEST_SHARD"]
     }
   }
 }

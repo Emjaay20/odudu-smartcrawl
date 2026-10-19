@@ -27,7 +27,9 @@ The sequence, in order:
    `docs/archive/plans/`, where they record how it was planned.
 
 Work happens on a branch; `main` is protected and requires `verify`,
-`container` and `commit-messages` to pass.
+`container` and `commit-messages` to pass. The `gate` job waits for every job
+in `verify.yml` and passes one skipped for a prose-only change (ADR 0044); it
+is the check to require once the owner adds it.
 
 ### What a phase owes before it closes
 

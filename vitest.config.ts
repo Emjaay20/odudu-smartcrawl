@@ -51,8 +51,14 @@ const browser = scope === 'apps/docs' ? ['tests/**/*.browser.test.ts'] : [];
 // only where it is asked for (`pnpm test:plans`), in a job of its own.
 const planFiles = process.env.ODUDU_QUERY_PLANS === '1' ? plans : [];
 
+// `i/n` runs the i-th of n slices of the files this run resolves. It is read
+// from the environment, not the command line, so Turborepo can hash it
+// (turbo.json lists it in every test task's `env`).
+const shard = process.env.ODUDU_TEST_SHARD;
+
 export default defineConfig({
   test: {
+    shard: shard === undefined || shard === '' ? undefined : shard,
     projects: [
       {
         test: {

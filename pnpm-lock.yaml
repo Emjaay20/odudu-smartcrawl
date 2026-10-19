@@ -845,6 +845,8 @@ importers:
 
   tests: {}
 
+  tools/ci: {}
+
   tools/commit-message: {}
 
   tools/trace: {}
