@@ -64,13 +64,81 @@
   font-weight: 600;
 }
 
-/* Docusaurus sets the dark footer's colours on the class, which beats :root. */
-.footer--dark {
-  --ifm-footer-background-color: var(--surface-rail);
-  --ifm-footer-color: var(--ink-rail-muted);
-  --ifm-footer-title-color: var(--ink-rail);
-  --ifm-footer-link-color: var(--ink-rail-muted);
-  --ifm-footer-link-hover-color: var(--ink-rail);
+.footer {
+  --ifm-footer-background-color: var(--surface-panel);
+  --ifm-footer-color: var(--ink-muted);
+  --ifm-footer-link-color: var(--ink-muted);
+  --ifm-footer-link-hover-color: var(--ink-primary);
+  --ifm-footer-padding-vertical: var(--space-4);
+  border-top: var(--hairline);
+  font-size: 0.875rem;
+}
+
+/* One row on a desktop: the licence on the left, the links on the right. */
+.footer .container {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-6);
+}
+
+.footer .footer__links {
+  display: flex;
+  flex-flow: row wrap;
+  gap: 0 var(--space-4);
+  margin: 0;
+  text-align: start;
+}
+
+.footer .footer__link-separator {
+  display: none;
+}
+
+.footer .footer__bottom {
+  order: -1;
+  padding: 0;
+  text-align: start;
+}
+
+.footer .footer__link-item {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 996px) {
+  .footer .footer__bottom {
+    order: 0;
+    width: 100%;
+  }
+
+  .footer .footer__link-item {
+    min-height: 2.75rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .footer .footer__links > .footer__links {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .footer .footer__links {
+    width: 100%;
+  }
 }
 
 .navbar__search-input {

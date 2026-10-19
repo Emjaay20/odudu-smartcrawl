@@ -7,7 +7,7 @@ import { contentDir } from './plugins/content-dir';
 import { requireDescriptions } from './plugins/descriptions';
 import imageStrip from './plugins/image-strip';
 import robots from './plugins/robots';
-import { NAVBAR_ROUTES, REPOSITORY_URL, SECTIONS } from './nav';
+import { FOOTER_ROUTES, NAVBAR_ROUTES, REPOSITORY_URL, SECTIONS } from './nav';
 import { siteHeadTags } from './seo';
 import { PAGES_BASE, SITE_ORIGIN } from './site.config';
 
@@ -43,15 +43,18 @@ const themeConfig: Preset.ThemeConfig = {
     ],
   },
   footer: {
-    style: 'dark',
+    style: 'light',
     links: [
+      ...FOOTER_ROUTES.flatMap((route) => {
+        const section = SECTIONS.find((candidate) => candidate.route === route);
+        return section === undefined ? [] : [{ label: section.label, to: `/${route}` }];
+      }),
       {
-        title: 'Documentation',
-        items: SECTIONS.map((section) => ({ label: section.label, to: `/${section.route}` })),
+        html: `<a class="footer__link-item" href="${REPOSITORY_URL}" target="_blank" rel="noopener noreferrer">GitHub<span class="visually-hidden"> (opens in a new tab)</span></a>`,
       },
-      { title: 'Project', items: [{ label: 'GitHub', href: REPOSITORY_URL }] },
     ],
-    copyright: 'Odudu is open source under the AGPL-3.0.',
+    // Read when the site is built: a build after New Year changes the year.
+    copyright: `© ${String(new Date().getUTCFullYear())} Odudu · AGPL-3.0`,
   },
   prism: { theme: themes.github, darkTheme: themes.dracula },
   colorMode: { respectPrefersColorScheme: true },

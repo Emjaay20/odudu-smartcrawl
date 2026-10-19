@@ -71,6 +71,13 @@ export const NAVBAR_ROUTES: readonly string[] = [
   'reference/',
 ];
 
+export const FOOTER_ROUTES: readonly string[] = [
+  'quick-start/',
+  'reference/',
+  'security/',
+  'contributing/',
+];
+
 export interface MachineReadableReference {
   readonly title: string;
   readonly description: string;

@@ -1620,24 +1620,29 @@ increments; this section is its source, and the heading below is the one they fi
 ### Recovery codes
 
 - **What a recovery code is for.** It stands in for a TOTP code at the second-factor step, once. It is not itself a
-  second factor, so a subject whose only "factor" is a set of codes has none.
-- **Which credentials are a second factor.** A `totp` row or a `webauthn` row (`recoveryStanding` in
-  `credentialRepository`). A passkey counts because its assertion is possession plus the authenticator's own user
-  verification, and the flow engine already treats it as satisfying the second-factor step (`otpApplicable` stands down
-  after one). A passkey-only subject's codes do not unlock a login in a tenant that does not require a second factor, but
-  they are kept and counted with the passkey: the removal rule is about whether anything is left to stand in for.
+  factor at all, so a subject whose only "factor" is a set of codes has none.
+- **What a recovery code stands in for: a TOTP, and only a TOTP.** The login accepts a code only at the TOTP code step
+  (`recoveryApplicable`, which now also needs the subject to hold a TOTP, whatever the tenant's `otpRequired` says of
+  others), and never after a passkey. So `recoveryStanding.hasTotp` counts `totp` rows alone. Consequences, all tested
+  through `advance`: removing the last TOTP revokes the set even while a passkey remains; passkey enrolment owes no set
+  (ADR 0021's amendment, dated 2026-10-19); a surviving code offered beside a password by a subject with no TOTP is
+  neither accepted nor spent, with `otpRequired` on or off and a passkey held or not. With `otpRequired` on, a
+  passkey-only subject signs in with the passkey, where the code step does not apply, as before, and a subject with
+  neither owes `configure-totp`; before this round a surviving code was offered to such a subject as the second factor.
+  The earlier reading, that a passkey is a factor a set protects, was wrong and is superseded.
 - **Removal.** `onSecondFactorRemoved` (`@odudu/authn-flows`) runs after a TOTP or passkey row is deleted, in the same
   transaction and with the subject row locked (`FOR NO KEY UPDATE`, as every admin mutation takes it). With no second
   factor left it deletes the whole set, spent rows included, and records `subject.recovery_codes_revoke` with
-  `{revoked, reason: "last_factor_removed"}`; with one left, or no codes held, it writes nothing. The only path that
+  `{revoked, reason: "last_factor_removed"}`; with a TOTP left, or no codes held, it writes nothing. It also completes an
+  owed `generate-recovery-codes` whenever no TOTP remains. The only path that
   removes a second-factor row today is the admin API's `deleteCredential` (verified: `grep -rn "deleteOne" packages apps
 --include='*.ts'` finds that one caller; password-history trimming and `deleteRecoveryCodes` are the other deletes).
   P4f's self-service removal calls the same function.
-- **Admin revoke.** `DELETE …/recovery-codes?require_new_set=true|false`, default true. With a second factor remaining
-  and the flag true it adds `generate-recovery-codes` in the same transaction; with none remaining nothing is added
+- **Admin revoke.** `DELETE …/recovery-codes?require_new_set=true|false`, default true. With a TOTP remaining
+  and the flag true it adds `generate-recovery-codes` in the same transaction; with no TOTP remaining nothing is added
   whatever the flag says. The audit detail is `{revoked, new_set_required}`.
 - **Sign-in check.** After a sign-in completes (every factor satisfied, not merely the first), a subject who holds a
-  second factor and no unspent code owes `generate-recovery-codes`. One aggregate query (`recoveryStanding`) on the
+  TOTP and no unspent code owes `generate-recovery-codes`. One aggregate query (`recoveryStanding`) on the
   success path; the action is only added, and `completeRecoveryCodes` clears it once a set exists, so it cannot loop.
   It does not run for a password-only stage, so a password alone earns no prompt about a factor it did not present.
 - **Owner notice.** `renderSecondFactorRemoved` and `renderRecoveryCodesRevoked` in `@odudu/email`, queued through the
@@ -1658,7 +1663,7 @@ increments; this section is its source, and the heading below is the one they fi
   point; one existing integration test (`subjects.int.test.ts`, the TOTP removal) seeded such a subject and now seeds a
   saved code, the state an ordinary enrolment leaves.
 - **Issuing is serialised with removal.** `beginRecoveryCodes` takes the subject row lock (`subjectRepository.lock`, which
-  `lockSubjectRow` in protocol-admin now delegates to) and issues only while a second factor is held; otherwise it clears
+  `lockSubjectRow` in protocol-admin now delegates to) and issues only while a TOTP is held; otherwise it clears
   the owed `generate-recovery-codes` action and answers `{kind: 'no_second_factor'}`, which both page doors turn into the
   expired-sign-in page. A set therefore never exists for a subject with no factor. verified: the interleaving test in
   `recovery-lifecycle.int.test.ts` ("never leaves a set behind a removed last factor") holds the issuing transaction open
@@ -1699,8 +1704,56 @@ design spec's P4f criterion and `docs/request-paths.md`'s "What is not implement
   both against real PostgreSQL; the console's Chromium run, `subjects.spec.ts` on the stack `odudu-p4g-recovery`, 15 passed.
 - Mutations, each failing the named test and passing after the restore: dropping the second-factor condition from
   `onSecondFactorRemoved` ("keeps the set while a passkey remains"); dropping it from the sign-in check ("owes nothing
-  to a subject with no second factor"); removing the sign-in call from `advance` (three tests); counting only `totp` as a
-  second factor ("owes a set to a subject whose only second factor is a passkey"); ignoring `require_new_set` in the
+  to a subject with no second factor"); removing the sign-in call from `advance` (three tests); counting a passkey as a factor again
+  ("revokes the set with the last TOTP even while a passkey remains"); ignoring `require_new_set` in the
   handler ("owes nothing when require_new_set is false"); owing a set with no factor left ("owes nothing to a subject
-  with no second factor"); handling only `totp` removals ("revokes the set when the passkey was the last factor");
+  with no second factor"); letting the executor offer the code step for a subject with no TOTP ("is neither accepted nor spent");
   mailing a revoke that found nothing ("writes no mail when no code was held").
+
+### Fix round 2
+
+- A passkey is not what a set protects; see "What a recovery code stands in for" above. The unverified-address rule has a
+  cost the P4f row now names: self-registration with somebody else's address can make an administrator's notice mail a
+  stranger the tenant name and the fact that an account exists.
+- `removeCredentialQuerySchema` and `revokeRecoveryCodesQuerySchema` are strict, so `DELETE …/credentials/{id}` now
+  refuses an unknown query parameter with `400` where it used to ignore one. admin-paths.md says so.
+
+### The docs footer, reworked
+
+2026-10-19. The stock footer (dark rail surface, nine links in one column, a lone
+"Project" column, a centred licence line) was taller than the content above it on
+the image's home page at 2000 px. It is now one hairline-topped row on the page
+surface (`--surface-panel`, `--border`, `--ink-muted`), content in the same
+`.container` as the pages: the licence on the left, five links on the right
+(Quick start, Reference, Security, Contributing, GitHub; `FOOTER_ROUTES` in
+`nav.ts`). Configuration and CSS only, no swizzle, no inline style. Under 997 px
+the licence drops below the links; at 576 px the links are a two-column grid with
+44 px targets (32 px on a desktop; WCAG 2.2 asks for 24). GitHub carries
+`rel="noopener noreferrer"` and a visually hidden "(opens in a new tab)", written
+as a footer `html` item because the theme's own icon has an `aria-label` on an
+`svg` with no role, which a screen reader may skip.
+
+![The footer before, desktop dark](p4g-docs/footer-before-desktop-dark.webp)
+![The footer after, desktop dark](p4g-docs/footer-after-desktop-dark.webp)
+![The footer before, phone light](p4g-docs/footer-before-phone-light.webp)
+![The footer after, phone light](p4g-docs/footer-after-phone-light.webp)
+
+- **The year is the build's.** `© {new Date().getUTCFullYear()}` is computed in
+  `docusaurus.config.ts`. A build after New Year changes it, and the turbo cache
+  keys (`@odudu/docs#build` inputs and `env`) do not include the date, so a
+  cached build from December survives into January until a source file changes.
+  turbo's `env` takes names, not expressions, so the year cannot be made an input
+  without a wrapper that exports it; not done. A cache hit can therefore carry the
+  previous year. `tests/footer.test.ts` fails on a stale
+  build, which is the signal to rebuild.
+- **Tests.** `tests/footer.test.ts` (both builds: footer on every page, year,
+  link targets exist, repository link attributes and cue, no `style` attribute,
+  no hosted address in the image) and `tests/footer.browser.test.ts` (axe on the
+  footer in both targets and both schemes, home and a docs page; no horizontal
+  scroll and 24 px targets at 1440, 768 and 390; surface equals the navbar's).
+  `axe-core` and `@axe-core/playwright` 4.13.0 became docs devDependencies, the
+  versions the console already pins.
+- verified: `pnpm --filter @odudu/docs build:image`, `build:pages`, then
+  `test` (209 passed) and `test:browser` (19 passed, the image CSP walk
+  among them); screenshots by Playwright Chromium at 1440, 768 and 390, light
+  and dark, home and `/reference/`.
