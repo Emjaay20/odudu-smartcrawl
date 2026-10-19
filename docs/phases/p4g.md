@@ -714,3 +714,35 @@ semver tag there.
   the recovery-codes gate and `continuation()` takes the subject it is handed,
   so no page asks twice for the same thing today; fold them if increments 14 to
   16 add a per-page lookup.
+
+## Increment 14: protocol-oidc page text in a catalogue
+
+- The catalogue is `packages/protocol-oidc/src/view/messages.ts` (a flat record
+  `en`, built with `createCatalogue`), not `catalogue/en.json` as the plan said:
+  the text is TypeScript so a renderer's `t` id is checked by `tsc`. `t` is
+  plain text (a title the shell escapes, a test); `tHtml` is escaped markup, and
+  the values it is given in `isolated` are wrapped in `<bdi>` after `escapeHtml`.
+  A user value reaches a message only as a marker the escaped result is searched
+  for, so the message is escaped once and each user value once.
+- A French catalogue exists in tests only (`tests/support/fr-catalogue.ts`,
+  imported as `#test/fr-catalogue`): a renderer test mocks `#/view/messages`
+  with `withFrench`, so the real renderer is the one rendering French.
+  `SHIPPED_LOCALES` stays `en`.
+- The English text is byte-identical to before except three things, each one
+  re-recorded in `docs/request-paths.md`: user-controlled values sit in
+  `<bdi>`, an apostrophe in a page's own text is `&#39;` (the catalogue is
+  escaped as a whole, not trusted), and the passkey script reads its three
+  sentences from `data-` attributes of its form (`data-failed` carries
+  `{reason}`, which the script replaces with the browser's own reason).
+  The redirect-refused logout sentence lost a hard line break. A plural uses
+  ICU, so `Try again in 1,000 seconds` would now carry a thousands separator.
+- The login refusal constants are catalogue ids; `refusalMessage` returns an id
+  and the page formats it. The page is still no oracle: one id per step.
+- Literals that stay: the protocol `error_description` an authorization error
+  passes through (`outcome.description`, the `415` media-type sentence and
+  `PASSWORD_TOO_LONG.message` from the kernel, which the account pages share)
+  are developer-facing text under ADR 0043 and are isolated in `<bdi>`, not
+  translated; the `·` between a client's links; the `<small>` error code;
+  a value attribute that echoes the username (an attribute is its own isolation).
+- Owner: the kernel's `PASSWORD_TOO_LONG.message` is user-visible in two
+  packages and moves with increment 16 (account), where its other reader is.

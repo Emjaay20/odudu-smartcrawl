@@ -37,6 +37,23 @@ shipped); it was added to the recorded blocks by hand, after `nosniff` where
 `pageHeaders` places it, and a live login-page response on the project
 `odudu-p4g-13b` confirmed its value and position.
 
+The text of the server's own pages now comes from a message catalogue, and a
+value somebody else wrote (a client's name, an account's name, a scope label,
+an error description) is wrapped in `<bdi>` after it is escaped. Three things
+changed in the recorded documents as a result: those values sit inside
+`<bdi>…</bdi>`, an apostrophe in a page's own text is `&#39;` (`Can&#39;t
+continue`) where it was a bare `'`, and the passkey script reads its three
+sentences from `data-` attributes of its form instead of holding them. The
+login page with and without a refusal, the error pages (restart link, no row,
+unknown client, `415`), the logout confirmation, `Can&#39;t sign out`, the
+two consent screens (the second with its client registered through dynamic
+registration), the account chooser and the unverified-email page were
+each run again on the project `odudu-p4g-14`; every changed line and every
+changed `content-length` in the recorded blocks is the byte-for-byte result of
+that change, checked against those runs, and the blocks were not replayed end
+to end. The sign-in refusal comparison under
+[A refused login says so](#a-refused-login-says-so) is a fresh run.
+
 Values that change on every run — authorization codes, tokens, `jti`,
 session ids, timestamps — are shortened or truncated where they appear, and
 that is said each time. Nothing here is reconstructed from what the code
@@ -984,7 +1001,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 3018
+content-length: 3170
 Date: Thu, 15 Oct 2026 13:25:46 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -1008,7 +1025,7 @@ Keep-Alive: timeout=72
   <label>Password <input type="password" name="password" autocomplete="current-password"></label>
   <button type="submit">Sign in</button>
 </form>
-<form method="post" action="/tenants/demo/login-actions/authenticate" id="passkey-form">
+<form method="post" action="/tenants/demo/login-actions/authenticate" id="passkey-form" data-failed="Your device did not finish signing in — {reason}. You can try again." data-cancelled="the request was cancelled" data-not-offered="this server is not offering passkeys">
   <input type="hidden" name="auth_session_id" value="01a13fbd-81d7-7035-a05f-3ed8c91cac49">
   <input type="hidden" name="assertion" id="passkey-assertion">
   <p><button type="submit" id="passkey-submit">Sign in with a passkey</button></p>
@@ -1031,7 +1048,7 @@ form.addEventListener('submit', async (event) => {
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ auth_session_id: form.auth_session_id.value }),
     });
-    if (!offered.ok) throw new Error('this server is not offering passkeys');
+    if (!offered.ok) throw new Error(form.dataset.notOffered);
     const options = await offered.json();
     const assertion = await navigator.credentials.get({
       publicKey: { ...options, challenge: fromBase64Url(options.challenge) },
@@ -1039,8 +1056,8 @@ form.addEventListener('submit', async (event) => {
     field.value = JSON.stringify(assertion.toJSON());
     form.submit();
   } catch (caught) {
-    failure.textContent =
-      'Your device did not finish signing in — ' + (caught && caught.message ? caught.message : 'the request was cancelled') + '. You can try again.';
+    const reason = caught && caught.message ? caught.message : form.dataset.cancelled;
+    failure.textContent = form.dataset.failed.replace('{reason}', reason);
     failure.hidden = false;
   }
 });
@@ -1207,7 +1224,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 2978
+content-length: 3130
 Date: Thu, 15 Oct 2026 13:25:59 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -1232,7 +1249,7 @@ Keep-Alive: timeout=72
   <label>Password <input type="password" name="password" autocomplete="current-password" autofocus></label>
   <button type="submit">Sign in</button>
 </form>
-<form method="post" action="/tenants/demo/login-actions/authenticate" id="passkey-form">
+<form method="post" action="/tenants/demo/login-actions/authenticate" id="passkey-form" data-failed="Your device did not finish signing in — {reason}. You can try again." data-cancelled="the request was cancelled" data-not-offered="this server is not offering passkeys">
   <input type="hidden" name="auth_session_id" value="01a13fbd-b4cc-7f45-a470-fe600d127131">
   <input type="hidden" name="assertion" id="passkey-assertion">
   <p><button type="submit" id="passkey-submit">Sign in with a passkey</button></p>
@@ -1259,25 +1276,25 @@ diff /tmp/refused-wrong-password.txt /tmp/refused-unknown-user.txt
 
 ```
 2c2
-< x-request-id: 01a13fbd-b4de-707d-9c69-765926abc2e3
+< x-request-id: 01a15237-3f11-7eb4-90b4-e34a61d0c8f7
 ---
-> x-request-id: 01a13fbd-b521-70cb-b665-17c89a7337a4
+> x-request-id: 01a15237-3f42-779b-a647-322e513ff699
 4c4
-< content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-kwGGd/DNU6OyCipi1Taykw=='; connect-src 'self'
+< content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-GU8J53RCpb/r4m244ssgoQ=='; connect-src 'self'
 ---
-> content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-JH3t1PMcC0g+CoWx0yazjg=='; connect-src 'self'
-8c8
-< content-length: 2488
+> content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-JGwkpbJ2wmIIHgDikRI32w=='; connect-src 'self'
+10c10
+< content-length: 3130
 ---
-> content-length: 2491
-20c20
+> content-length: 3133
+31c31
 <   <label>Username <input type="text" name="username" autocomplete="username" value="ada"></label>
 ---
 >   <label>Username <input type="text" name="username" autocomplete="username" value="nobody"></label>
-31c31
-< <script nonce="kwGGd/DNU6OyCipi1Taykw==">
+42c42
+< <script nonce="GU8J53RCpb/r4m244ssgoQ==">
 ---
-> <script nonce="JH3t1PMcC0g+CoWx0yazjg==">
+> <script nonce="JGwkpbJ2wmIIHgDikRI32w==">
 ```
 
 Five lines differ: the request id, the script nonce (in the header and on
@@ -1539,7 +1556,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 1060
+content-length: 1075
 Date: Wed, 14 Oct 2026 00:41:38 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -1557,8 +1574,8 @@ Keep-Alive: timeout=72
 <body>
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<h1>Can't continue</h1>
-<p>This sign-in attempt is no longer valid. Go back and start again.</p>
+<h1>Can&#39;t continue</h1>
+<p><bdi>This sign-in attempt is no longer valid. Go back and start again.</bdi></p>
 <p><a href="/tenants/demo/protocol/openid-connect/auth?response_type=code&amp;client_id=demo-spa&amp;redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&amp;scope=openid&amp;code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&amp;code_challenge_method=S256&amp;state=demo-state">Start sign-in again</a></p>
 <p><small>invalid_request</small></p>
 </main>
@@ -1632,7 +1649,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 744
+content-length: 759
 Date: Wed, 14 Oct 2026 00:41:38 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -1650,8 +1667,8 @@ Keep-Alive: timeout=72
 <body>
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<h1>Can't continue</h1>
-<p>This sign-in attempt is no longer valid. Go back and start again.</p>
+<h1>Can&#39;t continue</h1>
+<p><bdi>This sign-in attempt is no longer valid. Go back and start again.</bdi></p>
 <p><small>invalid_request</small></p>
 </main>
 </body>
@@ -1679,7 +1696,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 744
+content-length: 759
 Date: Wed, 14 Oct 2026 00:42:05 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -1697,8 +1714,8 @@ Keep-Alive: timeout=72
 <body>
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<h1>Can't continue</h1>
-<p>This sign-in attempt is no longer valid. Go back and start again.</p>
+<h1>Can&#39;t continue</h1>
+<p><bdi>This sign-in attempt is no longer valid. Go back and start again.</bdi></p>
 <p><small>invalid_request</small></p>
 </main>
 </body>
@@ -1783,7 +1800,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 918
+content-length: 933
 Date: Wed, 14 Oct 2026 00:42:05 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -1801,8 +1818,8 @@ Keep-Alive: timeout=72
 <body>
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<h1>Can't continue</h1>
-<p>This sign-in attempt is no longer valid. Go back and start again.</p>
+<h1>Can&#39;t continue</h1>
+<p><bdi>This sign-in attempt is no longer valid. Go back and start again.</bdi></p>
 <p><a href="http://localhost:8080/callback?error=access_denied&amp;state=demo-state&amp;iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo">Return to the application</a></p>
 <p><small>invalid_request</small></p>
 </main>
@@ -3366,7 +3383,7 @@ content-type: text/html
 <body>
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<h1>Can't sign in yet</h1>
+<h1>Can&#39;t sign in yet</h1>
 <p>You need to verify your email address before you can sign in. We sent a link to the address on this account — follow it, then sign in again.</p>
 </main>
 </body>
@@ -4629,7 +4646,7 @@ An enrolled passkey is a first factor on its own. The login page offers it
 beside the password fields, and pressing it asks for nothing typed:
 
 ```
-<form method="post" action="/tenants/demo/login-actions/authenticate" id="passkey-form">
+<form method="post" action="/tenants/demo/login-actions/authenticate" id="passkey-form" data-failed="Your device did not finish signing in — {reason}. You can try again." data-cancelled="the request was cancelled" data-not-offered="this server is not offering passkeys">
   <input type="hidden" name="auth_session_id" value="01a13fbd-81d7-…">
   <input type="hidden" name="assertion" id="passkey-assertion">
   <p><button type="submit" id="passkey-submit">Sign in with a passkey</button></p>
@@ -7636,7 +7653,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 710
+content-length: 714
 
 <!doctype html>
 <html lang="en" dir="ltr">
@@ -7651,7 +7668,7 @@ content-length: 710
 <body>
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<h1>Can't sign out</h1>
+<h1>Can&#39;t sign out</h1>
 <p>This sign-out attempt is no longer valid. Go back and try again.</p>
 </main>
 </body>
@@ -8534,7 +8551,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 1154
+content-length: 1198
 Date: Wed, 14 Oct 2026 00:36:23 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -8552,14 +8569,14 @@ Keep-Alive: timeout=72
 <body>
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<h1>Example RP is asking for access</h1>
+<h1><bdi>Example RP</bdi> is asking for access</h1>
 <form method="post" action="/tenants/demo/login-actions/consent">
   <input type="hidden" name="auth_session_id" value="01a137d6-c22e-791c-9097-e8d295b70e7f">
   <ul>
-  <li>openid</li>
-  <li>profile</li>
+  <li><bdi>openid</bdi></li>
+  <li><bdi>profile</bdi></li>
   </ul>
-  <label><input type="checkbox" name="scope" value="offline_access"> offline_access — grants ongoing access, even while you are not present</label>
+  <label><input type="checkbox" name="scope" value="offline_access"> <bdi>offline_access</bdi> — grants ongoing access, even while you are not present</label>
   <button type="submit" name="decision" value="allow">Allow</button>
   <button type="submit" name="decision" value="deny">Deny</button>
 </form>
@@ -8693,7 +8710,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 1303
+content-length: 1347
 Date: Wed, 14 Oct 2026 00:36:24 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -8711,14 +8728,14 @@ Keep-Alive: timeout=72
 <body>
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<h1>Example RP is asking for access</h1>
+<h1><bdi>Example RP</bdi> is asking for access</h1>
 <form method="post" action="/tenants/demo/login-actions/consent">
   <input type="hidden" name="auth_session_id" value="01a137d6-c495-744e-aefc-7c457bb799de">
   <ul>
-  <li>openid</li>
-  <li>profile</li>
+  <li><bdi>openid</bdi></li>
+  <li><bdi>profile</bdi></li>
   </ul>
-  <label><input type="checkbox" name="scope" value="offline_access"> offline_access — grants ongoing access, even while you are not present</label>
+  <label><input type="checkbox" name="scope" value="offline_access"> <bdi>offline_access</bdi> — grants ongoing access, even while you are not present</label>
   <button type="submit" name="decision" value="allow">Allow</button>
   <button type="submit" name="decision" value="deny">Deny</button>
 </form>
@@ -8794,8 +8811,8 @@ curl -sS -D - \
 {"client_id":"billing-spa","name":"Billing & Co","consent_required":true,"client_uri":"https://billing.example/about?from=consent&lang=en","policy_uri":"https://billing.example/privacy","tos_uri":"https://billing.example/terms"}
 HTTP/1.1 200 OK
 content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'
-<h1>Billing &amp; Co is asking for access</h1>
-<p><a href="https://billing.example/about?from=consent&amp;lang=en">About Billing &amp; Co</a> · <a href="https://billing.example/privacy">Privacy policy</a> · <a href="https://billing.example/terms">Terms of service</a></p>
+<h1><bdi>Billing &amp; Co</bdi> is asking for access</h1>
+<p><a href="https://billing.example/about?from=consent&amp;lang=en">About <bdi>Billing &amp; Co</bdi></a> · <a href="https://billing.example/privacy">Privacy policy</a> · <a href="https://billing.example/terms">Terms of service</a></p>
 <form method="post" action="/tenants/email-demo/login-actions/consent">
 ```
 
@@ -9962,8 +9979,8 @@ content-type: text/html
 <body>
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<h1>Can't continue</h1>
-<p>Unknown or disabled client</p>
+<h1>Can&#39;t continue</h1>
+<p><bdi>Unknown or disabled client</bdi></p>
 <p><small>invalid_client</small></p>
 </main>
 </body>
@@ -10068,7 +10085,7 @@ curl -sS -D - -X POST -H 'content-type: application/json' \
 ```
 HTTP/1.1 415 Unsupported Media Type
 content-type: text/html
-content-length: 762
+content-length: 777
 
 <!doctype html>
 <html lang="en" dir="ltr">
@@ -10083,8 +10100,8 @@ content-length: 762
 <body>
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<h1>Can't continue</h1>
-<p>Authorization request parameters must be sent as application/x-www-form-urlencoded.</p>
+<h1>Can&#39;t continue</h1>
+<p><bdi>Authorization request parameters must be sent as application/x-www-form-urlencoded.</bdi></p>
 <p><small>invalid_request</small></p>
 </main>
 </body>
@@ -10590,8 +10607,8 @@ cat chooser.html
 <h1>Choose an account</h1>
 <form method="post" action="/tenants/demo/login-actions/select-account">
   <input type="hidden" name="auth_session_id" value="01a0cb29-6541-7948-968b-a0a487e699f8">
-  <button type="submit" name="session_id" value="01a0cb29-64de-7524-9fa8-6010a80148bb">ada</button>
-  <button type="submit" name="session_id" value="01a0cb29-652b-7714-9d32-50e37b35e21a">carol</button>
+  <button type="submit" name="session_id" value="01a0cb29-64de-7524-9fa8-6010a80148bb"><bdi>ada</bdi></button>
+  <button type="submit" name="session_id" value="01a0cb29-652b-7714-9d32-50e37b35e21a"><bdi>carol</bdi></button>
   <button type="submit" name="use_other" value="1">Use another account</button>
 </form>
 </main>
