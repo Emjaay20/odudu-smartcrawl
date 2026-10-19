@@ -1,5 +1,6 @@
 import { type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { escapeHtml, page } from '#/view/document';
+import { bdi, t, tHtml } from '#/view/messages';
 
 export interface SelectAccountEntry {
   sessionId: string;
@@ -12,10 +13,10 @@ export interface SelectAccountInput {
   accounts: readonly SelectAccountEntry[];
 }
 
+// The name is the account's own, so it is isolated from the page around it.
 function renderAccount(account: SelectAccountEntry): string {
   const sessionId = escapeHtml(account.sessionId);
-  const displayName = escapeHtml(account.displayName);
-  return `<button type="submit" name="session_id" value="${sessionId}">${displayName}</button>`;
+  return `<button type="submit" name="session_id" value="${sessionId}">${bdi(account.displayName)}</button>`;
 }
 
 // The hidden field is this page's CSRF defence, exactly as renderConsentPage's
@@ -29,12 +30,12 @@ export function renderSelectAccountPage(
   const action = `/tenants/${escapeHtml(input.tenant)}/login-actions/select-account`;
   const accountList = input.accounts.map(renderAccount).join('\n  ');
   return page(
-    'Choose an account',
-    `<h1>Choose an account</h1>
+    t(locale, 'selectAccount.title'),
+    `<h1>${tHtml(locale, 'selectAccount.title')}</h1>
 <form method="post" action="${action}">
   <input type="hidden" name="auth_session_id" value="${escapeHtml(input.authSessionId)}">
   ${accountList}
-  <button type="submit" name="use_other" value="1">Use another account</button>
+  <button type="submit" name="use_other" value="1">${tHtml(locale, 'selectAccount.useOther')}</button>
 </form>`,
     null,
     [],

@@ -9,6 +9,9 @@ export const en = {
   'throttled.title': 'Too many attempts',
   'throttled.retryAfter': 'Try again in {seconds, plural, one {# second} other {# seconds}}.',
   'throttled.goBack': 'Go back to the previous page when the time is up.',
+
+  'selectAccount.title': 'Choose an account',
+  'selectAccount.useOther': 'Use another account',
 };
 
 export type MessageId = keyof typeof en;
