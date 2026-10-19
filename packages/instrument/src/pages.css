@@ -51,7 +51,8 @@ body > section {
   box-shadow: var(--shadow-overlay);
 }
 
-main > :nth-last-child(1 of :not(iframe)) {
+main > :nth-last-child(1 of :not(iframe, script, noscript, [hidden])),
+form > :last-child {
   margin-block-end: 0;
 }
 
@@ -252,6 +253,12 @@ button.choice {
   font-size: var(--type-13);
   font-weight: 700;
   line-height: 1;
+}
+
+.alert ul {
+  margin: 0;
+  padding-inline-start: 0;
+  list-style: none;
 }
 
 .alert.notice {

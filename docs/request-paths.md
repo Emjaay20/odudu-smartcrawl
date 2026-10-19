@@ -59,6 +59,24 @@ the error page too, not only text somebody typed, since the page cannot tell the
 apart. The sign-in refusal comparison under
 [A refused login says so](#a-refused-login-says-so) is a fresh run.
 
+The pages then took one card width and a visual pass, which
+[docs/phases/p4g.md](phases/p4g.md#server-pages-the-visual-pass) records. In the
+recorded documents that is: the shell opens with `<p class="brand">`, the mark
+beside the word `odudu`; a page that knows its tenant puts its `<h1>` in
+`<header class="intro">`, with the tenant in `<p class="tenant">` and, on a
+sign-in form whose parked request names a client, the line
+`to continue to <bdi>…</bdi>`; a refusal is `<p class="alert" role="alert">`;
+the update-password violations sit in `<div class="alert" role="alert">`; and
+consent's Deny, the chooser's buttons and the passkey button carry classes. That
+was applied to the 53 recorded documents and their `content-length` lines by a
+script over the documents as they stood, not by replaying the guides end to end.
+Seven runs on the project `odudu-p4g-vis` were compared line for line with the
+matching recorded document, session ids, ports, secrets and nonces masked: the
+sign-in form, the refused sign-in, the TOTP enrolment, the recovery codes, the code
+form with and without a refusal, and the update-password page, whose tenant name is
+the only difference. The console's sign-in form names its client `Odudu
+administration`, the name of the client whose `client_id` is `odudu-admin`.
+
 The authn-flows pages read their text from a catalogue of their own too. The
 two that changed in these recordings are the authenticator enrolment page and
 the recovery-codes page: the key URI, the key and each recovery code are

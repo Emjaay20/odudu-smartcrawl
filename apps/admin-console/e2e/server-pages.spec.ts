@@ -16,6 +16,15 @@ const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3080';
 const LANDING = `${BASE}/health/ready`;
 const LONG_NAME =
   'The International Consortium of Extraordinarily Long Named Organisations and Their Subsidiary Applications Incorporated';
+// Every scope the consent clients are assigned, so the page lists defaults and options.
+const ALL_SCOPES = [
+  'openid',
+  'profile',
+  'reports',
+  'email',
+  'offline_access',
+  'segment'.repeat(12),
+].join(' ');
 const LONG_SCOPE_TEXT =
   'Read every report your organisation has ever produced, including the confidential quarterly summaries and the attachments beneath them, for as long as you remain employed';
 
@@ -41,7 +50,10 @@ const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 
 // RFC 6238 with the SHA-1, six digits and thirty seconds the enrolment page asks for.
 function totp(secret: string, at = Date.now()): string {
-  const bits = [...secret].map((c) => ALPHABET.indexOf(c).toString(2).padStart(5, '0')).join('');
+  const bits = secret
+    .split('')
+    .map((c) => ALPHABET.indexOf(c).toString(2).padStart(5, '0'))
+    .join('');
   const key = Buffer.from((bits.match(/.{8}/gu) ?? []).map((byte) => parseInt(byte, 2)));
   const counter = Buffer.alloc(8);
   counter.writeBigUInt64BE(BigInt(Math.floor(at / 30_000)));
@@ -95,7 +107,7 @@ test.beforeAll(() => {
     ]);
   }
   psql(
-    `insert into user_required_actions (tenant_id, subject_id, action) select u.tenant_id, u.subject_id, '${'configure-passkey'}' from users u where u.tenant_id = ${inTenant(main)} and u.username = 'passkey'`,
+    `insert into user_required_actions (tenant_id, subject_id, action) select u.tenant_id, u.subject_id, 'configure-passkey' from users u where u.tenant_id = ${inTenant(main)} and u.username = 'passkey'`,
   );
   psql(
     `insert into user_required_actions (tenant_id, subject_id, action) select u.tenant_id, u.subject_id, 'generate-recovery-codes' from users u where u.tenant_id = ${inTenant(main)} and u.username = 'recovery'`,
@@ -246,12 +258,12 @@ test('the required-action pages: password change, passkey enrolment', async ({
 });
 
 test('consent, the account chooser and signing out', async ({ page }) => {
-  await page.goto(authorize(main, 'portal'));
+  await page.goto(authorize(main, 'portal', { scope: ALL_SCOPES }));
   await signIn(page, 'alice');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('is asking for access');
   await inspect(page, 'consent');
 
-  await page.goto(authorize(main, 'longco', { prompt: 'login' }));
+  await page.goto(authorize(main, 'longco', { prompt: 'login', scope: ALL_SCOPES }));
   await signIn(page, 'alice');
   await expect(page.getByRole('heading', { level: 1 })).toContainText(LONG_NAME);
   await inspect(page, 'consent-long-names');
