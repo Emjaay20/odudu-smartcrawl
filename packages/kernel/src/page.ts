@@ -17,8 +17,9 @@ export interface PageScript {
 export interface RenderedPage {
   // The whole document, as the server sends it today.
   html: string;
-  // Everything inside <body>. What a theme is allowed to place; see
-  // ADR 0030 for why it is never handed the document.
+  // What the renderer put inside the page's <main>, without the shell's
+  // own chrome. What a theme is allowed to place; see ADR 0030 for why it
+  // is never handed the document.
   body: string;
   // The document's title, so a theme's own shell can set one.
   title: string;
@@ -134,6 +135,9 @@ export function pageHeaders(page: RenderedPage): readonly (readonly [string, str
     // Referer, but a link a user clicks away from is not a subresource.
     ['referrer-policy', 'no-referrer'],
     ['cache-control', PAGE_CACHE_CONTROL],
+    // The page's own type is the one it is served as; a browser has no
+    // business guessing another from its bytes.
+    ['x-content-type-options', 'nosniff'],
   ];
 }
 

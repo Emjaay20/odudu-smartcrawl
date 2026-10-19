@@ -220,6 +220,18 @@ printf '%s' "$FONT_HEADERS" | grep -i '^cache-control:.*immutable' > /dev/null |
 }
 echo "smoke: the instrument stylesheet and $FONT are served from the image"
 
+MARK_HEADERS=$(curl -sS -D - -o /dev/null "$BASE/instrument/mark.svg")
+printf '%s' "$MARK_HEADERS" | grep -i '^content-type: *image/svg+xml' > /dev/null || {
+  echo "smoke: /instrument/mark.svg was not served as image/svg+xml" >&2
+  exit 1
+}
+SHELL_HEADERS=$(curl -sS -D - -o /dev/null "$BASE/console/")
+printf '%s' "$SHELL_HEADERS" | grep -i '^x-content-type-options: *nosniff' > /dev/null || {
+  echo "smoke: the console shell did not carry nosniff" >&2
+  exit 1
+}
+echo "smoke: the mark is served and the console shell forbids a sniffed type"
+
 # `odudu` is the image's command, so an operator runs `docker compose exec
 # odudu odudu reap` rather than naming the bundle. It prints one JSON report.
 REAP_REPORT=$(docker compose exec -T odudu odudu reap) || { echo "smoke: odudu reap failed inside the image" >&2; exit 1; }

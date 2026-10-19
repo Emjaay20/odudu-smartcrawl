@@ -631,3 +631,24 @@ semver tag there.
   `ODUDU_ALLOW_PRIVATE_CLIENT_URLS`, `ODUDU_KEK`.
 - With `ODUDU_ADMIN_PASSWORD` set and no email on a terminal, `init` defaults
   the address instead of asking (`init.int.test.ts`; README states it).
+
+### The shell and the reach check
+
+- verified: `node_modules/.bin/vitest run --project unit packages/protocol-oidc/src/view/instrument-reach.test.ts`
+  before the change: four renderers built a document of their own and
+  imported no shell, `passkey-enrolment-html.ts`, `recovery-codes-html.ts` and
+  `update-password-html.ts` in authn-flows (each with its own `escapeHtml`) and
+  console-gateway's `refusal-html.ts`; `update-password-html.ts` had no test.
+  All four now call their package's `page()`; its test was added with the
+  check so the check ends green.
+- The shell is one `page(title, body, script, frames, locale)` in each of four
+  packages, held to one text by the reach test (comments aside). `body` is the
+  renderer's content only; the shell owns `<main class="page">`, the mark, the
+  stylesheet and favicon links. `PageLocale` is a local structural type until
+  the i18n package exists.
+- `x-content-type-options: nosniff` is sent by `pageHeaders`, the console shell
+  and `/console/assets/*`, and `/instrument/*`; the Instrument routes bound
+  their tree at 128 entries (`maxEntries`).
+- A recorded `content-security-policy` block is now also held to the other
+  headers `pageHeaders` sends, to the nonce form, to `connect-src 'self'` as
+  the only directive beside a script, and to `frame-src` as bare origins.

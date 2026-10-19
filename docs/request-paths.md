@@ -24,6 +24,15 @@ stack on that change (the authorization form, an error page, the logout
 confirmation, the console shell), and `tests/docs/page-csp-transcripts.test.ts`
 holds every recorded line in all three guides to what `pageHeaders` sends.
 
+Every page document in the three guides now shows the shared shell (the
+Instrument stylesheet, the mark and one `<main>`), and every page response
+carries `x-content-type-options: nosniff`. That was applied to the recorded
+documents by wrapping each in the shell, and to each `content-length` by the
+shell's 490 extra bytes, which a live response confirmed (the unknown-client
+error page, 704 bytes, on the project `odudu-p4g-12`); those guides were not
+replayed end to end. The test above holds the headers of every recorded block,
+`nosniff` included.
+
 Values that change on every run — authorization codes, tokens, `jti`,
 session ids, timestamps — are shortened or truncated where they appear, and
 that is said each time. Nothing here is reconstructed from what the code
@@ -968,15 +977,25 @@ content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; 
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 2528
+x-content-type-options: nosniff
+content-length: 3018
 Date: Thu, 15 Oct 2026 13:25:46 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Sign in</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Sign in</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <form method="post" action="/tenants/demo/login-actions/authenticate">
   <input type="hidden" name="auth_session_id" value="01a13fbd-81d7-7035-a05f-3ed8c91cac49">
   <label>Username <input type="text" name="username" autocomplete="username"></label>
@@ -1020,6 +1039,7 @@ form.addEventListener('submit', async (event) => {
   }
 });
 </script>
+</main>
 <script nonce="Wl0HqPsMni5vrqbjy4QgLg==">window.addEventListener('pageshow', function (event) { if (event.persisted) location.reload(); });</script>
 </body>
 </html>
@@ -1179,15 +1199,25 @@ content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; 
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 2488
+x-content-type-options: nosniff
+content-length: 2978
 Date: Thu, 15 Oct 2026 13:25:59 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Sign in</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Sign in</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <p role="alert"><strong>Sign-in failed. Check your details and try again.</strong></p>
 <form method="post" action="/tenants/demo/login-actions/authenticate">
   <input type="hidden" name="auth_session_id" value="01a13fbd-b4cc-7f45-a470-fe600d127131">
@@ -1203,6 +1233,7 @@ Keep-Alive: timeout=72
 <p id="passkey-error" hidden></p>
 <noscript><p>Signing in with a passkey needs JavaScript, because only the browser can talk to your authenticator. Use your username and password above.</p></noscript>
 <script nonce="kwGGd/DNU6OyCipi1Taykw==">…</script>
+</main>
 </body>
 </html>
 ```
@@ -1499,19 +1530,30 @@ content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; 
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 570
+x-content-type-options: nosniff
+content-length: 1060
 Date: Wed, 14 Oct 2026 00:41:38 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Sign-in error</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Sign-in error</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Can't continue</h1>
 <p>This sign-in attempt is no longer valid. Go back and start again.</p>
 <p><a href="/tenants/demo/protocol/openid-connect/auth?response_type=code&amp;client_id=demo-spa&amp;redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&amp;scope=openid&amp;code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&amp;code_challenge_method=S256&amp;state=demo-state">Start sign-in again</a></p>
 <p><small>invalid_request</small></p>
+</main>
 </body>
 </html>
 ```
@@ -1548,6 +1590,7 @@ content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; 
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
+x-content-type-options: nosniff
 content-length: 2528
 Date: Thu, 15 Oct 2026 13:26:39 GMT
 Connection: keep-alive
@@ -1578,18 +1621,29 @@ content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; 
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 254
+x-content-type-options: nosniff
+content-length: 744
 Date: Wed, 14 Oct 2026 00:41:38 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Sign-in error</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Sign-in error</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Can't continue</h1>
 <p>This sign-in attempt is no longer valid. Go back and start again.</p>
 <p><small>invalid_request</small></p>
+</main>
 </body>
 </html>
 ```
@@ -1613,18 +1667,29 @@ content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; 
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 254
+x-content-type-options: nosniff
+content-length: 744
 Date: Wed, 14 Oct 2026 00:42:05 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Sign-in error</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Sign-in error</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Can't continue</h1>
 <p>This sign-in attempt is no longer valid. Go back and start again.</p>
 <p><small>invalid_request</small></p>
+</main>
 </body>
 </html>
 ```
@@ -1705,19 +1770,30 @@ content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; 
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 428
+x-content-type-options: nosniff
+content-length: 918
 Date: Wed, 14 Oct 2026 00:42:05 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Sign-in error</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Sign-in error</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Can't continue</h1>
 <p>This sign-in attempt is no longer valid. Go back and start again.</p>
 <p><a href="http://localhost:8080/callback?error=access_denied&amp;state=demo-state&amp;iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo">Return to the application</a></p>
 <p><small>invalid_request</small></p>
+</main>
 </body>
 </html>
 ```
@@ -3164,11 +3240,21 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Account created</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Account created</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Account created</h1>
 <p>Check your email for a link to verify your address before you can sign in.</p>
+</main>
 </body>
 </html>
 ```
@@ -3256,11 +3342,21 @@ HTTP/1.1 200 OK
 content-type: text/html
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Verify your email</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Verify your email</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Can't sign in yet</h1>
 <p>You need to verify your email address before you can sign in. We sent a link to the address on this account — follow it, then sign in again.</p>
+</main>
 </body>
 </html>
 ```
@@ -3321,13 +3417,23 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Can&#39;t create this account</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Can&#39;t create this account</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Can't create this account</h1>
 <ul>
 <li>That email address is already registered.</li>
 </ul>
+</main>
 </body>
 </html>
 ```
@@ -3352,13 +3458,23 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Can&#39;t create this account</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Can&#39;t create this account</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Can't create this account</h1>
 <ul>
 <li>Password must be at least 8 characters long.</li>
 </ul>
+</main>
 </body>
 </html>
 ```
@@ -3370,15 +3486,25 @@ same short password now lists all three:
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Can&#39;t create this account</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Can&#39;t create this account</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Can't create this account</h1>
 <ul>
 <li>Password must be at least 8 characters long.</li>
 <li>Password must contain a digit.</li>
 <li>Password must contain an uppercase letter.</li>
 </ul>
+</main>
 </body>
 </html>
 ```
@@ -3402,14 +3528,24 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Can&#39;t create this account</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Can&#39;t create this account</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Can't create this account</h1>
 <ul>
 <li>Password must not contain the username.</li>
 <li>Password must not contain the email address.</li>
 </ul>
+</main>
 </body>
 </html>
 ```
@@ -3427,13 +3563,23 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Can&#39;t create this account</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Can&#39;t create this account</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Can't create this account</h1>
 <ul>
 <li>Password must not contain the email address.</li>
 </ul>
+</main>
 </body>
 </html>
 ```
@@ -3484,13 +3630,23 @@ curl -sS -w '\n%{http_code}\n' \
 {"command":"tenant","created":false,"tenant":"signup-audit","tenantId":"01a0dc5e-9596-7fe2-903f-e72fe1e10817","settings":["registration_allowed","verify_email"]}
 201
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Can&#39;t create this account</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Can&#39;t create this account</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Can't create this account</h1>
 <ul>
 <li>That email address is already registered.</li>
 </ul>
+</main>
 </body>
 </html>
 400
@@ -3619,9 +3775,18 @@ curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authentica
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Set up your authenticator</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Set up your authenticator</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Set up your authenticator</h1>
 <p>Scan this with your authenticator app, or enter the key by hand.</p>
 <svg …>…</svg>
@@ -3633,6 +3798,7 @@ curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authentica
   <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
   <button type="submit">Confirm</button>
 </form>
+</main>
 </body>
 </html>
 ```
@@ -3682,15 +3848,25 @@ content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; 
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 1078
+x-content-type-options: nosniff
+content-length: 1568
 Date: Wed, 14 Oct 2026 00:32:57 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Save your recovery codes</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Save your recovery codes</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Save your recovery codes</h1>
 <p>Each of these signs you in once, in place of your second factor, if you lose it. <strong>This is the only time they are shown.</strong> Print them or put them in a password manager before you continue — nobody, including an administrator, can show them to you again.</p>
 <ol>
@@ -3709,6 +3885,7 @@ Keep-Alive: timeout=72
   <input type="hidden" name="auth_session_id" value="01a137d3-98b1-7904-aeda-9a6709b81b53">
   <button type="submit">I have saved these codes</button>
 </form>
+</main>
 </body>
 </html>
 ```
@@ -3797,15 +3974,25 @@ curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authentica
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Enter your authentication code</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Enter your authentication code</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
   <input type="hidden" name="auth_session_id" value="01a137d3-9bc1-7987-8c23-f806ce89510f">
   <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
   <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>
   <button type="submit">Verify</button>
 </form>
+</main>
 </body>
 </html>
 ```
@@ -3835,9 +4022,18 @@ curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authentica
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Enter your authentication code</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Enter your authentication code</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <p role="alert"><strong>That code did not work. Check it and try again.</strong></p>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
   <input type="hidden" name="auth_session_id" value="01a13f65-6fc2-798d-b022-fab2a73714f1">
@@ -3845,6 +4041,7 @@ curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authentica
   <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>
   <button type="submit">Verify</button>
 </form>
+</main>
 </body>
 </html>
 ```
@@ -3967,15 +4164,25 @@ curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authentica
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Enter your authentication code</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Enter your authentication code</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
   <input type="hidden" name="auth_session_id" value="01a137d3-9df0-76d0-b626-fe71c6edce91">
   <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
   <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>
   <button type="submit">Verify</button>
 </form>
+</main>
 </body>
 </html>
 ```
@@ -4057,9 +4264,18 @@ curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authentica
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Enter your authentication code</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Enter your authentication code</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <p role="alert"><strong>You have already used that recovery code. Try another one from your list.</strong></p>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
   <input type="hidden" name="auth_session_id" value="01a13f65-709f-77fd-916a-4dde358b7bbc">
@@ -4067,6 +4283,7 @@ curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authentica
   <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>
   <button type="submit">Verify</button>
 </form>
+</main>
 </body>
 </html>
 ```
@@ -4085,9 +4302,18 @@ curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authentica
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Enter your authentication code</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Enter your authentication code</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <p role="alert"><strong>That code did not work. Check it and try again.</strong></p>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
   <input type="hidden" name="auth_session_id" value="01a13f65-709f-77fd-916a-4dde358b7bbc">
@@ -4095,6 +4321,7 @@ curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authentica
   <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>
   <button type="submit">Verify</button>
 </form>
+</main>
 </body>
 </html>
 ```
@@ -4182,15 +4409,25 @@ content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; 
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 1166
+x-content-type-options: nosniff
+content-length: 1656
 Date: Wed, 14 Oct 2026 00:33:47 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Save your recovery codes</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Save your recovery codes</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Save your recovery codes</h1>
 <p>Each of these signs you in once, in place of your second factor, if you lose it. <strong>This is the only time they are shown.</strong> Print them or put them in a password manager before you continue — nobody, including an administrator, can show them to you again.</p>
 <p>These replace the codes issued to this account before now, which no longer work.</p>
@@ -4201,6 +4438,7 @@ Keep-Alive: timeout=72
   <input type="hidden" name="auth_session_id" value="01a137d4-5f25-7dd5-b54e-f530dd226d0d">
   <button type="submit">I have saved these codes</button>
 </form>
+</main>
 </body>
 </html>
 ```
@@ -4521,19 +4759,39 @@ curl -sS -X POST http://localhost:3000/tenants/reset-demo/login-actions/reset-pa
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Check your email</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Check your email</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Check your email</h1>
 <p>If that address has an account, we've sent a link to reset its password.</p>
+</main>
 </body>
 </html>
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Check your email</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Check your email</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Check your email</h1>
 <p>If that address has an account, we've sent a link to reset its password.</p>
+</main>
 </body>
 </html>
 ```
@@ -4580,14 +4838,24 @@ curl -sS 'http://localhost:3000/tenants/reset-demo/login-actions/action-token?ke
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Choose a new password</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Choose a new password</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <form method="post" action="/tenants/reset-demo/login-actions/action-token">
   <input type="hidden" name="key" value="iad4k852Rw6VvCK8djwZSvU0dzcPMvNXXM3-UjOeRkk">
   <label>New password <input type="password" name="password" autocomplete="new-password"></label>
   <button type="submit">Reset password</button>
 </form>
+</main>
 </body>
 </html>
 ```
@@ -4605,13 +4873,23 @@ curl -sS -X POST http://localhost:3000/tenants/reset-demo/login-actions/action-t
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Can&#39;t reset your password</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Can&#39;t reset your password</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Can't reset your password</h1>
 <ul>
 <li>Password must be at least 8 characters long.</li>
 </ul>
+</main>
 </body>
 </html>
 ```
@@ -4636,16 +4914,26 @@ curl -sS -i -X POST http://localhost:3000/tenants/reset2-demo/login-actions/acti
 ```
 HTTP/1.1 400 Bad Request
 content-type: text/html
-content-length: 237
+content-length: 727
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Can&#39;t reset your password</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Can&#39;t reset your password</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Can't reset your password</h1>
 <ul>
 <li>Password must not be one you have used before.</li>
 </ul>
+</main>
 </body>
 </html>
 ```
@@ -4667,11 +4955,21 @@ curl -sS -X POST http://localhost:3000/tenants/reset-demo/login-actions/action-t
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Password reset</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Password reset</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Your password has been reset</h1>
 <p>You can close this page and sign in with your new password.</p>
+</main>
 </body>
 </html>
 ```
@@ -4936,15 +5234,25 @@ content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; 
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 595
+x-content-type-options: nosniff
+content-length: 1085
 Date: Wed, 14 Oct 2026 00:35:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Update your account</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Update your account</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Update your account</h1>
 <p>Your administrator asks you to:</p>
 <ul>
@@ -4956,6 +5264,7 @@ Keep-Alive: timeout=72
   <label>New password <input type="password" name="password" autocomplete="new-password"></label>
   <button type="submit">Continue</button>
 </form>
+</main>
 </body>
 </html>
 ```
@@ -4974,20 +5283,31 @@ content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; 
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 247
+x-content-type-options: nosniff
+content-length: 737
 Date: Wed, 14 Oct 2026 00:35:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Account updated</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Account updated</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Your account is updated</h1>
 <p>Sign in to the application to finish:</p>
 <ul>
 <li>Set up an authenticator app</li>
 </ul>
+</main>
 </body>
 </html>
 ```
@@ -5004,11 +5324,21 @@ curl -sS -w '\n' -X POST \
 ```
 {"actions":["configure-totp"]}
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Can&#39;t use this link</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Can&#39;t use this link</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>This link can't be used</h1>
 <p>It may have already been used or expired. Request a new one and try again.</p>
+</main>
 </body>
 </html>
 ```
@@ -5064,9 +5394,18 @@ curl -sS -X POST http://localhost:3086/tenants/expiry-demo/login-actions/authent
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Change your password</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Change your password</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Change your password</h1>
 <p>This account needs a new password before you can continue.</p>
 <form method="post" action="/tenants/expiry-demo/login-actions/required-action?action=update-password">
@@ -5074,6 +5413,7 @@ curl -sS -X POST http://localhost:3086/tenants/expiry-demo/login-actions/authent
   <label>New password <input type="password" name="password" autocomplete="new-password"></label>
   <button type="submit">Update password</button>
 </form>
+</main>
 </body>
 </html>
 ```
@@ -5542,18 +5882,29 @@ content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; 
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 239
+x-content-type-options: nosniff
+content-length: 729
 Date: Thu, 15 Oct 2026 11:54:12 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Too many attempts</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Too many attempts</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Too many attempts</h1>
 <p>Try again in 60 seconds.</p>
 <p>Go back to the previous page when the time is up.</p>
+</main>
 </body>
 </html>
 --- an address this tenant has never seen, still throttled ---
@@ -6925,13 +7276,13 @@ curl -sS -D - --get --data-urlencode "id_token_hint=$TOKEN_A" --data-urlencode '
 
 ```
 HTTP/1.1 200 OK
-<head><meta charset="utf-8"><title>Sign out?</title></head>
+<title>Sign out?</title>
 ---
 HTTP/1.1 200 OK
-<head><meta charset="utf-8"><title>Sign out?</title></head>
+<title>Sign out?</title>
 ---
 HTTP/1.1 200 OK
-<head><meta charset="utf-8"><title>Already signed out</title></head>
+<title>Already signed out</title>
 ```
 
 The first two are the confirmation form and the third the no-session page;
@@ -7208,9 +7559,18 @@ curl -sS -b cookies2.txt \
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Sign out?</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Sign out?</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Sign out?</h1>
 <p>Signing out ends this session for every application that uses it.</p>
 <form method="post" action="/tenants/demo/protocol/openid-connect/logout">
@@ -7218,6 +7578,7 @@ curl -sS -b cookies2.txt \
   <input type="hidden" name="csrf" value="yU7AU__xF-kY…">
   <button type="submit">Sign out</button>
 </form>
+</main>
 </body>
 </html>
 ```
@@ -7256,14 +7617,25 @@ content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; 
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 220
+x-content-type-options: nosniff
+content-length: 710
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Can&#39;t sign out</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Can&#39;t sign out</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Can't sign out</h1>
 <p>This sign-out attempt is no longer valid. Go back and try again.</p>
+</main>
 </body>
 </html>
 ```
@@ -7478,9 +7850,18 @@ curl -sS -b cookies-aud.txt -X POST \
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Sign out?</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Sign out?</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Sign out?</h1>
 <p>Signing out ends this session for every application that uses it.</p>
 <form method="post" action="/tenants/demo/protocol/openid-connect/logout">
@@ -7488,6 +7869,7 @@ curl -sS -b cookies-aud.txt -X POST \
   <input type="hidden" name="client_id" value="demo-post">
   <button type="submit">Sign out</button>
 </form>
+</main>
 </body>
 </html>
 ```
@@ -7602,17 +7984,28 @@ content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; 
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
+x-content-type-options: nosniff
 content-length: 318
 ```
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Signed out</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Signed out</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Signed out</h1>
 <p>You have been signed out.</p>
 <iframe src="http://localhost:9100/logout?iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo&amp;sid=01a137d7-eae6-…"></iframe>
+</main>
 </body>
 </html>
 ```
@@ -7921,15 +8314,25 @@ curl -sS -b cookies-offline.txt "http://localhost:3000/tenants/demo/protocol/ope
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Sign out?</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Sign out?</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Sign out?</h1>
 <p>Signing out ends this session for every application that uses it.</p>
 <form method="post" action="/tenants/demo/protocol/openid-connect/logout">
   <input type="hidden" name="session_id" value="01a0cb23-6b57-…">
   <button type="submit">Sign out</button>
 </form>
+</main>
 </body>
 </html>
 ```
@@ -7949,12 +8352,22 @@ set-cookie: demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 cache-control: no-store
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Signed out</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Signed out</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Signed out</h1>
 <p>You have been signed out.</p>
 
+</main>
 </body>
 </html>
 ```
@@ -8100,15 +8513,25 @@ content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; 
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 664
+x-content-type-options: nosniff
+content-length: 1154
 Date: Wed, 14 Oct 2026 00:36:23 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Allow access?</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Allow access?</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Example RP is asking for access</h1>
 <form method="post" action="/tenants/demo/login-actions/consent">
   <input type="hidden" name="auth_session_id" value="01a137d6-c22e-791c-9097-e8d295b70e7f">
@@ -8120,6 +8543,7 @@ Keep-Alive: timeout=72
   <button type="submit" name="decision" value="allow">Allow</button>
   <button type="submit" name="decision" value="deny">Deny</button>
 </form>
+</main>
 </body>
 </html>
 ```
@@ -8247,15 +8671,25 @@ content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; 
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 813
+x-content-type-options: nosniff
+content-length: 1303
 Date: Wed, 14 Oct 2026 00:36:24 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Allow access?</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Allow access?</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Example RP is asking for access</h1>
 <form method="post" action="/tenants/demo/login-actions/consent">
   <input type="hidden" name="auth_session_id" value="01a137d6-c495-744e-aefc-7c457bb799de">
@@ -8267,6 +8701,7 @@ Keep-Alive: timeout=72
   <button type="submit" name="decision" value="allow">Allow</button>
   <button type="submit" name="decision" value="deny">Deny</button>
 </form>
+</main>
 <script nonce="RGkC4LknpA2uMvjtQxZIHg==">window.addEventListener('pageshow', function (event) { if (event.persisted) location.reload(); });</script>
 </body>
 </html>
@@ -9494,12 +9929,22 @@ HTTP/1.1 400 Bad Request
 content-type: text/html
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Sign-in error</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Sign-in error</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Can't continue</h1>
 <p>Unknown or disabled client</p>
 <p><small>invalid_client</small></p>
+</main>
 </body>
 </html>
 ```
@@ -9602,15 +10047,25 @@ curl -sS -D - -X POST -H 'content-type: application/json' \
 ```
 HTTP/1.1 415 Unsupported Media Type
 content-type: text/html
-content-length: 272
+content-length: 762
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Sign-in error</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Sign-in error</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Can't continue</h1>
 <p>Authorization request parameters must be sent as application/x-www-form-urlencoded.</p>
 <p><small>invalid_request</small></p>
+</main>
 </body>
 </html>
 ```
@@ -10099,9 +10554,18 @@ cat chooser.html
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Choose an account</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Choose an account</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Choose an account</h1>
 <form method="post" action="/tenants/demo/login-actions/select-account">
   <input type="hidden" name="auth_session_id" value="01a0cb29-6541-7948-968b-a0a487e699f8">
@@ -10109,6 +10573,7 @@ cat chooser.html
   <button type="submit" name="session_id" value="01a0cb29-652b-7714-9d32-50e37b35e21a">carol</button>
   <button type="submit" name="use_other" value="1">Use another account</button>
 </form>
+</main>
 </body>
 </html>
 ```

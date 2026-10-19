@@ -212,6 +212,11 @@ page (the sheet is under 12 KB gzipped; the browser fetches only the font
 faces a page uses, by `unicode-range`). The directory read at boot is
 bounded by `readStaticTree`'s limits.
 
+**`x-content-type-options: nosniff`.** `pageHeaders` sends it on every page,
+and the console shell, its assets and `/instrument/*` send it too: a response
+is the type it was served as, which matters once a stylesheet and fonts are
+fetched from the same origin as the markup.
+
 ## Alternatives rejected
 
 - **Move `sendHtml` itself into `kernel`.** Would add `fastify` as a

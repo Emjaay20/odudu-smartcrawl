@@ -717,9 +717,18 @@ the change-password page, `change.html`, whose form carries the same
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Change your password</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Change your password</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Change your password</h1>
 <p>This account needs a new password before you can continue.</p>
 <form method="post" action="/tenants/system/login-actions/required-action?action=update-password">
@@ -727,6 +736,7 @@ the change-password page, `change.html`, whose form carries the same
   <label>New password <input type="password" name="password" autocomplete="new-password"></label>
   <button type="submit">Update password</button>
 </form>
+</main>
 </body>
 </html>
 ```
@@ -4908,9 +4918,18 @@ the one box the subject can grant:
 
 ```
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Allow access?</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Allow access?</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>consents-demo-app2 is asking for access</h1>
 <form method="post" action="/tenants/consents-demo2/login-actions/consent">
   <input type="hidden" name="auth_session_id" value="01a0e558-b0a9-763b-84f8-f348efaacd53">
@@ -4921,6 +4940,7 @@ the one box the subject can grant:
   <button type="submit" name="decision" value="allow">Allow</button>
   <button type="submit" name="decision" value="deny">Deny</button>
 </form>
+</main>
 </body>
 </html>
 ```
@@ -7918,15 +7938,25 @@ content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; 
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 796
+x-content-type-options: nosniff
+content-length: 1286
 Date: Wed, 14 Oct 2026 00:41:01 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Allow access?</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Allow access?</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Consent &lt;Portal&gt; is asking for access</h1>
 <form method="post" action="/tenants/demo/login-actions/consent">
   <input type="hidden" name="auth_session_id" value="01a137da-fe1b-73d0-adb7-877a0657f131">
@@ -7939,6 +7969,7 @@ Keep-Alive: timeout=72
   <button type="submit" name="decision" value="allow">Allow</button>
   <button type="submit" name="decision" value="deny">Deny</button>
 </form>
+</main>
 </body>
 </html>
 ``` `DELETE` cascades:

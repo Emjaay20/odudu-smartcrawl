@@ -58,6 +58,7 @@ function sendShell(reply: FastifyReply, shell: Buffer): FastifyReply {
     .header('x-frame-options', 'DENY')
     .header('referrer-policy', 'no-referrer')
     .header('cache-control', 'no-store')
+    .header('x-content-type-options', 'nosniff')
     .send(shell);
 }
 
@@ -116,6 +117,7 @@ export function spaRoutes(consoleDir: string): FastifyPluginAsync {
         .code(200)
         .header('content-type', asset.contentType)
         .header('cache-control', cacheControl)
+        .header('x-content-type-options', 'nosniff')
         .send(asset.content);
     });
 

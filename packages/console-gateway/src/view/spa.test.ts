@@ -96,6 +96,7 @@ describe('the console shell', () => {
     expect(res.headers['content-security-policy']).toBe(CSP);
     expect(res.headers['x-frame-options']).toBe('DENY');
     expect(res.headers['referrer-policy']).toBe('no-referrer');
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
     expect(res.headers['cache-control']).toBe('no-store');
     expect(res.headers['content-type']).toContain('text/html');
     expect(res.body).toContain('<div id="root">');
@@ -109,6 +110,7 @@ describe('the console shell', () => {
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toBe('text/javascript; charset=utf-8');
     expect(res.headers['cache-control']).toBe('public, max-age=31536000, immutable');
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
     expect(res.body).toContain("console.log('odudu console shell')");
   });
 
@@ -119,6 +121,7 @@ describe('the console shell', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toBe('text/css; charset=utf-8');
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
   });
 
   it('answers 404 for an asset path with no manifest entry', async () => {

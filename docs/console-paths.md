@@ -205,15 +205,25 @@ content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; 
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 2548
+x-content-type-options: nosniff
+content-length: 3038
 Date: Wed, 14 Oct 2026 00:39:57 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Sign in</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Sign in</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <form method="post" action="/tenants/console-paths/login-actions/authenticate">
   <input type="hidden" name="auth_session_id" value="01a137da-0690-7e7c-b322-b21a3a5e09ee">
   <label>Username <input type="text" name="username" autocomplete="username"></label>
@@ -514,17 +524,28 @@ content-type: text/html; charset=utf-8
 content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
-content-length: 187
+x-content-type-options: nosniff
+content-length: 677
 Date: Mon, 28 Sep 2026 09:03:26 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Sign-in failed</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Sign-in failed</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Sign-in failed</h1>
 <p>The sign-in could not be completed.</p>
+</main>
 </body>
 </html>
 ```
@@ -575,17 +596,28 @@ content-type: text/html; charset=utf-8
 content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
-content-length: 187
+x-content-type-options: nosniff
+content-length: 677
 Date: Mon, 28 Sep 2026 09:03:46 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Sign-in failed</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Sign-in failed</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Sign-in failed</h1>
 <p>The sign-in could not be completed.</p>
+</main>
 </body>
 </html>
 ```
@@ -770,18 +802,29 @@ content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; 
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 232
+x-content-type-options: nosniff
+content-length: 722
 Date: Wed, 14 Oct 2026 00:39:03 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Sign-in failed</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Sign-in failed</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Sign-in failed</h1>
 <p>The sign-in could not be completed.</p>
 <p><a href="/console/">Sign in again</a></p>
+</main>
 </body>
 </html>
 ```
@@ -915,18 +958,29 @@ content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; 
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
-content-length: 232
+x-content-type-options: nosniff
+content-length: 722
 Date: Wed, 14 Oct 2026 00:39:04 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Sign-in failed</title></head>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Sign-in failed</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+</head>
 <body>
+<main class="page">
+<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Sign-in failed</h1>
 <p>The sign-in could not be completed.</p>
 <p><a href="/console/">Sign in again</a></p>
+</main>
 </body>
 </html>
 ```
@@ -2089,6 +2143,7 @@ content-security-policy: default-src 'self'; script-src 'self'; style-src 'self'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
+x-content-type-options: nosniff
 content-length: 1124
 Date: Thu, 15 Oct 2026 18:13:08 GMT
 Connection: keep-alive

@@ -35,7 +35,7 @@ describe('the headers every rendered page carries', () => {
     expect(INSTRUMENT_STYLESHEET).toBe('/instrument/instrument.css');
   });
 
-  it('sends exactly four headers, the policy being the only one that grew', () => {
+  it('sends exactly five headers, one of them forbidding a sniffed content type', () => {
     const headers = headerMap(MARKUP_ONLY_PAGE);
     expect(headers['content-security-policy']).toBe(
       [
@@ -52,8 +52,10 @@ describe('the headers every rendered page carries', () => {
       'cache-control',
       'content-security-policy',
       'referrer-policy',
+      'x-content-type-options',
       'x-frame-options',
     ]);
+    expect(headers['x-content-type-options']).toBe('nosniff');
     expect(headers['x-frame-options']).toBe('DENY');
     expect(headers['referrer-policy']).toBe('no-referrer');
     expect(headers['cache-control']).toBe('no-store');
