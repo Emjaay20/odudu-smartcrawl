@@ -51,7 +51,8 @@ export type ErrorCode =
   | 'outbox_serving_role_bypasses_rls'
   | 'logout_sender_cannot_enumerate_tenants'
   | 'logout_sender_requires_app_database_url'
-  | 'logout_sender_serving_role_bypasses_rls';
+  | 'logout_sender_serving_role_bypasses_rls'
+  | 'static_tree_too_large';
 
 export class OduduError extends Error {
   readonly code: ErrorCode;

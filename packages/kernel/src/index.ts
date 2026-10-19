@@ -16,6 +16,7 @@ export {
   DEFAULT_OUTBOX_MAX_ATTEMPTS,
   loadConfig,
 } from '#/config';
+export { readStaticTree, type StaticFile, type StaticTreeLimits } from '#/static-tree';
 export { type Logger } from '#/logger';
 export { ModuleRegistry, type ModuleContext, type OduduModule } from '#/registry';
 export { ClaimMapperRegistry, type ClaimMapper } from '#/registries/claim-mapper';

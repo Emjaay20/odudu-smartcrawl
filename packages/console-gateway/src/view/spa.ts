@@ -1,6 +1,7 @@
 import { type FastifyInstance, type FastifyPluginAsync, type FastifyReply } from 'fastify';
-import { lstat, readFile, readdir } from 'node:fs/promises';
-import { extname, join, relative, sep } from 'node:path';
+import { readStaticTree, type StaticFile } from '@odudu/kernel';
+import { lstat, readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
 // The exact policy measured for the built React shell under a strict CSP —
 // see docs/phases/p4d.md, "React Aria under a strict CSP". Set directly
@@ -32,56 +33,23 @@ const ASSET_CONTENT_TYPES: Readonly<Record<string, string>> = {
 // memory at boot.
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
+// The build is about 35 files; these bound the boot-time read of a
+// directory that is not one.
+const ASSET_LIMITS = {
+  maxFileBytes: MAX_FILE_BYTES,
+  maxFiles: 1_000,
+  maxTotalBytes: 64 * 1024 * 1024,
+} as const;
+
 // Vite's default `[hash]` is an 8-or-more character xxhash, base64url-encoded
 // (rollup's `hashCharacters: 'base64'`, the default) — never longer than the
 // name it is appended to. Anything else is a fixed name and must revalidate.
 const CONTENT_HASHED_NAME = /-[A-Za-z0-9_-]{8,}\.[a-z0-9]+$/u;
 
-interface Asset {
-  readonly content: Buffer;
-  readonly contentType: string;
-}
-
 function errnoCode(err: unknown): string | undefined {
   if (typeof err !== 'object' || err === null || !('code' in err)) return undefined;
   const code = err.code;
   return typeof code === 'string' ? code : undefined;
-}
-
-async function readAssets(
-  assetsDir: string,
-  warn: (message: string) => void,
-): Promise<Map<string, Asset>> {
-  // The files of the built console, read once when the gateway starts and never
-  // again: the build's own size (about 35 files, 0.7 MB entry), each file at
-  // most MAX_FILE_BYTES (10 MiB), so the map holds a few MB, however many
-  // requests arrive.
-  const assets = new Map<string, Asset>();
-  async function walk(dir: string): Promise<void> {
-    for (const entry of await readdir(dir, { withFileTypes: true })) {
-      const full = join(dir, entry.name);
-      if (entry.name.startsWith('.')) continue;
-      if (entry.isDirectory()) {
-        await walk(full);
-        continue;
-      }
-      // `readdir`'s dirents are lstat-based: a symlink is never `isFile()`,
-      // whatever it points at, so this keeps the walk from ever following
-      // one out of the built directory.
-      if (!entry.isFile()) continue;
-      const contentType = ASSET_CONTENT_TYPES[extname(entry.name)];
-      if (contentType === undefined) continue;
-      const stats = await lstat(full);
-      if (stats.size > MAX_FILE_BYTES) {
-        warn(`console asset over 10 MB, refused: ${full}`);
-        continue;
-      }
-      const key = relative(assetsDir, full).split(sep).join('/');
-      assets.set(key, { content: await readFile(full), contentType });
-    }
-  }
-  await walk(assetsDir);
-  return assets;
 }
 
 function sendUnavailable(reply: FastifyReply): FastifyReply {
@@ -129,11 +97,16 @@ export function spaRoutes(consoleDir: string): FastifyPluginAsync {
       return;
     }
 
-    let assets: Map<string, Asset>;
+    let assets: ReadonlyMap<string, StaticFile>;
     try {
-      assets = await readAssets(join(consoleDir, 'assets'), (message) => {
-        fastify.log.warn(message);
-      });
+      assets = await readStaticTree(
+        join(consoleDir, 'assets'),
+        ASSET_CONTENT_TYPES,
+        ASSET_LIMITS,
+        (message) => {
+          fastify.log.warn(message);
+        },
+      );
     } catch (err) {
       registerUnavailable(fastify, consoleDir, errnoCode(err) ?? 'unknown error');
       return;
