@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { renderBanner } from '../../apps/server/src/cli/banner.js';
 import { PROMPT_LABELS } from '../../apps/server/src/cli/prompt.js';
+import { DEFAULT_STATE_DIR } from '../../apps/server/src/cli/init-options.js';
 import {
-  DEFAULT_STATE_DIR,
   existingAdministratorMessage,
   REQUIRED_KEYS,
   rolesWithoutSecretsMessage,

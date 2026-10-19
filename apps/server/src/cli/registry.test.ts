@@ -139,3 +139,42 @@ describe('option metadata', () => {
     expect(refused.size).toBe(checked.length);
   });
 });
+
+describe('main.ts before it dispatches', () => {
+  const SRC = new URL('../', import.meta.url);
+
+  function staticImports(file: string): { local: string[]; packages: string[] } {
+    const text = readFileSync(new URL(file, SRC), 'utf8');
+    const specifiers = [...text.matchAll(/^(?:import|export)[^;]*?from '([^']+)';/gms)].map(
+      (m) => m[1] ?? '',
+    );
+    return {
+      local: specifiers.filter((s) => s.startsWith('#/')).map((s) => `${s.slice(2)}.ts`),
+      packages: specifiers.filter((s) => !s.startsWith('#/')),
+    };
+  }
+
+  it('statically imports neither the server nor a database, so help and --version stay fast', () => {
+    const seen = new Set<string>();
+    const packages = new Set<string>();
+    const queue = ['main.ts'];
+    for (let file = queue.pop(); file !== undefined; file = queue.pop()) {
+      if (seen.has(file)) continue;
+      seen.add(file);
+      const found = staticImports(file);
+      found.packages.forEach((p) => packages.add(p));
+      queue.push(...found.local);
+    }
+
+    expect([...seen].sort()).toEqual([
+      'cli/command-types.ts',
+      'cli/help.ts',
+      'cli/init-options.ts',
+      'cli/init-plan.ts',
+      'cli/registry.ts',
+      'cli/seed-options.ts',
+      'main.ts',
+    ]);
+    expect([...packages].sort()).toEqual(['@odudu/kernel']);
+  });
+});

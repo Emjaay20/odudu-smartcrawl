@@ -9,7 +9,7 @@ import {
   tenantLookupRepository,
 } from '@odudu/protocol-oidc';
 import { parseArgs } from 'node:util';
-import { text } from '#/cli/command-types';
+import { ASSERTION_OPTIONS } from '#/cli/seed-options';
 import { assertConsoleConfigured } from '#/config-guard';
 import { consoleProvisioning, loadConsoleKeys } from '#/console-key';
 
@@ -49,10 +49,6 @@ export async function provisionConsole(
   }
   return visited;
 }
-
-export const ASSERTION_OPTIONS = {
-  tenant: text('Name of the tenant whose token endpoint it is for.', true),
-} as const;
 
 // `odudu console assertion --tenant <name>` prints a one-minute assertion
 // that authenticates `odudu-admin` at that tenant's token endpoint, for an

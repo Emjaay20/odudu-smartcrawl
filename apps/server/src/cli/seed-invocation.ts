@@ -1,25 +1,6 @@
 import { parseArgs } from 'node:util';
-import { cliOptions, flag, text, texts } from '#/cli/command-types';
+import { SEED_BOOTSTRAP_OPTIONS } from '#/cli/seed-options';
 import { SEED_COMMANDS, type SeedOptions } from '#/cli/seed';
-
-// The options of `seed` without a subcommand, which creates a client in one
-// call. Read by parseArgs below and rendered by `odudu help seed`.
-export const SEED_BOOTSTRAP_OPTIONS = {
-  tenant: text('Name of the tenant to create the client in.', true),
-  client: text('The client_id to create.', true),
-  'client-secret': text('Register a confidential client with this secret.'),
-  'token-endpoint-auth-method': text(
-    'client_secret_basic or client_secret_post, for a confidential client.',
-  ),
-  'redirect-uri': texts('A redirect URI the client may use.'),
-  user: text('Username of a user to create with the client.'),
-  password: text('The password of that user.'),
-  email: text('The email address of that user.'),
-  'send-verification-email': flag('Queue a verification email for that user.'),
-  'issuer-base': text('Base URL to print the issuer under, in place of the default.'),
-} as const;
-
-export const SEED_BOOTSTRAP_HELP = cliOptions(SEED_BOOTSTRAP_OPTIONS);
 
 // --client-secret and --password land in process listings (ps) and shell
 // history, since both are plain command-line flags. Acceptable for a local

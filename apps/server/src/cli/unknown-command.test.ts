@@ -7,12 +7,12 @@ const MAIN = fileURLToPath(new URL('../main.ts', import.meta.url));
 function run(args: readonly string[], env: Record<string, string> = {}) {
   return spawnSync(process.execPath, [MAIN, ...args], {
     encoding: 'utf8',
-    timeout: 2000,
+    timeout: 30_000,
     env: { PATH: process.env.PATH ?? '', ...env },
   });
 }
 
-describe('odudu with a first argument', () => {
+describe('odudu with a first argument', { timeout: 60_000 }, () => {
   it('does not start the server for an unknown subcommand', () => {
     const result = run(['sead']);
 

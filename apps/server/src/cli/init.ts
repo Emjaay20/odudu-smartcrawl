@@ -14,7 +14,7 @@ import {
 import { OduduError } from '@odudu/kernel';
 import { sql } from 'drizzle-orm';
 import { renderBanner } from '#/cli/banner';
-import { flag, text } from '#/cli/command-types';
+import { DEFAULT_STATE_DIR, INIT_OPTIONS } from '#/cli/init-options';
 import {
   assertLoopbackBase,
   DEFAULT_ADMIN_EMAIL,
@@ -47,7 +47,6 @@ type Handle = ReturnType<typeof createDatabase>;
 const SECRETS_FILE = 'quickstart.env';
 export const SECRETS_FILE_MODE = 0o600;
 export const STATE_DIR_MODE = 0o700;
-export const DEFAULT_STATE_DIR = '/var/lib/odudu';
 const LOCK_WAIT_MS = 60_000;
 const LOCK_POLL_MS = 200;
 
@@ -440,25 +439,6 @@ async function initLocked(
   io.out(renderBanner(report));
   return report;
 }
-
-export const INIT_OPTIONS = {
-  'admin-email': text(
-    'Email address of the first administrator, who signs in with it. Defaults to ODUDU_ADMIN_EMAIL, then ' +
-      DEFAULT_ADMIN_EMAIL +
-      ' when there is no terminal to ask on or ODUDU_ADMIN_PASSWORD is set.',
-  ),
-  'state-dir': text('Directory that holds quickstart.env. Defaults to ' + DEFAULT_STATE_DIR + '.'),
-  'add-admin': flag(
-    'Add an administrator when the system tenant already has one; without it a ' +
-      'different --admin-email is refused.',
-  ),
-  'public-base-url': text(
-    'Address the server is reached at, loopback only. Defaults to ODUDU_PUBLIC_BASE_URL, ' +
-      'then ' +
-      DEFAULT_PUBLIC_BASE_URL +
-      '.',
-  ),
-} as const;
 
 // A blank ${ODUDU_ADMIN_PASSWORD:-} in a compose file is unset, not a password.
 function blankAsUnset(value: string | undefined): string | undefined {

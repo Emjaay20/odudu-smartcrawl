@@ -1,8 +1,11 @@
 import { cliOptions, type CliCommand } from '#/cli/command-types';
-import { ASSERTION_OPTIONS } from '#/cli/console';
-import { INIT_OPTIONS } from '#/cli/init';
-import { SEED_COMMAND_OPTIONS, SEED_COMMANDS } from '#/cli/seed';
-import { SEED_BOOTSTRAP_HELP } from '#/cli/seed-invocation';
+import { INIT_OPTIONS } from '#/cli/init-options';
+import {
+  ASSERTION_OPTIONS,
+  SEED_BOOTSTRAP_HELP,
+  SEED_COMMAND_OPTIONS,
+  SEED_COMMANDS,
+} from '#/cli/seed-options';
 
 export type { CliCommand, CliOption } from '#/cli/command-types';
 
