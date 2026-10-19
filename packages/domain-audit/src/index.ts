@@ -11,6 +11,7 @@ export {
   isAuditReason,
   AUDIT_ACTIONS,
   AUDIT_EVENT_TYPES,
+  AUDIT_REASONS,
   type AuditAction,
   type AdminMutationInput,
   type AuditEventInput,
@@ -20,4 +21,10 @@ export {
   type VocabularyEventInput,
   type VocabularyEventType,
 } from '#/service/vocabulary';
+export {
+  AUDIT_ACTION_DOCS,
+  AUDIT_EVENT_TYPE_DOCS,
+  AUDIT_OUTCOME_DOCS,
+  AUDIT_REASON_DOCS,
+} from '#/service/vocabulary-docs';
 export { requestContextFrom, type RequestContext } from '#/service/request-context';

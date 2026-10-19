@@ -32,6 +32,18 @@ const READS: readonly { file: string; targets: readonly string[] }[] = [
     file: 'apps/docs/tests/support/dist.ts',
     targets: ['apps/docs/content/**', 'apps/docs/src/**'],
   },
+  {
+    file: 'packages/protocol-admin/src/service/problem-types.test.ts',
+    targets: ['packages/protocol-admin/src/view/**'],
+  },
+  {
+    file: 'packages/protocol-admin/src/service/admin-mutation-actions.test.ts',
+    targets: ['packages/protocol-admin/src/**'],
+  },
+  {
+    file: 'packages/protocol-oidc/src/service/oauth-errors.test.ts',
+    targets: ['packages/protocol-oidc/src/**'],
+  },
   { file: 'tools/ci/src/cli.test.ts', targets: ['tools/ci/src/**'] },
   { file: 'packages/db/src/migrate.ts', targets: ['packages/db/drizzle/**'] },
   {

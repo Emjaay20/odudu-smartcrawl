@@ -216,6 +216,13 @@ import {
 
 export { ADMIN_ROUTES, type AdminRoute } from '#/service/capability';
 export { buildAdminOpenApiDocument, type OpenApiDocument } from '#/view/routes/openapi';
+export { ADMIN_MUTATION_ACTIONS } from '#/service/admin-mutation-actions';
+export {
+  ADMIN_PROBLEM_TYPES,
+  GENERIC_PROBLEM_SUMMARY,
+  problemTypeUri,
+  type AdminProblemType,
+} from '#/service/problem-types';
 export { COUNT_CAP } from '#/usecase/counts';
 export { expireRotatedClientSecrets } from '#/usecase/client-secret-expiry';
 export { composeUserSubject, type ComposeUserSubjectInput } from '#/usecase/subjects';

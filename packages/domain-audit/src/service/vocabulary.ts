@@ -48,7 +48,7 @@ export const AUDIT_EVENT_TYPES: readonly AuditEventType[] = [
   'credential',
 ];
 
-const AUDIT_REASONS = [
+export const AUDIT_REASONS = [
   'unknown_subject',
   'bad_credential',
   'locked_out',
