@@ -103,7 +103,9 @@ describe('renderConsentPage', () => {
   it('gives Allow and Deny distinguishable submitted values', () => {
     const page = renderConsentPage(BASE, DEFAULT_PAGE_LOCALE);
     expect(page.body).toMatch(/<button type="submit" name="decision" value="allow">/);
-    expect(page.body).toMatch(/<button type="submit" name="decision" value="deny" class="secondary">/);
+    expect(page.body).toMatch(
+      /<button type="submit" name="decision" value="deny" class="secondary">/,
+    );
     // Same name, different value: a form that instead rendered two buttons
     // both named "decision" with the same value would satisfy a looser
     // check, so pin both values distinctly.
