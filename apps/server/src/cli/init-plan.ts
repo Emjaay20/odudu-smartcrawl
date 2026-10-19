@@ -3,6 +3,7 @@ import { OduduError } from '@odudu/kernel';
 export interface InitInput {
   readonly adminEmail?: string;
   readonly adminPassword?: string;
+  readonly additionalAdmin?: boolean;
   readonly interactive: boolean;
   readonly publicBaseUrl: string;
   readonly stateDir: string;
@@ -38,7 +39,7 @@ export function assertLoopbackBase(publicBaseUrl: string): void {
       'init_invalid_options',
       `ODUDU_PUBLIC_BASE_URL ${reason}: odudu init is for a machine you are ` +
         'sitting at and serves over plain http on localhost. To run on a public ' +
-        'address, configure the server yourself: docs/operating/deploying',
+        "address, configure the server yourself: see the README's Deploying section",
     );
   let url: URL;
   try {

@@ -44,7 +44,7 @@ describe('assertLoopbackBase', () => {
   it('refuses a public host and says where to read about deploying', () => {
     expect(() => {
       assertLoopbackBase('https://id.example.com');
-    }).toThrow(/ODUDU_PUBLIC_BASE_URL.*docs\/operating\/deploying/su);
+    }).toThrow(/ODUDU_PUBLIC_BASE_URL.*Deploying section/su);
   });
 
   it('refuses a value that is not a URL', () => {

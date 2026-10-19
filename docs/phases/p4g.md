@@ -566,3 +566,10 @@ served from the image` (the asset it names is content-hashed).
 - The prompt for an interactive password is not wired: `odudu init` passes
   `interactive: false`, so a password comes from `ODUDU_ADMIN_PASSWORD` or is
   generated.
+- `init` creates `odudu_svc` from a SCRAM-SHA-256 verifier computed with
+  `node:crypto` (no dependency), so the plaintext never reaches
+  `log_statement=ddl` or `pg_stat_statements`. verified: the integration test
+  signs in as the service role through `quickstart.env`'s URL.
+- Runs are serialised by `pg_advisory_lock(hashtext('odudu_init'), 0)` held on
+  the owner connection, and `quickstart.env` is published by link from a
+  mode-0600 temp file; verified by the two-concurrent-runs test.

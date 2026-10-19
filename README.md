@@ -1264,6 +1264,72 @@ twin already was — `https`, absolute, no fragment — because the logout page
 renders it into an iframe, and a `javascript:` or bare-`http:` value would
 reach that sink unchecked otherwise.
 
+**Quickstart: `odudu init`.** One command takes an empty database to a
+signed-in console: it creates the `odudu_app` and `odudu_svc` roles, applies
+the migrations, creates the `system` tenant and one administrator, and writes
+`quickstart.env` for the server to start from. It needs only the owner
+connection, `ODUDU_DATABASE_URL`, and it is safe to run again.
+
+| Input                        | Meaning                                                                                          |
+| ---------------------------- | ------------------------------------------------------------------------------------------------ |
+| `--admin-email`              | The administrator's address; it is also the username they sign in with.                          |
+| `--state-dir`                | Where `quickstart.env` goes. Default `/var/lib/odudu`, created `0700`.                           |
+| `--public-base-url`          | Where the server will be reached. Default `ODUDU_PUBLIC_BASE_URL`, then `http://localhost:3000`. |
+| `--add-admin`                | Add a second administrator. Without it a different `--admin-email` is refused.                   |
+| `ODUDU_ADMIN_PASSWORD` (env) | A password to use instead of a generated one; never an option, so not in `ps`. Empty is unset.   |
+
+`quickstart.env` is created `0600`, complete or not at all, and never
+overwritten: it holds the owner and service database URLs, `ODUDU_KEK`, the
+console's client key and the base URL, so a second run reuses the same KEK
+instead of rotating it. Two runs at once are serialised by a Postgres advisory
+lock. A generated password is printed once and must be changed at first
+sign-in; a chosen one is checked against the system tenant's password policy,
+never printed, and not forced to change. A run against an administrator that
+already exists changes nothing. If its password is lost, `odudu seed admin
+--username <name>` creates another administrator with a new one-time password.
+`init` serves plain http on loopback only and refuses any other
+`--public-base-url`; a public deployment is configured by hand
+([Deploying](#deploying)). If `odudu_svc` exists but `quickstart.env` does not,
+`init` refuses rather than reset a password it cannot know; restore the file or
+drop the role. The service role is created from a SCRAM-SHA-256 verifier, so
+the password is not in `log_statement` output.
+
+Commands are shown as `odudu`, which is `node apps/server/src/main.ts` here.
+Run against an empty `postgres:17-alpine` (project `odudu-p4g-init`, the owner
+`odudu`, nothing else run before it), from the repository root with
+`NODE_NO_WARNINGS=1 ODUDU_DATABASE_URL=postgres://odudu:…@127.0.0.1:54733/odudu`;
+the generated password is replaced by `<generated>` and the chosen one by
+`<chosen>`:
+
+```
+$ odudu init --state-dir ./state --admin-email ada@example.com
+Console: http://localhost:3000/console/
+Administrator: ada@example.com
+One-time password: <generated>
+It is shown once and must be changed at first sign-in.
+$ ls -l state; cut -d= -f1 state/quickstart.env
+-rw------- 1  670 Oct 19 02:00 quickstart.env
+ODUDU_KEK
+ODUDU_CONSOLE_CLIENT_KEY
+ODUDU_DATABASE_URL
+ODUDU_APP_DATABASE_URL
+ODUDU_PUBLIC_BASE_URL
+ODUDU_CONSOLE
+$ odudu init --state-dir ./state --admin-email ada@example.com
+The administrator ada@example.com already exists. Console: http://localhost:3000/console/
+If you cannot sign in, `odudu seed admin --username <name>` creates another.
+$ odudu init --state-dir ./state --admin-email grace@example.com
+the system tenant already has an administrator and grace@example.com is not it; pass --add-admin to add another
+exit 1
+$ ODUDU_ADMIN_PASSWORD=<chosen> odudu init --state-dir ./state --admin-email grace@example.com --add-admin
+Console: http://localhost:3000/console/
+Administrator: grace@example.com
+$ odudu init --public-base-url https://id.example.com --admin-email ada@example.com
+ODUDU_PUBLIC_BASE_URL is "https://id.example.com", which is not a loopback address: odudu init is for a machine you are sitting at and serves over plain http on localhost. To run on a public address, configure the server yourself: see the README's Deploying section
+$ mv state/quickstart.env state/old.env; odudu init --state-dir ./state --admin-email ada@example.com
+the odudu_svc role exists but state/quickstart.env does not, so its password is unknown; restore the file, or drop the role if this database is disposable
+```
+
 **Bootstrap the first administrator.** `odudu seed admin` creates the
 `system` tenant the first time it runs — idempotently, so a second run with
 a different username reuses the same tenant, client and roles rather than
@@ -1291,6 +1357,9 @@ lost password means seeding a new administrator, not recovering the old
 one. The account's first login is forced through a password change —
 `update-password` is queued as a required action the moment the subject is
 created.
+
+`odudu init` (above) is the quickstart route to the same administrator and
+the same forced first change; use `seed admin` for any later one.
 
 A tenant's own administrator can be given the same first login.
 `seed user --require-password-change` queues `update-password` for the user

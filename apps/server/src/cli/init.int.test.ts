@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, stat, unlink } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm, stat, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createDatabase, type DatabaseHandle } from '@odudu/db';
@@ -70,6 +70,10 @@ function capture(): { io: InitIo; out: string[] } {
   };
 }
 
+async function fileMode(): Promise<number> {
+  return (await stat(join(stateDir, 'quickstart.env'))).mode;
+}
+
 async function envFile(): Promise<Map<string, string>> {
   const text = await readFile(join(stateDir, 'quickstart.env'), 'utf8');
   return new Map(
@@ -98,7 +102,9 @@ function formPost(
 
 // What the first sign-in shows: the page asking for a new password, or the
 // redirect that carries a code.
-async function signIn(email: string, password: string): Promise<'change-password' | 'signed-in'> {
+type SignIn = 'change-password' | 'signed-in' | 'rejected';
+
+async function signIn(email: string, password: string): Promise<SignIn> {
   const env = await envFile();
   const owner = createDatabase(database.adminUrl);
   const runtime = createDatabase(env.get('ODUDU_APP_DATABASE_URL') ?? '');
@@ -129,7 +135,8 @@ async function signIn(email: string, password: string): Promise<'change-password
       username: email,
       password,
     });
-    return login.statusCode === 302 ? 'signed-in' : 'change-password';
+    if (login.statusCode === 302) return 'signed-in';
+    return login.body.includes('Change your password') ? 'change-password' : 'rejected';
   } finally {
     await app.close();
     await runtime.close();
@@ -160,6 +167,9 @@ describe('odudu init', () => {
     const env = await envFile();
     expect(await countRows(env.get('ODUDU_APP_DATABASE_URL') ?? '', 'tenants')).toBe(0);
     expect(await signIn(EMAIL, report.generatedPassword ?? '')).toBe('change-password');
+    expect(await signIn(EMAIL, 'not-the-password')).toBe('rejected');
+    expect((await fileMode()) & 0o777).toBe(0o600);
+    expect((await stat(stateDir)).mode & 0o777).toBe(0o700);
     expect(out.join('\n')).toContain(report.generatedPassword ?? 'no password');
   }, 120_000);
 
@@ -175,6 +185,58 @@ describe('odudu init', () => {
     expect(await countRows(database.adminUrl, 'subjects')).toBe(before);
     expect(await countRows(database.adminUrl, 'tenants')).toBe(1);
     expect(out.join('\n')).not.toMatch(/password/iu);
+    expect(out.join('\n')).toContain('odudu seed admin');
+  }, 120_000);
+
+  it('leaves an existing administrator alone whatever password the second run is given', async () => {
+    const chosen = 'Chosen-Passw0rd!42';
+    await init(inputWith({ adminPassword: chosen }), capture().io);
+
+    const second = await init(inputWith({ adminPassword: 'Another-Passw0rd!77' }), capture().io);
+
+    expect(second.created).toBe(false);
+    expect(await signIn(EMAIL, chosen)).toBe('signed-in');
+    expect(await signIn(EMAIL, 'Another-Passw0rd!77')).toBe('rejected');
+  }, 120_000);
+
+  it('refuses a different address once an administrator exists, unless adding one is explicit', async () => {
+    await init(inputWith(), capture().io);
+
+    await expect(
+      init(inputWith({ adminEmail: 'grace@example.com' }), capture().io),
+    ).rejects.toThrow(/--add-admin/u);
+    const added = await init(
+      inputWith({ adminEmail: 'grace@example.com', additionalAdmin: true }),
+      capture().io,
+    );
+
+    expect(added.created).toBe(true);
+    expect(await countRows(database.adminUrl, 'users')).toBe(2);
+  }, 120_000);
+
+  it('refuses a secrets file written for a different database', async () => {
+    await init(inputWith(), capture().io);
+    const { io } = capture();
+    const admin = createDatabase(database.adminUrl, { max: 1 });
+    await admin.sql.unsafe('create database elsewhere');
+    await admin.close();
+
+    await expect(
+      init(inputWith(), { ...io, databaseUrl: io.databaseUrl.replace(/\/[^/]*$/u, '/elsewhere') }),
+    ).rejects.toThrow(/quickstart\.env/u);
+  }, 120_000);
+
+  it('keeps the file, the roles and the administrator single when two runs race', async () => {
+    const results = await Promise.all([
+      init(inputWith(), capture().io),
+      init(inputWith(), capture().io),
+    ]);
+
+    expect(results.filter((report) => report.created)).toHaveLength(1);
+    expect(await countRows(database.adminUrl, 'users')).toBe(1);
+    expect(await countRows(database.adminUrl, "pg_roles where rolname like 'odudu\\_%'")).toBe(2);
+    expect((await envFile()).size).toBe(6);
+    expect((await readdir(stateDir)).sort()).toEqual(['quickstart.env']);
   }, 120_000);
 
   it('stores the chosen password so the first sign-in is not forced to change it, and a generated one is', async () => {
@@ -223,9 +285,12 @@ describe('odudu init', () => {
   }, 120_000);
 
   it('refuses a chosen password the system tenant policy rejects, naming the rule', async () => {
-    await expect(init(inputWith({ adminPassword: 'short' }), capture().io)).rejects.toThrow(
-      /at least/u,
+    const error = await init(inputWith({ adminPassword: 'Qz9!k' }), capture().io).catch(
+      (caught: unknown) => caught,
     );
+
+    expect(String(error)).toMatch(/at least/u);
+    expect(String(error)).not.toContain('Qz9!k');
   }, 120_000);
 
   it('refuses roles that exist while the secrets file is gone, rather than resetting their password', async () => {
