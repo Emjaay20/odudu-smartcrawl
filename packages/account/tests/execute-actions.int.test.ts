@@ -244,6 +244,32 @@ describe('a link that takes its subject through required actions', () => {
     }
   });
 
+  it.each([
+    ['2026-12-31T23:59:59Z', '2026'],
+    ['2027-01-01T00:00:00Z', '2027'],
+    ['2031-06-01T12:00:00Z', '2031'],
+  ])('stamps the mail with the year of the clock it was given: %s', async (instant, year) => {
+    const seeded = await seed(true);
+    const rows = await withTenant(app.db, seeded.tenantId, async (tx) => {
+      await enqueueActionsLink(
+        tx,
+        {
+          tenantId: seeded.tenantId,
+          tenantName: seeded.tenantName,
+          tenantDisplayName: 'Acme',
+          issuerBase: 'https://idp.example.test',
+          now: () => new Date(instant),
+        },
+        { subjectId: seeded.subjectId, email: 'ada@example.test' },
+        { actions: ['configure-totp'] },
+      );
+      return tx.select().from(emailOutbox);
+    });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.bodyHtml).toContain(`\u00a9 ${year} Odudu`);
+    expect(rows[0]?.bodyText).toContain(`\u00a9 ${year} Odudu`);
+  });
+
   it('asks for no password when the link names none, and leaves it unchanged', async () => {
     const seeded = await seed(false);
     const link = await mail(seeded, ['generate-recovery-codes', 'configure-passkey']);

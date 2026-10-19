@@ -15,6 +15,7 @@ export const MAIL_PALETTE: MailPalette = {
     buttonInk: '#ffffff',
     rail: '#111514',
     railInk: '#e4e9e7',
+    railEdge: '#9ba6a2',
   },
   dark: {
     page: '#151a19',
@@ -28,5 +29,6 @@ export const MAIL_PALETTE: MailPalette = {
     buttonInk: '#1c2221',
     rail: '#0b0e0d',
     railInk: '#e4e9e7',
+    railEdge: '#8b9692',
   },
 };

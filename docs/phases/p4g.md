@@ -1782,12 +1782,36 @@ notices, the SMTP test). A grep of the six `render…` names finds every call si
   with `mso-padding-alt` for Outlook, no VML. The same address is written out under it in
   a monospace box, `word-break: break-all`, as an anchor with the whole link; the
   plain-text part has the link on a line of its own. A link that is not an absolute
-  `http(s)` URL is refused (`RangeError`), so `javascript:` cannot reach an `href`.
+  `http(s)` URL is refused (`RangeError`), so `javascript:` cannot reach an `href`; the check
+  lives in `renderShell` itself and also refuses credentials in the URL, surrounding whitespace
+  and control characters. `+` and `%2F` in a link reach the href, the shown text and the
+  plain text unchanged (`shell.test.ts`).
 - **Footer.** The reason the mail was sent, per kind, then `© {year} Odudu · Powered by
-odudu`. The year is the UTC year of an injected `now`: each usecase takes it from the
-  caller's clock (`deps.now`, `systemClock` at the composition root, a route's `now` in
-  protocol-admin), tested at 2026-12-31T23:59:59Z, 2027-01-01T00:00:00Z and across a
-  time zone's New Year. The plain-text part ends the same way after a `--` line.
+odudu`. The year is the UTC year of an injected `now`, required everywhere (the account
+  usecase and route deps, `ActionLinkTenant`, the credential-notice input, the SMTP test
+  message; `systemClock` is passed only at the composition root). Tested with a fixed clock
+  at 2026-12-31T23:59:59Z, 2027-01-01T00:00:00Z and 2031-06-01 against the queued row's
+  footer year for verification (`verify-email.int.test.ts`), registration and reset (through
+  their routes, `register.int.test.ts`, `reset-password.int.test.ts`), required actions
+  (`execute-actions.int.test.ts`), `deleteCredential`, `revokeRecoveryCodes` and
+  `enqueueCredentialNotice` (`recovery-lifecycle.int.test.ts`) and `sendTestMessage`
+  (`smtp.test.ts`); replacing `now` with `new Date()` in each of those usecases fails its test.
+  What is not tested: the protocol-admin routes' own `now: deps.now()` argument. A token
+  minted on a fake clock is refused by the server, so a year cannot be forced through
+  HTTP there; typecheck is what holds it (the input requires `now`). The plain-text part ends
+  the same way after a `--` line.
+- **A retried mail keeps the year it was queued in.** The markup is rendered when the row is
+  written, not when it is sent, so a message retried after New Year says the year it was queued.
+- **Preview text.** A hidden first element of the body (`display:none`, `max-height:0`,
+  `overflow:hidden`, `mso-hide:all`, page-coloured, then a run of zero-width and no-break
+  spaces so the client does not append body text), one sentence per kind from the catalogue
+  (`*.preheader`), escaped like any text and naming no tenant.
+- **Size.** A rendered message is about 5.8 KB (the same in the outbox row, which stores the
+  markup, and over the wire). The display name shown in the mail is cut to 80 code points and an
+  ellipsis before anything is escaped, so a 10,000-character name adds nothing (tested at 10,000
+  in `shell.test.ts`, under 14 KB a message). `loggingSender` logs the text part and the markup's
+  byte count, `htmlBytes`, never the markup. At the phase spec's scale the outbox holds
+  one such row per mail not yet reaped, which is the reap's retention to bound, not the shell's.
 - **Escaping.** Unchanged and extended to the shell: every value through `escapeHtml`, the
   tenant in `<bdi>`, FSI/PDI in text, nothing that can start a line in the subject. The
   link is now escaped in the markup (it was inserted raw) and stays raw in the text.
@@ -1801,7 +1825,8 @@ odudu`. The year is the UTC year of an injected `now`: each usecase takes it fro
   in both palettes: the console's own pairs, with the button on `--ink-primary`, as the
   server pages' buttons are.
 - **The mark.** A 80x80 PNG (shown at 40x40), the staff in `--ink-rail` on a `--surface-rail` rounded
-  tile, so one image reads on either palette. It is rasterised from `mark.svg` by a small
+  tile with a 1px ring in `--ink-rail-muted` (a mid tone that shows on the light page and on
+  the dark one, where the tile alone was nearly invisible), so one image reads on either palette. It is rasterised from `mark.svg` by a small
   anti-aliasing drawer in the package (`mark-png.ts`; the committed bytes are compared pixel for
   pixel with a fresh drawing, not byte for byte, so a different zlib cannot fail it).
   It travels as an inline `cid:odudu-mark` part: `smtpSender` adds the attachment to any message
@@ -1829,7 +1854,7 @@ transform; the Outlook.com and Outlook-on-Windows dark modes rewrite colours too
 differ from the palette. A client that does neither gets the light version, which is the one
 every text pair is checked against and is fully readable. The corners round in clients that
 honour `border-radius` and are square in the Word engine. The mark's tile is dark in both
-schemes by design, so it needs no variant.
+schemes and carries a mid-tone ring, so it needs no variant.
 
 Per-tenant mail theming (the tenant's own colours and logo in the shell) stays with **P4b**,
 whose criterion already names the verification and reset mail rendered under a tenant's theme;
@@ -1851,9 +1876,10 @@ The gallery holds twelve of the thirty-two views; the rest were looked at.
 - ![second factor removed, light, 600px](p4g-mails/factor-removed-light-600.webp) `factor-removed-light-600`: the notice, no button and no link.
 - ![recovery codes revoked, dark, 600px](p4g-mails/recovery-revoked-dark-600.webp) `recovery-revoked-dark-600`: the other notice, dark.
 - ![SMTP test, light, 375px](p4g-mails/smtp-test-light-375.webp) `smtp-test-light-375`: the SMTP test mail.
-- ![a very long tenant name](p4g-mails/verification-long-name-light-375.webp) `verification-long-name-light-375`: a 190-character name with an unbroken run, wrapping inside the card.
+- ![a very long tenant name](p4g-mails/verification-long-name-light-375.webp) `verification-long-name-light-375`: a 192-character name, cut at 80 characters and an ellipsis.
 - ![a right-to-left tenant name](p4g-mails/verification-rtl-light-375.webp) `verification-rtl-light-375`: an Arabic name in an English mail, isolated.
 
 What the first look found and was fixed: a long name with no break widened the page past the
-phone (every text block now wraps anywhere), the footer sat 4px inside the card's edge, and the
-mark was small in its tile.
+phone (every text block now wraps anywhere), the footer sat 4px inside the card's edge, the
+mark was small in its tile, and in the dark palette the tile's edge was invisible against the page (now ringed).
+The wrap of an unbroken run is held by `shell.test.ts` and was looked at before the name cap made the sample shorter.

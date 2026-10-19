@@ -14,7 +14,12 @@ export function loggingSender(logger: Logger): EmailSender {
   return {
     send(message: EmailMessage): Promise<void> {
       logger.info(
-        { to: message.to, subject: message.subject, text: message.text, html: message.html },
+        {
+          to: message.to,
+          subject: message.subject,
+          text: message.text,
+          htmlBytes: Buffer.byteLength(message.html),
+        },
         'captured email — no SMTP host configured',
       );
       return Promise.resolve();

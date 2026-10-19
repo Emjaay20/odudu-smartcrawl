@@ -3249,38 +3249,41 @@ reader without a mail server gets the link:
   "level": 30,
   "to": "ada@example.com",
   "subject": "Verify your demo account",
-  "text": "Confirm your email address for ⁨demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/demo/login-actions/action-token?key=kaAlzyKyr9spRjlMg6V20eGCBHjFkaxD-Zk_kzhIYUc\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to create or update an account at ⁨demo⁩.\n© 2026 Odudu · Powered by odudu",
-  "html": "<!doctype html><html lang=\"en\" dir=\"ltr\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta name=\"color-scheme\" content=\"light dark\">…",
+  "text": "Confirm your email address for ⁨demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/demo/login-actions/action-token?key=F5EglJdZ3sw6QhoZJ-df2pm7R5NIFvub-AYg4HV6IBw\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to create or update an account at ⁨demo⁩.\n© 2026 Odudu · Powered by odudu",
+  "htmlBytes": 5839,
   "msg": "captured email — no SMTP host configured"
 }
 ```
 
 (One line of a larger pino JSON object, reduced to the fields that matter
-here. `html` is cut after the head's colour-scheme declaration, at the
-ellipsis, because the whole document is five kilobytes; the key is shortened
-nowhere else in this document because a reader needs the whole thing to
-follow the link.)
+here. The log carries the size of the `html` part in bytes, `htmlBytes`, and
+never the markup: it is five kilobytes a message, and a log line is not the
+place for it. The key is shortened nowhere else in this document because a
+reader needs the whole thing to follow the link.)
 
 The `html` part is a designed message, not bare markup: table-based and
 560px wide, every style inline, the colours the console's own tokens compile
 to, a light palette that stands alone and a dark one a `prefers-color-scheme`
-block swaps in where the client reads it. It carries the tenant's display
-name beside the Odudu mark (an inline image the SMTP sender attaches, named
-`cid:odudu-mark`, with the word `odudu` as its alt text), a heading, the
-sentence, a button, the same address written out under it, a muted line on
-why the message was sent, and a footer whose year is the UTC year of the
-moment the message was written. The button and the written-out address are the
-only two anchors in it, and both carry the whole link; the command reads them
-from the log of the run above:
+block swaps in where the client reads it. It opens with a hidden line of
+preview text for the inbox list, then carries the tenant's display name
+(cut to eighty characters and an ellipsis if it is longer) beside the Odudu
+mark (an inline image the SMTP sender attaches, named `cid:odudu-mark`, with
+the word `odudu` as its alt text), a heading, the sentence, a button, the same
+address written out under it, a muted line on why the message was sent, and a
+footer whose year is the UTC year of the moment the message was written. The
+button and the written-out address are the only two anchors in it, and both
+carry the whole link. The stack sent the same message again through a relay,
+a Mailpit container, and the command reads the anchors from what Mailpit
+holds (`ID` is the message's id in Mailpit's list; its key is that send's, not
+the one above):
 
 ```bash
-docker compose logs --no-log-prefix odudu | grep 'captured email' | grep 'Verify your demo' \
-  | jq -r .html | grep -o '<a [^>]*>[^<]*</a>'
+curl -s "http://localhost:18925/api/v1/message/$ID" | jq -r .HTML | grep -o '<a [^>]*>[^<]*</a>'
 ```
 
 ```
-<a class="m-button-link" href="http://localhost:3000/tenants/demo/login-actions/action-token?key=kaAlzyKyr9spRjlMg6V20eGCBHjFkaxD-Zk_kzhIYUc" target="_blank" style="display:inline-block;font:600 15px/20px system-ui,-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;color:#ffffff;text-decoration:none;mso-line-height-rule:exactly">Verify email</a>
-<a class="m-link" href="http://localhost:3000/tenants/demo/login-actions/action-token?key=kaAlzyKyr9spRjlMg6V20eGCBHjFkaxD-Zk_kzhIYUc" target="_blank" style="color:#0a6344;text-decoration:underline;word-break:break-all">http://localhost:3000/tenants/demo/login-actions/action-token?key=kaAlzyKyr9spRjlMg6V20eGCBHjFkaxD-Zk_kzhIYUc</a>
+<a class="m-button-link" href="http://localhost:3000/tenants/demo/login-actions/action-token?key=odhQGLAhhS7ff880f_mHki4G35TclDgeGPo0bSMMtos" target="_blank" style="display:inline-block;font:600 15px/20px system-ui,-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;color:#ffffff;text-decoration:none;mso-line-height-rule:exactly">Verify email</a>
+<a class="m-link" href="http://localhost:3000/tenants/demo/login-actions/action-token?key=odhQGLAhhS7ff880f_mHki4G35TclDgeGPo0bSMMtos" target="_blank" style="color:#0a6344;text-decoration:underline;word-break:break-all">http://localhost:3000/tenants/demo/login-actions/action-token?key=odhQGLAhhS7ff880f_mHki4G35TclDgeGPo0bSMMtos</a>
 ```
 
 The plain-text part carries the link on a line of its own, then the same
@@ -3438,7 +3441,8 @@ log instead of an inbox:
   "level": 30,
   "to": "ada@example.com",
   "subject": "Verify your register-demo account",
-  "text": "Confirm your email address for ⁨register-demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/register-demo/login-actions/action-token?key=UOsLZ2p25jj6wWYEJIlEFH239txOSNvBlBWFMxUfwWM\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to create or update an account at ⁨register-demo⁩.\n© 2026 Odudu · Powered by odudu",
+  "text": "Confirm your email address for ⁨register-demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/register-demo/login-actions/action-token?key=Lab7hHM2wxtYPPCJKwlr-DLWD_Agyfk3A998qLQtaHo\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to create or update an account at ⁨register-demo⁩.\n© 2026 Odudu · Powered by odudu",
+  "htmlBytes": 5893,
   "msg": "captured email — no SMTP host configured"
 }
 ```
@@ -3527,7 +3531,8 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
   "level": 30,
   "to": "grace@example.com",
   "subject": "Verify your register-demo account",
-  "text": "Confirm your email address for ⁨register-demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/register-demo/login-actions/action-token?key=ImiqkiAvo0CyLJGuTgZKQVaaqEQzhaO8u1-0yI-3R7Q\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to create or update an account at ⁨register-demo⁩.\n© 2026 Odudu · Powered by odudu",
+  "text": "Confirm your email address for ⁨register-demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/register-demo/login-actions/action-token?key=6f5ULPUsXns2PQdyunW7qE0ArIa-yhBGsjVQg4DPNOA\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to create or update an account at ⁨register-demo⁩.\n© 2026 Odudu · Powered by odudu",
+  "htmlBytes": 5893,
   "msg": "captured email — no SMTP host configured"
 }
 ```
@@ -5092,15 +5097,15 @@ moment after both answers had gone out, and there exactly once:
   "level": 30,
   "to": "ada@example.com",
   "subject": "Reset your reset-demo password",
-  "text": "Reset your password for ⁨reset-demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/reset-demo/login-actions/action-token?key=cpXWtqhtPO_453HSJu9d-uEGcqayipJrw4CdRSV_XLk\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because a password reset was requested for this email address at ⁨reset-demo⁩.\n© 2026 Odudu · Powered by odudu",
-  "html": "<!doctype html><html lang=\"en\" dir=\"ltr\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta name=\"color-scheme\" content=\"light dark\">…",
+  "text": "Reset your password for ⁨reset-demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/reset-demo/login-actions/action-token?key=b1opXzSvCaOP4zK1GNSRvd07yNnqeDB6n1T3cmYw5Kc\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because a password reset was requested for this email address at ⁨reset-demo⁩.\n© 2026 Odudu · Powered by odudu",
+  "htmlBytes": 5836,
   "msg": "captured email — no SMTP host configured"
 }
 ```
 
 (Reduced to the fields that matter, the same way
-[Address verification](#address-verification) reduces its own capture, `html`
-included; the key is shortened nowhere in this section because a reader needs
+[Address verification](#address-verification) reduces its own capture, with
+`htmlBytes` for the markup; the key is shortened nowhere in this section because a reader needs
 the whole thing to follow the link. It was captured on the project
 `odudu-p4g-mail` that section names, so its key is that run's.) The link's host is `ODUDU_PUBLIC_BASE_URL`, never
 the request's `Host` header — the same rule and the same reasoning

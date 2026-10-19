@@ -1,3 +1,4 @@
+import { type EmailMessage } from '@odudu/email';
 import { describe, expect, it } from 'vitest';
 import { type SmtpDestinationPolicy } from '#/service/smtp-destination';
 import { sendTestMessage } from '#/usecase/smtp';
@@ -60,5 +61,45 @@ describe('sendTestMessage', () => {
     );
 
     expect(outcome.kind).toBe('refused_destination');
+  });
+});
+
+describe('sendTestMessage, the mail it sends', () => {
+  async function sentAt(instant: string): Promise<EmailMessage> {
+    const sent: EmailMessage[] = [];
+    const outcome = await sendTestMessage(
+      RECORD,
+      KEK,
+      admitting('203.0.113.10'),
+      { to: 'ops@example.test', tenantDisplayName: 'Demo', now: new Date(instant) },
+      () =>
+        Promise.resolve({
+          kind: 'ok',
+          sender: {
+            send: (message) => {
+              sent.push(message);
+              return Promise.resolve();
+            },
+          },
+        }),
+    );
+    expect(outcome.kind).toBe('sent');
+    const [message] = sent;
+    if (message === undefined) throw new Error('nothing was sent');
+    return message;
+  }
+
+  it.each([
+    ['2026-12-31T23:59:59Z', '2026'],
+    ['2027-01-01T00:00:00Z', '2027'],
+    ['2031-06-01T12:00:00Z', '2031'],
+  ])('carries the year of the time it was given: %s', async (instant, year) => {
+    const message = await sentAt(instant);
+    expect(message.html).toContain(`\u00a9 ${year} Odudu`);
+    expect(message.text).toContain(`\u00a9 ${year} Odudu`);
+  });
+
+  it('names the tenant it was sent for', async () => {
+    expect((await sentAt('2031-06-01T12:00:00Z')).html).toContain('<bdi>Demo</bdi>');
   });
 });

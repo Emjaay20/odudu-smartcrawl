@@ -11,6 +11,7 @@ export const en = {
   'mail.linkFallback': 'If the button does not work, copy this link into your browser:',
   'mail.notRequested': 'If you did not request this, you can ignore this message.',
   'verify.subject': 'Verify your {tenant} account',
+  'verify.preheader': 'Confirm your email address to finish setting up your account.',
   'verify.heading': 'Verify your email address',
   'verify.text': 'Confirm your email address for {tenant} by visiting this link:',
   'verify.body': 'Confirm that this is your email address for your {tenant} account.',
@@ -18,6 +19,7 @@ export const en = {
   'verify.reason':
     'You received this because this email address was used to create or update an account at {tenant}.',
   'reset.subject': 'Reset your {tenant} password',
+  'reset.preheader': 'Use the link inside to choose a new password.',
   'reset.heading': 'Reset your password',
   'reset.text': 'Reset your password for {tenant} by visiting this link:',
   'reset.body': 'We received a request to reset your password for {tenant}.',
@@ -25,6 +27,7 @@ export const en = {
   'reset.reason':
     'You received this because a password reset was requested for this email address at {tenant}.',
   'actions.subject': 'Update your {tenant} account',
+  'actions.preheader': 'Your administrator has asked you to make a change to your account.',
   'actions.heading': 'Update your account',
   'actions.text': 'Your administrator asks you to update your {tenant} account:',
   'actions.textLink': 'Do so by visiting this link:',
@@ -34,6 +37,7 @@ export const en = {
     'You received this because an administrator at {tenant} asked you to update your account.',
   'notice.contact': 'If you did not expect this, contact your administrator.',
   'factorRemoved.subject': 'A sign-in method was removed from your {tenant} account',
+  'factorRemoved.preheader': 'An administrator changed how you sign in to your account.',
   'factorRemoved.heading': 'A sign-in method was removed',
   'factorRemoved.totp':
     'An administrator removed the authenticator app from your {tenant} account.',
@@ -42,6 +46,7 @@ export const en = {
   'factorRemoved.reason':
     'You received this because a sign-in method on your account at {tenant} was changed.',
   'recoveryRevoked.subject': 'Your {tenant} recovery codes were revoked',
+  'recoveryRevoked.preheader': 'An administrator revoked your recovery codes.',
   'recoveryRevoked.heading': 'Your recovery codes were revoked',
   'recoveryRevoked.text':
     'An administrator revoked the recovery codes on your {tenant} account. The old codes no longer work.',
@@ -49,6 +54,7 @@ export const en = {
   'recoveryRevoked.reason':
     'You received this because the recovery codes on your account at {tenant} were changed.',
   'smtpTest.subject': 'Odudu SMTP test',
+  'smtpTest.preheader': 'This message was sent to check the mail settings.',
   'smtpTest.heading': 'SMTP test',
   'smtpTest.text': 'This is a test message from Odudu.',
   'smtpTest.reason':

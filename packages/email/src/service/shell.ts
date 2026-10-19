@@ -17,6 +17,8 @@ export interface ShellInput {
   readonly now: Date;
   /** Plain text, for the document title and the heading. */
   readonly heading: string;
+  /** The inbox preview line: plain text, shown by no message body. */
+  readonly preheader: string;
   /** Markup the caller built from the catalogue, already escaped. */
   readonly blocks: readonly Block[];
   readonly action?: { readonly label: string; readonly href: string } | undefined;
@@ -29,6 +31,8 @@ export interface ShellInput {
 const SANS = 'system-ui,-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif';
 const MONO = 'ui-monospace,SFMono-Regular,Menlo,Consolas,monospace';
 const WIDTH = 560;
+const CONTROLS = /[\u0000-\u001F\u007F-\u009F\u2028\u2029]/u;
+const PREHEADER_PAD = '\u200c\u00a0'.repeat(80);
 // A name or an address with no break opportunity wraps instead of widening the page.
 const WRAP = 'word-break:break-word;overflow-wrap:anywhere';
 const SCHEMES = ['light', 'dark'].join(' ');
@@ -41,13 +45,15 @@ const TIME_REFUSED = 'mail-send-time-invalid';
 // URL; the shell still refuses anything that is not a web address, because
 // the href is the one place a mail's markup takes a URL.
 export function safeHref(link: string): string {
-  let protocol: string;
+  let url: URL;
   try {
-    protocol = new URL(link).protocol;
+    url = new URL(link);
   } catch {
     throw new RangeError(LINK_REFUSED);
   }
-  if (protocol !== 'https:' && protocol !== 'http:') {
+  const web = url.protocol === 'https:' || url.protocol === 'http:';
+  const bare = url.username === '' && url.password === '';
+  if (!web || !bare || link !== link.trim() || CONTROLS.test(link)) {
     throw new RangeError(LINK_REFUSED);
   }
   return link;
@@ -116,7 +122,7 @@ function rawLink(c: MailPalette['light'], start: string, locale: PageLocale, hre
 function header(c: MailPalette['light'], input: ShellInput, start: string): string {
   const alt = escapeHtml(t(input.locale, 'mail.brand'));
   const gap = start === 'left' ? 'right' : 'left';
-  return `<tr><td style="padding:0 0 16px"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td valign="middle" style="padding-${gap}:12px"><img class="m-ink" src="cid:${MARK_CID}" width="40" height="40" alt="${alt}" style="display:block;width:40px;height:40px;border:0;border-radius:8px;font:600 14px/40px ${SANS};color:${c.ink}"></td><td valign="middle" class="m-ink" style="font:600 18px/1.3 ${SANS};color:${c.ink};text-align:${start};${WRAP}">${bdi(input.tenant)}</td></tr></table></td></tr>`;
+  return `<tr><td style="padding:0 0 16px"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td valign="middle" style="padding-${gap}:12px"><img src="cid:${MARK_CID}" width="40" height="40" alt="${alt}" style="display:block;width:40px;height:40px;border:0;border-radius:8px;font:600 14px/40px ${SANS};color:${c.ink}"></td><td valign="middle" class="m-ink" style="font:600 18px/1.3 ${SANS};color:${c.ink};text-align:${start};${WRAP}">${bdi(input.tenant)}</td></tr></table></td></tr>`;
 }
 
 function footer(c: MailPalette['light'], input: ShellInput, start: string): string {
@@ -135,12 +141,13 @@ export function renderShell(input: ShellInput): string {
   const dir = input.locale.dir;
   const start = dir === 'rtl' ? 'right' : 'left';
   const title = escapeHtml(input.heading);
+  const href = input.action === undefined ? '' : safeHref(input.action.href);
   const action =
     input.action === undefined
       ? ''
-      : button(c, input.action.label, input.action.href) +
-        rawLink(c, start, input.locale, input.action.href);
+      : button(c, input.action.label, href) + rawLink(c, start, input.locale, href);
+  const preheader = `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:${c.page};opacity:0">${escapeHtml(input.preheader)}${PREHEADER_PAD}</div>`;
   const closing = (input.closing ?? []).map((line) => muted(c, start, line)).join('');
   const panel = `<tr><td class="m-panel" bgcolor="${c.panel}" style="background-color:${c.panel};border:1px solid ${c.border};border-radius:4px;padding:32px 28px"><h1 class="m-ink" style="margin:0 0 16px;font:600 20px/1.3 ${SANS};color:${c.ink};text-align:${start};${WRAP}">${title}</h1>${input.blocks.map((block) => blockHtml(c, start, block)).join('')}${action}${closing}</td></tr>`;
-  return `<!doctype html><html lang="${escapeHtml(input.locale.tag)}" dir="${dir}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="${SCHEMES}"><meta name="supported-color-schemes" content="${SCHEMES}"><title>${title}</title><style>${headStyles(MAIL_PALETTE)}</style></head><body class="m-page" style="margin:0;padding:0;background-color:${c.page}"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="m-page" bgcolor="${c.page}" style="background-color:${c.page}"><tr><td align="center" style="padding:24px 16px"><!--[if mso]><table role="presentation" width="${String(WIDTH)}" align="center" cellpadding="0" cellspacing="0"><tr><td><![endif]--><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:${String(WIDTH)}px;table-layout:fixed">${header(c, input, start)}${panel}${footer(c, input, start)}</table><!--[if mso]></td></tr></table><![endif]--></td></tr></table></body></html>`;
+  return `<!doctype html><html lang="${escapeHtml(input.locale.tag)}" dir="${dir}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="${SCHEMES}"><meta name="supported-color-schemes" content="${SCHEMES}"><title>${title}</title><style>${headStyles(MAIL_PALETTE)}</style></head><body class="m-page" style="margin:0;padding:0;background-color:${c.page}">${preheader}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="m-page" bgcolor="${c.page}" style="background-color:${c.page}"><tr><td align="center" style="padding:24px 16px"><!--[if mso]><table role="presentation" width="${String(WIDTH)}" align="center" cellpadding="0" cellspacing="0"><tr><td><![endif]--><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:${String(WIDTH)}px;table-layout:fixed">${header(c, input, start)}${panel}${footer(c, input, start)}</table><!--[if mso]></td></tr></table><![endif]--></td></tr></table></body></html>`;
 }

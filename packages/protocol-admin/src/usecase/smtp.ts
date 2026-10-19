@@ -268,8 +268,9 @@ export async function sendTestMessage(
   kek: Uint8Array,
   policy: SmtpDestinationPolicy,
   message: { readonly to: string; readonly tenantDisplayName: string; readonly now: Date },
+  buildSender: typeof smtpSenderFromRecord = smtpSenderFromRecord,
 ): Promise<SendTestMessageOutcome> {
-  const built = await smtpSenderFromRecord(record, kek, policy);
+  const built = await buildSender(record, kek, policy);
   if (built.kind === 'refused_destination') return built;
 
   try {

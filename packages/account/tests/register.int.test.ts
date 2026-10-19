@@ -34,6 +34,9 @@ import { actionTokens } from '#/schema/action-tokens';
 import { type CreateAccountResult, type NewAccountInput } from '#/usecase/register';
 import { registerRegistrationRoute } from '#/view/routes/registration';
 
+// Set by a test that reads the year a mail carries; the system clock otherwise.
+let mailNow: Date | null = null;
+
 let containerHandle: TestDatabase | undefined;
 let ownerHandle: DatabaseHandle | undefined;
 let appHandle: DatabaseHandle | undefined;
@@ -177,6 +180,7 @@ function buildHttpApp(): FastifyInstance {
     database: app,
     findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
     publicBaseUrl,
+    now: () => mailNow ?? new Date(),
     createAccount,
     evaluatePassword,
     pageLocales: ['en', 'fr'],
@@ -312,6 +316,7 @@ describe('self-registration', () => {
       database: app,
       findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
       publicBaseUrl,
+      now: () => mailNow ?? new Date(),
       createAccount,
       evaluatePassword: () => [
         { rule: 'min-length', message: 'DOMAIN-SENTENCE-ONE' },
@@ -537,6 +542,7 @@ describe('self-registration', () => {
       database: app,
       findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
       publicBaseUrl,
+      now: () => mailNow ?? new Date(),
       createAccount: (tx, tenantId, input) => {
         attempted += 1;
         return createAccount(tx, tenantId, input);
@@ -568,6 +574,7 @@ describe('self-registration', () => {
       database: app,
       findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
       publicBaseUrl,
+      now: () => mailNow ?? new Date(),
       createAccount: () => Promise.reject(new BidiControlError('username')),
       evaluatePassword,
     });
@@ -634,6 +641,35 @@ describe('self-registration', () => {
 
     expect(res.statusCode).toBe(400);
   });
+
+  it.each([
+    ['2026-12-31T23:59:59Z', '2026'],
+    ['2027-01-01T00:00:00Z', '2027'],
+    ['2031-06-01T12:00:00Z', '2031'],
+  ])(
+    'stamps the verification mail with the year of the clock it was given: %s',
+    async (instant, year) => {
+      const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {
+        registrationAllowed: true,
+        verifyEmail: true,
+      });
+      mailNow = new Date(instant);
+      try {
+        const res = await submitRegistration(tenantName, {
+          username: 'ada',
+          email: 'ada@example.test',
+          password: 'correct horse battery',
+        });
+        expect(res.statusCode).toBe(201);
+      } finally {
+        mailNow = null;
+      }
+
+      const [queued] = await outboxRows(tenantId);
+      expect(queued?.bodyHtml).toContain(`\u00a9 ${year} Odudu`);
+      expect(queued?.bodyText).toContain(`\u00a9 ${year} Odudu`);
+    },
+  );
 
   it('registers the account whatever the transport later does with the mail', async () => {
     const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {

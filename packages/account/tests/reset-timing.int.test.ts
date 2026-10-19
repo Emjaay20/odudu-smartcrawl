@@ -118,6 +118,7 @@ beforeEach(async () => {
     database: app,
     findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
     publicBaseUrl: 'https://idp.example.test',
+    now: () => new Date(),
     findByEmail: async (tx, email) => {
       const user = await userRepository(tx).byEmail(email);
       return user?.email == null ? null : { subjectId: user.subjectId, email: user.email };

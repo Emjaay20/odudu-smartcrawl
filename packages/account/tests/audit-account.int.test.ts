@@ -190,6 +190,7 @@ beforeAll(async () => {
     database: app,
     findTenant,
     publicBaseUrl: 'https://idp.example.test',
+    now: () => new Date(),
     createAccount,
     evaluatePassword,
   });

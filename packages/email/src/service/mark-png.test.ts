@@ -4,6 +4,7 @@ import { inflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { MARK_PNG_BASE64 } from '#/service/mark.generated';
 import { MAIL_PALETTE } from '#/service/palette.generated';
+import { contrastRatio } from '#/service/palette';
 import { encodePng, rasteriseMark, MARK_SIZE } from '#/service/mark-png';
 
 const MARK_SVG = path.resolve(import.meta.dirname, '../../../instrument/src/mark.svg');
@@ -42,6 +43,7 @@ describe('the mark as a PNG', () => {
     const drawn = rasteriseMark(svg, {
       background: MAIL_PALETTE.light.rail,
       ink: MAIL_PALETTE.light.railInk,
+      edge: MAIL_PALETTE.light.railEdge,
     });
     const committed = pixels(Buffer.from(MARK_PNG_BASE64, 'base64'));
     expect([committed.width, committed.height]).toEqual([MARK_SIZE, MARK_SIZE]);
@@ -59,13 +61,28 @@ describe('the mark as a PNG', () => {
     expect(stem.slice(0, 3)).toEqual([0xe4, 0xe9, 0xe7]);
   });
 
+  it('rings the tile in a mid tone that shows on the light and the dark page', () => {
+    const png = pixels(Buffer.from(MARK_PNG_BASE64, 'base64'));
+    const at = (x: number, y: number): number[] => [
+      ...png.rgba.subarray((y * png.width + x) * 4, (y * png.width + x) * 4 + 4),
+    ];
+    const [r = 0, g = 0, b = 0, a = 0] = at(0, 40);
+    expect(a).toBe(255);
+    const hex = `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+    expect(hex).toBe(MAIL_PALETTE.light.railEdge);
+    for (const scheme of ['light', 'dark'] as const) {
+      expect(contrastRatio(hex, MAIL_PALETTE[scheme].page)).toBeGreaterThan(2);
+    }
+    expect(at(3, 40).slice(0, 3)).toEqual([0x11, 0x15, 0x14]);
+  });
+
   it('is small enough to ride in every message', () => {
     expect(Buffer.from(MARK_PNG_BASE64, 'base64').length).toBeLessThan(2048);
   });
 });
 
 describe('rasteriseMark', () => {
-  const options = { background: '#000000', ink: '#ffffff' };
+  const options = { background: '#000000', ink: '#ffffff', edge: '#888888' };
 
   it('refuses a shape it cannot draw rather than drawing part of a mark', () => {
     expect(() =>

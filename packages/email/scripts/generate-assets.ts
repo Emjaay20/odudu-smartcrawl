@@ -17,7 +17,11 @@ const HEADER =
 const [tokens, svg] = await Promise.all([readFile(TOKENS, 'utf8'), readFile(MARK, 'utf8')]);
 const palette = mailPalette(tokens);
 const png = encodePng(
-  rasteriseMark(svg, { background: palette.light.rail, ink: palette.light.railInk }),
+  rasteriseMark(svg, {
+    background: palette.light.rail,
+    ink: palette.light.railInk,
+    edge: palette.light.railEdge,
+  }),
   MARK_SIZE,
   MARK_SIZE,
 );

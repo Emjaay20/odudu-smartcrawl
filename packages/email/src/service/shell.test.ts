@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MAIL_PALETTE } from '#/service/palette.generated';
+import { renderShell } from '#/service/shell';
 import {
   renderRecoveryCodesRevoked,
   renderRequiredActions,
@@ -101,6 +102,7 @@ describe.each(each)('the %s mail shell', (_name, kind) => {
     expect(images).toHaveLength(1);
     expect(images[0]).toContain('src="cid:odudu-mark"');
     expect(images[0]).toContain('alt="odudu"');
+    expect(images[0]).not.toContain('class=');
     expect(images[0]).toContain('width="40"');
     expect(images[0]).toContain('height="40"');
     expect(attr(html, 'src')).toEqual(['cid:odudu-mark']);
@@ -238,3 +240,124 @@ describe('the table of kinds', () => {
     expect(exported.length).toBe(Object.keys(kinds).length);
   });
 });
+
+describe.each(each)('the %s mail preheader', (_name, kind) => {
+  const { html } = kind.render('Demo');
+
+  it('is the first thing in the body, hidden from view and from Outlook, padded out', () => {
+    const body = html.slice(html.indexOf('<body'));
+    const hidden = /^<body[^>]*><div style="([^"]*)">([^<]*)<\/div>/u.exec(body);
+    expect(hidden).not.toBeNull();
+    expect(hidden?.[1]).toContain('display:none');
+    expect(hidden?.[1]).toContain('max-height:0');
+    expect(hidden?.[1]).toContain('overflow:hidden');
+    expect(hidden?.[1]).toContain('mso-hide:all');
+    const [sentence = '', padding = ''] = (hidden?.[2] ?? '').split('‌');
+    expect(sentence.length).toBeGreaterThan(20);
+    expect(sentence).not.toContain('odudu');
+    expect(padding.length + (hidden?.[2] ?? '').length).toBeGreaterThan(100);
+  });
+});
+
+describe('the preheader sentences', () => {
+  it('differ per kind and come from the catalogue', () => {
+    const sentences = each.map(([, kind]) => {
+      const html = kind.render('Demo').html;
+      return /^<body[^>]*><div[^>]*>([^<‌]*)/u.exec(html.slice(html.indexOf('<body')))?.[1];
+    });
+    expect(new Set(sentences).size).toBe(each.length);
+  });
+});
+
+describe('renderShell given a link of its own', () => {
+  const base = {
+    locale: { tag: 'en', dir: 'ltr' as const },
+    tenant: 'Demo',
+    now: NOW,
+    heading: 'h',
+    preheader: 'p',
+    blocks: [],
+    reason: 'r',
+  };
+
+  it.each([
+    ['javascript:alert(1)'],
+    ['data:text/html,x'],
+    ['/relative'],
+    [' https://x.test/'],
+    ['https://x.test/ '],
+    ['https://user:secret@x.test/'],
+    ['https://user@x.test/'],
+    ['https://x.test/\u0001'],
+    ['https://x.test/\nBcc: y'],
+    ['https://x.test/ '],
+    [''],
+  ])('refuses %j', (href) => {
+    expect(() => renderShell({ ...base, action: { label: 'Go', href } })).toThrow(RangeError);
+  });
+
+  it('accepts a plain https and a plain http address', () => {
+    for (const href of ['https://x.test/a?b=c', 'http://localhost:3000/x']) {
+      expect(renderShell({ ...base, action: { label: 'Go', href } })).toContain(`href="${href}"`);
+    }
+  });
+});
+
+describe('a link with + and %2F in it', () => {
+  const link = 'https://idp.example/x?key=a+b%2Fc&next=%2Fhome%3Fx%3D1';
+
+  it('reaches the href, the shown text and the plain text unchanged', () => {
+    const msg = renderVerifyEmail({
+      to: 'a@b.test',
+      link,
+      tenantDisplayName: 'Demo',
+      now: NOW,
+    });
+    const anchors = msg.html.match(/<a\b[^>]*>[^<]*<\/a>/gu) ?? [];
+    expect(anchors).toHaveLength(2);
+    for (const anchor of anchors) {
+      expect(attr(anchor, 'href')[0]).toBe(link.replaceAll('&', '&amp;'));
+    }
+    expect(unescape(anchors[1]?.replace(/<[^>]*>/gu, '') ?? '')).toBe(link);
+    expect(msg.text.split('\n')).toContain(link);
+  });
+});
+
+describe('a very long tenant name', () => {
+  const long = 'N'.repeat(10_000);
+
+  it.each(each)(
+    'is shortened with an ellipsis in the %s mail, escaped after the cut',
+    (_n, kind) => {
+      const { html, text, subject } = kind.render(long);
+      expect(Buffer.byteLength(html)).toBeLessThan(14_000);
+      expect(text.length).toBeLessThan(3_000);
+      expect(subject.length).toBeLessThan(300);
+      expect(html).toContain('…</bdi>');
+      expect(html).not.toContain('N'.repeat(200));
+    },
+  );
+
+  it('cuts before escaping, so markup cannot grow the page', () => {
+    const { html } = kind0().render('<'.repeat(10_000));
+    expect(html.match(/&lt;/gu)?.length ?? 0).toBeLessThan(1_000);
+    expect(html).not.toMatch(/&l?t?…/u);
+  });
+
+  it('never splits a surrogate pair', () => {
+    const { html } = kind0().render('\u{1f680}'.repeat(5_000));
+    expect(html).not.toMatch(/[\ud800-\udbff](?![\udc00-\udfff])/u);
+  });
+
+  it('leaves a name of ordinary length alone', () => {
+    expect(kind0().render('Northwind International Holdings').html).toContain(
+      '<bdi>Northwind International Holdings</bdi>',
+    );
+  });
+});
+
+function kind0(): Kind {
+  const first = each[0]?.[1];
+  if (first === undefined) throw new Error('no kinds');
+  return first;
+}

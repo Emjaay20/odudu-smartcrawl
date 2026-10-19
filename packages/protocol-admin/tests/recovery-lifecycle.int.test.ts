@@ -13,6 +13,8 @@ import { emailOutbox } from '@odudu/email';
 import { newId } from '@odudu/kernel';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startAdminFixture, type AdminFixture } from '#/testing/admin-fixture';
+import { revokeRecoveryCodes } from '#/usecase/account-recovery';
+import { enqueueCredentialNotice } from '#/usecase/credential-notice';
 import { deleteCredential } from '#/usecase/subjects';
 import {
   createPasswordSubject,
@@ -464,5 +466,77 @@ describe('a refused removal queues nothing', () => {
     });
     expect(await http(seeded, 'DELETE', `credentials/${passwordId}`)).toBe(409);
     expect(await mail(seeded)).toEqual([]);
+  });
+});
+
+describe('the notice mail carries the year of the clock it was sent by', () => {
+  const INSTANTS = [
+    ['2026-12-31T23:59:59Z', '2026'],
+    ['2027-01-01T00:00:00Z', '2027'],
+    ['2031-06-01T12:00:00Z', '2031'],
+  ] as const;
+  const actor = {
+    callerCapabilities: new Set<string>(),
+    actorSubjectId: 'test',
+    actorTenantId: 'test-tenant',
+    actorClientId: 'test-client',
+  };
+
+  async function expectYear(s: Seeded, year: string): Promise<void> {
+    const [queued] = await mail(s);
+    expect(queued?.bodyHtml).toContain(`\u00a9 ${year} Odudu`);
+    expect(queued?.bodyText).toContain(`\u00a9 ${year} Odudu`);
+  }
+
+  it.each(INSTANTS)('on deleteCredential: %s', async (instant, year) => {
+    const s = await seed({ totp: true, passkey: false, codes: 2, email: 'ada@example.test' });
+    await withTenant(fixture.app.db, s.tenant.id, (tx) =>
+      deleteCredential(
+        tx,
+        { audit: () => Promise.resolve() },
+        {
+          tenantId: s.tenant.id,
+          subjectId: s.subjectId,
+          credentialId: s.totpId ?? '',
+          now: new Date(instant),
+          ...actor,
+        },
+      ),
+    );
+    await expectYear(s, year);
+  });
+
+  it.each(INSTANTS)('on revokeRecoveryCodes: %s', async (instant, year) => {
+    const s = await seed({ totp: true, passkey: false, codes: 2, email: 'ada@example.test' });
+    await withTenant(fixture.app.db, s.tenant.id, (tx) =>
+      revokeRecoveryCodes(
+        tx,
+        { audit: () => Promise.resolve() },
+        {
+          tenantId: s.tenant.id,
+          subjectId: s.subjectId,
+          requireNewSet: true,
+          now: new Date(instant),
+          ...actor,
+        },
+      ),
+    );
+    await expectYear(s, year);
+  });
+
+  it.each(INSTANTS)('on enqueueCredentialNotice, both kinds: %s', async (instant, year) => {
+    const s = await seed({ totp: false, passkey: false, codes: 0, email: 'ada@example.test' });
+    await withTenant(fixture.app.db, s.tenant.id, async (tx) => {
+      const input = { tenantId: s.tenant.id, subjectId: s.subjectId, now: new Date(instant) };
+      await enqueueCredentialNotice(tx, input, {
+        kind: 'second_factor_removed',
+        factor: 'totp',
+        codes: false,
+      });
+      await enqueueCredentialNotice(tx, input, { kind: 'recovery_codes_revoked', newSet: false });
+    });
+    const queued = await mail(s);
+    expect(queued).toHaveLength(2);
+    for (const row of queued) expect(row.bodyHtml).toContain(`\u00a9 ${year} Odudu`);
   });
 });

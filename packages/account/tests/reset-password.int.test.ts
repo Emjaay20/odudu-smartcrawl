@@ -35,6 +35,9 @@ import { tenantSettingsRepository } from '#/repository/tenant-settings';
 import { registerResetPasswordRoute } from '#/view/routes/reset-password';
 import { actionTokens } from '#/schema/action-tokens';
 
+// Set by a test that reads the year a mail carries; the system clock otherwise.
+let mailNow: Date | null = null;
+
 let containerHandle: TestDatabase | undefined;
 let ownerHandle: DatabaseHandle | undefined;
 let appHandle: DatabaseHandle | undefined;
@@ -213,6 +216,7 @@ function buildHttpApp(): FastifyInstance {
     database: app,
     findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
     publicBaseUrl: 'https://idp.example.test',
+    now: () => mailNow ?? new Date(),
     findByEmail,
   });
   registerActionTokenRoute(instance, {
@@ -322,6 +326,7 @@ describe('password reset', () => {
       database: app,
       findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
       publicBaseUrl: 'https://idp.example.test',
+      now: () => mailNow ?? new Date(),
       findByEmail,
       pageLocales: ['en', 'fr'],
     });
@@ -349,6 +354,27 @@ describe('password reset', () => {
       expect(unknown.headers['content-length'], language).toBe(known.headers['content-length']);
     }
     await instance.close();
+  });
+
+  it.each([
+    ['2026-12-31T23:59:59Z', '2026'],
+    ['2027-01-01T00:00:00Z', '2027'],
+    ['2031-06-01T12:00:00Z', '2031'],
+  ])('stamps the reset mail with the year of the clock it was given: %s', async (instant, year) => {
+    const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {
+      resetPasswordAllowed: true,
+    });
+    await seedAda(tenantId);
+    mailNow = new Date(instant);
+    try {
+      await requestReset(tenantName, 'ada@example.test');
+    } finally {
+      mailNow = null;
+    }
+
+    const [queued] = await outboxRows(tenantId);
+    expect(queued?.bodyHtml).toContain(`\u00a9 ${year} Odudu`);
+    expect(queued?.bodyText).toContain(`\u00a9 ${year} Odudu`);
   });
 
   it('sends mail only for the address that exists', async () => {
@@ -682,6 +708,7 @@ describe('password reset', () => {
       database: app,
       findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
       publicBaseUrl: undefined,
+      now: () => mailNow ?? new Date(),
       findByEmail,
     });
     await instance.ready();

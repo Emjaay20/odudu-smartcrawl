@@ -513,6 +513,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     database: deps.database,
     findTenant: (name) => tenantSettingsRepository(deps.ownerDatabase.db).byName(name),
     publicBaseUrl: deps.publicBaseUrl,
+    now: () => systemClock.now(),
     createAccount,
     evaluatePassword,
   });
@@ -521,6 +522,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     database: deps.database,
     findTenant: (name) => tenantSettingsRepository(deps.ownerDatabase.db).byName(name),
     publicBaseUrl: deps.publicBaseUrl,
+    now: () => systemClock.now(),
     findByEmail: async (tx, email) => {
       const user = await userRepository(tx).byEmail(email);
       return user?.email == null

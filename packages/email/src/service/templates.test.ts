@@ -13,6 +13,7 @@ vi.mock('#/service/messages', async (importOriginal) => {
   const { withFrench } = await import('@odudu/testkit/i18n');
   return withFrench(await importOriginal(), {
     'verify.subject': 'Vérifiez votre compte {tenant}',
+    'verify.preheader': 'Confirmez votre adresse pour terminer la création de votre compte.',
     'verify.heading': 'Vérifiez votre adresse e-mail',
     'verify.text': 'Confirmez votre adresse e-mail pour {tenant} en ouvrant ce lien :',
     'verify.body': 'Confirmez que cette adresse e-mail est bien la vôtre pour {tenant}.',
@@ -93,6 +94,9 @@ describe('renderVerifyEmail', () => {
       'Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :',
     );
     expect(msg.html).toContain('Propulsé par odudu');
+    expect(msg.html).toContain(
+      'Confirmez votre adresse pour terminer la création de votre compte.',
+    );
     expect(msg.html).toContain(
       'Vous recevez ce message car cette adresse a servi chez <bdi>Demo</bdi>.',
     );

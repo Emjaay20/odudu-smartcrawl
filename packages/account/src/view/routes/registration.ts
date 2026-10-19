@@ -1,6 +1,6 @@
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { requestContextFrom } from '@odudu/domain-audit';
-import { PASSWORD_TOO_LONG, readPasswordField, systemClock } from '@odudu/kernel';
+import { PASSWORD_TOO_LONG, readPasswordField } from '@odudu/kernel';
 import { type FastifyInstance } from 'fastify';
 import {
   register,
@@ -40,8 +40,8 @@ export interface RegistrationRouteDeps {
   // tenant with verify_email on then refuses to register rather than
   // building a link some other way.
   readonly publicBaseUrl: string | undefined;
-  // The clock a mail's send time comes from; the system's unless a test sets one.
-  readonly now?: () => Date;
+  // The clock a mail's send time comes from.
+  readonly now: () => Date;
   readonly createAccount: (
     tx: TenantScopedDatabase,
     tenantId: string,
@@ -136,7 +136,7 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
         request: requestContextFrom(request),
         issuerBase: deps.publicBaseUrl,
         verifyEmailEnabled: tenant.verifyEmail,
-        now: deps.now ?? (() => systemClock.now()),
+        now: deps.now,
         createAccount: deps.createAccount,
         passwordPolicy: tenant.passwordPolicy,
         evaluatePassword: deps.evaluatePassword,

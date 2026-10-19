@@ -4,10 +4,13 @@ import { crc32, deflateSync } from 'node:zlib';
 export const MARK_SIZE = 80;
 const SAMPLES = 8;
 const TILE_RADIUS = 16;
+const EDGE_WIDTH = 2;
 
 export interface MarkColours {
   readonly background: string;
   readonly ink: string;
+  // A ring just inside the tile's edge, so the tile shows on a dark page.
+  readonly edge: string;
 }
 
 interface Circle {
@@ -63,10 +66,17 @@ function channels(hex: string): [number, number, number] {
   ];
 }
 
-function insideTile(x: number, y: number): boolean {
+function insideTile(x: number, y: number, inset = 0): boolean {
+  const radius = TILE_RADIUS - inset;
   const dx = Math.max(TILE_RADIUS - x, 0, x - (MARK_SIZE - TILE_RADIUS));
   const dy = Math.max(TILE_RADIUS - y, 0, y - (MARK_SIZE - TILE_RADIUS));
-  return dx * dx + dy * dy <= TILE_RADIUS * TILE_RADIUS;
+  return (
+    x >= inset &&
+    y >= inset &&
+    x <= MARK_SIZE - inset &&
+    y <= MARK_SIZE - inset &&
+    dx * dx + dy * dy <= radius * radius
+  );
 }
 
 function insideStem(stem: Stem, half: number, x: number, y: number): boolean {
@@ -87,29 +97,36 @@ export function rasteriseMark(svg: string, colours: MarkColours): Buffer {
   const origin = (MARK_SIZE - size * scale) / 2;
   const bg = channels(colours.background);
   const ink = channels(colours.ink);
+  const edge = channels(colours.edge);
   const out = Buffer.alloc(MARK_SIZE * MARK_SIZE * 4);
+  const total = SAMPLES * SAMPLES;
   for (let py = 0; py < MARK_SIZE; py += 1) {
     for (let px = 0; px < MARK_SIZE; px += 1) {
       let tile = 0;
+      let inner = 0;
       let drawn = 0;
       for (let sy = 0; sy < SAMPLES; sy += 1) {
         for (let sx = 0; sx < SAMPLES; sx += 1) {
           const x = px + (sx + 0.5) / SAMPLES;
           const y = py + (sy + 0.5) / SAMPLES;
           if (insideTile(x, y)) tile += 1;
+          if (insideTile(x, y, EDGE_WIDTH)) inner += 1;
           const mx = (x - origin) / scale;
           const my = (y - origin) / scale;
           const ring = Math.abs(Math.hypot(mx - circle.cx, my - circle.cy) - circle.r) <= half;
           if (ring || insideStem(stem, half, mx, my)) drawn += 1;
         }
       }
-      const total = SAMPLES * SAMPLES;
-      const weight = tile === 0 ? 0 : drawn / total / (tile / total);
+      const inkWeight = tile === 0 ? 0 : drawn / tile;
+      const edgeWeight = tile === 0 ? 0 : (tile - inner) / tile;
       const at = (py * MARK_SIZE + px) * 4;
       for (let channel = 0; channel < 3; channel += 1) {
-        const from = bg[channel] ?? 0;
-        const to = ink[channel] ?? 0;
-        out[at + channel] = Math.round(from + (to - from) * Math.min(weight, 1));
+        const base = bg[channel] ?? 0;
+        const value =
+          base +
+          ((edge[channel] ?? 0) - base) * edgeWeight +
+          ((ink[channel] ?? 0) - base) * inkWeight;
+        out[at + channel] = Math.round(value);
       }
       out[at + 3] = Math.round((tile / total) * 255);
     }

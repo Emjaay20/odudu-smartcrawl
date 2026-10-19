@@ -14,7 +14,6 @@ import {
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const doc = (name: string): Promise<string> => readFile(path.join(ROOT, 'docs', name), 'utf8');
 
-const ELLIPSIS = '…';
 const TO = 'recipient@example.test';
 const FSI = '⁨';
 const PDI = '⁩';
@@ -39,12 +38,13 @@ function tenantOf(text: string): string {
   return tenant;
 }
 
-// Each pino capture is one JSON object; the guides show some with `html` cut
-// at an ellipsis and some without it.
+// Each pino capture is one JSON object; the log carries the size of the
+// markup, never the markup.
 interface Capture {
   readonly subject: string;
   readonly text: string;
-  readonly html: string | null;
+  readonly htmlBytes: number | null;
+  readonly hasHtml: boolean;
   readonly line: number;
 }
 
@@ -56,10 +56,16 @@ function captures(markdown: string): Capture[] {
     if (!body.includes('captured email')) continue;
     const parsed: unknown = JSON.parse(body);
     if (typeof parsed !== 'object' || parsed === null) continue;
-    const { subject, text, html } = parsed as Record<string, unknown>;
+    const { subject, text, htmlBytes, html } = parsed as Record<string, unknown>;
     if (typeof subject !== 'string' || typeof text !== 'string') continue;
     const line = markdown.slice(0, block.index).split('\n').length;
-    found.push({ subject, text, html: typeof html === 'string' ? html : null, line });
+    found.push({
+      subject,
+      text,
+      htmlBytes: typeof htmlBytes === 'number' ? htmlBytes : null,
+      hasHtml: html !== undefined,
+      line,
+    });
   }
   return found;
 }
@@ -86,12 +92,8 @@ describe('the mail the guides record is what the templates produce', () => {
       const real = rendered(capture);
       expect(capture.subject, `line ${String(capture.line)}`).toBe(real.subject);
       expect(capture.text, `line ${String(capture.line)}`).toBe(real.text);
-      if (capture.html !== null) {
-        expect(capture.html.endsWith(ELLIPSIS), `line ${String(capture.line)}`).toBe(true);
-        const shown = capture.html.slice(0, -ELLIPSIS.length);
-        expect(shown.length).toBeGreaterThan(100);
-        expect(real.html.startsWith(shown), `line ${String(capture.line)}`).toBe(true);
-      }
+      expect(capture.hasHtml, `line ${String(capture.line)}`).toBe(false);
+      expect(capture.htmlBytes, `line ${String(capture.line)}`).toBe(Buffer.byteLength(real.html));
     }
   });
 
@@ -102,9 +104,17 @@ describe('the mail the guides record is what the templates produce', () => {
     );
     if (found?.[1] === undefined) throw new Error('no anchor excerpt in request-paths.md');
     const shown = found[1].split('\n');
-    const verification = captures(markdown).find((c) => c.subject === 'Verify your demo account');
-    if (verification === undefined) throw new Error('no demo verification capture');
-    expect(shown).toEqual(anchors(rendered(verification).html));
+    const href = /href="([^"]+)"/u.exec(shown[0] ?? '')?.[1];
+    if (href === undefined) throw new Error('no href in the first anchor');
+    const demo = captures(markdown).find((c) => c.subject === 'Verify your demo account');
+    if (demo === undefined) throw new Error('no demo verification capture');
+    const real = renderVerifyEmail({
+      to: TO,
+      link: href,
+      tenantDisplayName: tenantOf(demo.text),
+      now: sentAt(demo.text),
+    });
+    expect(shown).toEqual(anchors(real.html));
     expect(shown).toHaveLength(2);
     expect(shown[0]).toContain('>Verify email</a>');
   });

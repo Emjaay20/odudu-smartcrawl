@@ -1,5 +1,4 @@
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
-import { systemClock } from '@odudu/kernel';
 import { type FastifyInstance } from 'fastify';
 import { requestPasswordReset } from '#/usecase/reset-password';
 import {
@@ -28,8 +27,8 @@ export interface ResetPasswordRouteDeps {
   // when unset; requestPasswordReset then refuses to send for any tenant
   // rather than building a link some other way.
   readonly publicBaseUrl: string | undefined;
-  // The clock a mail's send time comes from; the system's unless a test sets one.
-  readonly now?: () => Date;
+  // The clock a mail's send time comes from.
+  readonly now: () => Date;
   readonly findByEmail: (
     tx: TenantScopedDatabase,
     email: string,
@@ -97,7 +96,7 @@ export function registerResetPasswordRoute(
         tenantName: tenant.name,
         tenantDisplayName: tenant.displayName ?? tenant.name,
         issuerBase: deps.publicBaseUrl,
-        now: deps.now ?? (() => systemClock.now()),
+        now: deps.now,
         findByEmail: deps.findByEmail,
       },
       email,

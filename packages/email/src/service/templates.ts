@@ -70,6 +70,16 @@ function actionHtml(locale: PageLocale, code: string): string {
   return id === null ? bdi(stripBidiControls(code)) : tHtml(locale, id);
 }
 
+const NAME_LIMIT = 80;
+
+// A display name is the tenant's own text and can be any length; the mail
+// shows its first characters and an ellipsis. Cut by code point, before
+// anything is escaped.
+function clipName(name: string): string {
+  const points = Array.from(name);
+  return points.length <= NAME_LIMIT ? name : `${points.slice(0, NAME_LIMIT).join('')}\u2026`;
+}
+
 const SIGNATURE_RULE = '--';
 const DOT = ' · ';
 
@@ -90,17 +100,22 @@ interface Page {
   readonly tenant: string;
   readonly now: Date;
   readonly heading: MessageId;
+  readonly preheader: MessageId;
   readonly reason: MessageId;
 }
 
 function page(
   spec: Page,
-): Pick<Parameters<typeof renderShell>[0], 'locale' | 'tenant' | 'now' | 'heading' | 'reason'> {
+): Pick<
+  Parameters<typeof renderShell>[0],
+  'locale' | 'tenant' | 'now' | 'heading' | 'preheader' | 'reason'
+> {
   return {
     locale: spec.locale,
     tenant: stripBidiControls(spec.tenant),
     now: spec.now,
     heading: t(spec.locale, spec.heading),
+    preheader: t(spec.locale, spec.preheader),
     reason: tHtml(spec.locale, spec.reason, {}, { tenant: stripBidiControls(spec.tenant) }),
   };
 }
@@ -112,7 +127,7 @@ interface Linked {
 
 function renderLinked({ kind, input }: Linked): EmailMessage {
   const locale = mailLocale(input.locale);
-  const tenant = input.tenantDisplayName;
+  const tenant = clipName(input.tenantDisplayName);
   const link = safeHref(input.link);
   return {
     to: input.to,
@@ -124,6 +139,7 @@ function renderLinked({ kind, input }: Linked): EmailMessage {
         tenant,
         now: input.now,
         heading: `${kind}.heading`,
+        preheader: `${kind}.preheader`,
         reason: `${kind}.reason`,
       }),
       blocks: [paragraph(tHtml(locale, `${kind}.body`, {}, { tenant: stripBidiControls(tenant) }))],
@@ -143,7 +159,7 @@ export function renderResetPassword(input: ResetPasswordInput): EmailMessage {
 
 export function renderRequiredActions(input: RequiredActionsInput): EmailMessage {
   const locale = mailLocale(input.locale);
-  const tenant = input.tenantDisplayName;
+  const tenant = clipName(input.tenantDisplayName);
   const link = safeHref(input.link);
   const listed = input.actions.map((code) => `- ${actionText(locale, code)}`).join('\n');
   return {
@@ -156,6 +172,7 @@ export function renderRequiredActions(input: RequiredActionsInput): EmailMessage
         tenant,
         now: input.now,
         heading: 'actions.heading',
+        preheader: 'actions.preheader',
         reason: 'actions.reason',
       }),
       blocks: [
@@ -190,6 +207,7 @@ interface Notice {
   readonly input: NoticeInput;
   readonly subject: MessageId;
   readonly heading: MessageId;
+  readonly preheader: MessageId;
   readonly reason: MessageId;
   // The sentences of the notice, the first naming the tenant.
   readonly lines: readonly MessageId[];
@@ -198,9 +216,9 @@ interface Notice {
 // Said to the address on file after an administrator changes how the
 // subject recovers or proves who they are. Never a link, a code or a secret:
 // whoever reads it may not be the subject, and nothing in it helps them.
-function renderNotice({ input, subject, heading, reason, lines }: Notice): EmailMessage {
+function renderNotice({ input, subject, heading, preheader, reason, lines }: Notice): EmailMessage {
   const locale = mailLocale(input.locale);
-  const tenant = input.tenantDisplayName;
+  const tenant = clipName(input.tenantDisplayName);
   const sentences = lines.map((id) => ({
     text: t(locale, id, { tenant: inText(tenant) }),
     html: tHtml(locale, id, {}, { tenant: stripBidiControls(tenant) }),
@@ -214,7 +232,7 @@ function renderNotice({ input, subject, heading, reason, lines }: Notice): Email
       textFooter(locale, reason, tenant, input.now),
     ].join('\n\n'),
     html: renderShell({
-      ...page({ locale, tenant, now: input.now, heading, reason }),
+      ...page({ locale, tenant, now: input.now, heading, preheader, reason }),
       blocks: sentences.map((line) => paragraph(line.html)),
       closing: [tHtml(locale, 'notice.contact')],
     }),
@@ -226,6 +244,7 @@ export function renderSecondFactorRemoved(input: SecondFactorRemovedInput): Emai
     input,
     subject: 'factorRemoved.subject',
     heading: 'factorRemoved.heading',
+    preheader: 'factorRemoved.preheader',
     reason: 'factorRemoved.reason',
     lines: [
       `factorRemoved.${input.factor}`,
@@ -239,6 +258,7 @@ export function renderRecoveryCodesRevoked(input: RecoveryCodesRevokedInput): Em
     input,
     subject: 'recoveryRevoked.subject',
     heading: 'recoveryRevoked.heading',
+    preheader: 'recoveryRevoked.preheader',
     reason: 'recoveryRevoked.reason',
     lines: ['recoveryRevoked.text', ...(input.newSet ? (['recoveryRevoked.newSet'] as const) : [])],
   });
@@ -253,7 +273,7 @@ export interface SmtpTestInput {
 
 export function renderSmtpTest(input: SmtpTestInput): EmailMessage {
   const locale = mailLocale(input.locale);
-  const tenant = input.tenantDisplayName;
+  const tenant = clipName(input.tenantDisplayName);
   return {
     to: input.to,
     subject: t(locale, 'smtpTest.subject'),
@@ -264,6 +284,7 @@ export function renderSmtpTest(input: SmtpTestInput): EmailMessage {
         tenant,
         now: input.now,
         heading: 'smtpTest.heading',
+        preheader: 'smtpTest.preheader',
         reason: 'smtpTest.reason',
       }),
       blocks: [paragraph(tHtml(locale, 'smtpTest.text'))],

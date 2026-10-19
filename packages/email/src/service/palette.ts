@@ -16,6 +16,7 @@ export const MAIL_ROLES = {
   buttonInk: '--surface-panel',
   rail: '--surface-rail',
   railInk: '--ink-rail',
+  railEdge: '--ink-rail-muted',
 } as const;
 
 export type MailRole = keyof typeof MAIL_ROLES;
