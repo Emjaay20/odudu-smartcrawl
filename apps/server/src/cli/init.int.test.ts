@@ -10,6 +10,7 @@ import { type FastifyInstance, type LightMyRequestResponse } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildApp } from '#/app';
 import { init, initCommand, type InitInput, type InitIo } from '#/cli/init';
+import { DEFAULT_ADMIN_EMAIL } from '#/cli/init-plan';
 import { createLogger } from '#/logger';
 
 const ENV_KEYS = [
@@ -315,6 +316,75 @@ describe('odudu init', () => {
     });
 
     expect(prompted).toBe(false);
+  }, 120_000);
+
+  it('uses the default administrator address when nobody names one and nobody can be asked', async () => {
+    const { io, out } = capture();
+
+    const report = await init({ interactive: false, publicBaseUrl: BASE, stateDir }, io);
+
+    expect(report.adminEmail).toBe(DEFAULT_ADMIN_EMAIL);
+    expect(out.join('\n')).toContain(DEFAULT_ADMIN_EMAIL);
+    expect(await signIn(DEFAULT_ADMIN_EMAIL, report.generatedPassword ?? '')).toBe(
+      'change-password',
+    );
+  }, 120_000);
+
+  it('succeeds on a bare re-run after the email was prompted, changing and printing nothing more', async () => {
+    const prompted = capture();
+    await init(
+      { interactive: true, publicBaseUrl: BASE, stateDir },
+      {
+        ...prompted.io,
+        promptAdmin: () =>
+          Promise.resolve({ email: 'grace@example.com', password: 'Typed-Passw0rd!77' }),
+      },
+    );
+    const before = await countRows(database.adminUrl, 'users');
+    const again = capture();
+
+    const report = await init({ interactive: false, publicBaseUrl: BASE, stateDir }, again.io);
+
+    expect(report.created).toBe(false);
+    expect(again.out).toHaveLength(1);
+    expect(again.out[0]).toContain('already exists');
+    expect(again.out[0]).not.toContain(DEFAULT_ADMIN_EMAIL);
+    expect(await countRows(database.adminUrl, 'users')).toBe(before);
+    expect(await signIn('grace@example.com', 'Typed-Passw0rd!77')).toBe('signed-in');
+  }, 120_000);
+
+  it('does not ask a terminal for anything once an administrator exists', async () => {
+    await init(inputWith(), capture().io);
+    const { io, out } = capture();
+
+    const report = await init(
+      { interactive: true, publicBaseUrl: BASE, stateDir },
+      {
+        ...io,
+        promptAdmin: () => Promise.reject(new Error('should not ask')),
+      },
+    );
+
+    expect(report.created).toBe(false);
+    expect(out.join('\n')).toContain('already exists');
+  }, 120_000);
+
+  it('still refuses a different address that was asked for by name', async () => {
+    await init({ interactive: false, publicBaseUrl: BASE, stateDir }, capture().io);
+
+    await expect(
+      init(inputWith({ adminEmail: 'grace@example.com' }), capture().io),
+    ).rejects.toThrow(/--add-admin/u);
+  }, 120_000);
+
+  it('says a password from the environment stays in the container, without printing it', async () => {
+    const { io, out } = capture();
+
+    const report = await init(inputWith({ adminPassword: 'Env-Passw0rd!55' }), io);
+
+    expect(report.passwordFromEnv).toBe(true);
+    expect(out.join('\n')).toContain('docker compose rm -f setup');
+    expect(out.join('\n')).not.toContain('Env-Passw0rd!55');
   }, 120_000);
 
   it('refuses to run against a non-loopback public base URL', async () => {

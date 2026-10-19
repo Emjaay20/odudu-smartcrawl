@@ -9,7 +9,11 @@ import {
   secondAdministratorMessage,
   STATE_DIR_MODE,
 } from '../../apps/server/src/cli/init.js';
-import { DEFAULT_PUBLIC_BASE_URL, loopbackRefusal } from '../../apps/server/src/cli/init-plan.js';
+import {
+  DEFAULT_ADMIN_EMAIL,
+  DEFAULT_PUBLIC_BASE_URL,
+  loopbackRefusal,
+} from '../../apps/server/src/cli/init-plan.js';
 import { CLI_COMMANDS } from '../../apps/server/src/cli/registry.js';
 
 const readme = readFileSync(new URL('../../README.md', import.meta.url), 'utf8');
@@ -35,6 +39,8 @@ describe('the README paragraph on odudu init', () => {
   it('states the defaults and modes the code uses', () => {
     expect(section).toContain(`\`${DEFAULT_STATE_DIR}\``);
     expect(section).toContain(`\`${DEFAULT_PUBLIC_BASE_URL}\``);
+    expect(readme).toContain(`email:    ${DEFAULT_ADMIN_EMAIL}`);
+    expect(section).toContain(`\`${DEFAULT_ADMIN_EMAIL}\``);
     expect(section).toContain(`\`${octal(SECRETS_FILE_MODE)}\``);
     expect(section).toContain(`\`${octal(STATE_DIR_MODE)}\``);
   });
@@ -57,9 +63,10 @@ describe('the README paragraph on odudu init', () => {
     expect(transcript).toContain(`\n${listed}\n`);
   });
 
-  it('shows the exit status of each refusal', () => {
-    const refusals = transcript.split('\n').filter((line) => line.endsWith('echo "exit $?"'));
-    expect(refusals).toHaveLength(3);
-    expect(transcript.match(/^exit 1$/gmu)).toHaveLength(refusals.length);
+  it('shows the exit status of each refusal, and of the re-run that succeeds', () => {
+    const shown = transcript.split('\n').filter((line) => line.endsWith('echo "exit $?"'));
+    expect(shown).toHaveLength(4);
+    expect(transcript.match(/^exit 1$/gmu)).toHaveLength(3);
+    expect(transcript.match(/^exit 0$/gmu)).toHaveLength(1);
   });
 });

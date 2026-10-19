@@ -95,6 +95,47 @@ describe('promptAdmin', () => {
     expect(answer.password).toBe('abcdef-1');
   });
 
+  it('ends with a clear message on Ctrl-D, even after some text', async () => {
+    const { io, input, rawCalls } = rig();
+    input.write('ada@example.com\nabc\x04');
+
+    await expect(promptAdmin(io, accept)).rejects.toThrow(/Ctrl-D/u);
+
+    expect(rawCalls.at(-1)).toBe(false);
+  });
+
+  it('ignores escape sequences and other control characters in the password', async () => {
+    const { io, input } = rig();
+    input.write('ada@example.com\nab\x1b[Ac\x1b[3~d\x01\x1bOPe-1\n');
+    input.write('abcde-1\n');
+
+    const answer = await promptAdmin(io, accept);
+
+    expect(answer.password).toBe('abcde-1');
+  });
+
+  it('deletes a whole character on backspace, not half a surrogate pair', async () => {
+    const { io, input } = rig();
+    input.write('ada@example.com\nabcdef-1\u{1F600}\x7f\n');
+    input.write('abcdef-1\n');
+
+    const answer = await promptAdmin(io, accept);
+
+    expect(answer.password).toBe('abcdef-1');
+  });
+
+  it('asks again for the email, before any password, when it is not an address', async () => {
+    const { io, input, written } = rig();
+    input.write('nobody\nada@example.com\npw-pw-pw-1\npw-pw-pw-1\n');
+
+    const answer = await promptAdmin(io, accept, undefined, (email) =>
+      email.includes('@') ? null : 'That is not an email address.',
+    );
+
+    expect(answer.email).toBe('ada@example.com');
+    expect(written().indexOf('not an email')).toBeLessThan(written().indexOf('Password:'));
+  });
+
   it('restores the terminal after Ctrl-C', async () => {
     const { io, input, rawCalls } = rig();
     input.write('ada@example.com\nabc\x03');

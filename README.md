@@ -1264,19 +1264,83 @@ twin already was — `https`, absolute, no fragment — because the logout page
 renders it into an iframe, and a `javascript:` or bare-`http:` value would
 reach that sink unchecked otherwise.
 
+**Quickstart with Docker Compose.** `quickstart/compose.yaml` starts Postgres, a
+one-time `setup` step that runs `odudu init`, and the server, on
+`http://localhost:3000` (`ODUDU_PORT` moves it, to a number from 1 to 65535).
+With no input at all:
+
+```
+$ docker compose up -d
+$ docker compose logs --no-log-prefix setup
+
+Odudu is ready.
+
+ console:  http://localhost:3250/console/
+ email:    admin@odudu.local
+ password: <generated>
+
+The password is shown once and must be changed at first sign-in.
+To remove it from the setup container log afterwards, run:
+
+  docker compose rm -f setup
+
+```
+
+Run against a local build of the image (`ODUDU_IMAGE=odudu:p4g-qs`,
+`ODUDU_PORT=3250`, a fresh project, nothing run before it); the generated
+password is replaced by `<generated>`. `ODUDU_ADMIN_EMAIL` names another
+administrator, and `ODUDU_ADMIN_PASSWORD` a password of your own instead of a
+generated one. In a `.env` file write a password with a `$` or `#` in single
+quotes, as `quickstart/.env.example` shows, or Compose changes it; a password
+from the environment stays in the stopped `setup` container until
+`docker compose rm -f setup`. `docker compose up -d` is safe to repeat: a later
+`setup` finds the administrator and exits 0.
+
+Compose gives a service no terminal under `up`, so the prompt is a second
+command: `docker compose run --rm setup` asks for the email and the password
+(twice, not echoed), and `docker compose up -d` then starts the server.
+
+```
+$ docker compose run --rm setup
+Administrator email: nobody
+That is not an email address. Try again.
+Administrator email: grace@example.com
+Password:
+Repeat password:
+
+Odudu is ready.
+
+ console:  http://localhost:3250/console/
+ email:    grace@example.com
+
+Sign in with the password you chose.
+
+$ docker compose up -d
+$ docker compose logs --no-log-prefix setup
+An administrator already exists. Console: http://localhost:3250/console/
+If you cannot sign in, `odudu seed admin --username <name>` creates another.
+```
+
+The second transcript is a run through a pseudo-terminal, with the carriage
+returns and the typed lines left out. Postgres publishes no port, but on
+Linux any process on the machine can reach a container's address and the
+database password in the file is public: do not use it on a shared host.
+While a person types at the prompt a concurrent `setup` waits for them, up to
+a minute, and then gives up.
+
 **Quickstart: `odudu init`.** One command takes an empty database to a
 signed-in console: it creates the `odudu_app` and `odudu_svc` roles, applies
 the migrations, creates the `system` tenant and one administrator, and writes
 `quickstart.env` for the server to start from. It needs only the owner
 connection, `ODUDU_DATABASE_URL`, and it is safe to run again.
 
-| Input                        | Meaning                                                                                                                        |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `--admin-email`              | The administrator's address; it is also the username they sign in with. Default `ODUDU_ADMIN_EMAIL`.                           |
-| `--state-dir`                | Where `quickstart.env` goes. Default `/var/lib/odudu`, created `0700`; an existing one writable by group or others is refused. |
-| `--public-base-url`          | Where the server will be reached. Default `ODUDU_PUBLIC_BASE_URL`, then `http://localhost:3000`.                               |
-| `--add-admin`                | Add a second administrator. Without it a different `--admin-email` is refused.                                                 |
-| `ODUDU_ADMIN_PASSWORD` (env) | A password to use instead of a generated one; never an option, so not in `ps`. Empty is unset.                                 |
+| Input                        | Meaning                                                                                                                            |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `--admin-email`              | The administrator's address and sign-in name. Default `ODUDU_ADMIN_EMAIL`, then asked for on a terminal, else `admin@odudu.local`. |
+| `--state-dir`                | Where `quickstart.env` goes. Default `/var/lib/odudu`, created `0700`; an existing one writable by group or others is refused.     |
+| `--public-base-url`          | Where the server will be reached. Default `ODUDU_PUBLIC_BASE_URL`, then `http://localhost:3000`.                                   |
+| `--add-admin`                | Add a second administrator. Without it a different `--admin-email` is refused.                                                     |
+| `ODUDU_ADMIN_PASSWORD` (env) | A password to use instead of a generated one; never an option, so not in `ps`. Empty is unset.                                     |
 
 `quickstart.env` is created `0600`, complete or not at all, and never
 overwritten: it holds the owner and service database URLs, `ODUDU_KEK`, the
@@ -1340,6 +1404,12 @@ Odudu is ready.
  email:    grace@example.com
 
 Sign in with the password you chose.
+It stays in the setup container environment until that container
+is removed: docker compose rm -f setup
+$ odudu init --state-dir ./state; echo "exit $?"
+An administrator already exists. Console: http://localhost:3000/console/
+If you cannot sign in, `odudu seed admin --username <name>` creates another.
+exit 0
 $ odudu init --state-dir ./state --public-base-url https://id.example.com --admin-email ada@example.com; echo "exit $?"
 ODUDU_PUBLIC_BASE_URL is "https://id.example.com", which is not a loopback address: odudu init is for a machine you are sitting at and serves over plain http on localhost. To run on a public address, configure the server yourself: see the README's Deploying section
 exit 1

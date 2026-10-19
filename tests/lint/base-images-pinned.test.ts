@@ -67,17 +67,19 @@ const YAML_PATTERNS: readonly RegExp[] = [
   /^\s*(?:-\s+)?uses:\s*['"]?docker:\/\/([^\s'"#]+)/,
 ];
 
-// The quickstart compose file installs this project's own image, chosen by a
-// variable and defaulting to the latest release; every image it builds on is
-// pinned in the Dockerfile that makes it.
-const OWN_IMAGE = /^\$\{ODUDU_IMAGE:-ghcr\.io\/wizzywit\/odudu:[\w.-]+\}$/;
+// quickstart/compose.yaml installs this project's own image, chosen by a
+// variable and defaulting to an exact release; every image it builds on is
+// pinned in the Dockerfile that makes it. A moving tag is not an exact release.
+const OWN_IMAGE_FILE = 'quickstart/compose.yaml';
+const OWN_IMAGE =
+  /^\$\{ODUDU_IMAGE:-ghcr\.io\/wizzywit\/odudu:\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\}$/;
 
 function yamlReferences(file: string, text: string): Reference[] {
   const found: Reference[] = [];
   text.split('\n').forEach((raw, index) => {
     for (const pattern of YAML_PATTERNS) {
       const match = pattern.exec(raw);
-      if (match?.[1] !== undefined && !OWN_IMAGE.test(match[1])) {
+      if (match?.[1] !== undefined && !(file === OWN_IMAGE_FILE && OWN_IMAGE.test(match[1]))) {
         found.push({ file, line: index + 1, image: match[1] });
       }
     }
@@ -180,20 +182,35 @@ describe('base images', () => {
     ]);
   });
 
-  it('exempts only the own-image variable, ODUDU_IMAGE', () => {
-    const text = [
-      'services:',
-      '  a:',
-      '    image: ${ODUDU_IMAGE:-ghcr.io/wizzywit/odudu:latest}',
-      '  b:',
-      '    image: ${OTHER:-ghcr.io/wizzywit/odudu:latest}',
-      '  c:',
-      '    image: ${ODUDU_IMAGE:-ghcr.io/someone/else:latest}',
-    ].join('\n');
-    expect(unpinned(imageReferences('quickstart/compose.yaml', text))).toEqual([
-      'quickstart/compose.yaml:5 ${OTHER:-ghcr.io/wizzywit/odudu:latest}',
-      'quickstart/compose.yaml:7 ${ODUDU_IMAGE:-ghcr.io/someone/else:latest}',
-    ]);
+  it('exempts only the own-image variable with an exact release, in the quickstart file', () => {
+    const own = (tag: string): string =>
+      `    image: \${ODUDU_IMAGE:-ghcr.io/wizzywit/odudu:${tag}}`;
+    const lines = (file: string, tag: string): string[] =>
+      unpinned(imageReferences(file, ['services:', '  a:', own(tag)].join('\n')));
+    const file = 'quickstart/compose.yaml';
+
+    for (const tag of ['1.2.3', '0.1.0-rc.4', '10.20.30']) expect(lines(file, tag)).toEqual([]);
+    for (const tag of ['latest', 'main', '1', '1.2', 'rc', 'v1.2.3', '1.2.3 ']) {
+      expect(lines(file, tag), tag).toHaveLength(1);
+    }
+    expect(lines('infra/docker/compose.yaml', '1.2.3')).toHaveLength(1);
+    expect(lines('.github/workflows/x.yml', '1.2.3')).toHaveLength(1);
+    expect(
+      unpinned(
+        imageReferences(
+          file,
+          ['services:', '  b:', '    image: ${OTHER:-ghcr.io/wizzywit/odudu:1.2.3}'].join('\n'),
+        ),
+      ),
+    ).toHaveLength(1);
+    expect(
+      unpinned(
+        imageReferences(
+          file,
+          ['services:', '  c:', '    image: ${ODUDU_IMAGE:-ghcr.io/someone/else:1.2.3}'].join('\n'),
+        ),
+      ),
+    ).toHaveLength(1);
   });
 
   it('flags unpinned workflow forms', () => {

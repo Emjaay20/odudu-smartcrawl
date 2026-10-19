@@ -37,6 +37,19 @@ describe('renderBanner', () => {
     expect(banner).toContain('ada@example.com');
   });
 
+  it('tells a password given in the environment how to remove it from the container', () => {
+    const chosen = {
+      consoleUrl: generated.consoleUrl,
+      adminEmail: generated.adminEmail,
+      created: true,
+    };
+
+    expect(renderBanner({ ...chosen, passwordFromEnv: true })).toContain(
+      'docker compose rm -f setup',
+    );
+    expect(renderBanner({ ...chosen, passwordFromEnv: true })).not.toContain('password:');
+  });
+
   it('keeps every line within 72 columns', () => {
     for (const report of [generated, { ...generated, generatedPassword: 'x'.repeat(40) }]) {
       for (const line of renderBanner(report).split('\n')) {

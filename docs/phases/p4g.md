@@ -597,3 +597,18 @@ run --rm setup` allocates the terminal itself. verified: `script -q
 - `ODUDU_ADMIN_EMAIL` is read by `init` when no `--admin-email` is given.
 - `base-images-pinned.test.ts` exempts the one interpolation
   `${ODUDU_IMAGE:-ghcr.io/wizzywit/odudu:<tag>}`, the project's own image.
+
+### One command, qualified
+
+The design's goal of one command from nothing to a signed-in console is met
+as: `docker compose up -d` with no input (administrator `admin@odudu.local`,
+generated password, printed once in `docker compose logs setup`), and, for a
+prompt, `docker compose run --rm setup` followed by `docker compose up -d`.
+Compose gives a service no terminal under `up`, so the prompt cannot belong to
+the first command. verified: both sequences on a local image, sign-in with the
+printed password reached the change-password page, and a later `up -d` ran
+`setup` to "already exists" with exit 0. A defaulted address never conflicts
+with an existing administrator; one named with `--admin-email` still does.
+The compose file's image tag is the placeholder `0.0.0`, replaced by the
+release when the file is published as a release asset; the lint accepts only a
+semver tag there.

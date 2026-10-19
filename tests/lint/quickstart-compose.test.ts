@@ -1,4 +1,6 @@
-import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { REPO_ROOT } from '../docs/markdown.js';
@@ -8,6 +10,8 @@ import { REPO_ROOT } from '../docs/markdown.js';
 // config` does in CI.
 
 const text = readFileSync(path.join(REPO_ROOT, 'quickstart/compose.yaml'), 'utf8');
+const example = readFileSync(path.join(REPO_ROOT, 'quickstart/.env.example'), 'utf8');
+const dependabot = readFileSync(path.join(REPO_ROOT, '.github/dependabot.yml'), 'utf8');
 
 function service(name: string): string {
   const start = text.search(new RegExp(`^  ${name}:`, 'm'));
@@ -76,5 +80,82 @@ describe('quickstart/compose.yaml', () => {
 
   it('starts the server from the file setup wrote', () => {
     expect(service('odudu')).toContain('--env-file=/var/lib/odudu/quickstart.env');
+  });
+
+  it('restarts postgres and the server unless stopped, and setup never', () => {
+    for (const name of ['postgres', 'odudu']) {
+      expect(service(name), name).toMatch(/restart: unless-stopped/);
+    }
+    expect(service('setup')).toMatch(/restart: ['"]no['"]/);
+  });
+
+  it('defaults to one exact release of its own image, written the same everywhere', () => {
+    const SEMVER = String.raw`\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?`;
+    const own = new RegExp(String.raw`\$\{ODUDU_IMAGE:-ghcr\.io/wizzywit/odudu:(${SEMVER})\}`, 'g');
+    const tags = [...text.matchAll(own)].map((match) => match[1]);
+    expect(tags).toHaveLength(2);
+    expect(new Set(tags).size).toBe(1);
+    expect(text).not.toMatch(/odudu:latest/);
+    expect(example).not.toMatch(/odudu:latest/);
+    expect(example).toContain(`ghcr.io/wizzywit/odudu:${tags[0] ?? ''}`);
+  });
+
+  it('says only what holds about who can reach postgres', () => {
+    expect(text).not.toMatch(/nowhere else/);
+    expect(text).toMatch(/any process on this machine/i);
+    expect(text).toMatch(/shared host/i);
+  });
+
+  it('keeps ODUDU_PORT in the example a valid port', () => {
+    const port = /^ODUDU_PORT=(\d+)$/m.exec(example)?.[1];
+    expect(Number(port)).toBeGreaterThanOrEqual(1);
+    expect(Number(port)).toBeLessThanOrEqual(65535);
+  });
+
+  it('tells a person to single-quote a password that holds $ or #', () => {
+    expect(example).toMatch(/single quotes/i);
+    expect(example).toContain("ODUDU_ADMIN_PASSWORD='");
+  });
+
+  it('keeps postgres on its major version in Dependabot', () => {
+    expect(dependabot).toMatch(
+      /ignore:\s*\n\s+- dependency-name: postgres\s*\n\s+update-types: \['version-update:semver-major'\]/,
+    );
+  });
+});
+
+const dockerAvailable = spawnSync('docker', ['compose', 'version']).status === 0;
+
+describe.skipIf(!dockerAvailable)('a password in a Compose .env file', () => {
+  it('reaches the container byte for byte when single-quoted, as the example advises', () => {
+    const directory = mkdtempSync(path.join(tmpdir(), 'odudu-env-'));
+    try {
+      const envFile = path.join(directory, '.env');
+      writeFileSync(envFile, "ODUDU_ADMIN_PASSWORD='pa$word#c'\n");
+      const result = spawnSync(
+        'docker',
+        [
+          'compose',
+          '-f',
+          path.join(REPO_ROOT, 'quickstart/compose.yaml'),
+          '--env-file',
+          envFile,
+          'config',
+          '--format',
+          'json',
+        ],
+        { encoding: 'utf8', env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '' } },
+      );
+      expect(result.status, result.stderr).toBe(0);
+      const parsed: unknown = JSON.parse(result.stdout);
+      const password =
+        typeof parsed === 'object' && parsed !== null && 'services' in parsed
+          ? JSON.stringify(parsed.services)
+          : '';
+      // `config` writes a literal $ as $$.
+      expect(password).toContain('pa$$word#c');
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 });

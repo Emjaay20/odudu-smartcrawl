@@ -1,10 +1,11 @@
 # Odudu on one machine: Postgres, a one-time setup step, the server.
 #   ODUDU_ADMIN_EMAIL=you@example.com docker compose up -d
 #   docker compose logs setup        # the console address and first password
-# Everything is reachable on this machine only. The server's port is bound
-# to loopback, and Postgres publishes nothing: it is reachable from the
-# other containers of this project and from nowhere else. For a public
-# address, follow the Deploying section of the README instead.
+# The server's port is bound to loopback and Postgres publishes no port. On
+# Linux any process on this machine can still reach a container's network
+# address, and the database password below is fixed and public, so do not
+# run this file on a shared host. For a public address, follow the Deploying
+# section of the README instead.
 services:
   postgres:
     # digest of the multi-arch index; Dependabot moves it
@@ -12,10 +13,10 @@ services:
     environment:
       POSTGRES_USER: odudu
       # Fixed, because a value generated at first run would need a file to
-      # carry it. It protects nothing a published port would expose: there is
-      # none.
+      # carry it.
       POSTGRES_PASSWORD: odudu-quickstart
       POSTGRES_DB: odudu
+    restart: unless-stopped
     volumes:
       - odudu-data:/var/lib/postgresql/data
     healthcheck:
@@ -31,7 +32,7 @@ services:
   # generates one; `docker compose run --rm setup` from a terminal gives it
   # one, and it asks for the password instead.
   setup:
-    image: ${ODUDU_IMAGE:-ghcr.io/wizzywit/odudu:latest}
+    image: ${ODUDU_IMAGE:-ghcr.io/wizzywit/odudu:0.0.0}
     command: ['odudu', 'init']
     restart: 'no'
     environment:
@@ -47,8 +48,9 @@ services:
         condition: service_healthy
 
   odudu:
-    image: ${ODUDU_IMAGE:-ghcr.io/wizzywit/odudu:latest}
+    image: ${ODUDU_IMAGE:-ghcr.io/wizzywit/odudu:0.0.0}
     command: ['node', '--env-file=/var/lib/odudu/quickstart.env', 'dist/main.js']
+    restart: unless-stopped
     environment:
       # The image sets NODE_ENV=production, whose boot guard refuses to serve
       # plain http. This stack is plain http on loopback and says so.

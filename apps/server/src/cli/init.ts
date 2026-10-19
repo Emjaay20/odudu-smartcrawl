@@ -17,6 +17,7 @@ import { renderBanner } from '#/cli/banner';
 import { flag, text } from '#/cli/command-types';
 import {
   assertLoopbackBase,
+  DEFAULT_ADMIN_EMAIL,
   DEFAULT_PUBLIC_BASE_URL,
   planInit,
   type InitInput,
@@ -35,6 +36,7 @@ export interface InitIo {
   readonly promptAdmin?: (
     validate: (password: string) => string | null,
     presetEmail?: string,
+    validateEmail?: (email: string) => string | null,
   ) => Promise<AdminAnswer>;
   /** How long to wait for another init on the same database. Default 60 seconds. */
   readonly lockWaitMs?: number;
@@ -63,9 +65,13 @@ export function secondAdministratorMessage(email: string): string {
   );
 }
 
-export function existingAdministratorMessage(email: string, consoleUrl: string): string {
+export function existingAdministratorMessage(
+  email: string | undefined,
+  consoleUrl: string,
+): string {
+  const who = email === undefined ? 'An administrator' : `The administrator ${email}`;
   return (
-    `The administrator ${email} already exists. Console: ${consoleUrl}\n` +
+    `${who} already exists. Console: ${consoleUrl}\n` +
     'If you cannot sign in, `odudu seed admin --username <name>` creates another.'
   );
 }
@@ -296,32 +302,61 @@ async function chosenPassword(
   return (await io.promptAdmin(policyRefusal(email), email)).password;
 }
 
+// Whether a previous run finished: its secrets are on disk and the system
+// tenant has a user. Read-only, so it needs no lock.
+async function alreadyInitialised(input: InitInput): Promise<boolean> {
+  const secrets = await readSecrets(join(input.stateDir, SECRETS_FILE));
+  if (secrets === null) return false;
+  const appUrl = secrets.get('ODUDU_APP_DATABASE_URL') ?? '';
+  try {
+    return (await administratorState(appUrl, '')).anyUser;
+  } catch {
+    return false;
+  }
+}
+
+const NOT_AN_EMAIL = 'That is not an email address.';
+const checkEmail = (email: string): string | null => (isEmailAddress(email) ? null : NOT_AN_EMAIL);
+
 // Idempotent: every step looks before it writes. Runs are serialised by an
 // advisory lock held on the owner connection until it closes, so two
 // replicas starting together cannot both create the roles, the secrets file
-// or the administrator.
+// or the administrator. A password asked for on a terminal is asked for
+// under that lock, so a concurrent init waits for the person to finish.
+// With nobody named and nobody to ask, the address is DEFAULT_ADMIN_EMAIL,
+// which never conflicts with an administrator that already exists.
 export async function init(input: InitInput, io: InitIo): Promise<InitReport> {
   assertLoopbackBase(input.publicBaseUrl);
+  const passwordFromEnv = input.adminPassword !== undefined;
   let resolved = input;
-  if (input.adminEmail === undefined && input.interactive && io.promptAdmin !== undefined) {
-    const answer = await io.promptAdmin(policyRefusal(undefined));
-    resolved = { ...input, adminEmail: answer.email, adminPassword: answer.password };
+  let defaulted = false;
+  if (input.adminEmail === undefined) {
+    const ask = input.interactive && !passwordFromEnv ? io.promptAdmin : undefined;
+    if (ask !== undefined && !(await alreadyInitialised(input))) {
+      const answer = await ask(policyRefusal(undefined), undefined, checkEmail);
+      resolved = { ...input, adminEmail: answer.email, adminPassword: answer.password };
+    } else {
+      resolved = { ...input, adminEmail: DEFAULT_ADMIN_EMAIL };
+      defaulted = true;
+    }
   }
   const email = resolved.adminEmail;
   if (email === undefined || !isEmailAddress(email)) {
-    throw new OduduError(
-      'init_invalid_options',
-      'init needs --admin-email or ODUDU_ADMIN_EMAIL, an email address',
-    );
+    throw new OduduError('init_invalid_options', 'init needs an administrator email address');
   }
 
   const owner = createDatabase(io.databaseUrl, { max: 1 });
   try {
     await takeLock(owner, io.lockWaitMs ?? LOCK_WAIT_MS);
-    return await initLocked(resolved, io, owner, email);
+    return await initLocked(resolved, io, owner, email, { defaulted, passwordFromEnv });
   } finally {
     await owner.close();
   }
+}
+
+interface Origin {
+  readonly defaulted: boolean;
+  readonly passwordFromEnv: boolean;
 }
 
 async function initLocked(
@@ -329,6 +364,7 @@ async function initLocked(
   io: InitIo,
   owner: Handle,
   email: string,
+  origin: Origin,
 ): Promise<InitReport> {
   const path = join(input.stateDir, SECRETS_FILE);
   const existing = await readSecrets(path);
@@ -371,10 +407,10 @@ async function initLocked(
   const state = await administratorState(appUrl, email);
   const plan = planInit(input, {
     hasSecretsFile: existing !== null,
-    adminExists: state.emailExists,
+    adminExists: state.emailExists || (origin.defaulted && state.anyUser),
   });
   if (plan.admin === 'exists') {
-    io.out(existingAdministratorMessage(email, consoleUrl));
+    io.out(existingAdministratorMessage(state.emailExists ? email : undefined, consoleUrl));
     return { consoleUrl, adminEmail: email, created: false };
   }
   if (state.anyUser && input.additionalAdmin !== true) {
@@ -395,14 +431,21 @@ async function initLocked(
 
   const password = await chosenPassword(plan.passwordSource, input, io, email);
   await seedAdmin({ username: email, email, password });
-  const report = { consoleUrl, adminEmail: email, created: true };
+  const report = {
+    consoleUrl,
+    adminEmail: email,
+    created: true,
+    ...(origin.passwordFromEnv ? { passwordFromEnv: true } : {}),
+  };
   io.out(renderBanner(report));
   return report;
 }
 
 export const INIT_OPTIONS = {
   'admin-email': text(
-    'Email address of the first administrator, who signs in with it. Defaults to ODUDU_ADMIN_EMAIL.',
+    'Email address of the first administrator, who signs in with it. Defaults to ODUDU_ADMIN_EMAIL, then ' +
+      DEFAULT_ADMIN_EMAIL +
+      ' when there is no terminal to ask on.',
   ),
   'state-dir': text('Directory that holds quickstart.env. Defaults to ' + DEFAULT_STATE_DIR + '.'),
   'add-admin': flag(
@@ -457,7 +500,10 @@ export async function initCommand(
         console.log(line);
       },
       ...(terminal !== null
-        ? { promptAdmin: (validate, presetEmail) => promptAdmin(terminal, validate, presetEmail) }
+        ? {
+            promptAdmin: (validate, presetEmail, validateEmail) =>
+              promptAdmin(terminal, validate, presetEmail, validateEmail),
+          }
         : {}),
     },
   );

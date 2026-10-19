@@ -38,6 +38,10 @@ updates:
       - /quickstart
     schedule:
       interval: weekly
+    # A new Postgres major cannot open the previous one's data directory.
+    ignore:
+      - dependency-name: postgres
+        update-types: ['version-update:semver-major']
     groups:
       base-images:
         patterns: ['*']

@@ -14,7 +14,13 @@ export interface InitReport {
   readonly adminEmail: string;
   readonly generatedPassword?: string;
   readonly created: boolean;
+  /** The password came from ODUDU_ADMIN_PASSWORD, so it sits in the container's environment. */
+  readonly passwordFromEnv?: boolean;
 }
+
+// Used when nobody names an administrator and nobody can be asked, so that a
+// bare `docker compose up -d` needs no input.
+export const DEFAULT_ADMIN_EMAIL = 'admin@odudu.local';
 
 export interface InitPlan {
   readonly secrets: 'generate' | 'reuse';

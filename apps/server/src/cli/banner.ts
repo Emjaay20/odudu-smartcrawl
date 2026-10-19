@@ -12,6 +12,12 @@ export function renderBanner(report: InitReport): string {
   ];
   if (report.generatedPassword === undefined) {
     lines.push('', 'Sign in with the password you chose.');
+    if (report.passwordFromEnv === true) {
+      lines.push(
+        'It stays in the setup container environment until that container',
+        'is removed: docker compose rm -f setup',
+      );
+    }
   } else {
     lines.push(
       ` password: ${report.generatedPassword}`,

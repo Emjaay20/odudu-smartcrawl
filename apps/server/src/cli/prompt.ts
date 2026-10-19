@@ -25,6 +25,7 @@ class LineReader {
   private pending = '';
   private ended = false;
   private skipLineFeed = false;
+  private escape: 'none' | 'started' | 'csi' | 'ss3' = 'none';
   private wake: (() => void) | undefined;
 
   private readonly input: PromptIo['input'];
@@ -57,9 +58,12 @@ class LineReader {
           return text;
         }
         if (editing && char === CTRL_C) throw cancelled();
-        if (editing && char === CTRL_D && text === '') throw cancelled();
-        if (editing && BACKSPACE.has(char)) text = text.slice(0, -1);
-        else text += char;
+        if (editing && char === CTRL_D) {
+          throw new OduduError('init_invalid_options', 'input ended (Ctrl-D)');
+        }
+        if (editing && this.skipsEscape(char)) continue;
+        if (editing && BACKSPACE.has(char)) text = Array.from(text).slice(0, -1).join('');
+        else if (!editing || char === '\t' || char >= ' ') text += char;
       }
       if (this.ended) {
         throw new OduduError('init_invalid_options', 'input ended before the prompt was answered');
@@ -68,6 +72,28 @@ class LineReader {
         this.wake = resolve;
       });
     }
+  }
+
+  // Arrow and function keys arrive as an escape sequence, which is no part
+  // of a password: CSI is ESC [ parameters and a final byte, the rest ESC and
+  // one character.
+  private skipsEscape(char: string): boolean {
+    if (this.escape === 'none') {
+      if (char !== '\x1b') return false;
+      this.escape = 'started';
+      return true;
+    }
+    if (this.escape === 'started' && char === '[') {
+      this.escape = 'csi';
+      return true;
+    }
+    if (this.escape === 'started' && char === 'O') {
+      this.escape = 'ss3';
+      return true;
+    }
+    if (this.escape === 'csi' && char >= ' ' && char <= '?') return true;
+    this.escape = 'none';
+    return true;
   }
 
   private readonly onData = (chunk: string | Buffer): void => {
@@ -99,6 +125,7 @@ export async function promptAdmin(
   io: PromptIo,
   validate: (password: string) => string | null,
   presetEmail?: string,
+  validateEmail: (email: string) => string | null = () => null,
 ): Promise<AdminAnswer> {
   if (io.input.isTTY !== true || io.input.setRawMode === undefined) {
     throw new OduduError('init_invalid_options', 'there is no terminal to ask for a password on');
@@ -107,8 +134,16 @@ export async function promptAdmin(
   try {
     let email = presetEmail;
     if (email === undefined) {
-      io.output.write('Administrator email: ');
-      email = (await reader.line(false)).trim();
+      for (let attempt = 0; email === undefined; attempt += 1) {
+        if (attempt === ATTEMPTS) {
+          throw new OduduError('init_invalid_options', 'no acceptable email after several tries');
+        }
+        io.output.write('Administrator email: ');
+        const typed = (await reader.line(false)).trim();
+        const refusal = validateEmail(typed);
+        if (refusal === null) email = typed;
+        else io.output.write(`${refusal} Try again.\n`);
+      }
     }
     for (let attempt = 0; attempt < ATTEMPTS; attempt += 1) {
       const password = await secretLine(reader, io, 'Password: ');
