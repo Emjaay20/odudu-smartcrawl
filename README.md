@@ -1328,6 +1328,20 @@ database password in the file is public: do not use it on a shared host.
 While a person types at the prompt a concurrent `setup` waits for them, up to
 a minute, and then gives up.
 
+`admin@odudu.local` is public knowledge, so the protection is the generated
+password, which is shown once and must be changed at first sign-in; bring the
+stack up only where the published port is loopback, as the file binds it. A
+terminal with `ODUDU_ADMIN_PASSWORD` set and no email uses that address
+without asking for the email.
+
+This is not a production deployment (the [Deploying](#deploying) section is).
+The server runs with `NODE_ENV=development` because every guard that variable
+switches on lives in `apps/server/src/config-guard.ts`, and the one a loopback
+http stack cannot meet is the TLS guard: the console cookie loses `Secure` and
+the `__Host-` prefix. The others (the owner role kept off the serving path,
+the published example KEK, private client URLs, a public base URL for
+passkeys) are met or unused here.
+
 **Quickstart: `odudu init`.** One command takes an empty database to a
 signed-in console: it creates the `odudu_app` and `odudu_svc` roles, applies
 the migrations, creates the `system` tenant and one administrator, and writes

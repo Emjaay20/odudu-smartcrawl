@@ -612,3 +612,22 @@ with an existing administrator; one named with `--admin-email` still does.
 The compose file's image tag is the placeholder `0.0.0`, replaced by the
 release when the file is published as a release asset; the lint accepts only a
 semver tag there.
+
+### NODE_ENV in the quickstart
+
+- verified: `grep -rn "NODE_ENV" apps packages` (sources, no tests): the server
+  reads `config.NODE_ENV` only in `apps/server/src/config-guard.ts`. Under
+  `production` it refuses to boot without `ODUDU_APP_DATABASE_URL`, with the
+  published example KEK, without `ODUDU_TLS=true`, with
+  `ODUDU_ALLOW_PRIVATE_CLIENT_URLS`, and without `ODUDU_PUBLIC_BASE_URL`.
+  Cookie `Secure` and the `__Host-` prefix follow `ODUDU_TLS` and the base
+  URL's scheme, not `NODE_ENV`; error detail and logging do not read it.
+- The quickstart sets `NODE_ENV=development` for one reason, the TLS guard: it
+  is plain http on loopback. The other four guards are met or unused (the app
+  URL is set, the KEK is generated, private client URLs are off, the base URL
+  is set). `infra/docker/compose.yaml` sets the same value for the same reason.
+  `quickstart-compose.test.ts` pins the value, the "not a production
+  deployment" comment and that the file sets none of `ODUDU_TLS`,
+  `ODUDU_ALLOW_PRIVATE_CLIENT_URLS`, `ODUDU_KEK`.
+- With `ODUDU_ADMIN_PASSWORD` set and no email on a terminal, `init` defaults
+  the address instead of asking (`init.int.test.ts`; README states it).

@@ -445,7 +445,7 @@ export const INIT_OPTIONS = {
   'admin-email': text(
     'Email address of the first administrator, who signs in with it. Defaults to ODUDU_ADMIN_EMAIL, then ' +
       DEFAULT_ADMIN_EMAIL +
-      ' when there is no terminal to ask on.',
+      ' when there is no terminal to ask on or ODUDU_ADMIN_PASSWORD is set.',
   ),
   'state-dir': text('Directory that holds quickstart.env. Defaults to ' + DEFAULT_STATE_DIR + '.'),
   'add-admin': flag(

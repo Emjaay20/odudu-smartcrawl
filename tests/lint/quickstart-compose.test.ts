@@ -122,6 +122,14 @@ describe('quickstart/compose.yaml', () => {
       /ignore:\s*\n\s+- dependency-name: postgres\s*\n\s+update-types: \['version-update:semver-major'\]/,
     );
   });
+
+  it('relaxes the production guards on purpose, and says it is not a production deployment', () => {
+    const server = service('odudu');
+    expect(server).toContain('- NODE_ENV=development');
+    expect(server).toMatch(/not a production deployment/);
+    expect(server).toMatch(/config-guard\.ts/);
+    expect(code(text)).not.toMatch(/ODUDU_TLS|ODUDU_ALLOW_PRIVATE_CLIENT_URLS|ODUDU_KEK/);
+  });
 });
 
 const dockerAvailable = spawnSync('docker', ['compose', 'version']).status === 0;

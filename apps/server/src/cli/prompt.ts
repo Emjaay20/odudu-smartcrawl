@@ -10,6 +10,12 @@ export interface AdminAnswer {
   readonly password: string;
 }
 
+export const PROMPT_LABELS = {
+  email: 'Administrator email: ',
+  password: 'Password: ',
+  repeat: 'Repeat password: ',
+} as const;
+
 const ATTEMPTS = 5;
 const CTRL_C = '\x03';
 const CTRL_D = '\x04';
@@ -138,7 +144,7 @@ export async function promptAdmin(
         if (attempt === ATTEMPTS) {
           throw new OduduError('init_invalid_options', 'no acceptable email after several tries');
         }
-        io.output.write('Administrator email: ');
+        io.output.write(PROMPT_LABELS.email);
         const typed = (await reader.line(false)).trim();
         const refusal = validateEmail(typed);
         if (refusal === null) email = typed;
@@ -146,8 +152,8 @@ export async function promptAdmin(
       }
     }
     for (let attempt = 0; attempt < ATTEMPTS; attempt += 1) {
-      const password = await secretLine(reader, io, 'Password: ');
-      const repeated = await secretLine(reader, io, 'Repeat password: ');
+      const password = await secretLine(reader, io, PROMPT_LABELS.password);
+      const repeated = await secretLine(reader, io, PROMPT_LABELS.repeat);
       if (password !== repeated) {
         io.output.write('The passwords do not match. Try again.\n');
         continue;

@@ -1,3 +1,4 @@
+import { PassThrough } from 'node:stream';
 import { chmod, mkdtemp, readdir, readFile, rm, stat, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -11,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildApp } from '#/app';
 import { init, initCommand, type InitInput, type InitIo } from '#/cli/init';
 import { DEFAULT_ADMIN_EMAIL } from '#/cli/init-plan';
+import { promptAdmin } from '#/cli/prompt';
 import { createLogger } from '#/logger';
 
 const ENV_KEYS = [
@@ -367,6 +369,42 @@ describe('odudu init', () => {
 
     expect(report.created).toBe(false);
     expect(out.join('\n')).toContain('already exists');
+  }, 120_000);
+
+  it('defaults the address, and asks nothing, when a terminal has an environment password but no email', async () => {
+    const { io, out } = capture();
+
+    const report = await init(
+      { interactive: true, adminPassword: 'Env-Passw0rd!55', publicBaseUrl: BASE, stateDir },
+      { ...io, promptAdmin: () => Promise.reject(new Error('should not ask')) },
+    );
+
+    expect(report.adminEmail).toBe(DEFAULT_ADMIN_EMAIL);
+    expect(await signIn(DEFAULT_ADMIN_EMAIL, 'Env-Passw0rd!55')).toBe('signed-in');
+    expect(out.join('\n')).not.toContain('Env-Passw0rd!55');
+  }, 120_000);
+
+  it('hands the prompt the real email validator, so a bad address is re-asked before any password', async () => {
+    const input = Object.assign(new PassThrough(), { isTTY: true, setRawMode: () => undefined });
+    const output = new PassThrough();
+    const shown: string[] = [];
+    output.on('data', (chunk: Buffer) => shown.push(chunk.toString('utf8')));
+    input.write('nobody\ngrace@example.com\nTyped-Passw0rd!77\nTyped-Passw0rd!77\n');
+    const { io } = capture();
+
+    const report = await init(
+      { interactive: true, publicBaseUrl: BASE, stateDir },
+      {
+        ...io,
+        promptAdmin: (validate, preset, validateEmail) =>
+          promptAdmin({ input, output }, validate, preset, validateEmail),
+      },
+    );
+
+    const text = shown.join('');
+    expect(report.adminEmail).toBe('grace@example.com');
+    expect(text).toContain('not an email address');
+    expect(text.indexOf('not an email address')).toBeLessThan(text.indexOf('Password:'));
   }, 120_000);
 
   it('still refuses a different address that was asked for by name', async () => {

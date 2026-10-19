@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { renderBanner } from '../../apps/server/src/cli/banner.js';
+import { PROMPT_LABELS } from '../../apps/server/src/cli/prompt.js';
 import {
   DEFAULT_STATE_DIR,
   existingAdministratorMessage,
@@ -68,5 +70,55 @@ describe('the README paragraph on odudu init', () => {
     expect(shown).toHaveLength(4);
     expect(transcript.match(/^exit 1$/gmu)).toHaveLength(3);
     expect(transcript.match(/^exit 0$/gmu)).toHaveLength(1);
+  });
+});
+
+const composeStart = readme.indexOf('**Quickstart with Docker Compose.**');
+const composeSection = readme.slice(composeStart, start);
+const composeBlocks = [...composeSection.matchAll(/```\n([\s\S]*?)```/gu)].map((m) => m[1] ?? '');
+
+describe('the README paragraph on the Compose quickstart', () => {
+  const url = 'http://localhost:3250/console/';
+
+  it('shows the bare command and the banner the server prints for it', () => {
+    const [bare = ''] = composeBlocks;
+    expect(
+      bare.startsWith('$ docker compose up -d\n$ docker compose logs --no-log-prefix setup\n'),
+    ).toBe(true);
+    expect(bare).toContain(
+      renderBanner({
+        consoleUrl: url,
+        adminEmail: DEFAULT_ADMIN_EMAIL,
+        generatedPassword: '<generated>',
+        created: true,
+      }),
+    );
+  });
+
+  it('shows the prompted run and the start that follows it', () => {
+    const [, prompted = ''] = composeBlocks;
+    expect(prompted.startsWith('$ docker compose run --rm setup\n')).toBe(true);
+    expect(prompted).toContain(PROMPT_LABELS.email.trimEnd());
+    expect(prompted).toContain(PROMPT_LABELS.password.trimEnd());
+    expect(prompted).toContain(PROMPT_LABELS.repeat.trimEnd());
+    expect(prompted).toContain(
+      renderBanner({ consoleUrl: url, adminEmail: 'grace@example.com', created: true }),
+    );
+    expect(prompted).toContain(
+      '$ docker compose up -d\n$ docker compose logs --no-log-prefix setup\n',
+    );
+    expect(prompted).toContain(existingAdministratorMessage(undefined, url));
+  });
+
+  it('says what the default address, the loopback bind and NODE_ENV mean', () => {
+    expect(composeSection).toContain(`\`${DEFAULT_ADMIN_EMAIL}\` is public knowledge`);
+    expect(composeSection).toContain('loopback');
+    expect(composeSection).toContain('not a production deployment');
+    expect(composeSection).toContain('NODE_ENV=development');
+    expect(composeSection).toContain('TLS');
+  });
+
+  it('states what happens with an environment password and no email on a terminal', () => {
+    expect(composeSection).toMatch(/ODUDU_ADMIN_PASSWORD.*without asking for the email/su);
   });
 });
