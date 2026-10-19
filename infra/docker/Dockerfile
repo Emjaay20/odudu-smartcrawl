@@ -41,26 +41,31 @@ RUN set -eu; \
     done; \
     exit 1
 
-FROM pnpm AS build
+# Every package is downloaded here, from the lockfile alone, so the layer is
+# rebuilt only when the lockfile changes and not on every source edit. The
+# stages below install from this store with no network.
+FROM pnpm AS store
 WORKDIR /app
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json .npmrc ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
+RUN pnpm fetch
+
+FROM store AS build
+COPY tsconfig.base.json ./
 COPY packages packages
 COPY apps apps
-RUN pnpm install --frozen-lockfile --ignore-scripts
+RUN pnpm install --frozen-lockfile --offline --ignore-scripts
 RUN pnpm --filter @odudu/server build
 RUN pnpm --filter @odudu/admin-console build
 RUN pnpm --filter @odudu/instrument build
 
-FROM pnpm AS prod-deps
-WORKDIR /app
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
+FROM store AS prod-deps
 COPY packages packages
 COPY apps apps
 # --ignore-scripts is safe here: @node-rs/argon2 ships prebuilt platform
 # binaries as optionalDependencies (verified against its package.json — no
 # install/postinstall script selects or compiles anything), so skipping
 # lifecycle scripts does not leave it half-installed.
-RUN pnpm install --frozen-lockfile --prod --ignore-scripts
+RUN pnpm install --frozen-lockfile --offline --prod --ignore-scripts
 
 FROM node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f AS runtime
 RUN addgroup -S odudu && adduser -S -G odudu odudu
