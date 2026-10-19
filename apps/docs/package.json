@@ -41,6 +41,7 @@
     "@playwright/test": "1.63.0",
     "@types/react": "19.3.0",
     "cheerio": "1.2.0",
+    "docusaurus-plugin-llms": "0.6.1",
     "prism-react-renderer": "2.4.1",
     "react": "19.3.0",
     "react-dom": "19.3.0"

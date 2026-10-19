@@ -70,3 +70,14 @@ export const NAVBAR_ROUTES: readonly string[] = [
   'concepts/',
   'reference/',
 ];
+
+export interface MachineReadableReference {
+  readonly title: string;
+  readonly description: string;
+  // Where the build writes it, relative to the site root.
+  readonly file: string;
+}
+
+// Files the build writes for tools rather than readers, such as an OpenAPI
+// document; `llms.txt` lists each one and the build fails if its file is absent.
+export const MACHINE_READABLE_REFERENCES: readonly MachineReadableReference[] = [];

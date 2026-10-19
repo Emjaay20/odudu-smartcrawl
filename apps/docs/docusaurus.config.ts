@@ -2,6 +2,7 @@ import type { Config } from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 import { themes } from 'prism-react-renderer';
 import path from 'node:path';
+import agentCopies from './plugins/agent-copies';
 import { requireDescriptions } from './plugins/descriptions';
 import imageStrip from './plugins/image-strip';
 import robots from './plugins/robots';
@@ -9,12 +10,16 @@ import { NAVBAR_ROUTES, REPOSITORY_URL, SECTIONS } from './nav';
 import { siteHeadTags } from './seo';
 import { PAGES_BASE, SITE_ORIGIN } from './site.config';
 
-requireDescriptions(path.resolve('content/en'));
+const CONTENT = process.env.DOCS_CONTENT ?? 'content/en';
+requireDescriptions(path.resolve(CONTENT));
+
+const DESCRIPTION =
+  'Odudu is a self-hosted OpenID Connect and OAuth 2.0 identity provider. Each page below is plain Markdown.';
 
 const image = process.env.DOCS_TARGET === 'image';
 
 const preset: Preset.Options = {
-  docs: { path: 'content/en', routeBasePath: '/', sidebarPath: './sidebars.ts' },
+  docs: { path: CONTENT, routeBasePath: '/', sidebarPath: './sidebars.ts' },
   blog: false,
   pages: { path: image ? 'src/image-pages' : 'src/pages' },
   sitemap: image ? false : { ignorePatterns: ['**/search/**'] },
@@ -81,11 +86,22 @@ const config: Config = {
         // The image's pages say noindex to crawlers; its own search must still read them.
         forceIgnoreNoIndex: image,
         docsRouteBasePath: '/',
-        docsDir: 'content/en',
+        docsDir: CONTENT,
       },
     ],
   ],
-  plugins: image ? [imageStrip, robots] : [robots],
+  plugins: [
+    [
+      agentCopies,
+      {
+        docsDir: CONTENT,
+        useRelativeUrls: image,
+        title: 'Odudu documentation',
+        description: DESCRIPTION,
+      },
+    ],
+    ...(image ? [imageStrip, robots] : [robots]),
+  ],
   presets: [['classic', preset]],
   themeConfig,
 };

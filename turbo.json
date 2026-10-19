@@ -108,7 +108,7 @@
         "tsconfig.json",
         "$TURBO_ROOT$/apps/admin-console/src/shared/view/*.css"
       ],
-      "env": ["DOCS_SITE_ORIGIN", "DOCS_BASE"],
+      "env": ["DOCS_SITE_ORIGIN", "DOCS_BASE", "DOCS_CONTENT"],
       "outputs": ["dist/**"]
     },
     "@odudu/docs#test": {

@@ -1,11 +1,11 @@
-import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import * as cheerio from 'cheerio';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { SITE_ORIGIN } from '#docs/site.config.ts';
-import { DOCS_ROOT, htmlFiles, load, routeOf, walk } from '#docs/tests/support/dist.ts';
+import { buildSite } from '#docs/tests/support/build.ts';
+import { htmlFiles, load, routeOf, walk } from '#docs/tests/support/dist.ts';
 
 const SWAPPED_ORIGIN = 'https://example.test';
 const TEXT = /\.(?:html|js|css|json|txt|xml|svg|md)$/u;
@@ -13,19 +13,10 @@ const TEXT = /\.(?:html|js|css|json|txt|xml|svg|md)$/u;
 describe('moving the site to another address', () => {
   let out = '';
 
-  beforeAll(() => {
+  beforeAll(async () => {
     out = mkdtempSync(path.join(tmpdir(), 'odudu-docs-swap-'));
-    const build = spawnSync(
-      path.join(DOCS_ROOT, 'node_modules/.bin/docusaurus'),
-      ['build', '--out-dir', out],
-      {
-        cwd: DOCS_ROOT,
-        env: { ...process.env, DOCS_SITE_ORIGIN: SWAPPED_ORIGIN, DOCS_BASE: '/', DOCS_TARGET: '' },
-        encoding: 'utf8',
-      },
-    );
-    if (build.status !== 0) throw new Error(`build failed:\n${build.stdout}\n${build.stderr}`);
-  }, 180_000);
+    await buildSite(out, { DOCS_SITE_ORIGIN: SWAPPED_ORIGIN, DOCS_BASE: '/' });
+  }, 300_000);
 
   afterAll(() => {
     rmSync(out, { recursive: true, force: true });

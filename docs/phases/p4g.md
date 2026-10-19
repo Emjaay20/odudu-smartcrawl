@@ -1210,3 +1210,39 @@ underline`, the prism themes) were already in place from the shell; Lighthouse i
   which is what CI runs. Confirmed unrelated to the theme work on 16cdf4e9,
   before it. Cause not found. Owner: the CI-speed task, which changes how the
   console's tests are run and has to settle one way of running them.
+
+### Increment 18c: readable by agents
+
+- `docusaurus-plugin-llms` 0.6.1 is pinned exactly. verified: `pnpm view
+  docusaurus-plugin-llms@0.6.1 license` prints `MIT`, a dev-only dependency that no
+  shipped artefact links, compatible with the AGPL-3.0 server of ADR 0042. Its
+  transitive additions are `gray-matter`, `js-yaml` 3, `minimatch` 9 (the lockfile also
+  re-resolved some peer suffixes).
+- verified: Docusaurus runs every plugin's `postBuild` concurrently
+  (`Promise.all` in `buildLocale.js`), so a second plugin cannot rewrite what the
+  first writes. `plugins/agent-copies.ts` therefore wraps the plugin and runs its
+  `postBuild` and then the rewrite in one function.
+- verified: `docsDir` is joined to the app directory, so an absolute path finds no
+  documents. `DOCS_CONTENT` (default `content/en`, a path relative to the app) lets the
+  generated-page test build a docs tree with extra pages; it is a turbo `env` of the build.
+- The copy of `a/index.md` is written to `a.md`, and the link rewrite maps each copy back
+  to its source by trying `x.md` then `x/index.md`; a page with a front-matter `slug`
+  has no such source and fails the build rather than getting a wrong rewrite.
+- `llms-full.txt` shifts every heading down a level and drops each description, so its
+  sections are matched to pages by order and title (the build fails if either disagrees);
+  a section starts at the first `## ` after a `---` line, which a body cannot contain.
+- Links in the copies: a site-absolute link gets the base (and the origin for Pages), a
+  relative `.md` link is resolved against its source file and named by route, anchors and
+  other hosts are untouched, code fences and inline code are skipped. A relative link to a
+  non-page file is left as written. A link names the page's HTML route, not its copy.
+- `MACHINE_READABLE_REFERENCES` in `nav.ts` is the hook for the generated reference: an entry
+  appends a "Machine-readable references" section to `llms.txt`, and the build fails if
+  the file is not written. It is empty until the reference lands in Increment 19.
+- Tests: `llms.test.ts` (both builds), `llms-generated.test.ts` (a fixture generated page,
+  both targets), `agent-links.test.ts`, `agent-references.test.ts`. Docusaurus builds
+  from different test files take turns through a lock in `tests/support/build.ts`
+  because each writes `.docusaurus`.
+- verified: mutations, each red and green after the restore: a page ignored by the plugin
+  (listing test, Pages), `keepFrontMatter` set (copy keeps front matter), the image built
+  with `useRelativeUrls: false` (names `http://localhost`), the base dropped from a rewritten
+  link (unit and generated-page tests).
