@@ -19,7 +19,17 @@ export const en = {
     'Adding a passkey needs JavaScript, because only the browser can talk to your authenticator.',
   'passkey.failed': 'Your device did not finish adding the passkey — {reason}. You can try again.',
   'passkey.cancelled': 'the request was cancelled',
+  'recoveryCodes.title': 'Save your recovery codes',
+  'recoveryCodes.use':
+    'Each of these signs you in once, in place of your second factor, if you lose it.',
+  'recoveryCodes.onlyTime': 'This is the only time they are shown.',
+  'recoveryCodes.keep':
+    'Print them or put them in a password manager before you continue — nobody, including an administrator, can show them to you again.',
+  'recoveryCodes.replaced':
+    'These replace the codes issued to this account before now, which no longer work.',
+  'recoveryCodes.acknowledge': 'I have saved these codes',
   'refusal.codeMismatch': 'That code did not match. Try the next one your app shows.',
+  'refusal.codesNotSaved': 'Save these codes before continuing.',
   'refusal.passkeyNotAdded': 'That passkey could not be added. Try again.',
 
   'updatePassword.title': 'Change your password',

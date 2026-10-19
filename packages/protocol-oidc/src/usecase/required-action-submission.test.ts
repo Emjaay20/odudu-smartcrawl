@@ -305,6 +305,7 @@ describe('handleRequiredActionSubmission — who is allowed to act', () => {
       kind: 'rejected',
       action: 'generate-recovery-codes',
       subjectId: 'subject-1',
+      reason: 'codes_not_saved',
     });
   });
 
@@ -561,7 +562,11 @@ describe('handleRequiredActionSubmission — enrolling a passkey', () => {
       expect.objectContaining({ response: undefined }),
       REQUEST,
     );
-    expect(outcome).toMatchObject({ kind: 'rejected', action: 'configure-passkey' });
+    expect(outcome).toMatchObject({
+      kind: 'rejected',
+      action: 'configure-passkey',
+      reason: 'passkey_not_added',
+    });
   });
 
   it('reports a spent challenge back to the same attempt', async () => {

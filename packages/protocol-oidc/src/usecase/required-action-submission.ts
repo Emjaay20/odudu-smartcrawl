@@ -53,7 +53,7 @@ export type RequiredActionOutcome =
       authSessionId: string;
       subjectId: string;
       action: 'generate-recovery-codes';
-      reason: string;
+      reason: EnrolmentRefusal;
     };
 
 export interface RequiredActionSubmission {
@@ -246,7 +246,7 @@ async function acknowledgeRecoveryCodes(
     authSessionId,
     subjectId,
     action: 'generate-recovery-codes',
-    reason: 'Save these codes before continuing.',
+    reason: 'codes_not_saved',
   };
 }
 

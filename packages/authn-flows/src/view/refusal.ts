@@ -4,6 +4,7 @@ import { tHtml, type MessageId } from '#/view/messages';
 
 const REFUSAL_MESSAGE: Readonly<Record<EnrolmentRefusal, MessageId>> = {
   code_mismatch: 'refusal.codeMismatch',
+  codes_not_saved: 'refusal.codesNotSaved',
   passkey_not_added: 'refusal.passkeyNotAdded',
 };
 

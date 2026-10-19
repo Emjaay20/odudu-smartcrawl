@@ -1,6 +1,18 @@
 import { DEFAULT_PAGE_LOCALE } from '@odudu/kernel';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { en } from '#/view/messages';
 import { renderRecoveryCodesPage } from '#/view/recovery-codes-html';
+import { ARABIC, FRENCH } from '#test/fr-catalogue';
+
+vi.mock('#/view/messages', async (importOriginal) => {
+  const { withFrench } = await import('#test/fr-catalogue');
+  return withFrench(await importOriginal(), {
+    'recoveryCodes.title': 'Enregistrez vos codes de secours',
+    'recoveryCodes.onlyTime': 'Ils ne sont affichés qu’une seule fois.',
+    'recoveryCodes.acknowledge': 'J’ai enregistré ces codes',
+    'refusal.codesNotSaved': 'Enregistrez ces codes avant de continuer.',
+  });
+});
 
 const OFFER = { codes: ['ABCDE-FGHJK', 'MNPQR-STVWX'], replaced: false };
 
@@ -69,23 +81,66 @@ describe('renderRecoveryCodesPage', () => {
     expect(again.html).toContain('no longer work');
   });
 
-  it('escapes the tenant, the session id, a code and an error message', () => {
+  it('escapes the tenant, the session id and a code, and keeps a code left to right', () => {
     const page = renderRecoveryCodesPage(
       'acme"><script>',
       'session"><script>',
       { codes: ['<script>'], replaced: false },
-      'wrong <code>',
+      undefined,
       DEFAULT_PAGE_LOCALE,
     );
 
     expect(page.html).not.toContain('<script>');
-    expect(page.html).toContain('&lt;script&gt;');
-    expect(page.html).toContain('wrong &lt;code&gt;');
+    expect(page.html).toContain('<bdi dir="ltr"><code>&lt;script&gt;</code></bdi>');
+  });
+
+  it('keeps the English markup exactly', () => {
+    expect(
+      renderRecoveryCodesPage(
+        'acme',
+        'sess-1',
+        { codes: ['ABCDE-FGHJK', 'MNPQR-STVWX'], replaced: true },
+        'codes_not_saved',
+        DEFAULT_PAGE_LOCALE,
+      ).body,
+    ).toBe(`<h1>Save your recovery codes</h1>
+<p><strong>Save these codes before continuing.</strong></p>
+<p>Each of these signs you in once, in place of your second factor, if you lose it. <strong>This is the only time they are shown.</strong> Print them or put them in a password manager before you continue — nobody, including an administrator, can show them to you again.</p>
+<p>These replace the codes issued to this account before now, which no longer work.</p>
+<ol>
+  <li><bdi dir="ltr"><code>ABCDE-FGHJK</code></bdi></li>
+  <li><bdi dir="ltr"><code>MNPQR-STVWX</code></bdi></li>
+</ol>
+<form method="post" action="/tenants/acme/login-actions/required-action?action=generate-recovery-codes">
+  <input type="hidden" name="auth_session_id" value="sess-1">
+  <button type="submit">I have saved these codes</button>
+</form>`);
+  });
+
+  it('reads French where the fixture has it and English for the rest, codes unchanged', () => {
+    const page = renderRecoveryCodesPage('acme', 's1', OFFER, 'codes_not_saved', FRENCH);
+    expect(page.html).toContain('<html lang="fr" dir="ltr">');
+    expect(page.title).toBe('Enregistrez vos codes de secours');
+    expect(page.body).toContain(
+      '<p><strong>Enregistrez ces codes avant de continuer.</strong></p>',
+    );
+    expect(page.body).toContain('<strong>Ils ne sont affichés qu’une seule fois.</strong>');
+    expect(page.body).toContain(`${en['recoveryCodes.keep']}</p>`);
+    expect(page.body).toContain('>J’ai enregistré ces codes</button>');
+    for (const code of OFFER.codes) {
+      expect(page.body).toContain(`<bdi dir="ltr"><code>${code}</code></bdi>`);
+    }
+  });
+
+  it('writes lang and dir for a right-to-left locale', () => {
+    expect(renderRecoveryCodesPage('a', 's', OFFER, undefined, ARABIC).html).toContain(
+      '<html lang="ar" dir="rtl">',
+    );
   });
 
   it('says nothing about an error when there is none', () => {
     expect(
       renderRecoveryCodesPage('acme', 'auth-session-1', OFFER, undefined, DEFAULT_PAGE_LOCALE).html,
-    ).not.toContain('<strong>wrong');
+    ).not.toContain('<p><strong>');
   });
 });
