@@ -86,3 +86,66 @@ describe('continuation', () => {
     expect(await localeFor(undefined, noSubject, 'authenticated')).toBe('en');
   });
 });
+
+describe('continuation clientName', () => {
+  async function nameFor(d: ContinuationDeps): Promise<string | undefined> {
+    const app = Fastify();
+    let name: string | undefined;
+    app.get('/', async (_request, reply) => {
+      name = await (await continuation(d, 'acme', 'a1', reply)).clientName();
+      return reply.send('ok');
+    });
+    await app.inject({ url: '/' });
+    await app.close();
+    return name;
+  }
+
+  it('reads the name of the client the parked request is for, in its tenant', async () => {
+    const seen: unknown[] = [];
+    const name = await nameFor(
+      deps({
+        clientName: (tenantId, clientId) => {
+          seen.push([tenantId, clientId]);
+          return Promise.resolve('Acme Portal');
+        },
+      }),
+    );
+    expect(name).toBe('Acme Portal');
+    expect(seen).toEqual([['t1', 'c']]);
+  });
+
+  it('asks nothing until the page wants the name', async () => {
+    const asked: string[] = [];
+    const app = Fastify();
+    app.get('/', async (_request, reply) => {
+      await continuation(
+        deps({
+          clientName: (_tenant, clientId) => {
+            asked.push(clientId);
+            return Promise.resolve('x');
+          },
+        }),
+        'acme',
+        'a1',
+        reply,
+      );
+      return reply.send('ok');
+    });
+    await app.inject({ url: '/' });
+    await app.close();
+    expect(asked).toEqual([]);
+  });
+
+  it('names no client when the lookup is not offered, finds none, or the request is gone', async () => {
+    expect(await nameFor(deps())).toBeUndefined();
+    expect(await nameFor(deps({ clientName: () => Promise.resolve(null) }))).toBeUndefined();
+    expect(
+      await nameFor(
+        deps({
+          loadPendingRequest: () => Promise.resolve(null),
+          clientName: () => Promise.resolve('never asked'),
+        }),
+      ),
+    ).toBeUndefined();
+  });
+});

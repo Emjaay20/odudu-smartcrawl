@@ -306,7 +306,7 @@ describe('enrolling the second factor a tenant asked for', () => {
     expect(sameStep.statusCode).toBe(200);
     expect(sameStep.headers.location).toBeUndefined();
     expect(sameStep.body).toContain(
-      '<p role="alert"><strong>That code did not work. Check it and try again.</strong></p>',
+      '<p class="alert" role="alert">That code did not work. Check it and try again.</p>',
     );
     expect(sameStep.body).toMatch(/name="code"[^>]*autofocus/u);
 

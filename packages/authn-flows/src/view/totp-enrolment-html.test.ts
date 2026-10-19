@@ -96,8 +96,11 @@ describe('renderTotpEnrolmentPage', () => {
       'code_mismatch',
       DEFAULT_PAGE_LOCALE,
     );
-    expect(body.replace(/<svg[\s\S]*<\/svg>/u, '<SVG>')).toBe(`<h1>Set up your authenticator</h1>
-<p><strong>That code did not match. Try the next one your app shows.</strong></p>
+    expect(body.replace(/<svg[\s\S]*<\/svg>/u, '<SVG>')).toBe(`<header class="intro">
+<h1>Set up your authenticator</h1>
+<p class="tenant"><bdi>acme</bdi></p>
+</header>
+<p class="alert" role="alert">That code did not match. Try the next one your app shows.</p>
 <p>Scan this with your authenticator app, or enter the key by hand.</p>
 <SVG>
 <p><bdi dir="ltr"><code>otpauth://totp/acme:ada?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&amp;issuer=acme&amp;algorithm=SHA1&amp;digits=6&amp;period=30</code></bdi></p>
@@ -114,7 +117,7 @@ describe('renderTotpEnrolmentPage', () => {
     const page = renderTotpEnrolmentPage('acme', 's1', OFFER, 'code_mismatch', FRENCH);
     expect(page.html).toContain('<html lang="fr" dir="ltr">');
     expect(page.title).toBe("Configurez votre application d'authentification");
-    expect(page.body).toContain('<p><strong>Ce code ne correspond pas.</strong></p>');
+    expect(page.body).toContain('<p class="alert" role="alert">Ce code ne correspond pas.</p>');
     expect(page.body).toContain('<p>Clé : <bdi dir="ltr"><code>');
     expect(page.body).toContain('<button type="submit">Confirmer</button>');
     expect(page.body).toContain(`<p>${en['totp.scan']}</p>`);

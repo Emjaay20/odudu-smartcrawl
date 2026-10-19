@@ -38,7 +38,11 @@ describe('renderRegistrationForm', () => {
 
   it('keeps the English markup exactly', () => {
     expect(renderRegistrationForm('acme', DEFAULT_PAGE_LOCALE).body)
-      .toBe(`<form method="post" action="/tenants/acme/login-actions/registration">
+      .toBe(`<header class="intro">
+<h1>Create account</h1>
+<p class="tenant"><bdi>acme</bdi></p>
+</header>
+<form method="post" action="/tenants/acme/login-actions/registration">
   <label>Username <input type="text" name="username" autocomplete="username"></label>
   <label>Email <input type="email" name="email" autocomplete="email"></label>
   <label>Password <input type="password" name="password" autocomplete="new-password"></label>

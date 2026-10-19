@@ -24,7 +24,10 @@ describe('renderRequiredActionsForm', () => {
     expect(
       renderRequiredActionsForm('acme', 'k"ey', ['update-password', 'configure-totp'], true, EN)
         .body,
-    ).toBe(`<h1>Update your account</h1>
+    ).toBe(`<header class="intro">
+<h1>Update your account</h1>
+<p class="tenant"><bdi>acme</bdi></p>
+</header>
 <p>Your administrator asks you to:</p>
 <ul>
 <li>Choose a new password</li>

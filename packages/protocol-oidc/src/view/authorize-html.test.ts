@@ -19,6 +19,7 @@ vi.mock('#/view/messages', async (importOriginal) => {
     'login.submit': 'Se connecter',
     'login.username': 'Nom d’utilisateur',
     'login.password': 'Mot de passe',
+    'login.context': 'pour continuer vers {client}',
     'login.rememberMe': 'Se souvenir de moi',
     'login.passkey.submit': 'Se connecter avec une clé d’accès',
     'login.passkey.failed': 'Votre appareil n’a pas terminé la connexion : {reason}. Réessayez.',
@@ -237,8 +238,64 @@ describe('renderLoginForm', () => {
       DEFAULT_PAGE_LOCALE,
     );
     expect(page.body).toContain(
-      '<p><button type="submit" id="passkey-submit">Sign in with a passkey</button></p>',
+      '<p><button type="submit" id="passkey-submit" class="secondary">Sign in with a passkey</button></p>',
     );
+  });
+
+  it('opens with the page heading and the tenant, as a heading the person can find', () => {
+    const body = renderLoginForm(
+      'acme',
+      'sid',
+      'otp',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      DEFAULT_PAGE_LOCALE,
+    ).body;
+    expect(body.startsWith('<header class="intro">\n<h1>Enter your authentication code</h1>')).toBe(
+      true,
+    );
+    expect(body).toContain('<p class="tenant"><bdi>acme</bdi></p>');
+    expect(body.match(/<h1>/gu)).toHaveLength(1);
+  });
+
+  describe('naming the client the request is for', () => {
+    const render = (client: string | undefined, locale: typeof FRENCH = DEFAULT_PAGE_LOCALE) =>
+      renderLoginForm(
+        'acme',
+        'sid',
+        'password',
+        false,
+        false,
+        undefined,
+        false,
+        locale,
+        client,
+      ).body;
+
+    it('says where the person is going, isolated, between the heading and the tenant', () => {
+      const body = render('Acme Portal');
+      expect(body).toContain(
+        '<h1>Sign in</h1>\n<p class="context">to continue to <bdi>Acme Portal</bdi></p>\n<p class="tenant">',
+      );
+    });
+
+    it('says nothing of a client when the request names none', () => {
+      expect(render(undefined)).not.toContain('class="context"');
+    });
+
+    it('reads the sentence in the language of the page', () => {
+      expect(render('Acme Portal', FRENCH)).toContain(
+        '<p class="context">pour continuer vers <bdi>Acme Portal</bdi></p>',
+      );
+    });
+
+    it('holds a hostile client name inside its own element', () => {
+      const body = render('<img src=x onerror=1>\u202e');
+      expect(body).not.toContain('<img');
+      expect(body).toContain('<bdi>&lt;img src=x onerror=1&gt;\u202e</bdi>');
+    });
   });
 
   describe('after a refusal', () => {
@@ -256,7 +313,7 @@ describe('renderLoginForm', () => {
         DEFAULT_PAGE_LOCALE,
       );
       expect(page.body).toContain(
-        '<p role="alert"><strong>Sign-in failed. Check your details and try again.</strong></p>',
+        '<p class="alert" role="alert">Sign-in failed. Check your details and try again.</p>',
       );
       expect(page.body.indexOf('role="alert"')).toBeLessThan(page.body.indexOf('<form'));
     });
@@ -280,10 +337,10 @@ describe('renderLoginForm', () => {
       const render = (locale: typeof FRENCH) =>
         renderLoginForm('acme', 'sid', 'password', false, false, refusal, undefined, locale);
       expect(render(DEFAULT_PAGE_LOCALE).body).toContain(
-        `<p role="alert"><strong>${en['login.refusal.signInFailed']}</strong></p>`,
+        `<p class="alert" role="alert">${en['login.refusal.signInFailed']}</p>`,
       );
       expect(render(FRENCH).body).toContain(
-        '<p role="alert"><strong>Échec de la connexion. Vérifiez vos informations.</strong></p>',
+        '<p class="alert" role="alert">Échec de la connexion. Vérifiez vos informations.</p>',
       );
     });
 
@@ -502,7 +559,11 @@ describe('the text of the sign-in pages', () => {
 
   it('keeps the English markup of the password form', () => {
     expect(login('password', DEFAULT_PAGE_LOCALE).body).toBe(
-      `<form method="post" action="/tenants/acme/login-actions/authenticate">
+      `<header class="intro">
+<h1>Sign in</h1>
+<p class="tenant"><bdi>acme</bdi></p>
+</header>
+<form method="post" action="/tenants/acme/login-actions/authenticate">
   <input type="hidden" name="auth_session_id" value="sid">
   <label>Username or email <input type="text" name="username" autocomplete="username"></label>
   <label>Password <input type="password" name="password" autocomplete="current-password"></label>

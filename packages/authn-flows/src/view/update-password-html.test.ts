@@ -74,7 +74,8 @@ describe('every rule the domain reports is worded by the catalogue', () => {
         [{ rule, message, minLength: policy.minLength }],
         DEFAULT_PAGE_LOCALE,
       );
-      expect(body, rule).not.toContain('<bdi>');
+      // The intro isolates the tenant; only a developer fallback would add another.
+      expect(body.replace(/<header[\s\S]*?<\/header>/u, ''), rule).not.toContain('<bdi>');
     }
   });
 });
@@ -102,12 +103,17 @@ describe('renderUpdatePasswordPage', () => {
         ],
         DEFAULT_PAGE_LOCALE,
       ).body,
-    ).toBe(`<h1>Change your password</h1>
+    ).toBe(`<header class="intro">
+<h1>Change your password</h1>
+<p class="tenant"><bdi>acme</bdi></p>
+</header>
 <p>This account needs a new password before you can continue.</p>
+<div class="alert" role="alert">
 <ul>
 <li>Password must be at least 12 characters long.</li>
 <li>Password must contain a digit.</li>
 </ul>
+</div>
 <form method="post" action="/tenants/acme/login-actions/required-action?action=update-password">
   <input type="hidden" name="auth_session_id" value="sess-1">
   <label>New password <input type="password" name="password" autocomplete="new-password"></label>

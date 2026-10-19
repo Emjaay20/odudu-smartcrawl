@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { page } from '#/view/document';
+import { intro, page } from '#/view/document';
 
 describe('page', () => {
   it('links the Instrument stylesheet, declares lang and dir and a viewport', () => {
@@ -16,11 +16,19 @@ describe('page', () => {
     expect(html).toContain('<html lang="ar" dir="rtl">');
   });
 
-  it('wraps the body in one main landmark under the mark', () => {
+  it('wraps the body in one main landmark under the brand', () => {
     const { html } = page('Sign in', '<p>hello</p>');
     expect(html.match(/<main /gu)).toHaveLength(1);
-    expect(html).toMatch(/<main class="page">\s*<svg class="mark"[^>]*aria-hidden="true"/u);
+    expect(html).toMatch(
+      /<main class="page">\s*<p class="brand"><svg class="mark"[^>]*aria-hidden="true"/u,
+    );
     expect(html.indexOf('class="mark"')).toBeLessThan(html.indexOf('<p>hello</p>'));
+  });
+
+  it('names the product beside the mark, outside the body a theme replaces', () => {
+    const rendered = page('Sign in', '<p>hello</p>');
+    expect(rendered.html).toContain('<span class="wordmark">odudu</span></p>');
+    expect(rendered.body).not.toContain('wordmark');
   });
 
   it('keeps the body a theme may replace free of the document chrome', () => {
@@ -42,5 +50,20 @@ describe('page', () => {
   it('escapes a hostile locale tag', () => {
     const { html } = page('x', '', null, [], { tag: 'en"><script>', dir: 'ltr' });
     expect(html).not.toContain('<script>');
+  });
+});
+
+describe('intro', () => {
+  it('is a heading alone when no tenant or context is named', () => {
+    expect(intro('Sign in')).toBe('<header class="intro">\n<h1>Sign in</h1>\n</header>');
+  });
+
+  it('puts the context lines, then the tenant isolated and escaped, under the heading', () => {
+    const html = intro('Sign in', '<acme>&', ['to continue to <bdi>Portal</bdi>']);
+    expect(html).toBe(
+      '<header class="intro">\n<h1>Sign in</h1>\n' +
+        '<p class="context">to continue to <bdi>Portal</bdi></p>\n' +
+        '<p class="tenant"><bdi>&lt;acme&gt;&amp;</bdi></p>\n</header>',
+    );
   });
 });

@@ -75,6 +75,9 @@ function formActionSource(redirectUri: string): string | null {
 // told apart from a typo in a link, so both name this constant.
 export const INSTRUMENT_STYLESHEET = '/instrument/instrument.css';
 
+// The product's name as the pages' brand line spells it.
+export const PRODUCT_NAME = 'odudu';
+
 // RFC 6749 §10.13's framing defence for the pages rendered to an end-user.
 // Almost all of these pages are markup only — no script or frame of their
 // own — and take a style, font and image only from their own origin, so

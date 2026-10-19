@@ -61,12 +61,15 @@ describe('renderSelectAccountPage', () => {
 
   it('keeps the English markup, each account name isolated', () => {
     expect(renderSelectAccountPage(base, DEFAULT_PAGE_LOCALE).body).toBe(
-      `<h1>Choose an account</h1>
+      `<header class="intro">
+<h1>Choose an account</h1>
+<p class="tenant"><bdi>demo</bdi></p>
+</header>
 <form method="post" action="/tenants/demo/login-actions/select-account">
   <input type="hidden" name="auth_session_id" value="a-session">
-  <button type="submit" name="session_id" value="s1"><bdi>alice@example.test</bdi></button>
-  <button type="submit" name="session_id" value="s2"><bdi>bob@example.test</bdi></button>
-  <button type="submit" name="use_other" value="1">Use another account</button>
+  <button type="submit" name="session_id" value="s1" class="secondary choice"><bdi>alice@example.test</bdi></button>
+  <button type="submit" name="session_id" value="s2" class="secondary choice"><bdi>bob@example.test</bdi></button>
+  <button type="submit" name="use_other" value="1" class="quiet">Use another account</button>
 </form>`,
     );
   });

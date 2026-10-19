@@ -103,8 +103,11 @@ describe('renderRecoveryCodesPage', () => {
         'codes_not_saved',
         DEFAULT_PAGE_LOCALE,
       ).body,
-    ).toBe(`<h1>Save your recovery codes</h1>
-<p><strong>Save these codes before continuing.</strong></p>
+    ).toBe(`<header class="intro">
+<h1>Save your recovery codes</h1>
+<p class="tenant"><bdi>acme</bdi></p>
+</header>
+<p class="alert" role="alert">Save these codes before continuing.</p>
 <p>Each of these signs you in once, in place of your second factor, if you lose it. <strong>This is the only time they are shown.</strong> Print them or put them in a password manager before you continue — nobody, including an administrator, can show them to you again.</p>
 <p>These replace the codes issued to this account before now, which no longer work.</p>
 <ol>
@@ -122,7 +125,7 @@ describe('renderRecoveryCodesPage', () => {
     expect(page.html).toContain('<html lang="fr" dir="ltr">');
     expect(page.title).toBe('Enregistrez vos codes de secours');
     expect(page.body).toContain(
-      '<p><strong>Enregistrez ces codes avant de continuer.</strong></p>',
+      '<p class="alert" role="alert">Enregistrez ces codes avant de continuer.</p>',
     );
     expect(page.body).toContain('<strong>Ils ne sont affichés qu’une seule fois.</strong>');
     expect(page.body).toContain(`${en['recoveryCodes.keep']}</p>`);
@@ -141,6 +144,6 @@ describe('renderRecoveryCodesPage', () => {
   it('says nothing about an error when there is none', () => {
     expect(
       renderRecoveryCodesPage('acme', 'auth-session-1', OFFER, undefined, DEFAULT_PAGE_LOCALE).html,
-    ).not.toContain('<p><strong>');
+    ).not.toContain('role="alert"');
   });
 });

@@ -1,5 +1,5 @@
 import { type PageLocale, scriptNonce, type RenderedPage } from '@odudu/kernel';
-import { escapeHtml, page } from '#/view/document';
+import { escapeHtml, intro, page } from '#/view/document';
 import { type RefusalMessageId } from '#/view/login-messages';
 import { bdi, t, tHtml, type MessageId } from '#/view/messages';
 
@@ -167,9 +167,9 @@ function renderPasskeyOption(
 <form method="post" action="/tenants/${escaped}/login-actions/authenticate" id="passkey-form" data-failed="${tHtml(locale, 'login.passkey.failed', { reason: REASON })}" data-cancelled="${tHtml(locale, 'login.passkey.cancelled')}" data-not-offered="${tHtml(locale, 'login.passkey.notOffered')}">
   <input type="hidden" name="auth_session_id" value="${escapeHtml(authSessionId)}">
   <input type="hidden" name="assertion" id="passkey-assertion">
-  <p><button type="submit" id="passkey-submit">${tHtml(locale, 'login.passkey.submit')}</button></p>
+  <p><button type="submit" id="passkey-submit" class="secondary">${tHtml(locale, 'login.passkey.submit')}</button></p>
 </form>
-<p id="passkey-error" hidden></p>
+<p id="passkey-error" class="alert" role="alert" hidden></p>
 <noscript><p>${tHtml(locale, 'login.passkey.needsScript')}</p></noscript>
 <script nonce="${escapeHtml(nonce)}">
 const form = document.getElementById('passkey-form');
@@ -231,6 +231,8 @@ export function renderLoginForm(
   // field takes either and the server decides which it names.
   loginWithEmail = false,
   locale: PageLocale,
+  // The name of the client the parked request is for, when there is one.
+  clientName?: string,
 ): RenderedPage {
   const action = `/tenants/${escapeHtml(tenant)}/login-actions/authenticate`;
   // Beside the password and nowhere else: a passkey is an alternative to
@@ -243,7 +245,7 @@ export function renderLoginForm(
   const message =
     refusal === undefined
       ? ''
-      : `<p role="alert"><strong>${tHtml(locale, refusal.messageId)}</strong></p>\n`;
+      : `<p class="alert" role="alert">${tHtml(locale, refusal.messageId)}</p>\n`;
   // Never rendered at all when the tenant has not turned the setting on —
   // login-submission.ts's own gate is the one that matters, but a checkbox
   // this tenant could never honour is not offered in the first place.
@@ -256,7 +258,8 @@ export function renderLoginForm(
   return {
     ...page(
       t(locale, title),
-      `${message}<form method="post" action="${action}">
+      `${intro(tHtml(locale, title), tenant, clientName === undefined ? [] : [tHtml(locale, 'login.context', {}, { client: clientName })])}
+${message}<form method="post" action="${action}">
   <input type="hidden" name="auth_session_id" value="${escapeHtml(authSessionId)}">
   ${renderFormFields(form, loginWithEmail, refusal, locale)}
   ${rememberMe}<button type="submit">${tHtml(locale, submit)}</button>

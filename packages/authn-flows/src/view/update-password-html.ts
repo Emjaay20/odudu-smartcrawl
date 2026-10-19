@@ -1,6 +1,6 @@
 import { MAX_PASSWORD_LENGTH, type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { type PasswordViolation } from '#/schema/password-violation';
-import { escapeHtml, page } from '#/view/document';
+import { escapeHtml, intro, page } from '#/view/document';
 import { bdi, t, tHtml, type MessageId } from '#/view/messages';
 
 // Every rule a violation can name, by the code the domain reports it under.
@@ -44,9 +44,9 @@ export function renderUpdatePasswordPage(
   const listed =
     violations.length === 0
       ? ''
-      : `<ul>\n${violations.map((violation) => `<li>${ruleHtml(violation, locale)}</li>`).join('\n')}\n</ul>\n`;
+      : `<div class="alert" role="alert">\n<ul>\n${violations.map((violation) => `<li>${ruleHtml(violation, locale)}</li>`).join('\n')}\n</ul>\n</div>\n`;
   const title = t(locale, 'updatePassword.title');
-  const body = `<h1>${tHtml(locale, 'updatePassword.title')}</h1>
+  const body = `${intro(tHtml(locale, 'updatePassword.title'), tenant)}
 <p>${tHtml(locale, 'updatePassword.intro')}</p>
 ${listed}<form method="post" action="${target}">
   <input type="hidden" name="auth_session_id" value="${escapeHtml(authSessionId)}">

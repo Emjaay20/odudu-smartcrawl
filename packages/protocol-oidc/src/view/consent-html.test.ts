@@ -103,7 +103,7 @@ describe('renderConsentPage', () => {
   it('gives Allow and Deny distinguishable submitted values', () => {
     const page = renderConsentPage(BASE, DEFAULT_PAGE_LOCALE);
     expect(page.body).toMatch(/<button type="submit" name="decision" value="allow">/);
-    expect(page.body).toMatch(/<button type="submit" name="decision" value="deny">/);
+    expect(page.body).toMatch(/<button type="submit" name="decision" value="deny" class="secondary">/);
     // Same name, different value: a form that instead rendered two buttons
     // both named "decision" with the same value would satisfy a looser
     // check, so pin both values distinctly.
@@ -145,7 +145,10 @@ describe('renderConsentPage', () => {
 
   it('keeps the English markup, each user-controlled value isolated', () => {
     expect(renderConsentPage(BASE, DEFAULT_PAGE_LOCALE).body).toBe(
-      `<h1><bdi>Acme Dashboard</bdi> is asking for access</h1>
+      `<header class="intro">
+<h1><bdi>Acme Dashboard</bdi> is asking for access</h1>
+<p class="tenant"><bdi>acme</bdi></p>
+</header>
 <form method="post" action="/tenants/acme/login-actions/consent">
   <input type="hidden" name="auth_session_id" value="session-id">
   <ul>
@@ -155,7 +158,7 @@ describe('renderConsentPage', () => {
   <label><input type="checkbox" name="scope" value="offline_access"> <bdi>offline_access</bdi> — grants ongoing access, even while you are not present</label>
   <label><input type="checkbox" name="scope" value="email" checked> <bdi>email</bdi></label>
   <button type="submit" name="decision" value="allow">Allow</button>
-  <button type="submit" name="decision" value="deny">Deny</button>
+  <button type="submit" name="decision" value="deny" class="secondary">Deny</button>
 </form>`,
     );
   });
@@ -204,7 +207,7 @@ describe('renderConsentPage', () => {
     expect(page.body).toContain('value="allow">Autoriser</button>');
     // Not in the French fixture: English shows for these two keys.
     expect(page.body).toContain('>Terms of service</a>');
-    expect(page.body).toContain('value="deny">Deny</button>');
+    expect(page.body).toContain('value="deny" class="secondary">Deny</button>');
     expect(renderConsentPage(BASE, ARABIC).html).toContain('<html lang="ar" dir="rtl">');
   });
 

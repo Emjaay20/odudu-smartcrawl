@@ -1,6 +1,6 @@
 import { type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { type EnrolmentRefusal } from '#/schema/enrolment-refusal';
-import { escapeHtml, page } from '#/view/document';
+import { escapeHtml, intro, page } from '#/view/document';
 import { t, tHtml, token } from '#/view/messages';
 import { refusalHtml } from '#/view/refusal';
 
@@ -27,7 +27,7 @@ export function renderRecoveryCodesPage(
   const replaced = offer.replaced ? `<p>${tHtml(locale, 'recoveryCodes.replaced')}</p>\n` : '';
   const items = offer.codes.map((code) => `  <li>${token(code)}</li>`).join('\n');
   const title = t(locale, 'recoveryCodes.title');
-  const body = `<h1>${tHtml(locale, 'recoveryCodes.title')}</h1>
+  const body = `${intro(tHtml(locale, 'recoveryCodes.title'), tenant)}
 ${refusalHtml(locale, error)}<p>${tHtml(locale, 'recoveryCodes.use')} <strong>${tHtml(locale, 'recoveryCodes.onlyTime')}</strong> ${tHtml(locale, 'recoveryCodes.keep')}</p>
 ${replaced}<ol>
 ${items}

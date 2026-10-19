@@ -64,7 +64,7 @@ export async function sendLoginOutcome(
     const form = pending?.kind === 'challenge' ? pending.form : FALLBACK_FORM;
     // Before the first factor is verified: the subject's own locale must not
     // choose the language, or it would say whether the account exists.
-    const { locale, continuing } = await continuation(
+    const { locale, continuing, clientName } = await continuation(
       deps,
       tenantName,
       outcome.authSessionId,
@@ -84,6 +84,7 @@ export async function sendLoginOutcome(
           },
       tenant?.loginWithEmail ?? false,
       locale,
+      await clientName(),
     );
     return sendHtml(reply, 200, continuing(page));
   }

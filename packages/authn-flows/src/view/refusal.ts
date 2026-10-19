@@ -12,5 +12,5 @@ const REFUSAL_MESSAGE: Readonly<Record<EnrolmentRefusal, MessageId>> = {
 export function refusalHtml(locale: PageLocale, refusal: EnrolmentRefusal | undefined): string {
   return refusal === undefined
     ? ''
-    : `<p><strong>${tHtml(locale, REFUSAL_MESSAGE[refusal])}</strong></p>\n`;
+    : `<p class="alert" role="alert">${tHtml(locale, REFUSAL_MESSAGE[refusal])}</p>\n`;
 }

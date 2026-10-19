@@ -28,6 +28,7 @@ export const en = {
 
   'login.title': 'Sign in',
   'login.submit': 'Sign in',
+  'login.context': 'to continue to {client}',
   'login.otp.title': 'Enter your authentication code',
   'login.recoveryCode.title': 'Enter a recovery code',
   'login.verify': 'Verify',

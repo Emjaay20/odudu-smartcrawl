@@ -1,6 +1,7 @@
 import {
   DEFAULT_PAGE_LOCALE,
   INSTRUMENT_STYLESHEET,
+  PRODUCT_NAME,
   type PageLocale,
   type PageScript,
   type RenderedPage,
@@ -28,6 +29,18 @@ const MARK =
   '<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" ' +
   'stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">' +
   '<circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>';
+
+// The heading every page opens with, and what it is for: lines saying what the
+// person is continuing to, then the tenant, in the smaller type of a caption.
+// `heading` and each context line arrive as markup, already escaped; the
+// tenant is a name somebody chose, so it is isolated here.
+export function intro(heading: string, tenant?: string, context: readonly string[] = []): string {
+  const lines = [
+    ...context.map((line) => `<p class="context">${line}</p>\n`),
+    ...(tenant === undefined ? [] : [`<p class="tenant"><bdi>${escapeHtml(tenant)}</bdi></p>\n`]),
+  ];
+  return `<header class="intro">\n<h1>${heading}</h1>\n${lines.join('')}</header>`;
+}
 
 // The one document shell for every page account renders. `body` is what a
 // theme may replace; `html` is what the server sends today. The stylesheet
@@ -58,7 +71,7 @@ export function page(
 </head>
 <body>
 <main class="page">
-${MARK}
+<p class="brand">${MARK}<span class="wordmark">${PRODUCT_NAME}</span></p>
 ${body}
 </main>
 </body>

@@ -642,6 +642,12 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
 
     const recoverPendingRequest = (tenantId: string, authSessionId: string) =>
       withTenant(deps.database.db, tenantId, (tx) => loadPendingRequest(tx, authSessionId));
+    const clientName = (tenantId: string, oauthClientId: string) =>
+      withTenant(
+        deps.database.db,
+        tenantId,
+        async (tx) => (await clientRepository(tx).byClientId(oauthClientId))?.name ?? null,
+      );
     const redirectStillRegistered = (
       tenantId: string,
       oauthClientId: string,
@@ -658,6 +664,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       findTenant,
       recoverPendingRequest,
       redirectStillRegistered,
+      clientName,
       tls,
       ...passkeyLogin,
       pageLocales,
@@ -803,6 +810,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
         withTenant(deps.database.db, tenantId, (tx) => loadPendingRequest(tx, authSessionId)),
       recoverPendingRequest,
       redirectStillRegistered,
+      clientName,
       pendingChallenge: pendingChallengeFor,
       checkEmailVerification,
       pendingActions,

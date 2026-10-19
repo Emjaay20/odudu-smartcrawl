@@ -18,6 +18,9 @@ export interface ContinuationDeps {
     oauthClientId: string,
     redirectUri: string,
   ): Promise<boolean>;
+  // The name of a client in its tenant, or null when there is none. Read only
+  // by a page that says whom the person is signing in to.
+  clientName?(tenantId: string, oauthClientId: string): Promise<string | null>;
   // The tags a page can be shown in; defaults to what the server ships.
   pageLocales?: readonly string[];
   // The `locale` attribute of a subject, read only for a page shown after
@@ -54,6 +57,9 @@ export interface PageContinuation {
   // redirect_uri for `pageHeaders` to license (ADR 0018). The value is the
   // one /authorize validated and parked, never anything the browser posted.
   readonly continuing: (page: RenderedPage) => RenderedPage;
+  // The name of the client the parked request is for. One read, made when it
+  // is called and not before, so a page that never names a client costs none.
+  readonly clientName: () => Promise<string | undefined>;
 }
 
 // Loads the parked request once and answers both questions that need it: the
@@ -89,5 +95,9 @@ export async function continuation(
   return {
     locale,
     continuing: (page) => (pending === null ? page : { ...page, redirectsTo: pending.redirectUri }),
+    clientName: async () =>
+      tenant === null || pending === null
+        ? undefined
+        : ((await deps.clientName?.(tenant.id, pending.clientId)) ?? undefined),
   };
 }

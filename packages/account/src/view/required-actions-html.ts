@@ -1,6 +1,6 @@
 import { type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { type LinkedRequiredAction } from '#/usecase/action-token';
-import { escapeHtml, page } from '#/view/document';
+import { escapeHtml, intro, page } from '#/view/document';
 import { bdi, t, tHtml, type MessageId } from '#/view/messages';
 
 const ACTION_MESSAGE: Readonly<Record<LinkedRequiredAction, MessageId>> = {
@@ -36,7 +36,7 @@ export function renderRequiredActionsForm(
     : '';
   return page(
     t(locale, 'requiredActions.title'),
-    `<h1>${tHtml(locale, 'requiredActions.title')}</h1>
+    `${intro(tHtml(locale, 'requiredActions.title'), tenant)}
 <p>${tHtml(locale, 'requiredActions.intro')}</p>
 ${listHtml(actions, locale)}
 <form method="post" action="${action}">

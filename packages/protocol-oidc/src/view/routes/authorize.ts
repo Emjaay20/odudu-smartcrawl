@@ -145,7 +145,12 @@ async function renderAuthorizationOutcome(
   }
 
   // The login form precedes the first factor: ui_locales, then the browser.
-  const { locale, continuing } = await continuation(deps, tenant, outcome.authSessionId, reply);
+  const { locale, continuing, clientName } = await continuation(
+    deps,
+    tenant,
+    outcome.authSessionId,
+    reply,
+  );
   const page = renderLoginForm(
     tenant,
     outcome.authSessionId,
@@ -155,6 +160,7 @@ async function renderAuthorizationOutcome(
     undefined,
     outcome.loginWithEmail,
     locale,
+    await clientName(),
   );
   return sendHtml(reply, 200, continuing(form(page)));
 }

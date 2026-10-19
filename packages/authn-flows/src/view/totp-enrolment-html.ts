@@ -1,7 +1,7 @@
 import qrcode from 'qrcode-generator';
 import { type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { type EnrolmentRefusal } from '#/schema/enrolment-refusal';
-import { escapeHtml, page } from '#/view/document';
+import { escapeHtml, intro, page } from '#/view/document';
 import { t, tHtml, token } from '#/view/messages';
 import { refusalHtml } from '#/view/refusal';
 
@@ -39,7 +39,7 @@ export function renderTotpEnrolmentPage(
   const target = `/tenants/${escapeHtml(tenant)}/login-actions/required-action?action=configure-totp`;
   return page(
     t(locale, 'totp.title'),
-    `<h1>${tHtml(locale, 'totp.title')}</h1>
+    `${intro(tHtml(locale, 'totp.title'), tenant)}
 ${refusalHtml(locale, error)}<p>${tHtml(locale, 'totp.scan')}</p>
 ${qrSvg(offer.uri)}
 <p>${token(offer.uri)}</p>

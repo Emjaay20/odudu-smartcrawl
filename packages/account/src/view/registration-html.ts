@@ -1,5 +1,5 @@
 import { type PageLocale, type RenderedPage } from '@odudu/kernel';
-import { escapeHtml, page } from '#/view/document';
+import { escapeHtml, intro, page } from '#/view/document';
 import { t, tHtml, type MessageId } from '#/view/messages';
 import { ruleListHtml, type PasswordViolation } from '#/view/password-rules';
 
@@ -30,7 +30,8 @@ export function renderRegistrationForm(tenant: string, locale: PageLocale): Rend
   const action = `/tenants/${escapeHtml(tenant)}/login-actions/registration`;
   return page(
     t(locale, 'registration.title'),
-    `<form method="post" action="${action}">
+    `${intro(tHtml(locale, 'registration.title'), tenant)}
+<form method="post" action="${action}">
   <label>${tHtml(locale, 'registration.username')} <input type="text" name="username" autocomplete="username"></label>
   <label>${tHtml(locale, 'registration.email')} <input type="email" name="email" autocomplete="email"></label>
   <label>${tHtml(locale, 'registration.password')} <input type="password" name="password" autocomplete="new-password"></label>

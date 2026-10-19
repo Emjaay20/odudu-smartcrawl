@@ -173,11 +173,23 @@ describe('a refused password step', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.body).toContain(
-      '<p role="alert"><strong>Sign-in failed. Check your details and try again.</strong></p>',
+      '<p class="alert" role="alert">Sign-in failed. Check your details and try again.</p>',
     );
     expect(res.body).toContain(`name="username" autocomplete="username" value="${RIGHT_USERNAME}"`);
     expect(res.body).not.toContain('a placeholder password');
     expect(res.body).toMatch(/name="password"[^>]*autofocus/u);
+  });
+
+  it('names the client and the tenant on the form and again on the refusal', async () => {
+    const name = `refusal-names-${newId()}`;
+    await setupTenant(name);
+    const first = await http.inject({ url: authorizeUrl(name) });
+    const second = await signIn(name, RIGHT_USERNAME, 'a placeholder password');
+
+    for (const res of [first, second]) {
+      expect(res.body).toContain('<p class="context">to continue to <bdi>Refusal client</bdi></p>');
+      expect(res.body).toContain(`<p class="tenant"><bdi>${name}</bdi></p>`);
+    }
   });
 
   it('is the same page for a wrong password, an unknown name, a locked and a disabled account', async () => {

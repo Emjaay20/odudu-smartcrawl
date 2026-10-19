@@ -1,6 +1,6 @@
 import { type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { sendVerificationHtml } from '#/view/verification-html';
-import { escapeHtml, page } from '#/view/document';
+import { escapeHtml, intro, page } from '#/view/document';
 import { t, tHtml } from '#/view/messages';
 import { ruleListHtml, type PasswordViolation } from '#/view/password-rules';
 
@@ -12,7 +12,8 @@ export function renderResetRequestForm(tenant: string, locale: PageLocale): Rend
   const action = `/tenants/${escapeHtml(tenant)}/login-actions/reset-password`;
   return page(
     t(locale, 'reset.request.title'),
-    `<form method="post" action="${action}">
+    `${intro(tHtml(locale, 'reset.request.title'), tenant)}
+<form method="post" action="${action}">
   <label>${tHtml(locale, 'reset.request.email')} <input type="email" name="email" autocomplete="email"></label>
   <button type="submit">${tHtml(locale, 'reset.request.submit')}</button>
 </form>`,
@@ -64,7 +65,8 @@ export function renderResetPasswordForm(
   const action = `/tenants/${escapeHtml(tenant)}/login-actions/action-token`;
   return page(
     t(locale, 'reset.form.title'),
-    `<form method="post" action="${action}">
+    `${intro(tHtml(locale, 'reset.form.title'), tenant)}
+<form method="post" action="${action}">
   <input type="hidden" name="key" value="${escapeHtml(key)}">
   <label>${tHtml(locale, 'reset.form.newPassword')} <input type="password" name="password" autocomplete="new-password"></label>
   <button type="submit">${tHtml(locale, 'reset.form.submit')}</button>

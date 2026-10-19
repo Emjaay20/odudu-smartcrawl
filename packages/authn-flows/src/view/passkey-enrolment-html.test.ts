@@ -147,8 +147,11 @@ describe('renderPasskeyEnrolmentPage', () => {
       'passkey_not_added',
       DEFAULT_PAGE_LOCALE,
     );
-    expect(body.slice(0, body.indexOf('<script'))).toBe(`<h1>Add a passkey</h1>
-<p><strong>That passkey could not be added. Try again.</strong></p>
+    expect(body.slice(0, body.indexOf('<script'))).toBe(`<header class="intro">
+<h1>Add a passkey</h1>
+<p class="tenant"><bdi>acme</bdi></p>
+</header>
+<p class="alert" role="alert">That passkey could not be added. Try again.</p>
 <p>Your device will ask you to confirm. Nothing is stored until it does.</p>
 <form method="post" action="/tenants/acme/login-actions/required-action?action=configure-passkey" id="passkey-form" data-failed="Your device did not finish adding the passkey — {reason}. You can try again." data-cancelled="the request was cancelled">
   <input type="hidden" name="auth_session_id" value="sess-1">
@@ -156,7 +159,7 @@ describe('renderPasskeyEnrolmentPage', () => {
   <label>Name this passkey <input type="text" name="label" placeholder="Passkey" maxlength="64"></label>
   <button type="submit" id="passkey-submit">Add passkey</button>
 </form>
-<p id="passkey-error" hidden></p>
+<p id="passkey-error" class="alert" role="alert" hidden></p>
 <noscript><p>Adding a passkey needs JavaScript, because only the browser can talk to your authenticator.</p></noscript>
 `);
   });
@@ -165,7 +168,7 @@ describe('renderPasskeyEnrolmentPage', () => {
     const page = renderPasskeyEnrolmentPage('acme', 's1', OFFER, 'passkey_not_added', FRENCH);
     expect(page.html).toContain('<html lang="fr" dir="ltr">');
     expect(page.title).toBe('Ajouter une clé d’accès');
-    expect(page.body).toContain('<p><strong>Cette clé n’a pas pu être ajoutée.</strong></p>');
+    expect(page.body).toContain('<p class="alert" role="alert">Cette clé n’a pas pu être ajoutée.</p>');
     expect(page.body).toContain('<label>Nommez cette clé <input');
     expect(page.body).toContain('placeholder="Clé d’accès"');
     expect(page.body).toContain('>Ajouter</button>');

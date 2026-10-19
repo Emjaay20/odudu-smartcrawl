@@ -48,7 +48,11 @@ describe('renderResetRequestForm', () => {
 
   it('keeps the English markup exactly', () => {
     expect(renderResetRequestForm('acme', EN).body)
-      .toBe(`<form method="post" action="/tenants/acme/login-actions/reset-password">
+      .toBe(`<header class="intro">
+<h1>Forgot your password?</h1>
+<p class="tenant"><bdi>acme</bdi></p>
+</header>
+<form method="post" action="/tenants/acme/login-actions/reset-password">
   <label>Email <input type="email" name="email" autocomplete="email"></label>
   <button type="submit">Send reset link</button>
 </form>`);
@@ -122,7 +126,11 @@ describe('renderResetPasswordForm', () => {
 
   it('keeps the English markup exactly', () => {
     expect(renderResetPasswordForm('acme', 'token-key', EN).body)
-      .toBe(`<form method="post" action="/tenants/acme/login-actions/action-token">
+      .toBe(`<header class="intro">
+<h1>Choose a new password</h1>
+<p class="tenant"><bdi>acme</bdi></p>
+</header>
+<form method="post" action="/tenants/acme/login-actions/action-token">
   <input type="hidden" name="key" value="token-key">
   <label>New password <input type="password" name="password" autocomplete="new-password"></label>
   <button type="submit">Reset password</button>
