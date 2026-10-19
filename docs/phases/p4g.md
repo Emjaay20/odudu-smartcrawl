@@ -1368,7 +1368,7 @@ error and config tables from `@odudu/kernel`, the audit vocabulary from
   its OpenAPI builder had to be exported from the index): `generated 24 files`, 1.3 s.
   `apps/docs/scripts/package.json` (`"type": "module"`) stops Node reparsing
   each file; the app's own package stays without it.
-- verified: a link `[x](/openapi/admin.json)` to a file in `static/` is bundled by
+- verified: a Markdown link whose target is `/openapi/admin.json`, a file in `static/`, is bundled by
   Docusaurus as a hashed asset: `dist/pages/assets/files/admin-<hash>.json`, a second
   890 KB copy per target. `pathname:///openapi/admin.json` renders `href=/odudu/openapi/admin.json`
   and copies nothing. `agent-links.ts` now rewrites that form in the Markdown copies.
