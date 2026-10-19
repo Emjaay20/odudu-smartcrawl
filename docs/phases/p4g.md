@@ -652,3 +652,17 @@ semver tag there.
 - A recorded `content-security-policy` block is now also held to the other
   headers `pageHeaders` sends, to the nonce form, to `connect-src 'self'` as
   the only directive beside a script, and to `frame-src` as bare origins.
+- axe in the browser covers the sign-in form, the throttle page and the
+  console's sign-in states only. The other page kinds (consent,
+  select-account, logout, registration, verification, reset, required-action,
+  TOTP, passkey, recovery codes, update-password, the error pages) are
+  unit-tested but not run under axe. That belongs to P4b's every-page criterion
+  (design spec section 11, P4b row: "every such page passes WCAG 2.2 AA under
+  axe in both colour schemes"), which already names it, so nothing is added to
+  a list.
+- Recorded page documents are held to their bytes and to `page()` by
+  `tests/docs/page-documents-transcripts.test.ts`; a block showing part of a
+  document says so with a `…` line in it. Fix round: the console refusal
+  transcripts at the `/console/auth/callback` section were stale and are
+  recaptured (a first refusal restarts, a second inside the minute answers the
+  page).
