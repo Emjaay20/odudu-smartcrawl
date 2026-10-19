@@ -120,6 +120,7 @@ describe('the CI workflow', () => {
       expect(block).toContain('needs: [changes, e2e-shards]');
       expect(block).toMatch(/^ {4}if: always\(\) && needs\.changes\.outputs\.server == 'true'$/mu);
       expect(block).toContain('needs.e2e-shards.result');
+      expect(block).toContain('case "$RESULTS" in success) ;; *) exit 1 ;; esac');
       expect(jobNames(workflow)).toContain('e2e-shards');
     });
 
@@ -138,10 +139,36 @@ describe('the CI workflow', () => {
       const workflow = await read('.github/workflows/verify.yml');
       const uses = workflow.match(/uses: \.\/\.github\/actions\/image/gu) ?? [];
       expect(uses).toHaveLength(2);
-      expect(workflow).toContain('save-cache: ${{ strategy.job-index == 0 }}');
+      expect(workflow).toContain(
+        "save-cache: ${{ strategy.job-index == 0 && github.event_name == 'push' }}",
+      );
+      expect(workflow.match(/save-cache:/gu)).toHaveLength(1);
       const action = await read('.github/actions/image/action.yml');
       expect(action).toContain('cache-from: type=gha,scope=odudu-image');
       expect(action).toContain('scope=odudu-image,mode=max');
+    });
+
+    it('starts the prebuilt image, labelled with the commit, in both scripts', async () => {
+      const workflow = await read('.github/workflows/verify.yml');
+      const job = (name: string, next: string): string => {
+        const from = workflow.slice(workflow.indexOf(`\n  ${name}:\n`));
+        return from.slice(0, from.indexOf(`\n  ${next}:\n`));
+      };
+      const smoke = job('container', 'e2e-shards');
+      expect(smoke).toContain("ODUDU_PREBUILT: '1'");
+      expect(smoke).toContain('ODUDU_REVISION: ${{ github.sha }}');
+      const e2e = job('e2e-shards', 'e2e');
+      expect(e2e).toContain("E2E_PREBUILT: '1'");
+      expect(e2e).toContain('ODUDU_REVISION: ${{ github.sha }}');
+      expect(workflow).toContain('revision: ${{ github.sha }}');
+    });
+
+    it('refuses, naming both revisions, a prebuilt image built from another commit', async () => {
+      for (const file of ['apps/admin-console/e2e/run.sh', 'infra/docker/smoke.sh']) {
+        const script = await read(file);
+        expect(script, file).toContain('org.opencontainers.image.revision');
+        expect(script, file).toContain('was built from');
+      }
     });
 
     it('tags the image with the name compose gives it in each script that starts it', async () => {

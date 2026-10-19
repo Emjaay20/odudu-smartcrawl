@@ -369,13 +369,10 @@ jobs:
         with:
           persist-credentials: false
 
-      # The e2e job's first shard writes the layer cache; this job writes it
-      # only when that job is skipped, so a change to the image alone still
-      # leaves one behind.
+      # Reads the layer cache that a push to main wrote; never writes it.
       - uses: ./.github/actions/image
         with:
           revision: ${{ github.sha }}
-          save-cache: ${{ needs.changes.outputs.server != 'true' }}
 
       # smoke.sh fails closed if infra/docker/.env is missing (ADR 0015) —
       # this is the deliberate act CI performs in its place. The console's
@@ -387,6 +384,7 @@ jobs:
         run: ./infra/docker/smoke.sh
         env:
           ODUDU_PREBUILT: '1'
+          ODUDU_REVISION: ${{ github.sha }}
 
   # The console's flows in Chromium against the built image, signed in
   # through the gateway, cut into slices by Playwright's --shard. Each slice is
@@ -416,7 +414,8 @@ jobs:
       - uses: ./.github/actions/image
         with:
           revision: ${{ github.sha }}
-          save-cache: ${{ strategy.job-index == 0 }}
+          # One writer, and only on main, so no pull request's leg waits on an export.
+          save-cache: ${{ strategy.job-index == 0 && github.event_name == 'push' }}
 
       - name: Bootstrap infra/docker/.env
         run: cp infra/docker/.env.example infra/docker/.env
@@ -425,6 +424,7 @@ jobs:
         run: ./apps/admin-console/e2e/run.sh
         env:
           E2E_PREBUILT: '1'
+          ODUDU_REVISION: ${{ github.sha }}
           E2E_SHARD: ${{ matrix.shard }}
 
       - name: Upload the Playwright report

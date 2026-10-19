@@ -32,6 +32,14 @@ trap cleanup EXIT
 build_flag=(--build)
 if [ "${ODUDU_PREBUILT:-}" = "1" ]; then
   build_flag=()
+  expected_revision="${ODUDU_REVISION:-$(git -C .. rev-parse HEAD)}"
+  actual_revision="$(docker image inspect "$COMPOSE_PROJECT_NAME-odudu" \
+    --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' 2>/dev/null || true)"
+  if [ -n "$actual_revision" ] && [ "$actual_revision" != "$expected_revision" ]; then
+    echo "$COMPOSE_PROJECT_NAME-odudu was built from '$actual_revision', not '$expected_revision'." >&2
+    echo "Build it from this commit (ODUDU_REVISION=$expected_revision), or run without ODUDU_PREBUILT." >&2
+    exit 1
+  fi
 fi
 
 docker compose up -d ${build_flag[@]+"${build_flag[@]}"}

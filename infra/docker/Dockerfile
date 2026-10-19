@@ -41,9 +41,9 @@ RUN set -eu; \
     done; \
     exit 1
 
-# Every package is downloaded here, from the lockfile alone, so the layer is
-# rebuilt only when the lockfile changes and not on every source edit. The
-# stages below install from this store with no network.
+# Every package is downloaded here, so the layer is rebuilt when the lockfile,
+# the workspace settings or the root package.json change, and not on an edit
+# to a package's source. The stages below install from this store offline.
 FROM pnpm AS store
 WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./

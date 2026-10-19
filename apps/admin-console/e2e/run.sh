@@ -7,7 +7,8 @@
 #   E2E_PREBUILT=1                        do not rebuild the image: compose starts the
 #                                         one tagged <project>-odudu if it exists (CI
 #                                         builds it against a layer cache), and builds
-#                                         only if it does not
+#                                         only if it does not. It must carry the revision
+#                                         label of ODUDU_REVISION, or of HEAD if unset
 #   E2E_SHARD=<n>/<total>                 run one slice of the specs (playwright --shard)
 #   E2E_PLAYWRIGHT                        a playwright binary to run, in place of
 #                                         `pnpm exec playwright`; the browser install is skipped
@@ -42,6 +43,14 @@ export COMPOSE_FILE="$DOCKER_DIR/compose.yaml"
 build_flag=(--build)
 if [ "${E2E_PREBUILT:-}" = "1" ]; then
   build_flag=()
+  expected_revision="${ODUDU_REVISION:-$(git -C "$REPO" rev-parse HEAD)}"
+  actual_revision="$(docker image inspect "$COMPOSE_PROJECT_NAME-odudu" \
+    --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' 2>/dev/null || true)"
+  if [ -n "$actual_revision" ] && [ "$actual_revision" != "$expected_revision" ]; then
+    echo "$COMPOSE_PROJECT_NAME-odudu was built from '$actual_revision', not '$expected_revision'." >&2
+    echo "Build it from this commit (ODUDU_REVISION=$expected_revision), or run without E2E_PREBUILT." >&2
+    exit 1
+  fi
 fi
 shard_flag=()
 if [ -n "${E2E_SHARD:-}" ]; then
