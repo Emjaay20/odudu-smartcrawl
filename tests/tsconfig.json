@@ -13,6 +13,7 @@
     "lint/fixtures/console-no-module-state/**",
     "lint/fixtures/console-store-access/**",
     "lint/fixtures/console-css-module-classes-defined/**",
-    "lint/fixtures/console-query-keys/**"
+    "lint/fixtures/console-query-keys/**",
+    "lint/fixtures/renderer-without-shell/**"
   ]
 }
