@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { landingJsonLd, siteHeadTags, stripForImage } from '#docs/seo.ts';
 import { missingDescriptions, requireDescriptions } from '#docs/plugins/descriptions.ts';
+import { expectLandingNodes, jsonLdNodes } from '#docs/tests/support/jsonld.ts';
 import { DOCS_ROOT } from '#docs/tests/support/dist.ts';
 
 describe('the site-wide head tags', () => {
@@ -22,35 +23,18 @@ describe('the site-wide head tags', () => {
 });
 
 describe('the landing page structured data', () => {
-  const data = (siteUrl: string): unknown => JSON.parse(landingJsonLd(siteUrl));
-
   it('describes free software and an organisation, and offers nothing for sale', () => {
-    const graph = (data('https://docs.test/base/') as { '@graph': Record<string, unknown>[] })[
-      '@graph'
-    ];
-    const types = graph.map((node) => node['@type']);
-    expect(types).toEqual(['SoftwareApplication', 'Organization']);
-    const [software, organisation] = graph;
-    expect(software).toMatchObject({
-      name: 'Odudu',
-      isAccessibleForFree: true,
-      license: expect.stringMatching(/^https:\/\//u),
-    });
-    expect(software).toHaveProperty('applicationCategory');
-    expect(software).toHaveProperty('operatingSystem');
-    expect(software).not.toHaveProperty('offers');
-    expect(organisation).toMatchObject({
-      name: 'Odudu',
-      url: 'https://docs.test/base/',
-      logo: expect.stringMatching(/^https:\/\/docs\.test\/base\//u),
-      sameAs: [expect.stringMatching(/^https:\/\/github\.com\//u)],
-    });
+    const nodes = jsonLdNodes([landingJsonLd('https://docs.test/base/')]);
+    expect(nodes.map((node) => node['@type'])).toEqual(['SoftwareApplication', 'Organization']);
+    expectLandingNodes(nodes, 'https://docs.test/base/');
   });
 
   it('escapes the characters that would close a script element', () => {
     const text = landingJsonLd('https://docs.test/</script><script>alert(1)</script>/');
     expect(text).not.toContain('<');
-    expect(JSON.stringify(data('https://docs.test/</script>/'))).toContain('</script>');
+    expect(JSON.stringify(jsonLdNodes([landingJsonLd('https://docs.test/</script>/')]))).toContain(
+      '</script>',
+    );
   });
 });
 
@@ -86,7 +70,9 @@ describe('stripping the public signals for the private image', () => {
 describe('the front-matter description check', () => {
   const dirs: string[] = [];
   afterEach(() => {
-    for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+    for (const dir of dirs.splice(0)) {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   function content(files: Record<string, string>): string {
@@ -114,9 +100,13 @@ describe('the front-matter description check', () => {
 
   it('throws naming the pages, and is silent when every page has one', () => {
     const bad = content({ 'x.md': '---\ntitle: X\n---\n' });
-    expect(() => requireDescriptions(bad)).toThrow(/x\.md/u);
+    expect(() => {
+      requireDescriptions(bad);
+    }).toThrow(/x\.md/u);
     const good = content({ 'x.md': '---\ndescription: Here.\n---\n' });
-    expect(() => requireDescriptions(good)).not.toThrow();
+    expect(() => {
+      requireDescriptions(good);
+    }).not.toThrow();
   });
 
   it('holds for every page of the documentation', () => {

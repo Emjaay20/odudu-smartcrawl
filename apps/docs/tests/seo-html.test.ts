@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import * as cheerio from 'cheerio';
 import { describe, expect, it } from 'vitest';
+import { expectLandingNodes, jsonLdNodes, type JsonLdNode } from '#docs/tests/support/jsonld.ts';
 import { SECTIONS } from '#docs/nav.ts';
 import { PAGES_BASE, SITE_ORIGIN } from '#docs/site.config.ts';
 import {
@@ -54,17 +55,13 @@ function duplicates(values: string[]): string[] {
   return values.filter((value, index) => values.indexOf(value) !== index);
 }
 
-function jsonLd(page: Page): { '@type'?: string; [key: string]: unknown }[] {
-  return page
-    .$('script[type="application/ld+json"]')
-    .map((_, element) => {
-      const parsed: unknown = JSON.parse(page.$(element).text());
-      return parsed as { '@graph'?: unknown[] } & Record<string, unknown>;
-    })
-    .get()
-    .flatMap((block) => (block['@graph'] === undefined ? [block] : block['@graph'])) as {
-    '@type'?: string;
-  }[];
+function jsonLd(page: Page): JsonLdNode[] {
+  return jsonLdNodes(
+    page
+      .$('script[type="application/ld+json"]')
+      .toArray()
+      .map((element) => page.$(element).text()),
+  );
 }
 
 // A stub page waits for its increment: its word floor applies once it is filled.
@@ -95,8 +92,10 @@ describe('the Pages build is indexable HTML', () => {
       violations((page) => {
         const titles = page.$('head title');
         const text = titles.text();
-        if (titles.length !== 1) return `${titles.length} titles`;
-        return text.length > 0 && text.length <= 70 ? null : `title of ${text.length} characters`;
+        if (titles.length !== 1) return `${String(titles.length)} titles`;
+        return text.length > 0 && text.length <= 70
+          ? null
+          : `title of ${String(text.length)} characters`;
       }),
     ).toEqual([]);
     expect(duplicates(pages().map((page) => page.$('head title').text()))).toEqual([]);
@@ -106,9 +105,9 @@ describe('the Pages build is indexable HTML', () => {
     expect(
       violations((page) => {
         const found = meta(page, 'name', 'description');
-        if (found.length !== 1) return `${found.length} descriptions`;
+        if (found.length !== 1) return `${String(found.length)} descriptions`;
         const length = (found[0] ?? '').length;
-        return length >= 50 && length <= 160 ? null : `description of ${length} characters`;
+        return length >= 50 && length <= 160 ? null : `description of ${String(length)} characters`;
       }),
     ).toEqual([]);
     expect(duplicates(pages().map((page) => meta(page, 'name', 'description')[0] ?? ''))).toEqual(
@@ -174,7 +173,7 @@ describe('the Pages build is indexable HTML', () => {
     expect(
       violations((page) => {
         const h1 = page.$('body h1').length;
-        if (h1 !== 1) return `${h1} h1 elements`;
+        if (h1 !== 1) return `${String(h1)} h1 elements`;
         const body = page.$('body').clone();
         body.find('script, style, noscript').remove();
         const words = body
@@ -182,7 +181,7 @@ describe('the Pages build is indexable HTML', () => {
           .split(/\s+/u)
           .filter((word) => word !== '').length;
         if (UNFILLED.has(page.name.replace(/\.html$/u, '.md'))) return null;
-        return words >= 80 ? null : `${words} words`;
+        return words >= 80 ? null : `${String(words)} words`;
       }),
     ).toEqual([]);
   });
@@ -213,32 +212,18 @@ describe('the Pages build is indexable HTML', () => {
 
   it('describes the landing page as free software by an organisation, and offers nothing', () => {
     const landing = pages().find((page) => page.route === BASE);
-    expect(landing).toBeDefined();
-    const nodes = jsonLd(landing as Page);
-    const software = nodes.find((node) => node['@type'] === 'SoftwareApplication');
-    const organisation = nodes.find((node) => node['@type'] === 'Organization');
-    expect(software).toMatchObject({
-      name: 'Odudu',
-      isAccessibleForFree: true,
-      license: expect.stringMatching(/^https:\/\//u),
-    });
-    expect(software).toHaveProperty('applicationCategory');
-    expect(software).toHaveProperty('operatingSystem');
-    expect(software).not.toHaveProperty('offers');
-    expect(organisation).toMatchObject({
-      name: 'Odudu',
-      url: `${SITE_ORIGIN}${BASE}`,
-      logo: expect.stringMatching(new RegExp(`^${SITE_ORIGIN}${BASE}`, 'u')),
-      sameAs: [expect.stringMatching(/^https:\/\/github\.com\//u)],
-    });
+    if (landing === undefined) throw new Error('the landing page was not built');
+    expectLandingNodes(jsonLd(landing), `${SITE_ORIGIN}${BASE}`);
   });
 
   it('gives every docs page a breadcrumb that ends at its own heading, with absolute addresses', () => {
     const docs = pages().filter((page) => page.$('[data-page="landing"]').length === 0);
     expect(
       docs.flatMap((page) => {
-        const lists = jsonLd(page).filter((node) => node['@type'] === 'BreadcrumbList');
-        const items = (lists[0]?.['itemListElement'] ?? []) as { item: string; name: string }[];
+        const lists = jsonLd(page).filter((node) => node['@type'] === 'BreadcrumbList') as {
+          itemListElement?: unknown;
+        }[];
+        const items = (lists[0]?.itemListElement ?? []) as { item: string; name: string }[];
         const last = items[items.length - 1];
         const ok =
           lists.length === 1 &&
@@ -353,7 +338,9 @@ describe('the image build is private to the installation', () => {
       const signals = $(
         'link[rel="canonical"], link[rel="alternate"], meta[property="og:url"], script[type="application/ld+json"]',
       ).length;
-      return robots === 1 && signals === 0 ? [] : [`${name}: noindex=${robots} signals=${signals}`];
+      return robots === 1 && signals === 0
+        ? []
+        : [`${name}: noindex=${String(robots)} signals=${String(signals)}`];
     });
     expect(bad).toEqual([]);
   });

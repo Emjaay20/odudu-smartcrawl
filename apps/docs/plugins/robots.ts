@@ -9,7 +9,7 @@ export default function robots(): Plugin {
   return {
     name: 'odudu-robots',
     async postBuild({ outDir, siteConfig }) {
-      const isImage = process.env['DOCS_TARGET'] === 'image';
+      const isImage = process.env.DOCS_TARGET === 'image';
       const sitemap = `${siteConfig.url}${siteConfig.baseUrl}sitemap.xml`;
       const text = isImage
         ? 'User-agent: *\nDisallow: /\n'
