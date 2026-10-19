@@ -46,6 +46,8 @@ export {
   type ChoiceKey,
   CHOICE_DEFAULTS,
   choiceKeyOf,
+  choiceControl,
+  type ChoiceControl,
   choicesWith,
   askToRemove,
   askToRevoke,

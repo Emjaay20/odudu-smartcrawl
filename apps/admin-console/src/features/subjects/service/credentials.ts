@@ -106,10 +106,32 @@ export function choicesWith(choices: Choices, key: ChoiceKey, checked: boolean):
   return { ...choices, [key]: checked };
 }
 
-export function choiceKeyOf(asking: Asking): ChoiceKey | null {
+export function choiceKeyOf(asking: Asking | null): ChoiceKey | null {
+  if (asking === null) return null;
   if (asking.kind === 'factor') return asking.last ? 'endSessions' : null;
   if (asking.kind === 'recovery-codes') return asking.hasFactor ? 'newSet' : null;
   return null;
+}
+
+export interface ChoiceControl {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}
+
+// What the dialog draws for the choice the ask offers, or nothing.
+export function choiceControl(
+  asking: Asking | null,
+  choices: Choices,
+  set: (next: Choices) => void,
+): ChoiceControl | null {
+  const key = choiceKeyOf(asking);
+  if (key === null) return null;
+  return {
+    checked: choices[key],
+    onChange: (checked) => {
+      set(choicesWith(choices, key, checked));
+    },
+  };
 }
 
 export function credentialChangeOf(asking: Change, choices: Choices): CredentialChange | null {

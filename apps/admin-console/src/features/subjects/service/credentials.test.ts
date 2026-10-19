@@ -3,6 +3,7 @@ import {
   askToRemove,
   askToRevoke,
   CHOICE_DEFAULTS,
+  choiceControl,
   choiceKeyOf,
   choicesWith,
   credentialDialogOf,
@@ -134,6 +135,13 @@ describe('credential changes', () => {
     expect(choiceKeyOf({ kind: 'lockout' })).toBeNull();
     expect(choiceKeyOf({ kind: 'password' })).toBeNull();
     expect(CHOICE_DEFAULTS).toEqual({ newSet: true, endSessions: false });
+    const seen: unknown[] = [];
+    const control = choiceControl(lastFactor, CHOICE_DEFAULTS, (next) => seen.push(next));
+    expect(control?.checked).toBe(false);
+    control?.onChange(true);
+    expect(seen).toEqual([{ newSet: true, endSessions: true }]);
+    expect(choiceControl(factor, CHOICE_DEFAULTS, () => undefined)).toBeNull();
+    expect(choiceControl(null, CHOICE_DEFAULTS, () => undefined)).toBeNull();
     expect(choicesWith(CHOICE_DEFAULTS, 'newSet', false)).toEqual({
       newSet: false,
       endSessions: false,
