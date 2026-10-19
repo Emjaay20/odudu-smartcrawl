@@ -1,6 +1,18 @@
 import { DEFAULT_PAGE_LOCALE } from '@odudu/kernel';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { en } from '#/view/messages';
 import { renderTotpEnrolmentPage } from '#/view/totp-enrolment-html';
+import { ARABIC, FRENCH } from '#test/fr-catalogue';
+
+vi.mock('#/view/messages', async (importOriginal) => {
+  const { withFrench } = await import('#test/fr-catalogue');
+  return withFrench(await importOriginal(), {
+    'totp.title': "Configurez votre application d'authentification",
+    'totp.key': 'Clé :',
+    'totp.confirm': 'Confirmer',
+    'refusal.codeMismatch': 'Ce code ne correspond pas.',
+  });
+});
 
 const OFFER = {
   secret: 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ',
@@ -61,18 +73,58 @@ describe('renderTotpEnrolmentPage', () => {
     expect(page.html).not.toContain('period=30</code>&');
   });
 
-  it('escapes the tenant, the session id and an error message', () => {
+  it('escapes the tenant, the session id, the secret and the URI', () => {
     const page = renderTotpEnrolmentPage(
       'acme"><script>',
       'session"><script>',
-      OFFER,
-      'wrong <code>',
+      { secret: '"><script>S', uri: 'otpauth://x?a=<script>&b="' },
+      undefined,
       DEFAULT_PAGE_LOCALE,
     );
 
     expect(page.html).not.toContain('<script>');
     expect(page.html).toContain('&lt;script&gt;');
-    expect(page.html).toContain('wrong &lt;code&gt;');
+    expect(page.html).toContain('name="secret" value="&quot;&gt;&lt;script&gt;S"');
+    expect(page.html).toContain('<code>otpauth://x?a=&lt;script&gt;&amp;b=&quot;</code>');
+  });
+
+  it('keeps the English markup exactly', () => {
+    const { body } = renderTotpEnrolmentPage(
+      'acme',
+      'sess-1',
+      OFFER,
+      'code_mismatch',
+      DEFAULT_PAGE_LOCALE,
+    );
+    expect(body.replace(/<svg[\s\S]*<\/svg>/u, '<SVG>')).toBe(`<h1>Set up your authenticator</h1>
+<p><strong>That code did not match. Try the next one your app shows.</strong></p>
+<p>Scan this with your authenticator app, or enter the key by hand.</p>
+<SVG>
+<p><bdi dir="ltr"><code>otpauth://totp/acme:ada?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&amp;issuer=acme&amp;algorithm=SHA1&amp;digits=6&amp;period=30</code></bdi></p>
+<p>Key: <bdi dir="ltr"><code>GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ</code></bdi></p>
+<form method="post" action="/tenants/acme/login-actions/required-action?action=configure-totp">
+  <input type="hidden" name="auth_session_id" value="sess-1">
+  <input type="hidden" name="secret" value="GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ">
+  <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
+  <button type="submit">Confirm</button>
+</form>`);
+  });
+
+  it('reads French where the fixture has it, English for the rest, and keeps the secret in the same places', () => {
+    const page = renderTotpEnrolmentPage('acme', 's1', OFFER, 'code_mismatch', FRENCH);
+    expect(page.html).toContain('<html lang="fr" dir="ltr">');
+    expect(page.title).toBe("Configurez votre application d'authentification");
+    expect(page.body).toContain('<p><strong>Ce code ne correspond pas.</strong></p>');
+    expect(page.body).toContain('<p>Clé : <bdi dir="ltr"><code>');
+    expect(page.body).toContain('<button type="submit">Confirmer</button>');
+    expect(page.body).toContain(`<p>${en['totp.scan']}</p>`);
+    expect(page.body).toContain(`value="${OFFER.secret}"`);
+  });
+
+  it('writes lang and dir for a right-to-left locale', () => {
+    expect(renderTotpEnrolmentPage('a', 's', OFFER, undefined, ARABIC).html).toContain(
+      '<html lang="ar" dir="rtl">',
+    );
   });
 
   it('says nothing about an error when there is none', () => {

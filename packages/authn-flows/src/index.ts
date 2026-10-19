@@ -77,6 +77,7 @@ export {
   type UpdatePasswordOutcome,
 } from '#/usecase/update-password';
 export { type PasswordViolation } from '#/schema/password-violation';
+export { type EnrolmentRefusal } from '#/schema/enrolment-refusal';
 export { renderTotpEnrolmentPage, type TotpEnrolmentOffer } from '#/view/totp-enrolment-html';
 export {
   beginPasskeyEnrolment,

@@ -5,6 +5,13 @@ import { escapeHtml } from '#/view/document';
 // the source and complete; another locale may omit a key and shows English
 // for it. A message is plain text: markup stays in the renderer.
 export const en = {
+  'totp.title': 'Set up your authenticator',
+  'totp.scan': 'Scan this with your authenticator app, or enter the key by hand.',
+  'totp.key': 'Key:',
+  'totp.codeLabel': 'Code from your app',
+  'totp.confirm': 'Confirm',
+  'refusal.codeMismatch': 'That code did not match. Try the next one your app shows.',
+
   'updatePassword.title': 'Change your password',
   'updatePassword.intro': 'This account needs a new password before you can continue.',
   'updatePassword.newPassword': 'New password',
@@ -23,6 +30,12 @@ export const en = {
   'updatePassword.rule.superseded':
     'Your password was changed somewhere else before this form was submitted. Sign in again with the password you set there.',
 };
+
+// A Latin token (a secret, a key URI, a recovery code) keeps its own
+// left-to-right order inside a right-to-left page.
+export function token(value: string): string {
+  return `<bdi dir="ltr"><code>${escapeHtml(value)}</code></bdi>`;
+}
 
 export type MessageId = keyof typeof en;
 

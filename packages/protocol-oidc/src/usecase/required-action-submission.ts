@@ -1,6 +1,7 @@
 import {
   nextRequiredAction,
   SUPERSEDED_PASSWORD,
+  type EnrolmentRefusal,
   type PasskeyEnrolmentOutcome,
   type PasswordViolation,
   type RecoveryCodesOutcome,
@@ -37,7 +38,21 @@ export type RequiredActionOutcome =
       kind: 'rejected';
       authSessionId: string;
       subjectId: string;
-      action: RequiredAction;
+      action: 'configure-totp';
+      reason: EnrolmentRefusal;
+    }
+  | {
+      kind: 'rejected';
+      authSessionId: string;
+      subjectId: string;
+      action: 'configure-passkey';
+      reason: string;
+    }
+  | {
+      kind: 'rejected';
+      authSessionId: string;
+      subjectId: string;
+      action: 'generate-recovery-codes';
       reason: string;
     };
 
@@ -210,7 +225,7 @@ export async function handleRequiredActionSubmission(
     authSessionId,
     subjectId,
     action: 'configure-totp',
-    reason: 'That code did not match. Try the next one your app shows.',
+    reason: 'code_mismatch',
   };
 }
 

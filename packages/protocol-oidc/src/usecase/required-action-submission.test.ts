@@ -368,6 +368,7 @@ describe('handleRequiredActionSubmission — enrolling the owed factor', () => {
       authSessionId: AUTH_SESSION_ID,
       subjectId: 'subject-1',
       action: 'configure-totp',
+      reason: 'code_mismatch',
     });
   });
 
