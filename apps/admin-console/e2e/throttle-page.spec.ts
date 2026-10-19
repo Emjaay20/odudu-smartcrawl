@@ -1,4 +1,4 @@
-import { expect, test } from './fixtures';
+import { expect, forgive, test } from './fixtures';
 import { inspect } from './page-inspection';
 import { startThrottledServer, stopThrottledServer } from './stack';
 
@@ -28,6 +28,7 @@ test.afterAll(() => {
 test('the throttled sign-in page names the wait and passes axe in both themes', async ({
   page,
   request,
+  problems,
 }) => {
   const url = `${ORIGIN}/tenants/anything/login-actions/reset-password`;
   await request.post(url, { form: { email: 'nobody@example.test' } });
@@ -43,4 +44,5 @@ test('the throttled sign-in page names the wait and passes axe in both themes', 
   await expect(page.getByRole('heading', { level: 1, name: 'Too many attempts' })).toBeVisible();
   await expect(page.getByText(`Try again in ${String(wait)} seconds.`)).toBeVisible();
   await inspect(page, 'throttle');
+  forgive(problems, '/throttled-view');
 });

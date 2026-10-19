@@ -958,3 +958,80 @@ used`); the required-actions, registration success and form pages are
   fallback `bdi(violation.message)` in `authn-flows/view/update-password-html.ts`
   and `account/view/password-rules.ts`: a rule code with no catalogue entry shows
   the domain's sentence, isolated, rather than nothing.
+
+## Server pages: the visual pass
+
+Every server page took one card width (28rem, the same on every page and in every
+state), the brand line, a heading, the tenant and client lines, and a visible alert
+marker. Only `packages/instrument/src/pages.css` and the renderers changed; the
+console's tokens and CSS did not. The stylesheet's line budget moved from 250 to 360
+lines, with the byte and gzip budgets unchanged.
+
+What was wrong: the card sized to its content (about 270px wide) and widened when an
+error sentence was longer than the form; the error was a bold paragraph with no
+marker; labels sat inside the focus ring; the form pages had no heading; consent's
+checkbox labels broke into columns; the QR code stretched to the card; a card's last
+paragraph doubled the bottom padding; a hidden passkey error showed.
+
+Each gallery image is the page in four views: desktop light and dark (1440px,
+cropped to the card) and phone light and dark (390px). Pages without the words
+"renderer only" were reached on a stack by `apps/admin-console/e2e/server-pages.spec.ts`
+(and `throttle-page.spec.ts`), which also holds each to axe in four theme combinations,
+to the phone width and to one card width. The renderer-only ones are pinned by their
+renderers' tests and by `tests/docs/page-documents-transcripts.test.ts`: the
+required-actions link pages need an admin-issued link, the recovery-code form needs a
+flow that includes it, and the unavailable-action page needs a deployment without a
+passkey relying-party id. The 768px width was captured and looked at too; it is the
+desktop layout.
+
+- ![signin-empty](p4g-pages/signin-empty.webp) `signin-empty`: The sign-in form with a client, remember-me and the passkey option.
+- ![signin-error-echo](p4g-pages/signin-error-echo.webp) `signin-error-echo`: A refused sign-in: the alert, the username given back, focus on the password.
+- ![signin-long-names](p4g-pages/signin-long-names.webp) `signin-long-names`: Sign-in with a very long client name, tenant name and username (renderer only).
+- ![signin-rtl](p4g-pages/signin-rtl.webp) `signin-rtl`: Sign-in under a right-to-left locale (renderer only).
+- ![throttle](p4g-pages/throttle.webp) `throttle`: The too-many-attempts page.
+- ![second-factor-totp](p4g-pages/second-factor-totp.webp) `second-factor-totp`: The authentication-code form with the recovery-code field.
+- ![second-factor-totp-error](p4g-pages/second-factor-totp-error.webp) `second-factor-totp-error`: The same form after a wrong code.
+- ![second-factor-recovery](p4g-pages/second-factor-recovery.webp) `second-factor-recovery`: The recovery-code form after an already-used code (renderer only).
+- ![totp-enrolment](p4g-pages/totp-enrolment.webp) `totp-enrolment`: Authenticator enrolment with the QR code, after a wrong code.
+- ![recovery-codes](p4g-pages/recovery-codes.webp) `recovery-codes`: The one-time list of recovery codes.
+- ![passkey-enrolment](p4g-pages/passkey-enrolment.webp) `passkey-enrolment`: Passkey enrolment.
+- ![update-password](p4g-pages/update-password.webp) `update-password`: Forced password change.
+- ![update-password-violations](p4g-pages/update-password-violations.webp) `update-password-violations`: Forced password change refused, with the broken rules.
+- ![required-action-unavailable](p4g-pages/required-action-unavailable.webp) `required-action-unavailable`: A pending action this deployment cannot offer (renderer only).
+- ![required-actions](p4g-pages/required-actions.webp) `required-actions`: An administrator's required-actions link page (renderer only).
+- ![required-actions-done](p4g-pages/required-actions-done.webp) `required-actions-done`: The page after such a link, with actions left (renderer only).
+- ![consent](p4g-pages/consent.webp) `consent`: Consent with default and optional scopes.
+- ![consent-long-names](p4g-pages/consent-long-names.webp) `consent-long-names`: Consent with a long client name and long unbroken scope names.
+- ![consent-rtl](p4g-pages/consent-rtl.webp) `consent-rtl`: Consent under a right-to-left locale (renderer only).
+- ![select-account](p4g-pages/select-account.webp) `select-account`: The account chooser with a long account name (renderer only).
+- ![logout-confirm](p4g-pages/logout-confirm.webp) `logout-confirm`: Sign-out confirmation.
+- ![logout-done](p4g-pages/logout-done.webp) `logout-done`: Signed out, with a front-channel logout frame.
+- ![logout-redirect-refused](p4g-pages/logout-redirect-refused.webp) `logout-redirect-refused`: Signed out, the requested return address not registered.
+- ![logout-no-session](p4g-pages/logout-no-session.webp) `logout-no-session`: Sign-out with no session.
+- ![logout-unauthenticated](p4g-pages/logout-unauthenticated.webp) `logout-unauthenticated`: Sign-out refused: the confirmation did not match the session.
+- ![error](p4g-pages/error.webp) `error`: The authorization error page.
+- ![error-long](p4g-pages/error-long.webp) `error-long`: The error page with a long description and a long way-on link (renderer only).
+- ![email-unverified](p4g-pages/email-unverified.webp) `email-unverified`: Sign-in refused until the address is verified.
+- ![registration](p4g-pages/registration.webp) `registration`: The registration form.
+- ![registration-failed](p4g-pages/registration-failed.webp) `registration-failed`: Registration refused, with the broken password rules.
+- ![registration-succeeded](p4g-pages/registration-succeeded.webp) `registration-succeeded`: Account created.
+- ![verification-ok](p4g-pages/verification-ok.webp) `verification-ok`: Email verified.
+- ![verification-failed](p4g-pages/verification-failed.webp) `verification-failed`: A verification link that cannot be used.
+- ![reset-request](p4g-pages/reset-request.webp) `reset-request`: Forgot-password request.
+- ![reset-request-failed](p4g-pages/reset-request-failed.webp) `reset-request-failed`: Reset request with no address.
+- ![reset-sent](p4g-pages/reset-sent.webp) `reset-sent`: Reset link sent.
+- ![reset-new-password](p4g-pages/reset-new-password.webp) `reset-new-password`: Choosing a new password from a reset link.
+- ![reset-weak](p4g-pages/reset-weak.webp) `reset-weak`: Reset refused, with the broken rules.
+- ![reset-done](p4g-pages/reset-done.webp) `reset-done`: Password reset.
+- ![reset-link-failed](p4g-pages/reset-link-failed.webp) `reset-link-failed`: A reset link that cannot be used.
+- ![console-refusal](p4g-pages/console-refusal.webp) `console-refusal`: The admin console's sign-in refusal.
+
+- verified: `docker compose` project `odudu-p4g-vis`, the image built from the branch,
+  14 console screenshots (seven pages, light and dark) byte-identical before and after.
+- verified: Firefox 1511 and WebKit 2272 from `playwright-core` 1.59.0, the sign-in
+  with an error, consent and a long-names page at 390px in both themes: `:has()` (the
+  hanging checkbox labels), `:nth-last-child(1 of :not(...))` (the trailing margin) and
+  the alert marker's `content: '!' / ''` all render as in Chromium; nothing needed a
+  fallback.
+- assumption: Safari versions older than 15.4 lack `:has()`; there the checkbox sits
+  inline before its text, which still reads.
