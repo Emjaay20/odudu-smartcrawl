@@ -31,7 +31,11 @@ documents by wrapping each in the shell, and to each `content-length` by the
 shell's 490 extra bytes, which a live response confirmed (the unknown-client
 error page, 704 bytes, on the project `odudu-p4g-12`); those guides were not
 replayed end to end. The test above holds the headers of every recorded block,
-`nosniff` included.
+`nosniff` included. Every page response also carries `content-language`, the
+negotiated page language (`en` in every recorded block, since only `en` is
+shipped); it was added to the recorded blocks by hand, after `nosniff` where
+`pageHeaders` places it, and a live login-page response on the project
+`odudu-p4g-13b` confirmed its value and position.
 
 Values that change on every run — authorization codes, tokens, `jti`,
 session ids, timestamps — are shortened or truncated where they appear, and
@@ -842,6 +846,7 @@ curl -sS http://localhost:3000/tenants/demo/.well-known/openid-configuration
   ],
   "authorization_response_iss_parameter_supported": true,
   "claims_parameter_supported": true,
+  "ui_locales_supported": ["en"],
   "backchannel_logout_supported": true,
   "backchannel_logout_session_supported": true,
   "frontchannel_logout_supported": true,
@@ -978,6 +983,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 3018
 Date: Thu, 15 Oct 2026 13:25:46 GMT
 Connection: keep-alive
@@ -1200,6 +1206,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 2978
 Date: Thu, 15 Oct 2026 13:25:59 GMT
 Connection: keep-alive
@@ -1531,6 +1538,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 1060
 Date: Wed, 14 Oct 2026 00:41:38 GMT
 Connection: keep-alive
@@ -1591,6 +1599,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 2528
 Date: Thu, 15 Oct 2026 13:26:39 GMT
 Connection: keep-alive
@@ -1622,6 +1631,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 744
 Date: Wed, 14 Oct 2026 00:41:38 GMT
 Connection: keep-alive
@@ -1668,6 +1678,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 744
 Date: Wed, 14 Oct 2026 00:42:05 GMT
 Connection: keep-alive
@@ -1771,6 +1782,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 918
 Date: Wed, 14 Oct 2026 00:42:05 GMT
 Connection: keep-alive
@@ -3849,6 +3861,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 1568
 Date: Wed, 14 Oct 2026 00:32:57 GMT
 Connection: keep-alive
@@ -4410,6 +4423,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 1656
 Date: Wed, 14 Oct 2026 00:33:47 GMT
 Connection: keep-alive
@@ -5235,6 +5249,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 1085
 Date: Wed, 14 Oct 2026 00:35:34 GMT
 Connection: keep-alive
@@ -5284,6 +5299,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 737
 Date: Wed, 14 Oct 2026 00:35:34 GMT
 Connection: keep-alive
@@ -5883,6 +5899,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 729
 Date: Thu, 15 Oct 2026 11:54:12 GMT
 Connection: keep-alive
@@ -7618,6 +7635,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 710
 
 <!doctype html>
@@ -7985,6 +8003,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 318
 ```
 
@@ -8514,6 +8533,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 1154
 Date: Wed, 14 Oct 2026 00:36:23 GMT
 Connection: keep-alive
@@ -8672,6 +8692,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 1303
 Date: Wed, 14 Oct 2026 00:36:24 GMT
 Connection: keep-alive
@@ -11426,19 +11447,57 @@ session lifecycle. A citation of either half here means that half.
 
 **`/authorize`**
 
-- **`display`, `ui_locales`, `claims_locales` and `login_hint` are accepted
-  and ignored**, including values none of them define, such as
-  `display=unheard_of`; every one of those requests answers 200 with the
-  ordinary login form. A decision, not a gap: OIDC Core §15.1 asks of
-  `display` that "the minimum level of support required for this parameter
-  is simply that its use must not result in an error", and says the same of
-  `ui_locales` and `claims_locales`. `ui_locales` starts choosing a page's
-  language in **P4g**, and `claims_locales` stays ignored by decision, both per
-  [ADR 0043](adr/0043-localization-is-a-catalogue-a-negotiation-and-a-set-of-owners.md).
+- **`display`, `claims_locales` and `login_hint` are accepted and ignored**,
+  including values none of them define, such as `display=unheard_of`; every
+  one of those requests answers 200 with the ordinary login form. A decision,
+  not a gap: OIDC Core §15.1 asks of `display` that "the minimum level of
+  support required for this parameter is simply that its use must not result
+  in an error", and says the same of `claims_locales`, which stays ignored by
+  decision ([ADR 0043](adr/0043-localization-is-a-catalogue-a-negotiation-and-a-set-of-owners.md)).
+  `ui_locales` is not ignored: its tags that could be language tags (the first
+  sixteen; anything else is dropped) are parked with the
+  request and every page of the sign-in negotiates its language from them,
+  then the browser's `Accept-Language`, then `en`; the answer is always one
+  of the tags the server ships (`ui_locales_supported` in discovery), so a tag
+  nobody ships changes nothing and refuses nothing. `<html lang>`, `dir` and
+  `Content-Language` carry the negotiated tag, and a restart link rebuilds
+  `ui_locales` with the rest of the parked request. Against the stack this
+  document builds, which ships `en` only, with a preference list that names
+  two languages it does not ship and a tag that is not one:
+
+  ```bash
+  curl -si -H 'accept-language: fr-CA, de;q=0.8' \
+    "$BASE/auth?response_type=code&client_id=demo-spa&scope=openid&state=ui-locales-demo\
+  &redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&code_challenge_method=S256\
+  &code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM\
+  &ui_locales=fr%20de%20%22%3E%3Cscript%3E" | grep -i -E '^content-language|<html'
+  ```
+
+  ```
+  content-language: en
+  <html lang="en" dir="ltr">
+  ```
+
+  Neither `fr` nor `de` is shipped, so the page is `en`, and the markup tag
+  is not parked: only the two that could be tags are, which is what a restart
+  link would rebuild `ui_locales` from. Scoped to this request's `state`:
+
+  ```bash
+  docker compose exec -T postgres psql -U odudu -d odudu -x -P 'null=(null)' -c \
+    "select pending_request->'uiLocales' as ui_locales from authentication_sessions
+      where pending_request->>'state' = 'ui-locales-demo'"
+  ```
+
+  ```
+  -[ RECORD 1 ]------------
+  ui_locales | ["fr", "de"]
+  ```
+
   `login_hint` is OPTIONAL in §3.1.2.1
   and prefills a form this server does not prefill. `prompt` is deliberately
   not treated this way, because it is the one that changes whether the end
   user is asked anything at all.
+
 - **`acr_values` is accepted and ignored on the request side.** §15.1 allows
   exactly that — "the minimum level of support required for this parameter
   is simply to have its use not result in an error" — so what happens today

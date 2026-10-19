@@ -1099,7 +1099,7 @@ curl -sS http://localhost:3000/tenants/demo/.well-known/openid-configuration
 }
 ```
 
-(Five of the twenty-eight members it returns; the other twenty-three, and
+(Five of the twenty-nine members it returns; the other twenty-four, and
 what a client does with each, are in the guide.)
 
 And this signs ada in and comes back with tokens — the whole

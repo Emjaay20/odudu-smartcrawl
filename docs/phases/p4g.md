@@ -666,3 +666,29 @@ semver tag there.
   transcripts at the `/console/auth/callback` section were stale and are
   recaptured (a first refusal restarts, a second inside the minute answers the
   page).
+
+## Increment 13b: ui_locales parked, negotiated per page, discovery
+
+- `ui_locales` is parked as `uiLocales` in `pending_request`, a jsonb column,
+  so no migration (nothing touches a large table) and the restart link rebuilds
+  it beside `prompt` and `max_age`. Parked tags are only those matching
+  `[A-Za-z0-9-]{1,35}`, at most sixteen, deduplicated; the strict `isValidLocale`
+  shape and the lookup are `negotiateLocale`'s. A tag outside the shipped list
+  never reaches `<html lang>` or `Content-Language`: output is always an entry
+  of the supported list.
+- Negotiation happens in `continuing()`, the one place a protocol-oidc page
+  already loads the parked request, then `withLocale()` (kernel) rewrites the
+  document element and the page's `locale`. Pages with no parked request (the
+  error pages, logout, throttle, and every account page) carry the default `en`.
+  Wiring Accept-Language negotiation into those, and the subject's own
+  `locale` once authenticated, belongs to the increments that move each
+  package's page text into catalogues (14 to 17); until a second locale ships
+  every answer is `en`.
+- `pageLocales` (defaults to `SHIPPED_LOCALES` of `@odudu/i18n`) is what both
+  negotiation and discovery's `ui_locales_supported` read, so they cannot
+  disagree. The integration test sets it to `['en', 'fr']`; there is no `fr`
+  catalogue file yet, only the supported-tag list.
+- `execute-actions.int.test.ts` asserted the page carried no `href`, which the
+  Instrument shell's stylesheet link broke; it now asserts no anchor.
+- `content-language: en` was added to every recorded page header block in the
+  three guides (22), and `ui_locales_supported` to the discovery transcripts.

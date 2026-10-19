@@ -44,6 +44,7 @@ import {
   clientScopeRepository,
   consentRepository,
 } from '@odudu/domain-tenant';
+import { SHIPPED_LOCALES } from '@odudu/i18n';
 import { systemClock, type ClaimMapperRegistry, type Clock } from '@odudu/kernel';
 import { type FastifyPluginAsync } from 'fastify';
 import { type ClientKeySet } from '#/repository/client-keys';
@@ -146,6 +147,11 @@ export interface OidcRoutesDeps {
   // name, so this is never a constant. Defaults to the same value the
   // kernel config schema does.
   tlsClientCertHeader?: string;
+  // The tags the server's pages can be shown in: what negotiation matches a
+  // request's preference against and what discovery advertises as
+  // `ui_locales_supported`, so the two cannot disagree. Defaults to the
+  // locales the server ships.
+  pageLocales?: readonly string[];
 }
 
 // The plugin apps/server registers. Discovery and JWKS both read the
@@ -309,6 +315,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
     // party id comes from ODUDU_PUBLIC_BASE_URL and nowhere else, so
     // without it there is nothing behind one.
     const passkeyLogin = { passkeyLogin: deps.publicBaseUrl !== undefined };
+    const pageLocales = deps.pageLocales ?? SHIPPED_LOCALES;
 
     // One definition for every door that can issue a code: the form path,
     // the consent POST, and (via completeAuthorizedLogin) whichever of the
@@ -463,6 +470,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       userinfoEncryptionAlgSupported: JWE_ALGS_PERMITTED,
       userinfoEncryptionEncSupported: USERINFO_ENCRYPTION_ENCS_PERMITTED,
       trustProxy: deps.trustProxy ?? false,
+      uiLocalesSupported: pageLocales,
     });
     registerJwksRoute(app, { findTenant, listPublishableKeys });
     // Introspection's two grant/session reads, resolved here rather than in
@@ -644,6 +652,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       redirectStillRegistered,
       tls,
       ...passkeyLogin,
+      pageLocales,
       listPublishableKeys,
       scopesNamed,
       resolveClient: (tenantId, oauthClientId) =>
@@ -748,6 +757,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       authenticatedSubject: authenticatedSubjectOf,
       tls,
       ...passkeyLogin,
+      pageLocales,
       beginTotpEnrolment: startTotpEnrolment,
       beginRecoveryCodes: startRecoveryCodes,
       ...passkeyEnrolment,
@@ -831,6 +841,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       beginTotpEnrolment: startTotpEnrolment,
       beginRecoveryCodes: startRecoveryCodes,
       ...passkeyEnrolment,
+      pageLocales,
       resolveClientId,
       consentContext,
       recordConsent: (tenantId, subjectId, clientId, scopeIds) =>

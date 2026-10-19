@@ -45,6 +45,10 @@ export interface DiscoveryDocument {
   readonly revocation_endpoint_auth_methods_supported: readonly string[];
   readonly authorization_response_iss_parameter_supported: boolean;
   readonly claims_parameter_supported: boolean;
+  // OIDC Discovery §3: the languages this server's own pages are written in.
+  // `claims_locales_supported` is deliberately absent: the parameter is
+  // accepted and ignored, and advertising it would promise otherwise.
+  readonly ui_locales_supported: readonly string[];
   // Fixed true: a client opts into logout per client, not per tenant, and
   // `sid` always travels in the logout token and in the front-channel
   // redirect of a client that registered `..._session_required`.
@@ -68,6 +72,9 @@ export interface DiscoveryDocumentOptions {
   // /authorize and to the claim mapper registry, which is what stops drift.
   readonly claimsSupported: readonly string[];
   readonly scopesSupported: readonly string[];
+  // The tags the server's pages ship a catalogue for, the same list page
+  // negotiation matches a request's preference against.
+  readonly uiLocalesSupported: readonly string[];
   // The tenant's active key's algorithm plus `none`.
   readonly userinfoSigningAlgSupported: readonly string[];
   // Fixed by the installed jose, not by any tenant's own data.
@@ -129,6 +136,7 @@ export function discoveryDocument(opts: DiscoveryDocumentOptions): DiscoveryDocu
     revocation_endpoint_auth_methods_supported: introspectionAndRevocationMethods,
     authorization_response_iss_parameter_supported: true,
     claims_parameter_supported: true,
+    ui_locales_supported: opts.uiLocalesSupported,
     backchannel_logout_supported: true,
     backchannel_logout_session_supported: true,
     frontchannel_logout_supported: true,

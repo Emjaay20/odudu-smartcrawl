@@ -56,6 +56,11 @@ values that make later conformance testing predictable:
   answer 404 (`packages/protocol-oidc/src/usecase/discovery.ts`, ADR 0026).
 - `scopes_supported` always lists `openid`, per §3's unconditional
   requirement that the server support the `openid` scope value.
+- `ui_locales_supported` lists the tags the server's own pages ship text
+  for, `["en"]` until a catalogue is added, and is the same list page
+  negotiation matches `ui_locales` against. `claims_locales_supported` is
+  never published: `claims_locales` is accepted and ignored, and advertising
+  it would promise a claim language the server does not choose (ADR 0043).
 
 ## Clause table
 

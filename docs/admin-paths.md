@@ -7939,6 +7939,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 1286
 Date: Wed, 14 Oct 2026 00:41:01 GMT
 Connection: keep-alive

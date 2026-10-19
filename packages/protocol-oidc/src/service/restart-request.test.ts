@@ -53,6 +53,24 @@ describe('restartAuthorizeLocation', () => {
     expect(url.searchParams.has('resource')).toBe(false);
   });
 
+  it('rebuilds ui_locales from the parked request', () => {
+    const url = parse(
+      restartAuthorizeLocation('acme', { ...PENDING, uiLocales: ['fr-CA', 'fr', 'en'] }),
+    );
+    expect(url.searchParams.get('ui_locales')).toBe('fr-CA fr en');
+  });
+
+  it('rebuilds without ui_locales when the request carried none', () => {
+    expect(parse(restartAuthorizeLocation('acme', PENDING)).searchParams.has('ui_locales')).toBe(
+      false,
+    );
+    expect(
+      parse(restartAuthorizeLocation('acme', { ...PENDING, uiLocales: [] })).searchParams.has(
+        'ui_locales',
+      ),
+    ).toBe(false);
+  });
+
   it('carries prompt, max_age and a single resource', () => {
     const url = parse(
       restartAuthorizeLocation('acme', {

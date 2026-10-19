@@ -8,8 +8,41 @@ const scopesForTenant = () => Promise.resolve(['profile', 'openid', 'email']);
 const algorithmsAvailable = () => Promise.resolve(['RS256']);
 const userinfoEncryptionAlgSupported = ['RSA-OAEP-256'];
 const userinfoEncryptionEncSupported = ['A128CBC-HS256'];
+const uiLocalesSupported = ['en'];
 
 describe('resolveDiscoveryDocument', () => {
+  it('lists ui_locales_supported and omits claims_locales_supported', async () => {
+    const doc = await resolveDiscoveryDocument(
+      {
+        findTenant: () =>
+          Promise.resolve({
+            id: 'r1',
+            enabled: true,
+            verifyEmail: false,
+            ssoSessionMaxSeconds: 36_000,
+            ssoSessionIdleSeconds: 1_800,
+            rememberMeIdleSeconds: 604_800,
+            rememberMeMaxSeconds: 2_592_000,
+            rememberMeAllowed: false,
+            loginWithEmail: false,
+            maxSessionsPerBrowser: 25,
+            clientRegistrationPolicy: 'disabled',
+          }),
+        claimNames,
+        scopesForTenant,
+        algorithmsAvailable,
+        userinfoEncryptionAlgSupported,
+        userinfoEncryptionEncSupported,
+        trustProxy: false,
+        uiLocalesSupported: ['en', 'fr'],
+      },
+      'acme',
+      'https://idp.example',
+    );
+    expect(doc?.ui_locales_supported).toEqual(['en', 'fr']);
+    expect(doc).not.toHaveProperty('claims_locales_supported');
+  });
+
   it('returns null for an unknown tenant', async () => {
     const doc = await resolveDiscoveryDocument(
       {
@@ -20,6 +53,7 @@ describe('resolveDiscoveryDocument', () => {
         userinfoEncryptionAlgSupported,
         userinfoEncryptionEncSupported,
         trustProxy: false,
+        uiLocalesSupported,
       },
       'no-such-tenant',
       'https://idp.example',
@@ -50,6 +84,7 @@ describe('resolveDiscoveryDocument', () => {
         userinfoEncryptionAlgSupported,
         userinfoEncryptionEncSupported,
         trustProxy: false,
+        uiLocalesSupported,
       },
       'disabled-tenant',
       'https://idp.example',
@@ -79,6 +114,7 @@ describe('resolveDiscoveryDocument', () => {
         userinfoEncryptionAlgSupported,
         userinfoEncryptionEncSupported,
         trustProxy: false,
+        uiLocalesSupported,
       },
       'disabled-tenant',
       'https://idp.example',
@@ -110,6 +146,7 @@ describe('resolveDiscoveryDocument', () => {
         userinfoEncryptionAlgSupported,
         userinfoEncryptionEncSupported,
         trustProxy: false,
+        uiLocalesSupported,
       },
       'acme',
       'https://idp.example',
@@ -140,6 +177,7 @@ describe('resolveDiscoveryDocument', () => {
         userinfoEncryptionAlgSupported,
         userinfoEncryptionEncSupported,
         trustProxy: false,
+        uiLocalesSupported,
       },
       'acme',
       'https://idp.example',
@@ -170,6 +208,7 @@ describe('resolveDiscoveryDocument', () => {
         userinfoEncryptionAlgSupported,
         userinfoEncryptionEncSupported,
         trustProxy: false,
+        uiLocalesSupported,
       },
       'acme',
       'https://idp.example',
@@ -210,6 +249,7 @@ describe('resolveDiscoveryDocument', () => {
           userinfoEncryptionAlgSupported,
           userinfoEncryptionEncSupported,
           trustProxy: false,
+          uiLocalesSupported,
         },
         'acme',
         'https://idp.example',
@@ -249,6 +289,7 @@ describe('resolveDiscoveryDocument', () => {
           userinfoEncryptionAlgSupported,
           userinfoEncryptionEncSupported,
           trustProxy,
+          uiLocalesSupported,
         },
         'acme',
         'https://idp.example',
@@ -282,6 +323,7 @@ describe('resolveDiscoveryDocument', () => {
         userinfoEncryptionAlgSupported,
         userinfoEncryptionEncSupported,
         trustProxy: false,
+        uiLocalesSupported,
       },
       'acme',
       'https://idp.example',
@@ -312,6 +354,7 @@ describe('resolveDiscoveryDocument', () => {
         userinfoEncryptionAlgSupported,
         userinfoEncryptionEncSupported,
         trustProxy: false,
+        uiLocalesSupported,
       },
       'acme',
       'https://idp.example',
@@ -343,6 +386,7 @@ describe('resolveDiscoveryDocument', () => {
         userinfoEncryptionAlgSupported,
         userinfoEncryptionEncSupported,
         trustProxy: false,
+        uiLocalesSupported,
       },
       'acme',
       'https://idp.example',
@@ -373,6 +417,7 @@ describe('resolveDiscoveryDocument', () => {
         userinfoEncryptionAlgSupported,
         userinfoEncryptionEncSupported,
         trustProxy: false,
+        uiLocalesSupported,
       },
       'acme',
       'https://idp.example',

@@ -67,6 +67,7 @@ export function registerRequiredActionRoute(
           tenantName,
           authSessionId,
           renderUpdatePasswordPage(tenantName, authSessionId, [PASSWORD_TOO_LONG.message]),
+          reply,
         ),
       );
     }
@@ -122,6 +123,7 @@ export function registerRequiredActionRoute(
           tenantName,
           outcome.authSessionId,
           renderUpdatePasswordPage(tenantName, outcome.authSessionId, outcome.violations),
+          reply,
         ),
       );
     }
@@ -131,7 +133,7 @@ export function registerRequiredActionRoute(
       return sendHtml(reply, 400, renderAuthorizeErrorPage('invalid_request', 'Unknown tenant.'));
     }
     const resumable = (page: RenderedPage) =>
-      continuing(deps, tenantName, outcome.authSessionId, page);
+      continuing(deps, tenantName, outcome.authSessionId, page, reply);
 
     // The action is done, so the parked login resumes where it stopped:
     // nothing it already proved is asked for again, and whatever it still

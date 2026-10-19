@@ -18,12 +18,27 @@ const doc = discoveryDocument({
   issuer: 'https://idp.example/tenants/acme',
   claimsSupported: CLAIMS_SUPPORTED,
   scopesSupported: SCOPES_SUPPORTED,
+  uiLocalesSupported: ['en'],
   userinfoSigningAlgSupported: USERINFO_SIGNING_ALG_SUPPORTED,
   userinfoEncryptionAlgSupported: USERINFO_ENCRYPTION_ALG_SUPPORTED,
   userinfoEncryptionEncSupported: USERINFO_ENCRYPTION_ENC_SUPPORTED,
 });
 
 describe('[OIDC-DISCOVERY-3-01] the discovery document', () => {
+  it('lists ui_locales_supported and omits claims_locales_supported', () => {
+    const shipped = discoveryDocument({
+      issuer: 'https://idp.example/tenants/acme',
+      claimsSupported: CLAIMS_SUPPORTED,
+      scopesSupported: SCOPES_SUPPORTED,
+      uiLocalesSupported: ['en', 'fr'],
+      userinfoSigningAlgSupported: USERINFO_SIGNING_ALG_SUPPORTED,
+      userinfoEncryptionAlgSupported: USERINFO_ENCRYPTION_ALG_SUPPORTED,
+      userinfoEncryptionEncSupported: USERINFO_ENCRYPTION_ENC_SUPPORTED,
+    });
+    expect(shipped.ui_locales_supported).toEqual(['en', 'fr']);
+    expect(shipped).not.toHaveProperty('claims_locales_supported');
+  });
+
   it('advertises only the code response type', () => {
     expect(doc.response_types_supported).toEqual(['code']);
   });
@@ -74,6 +89,7 @@ describe('[OIDC-DISCOVERY-3-01] the discovery document', () => {
       issuer: 'https://idp.example/tenants/acme',
       claimsSupported: CLAIMS_SUPPORTED,
       scopesSupported: SCOPES_SUPPORTED,
+      uiLocalesSupported: ['en'],
       userinfoSigningAlgSupported: USERINFO_SIGNING_ALG_SUPPORTED,
       userinfoEncryptionAlgSupported: USERINFO_ENCRYPTION_ALG_SUPPORTED,
       userinfoEncryptionEncSupported: USERINFO_ENCRYPTION_ENC_SUPPORTED,
@@ -110,6 +126,7 @@ describe('[OIDC-DISCOVERY-3-01] the discovery document', () => {
       issuer: 'https://idp.example/tenants/acme/',
       claimsSupported: CLAIMS_SUPPORTED,
       scopesSupported: SCOPES_SUPPORTED,
+      uiLocalesSupported: ['en'],
       userinfoSigningAlgSupported: USERINFO_SIGNING_ALG_SUPPORTED,
       userinfoEncryptionAlgSupported: USERINFO_ENCRYPTION_ALG_SUPPORTED,
       userinfoEncryptionEncSupported: USERINFO_ENCRYPTION_ENC_SUPPORTED,
@@ -167,6 +184,7 @@ describe('[OIDC-DISCOVERY-3-01] the discovery document', () => {
       issuer: 'https://idp.example/tenants/acme',
       claimsSupported: CLAIMS_SUPPORTED,
       scopesSupported: SCOPES_SUPPORTED,
+      uiLocalesSupported: ['en'],
       userinfoSigningAlgSupported: USERINFO_SIGNING_ALG_SUPPORTED,
       userinfoEncryptionAlgSupported: USERINFO_ENCRYPTION_ALG_SUPPORTED,
       userinfoEncryptionEncSupported: USERINFO_ENCRYPTION_ENC_SUPPORTED,
@@ -196,6 +214,7 @@ describe('[OIDC-DISCOVERY-4.2-01] a metadata claim with zero elements', () => {
       issuer: 'https://idp.example/tenants/acme',
       claimsSupported: [],
       scopesSupported: [],
+      uiLocalesSupported: ['en'],
       userinfoSigningAlgSupported: USERINFO_SIGNING_ALG_SUPPORTED,
       userinfoEncryptionAlgSupported: USERINFO_ENCRYPTION_ALG_SUPPORTED,
       userinfoEncryptionEncSupported: USERINFO_ENCRYPTION_ENC_SUPPORTED,

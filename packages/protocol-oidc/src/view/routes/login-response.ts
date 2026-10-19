@@ -76,7 +76,11 @@ export async function sendLoginOutcome(
           },
       tenant?.loginWithEmail ?? false,
     );
-    return sendHtml(reply, 200, await continuing(deps, tenantName, outcome.authSessionId, page));
+    return sendHtml(
+      reply,
+      200,
+      await continuing(deps, tenantName, outcome.authSessionId, page, reply),
+    );
   }
 
   // No location header and no code: the assertion this state exists to
@@ -111,7 +115,11 @@ export async function sendLoginOutcome(
       optionalScopes: outcome.optionalScopes,
       alreadyGranted: outcome.alreadyGranted,
     });
-    return sendHtml(reply, 200, await continuing(deps, tenantName, outcome.authSessionId, page));
+    return sendHtml(
+      reply,
+      200,
+      await continuing(deps, tenantName, outcome.authSessionId, page, reply),
+    );
   }
 
   const written = sessionCookies({

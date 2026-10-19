@@ -730,6 +730,9 @@ importers:
       '@odudu/domain-tenant':
         specifier: workspace:*
         version: link:../domain-tenant
+      '@odudu/i18n':
+        specifier: workspace:*
+        version: link:../i18n
       '@odudu/kernel':
         specifier: workspace:*
         version: link:../kernel

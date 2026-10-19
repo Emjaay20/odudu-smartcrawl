@@ -1,6 +1,6 @@
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
-import { INSTRUMENT_STYLESHEET, pageHeaders, reloadOnRestore } from '#/page';
+import { INSTRUMENT_STYLESHEET, pageHeaders, reloadOnRestore, withLocale } from '#/page';
 
 const headerMap = (page: Parameters<typeof pageHeaders>[0]): Record<string, string> =>
   Object.fromEntries(pageHeaders(page).map(([name, value]) => [name, value]));
@@ -11,6 +11,7 @@ const MARKUP_ONLY_PAGE = {
   title: 'Untitled',
   script: null,
   frames: [],
+  locale: { tag: 'en', dir: 'ltr' as const },
 };
 
 describe('the headers every rendered page carries', () => {
@@ -35,7 +36,7 @@ describe('the headers every rendered page carries', () => {
     expect(INSTRUMENT_STYLESHEET).toBe('/instrument/instrument.css');
   });
 
-  it('sends exactly five headers, one of them forbidding a sniffed content type', () => {
+  it('sends exactly six headers, one of them forbidding a sniffed content type', () => {
     const headers = headerMap(MARKUP_ONLY_PAGE);
     expect(headers['content-security-policy']).toBe(
       [
@@ -50,6 +51,7 @@ describe('the headers every rendered page carries', () => {
     );
     expect(Object.keys(headers).sort()).toEqual([
       'cache-control',
+      'content-language',
       'content-security-policy',
       'referrer-policy',
       'x-content-type-options',
@@ -59,6 +61,13 @@ describe('the headers every rendered page carries', () => {
     expect(headers['x-frame-options']).toBe('DENY');
     expect(headers['referrer-policy']).toBe('no-referrer');
     expect(headers['cache-control']).toBe('no-store');
+  });
+
+  it('sends Content-Language from the negotiated locale', () => {
+    expect(headerMap(MARKUP_ONLY_PAGE)['content-language']).toBe('en');
+    expect(
+      headerMap({ ...MARKUP_ONLY_PAGE, locale: { tag: 'ar-EG', dir: 'rtl' } })['content-language'],
+    ).toBe('ar-EG');
   });
 
   it('carries the framing defence and the referrer policy on every page', () => {
@@ -86,6 +95,7 @@ describe('the headers every rendered page carries', () => {
       title: 'Untitled',
       script: { nonce: 'abc', fetchesSameOrigin: false },
       frames: [],
+      locale: { tag: 'en', dir: 'ltr' as const },
     })['content-security-policy'];
     expect(csp).toContain("script-src 'nonce-abc'");
     expect(csp).not.toContain('connect-src');
@@ -98,6 +108,7 @@ describe('the headers every rendered page carries', () => {
       title: 'Untitled',
       script: { nonce: 'abc', fetchesSameOrigin: true },
       frames: [],
+      locale: { tag: 'en', dir: 'ltr' as const },
     })['content-security-policy'];
     expect(csp).toContain("connect-src 'self'");
   });
@@ -205,6 +216,7 @@ describe('reloading a form restored from the back/forward cache', () => {
     title: 'Sign in',
     script: null,
     frames: [],
+    locale: { tag: 'en', dir: 'ltr' as const },
   };
   const SCRIPT_ELEMENT =
     /<script nonce="([^"]+)">[^<]*pageshow[^<]*persisted[^<]*reload\(\)[^<]*<\/script>/u;
@@ -260,6 +272,7 @@ describe('what the reload script does when run', () => {
     title: 'Sign in',
     script: null,
     frames: [],
+    locale: { tag: 'en', dir: 'ltr' as const },
   };
 
   function run(): { fire(persisted: boolean): void; reloads: () => number } {
@@ -292,5 +305,29 @@ describe('what the reload script does when run', () => {
     expect(page.reloads()).toBe(0);
     page.fire(true);
     expect(page.reloads()).toBe(1);
+  });
+});
+
+describe('withLocale', () => {
+  const rendered = {
+    ...MARKUP_ONLY_PAGE,
+    html: '<!doctype html>\n<html lang="en" dir="ltr">\n<head></head>\n<body></body>\n</html>',
+  };
+
+  it('rewrites the document element and the page locale together', () => {
+    const localized = withLocale(rendered, { tag: 'ar', dir: 'rtl' });
+    expect(localized.locale).toEqual({ tag: 'ar', dir: 'rtl' });
+    expect(localized.html).toContain('<html lang="ar" dir="rtl">');
+    expect(localized.html).not.toContain('lang="en"');
+  });
+
+  it('refuses a tag that could break out of the attribute or the header', () => {
+    for (const tag of ['en"><script>', 'en\r\nX: y', '', 'x'.repeat(36)]) {
+      expect(() => withLocale(rendered, { tag, dir: 'ltr' })).toThrow();
+    }
+  });
+
+  it('refuses a page whose document element it cannot find', () => {
+    expect(() => withLocale(MARKUP_ONLY_PAGE, { tag: 'fr', dir: 'ltr' })).toThrow();
   });
 });

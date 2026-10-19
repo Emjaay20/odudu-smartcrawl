@@ -54,7 +54,7 @@ export async function sendRequiredActionPage(
   action: RequiredAction,
 ): Promise<FastifyReply> {
   const send = async (page: RenderedPage) =>
-    sendHtml(reply, 200, await continuing(deps, tenantName, authSessionId, page));
+    sendHtml(reply, 200, await continuing(deps, tenantName, authSessionId, page, reply));
   const beginPasskey = deps.beginPasskeyEnrolment?.bind(deps);
   if (action === 'configure-passkey' && beginPasskey !== undefined) {
     const tenant = await deps.findTenant(tenantName);

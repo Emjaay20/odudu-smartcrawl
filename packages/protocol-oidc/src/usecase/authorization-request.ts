@@ -29,6 +29,7 @@ import {
   type ClaimsRequest,
 } from '#/service/claims-request';
 import { normalizeAuthorizeQuery } from '#/service/query-normalization';
+import { parseUiLocales } from '#/service/ui-locales';
 import { parseResource } from '#/service/resource-indicator';
 import {
   decideConsentGate,
@@ -356,6 +357,10 @@ export async function handleAuthorizationRequest(
   // and the client's `default_max_age` stands in where it carries none.
   const maxAge = outcome.maxAge ?? resolved.config?.defaultMaxAge ?? null;
 
+  // OIDC Core §3.1.2.1: a preference, never an error, so nothing about it
+  // can refuse the request; it is parked for the pages' language.
+  const uiLocales = parseUiLocales(params.ui_locales);
+
   // OIDC Core §5.5. Parsed below the §4.1.2.1 boundary, same as `resource`
   // above: a malformed parameter is reported at the client's own
   // redirect_uri, not rendered.
@@ -491,6 +496,7 @@ export async function handleAuthorizationRequest(
       const { authSessionId } = await deps.startAuthentication(tenant.id, {
         ...request,
         prompt: [...outcome.prompts],
+        ...(uiLocales.length > 0 ? { uiLocales } : {}),
         ...(hintSubject !== null ? { idTokenHintSubject: hintSubject } : {}),
         ...(claimsSubject !== null ? { claimsSubject } : {}),
         reuseSessionId: resolvedSession.id,
@@ -577,6 +583,7 @@ export async function handleAuthorizationRequest(
     const { authSessionId } = await deps.startAuthentication(tenant.id, {
       ...request,
       prompt: [...outcome.prompts],
+      ...(uiLocales.length > 0 ? { uiLocales } : {}),
       ...(hintSubject !== null ? { idTokenHintSubject: hintSubject } : {}),
       ...(claimsSubject !== null ? { claimsSubject } : {}),
       // Re-checked against whichever session is posted back — see
@@ -629,6 +636,7 @@ export async function handleAuthorizationRequest(
     // this login completes, still sees `prompt=consent` the way it would
     // have at the moment this request first arrived.
     prompt: [...outcome.prompts],
+    ...(uiLocales.length > 0 ? { uiLocales } : {}),
     resource: [...audience],
     claims,
   });

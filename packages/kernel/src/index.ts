@@ -4,10 +4,12 @@ export { type Clock, systemClock, FakeClock } from '#/clock';
 export { isUuid, newId, scriptNonce } from '#/ids';
 export {
   INSTRUMENT_STYLESHEET,
+  type PageLocale,
   type PageScript,
   type RenderedPage,
   pageHeaders,
   reloadOnRestore,
+  withLocale,
 } from '#/page';
 export {
   MAX_PASSWORD_LENGTH,

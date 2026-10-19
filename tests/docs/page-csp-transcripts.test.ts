@@ -52,6 +52,7 @@ function pageOf(policy: string): RenderedPage {
         ? null
         : { nonce, fetchesSameOrigin: sources(directives, 'connect-src') !== undefined },
     frames: sources(directives, 'frame-src') ?? [],
+    locale: { tag: 'en', dir: 'ltr' },
     ...(formAction[1] === undefined ? {} : { redirectsTo: formAction[1] }),
   };
 }

@@ -1,4 +1,9 @@
-import { INSTRUMENT_STYLESHEET, type PageScript, type RenderedPage } from '@odudu/kernel';
+import {
+  INSTRUMENT_STYLESHEET,
+  type PageLocale,
+  type PageScript,
+  type RenderedPage,
+} from '@odudu/kernel';
 
 // Duplicated per package deliberately, the same choice
 // packages/protocol-oidc/src/view/document.ts makes: a package's view layer
@@ -14,12 +19,6 @@ export function escapeHtml(value: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
-}
-
-// Structural until the i18n package defines the real type.
-export interface PageLocale {
-  readonly tag: string;
-  readonly dir: 'ltr' | 'rtl';
 }
 
 const DEFAULT_LOCALE: PageLocale = { tag: 'en', dir: 'ltr' };
@@ -47,6 +46,7 @@ export function page(
     body,
     script,
     frames,
+    locale,
     html: `<!doctype html>
 <html lang="${escapeHtml(locale.tag)}" dir="${escapeHtml(locale.dir)}">
 <head>

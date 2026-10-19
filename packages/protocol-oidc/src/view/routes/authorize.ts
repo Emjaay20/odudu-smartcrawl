@@ -99,7 +99,11 @@ async function renderAuthorizationOutcome(
       authSessionId: outcome.authSessionId,
       accounts: outcome.accounts,
     });
-    return sendHtml(reply, 200, await continuing(deps, tenant, outcome.authSessionId, form(page)));
+    return sendHtml(
+      reply,
+      200,
+      await continuing(deps, tenant, outcome.authSessionId, form(page), reply),
+    );
   }
 
   // A reused session that still needs consent: the same page the form path
@@ -116,7 +120,11 @@ async function renderAuthorizationOutcome(
       optionalScopes: outcome.optionalScopes,
       alreadyGranted: outcome.alreadyGranted,
     });
-    return sendHtml(reply, 200, await continuing(deps, tenant, outcome.authSessionId, form(page)));
+    return sendHtml(
+      reply,
+      200,
+      await continuing(deps, tenant, outcome.authSessionId, form(page), reply),
+    );
   }
 
   const page = renderLoginForm(
@@ -128,7 +136,11 @@ async function renderAuthorizationOutcome(
     undefined,
     outcome.loginWithEmail,
   );
-  return sendHtml(reply, 200, await continuing(deps, tenant, outcome.authSessionId, form(page)));
+  return sendHtml(
+    reply,
+    200,
+    await continuing(deps, tenant, outcome.authSessionId, form(page), reply),
+  );
 }
 
 // OIDC Core §3.1.2 requires both methods; they differ only in where the

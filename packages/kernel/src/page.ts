@@ -14,6 +14,14 @@ export interface PageScript {
   fetchesSameOrigin: boolean;
 }
 
+// The language a page is written in and the direction it reads. Negotiated
+// per response by @odudu/i18n; declared here because the transport-free
+// kernel cannot import it, and the two shapes are structurally identical.
+export interface PageLocale {
+  readonly tag: string;
+  readonly dir: 'ltr' | 'rtl';
+}
+
 export interface RenderedPage {
   // The whole document, as the server sends it today.
   html: string;
@@ -24,6 +32,8 @@ export interface RenderedPage {
   // The document's title, so a theme's own shell can set one.
   title: string;
   script: PageScript | null;
+  // Rendered into `<html lang dir>` and sent as `Content-Language`.
+  locale: PageLocale;
   // The exact origins this page's own markup frames. `frame-src` is derived
   // from it, so a policy can never license an origin the markup does not
   // embed, nor refuse one it does — the failure mode ADR 0018's amendment
@@ -138,6 +148,7 @@ export function pageHeaders(page: RenderedPage): readonly (readonly [string, str
     // The page's own type is the one it is served as; a browser has no
     // business guessing another from its bytes.
     ['x-content-type-options', 'nosniff'],
+    ['content-language', page.locale.tag],
   ];
 }
 
@@ -163,5 +174,28 @@ export function reloadOnRestore(page: RenderedPage): RenderedPage {
         : `${page.html.slice(0, end)}${element}\n${page.html.slice(end)}`,
     body: `${page.body}\n${element}`,
     script: page.script ?? { nonce, fetchesSameOrigin: false },
+  };
+}
+
+// What may reach an attribute and a header: a tag from the negotiated list
+// has this shape already, and a value that does not is a bug, not input.
+const DIRECTIONS: ReadonlySet<string> = new Set(['ltr', 'rtl']);
+const SAFE_TAG = /^[A-Za-z0-9-]{1,35}$/u;
+const DOCUMENT_ELEMENT = /^(<!doctype html>\n)<html lang="[^"]*" dir="[^"]*">/u;
+
+// Re-targets a rendered page at the locale negotiated for this response. The
+// renderers know no request, so a page is built in the default locale and
+// the route that negotiated says which one it was shown in.
+export function withLocale(page: RenderedPage, locale: PageLocale): RenderedPage {
+  if (!SAFE_TAG.test(locale.tag) || !DIRECTIONS.has(locale.dir)) {
+    throw new Error('refusing to render an unvalidated locale');
+  }
+  if (!DOCUMENT_ELEMENT.test(page.html)) {
+    throw new Error('the page has no document element to localise');
+  }
+  return {
+    ...page,
+    locale,
+    html: page.html.replace(DOCUMENT_ELEMENT, `$1<html lang="${locale.tag}" dir="${locale.dir}">`),
   };
 }

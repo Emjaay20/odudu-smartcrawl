@@ -206,6 +206,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 3038
 Date: Wed, 14 Oct 2026 00:39:57 GMT
 Connection: keep-alive
@@ -557,6 +558,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 722
 Date: Mon, 19 Oct 2026 02:02:53 GMT
 Connection: keep-alive
@@ -651,6 +653,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 722
 Date: Mon, 19 Oct 2026 02:02:53 GMT
 Connection: keep-alive
@@ -860,6 +863,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 722
 Date: Wed, 14 Oct 2026 00:39:03 GMT
 Connection: keep-alive
@@ -1016,6 +1020,7 @@ x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
+content-language: en
 content-length: 722
 Date: Wed, 14 Oct 2026 00:39:04 GMT
 Connection: keep-alive

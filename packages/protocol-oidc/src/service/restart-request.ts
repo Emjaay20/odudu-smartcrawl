@@ -55,6 +55,9 @@ export function restartAuthorizeLocation(
     query.set('prompt', pending.prompt.join(' '));
   }
   if (pending.maxAge !== undefined) query.set('max_age', String(pending.maxAge));
+  if (pending.uiLocales !== undefined && pending.uiLocales.length > 0) {
+    query.set('ui_locales', pending.uiLocales.join(' '));
+  }
   // Several resolved audiences mean the client sent none and the registered
   // list applied; naming them all would be refused as invalid_target.
   if (pending.resource?.length === 1) query.set('resource', pending.resource[0] ?? '');

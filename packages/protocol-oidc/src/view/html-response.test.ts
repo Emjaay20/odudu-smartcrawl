@@ -87,6 +87,7 @@ async function headersOf(
       title: 'Test page',
       script: script ?? null,
       frames: [],
+      locale: { tag: 'en', dir: 'ltr' },
     }),
   );
   const res = await app.inject({ url: '/page' });
