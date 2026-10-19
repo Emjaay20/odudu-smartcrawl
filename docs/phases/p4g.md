@@ -1103,7 +1103,14 @@ the sign-in page followed the operating system and was dark.
 - **Not a secret and not an identifier.** It holds one of two constants, is not
   `HttpOnly` (the console's script writes it), names nobody, and is read by the
   pages only to choose a stylesheet branch. It is the console's own origin, the
-  one the gateway serves the pages from, so it needs no `Domain`. A planted or
+  one the gateway serves the pages from, so it needs no `Domain`; that holds
+  because `ODUDU_PUBLIC_BASE_URL` serves both, and is not a guarantee if the
+  console is ever served from another host. The browser sends it with every
+  request to that origin, `/token` and the administration API included, which
+  is harmless for a value that names a colour. The 8,192-character cap on the
+  `Cookie` header means a person whose header is longer silently gets no theme.
+  At start the console writes the cookie from the stored choice and leaves an
+  existing one alone when storage cannot be read. A planted or
   stale value can only change the colour of the page it is sent to.
 - **The server reads it in one place.** `pageThemeFromCookies` (`@odudu/kernel`,
   beside `pageHeaders`) takes exactly one cookie of that name whose value is
@@ -1157,3 +1164,13 @@ image` (0 then 9 per index part). The test now asserts the nine sections are in 
   `verify` runs through turbo (about two builds, seconds each); its value is Chromium. The
   plan's text still says `dist-pages` and `dist-image` (D4, Task 31b, Task 35's guard b);
   the output is `dist/pages` and `dist/image`.
+
+- **Two console tests fail when run alone under the root `dom` project.**
+  `apps/admin-console/src/shared/transport/gateway.test.ts` ("refuses a path
+  that would leave /console/api/") and
+  `apps/admin-console/src/shared/repository/useWrite.test.tsx` ("throws a
+  rejection from a plain write...") fail with an empty message under
+  `vitest run --project dom <file>`, and pass under the package's own `pnpm test`,
+  which is what CI runs. Confirmed unrelated to the theme work on 16cdf4e9,
+  before it. Cause not found. Owner: the CI-speed task, which changes how the
+  console's tests are run and has to settle one way of running them.

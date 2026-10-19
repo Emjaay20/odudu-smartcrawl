@@ -87,4 +87,14 @@ describe('the remembered theme', () => {
     applyRememberedTheme();
     expect(document.cookie).not.toContain('odudu-theme');
   });
+
+  it('keeps a cookie written earlier when storage cannot be read at start', () => {
+    document.cookie = 'odudu-theme=dark; Path=/';
+    vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
+      throw new DOMException('denied', 'SecurityError');
+    });
+    applyRememberedTheme();
+    expect(document.cookie).toContain('odudu-theme=dark');
+    expect(root.dataset.theme).toBeUndefined();
+  });
 });

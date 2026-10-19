@@ -1,7 +1,12 @@
 import { type PendingRequest } from '@odudu/authn-flows';
 import Fastify from 'fastify';
 import { describe, expect, it } from 'vitest';
-import { continuation, type ContinuationDeps, type PageSubject } from '#/view/routes/continuation';
+import {
+  continuation,
+  requestLocale,
+  type ContinuationDeps,
+  type PageSubject,
+} from '#/view/routes/continuation';
 import { page } from '#/view/document';
 
 const PENDING: PendingRequest = {
@@ -147,5 +152,30 @@ describe('continuation clientName', () => {
         }),
       ),
     ).toBeUndefined();
+  });
+});
+
+describe('the theme the request carries', () => {
+  async function themes(cookie: string | undefined): Promise<(string | undefined)[]> {
+    const app = Fastify();
+    const seen: (string | undefined)[] = [];
+    app.get('/', async (_request, reply) => {
+      seen.push((await continuation(deps(), 'acme', 'a1', reply)).locale.theme);
+      seen.push((await continuation(deps(), 'acme', 'a1', reply, 'authenticated')).locale.theme);
+      seen.push(requestLocale(reply).theme);
+      return reply.send('ok');
+    });
+    await app.inject({ url: '/', ...(cookie === undefined ? {} : { headers: { cookie } }) });
+    await app.close();
+    return seen;
+  }
+
+  it('reaches the locale of a continuation and of a request alone', async () => {
+    expect(await themes('odudu-theme=dark')).toEqual(['dark', 'dark', 'dark']);
+  });
+
+  it('is absent without the cookie or with one off the allowlist', async () => {
+    expect(await themes(undefined)).toEqual([undefined, undefined, undefined]);
+    expect(await themes('odudu-theme=LIGHT')).toEqual([undefined, undefined, undefined]);
   });
 });

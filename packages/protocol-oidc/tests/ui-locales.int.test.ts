@@ -252,6 +252,32 @@ describe("the person's light or dark choice reaches the pages", () => {
     expect(res.headers['cache-control']).toBe('no-store');
   });
 
+  it("names the cookie's theme on the expired sign-in page and the rejected-attempt page", async () => {
+    const post = (authSessionId: string, password: string): Promise<LightMyRequestResponse> =>
+      http.inject({
+        method: 'POST',
+        url: `/tenants/${TENANT}/login-actions/authenticate`,
+        headers: {
+          'content-type': 'application/x-www-form-urlencoded',
+          cookie: 'odudu-theme=light',
+        },
+        payload: new URLSearchParams({
+          auth_session_id: authSessionId,
+          username: 'nobody',
+          password,
+        }).toString(),
+      });
+    const expired = await post(newId(), 'wrong');
+    expect(expired.statusCode).toBe(400);
+    expect(documentTheme(expired)).toBe('light');
+
+    const first = await authorize();
+    const authSessionId = /name="auth_session_id" value="([^"]+)"/u.exec(first.body)?.[1];
+    const rejected = await post(authSessionId ?? '', 'wrong');
+    expect(rejected.statusCode).toBe(200);
+    expect(documentTheme(rejected)).toBe('light');
+  });
+
   it('names none without the cookie, and keeps the page the same bytes as before', async () => {
     const res = await authorize();
     expect(res.statusCode).toBe(200);

@@ -112,10 +112,20 @@ describe('every negotiation of a page locale carries the theme', () => {
         const open = match.index + match[0].length - 1;
         const before = text.slice(Math.max(0, match.index - 120), match.index);
         const after = text.slice(closing(text, open) + 1, closing(text, open) + 3);
-        const wrapped = /withPageTheme\(\s*$/u.test(before) && after.startsWith(',');
-        if (!wrapped) {
+        const wrapper = /withPageTheme\(\s*$/u.exec(before);
+        let cookieArgument = false;
+        if (wrapper !== null && after.startsWith(',')) {
+          const wrapperOpen = match.index - wrapper[0].length + wrapper[0].indexOf('(');
+          const wrapperArgs = text.slice(wrapperOpen + 1, closing(text, wrapperOpen));
+          cookieArgument = /^\s*(?:reply\.)?request\.headers\.cookie\s*$/u.test(
+            lastArgument(wrapperArgs),
+          );
+        }
+        if (!cookieArgument) {
           const line = text.slice(0, match.index).split('\n').length.toString();
-          offences.push(`${file}:${line} negotiatePageLocale without withPageTheme`);
+          offences.push(
+            `${file}:${line} negotiatePageLocale not wrapped in withPageTheme(…, request.headers.cookie)`,
+          );
         }
       }
     }

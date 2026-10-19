@@ -43,11 +43,16 @@ every page's `<html>` names that value in `data-theme` and nothing else: with no
 cookie, or one holding anything but exactly `light` or `dark`, there is no
 attribute and the page follows the operating system, so the recorded documents
 below are the bytes served without it. The cookie is a preference, not a secret
-or an identifier; the pages are `no-store`, so no `Vary` is needed. Captured
-against the project `odudu-p4g-theme`, whose tenant is `e2e-mvf3mms1-a`:
+or an identifier; the pages are `no-store`, so no `Vary` is needed. Two cases
+give no theme that a reader might expect to: the name present twice (a cookie
+planted at another path or domain cannot choose), and a `Cookie` header over
+8,192 characters (the cap that bounds what a public page parses). Captured
+against the project `odudu-p4g-theme`, a new stack with the tenant `acme`
+seeded and nothing else:
 
 ```
-$ U=http://localhost:3180/tenants/e2e-mvf3mms1-a/protocol/openid-connect/logout
+$ U=http://localhost:3180/tenants/acme/protocol/openid-connect/logout
+$ PAD=$(printf 'x%.0s' $(seq 1 9000))
 $ curl -s "$U" | grep -m1 "<html"
 <html lang="en" dir="ltr">
 $ curl -s -H 'Cookie: odudu-theme=dark' "$U" | grep -m1 "<html"
@@ -56,6 +61,12 @@ $ curl -s -H 'Cookie: odudu-theme=LIGHT' "$U" | grep -m1 "<html"
 <html lang="en" dir="ltr">
 $ curl -s -H 'Cookie: odudu-theme=x"><script>' "$U" | grep -m1 "<html"
 <html lang="en" dir="ltr">
+$ curl -s -H 'Cookie: odudu-theme=light; odudu-theme=dark' "$U" | grep -m1 "<html"
+<html lang="en" dir="ltr">
+$ curl -s -H "Cookie: odudu-theme=dark; pad=$PAD" "$U" | grep -m1 "<html"
+<html lang="en" dir="ltr">
+$ curl -s -H "Cookie: pad=$(printf 'x%.0s' $(seq 1 3000)); odudu-theme=dark" "$U" | grep -m1 "<html"
+<html lang="en" dir="ltr" data-theme="dark">
 ```
 
 The text of the server's own pages now comes from a message catalogue, and a

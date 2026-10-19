@@ -15,9 +15,11 @@ export interface PageScript {
   fetchesSameOrigin: boolean;
 }
 
-// The language a page is written in and the direction it reads. Negotiated
-// per response by @odudu/i18n; declared here because the transport-free
-// kernel cannot import it, and the two shapes are structurally identical.
+// What a page is rendered for: the language it is written in and the
+// direction it reads, negotiated per response by @odudu/i18n (whose own type
+// holds those two and is assignable to this one), and the light or dark
+// choice read from the request's cookie, which i18n knows nothing of.
+// Declared here because the transport-free kernel cannot import i18n.
 export interface PageLocale {
   readonly tag: string;
   readonly dir: 'ltr' | 'rtl';
