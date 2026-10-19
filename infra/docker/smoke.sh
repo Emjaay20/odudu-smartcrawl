@@ -26,7 +26,15 @@ BASE="http://localhost:$ODUDU_HOST_PORT"
 cleanup() { docker compose down -v --remove-orphans || true; }
 trap cleanup EXIT
 
-docker compose up -d --build
+# CI builds the image against a layer cache and tags it odudu-smoke-odudu, the
+# name compose gives it; ODUDU_PREBUILT=1 starts that instead of rebuilding it.
+# If it is missing compose builds it, so the flag cannot leave a stack unbuilt.
+build_flag=(--build)
+if [ "${ODUDU_PREBUILT:-}" = "1" ]; then
+  build_flag=()
+fi
+
+docker compose up -d ${build_flag[@]+"${build_flag[@]}"}
 
 ready=0
 for _ in $(seq 1 60); do

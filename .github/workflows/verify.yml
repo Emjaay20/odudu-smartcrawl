@@ -369,24 +369,39 @@ jobs:
         with:
           persist-credentials: false
 
+      # The e2e job's first shard writes the layer cache; this job writes it
+      # only when that job is skipped, so a change to the image alone still
+      # leaves one behind.
+      - uses: ./.github/actions/image
+        with:
+          revision: ${{ github.sha }}
+          save-cache: ${{ needs.changes.outputs.server != 'true' }}
+
       # smoke.sh fails closed if infra/docker/.env is missing (ADR 0015) —
       # this is the deliberate act CI performs in its place. The console's
       # private key is made by the script, never committed in .env.example.
       - name: Bootstrap infra/docker/.env
         run: cp infra/docker/.env.example infra/docker/.env
 
-      - name: Build and smoke-test the stack
+      - name: Smoke-test the stack
         run: ./infra/docker/smoke.sh
         env:
-          ODUDU_REVISION: ${{ github.sha }}
+          ODUDU_PREBUILT: '1'
 
   # The console's flows in Chromium against the built image, signed in
-  # through the gateway. e2e/run.sh is the whole of it, locally as here.
-  e2e:
+  # through the gateway, cut into slices by Playwright's --shard. Each slice is
+  # a runner of its own with a stack of its own, so the slices share no port or
+  # database; e2e/run.sh is the whole of it, locally as here.
+  e2e-shards:
     needs: changes
     if: needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ['1/3', '2/3', '3/3']
+    name: e2e ${{ matrix.shard }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -398,23 +413,44 @@ jobs:
         with:
           package: '@odudu/admin-console'
 
+      - uses: ./.github/actions/image
+        with:
+          revision: ${{ github.sha }}
+          save-cache: ${{ strategy.job-index == 0 }}
+
       - name: Bootstrap infra/docker/.env
         run: cp infra/docker/.env.example infra/docker/.env
 
       - name: Run the console in a browser against the image
         run: ./apps/admin-console/e2e/run.sh
         env:
-          ODUDU_REVISION: ${{ github.sha }}
+          E2E_PREBUILT: '1'
+          E2E_SHARD: ${{ matrix.shard }}
 
       - name: Upload the Playwright report
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
+          name: playwright-report-${{ strategy.job-index }}
           path: |
             apps/admin-console/e2e/playwright-report
             apps/admin-console/e2e/test-results
           retention-days: 14
+
+  # One name for the slices, so a reference to `e2e` stays true. Skipped, like
+  # the slices, when `changes` found nothing the console can reach.
+  e2e:
+    needs: [changes, e2e-shards]
+    if: always() && needs.changes.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Fail if any slice failed or was cancelled
+        env:
+          RESULTS: ${{ needs.e2e-shards.result }}
+        run: |
+          echo "results: $RESULTS"
+          case "$RESULTS" in success) ;; *) exit 1 ;; esac
 
   conformance:
     needs: changes
@@ -505,6 +541,7 @@ jobs:
       - verify
       - query-plans
       - container
+      - e2e-shards
       - e2e
       - conformance
       - commit-messages

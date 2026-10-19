@@ -87,4 +87,71 @@ describe('the CI workflow', () => {
       expect(upload).toContain('if-no-files-found: error');
     }
   });
+
+  describe('the console e2e job', () => {
+    async function e2eShards(): Promise<string[]> {
+      const workflow = await read('.github/workflows/verify.yml');
+      const job = workflow.slice(workflow.indexOf('\n  e2e-shards:\n'));
+      const line = /shard: \[([^\]]*)\]/u.exec(job)?.[1] ?? '';
+      return [...line.matchAll(/'([^']*)'/gu)].map((m) => m[1] ?? '');
+    }
+
+    it('cuts the specs into slices playwright accepts, each of them run once', async () => {
+      const slices = await e2eShards();
+      expect(slices.length).toBeGreaterThan(1);
+      const totals = new Set(slices.map((s) => s.split('/')[1]));
+      expect(totals.size).toBe(1);
+      const total = Number([...totals][0]);
+      expect(slices.map((s) => Number(s.split('/')[0])).sort()).toEqual(
+        Array.from({ length: total }, (_, i) => i + 1),
+      );
+    });
+
+    it('takes the slice from the matrix alone, and run.sh passes it on to playwright', async () => {
+      const workflow = await read('.github/workflows/verify.yml');
+      expect(workflow).toContain('E2E_SHARD: ${{ matrix.shard }}');
+      expect(await read('apps/admin-console/e2e/run.sh')).toContain('--shard "$E2E_SHARD"');
+    });
+
+    it('keeps `e2e` as one job that waits for every slice and is skipped as they are', async () => {
+      const workflow = await read('.github/workflows/verify.yml');
+      const job = workflow.slice(workflow.indexOf('\n  e2e:\n'));
+      const block = job.slice(0, job.indexOf('\n  conformance:\n'));
+      expect(block).toContain('needs: [changes, e2e-shards]');
+      expect(block).toMatch(/^ {4}if: always\(\) && needs\.changes\.outputs\.server == 'true'$/mu);
+      expect(block).toContain('needs.e2e-shards.result');
+      expect(jobNames(workflow)).toContain('e2e-shards');
+    });
+
+    it('gives each slice a runner and a report of its own', async () => {
+      const workflow = await read('.github/workflows/verify.yml');
+      const job = workflow.slice(workflow.indexOf('\n  e2e-shards:\n'));
+      const block = job.slice(0, job.indexOf('\n  e2e:\n'));
+      expect(block).toContain('runs-on: ubuntu-latest');
+      expect(block).toContain('fail-fast: false');
+      expect(block).toMatch(/name: playwright-report-\$\{\{ strategy\.job-index \}\}/u);
+    });
+  });
+
+  describe('the image build', () => {
+    it('is one action both jobs that run the image use, with one writer of the cache', async () => {
+      const workflow = await read('.github/workflows/verify.yml');
+      const uses = workflow.match(/uses: \.\/\.github\/actions\/image/gu) ?? [];
+      expect(uses).toHaveLength(2);
+      expect(workflow).toContain('save-cache: ${{ strategy.job-index == 0 }}');
+      const action = await read('.github/actions/image/action.yml');
+      expect(action).toContain('cache-from: type=gha,scope=odudu-image');
+      expect(action).toContain('scope=odudu-image,mode=max');
+    });
+
+    it('tags the image with the name compose gives it in each script that starts it', async () => {
+      const action = await read('.github/actions/image/action.yml');
+      const run = await read('apps/admin-console/e2e/run.sh');
+      const smoke = await read('infra/docker/smoke.sh');
+      const e2eProject = /E2E_COMPOSE_PROJECT:-([\w-]+)/u.exec(run)?.[1];
+      const smokeProject = /COMPOSE_PROJECT_NAME=([\w-]+)/u.exec(smoke)?.[1];
+      expect(action).toContain(`${String(e2eProject)}-odudu\n`);
+      expect(action).toContain(`${String(smokeProject)}-odudu\n`);
+    });
+  });
 });
