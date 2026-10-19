@@ -5,6 +5,7 @@ import { restartAuthorizeLocation } from '#/service/restart-request';
 import { errorRedirect } from '#/usecase/login-submission';
 import { renderAuthorizeErrorPage, type WayOn } from '#/view/authorize-html';
 import { sendHtml } from '#/view/html-response';
+import { t } from '#/view/messages';
 import { type ContinuationDeps } from '#/view/routes/continuation';
 import { issuerBaseFor } from '#/view/issuer';
 
@@ -68,11 +69,6 @@ export async function sendSignInExpired(
   return sendHtml(
     reply,
     400,
-    renderAuthorizeErrorPage(
-      'invalid_request',
-      'This sign-in attempt is no longer valid. Go back and start again.',
-      wayOn,
-      locale,
-    ),
+    renderAuthorizeErrorPage('invalid_request', t(locale, 'error.signInExpired'), wayOn, locale),
   );
 }

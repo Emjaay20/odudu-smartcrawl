@@ -13,11 +13,11 @@ import {
   handleRequiredActionSubmission,
   type RequiredActionSubmissionDeps,
 } from '#/usecase/required-action-submission';
-import { renderAuthorizeErrorPage } from '#/view/authorize-html';
 import { sendSignInExpired } from '#/view/routes/expired-sign-in';
 import { sendHtml } from '#/view/html-response';
+import { sendRequestError } from '#/view/routes/request-error';
 import { issuerBaseFor } from '#/view/issuer';
-import { continuation, requestLocale } from '#/view/routes/continuation';
+import { continuation } from '#/view/routes/continuation';
 import { sendLoginOutcome, type LoginResponseDeps } from '#/view/routes/login-response';
 
 // A finished action resumes the login it was parked on through the same
@@ -96,29 +96,11 @@ export function registerRequiredActionRoute(
     }
 
     if (outcome.kind === 'not_owed') {
-      return sendHtml(
-        reply,
-        400,
-        renderAuthorizeErrorPage(
-          'invalid_request',
-          'This account has no such pending action.',
-          undefined,
-          requestLocale(reply, deps),
-        ),
-      );
+      return sendRequestError(reply, deps, 400, 'error.noPendingAction');
     }
 
     if (outcome.kind === 'unsupported') {
-      return sendHtml(
-        reply,
-        400,
-        renderAuthorizeErrorPage(
-          'invalid_request',
-          'That pending action cannot be completed here yet.',
-          undefined,
-          requestLocale(reply, deps),
-        ),
-      );
+      return sendRequestError(reply, deps, 400, 'error.pendingActionNotReady');
     }
 
     // Back to the same form with every rule it broke, and 400 for the same
@@ -143,16 +125,7 @@ export function registerRequiredActionRoute(
 
     const tenant = await deps.findTenant(tenantName);
     if (tenant === null) {
-      return sendHtml(
-        reply,
-        400,
-        renderAuthorizeErrorPage(
-          'invalid_request',
-          'Unknown tenant.',
-          undefined,
-          requestLocale(reply, deps),
-        ),
-      );
+      return sendRequestError(reply, deps, 400, 'error.unknownTenant');
     }
 
     // The action is done, so the parked login resumes where it stopped:

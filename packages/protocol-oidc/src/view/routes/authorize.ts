@@ -14,6 +14,7 @@ import { tenantIssuerFor } from '#/view/issuer';
 import { namesUnsupportedRepresentation } from '#/view/media-type';
 import { continuation, requestLocale } from '#/view/routes/continuation';
 import { sendSignInExpired } from '#/view/routes/expired-sign-in';
+import { sendRequestError } from '#/view/routes/request-error';
 import {
   sendRequiredActionPage,
   type RequiredActionResponseDeps,
@@ -220,16 +221,7 @@ async function respondToSelectAccountSubmission(
   // because it names some live session in the tenant — see
   // handleSelectAccountSubmission's own comment on why.
   if (outcome.kind === 'invalid_selection') {
-    return sendHtml(
-      reply,
-      400,
-      renderAuthorizeErrorPage(
-        'invalid_request',
-        'That account is not one this browser is currently signed in to.',
-        undefined,
-        requestLocale(reply, deps),
-      ),
-    );
+    return sendRequestError(reply, deps, 400, 'error.accountNotSignedIn');
   }
 
   return renderAuthorizationOutcome(deps, tenant, issuer, outcome, reply, false);
