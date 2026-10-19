@@ -1432,3 +1432,7 @@ error and config tables from `@odudu/kernel`, the audit vocabulary from
   an `about:blank#…` literal removed from `keys.ts` (the problem-type test fails); a code removed from
   `ERROR_CODES` (a compile error and the code test); an audit action added without a sentence; a route
   removed from the app; an OAuth error replaced in the source.
+- **`pnpm lint` needed more memory.** verified: `eslint .` over the whole repository with `apps/docs` ignored peaks at
+  4.3 GB resident and passes at Node's default heap; with the docs app's scripts and tests importing the
+  workspace sources (a second typed program over them) it ran out of heap (a V8 stack dump, exit non-zero).
+  `NODE_OPTIONS=--max-old-space-size=8192 eslint .` passes in 2 min 24 s. The `lint` script sets it.

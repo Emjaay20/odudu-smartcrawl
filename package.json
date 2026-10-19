@@ -9,7 +9,7 @@
   },
   "scripts": {
     "typecheck": "turbo run typecheck && tsc -p tests/tsconfig.json --noEmit",
-    "lint": "eslint .",
+    "lint": "NODE_OPTIONS=--max-old-space-size=8192 eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "turbo run test --concurrency=4",
