@@ -37,6 +37,27 @@ shipped); it was added to the recorded blocks by hand, after `nosniff` where
 `pageHeaders` places it, and a live login-page response on the project
 `odudu-p4g-13b` confirmed its value and position.
 
+A page follows the colour the person chose in the console. The console writes
+the cookie `odudu-theme` (`light` or `dark`; it expires it for `system`), and
+every page's `<html>` names that value in `data-theme` and nothing else: with no
+cookie, or one holding anything but exactly `light` or `dark`, there is no
+attribute and the page follows the operating system, so the recorded documents
+below are the bytes served without it. The cookie is a preference, not a secret
+or an identifier; the pages are `no-store`, so no `Vary` is needed. Captured
+against the project `odudu-p4g-theme`, whose tenant is `e2e-mvf3mms1-a`:
+
+```
+$ U=http://localhost:3180/tenants/e2e-mvf3mms1-a/protocol/openid-connect/logout
+$ curl -s "$U" | grep -m1 "<html"
+<html lang="en" dir="ltr">
+$ curl -s -H 'Cookie: odudu-theme=dark' "$U" | grep -m1 "<html"
+<html lang="en" dir="ltr" data-theme="dark">
+$ curl -s -H 'Cookie: odudu-theme=LIGHT' "$U" | grep -m1 "<html"
+<html lang="en" dir="ltr">
+$ curl -s -H 'Cookie: odudu-theme=x"><script>' "$U" | grep -m1 "<html"
+<html lang="en" dir="ltr">
+```
+
 The text of the server's own pages now comes from a message catalogue, and a
 value somebody else wrote (a client's name, an account's name, a scope label,
 an error description) is wrapped in `<bdi>` after it is escaped. Three things

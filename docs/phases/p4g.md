@@ -1083,3 +1083,44 @@ what the build of the real workspace added or changed:
 - Local cost of the added build: `pnpm --filter @odudu/docs build` runs both builds in 7 s on a warm install
   (cold cache each, `docusaurus clear` between). The minutes the `docs` job adds to CI are recorded from its
   first run on the pushed branch.
+
+## The console's theme choice reaches the server pages
+
+The console keeps a light, dark or system choice in `localStorage` and names it
+on its own `<html data-theme>`. The server's pages run no script (their policy
+is `default-src 'none'`), so after signing out of a console switched to light
+the sign-in page followed the operating system and was dark.
+
+- **The cookie `odudu-theme` is the carrier.** The console writes
+  `odudu-theme=light|dark; Path=/; SameSite=Lax; Max-Age=31536000` (plus
+  `Secure` on an https page) when a theme is chosen and expires it when the
+  choice is `system`. `applyRememberedTheme` writes it on start too, so a
+  stored choice made before the cookie existed reaches the pages without being
+  picked again. `themeCookie` (`shared/service/theme.ts`) builds the string and
+  `writeThemeCookie` (`shared/adapter/themeCookie.ts`) sets it.
+- **Not a secret and not an identifier.** It holds one of two constants, is not
+  `HttpOnly` (the console's script writes it), names nobody, and is read by the
+  pages only to choose a stylesheet branch. It is the console's own origin, the
+  one the gateway serves the pages from, so it needs no `Domain`. A planted or
+  stale value can only change the colour of the page it is sent to.
+- **The server reads it in one place.** `pageThemeFromCookies` (`@odudu/kernel`,
+  beside `pageHeaders`) takes exactly one cookie of that name whose value is
+  exactly `light` or `dark`; anything else, the name twice, a header over 8,192
+  characters or a value that is not text is no preference. Nothing from the
+  header is ever written into markup: `page()` emits `data-theme="light"` or
+  `"dark"` from a two-value allowlist. `pageHeaders` refuses a page whose
+  locale carries any other theme.
+- **The theme rides on the negotiated locale.** `PageLocale` gains an optional
+  `theme`; `requestLocale` and `continuation` in protocol-oidc, account's
+  `requestLocale` and the console gateway's refusal each pass the negotiated
+  locale through `withPageTheme`, so every renderer, which already takes the
+  locale last, gets it. `tests/lint/page-routes-negotiate-locale.test.ts` fails
+  a route file that negotiates a page locale without `withPageTheme`.
+- **No `Vary`.** Pages are `cache-control: no-store`, so no cache holds one
+  to be served under a different cookie.
+- **Markup is unchanged without the cookie**: no `data-theme` attribute is
+  written, so the recorded documents and `page-documents-transcripts` did not
+  move. The inlined brand mark is `currentColor` and follows the page. The
+  favicon file `mark.svg` keeps its own `prefers-color-scheme` rule: a document
+  loaded as an icon cannot read the page's attribute, and the browser's tab
+  strip follows the operating system anyway.

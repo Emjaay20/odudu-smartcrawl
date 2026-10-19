@@ -1,5 +1,14 @@
 import type { Page } from '@playwright/test';
-import { expect, expectAccessible, forgive, sessionTenant, signIn, test, PHONE } from './fixtures';
+import {
+  chooseTheme,
+  expect,
+  expectAccessible,
+  forgive,
+  sessionTenant,
+  signIn,
+  test,
+  PHONE,
+} from './fixtures';
 import { seeded } from './stack';
 
 const { admin, system } = seeded();
@@ -13,12 +22,6 @@ async function backgroundLuminance(page: Page): Promise<number> {
     const [r = 0, g = 0, b = 0] = probe.getImageData(0, 0, 1, 1).data;
     return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
   });
-}
-
-// React Aria keeps the radio input itself out of reach of the pointer.
-async function chooseTheme(page: Page, name: string): Promise<void> {
-  await page.getByRole('radiogroup', { name: 'Theme' }).getByText(name, { exact: true }).click();
-  await expect(page.getByRole('radio', { name })).toBeChecked();
 }
 
 test('the rail collapses and expands on [, remembered across a reload', async ({ page }) => {
