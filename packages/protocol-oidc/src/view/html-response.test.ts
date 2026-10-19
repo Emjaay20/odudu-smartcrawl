@@ -46,14 +46,16 @@ const CSP_DIRECTIVES = [
 ];
 // The files that legitimately name a page header: `html-response.ts` and
 // `verification-html.ts`, which spread `pageHeaders` (`@odudu/kernel`), and
-// `console-gateway`'s `spa.ts`, the static shell with its own fixed policy
-// (ADR 0029's amendment). Any other wrapper — `console-gateway`'s
+// `console-gateway`'s `spa.ts`, the static shell with its own fixed policy,
+// and `web-assets`'s `docs-routes.ts`, the built documentation under a policy
+// computed from the build (both ADR 0029 amendments). Any other wrapper — `console-gateway`'s
 // `send-page.ts` among them — gets these headers only by spreading
 // `pageHeaders`, and names none of them itself.
 const EXEMPT_FILES = [
   'packages/protocol-oidc/src/view/html-response.ts',
   'packages/account/src/view/verification-html.ts',
   'packages/console-gateway/src/view/spa.ts',
+  'packages/web-assets/src/view/docs-routes.ts',
 ];
 
 // `cache-control` is set by plenty of non-page responses (tokens, JSON, a
