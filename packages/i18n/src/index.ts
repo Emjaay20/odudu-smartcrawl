@@ -6,3 +6,5 @@ export type { NegotiationInput, PageLocale } from '#/service/negotiate';
 export { SHIPPED_LOCALES } from '#/service/shipped';
 export { negotiatePageLocale } from '#/service/page-locale';
 export type { PageLocaleInput } from '#/service/page-locale';
+export { createTranslators } from '#/service/translators';
+export type { Translators } from '#/service/translators';
