@@ -21,7 +21,10 @@ const RULE_MESSAGE: Readonly<Record<string, MessageId>> = {
 // has no entry for shows that sentence, isolated, rather than nothing.
 function ruleHtml(violation: PasswordViolation, locale: PageLocale): string {
   const id = Object.hasOwn(RULE_MESSAGE, violation.rule) ? RULE_MESSAGE[violation.rule] : undefined;
-  if (id === undefined) return bdi(violation.message);
+  // A minimum the page was not told is not one to state.
+  if (id === undefined || (violation.rule === 'min-length' && violation.minLength === undefined)) {
+    return bdi(violation.message);
+  }
   return tHtml(locale, id, { min: violation.minLength ?? 0, max: MAX_PASSWORD_LENGTH });
 }
 

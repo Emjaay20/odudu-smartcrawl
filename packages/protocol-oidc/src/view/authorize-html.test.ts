@@ -7,10 +7,10 @@ import {
   renderLoginForm,
 } from '#/view/authorize-html';
 import { en } from '#/view/messages';
-import { ARABIC, FRENCH } from '#test/fr-catalogue';
+import { ARABIC, FRENCH } from '@odudu/testkit/i18n';
 
 vi.mock('#/view/messages', async (importOriginal) => {
-  const { withFrench } = await import('#test/fr-catalogue');
+  const { withFrench } = await import('@odudu/testkit/i18n');
   return withFrench(await importOriginal(), {
     'error.title': 'Erreur de connexion',
     'error.heading': 'Impossible de continuer',
@@ -27,6 +27,16 @@ vi.mock('#/view/messages', async (importOriginal) => {
       'Vérifiez votre adresse e-mail. {mail, select, sent {Un lien a été envoyé.} other {Aucune adresse.}}',
   });
 });
+
+// What a browser makes of an attribute value: the five entities the renderer writes.
+function unescapeAttribute(value: string): string {
+  return value
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#39;', "'")
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&amp;', '&');
+}
 
 describe('renderAuthorizeErrorPage', () => {
   it('returns a body fragment and a title beside the document', () => {
@@ -624,7 +634,7 @@ describe('the text of the sign-in pages', () => {
       const body = login('password', locale, true).body;
       const code = /<script nonce="[^"]*">([\s\S]*?)<\/script>/u.exec(body)?.[1] ?? '';
       const data = (name: string): string =>
-        new RegExp(`${name}="([^"]*)"`, 'u').exec(body)?.[1]?.replaceAll('&#39;', "'") ?? '';
+        unescapeAttribute(new RegExp(`${name}="([^"]*)"`, 'u').exec(body)?.[1] ?? '');
       const failure: Failure = { textContent: '', hidden: true };
       const handlers: ((event: { preventDefault(): void }) => Promise<void>)[] = [];
       const form = {

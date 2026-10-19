@@ -6,16 +6,16 @@ import {
   renderPasskeyEnrolmentPage,
   type PasskeyEnrolmentOffer,
 } from '#/view/passkey-enrolment-html';
-import { ARABIC, FRENCH } from '#test/fr-catalogue';
+import { ARABIC, FRENCH } from '@odudu/testkit/i18n';
 
 vi.mock('#/view/messages', async (importOriginal) => {
-  const { withFrench } = await import('#test/fr-catalogue');
+  const { withFrench } = await import('@odudu/testkit/i18n');
   return withFrench(await importOriginal(), {
     'passkey.title': 'Ajouter une clé d’accès',
     'passkey.nameLabel': 'Nommez cette clé',
     'passkey.namePlaceholder': 'Clé d’accès',
     'passkey.submit': 'Ajouter',
-    'passkey.failed': 'Votre appareil n’a pas terminé l’ajout : {reason}. Réessayez.',
+    'passkey.failed': 'Votre appareil n’a pas terminé l’ajout ("a" & "b") : {reason}. Réessayez.',
     'refusal.passkeyNotAdded': 'Cette clé n’a pas pu être ajoutée.',
   });
 });
@@ -30,6 +30,16 @@ const OFFER: PasskeyEnrolmentOffer = {
     excludeCredentials: [{ id: 'ZXhpc3Rpbmc', type: 'public-key' }],
   },
 };
+
+// What a browser makes of an attribute value: the five entities the renderer writes.
+function unescapeAttribute(value: string): string {
+  return value
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#39;', "'")
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&amp;', '&');
+}
 
 describe('renderPasskeyEnrolmentPage', () => {
   it('carries the creation options and the field the ceremony fills in', () => {
@@ -189,7 +199,7 @@ describe('renderPasskeyEnrolmentPage', () => {
       const { body } = renderPasskeyEnrolmentPage('acme', 'sid', OFFER, undefined, locale);
       const code = /<script nonce="[^"]*">([\s\S]*?)<\/script>/u.exec(body)?.[1] ?? '';
       const data = (name: string): string =>
-        new RegExp(`${name}="([^"]*)"`, 'u').exec(body)?.[1]?.replaceAll('&#39;', "'") ?? '';
+        unescapeAttribute(new RegExp(`${name}="([^"]*)"`, 'u').exec(body)?.[1] ?? '');
       const failure = { textContent: '', hidden: true };
       const handlers: ((event: { preventDefault(): void }) => Promise<void>)[] = [];
       const form = {
@@ -220,7 +230,7 @@ describe('renderPasskeyEnrolmentPage', () => {
 
     it('says the page-language sentence, and the cancelled reason when there is none', async () => {
       expect(await failureShown(FRENCH, new Error(''))).toBe(
-        'Votre appareil n’a pas terminé l’ajout : the request was cancelled. Réessayez.',
+        'Votre appareil n’a pas terminé l’ajout ("a" & "b") : the request was cancelled. Réessayez.',
       );
     });
 

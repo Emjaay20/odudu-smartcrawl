@@ -169,8 +169,9 @@ const elidesOnlyTheQr = (block: Recorded): boolean =>
 // What the recorded markup says its inputs were, put back through the real
 // renderer: a page whose text or markup the server no longer produces for the
 // same inputs is named here. It cannot see a branch no recording takes, the
-// login forms (too many inputs to read back), the pages of authn-flows,
-// account or the console, or a value the markup does not show.
+// login forms (too many inputs to read back), the passkey and pending-action
+// pages of authn-flows (recorded nowhere), the pages of account or the
+// console, or a value the markup does not show.
 const RENDER_BACK: Record<string, (body: string) => string> = {
   'Set up your authenticator': (body: string) =>
     renderTotpEnrolmentPage(

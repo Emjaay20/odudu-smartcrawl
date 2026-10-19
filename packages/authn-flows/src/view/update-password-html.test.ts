@@ -1,12 +1,13 @@
-import { DEFAULT_PAGE_LOCALE } from '@odudu/kernel';
+import { evaluatePassword, REUSED_PASSWORD } from '@odudu/domain-identity';
+import { DEFAULT_PAGE_LOCALE, PASSWORD_TOO_LONG } from '@odudu/kernel';
 import { describe, expect, it, vi } from 'vitest';
 import { type PasswordViolation } from '#/schema/password-violation';
 import { en } from '#/view/messages';
 import { renderUpdatePasswordPage } from '#/view/update-password-html';
-import { ARABIC, FRENCH } from '#test/fr-catalogue';
+import { ARABIC, FRENCH } from '@odudu/testkit/i18n';
 
 vi.mock('#/view/messages', async (importOriginal) => {
-  const { withFrench } = await import('#test/fr-catalogue');
+  const { withFrench } = await import('@odudu/testkit/i18n');
   return withFrench(await importOriginal(), {
     'updatePassword.title': 'Changez votre mot de passe',
     'updatePassword.rule.minLength':
@@ -30,6 +31,53 @@ const RULES: readonly PasswordViolation[] = [
   { rule: 'not-reused', message: 'dev' },
   { rule: 'superseded', message: 'dev' },
 ];
+
+// Every rule code the domain can report must have a catalogue entry here, or
+// the page falls back to the developer sentence for it.
+describe('every rule the domain reports is worded by the catalogue', () => {
+  const policy = {
+    minLength: 300,
+    requireDigit: true,
+    requireUppercase: true,
+    requireLowercase: true,
+    requireSpecial: true,
+    notUsername: true,
+    notEmail: true,
+    historyDepth: 1,
+    maxAgeDays: 0,
+  };
+  const subject = { username: 'a', email: 'a@example.com' };
+
+  it('renders each reported rule without the developer fallback', () => {
+    const reported = [
+      ...evaluatePassword('a'.repeat(400), policy, subject),
+      ...evaluatePassword('A'.repeat(400), policy, subject),
+      ...evaluatePassword('a', policy, subject),
+      REUSED_PASSWORD,
+      PASSWORD_TOO_LONG,
+    ];
+    expect([...new Set(reported.map((violation) => violation.rule))].sort()).toEqual([
+      'max-length',
+      'min-length',
+      'not-email',
+      'not-reused',
+      'not-username',
+      'require-digit',
+      'require-lowercase',
+      'require-special',
+      'require-uppercase',
+    ]);
+    for (const { rule, message } of reported) {
+      const { body } = renderUpdatePasswordPage(
+        'd',
+        's',
+        [{ rule, message, minLength: policy.minLength }],
+        DEFAULT_PAGE_LOCALE,
+      );
+      expect(body, rule).not.toContain('<bdi>');
+    }
+  });
+});
 
 describe('renderUpdatePasswordPage', () => {
   it('posts the new password to the update-password action with the session it was given', () => {
@@ -91,6 +139,17 @@ describe('renderUpdatePasswordPage', () => {
         FRENCH,
       ).body,
     ).toContain('au moins 1000 caractères');
+  });
+
+  it('never states a minimum it was not given', () => {
+    const { body } = renderUpdatePasswordPage(
+      'demo',
+      's',
+      [{ rule: 'min-length', message: 'Too short' }],
+      DEFAULT_PAGE_LOCALE,
+    );
+    expect(body).toContain('<li><bdi>Too short</bdi></li>');
+    expect(body).not.toContain('at least 0');
   });
 
   it('shows an unknown rule by its developer message, isolated', () => {

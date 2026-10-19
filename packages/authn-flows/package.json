@@ -5,8 +5,7 @@
   "license": "AGPL-3.0-only",
   "type": "module",
   "imports": {
-    "#/*": "./src/*.ts",
-    "#test/*": "./tests/support/*.ts"
+    "#/*": "./src/*.ts"
   },
   "exports": {
     ".": "./src/index.ts"

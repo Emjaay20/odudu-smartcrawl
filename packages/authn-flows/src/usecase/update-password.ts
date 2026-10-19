@@ -26,13 +26,11 @@ export type UpdatePasswordOutcome =
   // password is one it is not.
   | { kind: 'superseded' };
 
-// What the form owes a person whose password was set elsewhere between the
-// page being rendered and submitted; shown as a rule so one page lists it.
+// A password set elsewhere between the page being rendered and submitted,
+// listed as a rule so one page shows every reason; the page words it by code.
 export const SUPERSEDED_PASSWORD: PasswordViolation = {
   rule: 'superseded',
-  message:
-    'Your password was changed somewhere else before this form was submitted. ' +
-    'Sign in again with the password you set there.',
+  message: 'password superseded',
 };
 
 export interface UpdatePassword {

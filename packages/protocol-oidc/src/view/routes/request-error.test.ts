@@ -5,7 +5,7 @@ import { sendSignInExpired } from '#/view/routes/expired-sign-in';
 import { sendRequestError } from '#/view/routes/request-error';
 
 vi.mock('#/view/messages', async (importOriginal) => {
-  const { withFrench } = await import('#test/fr-catalogue');
+  const { withFrench } = await import('@odudu/testkit/i18n');
   return withFrench(await importOriginal(), {
     'error.unknownTenant': 'Locataire inconnu.',
     'error.signInExpired': 'Cette tentative de connexion n’est plus valide.',

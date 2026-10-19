@@ -8,10 +8,10 @@ import {
   renderNoActiveSessionPage,
 } from '#/view/logout-html';
 import { en } from '#/view/messages';
-import { ARABIC, FRENCH } from '#test/fr-catalogue';
+import { ARABIC, FRENCH } from '@odudu/testkit/i18n';
 
 vi.mock('#/view/messages', async (importOriginal) => {
-  const { withFrench } = await import('#test/fr-catalogue');
+  const { withFrench } = await import('@odudu/testkit/i18n');
   return withFrench(await importOriginal(), {
     'logout.confirm.title': 'Se déconnecter ?',
     'logout.confirm.submit': 'Se déconnecter',

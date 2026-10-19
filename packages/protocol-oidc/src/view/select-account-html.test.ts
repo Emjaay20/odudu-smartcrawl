@@ -2,10 +2,10 @@ import { DEFAULT_PAGE_LOCALE } from '@odudu/kernel';
 import { describe, expect, it, vi } from 'vitest';
 import { en } from '#/view/messages';
 import { renderSelectAccountPage } from '#/view/select-account-html';
-import { ARABIC, FRENCH } from '#test/fr-catalogue';
+import { ARABIC, FRENCH } from '@odudu/testkit/i18n';
 
 vi.mock('#/view/messages', async (importOriginal) => {
-  const { withFrench } = await import('#test/fr-catalogue');
+  const { withFrench } = await import('@odudu/testkit/i18n');
   return withFrench(await importOriginal(), {
     'selectAccount.title': 'Choisir un compte',
     'selectAccount.useOther': 'Utiliser un autre compte',

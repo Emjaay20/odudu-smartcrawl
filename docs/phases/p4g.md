@@ -724,8 +724,8 @@ semver tag there.
   the values it is given in `isolated` are wrapped in `<bdi>` after `escapeHtml`.
   A user value reaches a message only as a marker the escaped result is searched
   for, so the message is escaped once and each user value once.
-- A French catalogue exists in tests only (`tests/support/fr-catalogue.ts`,
-  imported as `#test/fr-catalogue`): a renderer test mocks `#/view/messages`
+- A French catalogue exists in tests only (`withFrench`, `FRENCH` and `ARABIC` in
+  `@odudu/testkit/i18n`, shared by every package): a renderer test mocks `#/view/messages`
   with `withFrench`, so the real renderer is the one rendering French.
   `SHIPPED_LOCALES` stays `en`.
 - The English text is byte-identical to before except three things, each one
@@ -787,3 +787,12 @@ semver tag there.
 - The English markup is byte-identical except `<bdi dir="ltr">` around the three
   token kinds and the two `data-` attributes on the passkey form; an apostrophe
   in a page's own text would be `&#39;`, and none of these pages has one.
+- The passkey sign-in script (protocol-oidc) and the passkey enrolment script
+  (authn-flows) each hold the `{reason}` placeholder and the
+  `form.dataset.failed.replace(...)` line. Two packages cannot share a script
+  string without a package both may import and that owns markup, which does not
+  exist (`kernel` is transport-free, `i18n` holds no markup); each is pinned by
+  its own `vm` test.
+- The French fixture helpers (`withFrench`, `FRENCH`, `ARABIC`) are in
+  `@odudu/testkit/i18n`; `tests/lint/shared-fr-catalogue.test.ts` fails on a
+  package that keeps a copy.

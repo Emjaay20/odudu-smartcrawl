@@ -13,6 +13,18 @@ import { type RequestContext } from '@odudu/domain-audit';
 import { isUuid } from '@odudu/kernel';
 import { type TenantLookup } from '#/repository/tenant-lookup';
 
+// The page an action goes back to, and the reason it says it is back; each
+// action has one reason, so one cannot carry another's.
+export type RejectedRequiredAction = {
+  kind: 'rejected';
+  authSessionId: string;
+  subjectId: string;
+} & (
+  | { action: 'configure-totp'; reason: Extract<EnrolmentRefusal, 'code_mismatch'> }
+  | { action: 'configure-passkey'; reason: Extract<EnrolmentRefusal, 'passkey_not_added'> }
+  | { action: 'generate-recovery-codes'; reason: Extract<EnrolmentRefusal, 'codes_not_saved'> }
+);
+
 export type RequiredActionOutcome =
   // No live authentication session, or one whose authentication has not
   // finished: no factor has bound a subject yet, a later factor is still
@@ -34,27 +46,7 @@ export type RequiredActionOutcome =
   // it broke is carried, not just the first, so the form it goes back to
   // can list them at once.
   | { kind: 'password_rejected'; authSessionId: string; violations: readonly PasswordViolation[] }
-  | {
-      kind: 'rejected';
-      authSessionId: string;
-      subjectId: string;
-      action: 'configure-totp';
-      reason: EnrolmentRefusal;
-    }
-  | {
-      kind: 'rejected';
-      authSessionId: string;
-      subjectId: string;
-      action: 'configure-passkey';
-      reason: EnrolmentRefusal;
-    }
-  | {
-      kind: 'rejected';
-      authSessionId: string;
-      subjectId: string;
-      action: 'generate-recovery-codes';
-      reason: EnrolmentRefusal;
-    };
+  | RejectedRequiredAction;
 
 export interface RequiredActionSubmission {
   authSessionId: string | undefined;

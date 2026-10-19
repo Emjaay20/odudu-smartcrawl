@@ -9,9 +9,17 @@ import {
 } from '#/view/routes/required-action';
 
 vi.mock('#/view/messages', async (importOriginal) => {
-  const { withFrench } = await import('#test/fr-catalogue');
+  const { withFrench } = await import('@odudu/testkit/i18n');
   return withFrench(await importOriginal(), {
     'error.passwordTooLong': 'Le mot de passe ne doit pas dépasser {max} caractères.',
+  });
+});
+
+vi.mock('../../../../authn-flows/src/view/messages', async (importOriginal) => {
+  const { withFrench } = await import('@odudu/testkit/i18n');
+  return withFrench(await importOriginal(), {
+    'updatePassword.rule.maxLength':
+      'Le mot de passe ne doit pas dépasser {max, number, ::group-off} caractères.',
   });
 });
 
@@ -81,6 +89,6 @@ describe('a password past the length bound', () => {
     const fr = await post(requiredAction, url, 'fr');
     expect(fr.statusCode).toBe(400);
     expect(fr.headers['content-language']).toBe('fr');
-    expect(fr.body).toContain('<li>Password must be at most 256 characters long.</li>');
+    expect(fr.body).toContain('<li>Le mot de passe ne doit pas dépasser 256 caractères.</li>');
   });
 });
