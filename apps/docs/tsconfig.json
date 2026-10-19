@@ -11,5 +11,5 @@
     "verbatimModuleSyntax": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["src", "tests", "plugins", "sidebars.ts", "nav.ts"]
+  "include": ["src", "tests", "plugins", "sidebars.ts", "nav.ts", "seo.ts"]
 }

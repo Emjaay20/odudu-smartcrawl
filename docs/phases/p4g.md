@@ -1165,6 +1165,42 @@ image` (0 then 9 per index part). The test now asserts the nine sections are in 
   plan's text still says `dist-pages` and `dist-image` (D4, Task 31b, Task 35's guard b);
   the output is `dist/pages` and `dist/image`.
 
+### Increment 18b: SEO and metadata
+
+- The tests are `tests/seo.test.ts` (pure units), `tests/seo-html.test.ts` (both builds,
+  parsed with cheerio, whose parser is parse5; the minifier drops attribute quotes) and
+  `tests/seo-swap.test.ts`. They sit in `tests/` and not beside `seo.ts`: the docs scope's
+  unit glob is `tests/**/*.test.ts`. `siteHeadTags()` takes no target; the head tags
+  carry no address.
+- verified: `themeConfig.image: 'brand/social.png'` makes the theme emit both `og:image`
+  and `twitter:image`, absolute from `url` + `baseUrl` (`seo-html.test.ts`, over the
+  built head). The image build sets no `image`, so it links no social image.
+  `static/brand/social.png` is a flat placeholder until the mark exists.
+- verified: a `<Head>` child in `src/pages/index.tsx` carries the landing's JSON-LD
+  intact (`@graph` of `SoftwareApplication` and `Organization`, no `offers`); the address
+  comes from `useDocusaurusContext`, because `site.config.ts` reads `process.env`, which
+  does not exist in the client bundle.
+- The missing-description check is `plugins/descriptions.ts`, called at the top of
+  `docusaurus.config.ts` over `content/en`. verified: deleting one `description:` line
+  fails `docusaurus build` with `Pages without a front-matter description:
+guides/index.md`.
+- The 80-word floor skips the pages listed in `tests/unfilled.json`, which are stubs until
+  their increment; filling a page and deleting it from that list turns the floor on for it.
+- verified: mutations, each failing the named test and passing after the restore: `<html
+lang>` dropped, canonical removed, description removed (Pages); a canonical added to an
+  image page and `stripForImage` bypassed (image); `url: SITE_ORIGIN` for the image (bundle
+  names the Pages host).
+- The swap test builds with `DOCS_SITE_ORIGIN=https://example.test DOCS_BASE=/` into a
+  temporary directory (about 8 s) and asserts no file names `wizzywit.github.io`, every
+  canonical, the sitemap and `robots.txt` use the new address.
+- `robots.txt` is written by `plugins/robots.ts` for both builds: the image's is
+  `Disallow: /`, Pages' names the sitemap. The sitemap exclusion `**/search/**` held; the
+  test asserts it. The stock theme's accessibility fixes (`--ifm-link-decoration:
+underline`, the prism themes) were already in place from the shell; Lighthouse is
+  Task 31b's.
+- turbo: `seo.ts` joins the docs build and test inputs (hash `48780ee17da6bae9` becomes
+  `e716fd6beeb52b3c` after a line is appended).
+
 - **Two console tests fail when run alone under the root `dom` project.**
   `apps/admin-console/src/shared/transport/gateway.test.ts` ("refuses a path
   that would leave /console/api/") and
