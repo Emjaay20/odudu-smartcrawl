@@ -1341,6 +1341,18 @@ read the run's job list and the merge box. Nothing below has been observed yet.
    second run; `gate` fails when you cancel a run midway; and the Actions cache list
    holds about 14 entries per run, not hundreds.
 
+5. **The e2e slices.** `e2e` is three legs (`e2e 1/3` to `3/3`) and one `e2e` job.
+   - Wall time of the job: target 8 to 10 minutes, from 19 (run 39254678576). Read each
+     leg's steps: image build under 1 minute cold, seeding about 2.3 minutes, tests
+     about 5. Legs should end within a minute of each other; if one is far behind,
+     count tests per leg in the log before changing anything.
+   - On the second run of the same lockfile the "Build the image" step shows layers as
+     `CACHED` (or `importing cache manifest`) and the `pnpm fetch` layer is not re-run;
+     `container` shows the same. The Actions cache list holds one `odudu-image` scope.
+   - On a docs-only push `e2e` and the three legs are skipped; cancel one leg and
+     `e2e` and `gate` go red.
+   - A leg that fails uploads `playwright-report-<index>`.
+
 Only after 1 to 3 behave as written, require `gate` on `main`, and later drop
 `verify`, `container` and `query-plans` from the required list.
 

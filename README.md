@@ -946,7 +946,9 @@ content-security-policy violation or a console error, and each console page
 a spec reaches is held to axe's WCAG 2.2 AA rules, contrast included, in
 both colour schemes and under both theme overrides. The stack is torn down
 afterwards unless `E2E_KEEP_STACK=1`, and arguments after the script go to
-`playwright test`. CI runs it as the `e2e` job.
+`playwright test`. CI runs it as the `e2e` job, in three slices of the specs on
+three runners (`E2E_SHARD=2/3` runs one; `E2E_PREBUILT=1` starts an image that is
+already built, which CI builds against a layer cache).
 
 **Developing the console.** `pnpm --filter @odudu/admin-console dev` starts
 its Vite dev server, which proxies `/console/api` and `/console/auth` to a

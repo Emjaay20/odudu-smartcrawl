@@ -98,7 +98,43 @@ replays its report, which the trace check needs. A task skipped by
 - `concurrency` cancels an earlier run of `main` when two merges land close
   together, so that commit's `gate` reads cancelled. It was so before; read
   main's state from the newest run.
-- Docker layer caching of the image build (`container`, `e2e`) is not done.
+
+## The console e2e job
+
+Measured on run 39254678576: `e2e` took 19 minutes. The image built in 1 minute
+cold; the stack was healthy 10 seconds later; `global-setup.ts` then seeded
+for 2 minutes 20 seconds (several hundred `docker compose exec` calls); the 231
+tests took the remaining 15 minutes on two workers (1832 s of test time, so
+nothing but the tests themselves was large: `clients` 338 s, `audit` 176 s,
+`groups-roles` 120 s, `subjects` 117 s).
+
+- **Three slices, `e2e-shards`.** Playwright's `--shard` with `fullyParallel`
+  cuts by test, not by file, so a slice is balanced without reading durations.
+  Each slice is a runner with its own stack, so nothing shares a port or a
+  database. The matrix in `verify.yml` is the one place the count is written;
+  `run.sh` takes `E2E_SHARD` and passes it on. Expected per slice: about 20 s
+  checkout and install, 25 s Chromium, 1 minute image, 2.3 minutes seeding
+  (paid by every slice, as each needs the whole fixture) and 5 minutes of tests:
+  9 to 10 minutes against 19. A fourth slice would save about 1.3 minutes more
+  and cost another runner's setup; raise it if the first runs sit above 10.
+- **`e2e` stays one job**, waiting for the slices and skipped as they are, so a
+  reference to it, and `gate`, read as before.
+- **The image is built in each job that runs it, against a shared layer
+  cache, not once and passed on.** A built image is 1.2 GB on disk; saving, uploading,
+  downloading and loading it costs about as much as the minute a build takes,
+  and a warm build is faster than either. `.github/actions/image` builds with
+  `docker/build-push-action` (`type=gha`, one scope), and tags the result with the
+  name compose gives it (`odudu-e2e-odudu`, `odudu-smoke-odudu`), so
+  `E2E_PREBUILT=1` and `ODUDU_PREBUILT=1` skip `--build` and compose starts what is
+  there, or builds if it is not. `container` reads the same cache. One job writes
+  it: the first slice, or `container` when `e2e` is skipped.
+- **The Dockerfile fetches before it copies.** `pnpm fetch` needs the lockfile
+  alone, so the download is a layer that a source edit does not invalidate, and
+  `pnpm install --offline` links from it. The `COPY packages apps` that
+  preceded the install made every edit re-download everything, so a cache would
+  have kept only the base images.
+- Not done: seeding the fixture once and sharing a database dump, or in parallel;
+  it is the largest remaining fixed cost and a change to every spec's setup.
 
 ## Alternatives rejected
 
