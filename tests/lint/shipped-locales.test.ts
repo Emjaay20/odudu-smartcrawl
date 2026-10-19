@@ -13,7 +13,8 @@ async function cataloguesInSource(): Promise<string[]> {
     exclude: (entry) => path.basename(entry) === 'node_modules',
   })) {
     if (file.startsWith('packages/i18n/') || file.endsWith('.test.ts')) continue;
-    if ((await readFile(path.join(REPO_ROOT, file), 'utf8')).includes('createCatalogue(')) {
+    const source = await readFile(path.join(REPO_ROOT, file), 'utf8');
+    if (source.includes('createCatalogue(') || source.includes('createTranslators(')) {
       found.push(file);
     }
   }
@@ -30,7 +31,7 @@ function localesOf(value: unknown): readonly string[] | null {
 // that holds a locale the list lacks would never be chosen or advertised, and
 // a listed locale with no catalogue would be advertised and never shown. A
 // package that builds a catalogue only has to export it from the module that
-// calls `createCatalogue`; this test finds it there.
+// calls `createCatalogue` or `createTranslators`; this test finds it there.
 describe('SHIPPED_LOCALES agrees with the catalogues', () => {
   it('lists en, the source every catalogue falls back to', () => {
     expect(SHIPPED_LOCALES).toContain('en');
@@ -44,10 +45,7 @@ describe('SHIPPED_LOCALES agrees with the catalogues', () => {
         const locales = localesOf(entry);
         return locales === null ? [] : [locales];
       });
-      expect(
-        catalogues.length,
-        `${file} calls createCatalogue but exports no catalogue`,
-      ).toBeGreaterThan(0);
+      expect(catalogues.length, `${file} builds a catalogue but exports none`).toBeGreaterThan(0);
       for (const locales of catalogues) {
         expect(locales, `${file} must hold en`).toContain('en');
         for (const tag of locales) {
