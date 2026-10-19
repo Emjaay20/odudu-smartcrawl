@@ -1,6 +1,11 @@
 import { unwrapSecret, wrapSecret } from '@odudu/crypto';
 import { type TenantScopedDatabase } from '@odudu/db';
-import { smtpSender, type EmailSender, type SmtpConfig as SmtpTransportConfig } from '@odudu/email';
+import {
+  renderSmtpTest,
+  smtpSender,
+  type EmailSender,
+  type SmtpConfig as SmtpTransportConfig,
+} from '@odudu/email';
 import { type SmtpConfig } from '@odudu/contracts/admin';
 import { etagOf, matches } from '#/service/etag';
 import { checkSmtpDestination, type SmtpDestinationPolicy } from '#/service/smtp-destination';
@@ -262,12 +267,7 @@ export async function sendTestMessage(
   if (built.kind === 'refused_destination') return built;
 
   try {
-    await built.sender.send({
-      to,
-      subject: 'Odudu SMTP test',
-      text: 'This is a test message from Odudu.',
-      html: '<p>This is a test message from Odudu.</p>',
-    });
+    await built.sender.send(renderSmtpTest({ to }));
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     return { kind: 'send_failed', detail };

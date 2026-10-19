@@ -2,16 +2,18 @@ import { readFile, glob } from 'node:fs/promises';
 import path from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
+import { createTranslators } from '../../packages/i18n/src/index.js';
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..');
 const FIXTURES = path.join(import.meta.dirname, 'fixtures/literals');
 
 // A user-facing sentence is an entry in a catalogue (ADR 0043). This reads each
-// `*-html.ts` renderer and the mail templates as TypeScript and reports text a
-// person would read that is typed in the file. Out of scope by kind, with no
-// allowlist or waiver: the RFC 9457 problem-details strings of console-gateway
-// and protocol-admin, which a program reads, and developer-facing protocol text
-// such as an `error_description`.
+// server renderer as TypeScript and reports text a person would read that is
+// typed in the file. The renderers are derived, not listed: every file under a
+// `src/view` that is a `*-html.ts` or builds a tag, and the mail templates.
+// Out of scope by kind, with no allowlist or waiver: the RFC 9457 strings of
+// console-gateway and protocol-admin, which a program reads and which build no
+// tag, and developer-facing protocol text such as an `error_description`.
 
 export interface Finding {
   readonly line: number;
@@ -30,7 +32,24 @@ export interface Finding {
 const BLANK = String.fromCodePoint(0xfffc);
 const LETTERS = /\p{L}{2}/u;
 const PROSE_ARGUMENT_CALLS = new Set(['page', 'escapeHtml', 'bdi']);
-const TEXT_ATTRIBUTES = new Set(['alt', 'title', 'placeholder', 'aria-label']);
+// Whatever the i18n API hands a renderer other than isolation takes a message
+// id, never text, so a string given to it is not prose.
+const CATALOGUE_ACCESSORS = new Set(
+  Object.keys(createTranslators({ en: {} }, (value: string) => value)).filter(
+    (name) => name !== 'catalogue' && name !== 'bdi',
+  ),
+);
+const TEXT_ATTRIBUTES = new Set([
+  'alt',
+  'title',
+  'placeholder',
+  'aria-label',
+  'label',
+  'summary',
+  'aria-description',
+  'aria-roledescription',
+  'aria-valuetext',
+]);
 const COMPARISONS = new Set([
   ts.SyntaxKind.EqualsEqualsToken,
   ts.SyntaxKind.EqualsEqualsEqualsToken,
@@ -128,11 +147,17 @@ function inspect(text: string, start: number): Finding[] {
     const name = (tag[1] ?? '').toLowerCase();
     const attributes = tag[2] ?? '';
     const type = /\btype\s*=\s*["']?(submit|button|reset)/iu.test(attributes);
-    for (const attribute of attributes.matchAll(/([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/gu)) {
+    const describes = /\bname\s*=\s*["']?description\b/iu.test(attributes);
+    const values = /([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/gu;
+    for (const attribute of attributes.matchAll(values)) {
       const key = (attribute[1] ?? '').toLowerCase();
-      const value = attribute[2] ?? attribute[3] ?? '';
-      const text = TEXT_ATTRIBUTES.has(key) || (key === 'value' && name === 'input' && type);
-      if (text && isProse(value)) {
+      const value = attribute[2] ?? attribute[3] ?? attribute[4] ?? '';
+      const text =
+        TEXT_ATTRIBUTES.has(key) ||
+        (key === 'value' && name === 'input' && type) ||
+        (key === 'content' && name === 'meta' && describes);
+      const data = key.startsWith('data-') && readsAsText(value);
+      if ((text && isProse(value)) || data) {
         found.push({
           line: lineIn(rest, tag.index, start),
           text: value,
@@ -166,8 +191,7 @@ function skipped(node: ts.Expression): boolean {
   if (ts.isBinaryExpression(parent) && COMPARISONS.has(parent.operatorToken.kind)) return true;
   if (ts.isTaggedTemplateExpression(parent)) return true;
   if (ts.isCallExpression(parent) && parent.arguments.includes(node)) {
-    const prose = PROSE_ARGUMENT_CALLS.has(calleeName(parent));
-    return !prose;
+    return CATALOGUE_ACCESSORS.has(calleeName(parent));
   }
   return false;
 }
@@ -182,11 +206,18 @@ export function findLiterals(source: string, fileName = 'renderer.ts'): Finding[
       const text = assemble(node, inner);
       if (!skipped(node)) {
         const line = file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1;
+        const sentenceOnly =
+          ts.isCallExpression(node.parent) &&
+          node.parent.arguments.includes(node) &&
+          !PROSE_ARGUMENT_CALLS.has(calleeName(node.parent)) &&
+          !text.includes('<');
         const asTitle =
           ts.isCallExpression(node.parent) &&
           calleeName(node.parent) === 'page' &&
           node.parent.arguments[0] === node;
-        if (asTitle) {
+        if (sentenceOnly) {
+          if (readsAsText(text)) found.push({ line, text: text.trim(), where: 'text' });
+        } else if (asTitle) {
           if (isProse(text)) found.push({ line, text, where: 'title' });
         } else {
           found.push(...inspect(text, line));
@@ -264,26 +295,75 @@ export const same = (v: string) => v === 'hello world';`;
 
 const REQUEST_ERROR_HELPER = /^(render[A-Z]\w*|send\w*Error\w*)$/u;
 
+function readsMessage(node: ts.Node): boolean {
+  if (ts.isPropertyAccessExpression(node)) return node.name.text === 'message';
+  return (
+    ts.isElementAccessExpression(node) &&
+    ts.isStringLiteralLike(node.argumentExpression) &&
+    node.argumentExpression.text === 'message'
+  );
+}
+
+function anyNode(node: ts.Node, found: (node: ts.Node) => boolean): boolean {
+  return (
+    found(node) || ts.forEachChild(node, (child) => anyNode(child, found) || undefined) === true
+  );
+}
+
 // A domain value's `.message` is developer-facing English: a view maps the
 // value's code to a sentence of its own catalogue instead. Handing the message
-// to a renderer or to a request-error helper puts it in front of a person.
+// to a renderer or a request-error helper puts it in front of a person, also
+// through a local alias, a destructured `message` or a bracket access. The
+// deliberate fallback `bdi(violation.message)` in a renderer (an unknown rule
+// code shows the domain's sentence, isolated) is a call to neither, so it is
+// not reported.
 export function findMessageLeaks(source: string, fileName = 'route.ts'): Finding[] {
   const file = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true);
   const found: Finding[] = [];
+  const tainted = new Set<string>();
 
-  function messages(node: ts.Node, call: ts.CallExpression): void {
-    if (ts.isPropertyAccessExpression(node) && node.name.text === 'message') {
+  function collect(node: ts.Node): void {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.initializer !== undefined &&
+      anyNode(node.initializer, readsMessage)
+    ) {
+      tainted.add(node.name.text);
+    }
+    if (
+      ts.isBindingElement(node) &&
+      ts.isIdentifier(node.name) &&
+      (node.propertyName ?? node.name).getText(file) === 'message'
+    ) {
+      tainted.add(node.name.text);
+    }
+    ts.forEachChild(node, collect);
+  }
+  collect(file);
+
+  function leaks(node: ts.Node): boolean {
+    if (readsMessage(node)) return true;
+    if (!ts.isIdentifier(node) || !tainted.has(node.text)) return false;
+    const parent = node.parent;
+    if (ts.isPropertyAccessExpression(parent) && parent.name === node) return false;
+    return !(ts.isPropertyAssignment(parent) && parent.name === node);
+  }
+
+  function report(node: ts.Node, call: ts.CallExpression): void {
+    if (leaks(node)) {
       const line = file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1;
       found.push({ line, text: `${calleeName(call)}(... ${node.getText(file)})`, where: 'text' });
+      return;
     }
     ts.forEachChild(node, (child) => {
-      messages(child, call);
+      report(child, call);
     });
   }
 
   function visit(node: ts.Node): void {
     if (ts.isCallExpression(node) && REQUEST_ERROR_HELPER.test(calleeName(node))) {
-      for (const argument of node.arguments) messages(argument, node);
+      for (const argument of node.arguments) report(argument, node);
     }
     ts.forEachChild(node, visit);
   }
@@ -303,6 +383,25 @@ describe('findMessageLeaks', () => {
   });
 });
 
+const TAG = /<[a-zA-Z!][^<>]*>/u;
+
+// A file is a renderer when it builds a tag, whatever it is called: a helper
+// that returns markup is held to the rule as much as a `*-html.ts`.
+export function carriesMarkup(source: string): boolean {
+  const file = ts.createSourceFile('file.ts', source, ts.ScriptTarget.Latest, true);
+  let found = false;
+  function visit(node: ts.Node): void {
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+      found ||= TAG.test(node.text);
+    } else if (ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node)) {
+      found ||= TAG.test(node.text);
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(file);
+  return found;
+}
+
 async function repoFiles(pattern: string): Promise<string[]> {
   const found: string[] = [];
   for await (const file of glob(pattern, {
@@ -314,13 +413,37 @@ async function repoFiles(pattern: string): Promise<string[]> {
   return found.sort();
 }
 
+// Derived, never listed: every non-test file under a package's `src/view` that
+// is a `*-html.ts` or builds a tag, and the mail templates. A catalogue
+// (`messages.ts`) is where the text lives, and the API problem-details helpers
+// build no tag, so they fall out by what they are rather than by name.
+async function renderers(): Promise<string[]> {
+  const candidates = [
+    ...(await repoFiles('packages/*/src/view/**/*.ts')),
+    ...(await repoFiles('apps/*/src/view/**/*.ts')),
+    ...(await repoFiles('packages/email/src/service/*.ts')),
+  ];
+  const found: string[] = [];
+  for (const file of candidates) {
+    const source = await readFile(path.join(REPO_ROOT, file), 'utf8');
+    if (path.basename(file) === 'messages.ts') continue;
+    if (file.endsWith('-html.ts') || carriesMarkup(source)) found.push(file);
+  }
+  return found;
+}
+
 describe('the server renderers and mail templates', () => {
   it('finds no user-facing literal in any server renderer', async () => {
-    const files = [
-      ...(await repoFiles('packages/*/src/view/*-html.ts')),
-      'packages/email/src/service/templates.ts',
-    ];
-    expect(files.length).toBeGreaterThan(14);
+    const files = await renderers();
+    expect(files).toEqual(
+      expect.arrayContaining([
+        'packages/account/src/view/password-rules.ts',
+        'packages/authn-flows/src/view/refusal.ts',
+        'packages/protocol-oidc/src/view/document.ts',
+        'packages/email/src/service/templates.ts',
+      ]),
+    );
+    expect(files.length).toBeGreaterThan(18);
 
     const offences: string[] = [];
     for (const file of files) {
@@ -353,5 +476,44 @@ describe('the server renderers and mail templates', () => {
       }
     }
     expect(offences).toEqual([]);
+  });
+});
+
+describe('findLiterals, further forms', () => {
+  it('reports a sentence handed to a helper inside markup, not a catalogue id', async () => {
+    const source = await readFile(path.join(FIXTURES, 'helper-arg-html.ts'), 'utf8');
+    expect(findLiterals(source).map((finding) => finding.text)).toEqual([
+      'Hello there',
+      'Ada Lovelace',
+    ]);
+  });
+
+  it('reports label, aria-description, aria-roledescription, aria-valuetext and data-* text', async () => {
+    const source = await readFile(path.join(FIXTURES, 'attributes-more-html.ts'), 'utf8');
+    expect(findLiterals(source).map((finding) => finding.text)).toEqual([
+      'Choose one',
+      'Opens a dialog',
+      'Slide deck',
+      'Halfway there',
+      'Press enter to continue',
+      'Your_name',
+      'A page about things',
+    ]);
+  });
+});
+
+describe('findMessageLeaks, further forms', () => {
+  it('follows an alias, a bracket access and a destructured message into a renderer', async () => {
+    const source = await readFile(path.join(FIXTURES, 'message-alias-html.ts'), 'utf8');
+    expect(findMessageLeaks(source).map((finding) => finding.line)).toEqual([5, 9, 14]);
+  });
+});
+
+describe('carriesMarkup', () => {
+  it('holds a file that builds a tag, whatever it is called, and no other', async () => {
+    const note = await readFile(path.join(FIXTURES, 'render-note.ts'), 'utf8');
+    const problem = await readFile(path.join(FIXTURES, 'problem.ts'), 'utf8');
+    expect(carriesMarkup(note)).toBe(true);
+    expect(carriesMarkup(problem)).toBe(false);
   });
 });

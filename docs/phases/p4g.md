@@ -937,3 +937,24 @@ used`); the required-actions, registration success and form pages are
   the account routes do, and the view maps the rule to its own catalogue entry.
 - Out of scope by kind, not by allowlist: console-gateway and protocol-admin
   problem-details strings (RFC 9457 values for a program).
+
+### Increment 17, fix round
+
+- The lint derives its files instead of globbing `*-html.ts`: every non-test file
+  under a `packages/*/src/view` (or `apps/*/src/view`) that is a `*-html.ts` or
+  builds a tag, minus `messages.ts` catalogues, plus the mail templates. That
+  brings in `account/view/password-rules.ts`, `authn-flows/view/refusal.ts` and
+  the four `document.ts` shells; the shells' structural text and attribute names
+  are not prose by the rule, so nothing is waived.
+- The SMTP test mail is a mail a person receives, so it left
+  `protocol-admin/src/usecase/smtp.ts` for `renderSmtpTest` in `@odudu/email`
+  (`smtpTest.subject`, `smtpTest.text`, an optional locale, English today since the
+  destination has no stored locale); it is in scope as part of the templates.
+- Also reported now: sentences given to helper calls inside markup, `label`,
+  `summary`, `aria-description`, `aria-roledescription`, `aria-valuetext`, text in
+  `data-*`, unquoted attribute values and `<meta name="description">`.
+- The leak check follows a local alias, a destructured `message` and a bracket
+  access into a `render*` or `send*Error*` call. It does not report the deliberate
+  fallback `bdi(violation.message)` in `authn-flows/view/update-password-html.ts`
+  and `account/view/password-rules.ts`: a rule code with no catalogue entry shows
+  the domain's sentence, isolated, rather than nothing.

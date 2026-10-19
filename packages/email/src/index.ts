@@ -3,9 +3,11 @@ export {
   renderVerifyEmail,
   renderResetPassword,
   renderRequiredActions,
+  renderSmtpTest,
   type VerifyEmailInput,
   type ResetPasswordInput,
   type RequiredActionsInput,
+  type SmtpTestInput,
 } from '#/service/templates';
 export { smtpSender, type SmtpConfig } from '#/adapter/smtp';
 export { capturingSender } from '#/adapter/capturing';

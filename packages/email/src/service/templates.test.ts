@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { en } from '#/service/messages';
-import { renderRequiredActions, renderResetPassword, renderVerifyEmail } from '#/service/templates';
+import {
+  renderRequiredActions,
+  renderResetPassword,
+  renderSmtpTest,
+  renderVerifyEmail,
+} from '#/service/templates';
 
 vi.mock('#/service/messages', async (importOriginal) => {
   const { withFrench } = await import('@odudu/testkit/i18n');
@@ -11,6 +16,8 @@ vi.mock('#/service/messages', async (importOriginal) => {
     'reset.subject': 'Réinitialisez votre mot de passe {tenant}',
     'actions.subject': 'Mettez à jour votre compte {tenant}',
     'action.update-password': 'Choisir un nouveau mot de passe',
+    'smtpTest.subject': 'Test SMTP Odudu',
+    'smtpTest.text': 'Ceci est un message de test d\u2019Odudu.',
   });
 });
 
@@ -269,5 +276,27 @@ describe('every mail isolates and cleans a tenant name the same way', () => {
 
   it.each(Object.entries(renderers))('%s: wraps the name in bdi, escaped', (_kind, render) => {
     expect(render('<i>x</i>').html).toContain('<bdi>&lt;i&gt;x&lt;/i&gt;</bdi>');
+  });
+});
+
+describe('renderSmtpTest', () => {
+  it('keeps the English test mail as it was', () => {
+    expect(renderSmtpTest({ to: 'ops@example.test' })).toEqual({
+      to: 'ops@example.test',
+      subject: 'Odudu SMTP test',
+      text: 'This is a test message from Odudu.',
+      html: '<p>This is a test message from Odudu.</p>',
+    });
+  });
+
+  it('reads subject, text and html from the catalogue, in the locale asked for', () => {
+    const msg = renderSmtpTest({ to: 'ops@example.test', locale: 'fr' });
+    expect(msg.subject).toBe('Test SMTP Odudu');
+    expect(msg.text).toBe('Ceci est un message de test d\u2019Odudu.');
+    expect(msg.html).toBe('<p>Ceci est un message de test d\u2019Odudu.</p>');
+  });
+
+  it('falls back to English for a locale it holds no catalogue for', () => {
+    expect(renderSmtpTest({ to: 'a@b.test', locale: 'ja' }).subject).toBe('Odudu SMTP test');
   });
 });

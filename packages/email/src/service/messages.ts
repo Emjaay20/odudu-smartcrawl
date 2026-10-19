@@ -17,6 +17,8 @@ export const en = {
   'actions.textLink': 'Do so by visiting this link:',
   'actions.html': 'Do so by visiting {link}.',
   'actions.ignore': 'If you were not expecting this, you can ignore this message.',
+  'smtpTest.subject': 'Odudu SMTP test',
+  'smtpTest.text': 'This is a test message from Odudu.',
   'action.update-password': 'Choose a new password',
   'action.configure-totp': 'Set up an authenticator app',
   'action.configure-passkey': 'Register a passkey',

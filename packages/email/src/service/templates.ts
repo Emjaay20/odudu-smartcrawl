@@ -124,3 +124,18 @@ export function renderRequiredActions(input: RequiredActionsInput): EmailMessage
     )}</p><p>${tHtml(locale, 'actions.ignore')}</p>`,
   };
 }
+
+export interface SmtpTestInput {
+  readonly to: string;
+  readonly locale?: string | null | undefined;
+}
+
+export function renderSmtpTest(input: SmtpTestInput): EmailMessage {
+  const locale = mailLocale(input.locale);
+  return {
+    to: input.to,
+    subject: t(locale, 'smtpTest.subject'),
+    text: t(locale, 'smtpTest.text'),
+    html: `<p>${tHtml(locale, 'smtpTest.text')}</p>`,
+  };
+}
