@@ -178,7 +178,7 @@ describe('docsRoutes', () => {
       'guides/index.html/x',
     ]) {
       const response = await server.inject(`/docs/${path}`);
-      expect(response.statusCode, path).not.toBe(200);
+      expect(response.statusCode, path).toBe(404);
     }
   });
 
@@ -312,6 +312,27 @@ describe('docsRoutes', () => {
     for (const url of ['/', '/index.html', '/documentation/', '/tenants/docs/x']) {
       expect((await server.inject(url)).statusCode, url).toBe(404);
     }
+  });
+});
+
+describe('docsRoutes logging', () => {
+  it('writes no line per static request, and still writes a warning', async () => {
+    const dir = await builtDir();
+    const logs: string[] = [];
+    const stream = new Writable({
+      write(chunk: Buffer, _encoding, done) {
+        logs.push(chunk.toString('utf8'));
+        done();
+      },
+    });
+    const instance = Fastify({ logger: { level: 'info', stream } });
+    await instance.register(docsRoutes(dir));
+    await instance.ready();
+    app = instance;
+    await instance.inject('/docs/');
+    await instance.inject('/docs/nope/');
+    await instance.inject('/docs');
+    expect(logs.filter((line) => line.includes('"reqId"'))).toEqual([]);
   });
 });
 

@@ -12,6 +12,10 @@ import { docsPolicy, parseDocsCsp, UNAVAILABLE_POLICY } from '#/service/docs-pol
 const ROBOTS = 'noindex, nofollow';
 const LANGUAGE = 'en';
 
+// A page load is about ten static files; two info lines each would bury the
+// log. A warning or an error from these routes is still written.
+const QUIET = { logLevel: 'warn' } as const;
+
 interface Site {
   readonly files: ReadonlyMap<string, StaticFile>;
   readonly etags: ReadonlyMap<string, string>;
@@ -68,7 +72,7 @@ function registerUnavailable(fastify: FastifyInstance, dir: string, reason: stri
     `ODUDU_DOCS_DIR (${dir}) cannot be served, ${reason}; /docs/* answers 503; ` +
       'set ODUDU_DOCS=false to turn the documentation off',
   );
-  fastify.get('/docs/*', (_request, reply) =>
+  fastify.get('/docs/*', QUIET, (_request, reply) =>
     toDocsReply(reply, UNAVAILABLE_POLICY)
       .code(503)
       .header('cache-control', 'no-store')
@@ -84,7 +88,7 @@ function registerUnavailable(fastify: FastifyInstance, dir: string, reason: stri
 // inline script and style attributes it emitted, and wrote it as csp.json.
 export function docsRoutes(dir: string): FastifyPluginAsync {
   return async (fastify) => {
-    fastify.get('/docs', (_request, reply) => redirect(reply, '/docs/'));
+    fastify.get('/docs', QUIET, (_request, reply) => redirect(reply, '/docs/'));
 
     let site: Site;
     try {
@@ -98,7 +102,7 @@ export function docsRoutes(dir: string): FastifyPluginAsync {
     const { files, etags, policy } = site;
     const notFound = files.get('404.html');
 
-    fastify.get<{ Params: { '*': string } }>('/docs/*', (request, reply) => {
+    fastify.get<{ Params: { '*': string } }>('/docs/*', QUIET, (request, reply) => {
       const path = request.params['*'];
       const key = path === '' || path.endsWith('/') ? `${path}index.html` : path;
       const file = files.get(key);

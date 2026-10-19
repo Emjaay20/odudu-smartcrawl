@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { docsPolicy, parseDocsCsp } from '@odudu/web-assets';
+import { DOCS_TYPES, docsPolicy, parseDocsCsp } from '@odudu/web-assets';
 import { computeCsp, writeCsp } from './csp.ts';
 
 const dirs: string[] = [];
@@ -120,5 +120,24 @@ describe('the image build’s csp.json', () => {
     expect(hashes.scriptHashes).toHaveLength(1);
     expect(policy).toContain(hashes.scriptHashes[0] ?? 'missing');
     expect(policy).not.toMatch(/unsafe-inline|unsafe-eval/u);
+  });
+
+  // The route serves only the types it knows and skips the rest without a word,
+  // so a file a theme change adds with another extension would be a silent 404.
+  it('has a served type for every file the build wrote', async () => {
+    const root = path.resolve(import.meta.dirname, '../dist/image');
+    const walk = async (dir: string): Promise<string[]> =>
+      (
+        await Promise.all(
+          (await readdir(dir, { withFileTypes: true })).map(async (entry) =>
+            entry.isDirectory() ? walk(path.join(dir, entry.name)) : [path.join(dir, entry.name)],
+          ),
+        )
+      ).flat();
+    const unserved = (await walk(root))
+      .filter((file) => !path.basename(file).startsWith('.'))
+      .filter((file) => DOCS_TYPES[path.extname(file)] === undefined)
+      .map((file) => path.relative(root, file));
+    expect(unserved).toEqual([]);
   });
 });

@@ -10,7 +10,7 @@ describe('docsPolicy', () => {
     expect(docsPolicy({ scriptHashes: [SCRIPT], styleAttributeHashes: [STYLE] })).toBe(
       `default-src 'self'; script-src 'self' '${SCRIPT}'; style-src 'self'; ` +
         `style-src-attr 'unsafe-hashes' '${STYLE}'; img-src 'self' data:; font-src 'self'; ` +
-        "connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'",
+        "connect-src 'self'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'",
     );
   });
 

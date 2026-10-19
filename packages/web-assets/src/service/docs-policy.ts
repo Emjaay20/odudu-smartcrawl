@@ -27,7 +27,9 @@ function directive(name: string, base: string, hashes: readonly string[]): strin
 // element, so both are licensed by hash and nothing is `'unsafe-inline'`.
 // `style-src-attr` governs only style attributes: a `<style>` element or a
 // style set from script stays under `style-src 'self'`. `data:` images are the
-// theme's chevron, menu and copy-button icons.
+// theme's chevron, menu and copy-button icons. The site embeds no plugin
+// content and frames nothing, so those two are closed rather than left to
+// fall back to `default-src`; workers fall back to it, and are `'self'`.
 export function docsPolicy(csp: DocsCsp): string {
   return [
     "default-src 'self'",
@@ -39,6 +41,8 @@ export function docsPolicy(csp: DocsCsp): string {
     "img-src 'self' data:",
     "font-src 'self'",
     "connect-src 'self'",
+    "object-src 'none'",
+    "frame-src 'none'",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'none'",

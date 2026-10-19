@@ -1591,3 +1591,21 @@ heap limit` at 4.56 GB resident; with `NODE_OPTIONS=--max-old-space-size=8192` i
   Increment 19 recorded ("4.5 GB peak resident at the default heap passes") is gone on Node 24.15.0 and macOS arm64.
   The `static` job runs `pnpm lint` with no `NODE_OPTIONS`; whether ubuntu-latest passes is unobserved. If it does
   not, the `lint` script takes the flag back or the typed program shrinks again; that decision is the controller's.
+
+### Increment 20, fix round
+
+- The Chromium walk now `goto`es every built HTML page as a document (35 routes from the built tree, `404.html` through
+  an unknown path), one browser and context. verified: an inline script added to `quick-start/index.html` without
+  regenerating `csp.json` fails it; the same page passed the old walk.
+- The policy gains `object-src 'none'` and `frame-src 'none'`; workers fall back to `default-src 'self'`.
+- The docs headers are on every response the route's handlers produce. Fastify's own `400` (malformed percent-escape)
+  and `404` for methods other than `GET`/`HEAD` carry none; a root hook would touch every other route, so the wording
+  was narrowed instead (ADR 0029, `request-paths.md`).
+- `scripts/csp.test.ts` fails, naming the file, on any built file whose extension is not in `DOCS_TYPES`.
+- The docs routes log nothing per request (`logLevel: 'warn'` on the route); warnings and errors still print. A page
+  load was about 20 info lines. Not done, kept as notes: no compression (P11), `csp.ts` does not read a `style=` inside a
+  `<template>` (Docusaurus emits none), and the immutable rule is by name shape under `assets/`.
+- **`lint` pins its heap.** Node's default old-space limit is about 4 GB on 64-bit (4,288 MB here, whatever the RAM
+  above 16 GB), and `eslint .` peaks at 5.0 to 5.3 GB resident, so a bare run is a coin flip on GC timing. The script is
+  `node --max-old-space-size=6144 node_modules/eslint/bin/eslint.js .`, cross-platform, so local, `pnpm verify` and CI
+  agree; 8192 would not be backed by a 7 GB runner. Shrinking the Docusaurus-options typed program is the longer-term fix.

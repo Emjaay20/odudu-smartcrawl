@@ -11618,8 +11618,10 @@ from the branch commit `580d1937` plus this change's Dockerfile, with no tenant
 seeded: the site is the same on any stack. `date`, `x-request-id`, `connection`
 and `keep-alive` change on every response and are filtered out in the command.
 
-A bare `/docs` is sent to the directory. Every response under `/docs/` carries
-`x-robots-tag: noindex, nofollow`, redirect included:
+A bare `/docs` is sent to the directory. Every response the route produces
+carries `x-robots-tag: noindex, nofollow`, redirect included. Fastify's own `400`
+for a malformed percent-escape and its `404` for a method other than `GET` or
+`HEAD` are not the route's and carry none of the docs headers:
 
 ```
 $ curl -sI http://localhost:3261/docs | tr -d '\r' | grep -viE '^(date|x-request-id|connection|keep-alive):'
@@ -11640,19 +11642,19 @@ inline script (the colour-mode initialiser, the same on every page) by hash, and
 the `style=` attributes the theme writes (the code blocks' colours and a hidden
 icon sprite) by hash with `'unsafe-hashes'`, which only `style-src-attr` carries.
 There is no `'unsafe-inline'` and no `'unsafe-eval'`, and the policy is the same
-on every response of the site (ADR 0029's second amendment). `data:` images are
+on every response the route produces (ADR 0029's second amendment). `data:` images are
 the theme's own icons. The page revalidates by `etag`:
 
 ```
 $ curl -sI http://localhost:3261/docs/ | tr -d '\r' | grep -viE '^(date|x-request-id|connection|keep-alive):'
 HTTP/1.1 200 OK
-content-security-policy: default-src 'self'; script-src 'self' 'sha256-XzbohOdLBHFS8lNAlXYAVACbmod6JzK/jbZ8kS4rKFA='; style-src 'self'; style-src-attr 'unsafe-hashes' 'sha256-AIsMoEZ2AFYSNPqPHAPTfeQBkBx0uwe/S138h7oBgqk=' 'sha256-IcqGb0TAbH6mKQhvd8hBx2FAalfysv4UbOSlrgEnNqs=' 'sha256-biLFinpqYMtWHmXfkA1BPeCY0/fNt46SAZ+BBk5YUog=' 'sha256-eslHeDkvJNiffFsT711OoAWNr5i7S9CBs7nlwyVzHxo=' 'sha256-jKE6QZqne5OsrfemNvuLSNoud++NsCOiSlGuIsQns5o=' 'sha256-sDIENtrZwmox3spLJOzzFKFmi3ELZ0v+EkEB+J8SMrA=' 'sha256-wfFRBRN9VtnoKyjFp7nESoyL5GicNVcIrkvfmAPxv1s='; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'
+content-security-policy: default-src 'self'; script-src 'self' 'sha256-XzbohOdLBHFS8lNAlXYAVACbmod6JzK/jbZ8kS4rKFA='; style-src 'self'; style-src-attr 'unsafe-hashes' 'sha256-AIsMoEZ2AFYSNPqPHAPTfeQBkBx0uwe/S138h7oBgqk=' 'sha256-IcqGb0TAbH6mKQhvd8hBx2FAalfysv4UbOSlrgEnNqs=' 'sha256-biLFinpqYMtWHmXfkA1BPeCY0/fNt46SAZ+BBk5YUog=' 'sha256-eslHeDkvJNiffFsT711OoAWNr5i7S9CBs7nlwyVzHxo=' 'sha256-jKE6QZqne5OsrfemNvuLSNoud++NsCOiSlGuIsQns5o=' 'sha256-sDIENtrZwmox3spLJOzzFKFmi3ELZ0v+EkEB+J8SMrA=' 'sha256-wfFRBRN9VtnoKyjFp7nESoyL5GicNVcIrkvfmAPxv1s='; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 x-content-type-options: nosniff
 x-robots-tag: noindex, nofollow
 content-language: en
-etag: "ccX9-I2wFTFHepBlEyXMCngsTLr"
+etag: "g0JO9AjGJhhNIfLpiG7FYhXh8Rn"
 cache-control: no-cache
 content-type: text/html; charset=utf-8
 content-length: 10350

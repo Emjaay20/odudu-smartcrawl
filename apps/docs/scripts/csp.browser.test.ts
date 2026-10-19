@@ -1,7 +1,7 @@
 import { chromium, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import { docsRoutes } from '@odudu/web-assets';
 import Fastify, { type FastifyInstance } from 'fastify';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -12,6 +12,20 @@ function builtImage(): string {
     throw new Error(`${IMAGE} is not built: run pnpm --filter @odudu/docs build:image`);
   }
   return IMAGE;
+}
+
+// Every HTML file of the build, as the path the route answers it at.
+function builtPages(): string[] {
+  const walk = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const full = path.join(dir, entry.name);
+      return entry.isDirectory() ? walk(full) : [full];
+    });
+  return walk(builtImage())
+    .filter((file) => file.endsWith('.html'))
+    .map((file) => path.relative(IMAGE, file).split(path.sep).join('/'))
+    .map((relative) => relative.replace(/(^|\/)index\.html$/u, '$1'))
+    .sort();
 }
 
 let server: FastifyInstance | undefined;
@@ -123,6 +137,27 @@ describe('the image build under the policy the server sends', () => {
     await copy.click();
     await page.locator('button[aria-label*="Copied"]').first().waitFor();
     await expectClean(watched);
+    await context.close();
+  });
+
+  it('loads every built page as a document under the policy with no violation', async () => {
+    const pages = builtPages();
+    expect(pages.length).toBeGreaterThan(20);
+    const context = await requireBrowser().newContext({ viewport: { width: 1280, height: 800 } });
+    const page = await context.newPage();
+    const watched = await watch(context, page);
+    const seen: string[] = [];
+    for (const route of pages) {
+      // 404.html is the page the route answers an unknown path with.
+      const response = await page.goto(`${origin}/docs/${route === '404.html' ? 'nope/' : route}`, {
+        waitUntil: 'load',
+      });
+      expect(response?.status(), route).toBe(route === '404.html' ? 404 : 200);
+      seen.push(...(await watched.violations()).map((line) => `${route}: ${line}`));
+    }
+    expect(seen).toEqual([]);
+    expect(watched.foreign).toEqual([]);
+    expect(watched.failures.filter((line) => !/status of 404/u.test(line))).toEqual([]);
     await context.close();
   });
 

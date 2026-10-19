@@ -240,9 +240,12 @@ makes the policy from it:
 ```
 default-src 'self'; script-src 'self' <script hash>; style-src 'self';
 style-src-attr 'unsafe-hashes' <style attribute hashes>; img-src 'self' data:;
-font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self';
-form-action 'none'
+font-src 'self'; connect-src 'self'; object-src 'none'; frame-src 'none';
+frame-ancestors 'none'; base-uri 'self'; form-action 'none'
 ```
+
+`object-src` and `frame-src` are closed because the site embeds no plugin
+content and frames nothing; workers fall back to `default-src 'self'`.
 
 **Why `'unsafe-hashes'`, and what it licenses.** A style attribute is
 licensed only by a hash with `'unsafe-hashes'`, and only `style-src-attr`
@@ -260,11 +263,16 @@ the header the route sends (navigation, search, the colour toggle, code copy,
 the mobile menu at 390 px) fails on any `securitypolicyviolation`, because a
 style or script made at run time is in the JavaScript and not the HTML.
 
-**The route says noindex on every response.** `x-robots-tag: noindex,
+**The route says noindex on every response it produces.** `x-robots-tag: noindex,
 nofollow` on the page, a hashed asset, a `404`, a `308`, the search index, the
 Markdown copies and `llms.txt`, beside `x-content-type-options: nosniff`,
 `x-frame-options: DENY`, `referrer-policy: no-referrer` and `content-language`.
-A private install never competes with the public site; the build's own
+That is every response the route's handlers produce. Two kinds are Fastify's
+own and carry none of these headers: the `400` for a malformed percent-escape
+or a byte Node refuses, and the `404` for a method other than `GET` or `HEAD`
+(both `application/problem+json`, no markup). Wrapping them would need a hook
+on the root instance, which touches every other route, so they are left. A
+private install never competes with the public site; the build's own
 `<meta name="robots">` is an independent second signal. The fixed policy is on
 every response, not only on HTML, so an SVG opened as a document is held too.
 Pages and unhashed files revalidate by etag (`no-cache`); a file named by its
