@@ -248,6 +248,44 @@ printf '%s' "$SHELL_HEADERS" | grep -i '^x-content-type-options: *nosniff' > /de
 }
 echo "smoke: the mark is served and the console shell forbids a sniffed type"
 
+# The documentation is built into the image and answers from the server's own
+# origin, under a policy computed from the build, and says noindex everywhere.
+DOCS_HEADERS="$(mktemp)"
+DOCS_BODY=$(curl -sS -D "$DOCS_HEADERS" "$BASE/docs/")
+DOCS_STATUS=$(sed -n '1s/^HTTP\/[0-9.]* \([0-9]*\).*/\1/p' "$DOCS_HEADERS")
+test "$DOCS_STATUS" = "200" || { echo "smoke: GET /docs/ answered $DOCS_STATUS, expected 200" >&2; exit 1; }
+grep -i "^content-security-policy: default-src 'self'; script-src 'self' 'sha256-" "$DOCS_HEADERS" > /dev/null || {
+  echo "smoke: /docs/ did not carry its hashed policy" >&2
+  exit 1
+}
+grep -i '^x-robots-tag: noindex, nofollow' "$DOCS_HEADERS" > /dev/null || {
+  echo "smoke: /docs/ did not say noindex, nofollow" >&2
+  exit 1
+}
+rm -f "$DOCS_HEADERS"
+# The build's minifier drops the quotes, so both spellings count; a page says it once.
+NOINDEX_METAS=$(printf '%s' "$DOCS_BODY" | grep -Eo 'name="?robots"? content="?noindex' | wc -l | tr -d ' ')
+test "$NOINDEX_METAS" = "1" || { echo "smoke: /docs/ names noindex in $NOINDEX_METAS robots metas, expected 1" >&2; exit 1; }
+
+DOCS_ASSET=$(printf '%s' "$DOCS_BODY" | sed -n 's/.*src="\{0,1\}\(\/docs\/assets\/js\/[^" >]*\).*/\1/p' | sed -n 1p)
+test -n "$DOCS_ASSET" || { echo "smoke: /docs/ names no /docs/assets/js/ script" >&2; exit 1; }
+DOCS_ASSET_HEADERS=$(curl -sS -D - -o /dev/null "$BASE$DOCS_ASSET")
+printf '%s' "$DOCS_ASSET_HEADERS" | grep -i '^cache-control:.*immutable' > /dev/null || {
+  echo "smoke: $DOCS_ASSET is not cached as immutable" >&2
+  exit 1
+}
+
+LLMS_HEADERS=$(curl -sS -D - -o /dev/null "$BASE/docs/llms.txt")
+printf '%s' "$LLMS_HEADERS" | sed -n '1s/^HTTP\/[0-9.]* \([0-9]*\).*/\1/p' | grep -qx 200 || {
+  echo "smoke: GET /docs/llms.txt did not answer 200" >&2
+  exit 1
+}
+printf '%s' "$LLMS_HEADERS" | grep -i '^x-robots-tag: noindex, nofollow' > /dev/null || {
+  echo "smoke: /docs/llms.txt did not say noindex, nofollow" >&2
+  exit 1
+}
+echo "smoke: the documentation, $DOCS_ASSET and llms.txt are served from the image under noindex"
+
 # `odudu` is the image's command, so an operator runs `docker compose exec
 # odudu odudu reap` rather than naming the bundle. It prints one JSON report.
 REAP_REPORT=$(docker compose exec -T odudu odudu reap) || { echo "smoke: odudu reap failed inside the image" >&2; exit 1; }

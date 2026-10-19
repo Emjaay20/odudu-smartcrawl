@@ -58,6 +58,15 @@ RUN pnpm --filter @odudu/server build
 RUN pnpm --filter @odudu/admin-console build
 RUN pnpm --filter @odudu/instrument build
 
+# The documentation that ships with the server: the image build of the docs app
+# (base /docs/, noindex, no landing page) and the csp.json the server's policy
+# is read from. It starts from `build` so the install above is shared, and
+# nothing in the runtime image reads it but the copy below. The commit goes in
+# last, so a new commit rebuilds only this step.
+FROM build AS docs
+ARG ODUDU_REVISION=unknown
+RUN ODUDU_COMMIT="$(printf '%.7s' "$ODUDU_REVISION")" pnpm --filter @odudu/docs build:image
+
 FROM store AS prod-deps
 COPY packages packages
 COPY apps apps
@@ -65,7 +74,10 @@ COPY apps apps
 # binaries as optionalDependencies (verified against its package.json — no
 # install/postinstall script selects or compiles anything), so skipping
 # lifecycle scripts does not leave it half-installed.
-RUN pnpm install --frozen-lockfile --offline --prod --ignore-scripts
+# `pnpm fetch` leaves the whole virtual store in node_modules, devDependencies
+# included, and a --prod install over it only unlinks them from the top level.
+# Removing it first is what keeps the runtime image to what runs.
+RUN rm -rf node_modules && pnpm install --frozen-lockfile --offline --prod --ignore-scripts
 
 FROM node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f AS runtime
 RUN addgroup -S odudu && adduser -S -G odudu odudu
@@ -82,6 +94,9 @@ COPY --from=build --chown=odudu:odudu /app/packages/db/drizzle ./drizzle
 COPY --from=build --chown=odudu:odudu /app/apps/admin-console/dist ./console
 # The stylesheet and fonts every rendered page links, read once at boot.
 COPY --from=build --chown=odudu:odudu /app/packages/instrument/dist ./instrument
+# The built documentation, served under /docs and read once at boot, with the
+# csp.json its policy comes from. ODUDU_DOCS=false turns the route off.
+COPY --from=docs --chown=odudu:odudu /app/apps/docs/dist/image ./docs
 # @node-rs/argon2 is marked external to the tsup bundle (a native .node
 # binary cannot be inlined into an ESM bundle), so its resolved package has
 # to ride along explicitly. It's a dependency of packages/domain-identity,
@@ -112,6 +127,7 @@ ENV ODUDU_VERSION=$ODUDU_VERSION \
     ODUDU_MIGRATIONS_DIR=/app/drizzle \
     ODUDU_CONSOLE_DIR=/app/console \
     ODUDU_INSTRUMENT_DIR=/app/instrument \
+    ODUDU_DOCS_DIR=/app/docs \
     ODUDU_HTTP_HOST=0.0.0.0 \
     ODUDU_HTTP_PORT=3000
 USER odudu
