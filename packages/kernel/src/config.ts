@@ -111,7 +111,7 @@ function throttleWindowSeconds(fallback: number) {
     .default(fallback);
 }
 
-const schema = z.object({
+export const configSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   ODUDU_HTTP_HOST: z.string().min(1).default('0.0.0.0'),
   ODUDU_HTTP_PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
@@ -337,7 +337,7 @@ const schema = z.object({
   ODUDU_ALLOW_PRIVATE_SMTP_HOSTS: booleanEnvVar,
 });
 
-export type Config = Readonly<z.infer<typeof schema>>;
+export type Config = Readonly<z.infer<typeof configSchema>>;
 
 /**
  * The base the console's redirect and post-logout URIs are registered
@@ -349,7 +349,7 @@ export function consoleBaseUrl(config: Config): string | undefined {
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
-  const parsed = schema
+  const parsed = configSchema
     .check((ctx) => {
       // A host with nowhere to say mail came from would fail every send at
       // the SMTP server rather than at boot — catch it here, where every
