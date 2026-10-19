@@ -380,10 +380,13 @@ ID, never a literal in the markup or a hook.** On the server that is a
 `messages.ts` beside the renderer; in the console, the wording constants a
 `service` already holds, with a count still written through `counted()` and
 `plural()`, which the extraction replaces. Pages and mail will read those
-records from per-locale catalogues (ADR 0043). **Nothing enforces this yet**:
-the fifteen `*-html.ts` renderers still hold their text inline. P4g adds the
-lint for the server and P4h for the console, each with the extraction it
-follows, so until then this is a rule somebody has to follow.
+records from per-locale catalogues (ADR 0043). On the server
+`tests/lint/server-page-literals.test.ts` fails the build on text typed in a
+`*-html.ts` renderer or in the mail templates, and on a domain value's
+`.message` handed to a renderer or a request-error helper; its header lists
+what it cannot see, and there is no allowlist. **Nothing enforces this in the
+console yet**: P4h adds that lint with the extraction it follows, so until
+then it is a rule somebody has to follow.
 
 ## Layering
 

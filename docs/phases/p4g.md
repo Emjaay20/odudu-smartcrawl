@@ -915,3 +915,25 @@ used`); the required-actions, registration success and form pages are
   checking the normalised input.
 - Mail transcripts were rewritten by transformation and checked against a live
   run on `odudu-p4g-17`; the admin API refusals come from the integration suite.
+
+## Increment 17: the server literal lint
+
+- `tests/lint/server-page-literals.test.ts` reads each `packages/*/src/view/*-html.ts`
+  and `packages/email/src/service/templates.ts` as TypeScript. It reassembles text
+  across concatenation and template spans, blanks `${...}` and tags, and reports
+  prose in text nodes, `<script>` bodies, `alt`/`title`/`placeholder`/`aria-label`,
+  the `value` of an `<input type="submit">` and a literal title passed to `page()`.
+  It found nothing in the tree: every renderer was already extracted.
+- Deviation from the plan text: `value` on a `<button>` is not reported. It is what
+  the form submits (`value="allow"` on the consent buttons), not what the button
+  says; the label is the content, which is checked as text.
+- A string outside markup (a script string, a plain constant) counts only when it
+  reads as a sentence or a capitalised word, since `'submit'` and `'text/html'`
+  are code. Its header names that and the other things it cannot see.
+- Second check: no call to `render*` or `send*Error*` in a page package's
+  `*-html.ts` or `view/routes/*.ts` takes an argument holding a `.message`. It found
+  one: `routes/required-action.ts` rebuilt the oversized-password violation as
+  `{ rule, message: PASSWORD_TOO_LONG.message }`; it now passes the constant, as
+  the account routes do, and the view maps the rule to its own catalogue entry.
+- Out of scope by kind, not by allowlist: console-gateway and protocol-admin
+  problem-details strings (RFC 9457 values for a program).

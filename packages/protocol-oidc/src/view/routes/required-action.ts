@@ -70,12 +70,7 @@ export function registerRequiredActionRoute(
         reply,
         400,
         continuing(
-          renderUpdatePasswordPage(
-            tenantName,
-            authSessionId,
-            [{ rule: PASSWORD_TOO_LONG.rule, message: PASSWORD_TOO_LONG.message }],
-            locale,
-          ),
+          renderUpdatePasswordPage(tenantName, authSessionId, [PASSWORD_TOO_LONG], locale),
         ),
       );
     }
