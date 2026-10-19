@@ -32,6 +32,7 @@ export {
   configSchema,
   consoleBaseUrl,
   DEFAULT_CONSOLE_DIR,
+  DEFAULT_DOCS_DIR,
   DEFAULT_INSTRUMENT_DIR,
   DEFAULT_OUTBOX_MAX_ATTEMPTS,
   loadConfig,
@@ -42,6 +43,7 @@ export {
   type StaticFile,
   type StaticTreeLimits,
 } from '#/static-tree';
+export { etagMatches, staticEtag } from '#/static-etag';
 export { type Logger } from '#/logger';
 export { ModuleRegistry, type ModuleContext, type OduduModule } from '#/registry';
 export { ClaimMapperRegistry, type ClaimMapper } from '#/registries/claim-mapper';

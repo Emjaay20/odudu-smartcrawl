@@ -1,6 +1,11 @@
-import { createHash } from 'node:crypto';
 import { type FastifyPluginAsync } from 'fastify';
-import { OduduError, readStaticTree, type StaticFile } from '@odudu/kernel';
+import {
+  etagMatches,
+  OduduError,
+  readStaticTree,
+  staticEtag,
+  type StaticFile,
+} from '@odudu/kernel';
 
 const TYPES: Readonly<Record<string, string>> = {
   '.css': 'text/css; charset=utf-8',
@@ -19,18 +24,6 @@ const LIMITS = {
 
 // `buildInstrument` names a font `<name>.<8 hex of its content>.woff2`.
 const CONTENT_HASHED_FONT = /^fonts\/[a-z0-9-]+\.[0-9a-f]{8}\.woff2$/u;
-
-function etagOf(file: StaticFile): string {
-  return `"${createHash('sha256').update(file.content).digest('base64url').slice(0, 27)}"`;
-}
-
-// RFC 9110 §13.1.2: a list, `*`, and weak validators all count, and the
-// comparison is weak, so `W/"x"` matches `"x"`.
-function matches(header: string | undefined, etag: string): boolean {
-  if (header === undefined) return false;
-  if (header.trim() === '*') return true;
-  return header.split(',').some((candidate) => candidate.trim().replace(/^W\//u, '') === etag);
-}
 
 function unavailable(dir: string, err: unknown): string {
   const why =
@@ -53,7 +46,7 @@ export function instrumentRoutes(dir: string): FastifyPluginAsync {
       fastify.log.warn(unavailable(dir, err));
       return;
     }
-    const etags = new Map([...tree].map(([path, file]) => [path, etagOf(file)]));
+    const etags = new Map([...tree].map(([path, file]) => [path, staticEtag(file.content)]));
 
     fastify.get<{ Params: { '*': string } }>('/instrument/*', (request, reply) => {
       const path = request.params['*'];
@@ -67,7 +60,7 @@ export function instrumentRoutes(dir: string): FastifyPluginAsync {
         .header('etag', etag)
         .header('x-content-type-options', 'nosniff')
         .header('cache-control', immutable ? 'public, max-age=31536000, immutable' : 'no-cache');
-      if (matches(request.headers['if-none-match'], etag)) return reply.code(304).send();
+      if (etagMatches(request.headers['if-none-match'], etag)) return reply.code(304).send();
       return reply.code(200).header('content-type', file.contentType).send(file.content);
     });
   };
