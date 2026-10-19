@@ -46,7 +46,7 @@ module.exports = {
       severity: 'error',
       comment:
         'The console gateway reaches the server only as an OAuth client does, so of the ' +
-        'workspace it may import the kernel, db, crypto, contracts, domain-tenant and ' +
+        'workspace it may import the kernel, db, crypto, contracts, i18n, domain-tenant and ' +
         'domain-identity packages and nothing else. The rule covers src/ minus its *.test.ts ' +
         'files; those and everything under tests/ are held only by ' +
         'console-gateway-imports-no-protocol, so they may import any package but the ' +
@@ -58,7 +58,7 @@ module.exports = {
       to: {
         path: '(^|/)packages/',
         pathNot:
-          '(^|/)node_modules/|(^|/)packages/(?:console-gateway|kernel|db|crypto|contracts|domain-tenant|domain-identity)/',
+          '(^|/)node_modules/|(^|/)packages/(?:console-gateway|kernel|db|crypto|contracts|i18n|domain-tenant|domain-identity)/',
       },
     },
     {
