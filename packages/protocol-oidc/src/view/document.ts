@@ -2,6 +2,7 @@ import {
   DEFAULT_PAGE_LOCALE,
   INSTRUMENT_STYLESHEET,
   PRODUCT_NAME,
+  isPageTheme,
   type PageLocale,
   type PageScript,
   type RenderedPage,
@@ -24,6 +25,15 @@ const MARK =
   '<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" ' +
   'stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">' +
   '<circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>';
+
+// Present only for a choice of light or dark: with none the stylesheet
+// follows the operating system, and nothing but one of the two constants is
+// ever written.
+function themeAttribute(locale: PageLocale): string {
+  return locale.theme !== undefined && isPageTheme(locale.theme)
+    ? ` data-theme="${locale.theme}"`
+    : '';
+}
 
 // The heading every page opens with, and what it is for: lines saying what the
 // person is continuing to, then the tenant, in the smaller type of a caption.
@@ -55,7 +65,7 @@ export function page(
     frames,
     locale,
     html: `<!doctype html>
-<html lang="${escapeHtml(locale.tag)}" dir="${escapeHtml(locale.dir)}">
+<html lang="${escapeHtml(locale.tag)}" dir="${escapeHtml(locale.dir)}"${themeAttribute(locale)}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">

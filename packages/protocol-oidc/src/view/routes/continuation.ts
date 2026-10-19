@@ -1,6 +1,6 @@
 import { type PendingRequest } from '@odudu/authn-flows';
 import { negotiatePageLocale } from '@odudu/i18n';
-import { type PageLocale, type RenderedPage } from '@odudu/kernel';
+import { type PageLocale, type RenderedPage, withPageTheme } from '@odudu/kernel';
 import { type FastifyReply } from 'fastify';
 
 export interface ContinuationDeps {
@@ -37,10 +37,13 @@ export function requestLocale(
   reply: FastifyReply,
   deps: { pageLocales?: readonly string[] | undefined } = {},
 ): PageLocale {
-  return negotiatePageLocale({
-    acceptLanguage: reply.request.headers['accept-language'],
-    ...(deps.pageLocales === undefined ? {} : { supported: deps.pageLocales }),
-  });
+  return withPageTheme(
+    negotiatePageLocale({
+      acceptLanguage: reply.request.headers['accept-language'],
+      ...(deps.pageLocales === undefined ? {} : { supported: deps.pageLocales }),
+    }),
+    reply.request.headers.cookie,
+  );
 }
 
 // Who is asking for the page, as far as the language may use it. `subject`
@@ -50,7 +53,8 @@ export type PageSubject = { readonly subject: string } | 'authenticated';
 
 export interface PageContinuation {
   // Negotiated before the renderer runs, so the text and the `lang` it is
-  // sent under come from one value (ADR 0043).
+  // sent under come from one value (ADR 0043). It carries the person's
+  // light or dark choice too, read from the request's cookie.
   readonly locale: PageLocale;
   // A page whose form continues a parked authorization request can be
   // answered with a 302 to that request's client, so it names the client's
@@ -85,13 +89,16 @@ export async function continuation(
     tenant !== null && subjectId !== null
       ? ((await deps.subjectLocale?.(tenant.id, subjectId)) ?? null)
       : null;
-  const locale = negotiatePageLocale({
-    uiLocales: pending?.uiLocales ?? [],
-    subjectLocale,
-    authenticated: subjectId !== null,
-    acceptLanguage: reply.request.headers['accept-language'],
-    ...(deps.pageLocales === undefined ? {} : { supported: deps.pageLocales }),
-  });
+  const locale = withPageTheme(
+    negotiatePageLocale({
+      uiLocales: pending?.uiLocales ?? [],
+      subjectLocale,
+      authenticated: subjectId !== null,
+      acceptLanguage: reply.request.headers['accept-language'],
+      ...(deps.pageLocales === undefined ? {} : { supported: deps.pageLocales }),
+    }),
+    reply.request.headers.cookie,
+  );
   return {
     locale,
     continuing: (page) => (pending === null ? page : { ...page, redirectsTo: pending.redirectUri }),

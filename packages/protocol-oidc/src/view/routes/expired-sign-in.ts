@@ -1,5 +1,6 @@
 import { type PendingRequest } from '@odudu/authn-flows';
 import { negotiatePageLocale } from '@odudu/i18n';
+import { withPageTheme } from '@odudu/kernel';
 import { type FastifyReply } from 'fastify';
 import { restartAuthorizeLocation } from '#/service/restart-request';
 import { errorRedirect } from '#/usecase/login-submission';
@@ -61,11 +62,14 @@ export async function sendSignInExpired(
   // The row may be gone, and an expired attempt authenticated nobody, so
   // the page is in the language its parked request asked for when there is
   // one, and the browser's otherwise.
-  const locale = negotiatePageLocale({
-    uiLocales: pending?.uiLocales ?? [],
-    acceptLanguage: reply.request.headers['accept-language'],
-    ...(deps.pageLocales === undefined ? {} : { supported: deps.pageLocales }),
-  });
+  const locale = withPageTheme(
+    negotiatePageLocale({
+      uiLocales: pending?.uiLocales ?? [],
+      acceptLanguage: reply.request.headers['accept-language'],
+      ...(deps.pageLocales === undefined ? {} : { supported: deps.pageLocales }),
+    }),
+    reply.request.headers.cookie,
+  );
   return sendHtml(
     reply,
     400,

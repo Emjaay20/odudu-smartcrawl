@@ -16,6 +16,25 @@ describe('page', () => {
     expect(html).toContain('<html lang="ar" dir="rtl">');
   });
 
+  it('names the theme the person chose on <html>, and none otherwise', () => {
+    const none = page('x', '');
+    expect(none.html).not.toContain('data-theme');
+    const dark = page('x', '', null, [], { tag: 'en', dir: 'ltr', theme: 'dark' });
+    expect(dark.html).toContain('<html lang="en" dir="ltr" data-theme="dark">');
+    const light = page('x', '', null, [], { tag: 'ar', dir: 'rtl', theme: 'light' });
+    expect(light.html).toContain('<html lang="ar" dir="rtl" data-theme="light">');
+  });
+
+  it('never writes a theme that is not one of the two', () => {
+    const { html } = page('x', '', null, [], {
+      tag: 'en',
+      dir: 'ltr',
+      theme: 'x"><script>' as never,
+    });
+    expect(html).not.toContain('data-theme');
+    expect(html).not.toContain('<script>');
+  });
+
   it('wraps the body in one main landmark under the brand', () => {
     const { html } = page('Sign in', '<p>hello</p>');
     expect(html.match(/<main /gu)).toHaveLength(1);

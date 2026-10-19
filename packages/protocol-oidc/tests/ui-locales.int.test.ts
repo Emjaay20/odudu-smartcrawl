@@ -223,3 +223,54 @@ describe('[ODUDU-UI-LOCALES-02] discovery advertises the shipped locales', () =>
     expect(doc).not.toHaveProperty('claims_locales_supported');
   });
 });
+
+const documentTheme = (res: LightMyRequestResponse): string | undefined =>
+  /<html [^>]*data-theme="([^"]*)"/u.exec(res.body)?.[1];
+
+describe("the person's light or dark choice reaches the pages", () => {
+  const pages: [string, () => Promise<LightMyRequestResponse>, string][] = [
+    ['the sign-in form', () => authorize({}, { cookie: 'odudu-theme=dark' }), 'dark'],
+    [
+      'the authorize error page',
+      () => authorize({ client_id: 'no-such-client' }, { cookie: 'a=1; odudu-theme=light' }),
+      'light',
+    ],
+    [
+      'the signed-out page',
+      () =>
+        http.inject({
+          url: `/tenants/${TENANT}/protocol/openid-connect/logout`,
+          headers: { cookie: 'odudu-theme=dark' },
+        }),
+      'dark',
+    ],
+  ];
+
+  it.each(pages)("names the cookie's theme on %s", async (_name, request, theme) => {
+    const res = await request();
+    expect(documentTheme(res)).toBe(theme);
+    expect(res.headers['cache-control']).toBe('no-store');
+  });
+
+  it('names none without the cookie, and keeps the page the same bytes as before', async () => {
+    const res = await authorize();
+    expect(res.statusCode).toBe(200);
+    expect(res.body).not.toContain('data-theme');
+    expect(res.body).toContain('<html lang="en" dir="ltr">');
+  });
+
+  it.each([
+    ['uppercase', 'odudu-theme=LIGHT'],
+    ['a break-out', 'odudu-theme=x"><script>alert(1)</script>'],
+    ['a suffix', 'odudu-theme=light evil'],
+    ['system', 'odudu-theme=system'],
+    ['a very long value', `odudu-theme=${'x'.repeat(9000)}`],
+    ['a long header holding a good cookie', `odudu-theme=dark; pad=${'x'.repeat(9000)}`],
+    ['two of them', 'odudu-theme=light; odudu-theme=dark'],
+  ])('ignores %s and reflects nothing of it', async (_name, cookie) => {
+    const res = await authorize({}, { cookie });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).not.toContain('data-theme');
+    expect(res.body).not.toContain('alert(1)');
+  });
+});

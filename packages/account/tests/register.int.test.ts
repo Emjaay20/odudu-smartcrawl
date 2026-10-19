@@ -240,6 +240,29 @@ describe('self-registration', () => {
     expect(none.headers['content-language']).toBe('en');
   });
 
+  it('follows the light or dark choice in the odudu-theme cookie, and only that', async () => {
+    const { tenantName } = await seedTenant(`tenant-${newId()}`, { registrationAllowed: true });
+    const url = `/tenants/${tenantName}/login-actions/registration`;
+
+    const dark = await httpApp.inject({ url, headers: { cookie: 'odudu-theme=dark' } });
+    expect(dark.body).toContain('<html lang="en" dir="ltr" data-theme="dark">');
+
+    const none = await httpApp.inject({ url });
+    expect(none.body).not.toContain('data-theme');
+
+    for (const cookie of [
+      'odudu-theme=LIGHT',
+      'odudu-theme=x"><script>alert(1)</script>',
+      'odudu-theme=light evil',
+      `odudu-theme=${'x'.repeat(9000)}`,
+    ]) {
+      const hostile = await httpApp.inject({ url, headers: { cookie } });
+      expect(hostile.statusCode).toBe(200);
+      expect(hostile.body).not.toContain('data-theme');
+      expect(hostile.body).not.toContain('alert(1)');
+    }
+  });
+
   it('rejects a request naming a tenant that does not exist', async () => {
     const res = await httpApp.inject({ url: '/tenants/does-not-exist/login-actions/registration' });
     expect(res.statusCode).toBe(404);

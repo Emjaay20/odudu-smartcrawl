@@ -93,3 +93,33 @@ describe('every route that renders a page passes the negotiated locale', () => {
     expect(offences).toEqual([]);
   });
 });
+
+// The theme rides on the negotiated locale, so the one way a page loses it is
+// a negotiation that never passes through withPageTheme. The helpers every
+// route reads the locale from are the only places that negotiate.
+describe('every negotiation of a page locale carries the theme', () => {
+  it('passes the result of negotiatePageLocale through withPageTheme', async () => {
+    const offences: string[] = [];
+    let negotiating = 0;
+    const routes = [
+      ...(await files('packages/*/src/view/routes/*.ts')),
+      ...(await files('packages/*/src/view/*.ts')),
+    ].filter((file) => !file.endsWith('-html.ts'));
+    for (const file of routes) {
+      const text = await readFile(path.join(REPO_ROOT, file), 'utf8');
+      for (const match of text.matchAll(/(?<![\w.])negotiatePageLocale\(/gu)) {
+        negotiating += 1;
+        const open = match.index + match[0].length - 1;
+        const before = text.slice(Math.max(0, match.index - 120), match.index);
+        const after = text.slice(closing(text, open) + 1, closing(text, open) + 3);
+        const wrapped = /withPageTheme\(\s*$/u.test(before) && after.startsWith(',');
+        if (!wrapped) {
+          const line = text.slice(0, match.index).split('\n').length.toString();
+          offences.push(`${file}:${line} negotiatePageLocale without withPageTheme`);
+        }
+      }
+    }
+    expect(negotiating).toBeGreaterThanOrEqual(4);
+    expect(offences).toEqual([]);
+  });
+});

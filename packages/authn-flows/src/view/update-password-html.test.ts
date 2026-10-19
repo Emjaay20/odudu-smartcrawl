@@ -48,6 +48,16 @@ describe('every rule the domain reports is worded by the catalogue', () => {
   };
   const subject = { username: 'a', email: 'a@example.com' };
 
+  it('carries the light or dark choice its locale holds into the document', () => {
+    const dark = renderUpdatePasswordPage('demo', 'sess-1', undefined, {
+      ...DEFAULT_PAGE_LOCALE,
+      theme: 'dark',
+    });
+    expect(dark.html).toContain('<html lang="en" dir="ltr" data-theme="dark">');
+    const none = renderUpdatePasswordPage('demo', 'sess-1', undefined, DEFAULT_PAGE_LOCALE);
+    expect(none.html).not.toContain('data-theme');
+  });
+
   it('renders each reported rule without the developer fallback', () => {
     const reported = [
       ...evaluatePassword('a'.repeat(400), policy, subject),
