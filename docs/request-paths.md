@@ -4292,6 +4292,15 @@ walkthrough above landed on. A subject who _does_ already hold codes is not
 asked again: a new factor does not invalidate a list they have saved, and
 re-issuing would silently retire the copy on their paper.
 
+Two more moments owe it, and one removes it. A sign-in that completes for a
+subject who holds a second factor and no unspent code owes the action once,
+so a set revoked without a new one asked for does not leave them with no way
+back. And removing the **last** TOTP or passkey through the admin API deletes
+the whole set with it, spent rows included: a code only stands in for a
+factor, and a set that outlived it would work again after a re-enrolment. The
+admin side, with its transcripts, is
+[`DELETE /subjects/:id/recovery-codes`](admin-paths.md#delete-subjectsidrecovery-codes).
+
 Every render of the page writes one `credential` audit row,
 `recovery_codes.issued`, in the transaction that stores the hashes — the
 forced first set included, and again for each set a re-render issues in
@@ -11939,7 +11948,12 @@ session lifecycle. A citation of either half here means that half.
   What is not there yet: no way for a subject to ask for a fresh set _before_
   they run out, and no warning as the list gets short — self-service
   credential management is **P4f**'s "me" API and application-initiated
-  actions. And **no rate
+  actions. The same goes for **no notice mail when the subject enrols a factor
+  or issues a set themselves**: an administrator's removal of a factor and
+  revoke of a set are mailed to the address on file, and a subject's own
+  changes are not (NIST SP 800-63B-4 §4.6 asks for both), which **P4f** brings
+  with the self-service actions that make a regeneration an explicit event
+  rather than a page render. And **no rate
   limit on re-issuing**: while the action is owed, each login submission
   with a valid password renders the page again, which costs ten Argon2id
   hashes and eleven row writes. Bounded by holding the password and by

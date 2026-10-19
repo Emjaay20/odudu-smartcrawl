@@ -4821,6 +4821,86 @@ unknown id, or one belonging to a different subject, answers `404`, and a
 subject holding an admin capability the caller does not is refused with
 `403` ([the target ceiling](#the-target-ceiling)).
 
+**Removing the last second factor revokes the recovery codes with it.** A
+recovery code only stands in for a TOTP code, so a set that outlived its
+factor would silently work again once the person enrolled a new one, and it
+may have left with the lost device. When no TOTP and no passkey remains after
+the delete, the whole set goes, spent rows too, in the same transaction, and
+a second `subject.recovery_codes_revoke` audit row says so in `detail`:
+`{"revoked": 10, "reason": "last_factor_removed"}`. A later enrolment finds no
+codes and so issues a fresh set. While another second factor remains the set
+stays, and a recovery code does not count as a second factor. The subject's
+row is locked first, so two concurrent removals serialise and exactly one of
+them revokes. The subject is also mailed, at the address on file whether or
+not it is verified, saying which factor was removed and, if it happened, that
+the codes went with it; it carries no link, no code and nothing about the
+factor. A subject with no address is not mailed, and the delete is
+unaffected. Nothing ends the subject's sessions: the console's removal
+dialog offers that as a separate, unticked choice that calls
+[`DELETE /subjects/:id/sessions`](#delete-subjectsidsessions).
+
+Captured on 2026-10-19 against a stack of its own, project
+`odudu-p4g-recovery`, built from this branch on an empty volume, with
+`seed admin --username rae` for the token, a tenant `recovery-life`, and in it
+a subject `ines` seeded with `seed user` and then given, as the database
+owner, a TOTP credential and ten recovery-code rows, the state an enrolment
+and its saved set leave. The credentials list first:
+
+```bash
+S=http://localhost:3187/admin/tenants/recovery-life/subjects
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$INES/credentials"
+```
+
+```
+{"items":[{"id":"01a1554b-bd12-7e43-943d-23bad4c55806","type":"password","created_at":"2026-10-19T17:53:09.356Z","expired":false},{"id":"1c0ec1ea-211d-4a02-aace-a5873c04b243","type":"totp","created_at":"2026-10-19T17:53:25.802Z"},{"type":"recovery-code","created_at":"2026-10-19T17:53:26.613Z","recovery_code_count":10}]}
+```
+
+Deleting the TOTP enrolment, then the list, then the audit rows for this
+subject, newest first, then the mail the outbox holds for her address, with `INES` the subject
+`01a1554b-bcf1-7f9e-a1c1-8e090f921cb8` and `TOTP` the credential
+`1c0ec1ea-211d-4a02-aace-a5873c04b243` the list showed:
+
+```bash
+curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$INES/credentials/$TOTP"
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$INES/credentials"; echo
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://localhost:3187/admin/tenants/recovery-life/audit?resource_type=subject&resource_id=$INES" |
+  python3 -c "
+import json,sys
+for r in json.load(sys.stdin)['items']: print(json.dumps({k:r[k] for k in ('action','outcome','detail')}))"
+docker compose -p odudu-p4g-recovery exec -T postgres psql -U odudu -d odudu -tA -c \
+  "select to_address, subject, body_text from email_outbox where tenant_id = (select id from tenants where name = 'recovery-life') order by created_at"
+```
+
+```
+HTTP/1.1 204 No Content
+x-request-id: 01a1554c-2e52-7d1a-b4eb-1d31751585cf
+cache-control: no-store
+Date: Mon, 19 Oct 2026 17:53:38 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+{"items":[{"id":"01a1554b-bd12-7e43-943d-23bad4c55806","type":"password","created_at":"2026-10-19T17:53:09.356Z","expired":false}]}
+```
+
+The delete's answer and the list come first. Then the audit rows, cut to
+`action`, `outcome` and `detail` by the filter in the command (each row
+carries the actor, request id and address as the other sections show), and the
+mail:
+
+```
+{"action": "subject.recovery_codes_revoke", "outcome": "allowed", "detail": {"reason": "last_factor_removed", "revoked": 10}}
+{"action": "subject.credential_delete", "outcome": "allowed", "detail": {}}
+```
+
+```
+ines@example.test|A sign-in method was removed from your recovery-life account|An administrator removed the authenticator app from your ⁨recovery-life⁩ account.
+
+Your recovery codes were removed with it, and no longer work.
+
+If you did not expect this, contact your administrator.
+```
+
 ## `DELETE /subjects/:id/recovery-codes`
 
 Requires `manage-users`. Revokes every recovery code the subject holds,
@@ -4829,10 +4909,33 @@ somebody else may have read. A code carries no `id` of its own
 ([`GET /subjects/:id/credentials`](#get-subjectsidcredentials) says why), so
 the set is the only thing there is to remove. It answers `204` whether or
 not any were held, and its `subject.recovery_codes_revoke` audit row says
-how many went in `detail.revoked`. It owes nothing: requiring
-`generate-recovery-codes` through
+how many went in `detail.revoked`.
+
+**A revoked set is replaced unless the request says otherwise.** While the
+subject still holds a second factor, a TOTP enrolment or a passkey, the
+request adds the `generate-recovery-codes` required action in the same
+transaction, so their next sign-in ends on the page that issues a fresh set;
+`?require_new_set=false` leaves them with none until
 [`PUT /subjects/:id/required-actions`](#get-subjectsidrequired-actions-and-put-subjectsidrequired-actions)
-is what asks the subject for a fresh set. An unknown subject, one in
+or the next sign-in asks (below). A subject with no second factor is never
+asked, since a set would serve nothing. The audit row's
+`detail.new_set_required` says which it was. Any value of `require_new_set`
+other than `true` or `false` is refused with `400` before anything changes.
+The subject is mailed at the address on file when any code was revoked, saying
+the old codes no longer work and, if one is asked, that a new set will be;
+there is no mail for a revoke that found nothing, and none for a subject with
+no address.
+
+**A sign-in that completes with a second factor and no unspent code also owes
+a set**, once: it adds `generate-recovery-codes`, which saving a set clears, so
+it does not repeat. That covers a subject whose set was revoked with
+`require_new_set=false`, and one enrolled before codes existed. It is one
+aggregate query on the sign-in's success path, and never runs for a subject
+with no second factor. Revoking the set because the last factor was removed is
+[`DELETE /subjects/:id/credentials/:credentialId`](#delete-subjectsidcredentialscredentialid)'s
+doing, not this endpoint's.
+
+An unknown subject, one in
 another tenant, or one with no `users` row answers `404`, and a subject
 holding an admin capability the caller does not is refused with `403`
 ([the target ceiling](#the-target-ceiling)).
@@ -4871,31 +4974,113 @@ HTTP/1.1 200 OK
 {"items":[{"id":"01a0ec85-0c6d-75c9-a720-81d3b70c0811","type":"password","created_at":"2026-09-29T09:35:37.542Z","expired":false},{"type":"recovery-code","created_at":"2026-09-29T09:36:10.866Z","recovery_code_count":10}]}
 ```
 
-Revoking them, then the list again, then the audit row, scoped to `ines`
-and this action:
-
-Recaptured against the tenth stack, once each row answered `actor_name` and
-`actor_origin`: in a tenant of the same name, `ines` seeded there, owed
-`generate-recovery-codes` and signed in once so the page minted her a set,
-then the same three requests, so the ids are that run's, not those above:
+The rest was captured on 2026-10-19 on the stack the credential section above
+names (project `odudu-p4g-recovery`, tenant `recovery-life`, a public client
+`life-app` with `https://app.example/callback`), on `olga` and `noor`, each
+seeded with `seed user` and then given as the database owner a TOTP credential
+and ten recovery-code rows. The id variables are their subject ids,
+`OLGA=01a1554b-be61-7ac8-b5d5-5cedc64a4492` and
+`NOOR=01a1554b-fca4-73b7-ad55-6a4150567782`. `olga` is revoked with the
+default: her `required-actions` first (empty, with the `ETag`), the revoke,
+what is owed after, the credentials (the TOTP stays, no recovery-code entry),
+the audit row for this action, and her mail:
 
 ```bash
-curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$INES/recovery-codes"
-curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$INES/credentials"; echo
+S=http://localhost:3187/admin/tenants/recovery-life/subjects
+curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$OLGA/required-actions" | grep -iE '^etag|^\{'
+curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$OLGA/recovery-codes"
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$OLGA/required-actions"; echo
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$OLGA/credentials"; echo
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
-  "http://localhost:3082/admin/tenants/lockout-demo/audit?resource_type=subject&resource_id=01a0ee8f-bef6-7e61-b451-6bb2bb05a643&action=subject.recovery_codes_revoke"; echo
+  "http://localhost:3187/admin/tenants/recovery-life/audit?resource_type=subject&resource_id=$OLGA&action=subject.recovery_codes_revoke" |
+  python3 -c "
+import json,sys
+for r in json.load(sys.stdin)['items']: print(json.dumps({k:r[k] for k in ('action','outcome','detail')}))"
+docker compose -p odudu-p4g-recovery exec -T postgres psql -U odudu -d odudu -tA -c \
+  "select to_address, subject, body_text from email_outbox where tenant_id = (select id from tenants where name = 'recovery-life') and to_address = 'olga@example.test'"
 ```
 
 ```
+etag: "7d357b0ef1f85ba71c5ccebb6671b0c34f4b3950f5b21d2af7b4a3d4e9dcd570"
+{"actions":[]}
 HTTP/1.1 204 No Content
-x-request-id: 01a0ee8f-c14b-7de0-b504-c314a6070e23
+x-request-id: 01a1554c-4c0a-7fe3-a0ff-cef22c539c0d
 cache-control: no-store
-Date: Tue, 29 Sep 2026 19:06:33 GMT
+Date: Mon, 19 Oct 2026 17:53:46 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"items":[{"id":"01a0ee8f-bf17-764e-b49c-59229a548da4","type":"password","created_at":"2026-09-29T19:06:33.071Z","expired":false}]}
-{"items":[{"id":"01a0ee8f-c159-7839-a043-7aeabfb94d1e","occurred_at":"2026-09-29T19:06:33.686Z","event_type":"admin_mutation","action":"subject.recovery_codes_revoke","outcome":"allowed","actor_tenant_id":"0199aa00-0000-7000-8000-000000000001","actor_subject_id":"01a0ee8a-bfb8-763c-ac22-0c8d97b0fada","actor_client_id":"01a0ee8a-bf72-77c9-a423-f61084924d9f","actor_name":null,"actor_origin":"system","resource_type":"subject","resource_id":"01a0ee8f-bef6-7e61-b451-6bb2bb05a643","request_id":"01a0ee8f-c14b-7de0-b504-c314a6070e23","ip":"172.22.0.1","detail":{"revoked":10}}]}
+{"actions":["generate-recovery-codes"]}
+{"items":[{"id":"01a1554b-be82-7e8a-ab63-1ecfd873f6b7","type":"password","created_at":"2026-10-19T17:53:09.725Z","expired":false},{"id":"f10d2fd7-1c2b-4095-b53c-5e94d7ad2f26","type":"totp","created_at":"2026-10-19T17:53:26.695Z"}]}
+{"action": "subject.recovery_codes_revoke", "outcome": "allowed", "detail": {"revoked": 10, "new_set_required": true}}
+olga@example.test|Your recovery-life recovery codes were revoked|An administrator revoked the recovery codes on your ⁨recovery-life⁩ account. The old codes no longer work.
+
+You will be asked to save a new set the next time you sign in.
+
+If you did not expect this, contact your administrator.
+```
+
+`noor` is revoked with `require_new_set=false`, after a value that is neither
+`true` nor `false` was refused and the ten codes counted to show it changed
+nothing. Nothing is owed after, and the audit row says so. Then `noor` signs
+in, the password and then the code from the authenticator app. `signin` is the
+helper the lockout section below defines, pointed at this tenant and client and
+taking, after the username, the name and value of a second field to post once
+the password has been taken; `totp.py` is a five-line RFC 6238 generator over
+the secret the TOTP row was seeded with. The sign-in ends on the page that
+issues a set, and the set is now owed:
+
+```bash
+AUTHORIZE='http://localhost:3187/tenants/recovery-life/protocol/openid-connect/auth?response_type=code&client_id=life-app&redirect_uri=https%3A%2F%2Fapp.example%2Fcallback&scope=openid&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'
+signin() {
+  sid=$(curl -sS "$AUTHORIZE" | sed -n 's/.*name="auth_session_id" value="\([^"]*\)".*/\1/p' | head -1)
+  curl -sS -D - -o body.html --data-urlencode "auth_session_id=$sid" --data-urlencode "username=$1" \
+    --data-urlencode "password=correct horse battery staple" \
+    http://localhost:3187/tenants/recovery-life/login-actions/authenticate | grep -iE '^(HTTP)' | tr -d '\r'
+  grep -o '<title>[^<]*</title>' body.html || true
+  if [ -n "$2" ]; then
+    curl -sS -D - -o body.html --data-urlencode "auth_session_id=$sid" --data-urlencode "$2=$3" \
+      http://localhost:3187/tenants/recovery-life/login-actions/authenticate |
+      grep -iE '^(HTTP|location)' | cut -c1-90 | tr -d '\r'
+    grep -o '<title>[^<]*</title>' body.html || true
+  fi
+}
+curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$NOOR/recovery-codes?require_new_set=maybe"
+docker compose -p odudu-p4g-recovery exec -T postgres psql -U odudu -d odudu -tA -c \
+  "select count(*) from user_credentials where subject_id = '$NOOR' and type = 'recovery-code'"
+curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$NOOR/recovery-codes?require_new_set=false"
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$NOOR/required-actions"; echo
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://localhost:3187/admin/tenants/recovery-life/audit?resource_type=subject&resource_id=$NOOR&action=subject.recovery_codes_revoke" |
+  python3 -c "
+import json,sys
+for r in json.load(sys.stdin)['items']: print(json.dumps({k:r[k] for k in ('action','outcome','detail')}))"
+signin noor code "$(python3 totp.py GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ)"
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$NOOR/required-actions"; echo
+```
+
+The `400` is cut to the lines that identify it: the capture dropped its
+`x-request-id`, `cache-control`, `date` and keep-alive lines with `grep -v`, which
+the commands above do not show. The status lines and titles are what `signin`
+prints, status and title after the password, then status, any `location` and
+title after the code. The wrong value is refused by the router's own query
+check, whose message is its validator's:
+
+```
+HTTP/1.1 400 Bad Request
+content-type: application/problem+json; charset=utf-8
+content-length: 276
+
+{"type":"about:blank","title":"Error","status":400,"detail":"querystring/require_new_set must be equal to one of the allowed values","errors":[{"path":"require_new_set","message":"must be equal to one of the allowed values"}],"instance":"01a1554c-6f30-7642-b969-feb18871fdc9"}
+10
+HTTP/1.1 204 No Content
+{"actions":[]}
+{"action": "subject.recovery_codes_revoke", "outcome": "allowed", "detail": {"revoked": 10, "new_set_required": false}}
+HTTP/1.1 200 OK
+<title>Enter your authentication code</title>
+HTTP/1.1 200 OK
+<title>Save your recovery codes</title>
+{"actions":["generate-recovery-codes"]}
 ```
 
 ## `GET /subjects/:id/consents` and `DELETE /subjects/:id/consents/:clientId`

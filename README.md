@@ -302,9 +302,17 @@ refusal.
 **An operator can revoke a subject's whole set** with
 `DELETE /admin/tenants/{tenant}/subjects/{id}/recovery-codes`, spent codes
 with it — the codes carry no id of their own, so there is no deleting one —
-for a list somebody else may have read. It owes nothing: requiring
-`generate-recovery-codes` through `PUT …/required-actions` is what asks for a
-fresh set at the next sign-in
+for a list somebody else may have read. While the subject still holds a
+second factor it also adds `generate-recovery-codes`, so the next sign-in
+asks for a fresh set, unless `?require_new_set=false` says otherwise.
+**Removing a subject's last TOTP or passkey revokes the set with it**
+(`DELETE …/credentials/{id}`; the audit row is `subject.recovery_codes_revoke`
+with `reason: last_factor_removed`), because a code only stands in for a factor
+and one that survived would work again after a re-enrolment. A sign-in that
+completes for a subject who holds a second factor and no unspent code owes a
+set once, so a subject enrolled before codes existed, or whose set was revoked
+without a new one asked for, is prompted. Both removals mail the subject at
+the address on file, saying nothing a stranger could use
 ([docs/admin-paths.md](docs/admin-paths.md#delete-subjectsidrecovery-codes)).
 
 **A subject can also enrol a passkey.** A pending `configure-passkey`

@@ -1516,7 +1516,7 @@ error and config tables from `@odudu/kernel`, the audit vocabulary from
 | `sessions`            | 17        | 18     |
 | `settings`            | 0         | 0      |
 | `smtp`                | 5         | 24     |
-| `subjects`            | 201       | 229    |
+| `subjects`            | 202       | 230    |
 | `tenants`             | 165       | 202    |
 | `whoami`              | 0         | 4      |
 
@@ -1609,3 +1609,92 @@ heap limit` at 4.56 GB resident; with `NODE_OPTIONS=--max-old-space-size=8192` i
   above 16 GB), and `eslint .` peaks at 5.0 to 5.3 GB resident, so a bare run is a coin flip on GC timing. The script is
   `node --max-old-space-size=6144 node_modules/eslint/bin/eslint.js .`, cross-platform, so local, `pnpm verify` and CI
   agree; 8192 would not be backed by a 7 GB runner. Shrinking the Docusaurus-options typed program is the longer-term fix.
+
+## Recovery-code lifecycle
+
+Recovery codes had a creation path and a spend path and nothing in between: an administrator could remove a TOTP
+enrolment and leave the set that stood in for it, so a re-enrolment silently revived codes that may have left with the
+lost device. This increment gives the set a lifecycle. The concept page for the docs site is written with the guides
+increments; this section is its source, and the heading below is the one they fill.
+
+### Recovery codes
+
+- **What a recovery code is for.** It stands in for a TOTP code at the second-factor step, once. It is not itself a
+  second factor, so a subject whose only "factor" is a set of codes has none.
+- **Which credentials are a second factor.** A `totp` row or a `webauthn` row (`recoveryStanding` in
+  `credentialRepository`). A passkey counts because its assertion is possession plus the authenticator's own user
+  verification, and the flow engine already treats it as satisfying the second-factor step (`otpApplicable` stands down
+  after one). A passkey-only subject's codes do not unlock a login in a tenant that does not require a second factor, but
+  they are kept and counted with the passkey: the removal rule is about whether anything is left to stand in for.
+- **Removal.** `onSecondFactorRemoved` (`@odudu/authn-flows`) runs after a TOTP or passkey row is deleted, in the same
+  transaction and with the subject row locked (`FOR NO KEY UPDATE`, as every admin mutation takes it). With no second
+  factor left it deletes the whole set, spent rows included, and records `subject.recovery_codes_revoke` with
+  `{revoked, reason: "last_factor_removed"}`; with one left, or no codes held, it writes nothing. The only path that
+  removes a second-factor row today is the admin API's `deleteCredential` (verified: `grep -rn "deleteOne" packages apps
+--include='*.ts'` finds that one caller; password-history trimming and `deleteRecoveryCodes` are the other deletes).
+  P4f's self-service removal calls the same function.
+- **Admin revoke.** `DELETE …/recovery-codes?require_new_set=true|false`, default true. With a second factor remaining
+  and the flag true it adds `generate-recovery-codes` in the same transaction; with none remaining nothing is added
+  whatever the flag says. The audit detail is `{revoked, new_set_required}`.
+- **Sign-in check.** After a sign-in completes (every factor satisfied, not merely the first), a subject who holds a
+  second factor and no unspent code owes `generate-recovery-codes`. One aggregate query (`recoveryStanding`) on the
+  success path; the action is only added, and `completeRecoveryCodes` clears it once a set exists, so it cannot loop.
+  It does not run for a password-only stage, so a password alone earns no prompt about a factor it did not present.
+- **Owner notice.** `renderSecondFactorRemoved` and `renderRecoveryCodesRevoked` in `@odudu/email`, queued through the
+  outbox in the admin transaction. The rule: sent to the address on file, verified or not, because the message carries no
+  link, code or factor detail and an unverified address learns nothing from it; skipped without a trace when the subject
+  has no address; none for a revoke that found no code. The tenant name goes through the catalogue's isolate and subject
+  cleaning like every other mail.
+- **Ending sessions.** The per-subject end exists (`DELETE …/sessions`), so the console's removal dialog offers
+  "Also end the subject's sessions" when the factor is the last one. Unticked by default: whether the factor was lost or
+  stolen is something only the operator knows, and the dialog says so. The two calls are separate; if the second fails
+  after the first succeeded the dialog reports the failure and the tab shows what the server holds.
+- **Confirmed unchanged.** First enrolment issues a set (`recovery-codes.int.test.ts`, "owes generate-recovery-codes to a
+  subject who has just enrolled TOTP"), regenerating replaces the old ten (same file, "replaces the whole set when a
+  subject generates again"), and wrong recovery codes count toward the second-factor lockout (`second-factor-lockout.int.test.ts`,
+  "wrong recovery codes count too"), so nothing needed adding for those.
+- **A behaviour change worth knowing.** A subject with a TOTP and no codes, which is every subject enrolled before codes
+  existed and every one revoked with `require_new_set=false`, is now asked for a set at their next sign-in. That is the
+  point; one existing integration test (`subjects.int.test.ts`, the TOTP removal) seeded such a subject and now seeds a
+  saved code, the state an ordinary enrolment leaves.
+- **Known gap, placed.** A subject who regenerates codes in the instant an administrator removes their last factor can
+  end with a set and no factor: the issuing page does not take the subject lock, and refusing it when no factor is held
+  would break the tests that seed codes first. The window needs an authenticated session and the codes then stand in
+  for nothing (a tenant that requires a second factor owes the enrolment). P4f's explicit regenerate action is where the
+  lock and the refusal belong.
+
+### What NIST requires of look-up secrets
+
+Read directly from the SP 800-63B-4 pages on 2026-10-19 (`https://pages.nist.gov/800-63-4/sp800-63b/authenticators/`
+and `…/events/`), paraphrased:
+
+- **§3.1.2.1, the authenticator.** Generated with an approved random bit generator; delivered securely, and when
+  delivered online, within a session authenticated at AAL2 or higher; at least six decimal digits or equivalent.
+- **§3.1.2.2, the verifier.** Prompts for a secret; accepts each secret successfully once; stores them hashed with an
+  approved function; a secret under 112 bits is salted (salt at least 32 bits) and hashed with a password hashing
+  scheme, and the verifier rate-limits failed attempts on the account (§3.2.2's bound is 100 consecutive failures).
+- **§4.3 and §4.5, compromise and invalidation.** Lost, stolen or duplicated authenticators are compromised and are
+  invalidated promptly; invalidation is also owed when the subscriber asks and when the account ceases to exist.
+- **§4.1.2.1 and §4.6, notice.** An added authenticator is notified through a channel independent of the binding; events
+  that change authenticators trigger notices to the addresses on file, with instructions for someone who did not do it;
+  issuing a replacement recovery code set is one of them (§4.2).
+
+Where Odudu stands: ten characters from a 32-character alphabet are 50 bits, far over the floor, drawn from
+`node:crypto` `randomBytes`; each is Argon2id-hashed with its own salt (the same parameters as a password), so the
+under-112-bit rule is met; single use is a conditional `UPDATE`; failures count against the tenant's second-factor
+lockout, whose threshold is a tenant setting that a CHECK holds to at most 100 and that defaults to 5; the codes page is reached only through a
+completed sign-in. Revocation on compromise was the gap (an operator could not tell the server a factor was lost without
+orphaning its set), now closed by the removal rule; the notice for an administrator's change is added here. Not met, and
+placed: a notice when the subject's own enrolment or regeneration changes their authenticators, which is **P4f** (the
+design spec's P4f criterion and `docs/request-paths.md`'s "What is not implemented" now name it).
+
+- verified: `cd packages/authn-flows && ../../node_modules/.bin/vitest run --config ../../vitest.config.ts tests/recovery-lifecycle.int.test.ts`
+  (12 tests) and the same from `packages/protocol-admin` with its own `tests/recovery-lifecycle.int.test.ts` (10 tests),
+  both against real PostgreSQL; the console's Chromium run, `subjects.spec.ts` on the stack `odudu-p4g-recovery`, 15 passed.
+- Mutations, each failing the named test and passing after the restore: dropping the second-factor condition from
+  `onSecondFactorRemoved` ("keeps the set while a passkey remains"); dropping it from the sign-in check ("owes nothing
+  to a subject with no second factor"); removing the sign-in call from `advance` (three tests); counting only `totp` as a
+  second factor ("owes a set to a subject whose only second factor is a passkey"); ignoring `require_new_set` in the
+  handler ("owes nothing when require_new_set is false"); owing a set with no factor left ("owes nothing to a subject
+  with no second factor"); handling only `totp` removals ("revokes the set when the passkey was the last factor");
+  mailing a revoke that found nothing ("writes no mail when no code was held").
