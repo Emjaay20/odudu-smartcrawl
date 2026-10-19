@@ -109,16 +109,24 @@ function subjectOf(tenant: SeededTenant, username: string): string {
   return id;
 }
 
+// A subject enrolled in the ordinary way holds a saved set; with none, the sign-in would
+// be asked for one, which is another test's subject.
 async function enrolTotp(tenant: SeededTenant, username: string): Promise<string> {
   const secret = generateTotpSecret();
-  await withTenant(app.db, tenant.id, (tx) =>
-    credentialRepository(tx).insert({
+  await withTenant(app.db, tenant.id, async (tx) => {
+    await credentialRepository(tx).insert({
       tenantId: tenant.id,
       subjectId: subjectOf(tenant, username),
       type: 'totp',
       secret: { kind: 'totp', secret, digits: 6, lastStep: 0 },
-    }),
-  );
+    });
+    await credentialRepository(tx).insert({
+      tenantId: tenant.id,
+      subjectId: subjectOf(tenant, username),
+      type: 'recovery-code',
+      secret: { kind: 'recovery-code', hash: await hashPassword('saved-code') },
+    });
+  });
   return secret;
 }
 

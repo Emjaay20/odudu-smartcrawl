@@ -121,6 +121,14 @@ async function seed(
         type: 'totp',
         secret: { kind: 'totp', secret: SECRET, digits: 6, lastStep: 0 },
       });
+      // A subject enrolled in the ordinary way holds a saved set; with none, the sign-in
+      // would be asked for one, which is another test's subject.
+      await credentialRepository(tx).insert({
+        tenantId,
+        subjectId: subject.id,
+        type: 'recovery-code',
+        secret: { kind: 'recovery-code', hash: await hashPassword('saved-code') },
+      });
     }
     for (const action of options.owes ?? []) {
       await requiredActionRepository(tx).add(tenantId, subject.id, action);

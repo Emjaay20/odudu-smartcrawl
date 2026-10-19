@@ -232,6 +232,8 @@ async function reuseAndRedeem(tenantName: string, cookie: string): Promise<{ idT
 // A TOTP credential for the tenant's one user, written as a fixture rather
 // than enrolled through the form: what this suite is about is what the
 // resulting token says, not how the secret got there.
+// A subject enrolled in the ordinary way holds a saved set; with none, the sign-in would
+// be asked for one, which is another test's subject.
 async function enrolTotp(tenantId: string): Promise<string> {
   const secret = generateTotpSecret();
   await withTenant(app.db, tenantId, async (tx) => {
@@ -242,6 +244,12 @@ async function enrolTotp(tenantId: string): Promise<string> {
       subjectId: found.subject.id,
       type: 'totp',
       secret: { kind: 'totp', secret, digits: 6, lastStep: 0 },
+    });
+    await credentialRepository(tx).insert({
+      tenantId,
+      subjectId: found.subject.id,
+      type: 'recovery-code',
+      secret: { kind: 'recovery-code', hash: await hashPassword('saved-code') },
     });
   });
   return secret;
