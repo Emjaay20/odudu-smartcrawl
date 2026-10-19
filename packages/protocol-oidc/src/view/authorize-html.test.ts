@@ -535,7 +535,7 @@ describe('the text of the sign-in pages', () => {
   it('hands the passkey script its sentences in the page language, and no sentence is in the script', () => {
     const en1 = login('password', DEFAULT_PAGE_LOCALE, true);
     expect(en1.body).toContain(
-      'data-failed="Your device did not finish signing in — \uE002reason\uE003. You can try again."',
+      'data-failed="Your device did not finish signing in — {reason}. You can try again."',
     );
     expect(en1.body).toContain('data-cancelled="the request was cancelled"');
     expect(en1.body).toContain('data-not-offered="this server is not offering passkeys"');
@@ -544,7 +544,7 @@ describe('the text of the sign-in pages', () => {
     expect(script).toContain('form.dataset.failed.replace(');
     const fr = login('password', FRENCH, true).body;
     expect(fr).toContain(
-      'data-failed="Votre appareil n’a pas terminé la connexion : \uE002reason\uE003. Réessayez."',
+      'data-failed="Votre appareil n’a pas terminé la connexion : {reason}. Réessayez."',
     );
     expect(fr).toContain('>Se connecter avec une clé d’accès</button>');
     expect(fr).toContain('data-cancelled="the request was cancelled"');

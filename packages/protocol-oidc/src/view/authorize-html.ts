@@ -146,8 +146,7 @@ function renderFormFields(
 // Where the browser's own reason goes in the failure sentence: the server
 // formats the sentence in the page's language around this marker, and the
 // script swaps the marker for the reason, which only the browser knows.
-const REASON = '\uE002reason\uE003';
-const REASON_IN_SCRIPT = '\\uE002reason\\uE003';
+const REASON = '{reason}';
 
 // navigator.credentials.get() is the only way to produce an assertion, so
 // the passkey half of this page cannot be a plain form: the script asks the
@@ -197,7 +196,7 @@ form.addEventListener('submit', async (event) => {
     form.submit();
   } catch (caught) {
     const reason = caught && caught.message ? caught.message : form.dataset.cancelled;
-    failure.textContent = form.dataset.failed.replace('${REASON_IN_SCRIPT}', reason);
+    failure.textContent = form.dataset.failed.replace('${REASON}', reason);
     failure.hidden = false;
   }
 });
