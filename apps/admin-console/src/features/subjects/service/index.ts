@@ -49,6 +49,7 @@ export {
   choiceControl,
   type ChoiceControl,
   choicesWith,
+  askingAgainst,
   askToRemove,
   askToRevoke,
   credentialChangeOf,

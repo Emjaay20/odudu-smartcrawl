@@ -4821,22 +4821,25 @@ unknown id, or one belonging to a different subject, answers `404`, and a
 subject holding an admin capability the caller does not is refused with
 `403` ([the target ceiling](#the-target-ceiling)).
 
-**Removing the last second factor revokes the recovery codes with it.** A
+**Removing the last TOTP revokes the recovery codes with it.** A
 recovery code only stands in for a TOTP code, so a set that outlived its
-factor would silently work again once the person enrolled a new one, and it
-may have left with the lost device. When no TOTP and no passkey remains after
-the delete, the whole set goes, spent rows too, in the same transaction, and
-a second `subject.recovery_codes_revoke` audit row says so in `detail`:
+TOTP would silently work again once the person enrolled a new one, and it
+may have left with the lost device. When no TOTP remains after the delete,
+passkeys or not, the whole set goes, spent rows too, in the same transaction,
+an owed set is dropped, and a second `subject.recovery_codes_revoke` audit row says so in `detail`:
 `{"revoked": 10, "reason": "last_factor_removed"}`. A later enrolment finds no
-codes and so issues a fresh set. While another second factor remains the set
-stays, and a recovery code does not count as a second factor. The subject's
+codes and so issues a fresh set. While another TOTP remains the set stays, and
+a recovery code, which only a TOTP can use, does not count as a factor. The
+credential list's `type` says which of the two a row is. The subject's
 row is locked first, so two concurrent removals serialise and exactly one of
 them revokes. The subject is also mailed, at the address on file whether or
 not it is verified, saying which factor was removed and, if it happened, that
 the codes went with it; it carries no link, no code and nothing about the
 factor. A subject with no address is not mailed, and the delete is
 unaffected; the mail goes to the address on file whether or not it is
-verified, because it says nothing a stranger could use.
+verified, because it says nothing a stranger could use beyond the tenant's name
+and that an account exists. The query string is strict: a parameter other than
+`end_sessions` is refused with `400`, where this door used to ignore one.
 
 **Sessions end only when asked, and then in the same transaction.**
 `?end_sessions=true` ends every live session of the subject, with their grants
@@ -4971,12 +4974,12 @@ not any were held, and its `subject.recovery_codes_revoke` audit row says
 how many went in `detail.revoked`.
 
 **A revoked set is replaced unless the request says otherwise.** While the
-subject still holds a second factor, a TOTP enrolment or a passkey, the
+subject still holds a TOTP enrolment, the
 request adds the `generate-recovery-codes` required action in the same
 transaction, so their next sign-in ends on the page that issues a fresh set;
 `?require_new_set=false` leaves them with none until
 [`PUT /subjects/:id/required-actions`](#get-subjectsidrequired-actions-and-put-subjectsidrequired-actions)
-or the next sign-in asks (below). A subject with no second factor is never
+or the next sign-in asks (below). A subject with no TOTP is never
 asked, since a set would serve nothing. The audit row's
 `detail.new_set_required` says which it was. Any value of `require_new_set`
 other than `true` or `false` is refused with `400` before anything changes.
@@ -4985,12 +4988,12 @@ the old codes no longer work and, if one is asked, that a new set will be;
 there is no mail for a revoke that found nothing, and none for a subject with
 no address.
 
-**A sign-in that completes with a second factor and no unspent code also owes
+**A sign-in that completes with a TOTP and no unspent code also owes
 a set**, once: it adds `generate-recovery-codes`, which saving a set clears, so
 it does not repeat. That covers a subject whose set was revoked with
 `require_new_set=false`, and one enrolled before codes existed. It is one
 aggregate query on the sign-in's success path, and never runs for a subject
-with no second factor. Revoking the set because the last factor was removed is
+with no TOTP. Revoking the set because the last TOTP was removed is
 [`DELETE /subjects/:id/credentials/:credentialId`](#delete-subjectsidcredentialscredentialid)'s
 doing, not this endpoint's.
 

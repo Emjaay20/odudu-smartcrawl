@@ -6,6 +6,7 @@ import {
   beginPasskeyAuthentication,
   beginPasskeyEnrolment,
   beginRecoveryCodes,
+  pendingActionsFor,
   beginTotpEnrolment,
   completePasskeyEnrolment,
   completeRecoveryCodes,
@@ -20,7 +21,6 @@ import {
   pendingSession,
   readSessionEntries,
   recordRememberMe,
-  requiredActionRepository,
   resetAuthenticationProgress,
   sessionRepository,
   startAuthentication,
@@ -636,9 +636,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
     // action is owed, and the required-action route that will not act on
     // one that is not.
     const pendingActions = (tenantId: string, subjectId: string) =>
-      withTenant(deps.database.db, tenantId, (tx) =>
-        requiredActionRepository(tx).pendingFor(subjectId),
-      );
+      withTenant(deps.database.db, tenantId, (tx) => pendingActionsFor(tx, subjectId));
 
     const recoverPendingRequest = (tenantId: string, authSessionId: string) =>
       withTenant(deps.database.db, tenantId, (tx) => loadPendingRequest(tx, authSessionId));

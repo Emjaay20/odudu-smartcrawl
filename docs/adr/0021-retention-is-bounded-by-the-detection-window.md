@@ -381,3 +381,30 @@ deployment to the external cron entry this ADR assumed.
 Nothing in the decision or in the windows changes. What changes is that a
 deployment which schedules nothing is no longer a deployment that retains
 everything for ever.
+
+## Amendment, 2026-10-19 — a recovery set is owed for a TOTP only, and goes with the last one
+
+This ADR keeps a spent recovery code's row so that a replay is refused as
+spent. Two rules about the set as a whole sit beside that and were never
+written down.
+
+**A recovery code is redeemed only at the TOTP code step.** A passkey is an
+alternative first factor and skips that step, so a code can never stand in
+for one. Therefore a set is owed for TOTP only: completing `configure-totp`
+adds `generate-recovery-codes`, and completing `configure-passkey` no longer
+does (it did until this amendment, and the codes it issued could not be
+redeemed). The sign-in check that owes a set to a subject with none unspent
+counts a TOTP and nothing else, and so does the removal rule below.
+
+**The set is revoked whole when the last TOTP is removed**, spent rows
+included, which is the one place a spent row is deleted outside the
+retention pass: a code that outlived the authenticator it stood in for would
+work again after a re-enrolment, and may have left with a lost device. An
+owed `generate-recovery-codes` is cleared with it, since nothing is left to
+recover, and the gate that reads what a subject owes drops it too where an
+administrator asked for one of a subject with no TOTP. A tenant that
+requires a second factor of a subject who has none owes the enrolment
+(`configure-totp`); a recovery code does not satisfy that, and is never
+accepted from a subject who holds no TOTP. A subject with a passkey and no
+TOTP signs in with the passkey, where the code step does not apply, as
+before.

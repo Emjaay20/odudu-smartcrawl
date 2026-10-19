@@ -4284,26 +4284,33 @@ Keep-Alive: timeout=72
 
 ## Recovery codes
 
-Enrolling a second factor creates a way to be locked out: lose the phone and
+Enrolling a TOTP creates a way to be locked out: lose the phone and
 the password alone no longer signs anybody in. So completing `configure-totp`
-— or `configure-passkey` — adds the `generate-recovery-codes` required
-action to a subject who holds no codes already, and that is the page the
-walkthrough above landed on. A subject who _does_ already hold codes is not
+adds the `generate-recovery-codes` required action to a subject who holds no
+codes already, and that is the page the walkthrough above landed on.
+Completing `configure-passkey` does not: a recovery code is redeemed only at
+the TOTP code step, which a passkey skips, so a set issued for one could never
+be used. A subject who _does_ already hold codes is not
 asked again: a new factor does not invalidate a list they have saved, and
 re-issuing would silently retire the copy on their paper.
 
 Two more moments owe it, and one removes it. A sign-in that completes for a
 subject who holds a second factor and no unspent code owes the action once,
 so a set revoked without a new one asked for does not leave them with no way
-back. And removing the **last** TOTP or passkey through the admin API deletes
-the whole set with it, spent rows included: a code only stands in for a
-factor, and a set that outlived it would work again after a re-enrolment. The
+back. And removing the **last TOTP** through the admin API deletes
+the whole set with it, spent rows included, and an owed set with it: a code
+only stands in for a TOTP code, and a set that outlived it would work again
+after a re-enrolment. A passkey is no TOTP, so it neither owes a set nor keeps
+one alive. A subject with no TOTP is never accepted a recovery code, in a
+tenant that requires a second factor or not. The
 admin side, with its transcripts, is
 [`DELETE /subjects/:id/recovery-codes`](admin-paths.md#delete-subjectsidrecovery-codes).
 Issuing takes the subject's row lock, the one a removal holds, and is refused
-while no second factor is held: a set never outlives the last factor, even for
-a person regenerating at the instant it is removed. The page then answers as an
-expired sign-in and the owed action is cleared, so signing in again goes on.
+while no TOTP is held: a set never outlives the last TOTP, even for a person
+regenerating at the instant it is removed. The gate that reads what a subject
+owes drops an owed set from somebody with no TOTP, so a correct sign-in goes on
+instead of meeting a page that cannot be shown; the one page door that can still
+meet the race continues the parked login the same way.
 
 Every render of the page writes one `credential` audit row,
 `recovery_codes.issued`, in the transaction that stores the hashes — the
@@ -11944,8 +11951,8 @@ session lifecycle. A citation of either half here means that half.
 
 - **Recovery codes are issued once and shown once.** Ten per subject, each
   Argon2id-hashed in its own credential row, offered by the
-  `generate-recovery-codes` required action that enrolling either second
-  factor adds. There is no way to see them again and no administrator
+  `generate-recovery-codes` required action that enrolling a TOTP adds
+  (a passkey owes none: a code is redeemed only at the TOTP code step). There is no way to see them again and no administrator
   surface that can print them, by construction rather than by omission.
   Spending the last one owes the action again, in the login that spent it —
   so a list runs out into a fresh set rather than into a lockout.

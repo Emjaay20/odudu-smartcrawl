@@ -72,7 +72,9 @@ export const searchPrefixSchema = z
   .min(1)
   .regex(/^[^\u0000]*$/);
 
-export const enabledFilterSchema = z.enum(['true', 'false']);
+export const booleanFlagSchema = z.enum(['true', 'false']);
+// The same two spellings, read as a filter on an `enabled` column.
+export const enabledFilterSchema = booleanFlagSchema;
 
 // One field a refusal names, by its JSON path from the request: `name`, or
 // `document.clients[0].redirect_uris`.

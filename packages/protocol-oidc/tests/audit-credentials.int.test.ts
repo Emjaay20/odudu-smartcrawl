@@ -59,7 +59,7 @@ interface SeededTenant {
 
 async function seedTenant(
   prefix: string,
-  settings: { otpRequired?: boolean; owes?: RequiredAction; withoutFactor?: boolean } = {},
+  settings: { otpRequired?: boolean; owes?: RequiredAction } = {},
 ): Promise<SeededTenant> {
   const name = `${prefix}-${newId()}`;
   const id = newId();
@@ -93,17 +93,6 @@ async function seedTenant(
       type: 'password',
       secret: { kind: 'password', hash: await hashPassword(PASSWORD) },
     });
-    if (settings.owes === 'generate-recovery-codes' && settings.withoutFactor !== true) {
-      // A set is only issued to somebody who holds a second factor. A passkey
-      // row leaves a password sign-in as it was: nothing here asserts it.
-      await credentialRepository(tx).insert({
-        tenantId: id,
-        subjectId: subject.id,
-        type: 'webauthn',
-        secret: { kind: 'webauthn', publicKey: 'AAAA', counter: 0, transports: [] },
-        lookupKey: `key-${newId()}`,
-      });
-    }
     if (settings.owes !== undefined) {
       await requiredActionRepository(tx).add(id, subject.id, settings.owes);
     }
@@ -292,31 +281,18 @@ describe('enrolling a TOTP app, then being shown recovery codes', () => {
 });
 
 describe('recovery codes', () => {
-  it('issues no set to a subject with no second factor, clears the action, and lets the next sign-in through', async () => {
-    const tenant = await seedTenant('audit-nofactor', {
-      owes: 'generate-recovery-codes',
-      withoutFactor: true,
-    });
-
-    const refused = await passwordStep(tenant, await startAuthSession(tenant));
-    expect(refused.res.body).not.toContain('Save your recovery codes');
-    expect(refused.res.statusCode).toBe(400);
-
-    const next = await passwordStep(tenant, await startAuthSession(tenant));
-    expect(next.res.statusCode).toBe(302);
-  });
-
-  it('writes recovery_codes.issued for every set shown, the forced first one included', async () => {
-    const tenant = await seedTenant('audit-codes', { owes: 'generate-recovery-codes' });
+  it('writes recovery_codes.issued for the set a TOTP enrolment owes, and nothing for its acknowledgement', async () => {
+    const tenant = await seedTenant('audit-codes', { otpRequired: true });
     const authSessionId = await startAuthSession(tenant);
-
-    const first = await passwordStep(tenant, authSessionId);
-    expect(first.res.body).toContain('Save your recovery codes');
-    await expectOneRow(tenant, first, 'recovery_codes.issued');
-
-    const again = await passwordStep(tenant, await startAuthSession(tenant));
-    expect(again.res.body).toContain('Save your recovery codes');
-    await expectOneRow(tenant, again, 'recovery_codes.issued');
+    const owed = await passwordStep(tenant, authSessionId);
+    const secret = offeredSecret(owed.res.body);
+    const shown = await action(tenant, 'configure-totp', {
+      auth_session_id: authSessionId,
+      secret,
+      code: totpCode(secret, totpCounter(clock.now())),
+    });
+    expect(shown.res.body).toContain('Save your recovery codes');
+    await expectRows(tenant, shown, ['otp.enrolled', 'recovery_codes.issued']);
 
     const acknowledged = await action(tenant, 'generate-recovery-codes', {
       auth_session_id: authSessionId,
@@ -324,6 +300,14 @@ describe('recovery codes', () => {
     expect(acknowledged.res.statusCode).toBe(302);
     expect(await rowsFor(tenant, acknowledged)).toEqual([]);
     expect(await credentialRows(tenant)).toHaveLength(2);
+  });
+
+  it('issues no set to a subject with no TOTP, drops the owed action, and lets the next sign-in through', async () => {
+    const tenant = await seedTenant('audit-nofactor', { owes: 'generate-recovery-codes' });
+
+    const next = await passwordStep(tenant, await startAuthSession(tenant));
+    expect(next.res.body).not.toContain('Save your recovery codes');
+    expect(next.res.statusCode).toBe(302);
   });
 });
 
@@ -352,9 +336,9 @@ describe('enrolling a passkey', () => {
       credential,
       label: 'Work laptop',
     });
-    expect(enrolled.res.body).toContain('Save your recovery codes');
-    await expectRows(tenant, enrolled, ['passkey.enrolled', 'recovery_codes.issued']);
-    expect(await credentialRows(tenant)).toHaveLength(2);
+    expect(enrolled.res.statusCode).toBe(302);
+    await expectRows(tenant, enrolled, ['passkey.enrolled']);
+    expect(await credentialRows(tenant)).toHaveLength(1);
   });
 });
 

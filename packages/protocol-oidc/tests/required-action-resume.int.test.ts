@@ -74,7 +74,6 @@ async function seed(
   options: {
     owes?: RequiredAction[];
     holdsTotp?: boolean;
-    holdsPasskey?: boolean;
     rememberMe?: boolean;
   } = {},
 ): Promise<Seeded> {
@@ -133,16 +132,6 @@ async function seed(
         subjectId: subject.id,
         type: 'recovery-code',
         secret: { kind: 'recovery-code', hash: await hashPassword('saved-code') },
-      });
-    }
-    if (options.holdsPasskey === true) {
-      // A second factor a password sign-in never asserts: it lets a set be issued.
-      await credentialRepository(tx).insert({
-        tenantId,
-        subjectId: subject.id,
-        type: 'webauthn',
-        secret: { kind: 'webauthn', publicKey: 'AAAA', counter: 0, transports: [] },
-        lookupKey: `key-${newId()}`,
       });
     }
     for (const action of options.owes ?? []) {
@@ -358,19 +347,19 @@ describe('a finished required action resumes the login that owed it', () => {
     expect(await redeemed(tenantName, run.final)).toEqual({ amr: ['pwd'], acr: '1' });
   });
 
-  it('generate-recovery-codes for a password-only subject: one password form', async () => {
-    const { tenantName } = await seed({ owes: ['generate-recovery-codes'], holdsPasskey: true });
+  it('generate-recovery-codes for a subject with no TOTP is dropped, and the login goes on', async () => {
+    const { tenantName } = await seed({ owes: ['generate-recovery-codes'] });
     const run = await walk(tenantName);
-    expect(run.pages).toEqual(['password', 'generate-recovery-codes']);
+    expect(run.pages).toEqual(['password']);
     expect(run.passwordForms).toBe(1);
     expect(run.codes).toBe(0);
     expect(await redeemed(tenantName, run.final)).toEqual({ amr: ['pwd'], acr: '1' });
   });
 
-  it('configure-passkey, then the recovery codes it owes: one password form', async () => {
+  it('configure-passkey finishes the login: a passkey owes no recovery codes', async () => {
     const { tenantName } = await seed({ owes: ['configure-passkey'] });
     const run = await walk(tenantName);
-    expect(run.pages).toEqual(['password', 'configure-passkey', 'generate-recovery-codes']);
+    expect(run.pages).toEqual(['password', 'configure-passkey']);
     expect(run.passwordForms).toBe(1);
     expect(run.codes).toBe(0);
     expect(await redeemed(tenantName, run.final)).toEqual({ amr: ['pwd'], acr: '1' });
@@ -487,12 +476,12 @@ describe('a login that passes through consent', () => {
 // names that client's origin, and a page that cannot does not.
 describe('the pages of a login license the redirect to their client', () => {
   it('names the redirect_uri origin on every page of the walk', async () => {
-    const { tenantName } = await seed({ owes: ['update-password', 'configure-passkey'] });
+    const { tenantName } = await seed({ owes: ['update-password', 'configure-totp'] });
     const run = await walk(tenantName, { clientId: CONSENT_CLIENT_ID });
     expect(run.pages).toEqual([
       'password',
       'update-password',
-      'configure-passkey',
+      'configure-totp',
       'generate-recovery-codes',
       'consent',
     ]);

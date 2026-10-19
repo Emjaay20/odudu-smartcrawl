@@ -194,8 +194,8 @@ export async function revokeRecoveryCodes(
 
   const credentials = credentialRepository(tx);
   const revoked = await credentials.deleteRecoveryCodes(input.subjectId);
-  const { hasSecondFactor } = await credentials.recoveryStanding(input.subjectId);
-  const newSet = input.requireNewSet && hasSecondFactor;
+  const { hasTotp } = await credentials.recoveryStanding(input.subjectId);
+  const newSet = input.requireNewSet && hasTotp;
   if (newSet) {
     await requiredActionRepository(tx).add(
       input.tenantId,

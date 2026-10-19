@@ -198,6 +198,26 @@ it('offers to end the sessions only when the last factor goes, unticked, and end
   expect(sent.some((s) => s.path === `${C}/sessions`)).toBe(false);
 });
 
+it('says the dialog against the list as the server holds it when it is asked, not as the tab loaded it', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(
+    AT,
+    subjectRoutes(undefined, {
+      [`GET ${C}/credentials`]: inTurn(
+        json(HELD),
+        json({ items: [HELD.items[0], HELD.items[1], HELD.items[3]] }),
+      ),
+    }),
+  );
+  await user.click(
+    await screen.findByRole('button', { name: /^Remove Authenticator app \(TOTP\) enrolled/u }),
+  );
+  const dialog = await screen.findByRole('alertdialog');
+  await waitFor(() => {
+    expect(dialog).toHaveTextContent(/last second factor/u);
+  });
+});
+
 it('offers no session choice while another second factor remains', async () => {
   const user = userEvent.setup();
   renderConsoleAt(AT, subjectRoutes(undefined, { [`GET ${C}/credentials`]: json(HELD) }));

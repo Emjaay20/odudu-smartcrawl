@@ -74,7 +74,7 @@ export {
   type RecoveryRevocation,
   type SecondFactorRemovedOutcome,
 } from '#/usecase/second-factor-removed';
-export { oweRecoveryCodesIfFactorWithoutCodes } from '#/usecase/recovery-codes';
+export { oweRecoveryCodesIfFactorWithoutCodes, pendingActionsFor } from '#/usecase/recovery-codes';
 export { renderRecoveryCodesPage, type RecoveryCodesOffer } from '#/view/recovery-codes-html';
 export { renderUpdatePasswordPage } from '#/view/update-password-html';
 export {

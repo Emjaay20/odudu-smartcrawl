@@ -5,9 +5,11 @@ import {
   useCredentialChanges,
   useCredentials,
   useIssuePassword,
+  useRefreshCredentials,
   useLockout,
 } from '#/features/subjects/repository/useCredentials';
 import {
+  askingAgainst,
   CHOICE_DEFAULTS,
   choiceControl,
   type ChoiceControl,
@@ -58,7 +60,9 @@ export function useSubjectCredentials(
   const credentials = useCredentials(tenant, subject.id, !itself);
   const lockout = useLockout(tenant, subject.id, !itself);
   const changes = useCredentialChanges(tenant, subject.id);
-  const [asking, setAsking] = useState<Asking | null>(null);
+  const [asked, setAsking] = useState<Asking | null>(null);
+  const refreshCredentials = useRefreshCredentials(tenant, subject.id);
+  const asking = askingAgainst(asked, credentials);
   const [choices, setChoices] = useState(CHOICE_DEFAULTS);
   const [problem, setProblem] = useState<string | null>(null);
   // The issue's failure is said in the dialog that asked for it; its
@@ -86,6 +90,7 @@ export function useSubjectCredentials(
     ask: (next) => {
       setProblem(null);
       setChoices(CHOICE_DEFAULTS);
+      refreshCredentials();
       setAsking(next);
     },
     cancel: () => {

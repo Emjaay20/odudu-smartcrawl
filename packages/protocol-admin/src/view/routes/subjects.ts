@@ -13,6 +13,7 @@ import {
   type SetRolesResponse,
   type Subject,
   removeCredentialQuerySchema,
+  END_SESSIONS_NEEDS_MANAGE_SESSIONS,
 } from '@odudu/contracts/admin';
 import {
   isCheckViolation,
@@ -27,7 +28,11 @@ import { coerceLimit, nextPageUrl } from '#/service/cursor';
 import { etagOf } from '#/service/etag';
 import { lifespansOf } from '#/usecase/authenticate-admin';
 import { listAdminCapabilities, listEffectiveRoles } from '#/usecase/effective-roles';
-import { endAllSessions, type Audit as SessionsAudit } from '#/usecase/sessions';
+import {
+  endAllSessions,
+  type Audit as SessionsAudit,
+  type EndAllSessionsOutcome,
+} from '#/usecase/sessions';
 import { amendProfile, PHONE_E164_MESSAGE, readProfile } from '#/usecase/profile';
 import {
   amendSubject,
@@ -528,6 +533,15 @@ export function listCredentialsHandler(deps: SubjectsRouteDeps): AdminRouteHandl
   };
 }
 
+class EndSessionsRefused extends Error {
+  readonly refusal: Exclude<EndAllSessionsOutcome, { kind: 'ended' }>;
+
+  constructor(refusal: Exclude<EndAllSessionsOutcome, { kind: 'ended' }>) {
+    super('protocol-admin: ending sessions after a removal was refused');
+    this.refusal = refusal;
+  }
+}
+
 /** What ending a subject's sessions needs; `SessionsRouteDeps` holds all of it. */
 export interface EndSessionsDeps {
   readonly audit: SessionsAudit;
@@ -558,10 +572,16 @@ export function deleteCredentialHandler(
       return sendProblem(
         reply,
         request,
-        problem(403, 'about:blank', 'Forbidden', 'end_sessions needs manage-sessions'),
+        problem(403, 'about:blank', 'Forbidden', END_SESSIONS_NEEDS_MANAGE_SESSIONS),
       );
     }
-    const tenant = query.end_sessions === 'true' ? await sessions.findTenant(tenantName) : null;
+    const wantsEnd = query.end_sessions === 'true';
+    const tenant = wantsEnd ? await sessions.findTenant(tenantName) : null;
+    // A security option fails closed: a tenant that cannot be resolved is not
+    // a request to leave the sessions alone.
+    if (wantsEnd && tenant === null) {
+      throw new Error('protocol-admin: credential route resolved a tenant router.ts already found');
+    }
     const actor = {
       actorSubjectId: principal.subjectId,
       actorTenantId: principal.issuerTenantId,
@@ -585,26 +605,34 @@ export function deleteCredentialHandler(
                   now: sessions.now(),
                 },
               );
-              if (ended.kind !== 'ended') {
-                throw new Error('protocol-admin: ending sessions after a removal was refused');
-              }
+              // Thrown to roll the removal back with it; the handler answers it below.
+              if (ended.kind !== 'ended') throw new EndSessionsRefused(ended);
               return ended.ended;
             },
           };
 
-    const outcome = await adminTx(deps.database, request, targetTenantId, (tx) =>
-      deleteCredential(
-        tx,
-        { audit: deps.audit, ...endSessions },
-        {
-          tenantId: targetTenantId,
-          subjectId: id,
-          credentialId,
-          callerCapabilities,
-          ...actor,
-        },
-      ),
-    );
+    let outcome: Awaited<ReturnType<typeof deleteCredential>>;
+    try {
+      outcome = await adminTx(deps.database, request, targetTenantId, (tx) =>
+        deleteCredential(
+          tx,
+          { audit: deps.audit, ...endSessions },
+          {
+            tenantId: targetTenantId,
+            subjectId: id,
+            credentialId,
+            callerCapabilities,
+            ...actor,
+          },
+        ),
+      );
+    } catch (error) {
+      if (!(error instanceof EndSessionsRefused)) throw error;
+      if (error.refusal.kind === 'target_ceiling') {
+        return targetCeilingProblem(reply, request, error.refusal.requested);
+      }
+      return sendProblem(reply, request, problem(404, 'about:blank', 'Not Found'));
+    }
 
     switch (outcome.kind) {
       case 'not_found':

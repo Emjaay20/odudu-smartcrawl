@@ -85,3 +85,11 @@ export function useIssuePassword(
     split: (data) => ({ secret: data.password, rest: null }),
   });
 }
+
+// The list read again, for a dialog about to be said against it.
+export function useRefreshCredentials(tenant: string, id: string): () => void {
+  const { invalidateExact } = useInvalidate();
+  return () => {
+    invalidateExact(subjectReadKey('credentials', tenant, id));
+  };
+}

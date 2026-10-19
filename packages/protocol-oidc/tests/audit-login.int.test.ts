@@ -599,7 +599,8 @@ describe('second factors', () => {
     const outcome = await withTenant(app.db, otpTenant.id, (tx) =>
       beginRecoveryCodes(tx, { tenantId: otpTenant.id, subjectId: rita }),
     );
-    const recoveryCode = outcome.kind === 'issued' ? (outcome.offer.codes[0] ?? '') : '';
+    if (outcome.kind !== 'issued') throw new Error('expected a set to be issued');
+    const recoveryCode = outcome.offer.codes[0] ?? '';
 
     const first = await startAuthSession(otpTenant);
     await submit(otpTenant, { auth_session_id: first, username: 'rita', password: PASSWORD });

@@ -262,12 +262,14 @@ the account-lifecycle settings above use.
 See [the TOTP section of docs/request-paths.md](docs/request-paths.md#two-factor-authentication-with-totp)
 for the walkthrough.
 
-**Enrolling a second factor also asks for ten recovery codes**, because a
-second factor with no recovery path is a locked-out account the first time a
-phone is lost. Completing `configure-totp` or `configure-passkey` adds the
-`generate-recovery-codes` required action to a subject who holds no codes
-already — one who does is not asked again, since a new factor does not
-invalidate a list they have saved. The page that renders the codes is the
+**Enrolling a TOTP authenticator also asks for ten recovery codes**, because a
+TOTP with no recovery path is a locked-out account the first time a phone is
+lost. Completing `configure-totp` adds the `generate-recovery-codes` required
+action to a subject who holds no codes already — one who does is not asked
+again, since a new factor does not invalidate a list they have saved. A
+passkey enrolment does not: a code is redeemed only at the TOTP code step,
+which a passkey skips ([ADR 0021](docs/adr/0021-retention-is-bounded-by-the-detection-window.md)'s
+amendment). The page that renders the codes is the
 only place they are ever shown: each is Argon2id-hashed with the same
 parameters as a password, one credential row per code, so no later page and
 no administrator can print them again, and reloading that page issues a
@@ -305,11 +307,11 @@ with it — the codes carry no id of their own, so there is no deleting one —
 for a list somebody else may have read. While the subject still holds a
 second factor it also adds `generate-recovery-codes`, so the next sign-in
 asks for a fresh set, unless `?require_new_set=false` says otherwise.
-**Removing a subject's last TOTP or passkey revokes the set with it**
-(`DELETE …/credentials/{id}`; the audit row is `subject.recovery_codes_revoke`
+**Removing a subject's last TOTP revokes the set with it**
+(`DELETE …/credentials/{id}`, a passkey being no TOTP; the audit row is `subject.recovery_codes_revoke`
 with `reason: last_factor_removed`), because a code only stands in for a factor
 and one that survived would work again after a re-enrolment. A sign-in that
-completes for a subject who holds a second factor and no unspent code owes a
+completes for a subject who holds a TOTP and no unspent code owes a
 set once, so a subject enrolled before codes existed, or whose set was revoked
 without a new one asked for, is prompted. Both removals mail the subject at
 the address on file, saying nothing a stranger could use

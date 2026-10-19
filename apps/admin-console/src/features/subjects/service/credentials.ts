@@ -1,4 +1,10 @@
-import { type Credential, type Lockout } from '@odudu/contracts/admin';
+import {
+  END_SESSIONS_NEEDS_MANAGE_SESSIONS,
+  type Credential,
+  type ListCredentialsResponse,
+  type Lockout,
+} from '@odudu/contracts/admin';
+import type { Read } from '#/shared/service/read';
 import type { NamedDialog } from '#/shared/service/dialog';
 import { COULD_NOT_FINISH } from '#/shared/service/failure';
 import { counted, formatAbsolute, lowerFirst } from '#/shared/service/format';
@@ -89,6 +95,20 @@ export function askToRevoke(factors: readonly Credential[]): Asking {
   return { kind: 'recovery-codes', hasFactor: factors.length > 0 };
 }
 
+// An ask is made against the list the tab held when it was made, and the
+// dialog is said against the list as it stands now: another administrator's
+// change, or one in another tab, moves what is the last factor.
+export function askingAgainst(
+  asking: Asking | null,
+  credentials: Read<ListCredentialsResponse>,
+): Asking | null {
+  if (asking === null || credentials.status !== 'ready') return asking;
+  const { factors } = credentialsOf(credentials.data.items);
+  if (asking.kind === 'factor') return { ...asking, last: factors.length <= 1 };
+  if (asking.kind === 'recovery-codes') return { ...asking, hasFactor: factors.length > 0 };
+  return asking;
+}
+
 export interface Choices {
   newSet: boolean;
   endSessions: boolean;
@@ -174,7 +194,7 @@ export function credentialFailureText(what: string, failure: GatewayFailure): st
       if (failure.problem.status === 403) {
         // The one refusal that is the caller's own: ending sessions needs a
         // capability the removal itself does not.
-        if (failure.problem.detail?.includes('manage-sessions') === true) {
+        if (failure.problem.detail === END_SESSIONS_NEEDS_MANAGE_SESSIONS) {
           return `Refused: ${subjectRefusal('the subject', 'manage-sessions')}`;
         }
         return `Refused: ${subjectRefusal('the subject', 'manage-users')}`;

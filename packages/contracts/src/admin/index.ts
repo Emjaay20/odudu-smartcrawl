@@ -241,6 +241,7 @@ export {
   issuePasswordResponseSchema,
   lockoutSchema,
   revokeRecoveryCodesQuerySchema,
+  END_SESSIONS_NEEDS_MANAGE_SESSIONS,
   removeCredentialQuerySchema,
   type RemoveCredentialQuery,
   type RevokeRecoveryCodesQuery,

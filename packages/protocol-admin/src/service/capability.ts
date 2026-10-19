@@ -331,9 +331,9 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     querystringSchema: removeCredentialQuerySchema,
     description:
       'Removes one credential; a `password` is refused with `409`. When the credential is the ' +
-      'last TOTP or passkey the subject holds, their whole set of recovery codes is revoked ' +
-      'with it, since a code only stands in for a factor, and a later enrolment issues a fresh ' +
-      'set. The subject is told by mail at their address on file, verified or not, if they ' +
+      'TOTP the subject holds, their whole set of recovery codes is revoked with it, and an ' +
+      'owed set is dropped, since a code only stands in for a TOTP code (a passkey is not one); ' +
+      'a later enrolment issues a fresh set. The subject is told by mail at their address on file, verified or not, if they ' +
       'have one. With `end_sessions=true` every live session of the subject ends in the same ' +
       'transaction, as `DELETE …/sessions` ends them, and also needs `manage-sessions`; the ' +
       'removal and the ending succeed or fail together.' +
@@ -451,11 +451,11 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
       'Revokes every recovery code the subject holds, spent or not, so none signs in again. ' +
       'Recovery codes carry no id of their own, so this is the only way to remove them. ' +
       '`204` whether or not any were held; `404` for a subject with no `users` row. ' +
-      'While the subject still holds a second factor, the `generate-recovery-codes` required ' +
+      'While the subject still holds a TOTP, the `generate-recovery-codes` required ' +
       'action is added so their next sign-in asks for a fresh set, unless `require_new_set` is ' +
-      '`false`; with no second factor left a set would serve nothing, and none is asked for. ' +
+      '`false`; with no TOTP left a set would serve nothing, and none is asked for. ' +
       'The subject is told by mail at their address on file, if they have one. Removing the ' +
-      'last TOTP or passkey through `DELETE …/credentials/{credentialId}` revokes the set the ' +
+      'last TOTP through `DELETE …/credentials/{credentialId}` revokes the set the ' +
       'same way, without being asked.' +
       TARGET_CEILING,
   },

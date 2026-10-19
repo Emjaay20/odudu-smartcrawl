@@ -157,8 +157,21 @@ export function registerRequiredActionRoute(
 
     if (outcome.action === 'generate-recovery-codes') {
       const issued = await deps.beginRecoveryCodes(tenant.id, outcome.subjectId, context);
+      // The last TOTP was removed after the gate read what is owed, and the
+      // action went with it: the parked login goes on without it.
       if (issued.kind === 'no_second_factor') {
-        return sendSignInExpired(reply, deps, tenantName, outcome.authSessionId);
+        const pending = await deps.loadPendingRequest(tenant.id, outcome.authSessionId);
+        const resumed = await handleLoginSubmission(
+          deps,
+          tenantName,
+          issuerBaseFor(request),
+          outcome.authSessionId,
+          {},
+          context,
+          request.headers.cookie,
+          pending?.rememberMe ?? false,
+        );
+        return sendLoginOutcome(reply, deps, tenantName, resumed, authSessionId);
       }
       return sendHtml(
         reply,

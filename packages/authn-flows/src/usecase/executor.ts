@@ -503,7 +503,9 @@ function isApplicable(
     return recoveryApplicable(
       { hasRecoveryCodes: facts.hasRecoveryCodes },
       facts.recoveryCodeOffered,
-      otpApplies(facts),
+      // A code stands in for a TOTP code, so only a subject who holds a TOTP has a
+      // code step for it to take, whatever the tenant requires of others.
+      facts.hasTotp && otpApplies(facts),
       facts.satisfied,
     );
   }

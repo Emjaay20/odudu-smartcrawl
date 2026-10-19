@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  askingAgainst,
   askToRemove,
   askToRevoke,
   CHOICE_DEFAULTS,
@@ -227,6 +228,30 @@ describe('credential changes', () => {
     expect(recoveryCodesText('ada', 0)).toBe('No recovery codes: ada holds no unspent one.');
     expect(recoveryCodesText('ada', 1)).toBe('1 unspent recovery code');
     expect(recoveryCodesText('ada', 8)).toBe('8 unspent recovery codes');
+  });
+});
+
+describe('askingAgainst', () => {
+  const totp = { id: 't', type: 'totp', created_at: 'x' } as const;
+  const key = { id: 'w', type: 'webauthn', created_at: 'x' } as const;
+  const ready = (items: (typeof totp | typeof key)[]) =>
+    ({ status: 'ready', data: { items } }) as const;
+
+  it('says the ask against the list as it stands now, not as it stood', () => {
+    const asked = askToRemove([totp, key], totp);
+    expect(asked).toMatchObject({ last: false });
+    expect(askingAgainst(asked, ready([totp]))).toMatchObject({ last: true });
+    expect(askingAgainst(askToRemove([totp], totp), ready([totp, key]))).toMatchObject({
+      last: false,
+    });
+    expect(askingAgainst(askToRevoke([totp]), ready([]))).toMatchObject({ hasFactor: false });
+  });
+
+  it('keeps the ask while the list is not there to judge it by', () => {
+    const asked = askToRemove([totp], totp);
+    expect(askingAgainst(asked, { status: 'loading' })).toBe(asked);
+    expect(askingAgainst(null, ready([totp]))).toBeNull();
+    expect(askingAgainst({ kind: 'lockout' }, ready([totp]))).toEqual({ kind: 'lockout' });
   });
 });
 

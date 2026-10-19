@@ -18,6 +18,7 @@ import { FakeClock, newId } from '@odudu/kernel';
 import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/testkit';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { generateRecoveryCodes, normaliseRecoveryCode } from '#/service/authenticators/recovery';
 import { requiredActionRepository } from '#/repository/required-actions';
 import { type PendingRequest } from '#/schema/authentication-sessions';
 import { advance, startAuthentication } from '#/usecase/executor';
@@ -68,11 +69,19 @@ interface Account {
   subjectId: string;
 }
 
-async function seedAccount(factors: { totp: boolean; passkey: boolean }): Promise<Account> {
+async function seedAccount(factors: {
+  totp: boolean;
+  passkey: boolean;
+  otpRequired?: boolean;
+}): Promise<Account> {
   const tenantId = newId();
   const clock = clockAt();
   const subjectId = await withTenant(app.db, tenantId, async (tx) => {
-    await tx.insert(tenants).values({ id: tenantId, name: `tenant-${tenantId}` });
+    await tx.insert(tenants).values({
+      id: tenantId,
+      name: `tenant-${tenantId}`,
+      otpRequired: factors.otpRequired ?? false,
+    });
     await provisionBrowserFlow(tx, tenantId);
     const subject = await subjectRepository(tx).create({ tenantId, type: 'user' });
     await tx.insert(users).values({ subjectId: subject.id, tenantId, username: 'ada' });
@@ -186,27 +195,40 @@ describe('onSecondFactorRemoved', () => {
 
     expect(outcome).toEqual({ recoveryCodesRevoked: 10 });
     expect(recorded).toEqual([{ revoked: 10, reason: 'last_factor_removed' }]);
-    expect(await standing(account)).toEqual({ unspent: 0, held: 0, hasSecondFactor: false });
+    expect(await standing(account)).toEqual({ unspent: 0, held: 0, hasTotp: false });
   });
 
-  it('keeps the set while a passkey remains, and while a TOTP remains', async () => {
-    const both = await seedAccount({ totp: true, passkey: true });
-    await issueCodes(both);
-    const first = await removeAndNotify(both, 'totp');
-    expect(first.outcome).toEqual({ recoveryCodesRevoked: 0 });
-    expect(first.recorded).toEqual([]);
-    expect(await standing(both)).toMatchObject({ unspent: 10, hasSecondFactor: true });
-
-    const second = await removeAndNotify(both, 'webauthn');
-    expect(second.outcome).toEqual({ recoveryCodesRevoked: 10 });
-
-    const other = await seedAccount({ totp: true, passkey: true });
-    await issueCodes(other);
-    await removeAndNotify(other, 'webauthn');
-    expect(await standing(other)).toMatchObject({ unspent: 10, hasSecondFactor: true });
+  it('revokes the set with the last TOTP even while a passkey remains: a code can only stand in for a TOTP', async () => {
+    const account = await seedAccount({ totp: true, passkey: true });
+    await issueCodes(account);
+    const { outcome, recorded } = await removeAndNotify(account, 'totp');
+    expect(outcome).toEqual({ recoveryCodesRevoked: 10 });
+    expect(recorded).toEqual([{ revoked: 10, reason: 'last_factor_removed' }]);
+    expect(await standing(account)).toEqual({ unspent: 0, held: 0, hasTotp: false });
   });
 
-  it('does not count a recovery code as a second factor', async () => {
+  it('keeps the set while a TOTP remains, whatever happens to a passkey', async () => {
+    const account = await seedAccount({ totp: true, passkey: true });
+    await issueCodes(account);
+    const { outcome } = await removeAndNotify(account, 'webauthn');
+    expect(outcome).toEqual({ recoveryCodesRevoked: 0 });
+    expect(await standing(account)).toMatchObject({ unspent: 10, hasTotp: true });
+  });
+
+  it('clears an owed set when no TOTP remains, since nothing is left to recover', async () => {
+    const account = await seedAccount({ totp: true, passkey: false });
+    await withTenant(app.db, account.tenantId, (tx) =>
+      requiredActionRepository(tx).add(
+        account.tenantId,
+        account.subjectId,
+        'generate-recovery-codes',
+      ),
+    );
+    await removeAndNotify(account, 'totp');
+    expect(await pending(account)).toEqual([]);
+  });
+
+  it('does not count a recovery code as a factor', async () => {
     const account = await seedAccount({ totp: false, passkey: false });
     await holdCodes(account, 3);
     const { outcome } = await removeAndNotify(account, 'totp');
@@ -235,7 +257,7 @@ describe('onSecondFactorRemoved', () => {
     expect(await standing(account, foreign)).toEqual({
       unspent: 0,
       held: 0,
-      hasSecondFactor: false,
+      hasTotp: false,
     });
   });
 
@@ -310,11 +332,11 @@ describe('the sign-in that completes with a second factor and no unspent code', 
     expect(await pending(account)).toEqual([]);
   });
 
-  it('owes a set to a subject whose only second factor is a passkey', async () => {
+  it('owes nothing to a subject whose only second factor is a passkey: a code cannot stand in for one', async () => {
     const account = await seedAccount({ totp: false, passkey: true });
     await acknowledged(account);
     await signIn(account, clockAt(90_000), false);
-    expect(await pending(account)).toEqual(['generate-recovery-codes']);
+    expect(await pending(account)).toEqual([]);
   });
 
   it('owes a set after the whole set is revoked while a factor remains', async () => {
@@ -351,7 +373,23 @@ describe('re-enrolling after the factor was removed', () => {
 
     expect(await pending(account)).toContain('generate-recovery-codes');
     expect(await standing(account)).toMatchObject({ held: 0 });
-    expect(old).toHaveLength(10);
+
+    // The reported defect: with the new TOTP in place the old set must not work again.
+    const clock = clockAt(600_000);
+    const authSessionId = await withTenant(app.db, account.tenantId, async (tx) => {
+      const started = await startAuthentication(tx, account.tenantId, request, clock);
+      return started.authSessionId;
+    });
+    await withTenant(app.db, account.tenantId, (tx) =>
+      advance(tx, authSessionId, { username: 'ada', password: PASSWORD }, clock, {
+        logger: SILENT_LOGGER,
+      }),
+    );
+    const replayed = await withTenant(app.db, account.tenantId, (tx) =>
+      advance(tx, authSessionId, { recoveryCode: old[0] ?? '' }, clock, { logger: SILENT_LOGGER }),
+    );
+    // No set is held, so the code step still asks for the app's code.
+    expect(replayed.kind).toBe('challenge');
   });
 });
 
@@ -420,7 +458,7 @@ describe('issuing a set', () => {
 
       expect(await issue).toBe('issued');
       expect(await removal).toEqual({ recoveryCodesRevoked: 10 });
-      expect(await standing(account)).toEqual({ unspent: 0, held: 0, hasSecondFactor: false });
+      expect(await standing(account)).toEqual({ unspent: 0, held: 0, hasTotp: false });
     }
   });
 
@@ -434,4 +472,57 @@ describe('issuing a set', () => {
     expect(outcome).toEqual({ kind: 'no_second_factor' });
     expect(await standing(account)).toMatchObject({ held: 0 });
   });
+});
+
+describe('a recovery code that outlived the TOTP it stood in for', () => {
+  const cases = [
+    { otpRequired: true, passkey: false },
+    { otpRequired: true, passkey: true },
+    { otpRequired: false, passkey: false },
+    { otpRequired: false, passkey: true },
+  ];
+
+  // The sign-in is by password, with a surviving code offered beside it. With no
+  // TOTP held there is no code step for the code to take, so it is neither
+  // accepted nor spent, in a tenant that requires a second factor or not: such
+  // a subject signs in by password, or by passkey, and owes an enrolment where
+  // the tenant requires one.
+  it.each(cases)(
+    'is neither accepted nor spent, with otpRequired $otpRequired and a passkey $passkey',
+    async ({ otpRequired, passkey }) => {
+      const account = await seedAccount({ totp: false, passkey, otpRequired });
+      const codes = generateRecoveryCodes(2);
+      await withTenant(app.db, account.tenantId, async (tx) => {
+        for (const code of codes) {
+          await credentialRepository(tx).insert({
+            ...account,
+            type: 'recovery-code',
+            secret: {
+              kind: 'recovery-code',
+              hash: await hashPassword(normaliseRecoveryCode(code)),
+            },
+          });
+        }
+      });
+      const clock = clockAt(90_000);
+      const authSessionId = await withTenant(app.db, account.tenantId, async (tx) => {
+        const started = await startAuthentication(tx, account.tenantId, request, clock);
+        return started.authSessionId;
+      });
+
+      const outcome = await withTenant(app.db, account.tenantId, (tx) =>
+        advance(
+          tx,
+          authSessionId,
+          { username: 'ada', password: PASSWORD, recoveryCode: codes[0] ?? '' },
+          clock,
+          { logger: SILENT_LOGGER },
+        ),
+      );
+
+      expect(outcome).toMatchObject({ kind: 'success', authenticators: ['password'] });
+      expect(await standing(account)).toMatchObject({ unspent: 2, hasTotp: false });
+      expect(await pending(account)).toEqual(otpRequired ? ['configure-totp'] : []);
+    },
+  );
 });
