@@ -18,6 +18,28 @@ export function escapeProse(text: string): string {
   return result + escapeMarkup(text.slice(last));
 }
 
+const FENCE = /^\s*(`{3,}|~{3,})/u;
+
+// Escapes the prose of a Markdown document and leaves its fenced blocks as written.
+export function escapeBody(markdown: string): string {
+  let fence: string | null = null;
+  return markdown
+    .split('\n')
+    .map((line) => {
+      const marker = FENCE.exec(line)?.[1];
+      if (fence === null) {
+        if (marker === undefined) return escapeProse(line);
+        fence = marker;
+        return line;
+      }
+      if (marker?.startsWith(fence.charAt(0)) === true && marker.length >= fence.length) {
+        fence = null;
+      }
+      return line;
+    })
+    .join('\n');
+}
+
 // One line, with `|` escaped, so a value never ends its table cell early.
 export function cell(text: string): string {
   return escapeProse(text)
@@ -56,4 +78,8 @@ export function titleCase(segment: string): string {
   const word = (text: string): string => (ACRONYMS.has(text) ? text.toUpperCase() : text);
   const head = word(first);
   return [`${head.charAt(0).toUpperCase()}${head.slice(1)}`, ...rest.map(word)].join(' ');
+}
+
+export function page(title: string, description: string, body: string): string {
+  return `${frontMatter(title, description)}\n# ${title}\n\n${body.trim()}\n`;
 }

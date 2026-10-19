@@ -8,7 +8,7 @@ import { GENERATED_DIRS, generatedFiles, writeGenerated } from '#docs/scripts/ge
 import { DOCS_ROOT, walk } from '#docs/tests/support/dist.ts';
 
 const COMMIT = 'abc1234';
-const files = generatedFiles(COMMIT);
+const files = await generatedFiles(COMMIT);
 const pages = [...files].filter(([name]) => name.endsWith('.md'));
 const scratch = mkdtempSync(path.join(tmpdir(), 'odudu-generate-'));
 
@@ -35,8 +35,8 @@ describe('writing the generated reference', () => {
     }
   });
 
-  it('is deterministic, in content and in order', () => {
-    expect([...generatedFiles(COMMIT)]).toEqual([...files]);
+  it('is deterministic, in content and in order', async () => {
+    expect([...(await generatedFiles(COMMIT))]).toEqual([...files]);
     expect([...files.keys()]).toEqual([...files.keys()].sort());
   });
 
@@ -69,13 +69,13 @@ describe('writing the generated reference', () => {
 describe('the generated reference on disk', () => {
   // The docs build and its tests read these files, so they must say what the
   // code says now. They are written by `pnpm generate`, which every build runs.
-  it('is what the code generates now, apart from the commit it names', () => {
+  it('is what the code generates now, apart from the commit it names', async () => {
     const first = path.join(DOCS_ROOT, [...files.keys()][0] ?? '');
     expect(existsSync(first), 'run pnpm --filter @odudu/docs generate').toBe(true);
     const named = /at ([0-9a-f]+|unknown); do not edit/u.exec(
       readFileSync(path.join(DOCS_ROOT, pages[0]?.[0] ?? ''), 'utf8'),
     )?.[1];
-    const fresh = generatedFiles(named ?? 'unknown');
+    const fresh = await generatedFiles(named ?? 'unknown');
 
     const onDisk = GENERATED_DIRS.flatMap((dir) =>
       walk(path.join(DOCS_ROOT, dir)).map((file) =>

@@ -10,6 +10,18 @@ Endpoints, configuration, commands, error codes and events, looked up by name.
 Most of this reference is generated from the code that does the work, so it lists what the version you
 run does and cannot fall behind it. The pages say which source they were generated from.
 
+## Configuration, commands, errors and events
+
+- [Configuration](./generated/configuration.md): every environment variable, with its type,
+  bounds and default.
+- [Command line](./generated/cli.md): `odudu init`, `seed`, `reap` and the other commands.
+- [Endpoints](./generated/endpoints.md): everything the server serves, and how each endpoint
+  authenticates.
+- [Error codes](./generated/errors.md): admin API problem types, OAuth errors and the errors
+  a command stops with.
+- [Audit events](./generated/events.md): the event types, actions and reasons the audit trail
+  records.
+
 ## Admin API
 
 The operations of the admin API, one page for each area. The same description is published as an

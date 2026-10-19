@@ -1,7 +1,14 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { buildAdminOpenApiDocument } from '@odudu/protocol-admin';
+import { ADMIN_ROUTES, buildAdminOpenApiDocument } from '@odudu/protocol-admin';
+import { CLI_COMMANDS } from '@odudu/server/src/cli/registry.ts';
+import { servedEndpoints, servingApp } from '@odudu/server/src/served-routes.ts';
+import { renderCliPage } from './cli-page.ts';
+import { renderConfigPage } from './config-page.ts';
+import { renderEndpointsPage } from './endpoints-page.ts';
+import { renderErrorsPage } from './errors-page.ts';
+import { renderEventsPage } from './events-page.ts';
 import { renderOpenApiPages } from './openapi-pages.ts';
 
 const APP_ROOT = path.resolve(import.meta.dirname, '..');
@@ -37,19 +44,51 @@ export interface Source {
   readonly pages: ReadonlyMap<string, string>;
 }
 
-export function sources(): readonly Source[] {
+async function endpointsPage(): Promise<string> {
+  const app = await servingApp();
+  try {
+    return renderEndpointsPage({
+      served: servedEndpoints(app),
+      adminOperations: new Set(ADMIN_ROUTES.map((route) => `${route.method} ${route.pattern}`)),
+    });
+  } finally {
+    await app.close();
+  }
+}
+
+export async function sources(): Promise<readonly Source[]> {
   return [
     {
       name: 'the OpenAPI document of @odudu/protocol-admin',
       pages: renderOpenApiPages(buildAdminOpenApiDocument()),
     },
+    {
+      name: 'the command registry of @odudu/server',
+      pages: new Map([['cli.md', renderCliPage(CLI_COMMANDS)]]),
+    },
+    {
+      name: 'the configuration schema of @odudu/kernel',
+      pages: new Map([['configuration.md', renderConfigPage()]]),
+    },
+    {
+      name: 'the error vocabularies of @odudu/kernel, @odudu/protocol-oidc and @odudu/protocol-admin',
+      pages: new Map([['errors.md', renderErrorsPage()]]),
+    },
+    {
+      name: 'the audit vocabularies of @odudu/domain-audit and @odudu/protocol-admin',
+      pages: new Map([['events.md', renderEventsPage()]]),
+    },
+    {
+      name: 'the routes the @odudu/server app serves',
+      pages: new Map([['endpoints.md', await endpointsPage()]]),
+    },
   ];
 }
 
 // Paths relative to the docs app, with the content to write at each.
-export function generatedFiles(commit: string): ReadonlyMap<string, string> {
+export async function generatedFiles(commit: string): Promise<ReadonlyMap<string, string>> {
   const files = new Map<string, string>();
-  for (const source of sources()) {
+  for (const source of await sources()) {
     for (const [name, page] of source.pages) {
       files.set(`${REFERENCE_DIR}/${name}`, withBanner(page, source.name, commit));
     }
@@ -75,7 +114,7 @@ export function writeGenerated(root: string, files: ReadonlyMap<string, string>)
 }
 
 if (import.meta.main) {
-  const files = generatedFiles(commitOf());
+  const files = await generatedFiles(commitOf());
   writeGenerated(APP_ROOT, files);
   console.log(`generated ${String(files.size)} files`);
 }
