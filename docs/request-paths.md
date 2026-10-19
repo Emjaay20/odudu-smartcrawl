@@ -3404,8 +3404,9 @@ Keep-Alive: timeout=72
 
 The same refusal holds for every other door: the admin API's field error carries
 the code `bidi_control_refused` ([POST /subjects](admin-paths.md#post-subjects)),
-and `odudu seed` stops with a `BidiControlError` naming the field, in the way
-its other refusals stop. Arabic and Hebrew usernames, with or without LRM and
+and `odudu seed` prints one line, `error: username must not contain
+bidirectional control characters (U+202A to U+202E, U+2066 to U+2069)`, and exits
+with status 1, naming the field it refused. Arabic and Hebrew usernames, with or without LRM and
 RLM, are accepted: `odudu seed user --username مستخدم` created the account on
 the same stack.
 

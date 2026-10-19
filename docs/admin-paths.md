@@ -578,7 +578,9 @@ A `400` that names something in the request carries `errors` beside
 `detail`, one entry per field: `path` is the field's JSON path within the
 query string or body — `port`, `document.clients[0].redirect_uris`,
 `[1].authenticator` for the second step of a flow — and `message` is what
-is wrong with it. `detail` is unchanged prose, so a caller that reads it
+is wrong with it. An entry may also carry a `code`, a stable name a
+client can act on without reading the message; the only one today is
+`bidi_control_refused`. `detail` is unchanged prose, so a caller that reads it
 still can. A refusal of the request as a whole, such as a flow with no
 steps or a test send to a tenant with no SMTP configuration, names no
 field and carries no `errors`. Captured against the fifth stack, in a
@@ -4037,24 +4039,28 @@ curl -sS -X POST \
 ```
 
 A username holding a bidirectional control character (U+202A to U+202E or
-U+2066 to U+2069) is refused the same way, by the generated schema, and the
-field error carries a `code` a client can act on without reading the message.
-The same rule, with the same message and code, holds for a profile name
-(`name`, `given_name`, `family_name`, `middle_name`, `nickname`,
-`preferred_username`), a tenant's `display_name` (create, import, `PATCH` and
-settings), a client's `name` and `client_name`, and a role or group `name`;
-inside an import document each is reported at its path. LRM, RLM and ALM, which
-Persian and Arabic text uses, and plain Arabic or Hebrew, are accepted. Only
-what is typed is refused: a row that already holds one is neither rewritten nor
-barred from signing in. These two answers came from the integration suite's own
-app (`packages/protocol-admin/tests/bidi-controls.int.test.ts` makes the
-requests), not from a compose stack, because minting an admin token takes the
-loopback flow above; `POST` a username ending in U+202E, then `PATCH` a
-profile's `given_name` to a value ending in U+2066:
+U+2066 to U+2069) is refused, and the field error carries the `code`
+`bidi_control_refused`. The rule is the same, with the same message and code,
+for what a person reads on a page or in a list: a profile name (`name`,
+`given_name`, `family_name`, `middle_name`, `nickname`, `preferred_username`), a
+tenant's `display_name` (create, import, `PATCH` and settings), a client's
+`client_id`, `name`, `client_name` and `description`, a role's or group's `name`
+and `description`, and a scope's `description` and `consent_text`; inside an
+import document each is reported at its path. LRM, RLM and ALM, which Persian and
+Arabic text uses, and plain Arabic or Hebrew, are accepted. Only a write that
+adds a control is refused: a value a row already holds can be sent back
+unchanged with an unrelated edit, and is never rewritten. A creation is checked
+by the generated schema, an amendment against the stored value by the usecase.
+What is not covered, and why, is in `docs/phases/p4g.md`. These two answers
+came from the integration suite's own app
+(`packages/protocol-admin/tests/bidi-controls.int.test.ts` makes the requests),
+not from a compose stack, because minting an admin token takes the loopback flow
+above; `POST` a username ending in U+202E, then `PATCH` a profile's `given_name`
+to a value ending in U+2066:
 
 ```
-{"type":"about:blank","title":"Error","status":400,"detail":"body/username must match pattern \"^[^\\u202A-\\u202E\\u2066-\\u2069]*$\"","errors":[{"path":"username","message":"must not contain bidirectional control characters (U+202A to U+202E, U+2066 to U+2069)","code":"bidi_control_refused"}],"instance":"01a152e2-efeb-7800-a8f0-b4644e344a18"}
-{"type":"about:blank","title":"Error","status":400,"detail":"body/given_name must match pattern \"^[^\\u202A-\\u202E\\u2066-\\u2069]*$\", body/given_name must be null, body/given_name must match a schema in anyOf","errors":[{"path":"given_name","message":"must not contain bidirectional control characters (U+202A to U+202E, U+2066 to U+2069)","code":"bidi_control_refused"}],"instance":"01a152e2-f005-7d1c-98f1-331c56c62435"}
+{"type":"about:blank","title":"Error","status":400,"detail":"username: must not contain bidirectional control characters (U+202A to U+202E, U+2066 to U+2069)","errors":[{"path":"username","message":"must not contain bidirectional control characters (U+202A to U+202E, U+2066 to U+2069)","code":"bidi_control_refused"}],"instance":"01a152f1-da3b-718b-88d7-1074c1ec32aa"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"given_name: must not contain bidirectional control characters (U+202A to U+202E, U+2066 to U+2069)","errors":[{"path":"given_name","message":"must not contain bidirectional control characters (U+202A to U+202E, U+2066 to U+2069)","code":"bidi_control_refused"}],"instance":"01a152f1-da58-7bab-86fe-2e481040445e"}
 ```
 
 ## `GET /subjects/username-policy`
