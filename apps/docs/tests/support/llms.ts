@@ -25,6 +25,11 @@ export function entriesOf(llmsTxt: string): Entry[] {
   });
 }
 
+// The pages llms.txt lists, which come before the references that are not pages.
+export function pagesOf(llmsTxt: string): Entry[] {
+  return entriesOf(llmsTxt.split('\n## Machine-readable references')[0] ?? '');
+}
+
 // The Markdown copy's path inside the build, from its listed address.
 export function copyPath(entry: Entry, target: Target): string {
   return entry.url.slice(addressPrefix(target).length);

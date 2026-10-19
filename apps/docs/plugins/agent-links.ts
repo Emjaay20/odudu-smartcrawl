@@ -5,6 +5,7 @@ export interface LinkTarget {
   readonly origin: string | null;
 }
 
+const STATIC_FILE = 'pathname:///';
 const NOT_A_SITE_PATH = /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/iu;
 // A destination is either `<...>` or a run that may hold one level of balanced parentheses.
 const DESTINATION = String.raw`<[^>\n]*>|(?:[^()\s]|\([^()\s]*\))+`;
@@ -24,6 +25,10 @@ function routeOfDocument(file: string): string {
 // A Markdown copy lives at another address than its source, so a link the
 // build resolved for the HTML page means nothing in it until it is made site-wide.
 function rewriteTarget(raw: string, source: string, target: LinkTarget): string {
+  // The page's own form for a file in `static/`, which the build must not bundle as an asset.
+  if (raw.startsWith(STATIC_FILE)) {
+    return `${target.origin ?? ''}${target.base}${raw.slice(STATIC_FILE.length)}`;
+  }
   if (NOT_A_SITE_PATH.test(raw)) return raw;
   const [, filePart = '', rest = ''] = /^([^#?]*)(.*)$/u.exec(raw) ?? [];
   if (filePart === '') return raw;

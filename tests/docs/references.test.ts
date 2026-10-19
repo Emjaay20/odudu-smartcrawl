@@ -188,10 +188,15 @@ describe('what the documents tell a newcomer to run still exists', () => {
 // is exactly as current as whoever last remembered to extend it.
 const NOT_OURS = new Set(['node_modules', 'dist', 'coverage', '.git', '.superpowers', '.turbo']);
 
+// The docs build writes these from the code and git ignores them; the build
+// checks their links itself, and a checkout that has not built has none.
+const GENERATED = 'apps/docs/content/en/reference/generated';
+
 function everyDocument(): string[] {
   return globSync('**/*.md', {
     cwd: REPO_ROOT,
-    exclude: (entry) => NOT_OURS.has(path.basename(entry)),
+    exclude: (entry) =>
+      NOT_OURS.has(path.basename(entry)) || entry.split(path.sep).join('/').endsWith(GENERATED),
   }).sort();
 }
 

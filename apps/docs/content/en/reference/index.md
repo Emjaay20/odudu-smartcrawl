@@ -7,4 +7,29 @@ description: Endpoints, configuration, commands, error codes and events, looked 
 
 Endpoints, configuration, commands, error codes and events, looked up by name.
 
-<!-- filled by Increment 19 -->
+Most of this reference is generated from the code that does the work, so it lists what the version you
+run does and cannot fall behind it. The pages say which source they were generated from.
+
+## Admin API
+
+The operations of the admin API, one page for each area. The same description is published as an
+[OpenAPI document](pathname:///openapi/admin.json) that a client generator can read.
+
+- [Admin API overview](./generated/admin-api/index.md): authentication, the tenant in the path and
+  the shape of an error.
+- [Audit](./generated/admin-api/audit.md)
+- [Clients](./generated/admin-api/clients.md)
+- [Flow](./generated/admin-api/flow.md)
+- [Groups](./generated/admin-api/groups.md)
+- [Keys](./generated/admin-api/keys.md)
+- [Lockouts](./generated/admin-api/lockouts.md)
+- [Mail](./generated/admin-api/mail.md)
+- [Registration tokens](./generated/admin-api/registration-tokens.md)
+- [Roles](./generated/admin-api/roles.md)
+- [Scopes](./generated/admin-api/scopes.md)
+- [Sessions](./generated/admin-api/sessions.md)
+- [Settings](./generated/admin-api/settings.md)
+- [SMTP](./generated/admin-api/smtp.md)
+- [Subjects](./generated/admin-api/subjects.md)
+- [Tenants](./generated/admin-api/tenants.md)
+- [Whoami](./generated/admin-api/whoami.md)

@@ -38,6 +38,12 @@ const FORMS: { form: string; input: string; pages: string; image: string }[] = [
     image: '[a](/docs/guides/?q=1&r=2#top)',
   },
   {
+    form: 'a pathname:// link to a file in the static directory',
+    input: '[j](pathname:///openapi/admin.json)',
+    pages: '[j](https://site.test/odudu/openapi/admin.json)',
+    image: '[j](/docs/openapi/admin.json)',
+  },
+  {
     form: 'an image with a title',
     input: '![x](/brand/favicon.svg "t")',
     pages: '![x](https://site.test/odudu/brand/favicon.svg "t")',

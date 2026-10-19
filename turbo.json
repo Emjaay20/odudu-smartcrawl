@@ -99,12 +99,17 @@
       "outputs": ["dist/**"]
     },
     "@odudu/docs#build": {
-      "dependsOn": ["^build"],
+      "dependsOn": [],
       "inputs": [
         "content/**",
+        "!content/en/reference/generated/**",
         "src/**",
         "static/**",
+        "!static/openapi/**",
         "plugins/**",
+        "scripts/**",
+        "$TURBO_ROOT$/packages/*/src/**",
+        "$TURBO_ROOT$/apps/server/src/**",
         "nav.ts",
         "sidebars.ts",
         "seo.ts",
@@ -121,8 +126,10 @@
       "dependsOn": ["^typecheck", "@odudu/docs#build"],
       "inputs": [
         "content/**",
+        "!content/en/reference/generated/**",
         "src/**",
         "static/**",
+        "!static/openapi/**",
         "plugins/**",
         "nav.ts",
         "sidebars.ts",
@@ -132,6 +139,8 @@
         "package.json",
         "tsconfig.json",
         "$TURBO_ROOT$/apps/admin-console/src/shared/view/*.css",
+        "$TURBO_ROOT$/packages/*/src/**",
+        "$TURBO_ROOT$/apps/server/src/**",
         "scripts/**",
         "tests/**"
       ],

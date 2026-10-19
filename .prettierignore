@@ -6,3 +6,5 @@ tests/boundaries/fixtures
 playwright-report
 test-results
 .docusaurus
+apps/docs/content/en/reference/generated
+apps/docs/static/openapi

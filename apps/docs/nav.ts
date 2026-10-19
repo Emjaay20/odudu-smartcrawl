@@ -80,4 +80,10 @@ export interface MachineReadableReference {
 
 // Files the build writes for tools rather than readers, such as an OpenAPI
 // document; `llms.txt` lists each one and the build fails if its file is absent.
-export const MACHINE_READABLE_REFERENCES: readonly MachineReadableReference[] = [];
+export const MACHINE_READABLE_REFERENCES: readonly MachineReadableReference[] = [
+  {
+    title: 'Admin API OpenAPI document',
+    description: 'The OpenAPI 3.1 description of the admin API, as JSON.',
+    file: 'openapi/admin.json',
+  },
+];

@@ -18,6 +18,7 @@ import {
   addressPrefix,
   copyPath,
   entriesOf,
+  pagesOf,
   normalised,
   readSource,
   routeOfCopy,
@@ -46,7 +47,7 @@ function documentRoutes(target: Target): string[] {
 }
 
 describe.each(TARGETS)('the agent copies of the %s build', (target) => {
-  const entries = entriesOf(read(target, 'llms.txt'));
+  const entries = pagesOf(read(target, 'llms.txt'));
 
   it('lists every page in llms.txt, once', () => {
     const listed = entries.map((entry) => routeOfCopy(entry, target));
