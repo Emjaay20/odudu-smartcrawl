@@ -213,6 +213,34 @@ describe('a link that takes its subject through required actions', () => {
     expect(outstanding.every((row) => row.consumedAt !== null)).toBe(true);
   });
 
+  it('mails each action as the catalogue words it, whatever locale the subject holds', async () => {
+    const seeded = await seed(true);
+    const rows = await withTenant(app.db, seeded.tenantId, async (tx) => {
+      const tenant = {
+        tenantId: seeded.tenantId,
+        tenantName: seeded.tenantName,
+        tenantDisplayName: 'Acme <Co>',
+        issuerBase: 'https://idp.example.test',
+      };
+      for (const locale of [null, 'de-CH', 'not a tag']) {
+        const user = { subjectId: seeded.subjectId, email: 'ada@example.test', locale };
+        await enqueueActionsLink(tx, tenant, user, {
+          actions: ['configure-totp', 'update-password'],
+        });
+      }
+      return tx.select().from(emailOutbox);
+    });
+    expect(rows).toHaveLength(3);
+    for (const row of rows) {
+      expect(row.subject).toBe('Update your Acme <Co> account');
+      expect(row.bodyText).toContain('- Choose a new password\n- Set up an authenticator app\n');
+      expect(row.bodyHtml).toContain(
+        '<li>Choose a new password</li><li>Set up an authenticator app</li>',
+      );
+      expect(row.bodyHtml).toContain('<bdi>Acme &lt;Co&gt;</bdi>');
+    }
+  });
+
   it('asks for no password when the link names none, and leaves it unchanged', async () => {
     const seeded = await seed(false);
     const link = await mail(seeded, ['generate-recovery-codes', 'configure-passkey']);

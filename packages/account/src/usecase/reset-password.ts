@@ -31,7 +31,7 @@ export interface RequestPasswordResetDeps {
   readonly findByEmail: (
     tx: TenantScopedDatabase,
     email: string,
-  ) => Promise<{ subjectId: string; email: string } | null>;
+  ) => Promise<{ subjectId: string; email: string; locale?: string | null | undefined } | null>;
 }
 
 export type RequestPasswordResetOutcome = { kind: 'requested' } | { kind: 'misconfigured' };
@@ -77,7 +77,11 @@ export interface ActionLinkTenant {
 export async function enqueueResetLink(
   tx: TenantScopedDatabase,
   tenant: ActionLinkTenant,
-  user: { readonly subjectId: string; readonly email: string },
+  user: {
+    readonly subjectId: string;
+    readonly email: string;
+    readonly locale?: string | null | undefined;
+  },
 ): Promise<void> {
   const tokens = actionTokenRepository(tx);
   const { token } = await tokens.issue({
@@ -90,7 +94,12 @@ export async function enqueueResetLink(
   const link = `${tenant.issuerBase}/tenants/${tenant.tenantName}/login-actions/action-token?key=${encodeURIComponent(token)}`;
   await outboxRepository(tx).enqueue({
     tenantId: tenant.tenantId,
-    ...renderResetPassword({ to: user.email, link, tenantDisplayName: tenant.tenantDisplayName }),
+    ...renderResetPassword({
+      to: user.email,
+      link,
+      tenantDisplayName: tenant.tenantDisplayName,
+      locale: user.locale,
+    }),
   });
 }
 

@@ -4,7 +4,7 @@ import { outboxRepository, renderRequiredActions } from '@odudu/email';
 import { actionTokenRepository } from '#/repository/action-tokens';
 import { type PasswordPolicy, type PolicyViolation } from '#/repository/tenant-settings';
 import { withMinimum } from '#/service/password-violations';
-import { actionLabel, orderedActions, type LinkedRequiredAction } from '#/service/required-actions';
+import { orderedActions, type LinkedRequiredAction } from '#/service/required-actions';
 import { type ActionLinkTenant } from '#/usecase/reset-password';
 
 export interface ActionsLink {
@@ -19,7 +19,11 @@ export interface ActionsLink {
 export async function enqueueActionsLink(
   tx: TenantScopedDatabase,
   tenant: ActionLinkTenant,
-  user: { readonly subjectId: string; readonly email: string },
+  user: {
+    readonly subjectId: string;
+    readonly email: string;
+    readonly locale?: string | null | undefined;
+  },
   link: ActionsLink,
 ): Promise<void> {
   const actions = orderedActions(link.actions);
@@ -40,7 +44,8 @@ export async function enqueueActionsLink(
       to: user.email,
       link: url,
       tenantDisplayName: tenant.tenantDisplayName,
-      actions: actions.map(actionLabel),
+      actions,
+      locale: user.locale,
     }),
   });
 }

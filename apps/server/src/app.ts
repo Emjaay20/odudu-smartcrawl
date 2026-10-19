@@ -505,7 +505,9 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     publicBaseUrl: deps.publicBaseUrl,
     findByEmail: async (tx, email) => {
       const user = await userRepository(tx).byEmail(email);
-      return user?.email == null ? null : { subjectId: user.subjectId, email: user.email };
+      return user?.email == null
+        ? null
+        : { subjectId: user.subjectId, email: user.email, locale: user.locale };
     },
   });
 

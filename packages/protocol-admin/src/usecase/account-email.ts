@@ -31,6 +31,7 @@ interface AccountLinkAddress {
   readonly tenantDisplayName: string;
   readonly subjectId: string;
   readonly email: string;
+  readonly locale: string | null;
 }
 
 /**
@@ -111,7 +112,7 @@ export async function sendAccountEmail(
 ): Promise<AccountEmailOutcome> {
   if (!(await lockSubjectRow(tx, input.subjectId))) return { kind: 'not_found' };
   const user = await tx
-    .select({ email: users.email })
+    .select({ email: users.email, locale: users.locale })
     .from(users)
     .where(eq(users.subjectId, input.subjectId));
   if (user.length === 0) return { kind: 'not_found' };
@@ -143,6 +144,7 @@ export async function sendAccountEmail(
     tenantDisplayName: tenant[0]?.displayName ?? input.tenantName,
     subjectId: input.subjectId,
     email,
+    locale: user[0]?.locale ?? null,
   });
   if (sent === 'unavailable') return { kind: 'unavailable' };
 

@@ -14,6 +14,7 @@ export interface SendVerificationEmailDeps {
 export interface SendVerificationEmailInput {
   readonly subjectId: string;
   readonly email: string;
+  readonly locale?: string | null | undefined;
 }
 
 // The token and the mail that carries it are written in one transaction:
@@ -49,7 +50,12 @@ export async function enqueueVerificationLink(
   const link = `${tenant.issuerBase}/tenants/${tenant.tenantName}/login-actions/action-token?key=${encodeURIComponent(token)}`;
   await outboxRepository(tx).enqueue({
     tenantId: tenant.tenantId,
-    ...renderVerifyEmail({ to: input.email, link, tenantDisplayName: tenant.tenantDisplayName }),
+    ...renderVerifyEmail({
+      to: input.email,
+      link,
+      tenantDisplayName: tenant.tenantDisplayName,
+      locale: input.locale,
+    }),
   });
 }
 
