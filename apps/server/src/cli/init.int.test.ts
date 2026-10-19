@@ -304,12 +304,29 @@ describe('odudu init', () => {
   }, 120_000);
 
   it('refuses a state directory others can write to, and accepts one they can only read', async () => {
+    await chmod(stateDir, 0o777);
+    await expect(init(inputWith(), capture().io)).rejects.toThrow(/writable/u);
+    await expect(stat(join(stateDir, 'quickstart.env'))).rejects.toThrow();
+
     await chmod(stateDir, 0o755);
+    await expect(init(inputWith(), capture().io)).resolves.toMatchObject({ created: true });
+  }, 120_000);
+
+  it('refuses a state directory others can write to even when the secrets file exists', async () => {
     await init(inputWith(), capture().io);
-    await unlink(join(stateDir, 'quickstart.env'));
     await chmod(stateDir, 0o777);
 
     await expect(init(inputWith(), capture().io)).rejects.toThrow(/writable/u);
+  }, 120_000);
+
+  it('creates no state directory when it refuses for existing roles', async () => {
+    await init(inputWith(), capture().io);
+    const fresh = join(stateDir, 'fresh');
+
+    await expect(init(inputWith({ stateDir: fresh }), capture().io)).rejects.toMatchObject({
+      code: 'init_roles_without_secrets',
+    });
+    await expect(stat(fresh)).rejects.toThrow();
   }, 120_000);
 
   it('gives up waiting for another init after the lock wait, naming it', async () => {

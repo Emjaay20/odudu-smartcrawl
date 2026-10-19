@@ -1308,9 +1308,9 @@ Console: http://localhost:3000/console/
 Administrator: ada@example.com
 One-time password: <generated>
 It is shown once and must be changed at first sign-in.
-$ stat -f '%Sp %N' state state/quickstart.env; cut -d= -f1 state/quickstart.env
-drwx------ state
--rw------- state/quickstart.env
+$ node -e 'for (const f of ["state", "state/quickstart.env"]) console.log((fs.statSync(f).mode & 0o7777).toString(8).padStart(4, "0"), f)'; cut -d= -f1 state/quickstart.env
+0700 state
+0600 state/quickstart.env
 ODUDU_KEK
 ODUDU_CONSOLE_CLIENT_KEY
 ODUDU_DATABASE_URL

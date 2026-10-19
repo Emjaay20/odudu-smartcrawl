@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_STATE_DIR,
   existingAdministratorMessage,
+  REQUIRED_KEYS,
   rolesWithoutSecretsMessage,
   SECRETS_FILE_MODE,
   secondAdministratorMessage,
@@ -47,14 +48,18 @@ describe('the README paragraph on odudu init', () => {
   });
 
   it('shows the modes it states: a 0700 directory and a 0600 file', () => {
-    const modes = (mode: number, kind: 'd' | '-'): string =>
-      kind +
-      [6, 3, 0]
-        .map((shift) =>
-          ['r', 'w', 'x'].map((bit, i) => ((mode >> (shift + 2 - i)) & 1 ? bit : '-')).join(''),
-        )
-        .join('');
-    expect(transcript).toContain(`${modes(STATE_DIR_MODE, 'd')} state\n`);
-    expect(transcript).toContain(`${modes(SECRETS_FILE_MODE, '-')} state/quickstart.env`);
+    expect(transcript).toContain(`${octal(STATE_DIR_MODE)} state\n`);
+    expect(transcript).toContain(`${octal(SECRETS_FILE_MODE)} state/quickstart.env\n`);
+  });
+
+  it('lists the variables quickstart.env holds, in order', () => {
+    const listed = REQUIRED_KEYS.join('\n');
+    expect(transcript).toContain(`\n${listed}\n`);
+  });
+
+  it('shows the exit status of each refusal', () => {
+    const refusals = transcript.split('\n').filter((line) => line.endsWith('echo "exit $?"'));
+    expect(refusals).toHaveLength(3);
+    expect(transcript.match(/^exit 1$/gmu)).toHaveLength(refusals.length);
   });
 });

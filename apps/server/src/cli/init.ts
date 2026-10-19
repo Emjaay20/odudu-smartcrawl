@@ -69,7 +69,7 @@ const LOCK_HELD_MESSAGE =
   'another odudu init is running against this database; wait for it to finish and run this again';
 const APP_ROLE = 'odudu_app';
 const SERVICE_ROLE = 'odudu_svc';
-const REQUIRED_KEYS = [
+export const REQUIRED_KEYS = [
   'ODUDU_KEK',
   'ODUDU_CONSOLE_CLIENT_KEY',
   'ODUDU_DATABASE_URL',
@@ -290,11 +290,11 @@ async function initLocked(
   const existing = await readSecrets(path);
   let secrets: Map<string, string>;
   if (existing === null) {
-    await mkdir(input.stateDir, { recursive: true, mode: STATE_DIR_MODE });
-    await assertStateDirNotWritableByOthers(input.stateDir);
     if (await roleExists(owner, SERVICE_ROLE)) {
       throw new OduduError('init_roles_without_secrets', rolesWithoutSecretsMessage(path));
     }
+    await mkdir(input.stateDir, { recursive: true, mode: STATE_DIR_MODE });
+    await assertStateDirNotWritableByOthers(input.stateDir);
     secrets = await newSecrets(
       io.databaseUrl,
       input.publicBaseUrl,
@@ -303,6 +303,7 @@ async function initLocked(
 
     await publishSecrets(path, serialise(secrets));
   } else {
+    await assertStateDirNotWritableByOthers(input.stateDir);
     if (!sameDatabase(existing.get('ODUDU_DATABASE_URL') ?? '', io.databaseUrl)) {
       throw new OduduError(
         'init_invalid_options',
