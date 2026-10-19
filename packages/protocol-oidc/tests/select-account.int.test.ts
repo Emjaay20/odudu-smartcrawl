@@ -539,7 +539,7 @@ describe('the account chooser', () => {
     });
     expect(chooser.statusCode).toBe(200);
     const authSessionId = extractAuthSessionId(chooser.body);
-    const aliceSessionId = /value="([^"]*)"><bdi>alice</u.exec(chooser.body)?.[1];
+    const aliceSessionId = /value="([^"]*)"[^>]*><bdi>alice</u.exec(chooser.body)?.[1];
     if (aliceSessionId === undefined) throw new Error('expected alice on the chooser page');
 
     fakeClock.advance(31 * 60_000);
