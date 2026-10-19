@@ -241,6 +241,8 @@ export {
   issuePasswordResponseSchema,
   lockoutSchema,
   revokeRecoveryCodesQuerySchema,
+  removeCredentialQuerySchema,
+  type RemoveCredentialQuery,
   type RevokeRecoveryCodesQuery,
   type IssuePasswordResponse,
   type Lockout,

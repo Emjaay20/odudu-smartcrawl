@@ -87,6 +87,7 @@ import {
   countTenantsQuerySchema,
   listTenantsResponseSchema,
   deleteTenantQuerySchema,
+  removeCredentialQuerySchema,
   revokeRecoveryCodesQuerySchema,
   roleSchema,
   rotateClientSecretQuerySchema,
@@ -327,11 +328,15 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     capability: 'manage-users',
     responseSchema: z.void(),
     successStatus: 204,
+    querystringSchema: removeCredentialQuerySchema,
     description:
       'Removes one credential; a `password` is refused with `409`. When the credential is the ' +
       'last TOTP or passkey the subject holds, their whole set of recovery codes is revoked ' +
       'with it, since a code only stands in for a factor, and a later enrolment issues a fresh ' +
-      'set. The subject is told by mail at their address on file, if they have one.' +
+      'set. The subject is told by mail at their address on file, verified or not, if they ' +
+      'have one. With `end_sessions=true` every live session of the subject ends in the same ' +
+      'transaction, as `DELETE …/sessions` ends them, and also needs `manage-sessions`; the ' +
+      'removal and the ending succeed or fail together.' +
       TARGET_CEILING,
   },
   {

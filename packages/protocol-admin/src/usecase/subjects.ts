@@ -197,22 +197,10 @@ export async function refuseOverTargetCeiling<A extends string, R extends string
   return { kind: 'target_ceiling', requested: denied };
 }
 
-// The lock every mutation of one subject serialises on; false when there is
-// none. `no key update` conflicts with itself, so two admin mutations still
-// queue, but not with the key-share lock every insert referencing the
-// subject takes: `FOR UPDATE` here deadlocks against a login that touched
-// a session, or cleared its failures, and then inserts a row naming the
-// subject. `deleteSubject`'s own delete still takes the full lock.
-export async function lockSubjectRow(
-  tx: TenantScopedDatabase,
-  subjectId: string,
-): Promise<boolean> {
-  const rows = await tx
-    .select({ id: subjects.id })
-    .from(subjects)
-    .where(eq(subjects.id, subjectId))
-    .for('no key update');
-  return rows.length > 0;
+// The lock every mutation of one subject serialises on, shared with the
+// sign-in's recovery-code issue so the two cannot interleave.
+export function lockSubjectRow(tx: TenantScopedDatabase, subjectId: string): Promise<boolean> {
+  return subjectRepository(tx).lock(subjectId);
 }
 
 /** Every `listSubjectsQuerySchema` parameter except the page controls. */
@@ -925,6 +913,12 @@ export interface DeleteCredentialInput {
 
 export interface DeleteCredentialDeps {
   readonly audit: Audit;
+  /**
+   * Ends the subject's sessions in this transaction and says how many ended;
+   * given only when the request asked for it. Injected because the sessions
+   * usecase imports this module.
+   */
+  readonly endSessions?: (tx: TenantScopedDatabase) => Promise<number>;
 }
 
 export type DeleteCredentialOutcome =
@@ -974,7 +968,12 @@ export async function deleteCredential(
     actorClientId: input.actorClientId,
     outcome: 'allowed',
   } as const;
-  await deps.audit(tx, { action: 'subject.credential_delete', ...actor });
+  const ended = deps.endSessions === undefined ? undefined : await deps.endSessions(tx);
+  await deps.audit(tx, {
+    action: 'subject.credential_delete',
+    ...actor,
+    ...(ended === undefined ? {} : { detail: { ended_sessions: ended } }),
+  });
 
   if (row.type === 'totp' || row.type === 'webauthn') {
     const { recoveryCodesRevoked } = await onSecondFactorRemoved(

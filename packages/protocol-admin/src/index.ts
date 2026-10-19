@@ -574,7 +574,7 @@ function buildAdminRoutes(
       'PATCH /admin/tenants/:tenant/subjects/:id/profile': amendProfileHandler(subjectsDeps),
       'GET /admin/tenants/:tenant/subjects/:id/credentials': listCredentialsHandler(subjectsDeps),
       'DELETE /admin/tenants/:tenant/subjects/:id/credentials/:credentialId':
-        deleteCredentialHandler(subjectsDeps),
+        deleteCredentialHandler(subjectsDeps, sessionsDeps),
       'GET /admin/tenants/:tenant/subjects/:id/consents': listConsentsHandler(consentsDeps),
       'DELETE /admin/tenants/:tenant/subjects/:id/consents/:clientId':
         deleteConsentHandler(consentsDeps),

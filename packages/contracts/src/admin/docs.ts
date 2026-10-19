@@ -853,6 +853,8 @@ const COMMON: Fields = {
   cursor: 'The `next` value of the previous page, to continue after it.',
   limit: 'How many items to return. A value over 200 is treated as 200; the default is 50.',
   items: 'The entries of this answer.',
+  end_sessions:
+    '`true` also ends every live session of the subject in the same transaction as the removal, queueing their back-channel logouts as `DELETE …/sessions` does; the default `false` leaves them signed in.',
   require_new_set:
     '`true` (the default) owes the subject a new set of recovery codes at their next sign-in when a second factor remains; `false` leaves them with none until one is asked of them.',
   count: 'How many items match, up to a cap.',

@@ -25,3 +25,10 @@ export const revokeRecoveryCodesQuerySchema = z
   .object({ require_new_set: enabledFilterSchema.optional() })
   .strict();
 export type RevokeRecoveryCodesQuery = z.infer<typeof revokeRecoveryCodesQuerySchema>;
+
+// `end_sessions` defaults to false: whether the factor was lost or stolen is
+// something only the operator knows, so nothing ends unless asked.
+export const removeCredentialQuerySchema = z
+  .object({ end_sessions: enabledFilterSchema.optional() })
+  .strict();
+export type RemoveCredentialQuery = z.infer<typeof removeCredentialQuerySchema>;

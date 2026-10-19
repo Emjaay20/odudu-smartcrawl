@@ -12,13 +12,22 @@ import {
   type SetRequiredActionsResponse,
   type SetRolesResponse,
   type Subject,
+  removeCredentialQuerySchema,
 } from '@odudu/contracts/admin';
-import { isCheckViolation, isUniqueViolation, type Database } from '@odudu/db';
+import {
+  isCheckViolation,
+  isUniqueViolation,
+  type Database,
+  type TenantScopedDatabase,
+} from '@odudu/db';
 import { OduduError } from '@odudu/kernel';
+import { tenantIssuerFor, type TenantLookup } from '@odudu/protocol-oidc';
 import { type FastifyReply } from 'fastify';
 import { coerceLimit, nextPageUrl } from '#/service/cursor';
 import { etagOf } from '#/service/etag';
+import { lifespansOf } from '#/usecase/authenticate-admin';
 import { listAdminCapabilities, listEffectiveRoles } from '#/usecase/effective-roles';
+import { endAllSessions, type Audit as SessionsAudit } from '#/usecase/sessions';
 import { amendProfile, PHONE_E164_MESSAGE, readProfile } from '#/usecase/profile';
 import {
   amendSubject,
@@ -519,31 +528,80 @@ export function listCredentialsHandler(deps: SubjectsRouteDeps): AdminRouteHandl
   };
 }
 
-export function deleteCredentialHandler(deps: SubjectsRouteDeps): AdminRouteHandler {
+/** What ending a subject's sessions needs; `SessionsRouteDeps` holds all of it. */
+export interface EndSessionsDeps {
+  readonly audit: SessionsAudit;
+  readonly kek: Uint8Array;
+  readonly now: () => Date;
+  readonly findTenant: (name: string) => Promise<TenantLookup | null>;
+}
+
+export function deleteCredentialHandler(
+  deps: SubjectsRouteDeps,
+  sessions: EndSessionsDeps,
+): AdminRouteHandler {
   return async (request, reply, principal, targetTenantId) => {
     const id = request.params.id;
     const credentialId = request.params.credentialId;
-    if (id === undefined || credentialId === undefined) {
+    const tenantName = request.params.tenant;
+    if (id === undefined || credentialId === undefined || tenantName === undefined) {
       throw new Error('protocol-admin: DELETE credential route received no :id/:credentialId');
     }
+    const query = removeCredentialQuerySchema.parse(request.query);
 
     const callerCapabilities = await deps.callerCapabilities(
       principal.issuerTenantId,
       principal.subjectId,
     );
+    // Ending sessions is `manage-sessions`' to do, as it is for the bulk door.
+    if (query.end_sessions === 'true' && !callerCapabilities.has('manage-sessions')) {
+      return sendProblem(
+        reply,
+        request,
+        problem(403, 'about:blank', 'Forbidden', 'end_sessions needs manage-sessions'),
+      );
+    }
+    const tenant = query.end_sessions === 'true' ? await sessions.findTenant(tenantName) : null;
+    const actor = {
+      actorSubjectId: principal.subjectId,
+      actorTenantId: principal.issuerTenantId,
+      actorClientId: principal.clientDbId,
+    };
+    const endSessions =
+      tenant === null
+        ? {}
+        : {
+            endSessions: async (tx: TenantScopedDatabase): Promise<number> => {
+              const ended = await endAllSessions(
+                tx,
+                { audit: sessions.audit, kek: sessions.kek },
+                {
+                  tenantId: targetTenantId,
+                  subjectId: id,
+                  lifespans: lifespansOf(tenant),
+                  callerCapabilities,
+                  ...actor,
+                  issuer: tenantIssuerFor(request, tenantName),
+                  now: sessions.now(),
+                },
+              );
+              if (ended.kind !== 'ended') {
+                throw new Error('protocol-admin: ending sessions after a removal was refused');
+              }
+              return ended.ended;
+            },
+          };
 
     const outcome = await adminTx(deps.database, request, targetTenantId, (tx) =>
       deleteCredential(
         tx,
-        { audit: deps.audit },
+        { audit: deps.audit, ...endSessions },
         {
           tenantId: targetTenantId,
           subjectId: id,
           credentialId,
           callerCapabilities,
-          actorSubjectId: principal.subjectId,
-          actorTenantId: principal.issuerTenantId,
-          actorClientId: principal.clientDbId,
+          ...actor,
         },
       ),
     );
