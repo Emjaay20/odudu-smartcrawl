@@ -1,47 +1,37 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   evaluatePassword,
   REUSED_PASSWORD,
 } from '../../packages/domain-identity/src/service/password-policy.js';
-import { loadDocument, REPO_ROOT } from './markdown.js';
+import { DEFAULT_PAGE_LOCALE, PASSWORD_TOO_LONG } from '../../packages/kernel/src/index.js';
+import {
+  renderRegistrationFailedPage,
+  type RegistrationRefusal,
+} from '../../packages/account/src/view/registration-html.js';
+import { renderResetPasswordWeakPage } from '../../packages/account/src/view/reset-html.js';
+import { loadDocument } from './markdown.js';
 
 const GUIDE = 'docs/request-paths.md';
 
-// The registration page renders every refusal as one list, so its own
-// non-policy reasons — a taken username, an address already registered —
-// arrive as <li> lines beside the policy's. They are read out of the route
-// that renders them rather than restated here, so a reworded one is still
-// compared against what the server would say.
-const REGISTRATION_ROUTE = 'packages/account/src/view/routes/registration.ts';
+const REFUSALS: readonly RegistrationRefusal[] = [
+  'fields_required',
+  'email_taken',
+  'username_taken',
+  'invalid_email',
+  'unavailable',
+];
 
-function registrationRefusals(): Set<string> {
-  const source = readFileSync(path.join(REPO_ROOT, REGISTRATION_ROUTE), 'utf8');
-  const messages = new Set(
-    [
-      ...source.matchAll(
-        /renderRegistrationFailedPage\(\s*\['(?<message>[^']+)'\]\s*,\s*locale\s*,?\s*\)/gu,
-      ),
-    ].flatMap((match) => (match.groups?.message === undefined ? [] : [match.groups.message])),
-  );
-  if (messages.size === 0) {
-    throw new Error(
-      `${REGISTRATION_ROUTE} no longer renders a refusal as a literal message; ` +
-        'point this check at where those words went.',
-    );
-  }
-  return messages;
+// The text of each <li> a page renders, as served.
+function itemsOf(body: string): string[] {
+  return [...body.matchAll(/^<li>(.*)<\/li>$/gmu)].map((match) => match[1] ?? '');
 }
 
-// Every violation message the password policy can actually produce, for
-// the policy shapes docs/request-paths.md's transcripts exercise: the
-// default tenant policy (min-length, not-username, not-email) and that same
-// policy with digit/uppercase also required. REUSED_PASSWORD joins them
-// because history is the one rule no candidate alone decides — it is
-// verified against stored hashes where a transaction is in hand. A reworded
-// message falls out of this set and fails the check below, rather than
-// silently downgrading the transcript to a claim nobody re-ran.
+// Every <li> sentence the pages that list a refusal can show, read from the
+// real renderers: each rule code the policy can report for the shapes the
+// transcripts exercise (REUSED_PASSWORD joins them, history being the one
+// rule no candidate alone decides) and each non-policy reason registration
+// gives. A renamed code or reworded sentence falls out and fails the check
+// below instead of downgrading the transcript to a claim nobody re-ran.
 function possibleMessages(): Set<string> {
   const base = {
     minLength: 8,
@@ -57,39 +47,44 @@ function possibleMessages(): Set<string> {
   const strict = { ...base, requireDigit: true, requireUppercase: true };
   const subject = { username: 'ada', email: 'ada@example.com' };
 
+  const reported = [
+    ...evaluatePassword('short', strict, subject),
+    ...evaluatePassword('myadapassword', base, subject),
+    REUSED_PASSWORD,
+    PASSWORD_TOO_LONG,
+  ].map(({ rule, message }) => ({
+    rule,
+    message,
+    ...(rule === 'min-length' ? { minLength: base.minLength } : {}),
+  }));
   const messages = new Set<string>();
-  for (const violation of evaluatePassword('short', strict, subject)) {
-    messages.add(violation.message);
+  for (const violation of reported) {
+    for (const item of itemsOf(
+      renderResetPasswordWeakPage([violation], DEFAULT_PAGE_LOCALE).body,
+    )) {
+      expect(item, `no catalogue sentence for the rule ${violation.rule}`).not.toContain('<bdi>');
+      messages.add(item);
+    }
   }
-  for (const violation of evaluatePassword('myadapassword', base, subject)) {
-    messages.add(violation.message);
+  for (const refusal of REFUSALS) {
+    for (const item of itemsOf(
+      renderRegistrationFailedPage({ refusal }, DEFAULT_PAGE_LOCALE).body,
+    )) {
+      messages.add(item);
+    }
   }
-  messages.add(REUSED_PASSWORD.message);
-  for (const refusal of registrationRefusals()) messages.add(refusal);
   return messages;
 }
 
-// The pages that render a violation list, read from the views that render
-// them: a `<li>` anywhere else in the document — a consent screen's scopes,
-// say — is not a policy message and is not this check's business.
-const VIOLATION_PAGE_VIEWS = [
-  'packages/account/src/view/registration-html.ts',
-  'packages/account/src/view/reset-html.ts',
-];
-
+// The headings of the pages that render a violation list, as served.
 function violationPageHeadings(): Set<string> {
   const headings = new Set<string>();
-  for (const view of VIOLATION_PAGE_VIEWS) {
-    const source = readFileSync(path.join(REPO_ROOT, view), 'utf8');
-    for (const match of source.matchAll(/<h1>(?<title>[^<]+)<\/h1>/gu)) {
-      if (match.groups?.title !== undefined) headings.add(match.groups.title);
-    }
-  }
-  if (headings.size === 0) {
-    throw new Error(
-      `${VIOLATION_PAGE_VIEWS.join(', ')} no longer render an <h1>; ` +
-        'point this check at where those pages went.',
-    );
+  for (const body of [
+    renderRegistrationFailedPage({ refusal: 'email_taken' }, DEFAULT_PAGE_LOCALE).body,
+    renderResetPasswordWeakPage([], DEFAULT_PAGE_LOCALE).body,
+  ]) {
+    const title = /<h1>(?<title>[^<]+)<\/h1>/u.exec(body)?.groups?.title;
+    if (title !== undefined) headings.add(title);
   }
   return headings;
 }

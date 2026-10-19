@@ -14,6 +14,31 @@ import {
 } from '../../packages/protocol-oidc/src/view/logout-html.js';
 import { renderSelectAccountPage } from '../../packages/protocol-oidc/src/view/select-account-html.js';
 import { renderThrottledPage } from '../../packages/protocol-oidc/src/view/throttled-html.js';
+import {
+  renderRegistrationFailedPage,
+  renderRegistrationForm,
+  renderRegistrationSucceededPage,
+  type RegistrationRefusal,
+} from '../../packages/account/src/view/registration-html.js';
+import {
+  renderResetLinkFailedPage,
+  renderResetPasswordForm,
+  renderResetPasswordRequiredPage,
+  renderResetPasswordSucceededPage,
+  renderResetPasswordWeakPage,
+  renderResetRequestedPage,
+  renderResetRequestFailedPage,
+  renderResetRequestForm,
+} from '../../packages/account/src/view/reset-html.js';
+import {
+  renderRequiredActionsForm,
+  renderRequiredActionsSucceededPage,
+} from '../../packages/account/src/view/required-actions-html.js';
+import {
+  renderVerificationFailedPage,
+  renderVerificationSucceededPage,
+} from '../../packages/account/src/view/verification-html.js';
+import { renderSignInRefused } from '../../packages/console-gateway/src/view/refusal-html.js';
 import { renderRecoveryCodesPage } from '../../packages/authn-flows/src/view/recovery-codes-html.js';
 import { renderTotpEnrolmentPage } from '../../packages/authn-flows/src/view/totp-enrolment-html.js';
 import { renderUpdatePasswordPage } from '../../packages/authn-flows/src/view/update-password-html.js';
@@ -158,6 +183,50 @@ function violationFor(sentence: string): { rule: string; message: string; minLen
   return { rule: 'unknown', message: sentence };
 }
 
+const ACCOUNT_RULES = RULES.filter((rule) => rule !== 'superseded');
+const REFUSALS: readonly RegistrationRefusal[] = [
+  'fields_required',
+  'email_taken',
+  'username_taken',
+  'invalid_email',
+  'unavailable',
+];
+const LINKED_ACTIONS = [
+  'update-password',
+  'configure-totp',
+  'configure-passkey',
+  'generate-recovery-codes',
+] as const;
+
+// The account pages word a rule from its own catalogue, so a recorded
+// sentence is read back by asking the account page which rule renders as it.
+function accountViolationFor(sentence: string): {
+  rule: string;
+  message: string;
+  minLength?: number;
+} {
+  const minLength = Number(/at least (\d+) characters/u.exec(sentence)?.[1] ?? 0);
+  for (const rule of ACCOUNT_RULES) {
+    const candidate = { rule, message: 'x', minLength };
+    const rendered = renderResetPasswordWeakPage([candidate], LOCALE).body;
+    if (first(rendered, /<li>(.*)<\/li>/u) === sentence) return candidate;
+  }
+  return { rule: 'unknown', message: sentence };
+}
+
+const tenantOf = (body: string): string => first(body, /action="\/tenants\/([^/"]*)\//u);
+const keyOf = (body: string): string => first(body, /name="key" value="([^"]*)"/u);
+const itemsOf = (body: string): string[] => all(body, /^<li>(.*)<\/li>$/gmu);
+const actionsOf = (body: string): (typeof LINKED_ACTIONS)[number][] =>
+  itemsOf(body).flatMap((text) => {
+    const found = LINKED_ACTIONS.find(
+      (action) =>
+        first(renderRequiredActionsSucceededPage([action], LOCALE).body, /<li>(.*)<\/li>/u) ===
+        text,
+    );
+    return found === undefined ? [] : [found];
+  });
+
 // A recording shows the QR image as an elision, so the page is read back
 // with the same one standing where the image is.
 const QR_ELIDED = '<svg …>…</svg>';
@@ -170,8 +239,9 @@ const elidesOnlyTheQr = (block: Recorded): boolean =>
 // renderer: a page whose text or markup the server no longer produces for the
 // same inputs is named here. It cannot see a branch no recording takes, the
 // login forms (too many inputs to read back), the passkey and pending-action
-// pages of authn-flows (recorded nowhere), the pages of account or the
-// console, or a value the markup does not show.
+// pages of authn-flows (recorded nowhere), the account forms nothing records,
+// a rule or action wording that two sentences share, or a value the markup
+// does not show.
 const RENDER_BACK: Record<string, (body: string) => string> = {
   'Set up your authenticator': (body: string) =>
     renderTotpEnrolmentPage(
@@ -202,6 +272,49 @@ const RENDER_BACK: Record<string, (body: string) => string> = {
       all(body, /^<li>(.*)<\/li>$/gmu).map(violationFor),
       LOCALE,
     ).body,
+  'Create account': (body) => renderRegistrationForm(tenantOf(body), LOCALE).body,
+  "Can't create this account": (body) => {
+    const items = itemsOf(body);
+    const refusal = REFUSALS.find(
+      (candidate) =>
+        itemsOf(renderRegistrationFailedPage({ refusal: candidate }, LOCALE).body)[0] === items[0],
+    );
+    return renderRegistrationFailedPage(
+      refusal !== undefined && items.length === 1
+        ? { refusal }
+        : { violations: items.map(accountViolationFor) },
+      LOCALE,
+    ).body;
+  },
+  'Account created': (body) =>
+    renderRegistrationSucceededPage(body.includes('Check your email for a link'), LOCALE).body,
+  'Email verified': () => renderVerificationSucceededPage(LOCALE).body,
+  "Can't verify this link": () => renderVerificationFailedPage(LOCALE).body,
+  'Forgot your password?': (body) => renderResetRequestForm(tenantOf(body), LOCALE).body,
+  'Check your email': () => renderResetRequestedPage(LOCALE).body,
+  "Can't send a reset link": (body) =>
+    renderResetRequestFailedPage(
+      body.includes('Email is required.') ? 'email_required' : 'unavailable',
+      LOCALE,
+    ).body,
+  'Choose a new password': (body) =>
+    renderResetPasswordForm(tenantOf(body), keyOf(body), LOCALE).body,
+  'Password reset': () => renderResetPasswordSucceededPage(LOCALE).body,
+  "Can't use this link": () => renderResetLinkFailedPage(LOCALE).body,
+  "Can't reset your password": (body) =>
+    body.includes('<ul>')
+      ? renderResetPasswordWeakPage(itemsOf(body).map(accountViolationFor), LOCALE).body
+      : renderResetPasswordRequiredPage(LOCALE).body,
+  'Update your account': (body) =>
+    renderRequiredActionsForm(
+      tenantOf(body),
+      keyOf(body),
+      actionsOf(body),
+      body.includes('name="password"'),
+      LOCALE,
+    ).body,
+  'Account updated': (body) => renderRequiredActionsSucceededPage(actionsOf(body), LOCALE).body,
+  'Sign-in failed': () => renderSignInRefused(LOCALE).body,
   'Allow access?': (body) => {
     const link = (label: RegExp): string | null => {
       const href = /<a href="([^"]*)">/u;

@@ -72,6 +72,18 @@ they were. `tests/docs/page-documents-transcripts.test.ts` also renders each
 recorded enrolment, recovery-codes and change-password body back through its
 renderer, with the QR image elided as the blocks show it.
 
+The account pages (registration, verification, reset and the required-actions
+link) and the console's sign-in refusal read from catalogues as well. Their
+recordings changed only where a page's own text holds an apostrophe, now
+`&#39;` (`Can&#39;t create this account`, `we&#39;ve sent`, `This link
+can&#39;t be used`): 11 lines. The registration pages, the reset request, form, weak-password, success and
+spent-link pages and the verification pages were run again on the project
+`odudu-p4g-16` against a tenant with registration, verification and reset on,
+and each recorded body that run produced matches the recorded one line for
+line; the not-reused reset page and the required-actions pages are what they
+were and were not re-run live. The test above now renders these bodies back through their
+renderers too.
+
 Values that change on every run — authorization codes, tokens, `jti`,
 session ids, timestamps — are shortened or truncated where they appear, and
 that is said each time. Nothing here is reconstructed from what the code
@@ -3476,7 +3488,7 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 <body>
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<h1>Can't create this account</h1>
+<h1>Can&#39;t create this account</h1>
 <ul>
 <li>That email address is already registered.</li>
 </ul>
@@ -3517,7 +3529,7 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 <body>
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<h1>Can't create this account</h1>
+<h1>Can&#39;t create this account</h1>
 <ul>
 <li>Password must be at least 8 characters long.</li>
 </ul>
@@ -3545,7 +3557,7 @@ same short password now lists all three:
 <body>
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<h1>Can't create this account</h1>
+<h1>Can&#39;t create this account</h1>
 <ul>
 <li>Password must be at least 8 characters long.</li>
 <li>Password must contain a digit.</li>
@@ -3587,7 +3599,7 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 <body>
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<h1>Can't create this account</h1>
+<h1>Can&#39;t create this account</h1>
 <ul>
 <li>Password must not contain the username.</li>
 <li>Password must not contain the email address.</li>
@@ -3622,7 +3634,7 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 <body>
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<h1>Can't create this account</h1>
+<h1>Can&#39;t create this account</h1>
 <ul>
 <li>Password must not contain the email address.</li>
 </ul>
@@ -3689,7 +3701,7 @@ curl -sS -w '\n%{http_code}\n' \
 <body>
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<h1>Can't create this account</h1>
+<h1>Can&#39;t create this account</h1>
 <ul>
 <li>That email address is already registered.</li>
 </ul>
@@ -4821,7 +4833,7 @@ curl -sS -X POST http://localhost:3000/tenants/reset-demo/login-actions/reset-pa
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Check your email</h1>
-<p>If that address has an account, we've sent a link to reset its password.</p>
+<p>If that address has an account, we&#39;ve sent a link to reset its password.</p>
 </main>
 </body>
 </html>
@@ -4839,7 +4851,7 @@ curl -sS -X POST http://localhost:3000/tenants/reset-demo/login-actions/reset-pa
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
 <h1>Check your email</h1>
-<p>If that address has an account, we've sent a link to reset its password.</p>
+<p>If that address has an account, we&#39;ve sent a link to reset its password.</p>
 </main>
 </body>
 </html>
@@ -4934,7 +4946,7 @@ curl -sS -X POST http://localhost:3000/tenants/reset-demo/login-actions/action-t
 <body>
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<h1>Can't reset your password</h1>
+<h1>Can&#39;t reset your password</h1>
 <ul>
 <li>Password must be at least 8 characters long.</li>
 </ul>
@@ -4978,7 +4990,7 @@ content-length: 727
 <body>
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<h1>Can't reset your password</h1>
+<h1>Can&#39;t reset your password</h1>
 <ul>
 <li>Password must not be one you have used before.</li>
 </ul>
@@ -5387,7 +5399,7 @@ curl -sS -w '\n' -X POST \
 <body>
 <main class="page">
 <svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>
-<h1>This link can't be used</h1>
+<h1>This link can&#39;t be used</h1>
 <p>It may have already been used or expired. Request a new one and try again.</p>
 </main>
 </body>

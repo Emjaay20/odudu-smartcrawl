@@ -796,3 +796,44 @@ semver tag there.
 - The French fixture helpers (`withFrench`, `FRENCH`, `ARABIC`) are in
   `@odudu/testkit/i18n`; `tests/lint/shared-fr-catalogue.test.ts` fails on a
   package that keeps a copy.
+
+## Increment 16: account and console-gateway page text in a catalogue
+
+- Fifteen account renderers (registration 3, verification 2, reset 8, required
+  actions 2) and the console-gateway refusal page now read their text from
+  `packages/account/src/view/messages.ts` (60 entries) and
+  `packages/console-gateway/src/view/messages.ts` (3). Entries per package so
+  far, counted with `Object.keys(en).length`: protocol-oidc 57, authn-flows 39,
+  account 60, console-gateway 3: 159, before mail templates. Catalogues are TS,
+  as in increments 14 and 15, not `catalogue/en.json`.
+- Account routes no longer pass sentences to a page. A refusal is a code
+  (`RegistrationRefusal`, `ResetRequestRefusal`) and a password rule is a
+  `PasswordViolation` read by its code, the same mapping authn-flows has; the
+  account views keep their own copy of the rule list (`password-rules.ts`)
+  because a view may not import another package's internals. `register`,
+  `completePasswordReset` and `completeRequiredActions` add `minLength` to the
+  minimum-length violation (`service/password-violations.ts`);
+  `PASSWORD_TOO_LONG` is passed as it is and read by its `max-length` code.
+- An actions link's page lists actions by code, not by label: `peekActionToken`
+  returns `actions` and `completeRequiredActions` returns `remaining` as
+  `LinkedRequiredAction` codes, and the page words each from its catalogue. The
+  mail still builds its list with `actionLabel`, which moves with the mail
+  templates.
+- `sendVerificationHtml` sends `content-language` through `pageHeaders`
+  (tested against a real reply); the refusal page is tested through `sendPage`
+  for the Instrument link and `Content-Language: en`.
+- The registration form shows neither the tenant's display name nor an entered
+  email, so there is nothing there to isolate; the tenant name appears only in
+  the escaped form action.
+- Reset-request enumeration: the response for a known and an unknown address is
+  byte-identical, headers included, in `en`, `fr` and a negotiated mixed
+  header (`reset-password.int.test.ts`).
+- English markup differs only by `&#39;` for an apostrophe in a page's own text
+  (`Can&#39;t create this account`, `we&#39;ve sent`, `This link can&#39;t be
+used`); the required-actions, registration success and form pages are
+  byte-identical. Recorded transcripts changed in 11 lines and were checked
+  against a live run on the project `odudu-p4g-16`.
+- `tests/docs/page-documents-transcripts.test.ts` now renders back the recorded
+  account and refusal pages; `tests/docs/password-policy.test.ts` reads the
+  recorded violation sentences from the real renderers instead of a regular
+  expression over a route.
