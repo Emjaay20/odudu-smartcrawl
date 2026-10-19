@@ -14,7 +14,7 @@
   --ifm-color-primary-light: color-mix(in srgb, var(--signal-active-ink) 90%, white);
   --ifm-color-primary-lighter: color-mix(in srgb, var(--signal-active-ink) 80%, white);
   --ifm-color-primary-lightest: color-mix(in srgb, var(--signal-active-ink) 60%, white);
-  --ifm-font-color-base-inverse: light-dark(#fff, #0b0e0d);
+  --ifm-font-color-base-inverse: var(--surface-panel);
 
   --ifm-background-color: var(--surface-panel);
   --ifm-background-surface-color: var(--surface-sunken);
@@ -48,7 +48,7 @@
   --ifm-menu-color-active: var(--signal-active-ink);
   --ifm-menu-color-background-active: var(--signal-active);
   --ifm-menu-color-background-hover: var(--surface-sunken);
-  --docusaurus-highlighted-code-line-bg: light-dark(rgb(17 21 20 / 8%), rgb(255 255 255 / 10%));
+  --docusaurus-highlighted-code-line-bg: color-mix(in srgb, var(--ink-primary) 10%, transparent);
 }
 
 :focus-visible {

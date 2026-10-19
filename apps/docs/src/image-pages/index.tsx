@@ -9,7 +9,7 @@ export default function ImageHome(): ReactNode {
       title="Documentation"
       description="The Odudu documentation that ships with this installation."
     >
-      <main className="container margin-vert--lg">
+      <main className="container margin-vert--lg" data-page="docs-home">
         <h1>Documentation</h1>
         <p>This is the documentation for the Odudu installation you are running.</p>
         <SectionGrid />

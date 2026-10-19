@@ -181,7 +181,7 @@ jobs:
         run: pnpm --filter @odudu/docs build:image
 
       - name: Check the built site
-        run: node_modules/.bin/vitest run --project unit apps/docs
+        run: pnpm --filter @odudu/docs test
 
       - name: Install Chromium and its system libraries
         run: pnpm --filter @odudu/docs exec playwright install --with-deps chromium

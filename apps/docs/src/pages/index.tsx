@@ -12,7 +12,7 @@ export default function Home(): ReactNode {
       title="Odudu documentation"
       description="Odudu is an OpenID Connect identity provider you run yourself. Start with the quick start, then read the guides, concepts, reference and operating notes."
     >
-      <header className={styles.hero}>
+      <header className={styles.hero} data-page="landing">
         <div className="container">
           <h1 className={styles.title}>Odudu</h1>
           <p className={styles.tagline}>

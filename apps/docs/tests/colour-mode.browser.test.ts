@@ -5,9 +5,6 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PAGES_BASE } from '#docs/site.config.ts';
 import { DOCS_ROOT, distDir } from '#docs/tests/support/dist.ts';
 
-// Instrument's --surface-panel as light-dark(#ffffff, #1c2221).
-const PANEL = { light: 'rgb(255, 255, 255)', dark: 'rgb(28, 34, 33)' };
-
 let server: ChildProcess;
 let browser: Browser;
 let origin = '';
@@ -48,9 +45,19 @@ describe('the colour mode', () => {
       const theme = () => page.locator('html').getAttribute('data-theme');
       const navbar = () =>
         page.locator('nav.navbar').evaluate((element) => getComputedStyle(element).backgroundColor);
+      // Instrument's panel surface as the current colour mode resolves it.
+      const panel = () =>
+        page.evaluate(() => {
+          const probe = document.createElement('div');
+          probe.style.backgroundColor = 'var(--surface-panel)';
+          document.body.append(probe);
+          const colour = getComputedStyle(probe).backgroundColor;
+          probe.remove();
+          return colour;
+        });
 
       expect(await theme()).toBe(system);
-      expect(await navbar()).toBe(PANEL[system]);
+      expect(await navbar()).toBe(await panel());
 
       const toggle = page.locator('button[class*="toggleButton"]').first();
       const seen: string[] = [];
@@ -58,7 +65,7 @@ describe('the colour mode', () => {
         await toggle.click();
         const now = await theme();
         seen.push(now ?? '');
-        expect(await navbar()).toBe(PANEL[now === 'dark' ? 'dark' : 'light']);
+        expect(await navbar()).toBe(await panel());
       }
       expect(new Set(seen)).toEqual(new Set(['light', 'dark']));
       await context.close();

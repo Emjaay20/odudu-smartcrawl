@@ -3,7 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { SECTIONS } from '#docs/nav.ts';
 import { PAGES_BASE } from '#docs/site.config.ts';
-import sidebars, { SECTION_ITEMS } from '#docs/sidebars.ts';
+import { SECTION_ITEMS } from '#docs/sidebars.ts';
 import {
   DOCS_ROOT,
   distDir,
@@ -35,9 +35,13 @@ describe('the information architecture', () => {
     expect(SECTIONS.map((section) => section.label)).toEqual(SECTION_ORDER);
   });
 
-  it('puts the same sections, in the same order, in the sidebar', () => {
+  it('lists the sections in the sidebar of a built page, in order', () => {
+    const $ = load(path.join(distDir('pages'), 'guides/index.html'));
+    const hrefs = $('.theme-doc-sidebar-menu a.menu__link')
+      .map((_, element) => $(element).attr('href'))
+      .get();
+    expect(hrefs).toEqual(SECTIONS.map((section) => `${PAGES_BASE}${section.route}`));
     expect(SECTION_ITEMS.map((item) => item.label)).toEqual(SECTION_ORDER);
-    expect(sidebars).toEqual({ docs: SECTION_ITEMS });
   });
 
   it('gives every section at least one page that exists', () => {
@@ -46,13 +50,15 @@ describe('the information architecture', () => {
     }
   });
 
-  it('reaches every page from the home page in one click to its section and one more to the page', () => {
+  it('reaches every page from the home page in one click to its section and one more to the page, the footer aside', () => {
     const dir = distDir('pages');
     const pages = new Map<string, string[]>();
     for (const file of htmlFiles(dir)) {
       const route = routeOf(dir, file, PAGES_BASE);
       if (!isDocumentRoute(route, PAGES_BASE)) continue;
-      const links = internalReferences(load(file), route)
+      const $ = load(file);
+      $('footer').remove();
+      const links = internalReferences($, route)
         .filter((reference) => reference.attribute.startsWith('a['))
         .map((reference) => reference.pathname);
       pages.set(route, links);

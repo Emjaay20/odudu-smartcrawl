@@ -124,6 +124,7 @@
         "package.json",
         "tsconfig.json",
         "$TURBO_ROOT$/apps/admin-console/src/shared/view/*.css",
+        "scripts/**",
         "tests/**"
       ],
       "outputs": ["trace-report.json"]

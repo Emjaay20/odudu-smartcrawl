@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { SECTIONS } from '#docs/nav.ts';
 import { PAGES_BASE, SITE_ORIGIN } from '#docs/site.config.ts';
 import {
   DOCS_ROOT,
@@ -65,9 +66,19 @@ describe('the two builds', () => {
       expect(outside).toEqual([]);
     });
 
-    it(`has a search index and a search page in the ${target} build`, () => {
+    it(`indexes every section for search in the ${target} build`, () => {
       const dir = distDir(target);
-      expect(existsSync(path.join(dir, 'search-index.json'))).toBe(true);
+      const base = BASES[target];
+      const index = JSON.parse(readFileSync(path.join(dir, 'search-index.json'), 'utf8')) as {
+        documents: { u: string }[];
+      }[];
+      const indexed = new Set(
+        index.flatMap((part) => part.documents.map((document) => document.u)),
+      );
+      const missing = SECTIONS.map((section) => `${base}${section.route}`).filter(
+        (route) => !indexed.has(route),
+      );
+      expect(missing).toEqual([]);
       expect(existsSync(path.join(dir, 'search/index.html'))).toBe(true);
     });
   }
@@ -85,12 +96,25 @@ describe('the two builds', () => {
     expect(pagesWithRobots).toEqual([]);
   });
 
-  it('gives the image its own plain home, not the landing', () => {
-    const text = load(path.join(distDir('image'), 'index.html'))('main').text();
-    expect(text).toContain('Documentation');
-    expect(walk(distDir('image')).some((file) => readFileSync(file).includes('Landing home'))).toBe(
-      false,
+  it('gives the image the documentation home and no landing, and Pages the landing', () => {
+    const marker = (file: string, page: string): number =>
+      load(file)(`[data-page="${page}"]`).length;
+    const image = distDir('image');
+    const pages = distDir('pages');
+    expect(marker(path.join(image, 'index.html'), 'docs-home')).toBe(1);
+    expect(marker(path.join(pages, 'index.html'), 'landing')).toBe(1);
+    expect(marker(path.join(pages, 'index.html'), 'docs-home')).toBe(0);
+    const landing = htmlFiles(image).filter((file) => marker(file, 'landing') > 0);
+    expect(landing).toEqual([]);
+  });
+
+  it('names the Pages address nowhere in the image build, bundle included', () => {
+    const host = new URL(SITE_ORIGIN).host;
+    const text = /\.(?:html|js|css|json|txt|xml|svg|md)$/u;
+    const named = walk(distDir('image')).filter(
+      (file) => text.test(file) && readFileSync(file, 'utf8').includes(host),
     );
+    expect(named).toEqual([]);
   });
 });
 

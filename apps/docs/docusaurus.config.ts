@@ -45,7 +45,8 @@ const themeConfig: Preset.ThemeConfig = {
 
 const config: Config = {
   title: 'Odudu',
-  url: SITE_ORIGIN,
+  // The image names no public address: the theme needs a URL, and it is bundled.
+  url: image ? 'http://localhost' : SITE_ORIGIN,
   baseUrl: image ? '/docs/' : PAGES_BASE,
   trailingSlash: true,
   favicon: 'brand/favicon.svg',
@@ -64,6 +65,8 @@ const config: Config = {
         indexDocs: true,
         indexBlog: false,
         indexPages: !image,
+        // The image's pages say noindex to crawlers; its own search must still read them.
+        forceIgnoreNoIndex: image,
         docsRouteBasePath: '/',
         docsDir: 'content/en',
       },

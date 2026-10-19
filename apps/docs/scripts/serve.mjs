@@ -61,7 +61,8 @@ const server = createServer((request, response) => {
       const stream = createReadStream(file);
       (gzip ? stream.pipe(createGzip()) : stream).pipe(response);
     },
-    () => {
+    (error) => {
+      console.error(error);
       response.writeHead(500);
       response.end();
     },

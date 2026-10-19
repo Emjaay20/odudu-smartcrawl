@@ -1069,10 +1069,12 @@ what the build of the real workspace added or changed:
   and the build emits the same hashed Plex files under `assets/fonts`.
 - verified: `docusaurus.config.ts`'s search options need `docsDir: 'content/en'`; without
   it the plugin warns `docsDir doesn't exist: …/docs`.
-- The unit project's globs gain `apps/docs/tests/**/*.test.ts` and, run from
-  `apps/docs`, `tests/**/*.test.ts`; `*.browser.test.ts` is excluded from unit and run by
-  `pnpm --filter @odudu/docs test:browser`, which needs Chromium. The root `verify` job
-  does not install one, so the browser test lives in the `docs` job.
+- The docs tests read `dist/`, so the root unit glob does not include them (`pnpm
+test:unit` passes on a tree with no docs build). They run through the turbo `test`
+  task, which depends on the build, and `pnpm --filter @odudu/docs test` in the `docs` job.
+  `*.browser.test.ts` is its own vitest project (`browser`, only in the `apps/docs` scope),
+  run by `pnpm --filter @odudu/docs test:browser`; the root `verify` job has no Chromium,
+  so it runs in the `docs` job.
 - turbo: `@odudu/docs#build` and `#test` list their inputs explicitly (the content, the
   config files and the console's `tokens.css` and `fonts.css`, which the build imports), and
   `build` names `DOCS_SITE_ORIGIN` and `DOCS_BASE` as environment. The test task depends
@@ -1124,3 +1126,34 @@ the sign-in page followed the operating system and was dark.
   favicon file `mark.svg` keeps its own `prefers-color-scheme` rule: a document
   loaded as an icon cannot read the page's attribute, and the browser's tab
   strip follows the operating system anyway.
+
+### Increment 18, fix round
+
+- **The image's search index was empty.** `@easyops-cn/docusaurus-search-local` skips
+  any page whose `<meta name="robots">` says noindex, and the image says it on every
+  page: nine documents indexed in the Pages build, none in the image. verified:
+  `node -e` over `dist/image/search-index.json` before and after `forceIgnoreNoIndex:
+image` (0 then 9 per index part). The test now asserts the nine sections are in each
+  build's index.
+- **The image bundle named the Pages host** through `siteConfig.url`, which Docusaurus
+  bundles. The image's `url` is `http://localhost` (a required value no page shows: the
+  canonical, `og:url` and sitemap are stripped or off), and a test greps every text file
+  of `dist/image` for the Pages host. Mutation: `url: SITE_ORIGIN` for the image fails it.
+  Task 18c's "a private install never names the public site" can now be held over the
+  bundle as well as the HTML.
+- The landing and the image home each carry `data-page` (`landing`, `docs-home`); the test
+  asserts the marker's presence in the right build and its absence from every image page.
+  Mutation: `pages.path` left at `src/pages` for the image fails it.
+- The sidebar is asserted from a built page's menu links, in order; deleting `sidebarPath`
+  fails it. The two-click walk ignores the footer, which links every section from every
+  page. The colour test reads `--surface-panel` from a probe element, so a token retune does
+  not fail it.
+- turbo: the docs `test` inputs include `scripts/**`. verified: `turbo run test
+--filter=@odudu/docs --dry=json` gives hash `b56672f34ee60e7c`, and `da10178b681bbe8a`
+  after one line is appended to `scripts/serve.mjs`.
+- Carried: `build:image` sets `DOCS_TARGET` inline (POSIX shell). CI is `ubuntu-latest`
+  only; the manual Windows quick-start run does not build the docs. A cross-OS CI build of
+  the site would need `cross-env` first. The `docs` job repeats the builds and tests that
+  `verify` runs through turbo (about two builds, seconds each); its value is Chromium. The
+  plan's text still says `dist-pages` and `dist-image` (D4, Task 31b, Task 35's guard b);
+  the output is `dist/pages` and `dist/image`.
