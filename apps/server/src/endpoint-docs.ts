@@ -160,7 +160,8 @@ export const ENDPOINT_DOCS: Readonly<Record<string, EndpointDoc>> = {
   },
   'GET /docs': {
     auth: 'None',
-    purpose: 'Redirects to `/docs/`, the documentation that ships with the server.',
+    purpose:
+      'Redirects to the form with the trailing slash, the documentation that ships with the server.',
   },
   'GET /docs/*': {
     auth: 'None',

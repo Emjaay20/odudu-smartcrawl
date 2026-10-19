@@ -340,7 +340,7 @@ export const CONFIG_DOCS: Record<ConfigKey, ConfigDoc> = {
     group: 'Server',
     summary:
       'The directory of the built documentation, as the release image lays it out. A ' +
-      'directory with no build, or one that is not the build, makes `/docs/*` answer `503` ' +
+      'directory with no build, or one that is not the build, makes the documentation answer `503` ' +
       'and the log names this variable; the rest of the server starts.',
     secret: false,
   },

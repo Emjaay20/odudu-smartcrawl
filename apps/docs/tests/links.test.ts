@@ -16,6 +16,15 @@ import {
 
 const BASES: Record<Target, string> = { pages: PAGES_BASE, image: '/docs/' };
 
+// The generated endpoints page lists the routes the server answers, and the
+// documentation's own are two of them: a route in code, not a link on the site.
+function isServerRouteRow(file: string, line: string): boolean {
+  return (
+    file.endsWith(path.join('reference', 'generated', 'endpoints.md')) &&
+    /^\| `[A-Z]+` \| `\/docs\/\*` \|/u.test(line)
+  );
+}
+
 describe('internal links', () => {
   for (const target of ['pages', 'image'] as const) {
     it(`has no internal link that resolves to nothing in the ${target} build`, () => {
@@ -46,7 +55,7 @@ describe('internal links', () => {
       readFileSync(file, 'utf8')
         .split('\n')
         .flatMap((line, index) =>
-          /(?:^|[\s"'`(=])\/(?:odudu|docs)\//u.test(line)
+          /(?:^|[\s"'`(=])\/(?:odudu|docs)\//u.test(line) && !isServerRouteRow(file, line)
             ? [`${path.relative(DOCS_ROOT, file)}:${String(index + 1)}`]
             : [],
         ),
