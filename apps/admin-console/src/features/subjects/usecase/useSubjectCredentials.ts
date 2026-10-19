@@ -8,6 +8,9 @@ import {
   useLockout,
 } from '#/features/subjects/repository/useCredentials';
 import {
+  CHOICE_DEFAULTS,
+  choiceKeyOf,
+  choicesWith,
   credentialChangeOf,
   credentialDialogOf,
   credentialDoneText,
@@ -29,6 +32,8 @@ export interface SubjectCredentials {
   credentials: Read<ListCredentialsResponse>;
   lockout: Read<Lockout>;
   asking: Asking | null;
+  // The choice the confirmation offers, when it offers one.
+  choice: { checked: boolean; onChange: (checked: boolean) => void } | null;
   // What the confirmation says for the change being asked.
   dialog: NamedDialog | null;
   busy: boolean;
@@ -54,7 +59,9 @@ export function useSubjectCredentials(
   const lockout = useLockout(tenant, subject.id, !itself);
   const changes = useCredentialChanges(tenant, subject.id);
   const [asking, setAsking] = useState<Asking | null>(null);
+  const [choices, setChoices] = useState(CHOICE_DEFAULTS);
   const [problem, setProblem] = useState<string | null>(null);
+  const choiceKey = asking === null ? null : choiceKeyOf(asking);
   // The issue's failure is said in the dialog that asked for it; its
   // success closes that dialog, and the secret has its own.
   const issue = useIssuePassword(tenant, subject.id, {
@@ -73,11 +80,21 @@ export function useSubjectCredentials(
     credentials,
     lockout,
     asking,
+    choice:
+      choiceKey === null
+        ? null
+        : {
+            checked: choices[choiceKey],
+            onChange: (checked) => {
+              setChoices(choicesWith(choices, choiceKey, checked));
+            },
+          },
     dialog: credentialDialogOf(asking, name, self),
     busy: changes.busy || issue.busy,
     problem,
     ask: (next) => {
       setProblem(null);
+      setChoices(CHOICE_DEFAULTS);
       setAsking(next);
     },
     cancel: () => {
@@ -91,7 +108,7 @@ export function useSubjectCredentials(
         issue.start();
         return;
       }
-      const change = credentialChangeOf(asking);
+      const change = credentialChangeOf(asking, choices);
       if (change === null) return;
       changes
         .run(change)

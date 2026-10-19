@@ -1,8 +1,16 @@
 import type { Asked } from '#/shared/service/capabilities';
 
+// A choice the confirmation offers beside what it asks, ticked or not by the
+// one asking; what it means is the usecase's, and the dialog only draws it.
+export interface DialogChoice {
+  label: string;
+  note: string;
+}
+
 // A confirmation a usecase asks for, drawn by DialogAsk: what it leaves out
 // the dialog decides, and `typed` is what must be typed before it is confirmed.
 export interface DialogAsk extends Asked {
+  choice?: DialogChoice;
   confirmLabel?: string;
   tone?: 'primary' | 'danger';
   typed?: string | null;

@@ -11,6 +11,7 @@ import {
   type Profile,
   type Subject,
 } from '@odudu/contracts/admin';
+import { endAllSessions } from '#/features/subjects/adapter/sessions';
 import type { CredentialChange } from '#/features/subjects/service';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 import { readSubjectCount, readSubjectPage } from '#/shared/adapter/directory';
@@ -107,8 +108,10 @@ export function revokeRecoveryCodes(
   gateway: Gateway,
   tenant: string,
   subjectId: string,
+  requireNewSet: boolean,
 ): Promise<GatewayResult<undefined>> {
   return adminCall(gateway, 'DELETE', tenant, ['subjects', subjectId, 'recovery-codes'], {
+    query: new URLSearchParams({ require_new_set: String(requireNewSet) }),
     schema: nothing,
   });
 }
@@ -143,15 +146,23 @@ export async function readUsernameEditable(
   return result.ok ? { ...result, data: result.data.username_editable } : result;
 }
 
-export function changeCredential(
+// Ending the sessions follows a removal that went through, so a refused
+// removal leaves them alone; one that fails after it is reported as the
+// failure it was, and the tab shows what the server holds.
+export async function changeCredential(
   gateway: Gateway,
   tenant: string,
   subjectId: string,
   change: CredentialChange,
 ): Promise<GatewayResult<undefined>> {
   if (change.kind === 'factor') {
-    return deleteCredential(gateway, tenant, subjectId, change.credentialId);
+    const removed = await deleteCredential(gateway, tenant, subjectId, change.credentialId);
+    if (!removed.ok || !change.endSessions) return removed;
+    const ended = await endAllSessions(gateway, tenant, subjectId);
+    return ended.ok ? { ...ended, data: undefined } : ended;
   }
-  if (change.kind === 'recovery-codes') return revokeRecoveryCodes(gateway, tenant, subjectId);
+  if (change.kind === 'recovery-codes') {
+    return revokeRecoveryCodes(gateway, tenant, subjectId, change.requireNewSet);
+  }
   return clearLockout(gateway, tenant, subjectId);
 }

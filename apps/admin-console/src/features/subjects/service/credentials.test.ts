@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  askToRemove,
+  askToRevoke,
+  CHOICE_DEFAULTS,
+  choiceKeyOf,
+  choicesWith,
   credentialDialogOf,
   credentialChangeOf,
   credentialDialog,
@@ -69,20 +74,75 @@ describe('credential changes', () => {
   const factor = {
     kind: 'factor',
     credential: { id: 'c1', type: 'totp', created_at: 'x' },
+    last: false,
   } as const;
+  const lastFactor = { ...factor, last: true } as const;
+  const keep = CHOICE_DEFAULTS;
 
   it('maps what was asked to the change that is sent, none for a factor without an id', () => {
-    expect(credentialChangeOf(factor)).toEqual({ kind: 'factor', credentialId: 'c1' });
+    expect(credentialChangeOf(factor, keep)).toEqual({
+      kind: 'factor',
+      credentialId: 'c1',
+      endSessions: false,
+    });
     expect(
-      credentialChangeOf({ kind: 'factor', credential: { type: 'totp', created_at: 'x' } }),
+      credentialChangeOf(
+        { kind: 'factor', credential: { type: 'totp', created_at: 'x' }, last: false },
+        keep,
+      ),
     ).toBeNull();
-    expect(credentialChangeOf({ kind: 'recovery-codes' })).toEqual({ kind: 'recovery-codes' });
-    expect(credentialChangeOf({ kind: 'lockout' })).toEqual({ kind: 'lockout' });
+    expect(credentialChangeOf({ kind: 'lockout' }, keep)).toEqual({ kind: 'lockout' });
+  });
+
+  it('ends the sessions only when asked, and only for the last factor', () => {
+    const ticked = { ...keep, endSessions: true };
+    expect(credentialChangeOf(lastFactor, ticked)).toMatchObject({ endSessions: true });
+    expect(credentialChangeOf(factor, ticked)).toMatchObject({ endSessions: false });
+    expect(credentialChangeOf(lastFactor, keep)).toMatchObject({ endSessions: false });
+  });
+
+  it('asks for a new set unless unticked, and never for a subject with no factor left', () => {
+    const revoke = { kind: 'recovery-codes', hasFactor: true } as const;
+    expect(credentialChangeOf(revoke, keep)).toEqual({
+      kind: 'recovery-codes',
+      requireNewSet: true,
+    });
+    expect(credentialChangeOf(revoke, { ...keep, newSet: false })).toEqual({
+      kind: 'recovery-codes',
+      requireNewSet: false,
+    });
+    expect(credentialChangeOf({ kind: 'recovery-codes', hasFactor: false }, keep)).toEqual({
+      kind: 'recovery-codes',
+      requireNewSet: false,
+    });
+  });
+
+  it('knows which asks hold a last factor, from the factors the subject has', () => {
+    const totp = { id: 't', type: 'totp', created_at: 'x' } as const;
+    const key = { id: 'w', type: 'webauthn', created_at: 'x' } as const;
+    expect(askToRemove([totp], totp)).toEqual({ kind: 'factor', credential: totp, last: true });
+    expect(askToRemove([totp, key], totp)).toMatchObject({ last: false });
+    expect(askToRevoke([totp])).toEqual({ kind: 'recovery-codes', hasFactor: true });
+    expect(askToRevoke([])).toEqual({ kind: 'recovery-codes', hasFactor: false });
+  });
+
+  it('offers a choice only where one changes the outcome, ticked for a new set only', () => {
+    expect(choiceKeyOf(factor)).toBeNull();
+    expect(choiceKeyOf(lastFactor)).toBe('endSessions');
+    expect(choiceKeyOf({ kind: 'recovery-codes', hasFactor: true })).toBe('newSet');
+    expect(choiceKeyOf({ kind: 'recovery-codes', hasFactor: false })).toBeNull();
+    expect(choiceKeyOf({ kind: 'lockout' })).toBeNull();
+    expect(choiceKeyOf({ kind: 'password' })).toBeNull();
+    expect(CHOICE_DEFAULTS).toEqual({ newSet: true, endSessions: false });
+    expect(choicesWith(CHOICE_DEFAULTS, 'newSet', false)).toEqual({
+      newSet: false,
+      endSessions: false,
+    });
   });
 
   it('says what was done, by name', () => {
     expect(credentialDoneText('ada', factor)).toBe('Authenticator app (TOTP) removed from ada.');
-    expect(credentialDoneText('ada', { kind: 'recovery-codes' })).toBe(
+    expect(credentialDoneText('ada', { kind: 'recovery-codes', hasFactor: true })).toBe(
       "ada's recovery codes are revoked.",
     );
     expect(credentialDoneText('ada', { kind: 'lockout' })).toBe("ada's lockout is cleared.");
@@ -121,11 +181,24 @@ describe('credential changes', () => {
       confirmLabel: 'Remove',
       tone: 'danger',
     });
-    expect(credentialDialog({ kind: 'recovery-codes' }, 'ada', false)).toMatchObject({
+    expect(
+      credentialDialog({ kind: 'recovery-codes', hasFactor: true }, 'ada', false),
+    ).toMatchObject({
       title: 'Revoke ada’s recovery codes?',
       confirmLabel: 'Revoke recovery codes',
       tone: 'danger',
+      choice: { label: 'Ask for a new set at next sign-in' },
     });
+    expect(
+      credentialDialog({ kind: 'recovery-codes', hasFactor: false }, 'ada', false).choice,
+    ).toBeUndefined();
+    expect(credentialDialog(factor, 'ada', false).choice).toBeUndefined();
+    expect(credentialDialog(factor, 'ada', false).consequence).not.toContain('recovery codes');
+    const last = credentialDialog(lastFactor, 'ada', false);
+    expect(last.consequence).toContain('last second factor');
+    expect(last.consequence).toContain('recovery codes are revoked with it');
+    expect(last.choice?.label).toBe('Also end ada’s sessions');
+    expect(last.choice?.note).toContain('unticked');
     expect(credentialDialog({ kind: 'lockout' }, 'ada', false)).toMatchObject({
       title: 'Clear ada’s lockout?',
       confirmLabel: 'Clear lockout',
@@ -153,7 +226,9 @@ describe('small model reads', () => {
 describe('staleReadOf', () => {
   it('makes a lockout change stale its own read, and any other the credentials list', () => {
     expect(staleReadOf({ kind: 'lockout' })).toBe('lockout');
-    expect(staleReadOf({ kind: 'factor', credentialId: 'c1' })).toBe('credentials');
-    expect(staleReadOf({ kind: 'recovery-codes' })).toBe('credentials');
+    expect(staleReadOf({ kind: 'factor', credentialId: 'c1', endSessions: false })).toBe(
+      'credentials',
+    );
+    expect(staleReadOf({ kind: 'recovery-codes', requireNewSet: true })).toBe('credentials');
   });
 });

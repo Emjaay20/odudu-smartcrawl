@@ -108,7 +108,7 @@ it('reaches the credential, lockout and deletion routes by the subject id', asyn
   const gateway = fake.transport.gateway;
   expect(await readCredentials(gateway, 'acme', ID)).toMatchObject({ ok: true });
   expect(await deleteCredential(gateway, 'acme', ID, 'c1')).toMatchObject({ ok: true });
-  expect(await revokeRecoveryCodes(gateway, 'acme', ID)).toMatchObject({ ok: true });
+  expect(await revokeRecoveryCodes(gateway, 'acme', ID, true)).toMatchObject({ ok: true });
   expect(await readLockout(gateway, 'acme', ID)).toMatchObject({
     ok: true,
     data: { locked: false },
@@ -125,14 +125,66 @@ it('sends a credential change to the route its kind names', async () => {
     [`DELETE ${T}/${ID}/lockout`]: gone,
   });
   const gateway = fake.transport.gateway;
-  await changeCredential(gateway, 'acme', ID, { kind: 'factor', credentialId: 'c1' });
-  await changeCredential(gateway, 'acme', ID, { kind: 'recovery-codes' });
+  await changeCredential(gateway, 'acme', ID, {
+    kind: 'factor',
+    credentialId: 'c1',
+    endSessions: false,
+  });
+  await changeCredential(gateway, 'acme', ID, { kind: 'recovery-codes', requireNewSet: true });
   await changeCredential(gateway, 'acme', ID, { kind: 'lockout' });
   expect(fake.sent.map((sent) => `${sent.method} ${sent.path.split(`${ID}/`)[1] ?? ''}`)).toEqual([
     'DELETE credentials/c1',
     'DELETE recovery-codes',
     'DELETE lockout',
   ]);
+});
+
+it('says whether a new set is asked for, in the query the route reads', async () => {
+  const gone = () => new Response(null, { status: 204 });
+  const fake = fakeTransport({ [`DELETE ${T}/${ID}/recovery-codes`]: gone });
+  const gateway = fake.transport.gateway;
+  await revokeRecoveryCodes(gateway, 'acme', ID, true);
+  await revokeRecoveryCodes(gateway, 'acme', ID, false);
+  expect(fake.sent.map((sent) => sent.search.toString())).toEqual([
+    'require_new_set=true',
+    'require_new_set=false',
+  ]);
+});
+
+it('ends the subject’s sessions after the last factor is removed, only when asked and only if it went', async () => {
+  const gone = () => new Response(null, { status: 204 });
+  const fake = fakeTransport({
+    [`DELETE ${T}/${ID}/credentials/c1`]: gone,
+    [`DELETE ${T}/${ID}/credentials/c2`]: () => new Response('{}', { status: 404 }),
+    [`DELETE ${T}/${ID}/sessions`]: json({ ended: 3 }),
+  });
+  const gateway = fake.transport.gateway;
+  await changeCredential(gateway, 'acme', ID, {
+    kind: 'factor',
+    credentialId: 'c1',
+    endSessions: false,
+  });
+  expect(fake.sent.map((sent) => sent.path.split(`${ID}/`)[1])).toEqual(['credentials/c1']);
+
+  const done = await changeCredential(gateway, 'acme', ID, {
+    kind: 'factor',
+    credentialId: 'c1',
+    endSessions: true,
+  });
+  expect(done).toMatchObject({ ok: true });
+  expect(fake.sent.map((sent) => sent.path.split(`${ID}/`)[1])).toEqual([
+    'credentials/c1',
+    'credentials/c1',
+    'sessions',
+  ]);
+
+  const refused = await changeCredential(gateway, 'acme', ID, {
+    kind: 'factor',
+    credentialId: 'c2',
+    endSessions: true,
+  });
+  expect(refused.ok).toBe(false);
+  expect(fake.sent.map((sent) => sent.path.split(`${ID}/`)[1]).at(-1)).toBe('credentials/c2');
 });
 
 it('reads whether usernames can be renamed from the subjects’ username policy', async () => {

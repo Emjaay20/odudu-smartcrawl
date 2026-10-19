@@ -2,6 +2,7 @@ import { useId, useState, type SubmitEvent, type ReactNode } from 'react';
 import type { DialogAsk } from '#/shared/service/dialog';
 import { Button } from '#/shared/view/Button';
 import { KeyHint } from '#/shared/view/KeyHint';
+import { ChecklistField } from '#/shared/view/ChecklistField';
 import { DialogFrame } from '#/shared/view/DialogFrame';
 import { TextField } from '#/shared/view/Field';
 import styles from '#/shared/view/ConfirmDialog/ConfirmDialog.module.css';
@@ -18,6 +19,8 @@ interface ConfirmProps {
   problem?: ReactNode;
   // Held when trying again could only be refused again.
   settled?: boolean;
+  // One thing the confirmation offers to do as well, ticked or not.
+  choice?: { label: string; note: string; checked: boolean; onChange: (checked: boolean) => void };
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -33,6 +36,7 @@ export function AskedDialog({
   confirmLabel,
   busy,
   problem,
+  choice,
   onConfirm,
   onCancel,
 }: {
@@ -41,6 +45,8 @@ export function AskedDialog({
   confirmLabel?: string;
   busy?: boolean;
   problem?: ReactNode;
+  // Whether the choice `asked` offers is ticked, and how it changes.
+  choice?: { checked: boolean; onChange: (checked: boolean) => void } | null;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -54,6 +60,9 @@ export function AskedDialog({
       {...(typeof asked?.typed === 'string' ? { typed: asked.typed } : {})}
       {...(busy === undefined ? {} : { busy })}
       {...(problem === undefined ? {} : { problem })}
+      {...(asked?.choice === undefined || choice === undefined || choice === null
+        ? {}
+        : { choice: { ...asked.choice, ...choice } })}
       onConfirm={onConfirm}
       onCancel={onCancel}
     />
@@ -69,6 +78,7 @@ function OpenConfirm({
   busy = false,
   problem,
   settled = false,
+  choice,
   onConfirm,
   onCancel,
 }: ConfirmProps) {
@@ -115,8 +125,18 @@ function OpenConfirm({
         </>
       }
     >
-      {typed === undefined && problem === undefined ? undefined : (
+      {typed === undefined && problem === undefined && choice === undefined ? undefined : (
         <>
+          {choice === undefined ? null : (
+            <ChecklistField
+              label="Options"
+              options={[{ id: 'choice', label: choice.label, description: choice.note }]}
+              value={choice.checked ? ['choice'] : []}
+              onChange={(chosen) => {
+                choice.onChange(chosen.includes('choice'));
+              }}
+            />
+          )}
           {typed === undefined ? null : (
             <form noValidate onSubmit={submit}>
               <TextField

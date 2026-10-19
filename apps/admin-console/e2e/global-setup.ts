@@ -255,6 +255,20 @@ function seedAuditTrail(audit: Seeded['audit']): string {
   return client;
 }
 
+// A TOTP enrolment and two recovery codes, written as the enrolment writes them.
+function giveSecondFactorAndCodes(tenant: string, username: string): void {
+  const rows = [
+    ['totp', `'{"secret":"GEZDGNBVGY3TQOJQ","digits":6,"lastStep":0}'`],
+    ['recovery-code', `'{"hash":"x"}'`],
+    ['recovery-code', `'{"hash":"y"}'`],
+  ] as const;
+  for (const [type, secret] of rows) {
+    psql(
+      `insert into user_credentials (id, tenant_id, subject_id, type, secret_data) select gen_random_uuid(), u.tenant_id, u.subject_id, '${type}', ${secret}::jsonb from users u where u.tenant_id = ${inTenant(tenant)} and u.username = ${sqlText(username)}`,
+    );
+  }
+}
+
 // The keys tenants each hold the one active key a tenant starts with.
 // The tokens tenant holds five live tokens, of one to five uses, which the
 // tests revoke and mint among; the flow tenants hold the flow a tenant starts
@@ -412,6 +426,8 @@ export default function globalSetup(): void {
     locked: { tenant: `${run}-s`, username: 'lamarr', password: password() },
     issued: { tenant: `${run}-s`, username: 'franklin', password: password() },
     doomed: 'turing',
+    revoker: 'tesla',
+    remover: 'noyce',
     departing: { tenant: `${run}-s`, username: 'meitner', password: password() },
     renamer: { tenant: `${run}-t`, username: 'hamilton', password: password() },
     renamed: 'rena',
@@ -582,6 +598,10 @@ export default function globalSetup(): void {
   subject(subjects.locked);
   subject(subjects.issued);
   subject({ tenant: subjects.admin.tenant, username: subjects.doomed, password: password() });
+  for (const username of [subjects.revoker, subjects.remover]) {
+    subject({ tenant: subjects.admin.tenant, username, password: password() });
+    giveSecondFactorAndCodes(subjects.admin.tenant, username);
+  }
   administrator(subjects.departing);
   subject(
     { tenant: subjects.admin.tenant, username: subjects.member, password: password() },

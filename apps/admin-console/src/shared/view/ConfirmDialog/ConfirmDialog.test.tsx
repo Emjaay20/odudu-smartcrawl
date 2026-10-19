@@ -314,3 +314,60 @@ describe('an asked dialog', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Not now.');
   });
 });
+
+describe('a confirmation that offers a choice', () => {
+  function Choosing({ onConfirm }: { onConfirm: (ticked: boolean) => void }) {
+    const [ticked, setTicked] = useState(true);
+    return (
+      <AskedDialog
+        asked={{
+          title: 'Revoke the codes?',
+          consequence: 'They stop working.',
+          confirmLabel: 'Revoke',
+          choice: { label: 'Ask for a new set', note: 'At the next sign-in.' },
+        }}
+        choice={{ checked: ticked, onChange: setTicked }}
+        onConfirm={() => {
+          onConfirm(ticked);
+        }}
+        onCancel={vi.fn()}
+      />
+    );
+  }
+
+  it('draws it with its note, in the state it was given, and reports a change', async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    render(<Choosing onConfirm={onConfirm} />);
+    const box = screen.getByRole('checkbox', { name: 'Ask for a new set' });
+    expect(box).toBeChecked();
+    expect(box).toHaveAccessibleDescription('At the next sign-in.');
+    await user.click(box);
+    expect(box).not.toBeChecked();
+    await user.click(screen.getByRole('button', { name: 'Revoke' }));
+    expect(onConfirm).toHaveBeenCalledWith(false);
+  });
+
+  it('draws none when the one asking has no state for it', () => {
+    render(
+      <AskedDialog
+        asked={{
+          title: 'T',
+          consequence: 'C',
+          confirmLabel: 'Go',
+          choice: { label: 'Ask for a new set', note: 'n' },
+        }}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('checkbox')).toBeNull();
+  });
+
+  it('passes axe in both themes', async () => {
+    expect(await axeInBothThemes(() => <Choosing onConfirm={vi.fn()} />)).toEqual({
+      light: [],
+      dark: [],
+    });
+  });
+});
