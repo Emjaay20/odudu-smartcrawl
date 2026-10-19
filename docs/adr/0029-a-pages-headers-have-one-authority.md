@@ -166,6 +166,52 @@ already writes one. Nothing hashed is affected: the console's assets under
 sent `no-store` and keeps setting it in `spa.ts` beside its own policy; that
 file does not spread `pageHeaders`, so nothing changed there.
 
+## Amendment — 2026-10-19 — a page may link one same-origin stylesheet and font
+
+Every rendered page now links one stylesheet, `/instrument/instrument.css`
+(`INSTRUMENT_STYLESHEET` in `@odudu/kernel`), which `@odudu/instrument`
+builds from the console's tokens and serves from the server's own origin
+along with the fonts it names. `pageHeaders` therefore adds three
+directives to every page's policy, unconditionally:
+
+```
+style-src 'self'; font-src 'self'; img-src 'self'
+```
+
+They are not derived from the page, as `script-src` is, because every page
+links the same sheet and the same mark; a directive that licenses nothing
+stops describing the page, and a directive a page may or may not need would
+fail silently for the page that forgot. `img-src 'self'` is for the mark
+and the favicon, which are files, not `data:` URIs.
+
+**What stays refused.** `default-src 'none'` is unchanged, so there is no
+inline style (`'unsafe-inline'`, a `style` attribute or a `<style>`
+element), no remote stylesheet, font or image, no `data:` source and no
+`@import`. A test holds the whole header set to its exact value for a
+markup-only page, so nothing but these three directives has moved, and a
+scan of every view layer holds `pageHeaders` to being the only place a
+directive is named. `build.test.ts` in `@odudu/instrument` fails the build
+on a remote `url()`, an `@import` or a `data:` URL in the stylesheet.
+
+**Why the stylesheet URL is stable and revalidated.** Pages link a fixed
+path, so the sheet cannot carry a content hash. It is sent with a strong
+`etag` and `cache-control: no-cache`: a browser asks again each time and
+gets `304` unless the sheet changed, so a release never leaves a page
+styled by last release's sheet. The fonts are named by their content
+(`<name>.<hash>.woff2`) and sent `public, max-age=31536000, immutable`, as
+the console's hashed assets are. The pages themselves stay `no-store`.
+
+**A page still works without it.** CSS is an enhancement: no page depends on
+a style for meaning, so a page whose stylesheet is refused, absent or slow
+is plain, usable markup. The routes answer `404`, never a throw, when the
+directory is missing at boot, and log a warning naming
+`ODUDU_INSTRUMENT_DIR`.
+
+**What this costs.** One more request per first visit, small beside the
+page (the sheet is under 12 KB gzipped; the browser fetches only the font
+faces a page uses, by `unicode-range`). The directory read at boot is
+bounded by `readStaticTree`'s limits.
+
 ## Alternatives rejected
 
 - **Move `sendHtml` itself into `kernel`.** Would add `fastify` as a
