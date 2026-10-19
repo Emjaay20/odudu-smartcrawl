@@ -546,8 +546,9 @@ served from the image` (the asset it names is content-hashed).
   gives `DOCKER_REGEXP = /dockerfile|containerfile/i`, so the docker fetcher
   takes any name containing either word.
 - The image gains `ARG ODUDU_REVISION` and the `revision` label; `compose.yaml`
-  passes `${ODUDU_REVISION:-unknown}` and the `container` and `e2e` jobs set it
-  to `github.sha`. `smoke.sh` asserts the label. The conformance rig's own
+  passes `${ODUDU_REVISION:-unknown}`. The `container` job sets it on its
+  smoke step, and `.github/actions/image` passes it as a build arg to both jobs, both
+  as `github.sha`. `smoke.sh` asserts the label. The conformance rig's own
   build is not a distributed image and is left unlabelled.
 - `base-images-pinned.test.ts` now also reads `.github/**/*.{yml,yaml}`
   (`image:`, scalar `container:`, `docker://`), Dockerfile continuations,
@@ -1348,7 +1349,11 @@ read the run's job list and the merge box. Nothing below has been observed yet.
      count tests per leg in the log before changing anything.
    - On the second run of the same lockfile the "Build the image" step shows layers as
      `CACHED` (or `importing cache manifest`) and the `pnpm fetch` layer is not re-run;
-     `container` shows the same. The Actions cache list holds one `odudu-image` scope.
+     `container` shows the same. Only a push to main writes the cache, so a pull request's
+     first run is cold until main has run once with the new Dockerfile; then the Actions
+     cache list holds one `odudu-image` scope for main. Slice 1 is the slowest leg by
+     about a minute: expected, not a fault. `container` fails with 'was built from' if
+     the image's revision label is not the commit.
    - On a docs-only push `e2e` and the three legs are skipped; cancel one leg and
      `e2e` and `gate` go red.
    - A leg that fails uploads `playwright-report-<index>`.

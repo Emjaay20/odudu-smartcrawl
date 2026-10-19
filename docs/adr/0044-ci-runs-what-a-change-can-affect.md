@@ -126,13 +126,21 @@ nothing but the tests themselves was large: `clients` 338 s, `audit` 176 s,
   `docker/build-push-action` (`type=gha`, one scope), and tags the result with the
   name compose gives it (`odudu-e2e-odudu`, `odudu-smoke-odudu`), so
   `E2E_PREBUILT=1` and `ODUDU_PREBUILT=1` skip `--build` and compose starts what is
-  there, or builds if it is not. `container` reads the same cache. One job writes
-  it: the first slice, or `container` when `e2e` is skipped.
+  there, or builds if it is not. `container` reads the same cache. Only the first slice of
+  a push to main writes it, so no pull request's leg waits on a 1.5 GB export and a
+  pull request reads main's cache; the first pull request after a lockfile change builds cold.
 - **The Dockerfile fetches before it copies.** `pnpm fetch` needs the lockfile
-  alone, so the download is a layer that a source edit does not invalidate, and
+  and the workspace settings, so the download is a layer that a source edit does not invalidate, and
   `pnpm install --offline` links from it. The `COPY packages apps` that
   preceded the install made every edit re-download everything, so a cache would
   have kept only the base images.
+- **Cost.** Runner minutes for an `e2e` run go from about 19 to about 31 (three
+  legs of about 10, which each repeat the seeding and setup), so +60%, spent for
+  the wall-clock win. Legs are not equal: summed test time in run 39254678576 is
+  708, 527 and 594 s for slices 1/3, 2/3 and 3/3. Playwright cuts contiguous
+  slices by test count, not duration, and has no setting that balances by
+  time, so the heavy `clients` and `audit` files land together in slice 1. Left as
+  it is; a fourth slice would save 1.5 to 2 minutes of wall time for another runner.
 - Not done: seeding the fixture once and sharing a database dump, or in parallel;
   it is the largest remaining fixed cost and a change to every spec's setup.
 
