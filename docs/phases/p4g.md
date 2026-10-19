@@ -1214,7 +1214,7 @@ underline`, the prism themes) were already in place from the shell; Lighthouse i
 ### Increment 18c: readable by agents
 
 - `docusaurus-plugin-llms` 0.6.1 is pinned exactly. verified: `pnpm view
-  docusaurus-plugin-llms@0.6.1 license` prints `MIT`, a dev-only dependency that no
+docusaurus-plugin-llms@0.6.1 license` prints `MIT`, a dev-only dependency that no
   shipped artefact links, compatible with the AGPL-3.0 server of ADR 0042. Its
   transitive additions are `gray-matter`, `js-yaml` 3, `minimatch` 9 (the lockfile also
   re-resolved some peer suffixes).
