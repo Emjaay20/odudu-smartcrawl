@@ -5145,6 +5145,40 @@ HTTP/1.1 200 OK
 {"actions":["generate-recovery-codes"]}
 ```
 
+A revoke that asks for a new set, followed by the removal of the last TOTP,
+leaves nothing owed, and the next sign-in is not refused for a page that cannot
+be shown. Captured on 2026-10-19 on a fresh `odudu-p4g-recovery` volume (the
+same names as above, so the ids are that run's: `olga` is
+`01a155ef-96aa-7aff-86c2-84b67d1c3a3d`, her TOTP row
+`d3c306d7-002d-487c-8d4b-acdd5817707d`), seeded with a TOTP and ten code rows as
+the database owner. `AUTHORIZE` is the helper's own URL for this tenant and
+client:
+
+```bash
+S=http://localhost:3187/admin/tenants/recovery-life/subjects
+curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$OLGA/recovery-codes"
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$OLGA/required-actions"; echo
+curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$OLGA/credentials/$TOTP"
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$OLGA/required-actions"; echo
+sid=$(curl -sS "$AUTHORIZE" | sed -n 's/.*name="auth_session_id" value="\([^"]*\)".*/\1/p' | head -1)
+curl -sS -D - -o body.html --data-urlencode "auth_session_id=$sid" --data-urlencode username=olga \
+  --data-urlencode "password=correct horse battery staple" \
+  http://localhost:3187/tenants/recovery-life/login-actions/authenticate
+```
+
+The two `DELETE`s were piped through `grep -E '^HTTP'` and the sign-in through
+`grep -iE '^(HTTP|location)' | cut -c1-70`, none of which the commands above
+show:
+
+```
+HTTP/1.1 204 No Content
+{"actions":["generate-recovery-codes"]}
+HTTP/1.1 204 No Content
+{"actions":[]}
+HTTP/1.1 302 Found
+location: https://app.example/callback?code=WZ04g9i_owPX2Tov5E4GvsHbZ1
+```
+
 ## `GET /subjects/:id/consents` and `DELETE /subjects/:id/consents/:clientId`
 
 The read requires `view-users`, the delete `manage-users`. A consent is what
