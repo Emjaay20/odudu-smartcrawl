@@ -59,6 +59,19 @@ the error page too, not only text somebody typed, since the page cannot tell the
 apart. The sign-in refusal comparison under
 [A refused login says so](#a-refused-login-says-so) is a fresh run.
 
+The authn-flows pages read their text from a catalogue of their own too. The
+two that changed in these recordings are the authenticator enrolment page and
+the recovery-codes page: the key URI, the key and each recovery code are
+wrapped in `<bdi dir="ltr">` so a right-to-left page does not reorder them, which
+adds 42 bytes to the first and 210 to the second (`content-length` 1568 to 1778
+and 1656 to 1866). The enrolment page, a wrong code, and the recovery codes
+page that follows were run on the project `odudu-p4g-15` and the blocks edited
+to match (the codes, secret and session id in the blocks are those of the
+earlier run, not that one); the change-password pages are byte-for-byte what
+they were. `tests/docs/page-documents-transcripts.test.ts` also renders each
+recorded enrolment, recovery-codes and change-password body back through its
+renderer, with the QR image elided as the blocks show it.
+
 Values that change on every run — authorization codes, tokens, `jti`,
 session ids, timestamps — are shortened or truncated where they appear, and
 that is said each time. Nothing here is reconstructed from what the code
@@ -3824,8 +3837,8 @@ curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authentica
 <h1>Set up your authenticator</h1>
 <p>Scan this with your authenticator app, or enter the key by hand.</p>
 <svg …>…</svg>
-<p><code>otpauth://totp/otp-demo:ada?secret=BYIQDMIGLQSMNOGKTZMVAGWBLWEOE7ZY&amp;issuer=otp-demo&amp;algorithm=SHA1&amp;digits=6&amp;period=30</code></p>
-<p>Key: <code>BYIQDMIGLQSMNOGKTZMVAGWBLWEOE7ZY</code></p>
+<p><bdi dir="ltr"><code>otpauth://totp/otp-demo:ada?secret=BYIQDMIGLQSMNOGKTZMVAGWBLWEOE7ZY&amp;issuer=otp-demo&amp;algorithm=SHA1&amp;digits=6&amp;period=30</code></bdi></p>
+<p>Key: <bdi dir="ltr"><code>BYIQDMIGLQSMNOGKTZMVAGWBLWEOE7ZY</code></bdi></p>
 <form method="post" action="/tenants/otp-demo/login-actions/required-action?action=configure-totp">
   <input type="hidden" name="auth_session_id" value="01a137d3-98b1-7904-aeda-9a6709b81b53">
   <input type="hidden" name="secret" value="BYIQDMIGLQSMNOGKTZMVAGWBLWEOE7ZY">
@@ -3884,7 +3897,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 1568
+content-length: 1778
 Date: Wed, 14 Oct 2026 00:32:57 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -3905,16 +3918,16 @@ Keep-Alive: timeout=72
 <h1>Save your recovery codes</h1>
 <p>Each of these signs you in once, in place of your second factor, if you lose it. <strong>This is the only time they are shown.</strong> Print them or put them in a password manager before you continue — nobody, including an administrator, can show them to you again.</p>
 <ol>
-  <li><code>TKBYN-J8QGH</code></li>
-  <li><code>NMFNF-273QV</code></li>
-  <li><code>WMTKH-5WFJ9</code></li>
-  <li><code>AWXJH-9Q43E</code></li>
-  <li><code>NTPYA-9GJNJ</code></li>
-  <li><code>NS5BM-Z503B</code></li>
-  <li><code>40HQS-ZTRXC</code></li>
-  <li><code>STXZG-CGAQF</code></li>
-  <li><code>TFF63-YK29X</code></li>
-  <li><code>TGGRZ-1EF3V</code></li>
+  <li><bdi dir="ltr"><code>TKBYN-J8QGH</code></bdi></li>
+  <li><bdi dir="ltr"><code>NMFNF-273QV</code></bdi></li>
+  <li><bdi dir="ltr"><code>WMTKH-5WFJ9</code></bdi></li>
+  <li><bdi dir="ltr"><code>AWXJH-9Q43E</code></bdi></li>
+  <li><bdi dir="ltr"><code>NTPYA-9GJNJ</code></bdi></li>
+  <li><bdi dir="ltr"><code>NS5BM-Z503B</code></bdi></li>
+  <li><bdi dir="ltr"><code>40HQS-ZTRXC</code></bdi></li>
+  <li><bdi dir="ltr"><code>STXZG-CGAQF</code></bdi></li>
+  <li><bdi dir="ltr"><code>TFF63-YK29X</code></bdi></li>
+  <li><bdi dir="ltr"><code>TGGRZ-1EF3V</code></bdi></li>
 </ol>
 <form method="post" action="/tenants/otp-demo/login-actions/required-action?action=generate-recovery-codes">
   <input type="hidden" name="auth_session_id" value="01a137d3-98b1-7904-aeda-9a6709b81b53">
@@ -4446,7 +4459,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 1656
+content-length: 1866
 Date: Wed, 14 Oct 2026 00:33:47 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72

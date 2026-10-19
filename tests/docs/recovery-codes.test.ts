@@ -18,7 +18,7 @@ describe('the recovery codes in docs/request-paths.md have the shape the generat
   const shown = loadDocument(GUIDE)
     .lines.map((line, index) => ({ text: line.trim(), lineNumber: index + 1 }))
     .flatMap(({ text, lineNumber }) => {
-      const match = /^<li><code>([^<]+)<\/code><\/li>$/u.exec(text);
+      const match = /^<li><bdi dir="ltr"><code>([^<]+)<\/code><\/bdi><\/li>$/u.exec(text);
       return match?.[1] === undefined ? [] : [{ code: match[1], lineNumber }];
     });
 

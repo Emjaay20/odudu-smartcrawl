@@ -14,6 +14,9 @@ import {
 } from '../../packages/protocol-oidc/src/view/logout-html.js';
 import { renderSelectAccountPage } from '../../packages/protocol-oidc/src/view/select-account-html.js';
 import { renderThrottledPage } from '../../packages/protocol-oidc/src/view/throttled-html.js';
+import { renderRecoveryCodesPage } from '../../packages/authn-flows/src/view/recovery-codes-html.js';
+import { renderTotpEnrolmentPage } from '../../packages/authn-flows/src/view/totp-enrolment-html.js';
+import { renderUpdatePasswordPage } from '../../packages/authn-flows/src/view/update-password-html.js';
 import { loadDocument, scanFences } from './markdown.js';
 
 // A recorded page response is a claim about bytes: its `content-length` is
@@ -130,12 +133,74 @@ const first = (text: string, pattern: RegExp): string => unescaped(pattern.exec(
 const all = (text: string, pattern: RegExp): string[] =>
   [...text.matchAll(pattern)].map((m) => unescaped(m[1] ?? ''));
 
+// The rule codes the domain reports, so a recorded violation is read back by
+// asking the real page which rule renders as that sentence.
+const RULES = [
+  'min-length',
+  'max-length',
+  'require-digit',
+  'require-uppercase',
+  'require-lowercase',
+  'require-special',
+  'not-username',
+  'not-email',
+  'not-reused',
+  'superseded',
+];
+
+function violationFor(sentence: string): { rule: string; message: string; minLength?: number } {
+  const minLength = Number(/at least (\d+) characters/u.exec(sentence)?.[1] ?? 0);
+  for (const rule of RULES) {
+    const candidate = { rule, message: 'x', minLength };
+    const rendered = renderUpdatePasswordPage('t', 's', [candidate], LOCALE).body;
+    if (first(rendered, /<li>(.*)<\/li>/u) === sentence) return candidate;
+  }
+  return { rule: 'unknown', message: sentence };
+}
+
+// A recording shows the QR image as an elision, so the page is read back
+// with the same one standing where the image is.
+const QR_ELIDED = '<svg …>…</svg>';
+const elidesOnlyTheQr = (block: Recorded): boolean =>
+  documentOf(block)
+    .filter((line) => line.includes('…'))
+    .every((line) => line === QR_ELIDED);
+
 // What the recorded markup says its inputs were, put back through the real
 // renderer: a page whose text or markup the server no longer produces for the
 // same inputs is named here. It cannot see a branch no recording takes, the
 // login forms (too many inputs to read back), the pages of authn-flows,
 // account or the console, or a value the markup does not show.
 const RENDER_BACK: Record<string, (body: string) => string> = {
+  'Set up your authenticator': (body: string) =>
+    renderTotpEnrolmentPage(
+      first(body, /action="\/tenants\/([^/"]*)\//u),
+      first(body, /name="auth_session_id" value="([^"]*)"/u),
+      {
+        secret: first(body, /name="secret" value="([^"]*)"/u),
+        uri: first(body, /<p><bdi dir="ltr"><code>(otpauth:[^<]*)<\/code><\/bdi><\/p>/u),
+      },
+      /^<p><strong>/mu.test(body) ? 'code_mismatch' : undefined,
+      LOCALE,
+    ).body.replace(/<svg version=[\s\S]*?<\/svg>/u, QR_ELIDED),
+  'Save your recovery codes': (body: string) =>
+    renderRecoveryCodesPage(
+      first(body, /action="\/tenants\/([^/"]*)\//u),
+      first(body, /name="auth_session_id" value="([^"]*)"/u),
+      {
+        codes: all(body, /^ {2}<li><bdi dir="ltr"><code>(.*)<\/code><\/bdi><\/li>$/gmu),
+        replaced: body.includes('<p>These replace the codes'),
+      },
+      /^<p><strong>/mu.test(body) ? 'codes_not_saved' : undefined,
+      LOCALE,
+    ).body,
+  'Change your password': (body: string) =>
+    renderUpdatePasswordPage(
+      first(body, /action="\/tenants\/([^/"]*)\//u),
+      first(body, /name="auth_session_id" value="([^"]*)"/u),
+      all(body, /^<li>(.*)<\/li>$/gmu).map(violationFor),
+      LOCALE,
+    ).body,
   'Allow access?': (body) => {
     const link = (label: RegExp): string | null => {
       const href = /<a href="([^"]*)">/u;
@@ -231,7 +296,7 @@ function documents(): Recorded[] {
         ? [{ where: `${guide}:${String(span.startLine)}`, lines: span.body }]
         : [],
     ),
-  ).filter((block) => !isPartial(block));
+  ).filter((block) => !isPartial(block) || elidesOnlyTheQr(block));
 }
 
 describe('the pages the guides record are what the renderers produce for the same inputs', () => {

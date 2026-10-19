@@ -756,3 +756,34 @@ semver tag there.
   `::group-off`, so 3600 seconds reads `3600`, as before. The
   `page-documents-transcripts` test now renders each recorded consent, chooser,
   error, logout and throttle body back through the real renderer.
+
+## Increment 15: authn-flows page text in a catalogue
+
+- The helpers that read a catalogue (`t`, `tHtml`, `bdi`, the marker that keeps
+  a user value out of the ICU string) moved from protocol-oidc to
+  `createTranslators` in `@odudu/i18n`, which takes the calling package's own
+  `escapeHtml`: authn-flows cannot import protocol-oidc, and account and
+  console-gateway need the same thing next. Each package still has its own
+  `messages.ts` holding its `en` record and exporting `catalogue`;
+  `tests/lint/shipped-locales.test.ts` now finds a catalogue built by
+  `createTranslators` as well as `createCatalogue`.
+- Violations of the password policy are `{ rule, message, minLength? }`
+  (`schema/password-violation.ts`): `rule` is the domain's code and picks the
+  catalogue entry, `message` is the developer sentence shown (isolated) only for
+  a rule this build has no entry for, `minLength` is the number the minimum
+  sentence states. The superseded-password sentence is the `superseded` rule
+  (`SUPERSEDED_PASSWORD`), so one page lists every sentence it can show.
+  `PASSWORD_TOO_LONG` is passed as it is and read by its code (`max-length`).
+- The reason a required-action page is shown again is a code
+  (`EnrolmentRefusal`: `code_mismatch`, `codes_not_saved`, `passkey_not_added`),
+  not a sentence, so protocol-oidc's usecase holds no English any more.
+- Secrets and codes (key URI, key, recovery codes) print inside
+  `<bdi dir="ltr"><code>`; the hidden `secret` field and every escaping are as
+  they were. The passkey page's script reads its two sentences from
+  `data-failed` and `data-cancelled` on its form, as the sign-in script does.
+- `update-password-html.test.ts` already existed; it now asserts the action
+  the form posts to, the title, `<bdi>` for an unknown rule, escaping, and every
+  rule in a French fixture.
+- The English markup is byte-identical except `<bdi dir="ltr">` around the three
+  token kinds and the two `data-` attributes on the passkey form; an apostrophe
+  in a page's own text would be `&#39;`, and none of these pages has one.
