@@ -24,6 +24,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  ODUDU_COMMIT: ${{ github.sha }}
   TURBO_CACHE_DIR: .turbo/cache
   TURBO_RUN_SUMMARY: 'true'
   TURBO_TELEMETRY_DISABLED: '1'
