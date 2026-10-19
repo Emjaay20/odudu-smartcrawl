@@ -1,10 +1,31 @@
 import { DEFAULT_PAGE_LOCALE } from '@odudu/kernel';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   renderAuthorizeErrorPage,
   renderEmailUnverifiedPage,
   renderLoginForm,
 } from '#/view/authorize-html';
+import { en } from '#/view/messages';
+import { ARABIC, FRENCH } from '#test/fr-catalogue';
+
+vi.mock('#/view/messages', async (importOriginal) => {
+  const { withFrench } = await import('#test/fr-catalogue');
+  return withFrench(await importOriginal(), {
+    'error.title': 'Erreur de connexion',
+    'error.heading': 'Impossible de continuer',
+    'error.wayOn.restart': 'Recommencer la connexion',
+    'login.title': 'Se connecter',
+    'login.submit': 'Se connecter',
+    'login.username': 'Nom d’utilisateur',
+    'login.password': 'Mot de passe',
+    'login.rememberMe': 'Se souvenir de moi',
+    'login.passkey.submit': 'Se connecter avec une clé d’accès',
+    'login.passkey.failed': 'Votre appareil n’a pas terminé la connexion : {reason}. Réessayez.',
+    'login.refusal.signInFailed': 'Échec de la connexion. Vérifiez vos informations.',
+    'emailUnverified.body':
+      'Vérifiez votre adresse e-mail. {mail, select, sent {Un lien a été envoyé.} other {Aucune adresse.}}',
+  });
+});
 
 describe('renderAuthorizeErrorPage', () => {
   it('returns a body fragment and a title beside the document', () => {
@@ -210,7 +231,7 @@ describe('renderLoginForm', () => {
   });
 
   describe('after a refusal', () => {
-    const refusal = { message: 'Sign-in failed. Check your details and try again.' };
+    const refusal = { messageId: 'login.refusal.signInFailed' } as const;
 
     it('puts the message in an alert above the form', () => {
       const page = renderLoginForm(
@@ -244,20 +265,15 @@ describe('renderLoginForm', () => {
       ).not.toContain('role="alert"');
     });
 
-    it('escapes the message', () => {
-      const page = renderLoginForm(
-        'acme',
-        'sid',
-        'password',
-        false,
-        false,
-        {
-          message: '<img src=x onerror=alert(1)>',
-        },
-        undefined,
-        DEFAULT_PAGE_LOCALE,
+    it('reads the message from the catalogue by its id, in the language of the page', () => {
+      const render = (locale: typeof FRENCH) =>
+        renderLoginForm('acme', 'sid', 'password', false, false, refusal, undefined, locale);
+      expect(render(DEFAULT_PAGE_LOCALE).body).toContain(
+        `<p role="alert"><strong>${en['login.refusal.signInFailed']}</strong></p>`,
       );
-      expect(page.body).not.toContain('<img');
+      expect(render(FRENCH).body).toContain(
+        '<p role="alert"><strong>Échec de la connexion. Vérifiez vos informations.</strong></p>',
+      );
     });
 
     it('gives the username back and moves focus to the empty password field', () => {
@@ -418,7 +434,7 @@ describe('renderLoginForm', () => {
         false,
         false,
         {
-          message: 'That code did not work. Check it and try again.',
+          messageId: 'login.refusal.codeFailed',
           username: 'ada',
         },
         undefined,
@@ -466,5 +482,133 @@ describe('renderLoginForm', () => {
         ).body,
       ).not.toContain('autofocus');
     });
+  });
+});
+
+describe('the text of the sign-in pages', () => {
+  const login = (form: string, locale: typeof FRENCH, passkey = false) =>
+    renderLoginForm('acme', 'sid', form, passkey, true, undefined, true, locale);
+
+  it('keeps the English markup of the password form', () => {
+    expect(login('password', DEFAULT_PAGE_LOCALE).body).toBe(
+      `<form method="post" action="/tenants/acme/login-actions/authenticate">
+  <input type="hidden" name="auth_session_id" value="sid">
+  <label>Username or email <input type="text" name="username" autocomplete="username"></label>
+  <label>Password <input type="password" name="password" autocomplete="current-password"></label>
+  <label><input type="checkbox" name="remember_me" id="remember-me" value="true"> Remember me</label>
+  <button type="submit">Sign in</button>
+</form>`,
+    );
+  });
+
+  it('shows every visible string as the catalogue says it', () => {
+    const otp = login('otp', DEFAULT_PAGE_LOCALE);
+    expect(otp.title).toBe(en['login.otp.title']);
+    expect(otp.body).toContain(`<label>${en['login.otp.code']} <input`);
+    expect(otp.body).toContain(`<label>${en['login.recoveryCode.label']} <input`);
+    expect(otp.body).toContain(`>${en['login.verify']}</button>`);
+    expect(login('recovery-code', DEFAULT_PAGE_LOCALE).title).toBe(en['login.recoveryCode.title']);
+    expect(login('password', DEFAULT_PAGE_LOCALE).title).toBe(en['login.title']);
+    expect(login('password', DEFAULT_PAGE_LOCALE).html).toContain('<html lang="en" dir="ltr">');
+    const withPasskey = login('password', DEFAULT_PAGE_LOCALE, true).body;
+    expect(withPasskey).toContain(`>${en['login.passkey.submit']}</button>`);
+    expect(withPasskey).toContain(`<noscript><p>${en['login.passkey.needsScript']}</p></noscript>`);
+    expect(login('x-new', DEFAULT_PAGE_LOCALE).body).toContain(
+      '<p>Unsupported sign-in step: x-new</p>',
+    );
+  });
+
+  it('reads French through the same renderer and falls back per key', () => {
+    const page = login('password', FRENCH);
+    expect(page.html).toContain('<html lang="fr" dir="ltr">');
+    expect(page.title).toBe('Se connecter');
+    expect(
+      renderLoginForm('acme', 'sid', 'password', false, false, undefined, false, FRENCH).body,
+    ).toContain('<label>Nom d’utilisateur <input');
+    expect(page.body).toContain('Se souvenir de moi</label>');
+    expect(page.body).toContain('<button type="submit">Se connecter</button>');
+    // Not in the French fixture: the label with the email wording is English.
+    expect(page.body).toContain('<label>Username or email <input');
+    expect(login('password', ARABIC).html).toContain('<html lang="ar" dir="rtl">');
+  });
+
+  it('hands the passkey script its sentences in the page language, and no sentence is in the script', () => {
+    const en1 = login('password', DEFAULT_PAGE_LOCALE, true);
+    expect(en1.body).toContain(
+      'data-failed="Your device did not finish signing in — \uE002reason\uE003. You can try again."',
+    );
+    expect(en1.body).toContain('data-cancelled="the request was cancelled"');
+    expect(en1.body).toContain('data-not-offered="this server is not offering passkeys"');
+    const script = en1.body.slice(en1.body.indexOf('<script'));
+    expect(script).not.toMatch(/Your device|request was cancelled|not offering/u);
+    expect(script).toContain('form.dataset.failed.replace(');
+    const fr = login('password', FRENCH, true).body;
+    expect(fr).toContain(
+      'data-failed="Votre appareil n’a pas terminé la connexion : \uE002reason\uE003. Réessayez."',
+    );
+    expect(fr).toContain('>Se connecter avec une clé d’accès</button>');
+    expect(fr).toContain('data-cancelled="the request was cancelled"');
+  });
+
+  it('keeps the English markup of the error and verification pages', () => {
+    expect(
+      renderAuthorizeErrorPage(
+        'invalid_request',
+        'expired',
+        { kind: 'restart', href: '/a' },
+        DEFAULT_PAGE_LOCALE,
+      ).body,
+    ).toBe(`<h1>Can&#39;t continue</h1>
+<p><bdi>expired</bdi></p>
+<p><a href="/a">Start sign-in again</a></p>
+<p><small>invalid_request</small></p>`);
+    expect(renderEmailUnverifiedPage(false, DEFAULT_PAGE_LOCALE).body).toBe(
+      `<h1>Can&#39;t sign in yet</h1>
+<p>You need to verify your email address before you can sign in. This account has no email address on file, so there is nothing to verify yet. Contact an administrator.</p>`,
+    );
+  });
+
+  it('reads the error and verification pages from the catalogue, in French and English', () => {
+    const error = renderAuthorizeErrorPage('e', 'd', { kind: 'return', href: '/b' }, FRENCH);
+    expect(error.title).toBe('Erreur de connexion');
+    expect(error.body).toContain('<h1>Impossible de continuer</h1>');
+    expect(error.body).toContain('>Return to the application</a>');
+    expect(renderEmailUnverifiedPage(true, FRENCH).body).toContain(
+      'Vérifiez votre adresse e-mail. Un lien a été envoyé.',
+    );
+    expect(renderEmailUnverifiedPage(true, DEFAULT_PAGE_LOCALE).title).toBe(
+      en['emailUnverified.title'],
+    );
+  });
+
+  it('holds a hostile error description inside its own element, in both languages', () => {
+    const hostile = '</bdi><img src=x onerror=1>"\'><script>1</script>';
+    for (const locale of [DEFAULT_PAGE_LOCALE, FRENCH]) {
+      const page = renderAuthorizeErrorPage(hostile, hostile, undefined, locale);
+      expect(page.html).toContain(
+        '<bdi>&lt;/bdi&gt;&lt;img src=x onerror=1&gt;&quot;&#39;&gt;&lt;script&gt;1&lt;/script&gt;</bdi>',
+      );
+      expect(page.html).not.toMatch(/<img|<script/u);
+    }
+  });
+
+  it('renders a username that holds markup and bidi controls inert and isolated', () => {
+    // The refusal gives the username back in a value attribute, where an
+    // attribute's escaping is the isolation: nothing can leave the quotes.
+    const hostile = '"><img src=x onerror=1>\u202e\u2066';
+    for (const locale of [DEFAULT_PAGE_LOCALE, FRENCH]) {
+      const page = renderLoginForm(
+        'acme',
+        'sid',
+        'password',
+        false,
+        false,
+        { messageId: 'login.refusal.signInFailed', username: hostile },
+        undefined,
+        locale,
+      );
+      expect(page.html).not.toContain('<img');
+      expect(page.html).toContain('value="&quot;&gt;&lt;img src=x onerror=1&gt;\u202e\u2066"');
+    }
   });
 });

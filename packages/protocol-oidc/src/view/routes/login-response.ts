@@ -79,7 +79,7 @@ export async function sendLoginOutcome(
       outcome.refusal === undefined
         ? undefined
         : {
-            message: refusalMessage(form, outcome.refusal),
+            messageId: refusalMessage(form, outcome.refusal),
             ...(outcome.username === undefined ? {} : { username: outcome.username }),
           },
       tenant?.loginWithEmail ?? false,
