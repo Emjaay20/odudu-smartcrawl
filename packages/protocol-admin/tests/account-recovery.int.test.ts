@@ -470,8 +470,8 @@ describe('DELETE /admin/tenants/{t}/subjects/{id}/recovery-codes', () => {
       .map((row) => ({ resourceId: row.resourceId, detail: row.detail }));
     expect(revokes).toEqual(
       expect.arrayContaining([
-        { resourceId: subjectId, detail: { revoked: 3 } },
-        { resourceId: subjectId, detail: { revoked: 0 } },
+        { resourceId: subjectId, detail: { revoked: 3, new_set_required: false } },
+        { resourceId: subjectId, detail: { revoked: 0, new_set_required: false } },
       ]),
     );
   });

@@ -1,5 +1,9 @@
 import { BIDI_REFUSED_MESSAGE, refusesBidi } from '@odudu/contracts';
-import { requiredActionRepository, type RequiredAction } from '@odudu/authn-flows';
+import {
+  onSecondFactorRemoved,
+  requiredActionRepository,
+  type RequiredAction,
+} from '@odudu/authn-flows';
 import {
   heldAdminCapabilitySchema,
   SUBJECT_SEARCH_FIELDS,
@@ -34,6 +38,7 @@ import {
 } from '@odudu/domain-identity';
 import { clients, tenantSettingsRepository } from '@odudu/domain-tenant';
 import { isUuid } from '@odudu/kernel';
+import { enqueueCredentialNotice } from '#/usecase/credential-notice';
 import {
   and,
   asc,
@@ -122,6 +127,7 @@ export interface SubjectAuditEvent {
     | 'subject.amend'
     | 'subject.delete'
     | 'subject.credential_delete'
+    | 'subject.recovery_codes_revoke'
     | 'subject.required_actions_set'
     | 'subject.roles_set'
     | 'subject.groups_set'
@@ -908,6 +914,7 @@ export function credentialWireShape(view: CredentialView): Credential {
 }
 
 export interface DeleteCredentialInput {
+  readonly tenantId: string;
   readonly subjectId: string;
   readonly credentialId: string;
   readonly callerCapabilities: ReadonlySet<string>;
@@ -959,15 +966,33 @@ export async function deleteCredential(
 
   await credentialRepository(tx).deleteOne(row.id);
 
-  await deps.audit(tx, {
-    action: 'subject.credential_delete',
+  const actor = {
     resourceType: 'subject',
     resourceId: input.subjectId,
     actorSubjectId: input.actorSubjectId,
     actorTenantId: input.actorTenantId,
     actorClientId: input.actorClientId,
     outcome: 'allowed',
-  });
+  } as const;
+  await deps.audit(tx, { action: 'subject.credential_delete', ...actor });
+
+  if (row.type === 'totp' || row.type === 'webauthn') {
+    const { recoveryCodesRevoked } = await onSecondFactorRemoved(
+      tx,
+      { subjectId: input.subjectId },
+      (detail) =>
+        deps.audit(tx, {
+          action: 'subject.recovery_codes_revoke',
+          ...actor,
+          detail: { ...detail },
+        }),
+    );
+    await enqueueCredentialNotice(tx, input, {
+      kind: 'second_factor_removed',
+      factor: row.type,
+      codes: recoveryCodesRevoked > 0,
+    });
+  }
   return { kind: 'deleted' };
 }
 

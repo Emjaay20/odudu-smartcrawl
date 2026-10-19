@@ -312,6 +312,8 @@ describeFields(consentSchema, {
 });
 describeFields(countResponseSchema, {
   count: 'How many items match, up to a cap.',
+  require_new_set:
+    '`true` (the default) owes the subject a new set of recovery codes at their next sign-in when a second factor remains; `false` leaves them with none until one is asked of them.',
   capped: 'True when more match than `count` says, because counting stops at the cap.',
 });
 describeFields(executionStepSchema, {

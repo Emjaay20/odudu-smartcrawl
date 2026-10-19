@@ -10,6 +10,7 @@ import {
   type LoginFailureRecord,
 } from '@odudu/domain-identity';
 import { eq } from 'drizzle-orm';
+import { enqueueCredentialNotice } from '#/usecase/credential-notice';
 import {
   lockSubjectRow,
   refuseOverTargetCeiling,
@@ -168,13 +169,19 @@ export async function readLockout(
 export type RevokeRecoveryCodesOutcome =
   { kind: 'not_found' } | TargetCeilingRefusal | { kind: 'revoked' };
 
+export interface RevokeRecoveryCodesInput extends AccountRecoveryInput {
+  /** Whether the subject's next sign-in asks for a new set; true when the request says nothing. */
+  readonly requireNewSet: boolean;
+}
+
 // Spent codes go too: ADR 0021 keeps a spent code's row, and a set that is
 // revoked is revoked whole. Idempotent, with `detail.revoked` saying how
-// many rows went.
+// many rows went. A new set is asked for only of a subject who still holds
+// a second factor: with none, a set would serve nothing.
 export async function revokeRecoveryCodes(
   tx: TenantScopedDatabase,
   deps: AccountRecoveryDeps,
-  input: AccountRecoveryInput,
+  input: RevokeRecoveryCodesInput,
 ): Promise<RevokeRecoveryCodesOutcome> {
   if (!(await isUserSubject(tx, input.subjectId))) return { kind: 'not_found' };
   const refused = await refuseOverTargetCeiling(
@@ -185,7 +192,17 @@ export async function revokeRecoveryCodes(
   );
   if (refused !== null) return refused;
 
-  const revoked = await credentialRepository(tx).deleteRecoveryCodes(input.subjectId);
+  const credentials = credentialRepository(tx);
+  const revoked = await credentials.deleteRecoveryCodes(input.subjectId);
+  const { hasSecondFactor } = await credentials.recoveryStanding(input.subjectId);
+  const newSet = input.requireNewSet && hasSecondFactor;
+  if (newSet) {
+    await requiredActionRepository(tx).add(
+      input.tenantId,
+      input.subjectId,
+      'generate-recovery-codes',
+    );
+  }
 
   await deps.audit(tx, {
     action: 'subject.recovery_codes_revoke',
@@ -195,8 +212,11 @@ export async function revokeRecoveryCodes(
     actorTenantId: input.actorTenantId,
     actorClientId: input.actorClientId,
     outcome: 'allowed',
-    detail: { revoked },
+    detail: { revoked, new_set_required: newSet },
   });
+  if (revoked > 0) {
+    await enqueueCredentialNotice(tx, input, { kind: 'recovery_codes_revoked', newSet });
+  }
 
   return { kind: 'revoked' };
 }

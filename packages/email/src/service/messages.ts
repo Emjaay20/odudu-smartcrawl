@@ -17,6 +17,16 @@ export const en = {
   'actions.textLink': 'Do so by visiting this link:',
   'actions.html': 'Do so by visiting {link}.',
   'actions.ignore': 'If you were not expecting this, you can ignore this message.',
+  'notice.contact': 'If you did not expect this, contact your administrator.',
+  'factorRemoved.subject': 'A sign-in method was removed from your {tenant} account',
+  'factorRemoved.totp':
+    'An administrator removed the authenticator app from your {tenant} account.',
+  'factorRemoved.webauthn': 'An administrator removed a passkey from your {tenant} account.',
+  'factorRemoved.codes': 'Your recovery codes were removed with it, and no longer work.',
+  'recoveryRevoked.subject': 'Your {tenant} recovery codes were revoked',
+  'recoveryRevoked.text':
+    'An administrator revoked the recovery codes on your {tenant} account. The old codes no longer work.',
+  'recoveryRevoked.newSet': 'You will be asked to save a new set the next time you sign in.',
   'smtpTest.subject': 'Odudu SMTP test',
   'smtpTest.text': 'This is a test message from Odudu.',
   'action.update-password': 'Choose a new password',

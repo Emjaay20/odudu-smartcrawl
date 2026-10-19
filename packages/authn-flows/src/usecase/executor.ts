@@ -13,7 +13,10 @@ import { tenantSettingsRepository } from '#/repository/tenant-settings';
 import { requiredActionRepository } from '#/repository/required-actions';
 import { sessionRepository } from '#/repository/sessions';
 import { SessionEntry } from '#/service/session-entry';
-import { oweRecoveryCodesIfNoneUnspent } from '#/usecase/recovery-codes';
+import {
+  oweRecoveryCodesIfFactorWithoutCodes,
+  oweRecoveryCodesIfNoneUnspent,
+} from '#/usecase/recovery-codes';
 import { recordPasswordExpiryIfOwed } from '#/usecase/update-password';
 import { loginAuditFor, type AuditFailureLogger, type LoginAudit } from '#/usecase/login-audit';
 import {
@@ -977,6 +980,13 @@ export async function advance(
   // since every step refuses it.
   if (outcome.kind === 'success' && outcome.authenticators.includes(PASSWORD)) {
     await loginFailureRepository(tx).clear(subjectId);
+  }
+
+  // Only once every factor has passed: what is owed here is read by the
+  // gate that follows a completed sign-in, and a password alone has not
+  // earned a prompt about a factor it did not present.
+  if (outcome.kind === 'success') {
+    await oweRecoveryCodesIfFactorWithoutCodes(tx, record.tenantId, subjectId);
   }
 
   // What a required-action submission is judged against, since it carries no

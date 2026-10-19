@@ -68,6 +68,12 @@ export {
   completeRecoveryCodes,
   type RecoveryCodesOutcome,
 } from '#/usecase/recovery-codes';
+export {
+  onSecondFactorRemoved,
+  type RecoveryRevocation,
+  type SecondFactorRemovedOutcome,
+} from '#/usecase/second-factor-removed';
+export { oweRecoveryCodesIfFactorWithoutCodes } from '#/usecase/recovery-codes';
 export { renderRecoveryCodesPage, type RecoveryCodesOffer } from '#/view/recovery-codes-html';
 export { renderUpdatePasswordPage } from '#/view/update-password-html';
 export {

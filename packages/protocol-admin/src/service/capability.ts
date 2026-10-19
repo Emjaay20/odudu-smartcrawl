@@ -87,6 +87,7 @@ import {
   countTenantsQuerySchema,
   listTenantsResponseSchema,
   deleteTenantQuerySchema,
+  revokeRecoveryCodesQuerySchema,
   roleSchema,
   rotateClientSecretQuerySchema,
   rotateClientSecretResponseSchema,
@@ -326,7 +327,12 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     capability: 'manage-users',
     responseSchema: z.void(),
     successStatus: 204,
-    description: TARGET_CEILING.trimStart(),
+    description:
+      'Removes one credential; a `password` is refused with `409`. When the credential is the ' +
+      'last TOTP or passkey the subject holds, their whole set of recovery codes is revoked ' +
+      'with it, since a code only stands in for a factor, and a later enrolment issues a fresh ' +
+      'set. The subject is told by mail at their address on file, if they have one.' +
+      TARGET_CEILING,
   },
   {
     method: 'GET',
@@ -435,12 +441,17 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     capability: 'manage-users',
     responseSchema: z.void(),
     successStatus: 204,
+    querystringSchema: revokeRecoveryCodesQuerySchema,
     description:
       'Revokes every recovery code the subject holds, spent or not, so none signs in again. ' +
       'Recovery codes carry no id of their own, so this is the only way to remove them. ' +
       '`204` whether or not any were held; `404` for a subject with no `users` row. ' +
-      'Owes nothing: `PUT .../required-actions` with `generate-recovery-codes` asks for a ' +
-      'fresh set at the next sign-in.' +
+      'While the subject still holds a second factor, the `generate-recovery-codes` required ' +
+      'action is added so their next sign-in asks for a fresh set, unless `require_new_set` is ' +
+      '`false`; with no second factor left a set would serve nothing, and none is asked for. ' +
+      'The subject is told by mail at their address on file, if they have one. Removing the ' +
+      'last TOTP or passkey through `DELETE …/credentials/{credentialId}` revokes the set the ' +
+      'same way, without being asked.' +
       TARGET_CEILING,
   },
   {

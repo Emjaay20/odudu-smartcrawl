@@ -1432,6 +1432,14 @@ describe('DELETE /admin/tenants/{t}/subjects/{id}/credentials/{credentialId}', (
           type: 'totp',
           secret: { kind: 'totp', secret, digits: 6, lastStep: 0 },
         });
+        // A subject enrolled in the ordinary way holds a saved set; without one the
+        // sign-in would be asked for it, which is another test's subject.
+        await credentialRepository(tx).insert({
+          tenantId: t.id,
+          subjectId: subject.id,
+          type: 'recovery-code',
+          secret: { kind: 'recovery-code', hash: await hashPassword('saved-code') },
+        });
         const [row] = await credentialRepository(tx).listFor(subject.id, 'totp');
         if (row === undefined) throw new Error('fixture: no totp credential row after insert');
         return { subjectId: subject.id, credentialId: row.id, totpSecret: secret };
@@ -1656,6 +1664,7 @@ describe('audit', () => {
         tx,
         { audit: ok.audit },
         {
+          tenantId: t.id,
           callerCapabilities: new Set<string>(),
           subjectId: id,
           credentialId,
@@ -1674,6 +1683,7 @@ describe('audit', () => {
         tx,
         { audit: refused.audit },
         {
+          tenantId: t.id,
           callerCapabilities: new Set<string>(),
           subjectId: id,
           credentialId: newId(),

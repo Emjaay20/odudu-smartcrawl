@@ -240,6 +240,8 @@ export {
 export {
   issuePasswordResponseSchema,
   lockoutSchema,
+  revokeRecoveryCodesQuerySchema,
+  type RevokeRecoveryCodesQuery,
   type IssuePasswordResponse,
   type Lockout,
 } from '#/admin/account-recovery';

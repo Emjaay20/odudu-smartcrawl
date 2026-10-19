@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { en } from '#/service/messages';
 import {
+  renderRecoveryCodesRevoked,
   renderRequiredActions,
+  renderSecondFactorRemoved,
   renderResetPassword,
   renderSmtpTest,
   renderVerifyEmail,
@@ -16,6 +18,8 @@ vi.mock('#/service/messages', async (importOriginal) => {
     'reset.subject': 'Réinitialisez votre mot de passe {tenant}',
     'actions.subject': 'Mettez à jour votre compte {tenant}',
     'action.update-password': 'Choisir un nouveau mot de passe',
+    'factorRemoved.subject': 'Une méthode de connexion a été retirée de votre compte {tenant}',
+    'recoveryRevoked.subject': 'Les codes de récupération de {tenant} ont été révoqués',
     'smtpTest.subject': 'Test SMTP Odudu',
     'smtpTest.text': 'Ceci est un message de test d\u2019Odudu.',
   });
@@ -256,6 +260,10 @@ describe('every mail isolates and cleans a tenant name the same way', () => {
     reset: (name: string) => renderResetPassword({ ...base, tenantDisplayName: name }),
     actions: (name: string) =>
       renderRequiredActions({ ...base, tenantDisplayName: name, actions: ['update-password'] }),
+    factorRemoved: (name: string) =>
+      renderSecondFactorRemoved({ ...base, tenantDisplayName: name, factor: 'totp', codes: true }),
+    recoveryRevoked: (name: string) =>
+      renderRecoveryCodesRevoked({ ...base, tenantDisplayName: name, newSet: true }),
   };
 
   it.each(Object.entries(renderers))('%s: cannot close its own isolate', (_kind, render) => {
@@ -276,6 +284,57 @@ describe('every mail isolates and cleans a tenant name the same way', () => {
 
   it.each(Object.entries(renderers))('%s: wraps the name in bdi, escaped', (_kind, render) => {
     expect(render('<i>x</i>').html).toContain('<bdi>&lt;i&gt;x&lt;/i&gt;</bdi>');
+  });
+});
+
+describe('renderSecondFactorRemoved', () => {
+  const input = { to: 'ada@example.test', tenantDisplayName: 'Demo' };
+
+  it('names the factor and says the codes went with it, in English', () => {
+    const msg = renderSecondFactorRemoved({ ...input, factor: 'totp', codes: true });
+    expect(msg.to).toBe('ada@example.test');
+    expect(msg.subject).toBe('A sign-in method was removed from your Demo account');
+    expect(msg.text).toContain('authenticator app');
+    expect(msg.text).toContain('recovery codes were removed with it');
+    expect(msg.html).toContain('<bdi>Demo</bdi>');
+  });
+
+  it('names a passkey, and leaves out the codes sentence when none were held', () => {
+    const msg = renderSecondFactorRemoved({ ...input, factor: 'webauthn', codes: false });
+    expect(msg.text).toContain('passkey');
+    expect(msg.text).not.toContain('recovery codes');
+  });
+
+  it('carries no link, no code and no secret', () => {
+    const msg = renderSecondFactorRemoved({ ...input, factor: 'totp', codes: true });
+    expect(msg.text + msg.html).not.toMatch(/https?:|[0-9A-Z]{5}-[0-9A-Z]{5}/u);
+  });
+
+  it('reads the subject in French where the fixture has it, English for the rest', () => {
+    const msg = renderSecondFactorRemoved({ ...input, factor: 'totp', codes: true, locale: 'fr' });
+    expect(msg.subject).toBe('Une méthode de connexion a été retirée de votre compte Demo');
+    expect(msg.text).toContain('authenticator app');
+  });
+});
+
+describe('renderRecoveryCodesRevoked', () => {
+  const input = { to: 'ada@example.test', tenantDisplayName: 'Demo' };
+
+  it('says the old codes stop working, and that a new set will be asked for', () => {
+    const msg = renderRecoveryCodesRevoked({ ...input, newSet: true });
+    expect(msg.subject).toBe('Your Demo recovery codes were revoked');
+    expect(msg.text).toContain('no longer work');
+    expect(msg.text).toContain('save a new set');
+    expect(msg.html).toContain('save a new set');
+  });
+
+  it('leaves the new-set sentence out when none is asked for', () => {
+    expect(renderRecoveryCodesRevoked({ ...input, newSet: false }).text).not.toContain('new set');
+  });
+
+  it('reads the subject in French where the fixture has it', () => {
+    const msg = renderRecoveryCodesRevoked({ ...input, newSet: true, locale: 'fr' });
+    expect(msg.subject).toBe('Les codes de récupération de Demo ont été révoqués');
   });
 });
 

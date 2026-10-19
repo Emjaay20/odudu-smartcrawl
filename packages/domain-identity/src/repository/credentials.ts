@@ -21,6 +21,12 @@ export interface NewCredential {
   lookupKey?: string;
 }
 
+export interface RecoveryStanding {
+  readonly unspent: number;
+  readonly held: number;
+  readonly hasSecondFactor: boolean;
+}
+
 function toRecord(row: typeof userCredentials.$inferSelect): CredentialRecord {
   return {
     id: row.id,
@@ -220,6 +226,28 @@ export function credentialRepository(tx: TenantScopedDatabase) {
           ),
         );
       return rows.length;
+    },
+
+    // What the recovery lifecycle decides on, in one aggregate over the
+    // subject's rows: whether a way back is held and unspent, and whether a
+    // second factor stands for it to stand in for. A recovery code is not
+    // one, and a passkey is: its assertion is possession plus the
+    // authenticator's own user verification.
+    async recoveryStanding(subjectId: string): Promise<RecoveryStanding> {
+      const rows = await tx.execute<{ unspent: number; held: number; factors: number }>(sql`
+        SELECT
+          count(*) FILTER (WHERE type = 'recovery-code' AND secret_data->>'usedAt' IS NULL)::int AS unspent,
+          count(*) FILTER (WHERE type = 'recovery-code')::int AS held,
+          count(*) FILTER (WHERE type IN ('totp', 'webauthn'))::int AS factors
+        FROM user_credentials
+        WHERE subject_id = ${subjectId}
+      `);
+      const row = rows[0];
+      return {
+        unspent: row?.unspent ?? 0,
+        held: row?.held ?? 0,
+        hasSecondFactor: (row?.factors ?? 0) > 0,
+      };
     },
 
     // Regenerating a set of recovery codes replaces it: the old ten stop

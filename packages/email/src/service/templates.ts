@@ -125,6 +125,74 @@ export function renderRequiredActions(input: RequiredActionsInput): EmailMessage
   };
 }
 
+interface NoticeInput {
+  readonly to: string;
+  readonly tenantDisplayName: string;
+  readonly locale?: string | null | undefined;
+}
+
+export interface SecondFactorRemovedInput extends NoticeInput {
+  readonly factor: 'totp' | 'webauthn';
+  /** Whether the subject's recovery codes were removed with the factor. */
+  readonly codes: boolean;
+}
+
+export interface RecoveryCodesRevokedInput extends NoticeInput {
+  /** Whether the next sign-in asks the subject to save a new set. */
+  readonly newSet: boolean;
+}
+
+// Said to the address on file after an administrator changes how the
+// subject recovers or proves who they are. Never a link, a code or a secret:
+// whoever reads it may not be the subject, and nothing in it helps them.
+export function renderSecondFactorRemoved(input: SecondFactorRemovedInput): EmailMessage {
+  const locale = mailLocale(input.locale);
+  const tenant = input.tenantDisplayName;
+  const lines = [
+    (html: boolean) =>
+      html
+        ? tHtml(locale, `factorRemoved.${input.factor}`, {}, { tenant: stripBidiControls(tenant) })
+        : t(locale, `factorRemoved.${input.factor}`, { tenant: inText(tenant) }),
+    ...(input.codes
+      ? [
+          (html: boolean) =>
+            html ? tHtml(locale, 'factorRemoved.codes') : t(locale, 'factorRemoved.codes'),
+        ]
+      : []),
+    (html: boolean) => (html ? tHtml(locale, 'notice.contact') : t(locale, 'notice.contact')),
+  ];
+  return {
+    to: input.to,
+    subject: t(locale, 'factorRemoved.subject', { tenant: inSubject(tenant) }),
+    text: lines.map((line) => line(false)).join('\n\n'),
+    html: lines.map((line) => `<p>${line(true)}</p>`).join(''),
+  };
+}
+
+export function renderRecoveryCodesRevoked(input: RecoveryCodesRevokedInput): EmailMessage {
+  const locale = mailLocale(input.locale);
+  const tenant = input.tenantDisplayName;
+  const lines = [
+    (html: boolean) =>
+      html
+        ? tHtml(locale, 'recoveryRevoked.text', {}, { tenant: stripBidiControls(tenant) })
+        : t(locale, 'recoveryRevoked.text', { tenant: inText(tenant) }),
+    ...(input.newSet
+      ? [
+          (html: boolean) =>
+            html ? tHtml(locale, 'recoveryRevoked.newSet') : t(locale, 'recoveryRevoked.newSet'),
+        ]
+      : []),
+    (html: boolean) => (html ? tHtml(locale, 'notice.contact') : t(locale, 'notice.contact')),
+  ];
+  return {
+    to: input.to,
+    subject: t(locale, 'recoveryRevoked.subject', { tenant: inSubject(tenant) }),
+    text: lines.map((line) => line(false)).join('\n\n'),
+    html: lines.map((line) => `<p>${line(true)}</p>`).join(''),
+  };
+}
+
 export interface SmtpTestInput {
   readonly to: string;
   readonly locale?: string | null | undefined;

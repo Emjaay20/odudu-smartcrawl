@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { dateTimeSchema } from '#/admin/shared';
+import { dateTimeSchema, enabledFilterSchema } from '#/admin/shared';
 
 // The only place an issued password is ever written down: never stored in
 // the clear, never logged, never in an audit row.
@@ -18,3 +18,10 @@ export const lockoutSchema = z.object({
   last_failure_at: dateTimeSchema.nullable(),
 });
 export type Lockout = z.infer<typeof lockoutSchema>;
+
+// `require_new_set` defaults to true: revoking a set while a second factor
+// remains leaves the subject with no way back unless one is asked of them.
+export const revokeRecoveryCodesQuerySchema = z
+  .object({ require_new_set: enabledFilterSchema.optional() })
+  .strict();
+export type RevokeRecoveryCodesQuery = z.infer<typeof revokeRecoveryCodesQuerySchema>;

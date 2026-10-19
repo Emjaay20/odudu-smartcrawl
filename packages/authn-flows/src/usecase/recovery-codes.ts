@@ -78,3 +78,19 @@ export async function oweRecoveryCodesIfNoneUnspent(
   if (usable > 0) return;
   await requiredActionRepository(tx).add(tenantId, subjectId, 'generate-recovery-codes');
 }
+
+// The sign-in that completes is the one place a subject who holds a second
+// factor and no unspent code is certain to be in front of the server: codes
+// revoked while a factor remains, or never issued to a subject enrolled
+// before they existed, would otherwise leave them with no way back and no
+// prompt. One aggregate, and the action is only added, so a set saved
+// clears it and nothing here asks again.
+export async function oweRecoveryCodesIfFactorWithoutCodes(
+  tx: TenantScopedDatabase,
+  tenantId: string,
+  subjectId: string,
+): Promise<void> {
+  const standing = await credentialRepository(tx).recoveryStanding(subjectId);
+  if (!standing.hasSecondFactor || standing.unspent > 0) return;
+  await requiredActionRepository(tx).add(tenantId, subjectId, 'generate-recovery-codes');
+}

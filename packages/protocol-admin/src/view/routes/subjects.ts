@@ -537,6 +537,7 @@ export function deleteCredentialHandler(deps: SubjectsRouteDeps): AdminRouteHand
         tx,
         { audit: deps.audit },
         {
+          tenantId: targetTenantId,
           subjectId: id,
           credentialId,
           callerCapabilities,

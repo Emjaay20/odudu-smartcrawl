@@ -40,4 +40,8 @@ export {
   isValidProfileUrl,
   isValidZoneinfo,
 } from '#/service/profile';
-export { credentialRepository, type NewCredential } from '#/repository/credentials';
+export {
+  credentialRepository,
+  type NewCredential,
+  type RecoveryStanding,
+} from '#/repository/credentials';
