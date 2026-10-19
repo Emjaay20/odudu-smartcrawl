@@ -215,6 +215,7 @@ import {
 } from '#/view/routes/tenant-sessions';
 
 export { ADMIN_ROUTES, type AdminRoute } from '#/service/capability';
+export { buildAdminOpenApiDocument, type OpenApiDocument } from '#/view/routes/openapi';
 export { COUNT_CAP } from '#/usecase/counts';
 export { expireRotatedClientSecrets } from '#/usecase/client-secret-expiry';
 export { composeUserSubject, type ComposeUserSubjectInput } from '#/usecase/subjects';

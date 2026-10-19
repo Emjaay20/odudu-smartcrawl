@@ -259,6 +259,21 @@ importers:
       '@mdx-js/react':
         specifier: 3.1.1
         version: 3.1.1(@types/react@19.3.0)(react@19.3.0)
+      '@odudu/domain-audit':
+        specifier: workspace:*
+        version: link:../../packages/domain-audit
+      '@odudu/kernel':
+        specifier: workspace:*
+        version: link:../../packages/kernel
+      '@odudu/protocol-admin':
+        specifier: workspace:*
+        version: link:../../packages/protocol-admin
+      '@odudu/protocol-oidc':
+        specifier: workspace:*
+        version: link:../../packages/protocol-oidc
+      '@odudu/server':
+        specifier: workspace:*
+        version: link:../server
       '@playwright/test':
         specifier: 1.63.0
         version: 1.63.0
