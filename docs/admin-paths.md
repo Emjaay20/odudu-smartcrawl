@@ -7914,7 +7914,7 @@ carried.
 HTTP/1.1 200 OK
 x-request-id: 01a137da-fe58-7897-8b4c-bcd168243669
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' https://portal.demo.example; base-uri 'none'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' https://portal.demo.example; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store

@@ -201,7 +201,7 @@ at the end of the password form.
 HTTP/1.1 200 OK
 x-request-id: 01a137da-0686-7870-954e-e3de76d272b7
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:3094; base-uri 'none'; script-src 'nonce-OMn01UznIrcg/AqkJ+gqsg=='; connect-src 'self'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:3094; base-uri 'none'; script-src 'nonce-OMn01UznIrcg/AqkJ+gqsg=='; connect-src 'self'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
@@ -511,7 +511,7 @@ x-request-id: 01a0e741-390e-7091-bf83-07e31b252605
 set-cookie: odudu-console-login=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 cache-control: no-store
 content-type: text/html; charset=utf-8
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 content-length: 187
@@ -572,7 +572,7 @@ x-request-id: 01a0e741-88cb-725c-8b08-0e2f2773ca7b
 set-cookie: odudu-console-login=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 cache-control: no-store
 content-type: text/html; charset=utf-8
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 content-length: 187
@@ -766,7 +766,7 @@ HTTP/1.1 400 Bad Request
 x-request-id: 01a137d9-33ca-741c-a265-6987b59da4cc
 set-cookie: odudu-console-login=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 content-type: text/html; charset=utf-8
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
@@ -911,7 +911,7 @@ HTTP/1.1 400 Bad Request
 x-request-id: 01a137d9-3620-717a-904f-4af8a603f810
 set-cookie: odudu-console-login=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 content-type: text/html; charset=utf-8
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store

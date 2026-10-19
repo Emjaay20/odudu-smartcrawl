@@ -17,6 +17,13 @@ button's spacing and the throttle page ran on the project `odudu-17h` on port
 with `ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000` unless a
 block says otherwise.
 
+The `content-security-policy` lines in these guides gained `style-src 'self';
+font-src 'self'; img-src 'self'` when pages began linking a same-origin
+stylesheet (ADR 0029's amendment). Each page kind was checked against a live
+stack on that change (the authorization form, an error page, the logout
+confirmation, the console shell), and `tests/docs/page-csp-transcripts.test.ts`
+holds every recorded line in all three guides to what `pageHeaders` sends.
+
 Values that change on every run — authorization codes, tokens, `jti`,
 session ids, timestamps — are shortened or truncated where they appear, and
 that is said each time. Nothing here is reconstructed from what the code
@@ -957,7 +964,7 @@ curl -sS -D - --get \
 HTTP/1.1 200 OK
 x-request-id: 01a13fbd-81c1-7294-9818-8d28aade3532
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-Wl0HqPsMni5vrqbjy4QgLg=='; connect-src 'self'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-Wl0HqPsMni5vrqbjy4QgLg=='; connect-src 'self'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
@@ -1034,7 +1041,7 @@ page and the passkey enrolment page are the two whose policy is not
 `connect-src 'self'`, since its script fetches the challenge:
 
 ```
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-uYonuarTnJ+02aAWxgis8g=='; connect-src 'self'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-uYonuarTnJ+02aAWxgis8g=='; connect-src 'self'
 ```
 
 (Captured on its own stack, the project `odudu-t8d` on
@@ -1168,7 +1175,7 @@ curl -sS -i \
 HTTP/1.1 200 OK
 x-request-id: 01a13fbd-b4de-707d-9c69-765926abc2e3
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-kwGGd/DNU6OyCipi1Taykw=='; connect-src 'self'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-kwGGd/DNU6OyCipi1Taykw=='; connect-src 'self'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
@@ -1218,9 +1225,9 @@ diff /tmp/refused-wrong-password.txt /tmp/refused-unknown-user.txt
 ---
 > x-request-id: 01a13fbd-b521-70cb-b665-17c89a7337a4
 4c4
-< content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-kwGGd/DNU6OyCipi1Taykw=='; connect-src 'self'
+< content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-kwGGd/DNU6OyCipi1Taykw=='; connect-src 'self'
 ---
-> content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-JH3t1PMcC0g+CoWx0yazjg=='; connect-src 'self'
+> content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-JH3t1PMcC0g+CoWx0yazjg=='; connect-src 'self'
 8c8
 < content-length: 2488
 ---
@@ -1488,7 +1495,7 @@ curl -sS -D - -X POST \
 HTTP/1.1 400 Bad Request
 x-request-id: 01a137db-8e6b-77ac-b25e-37ce7a4452eb
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
@@ -1537,7 +1544,7 @@ same nonce the policy names:
 HTTP/1.1 200 OK
 x-request-id: 01a13fbe-5240-7c96-8789-6be19bcf58ab
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-A4EUaub9ChHrn95wQwVmDg=='; connect-src 'self'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-A4EUaub9ChHrn95wQwVmDg=='; connect-src 'self'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
@@ -1567,7 +1574,7 @@ DELETE 1
 HTTP/1.1 400 Bad Request
 x-request-id: 01a137db-8fa1-7f47-be66-a008a108cfbf
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
@@ -1602,7 +1609,7 @@ curl -sS -D - -X POST \
 HTTP/1.1 400 Bad Request
 x-request-id: 01a137db-facc-7f29-86ed-3823793412ee
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
@@ -1694,7 +1701,7 @@ curl -sS -D - -X POST \
 HTTP/1.1 400 Bad Request
 x-request-id: 01a137db-fa94-75e9-bec9-c11977da9446
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
@@ -3671,7 +3678,7 @@ curl -sS -i -X POST \
 HTTP/1.1 200 OK
 x-request-id: 01a137d3-99f5-7c70-ba82-a75606f1c447
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
@@ -4171,7 +4178,7 @@ one:
 HTTP/1.1 200 OK
 x-request-id: 01a137d4-5faf-7d4c-867b-86e075e0ac38
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
@@ -4925,7 +4932,7 @@ curl -sS -D - \
 HTTP/1.1 200 OK
 x-request-id: 01a137d6-0294-7385-8d89-25ff1b96ce96
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
@@ -4963,7 +4970,7 @@ curl -sS -D - -X POST http://localhost:3094/tenants/required-actions-demo/login-
 HTTP/1.1 200 OK
 x-request-id: 01a137d6-02c7-7996-9fc9-0c51ccac9243
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
@@ -5531,7 +5538,7 @@ HTTP/1.1 429 Too Many Requests
 x-request-id: 01a13f69-ab71-78df-86cd-aad092231823
 retry-after: 60
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
@@ -7245,7 +7252,7 @@ curl -sS -b cookies2.txt -D - -X POST \
 ```
 HTTP/1.1 400 Bad Request
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
@@ -7591,7 +7598,7 @@ HTTP/1.1 200 OK
 set-cookie: demo-session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 set-cookie: demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'; frame-src http://localhost:9100
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'; frame-src http://localhost:9100
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
@@ -8089,7 +8096,7 @@ curl -sS -D - -c cookies-consent.txt -b cookies-consent.txt \
 HTTP/1.1 200 OK
 x-request-id: 01a137d6-c260-716b-9777-461155c440c8
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' https://rp.example; base-uri 'none'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' https://rp.example; base-uri 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
@@ -8236,7 +8243,7 @@ curl -sS -D - -b cookies-consent.txt --get \
 HTTP/1.1 200 OK
 x-request-id: 01a137d6-c485-73aa-b3c3-824d47fe7178
 content-type: text/html
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' https://rp.example; base-uri 'none'; script-src 'nonce-RGkC4LknpA2uMvjtQxZIHg=='
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' https://rp.example; base-uri 'none'; script-src 'nonce-RGkC4LknpA2uMvjtQxZIHg=='
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
@@ -8330,7 +8337,7 @@ curl -sS -D - \
 ```
 {"client_id":"billing-spa","name":"Billing & Co","consent_required":true,"client_uri":"https://billing.example/about?from=consent&lang=en","policy_uri":"https://billing.example/privacy","tos_uri":"https://billing.example/terms"}
 HTTP/1.1 200 OK
-content-security-policy: default-src 'none'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'
 <h1>Billing &amp; Co is asking for access</h1>
 <p><a href="https://billing.example/about?from=consent&amp;lang=en">About Billing &amp; Co</a> · <a href="https://billing.example/privacy">Privacy policy</a> · <a href="https://billing.example/terms">Terms of service</a></p>
 <form method="post" action="/tenants/email-demo/login-actions/consent">
