@@ -257,7 +257,7 @@ test('the required-action pages: password change, passkey enrolment', async ({
   forgiveRefusals(problems);
 });
 
-test('consent, the account chooser and signing out', async ({ page }) => {
+test('consent, the account chooser and signing out', async ({ page, problems }) => {
   await page.goto(authorize(main, 'portal', { scope: ALL_SCOPES }));
   await signIn(page, 'alice');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('is asking for access');
@@ -281,9 +281,32 @@ test('consent, the account chooser and signing out', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1, name: 'Signed out' })).toBeVisible();
   await inspect(page, 'logout-done');
 
+  await page.goto(authorize(main, 'plain', { prompt: 'login' }));
+  await signIn(page, 'alice');
+  await expect(page).toHaveURL(/\/health\/ready/u);
+  const unregistered = encodeURIComponent('https://unregistered.example/');
+  await page.goto(
+    `/tenants/${main}/protocol/openid-connect/logout?client_id=plain&post_logout_redirect_uri=${unregistered}`,
+  );
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await expect(page.getByText('has not been used')).toBeVisible();
+  await inspect(page, 'logout-redirect-refused');
+
   await page.goto(`/tenants/${main}/protocol/openid-connect/logout`);
   await expect(page.getByRole('heading', { level: 1, name: 'Already signed out' })).toBeVisible();
   await inspect(page, 'logout-no-session');
+
+  await page.goto(authorize(main, 'plain', { prompt: 'login' }));
+  await signIn(page, 'alice');
+  await expect(page).toHaveURL(/\/health\/ready/u);
+  await page.goto(`/tenants/${main}/protocol/openid-connect/logout?client_id=plain`);
+  await page.locator('input[name="csrf"]').evaluate((input: HTMLInputElement) => {
+    input.value = 'forged';
+  });
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: "Can't sign out" })).toBeVisible();
+  await inspect(page, 'logout-unauthenticated');
+  forgiveRefusals(problems);
 });
 
 test('the error pages', async ({ page, problems }) => {
@@ -346,6 +369,13 @@ test('registration, the unverified account, password reset and their links', asy
   await page.getByRole('button', { name: 'Send reset link' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Check your email' })).toBeVisible();
   await inspect(page, 'reset-sent');
+
+  await page.goto(`/tenants/${open}/login-actions/reset-password`);
+  await page.getByRole('button', { name: 'Send reset link' }).click();
+  await expect(
+    page.getByRole('heading', { level: 1, name: "Can't send a reset link" }),
+  ).toBeVisible();
+  await inspect(page, 'reset-request-failed');
 
   const reset = mailKey(open, `resetter-${run}@example.test`);
   await page.goto(`/tenants/${open}/login-actions/action-token?key=${reset}`);
