@@ -43,6 +43,7 @@ import Fastify, {
   type FastifyError,
   type FastifyInstance,
   type FastifyReply,
+  type RouteOptions,
   type RawServerDefault,
 } from 'fastify';
 import { type IncomingMessage, type ServerResponse } from 'node:http';
@@ -110,6 +111,8 @@ export interface AppDeps {
   readonly instrumentDir?: string;
   /** The console gateway's clock, so a test can age a pending sign-in. */
   readonly consoleNow?: () => Date;
+  /** Called with every route as it is registered, for a tool that lists what the app serves. */
+  readonly onRoute?: (route: RouteOptions) => void;
   /**
    * Whether to trust `X-Forwarded-*` headers when deriving `request.ip`.
    * Defaults to `false`: with no reverse proxy in front of the server,
@@ -279,6 +282,8 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     requestIdHeader: 'x-request-id',
     trustProxy: deps.trustProxy ?? false,
   });
+
+  if (deps.onRoute !== undefined) app.addHook('onRoute', deps.onRoute);
 
   app.addHook('onRequest', async (request, reply) => {
     reply.header('x-request-id', request.id);

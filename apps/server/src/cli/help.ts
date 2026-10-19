@@ -101,8 +101,13 @@ export function renderHelp(commands: readonly CliCommand[], path: readonly strin
 function markdownSection(command: CliCommand, path: readonly string[], depth: number): string[] {
   const full = [...path, command.name];
   const lines = [`${'#'.repeat(depth)} ${command.name}`, '', command.summary, ''];
-  const usage = command.subcommands.length > 0 ? '<command> [options]' : '[options]';
-  lines.push('```', `odudu ${full.join(' ')} ${usage}`, '```', '');
+  const usage =
+    command.subcommands.length > 0
+      ? ' <command> [options]'
+      : command.options.length > 0
+        ? ' [options]'
+        : '';
+  lines.push('```', `odudu ${full.join(' ')}${usage}`, '```', '');
   if (command.options.length > 0) {
     for (const option of command.options) {
       lines.push(

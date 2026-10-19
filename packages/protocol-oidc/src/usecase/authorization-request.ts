@@ -40,10 +40,11 @@ import {
   type LoginSubmissionDeps,
 } from '#/usecase/login-submission';
 import { decideReuse, withinMaxAge, type ResolvedSession } from '#/usecase/session-reuse';
+import { type AuthorizationErrorCode } from '#/service/oauth-errors';
 
 export type AuthorizationRequestOutcome =
-  | { kind: 'render'; error: string; description: string }
-  | { kind: 'redirect'; redirectUri: string; error: string; state: string | null }
+  | { kind: 'render'; error: AuthorizationErrorCode; description: string }
+  | { kind: 'redirect'; redirectUri: string; error: AuthorizationErrorCode; state: string | null }
   // `form` names what the rendered login page should ask for first —
   // whatever the tenant's flow would offer nobody has submitted anything
   // yet (authn-flows' initialChallenge).
@@ -337,7 +338,7 @@ export async function handleAuthorizationRequest(
   // client's registrations, so everything from here reports by redirecting
   // (OIDC Core §3.1.2.6).
   const { request } = outcome;
-  const reject = (error: string): AuthorizationRequestOutcome => ({
+  const reject = (error: AuthorizationErrorCode): AuthorizationRequestOutcome => ({
     kind: 'redirect',
     redirectUri: request.redirectUri,
     error,
@@ -742,7 +743,7 @@ export async function handleSelectAccountSubmission(
   }
   const client = resolvedClient.client;
 
-  const reject = (error: string): SelectAccountOutcome => ({
+  const reject = (error: AuthorizationErrorCode): SelectAccountOutcome => ({
     kind: 'redirect',
     redirectUri: pending.redirectUri,
     error,

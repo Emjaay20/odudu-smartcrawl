@@ -1,3 +1,5 @@
+import { type AuthorizationErrorCode } from '#/service/oauth-errors';
+
 // Fastify's querystring parser returns a string[] for a repeated key, not
 // the single string the rest of /authorize is typed against; normalizing
 // before validateAuthorizationRequest runs is what makes that type true at
@@ -6,7 +8,7 @@
 // otherwise smuggle them into rules written for strings, where
 // `code_challenge.length` is `undefined` rather than a rejection.
 export type QueryNormalization =
-  | { kind: 'render'; error: string; description: string }
+  | { kind: 'render'; error: AuthorizationErrorCode; description: string }
   | { kind: 'ok'; params: Record<string, string | undefined>; repeatedKey: string | null };
 
 // Repeating one of these leaves no way to send an error back at all — no

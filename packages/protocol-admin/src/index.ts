@@ -1,7 +1,7 @@
 import { sessionRepository } from '@odudu/authn-flows';
 import { signingKeyRepository } from '@odudu/crypto';
 import { type DatabaseHandle, type TenantScopedDatabase, withTenant } from '@odudu/db';
-import { auditRepository } from '@odudu/domain-audit';
+import { auditRepository, type AdminMutationAction } from '@odudu/domain-audit';
 import { effectiveRoles } from '@odudu/domain-authz';
 import { hashPassword, subjectIsEnabled, subjectRepository } from '@odudu/domain-identity';
 import { ADMIN_CLIENT_ID, clientRepository } from '@odudu/domain-tenant';
@@ -215,14 +215,6 @@ import {
 } from '#/view/routes/tenant-sessions';
 
 export { ADMIN_ROUTES, type AdminRoute } from '#/service/capability';
-export { buildAdminOpenApiDocument, type OpenApiDocument } from '#/view/routes/openapi';
-export { ADMIN_MUTATION_ACTIONS } from '#/service/admin-mutation-actions';
-export {
-  ADMIN_PROBLEM_TYPES,
-  GENERIC_PROBLEM_SUMMARY,
-  problemTypeUri,
-  type AdminProblemType,
-} from '#/service/problem-types';
 export { COUNT_CAP } from '#/usecase/counts';
 export { expireRotatedClientSecrets } from '#/usecase/client-secret-expiry';
 export { composeUserSubject, type ComposeUserSubjectInput } from '#/usecase/subjects';
@@ -328,7 +320,7 @@ function buildAdminRoutes(
     async function recordAudit(
       tx: TenantScopedDatabase,
       event: {
-        readonly action: string;
+        readonly action: AdminMutationAction;
         readonly resourceType: string;
         readonly resourceId: string | null;
         readonly actorSubjectId: string;

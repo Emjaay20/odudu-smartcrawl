@@ -1,6 +1,5 @@
 export { KERNEL_VERSION } from '#/version';
 export { OduduError, ERROR_CODES, type ErrorCode } from '#/errors';
-export { ERROR_DOCS, ERROR_GROUPS, type ErrorGroup } from '#/error-docs';
 export { BIDI_REFUSED, BidiControlError, containsBidiControl, refuseBidiControls } from '#/bidi';
 export { type Clock, systemClock, FakeClock } from '#/clock';
 export { isUuid, newId, scriptNonce } from '#/ids';
@@ -37,14 +36,6 @@ export {
   DEFAULT_OUTBOX_MAX_ATTEMPTS,
   loadConfig,
 } from '#/config';
-export {
-  CONFIG_DOCS,
-  CONFIG_GROUPS,
-  configReference,
-  type ConfigGroup,
-  type ConfigKey,
-  type ConfigReference,
-} from '#/config-docs';
 export {
   DEFAULT_STATIC_TREE_LIMITS,
   readStaticTree,

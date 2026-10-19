@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { configReference } from '../../packages/kernel/src/index.js';
+import { configReference } from '../../packages/kernel/src/docs.js';
 import { loadDocument } from './markdown.js';
 
 // The reference page for configuration is generated from the loader. The

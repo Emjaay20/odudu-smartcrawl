@@ -1,3 +1,4 @@
+import { type RegistrationErrorCode } from '#/service/oauth-errors';
 import { type FastifyInstance } from 'fastify';
 import {
   registerClient,
@@ -64,6 +65,10 @@ function toResponseBody(client: RegisteredClient): Record<string, unknown> {
 // `realm` is RFC 7235 §4.1's auth-param name, not this project's word.
 const BEARER_CHALLENGE = 'Bearer realm="client-registration"';
 
+function bearerChallengeFor(error: RegistrationErrorCode): string {
+  return `${BEARER_CHALLENGE}, error="${error}"`;
+}
+
 export function registerClientRegistrationRoute(
   app: FastifyInstance,
   deps: ClientRegistrationDeps,
@@ -88,7 +93,7 @@ export function registerClientRegistrationRoute(
       case 'invalid_token':
         return reply
           .code(401)
-          .header('www-authenticate', `${BEARER_CHALLENGE}, error="invalid_token"`)
+          .header('www-authenticate', bearerChallengeFor('invalid_token'))
           .send();
       case 'invalid_metadata':
         return reply

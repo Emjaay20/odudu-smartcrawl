@@ -1,7 +1,7 @@
 import { auditEventSchema } from '@odudu/contracts/admin';
 import { tenants, withTenant } from '@odudu/db';
 import { expectCrossTenantMethodProbe } from '@odudu/db/testing';
-import { auditRepository } from '@odudu/domain-audit';
+import { auditRepository, type AdminMutationAction } from '@odudu/domain-audit';
 import { subjectRepository, subjects, userRepository } from '@odudu/domain-identity';
 import { clientRepository, SYSTEM_TENANT_ID } from '@odudu/domain-tenant';
 import { newId } from '@odudu/kernel';
@@ -31,7 +31,7 @@ function get(tenantName: string, token: string, tail: string): Promise<LightMyRe
 
 async function record(
   tenantId: string,
-  action: string,
+  action: AdminMutationAction,
   actor: { subjectId: string; tenantId?: string },
 ): Promise<void> {
   await withTenant(fixture.app.db, tenantId, (tx) =>
@@ -87,23 +87,23 @@ describe('the actor an audit row names, resolved when it is read', () => {
       });
       return { ada: user.id, service: serviceSubject.id, client: created, gone: deleted.id };
     });
-    await record(t.id, 'probe.user', { subjectId: ada });
-    await record(t.id, 'probe.service', { subjectId: service });
-    await record(t.id, 'probe.deleted', { subjectId: gone });
-    await record(t.id, 'probe.system', { subjectId: newId(), tenantId: SYSTEM_TENANT_ID });
+    await record(t.id, 'subject.create', { subjectId: ada });
+    await record(t.id, 'subject.amend', { subjectId: service });
+    await record(t.id, 'subject.delete', { subjectId: gone });
+    await record(t.id, 'subject.roles_set', { subjectId: newId(), tenantId: SYSTEM_TENANT_ID });
     await withTenant(fixture.app.db, t.id, (tx) =>
       tx.delete(subjects).where(eq(subjects.id, gone)),
     );
     const auditorOnly = await fixture.adminToken(t.name, ['view-audit']);
     const unnamed = await get(t.name, auditorOnly, 'audit?limit=50');
     const hidden = unnamed.json<{ items: AuditItem[] }>().items;
-    expect(hidden.find((item) => item.action === 'probe.user')).toMatchObject({
+    expect(hidden.find((item) => item.action === 'subject.create')).toMatchObject({
       actor_subject_id: ada,
       actor_name: null,
       actor_origin: 'tenant',
     });
     expect(hidden.every((item) => item.actor_name === null)).toBe(true);
-    const unnamedExport = await get(t.name, auditorOnly, 'audit/export?action=probe.user');
+    const unnamedExport = await get(t.name, auditorOnly, 'audit/export?action=subject.create');
     expect(unnamedExport.body).not.toContain('"actor_name":"ada"');
 
     const token = await fixture.adminToken(t.name, ['view-audit', 'view-users']);
@@ -112,17 +112,20 @@ describe('the actor an audit row names, resolved when it is read', () => {
     const byAction = new Map(
       res.json<{ items: AuditItem[] }>().items.map((item) => [item.action, item]),
     );
-    expect(byAction.get('probe.user')).toMatchObject({ actor_name: 'ada', actor_origin: 'tenant' });
-    expect(byAction.get('probe.service')).toMatchObject({
+    expect(byAction.get('subject.create')).toMatchObject({
+      actor_name: 'ada',
+      actor_origin: 'tenant',
+    });
+    expect(byAction.get('subject.amend')).toMatchObject({
       actor_name: client.clientId,
       actor_origin: 'tenant',
     });
-    expect(byAction.get('probe.deleted')).toMatchObject({
+    expect(byAction.get('subject.delete')).toMatchObject({
       actor_subject_id: gone,
       actor_name: null,
       actor_origin: 'tenant',
     });
-    expect(byAction.get('probe.system')).toMatchObject({
+    expect(byAction.get('subject.roles_set')).toMatchObject({
       actor_name: null,
       actor_origin: 'system',
     });
@@ -162,11 +165,11 @@ describe('the actor an audit row names, resolved when it is read', () => {
 describe('GET /audit/count', () => {
   it('counts what the listing under the same filters lists', async () => {
     const t = await fixture.createTenant(`aud-${newId()}`);
-    for (let i = 0; i < 3; i += 1) await record(t.id, 'probe.counted', { subjectId: newId() });
-    await record(t.id, 'probe.other', { subjectId: newId() });
+    for (let i = 0; i < 3; i += 1) await record(t.id, 'role.create', { subjectId: newId() });
+    await record(t.id, 'role.delete', { subjectId: newId() });
     const token = await fixture.adminToken(t.name, ['view-audit']);
 
-    const res = await get(t.name, token, 'audit/count?action=probe.counted');
+    const res = await get(t.name, token, 'audit/count?action=role.create');
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ count: 3, capped: false });
     expect((await get(t.name, token, 'audit/count?resource_id=x')).statusCode).toBe(400);
@@ -176,19 +179,19 @@ describe('GET /audit/count', () => {
 describe('GET /audit/export', () => {
   it('answers every matching row as NDJSON, newest first, and audits the export', async () => {
     const t = await fixture.createTenant(`aud-${newId()}`);
-    await record(t.id, 'probe.exported', { subjectId: newId() });
+    await record(t.id, 'tenant.export', { subjectId: newId() });
     fixture.clock.advance(1000);
-    await record(t.id, 'probe.exported', { subjectId: newId() });
+    await record(t.id, 'tenant.export', { subjectId: newId() });
     const token = await fixture.adminToken(t.name, ['view-audit']);
 
-    const res = await get(t.name, token, 'audit/export?action=probe.exported');
+    const res = await get(t.name, token, 'audit/export?action=tenant.export');
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toMatch(/^application\/x-ndjson/u);
     const lines = res.body
       .trim()
       .split('\n')
       .map((line) => auditEventSchema.parse(JSON.parse(line)));
-    expect(lines.map((line) => line.action)).toEqual(['probe.exported', 'probe.exported']);
+    expect(lines.map((line) => line.action)).toEqual(['tenant.export', 'tenant.export']);
     const [newer, older] = lines.map((line) => line.occurred_at);
     expect((newer ?? '') >= (older ?? '')).toBe(true);
 
@@ -200,7 +203,7 @@ describe('GET /audit/export', () => {
 
   it('refuses more rows than it will write with 413, and writes none', async () => {
     const t = await fixture.createTenant(`aud-${newId()}`);
-    for (let i = 0; i < 3; i += 1) await record(t.id, 'probe.big', { subjectId: newId() });
+    for (let i = 0; i < 3; i += 1) await record(t.id, 'group.create', { subjectId: newId() });
     const recorded: string[] = [];
     const outcome = await withTenant(fixture.app.db, t.id, (tx) =>
       exportAudit(
@@ -214,7 +217,7 @@ describe('GET /audit/export', () => {
         {
           tenantId: t.id,
           revealNames: true,
-          filters: { action: 'probe.big' },
+          filters: { action: 'group.create' },
           cap: 2,
           actorSubjectId: newId(),
           actorTenantId: t.id,
@@ -241,7 +244,7 @@ describe('countAudit and exportAudit, probed with a foreign tenant_id', () => {
         await tx.insert(tenants).values({ id: tenantId, name: `probe-${newId()}` });
         await auditRepository(tx).record({
           eventType: 'admin_mutation',
-          action: 'probe.exported',
+          action: 'tenant.export',
           outcome: 'allowed',
         });
       },

@@ -1,8 +1,16 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { type TokenErrorCode } from '#/service/errors';
-import { OAUTH_ERROR_DOCS, type OAuthErrorCode } from '#/service/oauth-errors';
+import {
+  AUTHORIZATION_ERRORS,
+  OAUTH_ERROR_DOCS,
+  REGISTRATION_ERRORS,
+  surfacesOf,
+  TOKEN_ERRORS,
+  USERINFO_ERRORS,
+  type OAuthErrorCode,
+  type OAuthSurface,
+} from '#/service/oauth-errors';
 
 const SRC = path.resolve(import.meta.dirname, '..');
 
@@ -14,40 +22,65 @@ function sources(dir: string): string[] {
   });
 }
 
-// Adding a code to TokenErrorCode without listing it here, or listing one it
-// does not have, fails `pnpm typecheck`.
-const TOKEN_CODES: Record<TokenErrorCode, true> = {
-  invalid_client: true,
-  invalid_grant: true,
-  invalid_request: true,
-  invalid_scope: true,
-  invalid_target: true,
-  unauthorized_client: true,
-  unsupported_grant_type: true,
+function text(files: readonly string[]): string {
+  return files.map((file) => readFileSync(path.join(SRC, file), 'utf8')).join('\n');
+}
+
+// The modules that answer each surface. The code types what they answer with
+// (the lists in oauth-errors.ts), so an unlisted value does not compile; this
+// is the other direction: a listed value that no module writes any more.
+const MODULES: Record<OAuthSurface, readonly string[]> = {
+  authorization: [
+    'service/authorize-validation.ts',
+    'service/query-normalization.ts',
+    'usecase/authorization-request.ts',
+    'usecase/login-submission.ts',
+    'usecase/session-reuse.ts',
+    'usecase/consent-submission.ts',
+    'view/routes/expired-sign-in.ts',
+  ],
+  token: sources(SRC)
+    .map((file) => path.relative(SRC, file))
+    .filter((file) => !file.endsWith('oauth-errors.ts')),
+  userinfo: ['usecase/userinfo.ts', 'view/routes/userinfo.ts'],
+  registration: [
+    'service/client-metadata.ts',
+    'usecase/client-registration.ts',
+    'view/routes/client-registration.ts',
+  ],
+};
+
+const LISTS: Record<OAuthSurface, readonly OAuthErrorCode[]> = {
+  authorization: AUTHORIZATION_ERRORS,
+  token: TOKEN_ERRORS,
+  userinfo: USERINFO_ERRORS,
+  registration: REGISTRATION_ERRORS,
 };
 
 describe('the OAuth error codes', () => {
-  it('lists every code the token endpoint can answer with, as a token error', () => {
-    const documented = Object.entries(OAUTH_ERROR_DOCS)
-      .filter(([, docs]) => docs.surfaces.includes('token'))
-      .map(([code]) => code)
-      .sort();
-    expect(documented).toEqual(Object.keys(TOKEN_CODES).sort());
+  it('describe every code of every surface and no other', () => {
+    const listed = new Set<string>(Object.values(LISTS).flat());
+    expect(Object.keys(OAUTH_ERROR_DOCS).sort()).toEqual([...listed].sort());
   });
 
-  it('names only codes that the source still writes', () => {
-    const text = sources(SRC)
-      .map((file) => readFileSync(file, 'utf8'))
-      .join('\n');
-    const gone = (Object.keys(OAUTH_ERROR_DOCS) as OAuthErrorCode[]).filter(
-      (code) => !text.includes(`'${code}'`),
-    );
-    expect(gone).toEqual([]);
+  it.each(Object.keys(LISTS) as OAuthSurface[])(
+    'are each still written by a module of the %s surface',
+    (surface) => {
+      const written = text(MODULES[surface]);
+      const gone = LISTS[surface].filter((code) => !written.includes(`'${code}'`));
+      expect(gone).toEqual([]);
+    },
+  );
+
+  it('say where each is answered from the lists, not from a second table', () => {
+    expect(surfacesOf('invalid_request')).toEqual(['authorization', 'token', 'userinfo']);
+    expect(surfacesOf('invalid_grant')).toEqual(['token']);
+    expect(surfacesOf('invalid_token')).toEqual(['userinfo', 'registration']);
+    expect(surfacesOf('login_required')).toEqual(['authorization']);
   });
 
-  it('gives each code the surfaces that answer with it and a one-paragraph meaning', () => {
+  it('give each code a one-paragraph meaning', () => {
     for (const [code, docs] of Object.entries(OAUTH_ERROR_DOCS)) {
-      expect(docs.surfaces.length, code).toBeGreaterThan(0);
       expect(docs.summary, code).toMatch(/^\S.*\.$/u);
       expect(docs.summary, code).not.toContain('\n');
     }

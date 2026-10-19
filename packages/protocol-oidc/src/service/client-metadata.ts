@@ -12,11 +12,15 @@ import {
 import { noBidiControls } from '@odudu/contracts';
 import { z } from 'zod';
 import { JWE_ALGS_PERMITTED, PRIVATE_JWK_MEMBERS } from '@odudu/crypto';
+import { type RegistrationErrorCode } from '#/service/oauth-errors';
 import { assertFetchableUrl, RemoteAddressRefused } from '#/service/remote-address';
 
 // The RFC 7591 §3.2.2 error codes this validator returns. `error` doubles
 // as the wire value of the registration error response's `error` member.
-type ClientMetadataError = 'invalid_redirect_uri' | 'invalid_client_metadata';
+type ClientMetadataError = Extract<
+  RegistrationErrorCode,
+  'invalid_redirect_uri' | 'invalid_client_metadata'
+>;
 
 export interface ClientMetadata {
   redirectUris: string[];

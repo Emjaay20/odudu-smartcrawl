@@ -1062,4 +1062,3 @@ export {
   type EvaluateClaimsInput,
   type EvaluateClaimsOutcome,
 } from '#/usecase/evaluate-claims';
-export { OAUTH_ERROR_DOCS, type OAuthErrorCode, type OAuthSurface } from '#/service/oauth-errors';

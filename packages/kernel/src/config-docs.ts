@@ -31,6 +31,8 @@ interface ConfigDoc {
   readonly summary: string;
   // A secret has no default printed and is described as one wherever it is listed.
   readonly secret: boolean;
+  // The condition under which the server refuses to start without it, for a key the schema leaves optional.
+  readonly requiredWhen?: string;
 }
 
 function retention(summary: string): ConfigDoc {
@@ -82,6 +84,7 @@ export const CONFIG_DOCS: Record<ConfigKey, ConfigDoc> = {
       'row-level security applies to. Required when `NODE_ENV=production`. Commands that ' +
       'read every tenant refuse a role that is a superuser or bypasses row-level security.',
     secret: true,
+    requiredWhen: '`NODE_ENV` is `production`',
   },
   ODUDU_TRUST_PROXY: {
     group: 'Server',
@@ -106,6 +109,7 @@ export const CONFIG_DOCS: Record<ConfigKey, ConfigDoc> = {
       'front of the server. It selects the `__Host-` session cookie prefix, and ' +
       '`NODE_ENV=production` refuses to boot while it is off.',
     secret: false,
+    requiredWhen: '`NODE_ENV` is `production`, where it must be `true`',
   },
   ODUDU_THROTTLE_LIMIT: limit(
     'Requests allowed per origin in each window on the routes that cost a password hash or a ' +
@@ -262,6 +266,7 @@ export const CONFIG_DOCS: Record<ConfigKey, ConfigDoc> = {
     group: 'Mail',
     summary: 'The address mail is sent from. Required when `ODUDU_SMTP_HOST` is set.',
     secret: false,
+    requiredWhen: '`ODUDU_SMTP_HOST` is set',
   },
   ODUDU_SMTP_USERNAME: {
     group: 'Mail',
@@ -288,6 +293,8 @@ export const CONFIG_DOCS: Record<ConfigKey, ConfigDoc> = {
       'console’s redirect URI are built from, and the source of the passkey relying party id. ' +
       'Never taken from a request header. Required when `NODE_ENV=production`.',
     secret: false,
+    requiredWhen:
+      'the console is on (`ODUDU_CONSOLE`, which defaults to `true`) or `NODE_ENV` is `production`',
   },
   ODUDU_CONSOLE: {
     group: 'Admin console',
@@ -303,6 +310,7 @@ export const CONFIG_DOCS: Record<ConfigKey, ConfigDoc> = {
       'client: an ES256 JWK, base64-encoded. `odudu console keygen` prints a new one. Required ' +
       'while the console is on.',
     secret: true,
+    requiredWhen: 'the console is on (`ODUDU_CONSOLE`, which defaults to `true`)',
   },
   ODUDU_CONSOLE_CLIENT_KEY_PREVIOUS: {
     group: 'Admin console',
@@ -358,6 +366,7 @@ export interface ConfigReference {
   readonly values?: readonly string[];
   readonly summary: string;
   readonly secret: boolean;
+  readonly requiredWhen?: string;
 }
 
 interface PropertySchema {
@@ -420,6 +429,22 @@ export function configReference(): readonly ConfigReference[] {
       ...(values === undefined || kindOf(property, values) === 'boolean' ? {} : { values }),
       summary: docs.summary,
       secret: docs.secret,
+      ...(docs.requiredWhen === undefined ? {} : { requiredWhen: docs.requiredWhen }),
     };
   });
 }
+
+// Read from the environment by a command or the image, not by the loader.
+export const OUTSIDE_LOADER_ENV = {
+  ODUDU_ADMIN_EMAIL:
+    'The address `odudu init` gives the first administrator when `--admin-email` is not passed. ' +
+    'A blank value counts as unset.',
+  ODUDU_ADMIN_PASSWORD:
+    'The password `odudu init` gives the first administrator in place of a generated one. It is ' +
+    'an environment variable and never an option, so it does not appear in a process listing. ' +
+    'A blank value counts as unset.',
+  ODUDU_VERSION:
+    'The version `odudu --version` prints. The release image sets it; elsewhere it is `dev`.',
+} as const;
+
+export type OutsideLoaderKey = keyof typeof OUTSIDE_LOADER_ENV;

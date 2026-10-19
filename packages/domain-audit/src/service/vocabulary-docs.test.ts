@@ -1,11 +1,18 @@
 import { describe, expect, it } from 'vitest';
+import { ADMIN_MUTATION_ACTIONS } from '#/service/admin-mutation-actions';
 import {
+  ADMIN_MUTATION_ACTION_DOCS,
   AUDIT_ACTION_DOCS,
   AUDIT_EVENT_TYPE_DOCS,
   AUDIT_OUTCOME_DOCS,
   AUDIT_REASON_DOCS,
 } from '#/service/vocabulary-docs';
-import { AUDIT_ACTIONS, AUDIT_EVENT_TYPES, AUDIT_REASONS } from '#/service/vocabulary';
+import {
+  AUDIT_ACTIONS,
+  AUDIT_EVENT_TYPES,
+  AUDIT_OUTCOMES,
+  AUDIT_REASONS,
+} from '#/service/vocabulary';
 
 function oneParagraph(entries: Record<string, string>): void {
   for (const [name, summary] of Object.entries(entries)) {
@@ -21,6 +28,13 @@ describe('the audit vocabulary reference', () => {
     oneParagraph(AUDIT_ACTION_DOCS);
   });
 
+  it('describes every admin mutation action and no other', () => {
+    expect(Object.keys(ADMIN_MUTATION_ACTION_DOCS).sort()).toEqual(
+      [...ADMIN_MUTATION_ACTIONS].sort(),
+    );
+    oneParagraph(ADMIN_MUTATION_ACTION_DOCS);
+  });
+
   it('describes every event type, the free-form one included', () => {
     expect(Object.keys(AUDIT_EVENT_TYPE_DOCS).sort()).toEqual([...AUDIT_EVENT_TYPES].sort());
     oneParagraph(AUDIT_EVENT_TYPE_DOCS);
@@ -28,7 +42,7 @@ describe('the audit vocabulary reference', () => {
 
   it('describes every reason and the three outcomes', () => {
     expect(Object.keys(AUDIT_REASON_DOCS).sort()).toEqual([...AUDIT_REASONS].sort());
-    expect(Object.keys(AUDIT_OUTCOME_DOCS).sort()).toEqual(['allowed', 'failed', 'refused']);
+    expect(Object.keys(AUDIT_OUTCOME_DOCS).sort()).toEqual([...AUDIT_OUTCOMES].sort());
     oneParagraph(AUDIT_REASON_DOCS);
     oneParagraph(AUDIT_OUTCOME_DOCS);
   });

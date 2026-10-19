@@ -9,11 +9,12 @@ import { sendHtml } from '#/view/html-response';
 import { t } from '#/view/messages';
 import { type ContinuationDeps } from '#/view/routes/continuation';
 import { issuerBaseFor } from '#/view/issuer';
+import { type AuthorizationErrorCode } from '#/service/oauth-errors';
 
 // RFC 6749 §4.1.2.1 / OIDC Core §3.1.2.6: `access_denied`, since the sign-in
 // was not completed and nothing was granted. `login_required` is defined for
 // a request that forbids interaction, which this was not.
-const NOT_COMPLETED = 'access_denied';
+const NOT_COMPLETED: AuthorizationErrorCode = 'access_denied';
 
 // A request the restart link cannot rebuild faithfully (one tied to a
 // subject by a hint) can still be handed back to the application, which

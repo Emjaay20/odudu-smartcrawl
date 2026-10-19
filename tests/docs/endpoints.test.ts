@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
-  servedEndpoints,
-  servingApp,
+  ENDPOINT_DOCS,
+  NOT_LISTED,
   type ServedEndpoint,
-} from '../../apps/server/src/served-routes.js';
+} from '../../apps/server/src/endpoint-docs.js';
+import { servingApp } from '../../apps/server/src/testing/served-routes.js';
 import { backticked, loadDocument, tableWithHeadings } from './markdown.js';
 
 // Two documents, one endpoint table shape: `docs/request-paths.md` is the
@@ -11,11 +12,6 @@ import { backticked, loadDocument, tableWithHeadings } from './markdown.js';
 // documented in either satisfies this check — see `docs/admin-paths.md`'s
 // header for why they are separate documents.
 const DOCUMENTS = ['docs/request-paths.md', 'docs/admin-paths.md'] as const;
-
-// `@fastify/cors` registers this catch-all preflight responder itself
-// (`packages/protocol-oidc/src/view/routes/cors.ts`) — plumbing for every
-// route CORS applies to, not a protocol endpoint a client is told to call.
-const CORS_PREFLIGHT_CATCHALL = 'OPTIONS *';
 
 function format(endpoint: ServedEndpoint): string {
   return `${endpoint.method} ${endpoint.url}`;
@@ -34,7 +30,7 @@ function documentedIn(path: string): ServedEndpoint[] {
 
 describe('the endpoints docs/request-paths.md and docs/admin-paths.md list are the endpoints the server serves', () => {
   it('serves every endpoint each document tells a reader to call', async () => {
-    const app = await servingApp();
+    const { app } = await servingApp();
 
     for (const document of DOCUMENTS) {
       const missing = documentedIn(document).filter(
@@ -48,16 +44,20 @@ describe('the endpoints docs/request-paths.md and docs/admin-paths.md list are t
     }
   });
 
-  it('documents every endpoint the server serves, in one of the two', async () => {
-    const app = await servingApp();
-    const claimed = new Set(DOCUMENTS.flatMap((document) => documentedIn(document).map(format)));
-    const undocumented = servedEndpoints(app)
-      .map(format)
-      .filter((endpoint) => endpoint !== CORS_PREFLIGHT_CATCHALL && !claimed.has(endpoint));
+  // The console gateway and the stylesheet are described by the generated
+  // endpoint reference, whose own test holds it to the server.
+  it('documents every endpoint the server serves, in one of the two or in the endpoint reference', async () => {
+    const { endpoints } = await servingApp();
+    const claimed = new Set([
+      ...DOCUMENTS.flatMap((document) => documentedIn(document).map(format)),
+      ...Object.keys(ENDPOINT_DOCS),
+      ...NOT_LISTED,
+    ]);
+    const undocumented = endpoints.map(format).filter((endpoint) => !claimed.has(endpoint));
 
     expect(
       undocumented,
-      `these endpoints are served but absent from both ${DOCUMENTS.join(' and ')}`,
+      `these endpoints are served but absent from ${DOCUMENTS.join(', ')} and ENDPOINT_DOCS`,
     ).toEqual([]);
   });
 });

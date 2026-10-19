@@ -79,4 +79,13 @@ describe('renderMarkdown', () => {
     }
     expect(text).not.toMatch(/```[a-z]/);
   });
+
+  it('writes a usage line that promises options only where there are some', () => {
+    const text = renderMarkdown(CLI_COMMANDS);
+
+    expect(text).toContain('```\nodudu --version\n```');
+    expect(text).toContain('```\nodudu reap\n```');
+    expect(text).toContain('```\nodudu init [options]\n```');
+    expect(text).toContain('```\nodudu seed <command> [options]\n```');
+  });
 });

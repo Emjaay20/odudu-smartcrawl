@@ -1,3 +1,4 @@
+import { type AdminMutationAction } from '#/service/admin-mutation-actions';
 // The fixed vocabulary of audit actions this server writes, grouped by the
 // event type they belong under. `admin_mutation` is not here: admin
 // mutations' action strings are free-form, one per resource mutation, and
@@ -67,7 +68,8 @@ export const AUDIT_REASONS = [
 
 export type AuditReason = (typeof AUDIT_REASONS)[number];
 
-export type AuditOutcome = 'allowed' | 'refused' | 'failed';
+export const AUDIT_OUTCOMES = ['allowed', 'refused', 'failed'] as const;
+export type AuditOutcome = (typeof AUDIT_OUTCOMES)[number];
 
 interface EventCommon {
   readonly outcome: AuditOutcome;
@@ -90,7 +92,7 @@ type ReasonOnly = Readonly<{ reason?: AuditReason }>;
 
 export interface AdminMutationInput extends EventCommon {
   readonly eventType: 'admin_mutation';
-  readonly action: string;
+  readonly action: AdminMutationAction;
   readonly detail?: Record<string, unknown> | undefined;
 }
 

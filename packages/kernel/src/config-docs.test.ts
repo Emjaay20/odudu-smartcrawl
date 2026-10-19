@@ -101,3 +101,20 @@ describe('the configuration reference', () => {
     }
   });
 });
+
+describe('what the server cannot start without', () => {
+  it('names the conditions under which an optional key is required, and only for these keys', () => {
+    const conditional = rows()
+      .filter((entry) => entry.requiredWhen !== undefined)
+      .map((entry) => entry.name)
+      .sort();
+    expect(conditional).toEqual([
+      'ODUDU_APP_DATABASE_URL',
+      'ODUDU_CONSOLE_CLIENT_KEY',
+      'ODUDU_PUBLIC_BASE_URL',
+      'ODUDU_SMTP_FROM',
+      'ODUDU_TLS',
+    ]);
+    expect(row('ODUDU_PUBLIC_BASE_URL').requiredWhen).toContain('console is on');
+  });
+});

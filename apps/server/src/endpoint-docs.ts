@@ -1,4 +1,4 @@
-import { type ServedEndpoint } from '#/served-routes';
+const ALL_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 
 export const ENDPOINT_AUTH = [
   'None',
@@ -8,6 +8,7 @@ export const ENDPOINT_AUTH = [
   'Access token',
   'Initial access token (optional)',
   'Session cookie or ID token hint',
+  'Console session',
 ] as const;
 
 export type EndpointAuth = (typeof ENDPOINT_AUTH)[number];
@@ -17,12 +18,29 @@ interface EndpointDoc {
   readonly purpose: string;
 }
 
+export interface ServedEndpoint {
+  readonly method: string;
+  readonly url: string;
+}
+
 export function endpointKey(endpoint: ServedEndpoint): string {
   return `${endpoint.method} ${endpoint.url}`;
 }
 
 const OIDC = '/tenants/:tenant/protocol/openid-connect';
 const LOGIN = '/tenants/:tenant/login-actions';
+
+// Routes that exist only so a path nothing else claims answers `404` rather than
+// falling through to a shallower wildcard (`claimPrefix` in the console gateway), and
+// the CORS preflight responder `@fastify/cors` registers. Not endpoints a client calls.
+const CLAIMED_PREFIXES = ['/console/auth', '/console/api'] as const;
+
+export const NOT_LISTED: ReadonlySet<string> = new Set([
+  'OPTIONS *',
+  ...CLAIMED_PREFIXES.flatMap((prefix) =>
+    ALL_METHODS.flatMap((method) => [`${method} ${prefix}`, `${method} ${prefix}/*`]),
+  ),
+]);
 
 // Every endpoint but the admin API's operations, which its OpenAPI document
 // lists. Keyed by method and path as Fastify spells it, with `:tenant` for the
@@ -136,4 +154,52 @@ export const ENDPOINT_DOCS: Readonly<Record<string, EndpointDoc>> = {
     auth: 'None',
     purpose: 'Requests a password reset link by mail.',
   },
+  'GET /instrument/*': {
+    auth: 'None',
+    purpose: 'The stylesheet, mark and fonts every server-rendered page links.',
+  },
+  'GET /console': {
+    auth: 'None',
+    purpose: 'Redirects to `/console/`, the admin console.',
+  },
+  'GET /console/*': {
+    auth: 'None',
+    purpose: 'The admin console\u2019s single-page app: its shell and static files.',
+  },
+  'GET /console/auth/login': {
+    auth: 'None',
+    purpose:
+      'Starts the console\u2019s sign-in for the tenant in the `tenant` query parameter, by sending the browser to that tenant\u2019s authorization endpoint.',
+  },
+  'GET /console/auth/callback': {
+    auth: 'None',
+    purpose: 'Receives the authorization response, redeems the code and starts a console session.',
+  },
+  'POST /console/auth/logout': {
+    auth: 'Console session',
+    purpose:
+      'Ends the console session, clears its cookie and answers where to send the browser to finish signing out.',
+  },
+  'GET /console/api/session': {
+    auth: 'Console session',
+    purpose: 'Says which tenant and user the console session belongs to.',
+  },
+  'GET /console/api/tenants/:tenant/discovery': {
+    auth: 'Console session',
+    purpose: 'A tenant\u2019s discovery document, with the issuer the public address gives.',
+  },
+  'GET /console/api/tenants/:tenant/jwks': {
+    auth: 'Console session',
+    purpose: 'A tenant\u2019s public signing keys.',
+  },
+  ...Object.fromEntries(
+    ALL_METHODS.map((method) => [
+      `${method} /console/api/admin/*`,
+      {
+        auth: 'Console session',
+        purpose:
+          'Forwards an admin API call under `/admin/` with the console\u2019s own credentials for the signed-in user.',
+      },
+    ]),
+  ),
 };

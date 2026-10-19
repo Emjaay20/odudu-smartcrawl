@@ -1,3 +1,4 @@
+import { type UserinfoErrorCode } from '#/service/oauth-errors';
 import { type Clock, systemClock } from '@odudu/kernel';
 import { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import { corsHeadersForRequest } from '#/service/cors';
@@ -67,19 +68,19 @@ async function respondToUserinfoRequest(
       return reply
         .headers(corsHeaders)
         .code(400)
-        .header('www-authenticate', `${CHALLENGE}, error="invalid_request"`)
+        .header('www-authenticate', challengeFor('invalid_request'))
         .send();
     case 'invalid_token':
       return reply
         .headers(corsHeaders)
         .code(401)
-        .header('www-authenticate', `${CHALLENGE}, error="invalid_token"`)
+        .header('www-authenticate', challengeFor('invalid_token'))
         .send();
     case 'insufficient_scope':
       return reply
         .headers(corsHeaders)
         .code(403)
-        .header('www-authenticate', `${CHALLENGE}, error="insufficient_scope"`)
+        .header('www-authenticate', challengeFor('insufficient_scope'))
         .send();
     // Not the token's fault, so no `WWW-Authenticate` challenge; no body
     // either — logged below instead, for whoever operates this tenant.
@@ -115,6 +116,10 @@ async function respondToUserinfoRequest(
 
 export interface UserinfoRouteDeps extends UserinfoDeps {
   clock?: Clock;
+}
+
+function challengeFor(error: UserinfoErrorCode): string {
+  return `${CHALLENGE}, error="${error}"`;
 }
 
 export function registerUserinfoRoute(app: FastifyInstance, deps: UserinfoRouteDeps): void {

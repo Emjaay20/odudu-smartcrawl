@@ -30,6 +30,21 @@ function emitted(): Set<string> {
   return found;
 }
 
+// The statuses the routes give each type: `problem(status, 'about:blank#x', …)`, the
+// same call spread over lines, or `fieldProblem(…, 'about:blank#x')`, which is a 400.
+function statusesWritten(name: string): Set<number> {
+  const found = new Set<number>();
+  const type = name === 'audit-query-too-broad' ? 'AUDIT_QUERY_TOO_BROAD' : `'about:blank#${name}'`;
+  for (const file of sources(ROUTES)) {
+    const text = readFileSync(file, 'utf8');
+    for (const match of text.matchAll(/\bproblem\(\s*(\d{3}),\s*([^,]+),/gu)) {
+      if (match[2]?.trim() === type && match[1] !== undefined) found.add(Number(match[1]));
+    }
+    if (new RegExp(`fieldProblem\\([\\s\\S]{0,600}?${type}`, 'u').test(text)) found.add(400);
+  }
+  return found;
+}
+
 describe('the admin problem types', () => {
   it('lists every type the routes write and no other', () => {
     const fragments = emitted();
@@ -40,6 +55,12 @@ describe('the admin problem types', () => {
   it('writes each type as the URI a client receives', () => {
     expect(problemTypeUri('last-administrator')).toBe('about:blank#last-administrator');
     expect(problemTypeUri('audit-query-too-broad')).toBe(AUDIT_QUERY_TOO_BROAD);
+  });
+
+  it('gives each type the status the routes answer it with', () => {
+    for (const [name, entry] of Object.entries(ADMIN_PROBLEM_TYPES)) {
+      expect([...statusesWritten(name)], name).toContain(entry.status);
+    }
   });
 
   it('gives every type an HTTP status and a one-paragraph meaning', () => {

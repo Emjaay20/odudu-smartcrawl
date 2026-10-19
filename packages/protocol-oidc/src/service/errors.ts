@@ -1,3 +1,4 @@
+import { type TokenErrorCode } from '#/service/oauth-errors';
 import { type AuditAction, type AuditReason } from '@odudu/domain-audit';
 
 export interface TokenRefusalAudit {
@@ -11,14 +12,7 @@ export interface TokenRefusalAudit {
   readonly method?: string;
 }
 
-export type TokenErrorCode =
-  | 'invalid_request'
-  | 'invalid_client'
-  | 'invalid_grant'
-  | 'unsupported_grant_type'
-  | 'invalid_scope'
-  | 'unauthorized_client'
-  | 'invalid_target';
+export type { TokenErrorCode } from '#/service/oauth-errors';
 
 // The one shape every /token failure reports through. `invalidGrant()` in
 // particular is called from every distinct way an authorization_code

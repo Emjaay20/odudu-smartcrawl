@@ -4,6 +4,7 @@ import { type ClientOidcConfig } from '#/schema/client-oidc-config';
 import { isWellFormedPkceString } from '#/service/pkce';
 import { parsePrompt, type PromptValue } from '#/service/prompt';
 import { isRegisteredRedirectUri } from '#/service/redirect-uri';
+import { type AuthorizationErrorCode } from '#/service/oauth-errors';
 
 export type AuthorizeOutcome =
   | {
@@ -22,8 +23,8 @@ export type AuthorizeOutcome =
       // reason — neither is answerable from the request parameters alone.
       maxAge: number | null;
     }
-  | { kind: 'render'; error: string; description: string }
-  | { kind: 'redirect'; redirectUri: string; error: string; state: string | null };
+  | { kind: 'render'; error: AuthorizationErrorCode; description: string }
+  | { kind: 'redirect'; redirectUri: string; error: AuthorizationErrorCode; state: string | null };
 
 // The only Response Mode Odudu answers in, and the default one for
 // `response_type=code` (OIDC Core §3.1.2.1). `fragment` and `form_post`
@@ -129,7 +130,7 @@ export function validateAuthorizationRequest(
 
   // Below the boundary: redirect_uri is trusted, so errors go back to it.
   const state = params.state ?? null;
-  const reject = (error: string): AuthorizeOutcome => ({
+  const reject = (error: AuthorizationErrorCode): AuthorizeOutcome => ({
     kind: 'redirect',
     redirectUri,
     error,
