@@ -1,9 +1,4 @@
-import {
-  DEFAULT_PAGE_LOCALE,
-  type PageLocale,
-  pageHeaders,
-  type RenderedPage,
-} from '@odudu/kernel';
+import { type PageLocale, pageHeaders, type RenderedPage } from '@odudu/kernel';
 import { type FastifyReply } from 'fastify';
 import { page } from '#/view/document';
 
@@ -19,9 +14,7 @@ export function sendVerificationHtml(
   return withHeaders.send(rendered.html);
 }
 
-export function renderVerificationSucceededPage(
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
-): RenderedPage {
+export function renderVerificationSucceededPage(locale: PageLocale): RenderedPage {
   return page(
     'Email verified',
     `<h1>Your email address is verified</h1>
@@ -32,9 +25,7 @@ export function renderVerificationSucceededPage(
   );
 }
 
-export function renderVerificationFailedPage(
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
-): RenderedPage {
+export function renderVerificationFailedPage(locale: PageLocale): RenderedPage {
   return page(
     "Can't verify this link",
     `<h1>This link can't be used</h1>

@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_LOCALE } from '@odudu/kernel';
 import { describe, expect, it } from 'vitest';
 import { renderTotpEnrolmentPage } from '#/view/totp-enrolment-html';
 
@@ -15,14 +16,26 @@ function expectFragment(page: { html: string; body: string }): void {
 
 describe('renderTotpEnrolmentPage', () => {
   it('returns a body fragment and a title beside the document', () => {
-    const page = renderTotpEnrolmentPage('acme', 'auth-session-1', OFFER);
+    const page = renderTotpEnrolmentPage(
+      'acme',
+      'auth-session-1',
+      OFFER,
+      undefined,
+      DEFAULT_PAGE_LOCALE,
+    );
     expect(page.title).toBe('Set up your authenticator');
     expect(page.body).toContain('Scan this with your authenticator app');
     expectFragment(page);
   });
 
   it('draws the URI as a QR code as well as text', () => {
-    const page = renderTotpEnrolmentPage('acme', 'auth-session-1', OFFER);
+    const page = renderTotpEnrolmentPage(
+      'acme',
+      'auth-session-1',
+      OFFER,
+      undefined,
+      DEFAULT_PAGE_LOCALE,
+    );
 
     expect(page.html).toContain('<svg');
     expect(page.html).toContain('</svg>');
@@ -34,7 +47,13 @@ describe('renderTotpEnrolmentPage', () => {
   // back, and the same escaping is what keeps an interpolated value from
   // closing the tag it sits in.
   it('escapes the URI where it appears as text', () => {
-    const page = renderTotpEnrolmentPage('acme', 'auth-session-1', OFFER);
+    const page = renderTotpEnrolmentPage(
+      'acme',
+      'auth-session-1',
+      OFFER,
+      undefined,
+      DEFAULT_PAGE_LOCALE,
+    );
 
     expect(page.html).toContain(
       '<code>otpauth://totp/acme:ada?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&amp;issuer=acme&amp;algorithm=SHA1&amp;digits=6&amp;period=30</code>',
@@ -48,6 +67,7 @@ describe('renderTotpEnrolmentPage', () => {
       'session"><script>',
       OFFER,
       'wrong <code>',
+      DEFAULT_PAGE_LOCALE,
     );
 
     expect(page.html).not.toContain('<script>');
@@ -56,10 +76,15 @@ describe('renderTotpEnrolmentPage', () => {
   });
 
   it('says nothing about an error when there is none', () => {
-    expect(renderTotpEnrolmentPage('acme', 'auth-session-1', OFFER).html).not.toContain('<strong>');
+    expect(
+      renderTotpEnrolmentPage('acme', 'auth-session-1', OFFER, undefined, DEFAULT_PAGE_LOCALE).html,
+    ).not.toContain('<strong>');
   });
 
   it('needs no script, so the page asks for no policy beyond the base one', () => {
-    expect(renderTotpEnrolmentPage('acme', 'auth-session-1', OFFER).script).toBeNull();
+    expect(
+      renderTotpEnrolmentPage('acme', 'auth-session-1', OFFER, undefined, DEFAULT_PAGE_LOCALE)
+        .script,
+    ).toBeNull();
   });
 });

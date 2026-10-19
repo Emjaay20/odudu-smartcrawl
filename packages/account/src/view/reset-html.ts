@@ -1,13 +1,10 @@
-import { DEFAULT_PAGE_LOCALE, type PageLocale, type RenderedPage } from '@odudu/kernel';
+import { type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { sendVerificationHtml } from '#/view/verification-html';
 import { escapeHtml, page } from '#/view/document';
 
 export { sendVerificationHtml as sendResetHtml };
 
-export function renderResetRequestForm(
-  tenant: string,
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
-): RenderedPage {
+export function renderResetRequestForm(tenant: string, locale: PageLocale): RenderedPage {
   const action = `/tenants/${escapeHtml(tenant)}/login-actions/reset-password`;
   return page(
     'Forgot your password?',
@@ -24,7 +21,7 @@ export function renderResetRequestForm(
 // The whole point: this text is identical whether or not the address
 // exists, and the route must reach it either way — see
 // #/usecase/reset-password.ts's requestPasswordReset.
-export function renderResetRequestedPage(locale: PageLocale = DEFAULT_PAGE_LOCALE): RenderedPage {
+export function renderResetRequestedPage(locale: PageLocale): RenderedPage {
   return page(
     'Check your email',
     `<h1>Check your email</h1>
@@ -35,10 +32,7 @@ export function renderResetRequestedPage(locale: PageLocale = DEFAULT_PAGE_LOCAL
   );
 }
 
-export function renderResetRequestFailedPage(
-  message: string,
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
-): RenderedPage {
+export function renderResetRequestFailedPage(message: string, locale: PageLocale): RenderedPage {
   return page(
     "Can't send a reset link",
     `<h1>Can't send a reset link</h1>
@@ -52,7 +46,7 @@ export function renderResetRequestFailedPage(
 export function renderResetPasswordForm(
   tenant: string,
   key: string,
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+  locale: PageLocale,
 ): RenderedPage {
   const action = `/tenants/${escapeHtml(tenant)}/login-actions/action-token`;
   return page(
@@ -68,9 +62,7 @@ export function renderResetPasswordForm(
   );
 }
 
-export function renderResetPasswordSucceededPage(
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
-): RenderedPage {
+export function renderResetPasswordSucceededPage(locale: PageLocale): RenderedPage {
   return page(
     'Password reset',
     `<h1>Your password has been reset</h1>
@@ -81,7 +73,7 @@ export function renderResetPasswordSucceededPage(
   );
 }
 
-export function renderResetLinkFailedPage(locale: PageLocale = DEFAULT_PAGE_LOCALE): RenderedPage {
+export function renderResetLinkFailedPage(locale: PageLocale): RenderedPage {
   return page(
     "Can't use this link",
     `<h1>This link can't be used</h1>
@@ -97,7 +89,7 @@ export function renderResetLinkFailedPage(locale: PageLocale = DEFAULT_PAGE_LOCA
 // request a new one. Every reason is listed, not just the first.
 export function renderResetPasswordWeakPage(
   messages: readonly string[],
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+  locale: PageLocale,
 ): RenderedPage {
   const items = messages.map((message) => `<li>${escapeHtml(message)}</li>`).join('\n');
   return page(
@@ -115,9 +107,7 @@ ${items}
 // Distinct from renderResetLinkFailedPage: reached only when the key is
 // present and unexamined, so the link itself may be perfectly good — the
 // submission was just missing the one field that matters.
-export function renderResetPasswordRequiredPage(
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
-): RenderedPage {
+export function renderResetPasswordRequiredPage(locale: PageLocale): RenderedPage {
   return page(
     "Can't reset your password",
     `<h1>Can't reset your password</h1>

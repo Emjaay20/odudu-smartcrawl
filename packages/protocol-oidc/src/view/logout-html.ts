@@ -1,4 +1,4 @@
-import { DEFAULT_PAGE_LOCALE, type PageLocale, type RenderedPage } from '@odudu/kernel';
+import { type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { escapeHtml, page } from '#/view/document';
 
 function hiddenField(name: string, value: string | null): string {
@@ -24,7 +24,7 @@ export function renderLogoutConfirmationPage(
   sessionId: string,
   csrf: string,
   fields: LogoutConfirmationFields,
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+  locale: PageLocale,
 ): RenderedPage {
   const action = `/tenants/${escapeHtml(tenant)}/protocol/openid-connect/logout`;
   return page(
@@ -45,7 +45,7 @@ export function renderLogoutConfirmationPage(
 // Reached when there is no live session to end at all — a missing or
 // expired cookie, or one scoped to a different tenant. Nothing to confirm,
 // so no form: confirming would end nothing anyway.
-export function renderNoActiveSessionPage(locale: PageLocale = DEFAULT_PAGE_LOCALE): RenderedPage {
+export function renderNoActiveSessionPage(locale: PageLocale): RenderedPage {
   return page(
     'Already signed out',
     `<h1>Already signed out</h1>
@@ -66,7 +66,7 @@ export function renderNoActiveSessionPage(locale: PageLocale = DEFAULT_PAGE_LOCA
 // know and does not claim to.
 export function renderLoggedOutPage(
   frontChannelLogoutUrls: readonly string[] = [],
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+  locale: PageLocale,
 ): RenderedPage {
   const iframes = frontChannelLogoutUrls
     .map((url) => `<iframe src="${escapeHtml(url)}"></iframe>`)
@@ -90,7 +90,7 @@ ${iframes}`,
 // than redirecting, so the same iframe opportunity applies.
 export function renderLogoutRedirectRefusedPage(
   frontChannelLogoutUrls: readonly string[] = [],
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+  locale: PageLocale,
 ): RenderedPage {
   const iframes = frontChannelLogoutUrls
     .map((url) => `<iframe src="${escapeHtml(url)}"></iframe>`)
@@ -110,9 +110,7 @@ ${iframes}`,
 // The confirmation form's CSRF defence failed — the hidden session id does
 // not name the session the cookie itself resolves to. Nothing was ended;
 // see #/usecase/logout.ts's `unauthenticated` outcome.
-export function renderLogoutUnauthenticatedPage(
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
-): RenderedPage {
+export function renderLogoutUnauthenticatedPage(locale: PageLocale): RenderedPage {
   return page(
     "Can't sign out",
     `<h1>Can't sign out</h1>

@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_LOCALE } from '@odudu/kernel';
 import { describe, expect, it } from 'vitest';
 import { renderConsentPage } from '#/view/consent-html';
 
@@ -14,7 +15,10 @@ const BASE = {
 
 describe('renderConsentPage', () => {
   it('escapes a hostile client name and never emits the raw form', () => {
-    const page = renderConsentPage({ ...BASE, clientName: '<script>alert(1)</script>' });
+    const page = renderConsentPage(
+      { ...BASE, clientName: '<script>alert(1)</script>' },
+      DEFAULT_PAGE_LOCALE,
+    );
     // A test that only asserts the escaped form is present would also pass
     // against a page that emits both the escaped and the raw string — the
     // negative assertion is what proves the raw markup never reaches the
@@ -25,14 +29,17 @@ describe('renderConsentPage', () => {
   });
 
   it('links each page the client registered, escaped, and no other', () => {
-    const page = renderConsentPage({
-      ...BASE,
-      clientPages: {
-        clientUri: 'https://acme.example/?a=1&b="x"',
-        policyUri: null,
-        tosUri: 'https://acme.example/terms',
+    const page = renderConsentPage(
+      {
+        ...BASE,
+        clientPages: {
+          clientUri: 'https://acme.example/?a=1&b="x"',
+          policyUri: null,
+          tosUri: 'https://acme.example/terms',
+        },
       },
-    });
+      DEFAULT_PAGE_LOCALE,
+    );
     expect(page.body).toContain('<a href="https://acme.example/?a=1&amp;b=&quot;x&quot;">');
     expect(page.body).toContain('<a href="https://acme.example/terms">Terms of service</a>');
     expect(page.body).not.toContain('Privacy policy');
@@ -40,11 +47,11 @@ describe('renderConsentPage', () => {
   });
 
   it('renders no link at all for a client that registered no page', () => {
-    expect(renderConsentPage(BASE).body).not.toContain('<a ');
+    expect(renderConsentPage(BASE, DEFAULT_PAGE_LOCALE).body).not.toContain('<a ');
   });
 
   it('lists every default scope without a checkbox', () => {
-    const page = renderConsentPage(BASE);
+    const page = renderConsentPage(BASE, DEFAULT_PAGE_LOCALE);
     for (const scope of BASE.defaultScopes) {
       expect(page.body).toContain(scope);
     }
@@ -56,7 +63,7 @@ describe('renderConsentPage', () => {
   });
 
   it('gives every optional scope a checkbox, pre-ticked when already granted', () => {
-    const page = renderConsentPage(BASE);
+    const page = renderConsentPage(BASE, DEFAULT_PAGE_LOCALE);
     // offline_access was not granted: present as a checkbox, not checked.
     expect(page.body).toMatch(/<input type="checkbox" name="scope" value="offline_access">/);
     // email was granted: same checkbox, but checked — a test asserting only
@@ -72,7 +79,7 @@ describe('renderConsentPage', () => {
   // offline_access alongside every other optional scope would not satisfy
   // this, so pin the distinguishing text rather than just the checkbox.
   it('[OIDC-CORE-16.18-01] identifies offline_access as a long-term grant, not just another optional scope', () => {
-    const page = renderConsentPage(BASE);
+    const page = renderConsentPage(BASE, DEFAULT_PAGE_LOCALE);
     expect(page.body).toMatch(/offline_access[^<]*ongoing access/);
     // A scope with no such note (email) proves the distinction is drawn
     // deliberately, not emitted for every optional scope alike.
@@ -80,7 +87,7 @@ describe('renderConsentPage', () => {
   });
 
   it('gives Allow and Deny distinguishable submitted values', () => {
-    const page = renderConsentPage(BASE);
+    const page = renderConsentPage(BASE, DEFAULT_PAGE_LOCALE);
     expect(page.body).toMatch(/<button type="submit" name="decision" value="allow">/);
     expect(page.body).toMatch(/<button type="submit" name="decision" value="deny">/);
     // Same name, different value: a form that instead rendered two buttons
@@ -89,18 +96,18 @@ describe('renderConsentPage', () => {
   });
 
   it('carries auth_session_id as a hidden field', () => {
-    const page = renderConsentPage(BASE);
+    const page = renderConsentPage(BASE, DEFAULT_PAGE_LOCALE);
     expect(page.body).toContain('<input type="hidden" name="auth_session_id" value="session-id">');
   });
 
   it('renders no script, matching a null CSP script directive', () => {
-    const page = renderConsentPage(BASE);
+    const page = renderConsentPage(BASE, DEFAULT_PAGE_LOCALE);
     expect(page.script).toBeNull();
     expect(page.body).not.toContain('<script');
   });
 
   it('returns a body fragment and a title beside the document', () => {
-    const page = renderConsentPage(BASE);
+    const page = renderConsentPage(BASE, DEFAULT_PAGE_LOCALE);
     expect(page.body).not.toContain('<!doctype');
     expect(page.body).not.toContain('<html');
     expect(page.html).toContain('<!doctype html>');
@@ -108,10 +115,13 @@ describe('renderConsentPage', () => {
   });
 
   it('shows a scope by its consent text, escaped, and posts its name', () => {
-    const page = renderConsentPage({
-      ...BASE,
-      scopeLabels: { profile: 'Your <name> & "picture"', email: 'Your address' },
-    });
+    const page = renderConsentPage(
+      {
+        ...BASE,
+        scopeLabels: { profile: 'Your <name> & "picture"', email: 'Your address' },
+      },
+      DEFAULT_PAGE_LOCALE,
+    );
     expect(page.body).toContain('<li>Your &lt;name&gt; &amp; &quot;picture&quot;</li>');
     expect(page.body).toContain('value="email" checked> Your address</label>');
     expect(page.body).toContain('<li>openid</li>');

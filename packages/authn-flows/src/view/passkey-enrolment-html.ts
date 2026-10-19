@@ -1,9 +1,4 @@
-import {
-  DEFAULT_PAGE_LOCALE,
-  type PageLocale,
-  scriptNonce,
-  type RenderedPage,
-} from '@odudu/kernel';
+import { type PageLocale, scriptNonce, type RenderedPage } from '@odudu/kernel';
 import { escapeHtml, page } from '#/view/document';
 import { type PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/server';
 
@@ -40,8 +35,8 @@ export function renderPasskeyEnrolmentPage(
   tenant: string,
   authSessionId: string,
   offer: PasskeyEnrolmentOffer,
-  error?: string,
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+  error: string | undefined,
+  locale: PageLocale,
 ): RenderedPage {
   // Minted here and handed back with the markup that carries it, so the
   // policy served with this page cannot name a different value — a refused

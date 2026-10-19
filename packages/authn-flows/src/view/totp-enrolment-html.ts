@@ -1,5 +1,5 @@
 import qrcode from 'qrcode-generator';
-import { DEFAULT_PAGE_LOCALE, type PageLocale, type RenderedPage } from '@odudu/kernel';
+import { type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { escapeHtml, page } from '#/view/document';
 
 // What an enrolment page has to show: the secret in the form the user's
@@ -30,8 +30,8 @@ export function renderTotpEnrolmentPage(
   tenant: string,
   authSessionId: string,
   offer: TotpEnrolmentOffer,
-  error?: string,
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+  error: string | undefined,
+  locale: PageLocale,
 ): RenderedPage {
   const target = `/tenants/${escapeHtml(tenant)}/login-actions/required-action?action=configure-totp`;
   const message = error === undefined ? '' : `<p><strong>${escapeHtml(error)}</strong></p>\n`;

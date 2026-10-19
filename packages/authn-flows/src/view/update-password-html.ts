@@ -1,4 +1,4 @@
-import { DEFAULT_PAGE_LOCALE, type PageLocale, type RenderedPage } from '@odudu/kernel';
+import { type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { escapeHtml, page } from '#/view/document';
 
 // The page a login parks on while `update-password` is owed, and the page a
@@ -11,7 +11,7 @@ export function renderUpdatePasswordPage(
   tenant: string,
   authSessionId: string,
   violations: readonly string[] = [],
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+  locale: PageLocale,
 ): RenderedPage {
   const target = `/tenants/${escapeHtml(tenant)}/login-actions/required-action?action=update-password`;
   const listed =

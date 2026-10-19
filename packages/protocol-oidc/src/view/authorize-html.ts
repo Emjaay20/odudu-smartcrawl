@@ -1,9 +1,4 @@
-import {
-  DEFAULT_PAGE_LOCALE,
-  type PageLocale,
-  scriptNonce,
-  type RenderedPage,
-} from '@odudu/kernel';
+import { type PageLocale, scriptNonce, type RenderedPage } from '@odudu/kernel';
 import { escapeHtml, page } from '#/view/document';
 
 // Where an expired sign-in can go on from. Both hrefs are built from a
@@ -22,8 +17,8 @@ const WAY_ON_LABEL: Record<WayOn['kind'], string> = {
 export function renderAuthorizeErrorPage(
   error: string,
   description: string,
-  wayOn?: WayOn,
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+  wayOn: WayOn | undefined,
+  locale: PageLocale,
 ): RenderedPage {
   const link =
     wayOn === undefined
@@ -46,10 +41,7 @@ export function renderAuthorizeErrorPage(
 // tenant turning verify_email on locks these accounts out with nothing they
 // can do about it, so the page says that rather than claiming a mail it
 // never sent.
-export function renderEmailUnverifiedPage(
-  hasEmail: boolean,
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
-): RenderedPage {
+export function renderEmailUnverifiedPage(hasEmail: boolean, locale: PageLocale): RenderedPage {
   const detail = hasEmail
     ? 'We sent a link to the address on this account — follow it, then sign in again.'
     : 'This account has no email address on file, so there is nothing to verify yet. Contact an administrator.';
@@ -224,11 +216,11 @@ export function renderLoginForm(
   rememberMeAllowed = false,
   // Shown above the fields after a refused step — see
   // LoginSubmissionOutcome's `reject`.
-  refusal?: LoginFormRefusal,
+  refusal: LoginFormRefusal | undefined,
   // The tenant's `login_with_email`: only the label changes, since the
   // field takes either and the server decides which it names.
   loginWithEmail = false,
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+  locale: PageLocale,
 ): RenderedPage {
   const action = `/tenants/${escapeHtml(tenant)}/login-actions/authenticate`;
   // Beside the password and nowhere else: a passkey is an alternative to

@@ -1,10 +1,7 @@
-import { DEFAULT_PAGE_LOCALE, type PageLocale, type RenderedPage } from '@odudu/kernel';
+import { type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { escapeHtml, page } from '#/view/document';
 
-export function renderRegistrationForm(
-  tenant: string,
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
-): RenderedPage {
+export function renderRegistrationForm(tenant: string, locale: PageLocale): RenderedPage {
   const action = `/tenants/${escapeHtml(tenant)}/login-actions/registration`;
   return page(
     'Create account',
@@ -25,7 +22,7 @@ export function renderRegistrationForm(
 // satisfy.
 export function renderRegistrationFailedPage(
   messages: readonly string[],
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+  locale: PageLocale,
 ): RenderedPage {
   const items = messages.map((message) => `<li>${escapeHtml(message)}</li>`).join('\n');
   return page(
@@ -45,7 +42,7 @@ ${items}
 // page must not claim otherwise.
 export function renderRegistrationSucceededPage(
   verifyEmailRequired: boolean,
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+  locale: PageLocale,
 ): RenderedPage {
   const next = verifyEmailRequired
     ? '<p>Check your email for a link to verify your address before you can sign in.</p>'

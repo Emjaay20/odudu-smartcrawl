@@ -706,3 +706,11 @@ semver tag there.
   Instrument shell's stylesheet link broke; it now asserts no anchor.
 - `content-language: en` was added to every recorded page header block in the
   three guides (22), and `ui_locales_supported` to the discovery transcripts.
+- Fix round 2: every renderer's `locale` is required (a forgotten argument no
+  longer compiles; the lint still checks provenance); `subjectLocale` has an
+  integration test (`ui-locales-subject.int.test.ts`) with a foreign-tenant
+  probe; `pageHeaders` also refuses a `dir` outside `ltr`/`rtl`. Left as is:
+  `required-action-response.ts` resolves the authenticated subject itself for
+  the recovery-codes gate and `continuation()` takes the subject it is handed,
+  so no page asks twice for the same thing today; fold them if increments 14 to
+  16 add a per-page lookup.

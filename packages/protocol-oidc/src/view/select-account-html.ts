@@ -1,4 +1,4 @@
-import { DEFAULT_PAGE_LOCALE, type PageLocale, type RenderedPage } from '@odudu/kernel';
+import { type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { escapeHtml, page } from '#/view/document';
 
 export interface SelectAccountEntry {
@@ -24,7 +24,7 @@ function renderAccount(account: SelectAccountEntry): string {
 // control. There is no script on this page, so `script` is null.
 export function renderSelectAccountPage(
   input: SelectAccountInput,
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+  locale: PageLocale,
 ): RenderedPage {
   const action = `/tenants/${escapeHtml(input.tenant)}/login-actions/select-account`;
   const accountList = input.accounts.map(renderAccount).join('\n  ');

@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_LOCALE } from '@odudu/kernel';
 import { describe, expect, it } from 'vitest';
 import {
   renderVerificationFailedPage,
@@ -13,7 +14,7 @@ function expectFragment(page: { html: string; body: string }): void {
 
 describe('renderVerificationSucceededPage', () => {
   it('returns a body fragment and a title beside the document', () => {
-    const page = renderVerificationSucceededPage();
+    const page = renderVerificationSucceededPage(DEFAULT_PAGE_LOCALE);
     expect(page.title).toBe('Email verified');
     expect(page.body).toContain('is verified');
     expectFragment(page);
@@ -22,7 +23,7 @@ describe('renderVerificationSucceededPage', () => {
 
 describe('renderVerificationFailedPage', () => {
   it('returns a body fragment and a title beside the document', () => {
-    const page = renderVerificationFailedPage();
+    const page = renderVerificationFailedPage(DEFAULT_PAGE_LOCALE);
     expect(page.title).toBe("Can't verify this link");
     expect(page.body).toContain("This link can't be used");
     expectFragment(page);

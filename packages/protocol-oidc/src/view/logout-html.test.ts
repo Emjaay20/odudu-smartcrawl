@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_LOCALE } from '@odudu/kernel';
 import { describe, expect, it } from 'vitest';
 import {
   renderLoggedOutPage,
@@ -16,11 +17,17 @@ function expectFragment(page: { html: string; body: string }): void {
 
 describe('renderLogoutConfirmationPage', () => {
   it('returns a body fragment and a title beside the document', () => {
-    const page = renderLogoutConfirmationPage('acme', 'session-id', 'the-token', {
-      clientId: null,
-      postLogoutRedirectUri: null,
-      state: null,
-    });
+    const page = renderLogoutConfirmationPage(
+      'acme',
+      'session-id',
+      'the-token',
+      {
+        clientId: null,
+        postLogoutRedirectUri: null,
+        state: null,
+      },
+      DEFAULT_PAGE_LOCALE,
+    );
     expect(page.title).toBe('Sign out?');
     expect(page.body).toContain('name="session_id"');
     expect(page.body).toContain('<input type="hidden" name="csrf" value="the-token">');
@@ -30,7 +37,7 @@ describe('renderLogoutConfirmationPage', () => {
 
 describe('renderNoActiveSessionPage', () => {
   it('returns a body fragment and a title beside the document', () => {
-    const page = renderNoActiveSessionPage();
+    const page = renderNoActiveSessionPage(DEFAULT_PAGE_LOCALE);
     expect(page.title).toBe('Already signed out');
     expect(page.body).toContain('no active session');
     expectFragment(page);
@@ -39,24 +46,24 @@ describe('renderNoActiveSessionPage', () => {
 
 describe('renderLoggedOutPage', () => {
   it('returns a body fragment and a title beside the document', () => {
-    const page = renderLoggedOutPage();
+    const page = renderLoggedOutPage(undefined, DEFAULT_PAGE_LOCALE);
     expect(page.title).toBe('Signed out');
     expect(page.body).toContain('signed out');
     expectFragment(page);
   });
 
   it('frames each URL it is given, as its own iframe and its own origin', () => {
-    const page = renderLoggedOutPage([
-      'https://rp-one.example/logout?iss=a',
-      'https://rp-two.example/logout?iss=a',
-    ]);
+    const page = renderLoggedOutPage(
+      ['https://rp-one.example/logout?iss=a', 'https://rp-two.example/logout?iss=a'],
+      DEFAULT_PAGE_LOCALE,
+    );
     expect(page.body).toContain('<iframe src="https://rp-one.example/logout?iss=a"></iframe>');
     expect(page.body).toContain('<iframe src="https://rp-two.example/logout?iss=a"></iframe>');
     expect(page.frames).toEqual(['https://rp-one.example', 'https://rp-two.example']);
   });
 
   it('escapes a query character in a framed URL rather than passing it through raw', () => {
-    const page = renderLoggedOutPage(['https://rp.example/logout?a=1&b=2']);
+    const page = renderLoggedOutPage(['https://rp.example/logout?a=1&b=2'], DEFAULT_PAGE_LOCALE);
     expect(page.body).toContain('<iframe src="https://rp.example/logout?a=1&amp;b=2"></iframe>');
     expect(page.body).not.toContain('logout?a=1&b=2"');
   });
@@ -64,7 +71,7 @@ describe('renderLoggedOutPage', () => {
 
 describe('renderLogoutRedirectRefusedPage', () => {
   it('returns a body fragment and a title beside the document', () => {
-    const page = renderLogoutRedirectRefusedPage();
+    const page = renderLogoutRedirectRefusedPage(undefined, DEFAULT_PAGE_LOCALE);
     expect(page.title).toBe('Signed out');
     expect(page.body).toContain('not one this client has registered');
     expectFragment(page);
@@ -73,7 +80,7 @@ describe('renderLogoutRedirectRefusedPage', () => {
 
 describe('renderLogoutUnauthenticatedPage', () => {
   it('returns a body fragment and a title beside the document', () => {
-    const page = renderLogoutUnauthenticatedPage();
+    const page = renderLogoutUnauthenticatedPage(DEFAULT_PAGE_LOCALE);
     expect(page.title).toBe("Can't sign out");
     expect(page.body).toContain('no longer valid');
     expectFragment(page);

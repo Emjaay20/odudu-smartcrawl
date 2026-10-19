@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_LOCALE } from '@odudu/kernel';
 import { describe, expect, it } from 'vitest';
 import {
   renderPasskeyEnrolmentPage,
@@ -17,7 +18,13 @@ const OFFER: PasskeyEnrolmentOffer = {
 
 describe('renderPasskeyEnrolmentPage', () => {
   it('carries the creation options and the field the ceremony fills in', () => {
-    const { html: page } = renderPasskeyEnrolmentPage('acme', 'auth-session-1', OFFER);
+    const { html: page } = renderPasskeyEnrolmentPage(
+      'acme',
+      'auth-session-1',
+      OFFER,
+      undefined,
+      DEFAULT_PAGE_LOCALE,
+    );
 
     expect(page).toContain('"challenge":"Q0hBTExFTkdF"');
     expect(page).toContain('name="credential"');
@@ -30,7 +37,13 @@ describe('renderPasskeyEnrolmentPage', () => {
   // Only the browser can produce a registration response, so a page that
   // did not emit the call is a page nobody can enrol from.
   it('[WEBAUTHN2-7.1.2-01] emits the ceremony itself, and a path for a refusal', () => {
-    const { html: page } = renderPasskeyEnrolmentPage('acme', 'auth-session-1', OFFER);
+    const { html: page } = renderPasskeyEnrolmentPage(
+      'acme',
+      'auth-session-1',
+      OFFER,
+      undefined,
+      DEFAULT_PAGE_LOCALE,
+    );
 
     expect(page).toContain('navigator.credentials.create');
     expect(page).toContain('excludeCredentials');
@@ -43,8 +56,20 @@ describe('renderPasskeyEnrolmentPage', () => {
   // page returns the nonce it used rather than being handed one, which is
   // what makes them impossible to diverge.
   it('carries the nonce it reports, freshly per render', () => {
-    const first = renderPasskeyEnrolmentPage('acme', 'auth-session-1', OFFER);
-    const second = renderPasskeyEnrolmentPage('acme', 'auth-session-1', OFFER);
+    const first = renderPasskeyEnrolmentPage(
+      'acme',
+      'auth-session-1',
+      OFFER,
+      undefined,
+      DEFAULT_PAGE_LOCALE,
+    );
+    const second = renderPasskeyEnrolmentPage(
+      'acme',
+      'auth-session-1',
+      OFFER,
+      undefined,
+      DEFAULT_PAGE_LOCALE,
+    );
 
     expect(first.script?.nonce).toBeDefined();
     expect(first.html).toContain(`<script nonce="${String(first.script?.nonce)}">`);
@@ -55,13 +80,22 @@ describe('renderPasskeyEnrolmentPage', () => {
   // and a directive licensing a request nobody makes has stopped describing
   // the page.
   it('reports that its script fetches nothing', () => {
-    expect(renderPasskeyEnrolmentPage('acme', 'auth-session-1', OFFER).script).toMatchObject({
+    expect(
+      renderPasskeyEnrolmentPage('acme', 'auth-session-1', OFFER, undefined, DEFAULT_PAGE_LOCALE)
+        .script,
+    ).toMatchObject({
       fetchesSameOrigin: false,
     });
   });
 
   it('bounds what can be typed into the label', () => {
-    const { html: page } = renderPasskeyEnrolmentPage('acme', 'auth-session-1', OFFER);
+    const { html: page } = renderPasskeyEnrolmentPage(
+      'acme',
+      'auth-session-1',
+      OFFER,
+      undefined,
+      DEFAULT_PAGE_LOCALE,
+    );
 
     expect(page).toContain('name="label"');
     expect(page).toContain('maxlength="64"');
@@ -73,6 +107,7 @@ describe('renderPasskeyEnrolmentPage', () => {
       'session"><script>',
       OFFER,
       'refused <code>',
+      DEFAULT_PAGE_LOCALE,
     );
 
     expect(page).not.toContain('"><script>');
@@ -84,21 +119,33 @@ describe('renderPasskeyEnrolmentPage', () => {
   // text: a tenant name carrying `</script>` would otherwise end the element
   // early and leave the rest of the options as markup.
   it('neutralises a value that would close the script element', () => {
-    const { html: page } = renderPasskeyEnrolmentPage('acme', 'auth-session-1', {
-      options: { ...OFFER.options, rp: { name: '</script><script>alert(1)</script>', id: 'x' } },
-    });
+    const { html: page } = renderPasskeyEnrolmentPage(
+      'acme',
+      'auth-session-1',
+      {
+        options: { ...OFFER.options, rp: { name: '</script><script>alert(1)</script>', id: 'x' } },
+      },
+      undefined,
+      DEFAULT_PAGE_LOCALE,
+    );
 
     expect(page).not.toContain('</script><script>alert(1)');
     expect(page).toContain('\\u003c/script');
   });
 
   it('escapes the JSON line terminators JavaScript does not allow raw', () => {
-    const { html: page } = renderPasskeyEnrolmentPage('acme', 'auth-session-1', {
-      options: {
-        ...OFFER.options,
-        rp: { name: `line${String.fromCharCode(0x2028)}break`, id: 'x' },
+    const { html: page } = renderPasskeyEnrolmentPage(
+      'acme',
+      'auth-session-1',
+      {
+        options: {
+          ...OFFER.options,
+          rp: { name: `line${String.fromCharCode(0x2028)}break`, id: 'x' },
+        },
       },
-    });
+      undefined,
+      DEFAULT_PAGE_LOCALE,
+    );
 
     expect(page).not.toContain(String.fromCharCode(0x2028));
     expect(page).toContain('line\\u2028break');

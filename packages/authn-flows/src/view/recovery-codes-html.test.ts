@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_LOCALE } from '@odudu/kernel';
 import { describe, expect, it } from 'vitest';
 import { renderRecoveryCodesPage } from '#/view/recovery-codes-html';
 
@@ -5,7 +6,13 @@ const OFFER = { codes: ['ABCDE-FGHJK', 'MNPQR-STVWX'], replaced: false };
 
 describe('renderRecoveryCodesPage', () => {
   it('prints every code and says it is the only time they are shown', () => {
-    const page = renderRecoveryCodesPage('acme', 'auth-session-1', OFFER);
+    const page = renderRecoveryCodesPage(
+      'acme',
+      'auth-session-1',
+      OFFER,
+      undefined,
+      DEFAULT_PAGE_LOCALE,
+    );
 
     for (const code of OFFER.codes) {
       expect(page.html).toContain(`<code>${code}</code>`);
@@ -17,7 +24,13 @@ describe('renderRecoveryCodesPage', () => {
   // hidden field would be a second copy of the plaintext, in a page the
   // browser can resubmit.
   it('carries the session id back and nothing else', () => {
-    const page = renderRecoveryCodesPage('acme', 'auth-session-1', OFFER);
+    const page = renderRecoveryCodesPage(
+      'acme',
+      'auth-session-1',
+      OFFER,
+      undefined,
+      DEFAULT_PAGE_LOCALE,
+    );
 
     expect(page.html).toContain('name="auth_session_id" value="auth-session-1"');
     expect(page.html).toContain(
@@ -27,13 +40,30 @@ describe('renderRecoveryCodesPage', () => {
   });
 
   it('needs no script, so the page asks for no policy beyond the base one', () => {
-    expect(renderRecoveryCodesPage('acme', 'auth-session-1', OFFER).script).toBeNull();
-    expect(renderRecoveryCodesPage('acme', 'auth-session-1', OFFER).html).not.toContain('<script');
+    expect(
+      renderRecoveryCodesPage('acme', 'auth-session-1', OFFER, undefined, DEFAULT_PAGE_LOCALE)
+        .script,
+    ).toBeNull();
+    expect(
+      renderRecoveryCodesPage('acme', 'auth-session-1', OFFER, undefined, DEFAULT_PAGE_LOCALE).html,
+    ).not.toContain('<script');
   });
 
   it('says so when this set retires an earlier one, and stays quiet when it does not', () => {
-    const first = renderRecoveryCodesPage('acme', 'auth-session-1', OFFER);
-    const again = renderRecoveryCodesPage('acme', 'auth-session-1', { ...OFFER, replaced: true });
+    const first = renderRecoveryCodesPage(
+      'acme',
+      'auth-session-1',
+      OFFER,
+      undefined,
+      DEFAULT_PAGE_LOCALE,
+    );
+    const again = renderRecoveryCodesPage(
+      'acme',
+      'auth-session-1',
+      { ...OFFER, replaced: true },
+      undefined,
+      DEFAULT_PAGE_LOCALE,
+    );
 
     expect(first.html).not.toContain('no longer work');
     expect(again.html).toContain('no longer work');
@@ -45,6 +75,7 @@ describe('renderRecoveryCodesPage', () => {
       'session"><script>',
       { codes: ['<script>'], replaced: false },
       'wrong <code>',
+      DEFAULT_PAGE_LOCALE,
     );
 
     expect(page.html).not.toContain('<script>');
@@ -53,8 +84,8 @@ describe('renderRecoveryCodesPage', () => {
   });
 
   it('says nothing about an error when there is none', () => {
-    expect(renderRecoveryCodesPage('acme', 'auth-session-1', OFFER).html).not.toContain(
-      '<strong>wrong',
-    );
+    expect(
+      renderRecoveryCodesPage('acme', 'auth-session-1', OFFER, undefined, DEFAULT_PAGE_LOCALE).html,
+    ).not.toContain('<strong>wrong');
   });
 });

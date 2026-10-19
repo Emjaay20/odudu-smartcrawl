@@ -138,10 +138,13 @@ const PAGE_CACHE_CONTROL = 'no-store';
 // page can never name a script the page does not carry.
 // What may reach a header: a tag negotiated from the shipped list has this
 // shape already, so anything else is a bug, never input.
+const DIRECTIONS: ReadonlySet<string> = new Set(['ltr', 'rtl']);
 const SAFE_TAG = /^[A-Za-z0-9-]{1,35}$/u;
 
 export function pageHeaders(page: RenderedPage): readonly (readonly [string, string])[] {
-  if (!SAFE_TAG.test(page.locale.tag)) throw new Error('refusing to send an unvalidated locale');
+  if (!SAFE_TAG.test(page.locale.tag) || !DIRECTIONS.has(page.locale.dir)) {
+    throw new Error('refusing to send an unvalidated locale');
+  }
   return [
     ['content-security-policy', policyFor(page)],
     // Governs this page being framed, not this page framing others — that

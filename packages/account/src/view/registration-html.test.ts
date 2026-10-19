@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_LOCALE } from '@odudu/kernel';
 import { describe, expect, it } from 'vitest';
 import {
   renderRegistrationFailedPage,
@@ -14,7 +15,7 @@ function expectFragment(page: { html: string; body: string }): void {
 
 describe('renderRegistrationForm', () => {
   it('returns a body fragment and a title beside the document', () => {
-    const page = renderRegistrationForm('acme');
+    const page = renderRegistrationForm('acme', DEFAULT_PAGE_LOCALE);
     expect(page.title).toBe('Create account');
     expect(page.body).toContain('name="username"');
     expectFragment(page);
@@ -23,7 +24,10 @@ describe('renderRegistrationForm', () => {
 
 describe('renderRegistrationFailedPage', () => {
   it('returns a body fragment and a title beside the document', () => {
-    const page = renderRegistrationFailedPage(['That username is already taken.']);
+    const page = renderRegistrationFailedPage(
+      ['That username is already taken.'],
+      DEFAULT_PAGE_LOCALE,
+    );
     expect(page.title).toBe("Can't create this account");
     expect(page.body).toContain('That username is already taken.');
     expectFragment(page);
@@ -32,7 +36,7 @@ describe('renderRegistrationFailedPage', () => {
 
 describe('renderRegistrationSucceededPage', () => {
   it('returns a body fragment and a title beside the document', () => {
-    const page = renderRegistrationSucceededPage(false);
+    const page = renderRegistrationSucceededPage(false, DEFAULT_PAGE_LOCALE);
     expect(page.title).toBe('Account created');
     expect(page.body).toContain('You can now sign in.');
     expectFragment(page);

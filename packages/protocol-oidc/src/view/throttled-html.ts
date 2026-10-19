@@ -1,13 +1,10 @@
-import { DEFAULT_PAGE_LOCALE, type PageLocale, type RenderedPage } from '@odudu/kernel';
+import { type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { page } from '#/view/document';
 
 // Identical whichever budget refused the request and decided before any
 // account lookup, so it names no cause and offers no link: building one
 // would need a read of the parked request, which a flood must not cost.
-export function renderThrottledPage(
-  retryAfterSeconds: number,
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
-): RenderedPage {
+export function renderThrottledPage(retryAfterSeconds: number, locale: PageLocale): RenderedPage {
   const seconds = Math.max(1, Math.ceil(retryAfterSeconds));
   const unit = seconds === 1 ? 'second' : 'seconds';
   return page(

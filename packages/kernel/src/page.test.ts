@@ -309,6 +309,11 @@ describe('what the reload script does when run', () => {
 });
 
 describe('the locale a page is sent under', () => {
+  it('refuses a direction that is neither ltr nor rtl', () => {
+    const page = { ...MARKUP_ONLY_PAGE, locale: { tag: 'en', dir: 'up' as never } };
+    expect(() => pageHeaders(page)).toThrow();
+  });
+
   it('refuses a tag that could break out of the header', () => {
     for (const tag of ['en\r\nX: y', 'en"><script>', '', 'x'.repeat(36)]) {
       expect(() => pageHeaders({ ...MARKUP_ONLY_PAGE, locale: { tag, dir: 'ltr' } })).toThrow();

@@ -1,4 +1,4 @@
-import { DEFAULT_PAGE_LOCALE, type PageLocale, type RenderedPage } from '@odudu/kernel';
+import { type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { escapeHtml, page } from '#/view/document';
 
 // What the page has to show: the codes in plaintext, and whether they
@@ -17,8 +17,8 @@ export function renderRecoveryCodesPage(
   tenant: string,
   authSessionId: string,
   offer: RecoveryCodesOffer,
-  error?: string,
-  locale: PageLocale = DEFAULT_PAGE_LOCALE,
+  error: string | undefined,
+  locale: PageLocale,
 ): RenderedPage {
   const target = `/tenants/${escapeHtml(tenant)}/login-actions/required-action?action=generate-recovery-codes`;
   const message = error === undefined ? '' : `<p><strong>${escapeHtml(error)}</strong></p>\n`;

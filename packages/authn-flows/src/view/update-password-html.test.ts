@@ -1,9 +1,10 @@
+import { DEFAULT_PAGE_LOCALE } from '@odudu/kernel';
 import { describe, expect, it } from 'vitest';
 import { renderUpdatePasswordPage } from '#/view/update-password-html';
 
 describe('renderUpdatePasswordPage', () => {
   it('posts the new password to the update-password action with the session it was given', () => {
-    const rendered = renderUpdatePasswordPage('demo', 'sess-1');
+    const rendered = renderUpdatePasswordPage('demo', 'sess-1', undefined, DEFAULT_PAGE_LOCALE);
     expect(rendered.html).toContain(
       'action="/tenants/demo/login-actions/required-action?action=update-password"',
     );
@@ -14,14 +15,26 @@ describe('renderUpdatePasswordPage', () => {
   });
 
   it('lists every violation it was given and none when there are none', () => {
-    expect(renderUpdatePasswordPage('demo', 's').html).not.toContain('<ul>');
-    const listed = renderUpdatePasswordPage('demo', 's', ['Too short', 'Too common']).html;
+    expect(
+      renderUpdatePasswordPage('demo', 's', undefined, DEFAULT_PAGE_LOCALE).html,
+    ).not.toContain('<ul>');
+    const listed = renderUpdatePasswordPage(
+      'demo',
+      's',
+      ['Too short', 'Too common'],
+      DEFAULT_PAGE_LOCALE,
+    ).html;
     expect(listed).toContain('<li>Too short</li>');
     expect(listed).toContain('<li>Too common</li>');
   });
 
   it('escapes the tenant, the session and each violation', () => {
-    const { html } = renderUpdatePasswordPage('<b>t</b>', '"><i>', ['<img src=x onerror=1>']);
+    const { html } = renderUpdatePasswordPage(
+      '<b>t</b>',
+      '"><i>',
+      ['<img src=x onerror=1>'],
+      DEFAULT_PAGE_LOCALE,
+    );
     expect(html).not.toContain('<b>t</b>');
     expect(html).not.toContain('"><i>');
     expect(html).not.toContain('<img src=x');
