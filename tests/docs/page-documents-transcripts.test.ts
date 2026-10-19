@@ -114,15 +114,32 @@ describe('the page documents the guides record', () => {
     expect(unmarked).toEqual([]);
   });
 
+  // Every response block that shows a content-length and a whole document,
+  // whatever other headers it shows: a block that omits the policy line is
+  // still a claim about bytes. A static file (the console shell) is served
+  // with the newline its file ends in, which a fence cannot show.
   it('gives each complete document the content-length its bytes have', () => {
-    const wrong = complete().flatMap((block) => {
-      const header = block.lines.find((line) => line.startsWith('content-length: '));
-      if (header === undefined) return [];
-      const bytes = Buffer.byteLength(documentOf(block).join('\n'));
-      return header === `content-length: ${String(bytes)}`
-        ? []
-        : [`${block.where}: ${header}, ${String(bytes)} bytes`];
-    });
+    const wrong = GUIDES.flatMap((guide) =>
+      scanFences(loadDocument(guide)).spans.flatMap((span) => {
+        const header = span.body.find((line) => line.startsWith('content-length: '));
+        const block = { where: `${guide}:${String(span.startLine)}`, lines: span.body };
+        if (
+          !(span.body[0] ?? '').startsWith('HTTP/1.1 ') ||
+          header === undefined ||
+          !span.body.includes('<!doctype html>') ||
+          !span.body.includes('</html>') ||
+          isPartial(block)
+        ) {
+          return [];
+        }
+        const document = documentOf(block).join('\n');
+        const bytes = Buffer.byteLength(document);
+        const served = document.includes('<main class="page">') ? [bytes] : [bytes, bytes + 1];
+        return served.map((n) => `content-length: ${String(n)}`).includes(header)
+          ? []
+          : [`${block.where}: ${header}, ${String(bytes)} bytes`];
+      }),
+    );
     expect(wrong).toEqual([]);
   });
 
