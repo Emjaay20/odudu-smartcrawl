@@ -87,13 +87,14 @@ Assumptions that remain after the spikes are listed in "Assumptions left" at the
 
 ## Review Focus
 
-The five failures most likely to bite a stranger that no feature task's happy path exercises. Each has a pinning test in the task named.
+The six failures most likely to bite a stranger that no feature task's happy path exercises. Each has a pinning test in the task named.
 
 1. **A port already in use.** A machine with something on 3000 (or 5432) runs `docker compose up` and is told "port is already allocated", or moves the port and gets a sign-in that redirects to the old one, because the issuer is built from `ODUDU_PUBLIC_BASE_URL`. Expected: one variable, `ODUDU_PORT`, moves the published port and the public base URL together, Postgres is not published at all, and the closing banner prints the real address. Pinned in Task 9 (static compose test) and Task 10 (the CI job runs on port 3190).
 2. **Apple silicon.** An amd64-only image runs under emulation, slowly, or not at all. Expected: every image the quickstart pulls is a multi-arch index (digest-pinned at the index) and the Odudu image lists `linux/amd64` and `linux/arm64`. Pinned in Task 6 (`imagetools inspect` step fails the release) and Task 10 (an arm64 runner smoke).
 3. **A password with shell metacharacters or a prompt that echoes.** `p'"$(id)\\n` typed at the prompt, or passed as `ODUDU_ADMIN_PASSWORD`, must sign in byte-exact, never be echoed, never reach a log line or the printed banner. Pinned in Task 9.
 4. **Copy and paste from the site.** A command pasted with smart quotes, a `$ ` prompt or a trailing backslash continuation fails in a way the reader cannot diagnose. Expected: every runnable block is one logical command, ASCII only, no leading prompt, and the runner executes the text exactly as published. Pinned in Task 21.
 5. **A pre-release taken as the release, and a site served from the wrong base.** An `rc` tag must never move `latest` or the quickstart's pin, and the copy of the docs inside the image must contain no `/odudu/` path while the Pages copy contains no `/docs/` one. Pinned in Task 6 and Task 20. (Two further stranger failures are pinned where they arise: a system clock skewed enough that signature verification fails is documented with the verify command's own error in Task 6, and a reverse proxy that mounts Odudu under a path prefix is documented as unsupported, with a test that the docs never emit an absolute link to another origin, in Task 20.)
+6. **Another operating system.** The release is a container image, so it runs wherever Docker runs Linux containers: Linux natively, macOS and Windows through Docker Desktop or Podman. `ODUDU_ADMIN_EMAIL=x docker compose up -d` does not work in PowerShell or `cmd`, and `curl` is an alias for another command in PowerShell. Expected: the main command is the bare `docker compose up -d`; every command that differs by shell has bash, PowerShell and `cmd` variants in the quick start; `.env` is the documented cross-shell way to set the administrator; files meant for copying keep LF line endings (a test); CI proves the full ten-minute run on Linux amd64 and arm64 and only the compose file and command syntax on macOS and Windows runners (they cannot run Linux containers), and the owner confirms the full run once on a Mac and a Windows machine (Owner steps). Pinning test: in Task 24 (the quick start's blocks) and Task 10 (the compose-validity job on macOS and Windows runners).
 
 ## Performance and scale
 
@@ -181,7 +182,7 @@ Subagent-driven, tuned for quality at lower usage (owner's choice, 2026-10-16).
 
 Plain steps the owner performs; each increment that needs one says so and waits. Step 7 (the domain) is needed by Increment 18, not by the deploy: see its reason.
 
-1. **GHCR package public** (after Increment 5's first push): GitHub, Packages, `odudu`, Package settings, Change visibility, Public. Needed before any stranger or any CI job without a token can pull.
+1. **GHCR package public** (after the first release candidate Increment 6's workflow publishes; there is no separate spike image): GitHub, Packages, `odudu`, Package settings, Change visibility, Public. Needed before any stranger or any CI job without a token can pull.
 2. **GitHub Pages enabled**, source "GitHub Actions" (before Increment 35's first deploy). A domain, when chosen, is step 7's procedure.
 3. **Private vulnerability reporting** on (Settings, Code security) before Increment 33 merges; `SECURITY.md` links to it.
 4. **Required checks on `main`:** add `e2e`, `quickstart`, `docs`, `lighthouse` and `cla` beside `verify`, `container` and `commit-messages` once each has gone green once.
@@ -190,7 +191,8 @@ Plain steps the owner performs; each increment that needs one says so and waits.
 7. **Domain** for the site (design, "Open for the owner"). **Buy it early, by Increment 18, not at the deploy.** Every canonical URL, Open Graph URL, sitemap entry and inbound link made before the swap belongs to the old address, and a `github.io` project path shares its host's reputation with every other project of the account and cannot be a Search Console domain property (`assumption:` ranking and link history accrue better to an owned domain; that is common practice, not something this phase measures). Until it exists the site lives at `https://wizzywit.github.io/odudu/` and nothing else changes: the address is one file (D12). The swap, written out in `RELEASING.md` (Task 6) and tested where it can be (Task 35): (a) verify the domain in the account's Pages settings (GitHub recommends it first); (b) Settings, Pages, Custom domain, enter it, and tick Enforce HTTPS when GitHub offers it (up to 24 hours); **no `CNAME` file is needed or read**, because the site is published by a workflow; (c) DNS at the registrar: for an apex domain four `A` records, `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`, and four `AAAA` records, `2606:50c0:8000::153` to `2606:50c0:8003::153`; for `www`, a `CNAME` to `wizzywit.github.io` (verified against GitHub's documentation on 2026-10-16); (d) one commit changing `SITE_ORIGIN` to `https://<domain>` and `PAGES_BASE` to `/` in `apps/docs/site.config.ts`; (e) the next stable release redeploys (`pages` runs on stable tags only: the site always equals a release); (f) in Google Search Console add the domain property (a DNS `TXT` record), submit `https://<domain>/sitemap.xml`, and leave the old property's sitemap in place until the old URLs stop being served; (g) GitHub redirects the old `github.io` address (`assumption:` the owner's understanding; GitHub's page on custom domains does not state it, so Task 35's walk runs `curl -sI` on the old URL and records what it returned).
 8. **Licence classification** (Decision D8) and the statement that the name and mark are not licensed.
 9. **The first non-rc tag** (Increment 36): the owner cuts it by hand after reading the close report. Steps 1 to 8 are its gate.
-10. **The "not production ready" notice** stays in `README.md` and on the landing page until the owner declares otherwise; its removal is the owner's decision after a hardening pass, not this phase's (README, top).
+10. **Run the quick start once by hand on a Mac and on a Windows machine** (Docker Desktop), in PowerShell and in `cmd` for the commands that differ, before Increment 36: CI cannot run Linux containers on macOS or Windows runners, so this is the only full cross-OS run.
+11. **The "not production ready" notice** stays in `README.md` and on the landing page until the owner declares otherwise; its removal is the owner's decision after a hardening pass, not this phase's (README, top).
 
 ---
 
@@ -278,6 +280,8 @@ Greps beside the claims: `git grep -nE "^\s*(FROM|image:)" -- infra .github` lis
 ---
 
 ## Increment 5: Spike: a real release tag (3 to 4 h)
+
+**Ruling, 2026-10-19 (owner):** no separate throwaway image. Task 5's questions (S9 to S12: native arm64 runner, keyless identity string, SBOM attached to the index, anonymous pull) are answered by the first real release candidate that Task 6's workflow publishes (`0.1.0-rc.1`); a failed step is iterated on later `-rc` tags and recorded in `docs/phases/p4g.md`, and deleting a broken package version is asked of the owner first (irreversible). Do Task 6 first; this increment closes when its rc run has answered S9 to S12.
 
 Only a real runner can answer these. Everything here happens on a throwaway tag `v0.0.0-spike.1` and is deleted after.
 
