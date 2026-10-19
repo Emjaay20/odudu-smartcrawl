@@ -206,6 +206,10 @@ grep -i '^content-type: *text/css' "$SHEET_HEADERS" > /dev/null || {
   echo "smoke: /instrument/instrument.css was not served as text/css" >&2
   exit 1
 }
+grep -i '^x-content-type-options: *nosniff' "$SHEET_HEADERS" > /dev/null || {
+  echo "smoke: /instrument/instrument.css did not carry nosniff" >&2
+  exit 1
+}
 rm -f "$SHEET_HEADERS"
 FONT=$(printf '%s' "$SHEET" | sed -n "s/.*url('\(\/instrument\/fonts\/[^']*\)').*/\1/p" | sed -n 1p)
 test -n "$FONT" || { echo "smoke: the stylesheet names no /instrument/fonts/ font" >&2; exit 1; }

@@ -11,6 +11,39 @@ const REPO_ROOT = join(VIEW_DIR, '..', '..', '..', '..');
 const PACKAGES_DIR = join(REPO_ROOT, 'packages');
 const APPS_DIR = join(REPO_ROOT, 'apps');
 const HEADER_NAMES = ['content-security-policy', 'x-frame-options', 'referrer-policy'];
+// Every directive name in CSP Level 3 and its extensions, so a second
+// policy cannot use one this scan has never heard of.
+const CSP_DIRECTIVES = [
+  'default-src',
+  'script-src',
+  'script-src-elem',
+  'script-src-attr',
+  'style-src',
+  'style-src-elem',
+  'style-src-attr',
+  'img-src',
+  'font-src',
+  'connect-src',
+  'media-src',
+  'object-src',
+  'manifest-src',
+  'prefetch-src',
+  'child-src',
+  'frame-src',
+  'worker-src',
+  'base-uri',
+  'sandbox',
+  'form-action',
+  'frame-ancestors',
+  'navigate-to',
+  'report-uri',
+  'report-to',
+  'require-trusted-types-for',
+  'trusted-types',
+  'upgrade-insecure-requests',
+  'block-all-mixed-content',
+  'plugin-types',
+];
 // The files that legitimately name a page header: `html-response.ts` and
 // `verification-html.ts`, which spread `pageHeaders` (`@odudu/kernel`), and
 // `console-gateway`'s `spa.ts`, the static shell with its own fixed policy
@@ -194,8 +227,7 @@ describe('[ODUDU-VIEW-HTML-01] an HTML response cannot leave without its framing
   // in code, comments aside, is building a second policy beside pageHeaders
   // that can disagree with it, silently, in a real browser only.
   it('names no Content-Security-Policy directive outside pageHeaders and the console shell', async () => {
-    const directive =
-      /\b(?:default|style|font|img|script|connect|frame|media|object|child|worker)-src\b|\bform-action\b|\bframe-ancestors\b|\bbase-uri\b/u;
+    const directive = new RegExp(`\\b(?:${CSP_DIRECTIVES.join('|')})\\b`, 'u');
     const offenders = (await viewSources())
       .map((f) => ({ ...f, path: f.path.slice(REPO_ROOT.length + 1) }))
       .filter((f) => f.path !== 'packages/console-gateway/src/view/spa.ts')

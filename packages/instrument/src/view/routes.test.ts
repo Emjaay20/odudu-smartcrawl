@@ -48,6 +48,7 @@ describe('instrumentRoutes', () => {
     expect(response.statusCode).toBe(200);
     expect(response.headers['content-type']).toBe('text/css; charset=utf-8');
     expect(response.headers['cache-control']).toBe('no-cache');
+    expect(response.headers['x-content-type-options']).toBe('nosniff');
     expect(response.headers.etag).toMatch(/^"[A-Za-z0-9_-]+"$/u);
     expect(response.body).toBe('body{margin:0}');
   });
@@ -75,6 +76,7 @@ describe('instrumentRoutes', () => {
     const response = await server.inject(`/instrument/fonts/${FONT}`);
     expect(response.statusCode).toBe(200);
     expect(response.headers['content-type']).toBe('font/woff2');
+    expect(response.headers['x-content-type-options']).toBe('nosniff');
     expect(response.headers['cache-control']).toBe('public, max-age=31536000, immutable');
   });
 
@@ -100,5 +102,43 @@ describe('instrumentRoutes', () => {
     const server = await served(join(tmpdir(), 'instrument-does-not-exist'), logs);
     expect(logs.join('')).toContain('ODUDU_INSTRUMENT_DIR');
     expect((await server.inject('/instrument/instrument.css')).statusCode).toBe(404);
+  });
+
+  it('answers 304 to the forms If-None-Match takes: weak, listed, and *', async () => {
+    const server = await served(await builtDir());
+    const etag = String((await server.inject('/instrument/instrument.css')).headers.etag);
+    for (const header of [`W/${etag}`, `"other", ${etag}`, `${etag},"other"`, '*']) {
+      const response = await server.inject({
+        url: '/instrument/instrument.css',
+        headers: { 'if-none-match': header },
+      });
+      expect(response.statusCode, header).toBe(304);
+      expect(response.headers['x-content-type-options']).toBe('nosniff');
+    }
+    const none = await server.inject({
+      url: '/instrument/instrument.css',
+      headers: { 'if-none-match': '"other", "another"' },
+    });
+    expect(none.statusCode).toBe(200);
+  });
+
+  it('says the directory is too large, not missing, when it holds more files than a build', async () => {
+    const dir = await builtDir();
+    for (let i = 0; i < 101; i++) await writeFile(join(dir, `extra${String(i)}.css`), 'x');
+    const logs: string[] = [];
+    const server = await served(dir, logs);
+
+    expect((await server.inject('/instrument/instrument.css')).statusCode).toBe(404);
+    const text = logs.join('');
+    expect(text).toContain('ODUDU_INSTRUMENT_DIR');
+    expect(text).toContain('more than');
+    expect(text).not.toContain('no built stylesheet');
+  });
+
+  it('says the stylesheet is missing, not too large, when the directory is absent', async () => {
+    const logs: string[] = [];
+    await served(join(tmpdir(), 'instrument-absent'), logs);
+    expect(logs.join('')).toContain('no built stylesheet');
+    expect(logs.join('')).not.toContain('more than');
   });
 });

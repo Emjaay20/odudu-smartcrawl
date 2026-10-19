@@ -33,19 +33,13 @@ const ASSET_CONTENT_TYPES: Readonly<Record<string, string>> = {
 // memory at boot.
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
-// The build is about 35 files; these bound the boot-time read of a
-// directory that is not one.
-const ASSET_LIMITS = {
-  maxFileBytes: MAX_FILE_BYTES,
-  maxFiles: 1_000,
-  maxTotalBytes: 64 * 1024 * 1024,
-} as const;
-
 // Vite's default `[hash]` is an 8-or-more character xxhash, base64url-encoded
 // (rollup's `hashCharacters: 'base64'`, the default) — never longer than the
 // name it is appended to. Anything else is a fixed name and must revalidate.
 const CONTENT_HASHED_NAME = /-[A-Za-z0-9_-]{8,}\.[a-z0-9]+$/u;
 
+// Reads the `code` of a system error and of an `OduduError` alike, which is
+// how a tree over its limits reaches `registerUnavailable` as a reason.
 function errnoCode(err: unknown): string | undefined {
   if (typeof err !== 'object' || err === null || !('code' in err)) return undefined;
   const code = err.code;
@@ -102,9 +96,9 @@ export function spaRoutes(consoleDir: string): FastifyPluginAsync {
       assets = await readStaticTree(
         join(consoleDir, 'assets'),
         ASSET_CONTENT_TYPES,
-        ASSET_LIMITS,
+        {},
         (message) => {
-          fastify.log.warn(message);
+          fastify.log.warn(`ODUDU_CONSOLE_DIR: ${message}`);
         },
       );
     } catch (err) {

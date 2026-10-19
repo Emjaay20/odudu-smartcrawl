@@ -3,10 +3,15 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { OduduError } from '#/errors';
-import { readStaticTree, type StaticTreeLimits } from '#/static-tree';
+import { DEFAULT_STATIC_TREE_LIMITS, readStaticTree, type StaticTreeLimits } from '#/static-tree';
 
 const TYPES = { '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
-const LIMITS: StaticTreeLimits = { maxFileBytes: 1024, maxFiles: 10, maxTotalBytes: 4096 };
+const LIMITS: StaticTreeLimits = {
+  maxFileBytes: 1024,
+  maxFiles: 10,
+  maxTotalBytes: 4096,
+  maxEntries: 1000,
+};
 const dirs: string[] = [];
 
 afterEach(async () => {
@@ -67,6 +72,7 @@ describe('readStaticTree', () => {
     expect([...files.keys()]).toEqual(['ok.js']);
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toContain('big.js');
+    expect(warnings[0]).toContain(String(LIMITS.maxFileBytes));
   });
 
   it('throws static_tree_too_large past maxFiles', async () => {
@@ -97,5 +103,48 @@ describe('readStaticTree', () => {
 
     expect(failure).toBeInstanceOf(OduduError);
     expect((failure as OduduError).code).toBe('static_tree_too_large');
+  });
+
+  it('reads with the console defaults when no limits are given', async () => {
+    const dir = await tree();
+    await writeFile(join(dir, 'a.js'), 'x');
+
+    const files = await readStaticTree(dir, TYPES, {}, () => undefined);
+
+    expect([...files.keys()]).toEqual(['a.js']);
+    expect(DEFAULT_STATIC_TREE_LIMITS).toEqual({
+      maxFileBytes: 10 * 1024 * 1024,
+      maxFiles: 1_000,
+      maxTotalBytes: 64 * 1024 * 1024,
+      maxEntries: 100_000,
+    });
+  });
+
+  it('lets a caller raise a limit past the defaults for one call', async () => {
+    const dir = await tree();
+    for (let i = 0; i < 1_001; i++) await writeFile(join(dir, `f${String(i)}.js`), 'x');
+
+    const refused = await readStaticTree(dir, TYPES, {}, () => undefined)
+      .then(() => undefined)
+      .catch((err: unknown) => err);
+    expect((refused as OduduError).code).toBe('static_tree_too_large');
+
+    const files = await readStaticTree(dir, TYPES, { maxFiles: 5_000 }, () => undefined);
+    expect(files.size).toBe(1_001);
+  });
+
+  it('bounds the entries it visits, typed or not', async () => {
+    const dir = await tree();
+    await mkdir(join(dir, 'd'));
+    for (let i = 0; i < 4; i++) await symlink('/etc/hosts', join(dir, `link${String(i)}`));
+    for (let i = 0; i < 4; i++) await mkdir(join(dir, 'd', `sub${String(i)}`));
+
+    const failure = await readStaticTree(dir, TYPES, { maxEntries: 5 }, () => undefined)
+      .then(() => undefined)
+      .catch((err: unknown) => err);
+
+    expect(failure).toBeInstanceOf(OduduError);
+    expect((failure as OduduError).code).toBe('static_tree_too_large');
+    expect((failure as OduduError).message).toContain('entries');
   });
 });
