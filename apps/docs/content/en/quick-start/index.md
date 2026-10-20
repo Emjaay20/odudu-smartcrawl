@@ -7,7 +7,7 @@ description: Start Odudu with Docker Compose, sign in to its console and sign a 
 
 You will start Odudu on your own machine, sign in to its console as the first administrator, and then sign a person in to an app. It takes about ten minutes, and you need nothing installed except Docker and `curl`.
 
-This is for trying Odudu out. The server listens on loopback only and the database password is fixed and public, so do not run it on a shared host.
+This stack is for trying Odudu out on your own machine, and Odudu itself runs happily on a server other people can reach. The quick start is not that deployment: it serves plain http on loopback only, and its database password is fixed and public. A server that others can reach needs a real database password, TLS and your own encryption key, which the Operating section covers.
 
 ## Before you start
 
