@@ -43,14 +43,19 @@ describe('findSecrets', () => {
   });
 
   it('refuses every private member of an RSA key, and lets its public half through', () => {
-    const value = (): string => randomBytes(128).toString('base64url');
-    const member = (name: string): string => `{"kty":"RSA","${name}":"${value()}"}`;
+    // 171 characters, six of them hyphens: the length scaling is what admits it.
+    const unit = 'aB3dE-fG7hJkL9mN2pQ4rS6tU8vW0xY1zA5bC';
+    const value = `${unit}-${unit}-${unit}-${unit}-${unit.slice(0, 20)}-${unit.slice(0, 17)}-${unit.slice(0, 13)}`;
+    expect(value.split('-').length - 1).toBeGreaterThan(3);
+    expect(value.length).toBeGreaterThan(150);
+    const member = (name: string): string => `{"kty":"RSA","${name}":"${value}"}`;
     for (const name of ['d', 'p', 'q', 'dp', 'dq', 'qi']) {
       expect(findSecrets({ ...clean, text: member(name) }, []), name).toHaveLength(1);
     }
-    const publicKey = `{"kty":"RSA","n":"${value()}","e":"AQAB"}`;
-    expect(findSecrets({ ...clean, text: publicKey }, [])).toEqual([]);
-    const privateKey = `{"kty":"RSA","n":"${value()}","e":"AQAB","d":"${value()}","p":"${value()}","q":"${value()}","dp":"${value()}","dq":"${value()}","qi":"${value()}"}`;
+    expect(findSecrets({ ...clean, text: `{"kty":"RSA","n":"${value}","e":"AQAB"}` }, [])).toEqual(
+      [],
+    );
+    const privateKey = `{"kty":"RSA","n":"${value}","e":"AQAB","d":"${value}","p":"${value}","q":"${value}"}`;
     expect(findSecrets({ ...clean, text: privateKey }, []).length).toBeGreaterThan(0);
   });
 

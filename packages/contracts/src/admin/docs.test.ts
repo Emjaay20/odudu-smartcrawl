@@ -3,10 +3,24 @@ import { z } from 'zod';
 import { listAuditQuerySchema } from '#/admin/audit';
 import { clientSchema, listClientsQuerySchema } from '#/admin/clients';
 import { documentedJsonSchema, fieldsMissingFrom } from '#/admin/docs';
-import { groupRecordSchema, listGroupsQuerySchema } from '#/admin/groups';
+import {
+  groupRecordSchema,
+  listGroupsQuerySchema,
+  setGroupDefaultRequestSchema,
+} from '#/admin/groups';
 import { mailMessageSchema } from '#/admin/mail';
-import { listRolesQuerySchema, roleSchema } from '#/admin/roles';
-import { putSmtpRequestSchema, smtpConfigSchema, testSmtpRequestSchema } from '#/admin/smtp';
+import {
+  addRoleCompositeRequestSchema,
+  listRolesQuerySchema,
+  roleSchema,
+  setRoleDefaultRequestSchema,
+} from '#/admin/roles';
+import {
+  putSmtpRequestSchema,
+  smtpConfigSchema,
+  testSmtpRequestSchema,
+  testSmtpResponseSchema,
+} from '#/admin/smtp';
 import { whoamiResponseSchema } from '#/admin/whoami';
 import { countResponseSchema } from '#/admin/counts';
 import { createTenantRequestSchema } from '#/admin/tenants';
@@ -61,6 +75,26 @@ describe('documentedJsonSchema', () => {
   it('keeps the audit trail’s own words for `to`, and gives the relay test its own', () => {
     expect(property(listAuditQuerySchema, 'to').description).toMatch(/before this instant/u);
     expect(property(testSmtpRequestSchema, 'to').description).toMatch(/message/u);
+  });
+
+  it('describes a single-field body by its field, and no wider object by it', () => {
+    expect(property(setGroupDefaultRequestSchema, 'default').description).toMatch(
+      /this group or role/u,
+    );
+    expect(property(setRoleDefaultRequestSchema, 'default').description).toMatch(
+      /this group or role/u,
+    );
+    expect(property(addRoleCompositeRequestSchema, 'child_role_id').description).toMatch(/nest/u);
+    expect(property(testSmtpResponseSchema, 'sent').description).toMatch(/relay/u);
+    const wider = z.object({
+      default: z.boolean(),
+      to: z.string(),
+      sent: z.boolean(),
+      name: z.string(),
+    });
+    for (const name of ['default', 'to', 'sent']) {
+      expect(property(wider, name).description, name).toBeUndefined();
+    }
   });
 
   it('names a field its schema lacks, so a stray description cannot hide', () => {

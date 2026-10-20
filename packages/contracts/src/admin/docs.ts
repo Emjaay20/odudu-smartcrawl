@@ -39,6 +39,7 @@ import {
 } from '#/admin/flow';
 import {
   countGroupsQuerySchema,
+  setGroupDefaultRequestSchema,
   groupFieldsSchema,
   groupRecordSchema,
   groupSchema,
@@ -53,6 +54,7 @@ import {
   registrationTokenSchema,
 } from '#/admin/registration-tokens';
 import {
+  addRoleCompositeRequestSchema,
   countRolesQuerySchema,
   createRoleRequestSchema,
   listRolesQuerySchema,
@@ -81,7 +83,12 @@ import {
   tenantSessionSchema,
 } from '#/admin/sessions';
 import { amendSettingsRequestSchema, settingsSchema } from '#/admin/settings';
-import { putSmtpRequestSchema, smtpConfigSchema } from '#/admin/smtp';
+import {
+  putSmtpRequestSchema,
+  smtpConfigSchema,
+  testSmtpRequestSchema,
+  testSmtpResponseSchema,
+} from '#/admin/smtp';
 import {
   adminCapabilitiesResponseSchema,
   amendSubjectRequestSchema,
@@ -171,7 +178,7 @@ function describing(names: readonly string[]): readonly Fields[] {
   return [...FIELDS.values()]
     .filter(
       (entry) =>
-        entry.names.size >= 2 &&
+        entry.names.size >= 1 &&
         entry.names.size >= 0.8 * held.size &&
         [...entry.names].every((name) => held.has(name)),
     )
@@ -967,6 +974,21 @@ describeFields(putSmtpRequestSchema, {
     'Whether the connection must upgrade to TLS (STARTTLS). Required while a username or password is set.',
 });
 
+// Bodies of a single field, described by that field alone: a shape of one
+// field describes only an object of exactly that one field.
+// One shape for the group and the role body alike: a fingerprint holds one set of words.
+describeFields(setGroupDefaultRequestSchema, {
+  default:
+    'True to give every subject created from now on this group or role, false to stop. Subjects that already exist are not changed.',
+});
+describeFields(addRoleCompositeRequestSchema, {
+  child_role_id: 'The role to nest in this one. Whoever holds this role then holds it too.',
+});
+describeFields(testSmtpRequestSchema, { to: 'The address to send the test message to.' });
+describeFields(testSmtpResponseSchema, {
+  sent: 'True when the relay accepted the message. A relay that refuses it answers 502 instead.',
+});
+
 describeFields(whoamiResponseSchema, {
   subjectId: 'The subject the access token was issued to.',
   issuerTenantId: 'The tenant that issued the token, which is the caller’s own tenant.',
@@ -986,11 +1008,6 @@ const COMMON: Fields = {
     '`true` also ends every live session of the subject in the same transaction as the removal, queueing their back-channel logouts as `DELETE …/sessions` does; the default `false` leaves them signed in.',
   require_new_set:
     '`true` (the default) owes the subject a new set of recovery codes at their next sign-in when a second factor remains; `false` leaves them with none until one is asked of them.',
-  default:
-    'Whether every subject created from now on is given it, by the admin API, registration and seeding alike.',
-  child_role_id: 'The role to nest in this one. Whoever holds this role then holds it too.',
-  to: 'The address to send the test message to.',
-  sent: 'True when the relay accepted the message. A relay that refuses it answers 502 instead.',
   count: 'How many items match, up to a cap.',
   capped: 'True when more match than `count` says, because counting stops at the cap.',
 };

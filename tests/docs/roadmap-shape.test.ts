@@ -43,15 +43,32 @@ describe('the roadmap page', () => {
     expect(headings).toEqual(['Shipped', 'Next', 'Later', 'Decided against, and why']);
   });
 
-  it('orders Next as the design spec orders the phases', () => {
+  it('orders Next as the design spec orders the phases, none dropped', () => {
     const { ahead } = phases();
     const named = items('## Next').flatMap(
       (item) => /^- \*\*(P\d+[a-z]?)\b/u.exec(item)?.[1] ?? [],
     );
-    expect(named[0]).toBe(RELEASE);
-    const expected = ahead.filter((phase) => named.includes(phase));
-    expect(named.slice(1)).toEqual(expected);
-    expect(named.length).toBeGreaterThanOrEqual(6);
+    // From this release to the last phase before the breadth phases begin.
+    expect(named).toEqual([RELEASE, ...ahead.slice(0, ahead.indexOf('P5b') + 1)]);
+  });
+
+  it('claims nothing in Shipped that a release has yet to publish', () => {
+    const { lines } = loadDocument(PAGE);
+    const start = lines.findIndex((line) => line.startsWith('## Shipped'));
+    const end = lines.findIndex((line, index) => index > start && line.startsWith('## '));
+    const shipped = lines.slice(start, end).join('\n');
+    expect(shipped).not.toMatch(/published (and signed )?(container )?image|one-file/iu);
+    expect(shipped).toMatch(/built from source/u);
+  });
+
+  it('says front-channel logout as the logout code does', () => {
+    const logout = loadDocument('packages/protocol-oidc/src/usecase/logout.ts').lines.join('\n');
+    expect(logout).toMatch(/decision\.redirectTo === null\s*\?\s*await frontChannelLogoutUrls/u);
+    const roadmap = prose();
+    expect(roadmap).toMatch(/shown unless the request names a matched post-logout redirect/u);
+    expect(roadmap).toMatch(
+      /names a matched post-logout redirect ends the session and redirects without rendering the front-channel frames/u,
+    );
   });
 
   it('puts every phase after Next in Later, and none in both', () => {
@@ -124,7 +141,7 @@ describe('the roadmap page', () => {
     ['TLS is ended in front', 'ADR 0020'],
     ['One instance only', 'P11'],
     ['deadline', 'P11'],
-    ['published, signed image', 'P4g'],
+    ['signed container image', 'P4g'],
     ['Secrets read from somewhere', 'P12'],
     ['backup and restore', 'P12'],
     ['Expired state', 'ADR 0024'],

@@ -94,6 +94,8 @@ describe('the quick start in a browser', () => {
       const context = await browser.newContext({ colorScheme: scheme });
       const page = await context.newPage();
       await page.goto(address('pages'));
+      // The theme the head script chose is settled once the page has hydrated.
+      await page.locator('html[data-has-hydrated="true"]').waitFor();
       const shots = await page.locator('figure img').evaluateAll((images) =>
         images.map((image) => {
           const element = image as HTMLImageElement;

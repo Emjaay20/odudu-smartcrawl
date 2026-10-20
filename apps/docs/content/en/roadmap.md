@@ -11,9 +11,9 @@ A paid, hosted service beside the open-source server is planned and has no date
 ([ADR 0042](https://github.com/wizzywit/odudu/blob/main/docs/adr/0042-distribution-licensing-and-the-paid-boundary.md));
 nothing on this page depends on it.
 
-| Today                                                                             | Next, in this order                                                                                  |
-| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Sign people in, issue tokens, run many tenants, manage them from a console or API | This release, theming, an MCP server, self-service for your users, a localized console, agent access |
+| Today                                                                                                              | Next, in this order                                                                   | Later                                                                                       |
+| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Sign-in and tokens, many tenants, passwords, passkeys and recovery codes, an admin API and console, an audit trail | This release, theming, an MCP server, self-service, a localized console, agent access | Brokering, LDAP and SCIM, SAML, authorization services, extensibility, many instances, FAPI |
 
 ## Shipped
 
@@ -21,45 +21,46 @@ Everything here works in the version you can run today.
 
 ### Sign-in and tokens
 
-- Sign people in with the authorization code flow and PKCE, which is always required. Discovery, signing keys, user info, token introspection and revocation are served for every tenant.
-- Keep people signed in with refresh tokens that rotate, with a stolen one caught when it is used twice, and with offline access for apps that ask for it.
-- Let an app act as itself with client credentials, or act for someone with token exchange (delegation, and impersonation when a client is allowed it).
-- End a session with RP-initiated logout, with front-channel and back-channel logout delivered to the apps that registered for them. A tenant can offer "remember me" and several sessions per browser.
-- Ask people for consent, register clients by hand or let an app register itself with a registration token or when a tenant opens that policy.
-- Authenticate a client with a secret, with a signed assertion (`private_key_jwt`) or, for a public app, with nothing.
+- The authorization code flow with PKCE, always required, with discovery, signing keys, user info, introspection and revocation for every tenant.
+- Refresh tokens that rotate, a stolen one caught on reuse, and offline access.
+- Client credentials, and token exchange for acting on someone's behalf.
+- RP-initiated logout with back-channel logout delivered to the apps that registered. Front-channel logout frames are shown unless the request names a matched post-logout redirect, which P4b closes.
+- "Remember me" and several sessions per browser, consent, and client registration by hand or by an app itself with a registration token.
+- Client authentication by secret, by signed assertion (`private_key_jwt`), by mutual TLS (`tls_client_auth`, when a proxy forwards the certificate and `ODUDU_TRUST_PROXY` is on), or by nothing for a public app.
 
 ### Many tenants
 
-- Run any number of tenants on one server, each with its own people, clients, keys, settings, sign-in flow and mail relay, kept apart by the database itself.
-- Rotate a tenant's signing keys without a gap, and export a tenant's configuration to a file or import it as a new tenant.
+- Any number of tenants on one server, each with its own people, clients, keys, settings, sign-in flow and mail relay, kept apart by the database itself.
+- Gap-free signing key rotation, and export of a tenant to a file and import as a new tenant.
 
 ### Credentials and second factors
 
-- Passwords with a policy you set and lockouts for repeated wrong guesses, sign-in with a passkey, and a one-time password from an authenticator app.
-- Recovery codes: ten per person, shown once, offered again when the last is spent, and revoked as a set when the last authenticator goes.
-- Self-registration, email verification and password reset by mail, each switched on per tenant, and required actions an administrator can set on a person.
+- Passwords with a policy and lockouts, passkeys, and a one-time password from an authenticator app.
+- Recovery codes: ten per person, shown once, offered again when the last is spent, revoked as a set when the last authenticator goes.
+- Self-registration, email verification and password reset, each switched on per tenant, and required actions you set on a person.
 
 ### Admin API and console
 
 - An admin API of more than a hundred operations, each checked against the capability it needs on every request.
-- An admin console with a page for every area: people, groups, roles, clients, scopes, registration tokens, the sign-in flow, signing keys, sessions, settings, email, the audit trail and tenants. [The tour](admin-console/tour.mdx) shows it.
+- An admin console with a page for every area ([the tour](admin-console/tour.mdx)).
 
 ### Audit
 
-- Every administrative change, every sign-in and refusal, every token issued or revoked and every credential change is recorded, filtered in the console or the API, exported as one JSON object per line, and kept for a window you set.
+- Every administrative change, sign-in, refusal, token and credential change is recorded, filterable, exportable as one JSON object per line, and kept for a window you set.
 
 ### Running it
 
-- A container image and a one-file Docker Compose quick start with Postgres, migrations applied at boot, and health endpoints. One instance today, with TLS ended in front of it.
+- Postgres with migrations applied at boot, health endpoints, one instance with TLS ended in front.
+- The container image and the Docker Compose quick start are built from source today; the first release, P4g (this release), publishes them.
 
 ## Next
 
 These are the phases being built, in the order the design spec gives. Each one says what it brings you.
 
-- **P4g, this release.** A published, signed image with its contents listed and its base images pinned, a written release process, this documentation site, a landing page, a quick start that gets a stranger signed in within ten minutes, and worked examples. Until it ships there is no published image or release process to rely on.
-- **P4b, theming and client branding.** Every page the server shows, today plain built-in HTML on the sign-in, second-factor, recovery-code, passkey, password, verification, reset, account-chooser and logged-out pages, will render in a tenant's own theme and a client's own branding. It also fixes one gap: when a front-channel logout ends a session with a matched redirect, the frames that tell the app are not rendered, so an app registered only for front-channel logout keeps its session. Translated pages and mail arrive with it.
-- **P5a, an MCP server.** The admin API as tools for an AI agent, read-only by default, signed in through Odudu and held to the same capabilities as everyone else. It also brings the authorization-server and protected-resource metadata an MCP client looks for, which the server does not publish yet, and the guide "Protect an MCP server with Odudu".
-- **P4f, self-service.** A "me" API through which an application lets a person read and change their own profile, credentials, sessions and consents, and application-initiated actions such as changing a password or enrolling an authenticator. It is also where the missing pieces of credential management live: asking for a fresh set of recovery codes before the old set runs out, a warning when it is short, a notice mail when a person enrols a factor themselves, and the offer to end a person's other sessions after a password change or reset (an administrator can end them today).
+- **P4g, this release.** A published, signed container image with its contents listed and its base images pinned, the one-file Docker Compose quick start that pulls it, a written release process, this documentation site, a landing page and worked examples. Until it ships there is no published image or release process to rely on.
+- **P4b, theming and client branding.** Every page the server shows, today plain built-in HTML, will render in a tenant's theme and a client's branding. It also fixes one gap: a logout whose request names a matched post-logout redirect ends the session and redirects without rendering the front-channel frames, so an app registered only for front-channel logout keeps its session. Translated pages and mail arrive with it.
+- **P5a, an MCP server.** The admin API as tools for an AI agent, read-only by default and held to the same capabilities as everyone else, with the authorization-server and protected-resource metadata an MCP client looks for, which the server does not publish yet, and a guide to protecting an MCP server with Odudu.
+- **P4f, self-service.** A "me" API through which an application lets a person read and change their own profile, credentials, sessions and consents, and application-initiated actions such as changing a password or enrolling an authenticator. It is also where the missing pieces of credential management live: asking for a fresh set of recovery codes before the old set runs out, a warning when it is short, a notice mail when a person enrols a factor themselves, and the offer to end a person's other sessions after a password change or reset (an administrator can end them today). Re-issuing recovery codes while the action is owed costs ten Argon2id hashes per login submission and is bounded only by the per-origin throttle.
 - **P4h, a localized console.** Every string in the admin console read from a catalogue, a language switch, and right-to-left layouts.
 - **P5, agent identity.** Budgets, attenuation and approval for AI agents acting for a person, including CIBA, which Odudu does not have today.
 - **P5b, destructive MCP tools.** The irreversible tools P5a withholds, each needing the owner's separate approval.
@@ -74,8 +75,8 @@ Placed on a phase, in order, and not started. Each line names the phase that wil
 - **P7, user federation and inbound provisioning.** LDAP-backed sign-in, SCIM 2.0 inbound provisioning, and moving more than the 10,000 subjects a tenant export carries; an export refuses a tenant above that size and names this as the way.
 - **P8, SAML 2.0.** Odudu as a SAML identity provider.
 - **P9, authorization services.** Policy evaluation and UMA 2.0, and a resource server as a first-class thing.
-- **P10, extensibility.** Third-party providers loaded without a rebuild. A tenant can choose which of the server's claim mappers a scope carries but cannot add a new mapper, which waits on this. An `EventListener` delivering a tenant's audit events to a SIEM or a webhook belongs here too: today the audit trail has two readers, the admin API and the console, and goes nowhere else.
-- **P11, many instances and performance.** One instance only today: migrations run at boot with no lock and the per-origin throttle lives in one process, so replicas would race and each allow the full budget. Also the deadline the two outbound lookups on `/token` and `/userinfo` lack, and a metrics endpoint.
+- **P10, extensibility.** Third-party providers loaded without a rebuild. A tenant can choose which claim mappers a scope carries but cannot add a new mapper, and an `EventListener` delivering audit events to a SIEM or a webhook belongs here: today only the admin API and the console read the trail.
+- **P11, many instances and performance.** One instance only today, because migrations run at boot with no lock and the throttle lives in one process. Also a deadline for the two outbound lookups on `/token` and `/userinfo`, and a metrics endpoint.
 - **P12, operational readiness.** Secrets read from somewhere other than the process environment, and written backup and restore guidance proven by a restore.
 - **P13, FAPI 2.0 and the deferred grants.** Pushed authorization requests (PAR), so request objects are refused until then; DPoP and mTLS-bound tokens; the device authorization grant; `client_secret_jwt` and `self_signed_tls_client_auth` client authentication; and a requested `acr_values` that forces re-authentication, which is accepted and ignored today.
 
@@ -105,10 +106,10 @@ These are choices, not gaps. Each names the decision.
 - **`resource` is validated against the client's registered audiences and not refused for a query component**, a decision: the registered list is what bounds the value.
 - **No aggregated or distributed claims**, a decision: the specification makes them optional.
 - **A person's password is not chosen in the console or the admin API**, a decision: a new subject owes a password change and the console issues a one-time password, so no operator handles a password. `odudu seed user --password` is the bootstrap exception.
-- **`odudu seed` creates the first of everything and does not amend** (a decision): once the admin API exists, changing a client belongs to it, so a client column has one door and not two.
+- **`odudu seed` creates the first of everything and does not amend** (a decision): once the admin API exists, changing a client belongs to it, so a client column has one door and not two. It has no flags for audiences, logout addresses, consent or impersonation and cannot create a `private_key_jwt` or `tls_client_auth` client; use the admin API or dynamic registration.
 - **A refused credential or session change writes no audit row**, ADR 0037's amendment: a link's key is chosen by the caller, and a refused change on a signed-in session is form validation. Sign-in steps, the token endpoints and the admin API do record their refusals.
 - **A successful `/introspect` or `/userinfo` call writes no row**, a decision: each is a read a resource server makes per request, and the grant was recorded when it was issued.
 - **TLS is ended in front of the server, never by it** (ADR 0020): in production the server refuses to boot until you assert that something in front does it.
 - **Expired state is deleted by one pass on a window per table** (ADR 0024, ADR 0021): `odudu reap`, run by the server or by your scheduler. A refresh token is kept for the life of its grant family, because deleting it sooner would disable reuse detection.
-- **Four operator commands have no button in the console** (ADR 0024, a decision). `odudu reap`, `odudu send-mail` and `odudu send-logouts` are passes the server already runs on its own schedule (`ODUDU_REAP_ENABLED`, `ODUDU_OUTBOX_ENABLED`, `ODUDU_LOGOUT_SENDER_ENABLED`), which a deployment may switch off and schedule itself; the console shows some of what they produce, the mail delivery list and a client's logout deliveries. `odudu client-origins rebuild` is a command to run once, after upgrading past the migration that added client origins, and a decision too: a one-off repair has no place on a screen people open every day.
+- **Four operator commands have no button in the console** (ADR 0024, a decision). `odudu reap`, `odudu send-mail` and `odudu send-logouts` are passes the server runs on its own schedule, which a deployment may switch off (`ODUDU_REAP_ENABLED`, `ODUDU_OUTBOX_ENABLED`, `ODUDU_LOGOUT_SENDER_ENABLED`) and schedule itself. `odudu client-origins rebuild` is run once after an upgrade that adds client origins.
 - **A paid, hosted layer, never required** (ADR 0042): planned, with no date, and nothing in the open product waits on it.

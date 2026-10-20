@@ -1,11 +1,11 @@
-// What this refuses is a short list of known shapes, not a proof that a page
-// holds no secret: the given strings, a filled password field, the console's
-// own "shown once" sentence, a token the length and alphabet of a generated
-// one-time password or client secret, and the setup banner's password line.
-// A green capture means none of those appeared; read the sidecar record
-// beside each image for what the page held. The scan runs before the shot's
-// rewrite and after it, so a secret shown and gone in between (a toast) is the
-// one case it can miss.
+// Refuses a short list of known shapes, not a proof that a page holds no secret:
+// the given strings, a filled password field, the console's "shown once"
+// sentence, a generated-looking token (32+ characters, mixed case with a digit)
+// and the setup banner's password line, before the shot's rewrite and after it.
+// It cannot catch a secret under 32 characters, one without upper case, lower
+// case or a digit (hex, a word-like password), a short token with four hyphens,
+// one split across text nodes or drawn as an image, or a toast shown and gone
+// between the two scans. Read each sidecar record for what a page held.
 export interface Visible {
   // Every text node, hidden ones included.
   readonly text: string;
