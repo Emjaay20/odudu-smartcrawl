@@ -829,6 +829,7 @@ Content written against what exists, including a guide "Protect an MCP server wi
 
 ### Task 26: A tour, then one page per area
 
+> **Owner addition (2026-10-20): console screenshots.** A scripted capture (`pnpm docs:screenshots`, Playwright, seeded demo tenant) writes a light and a dark WebP per area page with explicit width/height and lazy loading; demo data only; a test fails if any capture holds a real secret or one-time password; every image has alt text and a caption; CI runs the capture on the e2e stack and fails on a missing expected heading or control, not on pixel difference. Assumption: the e2e stack can be seeded with a readable demo tenant; verify before relying on it.
 
 **Files:** Create `apps/docs/content/en/admin-console/{index.md,tour.md}` and one page per feature directory (`ls apps/admin-console/src/features` at execution gives the list; the plan does not restate it). Screenshots: `apps/admin-console/scripts/galleryScreenshots.ts` exists (`grep -n "gallery:screenshots" apps/admin-console/package.json`) for the component gallery, not for areas: do **not** commit screenshots of live screens (they rot and have no check); each area page instead names its rail label, its tabs and its dangerous actions as text, generated from the console's own route table where possible.
 
