@@ -1,16 +1,16 @@
 import { expect, it } from 'vitest';
 import { loadDocument } from './markdown.js';
 
-// An item placed in a phase only in request-paths.md is placed nowhere that
+// An item placed in a phase only on the roadmap page is placed nowhere that
 // phase reads: its own exit criterion is what decides whether it closes.
 const HEADING = '**Administrative capabilities placed by the P4d gap audit**';
 const ITEM = /^- \*\*(.+?)\*\*: (P\d+[a-z]?)\b/u;
 const ROW = /^\| (P\d+[a-z]?) +\|/u;
 
 function placedItems(): { capability: string; phase: string }[] {
-  const { lines } = loadDocument('docs/request-paths.md');
+  const { lines } = loadDocument('apps/docs/content/en/roadmap.md');
   const start = lines.indexOf(HEADING);
-  if (start === -1) throw new Error(`docs/request-paths.md has no ${HEADING}`);
+  if (start === -1) throw new Error(`apps/docs/content/en/roadmap.md has no ${HEADING}`);
   const items: { capability: string; phase: string }[] = [];
   for (const line of lines.slice(start + 1)) {
     if (line.startsWith('**') || line.startsWith('## ')) break;

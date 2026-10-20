@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { loadDocument } from './markdown.js';
 
-const GUIDE = 'docs/request-paths.md';
+const GUIDE = 'apps/docs/content/en/roadmap.md';
 const HEADING = '## What is not implemented';
 
 // A phase (P3, P4b, P13), a decision, or an ADR. Anything else is an item
@@ -35,7 +35,7 @@ function itemsUnderHeading(): Item[] {
   return items;
 }
 
-describe('every gap docs/request-paths.md names has somewhere to be', () => {
+describe('every gap the roadmap page names has somewhere to be', () => {
   const items = itemsUnderHeading();
 
   it('finds the list, so a renamed heading fails rather than passing vacuously', () => {

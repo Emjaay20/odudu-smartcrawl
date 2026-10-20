@@ -24,6 +24,6 @@ The pages follow the order you will need them in.
 5. [Operating Odudu](../operating/index.md) is for the person who deploys it.
 6. [Reference](../reference/index.md) is where you look things up, and where the full recorded transcripts live.
 
-[Security](../security/index.md) says how Odudu protects what it holds. [Contributing](../contributing/index.md) is for building Odudu from source.
+The [roadmap](../roadmap.md) says what Odudu does not do yet. [Security](../security/index.md) says how Odudu protects what it holds. [Contributing](../contributing/index.md) is for building Odudu from source.
 
 <!-- filled by Increment 24 -->

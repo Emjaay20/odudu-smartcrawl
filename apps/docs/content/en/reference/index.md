@@ -23,6 +23,10 @@ rather follow a journey than look something up, the [guides](../guides/index.md)
 - [Audit events](./generated/events.md): the event types, actions and reasons the audit trail
   records.
 
+## What is not there yet
+
+The [roadmap](../roadmap.md) lists every gap, the phase that brings it, and the decisions that mean a thing is left out on purpose.
+
 ## Admin API
 
 The operations of the admin API, one page for each area. The same description is published as an
