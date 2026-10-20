@@ -1,0 +1,49 @@
+name: docs-commands
+
+# Runs every command a guide marks runnable against the quickstart stack. A
+# command in a guide is a runnable block or it is not in the guide;
+# an illustrative one is tagged `text`.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-commands-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs-commands:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup
+
+      - uses: ./.github/actions/image
+        with:
+          revision: ${{ github.sha }}
+
+      - name: Make the administrator's credentials
+        run: |
+          password="$(openssl rand -hex 16)"
+          echo "::add-mask::$password"
+          {
+            echo "ODUDU_ADMIN_EMAIL=admin@odudu.local"
+            echo "ODUDU_ADMIN_PASSWORD=$password"
+            echo "ODUDU_BASE=http://localhost:3195"
+          } >> "$GITHUB_ENV"
+
+      - name: Start the quickstart stack
+        run: quickstart/stack.sh up odudu-smoke-odudu 3195
+
+      - name: Run the guides' commands
+        run: node tools/docs-run/src/index.ts apps/docs/content/en/guides apps/docs/content/en/quick-start
+
+      - name: Stop the stack
+        if: always()
+        run: quickstart/stack.sh down
