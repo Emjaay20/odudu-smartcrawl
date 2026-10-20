@@ -10,11 +10,12 @@ const NOT_A_SITE_PATH = /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/iu;
 // A destination is either `<...>` or a run that may hold one level of balanced parentheses.
 const DESTINATION = String.raw`<[^>\n]*>|(?:[^()\s]|\([^()\s]*\))+`;
 const TITLE = String.raw`(?:\s+(?:"[^"\n]*"|'[^'\n]*'|\([^)\n]*\)))?`;
-const LINK = new RegExp(String.raw`(!?\[[^\]\n]*\]\()(${DESTINATION})(${TITLE}\s*\))`, 'gu');
+// The opening bracket is not required: hard-wrapped prose breaks a link's text across lines.
+const LINK = new RegExp(String.raw`(\]\()(${DESTINATION})(${TITLE}\s*\))`, 'gu');
 const DEFINITION = new RegExp(String.raw`^(\s{0,3}\[[^\]\n]+\]:\s*)(${DESTINATION})`, 'u');
 // Raw HTML is read one line at a time and only for quoted attributes.
 const HTML_REFERENCE = /(<(?:a|img)\b[^>]*?\s(?:href|src)=)(?:"([^"]*)"|'([^']*)')/giu;
-const INLINE_CODE = /(`+[^`]*`+)/u;
+const INLINE_CODE = /`+[^`]*`+/gu;
 const FENCE = /^\s*(`{3,}|~{3,})/u;
 
 function routeOfDocument(file: string): string {
@@ -50,31 +51,41 @@ function inBrackets(destination: string, replace: (raw: string) => string): stri
     : replace(destination);
 }
 
+interface Edit {
+  readonly start: number;
+  readonly end: number;
+}
+
+// Code spans are blanked, not cut out, so a link whose text is inline code is
+// still seen whole and every offset found in the blanked line holds in the line.
+function maskCode(line: string): string {
+  return line.replace(INLINE_CODE, (span) => '\u0000'.repeat(span.length));
+}
+
 function mapLine(line: string, replace: (raw: string) => string): string {
   const defined = line.replace(
     DEFINITION,
     (_, open: string, destination: string) => `${open}${inBrackets(destination, replace)}`,
   );
-  return defined
-    .split(INLINE_CODE)
-    .map((part, index) =>
-      index % 2 === 1
-        ? part
-        : part
-            .replace(
-              LINK,
-              (_, open: string, destination: string, close: string) =>
-                `${open}${inBrackets(destination, replace)}${close}`,
-            )
-            .replace(
-              HTML_REFERENCE,
-              (_, open: string, double: string | undefined, single: string | undefined) => {
-                const quote = double === undefined ? "'" : '"';
-                return `${open}${quote}${replace(double ?? single ?? '')}${quote}`;
-              },
-            ),
-    )
-    .join('');
+  const masked = maskCode(defined);
+  const edits: Edit[] = [];
+  for (const match of masked.matchAll(LINK)) {
+    const start = match.index + (match[1] ?? '').length;
+    edits.push({ start, end: start + (match[2] ?? '').length });
+  }
+  for (const match of masked.matchAll(HTML_REFERENCE)) {
+    const start = match.index + (match[1] ?? '').length + 1;
+    edits.push({ start, end: start + (match[2] ?? match[3] ?? '').length });
+  }
+  let result = '';
+  let cursor = 0;
+  for (const { start, end } of edits.sort((a, b) => a.start - b.start)) {
+    result += defined.slice(cursor, start);
+    const original = defined.slice(start, end);
+    result += original.startsWith('<') ? inBrackets(original, replace) : replace(original);
+    cursor = end;
+  }
+  return result + defined.slice(cursor);
 }
 
 // Applies `replace` to the target of every link outside code.

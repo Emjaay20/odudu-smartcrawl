@@ -38,6 +38,27 @@ const FORMS: { form: string; input: string; pages: string; image: string }[] = [
     image: '[a](/docs/guides/?q=1&r=2#top)',
   },
   {
+    form: 'a link whose text is inline code',
+    input: 'See [`GET /x`](./other.md#x) and `code` then [`a`](/guides/) twice.',
+    pages:
+      'See [`GET /x`](https://site.test/odudu/reference/generated/other/#x) and `code` then [`a`](https://site.test/odudu/guides/) twice.',
+    image:
+      'See [`GET /x`](/docs/reference/generated/other/#x) and `code` then [`a`](/docs/guides/) twice.',
+  },
+  {
+    form: 'a link whose text is wrapped onto the next line',
+    input: 'See [the first part\nand the second](./other.md#x) there.',
+    pages:
+      'See [the first part\nand the second](https://site.test/odudu/reference/generated/other/#x) there.',
+    image: 'See [the first part\nand the second](/docs/reference/generated/other/#x) there.',
+  },
+  {
+    form: 'a destination that only looks like a link inside inline code',
+    input: 'Write `[a](./other.md)` to link.',
+    pages: 'Write `[a](./other.md)` to link.',
+    image: 'Write `[a](./other.md)` to link.',
+  },
+  {
     form: 'a pathname:// link to a file in the static directory',
     input: '[j](pathname:///openapi/admin.json)',
     pages: '[j](https://site.test/odudu/openapi/admin.json)',
