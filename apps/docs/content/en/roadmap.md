@@ -401,6 +401,13 @@ session lifecycle. A citation of either half here means that half.
   row-level security learns about it from an hourly log line — a decision
   rather than an oversight, and ADR 0024 records it as the one precondition
   bought at that price to keep the loop free of logic.
+- **The four operator commands have no button in the console.**
+  `odudu reap`, `odudu send-mail`, `odudu send-logouts` and
+  `odudu client-origins rebuild` are the work of a schedule rather than of a
+  person at a screen, so the console offers no way to start them. It shows
+  some of what they produce, the mail delivery list and a client's logout
+  deliveries. A decision, ADR 0024: each is a command first and a timer second, and a
+  deployment that schedules it from outside is a supported configuration.
 
 **Administrative capabilities placed by the P4d gap audit**
 

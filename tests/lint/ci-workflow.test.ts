@@ -135,10 +135,10 @@ describe('the CI workflow', () => {
   });
 
   describe('the image build', () => {
-    it('is one action both jobs that run the image use, with one writer of the cache', async () => {
+    it('is one action every job that runs the image uses, with one writer of the cache', async () => {
       const workflow = await read('.github/workflows/verify.yml');
       const uses = workflow.match(/uses: \.\/\.github\/actions\/image/gu) ?? [];
-      expect(uses).toHaveLength(2);
+      expect(uses).toHaveLength(3);
       expect(workflow).toContain(
         "save-cache: ${{ strategy.job-index == 0 && github.event_name == 'push' }}",
       );
@@ -175,10 +175,53 @@ describe('the CI workflow', () => {
       const action = await read('.github/actions/image/action.yml');
       const run = await read('apps/admin-console/e2e/run.sh');
       const smoke = await read('infra/docker/smoke.sh');
+      const shots = await read('apps/docs/scripts/console-shots/with-stack.sh');
       const e2eProject = /E2E_COMPOSE_PROJECT:-([\w-]+)/u.exec(run)?.[1];
       const smokeProject = /COMPOSE_PROJECT_NAME=([\w-]+)/u.exec(smoke)?.[1];
+      const shotsProject = /SHOTS_COMPOSE_PROJECT:-([\w-]+)/u.exec(shots)?.[1];
       expect(action).toContain(`${String(e2eProject)}-odudu\n`);
       expect(action).toContain(`${String(smokeProject)}-odudu\n`);
+      expect(action).toContain(`${String(shotsProject)}-odudu\n`);
+    });
+  });
+
+  describe('the console capture job', () => {
+    async function job(): Promise<string> {
+      const workflow = await read('.github/workflows/verify.yml');
+      const from = workflow.slice(workflow.indexOf('\n  console-shots:\n'));
+      return from.slice(0, from.indexOf('\n  conformance:\n'));
+    }
+
+    it('runs only when changes found the console or the documentation touched, and the gate waits for it', async () => {
+      const block = await job();
+      expect(block).toContain('needs: changes');
+      expect(block).toMatch(/^ {4}if: needs\.changes\.outputs\.buildImage == 'true'$/mu);
+      const workflow = await read('.github/workflows/verify.yml');
+      expect(gateNeeds(workflow)).toContain('console-shots');
+    });
+
+    it('checks the console against the committed records, on the image built from this commit', async () => {
+      const block = await job();
+      expect(block).toContain('apps/docs/scripts/console-shots/with-stack.sh --check');
+      expect(block).toContain("SHOTS_PREBUILT: '1'");
+      expect(block).toContain('ODUDU_REVISION: ${{ github.sha }}');
+      expect(block).toContain('uses: ./.github/actions/image');
+      expect(block).toContain('cp infra/docker/.env.example infra/docker/.env');
+    });
+
+    it('is the same capture a writer runs: one script starts the stack, whose records the check reads', async () => {
+      const shots = await read('apps/docs/scripts/console-shots/with-stack.sh');
+      expect(shots).toContain('run.ts "$@"');
+      expect(shots).toContain('org.opencontainers.image.revision');
+      const run = await read('apps/docs/scripts/console-shots/run.ts');
+      expect(run).toContain("process.argv.includes('--check')");
+    });
+
+    it('never builds for a pull request that touches neither the console nor the documentation', async () => {
+      const { classifyChanges } = await import('../../tools/ci/src/changes.ts');
+      expect(classifyChanges(['docs/NEXT.md']).buildImage).toBe(false);
+      expect(classifyChanges(['apps/admin-console/src/main.tsx']).buildImage).toBe(true);
+      expect(classifyChanges(['apps/docs/content/en/roadmap.md']).buildImage).toBe(true);
     });
   });
 

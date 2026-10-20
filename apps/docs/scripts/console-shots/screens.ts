@@ -12,6 +12,11 @@ async function exists(page: Page, cell: string): Promise<boolean> {
   return (await page.getByRole('row', { name: new RegExp(cell, 'u') }).count()) > 0;
 }
 
+async function openArea(page: Page, context: Context, area: string): Promise<void> {
+  await page.goto(`${context.base}/console/${area}`);
+  await page.getByRole('heading', { level: 1 }).waitFor();
+}
+
 async function openList(page: Page, context: Context, area: string): Promise<void> {
   await page.goto(`${context.base}/console/${DEMO}/${area}`);
 }
@@ -156,6 +161,271 @@ export const SCREENS: readonly Screen[] = [
     },
     leave: async (page) => {
       await page.getByRole('button', { name: 'Cancel' }).click();
+    },
+  },
+  {
+    name: 'overview',
+    alt: "The demo tenant's Overview: nothing needs attention, the counts of its subjects, clients, groups, roles and scopes, and its discovery addresses, with the console's menu on the left.",
+    caption: 'A tenant opens on its Overview: what needs attention, the counts and its addresses.',
+    signedIn: true,
+    expect: [{ heading: 'Overview' }, { heading: 'Needs attention' }, { heading: 'Counts' }],
+    open: async (page, context) => {
+      await openArea(page, context, DEMO);
+      await page.getByText(/^\d+ subjects?$/u).waitFor();
+    },
+  },
+  {
+    name: 'subject-profile',
+    alt: "ada's record on its Profile tab, with the tabs Profile, Credentials, Groups, Roles, Required actions, Sessions, Consents and Grants above the account fields.",
+    caption: 'A person opens on a Profile tab. The Activity tab is just beyond the right edge.',
+    signedIn: true,
+    expect: [
+      { heading: PERSON },
+      { role: 'tab', name: 'Profile' },
+      { role: 'tab', name: 'Credentials' },
+      { role: 'tab', name: 'Activity' },
+    ],
+    open: async (page, context) => {
+      await openList(page, context, 'subjects');
+      await page.getByRole('row', { name: new RegExp(PERSON, 'u') }).click();
+      await page.getByRole('tab', { name: 'Profile' }).waitFor();
+    },
+  },
+  {
+    name: 'groups',
+    alt: "The demo tenant's Groups list, empty, with a Create a group button and a search by name.",
+    caption: 'No group exists yet in the demo tenant.',
+    signedIn: true,
+    expect: [{ heading: 'Groups' }, { role: 'link', name: 'Create a group' }],
+    open: async (page, context) => {
+      await openArea(page, context, `${DEMO}/groups`);
+      await page.getByText('No groups yet').waitFor();
+    },
+  },
+  {
+    name: 'new-group',
+    alt: 'The Create a group form with the name engineering typed in and a parent picker beneath it.',
+    caption: 'A group needs a name. It can sit under a parent.',
+    signedIn: true,
+    expect: [
+      { heading: 'Create a group' },
+      { label: 'Name' },
+      { role: 'button', name: 'Create group' },
+    ],
+    open: async (page, context) => {
+      await page.goto(`${context.base}/console/${DEMO}/groups/new`);
+      await page.getByLabel('Name', { exact: true }).fill('engineering');
+    },
+  },
+  {
+    name: 'roles',
+    alt: "The demo tenant's Roles list: the eight built-in admin capabilities, each marked as an admin capability, and a Create a role button.",
+    caption: 'Every tenant starts with the admin capabilities as roles.',
+    signedIn: true,
+    expect: [
+      { heading: 'Roles' },
+      { role: 'link', name: 'Create a role' },
+      {
+        rows: [
+          'tenant-admin',
+          'view-users',
+          'manage-users',
+          'manage-clients',
+          'manage-tenant',
+          'manage-keys',
+          'manage-sessions',
+          'view-audit',
+        ],
+      },
+    ],
+    open: async (page, context) => {
+      await openArea(page, context, `${DEMO}/roles`);
+      await page.getByText('8 roles').waitFor();
+    },
+  },
+  {
+    name: 'client-redirects',
+    alt: "my-app's record on its Redirects & origins tab, listing its one redirect URI and the fields to add another redirect URI or a web origin.",
+    caption:
+      'The redirect URIs a client may send the browser back to, and the web origins it may be called from.',
+    signedIn: true,
+    expect: [
+      { heading: CLIENT },
+      { role: 'tab', name: 'Redirects & origins' },
+      { role: 'button', name: 'Add redirect URI' },
+    ],
+    open: async (page, context) => {
+      await openList(page, context, 'clients');
+      await page.getByRole('row', { name: new RegExp(CLIENT, 'u') }).click();
+      await page.getByRole('tab', { name: 'Redirects & origins' }).click();
+      await page.getByRole('button', { name: 'Add redirect URI' }).waitFor();
+    },
+  },
+  {
+    name: 'scopes',
+    alt: "The demo tenant's Scopes list: openid, profile, email, address, phone, roles, groups and offline_access, and a Create a scope button.",
+    caption: 'The eight scopes every tenant starts with.',
+    signedIn: true,
+    expect: [
+      { heading: 'Scopes' },
+      { role: 'link', name: 'Create a scope' },
+      {
+        rows: [
+          'openid',
+          'profile',
+          'email',
+          'address',
+          'phone',
+          'roles',
+          'groups',
+          'offline_access',
+        ],
+      },
+    ],
+    open: async (page, context) => {
+      await openArea(page, context, `${DEMO}/scopes`);
+      await page.getByText('8 scopes').waitFor();
+    },
+  },
+  {
+    name: 'registration-tokens',
+    alt: 'The Registration tokens page with the Mint a registration token form, its Uses and Lifetime fields and a Mint token button, above an empty list.',
+    caption: 'No registration token is live. A token is minted from this form.',
+    signedIn: true,
+    expect: [
+      { heading: 'Registration tokens' },
+      { label: 'Uses' },
+      { label: 'Lifetime' },
+      { role: 'button', name: 'Mint token' },
+    ],
+    open: async (page, context) => {
+      await openArea(page, context, `${DEMO}/registration-tokens`);
+      await page.getByText('No registration tokens yet').waitFor();
+    },
+  },
+  {
+    name: 'flow',
+    alt: 'The Sign-in flow page: four steps in order, passkey, password, otp and recovery-code, each with a requirement menu and Up and Down buttons.',
+    caption: 'The steps a person is asked, in order, each with its requirement.',
+    signedIn: true,
+    expect: [
+      { heading: 'Sign-in flow' },
+      { heading: 'Steps' },
+      { label: 'Requirement for password' },
+    ],
+    open: (page, context) => openArea(page, context, `${DEMO}/flow`),
+  },
+  {
+    name: 'signing-keys',
+    alt: 'The Signing keys page: a Stage key button, an empty Rotating lane, the Active lane with one ES256 key that cannot be retired while it is active, and an empty Retired lane.',
+    caption: 'One key is active. A staged key waits in Rotating until it is promoted.',
+    signedIn: true,
+    expect: [
+      { heading: 'Signing keys' },
+      { heading: 'Active' },
+      { role: 'button', name: 'Stage key' },
+    ],
+    open: async (page, context) => {
+      await openArea(page, context, `${DEMO}/keys`);
+      await page.getByRole('heading', { name: 'Active', exact: true }).evaluate((heading) => {
+        heading.scrollIntoView({ block: 'start' });
+      });
+    },
+  },
+  {
+    name: 'tenant-sessions',
+    alt: "The demo tenant's Sessions page with an End every session button and a message that nobody is signed in.",
+    caption: 'Nobody is signed in to the demo tenant.',
+    signedIn: true,
+    expect: [{ heading: 'Sessions' }, { role: 'button', name: 'End every session' }],
+    open: async (page, context) => {
+      await openArea(page, context, `${DEMO}/sessions`);
+      await page.getByText('No sessions yet').waitFor();
+    },
+  },
+  {
+    name: 'settings',
+    alt: 'The Settings page: a row of section names from General to Audit retention, then the General and Sessions sections with their fields.',
+    caption: 'Every section of the settings saves on its own.',
+    signedIn: true,
+    expect: [
+      { heading: 'Settings' },
+      { role: 'button', name: 'Password policy' },
+      { role: 'button', name: 'Brute force' },
+    ],
+    open: (page, context) => openArea(page, context, `${DEMO}/settings`),
+  },
+  {
+    name: 'email',
+    alt: 'The Email page: a notice that nothing sends this tenant’s mail, and the Mail relay form with Host, Port and Sender address.',
+    caption:
+      'Until a relay is saved, verification and reset mail is only written to the server’s log.',
+    signedIn: true,
+    expect: [
+      { heading: 'Email' },
+      { heading: 'Mail relay' },
+      { label: 'Host' },
+      { role: 'button', name: 'Send test message' },
+    ],
+    open: (page, context) => openArea(page, context, `${DEMO}/email`),
+  },
+  {
+    name: 'audit',
+    alt: "The demo tenant's audit trail: the three events so far, tenant.create, client.create and subject.create, each allowed and made by a system administrator.",
+    caption: 'The trail records each change with who made it, newest first.',
+    signedIn: true,
+    expect: [
+      { heading: 'Audit trail' },
+      { role: 'button', name: 'Apply filters' },
+      { rows: ['tenant.create', 'client.create', 'subject.create'] },
+    ],
+    open: async (page, context) => {
+      await openArea(page, context, `${DEMO}/audit`);
+      await page.getByText('subject.create').evaluate((cell) => {
+        cell.scrollIntoView({ block: 'center' });
+      });
+    },
+  },
+  {
+    name: 'tenants',
+    alt: 'The Tenants list of the system tenant: system and demo, each with an Enter button, and the Import a tenant and Create a tenant buttons.',
+    caption: 'The system tenant lists every tenant, with a way into each.',
+    signedIn: true,
+    expect: [
+      { heading: 'Tenants' },
+      { role: 'link', name: 'Create a tenant' },
+      { role: 'link', name: 'Import a tenant' },
+      { rows: ['system', DEMO] },
+    ],
+    open: async (page, context) => {
+      await page.goto(`${context.base}/console/system/tenants`);
+      await page.getByText(/^\d+ tenants?$/u).waitFor();
+    },
+  },
+  {
+    name: 'export',
+    alt: 'The Export page for demo, with an Include subjects switch and an Export to a file button.',
+    caption: 'An export is a file of the tenant’s configuration. No secret is in it.',
+    signedIn: true,
+    expect: [
+      { heading: 'Export demo' },
+      { label: 'Include subjects' },
+      { role: 'button', name: 'Export to a file' },
+    ],
+    open: (page, context) => openArea(page, context, `${DEMO}/export`),
+  },
+  {
+    name: 'system-admins',
+    alt: 'The System administrators page: one administrator, admin@odudu.local, holding Full (tenant-admin) and reaching every tenant.',
+    caption: 'The first administrator holds every capability and reaches every tenant.',
+    signedIn: true,
+    expect: [
+      { heading: 'System administrators' },
+      { role: 'button', name: 'Give it to the chosen subject' },
+    ],
+    open: async (page, context) => {
+      await openArea(page, context, 'system/system-admins');
+      await page.getByText('1 administrator').waitFor();
     },
   },
 ];

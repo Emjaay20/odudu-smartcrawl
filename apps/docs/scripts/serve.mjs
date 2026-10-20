@@ -14,6 +14,7 @@ const TYPES = {
   '.xml': 'application/xml',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.webp': 'image/webp',
   '.woff2': 'font/woff2',
   '.md': 'text/markdown; charset=utf-8',
 };

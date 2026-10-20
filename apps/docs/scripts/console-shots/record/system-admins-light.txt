@@ -1,0 +1,121 @@
+@layer {
+  [data-react-aria-pressable] {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+}
+Odudu console
+Skip to content
+odudu · system
+System
+Tenants
+System administrators
+Overview
+Identity
+Subjects
+Groups
+Roles
+Applications
+Clients
+Scopes
+Registration tokens
+Security
+Sign-in flow
+Signing keys
+Sessions
+Tenant
+Settings
+Email
+Export
+Observe
+Audit trail
+Signed in as 
+admin@odudu.local
+Theme
+System
+Light
+Dark
+Switch tenant
+Sign out
+Collapse menu
+or press 
+[
+odudu · system
+Menu
+System
+System administrators
+Everybody in system who holds an admin capability. manage-tenants, which Full carries here, is what reaches every other tenant; anything else held in system acts in system only. A change that would leave system with no enabled holder of manage-tenants is refused.
+Username
+Clear
+Search
+or press 
+↩ 
+Return
+Status
+Any status
+▾
+Any status
+Enabled
+Disabled
+Holds
+Any capability
+▾
+Any capability
+Full (tenant-admin)
+view-users
+manage-users
+manage-clients
+manage-tenant
+manage-keys
+manage-sessions
+view-audit
+manage-tenants
+1 administrator
+admin@odudu.local
+reaches every tenant
+Created 
+recently
+Full (tenant-admin)
+ · directly
+Change admin@odudu.local’s capabilities
+Previous
+Page 1
+Next
+Add an administrator
+Give a subject of 
+system
+ what it should hold, or create a new one. Nobody is given a password here.
+Subject in system
+0 selected
+Search
+admin@odudu.local
+user · already holds a capability: change it in the list
+What they hold
+Full (tenant-admin)
+Every capability, manage-tenants among them, so every tenant too.
+view-users
+Read subjects, their profiles, credentials, roles and groups.
+Carried by Full (tenant-admin).
+manage-users
+Create, change and delete subjects. Carries view-users.
+Carried by Full (tenant-admin).
+manage-clients
+Register, change and delete clients and their secrets.
+Carried by Full (tenant-admin).
+manage-tenant
+Change settings, roles, groups, scopes, the sign-in flow and email.
+Carried by Full (tenant-admin).
+manage-keys
+Create, promote, retire and delete signing keys.
+Carried by Full (tenant-admin).
+manage-sessions
+See and end sessions, and revoke grants.
+Carried by Full (tenant-admin).
+view-audit
+Read the audit trail.
+Carried by Full (tenant-admin).
+manage-tenants
+Create, change and disable tenants, and act inside every one.
+Carried by Full (tenant-admin).
+Full is every capability, manage-tenants among them. You can give only what you hold.
+Give it to the chosen subject
+Create a new subject as an administrator

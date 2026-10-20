@@ -83,8 +83,33 @@ async function present(page: Page, options: Options): Promise<void> {
       // A time reads differently on every run, and its width moves the columns; a
       // word that is true of every row the demo makes holds it still.
       for (const time of document.querySelectorAll('time')) time.textContent = 'recently';
+      // An id and a moment differ on every run: each distinct one becomes the
+      // next of a fixed series, in the order the page shows them.
+      const ids = new Map<string, string>();
+      const moments = new Map<string, string>();
+      const standIn = (found: string): string => {
+        const known = ids.get(found);
+        if (known !== undefined) return known;
+        const made = `0199aa00-0000-7000-8000-${String(ids.size + 1).padStart(12, '0')}`;
+        ids.set(found, made);
+        return made;
+      };
+      const momentOf = (found: string): string => {
+        const known = moments.get(found);
+        if (known !== undefined) return known;
+        const made = `2026-03-02 09:${String(41 - moments.size).padStart(2, '0')}:00`;
+        moments.set(found, made);
+        return made;
+      };
       const replace = (text: string): string =>
-        text.replaceAll(origin, published).replaceAll(admin, publishedAdmin);
+        text
+          .replaceAll(origin, published)
+          .replaceAll(admin, publishedAdmin)
+          .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gu, standIn)
+          .replace(/[0-9a-f]{8}…/gu, '0199aa00…')
+          // A published key's public point is new on every stack.
+          .replace(/("(?:x|y|n)"\s*:\s*")[A-Za-z0-9_-]+"/gu, '$1…"')
+          .replace(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/gu, momentOf);
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
       for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
         node.nodeValue = replace(node.nodeValue ?? '');
@@ -245,6 +270,8 @@ export async function captureScreens(
       const browserContext = await browser.newContext({
         viewport,
         colorScheme: theme,
+        timezoneId: 'UTC',
+        locale: 'en-US',
         reducedMotion: 'reduce',
       });
       const sent: string[] = [];

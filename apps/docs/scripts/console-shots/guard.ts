@@ -19,6 +19,10 @@ export interface Visible {
 const SHOWN_ONCE = /only time the .+ is shown/iu;
 const PASSWORD_LINE = /^\s*password:\s*[A-Za-z0-9_-]{12,}\s*$/imu;
 const UUID = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/giu;
+// The public half of a published key: an EC point (x, y) or an RSA modulus (n)
+// is as long and as random as a secret and is served to anybody. The private
+// members (d, p, q, ...) are not named here, so they are still refused.
+const PUBLIC_KEY_MEMBER = /"(?:x|y|n)"\s*:\s*"[A-Za-z0-9_-]+"/gu;
 // 24 random bytes as base64url, which is what a one-time password is.
 const GENERATED = /(?<![A-Za-z0-9_-])[A-Za-z0-9_-]{32,}(?![A-Za-z0-9_-])/u;
 
@@ -48,7 +52,7 @@ export function findSecrets(visible: Visible, known: readonly string[]): string[
   }
   if (PASSWORD_LINE.test(visible.text)) found.push('a line shows a password');
   for (const value of surfaces) {
-    const token = GENERATED.exec(value.replaceAll(UUID, ''))?.[0];
+    const token = GENERATED.exec(value.replaceAll(UUID, '').replaceAll(PUBLIC_KEY_MEMBER, ''))?.[0];
     if (token !== undefined && looksRandom(token)) {
       found.push(
         `a token the shape of a generated secret is on the page (${token.slice(0, 4)}…, ${String(token.length)} characters)`,

@@ -1,0 +1,52 @@
+---
+title: Scopes in the console
+description: Create a scope, decide which clients get it, write the text people see when they consent, and connect roles to it.
+sidebar_position: 7
+---
+
+import ConsoleShot from '@site/src/components/ConsoleShot';
+
+# Scopes in the console
+
+A scope is a name an application uses to say what it wants, such as `profile` or `reports:read`. When a person signs in, the scopes the application asked for decide what its tokens carry, and the consent screen can list them so the person knows what they are agreeing to. This page is for adding your own and for choosing which clients get which. It needs the `manage-tenant` capability; the menu entry is **Scopes** under **APPLICATIONS**.
+
+<ConsoleShot
+  name="scopes"
+  alt="The demo tenant's Scopes list: openid, profile, email, address, phone, roles, groups and offline_access, and a Create a scope button."
+  caption="The eight scopes every tenant starts with."
+/>
+
+## 1. Create a scope
+
+Choose **Create a scope**. Give it a **Name** and, if you want, a **Description**, then choose **Create scope**. An application asks for the scope by this name and a token carries it, so the name is fixed once the scope exists. Make a new scope and assign it instead of renaming.
+
+## 2. Decide where its claims are carried
+
+Open the scope. On the **General** tab, **In the ID token** and **In the access token** choose where the scope's claims appear once it is granted.
+
+## 3. Write what a person is shown
+
+Still on the **General** tab, **Consent text** is what the consent screen says in place of the scope's name, and **Display order** puts it among the others, lowest first. Both are optional.
+
+## 4. Give it to clients
+
+A scope does nothing until a client is assigned it. There are two ways.
+
+1. For clients made from now on, set **For a client made from now on** on the **General** tab to **Default** or **Optional**. Clients that already exist are not changed.
+2. For a client that exists, open the scope's **Clients** tab, pick the client under **Client to assign** and choose **Assign to a client**. Or open the client and use its **Scopes** tab, which is the same assignment seen from the other side.
+
+A default scope goes to a request that names no scope. An optional scope goes only to a request that names it.
+
+## 5. Connect roles
+
+The **Roles** tab lists the roles whose claims a token carries when it is granted this scope. The **Claim mappers** tab chooses which mappers build the scope's claims, under **Bound mappers**. While none is bound, the mappers that declare the scope are used, and the tab says which.
+
+The **Activity** tab lists every change made to the scope.
+
+## Things that cannot be undone
+
+**Delete** on the **General** tab, named for the scope as in **Delete reports:read**, takes the scope off every client that carries it and unmaps every role mapped to it. Applications that asked for it will then be refused or issued less.
+
+## Do the same through the API
+
+The calls are in the [scopes area of the admin API](../reference/generated/admin-api/scopes.md); assigning a scope to a client is on the [clients area](../reference/generated/admin-api/clients.md). To understand what a scope is, read the [Scopes concept](../concepts/scopes.mdx). From the command line, `odudu seed scope` and `odudu seed assign-scope` do the same for a first installation.

@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
+import { listAuditQuerySchema } from '#/admin/audit';
 import { clientSchema, listClientsQuerySchema } from '#/admin/clients';
 import { documentedJsonSchema } from '#/admin/docs';
+import { groupRecordSchema, listGroupsQuerySchema } from '#/admin/groups';
+import { mailMessageSchema } from '#/admin/mail';
+import { listRolesQuerySchema, roleSchema } from '#/admin/roles';
+import { putSmtpRequestSchema, smtpConfigSchema, testSmtpRequestSchema } from '#/admin/smtp';
+import { whoamiResponseSchema } from '#/admin/whoami';
 import { createTenantRequestSchema } from '#/admin/tenants';
 
 function property(schema: z.ZodType, name: string): { description?: string } {
@@ -37,6 +43,23 @@ describe('documentedJsonSchema', () => {
     expect(documentedJsonSchema(createTenantRequestSchema).examples).toEqual([
       { name: 'acme', display_name: 'Acme Corporation' },
     ]);
+  });
+
+  it('describes the fields of a group, a role, a mail message, a relay and whoami', () => {
+    expect(property(groupRecordSchema, 'path').description).toMatch(/names from the top/u);
+    expect(property(groupRecordSchema, 'subtree_admin_reach').description).toMatch(/beneath/u);
+    expect(property(listGroupsQuerySchema, 'parent').description).toMatch(/root/u);
+    expect(property(roleSchema, 'client_key').description).toMatch(/client/u);
+    expect(property(listRolesQuerySchema, 'client').description).toMatch(/tenant/u);
+    expect(property(mailMessageSchema, 'to_masked').description).toMatch(/read subjects/u);
+    expect(property(smtpConfigSchema, 'password_set').description).toMatch(/never/u);
+    expect(property(putSmtpRequestSchema, 'from_address').description).toMatch(/From/u);
+    expect(property(whoamiResponseSchema, 'crossTenant').description).toMatch(/path/u);
+  });
+
+  it('keeps the audit trail’s own words for `to`, and gives the relay test its own', () => {
+    expect(property(listAuditQuerySchema, 'to').description).toMatch(/before this instant/u);
+    expect(property(testSmtpRequestSchema, 'to').description).toMatch(/message/u);
   });
 
   it('leaves the schemas the console imports without any of this prose', () => {

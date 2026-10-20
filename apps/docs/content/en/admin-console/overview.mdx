@@ -1,0 +1,34 @@
+---
+title: Overview in the console
+description: Check what needs attention in a tenant, see how big it is and copy the addresses an application needs.
+sidebar_position: 2
+---
+
+import ConsoleShot from '@site/src/components/ConsoleShot';
+
+# Overview in the console
+
+Every tenant opens on its **Overview**. It is the page to look at first thing: it tells you whether something needs doing, how many people and applications the tenant holds, and the addresses an application is configured with. It needs no capability beyond signing in to the tenant, so every administrator can open it.
+
+<ConsoleShot
+  name="overview"
+  alt="The demo tenant's Overview: nothing needs attention, the counts of its subjects, clients, groups, roles and scopes, and its discovery addresses, with the console's menu on the left."
+  caption="A tenant opens on its Overview: what needs attention, the counts and its addresses."
+/>
+
+## 1. Read the Overview
+
+1. Look at **Needs attention** first. It is empty, with a tick, when all is well. It lists a problem only when it is certain of it: a mail relay missing while email verification or password reset is on, a signing key that has been published long enough to promote, and a registration policy that has no room left for another client. Each entry links to the area that fixes it.
+2. Read **Counts**. It shows how many subjects, clients, groups, roles and scopes the tenant holds, and how many clients it allows. Each name is a link to its list.
+3. Copy what an application needs from **Discovery**. The **Issuer** is the tenant's address, and the discovery document lists every other address under it. The same panel holds the tenant's published keys and the raw key set.
+4. Glance at **Latest activity**. It shows the latest entries of the audit trail, with **Open the audit trail** beside it for the rest.
+
+If one panel cannot be read, because your account lacks a capability it needs, the page says so in that panel and keeps the others.
+
+## Nothing here changes anything
+
+The Overview only reads. There are no dangerous actions on it, and everything it shows is also in the area it links to.
+
+## Do the same through the API
+
+The addresses are public: `GET /tenants/{tenant}/.well-known/openid-configuration` and the key set it names are described in the [endpoint reference](../reference/generated/endpoints.md). The counts come from the list calls of the [subjects](../reference/generated/admin-api/subjects.md), [clients](../reference/generated/admin-api/clients.md), [groups](../reference/generated/admin-api/groups.md), [roles](../reference/generated/admin-api/roles.md) and [scopes](../reference/generated/admin-api/scopes.md) areas. What you may see comes from [whoami](../reference/generated/admin-api/whoami.md).

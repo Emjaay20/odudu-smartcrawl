@@ -30,5 +30,73 @@
   "issue-password": {
     "width": 1100,
     "height": 820
+  },
+  "overview": {
+    "width": 1100,
+    "height": 820
+  },
+  "subject-profile": {
+    "width": 1100,
+    "height": 820
+  },
+  "groups": {
+    "width": 1100,
+    "height": 820
+  },
+  "new-group": {
+    "width": 1100,
+    "height": 820
+  },
+  "roles": {
+    "width": 1100,
+    "height": 820
+  },
+  "client-redirects": {
+    "width": 1100,
+    "height": 820
+  },
+  "scopes": {
+    "width": 1100,
+    "height": 820
+  },
+  "registration-tokens": {
+    "width": 1100,
+    "height": 820
+  },
+  "flow": {
+    "width": 1100,
+    "height": 820
+  },
+  "signing-keys": {
+    "width": 1100,
+    "height": 820
+  },
+  "tenant-sessions": {
+    "width": 1100,
+    "height": 820
+  },
+  "settings": {
+    "width": 1100,
+    "height": 820
+  },
+  "email": {
+    "width": 1100,
+    "height": 820
+  },
+  "audit": {
+    "width": 1100,
+    "height": 820
+  },
+  "tenants": {
+    "width": 1100,
+    "height": 820
+  },
+  "export": {
+    "width": 1100,
+    "height": 820
+  },
+  "system-admins": {
+    "width": 1100,
+    "height": 820
   }
 }

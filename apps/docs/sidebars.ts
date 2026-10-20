@@ -48,7 +48,7 @@ export const SIDEBAR_ITEMS: SidebarItemConfig[] = [
   },
   directory(section('guides/index').label, 'guides'),
   directory(section('concepts/index').label, 'concepts'),
-  page('admin-console/index'),
+  directory(section('admin-console/index').label, 'admin-console'),
   page('operating/index'),
   {
     type: 'category' as const,

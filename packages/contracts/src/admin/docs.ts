@@ -37,13 +37,27 @@ import {
   listExecutionsResponseSchema,
   replaceExecutionsRequestSchema,
 } from '#/admin/flow';
+import {
+  countGroupsQuerySchema,
+  groupFieldsSchema,
+  groupRecordSchema,
+  listGroupsQuerySchema,
+} from '#/admin/groups';
 import { createKeyRequestSchema, listKeysQuerySchema, signingKeySchema } from '#/admin/keys';
+import { mailMessageSchema } from '#/admin/mail';
 import { amendProfileRequestSchema, profileSchema } from '#/admin/profile';
 import {
   mintRegistrationTokenRequestSchema,
   mintRegistrationTokenResponseSchema,
   registrationTokenSchema,
 } from '#/admin/registration-tokens';
+import {
+  countRolesQuerySchema,
+  createRoleRequestSchema,
+  listRolesQuerySchema,
+  roleFieldsSchema,
+  roleSchema,
+} from '#/admin/roles';
 import { scopeMappersSchema, setScopeMappersRequestSchema } from '#/admin/scope-mappers';
 import {
   assignScopeToClientRequestSchema,
@@ -66,6 +80,7 @@ import {
   tenantSessionSchema,
 } from '#/admin/sessions';
 import { amendSettingsRequestSchema, settingsSchema } from '#/admin/settings';
+import { putSmtpRequestSchema, smtpConfigSchema } from '#/admin/smtp';
 import {
   adminCapabilitiesResponseSchema,
   amendSubjectRequestSchema,
@@ -108,6 +123,7 @@ import {
   listTenantsQuerySchema,
   tenantSchema,
 } from '#/admin/tenants';
+import { whoamiResponseSchema } from '#/admin/whoami';
 
 function fingerprint(names: readonly string[]): string {
   return [...names].sort().join(',');
@@ -311,6 +327,11 @@ describeFields(consentSchema, {
   granted_at: 'When the user agreed.',
 });
 describeFields(countResponseSchema, {
+  default:
+    'Whether every subject created from now on is given it, by the admin API, registration and seeding alike.',
+  child_role_id: 'The role to nest in this one. Whoever holds this role then holds it too.',
+  to: 'The address to send the test message to.',
+  sent: 'True when the relay accepted the message. A relay that refuses it answers 502 instead.',
   count: 'How many items match, up to a cap.',
   capped: 'True when more match than `count` says, because counting stops at the cap.',
 });
@@ -847,6 +868,106 @@ describeFields(tenantSchema, {
   created_at: 'When the tenant was created.',
 });
 
+const GROUP_WORDS: Fields = {
+  id: 'The group’s identifier, a UUID.',
+  name: 'The group’s own name, unique among the groups beside it. Fixed once the group is made.',
+  description: 'What the group is for, or null.',
+  parent_id: 'The group this one sits under, or null for a group at the top level.',
+  default_for_new_subjects:
+    'Whether every subject created from now on joins the group, by the admin API, registration and seeding alike. Subjects that already exist are not changed.',
+  path: 'The names from the top of the tree down to this group, such as `/eng/platform`. The `groups` claim carries it, and it is recomputed when the group is moved.',
+  created_at: 'When the group was created.',
+  admin_reach:
+    'The admin capabilities membership of the group hands out, however deep roles nest them: its own roles and those of every group above it.',
+  subtree_admin_reach:
+    'The admin capabilities handed out by this group and every group beneath it, which is what deleting it would take away.',
+  holds_default_group:
+    'Whether this group, or one beneath it, is given to every new subject. Such a group cannot be moved under a parent that hands out an admin capability.',
+};
+describeFields(groupFieldsSchema, GROUP_WORDS);
+describeFields(groupRecordSchema, GROUP_WORDS);
+for (const query of [listGroupsQuerySchema, countGroupsQuerySchema]) {
+  describeFields(query, {
+    name: 'Only groups whose own name starts with this, at any level.',
+    parent:
+      'Only the groups directly under the group with this id, or `root` for the groups with no parent.',
+  });
+}
+
+const ROLE_WORDS: Fields = {
+  id: 'The role’s identifier, a UUID.',
+  name: 'The role’s name, which a token carries. Fixed once the role is made.',
+  description: 'What the role is for, or null.',
+  client_id:
+    'The internal identifier of the client the role is scoped to, or null for a tenant role.',
+  client_key:
+    'The `client_id` of that client, the name it is told apart by, or null for a tenant role. A token carries a client role as this, a colon and the role’s name.',
+  default_for_new_subjects:
+    'Whether every subject created from now on is given the role. Subjects that already exist are not changed.',
+  created_at: 'When the role was created.',
+  admin_reach:
+    'The admin capabilities the role hands out, however deep it nests them, as the capability ceiling judges them.',
+};
+describeFields(roleFieldsSchema, ROLE_WORDS);
+describeFields(roleSchema, ROLE_WORDS);
+for (const query of [listRolesQuerySchema, countRolesQuerySchema]) {
+  describeFields(query, {
+    name: 'Only roles whose name starts with this.',
+    client:
+      'Only the roles of one owner: `tenant` for the tenant’s own roles, or a client’s internal id for the roles scoped to it.',
+  });
+}
+describeFields(createRoleRequestSchema, {
+  name: 'The role’s name, which a token carries. It cannot be changed afterwards.',
+  description: 'What the role is for.',
+  client_id:
+    'The internal identifier of the client to scope the role to; omit it for a tenant role.',
+  default_for_new_subjects: 'Give the role to every subject created from now on.',
+});
+
+describeFields(mailMessageSchema, {
+  id: 'The message’s identifier, a UUID.',
+  to: 'The recipient’s address. Masked, with `to_masked` true, unless the caller may read subjects.',
+  to_masked: 'True when `to` is masked because the caller may not read subjects.',
+  subject:
+    'The message’s subject line. Its body is never returned, because it carries a link that signs somebody in.',
+  last_error: 'What the last failed attempt answered, or null if none has failed.',
+  created_at: 'When the message was queued.',
+  next_attempt_at: 'When the sender will try it next.',
+  sent_at: 'When it was delivered, or null if it has not been.',
+});
+
+describeFields(smtpConfigSchema, {
+  configured: 'Whether the tenant has a relay of its own saved.',
+  host: 'The relay’s host, or null when the tenant has none.',
+  port: 'The relay’s port, or null when the tenant has none.',
+  from_address: 'What the From line of each message says, or null when the tenant has no relay.',
+  username: 'The login the relay asks for, or null when it asks for none.',
+  password_set:
+    'Whether a password is stored. The password itself is never returned, whether the relay was just written or read in an earlier session.',
+  starttls:
+    'Whether the connection must upgrade to TLS (STARTTLS), or null when the tenant has no relay.',
+});
+describeFields(putSmtpRequestSchema, {
+  host: 'The relay’s host.',
+  port: 'The relay’s port, a whole number from 1 to 65535.',
+  from_address: 'What the From line of each message says.',
+  username: 'The login the relay asks for. Omit it or send null when it asks for none.',
+  password:
+    'The password to store. Omitted, the stored one is kept while the host, port and username are unchanged; null clears it.',
+  starttls:
+    'Whether the connection must upgrade to TLS (STARTTLS). Required while a username or password is set.',
+});
+
+describeFields(whoamiResponseSchema, {
+  subjectId: 'The subject the access token was issued to.',
+  issuerTenantId: 'The tenant that issued the token, which is the caller’s own tenant.',
+  capabilities:
+    'The admin capabilities the caller holds in its own tenant, directly, through a group or nested in a role. A composite such as `tenant-admin` is reported as the capabilities it carries.',
+  crossTenant:
+    'True when the caller’s tenant is not the tenant in the path, which only a holder of `manage-tenants` may be.',
+});
+
 // Words for a field of this name wherever it appears and nothing says otherwise.
 const COMMON: Fields = {
   next: 'An opaque cursor for the next page; absent on the last page.',
@@ -857,6 +978,11 @@ const COMMON: Fields = {
     '`true` also ends every live session of the subject in the same transaction as the removal, queueing their back-channel logouts as `DELETE …/sessions` does; the default `false` leaves them signed in.',
   require_new_set:
     '`true` (the default) owes the subject a new set of recovery codes at their next sign-in when a second factor remains; `false` leaves them with none until one is asked of them.',
+  default:
+    'Whether every subject created from now on is given it, by the admin API, registration and seeding alike.',
+  child_role_id: 'The role to nest in this one. Whoever holds this role then holds it too.',
+  to: 'The address to send the test message to.',
+  sent: 'True when the relay accepted the message. A relay that refuses it answers 502 instead.',
   count: 'How many items match, up to a cap.',
   capped: 'True when more match than `count` says, because counting stops at the cap.',
 };

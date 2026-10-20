@@ -1,0 +1,139 @@
+@layer {
+  [data-react-aria-pressable] {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+}
+Odudu console
+Skip to content
+odudu · demo
+Overview
+Identity
+Subjects
+Groups
+Roles
+Applications
+Clients
+Scopes
+Registration tokens
+Security
+Sign-in flow
+Signing keys
+Sessions
+Tenant
+Settings
+Email
+Export
+Observe
+Audit trail
+Signed in as 
+admin@odudu.local
+ from 
+system
+Theme
+System
+Light
+Dark
+Switch tenant
+Sign out
+Collapse menu
+or press 
+[
+odudu · demo
+Menu
+System
+Acting in 
+demo
+ with system authority
+Back to system
+Identity
+›
+Subjects
+›
+ada
+‹
+Subjects
+ada
+enabled
+No email
+Profile
+Credentials
+Groups
+Roles
+Required actions
+Sessions
+Consents
+Grants
+Activity
+Account
+How the subject signs in and is written to. A changed email is unverified until it is proved or marked verified below.
+Username
+ada
+Usernames in this tenant are fixed: its username_editable setting is off, so a rename would be refused. Turn it on under the tenant's
+Settings
+.
+Email
+Leave it empty for none.
+Name
+Full name
+Given name
+Family name
+Middle name
+Nickname
+Preferred username
+Details
+Phone number
+Country
+▾
+Number
+Extension
+Gender
+Not given
+▾
+Not given
+Female
+Male
+In their own words
+Profile page
+Website
+Picture
+Birthdate
+What is known of the birthdate
+Full date
+▾
+Full date
+Year only
+Day and month
+Date
+mm
+/
+dd
+/
+yyyy
+Time zone
+▾
+Locale
+▾
+Address
+Formatted address
+Street
+Locality
+Region
+Postal code
+Country
+▾
+Verification
+Whether the email and the phone number are proved to be the subject's. A relying party reads these as email_verified and phone_number_verified.
+Email verified
+Off
+Phone number verified
+Off
+A verified phone number must be in E.164 form, such as +14155550100.
+Profile last updated
+Never
+Status
+enabled
+ada can sign in.
+Disable ada
+Delete
+Deleting removes the subject with everything that names it: credentials, sessions, grants, roles and group memberships. It cannot be undone; disabling can.
+Delete ada

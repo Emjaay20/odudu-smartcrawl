@@ -31,6 +31,17 @@ describe('findSecrets', () => {
     expect(findSecrets({ ...clean, attributes }, [])).toEqual([]);
   });
 
+  it('lets the public half of a published key through and refuses a private member', () => {
+    const point = randomBytes(32).toString('base64url');
+    const jwks = (member: string): string =>
+      `{"keys":[{"kty":"EC","crv":"P-256","${member}":"${point}"}]}`;
+    expect(point).toHaveLength(43);
+    expect(findSecrets({ ...clean, text: jwks('x') }, [])).toEqual([]);
+    expect(findSecrets({ ...clean, text: jwks('y') }, [])).toEqual([]);
+    expect(findSecrets({ ...clean, text: jwks('n') }, [])).toEqual([]);
+    expect(findSecrets({ ...clean, text: jwks('d') }, [])).toHaveLength(1);
+  });
+
   it('refuses a filled password field', () => {
     expect(findSecrets({ ...clean, passwordFieldsFilled: 1 }, [])).toEqual([
       'a password field is filled',

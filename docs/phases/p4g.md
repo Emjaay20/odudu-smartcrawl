@@ -1496,8 +1496,8 @@ error and config tables from `@odudu/kernel`, the audit vocabulary from
   `packages/contracts/src/admin/docs.ts`, apart from the schemas, and five request or response bodies carry an example (create client, create user,
   set required actions, a page of audit events, create tenant; settings has one too).
   `apps/docs/scripts/coverage-ratchet.test.ts` holds each area to the baseline below; an area new to the API must be added.
-  The areas below 50% (`groups`, `roles`, `mail`, `smtp`, `whoami`, which share shapes with ones that are done) belong to the guides increments (24 to 27), which
-  write for those areas as they describe them.
+  The areas below 50% (`groups`, `roles`, `mail`, `smtp`, `whoami`) were left to the guides increments, which write for the
+  areas they describe; the console tour (Increment 26) described all five and filled them (see the Increment 26 section).
 
 #### Admin API documentation coverage
 
@@ -1506,19 +1506,19 @@ error and config tables from `@odudu/kernel`, the audit vocabulary from
 | `audit`               | 60        | 60     |
 | `clients`             | 277       | 288    |
 | `flow`                | 12        | 12     |
-| `groups`              | 16        | 67     |
+| `groups`              | 61        | 67     |
 | `keys`                | 30        | 31     |
 | `lockouts`            | 3         | 3      |
-| `mail`                | 4         | 15     |
+| `mail`                | 12        | 15     |
 | `registration-tokens` | 14        | 14     |
-| `roles`               | 7         | 65     |
+| `roles`               | 65        | 65     |
 | `scopes`              | 78        | 85     |
 | `sessions`            | 17        | 18     |
 | `settings`            | 0         | 0      |
-| `smtp`                | 5         | 24     |
-| `subjects`            | 202       | 230    |
-| `tenants`             | 165       | 202    |
-| `whoami`              | 0         | 4      |
+| `smtp`                | 22        | 24     |
+| `subjects`            | 217       | 231    |
+| `tenants`             | 175       | 202    |
+| `whoami`              | 4         | 4      |
 
 - The `generate.test.ts` comparison of the files on disk with a fresh generation guards a stale local tree; in CI
   the build regenerates just before the tests run, so it is not a drift check there. What keeps the reference from
@@ -2216,3 +2216,32 @@ https://www.rfc-editor.org/rfc/rfc8414.txt | grep -m2 oauth-authorization-server
   (Increment 27's plan names configuration and deploying pages, not the retention schedule, so the page does not rely on it).
 - `resolveTarget` in `references.test.ts` is removed (no site-root link remains); the code-font name check now needs the
   full name, except a field named through `settings.`.
+
+## Increment 26: the admin console tour
+
+- **Pages.** `admin-console/` holds the index, `tour.mdx` (a guided first visit: sign-in, tenants, entering a tenant,
+  the menu, one person, the audit trail, sign-out) and one `.mdx` per area: overview, subjects, groups, roles, clients,
+  scopes, registration-tokens, sign-in-flow, signing-keys, sessions, settings, email, audit-trail, tenants (with
+  export and import) and system-administrators. Each is a story: the goal, numbered steps with a light and dark
+  capture, a section on what cannot be undone, and "Do the same through the API" as the last section. Titles read
+  "X in the console" because four area names (Clients, Scopes, Sessions, Tenants) are also concept titles and the
+  llms plugin cannot tell two pages of one title apart (`llms-full.txt section 17 is not Clients`).
+- **Captures.** 17 screens added to `screens.ts` (25 in all, 50 images and records). The page text is made
+  reproducible across stacks: ids become a numbered series, moments a fixed series, the public point of a published
+  key is blanked, the browser runs in UTC. verified: `with-stack.sh --check` on a second fresh stack matched the
+  records written on the first. The guard now lets the public members (`x`, `y`, `n`) of a published key through and
+  still refuses a private one (`d`).
+- **CI.** Job `console-shots` (needs `changes`, `if buildImage == 'true'`, in `gate`'s needs) builds the image,
+  starts the e2e-style stack with `with-stack.sh`, signs in as the one administrator `odudu seed admin` makes (the
+  required first-sign-in password change is stood in for by clearing `user_required_actions`) and runs `--check`:
+  a missing heading, control or row, a secret on a page, or a text that no longer matches its record fails it.
+  `ci-workflow.test.ts` pins the job, its condition, the gate and the image tag.
+- **Labels.** The label table moved to `tests/support/console-labels.ts` (about 230 names, a name meaning several things
+  lists each place a page uses it, whitespace read as one space). `console-areas.test.ts` ties every feature directory,
+  menu entry, capability and tab to a page. `turbo.json` now lists the console sources among `@odudu/docs#test`'s inputs:
+  before, a console rename could be a cache hit on the label test.
+- **Descriptions.** The groups, roles, mail, smtp and whoami reference fields are written (the coverage table above);
+  `to`, `sent`, `default` and `child_role_id` are common words because each body holds one field.
+- **CLI beyond the console.** The four operator commands (`reap`, `send-mail`, `send-logouts`, `client-origins rebuild`)
+  have no console button: placed on the roadmap as a decision under ADR 0024.
+- **Not done.** The amend bodies (`PATCH` of a group, role, scope) are open records with no fields to describe.

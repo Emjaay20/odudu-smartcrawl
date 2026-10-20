@@ -1,0 +1,82 @@
+@layer {
+  [data-react-aria-pressable] {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+}
+Odudu console
+Skip to content
+odudu · demo
+Overview
+Identity
+Subjects
+Groups
+Roles
+Applications
+Clients
+Scopes
+Registration tokens
+Security
+Sign-in flow
+Signing keys
+Sessions
+Tenant
+Settings
+Email
+Export
+Observe
+Audit trail
+Signed in as 
+admin@odudu.local
+ from 
+system
+Theme
+System
+Light
+Dark
+Switch tenant
+Sign out
+Collapse menu
+or press 
+[
+odudu · demo
+Menu
+System
+Acting in 
+demo
+ with system authority
+Back to system
+demo
+Signing keys
+The keys that sign this tenant’s tokens, and the ones published for relying parties to verify them.
+Stage a key
+A staged key is published in the key set at once and signs nothing until you promote it, which gives relying parties time to fetch it first.
+Algorithm
+ES256 (elliptic curve)
+▾
+ES256 (elliptic curve)
+RS256 (RSA)
+Stage key
+Rotating
+Published in the key set but not signing. A staged key waits here until relying parties have had time to fetch it; the key a promotion replaced waits here to be retired.
+Nothing yet
+No rotating keys
+No key is rotating. Stage one to start a rotation.
+Active
+Signs every new token. A tenant has one active key, and it is never retired while it is active: promote another key first.
+Key
+Algorithm
+Created
+Actions
+Key
+0199aa00-0000-7000-8000-000000000001
+Algorithm
+ES256
+Created
+recently
+Actions
+It cannot be retired while it is active.
+Retired
+Published nowhere and signing nothing. A retired key can be deleted.
+Nothing yet
+No retired keys
+No key has been retired.

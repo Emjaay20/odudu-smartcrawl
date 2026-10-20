@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { SECRET_REQUEST } from '#docs/scripts/console-shots/capture.ts';
@@ -8,7 +8,12 @@ import { DOCS_ROOT } from '#docs/tests/support/dist.ts';
 
 const OUT = path.join(DOCS_ROOT, 'static/console');
 const RECORD = path.join(DOCS_ROOT, 'scripts/console-shots/record');
-const PAGES = ['quick-start/index.mdx'];
+const PAGES = [
+  'quick-start/index.mdx',
+  ...readdirSync(path.join(DOCS_ROOT, 'content/en/admin-console'))
+    .filter((name) => name.endsWith('.mdx'))
+    .map((name) => `admin-console/${name}`),
+];
 const manifest = JSON.parse(readFileSync(path.join(OUT, 'manifest.json'), 'utf8')) as Record<
   string,
   { width: number; height: number }

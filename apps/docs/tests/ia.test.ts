@@ -86,6 +86,33 @@ describe('the information architecture', () => {
     ]);
   });
 
+  it('opens the admin console to the tour and its fifteen areas, in order', () => {
+    const links = sidebarLinks('admin-console/index.html');
+    const start = links.indexOf(`${PAGES_BASE}admin-console/`);
+    expect(
+      links
+        .slice(start + 1, start + 17)
+        .map((href) => href.slice(`${PAGES_BASE}admin-console/`.length)),
+    ).toEqual([
+      'tour/',
+      'overview/',
+      'subjects/',
+      'groups/',
+      'roles/',
+      'clients/',
+      'scopes/',
+      'registration-tokens/',
+      'sign-in-flow/',
+      'signing-keys/',
+      'sessions/',
+      'settings/',
+      'email/',
+      'audit-trail/',
+      'tenants/',
+      'system-administrators/',
+    ]);
+  });
+
   it('keeps the recorded transcripts out of the navigation until a reader is inside them', () => {
     const outside = [
       ...sidebarLinks('reference/index.html'),

@@ -1,0 +1,69 @@
+@layer {
+  [data-react-aria-pressable] {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+}
+Odudu console
+Skip to content
+odudu · demo
+Overview
+Identity
+Subjects
+Groups
+Roles
+Applications
+Clients
+Scopes
+Registration tokens
+Security
+Sign-in flow
+Signing keys
+Sessions
+Tenant
+Settings
+Email
+Export
+Observe
+Audit trail
+Signed in as 
+admin@odudu.local
+ from 
+system
+Theme
+System
+Light
+Dark
+Switch tenant
+Sign out
+Collapse menu
+or press 
+[
+odudu · demo
+Menu
+System
+Acting in 
+demo
+ with system authority
+Back to system
+Identity
+›
+Groups
+›
+Create a group
+‹
+Groups
+Create a group
+A group starts with no members and no roles: give it roles from its Roles tab, and subjects join it from their own Groups tab.
+Name
+Fixed once the group is made: the groups claim carries its path. Unique among the groups beside it.
+Description
+Leave it empty for none.
+0 of 1,000 characters.
+Parent
+0 selected
+Search
+There are no groups yet.
+It will sit at the top level.
+Its members receive the roles of every group above it too. Choose the parent again to put it at the top level.
+Create group
+Cancel

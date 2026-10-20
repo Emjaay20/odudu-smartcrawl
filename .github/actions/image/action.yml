@@ -1,5 +1,5 @@
 name: Build the image
-description: Builds infra/docker's image against a layer cache shared by every job that runs it, and tags it with the names compose gives it, so that run.sh and smoke.sh start it instead of building.
+description: Builds infra/docker's image against a layer cache shared by every job that runs it, and tags it with the names compose gives it, so that run.sh, smoke.sh and the console capture start it instead of building.
 
 inputs:
   save-cache:
@@ -28,5 +28,6 @@ runs:
         tags: |
           odudu-e2e-odudu
           odudu-smoke-odudu
+          odudu-shots-odudu
         cache-from: type=gha,scope=odudu-image
         cache-to: ${{ inputs.save-cache == 'true' && 'type=gha,scope=odudu-image,mode=max,ignore-error=true' || '' }}

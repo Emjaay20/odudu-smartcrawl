@@ -1,0 +1,112 @@
+@layer {
+  [data-react-aria-pressable] {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+}
+Odudu console
+Skip to content
+odudu · demo
+Overview
+Identity
+Subjects
+Groups
+Roles
+Applications
+Clients
+Scopes
+Registration tokens
+Security
+Sign-in flow
+Signing keys
+Sessions
+Tenant
+Settings
+Email
+Export
+Observe
+Audit trail
+Signed in as 
+admin@odudu.local
+ from 
+system
+Theme
+System
+Light
+Dark
+Switch tenant
+Sign out
+Collapse menu
+or press 
+[
+odudu · demo
+Menu
+System
+Acting in 
+demo
+ with system authority
+Back to system
+demo
+Scopes
+A scope is what a client asks to be let do, and what a token says it was granted. A search matches the start of a name.
+Create a scope
+Name
+Clear
+Search
+or press 
+↩ 
+Return
+8 scopes
+Scope
+Description
+Created
+Scope
+openid
+Description
+—
+Created
+recently
+Scope
+profile
+Description
+—
+Created
+recently
+Scope
+email
+Description
+—
+Created
+recently
+Scope
+address
+Description
+—
+Created
+recently
+Scope
+phone
+Description
+—
+Created
+recently
+Scope
+roles
+Description
+—
+Created
+recently
+Scope
+groups
+Description
+—
+Created
+recently
+Scope
+offline_access
+Description
+—
+Created
+recently
+Previous
+Page 1
+Next

@@ -453,6 +453,41 @@ jobs:
           echo "results: $RESULTS"
           case "$RESULTS" in success) ;; *) exit 1 ;; esac
 
+  # Photographs the console's areas against the built image, for the pages of
+  # the documentation that show them, and fails when a heading or a control a
+  # page relies on has gone from the console, or when a screen's text no longer
+  # matches its record. Pictures are not compared pixel by pixel. `buildImage`
+  # is true for a change to the console or to the documentation and for
+  # nothing else (tools/ci/src/changes.ts), so a prose-only change skips it.
+  console-shots:
+    needs: changes
+    if: needs.changes.outputs.buildImage == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup
+
+      - uses: ./.github/actions/playwright
+        with:
+          package: '@odudu/docs'
+
+      - uses: ./.github/actions/image
+        with:
+          revision: ${{ github.sha }}
+
+      - name: Bootstrap infra/docker/.env
+        run: cp infra/docker/.env.example infra/docker/.env
+
+      - name: Photograph the console and compare it with what the pages say
+        run: apps/docs/scripts/console-shots/with-stack.sh --check
+        env:
+          SHOTS_PREBUILT: '1'
+          ODUDU_REVISION: ${{ github.sha }}
+
   conformance:
     needs: changes
     if: needs.changes.outputs.server == 'true'
@@ -544,6 +579,7 @@ jobs:
       - container
       - e2e-shards
       - e2e
+      - console-shots
       - conformance
       - commit-messages
     if: always()
