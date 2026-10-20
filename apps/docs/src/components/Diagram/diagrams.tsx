@@ -237,7 +237,10 @@ function sessions(): Drawing {
     ['active', 70, true],
     ['too long', 106, false],
   ];
-  let x = 14;
+  // Each segment starts where the one before it ends.
+  const lefts = segments.map((_, index) =>
+    segments.slice(0, index).reduce((sum, [, width]) => sum + width, 14),
+  );
   return {
     height: 360,
     draw: (head) => (
@@ -249,8 +252,7 @@ function sessions(): Drawing {
           Ceiling
         </Txt>
         {segments.map(([label, width, busy], index) => {
-          const left = x;
-          x += width;
+          const left = lefts[index] ?? 14;
           return (
             <g key={`${label}${String(index)}`}>
               <Box x={left} y={40} w={width} h={34} tone={busy ? 'accent' : 'panel'} />

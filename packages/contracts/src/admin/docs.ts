@@ -41,6 +41,7 @@ import {
   countGroupsQuerySchema,
   groupFieldsSchema,
   groupRecordSchema,
+  groupSchema,
   listGroupsQuerySchema,
 } from '#/admin/groups';
 import { createKeyRequestSchema, listKeysQuerySchema, signingKeySchema } from '#/admin/keys';
@@ -131,10 +132,31 @@ function fingerprint(names: readonly string[]): string {
 
 const FIELDS = new Map<string, { readonly names: ReadonlySet<string>; readonly fields: Fields }>();
 
+// The names in `fields` that the schema has no field for: words for a field
+// that is not there describe nothing and read as dead code.
+export function fieldsMissingFrom(
+  schema: { readonly shape: Readonly<Record<string, unknown>> },
+  fields: Fields,
+): string[] {
+  return Object.keys(fields).filter((name) => !(name in schema.shape));
+}
+
+// The words of a shared set that belong to this schema's own fields.
+function wordsOf(
+  schema: { readonly shape: Readonly<Record<string, unknown>> },
+  words: Fields,
+): Fields {
+  return Object.fromEntries(Object.entries(words).filter(([name]) => name in schema.shape));
+}
+
 function describeFields(
   schema: { readonly shape: Readonly<Record<string, unknown>> },
   fields: Fields,
 ): void {
+  const missing = fieldsMissingFrom(schema, fields);
+  if (missing.length > 0) {
+    throw new Error(`describeFields names ${missing.join(', ')}, which the schema lacks`);
+  }
   const names = Object.keys(schema.shape);
   const key = fingerprint(names);
   FIELDS.set(key, { names: new Set(names), fields: { ...FIELDS.get(key)?.fields, ...fields } });
@@ -327,11 +349,6 @@ describeFields(consentSchema, {
   granted_at: 'When the user agreed.',
 });
 describeFields(countResponseSchema, {
-  default:
-    'Whether every subject created from now on is given it, by the admin API, registration and seeding alike.',
-  child_role_id: 'The role to nest in this one. Whoever holds this role then holds it too.',
-  to: 'The address to send the test message to.',
-  sent: 'True when the relay accepted the message. A relay that refuses it answers 502 instead.',
   count: 'How many items match, up to a cap.',
   capped: 'True when more match than `count` says, because counting stops at the cap.',
 });
@@ -390,7 +407,6 @@ describeFields(amendProfileRequestSchema, {
   address_region: 'The state, province or region.',
   address_postal_code: 'The postal code.',
   address_country: 'The country.',
-  profile_updated_at: 'When the profile last changed, or null.',
   email: 'Refused here: change the email address with the subject’s own `email`.',
   username: 'Refused here: change the username with the subject’s own `username`.',
 });
@@ -656,7 +672,6 @@ describeFields(usernamePolicySchema, {
   username_editable: 'Whether the tenant lets a username be changed.',
 });
 describeFields(exportedClientSchema, {
-  id: "The client's internal identifier, a UUID. It names the client in admin API paths such as `/clients/{id}`; it is not the OAuth `client_id`.",
   client_id:
     'The `client_id` the application sends to the authorization and token endpoints. Chosen when the client is created and unique within the tenant.',
   name: 'A display name for people, shown for example on the consent screen.',
@@ -668,7 +683,6 @@ describeFields(exportedClientSchema, {
     "When true the client's tokens carry every role the user holds. When false, a role reaches a token only through a scope the client is assigned.",
   registration_origin:
     'How the client came to exist: `seeded` by `odudu seed` or `odudu init`, `anonymous` or `token` through dynamic registration, or `operator` through the admin API.',
-  created_at: 'When the client was created, as an ISO 8601 date and time.',
   redirect_uris:
     'The addresses the authorization server may send the user back to after sign-in. A request naming any other address is refused.',
   grant_types:
@@ -720,14 +734,6 @@ describeFields(exportedClientSchema, {
   default_max_age:
     'The longest age in seconds a sign-in may have before the user must sign in again, when the request does not say. Null sets none.',
   require_auth_time: 'Whether ID tokens always carry the `auth_time` claim.',
-  previous_secret_expires_at:
-    'When the secret that a rotation replaced stops authenticating, or null when no rotation kept one. The secret itself is never shown.',
-  builtin_admin:
-    'True for the tenant’s built-in admin console client, which cannot be deleted and is limited in what can be amended.',
-  service_subject_id:
-    'The service account a confidential client authenticates as, or null when it has none.',
-  scopes:
-    'The scopes assigned to the client and whether each is `default` (always requested) or `optional` (only when asked for).',
 });
 describeFields(exportedFlowStepSchema, {
   authenticator: 'The sign-in step to run.',
@@ -884,8 +890,9 @@ const GROUP_WORDS: Fields = {
   holds_default_group:
     'Whether this group, or one beneath it, is given to every new subject. Such a group cannot be moved under a parent that hands out an admin capability.',
 };
-describeFields(groupFieldsSchema, GROUP_WORDS);
-describeFields(groupRecordSchema, GROUP_WORDS);
+for (const schema of [groupFieldsSchema, groupSchema, groupRecordSchema]) {
+  describeFields(schema, wordsOf(schema, GROUP_WORDS));
+}
 for (const query of [listGroupsQuerySchema, countGroupsQuerySchema]) {
   describeFields(query, {
     name: 'Only groups whose own name starts with this, at any level.',
@@ -908,8 +915,9 @@ const ROLE_WORDS: Fields = {
   admin_reach:
     'The admin capabilities the role hands out, however deep it nests them, as the capability ceiling judges them.',
 };
-describeFields(roleFieldsSchema, ROLE_WORDS);
-describeFields(roleSchema, ROLE_WORDS);
+for (const schema of [roleFieldsSchema, roleSchema]) {
+  describeFields(schema, wordsOf(schema, ROLE_WORDS));
+}
 for (const query of [listRolesQuerySchema, countRolesQuerySchema]) {
   describeFields(query, {
     name: 'Only roles whose name starts with this.',

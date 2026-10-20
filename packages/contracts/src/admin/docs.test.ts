@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { listAuditQuerySchema } from '#/admin/audit';
 import { clientSchema, listClientsQuerySchema } from '#/admin/clients';
-import { documentedJsonSchema } from '#/admin/docs';
+import { documentedJsonSchema, fieldsMissingFrom } from '#/admin/docs';
 import { groupRecordSchema, listGroupsQuerySchema } from '#/admin/groups';
 import { mailMessageSchema } from '#/admin/mail';
 import { listRolesQuerySchema, roleSchema } from '#/admin/roles';
 import { putSmtpRequestSchema, smtpConfigSchema, testSmtpRequestSchema } from '#/admin/smtp';
 import { whoamiResponseSchema } from '#/admin/whoami';
+import { countResponseSchema } from '#/admin/counts';
 import { createTenantRequestSchema } from '#/admin/tenants';
 
 function property(schema: z.ZodType, name: string): { description?: string } {
@@ -60,6 +61,14 @@ describe('documentedJsonSchema', () => {
   it('keeps the audit trail’s own words for `to`, and gives the relay test its own', () => {
     expect(property(listAuditQuerySchema, 'to').description).toMatch(/before this instant/u);
     expect(property(testSmtpRequestSchema, 'to').description).toMatch(/message/u);
+  });
+
+  it('names a field its schema lacks, so a stray description cannot hide', () => {
+    expect(fieldsMissingFrom(countResponseSchema, { count: 'x', capped: 'y' })).toEqual([]);
+    expect(fieldsMissingFrom(countResponseSchema, { count: 'x', to: 'y', sent: 'z' })).toEqual([
+      'to',
+      'sent',
+    ]);
   });
 
   it('leaves the schemas the console imports without any of this prose', () => {

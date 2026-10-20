@@ -67,6 +67,9 @@ export default defineConfig({
     shard: shard === undefined || shard === '' ? undefined : shard,
     projects: [
       {
+        // The docs site's own `@site/…` imports, which Docusaurus resolves, for the
+        // tests that load a component.
+        resolve: { alias: scope === 'apps/docs' ? { '@site': join(REPO_ROOT, 'apps/docs') } : {} },
         test: {
           name: 'unit',
           include: unit,

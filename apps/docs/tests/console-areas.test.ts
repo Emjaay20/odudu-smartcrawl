@@ -202,4 +202,28 @@ describe('the admin console section', () => {
     expect(commands.length).toBeGreaterThanOrEqual(4);
     for (const command of commands) expect(registry, command).toContain(`name: '${command}'`);
   });
+
+  it('calls a command a scheduled pass only when the server schedules it, and run-once what is run once', () => {
+    const settings = text(path.join(REPO, 'packages/kernel/src/config-docs.ts'));
+    const registry = text(path.join(REPO, 'apps/server/src/cli/registry.ts'));
+    const sentences = [page('tour'), text(path.join(CONTENT, 'roadmap.md'))].flatMap((source) =>
+      source.split(/(?<=[.:;])\s+/u),
+    );
+    for (const scheduled of ['reap', 'send-mail', 'send-logouts']) {
+      const named = new RegExp(`_ENABLED[\\s\\S]{0,500}odudu ${scheduled}`, 'u');
+      expect(named.test(settings.replace(/'\\s*\\+\\s*'/gu, '')), scheduled).toBe(true);
+    }
+    expect(registry).toMatch(/Rebuild the stored client origins after upgrading/u);
+    const once = sentences.filter((sentence) => sentence.includes('odudu client-origins rebuild'));
+    expect(once.length).toBeGreaterThan(0);
+    for (const sentence of once) expect(sentence, sentence).not.toMatch(/schedul|timer/u);
+  });
+
+  it('states the tenant name rule as the contract does', () => {
+    const rule = text(path.join(REPO, 'packages/contracts/src/tenant-name.ts'));
+    expect(rule).toMatch(/1-63 lowercase letters, digits or hyphens/u);
+    expect(rule).toMatch(/must not start or end/u);
+    expect(page('tenants')).toMatch(/one to sixty-three lowercase letters, digits or hyphens/u);
+    expect(page('tenants')).toMatch(/may not start or end with a hyphen/u);
+  });
 });

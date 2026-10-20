@@ -26,14 +26,15 @@ const PUBLIC_KEY_MEMBER = /"(?:x|y|n)"\s*:\s*"[A-Za-z0-9_-]+"/gu;
 // 24 random bytes as base64url, which is what a one-time password is.
 const GENERATED = /(?<![A-Za-z0-9_-])[A-Za-z0-9_-]{32,}(?![A-Za-z0-9_-])/u;
 
-// Random base64url mixes cases and digits and hardly ever holds many hyphens;
-// an identifier such as a component id is words joined by hyphens.
+// Random base64url mixes cases and digits and holds about one hyphen in sixty-four
+// characters, so a long key holds several; an identifier such as a component
+// id is words joined by hyphens, about one in eight characters.
 function looksRandom(token: string): boolean {
   return (
     /\d/u.test(token) &&
     /[A-Z]/u.test(token) &&
     /[a-z]/u.test(token) &&
-    token.split('-').length <= 4
+    token.split('-').length - 1 <= Math.max(3, token.length / 12)
   );
 }
 

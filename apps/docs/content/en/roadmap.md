@@ -401,13 +401,17 @@ session lifecycle. A citation of either half here means that half.
   row-level security learns about it from an hourly log line — a decision
   rather than an oversight, and ADR 0024 records it as the one precondition
   bought at that price to keep the loop free of logic.
-- **The four operator commands have no button in the console.**
-  `odudu reap`, `odudu send-mail`, `odudu send-logouts` and
-  `odudu client-origins rebuild` are the work of a schedule rather than of a
-  person at a screen, so the console offers no way to start them. It shows
-  some of what they produce, the mail delivery list and a client's logout
-  deliveries. A decision, ADR 0024: each is a command first and a timer second, and a
-  deployment that schedules it from outside is a supported configuration.
+- **Four operator commands have no button in the console.** `odudu reap`,
+  `odudu send-mail` and `odudu send-logouts` are passes the server already
+  runs on its own schedule (`ODUDU_REAP_ENABLED`, `ODUDU_OUTBOX_ENABLED`,
+  `ODUDU_LOGOUT_SENDER_ENABLED`), and a deployment may turn that off and
+  schedule them itself; the console shows some of what they produce, the mail
+  delivery list and a client's logout deliveries, and offers no way to start
+  one. A decision: ADR 0024 records the principle for `reap`, a pass is a
+  command first and a timer second, and the two senders follow the same
+  split. `odudu client-origins rebuild` is a command to run once, after upgrading past the migration that added client origins,
+  and a decision too: a one-off repair has no place on a screen people open
+  every day.
 
 **Administrative capabilities placed by the P4d gap audit**
 

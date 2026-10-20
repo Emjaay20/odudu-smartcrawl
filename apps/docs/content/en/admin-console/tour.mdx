@@ -100,7 +100,7 @@ Choose **Sign out** at the bottom of the menu, beside the name you are signed in
 
 ## What the console leaves to the command line
 
-The console covers what an administrator does day to day. Four operator commands, `odudu reap`, `odudu send-mail`, `odudu send-logouts` and `odudu client-origins rebuild`, have no button, because each is a scheduled job that a deployment runs on a timer or from a scheduler. The [roadmap](../roadmap.md) says why.
+The console covers what an administrator does day to day. Four operator commands have no button. `odudu reap`, `odudu send-mail` and `odudu send-logouts` are passes the server already runs on its own schedule, which a deployment may turn off and run itself, so the console shows what some of them produce and does not start them. `odudu client-origins rebuild` is run once, after an upgrade that adds client origins. The [roadmap](../roadmap.md) says why.
 
 ## Do the same through the API
 

@@ -2245,3 +2245,22 @@ https://www.rfc-editor.org/rfc/rfc8414.txt | grep -m2 oauth-authorization-server
 - **CLI beyond the console.** The four operator commands (`reap`, `send-mail`, `send-logouts`, `client-origins rebuild`)
   have no console button: placed on the roadmap as a decision under ADR 0024.
 - **Not done.** The amend bodies (`PATCH` of a group, role, scope) are open records with no fields to describe.
+
+### Increment 26, fix round 1
+
+- **Operator commands.** The roadmap and the tour no longer call all four a scheduled pass: `reap`, `send-mail` and `send-logouts` are
+  run by the server on its own schedule and can be switched off (`ODUDU_REAP_ENABLED`, `ODUDU_OUTBOX_ENABLED`,
+  `ODUDU_LOGOUT_SENDER_ENABLED`); `client-origins rebuild` is run once after an upgrade. ADR 0024 covers `reap` only, and the pages say so.
+  `console-areas.test.ts` derives the scheduled three from the configuration docs and refuses "schedule" in a sentence about `rebuild`.
+- **`describeFields` refuses a field its schema lacks** (`fieldsMissingFrom`). It found three more strays besides the four pasted into
+  the count response.
+- **The guard missed long random keys with many hyphens**; the limit scales with length now. Tests for d, p, q, dp, dq, qi, a full private
+  JWK and a public `n`.
+- **A diagram that kept a cursor outside `draw`.** `sessions()` mutated an outer `x` while rendering, so the first draw was right
+  and every later one (a second visit through the router, history back and forward) drew its segments off the viewBox. The static
+  page and the first load looked right, which is why the browser test passed. Now: `diagram-purity.test.ts` draws every drawing three times
+  and compares the elements (the others were already pure); `concepts.browser.test.ts` compares the page's texts, in order, with the
+  texts the drawing declares, after hydration, after a router navigation, after back and forward and after a theme toggle, and fails on a
+  text outside the viewBox. verified: with the outer `let x` put back, the unit test fails and the browser test fails with
+  "sessions after coming back to it leaves the drawing". Captures: `docs/phases/p4g-docs/concept-sessions-diagram-desktop-*.png`.
+- **Captures** are 1100x900 now, so the menu's "Signed in as" is whole; the signing keys shot starts at the page title.

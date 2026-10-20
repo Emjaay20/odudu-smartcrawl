@@ -47,6 +47,10 @@ fi
 compose() { docker compose --project-directory "$DOCKER_DIR" "$@"; }
 
 cleanup() {
+  local status=$?
+  if [ "$status" -ne 0 ]; then
+    compose logs --tail 80 postgres odudu >&2 || true
+  fi
   if [ "${SHOTS_KEEP_STACK:-}" = "1" ]; then
     echo "leaving $COMPOSE_PROJECT_NAME up on http://localhost:$ODUDU_HOST_PORT" >&2
     return

@@ -260,7 +260,7 @@ export async function captureScreens(
 ): Promise<{ captures: Captured[]; manifest: Record<string, ManifestEntry> }> {
   // A trailing slash would join to the paths below as `3000tenants`.
   const options = { ...given, base: given.base.replace(/\/+$/u, '') };
-  const viewport = { width: options.width ?? 1100, height: options.height ?? 820 };
+  const viewport = { width: options.width ?? 1100, height: options.height ?? 900 };
   const manifest: Record<string, ManifestEntry> = {};
   const captures: Captured[] = [];
   const context: Context = { base: options.base, tenant: 'demo' };

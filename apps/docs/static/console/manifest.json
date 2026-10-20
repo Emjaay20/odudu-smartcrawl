@@ -1,102 +1,102 @@
 {
   "sign-in-tenant": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "sign-in": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "new-tenant": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "new-client": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "clients": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "new-subject": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "subjects": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "issue-password": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "overview": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "subject-profile": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "groups": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "new-group": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "roles": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "client-redirects": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "scopes": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "registration-tokens": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "flow": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "signing-keys": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "tenant-sessions": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "settings": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "email": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "audit": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "tenants": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "export": {
     "width": 1100,
-    "height": 820
+    "height": 900
   },
   "system-admins": {
     "width": 1100,
-    "height": 820
+    "height": 900
   }
 }

@@ -17,8 +17,6 @@ The console signs an administrator in through the same flow your users meet, and
 
 Each page below does one job. It says what the area is for, walks through the common tasks in order, names the actions that cannot be undone, and ends with how to do the same through the API.
 
-### A tenant
-
 1. [Overview](./overview.mdx): what needs attention, and the tenant's addresses.
 
 ### Identity

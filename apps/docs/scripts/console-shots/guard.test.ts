@@ -42,6 +42,18 @@ describe('findSecrets', () => {
     expect(findSecrets({ ...clean, text: jwks('d') }, [])).toHaveLength(1);
   });
 
+  it('refuses every private member of an RSA key, and lets its public half through', () => {
+    const value = (): string => randomBytes(128).toString('base64url');
+    const member = (name: string): string => `{"kty":"RSA","${name}":"${value()}"}`;
+    for (const name of ['d', 'p', 'q', 'dp', 'dq', 'qi']) {
+      expect(findSecrets({ ...clean, text: member(name) }, []), name).toHaveLength(1);
+    }
+    const publicKey = `{"kty":"RSA","n":"${value()}","e":"AQAB"}`;
+    expect(findSecrets({ ...clean, text: publicKey }, [])).toEqual([]);
+    const privateKey = `{"kty":"RSA","n":"${value()}","e":"AQAB","d":"${value()}","p":"${value()}","q":"${value()}","dp":"${value()}","dq":"${value()}","qi":"${value()}"}`;
+    expect(findSecrets({ ...clean, text: privateKey }, []).length).toBeGreaterThan(0);
+  });
+
   it('refuses a filled password field', () => {
     expect(findSecrets({ ...clean, passwordFieldsFilled: 1 }, [])).toEqual([
       'a password field is filled',

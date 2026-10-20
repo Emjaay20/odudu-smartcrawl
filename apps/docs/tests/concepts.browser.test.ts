@@ -4,6 +4,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { chromium, type Browser, type Page } from '@playwright/test';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PAGES_BASE } from '#docs/site.config.ts';
+import { declaredTexts } from '#docs/tests/support/diagram-markup.ts';
 import { DOCS_ROOT, distDir } from '#docs/tests/support/dist.ts';
 
 const PAGES = [
@@ -171,6 +172,29 @@ async function setTheme(page: Page, wanted: 'light' | 'dark'): Promise<void> {
   expect(await page.locator('html').getAttribute('data-theme')).toBe(wanted);
 }
 
+// Every text the drawing declares is in the page, in order, inside the drawing:
+// a drawing that is right on the server and wrong once the browser has drawn it
+// again shows up as a count or a position that is not the declared one.
+function expectDeclared(seen: Measured, name: (typeof PAGES)[number], how: string): void {
+  expect(
+    seen.texts.map((text) => text.words),
+    `${name} ${how}`,
+  ).toEqual(declaredTexts(name));
+  expect(
+    seen.texts.filter((text) => !text.inside).map((text) => text.words),
+    `${name} ${how} leaves the drawing`,
+  ).toEqual([]);
+}
+
+async function shown(page: Page): Promise<void> {
+  await hydrated(page);
+  await page.locator('article svg[role="img"]').waitFor();
+}
+
+async function hydrated(page: Page): Promise<void> {
+  await page.locator('html[data-has-hydrated="true"]').waitFor();
+}
+
 describe('the concept diagrams in a browser, following the site toggle', () => {
   for (const [label, size] of [
     ['a phone', { width: 375, height: 800 }],
@@ -195,7 +219,9 @@ describe('the concept diagrams in a browser, following the site toggle', () => {
           // The toggle's choice is kept, so a fresh load shows the page with the menu shut.
           await page.goto(`${origin}${PAGES_BASE}concepts/${name}/`);
           expect(await page.locator('html').getAttribute('data-theme')).toBe(theme);
+          await shown(page);
           const seen = await measure(page);
+          expectDeclared(seen, name, 'after hydration');
           const background = channels(seen.page);
           expect(seen.texts.length, name).toBeGreaterThan(5);
           for (const text of seen.texts) {
@@ -226,6 +252,22 @@ describe('the concept diagrams in a browser, following the site toggle', () => {
             ),
             name,
           ).toEqual([]);
+          // Reached by the router, the drawing is made in the browser, not read from the page.
+          await page.goto(`${origin}${PAGES_BASE}concepts/`);
+          await hydrated(page);
+          await page.locator(`article a[href$="/concepts/${name}/"]`).first().click();
+          await page.waitForURL(`**/concepts/${name}/`);
+          await shown(page);
+          expectDeclared(await measure(page), name, 'after navigation');
+          // Drawn again in the same page: the module's state outlives a render.
+          await page.goBack();
+          await hydrated(page);
+          await page.goForward();
+          await shown(page);
+          expectDeclared(await measure(page), name, 'after coming back to it');
+          await setTheme(page, theme === 'light' ? 'dark' : 'light');
+          await setTheme(page, theme);
+          expectDeclared(await measure(page), name, 'after the theme was toggled');
         }
         expect(problems).toEqual([]);
         await context.close();

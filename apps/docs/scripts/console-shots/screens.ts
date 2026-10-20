@@ -245,7 +245,7 @@ export const SCREENS: readonly Screen[] = [
   },
   {
     name: 'client-redirects',
-    alt: "my-app's record on its Redirects & origins tab, listing its one redirect URI and the fields to add another redirect URI or a web origin.",
+    alt: "my-app's record on its Redirects & origins tab, listing its one redirect URI and the buttons to add another redirect URI or a web origin. The tab row runs past the right edge.",
     caption:
       'The redirect URIs a client may send the browser back to, and the web origins it may be called from.',
     signedIn: true,
@@ -317,20 +317,15 @@ export const SCREENS: readonly Screen[] = [
   },
   {
     name: 'signing-keys',
-    alt: 'The Signing keys page: a Stage key button, an empty Rotating lane, the Active lane with one ES256 key that cannot be retired while it is active, and an empty Retired lane.',
-    caption: 'One key is active. A staged key waits in Rotating until it is promoted.',
+    alt: 'The Signing keys page: a Stage a key form with an algorithm menu and a Stage key button, an empty Rotating lane, and the Active lane with one ES256 key that cannot be retired while it is active.',
+    caption: 'A new key is staged here and waits in Rotating until it is promoted.',
     signedIn: true,
     expect: [
       { heading: 'Signing keys' },
       { heading: 'Active' },
       { role: 'button', name: 'Stage key' },
     ],
-    open: async (page, context) => {
-      await openArea(page, context, `${DEMO}/keys`);
-      await page.getByRole('heading', { name: 'Active', exact: true }).evaluate((heading) => {
-        heading.scrollIntoView({ block: 'start' });
-      });
-    },
+    open: (page, context) => openArea(page, context, `${DEMO}/keys`),
   },
   {
     name: 'tenant-sessions',
