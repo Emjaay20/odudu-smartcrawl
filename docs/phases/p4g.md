@@ -2088,7 +2088,7 @@ The other variants are `p4g-docs/22b-{before,after}-{home,console,reference,tran
     `extractRunnable` now refuses it. Prettier also rewrites a backslash-escaped quote in a fence's info
     string, so no `expect` text holds a double quote.
 - **Not written.** A guide for protecting an MCP server. verified: `curl
-  $ODUDU_BASE/.well-known/oauth-authorization-server/tenants/demo` answers 404 and the demo tenant's
+$ODUDU_BASE/.well-known/oauth-authorization-server/tenants/demo` answers 404 and the demo tenant's
   discovery document names no `registration_endpoint` (registration is closed until a tenant's policy or a
   registration token opens it). The plan names the guide in the increment's preface but not in the task's
   file list; it needs a decision on where the gap is placed before a page can describe it.
