@@ -50,7 +50,7 @@ export function sourceOf(contentDir: string, copy: string): string | null {
 function asMarkdown(text: string): string {
   return text
     .replace(/^import .+;$/gmu, '')
-    .replace(/<ConsoleShot[\s\S]*?\/>/gu, '')
+    .replace(/<(?:ConsoleShot|Diagram)[\s\S]*?\/>/gu, '')
     .replace(/<\/?Tabs[^>]*>/gu, '')
     .replace(/<TabItem [^>]*label="([^"]+)"[^>]*>/gu, '**$1**')
     .replace(/<\/TabItem>/gu, '');

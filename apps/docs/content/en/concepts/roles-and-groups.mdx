@@ -1,0 +1,73 @@
+---
+title: Roles and groups
+description: A role says what a person may do, a group says who they are alongside. Roles reach down a tree of groups, and the groups claim does not.
+sidebar_position: 4
+---
+
+import Diagram from '@site/src/components/Diagram';
+
+# Roles and groups
+
+Ada joins the backend team. On her first day she should be able to review code, and because she is on a team inside engineering she should also get whatever every engineer gets. Nobody wants to tick those boxes person by person. Roles and groups are how you say it once.
+
+<Diagram
+  name="roles-and-groups"
+  title="Roles and groups"
+  desc="Groups form a tree. A role mapped to the engineering group reaches everyone in its backend group. Ada joins only backend, so her roles claim lists reviewer and engineering-lead, while her groups claim lists only the backend group, because it carries direct memberships and no parents."
+/>
+
+_In words: Groups form a tree. A role mapped to the engineering group reaches everyone in its backend group. Ada joins only backend, so her roles claim lists reviewer and engineering-lead, while her groups claim lists only the backend group, because it carries direct memberships and no parents._
+
+## Roles
+
+A role is a name for something a person may do, such as `reviewer` or `billing-admin`. Odudu does not decide what the role allows. Your app does, when it reads the role from a token. A role can be:
+
+- a **tenant role**, which any client in the tenant may read;
+- a **client role**, named for one client and relevant only to it;
+- a **composite role**, which bundles other roles so that holding it means holding them all.
+
+A role can also be marked as a default for new people, so everyone created afterwards starts with it.
+
+## Groups
+
+A group is a place people belong. Groups form a tree, and each has a path: `/engineering` is a group, and `/engineering/backend` is a group inside it. A person can belong to several groups.
+
+A group can be given roles. Everyone in the group holds them.
+
+## How a person ends up with a role
+
+There are three ways, and they add together:
+
+1. The role is given to the person directly.
+2. The role is given to a group the person belongs to.
+3. The role is given to a group **above** the person's own. A role mapped to `/engineering` reaches everyone in `/engineering` and in every group beneath it.
+
+The third is the one that saves work. Ada belongs to `/engineering/backend` and nothing else. She holds what backend gives her, and what engineering gives her too, though nobody ever added her to `/engineering` itself. Ask the admin API for her `effective-roles` and you see the full answer.
+
+## What reaches a token
+
+Two claims carry this to your app, and they do not agree on purpose.
+
+- The **`roles` claim** lists every role the person holds, including those that came from groups above. Ada's lists both `reviewer` and `engineering-lead`.
+- The **`groups` claim** lists only the groups the person belongs to directly. Ada's lists `/engineering/backend` and nothing else.
+
+If your app checks `groups` for `/engineering`, it will not find Ada, even though she holds everything engineering grants. Check roles, and your app agrees with what Odudu allows. Use `groups` when you want the person's own memberships, for example to show where they sit.
+
+A role also reaches a token only when a scope carries it. You map the role to a scope, such as `roles`, and the claim appears when the client was granted that scope. [Scopes](./scopes.mdx) explains the mapping.
+
+## Working with roles and groups
+
+1. Decide which things your app needs to tell people apart by, and name one role for each.
+2. Create the roles, then the groups that match how people are organised.
+3. Give each group the roles its members should hold.
+4. Put people in groups. Prefer a group to a direct role: one change then covers everybody in it.
+5. Map the roles to a scope and give the client that scope, so they reach the token.
+6. In your app, read `roles` from the access token. The access token carries it by default, and the ID token does not.
+
+An administrator cannot put a person in a group whose roles reach further than the administrator's own, so the admin API cannot be used to grant more than its caller holds.
+
+## Where to go next
+
+- [Scopes](./scopes.mdx) shows how a role reaches a token.
+- [Tokens](./tokens.mdx) shows where the claim lives.
+- The admin API has [roles](../reference/generated/admin-api/roles.md) and [groups](../reference/generated/admin-api/groups.md) pages, and the [Keycloak guide](../guides/keycloak.md) lines Odudu's names up with Keycloak's.

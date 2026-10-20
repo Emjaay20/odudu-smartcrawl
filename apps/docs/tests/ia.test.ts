@@ -54,7 +54,7 @@ describe('the information architecture', () => {
   });
 
   it('lists the sections in the sidebar of a built page, in order', () => {
-    expect(sidebarLinks('concepts/index.html')).toEqual(
+    expect(sidebarLinks('quick-start/index.html')).toEqual(
       SECTIONS.map((section) => `${PAGES_BASE}${section.route}`),
     );
     expect(
@@ -68,6 +68,22 @@ describe('the information architecture', () => {
     const start = links.indexOf(`${PAGES_BASE}guides/`);
 
     expect(links.slice(start + 1, start + 1 + journeys.length)).toEqual(journeys);
+  });
+
+  it('opens the concepts to their seven pages, in order', () => {
+    const links = sidebarLinks('concepts/index.html');
+    const start = links.indexOf(`${PAGES_BASE}concepts/`);
+    expect(
+      links.slice(start + 1, start + 8).map((href) => href.slice(`${PAGES_BASE}concepts/`.length)),
+    ).toEqual([
+      'tenants/',
+      'clients/',
+      'scopes/',
+      'roles-and-groups/',
+      'sessions/',
+      'tokens/',
+      'consent-and-audit/',
+    ]);
   });
 
   it('keeps the recorded transcripts out of the navigation until a reader is inside them', () => {

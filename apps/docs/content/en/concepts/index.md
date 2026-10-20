@@ -1,32 +1,22 @@
 ---
 title: Concepts
-description: Tenants, clients, tokens, sessions and the other ideas the product is built on.
+description: Tenants, clients, scopes, roles and groups, sessions, tokens, and consent and audit, each explained with a story and a diagram.
 ---
 
 # Concepts
 
-Tenants, clients, tokens, sessions and the other ideas the product is built on.
+You have signed a person in, and now you want to know why it worked. These seven pages explain the ideas behind it, one at a time. Each is short, starts from a small story, and has one diagram you can come back to.
 
-Each idea below is short, and links to the guide step where you meet it.
+If you read them in order, each one leans on the one before.
 
-## Tenant
+1. [Tenants](./tenants.mdx): one organisation's own space, kept apart from every other.
+2. [Clients](./clients.mdx): the apps that may ask people to sign in, and how they prove who they are.
+3. [Scopes](./scopes.mdx): the names an app uses to say what it wants, and a person to say what they allow.
+4. [Roles and groups](./roles-and-groups.mdx): how a person comes to hold a role, and why the roles and groups claims differ.
+5. [Sessions](./sessions.mdx): how long a sign-in lasts, how it ends, and what recovery codes are for.
+6. [Tokens](./tokens.mdx): the access, ID and refresh tokens, and what happens when one is used twice.
+7. [Consent and audit](./consent-and-audit.mdx): what a person agreed to share, and the record of what happened.
 
-A tenant is one organisation's own space in Odudu. It has its own users, clients, signing keys and sessions, kept apart from every other tenant's. The tenant is part of every address, as in `/tenants/demo/`, so a request can never be mistaken for another tenant's. You meet it in [Sign a user in](../guides/sign-a-user-in.md#1-find-the-endpoints).
+When Odudu says no, it tells a person, a client or an admin tool in the way each can use. [Read a refusal](../guides/read-a-refusal.md) shows seven of them.
 
-## Client
-
-A client is an app registered with a tenant. It has a `client_id` and a list of redirect addresses it may use. A **public** client, such as a single-page app, holds no secret. A **confidential** client, such as a web app's server, does, and proves it. Every client uses PKCE.
-
-## Tokens
-
-An **access token** is what you send to an API. In the examples it lives 300 seconds. An **ID token** says who signed in. A **refresh token** gets new tokens later, and each one works once. See [Sign a user in](../guides/sign-a-user-in.md#5-swap-the-code-for-tokens) and [Refresh and end a session](../guides/refresh-and-end-a-session.md).
-
-## Session
-
-When a person signs in, Odudu sets a session cookie. A session ends when it has been idle too long or has lasted too long, whichever comes first, or when it is ended on purpose, as in [Refresh and end a session](../guides/refresh-and-end-a-session.md#3-end-the-session).
-
-## Refusal
-
-When Odudu says no it tells a person, a client or an admin tool in the way each can use. [Read a refusal](../guides/read-a-refusal.md) shows seven of them.
-
-<!-- filled by Increment 25 -->
+To do something rather than understand it, start with the [guides](../guides/index.md). To look up an exact setting or address, go to the [reference](../reference/index.md).

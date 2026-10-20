@@ -1,7 +1,1 @@
-[
-  "concepts/index.md",
-  "admin-console/index.md",
-  "operating/index.md",
-  "security/index.md",
-  "contributing/index.md"
-]
+["admin-console/index.md", "operating/index.md", "security/index.md", "contributing/index.md"]

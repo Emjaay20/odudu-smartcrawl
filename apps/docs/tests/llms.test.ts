@@ -151,7 +151,7 @@ describe('the documentation sources', () => {
     const dirty = pages.flatMap((file) => {
       const relative = path.relative(CONTENT_DIR, file).replace(/(\/index)?\.mdx$/u, '.md');
       const copy = readFileSync(path.join(distDir('pages'), relative), 'utf8');
-      return /^import |<(Tabs|TabItem|ConsoleShot)\b/mu.test(copy) ? [relative] : [];
+      return /^import |<(Tabs|TabItem|ConsoleShot|Diagram)\b/mu.test(copy) ? [relative] : [];
     });
     expect(dirty).toEqual([]);
   });

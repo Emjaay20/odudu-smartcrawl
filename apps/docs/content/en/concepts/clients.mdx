@@ -1,0 +1,60 @@
+---
+title: Clients
+description: A client is an app registered with a tenant. It is public or confidential, uses PKCE, and may only send people back to addresses you listed.
+sidebar_position: 2
+---
+
+import Diagram from '@site/src/components/Diagram';
+
+# Clients
+
+Your tenant knows its people. Your app wants to know who they are. Between the two sits a rule: Odudu only talks to apps it has been told about. Telling it is called registering a client, and the registration is what lets a person trust the page that asked them to sign in.
+
+<Diagram
+  name="clients"
+  title="Public and confidential clients"
+  desc="A public client, such as a browser or mobile app that holds no secret, and a confidential client, such as a server-side app that holds and proves a secret, both reach the tenant token endpoint. The endpoint checks the client id, the registered redirect address, the PKCE verifier and, for a confidential client, its secret."
+/>
+
+_In words: A public client, such as a browser or mobile app that holds no secret, and a confidential client, such as a server-side app that holds and proves a secret, both reach the tenant token endpoint. The endpoint checks the client id, the registered redirect address, the PKCE verifier and, for a confidential client, its secret._
+
+## What a client is
+
+A client is one app, registered with one tenant. It has a `client_id`, a name, and a list of **redirect addresses**: the only places Odudu will send a person after they sign in. An address that is not on the list is refused, which stops somebody else's page from catching the result of a sign-in meant for yours.
+
+Each client also has its own settings: how long its access tokens live, how long its refresh tokens live, which scopes it may ask for, and whether people must approve it on a consent screen.
+
+## Public and confidential
+
+How an app can keep a secret decides the kind of client it is.
+
+- A **public** client cannot keep a secret. A single-page app and a mobile app are public, because anyone can read the code that ships to the device. A public client holds no secret at all.
+- A **confidential** client can keep one. A web app's server and a back-end service are confidential. It holds a client secret and proves it when it calls the token endpoint.
+
+You pick the kind when you register the client, and it decides which sign-in guide fits. A [web app](../guides/web-app.md) is confidential. A [single-page app](../guides/single-page-app.md) is public. A [service with no person involved](../guides/machine-to-machine.md) is confidential and uses the `client_credentials` grant.
+
+## PKCE protects the code in between
+
+When a person signs in, Odudu does not hand the app a token straight away. It sends the browser back with a short-lived **code**, and the app trades the code for tokens. PKCE closes the gap in the middle. The app invents a secret for this one sign-in, sends only a fingerprint of it when it starts, and shows the secret itself when it trades the code. Somebody who steals the code on the way back has the fingerprint, not the secret, and gets nothing.
+
+Every sign-in that uses a code uses PKCE, for a public client and a confidential one alike, so there is nothing to switch on. A confidential client adds its secret on top.
+
+## Who may register a client
+
+An administrator registers clients from the console or the admin API, or seeds them from the command line. A tenant can also let apps register themselves. A client that registered itself with no token starts out with the consent screen switched on, because nobody vouched for it. A client an administrator registered does not ask for consent unless you turn it on. [Consent and audit](./consent-and-audit.mdx) explains the screen.
+
+## Working with clients
+
+1. Decide whether the app can keep a secret. If it cannot, it is public.
+2. Register it with the redirect addresses it really uses, and no others.
+3. For a confidential client, store the secret where only the server can read it. The console shows a generated secret once, so copy it then.
+4. Choose the scopes it may ask for. [Scopes](./scopes.mdx) explains how.
+5. Send people to the tenant's authorization address, then trade the code for tokens at the token endpoint, `POST /tenants/{tenant}/protocol/openid-connect/token`.
+
+If a client's secret leaks, issue a new one. Nothing else about the client has to change.
+
+## Where to go next
+
+- [Sign a user in](../guides/sign-a-user-in.md) registers a client and signs a person in end to end.
+- [Tokens](./tokens.mdx) explains what the client gets back.
+- The [client operations of the admin API](../reference/generated/admin-api/clients.md) list every setting.

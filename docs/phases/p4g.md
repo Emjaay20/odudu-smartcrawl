@@ -1614,8 +1614,8 @@ heap limit` at 4.56 GB resident; with `NODE_OPTIONS=--max-old-space-size=8192` i
 
 Recovery codes had a creation path and a spend path and nothing in between: an administrator could remove a TOTP
 enrolment and leave the set that stood in for it, so a re-enrolment silently revived codes that may have left with the
-lost device. This increment gives the set a lifecycle. The concept page for the docs site is written with the guides
-increments; this section is its source, and the heading below is the one they fill.
+lost device. This increment gives the set a lifecycle. The concept page for the docs site is the "Recovery codes"
+section of `concepts/sessions.md` (Increment 25); this section is its source.
 
 ### Recovery codes
 
@@ -2158,3 +2158,38 @@ https://www.rfc-editor.org/rfc/rfc8414.txt | grep -m2 oauth-authorization-server
   of about 750; a smaller capture changes every layout and every alt text, left for the tour increment, which
   owns the capture and its CI job); no-JavaScript readers see the first tab only, and a dark-OS reader without
   JavaScript sees the light image (standard Docusaurus tabs; the agent copies carry both routes).
+
+## Increment 25: the seven concepts
+
+- **Pages.** `concepts/` holds an index and seven pages (tenants, clients, scopes, roles and groups, sessions, tokens,
+  consent and audit), each a short story, a diagram, the rules and a numbered "Working with" list. The concepts
+  sidebar entry is now a directory of the seven. "Recovery codes" is a section of the sessions page, because a set is
+  what stands in for a second factor at sign-in; it states one set per person (ten codes), a code that stands in for a TOTP
+  code and never follows a passkey, whole-set revocation with the audit action when the last TOTP goes, and the admin
+  revoke with `require_new_set`.
+- **Diagrams.** `src/components/Diagram/` draws each diagram inline as React SVG, so it sits in the page's own tree and
+  every colour is one of Instrument's custom properties (`--surface-sunken`, `--signal-active`, `--ink-primary`, ...), which
+  follow the site's colour toggle, not the system setting. (A first version used standalone SVG files through `<img>`, which
+  cannot read the page's properties and followed only the OS scheme.) The seven concept pages became `.mdx` to import it:
+  `<Diagram name title desc />` followed by an italic "In words" paragraph repeating `desc`. The llms plugin drops the
+  component and keeps the paragraph, so a Markdown copy carries the description and no drawing. Colours are presentation
+  attributes (`fill="var(--...)"`), so no `style` attribute reaches the policy's hash inventory, and the diagrams need no
+  asset, data URI or CSS file but a two-rule module. Every diagram is one portrait 340-unit viewBox, nodes stacked
+  vertically, text 13 to 15 units, shown at most 22rem wide, so text renders at 13 to 14.5 px on a 375 px phone.
+- **Alt text.** Not applicable now: the text alternative is the SVG's own `<title>` and `<desc>` through
+  `aria-labelledby`, equal (tested) to the page's props.
+- **Checks.** `apps/docs/tests/concepts.browser.test.ts` (built site in Chromium, theme changed with the site's toggle
+  while the system scheme says the opposite; on a phone through the menu's toggle): the computed contrast of every text
+  against the surface it sits on is at least 4.5 and of every arrow against the page at least 3, every text lies inside its
+  drawing, the rendered text is at least 12 px at 375 px, nothing scrolls sideways, and axe finds no violation, for all
+  seven pages, light and dark, phone and desktop. `apps/docs/tests/concepts.test.ts`: structure, word count (400 to 900),
+  one `<Diagram>` per page with the title and description in the built `<svg>` and the description in the Markdown copy,
+  the component's source carrying no hard-coded colour, `style` or link, every stated number
+  against the migration or constant that sets it (`FACTS`), and every code-font name that looks like a setting, claim or
+  action against the sources. `tests/docs/concept-claims.test.ts`: every `METHOD /path` a page names against the
+  server's router, the consent decision against `decideConsent`, the recovery rules against `recoveryApplicable`, and the
+  refusal budget against its constant. The server-importing half lives in `tests/docs` because `apps/docs/tsconfig.json`
+  cannot typecheck the server's sources. Mutation checked: a stated default changed on a page, and a route renamed.
+- **Screenshots.** `docs/phases/p4g-docs/concept-sessions-*` and `concept-tokens-*`, desktop and 375 px, light and dark.
+- **Sidebar test.** `ia.test.ts` read the section list from the concepts page; with the concepts opened it now reads it
+  from the quick start and asserts the seven pages beneath concepts in order.

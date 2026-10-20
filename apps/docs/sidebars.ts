@@ -47,7 +47,7 @@ export const SIDEBAR_ITEMS: SidebarItemConfig[] = [
     ],
   },
   directory(section('guides/index').label, 'guides'),
-  page('concepts/index'),
+  directory(section('concepts/index').label, 'concepts'),
   page('admin-console/index'),
   page('operating/index'),
   {
