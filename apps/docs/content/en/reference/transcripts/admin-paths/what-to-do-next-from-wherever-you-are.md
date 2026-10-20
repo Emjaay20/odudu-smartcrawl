@@ -7,6 +7,6 @@ description: "From here, for anything this document does not yet cover — creat
 
 **From here, for anything this document does not yet cover** — creating a
 client, rotating a signing key, editing a tenant's authentication flow —
-[docs/request-paths.md](../request-paths/index.md) is where the rest of the server's
+[the request paths](../request-paths/index.md) is where the rest of the server's
 behaviour is documented, and its own "What to do next" section covers the
 protocol surface this API sits beside.

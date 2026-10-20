@@ -56,9 +56,9 @@ registered for. Presenting the right secret the wrong way is refused exactly
 like the wrong secret.
 
 **From here, to administer a tenant rather than act as a client of one.**
-[docs/admin-paths.md](../admin-paths/index.md) documents the admin API — the
+[the admin paths](../admin-paths/index.md) documents the admin API — the
 endpoints under `/admin/tenants/{tenant}/` — separately from this document,
 because it serves an operator rather than an application integrator.
-[docs/console-paths.md](../console-paths/index.md) documents the console gateway
+[the console paths](../console-paths/index.md) documents the console gateway
 under `/console`, which signs an administrator in and forwards the console's
 calls to that API.

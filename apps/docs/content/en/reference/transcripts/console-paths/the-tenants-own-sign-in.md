@@ -7,7 +7,7 @@ description: "The two requests between the gateway's redirect and its callback a
 
 The two requests between the gateway's redirect and its callback are the
 tenant's authorization endpoint and sign-in form, which
-[docs/request-paths.md](../request-paths/index.md) documents. They are shown here
+[the request paths](../request-paths/index.md) documents. They are shown here
 only so that the callback below has a real code. This section and the
 `authenticate` request below were recaptured after the page headers changed,
 on the project `odudu-17a` at `http://localhost:3094`, built from commit

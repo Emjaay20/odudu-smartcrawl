@@ -10,7 +10,7 @@ This one drives a whole sign-in — a login, the code's redemption, a
 refresh, a logout — and reads what it left through
 `GET /admin/tenants/{tenant}/audit`, which is how an operator reads it.
 `$ADMIN_TOKEN` is an admin access token got the way
-[docs/admin-paths.md](../admin-paths/getting-the-token.md) shows, here for a
+[the admin paths](../admin-paths/getting-the-token.md) shows, here for a
 second `system` administrator seeded on the same stack. `event_type` picks
 the kind of row, and `from` narrows both queries to rows written since the
 run began, `request_id` not being a filter. `from` is only as precise as the
@@ -86,7 +86,7 @@ The refresh's status, the logout's, then the `token` page and the
 ```
 
 Recaptured against the tenth stack
-([docs/admin-paths.md](../admin-paths/index.md)), after `demo-spa`
+([the admin paths](../admin-paths/index.md)), after `demo-spa`
 was created in its `demo` through `POST /clients` as a public client and
 `ada` seeded there with `odudu seed user`, so each row answers `actor_name`
 and `actor_origin` as well; the ids are that run's.

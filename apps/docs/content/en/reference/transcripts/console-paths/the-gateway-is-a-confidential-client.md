@@ -51,7 +51,7 @@ exchange, and it was answered `200`:
 
 What the assertion buys is what the same calls are without it. The
 loopback client's session at `system` left a refresh token from the first
-sign-in of the stack (`docs/admin-paths.md`'s "Getting the token" is the same
+sign-in of the stack ("Getting the token" in the admin paths is the same
 stack), `$R1`, and `console assertion` prints a signed assertion. The refresh
 and the revocation, each without one, are refused, and a refusal spends
 nothing:

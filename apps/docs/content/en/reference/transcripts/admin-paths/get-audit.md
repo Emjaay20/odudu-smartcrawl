@@ -85,9 +85,9 @@ which reading takes `view-users` everywhere else, so a caller holding
 `GET /mail`. `GET /clients/:id/evaluate` and `DELETE /sessions` above show a
 `system` and a `tenant` actor, and `GET /audit/export` below a deleted one.
 The older transcripts of this listing in this document and in
-[docs/request-paths.md](../request-paths/index.md) were recaptured against the tenth
+[the request paths](../request-paths/index.md) were recaptured against the tenth
 stack once the two fields were added, each saying so where it appears; those
-in [docs/console-paths.md](../console-paths/index.md) say at the block that they
+in [the console paths](../console-paths/index.md) say at the block that they
 predate them.
 
 Against the tenth stack, `ivy`, seeded in `ops-demo` with `odudu seed user`
@@ -337,7 +337,7 @@ any one scope.
 ## A token from another tenant, and a caller missing a capability
 
 **A fourth stack.** This subsection only ran against the compose stack
-[docs/request-paths.md](../request-paths/path-a-authorization-code-with-pkce.md#what-a-refused-login-leaves-behind)'s
+[the request paths](../request-paths/path-a-authorization-code-with-pkce.md#what-a-refused-login-leaves-behind)'s
 audit transcripts were captured on, whose `demo` is
 `01a0db22-1c32-7d17-b351-697d7911033c`. That stack had no `system` tenant
 until `seed admin --username ada` was run on it for this section, printing

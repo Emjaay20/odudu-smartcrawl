@@ -79,7 +79,7 @@ Keep-Alive: timeout=72
 The console gateway reads such a `401` as the end of its session once the
 same token is refused at its own tenant's `whoami` too, so a console session
 whose subject is disabled ends at its next request
-([docs/console-paths.md](../console-paths/index.md)).
+([the console paths](../console-paths/index.md)).
 
 **Every path parameter but `{tenant}` is a row id**, narrowed before the
 route runs: an id that is not a canonical hyphenated UUID is refused with

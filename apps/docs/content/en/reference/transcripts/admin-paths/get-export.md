@@ -33,7 +33,7 @@ A client's `jwks` is exported with any private member (`d`, `p`, `q`,
 `dp`, `dq`, `qi`, `k`) removed from each key, and each key that lost one is
 named under `omitted` as `clients[<i>].jwks.keys[<j>]`. Registration and
 `POST`/`PATCH /clients` refuse such a key
-([docs/request-paths.md](../request-paths/bootstrap.md#dynamic-client-registration)
+([the request paths](../request-paths/bootstrap.md#dynamic-client-registration)
 shows the refusal), so only a row stored before that check can hold one;
 none on this stack does, so no stripped key appears below.
 

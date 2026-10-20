@@ -20,10 +20,9 @@ const ROADMAP = 'docs/superpowers/specs/2026-09-10-odudu-design.md';
 const CITING_DOCUMENTS: readonly (readonly [name: string, atLeast: number])[] = [
   ['README.md', 6],
   [PROTOCOL_PAGES, 4],
-  ['apps/docs/content/en/roadmap.md', 20],
-  // The pages hold the guide without its "What is not implemented" list, which
-  // carries most of the citations and is still in this file.
-  ['docs/request-paths.md', 20],
+  // The roadmap carries most of the citations: the transcripts hold the
+  // request paths without the list of what is not implemented.
+  ['apps/docs/content/en/roadmap.md', 49],
 ];
 
 function roadmapPhases(): Set<string> {

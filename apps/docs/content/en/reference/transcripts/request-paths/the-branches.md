@@ -1396,7 +1396,7 @@ rendered page — cannot tell a disabled tenant from one that never existed.
 Captured on 2026-09-29 from the repository root against compose project
 `odudu-t8b2` on port 3082, its image built from this branch at `cd930b59` and
 brought up from an empty volume for
-[docs/admin-paths.md](../admin-paths/index.md)'s `DELETE /admin/tenants/{tenant}`. A
+[the admin paths](../admin-paths/index.md)'s `DELETE /admin/tenants/{tenant}`. A
 tenant `lapsed` is seeded and answers, then is disabled through `psql`, in
 the column `PATCH /admin/tenants/{tenant}` with `enabled: false` and the
 console's Disable both write, and is asked again beside `nope`. The `diff`

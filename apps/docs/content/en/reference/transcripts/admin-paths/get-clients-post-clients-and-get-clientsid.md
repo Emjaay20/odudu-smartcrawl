@@ -20,7 +20,7 @@ a population to browse. A `GET` on a single client carries an `ETag`, which
 
 A create body names `client_id` — chosen by the operator, unlike RFC 7591
 dynamic registration (`clients-registrations/openid-connect`,
-[docs/request-paths.md](../request-paths/bootstrap.md#dynamic-client-registration))
+[the request paths](../request-paths/bootstrap.md#dynamic-client-registration))
 where the server assigns it — plus the same RFC 7591 client metadata dynamic
 registration accepts, narrowed by the identical validator
 (`parseClientMetadata`, `packages/protocol-oidc/src/service/client-metadata.ts`):

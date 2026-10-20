@@ -1,12 +1,12 @@
 ---
 title: 'GET /console/api/tenants/{tenant}/discovery, GET…'
-description: "Read-only mirrors of the tenant's own public discovery document and JWKS (docs/request-paths.md's GET…"
+description: "Read-only mirrors of the tenant's own public discovery document and JWKS (the request paths' GET…"
 ---
 
 ## `GET /console/api/tenants/{tenant}/discovery`, `GET /console/api/tenants/{tenant}/jwks`
 
 Read-only mirrors of the tenant's own public discovery document and JWKS
-(`docs/request-paths.md`'s `GET /tenants/{tenant}/.well-known/openid-configuration`
+(the request paths document `GET /tenants/{tenant}/.well-known/openid-configuration`
 and `GET /tenants/{tenant}/protocol/openid-connect/certs`), reached through
 the gateway so the console never needs a transport exception to read them
 and the issuer shown is always the one the gateway's own `OduduPort` reads
@@ -19,7 +19,7 @@ named answers `403`, and a tenant unknown to the server answers `404`.
 compose project, `odudu-task3`, built from this branch (`40e9e43f`) and
 removed afterwards, on `http://localhost:3080`. Two administrators: `ada`,
 `seed admin`'s system-tenant administrator, signed in through the forced
-password change `docs/request-paths.md` documents; and `grace`,
+password change the request paths documents; and `grace`,
 `odudu-admin:tenant-admin` on a second throwaway tenant, `console-paths-disc`,
 signed in the same way `console-paths`' `grace` is above. Neither sign-in is
 re-shown here.

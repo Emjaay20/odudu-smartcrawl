@@ -70,7 +70,7 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 The subject, the `users` row, the password credential and the tenant's
 default roles and groups — those `PUT /admin/tenants/{tenant}/roles/{id}/default`
 and `PUT /admin/tenants/{tenant}/groups/{id}/default` mark, none of which may
-reach an admin capability ([docs/admin-paths.md](../admin-paths/index.md)) — are all
+reach an admin capability ([the admin paths](../admin-paths/index.md)) — are all
 created in one transaction, and the `verify_email`
 token is issued inside that same transaction — the mail goes out only after
 it commits, the same ordering [Address verification](./path-a-as-a-confidential-client.md#address-verification)

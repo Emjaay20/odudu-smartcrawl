@@ -144,7 +144,7 @@ client it creates. The walk-through below asks for three of them — `openid`,
 The issuer is derived from the request, so it is `http://` on this
 plain-HTTP local stack. A deployment terminates TLS in front of the server
 and the issuer becomes `https://` — see
-[What is not implemented](https://github.com/wizzywit/odudu/blob/main/docs/request-paths.md#what-is-not-implemented).
+[What is not implemented](../../../roadmap.md#what-is-not-implemented).
 
 The public keys are a separate fetch, and are what a client verifies an ID
 token against:
@@ -1187,7 +1187,7 @@ characters — this document's usual truncation — coincide.
 **A `resource` at `/token` narrows what the code already carries, and can
 never widen it.** The same `resource` `/authorize` resolves and stores on
 the code (see its own bullet under
-[What is not implemented](https://github.com/wizzywit/odudu/blob/main/docs/request-paths.md#what-is-not-implemented)) is what `/token`
+[What is not implemented](../../../roadmap.md#what-is-not-implemented)) is what `/token`
 derives `aud` from — a `resource` on the token request itself may select
 one value out of what the code carries, but naming one the code does not
 carry refuses with `invalid_target` rather than being ignored, on a public
@@ -1521,7 +1521,7 @@ why `engineering-lead` appears even though nothing ever joined `ada` to
 `/engineering` itself. `seed join-group` is one way in; the admin API's
 `PUT /admin/tenants/{tenant}/subjects/:id/groups` is the other, and refuses
 a membership whose roles reach past its caller's own
-([docs/admin-paths.md](../admin-paths/index.md)).
+([the admin paths](../admin-paths/index.md)).
 
 ## 5. `/userinfo`
 

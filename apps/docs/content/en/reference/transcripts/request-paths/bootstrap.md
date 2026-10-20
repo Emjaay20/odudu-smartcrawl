@@ -12,7 +12,7 @@ Everything after that first row has two more doors: the admin API, and, for
 a client on a tenant that opens registration to it,
 [dynamic client registration](#dynamic-client-registration). This document
 seeds, because a seed command is reproducible from a shell with no token in
-it; [docs/admin-paths.md](../admin-paths/index.md) walks the same ground through the
+it; [the admin paths](../admin-paths/index.md) walks the same ground through the
 API.
 
 ## Pick how you are running it
@@ -433,7 +433,7 @@ answers with the token alone, so `TOKEN=$(odudu seed registration-token …)`
 captures exactly the credential and nothing else. The admin API mints the
 same way, for an operator who would rather not shell into the container:
 `POST /admin/tenants/{tenant}/registration-tokens` (`manage-clients`),
-documented in [docs/admin-paths.md](../admin-paths/index.md).
+documented in [the admin paths](../admin-paths/index.md).
 
 ```bash
 TOKEN=$(odudu seed registration-token --tenant reg-demo --uses 1 --ttl 3600)
@@ -558,9 +558,9 @@ curl -sS -X POST http://localhost:3000/tenants/reg-demo/clients-registrations/op
 ```
 
 A client holds at most 200 redirect URIs, the bound every list on a client
-shares ([docs/admin-paths.md](../admin-paths/patch-clientsid.md)); a longer list is
+shares ([the admin paths](../admin-paths/patch-clientsid.md)); a longer list is
 refused with the count and the limit, and 200 exactly is registered. Captured
-on the stack `docs/admin-paths.md` calls its fifteenth, in the tenant
+on the stack the admin paths calls its fifteenth, in the tenant
 `client-reach-demo`, with registration opened:
 
 ```bash

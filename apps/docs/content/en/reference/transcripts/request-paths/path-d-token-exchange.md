@@ -34,7 +34,7 @@ odudu seed client \
 ```
 
 `seed client` has no `--audience` or impersonation flag (see [What is not
-implemented](https://github.com/wizzywit/odudu/blob/main/docs/request-paths.md#what-is-not-implemented)), so `exdoc-exchange` and
+implemented](../../../roadmap.md#what-is-not-implemented)), so `exdoc-exchange` and
 `exdoc-exchange-restricted` both get an audience set directly, and only the
 first gets `token_exchange_impersonation_allowed` flipped on:
 
@@ -262,7 +262,7 @@ than asserting which check fired.
 ## A client disabled after a token was issued to it
 
 Disabling a client is an admin API operation
-([docs/admin-paths.md](../admin-paths/index.md)), not something this document's
+([the admin paths](../admin-paths/index.md)), not something this document's
 `odudu seed` walks through, but its effect on a token that is already live
 is a fact about `/userinfo`, `/introspect` and this grant, so it belongs
 here rather than there. A tenant of its own, `disableddoc`, with a public
@@ -285,7 +285,7 @@ odudu seed client \
 ```
 
 The top-level `odudu seed` has no `--grant-type`, `--audience` or
-impersonation flag at all (see [What is not implemented](https://github.com/wizzywit/odudu/blob/main/docs/request-paths.md#what-is-not-implemented)),
+impersonation flag at all (see [What is not implemented](../../../roadmap.md#what-is-not-implemented)),
 so `disableddoc-spa` — created through it, not through `seed client` — gets
 the exchange grant and `https://api.disableddoc.example` named in its own
 `audiences` directly, the same way an id_token self-exchange needs

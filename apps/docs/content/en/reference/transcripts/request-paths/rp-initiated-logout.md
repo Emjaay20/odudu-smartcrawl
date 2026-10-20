@@ -361,7 +361,7 @@ below use a freshly seeded tenant and confidential client of their own,
 `revokedoc`/`revoke-doc-client`, so a resource server that wants to see a
 revocation before `exp` has something to call. `seed client` has no
 `--audience` flag (see [What is not
-implemented](https://github.com/wizzywit/odudu/blob/main/docs/request-paths.md#what-is-not-implemented)'s `seed client` row), so the
+implemented](../../../roadmap.md#what-is-not-implemented)'s `seed client` row), so the
 client's own `client_oidc_config.audiences` is set directly, the same way
 [the section above](./rp-initiated-logout.md) sets `post_logout_redirect_uris`
 directly. `PATCH /admin/tenants/{tenant}/clients/{id}` sets it too, with
@@ -868,7 +868,7 @@ a grant under that session. [Back-Channel Logout 1.0](https://github.com/wizzywi
 asks it to also `POST` a signed Logout Token to every client that
 registered a `backchannel_logout_uri` and held a grant under that session.
 `seed client` has no flag for either URI (see
-[What is not implemented](https://github.com/wizzywit/odudu/blob/main/docs/request-paths.md#what-is-not-implemented)'s `seed client` row),
+[What is not implemented](../../../roadmap.md#what-is-not-implemented)'s `seed client` row),
 so a second client is seeded and given both directly, the same way
 `post_logout_redirect_uris` was set above.
 `PATCH /admin/tenants/{tenant}/clients/{id}` sets both, revalidating them
@@ -1051,7 +1051,7 @@ guard `clientKeySet`'s `jwks_uri` fetch uses (ADR 0028). `attempts` reads
 records only the error and when the row is next due, so
 `BACKCHANNEL_LOGOUT_MAX_ATTEMPTS` is the number of times a token is really
 offered. The pass and this second query were recaptured against the tenth
-stack of [docs/admin-paths.md](../admin-paths/index.md) once `markFailed` stopped
+stack of [the admin paths](../admin-paths/index.md) once `markFailed` stopped
 spending a second attempt: `reports-widget` created in its `demo` through
 `POST /clients` with this back-channel URI, `ada` signed in through it and
 signed out through the confirmation page, as
@@ -1149,7 +1149,7 @@ consent screen ([below](#the-consent-screen)) tell it apart from a scope
 pre-approved the moment a client is assigned it (it maps no claims either
 way — see [Discovery](./path-a-authorization-code-with-pkce.md#1-discovery) above). `demo-spa`'s own
 `consent_required` is `false` — `seed client` names no way to set it (see
-[What is not implemented](https://github.com/wizzywit/odudu/blob/main/docs/request-paths.md#what-is-not-implemented)'s `seed client` row;
+[What is not implemented](../../../roadmap.md#what-is-not-implemented)'s `seed client` row;
 `PATCH /admin/tenants/{tenant}/clients/{id}` does, without `If-Match`,
 being no list field) — so every seeded client keeps the column's own
 default — so the transcript
@@ -1377,7 +1377,7 @@ session's own liveness, not just the grant's `revoked_at`, for exactly that
 second case. An offline grant has neither: no session to end, and no idle
 window to outlive, so it is bounded only by its own
 `refresh_token_ttl_seconds` and by retention (see [What is not
-implemented](https://github.com/wizzywit/odudu/blob/main/docs/request-paths.md#what-is-not-implemented)) — nothing about ending a session
+implemented](../../../roadmap.md#what-is-not-implemented)) — nothing about ending a session
 ages it out early. An administrator revokes one with
 `DELETE /admin/tenants/{tenant}/subjects/{id}/grants/{clientId}`, or every
 grant a client holds with `DELETE /admin/tenants/{tenant}/clients/{id}/grants`
@@ -1396,7 +1396,7 @@ unassigned scope gets (see [Discovery](./path-a-authorization-code-with-pkce.md#
 
 The scopes it lists are ordered by each scope's `display_order`, then its
 name, and each is shown by the scope's `consent_text` where an
-administrator gave it one ([docs/admin-paths.md](../admin-paths/index.md), under
+administrator gave it one ([the admin paths](../admin-paths/index.md), under
 `PATCH /scopes/:id`); the scopes below have neither, so they show by name.
 
 `demo-spa`'s own `consent_required` is `false`, so nothing above ever saw
@@ -1721,7 +1721,7 @@ continuing page sends: a link is a navigation, which `default-src 'none'`
 does not govern. Captured on the earlier stack named above (`odudu-t8d`),
 with a tenant of its own, `email-demo`, holding `grace`
 (`odudu seed tenant --name email-demo`, then `odudu seed user` with an
-address), `$ADMIN_TOKEN` got the way [docs/admin-paths.md](../admin-paths/getting-the-token.md)
+address), `$ADMIN_TOKEN` got the way [the admin paths](../admin-paths/getting-the-token.md)
 shows, and a public client created through the admin API for it:
 
 ```bash

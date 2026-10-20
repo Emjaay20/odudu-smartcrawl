@@ -1,12 +1,12 @@
 ---
 title: 'Following a required-actions link'
-description: "An administrator's POST /admin/tenants/{tenant}/subjects/{id}/actions-email (docs/admin-paths.md) mails a link to the same…"
+description: "An administrator's POST /admin/tenants/{tenant}/subjects/{id}/actions-email (the admin paths) mails a link to the same…"
 ---
 
 # Following a required-actions link
 
 An administrator's `POST /admin/tenants/{tenant}/subjects/{id}/actions-email`
-([docs/admin-paths.md](../admin-paths/index.md)) mails a link to the same
+([the admin paths](../admin-paths/index.md)) mails a link to the same
 `/login-actions/action-token` endpoint a reset link uses, carrying the
 actions it was sent for. Opening it renders the actions and consumes
 nothing, so a mail scanner's `GET` does not spend it; the form carries a

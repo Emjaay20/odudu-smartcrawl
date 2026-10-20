@@ -95,7 +95,7 @@ registration), the account chooser and the unverified-email page were
 each run again on the project `odudu-p4g-14`; every changed line and every
 changed `content-length` in the recorded blocks is the byte-for-byte result of
 that change, checked against those runs, and the blocks were not replayed end
-to end. The two consent screens in [docs/admin-paths.md](../reference/transcripts/admin-paths/index.md) were
+to end. The two consent screens in [the admin paths](../reference/transcripts/admin-paths/index.md) were
 re-run the same way on that project, and `tests/docs/page-documents-transcripts.test.ts`
 now renders each recorded consent, chooser, error, logout and throttle body back
 through the real renderer. Every sentence from the catalogue sits in `<bdi>` on
@@ -184,13 +184,13 @@ it against, the real response. [README.md](https://github.com/wizzywit/odudu/blo
 point** — how to get a token that can call any of this at all.
 
 There is one "What is not implemented" list for the whole server, and it
-stays in [docs/request-paths.md](https://github.com/wizzywit/odudu/blob/main/docs/request-paths.md#what-is-not-implemented);
+stays in [the roadmap](../roadmap.md#what-is-not-implemented);
 this document never starts a second one. An admin endpoint that does not do
 yet what its name suggests says so in its own section below, and points at
 that list rather than duplicating it.
 
 Every transcript below is captured output, and follows the same discipline
-as [docs/request-paths.md](../reference/transcripts/request-paths/index.md): a fenced block holding a
+as [the request paths](../reference/transcripts/request-paths/index.md): a fenced block holding a
 response carries no language tag, a section whose output depends on the
 state of the stack it ran against says which state, and a precondition a
 refusal depends on is shown rather than asserted.
@@ -370,7 +370,7 @@ alone. `$VERA_TOKEN` is `vera`'s own admin access token, got the way
 tenant — its sessions and grants, its mail and logout deliveries, bulk and
 tenant-wide writes, claim evaluation, audit reporting and tenant deletion — the
 older `GET /audit` transcripts their notes say were recaptured, and in
-[docs/request-paths.md](../reference/transcripts/request-paths/index.md) "One sign-in's audit trail" and the
+[the request paths](../reference/transcripts/request-paths/index.md) "One sign-in's audit trail" and the
 back-channel logout queue's `attempts`, ran against one more stack: compose
 project `odudu-t8b2` on port 3082, its Postgres on 5464, built from this branch
 at `a66cf8df` and brought up from an empty volume with
@@ -419,7 +419,7 @@ created there for it through the endpoints below, each section says which,
 so its ids refer to nothing on the stacks above. It was torn down with
 `docker compose down -v` when the capture finished. The required-actions
 transcripts under `POST /subjects/:id/actions-email` and in
-[docs/request-paths.md](../reference/transcripts/request-paths/following-a-required-actions-link.md),
+[the request paths](../reference/transcripts/request-paths/following-a-required-actions-link.md),
 and the audit types under `GET /audit`, ran on a later stack: compose project `odudu-t8d2` on port 3086, its Postgres
 on 5466, built at `6feb06b7` and brought up from an empty volume with
 `ODUDU_OUTBOX_ENABLED=false`, `ODUDU_REAP_ENABLED=false` and
@@ -449,7 +449,7 @@ stay on the stacks they were captured against. It was torn down with
 
 **The fifteenth stack.** Every transcript about a client's service account reach, the exact
 lookup and the 200-entry bound under `GET /clients`, `PATCH /clients/{id}`
-and [docs/request-paths.md](../reference/transcripts/request-paths/bootstrap.md#dynamic-client-registration) ran
+and [the request paths](../reference/transcripts/request-paths/bootstrap.md#dynamic-client-registration) ran
 against one more stack: compose project `odudu-tx` on port 3082, its Postgres
 on 5464, built from this branch at `3cf8eceb` with the changes those sections
 describe, from an empty volume. Against it: `seed admin --username ada`, whose
@@ -541,15 +541,15 @@ console's calls to the admin API. The browser holds nothing but a session
 cookie.
 
 [README.md](https://github.com/wizzywit/odudu/blob/main/README.md) is the **entry point** — what each route does and
-which settings turn the console on. [docs/admin-paths.md](../reference/transcripts/admin-paths/index.md)
+which settings turn the console on. [the admin paths](../reference/transcripts/admin-paths/index.md)
 is the admin API the proxy forwards to, and this document shows only enough
 of it to show the forwarding. There is one "What is not implemented" list
 for the whole server, in
-[docs/request-paths.md](https://github.com/wizzywit/odudu/blob/main/docs/request-paths.md#what-is-not-implemented); this
+[the roadmap](../roadmap.md#what-is-not-implemented); this
 document never starts a second one.
 
 Every transcript below is captured output, under the same discipline as
-[docs/request-paths.md](../reference/transcripts/request-paths/index.md): a fenced block holding a response
+[the request paths](../reference/transcripts/request-paths/index.md): a fenced block holding a response
 carries no language tag, a section whose output depends on the state of the
 stack says which state, and a precondition a refusal depends on is shown
 rather than asserted. `tests/docs/console-paths.test.ts` holds every

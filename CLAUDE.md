@@ -69,22 +69,23 @@ only point where anything reads them **as a whole**, and four things go wrong
 only at that scale. Run these after the whole-branch review and before
 `finishing-a-development-branch`, because each one has already happened:
 
-1. **Every gap in `docs/request-paths.md`'s "What is not implemented" names
-   a phase, a decision or an ADR.**
+1. **Every gap in `apps/docs/content/en/roadmap.md`'s "What is not
+   implemented" names a phase, a decision or an ADR.**
    `tests/docs/not-implemented-placement.test.ts` fails the build otherwise,
    so this one is checked rather than remembered — but the test only knows
    whether a marker is _present_. Read the section and ask whether each
    marker is still _true_.
 2. **Grep the phase numbers you moved.** Splitting P10 into P4b left
-   `request-paths.md` saying theming was P10 for three commits, in the one
-   section a reader consults to find out where something went. A phase that
+   the not-implemented list saying theming was P10 for three commits, in the
+   one section a reader consults to find out where something went. A phase that
    renumbers or splits anything greps every document for the old number
    before it closes.
 3. **Read `docs/NEXT.md`'s headings against the phases that have closed**,
    per the rule below. A section addressed to a closed phase is overdue for a
    decision or a move.
-4. **Reconcile the roadmap against the "not implemented" list in both
-   directions.** Every item placed in a phase, and every phase's criterion
+4. **Reconcile the roadmap against the "not implemented" list in
+   `apps/docs/content/en/roadmap.md`, in both directions.** Every item placed
+   in a phase, and every phase's criterion
    naming the work placed against it. A criterion that omits work the list
    sends to it is work that can be skipped with nothing going red — section
    11 of the design spec records five of those, found exactly this way.
@@ -164,18 +165,20 @@ one by asserting a fix that is not pushed.
 
 ### The documentation an increment owns
 
-`README.md` and `docs/request-paths.md` describe what the server does
-**now**, not what it did when they were written. An increment that changes
+`README.md` and the documentation site under `apps/docs/content/en/` describe
+what the server does **now**, not what it did when they were written. An increment that changes
 a request, a response, a branch, an error code, an endpoint, a command or a
 default updates them in the same commit as the code — they are part of
 finishing the work, in the way a test is, not a tidy-up afterwards.
 
-`docs/request-paths.md` carries a stronger promise than most prose: every
-command in it has been executed against a running stack and every response
-in it is real output. Changing behaviour without re-running the affected
-transcript silently downgrades it to a claim, which is the state it was
-written to escape. If a command cannot be run, the document says so rather
-than showing output nobody produced.
+The transcripts under `apps/docs/content/en/reference/transcripts/` carry a
+stronger promise than most prose: every command in them has been executed
+against a running stack and every response in them is real output. Changing
+behaviour without re-running the affected transcript silently downgrades it
+to a claim, which is the state it was written to escape. If a command cannot
+be run, the page says so rather than showing output nobody produced. The same
+holds for a guide's commands, which are runnable blocks `tools/docs-run`
+executes in CI, or are tagged `text` and say they are illustrative.
 
 **Three rules a transcript has to follow, each learned from a way one was
 false while looking fine.**
@@ -189,9 +192,11 @@ A transcript whose output depends on what ran before it **says what that
 was, or scopes its query so that it does not.** An unscoped
 `select … from login_failures` prints whatever earlier sections happened to
 leave behind; a psql listing of every client prints two rows on the stack
-its author had and eleven on the one the document builds. Where the state
-is the point — a retention pass's counts, a lockout's arithmetic — name the
-stack it was captured against.
+its author had and eleven on the one the page builds. Where the state is
+the point — a retention pass's counts, a lockout's arithmetic — say what had
+run before it. Which stack each transcript was captured on is recorded in
+`apps/docs/content/en/contributing/transcripts.md`, not on the page a
+reader looks a route up on.
 
 A precondition a refusal depends on is **shown, not asserted.** Two
 different checks that refuse with byte-identical output cannot be told apart
@@ -203,9 +208,10 @@ transcript would prove nothing.
 Saying this is not enough on its own — an instruction to keep prose current
 is unfalsifiable, because a stale document and a checked one look identical.
 So the parts that can be checked are checked: `tests/docs/` compares what
-these documents assert against what the server actually serves, and fails
-the build on drift. When you add a claim that could be checked that way,
-add the check with it.
+the site and `README.md` assert against what the server actually serves, and
+fails the build on drift, and on any link whose file or heading is gone
+(`tests/docs/references.test.ts`, `tests/docs/link-fragments.test.ts`). When
+you add a claim that could be checked that way, add the check with it.
 
 ### The rule P0 was written to produce
 
