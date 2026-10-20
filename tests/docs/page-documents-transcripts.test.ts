@@ -42,14 +42,14 @@ import { renderSignInRefused } from '../../packages/console-gateway/src/view/ref
 import { renderRecoveryCodesPage } from '../../packages/authn-flows/src/view/recovery-codes-html.js';
 import { renderTotpEnrolmentPage } from '../../packages/authn-flows/src/view/totp-enrolment-html.js';
 import { renderUpdatePasswordPage } from '../../packages/authn-flows/src/view/update-password-html.js';
-import { loadDocument, scanFences } from './markdown.js';
+import { ADMIN_PAGES, CONSOLE_PAGES, loadSource, PROTOCOL_PAGES, scanFences } from './markdown.js';
 
 // A recorded page response is a claim about bytes: its `content-length` is
 // the length of the document under it, and the document is the shell around
 // the page's own markup. A block that shows only part of a document says so
 // with a `…` in its body; every other block is held to the shell and, where
 // it shows a `content-length`, to that length.
-const GUIDES = ['docs/request-paths.md', 'docs/console-paths.md', 'docs/admin-paths.md'];
+const GUIDES = [PROTOCOL_PAGES, CONSOLE_PAGES, ADMIN_PAGES];
 const MARKER = '@@';
 
 interface Recorded {
@@ -59,7 +59,7 @@ interface Recorded {
 
 function recorded(): Recorded[] {
   return GUIDES.flatMap((guide) =>
-    scanFences(loadDocument(guide)).spans.flatMap((span) => {
+    scanFences(loadSource(guide)).spans.flatMap((span) => {
       const start = span.body.indexOf('<!doctype html>');
       const page = span.body.some((line) =>
         line.startsWith("content-security-policy: default-src 'none'"),
@@ -120,7 +120,7 @@ describe('the page documents the guides record', () => {
   // with the newline its file ends in, which a fence cannot show.
   it('gives each complete document the content-length its bytes have', () => {
     const wrong = GUIDES.flatMap((guide) =>
-      scanFences(loadDocument(guide)).spans.flatMap((span) => {
+      scanFences(loadSource(guide)).spans.flatMap((span) => {
         const header = span.body.find((line) => line.startsWith('content-length: '));
         const block = { where: `${guide}:${String(span.startLine)}`, lines: span.body };
         if (
@@ -423,7 +423,7 @@ const RENDER_BACK: Record<string, (body: string) => string> = {
 // above it.
 function documents(): Recorded[] {
   return GUIDES.flatMap((guide) =>
-    scanFences(loadDocument(guide)).spans.flatMap((span) =>
+    scanFences(loadSource(guide)).spans.flatMap((span) =>
       span.body.includes('<!doctype html>')
         ? [{ where: `${guide}:${String(span.startLine)}`, lines: span.body }]
         : [],

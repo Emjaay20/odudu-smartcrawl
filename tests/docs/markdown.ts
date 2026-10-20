@@ -3,9 +3,19 @@ import path from 'node:path';
 
 export const REPO_ROOT = path.resolve(import.meta.dirname, '../..');
 
+export interface PageSource {
+  readonly file: string;
+  /** 1-based line of the page's first line of content in the concatenation. */
+  readonly fromLine: number;
+  /** 1-based line in the page file at which that content starts, after its front matter. */
+  readonly pageLine: number;
+}
+
 export interface Document {
   readonly name: string;
   readonly lines: readonly string[];
+  /** Present on a document read from a directory of pages. */
+  readonly sources?: readonly PageSource[];
 }
 
 export function loadDocument(relativePath: string): Document {
@@ -13,6 +23,63 @@ export function loadDocument(relativePath: string): Document {
     name: relativePath,
     lines: readFileSync(path.join(REPO_ROOT, relativePath), 'utf8').split('\n'),
   };
+}
+
+export const PROTOCOL_PAGES = 'apps/docs/content/en/reference/protocol';
+export const ADMIN_PAGES = 'apps/docs/content/en/reference/admin-api-paths';
+export const CONSOLE_PAGES = 'apps/docs/content/en/admin-console/paths';
+
+const FRONT_MATTER = /^---\n[\s\S]*?\n---\n\n?/u;
+
+// A page whose first heading is its own title, so Docusaurus draws it as the
+// page's `h1`, is written one level up; the document it was cut from has it at
+// the level the section had, which is what the extractors below count on.
+function withSectionDepth(file: string, body: string[]): string[] {
+  if (file === 'index.md' || !body[0]?.startsWith('# ')) return body;
+  const { fenced } = scanFences({ name: file, lines: body });
+  return body.map((line, index) =>
+    fenced[index] === true ? line : line.replace(/^(#{1,5}) /u, '$1# '),
+  );
+}
+
+/**
+ * A directory of pages read as the one document it was cut from: the pages in
+ * `order.json` order, front matter removed, one blank line between them.
+ */
+export function loadPages(relativeDir: string): Document {
+  const dir = path.join(REPO_ROOT, relativeDir);
+  const order: unknown = JSON.parse(readFileSync(path.join(dir, 'order.json'), 'utf8'));
+  if (!Array.isArray(order) || !order.every((entry) => typeof entry === 'string')) {
+    throw new Error(`${relativeDir}/order.json is not a list of page names`);
+  }
+  const lines: string[] = [];
+  const sources: PageSource[] = [];
+  for (const file of order) {
+    const text = readFileSync(path.join(dir, file), 'utf8');
+    const front = FRONT_MATTER.exec(text)?.[0] ?? '';
+    const body = text.slice(front.length).replace(/\n$/u, '');
+    if (lines.length > 0) lines.push('');
+    sources.push({
+      file: `${relativeDir}/${file}`,
+      fromLine: lines.length + 1,
+      pageLine: front.split('\n').length,
+    });
+    lines.push(...withSectionDepth(file, body.split('\n')));
+  }
+  return { name: relativeDir, lines, sources };
+}
+
+/** A path to one Markdown file, or to a directory of pages cut from one. */
+export function loadSource(relativePath: string): Document {
+  return relativePath.endsWith('.md') ? loadDocument(relativePath) : loadPages(relativePath);
+}
+
+/** `file:line` of a 1-based line of a document, in the page it came from when it has pages. */
+export function at(document: Document, line: number): string {
+  const source = document.sources?.findLast((candidate) => candidate.fromLine <= line);
+  return source === undefined
+    ? `${document.name}:${String(line)}`
+    : `${source.file}:${String(line - source.fromLine + source.pageLine)}`;
 }
 
 // Every extractor below throws rather than returning nothing. A check that

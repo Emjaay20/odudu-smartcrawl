@@ -1,0 +1,23 @@
+[
+  "index.md",
+  "get-consoleauthlogin.md",
+  "the-tenants-own-sign-in.md",
+  "get-consoleauthcallback.md",
+  "the-gateway-is-a-confidential-client.md",
+  "get-consoleauthcallback-refused.md",
+  "get-consoleauthcallback-restarted.md",
+  "get-consoleapisession.md",
+  "get-consoleapitenantstenantdiscovery-get-consoleapitenantstenantjwks.md",
+  "get-consoleapiadmintenantstenantsubjects.md",
+  "patch-consoleapiadmintenantstenantsubjectsid.md",
+  "post-consoleapiadmintenantstenantsubjects-refused-as-cross-site.md",
+  "post-consoleapiadmintenantstenantsubjects-refused-for-another-principal.md",
+  "a-path-that-escapes-admin.md",
+  "a-refresh.md",
+  "a-refresh-that-cannot-take-the-lock.md",
+  "a-refresh-the-server-refuses.md",
+  "post-consoleauthlogout.md",
+  "following-the-logout-redirect.md",
+  "get-console.md",
+  "what-these-runs-do-not-show.md"
+]

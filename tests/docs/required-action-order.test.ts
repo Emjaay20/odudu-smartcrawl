@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { nextRequiredAction } from '../../packages/authn-flows/src/usecase/required-actions.js';
-import { loadDocument } from './markdown.js';
+import { loadSource, PROTOCOL_PAGES } from './markdown.js';
 
 // The order a login's pending actions run in is now stated in three places:
 // REQUIRED_ACTION_ORDER, and a sentence in each of these documents. Three
@@ -8,7 +8,7 @@ import { loadDocument } from './markdown.js';
 // order carries a security property — the password change comes first so an
 // expired password can never be used to enrol a second factor — so a
 // document that has fallen behind it is worse than one that never said.
-const DOCUMENTS = ['README.md', 'docs/request-paths.md'] as const;
+const DOCUMENTS = ['README.md', PROTOCOL_PAGES] as const;
 
 const ACTIONS = [
   'update-password',
@@ -43,7 +43,7 @@ function orderTheResolverApplies(): string[] {
 // been rewrapped to. Throws rather than matching nothing: a check that
 // silently finds no claim passes forever.
 function orderStatedIn(name: string): string[] {
-  const text = loadDocument(name).lines.join(' ');
+  const text = loadSource(name).lines.join(' ');
   const stated = /in the order (?<list>(?:`[a-z-]+`(?:,\s*)?)+)/u.exec(text);
   if (stated?.groups?.list === undefined) {
     throw new Error(

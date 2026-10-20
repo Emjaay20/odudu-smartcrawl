@@ -5,9 +5,9 @@ import {
   TENANT_CAPABILITIES,
 } from '../../packages/domain-tenant/src/index.js';
 import { ADMIN_ROUTES } from '../../packages/protocol-admin/src/index.js';
-import { backticked, loadDocument, sections, type Section } from './markdown.js';
+import { ADMIN_PAGES, backticked, loadSource, type Section, sections } from './markdown.js';
 
-const GUIDE = 'docs/admin-paths.md';
+const GUIDE = ADMIN_PAGES;
 
 // `tests/docs/endpoints.test.ts` already holds this document's endpoint table
 // to Fastify's own route set, in both directions. What it cannot see is the
@@ -91,8 +91,8 @@ function sectionFor(
   return best?.section;
 }
 
-describe('docs/admin-paths.md says what the admin API actually requires', () => {
-  const document = loadDocument(GUIDE);
+describe('the admin API pages say what the admin API actually requires', () => {
+  const document = loadSource(GUIDE);
   // 34 headings when this was written; the floor guards against an extractor
   // that silently stops finding them. `tests/docs/structure.test.ts` is what
   // holds a heading to rendering as a heading.

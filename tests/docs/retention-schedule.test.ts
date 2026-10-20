@@ -6,13 +6,13 @@ import { LOGOUT_SENDER_JITTER_FRACTION } from '../../apps/server/src/modules/log
 import { OUTBOX_JITTER_FRACTION } from '../../apps/server/src/modules/outbox.js';
 import { REAP_JITTER_FRACTION } from '../../apps/server/src/modules/reap.js';
 import { REAP_ORDER } from '../../apps/server/src/cli/reap.js';
-import { loadDocument, REPO_ROOT } from './markdown.js';
+import { loadSource, PROTOCOL_PAGES, REPO_ROOT } from './markdown.js';
 
-// README.md and docs/request-paths.md both quote the interval the server
+// README.md and the protocol pages both quote the interval the server
 // reaps on and the warning it logs when it will not reap at all. The
 // interval is a schema default and the warning is a string in one module;
 // neither is where anybody would look after rewording a paragraph.
-const DOCUMENTS = ['README.md', 'docs/request-paths.md'] as const;
+const DOCUMENTS = ['README.md', PROTOCOL_PAGES] as const;
 
 const defaults = loadConfig({
   ODUDU_DATABASE_URL: 'postgres://u:p@localhost:5432/odudu',
@@ -20,7 +20,7 @@ const defaults = loadConfig({
 });
 
 function textOf(name: string): string {
-  return loadDocument(name).lines.join('\n');
+  return loadSource(name).lines.join('\n');
 }
 
 // Whitespace flattened, and the concatenation Prettier introduces when a
@@ -30,7 +30,7 @@ function sourceText(source: string): string {
   return source.replaceAll(/'\s*\+\s*'/gu, '').replaceAll(/\s+/gu, ' ');
 }
 
-// A refusal reaches docs/request-paths.md two ways: quoted inline in a
+// A refusal reaches the protocol pages two ways: quoted inline in a
 // sentence, or as the captured output of the command that prints it. The
 // second is the stronger evidence and carries no backticks, so both spellings
 // are accepted — what is compared is still the document's wording against
@@ -41,7 +41,7 @@ function refusalQuoted(document: string, opening: string): string {
   const captured = new RegExp('^(?<message>' + opening + '.*)$', 'mu').exec(document);
   if (captured?.groups?.message !== undefined) return captured.groups.message;
   throw new Error(
-    `docs/request-paths.md no longer shows the refusal beginning "${opening}", ` +
+    `the protocol pages no longer show the refusal beginning "${opening}", ` +
       `quoted in a sentence or captured from the command that prints it.`,
   );
 }
@@ -73,7 +73,7 @@ describe('the retention schedule the documents describe is the one the server ru
 
   it('refuses without a serving connection in the words the document shows', () => {
     const command = readFileSync(path.join(REPO_ROOT, 'apps/server/src/cli/reap.ts'), 'utf8');
-    const quoted = refusalQuoted(textOf('docs/request-paths.md'), 'reap requires ');
+    const quoted = refusalQuoted(textOf(PROTOCOL_PAGES), 'reap requires ');
     expect(sourceText(command)).toContain(quoted.replaceAll(/\s+/gu, ' '));
   });
 
@@ -94,11 +94,11 @@ describe('the retention schedule the documents describe is the one the server ru
     }
   });
 
-  it('logs the refusal docs/request-paths.md quotes, in those words', () => {
+  it('logs the refusal the protocol pages quotes, in those words', () => {
     const module = readFileSync(path.join(REPO_ROOT, 'apps/server/src/modules/reap.ts'), 'utf8');
-    const quoted = /`(?<message>not reaping: [^`]+)`/su.exec(textOf('docs/request-paths.md'));
+    const quoted = /`(?<message>not reaping: [^`]+)`/su.exec(textOf(PROTOCOL_PAGES));
     if (quoted?.groups?.message === undefined) {
-      throw new Error('docs/request-paths.md no longer quotes the refusal the schedule logs');
+      throw new Error('the protocol pages no longer quote the refusal the schedule logs');
     }
     expect(module.replaceAll(/\s+/gu, ' ')).toContain(
       quoted.groups.message.replaceAll(/\s+/gu, ' '),
@@ -124,7 +124,7 @@ describe('the outbox schedule the documents describe is the one the server runs'
   });
 
   it('states the attempt ceiling the config schema defaults to', () => {
-    expect(statedDefault('docs/request-paths.md', 'ODUDU_OUTBOX_MAX_ATTEMPTS')).toBe(
+    expect(statedDefault(PROTOCOL_PAGES, 'ODUDU_OUTBOX_MAX_ATTEMPTS')).toBe(
       String(defaults.ODUDU_OUTBOX_MAX_ATTEMPTS),
     );
   });
@@ -140,33 +140,31 @@ describe('the outbox schedule the documents describe is the one the server runs'
   ])('describes %s as the period it defaults to', (variable, seconds) => {
     const words: Record<string, number> = { 'a week': 604_800, 'thirty days': 2_592_000 };
     const pattern = new RegExp('`' + variable + '`[^.]*?(?<period>a week|thirty days)', 'su');
-    const stated = pattern.exec(textOf('docs/request-paths.md'));
+    const stated = pattern.exec(textOf(PROTOCOL_PAGES));
     if (stated?.groups?.period === undefined) {
-      throw new Error(`docs/request-paths.md no longer says how long ${variable} keeps a message`);
+      throw new Error(`the protocol pages no longer say how long ${variable} keeps a message`);
     }
     expect(words[stated.groups.period]).toBe(seconds);
   });
 
   it('refuses without a serving connection in the words the documents quote', () => {
     const command = readFileSync(path.join(REPO_ROOT, 'apps/server/src/cli/send-mail.ts'), 'utf8');
-    const quoted = refusalQuoted(textOf('docs/request-paths.md'), 'odudu send-mail requires ');
+    const quoted = refusalQuoted(textOf(PROTOCOL_PAGES), 'odudu send-mail requires ');
     expect(sourceText(command)).toContain(quoted.replaceAll(/\s+/gu, ' '));
   });
 
   it('declines to schedule in the words README.md and request-paths.md quote', () => {
     const module = readFileSync(path.join(REPO_ROOT, 'apps/server/src/modules/outbox.ts'), 'utf8');
-    const quoted = /`(?<message>not sending queued mail: [^`]+)`/su.exec(
-      textOf('docs/request-paths.md'),
-    );
+    const quoted = /`(?<message>not sending queued mail: [^`]+)`/su.exec(textOf(PROTOCOL_PAGES));
     if (quoted?.groups?.message === undefined) {
-      throw new Error('docs/request-paths.md no longer quotes the warning the schedule logs');
+      throw new Error('the protocol pages no longer quote the warning the schedule logs');
     }
     expect(module).toContain('ODUDU_OUTBOX_ENABLED=false');
     expect(sourceText(module)).toContain(quoted.groups.message.replaceAll(/\s+/gu, ' '));
   });
 });
 
-// The interval and jitter claims are README-only: docs/request-paths.md's
+// The interval and jitter claims are README-only: the protocol pages'
 // real `odudu send-logouts` transcript (under "Front-channel and
 // back-channel logout") states no interval or timeout default in words
 // there for this check to read. The retention windows are the opposite —
@@ -189,9 +187,9 @@ describe('the logout-sender schedule README describes is the one the server runs
   ])('describes %s as the period it defaults to', (variable, seconds) => {
     const words: Record<string, number> = { 'a week': 604_800, 'thirty days': 2_592_000 };
     const pattern = new RegExp('`' + variable + '`[^.]*?(?<period>a week|thirty days)', 'su');
-    const stated = pattern.exec(textOf('docs/request-paths.md'));
+    const stated = pattern.exec(textOf(PROTOCOL_PAGES));
     if (stated?.groups?.period === undefined) {
-      throw new Error(`docs/request-paths.md no longer says how long ${variable} keeps a row`);
+      throw new Error(`the protocol pages no longer say how long ${variable} keeps a row`);
     }
     expect(words[stated.groups.period]).toBe(seconds);
   });

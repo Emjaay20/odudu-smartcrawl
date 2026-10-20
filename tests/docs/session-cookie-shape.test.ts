@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { loadDocument } from './markdown.js';
+import { ADMIN_PAGES, loadSource, PROTOCOL_PAGES } from './markdown.js';
 
 // A session cookie entry is `<session id>:<secret>` (spec §16 of
 // docs/archive/specs/2026-09-26-p4e-audit-events-design.md). A
 // transcript showing a bare id as the cookie shows the defect that shape
 // closed, so it passes only as a capture older than the secret, and only
 // with the re-run naming the migration placed right after it.
-const DOCUMENTS = ['README.md', 'docs/request-paths.md', 'docs/admin-paths.md'] as const;
+const DOCUMENTS = ['README.md', PROTOCOL_PAGES, ADMIN_PAGES] as const;
 
 const SET_COOKIE = /^set-cookie: [a-z0-9-]+-session(?:-persistent)?=(?<value>[^;]*);/u;
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
@@ -14,7 +14,7 @@ const ENTRY = new RegExp(`^${UUID}:[A-Za-z0-9_-]{43}$`, 'u');
 const RERUN_WITHIN = 12;
 
 function problems(name: string): string[] {
-  const { lines } = loadDocument(name);
+  const { lines } = loadSource(name);
   const found: string[] = [];
   lines.forEach((line, index) => {
     const value = SET_COOKIE.exec(line)?.groups?.value;
@@ -35,7 +35,7 @@ describe('a session cookie a transcript shows is an entry, not a bare id', () =>
 
   it('finds the entries it checks, rather than passing on none', () => {
     const shown = DOCUMENTS.flatMap((name) =>
-      loadDocument(name).lines.filter((line) => {
+      loadSource(name).lines.filter((line) => {
         const value = SET_COOKIE.exec(line)?.groups?.value;
         return value !== undefined && ENTRY.test(value);
       }),

@@ -5,7 +5,7 @@ import { SHIPPED_LOCALES } from '../../packages/i18n/src/index.js';
 import { standardClaimMappers } from '../../packages/protocol-oidc/src/service/claims.js';
 import { USERINFO_ENCRYPTION_ENCS_PERMITTED } from '../../packages/protocol-oidc/src/service/client-metadata.js';
 import { resolveDiscoveryDocument } from '../../packages/protocol-oidc/src/usecase/discovery.js';
-import { jsonAfter, loadDocument } from './markdown.js';
+import { jsonAfter, loadDocument, loadPages, PROTOCOL_PAGES } from './markdown.js';
 
 // Both documents show the discovery response for this tenant on this stack, so
 // the document under test fixes the issuer the comparison is made against.
@@ -43,7 +43,7 @@ async function serverDiscoveryDocument(): Promise<Record<string, unknown>> {
       // same two call sites `usecase/discovery.ts`'s own reading note names.
       userinfoEncryptionAlgSupported: JWE_ALGS_PERMITTED,
       userinfoEncryptionEncSupported: USERINFO_ENCRYPTION_ENCS_PERMITTED,
-      // ODUDU_TRUST_PROXY defaults false, and docs/request-paths.md's own
+      // ODUDU_TRUST_PROXY defaults false, and the protocol pages' own
       // transcript was captured against a stack that never set it — see
       // this same value's effect on token_endpoint_auth_methods_supported.
       trustProxy: false,
@@ -86,12 +86,12 @@ function spelled(word: string, context: string): number {
 }
 
 describe('the discovery document the guide publishes is the one the server produces', () => {
-  it('matches docs/request-paths.md member for member', async () => {
-    const shown = jsonAfter(loadDocument('docs/request-paths.md'), CURL);
+  it('matches the protocol pages member for member', async () => {
+    const shown = jsonAfter(loadPages(PROTOCOL_PAGES), CURL);
 
     expect(
       shown,
-      'docs/request-paths.md shows a discovery response the server no longer produces',
+      'the protocol pages show a discovery response the server no longer produces',
     ).toEqual(await serverDiscoveryDocument());
   });
 

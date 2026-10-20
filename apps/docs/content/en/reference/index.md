@@ -45,3 +45,12 @@ The operations of the admin API, one page for each area. The same description is
 - [Subjects](./generated/admin-api/subjects.md)
 - [Tenants](./generated/admin-api/tenants.md)
 - [Whoami](./generated/admin-api/whoami.md)
+
+## Transcripts
+
+Every request and response below was run against a stack and is the output that came back.
+
+- [Protocol transcripts](./protocol/index.md): sign-in, tokens, sessions, logout and the
+  refusals each can end in, one page for each journey.
+- [Admin API transcripts](./admin-api-paths/index.md): the admin API route by route, with the
+  response each one answers.

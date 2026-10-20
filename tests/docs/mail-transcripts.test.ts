@@ -10,9 +10,11 @@ import {
   renderSecondFactorRemoved,
   renderVerifyEmail,
 } from '../../packages/email/src/service/templates.js';
+import { ADMIN_PAGES, loadPages, PROTOCOL_PAGES } from './markdown.js';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const doc = (name: string): Promise<string> => readFile(path.join(ROOT, 'docs', name), 'utf8');
+const pagesText = (directory: string): string => loadPages(directory).lines.join('\n');
 
 const TO = 'recipient@example.test';
 const FSI = '⁨';
@@ -85,8 +87,8 @@ function rendered(capture: Capture) {
 const anchors = (html: string): string[] => html.match(/<a [^>]*>[^<]*<\/a>/gu) ?? [];
 
 describe('the mail the guides record is what the templates produce', () => {
-  it('matches every captured verification and reset mail in request-paths.md', async () => {
-    const found = captures(await doc('request-paths.md'));
+  it('matches every captured verification and reset mail in the protocol pages', () => {
+    const found = captures(pagesText(PROTOCOL_PAGES));
     expect(found.length).toBeGreaterThanOrEqual(4);
     for (const capture of found) {
       const real = rendered(capture);
@@ -97,12 +99,12 @@ describe('the mail the guides record is what the templates produce', () => {
     }
   });
 
-  it('shows the button and the written-out link the verification mail really has', async () => {
-    const markdown = await doc('request-paths.md');
+  it('shows the button and the written-out link the verification mail really has', () => {
+    const markdown = pagesText(PROTOCOL_PAGES);
     const found = /grep -o '<a \[\^>\]\*>\[\^<\]\*<\/a>'\n```\n\n```\n([\s\S]*?)\n```/u.exec(
       markdown,
     );
-    if (found?.[1] === undefined) throw new Error('no anchor excerpt in request-paths.md');
+    if (found?.[1] === undefined) throw new Error('no anchor excerpt in the protocol pages');
     const shown = found[1].split('\n');
     const href = /href="([^"]+)"/u.exec(shown[0] ?? '')?.[1];
     if (href === undefined) throw new Error('no href in the first anchor');
@@ -119,10 +121,10 @@ describe('the mail the guides record is what the templates produce', () => {
     expect(shown[0]).toContain('>Verify email</a>');
   });
 
-  it('matches the required-actions mail in admin-paths.md', async () => {
-    const markdown = await doc('admin-paths.md');
+  it('matches the required-actions mail in the admin API pages', () => {
+    const markdown = pagesText(ADMIN_PAGES);
     const block = /```\n(Update your [^|\n]+)\|([\s\S]*?)\n```/u.exec(markdown);
-    if (block === null) throw new Error('no required-actions mail in admin-paths.md');
+    if (block === null) throw new Error('no required-actions mail in the admin API pages');
     const [, subject = '', text = ''] = block;
     const codes = [...text.matchAll(/^- (.+)$/gmu)].map((line) => {
       const code = Object.keys(en)
@@ -142,8 +144,8 @@ describe('the mail the guides record is what the templates produce', () => {
     expect(text).toBe(real.text);
   });
 
-  it('matches the two credential notices in admin-paths.md', async () => {
-    const markdown = await doc('admin-paths.md');
+  it('matches the two credential notices in the admin API pages', () => {
+    const markdown = pagesText(ADMIN_PAGES);
     const notices = [
       ...markdown.matchAll(/^([a-z]+@example\.test)\|([^|\n]+)\|([\s\S]*?)\n```/gmu),
     ];
@@ -165,10 +167,10 @@ describe('the mail the guides record is what the templates produce', () => {
     }
   });
 
-  it('shows an inline mark whose size is the PNG the sender attaches', async () => {
-    const markdown = await doc('admin-paths.md');
+  it('shows an inline mark whose size is the PNG the sender attaches', () => {
+    const markdown = pagesText(ADMIN_PAGES);
     const found = /\{"To":\[[^\n]*"Inline":(\[[^\n]*\])\}\n```/u.exec(markdown);
-    if (found?.[1] === undefined) throw new Error('no Mailpit capture in admin-paths.md');
+    if (found?.[1] === undefined) throw new Error('no Mailpit capture in the admin API pages');
     const [inline] = JSON.parse(found[1]) as {
       ContentID: string;
       ContentType: string;

@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { SHELL_CSP } from '../../packages/console-gateway/src/view/spa.js';
 import { pageHeaders, type RenderedPage } from '../../packages/kernel/src/index.js';
 import { docsPolicy, UNAVAILABLE_POLICY } from '../../packages/web-assets/src/index.js';
-import { loadDocument } from './markdown.js';
+import { ADMIN_PAGES, CONSOLE_PAGES, loadSource, PROTOCOL_PAGES } from './markdown.js';
 
 // A recorded `content-security-policy` is a claim about what the server sends.
 // Each page's policy is rebuilt from what its own line says the page carries
 // (a nonce, a framed origin, a redirect target) and handed to `pageHeaders`,
 // so a directive added there fails every transcript that no longer shows it.
-const GUIDES = ['docs/request-paths.md', 'docs/console-paths.md', 'docs/admin-paths.md'];
+const GUIDES = [PROTOCOL_PAGES, CONSOLE_PAGES, ADMIN_PAGES];
 const RECORDED = /^(?:[<>] )?content-security-policy: (.+)$/u;
 
 interface Recorded {
@@ -21,7 +21,7 @@ interface Recorded {
 
 function recorded(): Recorded[] {
   return GUIDES.flatMap((guide) =>
-    loadDocument(guide).lines.flatMap((line, index, all) => {
+    loadSource(guide).lines.flatMap((line, index, all) => {
       const policy = RECORDED.exec(line)?.[1];
       if (policy === undefined) return [];
       const isHeader = (text: string | undefined): text is string =>

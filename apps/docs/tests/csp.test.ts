@@ -47,13 +47,19 @@ const ENTITIES: Readonly<Record<string, string>> = {
   '&amp;': '&',
 };
 
+// An attribute is read only inside a tag. Escaped markup in a transcript
+// writes `style=` in its text, which is not an attribute of anything.
+const TAG = /<[A-Za-z][^\s>/]*((?:\s+[^\s=>/]+(?:=(?:"[^"]*"|'[^']*'|[^\s>"']+))?)*)\s*\/?>/gu;
+
 function rawStyleAttributes(html: string): string[] {
-  return [...html.matchAll(/\sstyle=(?:"([^"]*)"|'([^']*)'|([^\s>"']+))/gu)].map(
-    ([, double, single, bare]) =>
-      (double ?? single ?? bare ?? '').replace(
-        /&(?:quot|#x27|#39|lt|gt|amp);/gu,
-        (e) => ENTITIES[e] ?? e,
-      ),
+  return [...html.matchAll(TAG)].flatMap(([, attributes = '']) =>
+    [...attributes.matchAll(/\sstyle=(?:"([^"]*)"|'([^']*)'|([^\s>"']+))/gu)].map(
+      ([, double, single, bare]) =>
+        (double ?? single ?? bare ?? '').replace(
+          /&(?:quot|#x27|#39|lt|gt|amp);/gu,
+          (e) => ENTITIES[e] ?? e,
+        ),
+    ),
   );
 }
 

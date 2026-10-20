@@ -25,6 +25,18 @@ function isServerRouteRow(file: string, line: string): boolean {
   );
 }
 
+// These pages record the server's own routes, `/docs/` among them, which are
+// not addresses on this site.
+const TRANSCRIPTS = ['reference/protocol/', 'reference/admin-api-paths/', 'admin-console/paths/'];
+
+function isTranscript(file: string): boolean {
+  const relative = path
+    .relative(path.join(DOCS_ROOT, 'content/en'), file)
+    .split(path.sep)
+    .join('/');
+  return TRANSCRIPTS.some((directory) => relative.startsWith(directory));
+}
+
 describe('internal links', () => {
   for (const target of ['pages', 'image'] as const) {
     it(`has no internal link that resolves to nothing in the ${target} build`, () => {
@@ -55,7 +67,9 @@ describe('internal links', () => {
       readFileSync(file, 'utf8')
         .split('\n')
         .flatMap((line, index) =>
-          /(?:^|[\s"'`(=])\/(?:odudu|docs)\//u.test(line) && !isServerRouteRow(file, line)
+          /(?:^|[\s"'`(=])\/(?:odudu|docs)\//u.test(line) &&
+          !isServerRouteRow(file, line) &&
+          !isTranscript(file)
             ? [`${path.relative(DOCS_ROOT, file)}:${String(index + 1)}`]
             : [],
         ),

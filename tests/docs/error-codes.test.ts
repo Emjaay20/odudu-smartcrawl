@@ -2,9 +2,9 @@ import { globSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { type TokenErrorCode } from '../../packages/protocol-oidc/src/service/errors.js';
-import { loadDocument, REPO_ROOT, type Document } from './markdown.js';
+import { type Document, loadSource, PROTOCOL_PAGES, REPO_ROOT } from './markdown.js';
 
-const GUIDE = 'docs/request-paths.md';
+const GUIDE = PROTOCOL_PAGES;
 
 // How many codes each document named when this check was written — a floor,
 // not a count to keep current.
@@ -99,7 +99,7 @@ describe('the error codes the documents name are ones the server can emit', () =
 
   for (const [name, atLeast] of DOCUMENTS) {
     it(`every error code in ${name} appears in the server's own source`, () => {
-      const absent = [...namedIn(loadDocument(name), atLeast)].filter(
+      const absent = [...namedIn(loadSource(name), atLeast)].filter(
         (code) => !source.includes(`'${code}'`) && !source.includes(`"${code}"`),
       );
 
@@ -111,7 +111,7 @@ describe('the error codes the documents name are ones the server can emit', () =
   }
 
   it(`${GUIDE} names every refusal /token can answer with`, () => {
-    const named = namedIn(loadDocument(GUIDE), 9);
+    const named = namedIn(loadSource(GUIDE), 9);
     const undocumented = Object.keys(TOKEN_ERROR_CODES).filter((code) => !named.has(code));
 
     expect(

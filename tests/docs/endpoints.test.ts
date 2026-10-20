@@ -5,13 +5,19 @@ import {
   type ServedEndpoint,
 } from '../../apps/server/src/endpoint-docs.js';
 import { servingApp } from '../../apps/server/src/testing/served-routes.js';
-import { backticked, loadDocument, tableWithHeadings } from './markdown.js';
+import {
+  ADMIN_PAGES,
+  backticked,
+  loadSource,
+  PROTOCOL_PAGES,
+  tableWithHeadings,
+} from './markdown.js';
 
-// Two documents, one endpoint table shape: `docs/request-paths.md` is the
-// protocol surface, `docs/admin-paths.md` the admin API. An endpoint
-// documented in either satisfies this check — see `docs/admin-paths.md`'s
+// Two documents, one endpoint table shape: the protocol pages are the
+// protocol surface, the admin API pages the admin API. An endpoint
+// documented in either satisfies this check — see the admin API pages'
 // header for why they are separate documents.
-const DOCUMENTS = ['docs/request-paths.md', 'docs/admin-paths.md'] as const;
+const DOCUMENTS = [PROTOCOL_PAGES, ADMIN_PAGES] as const;
 
 function format(endpoint: ServedEndpoint): string {
   return `${endpoint.method} ${endpoint.url}`;
@@ -19,7 +25,7 @@ function format(endpoint: ServedEndpoint): string {
 
 // `{tenant}` reads as a placeholder to a person; Fastify spells it `:tenant`.
 function documentedIn(path: string): ServedEndpoint[] {
-  const table = tableWithHeadings(loadDocument(path), ['Method', 'Path', 'What it is']);
+  const table = tableWithHeadings(loadSource(path), ['Method', 'Path', 'What it is']);
   return table.rows.flatMap((row) => {
     const [methodCell = '', pathCell = ''] = row;
     const method = backticked(methodCell)[0];
@@ -28,7 +34,7 @@ function documentedIn(path: string): ServedEndpoint[] {
   });
 }
 
-describe('the endpoints docs/request-paths.md and docs/admin-paths.md list are the endpoints the server serves', () => {
+describe('the endpoints the protocol pages and the admin API pages list are the endpoints the server serves', () => {
   it('serves every endpoint each document tells a reader to call', async () => {
     const { app } = await servingApp();
 

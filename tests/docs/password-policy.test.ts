@@ -9,9 +9,9 @@ import {
   type RegistrationRefusal,
 } from '../../packages/account/src/view/registration-html.js';
 import { renderResetPasswordWeakPage } from '../../packages/account/src/view/reset-html.js';
-import { loadDocument } from './markdown.js';
+import { at, loadSource, PROTOCOL_PAGES } from './markdown.js';
 
-const GUIDE = 'docs/request-paths.md';
+const GUIDE = PROTOCOL_PAGES;
 
 const REFUSALS: readonly RegistrationRefusal[] = [
   'fields_required',
@@ -90,9 +90,9 @@ function violationPageHeadings(): Set<string> {
   return headings;
 }
 
-describe('the password-policy violation messages in docs/request-paths.md are ones the policy actually produces', () => {
+describe('the password-policy violation messages in the protocol pages are ones the policy actually produces', () => {
   it('matches every <li> violation line to a real message', () => {
-    const document = loadDocument(GUIDE);
+    const document = loadSource(GUIDE);
     const possible = possibleMessages();
     // A policy violation is rendered as plain text in its <li>. The other
     // list this document shows inside a transcript is the recovery codes,
@@ -119,7 +119,7 @@ describe('the password-policy violation messages in docs/request-paths.md are on
       const message = text.replace(/^<li>/u, '').replace(/<\/li>$/u, '');
       expect(
         possible.has(message),
-        `${GUIDE}:${String(lineNumber)} shows a violation message the password policy ` +
+        `${at(document, lineNumber)} shows a violation message the password policy ` +
           `does not produce: ${JSON.stringify(message)}`,
       ).toBe(true);
     }

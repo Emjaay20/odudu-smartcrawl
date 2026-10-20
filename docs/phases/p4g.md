@@ -1883,3 +1883,59 @@ What the first look found and was fixed: a long name with no break widened the p
 phone (every text block now wraps anywhere), the footer sat 4px inside the card's edge, the
 mark was small in its tile, and in the dark palette the tile's edge was invisible against the page (now ringed).
 The wrap of an unbroken run is held by `shell.test.ts` and was looked at before the name cap made the sample shorter.
+
+## Increment 22: the path documents in the site
+
+`docs/request-paths.md`, `admin-paths.md` and `console-paths.md` now exist twice: as the three
+originals, and cut by section into `apps/docs/content/en/reference/protocol/` (24 pages and an
+index), `reference/admin-api-paths/` (70 and an index) and `admin-console/paths/` (20 and an
+index). "What is not implemented" stays in `request-paths.md` until the roadmap page takes it, so
+the protocol pages are the guide without that list. The tests read the pages
+(`loadPages` in `tests/docs/markdown.ts`, which gives back the one document the pages were cut
+from, with `at(document, line)` citing `page:line`); `tests/docs/split-preserves-the-documents.test.ts`
+holds every line of each original, in order, against its pages. Only page boundaries, front matter,
+link targets and the padding of a table row may differ.
+
+The split was a one-off script kept out of the tree. Its three rules: cut at each `^## ` outside a
+fence, name the page by the heading's slug (at most 80 characters), and give it a `title` and a
+`description` (the first sentence of its first paragraph, 50 to 150 characters); then retarget every
+Markdown link, with `github-slugger` for the anchors, to the page that now holds the heading, or to
+`https://github.com/wizzywit/odudu/blob/main/...` for a file the site does not hold. No prose was edited.
+A line that carries bare HTML outside a fence or code span would have been listed for a human: there
+were none. verified: `node --no-warnings <script>.ts`, then `prettier --write` on the three directories.
+
+- **Build.** `pnpm --filter @odudu/docs build:pages`: 9 s with `generate` and `docusaurus clear`.
+  Largest page, `protocol/path-a-authorization-code-with-pkce`: 370,504 bytes of HTML (41 KB gzip),
+  against 1.37 MB unsplit; the largest admin page is 119 KB. Largest content chunk 29 KB gzip
+  (157 KB unsplit). First load of that page is the runtime (5.6 KB) and `main` (168.8 KB) plus the
+  chunk: about 203 KB gzip, 3 KB over the 200 KB figure the landing and docs pages were held to
+  before the search index and these chunks, so the budget needs a decision where it is enforced.
+- **Fenced blocks.** `apps/docs/tests/transcripts.test.ts` compares every fenced block of every page
+  with the `<pre>` text of the built page (`.token-line` rows joined by a newline), in both targets:
+  all of them identical. Changing one space in a source block fails it.
+- **A page's first heading is its title only when that is lossless.** A heading with no markup and at
+  most 60 characters becomes the page's `# `, and its sub-headings move up a level (`loadPages` moves
+  them back); a link to that heading is a link to the page, because Docusaurus gives an `h1` no id.
+  Every other page keeps `## `, with a plain `title` under 60 characters. The agent-copy plugin drops a
+  duplicate title heading only when it matches the title exactly and holds no inline code, so a
+  promoted heading with backticks left two copies of it in the Markdown copy.
+- **Front matter has limits the site tests set.** A description is 50 to 150 characters and unique:
+  the llms plugin cuts at 150 and the copy test compares the description it prints with the page's, and
+  no `://` may appear in it. A title is at most 70 characters and unique across the site; four needed
+  an override (two `The shape of it` and `What to do next` headings, two console refusals).
+- **`agent-links.ts` did not rewrite a link whose text holds inline code or wraps a line.** Both are
+  everywhere in the moved pages, and the copies kept `./page.md` links that resolve nowhere. It now
+  blanks code spans instead of cutting around them and no longer needs the `[` on the same line
+  (`agent-links.test.ts`, one row for each form, each failing before the change).
+- **`csp.test.ts` read `style=` out of escaped text.** A transcript shows markup, and the raw reader
+  took ` style=` in its text for an attribute; it now reads attributes inside tags only. The CSP
+  script, which parses, was right: 9 style-attribute hashes before and after.
+- **`links.test.ts`** exempts the three transcript directories from "no absolute `/docs/` path": they
+  record the server's own `/docs` route, which is not an address on this site.
+- **Sidebar.** Each directory is a category (`Request paths`, `Admin paths`, `Console paths`) under
+  its section, expanded, because a collapsed category renders its children lazily and a page three
+  clicks from home fails the information-architecture walk. The section pages link to the index of
+  each. The category labels equal the indexes' `h1` because the breadcrumb ends at the label.
+- **Left for the roadmap page.** `request-paths.md#what-is-not-implemented` is linked from seven pages
+  as a repository URL. `phase-references.test.ts` reads both the pages (floor 4) and the original
+  (floor 20) until the list moves.

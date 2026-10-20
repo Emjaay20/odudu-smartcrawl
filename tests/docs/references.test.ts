@@ -3,10 +3,10 @@ import { existsSync, globSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { plannedGenerated, underGenerated } from './generated-links.js';
-import { loadDocument, REPO_ROOT, scanFences, type Document } from './markdown.js';
+import { type Document, loadSource, PROTOCOL_PAGES, REPO_ROOT, scanFences } from './markdown.js';
 
 // How many of each kind of reference each document carried when these checks
-// were written — a floor, not a count to keep current. `docs/request-paths.md`
+// were written — a floor, not a count to keep current. The protocol pages
 // names no pnpm command; the check still runs over it so that the first one
 // added is covered. Links are not here: every document is held to those,
 // below, because a link is navigation and is broken whenever it was written.
@@ -17,7 +17,7 @@ interface Floors {
 
 const DOCUMENTS: readonly (readonly [name: string, floors: Floors])[] = [
   ['README.md', { pnpm: 4, paths: 6 }],
-  ['docs/request-paths.md', { pnpm: 0, paths: 5 }],
+  [PROTOCOL_PAGES, { pnpm: 0, paths: 5 }],
 ];
 
 function scriptsOf(packageJson: string): Set<string> {
@@ -146,7 +146,7 @@ describe('what the documents tell a newcomer to run still exists', () => {
   });
 
   for (const [name, floors] of DOCUMENTS) {
-    const document = loadDocument(name);
+    const document = loadSource(name);
 
     it(`every pnpm script ${name} names is defined`, () => {
       const undefinedScripts = foundIn(
@@ -219,7 +219,7 @@ describe('every link in every document resolves', () => {
     let links = 0;
     const broken: string[] = [];
     for (const name of documents) {
-      const document = loadDocument(name);
+      const document = loadSource(name);
       const from = path.dirname(path.join(REPO_ROOT, name));
       for (const target of linkTargets(document)) {
         links += 1;
