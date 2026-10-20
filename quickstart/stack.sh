@@ -8,6 +8,9 @@
 set -euo pipefail
 
 cd "$(dirname "$0")"
+# Compose reads compose.yaml from here; a COMPOSE_FILE inherited from the
+# caller's environment, set for a guide's commands, would name another path.
+unset COMPOSE_FILE
 export COMPOSE_PROJECT_NAME="${ODUDU_STACK_PROJECT:-odudu-quickstart-stack}"
 
 case "${1:-}" in

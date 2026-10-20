@@ -47,6 +47,16 @@ describe('CLI_COMMANDS', () => {
     }
   });
 
+  it('writes a group in an example as a path, which begins with a slash', () => {
+    const named = everyCommand(CLI_COMMANDS).filter((command) =>
+      command.example.includes('--group '),
+    );
+    expect(named.length).toBeGreaterThan(0);
+    for (const command of named) {
+      expect(command.example, command.name).toMatch(/--group \//);
+    }
+  });
+
   it('gives every command a summary', () => {
     for (const command of everyCommand(CLI_COMMANDS)) {
       expect(command.summary.length, command.name).toBeGreaterThanOrEqual(12);

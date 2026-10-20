@@ -1226,6 +1226,17 @@ async function runClientCommand(
     );
   }
 
+  // client_oidc_config_redirect_uris_present: only a client whose grants are
+  // exactly client_credentials may have none.
+  const serviceOnly = grantTypes.length === 1 && grantTypes[0] === 'client_credentials';
+  if (redirectUris.length === 0 && !serviceOnly) {
+    throw new OduduError(
+      'seed_invalid_options',
+      'seed client requires --redirect-uri for a client that signs people in; ' +
+        'a service client with no redirect URI names --grant-type client_credentials alone',
+    );
+  }
+
   const tenantId = await requireTenantId(ownerDb, tenantName);
 
   return withTenant(runtimeDb, tenantId, async (tx) => {

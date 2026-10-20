@@ -1012,6 +1012,42 @@ describe('seed client --grant-type', () => {
     ).rejects.toThrow(/grant-type/u);
   });
 
+  it('registers a service client that names client_credentials alone, with no redirect URI', async () => {
+    const options = uniqueOptions();
+    await seed(options);
+
+    await seed([
+      'client',
+      '--tenant',
+      options.tenant,
+      '--client-id',
+      'service',
+      '--client-secret',
+      'secret',
+      '--grant-type',
+      'client_credentials',
+    ]);
+
+    expect(await grantTypesOf(options.tenant, 'service')).toEqual(['client_credentials']);
+  });
+
+  it('says a redirect URI is missing instead of failing in the database', async () => {
+    const options = uniqueOptions();
+    await seed(options);
+
+    await expect(
+      seed([
+        'client',
+        '--tenant',
+        options.tenant,
+        '--client-id',
+        'web',
+        '--client-secret',
+        'secret',
+      ]),
+    ).rejects.toThrow(/--redirect-uri/u);
+  });
+
   it('still gives a public client two grants and no client_credentials', async () => {
     const options = uniqueOptions();
     await seed(options);

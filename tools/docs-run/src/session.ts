@@ -15,7 +15,8 @@ export interface Session {
 
 /**
  * One bash for a whole file, so `cd` and exported variables carry from block
- * to block. `set -e` ends the shell at the first failing command, which is
+ * to block. A block's standard input is empty, so a command that reads it
+ * cannot take the rest of the script. `set -e` ends the shell at the first failing command, which is
  * read as that block's status. The shell leads its own process group so a
  * timeout takes down whatever it started as well.
  */
@@ -61,7 +62,9 @@ export function openSession(): Session {
       const exports = Object.entries(env)
         .map(([name, value]) => `export ${name}='${value.replaceAll("'", "'\\''")}'\n`)
         .join('');
-      shell.stdin.write(`${exports}${command}\nprintf '\\n%s %d\\n' ${marker} $?\n`);
+      shell.stdin.write(
+        `${exports}{\n${command}\n} </dev/null\nprintf '\\n%s %d\\n' ${marker} $?\n`,
+      );
       const deadline = Date.now() + seconds * 1000;
       for (;;) {
         const done = finished.exec(buffer);

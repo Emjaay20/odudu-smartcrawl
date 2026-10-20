@@ -11,7 +11,14 @@ const OPENING = /^(`{3,})(.*)$/u;
 const RUNNABLE_INFO = /^sh\s+\{run((?:\s+[^}]*)?)\}\s*$/u;
 const ATTRIBUTE = /expect="([^"]*)"|timeout=(\d+)/gu;
 
-function attributes(raw: string): Pick<RunnableBlock, 'expect' | 'env' | 'timeoutSeconds'> {
+function attributes(
+  raw: string,
+  where: string,
+): Pick<RunnableBlock, 'expect' | 'env' | 'timeoutSeconds'> {
+  const leftover = raw.replace(ATTRIBUTE, '').trim();
+  if (leftover !== '') {
+    throw new Error(`${where}: the attribute "${leftover}" is not recognised and would be ignored`);
+  }
   const expect: string[] = [];
   let timeoutSeconds: number | undefined;
   for (const match of raw.matchAll(ATTRIBUTE)) {
@@ -49,7 +56,12 @@ export function extractRunnable(markdown: string, file: string): RunnableBlock[]
     index += 1;
     const info = RUNNABLE_INFO.exec((opening[2] ?? '').trim());
     if (info === null) continue;
-    found.push({ file, line: start + 1, command: body.join('\n'), ...attributes(info[1] ?? '') });
+    found.push({
+      file,
+      line: start + 1,
+      command: body.join('\n'),
+      ...attributes(info[1] ?? '', `${file}:${String(start + 1)}`),
+    });
   }
   return found;
 }

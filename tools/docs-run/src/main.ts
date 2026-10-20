@@ -6,7 +6,7 @@ import { openSession } from '#/session';
 
 // Fewer runnable blocks than this fails the run, so a guide whose commands
 // were all retagged `text` cannot leave the job passing on nothing.
-export const MINIMUM_BLOCKS = 0;
+export const MINIMUM_BLOCKS = 59;
 
 export interface Output {
   out(text: string): void;

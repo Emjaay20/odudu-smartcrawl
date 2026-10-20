@@ -27,6 +27,15 @@ describe('openSession', () => {
     expect(out.output).toBe('kept');
   });
 
+  it('gives a command that reads standard input none, so it cannot swallow the session', async () => {
+    const [read, after] = await inSession(async (s) => [
+      await s.exec('cat', {}, { timeoutSeconds: 5 }),
+      await s.exec('echo after', {}, {}),
+    ]);
+    expect(read).toEqual({ status: 0, output: '' });
+    expect(after.output).toBe('after');
+  });
+
   it('returns the output without the status marker, stderr included', async () => {
     const out = await inSession((s) => s.exec('echo out; echo err >&2', {}, {}));
     expect(out).toEqual({ status: 0, output: 'out\nerr' });

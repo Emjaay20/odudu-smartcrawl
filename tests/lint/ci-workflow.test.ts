@@ -187,8 +187,12 @@ describe('the CI workflow', () => {
     expect(workflow).toMatch(/^on:\n {2}pull_request:\s*$/mu);
     expect(jobNames(workflow)).toEqual(['docs-commands']);
     expect(workflow).toContain(
-      'node tools/docs-run/src/index.ts apps/docs/content/en/guides apps/docs/content/en/quick-start',
+      'node tools/docs-run/src/index.ts apps/docs/content/en/quick-start apps/docs/content/en/guides',
     );
+    // `docker compose exec` in a guide finds the stack by these two variables,
+    // which a reader's own folder and project name stand in for.
+    expect(workflow).toContain('COMPOSE_FILE=$GITHUB_WORKSPACE/quickstart/compose.yaml');
+    expect(workflow).toContain('COMPOSE_PROJECT_NAME=odudu-quickstart-stack');
     expect(workflow).toContain('quickstart/stack.sh up odudu-smoke-odudu 3195');
     expect(workflow).toContain('ODUDU_BASE=http://localhost:3195');
     expect(workflow).toMatch(/if: always\(\)\n\s+run: quickstart\/stack\.sh down/u);

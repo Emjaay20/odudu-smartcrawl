@@ -30,6 +30,13 @@ describe('extractRunnable', () => {
     ]);
   });
 
+  it('refuses an attribute it would otherwise ignore, such as an unquoted expect', () => {
+    expect(() => extractRunnable('```sh {run expect=Bearer}\nls\n```', 'a.md')).toThrow(
+      /a\.md:1.*expect=Bearer/u,
+    );
+    expect(() => extractRunnable('```sh {run expect="a"b"}\nls\n```', 'a.md')).toThrow(/a\.md:1/u);
+  });
+
   it('reads a block with no attributes', () => {
     const [only] = extractRunnable('```sh {run}\nls\n```', 'a.md');
     expect(only?.command).toBe('ls');

@@ -1,2 +1,10 @@
 #!/bin/sh
+# The quickstart stack keeps the server's configuration in a file on the
+# state volume rather than in the container's environment.
+NODE_NO_WARNINGS="${NODE_NO_WARNINGS:-1}"
+export NODE_NO_WARNINGS
+env_file="${ODUDU_QUICKSTART_ENV_FILE:-/var/lib/odudu/quickstart.env}"
+if [ -r "$env_file" ]; then
+  exec node --env-file="$env_file" /app/dist/main.js "$@"
+fi
 exec node /app/dist/main.js "$@"
