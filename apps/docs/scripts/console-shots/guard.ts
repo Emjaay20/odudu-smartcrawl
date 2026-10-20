@@ -3,7 +3,9 @@
 // own "shown once" sentence, a token the length and alphabet of a generated
 // one-time password or client secret, and the setup banner's password line.
 // A green capture means none of those appeared; read the sidecar record
-// beside each image for what the page held.
+// beside each image for what the page held. The scan runs before the shot's
+// rewrite and after it, so a secret shown and gone in between (a toast) is the
+// one case it can miss.
 export interface Visible {
   // Every text node, hidden ones included.
   readonly text: string;
@@ -40,7 +42,10 @@ export function findSecrets(visible: Visible, known: readonly string[]): string[
     }
   }
   if (visible.passwordFieldsFilled > 0) found.push('a password field is filled');
-  if (SHOWN_ONCE.test(visible.text)) found.push('the page shows a secret once');
+  // Text nodes arrive one per line, and the sentence spans several.
+  if (SHOWN_ONCE.test(visible.text.replace(/\s+/gu, ' '))) {
+    found.push('the page shows a secret once');
+  }
   if (PASSWORD_LINE.test(visible.text)) found.push('a line shows a password');
   for (const value of surfaces) {
     const token = GENERATED.exec(value.replaceAll(UUID, ''))?.[0];

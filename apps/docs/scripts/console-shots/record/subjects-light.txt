@@ -91,7 +91,7 @@ Email
 Status
 enabled
 Created
-just now
+recently
 Previous
 Page 1
 Next

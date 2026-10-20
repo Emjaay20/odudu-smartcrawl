@@ -74,14 +74,15 @@ async function check(page: Page, expectation: Expectation): Promise<void> {
 
 // The page as a reader of the quick start sees it: the stack's own address is
 // the published one, the administrator is the default one, and every time
-// reads "just now", so the same console gives the same bytes.
+// reads "recently", so the same console gives the same bytes.
 async function present(page: Page, options: Options): Promise<void> {
   await page.evaluate(
     ({ origin, published, admin, publishedAdmin }) => {
       // A blinking caret is the one thing that moves in a still page.
       document.documentElement.style.caretColor = 'transparent';
-      // A time reads differently on every run, and its width moves the columns.
-      for (const time of document.querySelectorAll('time')) time.textContent = 'just now';
+      // A time reads differently on every run, and its width moves the columns; a
+      // word that is true of every row the demo makes holds it still.
+      for (const time of document.querySelectorAll('time')) time.textContent = 'recently';
       const replace = (text: string): string =>
         text.replaceAll(origin, published).replaceAll(admin, publishedAdmin);
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -174,6 +175,30 @@ export interface Captured {
   readonly record: string;
 }
 
+// A toast or an alert at shot time is a message the console is telling, and the
+// one place a one-time value could appear; a capture shows none.
+async function refuseSecrets(
+  page: Page,
+  screen: Screen,
+  known: readonly string[],
+): Promise<Visible> {
+  const told = await page.evaluate(
+    () =>
+      [...document.querySelectorAll('[role=alert], [role=status]')].filter(
+        (element) => (element as HTMLElement).innerText.trim() !== '',
+      ).length,
+  );
+  const seen = await visible(page);
+  const secrets = [
+    ...findSecrets(seen, known),
+    ...(told > 0 ? ['an alert or a status message is on the page'] : []),
+  ];
+  if (secrets.length > 0) {
+    throw new Error(`screen ${screen.name} was not kept: ${secrets.join('; ')}`);
+  }
+  return seen;
+}
+
 async function shoot(
   page: Page,
   screen: Screen,
@@ -182,16 +207,15 @@ async function shoot(
 ): Promise<{ png: Buffer; record: string }> {
   await screen.open(page, context);
   await expectShown(page, screen);
+  // On the page as the console renders it, before anything is rewritten: the
+  // administrator's name is allowed there, so only the password is refused.
+  await refuseSecrets(page, screen, [options.adminPassword]);
   await present(page, options);
   await page.evaluate(() => document.fonts.ready.then(() => true));
   await page.waitForTimeout(400);
   const png = await page.screenshot({ type: 'png', animations: 'disabled', caret: 'hide' });
-  // Scanned after the shot and before anything is kept, so a late render is caught.
-  const seen = await visible(page);
-  const secrets = findSecrets(seen, refused(options));
-  if (secrets.length > 0) {
-    throw new Error(`screen ${screen.name} was not kept: ${secrets.join('; ')}`);
-  }
+  // And again after the shot, as published, so a late render is caught too.
+  const seen = await refuseSecrets(page, screen, refused(options));
   return {
     png,
     record: `${seen.text
@@ -207,8 +231,10 @@ async function shoot(
  */
 export async function captureScreens(
   screens: readonly Screen[],
-  options: Options,
+  given: Options,
 ): Promise<{ captures: Captured[]; manifest: Record<string, ManifestEntry> }> {
+  // A trailing slash would join to the paths below as `3000tenants`.
+  const options = { ...given, base: given.base.replace(/\/+$/u, '') };
   const viewport = { width: options.width ?? 1100, height: options.height ?? 820 };
   const manifest: Record<string, ManifestEntry> = {};
   const captures: Captured[] = [];

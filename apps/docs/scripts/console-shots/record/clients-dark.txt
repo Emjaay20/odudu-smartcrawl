@@ -83,7 +83,7 @@ Confidential
 Status
 enabled
 Created
-just now
+recently
 Client
 my-app
 my-app
@@ -92,7 +92,7 @@ Public
 Status
 enabled
 Created
-just now
+recently
 Previous
 Page 1
 Next

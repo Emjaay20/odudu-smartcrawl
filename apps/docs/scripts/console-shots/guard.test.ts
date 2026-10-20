@@ -45,25 +45,14 @@ describe('findSecrets', () => {
     expect(findSecrets({ ...clean, fieldValues: [secret] }, [])).toHaveLength(1);
   });
 
-  it("refuses the console's shown-once sentence outside a dialog", () => {
-    const text = 'This is the only time the one-time password is shown.';
-    expect(findSecrets({ ...clean, text }, [])).toHaveLength(1);
-  });
-
-  it('matches the sentence the console really renders', () => {
-    const source = readFileSync(
-      path.resolve(
-        import.meta.dirname,
-        '../../../admin-console/src/shared/view/SecretDialog/SecretDialog.tsx',
-      ),
-      'utf8',
-    );
-    const rendered = /This is the only time the \{label\} is shown\./u.exec(
-      source.replace(/\s+/gu, ' '),
-    );
-    expect(rendered).not.toBeNull();
-    const text = 'This is the only time the client secret is shown.';
-    expect(findSecrets({ ...clean, text }, [])).toHaveLength(1);
+  it('refuses the dialog the console really renders, whose sentence spans text nodes', () => {
+    const nodes = JSON.parse(
+      readFileSync(path.join(import.meta.dirname, 'fixtures/secret-dialog.json'), 'utf8'),
+    ) as string[];
+    // Without the secret itself, so only the sentence can be what is refused.
+    const text = nodes.filter((node) => !/^[A-Za-z0-9_-]{32,}$/u.test(node)).join('\n');
+    expect(text).toContain('This is the only time the \nclient secret\n is shown.');
+    expect(findSecrets({ ...clean, text }, [])).toEqual(['the page shows a secret once']);
   });
 
   it('lets a confirmation question through', () => {

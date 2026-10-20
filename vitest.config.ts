@@ -80,6 +80,9 @@ export default defineConfig({
           ],
           environment: 'node',
           setupFiles: SETUP,
+          // The docs tests each read the whole built site, which takes longer than the
+          // default when every package's tests run at once.
+          ...(scope === 'apps/docs' ? { testTimeout: 30_000 } : {}),
         },
       },
       {

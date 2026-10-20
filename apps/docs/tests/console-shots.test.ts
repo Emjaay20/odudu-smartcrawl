@@ -101,6 +101,16 @@ describe('the console captures', () => {
         const seen = { text, attributes: [], fieldValues: [], passwordFieldsFilled: 0 };
         expect(findSecrets(seen, []), file).toEqual([]);
         expect(/localhost:(?!3000\b)\d+/u.test(text), file).toBe(false);
+        // The administrator is the published default, or whoever the capture is given.
+        const emails = text.match(/[\w.+-]+@[\w-]+\.[\w.-]+/gu) ?? [];
+        expect(
+          emails.filter((email) => email !== 'admin@odudu.local'),
+          file,
+        ).toEqual([]);
+        const given = process.env.ODUDU_ADMIN_EMAIL;
+        if (given !== undefined && given !== 'admin@odudu.local') {
+          expect(text.includes(given), file).toBe(false);
+        }
       }
     }
   });

@@ -48,7 +48,12 @@ if (process.argv.includes('--check')) {
   writeCaptures(result, fresh);
   const same = (left: string, right: string): boolean =>
     readFileSync(left).equals(readFileSync(right));
+  const stale = [
+    ...readdirSync(final.recordDir).filter((file) => !readdirSync(fresh.recordDir).includes(file)),
+    ...readdirSync(final.outDir).filter((file) => !readdirSync(fresh.outDir).includes(file)),
+  ].map((file) => `${file} (no screen makes it)`);
   const differing = [
+    ...stale,
     ...readdirSync(fresh.recordDir).filter(
       (file) => !same(path.join(fresh.recordDir, file), path.join(final.recordDir, file)),
     ),

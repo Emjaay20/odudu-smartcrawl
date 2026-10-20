@@ -116,6 +116,22 @@ const DEFINED: Readonly<Record<string, Defined>> = {
 
 const read = (file: string): string => readFileSync(path.join(REPO, file), 'utf8');
 
+// Each snippet is looked for in the one file that renders the control, so a
+// word that appears elsewhere in the console cannot stand in for it.
+function problems(source: (file: string) => string): string[] {
+  const wrong: string[] = [];
+  for (const [name, defined] of Object.entries(DEFINED)) {
+    for (const { file, text } of defined.evidence) {
+      if (!source(file).includes(text)) wrong.push(`${name}: ${file} does not hold ${text}`);
+    }
+    if (defined.expand !== undefined) {
+      const { template, values } = defined.expand;
+      if (expanded(template, values) !== name) wrong.push(`${name}: expands to something else`);
+    }
+  }
+  return wrong;
+}
+
 export function expanded(template: string, values: Readonly<Record<string, string>>): string {
   return Object.entries(values).reduce(
     (text, [key, value]) => text.replaceAll(`\${${key}}`, value),
@@ -138,17 +154,7 @@ describe('the names the quick start quotes from the console', () => {
   });
 
   it('are each defined where the table says, by exactly that text', () => {
-    const wrong: string[] = [];
-    for (const [name, defined] of Object.entries(DEFINED)) {
-      for (const { file, text } of defined.evidence) {
-        if (!read(file).includes(text)) wrong.push(`${name}: ${file} does not hold ${text}`);
-      }
-      if (defined.expand !== undefined) {
-        const { template, values } = defined.expand;
-        if (expanded(template, values) !== name) wrong.push(`${name}: expands to something else`);
-      }
-    }
-    expect(wrong).toEqual([]);
+    expect(problems(read)).toEqual([]);
   });
 
   it('lists no name the page does not quote', () => {
@@ -156,12 +162,13 @@ describe('the names the quick start quotes from the console', () => {
     expect(Object.keys(DEFINED).filter((name) => !quoted.has(name))).toEqual([]);
   });
 
-  it('refuses a name no screen defines, and a control whose label was renamed', () => {
+  it('fails when the console renames a control, and for a name no screen defines', () => {
+    const renamed = (file: string): string =>
+      file.endsWith('NewClientPage.tsx')
+        ? read(file).replace('label="Kind"', 'label="Type"')
+        : read(file);
+    expect(problems(renamed).filter((problem) => problem.startsWith('Kind:'))).toHaveLength(1);
+    expect(problems(read)).toEqual([]);
     expect(DEFINED['Create a widget']).toBeUndefined();
-    const renamed = read(`${CONSOLE}/clients/view/NewClientPage/NewClientPage.tsx`).replace(
-      'label="Kind"',
-      'label="Type"',
-    );
-    expect(renamed.includes('label="Kind"')).toBe(false);
   });
 });
