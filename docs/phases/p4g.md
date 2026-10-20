@@ -2038,6 +2038,18 @@ The other variants are `p4g-docs/22b-{before,after}-{home,console,reference,tran
   are byte-identical (checked per file against HEAD). Front matter descriptions that carried the
   provenance were rewritten. `transcript-pages.test.ts` fails on any of these patterns in prose; it
   was shown to fail on a planted line. `contributing/transcripts.md` keeps the stack notes.
-- **Left as it was.** The 18 pages whose long multi-route heading stays an `h2` under a short
-  `title`: the breadcrumb test requires the last crumb to equal the `h1`, so promoting them needs a
-  decision on title length, not a script.
+- **Placed: Increment 36a (the whole-docs reading pass).** The 18 pages whose long multi-route
+  heading stays an `h2` under a short `title`. The choice is the breadcrumb: the last crumb must
+  equal the `h1`, so either the long heading becomes both, or the heading is shortened to the title
+  and the routes move into the first paragraph. Listed in the plan's Task 36a.
+- **A rule softened on purpose, then restored.** The first retargeting of CLAUDE.md traded "name the
+  stack it was captured against" for "say what had run before it", and the page test banned
+  "captured on/against". The rule is back at full strength: a transcript whose output depends on
+  earlier state names the stack in words a reader can reproduce; the page test bans a date, a run, a
+  compose project, an ordinal stack and a commit, not "captured against a stack driven only as far
+  as Path A".
+- **Fix round.** `references.test.ts` already failed on a dead relative link in every Markdown file
+  outside generated output, the archive included; it now also pins that its document set holds
+  README, CLAUDE, NEXT, the ADRs, phase notes, specs, the archive and the site source. Source
+  comments cite the page, not the directory. NEXT's localization row and sentence say the catalogue
+  mechanism exists and name what P4b and P4h still own.

@@ -1107,7 +1107,8 @@ interface ParsedSetting {
 }
 
 // `--set name=value`, repeatable. The name is a column name, which is what a
-// reader of the schema or of apps/docs/content/en/reference/transcripts/request-paths/ already has in hand.
+// reader of the schema or of
+// apps/docs/content/en/reference/transcripts/request-paths/bootstrap.md already has in hand.
 function parseSettings(assignments: readonly string[]): ParsedSetting[] {
   return assignments.map((assignment) => {
     const separator = assignment.indexOf('=');

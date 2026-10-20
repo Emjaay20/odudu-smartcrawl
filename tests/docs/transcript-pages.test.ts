@@ -141,7 +141,9 @@ const ORDINAL =
   'twenty-(?:first|second|third))';
 const CONTRIBUTOR_PROSE: readonly (readonly [RegExp, string])[] = [
   [/\bre-?captured\b/iu, 'a recapture note'],
-  [/\bcaptured (?:on|against|again)\b/iu, 'a note on where it was captured'],
+  // "captured against a stack driven only as far as Path A" names the state a
+  // transcript depends on, which is required; a date, a run or a project is not.
+  [/\bcaptured (?:on|against|again)\b(?! an? )/iu, 'a note on where it was captured'],
   [new RegExp(`\\b${ORDINAL} stack\\b`, 'iu'), 'an ordinal stack'],
   [/\b(?:compose )?project `?odudu-[\w-]+/iu, 'a compose project name'],
   [/-p odudu-[\w-]+/u, 'a compose project flag'],

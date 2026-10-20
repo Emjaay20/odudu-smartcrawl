@@ -193,10 +193,11 @@ was, or scopes its query so that it does not.** An unscoped
 `select … from login_failures` prints whatever earlier sections happened to
 leave behind; a psql listing of every client prints two rows on the stack
 its author had and eleven on the one the page builds. Where the state is
-the point — a retention pass's counts, a lockout's arithmetic — say what had
-run before it. Which stack each transcript was captured on is recorded in
-`apps/docs/content/en/contributing/transcripts.md`, not on the page a
-reader looks a route up on.
+the point — a retention pass's counts, a lockout's arithmetic — name the
+stack it was captured against, in words a reader can reproduce ("a freshly
+built stack driven only as far as Path A"). The compose project and commit
+are not that: they are recorded in
+`apps/docs/content/en/contributing/transcripts.md`.
 
 A precondition a refusal depends on is **shown, not asserted.** Two
 different checks that refuse with byte-identical output cannot be told apart

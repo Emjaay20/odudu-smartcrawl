@@ -9,16 +9,17 @@ Everything above leaves rows behind, and nothing in any repository deletes
 one. `odudu reap` is the pass that does, on a stated window per table
 ([ADR 0021](https://github.com/wizzywit/odudu/blob/main/docs/adr/0021-retention-is-bounded-by-the-detection-window.md)).
 
-**The counts in this section are the whole point of it, so they come from a
-stack driven only as far as [Path A](./path-a-authorization-code-with-pkce.md)
-plus one refresh rotation** — a freshly built compose stack, `demo` seeded as
-[Bootstrap](./bootstrap.md) seeds it, one login, one code redeemed, one refresh
-rotated, and nothing else. Following this document end to end instead leaves
-dozens of sessions and grants behind, and a pass over those reports numbers that
-say nothing about which rule kept which row. Every report below is from such a
-stack, once the pass reported `cleared` too, brought up from an empty volume
-with `ODUDU_REAP_ENABLED=false` so that no pass but these ran. Run against that
-minimal stack, the pass removes nothing at all:
+**The counts in this section are the whole point of it, so they were captured
+against a stack driven only as far as [Path
+A](./path-a-authorization-code-with-pkce.md) plus one refresh rotation** — a
+freshly built compose stack, `demo` seeded as [Bootstrap](./bootstrap.md) seeds
+it, one login, one code redeemed, one refresh rotated, and nothing else.
+Following this document end to end instead leaves dozens of sessions and grants
+behind, and a pass over those reports numbers that say nothing about which rule
+kept which row. Every report below is from such a stack, once the pass reported
+`cleared` too, brought up from an empty volume with `ODUDU_REAP_ENABLED=false`
+so that no pass but these ran. Run against that minimal stack, the pass removes
+nothing at all:
 
 ```bash
 odudu reap

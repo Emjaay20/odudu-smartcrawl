@@ -214,6 +214,22 @@ describe('every link in every document resolves', () => {
     expect(documents.length).toBeGreaterThan(80);
   });
 
+  it('covers the ADRs, NEXT, phase notes, specs, the archive, README, CLAUDE and the site source', () => {
+    const wanted = [
+      'README.md',
+      'CLAUDE.md',
+      'docs/NEXT.md',
+      'docs/README.md',
+      'docs/adr/0043-localization-is-a-catalogue-a-negotiation-and-a-set-of-owners.md',
+      'docs/phases/p4g.md',
+      'docs/superpowers/specs/2026-09-10-odudu-design.md',
+      'apps/docs/content/en/roadmap.md',
+      'apps/docs/content/en/guides/sign-a-user-in.md',
+    ];
+    expect(wanted.filter((file) => !documents.includes(file))).toEqual([]);
+    expect(documents.some((file) => file.startsWith('docs/archive/'))).toBe(true);
+  });
+
   it('resolves each relative link against the file that makes it', async () => {
     const planned = await plannedGenerated();
     let links = 0;
