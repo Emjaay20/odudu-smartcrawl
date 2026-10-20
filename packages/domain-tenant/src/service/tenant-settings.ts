@@ -4,7 +4,7 @@ import { type tenants } from '@odudu/db';
 type TenantColumn = keyof typeof tenants.$inferSelect;
 
 // What a tenant exposes for configuration, keyed by the column name a reader
-// sees in the schema and in `docs/request-paths.md` rather than by Drizzle's
+// sees in the schema and in `apps/docs/content/en/reference/transcripts/request-paths/` rather than by Drizzle's
 // camel case. Identity is absent on purpose: `name` is in every issuer URL
 // already minted, and `id` is what row-level security keys on. `column` is
 // typed against the real row, so a typo is a compile error, not a silent

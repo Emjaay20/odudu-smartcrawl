@@ -8,7 +8,7 @@ Nothing in the roadmap or in any ADR placed localization. The parts of it that
 exist are accidents of other work.
 
 - `/authorize` accepts `ui_locales` and `claims_locales` and ignores them, a
-  documented decision under OIDC Core §15.1 (`docs/request-paths.md`,
+  documented decision under OIDC Core §15.1 (`apps/docs/content/en/reference/transcripts/request-paths/`,
   "`/authorize`").
 - A subject has a `locale` attribute (`packages/domain-identity/src/schema/users.ts`,
   `packages/contracts/src/admin/profile.ts`) and the console offers a picker

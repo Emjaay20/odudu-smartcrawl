@@ -46,7 +46,7 @@ refused, even though such schemes are common and harmless in practice —
 Android and iOS both permit registering one. That refusal answers
 `invalid_redirect_uri` with no further detail in the response body, so a
 client author who hits it has to consult documentation to learn the
-reverse-DNS requirement (`README.md` and `docs/request-paths.md`, updated
+reverse-DNS requirement (`README.md` and `apps/docs/content/en/reference/transcripts/request-paths/`, updated
 alongside this decision) rather than being told inline. Reworded to name
 the requirement in the refusal is a smaller, separate change, left for
 whoever next touches this error path.

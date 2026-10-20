@@ -59,7 +59,7 @@ services:
       # The per-origin request budget on the sign-in, registration and
       # reset-request submissions (ADR 0023). Passed through so a session
       # driving more of them than a person would — a burst captured for
-      # docs/request-paths.md, say — can raise it without editing this file.
+      # apps/docs/content/en/reference/transcripts/request-paths/, say — can raise it without editing this file.
       ODUDU_THROTTLE_LIMIT: ${ODUDU_THROTTLE_LIMIT:-10}
       # And the per-username budget on the sign-in submission, raised for
       # the same bursts: a script signing in as one user hits it first.

@@ -79,7 +79,7 @@ because it is easy to read past.
   is and the meaning of the name, the one-command quickstart, links to the
   docs, examples, roadmap, contributing and security, and the licence. Its
   operating detail moves into the site.
-- `docs/request-paths.md`, `docs/admin-paths.md` and `docs/console-paths.md`
+- `request-paths`, `admin-paths` and `console-paths`
   move into the site's source as guides and reference, with their commands
   still executed in CI and `tests/docs/` retargeted at the site. The three
   files are then retired, every citation of them repointed, and CLAUDE.md's

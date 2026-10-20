@@ -6,17 +6,17 @@ Start with [the design specification](superpowers/specs/2026-09-10-odudu-design.
 
 ## What describes the system now
 
-These are kept current, and `tests/docs/` fails the build where they drift
-from what the server serves.
+These are kept current, and `tests/docs/` fails the build where the site
+drifts from what the server serves.
 
-| Path                                   | What it holds                                               |
-| -------------------------------------- | ----------------------------------------------------------- |
-| [`request-paths.md`](request-paths.md) | Every protocol request, run against a real stack            |
-| [`admin-paths.md`](admin-paths.md)     | The same for the admin API                                  |
-| [`console-paths.md`](console-paths.md) | The same for the admin console                              |
-| [`NEXT.md`](NEXT.md)                   | Where the project stands, what is open, what was deferred   |
-| [`adr/`](adr/)                         | Decisions and their rejected alternatives                   |
-| [`protocols/`](protocols/)             | One reading note per RFC or specification, clause by clause |
+| Path                                                                                   | What it holds                                                           |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| [`apps/docs/content/en/`](../apps/docs/content/en/)                                    | The documentation site: guides, concepts, reference, and the roadmap    |
+| [`.../reference/transcripts/`](../apps/docs/content/en/reference/transcripts/index.md) | Every protocol, admin API and console request, run against a real stack |
+| [`.../roadmap.md`](../apps/docs/content/en/roadmap.md)                                 | What is not implemented, each gap placed in a phase or a decision       |
+| [`NEXT.md`](NEXT.md)                                                                   | Where the project stands, what is open, what was deferred               |
+| [`adr/`](adr/)                                                                         | Decisions and their rejected alternatives                               |
+| [`protocols/`](protocols/)                                                             | One reading note per RFC or specification, clause by clause             |
 
 ## What records the past
 

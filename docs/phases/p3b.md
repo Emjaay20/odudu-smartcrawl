@@ -26,7 +26,7 @@ executed.
 explanations, not the behaviour.** The code that shipped was mostly right
 the first time. What was wrong, over and over, was the sentence beside it
 saying why: a comment, a clause-table status, a paragraph in
-`docs/request-paths.md`, an ADR's own bound. Two dozen instances, catalogued
+`apps/docs/content/en/reference/transcripts/request-paths/`, an ADR's own bound. Two dozen instances, catalogued
 below as one finding, and the reviews earned their cost on every one of
 them.
 
@@ -118,7 +118,7 @@ of.
   not into the same _re-check_, and the re-check is the half that matters
   once a login intervenes.
 - **The same commit asserted the behaviour that bypass disproved** — the
-  clause row moved to `covered` and `docs/request-paths.md` gained a
+  clause row moved to `covered` and `apps/docs/content/en/reference/transcripts/request-paths/` gained a
   sentence saying the `claims` `sub` "reaches the same check an
   `id_token_hint` does". Worse than an ordinary false reason, because it is
   the sentence that stops the next reader looking.
@@ -213,7 +213,7 @@ shapes turned up, which is worth more than the tally:
   row, asserting a count: it cannot tell a retention rule from its inverse.
 - **A tautology.** The concurrency test queried exactly five known ids and
   asserted `<= 5`. Removing the eviction call entirely left it green — and
-  it was cited as evidence in an ADR and twice in `docs/request-paths.md`.
+  it was cited as evidence in an ADR and twice in `apps/docs/content/en/reference/transcripts/request-paths/`.
 - **A new check unpinning an older one.** Closing the `id_token_hint`
   audience check at `/authorize` made an existing refusal test pass for a
   second reason, so the `typ: at+jwt` refusal it named became held by no
@@ -382,7 +382,7 @@ named. Three instances, one of them inside the fix for the failure
 
 ## Documentation integrity
 
-`docs/request-paths.md`'s promise is that every command was executed and
+`apps/docs/content/en/reference/transcripts/request-paths/`'s promise is that every command was executed and
 every response is real output. Four ways it was false while looking fine
 turned up, one of them new to `CLAUDE.md`'s list:
 
@@ -457,7 +457,7 @@ block tagged `json`. But `tests/docs/markdown.ts`'s
 `blockAfter(document, marker, language)` selects a block **by** language,
 and its callers pass `'json'`,
 so an untagged JSON response block is invisible to every check built on it.
-Every JSON response in `docs/request-paths.md` therefore shows Prettier's
+Every JSON response in `apps/docs/content/en/reference/transcripts/request-paths/` therefore shows Prettier's
 formatting rather than the server's bytes. Content survives — keys, values
 and order are intact — but the byte-level promise does not.
 

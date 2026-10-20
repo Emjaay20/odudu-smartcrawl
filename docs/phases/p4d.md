@@ -698,7 +698,7 @@ Execution Time: 0.229 ms
 the earlier text here accepted a scan of `token_grants` for this write as
 too rare to index, and at a million subjects that scan reads every grant of
 the tenant. The list is paged, so a subject with many consents answers a page
-(`GET /subjects/:id/consents`, `docs/admin-paths.md`).
+(`GET /subjects/:id/consents`, `apps/docs/content/en/reference/transcripts/admin-paths/`).
 
 ## What export and import found
 
@@ -904,7 +904,7 @@ the test harness's own normalisation.
 
 ## Part 2 — what building the gateway found
 
-The gateway's transcripts are in [docs/console-paths.md](../console-paths.md).
+The gateway's transcripts are in [the console paths](../../apps/docs/content/en/reference/transcripts/console-paths/index.md).
 These are the defects and false assumptions that building it turned up,
 each fixed on the branch.
 
@@ -1714,8 +1714,8 @@ encryption algorithms and encodings, and the token lifetime ranges now live in
 `@odudu/contracts` (`client-rules.ts`). The validators import them, so the
 console offers exactly the choices the server takes, and a parity test holds
 the encryption algorithms to `@odudu/crypto`'s. No server behaviour changed:
-no route, no response and no default moved, so `README.md`, `request-paths.md`,
-`admin-paths.md` and the OpenAPI document stand as they were, and the plan check
+no route, no response and no default moved, so `README.md`, the request-path and
+admin-path transcripts and the OpenAPI document stand as they were, and the plan check
 had nothing new to drive.
 
 **Five routes the plan never placed are Clients'.** Task 8b built a client's
@@ -1822,7 +1822,7 @@ token endpoint's URL as the one `aud` at all three. `tls_client_auth` first stay
 (`[ODUDU-TLS-CLIENT-AUTH-ENDPOINTS-01]`): a method shipped at `/token` is not one a
 client may be refused at its siblings. `client_secret_jwt` and
 `self_signed_tls_client_auth` are placed on P13 in the umbrella spec and in
-`request-paths.md`'s "What is not implemented".
+the roadmap page's "What is not implemented".
 
 **A `/revoke` test against a fixed clock would have passed for the wrong reason.** Revoking an
 access token reads its signature and expiry against the real clock, so a token
@@ -1956,7 +1956,7 @@ reason.
 their own (`about:blank#flow-empty` and four more), added for this page with the
 `detail` and `errors[]` unchanged; the console words each from its type, and
 names the step at fault from the path in `errors[]` against the list it sent.
-`flow.int.test.ts` pins the types, and `docs/admin-paths.md` shows them captured.
+`flow.int.test.ts` pins the types, and `apps/docs/content/en/reference/transcripts/admin-paths/` shows them captured.
 
 **A page is not drawn until whoami has answered.** `AreaGate` held its children
 while whoami was pending only by showing them, so every page read before it knew
@@ -1990,7 +1990,7 @@ older than the active key and so probably the one a promotion replaced).
 leave a client's algorithm with no key, and delete of a key that is not retired
 all answered a bare `about:blank` and told apart only by their words. They are
 now `about:blank#key-active`, `#key-algorithm-needed` and `#key-not-retired`, the
-console words each from its type, and `docs/admin-paths.md` shows each captured.
+console words each from its type, and `apps/docs/content/en/reference/transcripts/admin-paths/` shows each captured.
 The active lane offers no Retire at all, since the status is known to the console
 and the server always refuses it; the refusal is shown when a page is stale.
 
@@ -2468,7 +2468,7 @@ design spec.
 ADR 0023's second amendment has the decisions; what building it found.
 
 - **`ODUDU_CLIENT_SECRET_THROTTLE_*` did not exist.** A comment in `app.ts`
-  and a "has no env var yet" sentence in `docs/request-paths.md` both said
+  and a "has no env var yet" sentence in `apps/docs/content/en/reference/transcripts/request-paths/` both said
   so; the limiter was fixed at 5 per 60 s. The two variables now exist and
   P11's criterion that named the gap is removed.
 - **`request.ip` is text, not an address.** A dual-stack listener reports an

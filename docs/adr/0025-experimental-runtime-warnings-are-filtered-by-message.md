@@ -71,7 +71,7 @@ same text.
 ## Consequences
 
 - The server still prints both lines when it boots, including in
-  `docs/request-paths.md` transcripts captured from the CLI. That is
+  `apps/docs/content/en/reference/transcripts/request-paths/` transcripts captured from the CLI. That is
   deliberate: an operator learning their runtime is using an experimental
   WebCrypto surface is being told something true, and the place to decide
   otherwise is the server's logging configuration, not a test helper.

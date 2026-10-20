@@ -188,7 +188,7 @@ allowDefaultProject but also was found in the project service`), because
   above (clean), after those edits.
 - **`tests/docs/references.test.ts` fails on a copied document.** It globs
   `**/*.md` and resolves each relative link against the file that holds it;
-  `request-paths.md`, `admin-paths.md` and `console-paths.md` copied into
+  `request-paths`, `admin-paths` and `console-paths` copied into
   `content/en/` fail with 20 unresolved links (`../README.md`, `adr/…`,
   `protocols/…`, `../infra/…`). The same links fail the Docusaurus build once
   `onBrokenLinks` is `throw` (a page lists each once; 32 occurrences are
@@ -371,7 +371,7 @@ gzip'` settles it.
   not rendered: the `import` line stays and `{1 + 1}` is left as text.
   **The `.md` copies keep body links untouched**: `/request-paths/` is not
   base-prefixed in `intro.md` under `/odudu/`, and `llms-full.txt` keeps
-  `../README.md` and `request-paths.md#…` as written. Plan change: agent copies
+  `../README.md` and `request-paths#…` as written. Plan change: agent copies
   are only as correct as the source's links, so the base-prefix and the
   absolute-URL rewrites belong to the content, not to the plugin.
 
@@ -730,7 +730,7 @@ semver tag there.
   with `withFrench`, so the real renderer is the one rendering French.
   `SHIPPED_LOCALES` stays `en`.
 - The English text is byte-identical to before except three things, each one
-  re-recorded in `docs/request-paths.md`: user-controlled values sit in
+  re-recorded in `apps/docs/content/en/reference/transcripts/request-paths/`: user-controlled values sit in
   `<bdi>`, an apostrophe in a page's own text is `&#39;` (the catalogue is
   escaped as a whole, not trusted), and the passkey script reads its three
   sentences from `data-` attributes of its form (`data-failed` carries
@@ -1600,7 +1600,7 @@ heap limit` at 4.56 GB resident; with `NODE_OPTIONS=--max-old-space-size=8192` i
 - The policy gains `object-src 'none'` and `frame-src 'none'`; workers fall back to `default-src 'self'`.
 - The docs headers are on every response the route's handlers produce. Fastify's own `400` (malformed percent-escape)
   and `404` for methods other than `GET`/`HEAD` carry none; a root hook would touch every other route, so the wording
-  was narrowed instead (ADR 0029, `request-paths.md`).
+  was narrowed instead (ADR 0029, `request-paths`).
 - `scripts/csp.test.ts` fails, naming the file, on any built file whose extension is not in `DOCS_TYPES`.
 - The docs routes log nothing per request (`logLevel: 'warn'` on the route); warnings and errors still print. A page
   load was about 20 info lines. Not done, kept as notes: no compression (P11), `csp.ts` does not read a `style=` inside a
@@ -1697,7 +1697,7 @@ completed sign-in. Revocation on compromise was the gap (an operator could not t
 orphaning its set), now closed by the removal rule; the notice for an administrator's change is added here (to the address on file, verified or not, since
 it carries nothing a stranger could use). Not met, and
 placed: a notice when the subject's own enrolment or regeneration changes their authenticators, which is **P4f** (the
-design spec's P4f criterion and `docs/request-paths.md`'s "What is not implemented" now name it).
+design spec's P4f criterion and `apps/docs/content/en/roadmap.md`'s "What is not implemented" now name it).
 
 - verified: `cd packages/authn-flows && ../../node_modules/.bin/vitest run --config ../../vitest.config.ts tests/recovery-lifecycle.int.test.ts`
   (12 tests) and the same from `packages/protocol-admin` with its own `tests/recovery-lifecycle.int.test.ts` (10 tests),
@@ -1716,7 +1716,7 @@ design spec's P4f criterion and `docs/request-paths.md`'s "What is not implement
   cost the P4f row now names: self-registration with somebody else's address can make an administrator's notice mail a
   stranger the tenant name and the fact that an account exists.
 - `removeCredentialQuerySchema` and `revokeRecoveryCodesQuerySchema` are strict, so `DELETE …/credentials/{id}` now
-  refuses an unknown query parameter with `400` where it used to ignore one. admin-paths.md says so.
+  refuses an unknown query parameter with `400` where it used to ignore one. admin-paths says so.
 
 ### The docs footer, reworked
 
@@ -1886,10 +1886,10 @@ The wrap of an unbroken run is held by `shell.test.ts` and was looked at before 
 
 ## Increment 22: the path documents in the site
 
-`docs/request-paths.md`, `admin-paths.md` and `console-paths.md` now exist twice: as the three
+`request-paths`, `admin-paths` and `console-paths` now exist twice: as the three
 originals, and cut by section into `apps/docs/content/en/reference/protocol/` (24 pages and an
 index), `reference/admin-api-paths/` (70 and an index) and `admin-console/paths/` (20 and an
-index). "What is not implemented" stays in `request-paths.md` until the roadmap page takes it, so
+index). "What is not implemented" stays in `request-paths` until the roadmap page takes it, so
 the protocol pages are the guide without that list. The tests read the pages
 (`loadPages` in `tests/docs/markdown.ts`, which gives back the one document the pages were cut
 from, with `at(document, line)` citing `page:line`); `tests/docs/split-preserves-the-documents.test.ts`
@@ -1936,7 +1936,7 @@ were none. verified: `node --no-warnings <script>.ts`, then `prettier --write` o
   its section, expanded, because a collapsed category renders its children lazily and a page three
   clicks from home fails the information-architecture walk. The section pages link to the index of
   each. The category labels equal the indexes' `h1` because the breadcrumb ends at the label.
-- **Left for the roadmap page.** `request-paths.md#what-is-not-implemented` is linked from seven pages
+- **Left for the roadmap page.** `request-paths#what-is-not-implemented` is linked from seven pages
   as a repository URL. `phase-references.test.ts` reads both the pages (floor 4) and the original
   (floor 20) until the list moves.
 

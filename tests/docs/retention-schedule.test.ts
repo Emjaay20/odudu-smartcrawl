@@ -153,7 +153,7 @@ describe('the outbox schedule the documents describe is the one the server runs'
     expect(sourceText(command)).toContain(quoted.replaceAll(/\s+/gu, ' '));
   });
 
-  it('declines to schedule in the words README.md and request-paths.md quote', () => {
+  it('declines to schedule in the words README.md and the request paths quote', () => {
     const module = readFileSync(path.join(REPO_ROOT, 'apps/server/src/modules/outbox.ts'), 'utf8');
     const quoted = /`(?<message>not sending queued mail: [^`]+)`/su.exec(textOf(PROTOCOL_PAGES));
     if (quoted?.groups?.message === undefined) {
@@ -168,7 +168,7 @@ describe('the outbox schedule the documents describe is the one the server runs'
 // real `odudu send-logouts` transcript (under "Front-channel and
 // back-channel logout") states no interval or timeout default in words
 // there for this check to read. The retention windows are the opposite —
-// stated only in request-paths.md, beside email_outbox's own.
+// stated only in the request paths, beside email_outbox's own.
 describe('the logout-sender schedule README describes is the one the server runs', () => {
   it('states the interval the config schema defaults to', () => {
     expect(statedDefault('README.md', 'ODUDU_LOGOUT_SENDER_INTERVAL_SECONDS')).toBe(

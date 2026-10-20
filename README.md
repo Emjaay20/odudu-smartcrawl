@@ -40,7 +40,7 @@ nothing, by design (`.github/workflows/verify.yml`).
 all. **P4c** adds the admin API — tenants, clients, subjects, roles,
 groups, scopes, signing keys, the authentication flow, per-tenant SMTP and
 an audit trail, under `/admin/tenants/{tenant}/`, described in
-[docs/admin-paths.md](docs/admin-paths.md) and published as OpenAPI at
+[the admin paths](apps/docs/content/en/reference/transcripts/admin-paths/index.md) and published as OpenAPI at
 `/admin/openapi.json`. The roadmap's second and third phases are each two. **P2a** is the
 identity model — roles, groups, client scopes, per-client web origins,
 email — and **P2b** is credentials, MFA and the session lifecycle. **P3a**
@@ -87,7 +87,7 @@ it.
 `/token` and `/userinfo` now enforce CORS from a client's own `web_origins`
 (a preflight from the tenant's union of every client's, since it carries no
 client identity to check against one) — see
-[the CORS section of docs/request-paths.md](docs/request-paths.md#cors-the-preflight-and-the-request-differ).
+[the CORS section of the request paths](apps/docs/content/en/reference/transcripts/request-paths/cors-the-preflight-and-the-request-differ.md).
 `seed client --web-origin` registers them as it creates a client, and
 `PATCH /admin/tenants/{tenant}/clients/{id}` amends the list afterwards —
 `seed client` itself refuses an existing client rather than widening a
@@ -145,14 +145,14 @@ tenant still serves its discovery document and `/certs`, so its relying
 parties can validate those tokens. A resource server verifying access tokens
 against a cached copy of the tenant's JWKS still accepts one issued before the disable until it
 expires, at most 3600 seconds later
-([docs/admin-paths.md](docs/admin-paths.md#delete-admintenantstenant)).
+([the admin paths](apps/docs/content/en/reference/transcripts/admin-paths/delete-admintenantstenant.md)).
 `GET`/`PATCH /admin/tenants/{tenant}/settings` changes the same set through
 the admin API, by the same column names; the ranges the numeric ones accept
 are CHECK constraints either way, so neither door has a way past a policy
 the database enforces. `username_editable`, off by default, lets an
 administrator rename a subject's username through
 `PATCH /admin/tenants/{tenant}/subjects/{id}`, always under `If-Match`
-([docs/admin-paths.md](docs/admin-paths.md#renaming-a-username)); `sub` does
+([the admin paths](apps/docs/content/en/reference/transcripts/admin-paths/patch-subjectsid.md#renaming-a-username)); `sub` does
 not change, so sessions, refresh tokens and lockout counters survive it,
 and the old name stops signing in at once. The lifetimes a tenant issues
 with are settings too, each defaulting to the value the code used to fix:
@@ -213,7 +213,7 @@ unless `starttls` is on, and its `host` is held to ADR 0028's address rules
 before any connection —
 `ODUDU_ALLOW_PRIVATE_SMTP_HOSTS` re-admits the private ranges where a
 relay genuinely is internal, and loopback stays refused regardless. See
-[the address verification section of docs/request-paths.md](docs/request-paths.md#address-verification)
+[the address verification section of the request paths](apps/docs/content/en/reference/transcripts/request-paths/path-a-as-a-confidential-client.md#address-verification)
 for that walkthrough, captured message included.
 
 `registration_allowed` now has a reader: `GET`/`POST
@@ -224,7 +224,7 @@ When the tenant's `verify_email` is also on, a self-registered address
 cannot complete a login until it is verified: no authorization code is
 issued, which is the property that made verification ship before
 registration rather than alongside it. See
-[the self-registration section of docs/request-paths.md](docs/request-paths.md#self-registration)
+[the self-registration section of the request paths](apps/docs/content/en/reference/transcripts/request-paths/self-registration.md)
 for the walkthrough.
 
 `reset_password_allowed` now has a reader too: `GET`/`POST
@@ -241,7 +241,7 @@ one reset also retires every other outstanding link that can set the
 subject's password — reset links, and required-actions links naming
 `update-password` — as does any other way the password is set, and turning `reset_password_allowed` off closes redemption as
 well as the request form.
-See [the password reset section of docs/request-paths.md](docs/request-paths.md#password-reset)
+See [the password reset section of the request paths](apps/docs/content/en/reference/transcripts/request-paths/password-reset.md)
 for the walkthrough.
 
 A tenant's `otp_required` turns TOTP into a real second factor. It defaults
@@ -259,7 +259,7 @@ used twice. A two-factor login's ID token carries `amr: ["otp", "pwd"]` and
 `acr: "2"`. Turning it on is
 `odudu seed tenant --name <tenant> --set otp_required=true`, the same command
 the account-lifecycle settings above use.
-See [the TOTP section of docs/request-paths.md](docs/request-paths.md#two-factor-authentication-with-totp)
+See [the TOTP section of the request paths](apps/docs/content/en/reference/transcripts/request-paths/two-factor-authentication-with-totp.md)
 for the walkthrough.
 
 **Enrolling a TOTP authenticator also asks for ten recovery codes**, because a
@@ -315,7 +315,7 @@ completes for a subject who holds a TOTP and no unspent code owes a
 set once, so a subject enrolled before codes existed, or whose set was revoked
 without a new one asked for, is prompted. Both removals mail the subject at
 the address on file, saying nothing a stranger could use
-([docs/admin-paths.md](docs/admin-paths.md#delete-subjectsidrecovery-codes)).
+([the admin paths](apps/docs/content/en/reference/transcripts/admin-paths/delete-subjectsidrecovery-codes.md)).
 
 **A subject can also enrol a passkey.** A pending `configure-passkey`
 required action renders a page that calls `navigator.credentials.create()`
@@ -400,8 +400,8 @@ answers whether the account is locked now, until when and after how many
 failures, `DELETE` on the same path clears it at once, and
 `POST …/subjects/{id}/password` issues a one-time
 password, shown once, for a subject who has lost theirs
-([docs/admin-paths.md](docs/admin-paths.md#delete-subjectsidlockout)).
-See [the brute-force section of docs/request-paths.md](docs/request-paths.md#brute-force-lockout)
+([the admin paths](apps/docs/content/en/reference/transcripts/admin-paths/delete-subjectsidlockout.md)).
+See [the brute-force section of the request paths](apps/docs/content/en/reference/transcripts/request-paths/brute-force-lockout.md)
 for the walkthrough.
 
 **What the lockout cannot see is answered by a per-origin throttle.** One
@@ -474,7 +474,7 @@ ADR 0023's amendment says why that gap is accepted rather than closed.
 This limiter is per instance for the same reason the throttle above is,
 which is likewise unshown here for want of a second replica; [the
 walkthrough is in
-docs/request-paths.md](docs/request-paths.md#the-client_secret-budget-at-token).
+the request paths](apps/docs/content/en/reference/transcripts/request-paths/brute-force-lockout.md#the-client_secret-budget-at-token).
 
 `password_max_age_days` (default `0`, the feature off) ages a password out.
 An expired password is **not** refused: the login authenticates as it
@@ -536,7 +536,7 @@ without, not an SMTP round trip more. A refused message is retried with a
 doubling backoff and, once its attempts are spent, kept with its last error
 for an operator to read, which `GET /admin/tenants/{tenant}/mail` lists
 without the body or, to a caller without `view-users`, the full address
-([docs/admin-paths.md](docs/admin-paths.md#get-mail)). A transport failure therefore cannot reach a
+([the admin paths](apps/docs/content/en/reference/transcripts/admin-paths/get-mail.md)). A transport failure therefore cannot reach a
 caller or change a status: it happens after the response, and no code
 reachable from a request holds a mail transport at all.
 
@@ -667,8 +667,8 @@ session in the tenant — which is what stops it from being a way to continue
 as somebody else's account. `prompt=none` with no account resolvable
 answers `account_selection_required` rather than showing any UI, and
 choosing "use another account" falls through to the ordinary login form on
-the same parked request. See [docs/request-paths.md's "Choosing among
-sessions"](docs/request-paths.md#choosing-among-sessions) for a full
+the same parked request. See ["Choosing among
+sessions" in the request paths](apps/docs/content/en/reference/transcripts/request-paths/the-branches.md#choosing-among-sessions) for a full
 transcript.
 
 **A tenant can now end a session.** `GET`/`POST
@@ -702,7 +702,7 @@ as its `subject_token`, also read the token's client and its subject: a
 token whose client or subject has since been disabled is refused the same
 way — `invalid_token`, `{"active":false}`, `invalid_request` — for the rest
 of its lifetime, since disabling either ends nothing it holds
-([docs/request-paths.md](docs/request-paths.md#a-subject-disabled-after-a-token-was-issued-to-it)).
+([the request paths](apps/docs/content/en/reference/transcripts/request-paths/path-d-token-exchange.md#a-subject-disabled-after-a-token-was-issued-to-it)).
 A client can also end a
 grant deliberately with `POST
 /tenants/{tenant}/protocol/openid-connect/revoke` (RFC 7009) — revoking a
@@ -723,12 +723,12 @@ Back-channel logout ships too: a session that ends enqueues one Logout
 Token per client that registered a `backchannel_logout_uri`, and the
 `send-logouts` pass delivers them off the request path — see below. See
 [the logout section of
-docs/request-paths.md](docs/request-paths.md#rp-initiated-logout) for the
+the request paths](apps/docs/content/en/reference/transcripts/request-paths/rp-initiated-logout.md) for the
 walkthrough, and [its front-channel logout
-section](docs/request-paths.md#front-channel-and-back-channel-logout) for a real transcript
+section](apps/docs/content/en/reference/transcripts/request-paths/rp-initiated-logout.md#front-channel-and-back-channel-logout) for a real transcript
 of the framed page.
 
-> ### → [docs/request-paths.md](docs/request-paths.md)
+> ### → [the request paths](apps/docs/content/en/reference/transcripts/request-paths/index.md)
 >
 > **Every request this server answers, and every branch each one can take,
 > as commands you can paste.** Discovery, `/authorize`, the login form,
@@ -858,7 +858,7 @@ the server, so reloading the page after a server restart shows the current
 routes. Without `--profile swagger` the stack starts exactly as above. It is
 for reading only: "Try it out" cannot reach the admin API from another
 origin, because only the OpenAPI document is readable cross-origin — use
-`curl`, as [docs/admin-paths.md](docs/admin-paths.md) does, to call it.
+`curl`, as [the admin paths](apps/docs/content/en/reference/transcripts/admin-paths/index.md) does, to call it.
 
 **Everything on your host** — your own Postgres, no Docker at all. Needs one
 bootstrap statement, because the restricted serving role is normally created
@@ -905,7 +905,7 @@ Which of the three you picked changes one thing past starting the server:
 how the seed command is invoked, because the container runs a built bundle
 and a host run has the source. The guide defines both once, as a shell
 function every command in it then uses —
-[Pick how you are running it](docs/request-paths.md#pick-how-you-are-running-it).
+[Pick how you are running it](apps/docs/content/en/reference/transcripts/request-paths/bootstrap.md#pick-how-you-are-running-it).
 The endpoints are on `http://localhost:3000` either way.
 
 **Check the whole thing works**, including that row-level security is
@@ -939,7 +939,7 @@ has no count).
 `tests/lint/console-covers-admin-routes.test.ts`
 names each, so a new admin route with neither a screen nor a reason fails
 the build. The console's own sign-in, drafts and sections are described in
-[docs/console-paths.md](docs/console-paths.md) and
+[the console paths](apps/docs/content/en/reference/transcripts/console-paths/index.md) and
 [the P4d note](docs/phases/p4d.md).
 
 **Drive the console in a browser** against the same image:
@@ -1194,7 +1194,7 @@ access token's payload carries it:
 
 (Trimmed to the claims this section is about; `aud`, `iat`, `exp`, `jti`,
 `sid` and `grant_id` are on it too, and
-[docs/request-paths.md](docs/request-paths.md#roles-once-a-scope-reaches-it)
+[the request paths](apps/docs/content/en/reference/transcripts/request-paths/path-a-authorization-code-with-pkce.md#roles-once-a-scope-reaches-it)
 shows the whole payload.)
 
 The admin API reaches the same state without the CLI:
@@ -1204,7 +1204,7 @@ direct roles and group memberships, each under a capability ceiling that
 refuses authority the caller does not hold itself, and
 `GET /admin/tenants/{tenant}/subjects/:id/effective-roles` answers what they
 add up to, each role with the path it is held by
-([docs/admin-paths.md](docs/admin-paths.md)). Every route that mutates a
+([the admin paths](apps/docs/content/en/reference/transcripts/admin-paths/index.md)). Every route that mutates a
 subject, or a client (on the service account it authenticates as), is
 refused with `403` when that subject holds an admin capability the caller
 does not — so `manage-clients` alone cannot rotate the secret of a
@@ -1222,7 +1222,7 @@ assigned to the client and actually requested (`scope=` at `/authorize`, or
 `clients.full_scope_allowed`). `seed client` already assigns every
 tenant-default scope — `roles` and `groups` included — so the third
 condition is usually already met; `seed assign-scope` is for a scope added
-to the tenant afterwards. [docs/request-paths.md](docs/request-paths.md#roles-once-a-scope-reaches-it)
+to the tenant afterwards. [the request paths](apps/docs/content/en/reference/transcripts/request-paths/path-a-authorization-code-with-pkce.md#roles-once-a-scope-reaches-it)
 walks through all of it, including a client-scoped role qualified as
 `clientId:roleName`.
 
@@ -1237,7 +1237,7 @@ require an operator already.
 A tenant whose policy is `token` needs a way to mint the
 credential a registering client presents: `seed registration-token`, for an
 operator at the command line, and `POST /admin/tenants/{tenant}/registration-tokens`
-(`manage-clients`, [docs/admin-paths.md](docs/admin-paths.md)) for the admin
+(`manage-clients`, [the admin paths](apps/docs/content/en/reference/transcripts/admin-paths/index.md)) for the admin
 console. Both take the same two numbers — `--uses`/`uses` (a token is good
 for that many registrations, never zero) and `--ttl`/`ttl_seconds` in
 seconds — and mint through the one repository
@@ -1257,7 +1257,7 @@ itself — no JSON, no trailing newline content beyond it — so a shell can
 capture it directly: `TOKEN=$(odudu seed registration-token --tenant demo
 --uses 1 --ttl 3600)`. It is stored as its SHA-256 digest
 (`packages/domain-tenant/src/repository/client-registration-tokens.ts`,
-copied from the action-token pattern `docs/request-paths.md` already
+copied from the action-token pattern `apps/docs/content/en/reference/transcripts/request-paths/` already
 documents), found by that digest rather than compared, and spent by one
 `UPDATE … RETURNING` so two concurrent registrations against a one-use
 token cannot both win.
@@ -1511,7 +1511,7 @@ redeems only with an assertion from the holder of the key, which
 use; the command writes an audit row against the tenant and refuses one that does
 not exist). The admin API refuses such a token once its grant is revoked, its
 session has ended, or its client or its subject has been disabled
-([docs/admin-paths.md](docs/admin-paths.md#the-shape-of-it)). While the console
+([the admin paths](apps/docs/content/en/reference/transcripts/admin-paths/the-shape-of-it.md#the-shape-of-it)). While the console
 is on (`ODUDU_CONSOLE`, default `true`), the same client is also registered
 `${ODUDU_PUBLIC_BASE_URL}/console/auth/callback` as a redirect URI and
 `${ODUDU_PUBLIC_BASE_URL}/console/` as a post-logout redirect URI — by
@@ -1665,8 +1665,8 @@ must carry `Origin` equal to the origin of `ODUDU_PUBLIC_BASE_URL` and the
 header `X-Odudu-Console: 1`, or it is refused `403` before anything else
 runs.
 A transcript of each request, executed against a running stack, is in
-[`docs/console-paths.md`](docs/console-paths.md), beside
-[docs/admin-paths.md](docs/admin-paths.md).
+[the console paths](apps/docs/content/en/reference/transcripts/console-paths/index.md), beside
+[the admin paths](apps/docs/content/en/reference/transcripts/admin-paths/index.md).
 
 **One pass deletes everything that expires.** Every login writes an
 `authentication_sessions` row, every redemption an `authorization_codes`
@@ -1709,7 +1709,7 @@ leaving every client-visible response identical. The windows, the
 `ODUDU_RETENTION_*` variables that set them, and why the obvious
 implementation is wrong are in
 [ADR 0021](docs/adr/0021-retention-is-bounded-by-the-detection-window.md);
-[docs/request-paths.md](docs/request-paths.md#retention-what-odudu-reap-removes)
+[the request paths](apps/docs/content/en/reference/transcripts/request-paths/retention-what-odudu-reap-removes.md)
 has a pass with work to do. Running it from two places at once is safe —
 replicas on their own schedules included: the pass takes a Postgres
 advisory lock and whoever loses the tick skips it rather than duplicating
@@ -1740,7 +1740,7 @@ node --env-file=.env apps/server/src/main.ts send-mail
 {"ran":true,"sent":1,"failed":0}
 ```
 
-[docs/request-paths.md](docs/request-paths.md#sending-queued-mail-odudu-send-mail)
+[the request paths](apps/docs/content/en/reference/transcripts/request-paths/sending-queued-mail-odudu-send-mail.md)
 has the queue before and after that run. Unlike the retention pass it takes
 no lock: two senders that meet claim different messages (`FOR UPDATE SKIP
 LOCKED`) and both make progress. It needs `ODUDU_APP_DATABASE_URL` for the
@@ -1750,7 +1750,7 @@ mail is never sent at all**: no verification link, no reset link, and a
 growing table to show for it.
 
 It answers three things that are not a report of rows, and
-[says which each is](docs/request-paths.md#when-the-pass-refuses-or-finds-nothing-to-look-at):
+[says which each is](apps/docs/content/en/reference/transcripts/request-paths/retention-what-odudu-reap-removes.md#when-the-pass-refuses-or-finds-nothing-to-look-at):
 `{"ran":false,"reason":"no tenant was enumerated"}` on a database nobody has
 seeded yet, and — exiting non-zero — a refusal to run at all when
 `ODUDU_APP_DATABASE_URL` is unset or names a role that escapes row-level
@@ -1786,7 +1786,7 @@ it for a reason retrying will not fix — is abandoned rather than retried;
 `BACKCHANNEL_LOGOUT_MAX_ATTEMPTS` ceiling, which has no environment
 variable of its own.
 
-**[docs/request-paths.md](docs/request-paths.md) takes it from there** — what
+**[the request paths](apps/docs/content/en/reference/transcripts/request-paths/index.md) takes it from there** — what
 each of those tokens is for, what `/userinfo` does with them, how a refresh
 rotates, and every way each request above can be refused, with the response
 each refusal actually returns.
@@ -2001,8 +2001,8 @@ password policy, an account lockout and a per-origin throttle, each of which
 has an adversarial test behind it rather than a paragraph. What has not
 happened is a hardening pass over the whole: credentials are still seeded
 from a command line, no deployment has been reviewed end to end, and the full
-list of what each endpoint does not yet do is in
-[docs/request-paths.md](docs/request-paths.md). The notice at the top of this
+list of what each endpoint does not yet do is on
+[the roadmap](apps/docs/content/en/roadmap.md). The notice at the top of this
 file is not boilerplate.
 
 ## License

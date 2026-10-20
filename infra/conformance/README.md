@@ -641,15 +641,15 @@ fired. Every occurrence was individually confirmed from its own log, not
 sampled; the full breakdown, including which modules share a condition,
 is in [ADR 0031](../../docs/adr/0031-the-dynamic-op-plan-cannot-pass-code-only.md).
 
-| Condition                                                              | Occurrences | Cause                                                                                      |
-| ---------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------ |
-| `EnsureServerConfigurationSupportsPrivateKeyJwt`                       | 15          | **P3b**: `private_key_jwt` client authentication not implemented (`docs/request-paths.md`) |
-| `CheckIfAuthorizationEndpointError` (`invalid_request`)                | 11          | Mandatory PKCE — ADR 0016                                                                  |
-| `CheckIfAuthorizationEndpointError` (`request_uri_not_supported`)      | 2           | **P13**: `request_uri` refused (`docs/request-paths.md`)                                   |
-| `OIDCCCheckDiscEndpointResponseTypesSupportedDynamic`                  | 1           | `response_types_supported` lacks `id_token`/`token id_token` — ADR 0031                    |
-| `OIDCCCheckDiscEndpointGrantTypesSupportedDynamic`                     | 1           | `grant_types_supported` lacks `implicit` — ADR 0031                                        |
-| `CheckDiscEndpointRequestObjectSigningAlgValuesSupportedContainsRS256` | 1           | **P13** corollary: no request-object support, so the alg list is never advertised          |
-| `CheckDiscEndpointUserinfoSigningAlgValuesSupportedContainsRS256`      | 1           | **P3b** corollary: `/userinfo` never signs a response yet                                  |
+| Condition                                                              | Occurrences | Cause                                                                                                                          |
+| ---------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `EnsureServerConfigurationSupportsPrivateKeyJwt`                       | 15          | **P3b**: `private_key_jwt` client authentication not implemented (`apps/docs/content/en/reference/transcripts/request-paths/`) |
+| `CheckIfAuthorizationEndpointError` (`invalid_request`)                | 11          | Mandatory PKCE — ADR 0016                                                                                                      |
+| `CheckIfAuthorizationEndpointError` (`request_uri_not_supported`)      | 2           | **P13**: `request_uri` refused (`apps/docs/content/en/reference/transcripts/request-paths/`)                                   |
+| `OIDCCCheckDiscEndpointResponseTypesSupportedDynamic`                  | 1           | `response_types_supported` lacks `id_token`/`token id_token` — ADR 0031                                                        |
+| `OIDCCCheckDiscEndpointGrantTypesSupportedDynamic`                     | 1           | `grant_types_supported` lacks `implicit` — ADR 0031                                                                            |
+| `CheckDiscEndpointRequestObjectSigningAlgValuesSupportedContainsRS256` | 1           | **P13** corollary: no request-object support, so the alg list is never advertised                                              |
+| `CheckDiscEndpointUserinfoSigningAlgValuesSupportedContainsRS256`      | 1           | **P3b** corollary: `/userinfo` never signs a response yet                                                                      |
 
 Plus 3 self-skips (2 `subject_types_supported` has no `pairwise`, ADR
 0031; 1 `id_token_signing_alg_values_supported` has no `none`,
@@ -685,7 +685,7 @@ result.
 
 **No defect was found in this phase's work.** Every failure and
 self-skip traces to a decision already on record — ADR 0016, ADR 0031, or
-`docs/request-paths.md`'s existing P3b/P13/P4 placements.
+`apps/docs/content/en/reference/transcripts/request-paths/`'s existing P3b/P13/P4 placements.
 
 **The unit that makes a multi-module plan's run legible is the condition,
 not the module.** A module can fail several conditions at once, and every

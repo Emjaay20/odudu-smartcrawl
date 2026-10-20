@@ -7,8 +7,8 @@ turned out to be wrong. The phase's own argument is in
 [its spec](../archive/specs/2026-09-26-p4e-audit-events-design.md) and
 [ADR 0037](../adr/0037-refusal-rows-are-bounded-by-the-principal-they-name.md);
 what it built is shown door by door in
-[docs/request-paths.md](../request-paths.md) and, for the admin rows, in
-[docs/admin-paths.md](../admin-paths.md).
+[the request paths](../../apps/docs/content/en/reference/transcripts/request-paths/index.md) and, for the admin rows, in
+[the admin paths](../../apps/docs/content/en/reference/transcripts/admin-paths/index.md).
 
 Two shapes recur below. **An audit write that changes the thing it
 records** — an extra statement, an aborted transaction, a lock — three
@@ -98,7 +98,7 @@ had no foreign-tenant probe, which §12 requires of every one.
 
 ## Refusals the vocabulary never named
 
-The closing pass read `docs/request-paths.md`'s "What is not implemented"
+The closing pass read `apps/docs/content/en/roadmap.md`'s "What is not implemented"
 and found two items still addressed to this phase. One was merely stale —
 it said nothing wrote `credential` rows, after they were written. The other
 was true: a refused credential or session change writes no row. Spec §5

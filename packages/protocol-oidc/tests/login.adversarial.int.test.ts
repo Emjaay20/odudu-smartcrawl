@@ -789,7 +789,7 @@ describe('[OIDC-CORE-3.1.2.1-09] an id_token_hint names who the response is abou
 
     // The end-user the hint actually names now signs in against the exact
     // same auth_session_id, and it still works — the transcript
-    // docs/request-paths.md's "The login POST" section documents.
+    // apps/docs/content/en/reference/transcripts/request-paths/'s "The login POST" section documents.
     const retry = await submitLogin({ ...GOOD, tenantName, csrf: authSessionId });
     expect(retry.statusCode).toBe(302);
     const location = new URL(locationHeader(retry));

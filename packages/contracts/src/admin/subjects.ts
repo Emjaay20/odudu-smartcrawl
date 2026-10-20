@@ -138,7 +138,7 @@ export const createSubjectRequestSchema = z.object({
 export type CreateSubjectRequest = z.infer<typeof createSubjectRequestSchema>;
 
 // `username` is accepted only where the tenant's `username_editable` is on,
-// and then only under `If-Match` (docs/admin-paths.md).
+// and then only under `If-Match` (apps/docs/content/en/reference/transcripts/admin-paths/).
 export const amendSubjectRequestSchema = z.object({
   username: usernameShapeSchema.optional(),
   email: z.string().min(1).nullable().optional(),

@@ -59,7 +59,7 @@ landed, which is the document doing its job. The hardcoded-pages bullet
 also already named the consent page alongside sign-in and error, correctly,
 since that bullet was never about consent's existence, only its theming
 (P4b's). Two markers were still wrong, both in `README.md`, neither in
-`docs/request-paths.md`: the Status section still said "no consent
+`apps/docs/content/en/reference/transcripts/request-paths/`: the Status section still said "no consent
 screen... P3a onwards" after P3a shipped one, and the dynamic-registration
 paragraph's parenthetical — "`seed client` is the only way to create a
 client in either case" — was false for the `open` and `token` policy cases
@@ -67,7 +67,7 @@ the same paragraph had just described, the exact scenario dynamic
 registration exists to serve. Both corrected.
 
 **Bare `P3`.** `grep -rnE "\bP3\b" README.md docs/ --include="*.md"`
-returned nothing in `README.md` or `docs/request-paths.md` (the test-backed
+returned nothing in `README.md` or `apps/docs/content/en/reference/transcripts/request-paths/` (the test-backed
 files) or in `docs/protocols/`. Two ADRs still carried it in prose written
 before the P3a/P3b split (0016, 0017) — reasoning text, not a claim about a
 specific phase's criterion, so low-stakes, but bare `P3` all the same;
@@ -179,7 +179,7 @@ each time. Accepted, with the reasoning in ADR 0023's amendment so it is
 not reopened as an oversight.
 
 **A claim three documents overstated, found reading the diff rather than
-the report:** `docs/request-paths.md` said a wrong secret "is refused
+the report:** `apps/docs/content/en/reference/transcripts/request-paths/` said a wrong secret "is refused
 before it is even checked against the stored hash," but the limiter is
 consulted in the `catch` **after** Argon2id has already run — the
 over-budget attempt pays the hash. Unlike the per-origin throttle (an
@@ -303,7 +303,7 @@ Widening the contract also surfaced that `<title>` needed escaping it had
 never had — correct for a general-purpose helper, since a later page
 interpolating a tenant or client name into a title would otherwise be
 injectable — but it changed served bytes for any apostrophe-bearing title.
-Seven transcripts in `docs/request-paths.md` carried exactly that
+Seven transcripts in `apps/docs/content/en/reference/transcripts/request-paths/` carried exactly that
 apostrophe ("Can't create this account" ×5, "Can't reset your password"
 ×2); all seven were re-observed against a live server rather than
 hand-edited, and a reviewer judged the re-run credible against the
@@ -362,7 +362,7 @@ resolved below rather than left to be re-discovered.
 - _Task 11_ — the minor named a transcript citing ADR 0014 (fixed compose
   passwords) to justify pasting a live token verbatim. Checked against the
   current document: no such citation exists in
-  `docs/request-paths.md`'s registration-token section as written — the
+  `apps/docs/content/en/reference/transcripts/request-paths/`'s registration-token section as written — the
   concern does not reproduce against the merged text. No change needed.
 
 **Spun off as immediate follow-ups, not deferred to a phase**:

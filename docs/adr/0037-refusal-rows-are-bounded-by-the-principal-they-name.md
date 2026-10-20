@@ -160,7 +160,7 @@ refused while it is parsed, before any client is known, and writes nothing.
 
 A caller sets `request_id` with `x-request-id` whatever `ODUDU_TRUST_PROXY`
 says, because a proxy in front and every transcript in
-`docs/request-paths.md` rely on naming their own.
+`apps/docs/content/en/reference/transcripts/request-paths/` rely on naming their own.
 `ip` is the evidence, and only a trusted proxy can change it. So a
 `request_id` join between rows is reliable only for requests an operator
 made or that came through a proxy it trusts; for anyone else's it shows

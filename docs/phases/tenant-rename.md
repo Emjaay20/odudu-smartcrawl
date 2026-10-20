@@ -135,7 +135,7 @@ the pinned one answers a question nobody asked.
 
 ## Re-capturing a transcript finds more than it was run to find
 
-`docs/request-paths.md` promises that every command in it was executed and
+`apps/docs/content/en/reference/transcripts/request-paths/` promises that every command in it was executed and
 every response is real output, so it was re-captured against a running stack
 rather than substituted. That turned up **eleven** discrepancies, and only
 six were this work's:
