@@ -53,6 +53,12 @@ const FORMS: { form: string; input: string; pages: string; image: string }[] = [
     image: 'See [the first part\nand the second](/docs/reference/generated/other/#x) there.',
   },
   {
+    form: 'a stray bracket-paren in plain prose that is not a link',
+    input: 'Index a](./other.md) is not a link, nor is f(x)](/guides/).',
+    pages: 'Index a](./other.md) is not a link, nor is f(x)](/guides/).',
+    image: 'Index a](./other.md) is not a link, nor is f(x)](/guides/).',
+  },
+  {
     form: 'a destination that only looks like a link inside inline code',
     input: 'Write `[a](./other.md)` to link.',
     pages: 'Write `[a](./other.md)` to link.',

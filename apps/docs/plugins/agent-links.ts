@@ -62,7 +62,18 @@ function maskCode(line: string): string {
   return line.replace(INLINE_CODE, (span) => '\u0000'.repeat(span.length));
 }
 
-function mapLine(line: string, replace: (raw: string) => string): string {
+// Whether a `[` is still waiting for its `]` at the end of a line.
+function endsInsideLinkText(masked: string): boolean {
+  return masked.lastIndexOf('[') > masked.lastIndexOf(']');
+}
+
+// A target counts only after link text: a `[` open before it on its line, or
+// left open by the line above in the same paragraph.
+function followsLinkText(before: string, continues: boolean): boolean {
+  return endsInsideLinkText(before) || (continues && !before.includes(']'));
+}
+
+function mapLine(line: string, replace: (raw: string) => string, continues: boolean): string {
   const defined = line.replace(
     DEFINITION,
     (_, open: string, destination: string) => `${open}${inBrackets(destination, replace)}`,
@@ -70,6 +81,7 @@ function mapLine(line: string, replace: (raw: string) => string): string {
   const masked = maskCode(defined);
   const edits: Edit[] = [];
   for (const match of masked.matchAll(LINK)) {
+    if (!followsLinkText(masked.slice(0, match.index), continues)) continue;
     const start = match.index + (match[1] ?? '').length;
     edits.push({ start, end: start + (match[2] ?? '').length });
   }
@@ -91,12 +103,20 @@ function mapLine(line: string, replace: (raw: string) => string): string {
 // Applies `replace` to the target of every link outside code.
 function mapLinks(markdown: string, replace: (raw: string) => string): string {
   let fence: string | null = null;
+  let open = false;
   return markdown
     .split('\n')
     .map((line) => {
       const marker = FENCE.exec(line)?.[1];
       if (fence === null) {
-        if (marker === undefined) return mapLine(line, replace);
+        if (marker === undefined) {
+          const masked = maskCode(line);
+          const result = mapLine(line, replace, open);
+          open =
+            line.trim() !== '' && (endsInsideLinkText(masked) || (open && !masked.includes(']')));
+          return result;
+        }
+        open = false;
         fence = marker;
         return line;
       }

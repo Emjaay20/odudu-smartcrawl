@@ -26,7 +26,7 @@ function isServerRouteRow(file: string, line: string): boolean {
 }
 
 // These pages record the server's own routes, `/docs/` among them, which are
-// not addresses on this site.
+// not addresses on this site; only a Markdown link in their prose is held to it.
 const TRANSCRIPTS = ['reference/protocol/', 'reference/admin-api-paths/', 'admin-console/paths/'];
 
 function isTranscript(file: string): boolean {
@@ -35,6 +35,19 @@ function isTranscript(file: string): boolean {
     .split(path.sep)
     .join('/');
   return TRANSCRIPTS.some((directory) => relative.startsWith(directory));
+}
+
+const ABSOLUTE = /(?:^|[\s"'`(=])\/(?:odudu|docs)\//u;
+const ABSOLUTE_LINK = /\]\(\/(?:odudu|docs)\//u;
+
+// 0-based indexes of the lines that name an absolute site path.
+export function absolutePathLines(text: string, transcript: boolean): number[] {
+  let fenced = false;
+  return text.split('\n').flatMap((line, index) => {
+    if (/^\s*(?:```|~~~)/u.test(line)) fenced = !fenced;
+    if (!transcript) return ABSOLUTE.test(line) ? [index] : [];
+    return !fenced && ABSOLUTE_LINK.test(line) ? [index] : [];
+  });
 }
 
 describe('internal links', () => {
@@ -64,16 +77,21 @@ describe('internal links', () => {
       path.join(DOCS_ROOT, 'sidebars.ts'),
     ].filter((file) => /\.(?:md|mdx|tsx?|css)$/u.test(file));
     const offenders = files.flatMap((file) =>
-      readFileSync(file, 'utf8')
-        .split('\n')
-        .flatMap((line, index) =>
-          /(?:^|[\s"'`(=])\/(?:odudu|docs)\//u.test(line) &&
-          !isServerRouteRow(file, line) &&
-          !isTranscript(file)
-            ? [`${path.relative(DOCS_ROOT, file)}:${String(index + 1)}`]
-            : [],
-        ),
+      absolutePathLines(readFileSync(file, 'utf8'), isTranscript(file))
+        .filter(
+          (index) => !isServerRouteRow(file, readFileSync(file, 'utf8').split('\n')[index] ?? ''),
+        )
+        .map((index) => `${path.relative(DOCS_ROOT, file)}:${String(index + 1)}`),
     );
     expect(offenders).toEqual([]);
+  });
+});
+
+describe('the absolute path check on a transcript page', () => {
+  it('ignores a route named in a fence or in prose, and catches a link', () => {
+    const text =
+      'The route is `/docs/` and /docs/ again.\n```\nGET /docs/\n```\nSee [x](/docs/y/).';
+    expect(absolutePathLines(text, true)).toEqual([4]);
+    expect(absolutePathLines(text, false)).toEqual([0, 2, 4]);
   });
 });
