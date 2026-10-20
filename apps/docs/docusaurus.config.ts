@@ -19,8 +19,24 @@ const DESCRIPTION =
 
 const image = process.env.DOCS_TARGET === 'image';
 
+type PrismTheme = typeof themes.github;
+
+function withSurface(theme: PrismTheme): PrismTheme {
+  return { ...theme, plain: { ...theme.plain, backgroundColor: 'var(--code-surface)' } };
+}
+
 const preset: Preset.Options = {
-  docs: { path: CONTENT, routeBasePath: '/', sidebarPath: './sidebars.ts' },
+  docs: {
+    path: CONTENT,
+    routeBasePath: '/',
+    sidebarPath: './sidebars.ts',
+    // A directory's index is the page its category links to, so it is not
+    // also listed among the category's items.
+    async sidebarItemsGenerator({ defaultSidebarItemsGenerator, ...args }) {
+      const items = await defaultSidebarItemsGenerator(args);
+      return items.filter((item) => !(item.type === 'doc' && item.id.endsWith('/index')));
+    },
+  },
   blog: false,
   pages: { path: image ? 'src/image-pages' : 'src/pages' },
   sitemap: image ? false : { ignorePatterns: ['**/search/**'] },
@@ -56,7 +72,12 @@ const themeConfig: Preset.ThemeConfig = {
     // Read when the site is built: a build after New Year changes the year.
     copyright: `© ${String(new Date().getUTCFullYear())} Odudu · AGPL-3.0`,
   },
-  prism: { theme: themes.github, darkTheme: themes.dracula },
+  // The block's own background is a variable, so the scroll hint in custom.css
+  // can fade into exactly the colour the theme paints.
+  prism: {
+    theme: withSurface(themes.github),
+    darkTheme: withSurface(themes.dracula),
+  },
   colorMode: { respectPrefersColorScheme: true },
 };
 

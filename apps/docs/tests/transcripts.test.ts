@@ -10,7 +10,11 @@ const BASES: Record<Target, string> = { pages: PAGES_BASE, image: '/docs/' };
 
 // The transcripts are captured output. A page that renders one differently
 // from its source shows a reader bytes the server never sent.
-const DIRECTORIES = ['reference/protocol', 'reference/admin-api-paths', 'admin-console/paths'];
+const DIRECTORIES = [
+  'reference/transcripts/request-paths',
+  'reference/transcripts/admin-paths',
+  'reference/transcripts/console-paths',
+];
 
 function pagesIn(directory: string): string[] {
   const order: unknown = JSON.parse(

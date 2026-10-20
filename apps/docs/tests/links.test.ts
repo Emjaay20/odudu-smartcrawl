@@ -27,7 +27,7 @@ function isServerRouteRow(file: string, line: string): boolean {
 
 // These pages record the server's own routes, `/docs/` among them, which are
 // not addresses on this site; only a Markdown link in their prose is held to it.
-const TRANSCRIPTS = ['reference/protocol/', 'reference/admin-api-paths/', 'admin-console/paths/'];
+const TRANSCRIPTS = ['reference/transcripts/'];
 
 function isTranscript(file: string): boolean {
   const relative = path

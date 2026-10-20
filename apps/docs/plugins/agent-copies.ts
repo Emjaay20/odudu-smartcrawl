@@ -6,6 +6,7 @@ import llms from 'docusaurus-plugin-llms';
 import { MACHINE_READABLE_REFERENCES } from '../nav';
 import { parseEntries } from './agent-entries';
 import { rewriteLinks, type LinkTarget } from './agent-links';
+import { dropRepeatedTitle } from './agent-title';
 import { appendReferences } from './agent-references';
 
 export interface AgentCopiesOptions {
@@ -57,10 +58,11 @@ export default function agentCopies(
       });
 
       const sources = new Map(copies.map(({ copy }) => [copy, sourceOf(docsRoot, copy)]));
-      for (const { copy } of copies) {
+      for (const { copy, title } of copies) {
         const file = path.join(outDir, copy);
         const source = sources.get(copy) ?? '';
-        await writeFile(file, rewriteLinks(await readFile(file, 'utf8'), source, target));
+        const text = dropRepeatedTitle(await readFile(file, 'utf8'), title, 1);
+        await writeFile(file, rewriteLinks(text, source, target));
       }
 
       const fullFile = path.join(outDir, 'llms-full.txt');
@@ -79,7 +81,11 @@ export default function agentCopies(
             `llms-full.txt section ${String(index)} is not ${entry?.title ?? 'a page'}`,
           );
         }
-        return rewriteLinks(section, sources.get(entry.copy) ?? '', target);
+        return rewriteLinks(
+          dropRepeatedTitle(section, entry.title, 2),
+          sources.get(entry.copy) ?? '',
+          target,
+        );
       });
       await writeFile(fullFile, `${preamble}\n\n${rewritten.join('\n\n---\n\n')}`);
 

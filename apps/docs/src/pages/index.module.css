@@ -21,11 +21,6 @@
   padding-top: var(--space-6);
 }
 
-.heading {
-  font-size: var(--type-20);
-  margin-bottom: var(--space-4);
-}
-
 @media (min-width: 997px) {
   .hero {
     padding: calc(var(--space-8) * 2) 0;

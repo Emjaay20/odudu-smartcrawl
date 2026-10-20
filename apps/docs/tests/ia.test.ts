@@ -1,9 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { SECTIONS } from '#docs/nav.ts';
+import { JOURNEYS, SECTIONS } from '#docs/nav.ts';
 import { PAGES_BASE } from '#docs/site.config.ts';
-import { SECTION_ITEMS } from '#docs/sidebars.ts';
+import { SIDEBAR_ITEMS } from '#docs/sidebars.ts';
 import {
   DOCS_ROOT,
   distDir,
@@ -28,7 +28,25 @@ const SECTION_ORDER = [
   'Contributing',
 ];
 
+const SIDEBAR_ORDER = [
+  'Start here',
+  'Guides',
+  'Concepts',
+  'Admin console',
+  'Operating Odudu',
+  'Reference',
+  'Security',
+  'Contributing',
+];
+
 const CONTENT = path.join(DOCS_ROOT, 'content/en');
+
+function sidebarLinks(page: string): string[] {
+  const $ = load(path.join(distDir('pages'), page));
+  return $('.theme-doc-sidebar-menu a.menu__link')
+    .map((_, element) => $(element).attr('href'))
+    .get();
+}
 
 describe('the information architecture', () => {
   it('has the nine sections, in the order the design gives', () => {
@@ -36,12 +54,33 @@ describe('the information architecture', () => {
   });
 
   it('lists the sections in the sidebar of a built page, in order', () => {
-    const $ = load(path.join(distDir('pages'), 'guides/index.html'));
-    const hrefs = $('.theme-doc-sidebar-menu a.menu__link')
-      .map((_, element) => $(element).attr('href'))
-      .get();
-    expect(hrefs).toEqual(SECTIONS.map((section) => `${PAGES_BASE}${section.route}`));
-    expect(SECTION_ITEMS.map((item) => item.label)).toEqual(SECTION_ORDER);
+    expect(sidebarLinks('concepts/index.html')).toEqual(
+      SECTIONS.map((section) => `${PAGES_BASE}${section.route}`),
+    );
+    expect(
+      SIDEBAR_ITEMS.map((item) => (typeof item === 'object' && 'label' in item ? item.label : '')),
+    ).toEqual(SIDEBAR_ORDER);
+  });
+
+  it('opens the guides to the journeys, in order, and no further', () => {
+    const links = sidebarLinks('guides/index.html');
+    const journeys = JOURNEYS.map((journey) => `${PAGES_BASE}${journey.route}`);
+    const start = links.indexOf(`${PAGES_BASE}guides/`);
+
+    expect(links.slice(start + 1, start + 1 + journeys.length)).toEqual(journeys);
+  });
+
+  it('keeps the recorded transcripts out of the navigation until a reader is inside them', () => {
+    const outside = [
+      ...sidebarLinks('reference/index.html'),
+      ...sidebarLinks('guides/index.html'),
+    ].filter(
+      (href) =>
+        href.startsWith(`${PAGES_BASE}reference/transcripts/`) &&
+        href !== `${PAGES_BASE}reference/transcripts/`,
+    );
+
+    expect(outside).toEqual([]);
   });
 
   it('gives every section at least one page that exists', () => {
@@ -73,11 +112,19 @@ describe('the information architecture', () => {
         }
       }
     }
-    const tooFar = [...pages.keys()].filter((route) => (depth.get(route) ?? Infinity) > 2);
+    // A recorded transcript is looked up from a group index the reference links,
+    // so it is one click further than the sections' own pages.
+    const transcripts = `${PAGES_BASE}reference/transcripts/`;
+    const tooFar = [...pages.keys()].filter(
+      (route) => (depth.get(route) ?? Infinity) > (route.startsWith(transcripts) ? 3 : 2),
+    );
     expect(tooFar).toEqual([]);
     const homeLinks = pages.get(PAGES_BASE) ?? [];
     for (const section of SECTIONS) {
       expect(homeLinks, section.label).toContain(`${PAGES_BASE}${section.route}`);
+    }
+    for (const journey of JOURNEYS) {
+      expect(homeLinks, journey.label).toContain(`${PAGES_BASE}${journey.route}`);
     }
   });
 

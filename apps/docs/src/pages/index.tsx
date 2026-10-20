@@ -3,12 +3,12 @@ import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import { landingJsonLd } from '@site/seo';
-import SectionGrid from '@site/src/components/SectionGrid';
+import HomeMap from '@site/src/components/HomeMap';
 import type { ReactNode } from 'react';
 import styles from '@site/src/pages/index.module.css';
 
 // A plain home until the landing page replaces it: the name, the one
-// sentence, the first step and every section.
+// sentence, the first step and then the way through the documentation.
 export default function Home(): ReactNode {
   const { siteConfig } = useDocusaurusContext();
   return (
@@ -34,10 +34,9 @@ export default function Home(): ReactNode {
         </div>
       </header>
       <main className="container">
-        <section className={styles.sections}>
-          <h2 className={styles.heading}>Documentation</h2>
-          <SectionGrid />
-        </section>
+        <div className={styles.sections}>
+          <HomeMap />
+        </div>
       </main>
     </Layout>
   );

@@ -1,0 +1,663 @@
+---
+title: How the transcripts are captured and checked
+description: How the recorded request, admin and console transcripts were captured against running stacks, and the tests that keep them true to the server.
+---
+
+# How the transcripts are captured and checked
+
+The transcripts under [Reference](../reference/transcripts/index.md) are real
+output. This page holds what a contributor needs to know about how each set was
+captured: the stacks, the commits, the conventions that keep a transcript honest, and
+the tests that read them.
+
+## Request path transcripts
+
+Every endpoint Odudu serves today, what a client does with each answer, and
+what happens on each way a request can go wrong. Every command below was run
+and every response is the one that came back. Unless a block says otherwise
+the run was against the compose stack (`infra/docker/compose.yaml`); the
+bootstrap and a full authorization-code exchange were additionally run in
+each of the other two ways of running the server, which
+[Pick how you are running it](../reference/transcripts/request-paths/bootstrap.md#pick-how-you-are-running-it) sets out.
+
+Every command is written against `http://localhost:3000`, the port the compose
+file publishes by default. A block that was captured on a stack publishing
+another port says so in the command itself, and the port in its output is that
+stack's: the blocks re-run for the sign-in refusal message, the passkey
+button's spacing and the throttle page ran on the project `odudu-17h` on port
+`3171`, built from the branch commit `a92240a1` plus the documentation, started
+with `ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000` unless a
+block says otherwise.
+
+The `content-security-policy` lines in these guides gained `style-src 'self';
+font-src 'self'; img-src 'self'` when pages began linking a same-origin
+stylesheet (ADR 0029's amendment). Each page kind was checked against a live
+stack on that change (the authorization form, an error page, the logout
+confirmation, the console shell), and `tests/docs/page-csp-transcripts.test.ts`
+holds every recorded line in all three guides to what `pageHeaders` sends.
+
+Every page document in the three guides now shows the shared shell (the
+Instrument stylesheet, the mark and one `<main>`), and every page response
+carries `x-content-type-options: nosniff`. That was applied to the recorded
+documents by wrapping each in the shell, and to each `content-length` by the
+shell's 490 extra bytes, which a live response confirmed (the unknown-client
+error page, 704 bytes, on the project `odudu-p4g-12`); those guides were not
+replayed end to end. The test above holds the headers of every recorded block,
+`nosniff` included. Every page response also carries `content-language`, the
+negotiated page language (`en` in every recorded block, since only `en` is
+shipped); it was added to the recorded blocks by hand, after `nosniff` where
+`pageHeaders` places it, and a live login-page response on the project
+`odudu-p4g-13b` confirmed its value and position.
+
+A page follows the colour the person chose in the console. The console writes
+the cookie `odudu-theme` (`light` or `dark`; it expires it for `system`), and
+every page's `<html>` names that value in `data-theme` and nothing else: with no
+cookie, or one holding anything but exactly `light` or `dark`, there is no
+attribute and the page follows the operating system, so the recorded documents
+below are the bytes served without it. The cookie is a preference, not a secret
+or an identifier; the pages are `no-store`, so no `Vary` is needed. Two cases
+give no theme that a reader might expect to: the name present twice (a cookie
+planted at another path or domain cannot choose), and a `Cookie` header over
+8,192 characters (the cap that bounds what a public page parses). Captured
+against the project `odudu-p4g-theme`, a new stack with the tenant `acme`
+seeded and nothing else:
+
+```
+$ U=http://localhost:3180/tenants/acme/protocol/openid-connect/logout
+$ PAD=$(printf 'x%.0s' $(seq 1 9000))
+$ curl -s "$U" | grep -m1 "<html"
+<html lang="en" dir="ltr">
+$ curl -s -H 'Cookie: odudu-theme=dark' "$U" | grep -m1 "<html"
+<html lang="en" dir="ltr" data-theme="dark">
+$ curl -s -H 'Cookie: odudu-theme=LIGHT' "$U" | grep -m1 "<html"
+<html lang="en" dir="ltr">
+$ curl -s -H 'Cookie: odudu-theme=x"><script>' "$U" | grep -m1 "<html"
+<html lang="en" dir="ltr">
+$ curl -s -H 'Cookie: odudu-theme=light; odudu-theme=dark' "$U" | grep -m1 "<html"
+<html lang="en" dir="ltr">
+$ curl -s -H "Cookie: odudu-theme=dark; pad=$PAD" "$U" | grep -m1 "<html"
+<html lang="en" dir="ltr">
+$ curl -s -H "Cookie: pad=$(printf 'x%.0s' $(seq 1 3000)); odudu-theme=dark" "$U" | grep -m1 "<html"
+<html lang="en" dir="ltr" data-theme="dark">
+```
+
+The text of the server's own pages now comes from a message catalogue, and a
+value somebody else wrote (a client's name, an account's name, a scope label,
+an error description) is wrapped in `<bdi>` after it is escaped. Three things
+changed in the recorded documents as a result: those values sit inside
+`<bdi>…</bdi>`, an apostrophe in a page's own text is `&#39;` (`Can&#39;t
+continue`) where it was a bare `'`, and the passkey script reads its three
+sentences from `data-` attributes of its form instead of holding them. The
+login page with and without a refusal, the error pages (restart link, no row,
+unknown client, `415`), the logout confirmation, `Can&#39;t sign out`, the
+two consent screens (the second with its client registered through dynamic
+registration), the account chooser and the unverified-email page were
+each run again on the project `odudu-p4g-14`; every changed line and every
+changed `content-length` in the recorded blocks is the byte-for-byte result of
+that change, checked against those runs, and the blocks were not replayed end
+to end. The two consent screens in [docs/admin-paths.md](../reference/transcripts/admin-paths/index.md) were
+re-run the same way on that project, and `tests/docs/page-documents-transcripts.test.ts`
+now renders each recorded consent, chooser, error, logout and throttle body back
+through the real renderer. Every sentence from the catalogue sits in `<bdi>` on
+the error page too, not only text somebody typed, since the page cannot tell them
+apart. The sign-in refusal comparison under
+[A refused login says so](../reference/transcripts/request-paths/path-a-authorization-code-with-pkce.md#a-refused-login-says-so) is a fresh run.
+
+The pages then took one card width and a visual pass, which
+[docs/phases/p4g.md](https://github.com/wizzywit/odudu/blob/main/docs/phases/p4g.md#server-pages-the-visual-pass) records. In the
+recorded documents that is: the shell opens with `<p class="brand">`, the mark
+beside the word `odudu`; a page that knows its tenant puts its `<h1>` in
+`<header class="intro">`, with the tenant in `<p class="tenant">` and, on a
+sign-in form whose parked request names a client, the line
+`to continue to <bdi>…</bdi>`; a refusal is `<p class="alert" role="alert">`;
+the update-password violations sit in `<div class="alert" role="alert">`; and
+consent's Deny, the chooser's buttons and the passkey button carry classes. That
+was applied to the 53 recorded documents and their `content-length` lines by a
+script over the documents as they stood, not by replaying the guides end to end.
+Seven runs on the project `odudu-p4g-vis` were compared line for line with the
+matching recorded document, session ids, ports, secrets and nonces masked: the
+sign-in form, the refused sign-in, the TOTP enrolment, the recovery codes, the code
+form with and without a refusal, and the update-password page, whose tenant name is
+the only difference. The console's sign-in form names its client `Odudu
+administration`, the name of the client whose `client_id` is `odudu-admin`.
+
+The authn-flows pages read their text from a catalogue of their own too. The
+two that changed in these recordings are the authenticator enrolment page and
+the recovery-codes page: the key URI, the key and each recovery code are
+wrapped in `<bdi dir="ltr">` so a right-to-left page does not reorder them, which
+adds 42 bytes to the first and 210 to the second (`content-length` 1568 to 1778
+and 1656 to 1866). The enrolment page, a wrong code, and the recovery codes
+page that follows were run on the project `odudu-p4g-15` and the blocks edited
+to match (the codes, secret and session id in the blocks are those of the
+earlier run, not that one); the change-password pages are byte-for-byte what
+they were. `tests/docs/page-documents-transcripts.test.ts` also renders each
+recorded enrolment, recovery-codes and change-password body back through its
+renderer, with the QR image elided as the blocks show it.
+
+The account pages (registration, verification, reset and the required-actions
+link) and the console's sign-in refusal read from catalogues as well. Their
+recordings changed only where a page's own text holds an apostrophe, now
+`&#39;` (`Can&#39;t create this account`, `we&#39;ve sent`, `This link
+can&#39;t be used`): 11 lines. The registration pages, the reset request, form, weak-password, success and
+spent-link pages and the verification pages were run again on the project
+`odudu-p4g-16` against a tenant with registration, verification and reset on,
+and each recorded body that run produced matches the recorded one line for
+line; the not-reused reset page and the required-actions pages are what they
+were and were not re-run live. The test above now renders these bodies back through their
+renderers too.
+
+Values that change on every run — authorization codes, tokens, `jti`,
+session ids, timestamps — are shortened or truncated where they appear, and
+that is said each time. Nothing here is reconstructed from what the code
+looks like it should do.
+
+Three conventions that keep that promise checkable. A fenced block holding a
+response **carries no language tag**, because a tagged one is reformatted by
+Prettier and what a reader then sees is the formatter's markup rather than
+the server's — the bytes below are the bytes served, line breaks included.
+Node prints two `ExperimentalWarning` lines about its Web Crypto API on
+every CLI invocation; they are on `stderr` and are trimmed from every
+transcript here. And a section whose output depends on the state of the
+stack it ran against **says which state** — [Retention](../reference/transcripts/request-paths/retention-what-odudu-reap-removes.md),
+the second [lockout](../reference/transcripts/request-paths/brute-force-lockout.md) run and
+[the throttle](../reference/transcripts/request-paths/brute-force-lockout.md#the-per-origin-throttle) each do. Everything else was run in
+the order it appears, front to back, against one stack started with
+`ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000`: a scripted
+walkthrough of a whole document sends more requests a minute than the budget
+a person needs ([the per-origin throttle](../reference/transcripts/request-paths/brute-force-lockout.md#the-per-origin-throttle), and
+[the per-username one](../reference/transcripts/request-paths/brute-force-lockout.md#the-per-username-budget-on-sign-in) for one user
+signing in again and again), and every transcript past the tenth would
+otherwise be a `429`.
+
+## Admin path transcripts
+
+The admin API: the endpoints under `/admin/tenants/{tenant}/` that let an
+operator manage a tenant instead of reaching for `psql`.
+
+Three artifacts describe this API and each has one job. The published
+OpenAPI document, served unauthenticated at `/admin/openapi.json`, is the
+**reference** — generated, and the place every endpoint and every field is
+listed exhaustively. This document is the **narrative** — an operator's
+journey through a task, in the order they would actually hit it, with the
+shape of each request and, once a live stack has been brought up to capture
+it against, the real response. [README.md](https://github.com/wizzywit/odudu/blob/main/README.md) is the **entry
+point** — how to get a token that can call any of this at all.
+
+There is one "What is not implemented" list for the whole server, and it
+stays in [docs/request-paths.md](https://github.com/wizzywit/odudu/blob/main/docs/request-paths.md#what-is-not-implemented);
+this document never starts a second one. An admin endpoint that does not do
+yet what its name suggests says so in its own section below, and points at
+that list rather than duplicating it.
+
+Every transcript below is captured output, and follows the same discipline
+as [docs/request-paths.md](../reference/transcripts/request-paths/index.md): a fenced block holding a
+response carries no language tag, a section whose output depends on the
+state of the stack it ran against says which state, and a precondition a
+refusal depends on is shown rather than asserted.
+
+**Reproducing a run that signs in repeatedly.** Several stacks below are
+described as started with `ODUDU_THROTTLE_LIMIT=1000` (or `10000`) so a
+scripted run of sign-ins is not refused. Those captures pre-date the
+per-username sign-in budget, which refuses a sixth submission naming one
+username from one address inside a minute
+([ADR 0023](https://github.com/wizzywit/odudu/blob/main/docs/adr/0023-brute-force-authority-is-split.md)); to run any of them
+again, start the stack with `ODUDU_LOGIN_THROTTLE_LIMIT=1000` as well. The
+transcripts themselves are unchanged.
+
+**The stack.** One run of `infra/docker/compose.yaml`, brought up from an
+empty volume, with `odudu seed admin --username ada` run against it and a
+tenant named `demo` created through `POST /admin/tenants` below. The
+sections are in the order they were executed, so the ids, secrets, `ETag`s
+and timestamps in them are one run's real ones and refer to each other:
+`demo` is `01a0d6fc-3626-7e23-94d7-3b1b666e278f`, `ada` in the `system`
+tenant is subject `01a0d6fb-0918-7846-b430-0a714b8bf7bf`. Secrets shown
+here are that stack's, and it was torn down with `docker compose down -v`
+when the capture finished.
+
+**The second stack.** The sections that turn on `If-Match` being
+mandatory, and the tenant and SMTP sections that describe endpoints added
+after the first capture, ran against a second stack brought up the same
+way from an empty volume: `seed admin --username ada`, then `demo` created
+through `POST /admin/tenants`, then a subject `grace`, a role
+`billing-viewer`, a group `engineering` and a scope `billing` created
+through the endpoints below. Its `demo` is
+`01a0d7ee-b611-71a0-b223-5a57ecbe83d8` — a different run, so its ids,
+`ETag`s and timestamps refer to each other and to nothing in the sections
+above. Each such section says so. It was torn down the same way.
+
+**The third stack.** "Getting the token" was captured again, after the
+session cookie gained its secret (`0071_session_secret.sql`), against a
+stack brought up the same way from an empty volume with only
+`seed admin --username ada` run against it. Its password, ids, code and
+cookie are that run's own: its `ada` is
+`01a0de12-c116-70ee-9cc1-984429980dcc`, not the subject the sections after
+it name. "Getting the token" has since been captured once more, on a stack of
+its own, and says so.
+
+**The fourth stack.** "Getting the token"'s final probe and `GET /whoami`
+were recaptured together (the first has since been captured again with the
+rest of that section), after `whoami` started answering `capabilities`
+and `crossTenant`, against this branch's own already-running development
+stack rather than a fresh one — it was not brought up for this capture and
+was not torn down afterward. It carries a tenant also named `demo`, under
+its own id, `01a0db22-1c32-7d17-b351-697d7911033c` — a different tenant
+from the one the sections above and below this note refer to by that same
+name. `seed admin --username ada-whoami` run against it created the
+subject behind the `GET /whoami` probe, `01a0e0a7-0ead-703a-ab34-22bcf5167d46`, rather
+than reusing the existing `ada` whose password from this stack's own
+history is not known here; its capabilities come from holding
+`tenant-admin`, which composites every capability plus `manage-tenants`
+(the same account "Getting the token" describes `ada` as). The searches
+under `GET /subjects` and the two refusals under `POST /subjects` were
+captured against it later, as `ada-whoami`, after its `odudu` service was
+rebuilt from this branch; the searches under `GET /admin/tenants` and
+`GET /clients` after a further rebuild that applied `0074`; and those under
+`GET /roles`, `GET /groups`, `GET /scopes` and `GET /keys` after one that
+applied `0075`, against roles and groups created in `demo` for them
+through the endpoints below, as each of those sections shows (the role and
+group ones, and the composites and defaults after them, have since been
+recaptured on the fourteenth stack, and say so). The counts
+under `GET /admin/tenants/count` were captured against it after a further
+rebuild, as that section says. The memberships under `GET /subjects/:id/groups` were captured
+against it after one more rebuild, in a tenant of their own, as that
+section says. So were the composites under `GET /roles/:id/composites` and
+the defaults under `PUT /roles/:id/default`, after a further rebuild, in a
+tenant `composites-demo`. `DELETE /scopes/:id/clients/:clientId` was
+captured against it after one more rebuild, as a new admin subject
+`ada-scope-unassign`, in a tenant `scope-unassign-demo` created for it; its
+built-in admin client guard and `DELETE /scopes/:id`'s `openid` guard were
+captured together after a further rebuild, as the same subject, in a
+tenant `scope-guard-demo` created for them. `GET /subjects/:id/profile`
+and `PATCH /subjects/:id/profile` were captured after one more rebuild, as
+a new admin subject `ada-profile` in the system tenant, in a tenant
+`profile-demo` created for them, on a subject `grace` created there; the
+same section was recaptured after a further rebuild fixed the write-order
+and locking review found in it, as the same `ada-profile`, in a fresh
+tenant `profile-demo2`, on a new subject also named `grace`; the two
+resubmit-the-same-number calls at the end of it were added after one more
+rebuild narrowed the reset rule to a different number, against that same
+`profile-demo2` tenant and subject, continuing where the recapture left
+off. `GET /subjects/:id/consents` and `DELETE /subjects/:id/consents/:clientId`
+were captured after a further rebuild, as a new admin subject
+`ada-consents2` in the system tenant, in a tenant `consents-demo2` created
+for it, on a subject `grace` seeded there with `odudu seed user` and a
+confidential client `consents-demo-app2` created with `consent_required`
+— recaptured entirely, under this tenant, after a further rebuild made
+`DELETE` also revoke the subject's grants against the client.
+`DELETE /subjects/:id/lockout`, `DELETE /subjects/:id/sessions` and
+`POST /subjects/:id/password` were captured in that order after one more
+rebuild, with the `odudu` service alone started with
+`ODUDU_THROTTLE_LIMIT=1000` (and, to reproduce it now,
+`ODUDU_LOGIN_THROTTLE_LIMIT=1000`) so a scripted run of sign-ins is not
+refused by the per-origin throttle, as a new admin subject `ada-recovery` in the
+system tenant, in a tenant `recovery-demo` created for them, on a subject
+`hana` seeded there with `odudu seed user`, and, for the target ceiling,
+subjects `mo` and `lin` seeded beside it. The service was restarted
+without that override afterwards, so the stack is back to its default
+throttle of ten. The `demo-fields-check` create and read under
+`POST /clients` were recaptured after a further rebuild added
+`builtin_admin` and `service_subject_id` to a client's representation, as
+`field-facts-admin`, a new admin subject in the system tenant — the client
+was deleted and recreated under the same `client_id` in `demo`, so its row
+id, secret and timestamp are later than the rest of this section's.
+`GET /settings` and `PATCH /settings`, and the rename under
+`PATCH /subjects/:id`, were recaptured after one more rebuild that applied
+`0077_username_editable.sql`, as a new admin subject `ada-rename` in the
+system tenant, in tenants `settings-demo` and `rename-demo` created for
+them, as each section says. `GET /export` was captured after one more
+rebuild, as a new admin subject `ada-export`, in a tenant `export-demo`
+created for it, as that section says; its audit-trail queries were later
+recaptured, scoped by `from=$RUN_START` instead of left unscoped, as a
+further admin subject `ada-export2` against that same tenant, without
+rebuilding the stack. `POST /admin/tenant-imports` was captured after one
+more rebuild, as a new admin subject `ada-import`, from a tenant
+`import-source` created for it into a tenant `import-demo`, as that
+section says; its own unscoped audit-trail query was later recaptured,
+scoped by `resource_type`/`resource_id`, as a further admin subject
+`ada-import2` importing into a new tenant `import-demo2` from the same
+`import-source`, again without rebuilding the stack. The range refusals
+under `PATCH /settings` were captured after a further rebuild, as the same
+`ada-import`, in a tenant `settings-range-demo`; the rest of that section
+was not re-run.
+
+**The fifth stack.** The sections this note names were captured against a
+stack of their own: compose project `odudu-task2`, published on port 3080,
+built from this branch and brought up from an empty volume with
+`seed admin --username ada-t2`, each section after a rebuild that added
+what it describes. It was torn down with `docker compose down -v` when the
+capture finished. They are "A refusal names its field", the `ETag`
+sections under scope assignment and signing keys, `GET /scopes/:id/clients`,
+"Filtering by capability", "The last administrator", "The authenticators a
+step may name", "The owning client, by name", and the OpenAPI entry under
+`PUT /scopes/:id/clients/:clientId`.
+
+**The sixth stack.** Every transcript whose output changed once a `400`
+named its field under `errors`, a create answered its `ETag`, SMTP reported
+`effective`, a flow answered `available` and a role named its owning
+client was captured again against one more stack (the role and group ones
+since recaptured on the fourteenth, and saying so): the same compose project
+`odudu-task2` on port 3080, brought up from an empty volume built from this
+branch, with `seed admin --username ada` run against it and every tenant,
+client, role, group, scope and subject a section names created there
+through the endpoints below — each section says which. Its `demo` is
+`01a0ea4c-0884-74fa-825c-05f6ef568dd0`, a different tenant from the other
+stacks' `demo`s. It was torn down with `docker compose down -v` when the
+capture finished. A section that says it was captured against it refers
+to nothing on the stacks above.
+
+**The seventh stack.** `GET /subjects/:id/lockout` and
+`DELETE /subjects/:id/recovery-codes` were captured against a stack of
+their own: compose project `odudu-t8` on port 3080, built from this branch
+with both routes in it and brought up from an empty volume with
+`ODUDU_THROTTLE_LIMIT=1000` (and, to reproduce it now,
+`ODUDU_LOGIN_THROTTLE_LIMIT=1000`), so a scripted run of sign-ins is not
+refused by the per-origin throttle, and `seed admin --username ada-t8` run against
+it. Each of the two sections says what else it seeded. It was torn down
+with `docker compose down -v` when the capture finished.
+
+**The eighth stack.** `GET /subjects/username-policy`, the refusal of a
+disabled subject's token under "The shape of it", and `GET /admin/openapi.json`
+(recaptured since against the twelfth stack, below) were captured against one more stack of their own: compose project
+`odudu-t8b` on port 3080, built from this branch and brought up from an
+empty volume, with `seed admin --username ada-t8b` run against it, then a
+tenant `policy-demo` made with `odudu seed tenant` and a subject `vera`
+seeded there with `odudu seed user` and granted `odudu-admin:view-users`
+alone. `$VERA_TOKEN` is `vera`'s own admin access token, got the way
+"Getting the token" shows but at `policy-demo`. It was torn down with
+`docker compose down -v` when the capture finished.
+
+**The tenth stack.** The sections on routes added for the operator's side of a
+tenant — its sessions and grants, its mail and logout deliveries, bulk and
+tenant-wide writes, claim evaluation, audit reporting and tenant deletion — the
+older `GET /audit` transcripts their notes say were recaptured, and in
+[docs/request-paths.md](../reference/transcripts/request-paths/index.md) "One sign-in's audit trail" and the
+back-channel logout queue's `attempts`, ran against one more stack: compose
+project `odudu-t8b2` on port 3082, its Postgres on 5464, built from this branch
+at `a66cf8df` and brought up from an empty volume with
+`ODUDU_OUTBOX_ENABLED=false` and `ODUDU_LOGOUT_SENDER_ENABLED=false`, so that
+mail and Logout Tokens leave only when `odudu send-mail` and `odudu
+send-logouts` are run by hand, `ODUDU_ALLOW_PRIVATE_SMTP_HOSTS=true` and
+`ODUDU_ALLOW_PRIVATE_CLIENT_URLS=true`, so that a relay and a logout endpoint
+can name the stack's own `postgres` container, where nothing listens and so
+every delivery fails, and `ODUDU_THROTTLE_LIMIT=1000`. Against it: `seed admin
+--username ada-t8b2` in `system`, a tenant `ops-demo` made through `POST
+/admin/tenants`, subjects `grace` (with an address), `linus` (without), `mona`,
+`sam` and `uma` seeded there with `odudu seed user`, `mona` granted
+`odudu-admin:manage-tenant`, `sam` `odudu-admin:manage-sessions` and `uma`
+`odudu-admin:manage-users`, and a confidential client `ops-app` made through
+`POST /clients` with a back-channel logout URI of
+`https://postgres:9/backchannel`, row id `01a0ee8a-d1a7-7c3c-a05b-903a2d8fa123`.
+`grace` then signed in through `ops-app` twice — once asking for
+`offline_access` — and `linus` once. `$ADMIN_TOKEN` is `ada-t8b2`'s token, got
+fresh for each section the way "Getting the token" shows, and
+`P=http://localhost:3082/admin/tenants/ops-demo` throughout. Each section says
+what else it seeded. The two rename refusals, `GET /admin/openapi.json` (since
+recaptured against the twelfth stack), `ivy`'s
+read under `GET /audit` and the back-channel logout queue ran last, on the image
+rebuilt at `1507a6c3`, whose only change is the wording of the
+`about:blank#logout-deliveries-pending` detail. The stack was torn down with
+`docker compose down -v` when the capture finished. `DELETE
+/admin/tenants/{tenant}` was captured again at the close of P4d, on a stack of its own,
+as its section says.
+
+**The twelfth stack.** Every transcript whose output changed once groups and
+roles carried a `description` (the role and group ones since recaptured on the
+fourteenth, and saying so), groups `default_for_new_subjects`, scopes
+their client default and consent fields, a tenant `audit_event_types`, a
+client the fields `0084` to `0086` added and `odudu reap` its `cleared`
+report, and the sections on the routes and settings those changes added,
+ran against one more stack: compose project `odudu-t8c2` on port 3082, its
+Postgres on 5464, built from this branch at `15cdb46a` and brought up from
+an empty volume with `ODUDU_OUTBOX_ENABLED=false`, `ODUDU_REAP_ENABLED=false`
+and `ODUDU_LOGOUT_SENDER_ENABLED=false`, so that mail leaves and `reap` runs
+only when run by hand, `ODUDU_ALLOW_PRIVATE_SMTP_HOSTS=true`,
+`ODUDU_ALLOW_PRIVATE_CLIENT_URLS=true` and `ODUDU_THROTTLE_LIMIT=1000`, with
+`seed admin --username ada-t8c2` run against it. `$ADMIN_TOKEN` is
+`ada-t8c2`'s, got fresh for each section the way "Getting the token" shows.
+Every tenant, client, role, group, scope and subject a section names was
+created there for it through the endpoints below, each section says which,
+so its ids refer to nothing on the stacks above. It was torn down with
+`docker compose down -v` when the capture finished. The required-actions
+transcripts under `POST /subjects/:id/actions-email` and in
+[docs/request-paths.md](../reference/transcripts/request-paths/following-a-required-actions-link.md),
+and the audit types under `GET /audit`, ran on a later stack: compose project `odudu-t8d2` on port 3086, its Postgres
+on 5466, built at `6feb06b7` and brought up from an empty volume with
+`ODUDU_OUTBOX_ENABLED=false`, `ODUDU_REAP_ENABLED=false` and
+`ODUDU_THROTTLE_LIMIT=1000`, with `seed admin --username ada` run against it. The
+tenant `required-actions-demo` and its client `actions-app` came from `odudu seed
+--tenant required-actions-demo --client actions-app --redirect-uri
+https://app.example/callback --user seeder`; it was torn down with `docker
+compose down -v` when the capture finished.
+
+**The fourteenth stack.** Every transcript that shows a role or a group
+answer ran against one more stack, once each such answer carried `admin_reach`,
+a group's own record `subtree_admin_reach` and `holds_default_group`, and each
+role in a group's roles its own `admin_reach`: compose project `odudu-t10b` on
+port 3082, its Postgres on 5464, built from this branch at `539ffd7a` and
+brought up from an empty volume with `ODUDU_THROTTLE_LIMIT=1000`,
+`ODUDU_OUTBOX_ENABLED=false`, `ODUDU_REAP_ENABLED=false` and
+`ODUDU_LOGOUT_SENDER_ENABLED=false`. Against it: `seed admin --username
+ada-t10b`, then a subject `ada-sys` seeded in `system` with a password and
+granted `odudu-admin:tenant-admin`, whose own admin token, got the way "Getting
+the token" shows, is `$ADMIN_TOKEN` throughout. Every tenant, client, role,
+group and subject a section names was made there for it through the endpoints
+below, `seed client` and `seed user`, and each section says which, so the ids in
+them refer to nothing on the stacks above. The transcripts that show audit rows,
+counts and the answers to a subject's roles carry no role or group record and
+stay on the stacks they were captured against. It was torn down with
+`docker compose down -v` when the capture finished.
+
+**The fifteenth stack.** Every transcript about a client's service account reach, the exact
+lookup and the 200-entry bound under `GET /clients`, `PATCH /clients/{id}`
+and [docs/request-paths.md](../reference/transcripts/request-paths/bootstrap.md#dynamic-client-registration) ran
+against one more stack: compose project `odudu-tx` on port 3082, its Postgres
+on 5464, built from this branch at `3cf8eceb` with the changes those sections
+describe, from an empty volume. Against it: `seed admin --username ada`, whose
+token, got the way "Getting the token" shows, is `$ADMIN_TOKEN`; a tenant
+`client-reach-demo` made through `POST /admin/tenants`, `$P` being
+`http://localhost:3082/admin/tenants/client-reach-demo`; and in it a
+confidential client `billing` made through `POST /clients`, row id
+`01a11113-6605-7a86-baa1-1f49b57fb240`, with one redirect URI. Rows a section
+writes by `psql`, which no route does, say so. It was torn down with `docker
+compose down -v` when the capture finished.
+
+**The sixteenth stack.** The transcripts about the 200-scope bound under `PUT
+/scopes/{id}/clients/{clientId}`, `POST`/`PATCH /scopes`, `POST /admin/tenant-imports`
+and `odudu seed assign-scope` ran against one more stack: compose project
+`odudu-tx` on port 3082, its Postgres on 5464, built from this branch at
+`1b3ad4cd` from an empty volume, with `ODUDU_THROTTLE_LIMIT=1000`. Against it:
+`seed admin --username ada4`, whose token, got the way "Getting the token" shows,
+is `$ADMIN_TOKEN`; a tenant `scope-limit-docs` made through `POST /admin/tenants`,
+`$P` being `http://localhost:3082/admin/tenants/scope-limit-docs` and `$A` the
+same without the tenant; in it a public client `limit-app` made through `POST
+/clients`, row id `$CID` (`01a11266-76cd-7f4f-81a8-3e9b76d5b1b4`); and scopes
+`reports:read` (`$SID`, `01a11266-7838-7db8-9c08-e5c64a8cf4d7`) and `late` made
+through `POST /scopes`. The scopes the sections add to reach the limit were
+written by `psql`, which no route does, and say so. It was torn down with
+`docker compose down -v` when the capture finished.
+
+**The eighteenth stack.** The transcripts under `GET`/`PUT /scopes/:id/roles` and
+`GET`/`PUT /scopes/:id/mappers`, once a scope's roles carried `admin_reach` and its
+mappers `declared`, ran against one more stack: compose project `odudu-tx` on
+port 3082, its Postgres on 5464, built from this branch at `95941669` from an
+empty volume, with `ODUDU_THROTTLE_LIMIT=1000`. Against it: `seed admin
+--username ada`, whose token, got the way "Getting the token" shows, is
+`$ADMIN_TOKEN`; a tenant `scope-reach-demo` made through `POST /admin/tenants`; in
+it a scope `billing`, made through `POST /scopes`, and a role `billing-viewer`,
+made through `POST /roles`. It was torn down with `docker compose down -v` when
+the capture finished.
+
+**The seventeenth stack.** "Getting the token" and the three sections after it
+(the admin client itself, converting a public one, rotating the console's key)
+ran against one more stack: compose project `odudu-docs-12b` on port 3082, its
+Postgres on 5464, built from this branch at `b4efbb72` from an empty volume,
+with `ODUDU_THROTTLE_LIMIT=10000` and a console key made for it by
+`infra/docker/console-key.sh`. Against it: `seed admin --username ada`, whose
+token, got the way "Getting the token" shows, is `$ADMIN_TOKEN`; and a tenant
+`legacy`, seeded with `ODUDU_CONSOLE=false` so that its `odudu-admin` was public.
+[Console paths](../reference/transcripts/console-paths/index.md) ran on the same stack, and its seventh run says
+what else it holds. It was torn down with `docker compose down -v` when the
+capture finished.
+
+**The nineteenth stack.** The five typed refusals of `PUT /flow/executions` ran
+against one more stack: compose project `odudu-docs-14` on port 3082, its Postgres on
+5464, built from this branch with the typed refusals from an empty volume, with
+`ODUDU_THROTTLE_LIMIT=10000` and a console key made for it by
+`infra/docker/console-key.sh`. Against it: `seed admin --username ada`, whose token,
+got the way "Getting the token" shows, is `$ADMIN_TOKEN`, and a tenant `flow-demo` made
+through `POST /admin/tenants`. It was torn down with `docker compose down -v` when the
+capture finished.
+
+**The twentieth stack.** The three typed refusals of the signing-key routes ran against
+one more stack: compose project `odudu-docs-15` on port 3082, its Postgres on 5464,
+built from this branch with the typed refusals and the cut client list from an empty
+volume, with `ODUDU_THROTTLE_LIMIT=10000` and a console key made for it by
+`infra/docker/console-key.sh`. Against it: `seed admin --username ada`, whose token,
+got the way "Getting the token" shows, is `$ADMIN_TOKEN`, and a tenant `key-refusals`
+made through `POST /admin/tenants`, `$P` being its `/admin/tenants/key-refusals`. It
+was torn down with `docker compose down -v` when the capture finished.
+
+**The twenty-first stack.** The blank display name under every route that writes one ran
+against one more stack: compose project `odudu-docs-17` on port 3082, its Postgres on 5464, built
+from this branch from an empty volume, with `ODUDU_THROTTLE_LIMIT=10000` and a console
+key made for it by `infra/docker/console-key.sh`. Against it: `seed admin --username ada`,
+whose token, got the way "Getting the token" shows, is `$ADMIN_TOKEN`, and a tenant
+`name-demo3` and `name-demo4` made through `POST /admin/tenants`. It was torn down with
+`docker compose down -v` when the capture finished.
+
+**The twenty-second stack.** The audit row of a test send ran against one more stack:
+compose project `odudu-docs-18` on port 3082, its Postgres on 5464, built from this
+branch from an empty volume, with `ODUDU_THROTTLE_LIMIT=10000` and a console key made
+for it by `infra/docker/console-key.sh`. Against it: `seed admin --username ada`, whose
+token, got the way "Getting the token" shows, is `$ADMIN_TOKEN`, and a tenant
+`smtp-audit-demo` made through `POST /admin/tenants`. It was torn down with
+`docker compose down -v` when the capture finished.
+
+## Console path transcripts
+
+The console gateway: the routes under `/console` that sign an administrator
+in to a tenant, hold that administrator's tokens server-side, and forward the
+console's calls to the admin API. The browser holds nothing but a session
+cookie.
+
+[README.md](https://github.com/wizzywit/odudu/blob/main/README.md) is the **entry point** — what each route does and
+which settings turn the console on. [docs/admin-paths.md](../reference/transcripts/admin-paths/index.md)
+is the admin API the proxy forwards to, and this document shows only enough
+of it to show the forwarding. There is one "What is not implemented" list
+for the whole server, in
+[docs/request-paths.md](https://github.com/wizzywit/odudu/blob/main/docs/request-paths.md#what-is-not-implemented); this
+document never starts a second one.
+
+Every transcript below is captured output, under the same discipline as
+[docs/request-paths.md](../reference/transcripts/request-paths/index.md): a fenced block holding a response
+carries no language tag, a section whose output depends on the state of the
+stack says which state, and a precondition a refusal depends on is shown
+rather than asserted. `tests/docs/console-paths.test.ts` holds every
+`/console/` route this document names to the routes the server serves. Every
+audit row below answers `actor_name` and `actor_origin` as well, resolved when
+it is read ([Admin paths](../reference/transcripts/admin-paths/get-audit.md)).
+
+**The stack.** The `docker-odudu-1` container of `infra/docker/compose.yaml`,
+restarted on the existing database volume. For the first two runs its `odudu`
+service was built at commit `5fd4b11`; for the third it was rebuilt at
+`6401476`. `ODUDU_PUBLIC_BASE_URL` is `http://localhost:3000` and
+`ODUDU_CONSOLE` is left at its default, `true`. The base is plain HTTP, so the
+cookies are `odudu-console` and `odudu-console-login`; over `https` they are
+`__Host-odudu-console` and `__Host-odudu-console-login` and carry `Secure`.
+The image built at those commits shipped no console build, so
+`ODUDU_CONSOLE_DIR` (`/app/console`) was absent, and the third run logged
+that below. The image has carried a build since `78826ac`;
+[`GET /console/`](../reference/transcripts/console-paths/get-console.md) is captured separately, against its own
+throwaway stack, because this stack's image carried no console build. The server logged these warnings when it booted for the third
+run. The second line is the console cookie's plain-HTTP fallback, and the
+third is the missing build:
+
+```
+{"level":40,"time":1790590008355,"pid":1,"hostname":"062313e900ce","msg":"authn-flows: serving session cookies without the __Host- prefix because TLS is off. This is expected for local development only — never in production."}
+{"level":40,"time":1790590008355,"pid":1,"hostname":"062313e900ce","msg":"console: serving the odudu-console cookie without the __Host- prefix or Secure, because ODUDU_PUBLIC_BASE_URL (http://localhost:3000) is http. This is expected for local development only."}
+{"level":40,"time":1790590008445,"pid":1,"hostname":"062313e900ce","msg":"ODUDU_CONSOLE_DIR (/app/console) has no console build (ENOENT); /console/* answers 503"}
+```
+
+**The tenant.** Every cookie, code and token below belongs to a throwaway
+tenant, `console-paths`, seeded for this capture and holding nothing else.
+It was created with the seed CLI, which printed one JSON line per command.
+Node's `ExperimentalWarning` lines on stderr are left out.
+
+```bash
+docker compose exec -T odudu node dist/main.js seed tenant --name console-paths
+docker compose exec -T odudu node dist/main.js seed user --tenant console-paths \
+  --username grace --password console-paths-throwaway --email grace@example.com
+docker compose exec -T odudu node dist/main.js seed grant-role --tenant console-paths \
+  --username grace --role odudu-admin:tenant-admin
+docker compose exec -T odudu node dist/main.js seed user --tenant console-paths \
+  --username hopper --password console-paths-throwaway-2 --email hopper@example.com
+```
+
+```
+{"command":"tenant","created":true,"tenant":"console-paths","tenantId":"01a0e72d-5927-73c3-b14d-a5b60d1ca9ad"}
+{"command":"user","tenant":"console-paths","tenantId":"01a0e72d-5927-73c3-b14d-a5b60d1ca9ad","username":"grace","userSubjectId":"01a0e72d-5ba9-78cd-b877-7ea6d4076028"}
+{"command":"grant-role","tenant":"console-paths","tenantId":"01a0e72d-5927-73c3-b14d-a5b60d1ca9ad","username":"grace","role":"odudu-admin:tenant-admin"}
+{"command":"user","tenant":"console-paths","tenantId":"01a0e72d-5927-73c3-b14d-a5b60d1ca9ad","username":"hopper","userSubjectId":"01a0e72d-7fc7-7950-a1e7-1d079588f8b4"}
+```
+
+`grace` is the administrator; `hopper` is there so that a list has a second
+page. The sections are in the order they ran, one curl cookie jar (`jar`)
+throughout, so each section's cookies are the ones the section before it set.
+
+Two sections come from **a second run**, twenty minutes after the first, on
+the same container and tenant, with a new, empty `jar` and a new sign-in: the
+refused callbacks and the path that escapes `/admin/`. Each says so in its
+first line.
+
+Three sections come from **an eighth run**, on a stack of its own built from
+the branch tip at the close of the console's features: the `infra/docker`
+compose file as the project `odudu-docs-18a`, on `http://localhost:3185`, its
+`odudu` service built from the tree the document describes, on an empty
+volume, with a console key made for it by `infra/docker/console-key.sh`.
+It is where the `PATCH`, the cross-site refusals and the principal refusal
+ran, one after another on one session, with a throwaway tenant,
+`console-paths`, holding `grace` as its administrator and `hopper` beside her.
+`grace` signed in through the same four steps the first run shows, with a new,
+empty `jar`. The seed printed:
+
+```bash
+docker compose -p odudu-docs-18a exec -T odudu node dist/main.js seed tenant --name console-paths
+docker compose -p odudu-docs-18a exec -T odudu node dist/main.js seed user --tenant console-paths \
+  --username grace --password console-paths-throwaway --email grace@example.com
+docker compose -p odudu-docs-18a exec -T odudu node dist/main.js seed grant-role --tenant console-paths \
+  --username grace --role odudu-admin:tenant-admin
+docker compose -p odudu-docs-18a exec -T odudu node dist/main.js seed user --tenant console-paths \
+  --username hopper --password console-paths-throwaway-2 --email hopper@example.com
+```
+
+```
+{"command":"tenant","created":true,"tenant":"console-paths","tenantId":"01a13ff2-eddb-7d89-8555-c32d1cd8acf9"}
+{"command":"user","tenant":"console-paths","tenantId":"01a13ff2-eddb-7d89-8555-c32d1cd8acf9","username":"grace","userSubjectId":"01a13ff2-eff9-746c-b8cb-e56af2072daa"}
+{"command":"grant-role","tenant":"console-paths","tenantId":"01a13ff2-eddb-7d89-8555-c32d1cd8acf9","username":"grace","role":"odudu-admin:tenant-admin"}
+{"command":"user","tenant":"console-paths","tenantId":"01a13ff2-eddb-7d89-8555-c32d1cd8acf9","username":"hopper","userSubjectId":"01a13ff2-f33a-79ce-a952-0aeec04a80d4"}
+```
+
+The gateway refuses a write naming no subject in `X-Odudu-Console-Subject`, so
+every write in those three sections names `grace`'s, and the principal
+refusal shows the refusal beside the same write forwarded.
+
+One section comes from **a fifth run**, on a stack of its own, the project
+`odudu-signin` on `http://localhost:3082` at `0824c4e7`: the restarted
+callback. It says what it seeded in its first lines.
+
+One response comes from **a sixth run**, after the pending sign-in's window
+was raised: `GET /console/auth/login` says which.
+
+**A seventh run** follows `odudu-admin` becoming a confidential client, which
+is what the gateway now signs in as: a stack of its own, the project
+`odudu-docs-12b` on `http://localhost:3082`, its `odudu` service built from
+commit `b4efbb72` on an empty volume, with a console key made for it by
+`infra/docker/console-key.sh`. `seed admin --username ada` made the `system`
+tenant's administrator, who signed in to the console with a new, empty `jar`.
+Every section that makes a token, refresh or revocation call ran on it, and
+each says so in its first line: [the gateway is a confidential
+client](../reference/transcripts/console-paths/the-gateway-is-a-confidential-client.md), the first block of the
+discovery read, [a refresh](../reference/transcripts/console-paths/a-refresh.md), [a refresh that cannot take the
+lock](../reference/transcripts/console-paths/a-refresh-that-cannot-take-the-lock.md), [a refresh the server
+refuses](../reference/transcripts/console-paths/a-refresh-the-server-refuses.md), and the logout with the redirect it
+ends on. Their audit rows answer `actor_name` and `actor_origin`.

@@ -64,6 +64,42 @@ export const SECTIONS: readonly Section[] = [
   },
 ];
 
+export interface Journey {
+  readonly label: string;
+  readonly route: string;
+  readonly summary: string;
+}
+
+// The guides a new reader follows in order; the guides index and the home
+// page list them as they are here.
+export const JOURNEYS: readonly Journey[] = [
+  {
+    label: 'Sign a user in',
+    route: 'guides/sign-a-user-in/',
+    summary:
+      'Send a person to Odudu and get tokens back, with the authorization code flow and PKCE.',
+  },
+  {
+    label: 'Refresh and end a session',
+    route: 'guides/refresh-and-end-a-session/',
+    summary: 'Keep a person signed in, catch a stolen refresh token and sign them out.',
+  },
+  {
+    label: 'An admin signs in and changes a user',
+    route: 'guides/admin-signs-in-and-changes-a-user/',
+    summary: 'Sign an administrator in to the console and make a safe change to a user.',
+  },
+  {
+    label: 'Read a refusal',
+    route: 'guides/read-a-refusal/',
+    summary: 'What an error looks like, why it happened and what to do about it.',
+  },
+];
+
+// The sections the home page lists once the reader has begun, in the order
+// they are looked for.
+export const START_ROUTES: readonly string[] = ['quick-start/', 'introduction/'];
+
 export const NAVBAR_ROUTES: readonly string[] = [
   'quick-start/',
   'guides/',

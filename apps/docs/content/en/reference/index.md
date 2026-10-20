@@ -8,7 +8,8 @@ description: Endpoints, configuration, commands, error codes and events, looked 
 Endpoints, configuration, commands, error codes and events, looked up by name.
 
 Most of this reference is generated from the code that does the work, so it lists what the version you
-run does and cannot fall behind it. The pages say which source they were generated from.
+run does and cannot fall behind it. The pages say which source they were generated from. If you would
+rather follow a journey than look something up, the [guides](../guides/index.md) come first.
 
 ## Configuration, commands, errors and events
 
@@ -48,9 +49,13 @@ The operations of the admin API, one page for each area. The same description is
 
 ## Transcripts
 
-Every request and response below was run against a stack and is the output that came back.
+The full, recorded runs behind the guides, with every request and the response that came back.
 
-- [Protocol transcripts](./protocol/index.md): sign-in, tokens, sessions, logout and the
-  refusals each can end in, one page for each journey.
-- [Admin API transcripts](./admin-api-paths/index.md): the admin API route by route, with the
+- [Request paths](./transcripts/request-paths/index.md): sign-in, tokens, sessions, logout and
+  the refusals each can end in, one page for each journey.
+- [Admin paths](./transcripts/admin-paths/index.md): the admin API route by route, with the
   response each one answers.
+- [Console paths](./transcripts/console-paths/index.md): the routes the admin console signs in
+  and forwards its calls through.
+
+All three are listed on the [Transcripts](./transcripts/index.md) page.

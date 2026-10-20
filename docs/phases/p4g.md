@@ -1939,3 +1939,67 @@ were none. verified: `node --no-warnings <script>.ts`, then `prettier --write` o
 - **Left for the roadmap page.** `request-paths.md#what-is-not-implemented` is linked from seven pages
   as a repository URL. `phase-references.test.ts` reads both the pages (floor 4) and the original
   (floor 20) until the list moves.
+
+## Increment 22b: the documentation as a story
+
+Owner feedback on the migrated pages: heavy navigation, no order, contributor prose on reader pages.
+The three transcript directories moved under Reference, and the site gained the journeys an adopter
+reads first.
+
+- **Layout.** `reference/protocol`, `reference/admin-api-paths` and `admin-console/paths` became
+  `reference/transcripts/{request-paths,admin-paths,console-paths}`, with a `Transcripts` page above
+  them. The three groups are collapsed in the sidebar, so a route list never sits in the navigation;
+  the Reference page links the three group indexes, which list every page in `order.json` order
+  (`tests/journeys.test.ts` holds the lists to the orders). Every relative link was re-resolved by
+  script; no prose in a transcript changed except as below.
+- **Sidebar by reader goal.** Start here (Introduction, Quick start), Guides, Concepts, Admin console,
+  Operating Odudu, Reference, Security, Contributing. `SECTION_ITEMS` became `SIDEBAR_ITEMS`; the
+  section labels and `SECTIONS` are as before, and the sidebar does not rename Operating Odudu to
+  "Run it" because the breadcrumb ends at the page's own title. A `sidebarItemsGenerator` drops a
+  directory's `index` from its category's items; without it the guides listed "Guides" as their last
+  child.
+- **Journeys.** `guides/` holds four pages in second person: `sign-a-user-in`,
+  `refresh-and-end-a-session`, `admin-signs-in-and-changes-a-user`, `read-a-refusal`. Each step is a
+  `##` with a goal sentence or two, one excerpt and a link to its full transcript.
+  `tests/journeys.test.ts` fails when an excerpt is not a substring of a fenced block on a transcript
+  page the same step links, when a step with an excerpt links none, and when an excerpt passes 24
+  lines. The excerpts were cut from the transcripts by a script that slices lines, never typed.
+  The console journey draws on three runs (ports and ids differ between steps) and says so.
+- **Contributor prose.** The opening of each original document (how and on which stack it was
+  captured) moved verbatim to `contributing/transcripts.md`; each group's `index.md` is now written for
+  a reader. `split-preserves-the-documents.test.ts` compares each original after its opening with the
+  pages after their index, and holds the opening to the contributing page in order. **Still in the
+  transcript bodies:** "recaptured on..." and run-provenance sentences inside individual pages, and
+  repository paths in prose. They are the transcripts' own record and the original documents still
+  carry them; Increment 23 retires the originals and is where they can be edited.
+- **One heading per page.** 67 route pages had a plain `title` rendered as `h1` and the same route as
+  a code `h2`. Where the heading is at most 60 characters its page now opens with it as the `# ` (its
+  sub-headings moved up one level, as `loadPages` already allows) and the title is its text without
+  the code marks; 32 links to such a heading became page links. The long multi-route headings and the
+  two duplicate-titled admin pages keep the old shape. `agent-title.ts` drops, from a page's Markdown
+  copy and its section of `llms-full.txt`, a repeat of the title that differs only by code marks
+  (`agent-title.test.ts`, failing before `dropRepeatedTitle` existed).
+- **Home.** `HomeMap` replaces `SectionGrid`: Quick start as the one primary card, the four journeys
+  numbered, the other sections as a quieter grid. Both the image's home and the landing use it.
+- **Code blocks.** A block's background is `var(--code-surface)` so a shadow can fade into it, and
+  the edge with more to scroll carries one (`background-attachment: local` over `scroll`); route
+  headings in the contents list wrap instead of being clipped.
+- **Stub pages.** Introduction, Quick start, Guides, Concepts and the console page keep their
+  `filled by` markers but open with a real outline built only from what exists today.
+- **`ia.test.ts`, changed on purpose.** The sidebar-order test reads `concepts/index.html`, where
+  every category but Start here is collapsed, instead of `guides/index.html`, where the guides expand.
+  The reach walk allows one more click (home, Reference, group index, page) for pages under
+  `reference/transcripts/` only. New: the guides' sidebar lists the four journeys in order, the
+  Reference page's sidebar names no transcript page, and the home links every journey.
+
+Before and after, light and dark, 1280 px and 375 px (the try stack's pages are the "before"):
+
+![Home, before](p4g-docs/22b-before-home-desktop-light.webp)
+![Home, after](p4g-docs/22b-after-home-desktop-light.webp)
+![Console path, before](p4g-docs/22b-before-console-desktop-light.webp)
+![Console path, after](p4g-docs/22b-after-console-desktop-light.webp)
+![Reference, before](p4g-docs/22b-before-reference-desktop-light.webp)
+![Transcripts, after](p4g-docs/22b-after-transcripts-desktop-light.webp)
+![A journey, after](p4g-docs/22b-after-journey-desktop-light.webp)
+
+The other variants are `p4g-docs/22b-{before,after}-{home,console,reference,transcripts,journey}-{desktop,phone}-{light,dark}.webp`.

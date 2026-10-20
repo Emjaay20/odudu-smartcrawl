@@ -48,6 +48,7 @@
   --ifm-menu-color-active: var(--signal-active-ink);
   --ifm-menu-color-background-active: var(--signal-active);
   --ifm-menu-color-background-hover: var(--surface-sunken);
+  --code-surface: light-dark(#f6f8fa, #282a36);
   --docusaurus-highlighted-code-line-bg: color-mix(in srgb, var(--ink-primary) 10%, transparent);
 }
 
@@ -183,4 +184,57 @@ a.button:hover {
     --ifm-h1-font-size: 2.5rem;
     --ifm-h2-font-size: 1.75rem;
   }
+}
+
+/*
+ * A wide block scrolls sideways. The edge that still has more to show carries
+ * a shadow, and the page-wide scroll bar is thin but never hidden, so a narrow
+ * screen does not look as if the line simply ends.
+ */
+.theme-code-block pre {
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+  background-image:
+    linear-gradient(to right, var(--code-surface) 30%, transparent),
+    linear-gradient(to left, var(--code-surface) 30%, transparent),
+    radial-gradient(
+      farthest-side at 0 50%,
+      color-mix(in srgb, var(--ink-primary) 28%, transparent),
+      transparent
+    ),
+    radial-gradient(
+      farthest-side at 100% 50%,
+      color-mix(in srgb, var(--ink-primary) 28%, transparent),
+      transparent
+    );
+  background-position:
+    left center,
+    right center,
+    left center,
+    right center;
+  background-repeat: no-repeat;
+  background-size:
+    2.5rem 100%,
+    2.5rem 100%,
+    0.75rem 100%,
+    0.75rem 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+
+/* A long route in the contents list wraps instead of being clipped. */
+.table-of-contents__link {
+  overflow-wrap: anywhere;
+}
+
+.table-of-contents__link code {
+  white-space: normal;
+}
+
+/* A route as a heading keeps its code face without the boxed, oversized code chip. */
+.theme-doc-markdown :is(h1, h2, h3) code {
+  background: none;
+  border: 0;
+  font-size: 0.85em;
+  overflow-wrap: anywhere;
+  padding: 0;
 }

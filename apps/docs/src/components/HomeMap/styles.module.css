@@ -1,0 +1,113 @@
+.map {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.heading {
+  font-size: var(--type-20);
+  margin-bottom: var(--space-3);
+}
+
+.lede {
+  color: var(--ink-muted);
+  margin-bottom: var(--space-4);
+  max-width: 40rem;
+}
+
+.start,
+.journeys,
+.deeper {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.journeys {
+  counter-reset: journey;
+}
+
+.journeys > li {
+  counter-increment: journey;
+  display: flex;
+}
+
+.start > li,
+.deeper > li {
+  display: flex;
+}
+
+.card,
+.row {
+  background: var(--surface-panel);
+  border: var(--hairline);
+  border-radius: var(--radius-m);
+  color: var(--ink-primary);
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  text-decoration: none;
+  transition:
+    border-color var(--motion-fast) var(--ease),
+    background-color var(--motion-fast) var(--ease);
+}
+
+.card:hover,
+.row:hover {
+  background: var(--surface-sunken);
+  border-color: var(--border-strong);
+  color: var(--ink-primary);
+  text-decoration: none;
+}
+
+.primary {
+  border-color: var(--signal-active-ink);
+  border-width: 2px;
+}
+
+.journeys .card::before {
+  color: var(--ink-muted);
+  content: 'Journey ' counter(journey);
+  font-size: var(--type-13);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.label {
+  color: var(--signal-active-ink);
+  font-size: var(--type-15);
+  font-weight: 600;
+}
+
+.primary .label {
+  font-size: var(--type-20);
+}
+
+.summary {
+  color: var(--ink-muted);
+  font-size: var(--type-15);
+  line-height: 1.5;
+}
+
+@media (min-width: 640px) {
+  .start,
+  .journeys {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .deeper {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 997px) {
+  .deeper {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

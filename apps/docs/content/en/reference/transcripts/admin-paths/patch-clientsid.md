@@ -1,0 +1,371 @@
+---
+title: 'PATCH /clients/{id}'
+description: 'Requires manage-clients, as every client route does.'
+---
+
+# `PATCH /clients/{id}`
+
+Requires `manage-clients`, as every client route does. Amends the fields a
+general-purpose amendment can safely touch — every
+column of `clients` and `client_oidc_config` except identity (`id`,
+`client_id`, `tenant_id`), history (`created_at`), provenance
+(`registration_origin`), the security-model switch (`type`), the secret
+(rotated only through `POST /secret` below) and `builtin_admin` itself. A
+field this excludes is refused with `400`, naming the field and the reason
+(`refusalFor`, `packages/protocol-admin/src/service/client-patch.ts`) —
+`client_id` answers "identity: changing it breaks every relying party and
+orphans the azp of every issued token", for instance, not merely "refused".
+
+A list field — `redirect_uris`, `post_logout_redirect_uris`, `web_origins`,
+`audiences`, `grant_types`, `client_credentials_scopes` — is replaced
+**wholesale**, never appended to: the body names the complete list the
+field should hold afterward. Because last-write-wins on one of these
+silently reinstates exactly what another admin just removed, `If-Match` is
+**required** when a request touches any of the six, answered with
+`428 Precondition Required` when it is missing;
+every other field amends with `If-Match` optional, the same concurrency
+control `PATCH /settings` uses, row lock included. A stale `If-Match` is
+`412` either way, and nothing is changed.
+
+A list field holds at most 200 entries (`CLIENT_LIST_LIMIT`,
+`@odudu/contracts`), for `redirect_uris`, `web_origins`,
+`post_logout_redirect_uris`, `audiences` and `client_credentials_scopes`
+alike, on a create, a `PATCH`, dynamic registration, an import and `odudu seed
+client`. A client is read and listed whole, and each redirect URI and web
+origin is expanded into `client_origins` rows when it is written, so this is
+what keeps both small. A longer list is refused with `400` naming the field,
+how many entries it held and how many it may, and nothing is changed; a list
+of exactly 200 is accepted. A web origin that is not a bare origin, and a
+redirect URI the registration validator refuses, are refused with the entry
+named, in the same `errors` shape. Each call sent the `ETag` the `GET` before
+it answered; `over-origins.json` held 201 origins `https://o0.example` to
+`https://o200.example`, and `over-uris.json` 201 redirect URIs
+`https://billing.example/cb/0` to `…/cb/200`:
+
+```bash
+curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" -H "If-Match: $ETAG" \
+  -d @over-origins.json $P/clients/$ID
+curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" -H "If-Match: $ETAG" \
+  -d @over-uris.json $P/clients/$ID
+curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" -H "If-Match: $ETAG" \
+  -d '{"web_origins":["https://app.example/"]}' $P/clients/$ID
+curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" -H "If-Match: $ETAG" \
+  -d '{"redirect_uris":["http://billing.example/cb"]}' $P/clients/$ID
+```
+
+```
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"web_origins: holds 201 entries, at most 200","errors":[{"path":"web_origins","message":"holds 201 entries, at most 200"}],"instance":"01a11113-f50c-7ae6-aec4-a811e51b624a"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"redirect_uris holds 201 entries, at most 200","errors":[{"path":"redirect_uris","message":"redirect_uris holds 201 entries, at most 200"}],"instance":"01a11113-f533-7a77-8896-435d4b50b8cb"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"web_origins: web_origins entry \"https://app.example/\" is not an origin: expected a scheme and host with no path, or \"+\" for every registered redirect URI's origin","errors":[{"path":"web_origins","message":"web_origins entry \"https://app.example/\" is not an origin: expected a scheme and host with no path, or \"+\" for every registered redirect URI's origin"}],"instance":"01a11113-f554-71d2-bcab-023d2110dd2b"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"redirect_uris entry http://billing.example/cb is not valid","errors":[{"path":"redirect_uris","message":"redirect_uris entry http://billing.example/cb is not valid"}],"instance":"01a11113-f571-7ff2-9da2-30785005fbfc"}
+```
+
+The same call with 200 origins, `at-origins.json`, answered `200`, and
+`.web_origins | length` of the client it returned was `200`.
+
+A create is refused the same way. `create-over-uris.json` named a public client
+`too-many` with 201 redirect URIs, and `create-over-origins.json` one redirect
+URI and 201 web origins; no client was made by either:
+
+```bash
+curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" -d @create-over-uris.json $P/clients
+curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" -d @create-over-origins.json $P/clients
+```
+
+```
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"redirect_uris holds 201 entries, at most 200","errors":[{"path":"redirect_uris","message":"redirect_uris holds 201 entries, at most 200"}],"instance":"01a11113-ba82-7f0c-93e2-d62bfee7a71c"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"web_origins: holds 201 entries, at most 200","errors":[{"path":"web_origins","message":"holds 201 entries, at most 200"}],"instance":"01a11113-ba98-7ea8-b109-d8ada7c90e77"}
+```
+
+**A client stored over the limit** — registered before it existed — is not
+refused for what a write does not change. `legacy` was made through `POST
+/clients`, and its `redirect_uris` then set to 201 entries with `psql`, which no
+route does:
+
+```bash
+docker compose -p odudu-tx exec -T postgres psql -U odudu -d odudu -tA -c \
+  "update client_oidc_config set redirect_uris = (select array_agg('https://legacy.example/cb/' || g) from generate_series(0, 200) g) where client_id = '$LID'"
+curl -sS -o /dev/null -w '%{http_code}\n' -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" -H "If-Match: $ETAG" \
+  -d '{"client_uri":"https://legacy.example/about"}' $P/clients/$LID
+curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" -H "If-Match: $ETAG" \
+  -d @patch-over.json $P/clients/$LID
+```
+
+```
+UPDATE 1
+200
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"redirect_uris holds 201 entries, at most 200","errors":[{"path":"redirect_uris","message":"redirect_uris holds 201 entries, at most 200"}],"instance":"01a11113-bbfc-7e13-bb8d-1c5284aa1858"}
+```
+
+The `PATCH` that left `redirect_uris` alone was `200`; one that sends a list
+sends one under the limit or is refused (`patch-over.json` held 201 URIs). The
+export carries the stored list as it is, and importing that document is
+refused at the field, with its count and the limit, until it is trimmed:
+
+```bash
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" $P/export > export.json
+jq -c '[.clients[] | {client_id, redirect_uris: (.redirect_uris | length)}]' export.json
+jq '{name: "client-reimport-demo", document: .}' export.json > import.json
+curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" -d @import.json \
+  http://localhost:3082/admin/tenant-imports
+```
+
+```
+[{"client_id":"billing","redirect_uris":1},{"client_id":"legacy","redirect_uris":201}]
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"the import was refused for 1 problem(s), listed under errors","errors":[{"path":"document.clients[1].redirect_uris","message":"holds 201 entries, at most 200"}],"instance":"01a11113-bc50-707b-b6d5-0ea661576540"}
+```
+
+`odudu seed client` refuses a list over the limit in the same words, before it
+writes anything; given 201 `--redirect-uri` flags it ends with:
+
+```
+OduduError: redirect_uris holds 201 entries, at most 200
+```
+
+**A client answers what its service account holds.** `service_account_admin_reach`
+is the admin capabilities the client's service account holds, in the
+vocabulary's order, which every write on the client is judged against (the
+target ceiling): derived on every read, one query for a whole page, and outside
+the `ETag`, which is taken over the stored fields alone, as a group's
+`admin_reach` is outside its own. It is empty for a client with no service
+account. A caller needs no `view-users` to read it, so a console can judge the
+ceiling from the record. `billing`'s service account was then given
+`manage-users`, which nests `view-users`, with `psql` (no route assigns a role
+to a service account):
+
+```bash
+curl -sS -D - -o body.json -H "Authorization: Bearer $ADMIN_TOKEN" $P/clients/$ID | grep -i '^etag'
+jq -c '{client_id, service_account_admin_reach}' body.json
+docker compose -p odudu-tx exec -T postgres psql -U odudu -d odudu -tA -c \
+  "insert into subject_roles (tenant_id, subject_id, role_id) select c.tenant_id, c.service_subject_id, r.id from clients c join clients a on a.tenant_id = c.tenant_id and a.client_id = 'odudu-admin' join roles r on r.client_id = a.id and r.name = 'manage-users' where c.id = '$ID'"
+curl -sS -D - -o body.json -H "Authorization: Bearer $ADMIN_TOKEN" $P/clients/$ID | grep -i '^etag'
+jq -c '{client_id, service_account_admin_reach}' body.json
+```
+
+```
+etag: "eb96ee27db9b6e3b447636ee42e52ac5ab2208a2e784d63c9a404845e2a02039"
+{"client_id":"billing","service_account_admin_reach":[]}
+INSERT 0 1
+etag: "eb96ee27db9b6e3b447636ee42e52ac5ab2208a2e784d63c9a404845e2a02039"
+{"client_id":"billing","service_account_admin_reach":["view-users","manage-users"]}
+```
+
+The `ETag` did not move. `GET /clients?client_id_exact=` finds the one client
+whose `client_id` is exactly the value, case kept, through the unique index; a
+prefix finds none, and it is one of the three searches that may not be
+combined:
+
+```bash
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/clients?client_id_exact=billing" | jq -c '[.items[] | {client_id, service_account_admin_reach}]'
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/clients?client_id_exact=bill"
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/clients?client_id_exact=billing&name=b"
+```
+
+```
+[{"client_id":"billing","service_account_admin_reach":["view-users","manage-users"]}]
+{"items":[]}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"search one field at a time: client_id, client_id_exact or name, not more than one","errors":[{"path":"name","message":"search one field at a time: client_id, client_id_exact or name, not more than one"}],"instance":"01a11153-d113-793f-9af7-112ce85082ff"}
+```
+
+The RFC 7591 metadata fields among them — `redirect_uris`, `grant_types`,
+`token_endpoint_auth_method`, `jwks`, `jwks_uri`, the two logout URIs and
+their `_session_required` flags, the three `userinfo_*` response fields,
+`tls_client_auth_subject_dn`, `client_uri`, `policy_uri` and `tos_uri`
+— each of those three an absolute https URI, or http on a loopback
+host, with no fragment, and linked from the consent screen — and
+`id_token_signed_response_alg`, `default_max_age` and `require_auth_time`
+are revalidated through the same
+`parseClientMetadata` a create body runs through, against the amended
+value merged with what the client already holds: a `redirect_uris` entry
+registration would refuse is refused here with the identical `400` detail,
+and narrowing `grant_types` takes effect on the very next `/token` request,
+since nothing about a grant type is cached anywhere between the two.
+
+Amending `token_endpoint_auth_method` to a value on the other side of the
+public/confidential boundary — `none` for a confidential client, or
+anything else for a public one — is refused with `409`, naming the
+client's current type and the type the new method implies: the same
+concern `type` itself being unamendable exists for, reached through a
+different field. `client_secret_basic`, `client_secret_post` and
+`private_key_jwt` are always confidential and freely amendable into one
+another; `tls_client_auth` joins them only when TLS client authentication
+is enabled (`ODUDU_TRUST_PROXY`) — `parseClientMetadata` refuses it
+otherwise, on a create or an amend alike. `none` is the only public
+method.
+
+The built-in admin client (`builtin_admin`) is amended through an
+allowlist, not an exclusion list: `name`, `description`, `client_uri`,
+`policy_uri`, `tos_uri`, `consent_required`, the two logout URIs and their
+`_session_required` flags, and the three `userinfo_*` algorithms. Every other field is refused with `409` naming
+the field and the client, because each could leave every administrator of
+the tenant locked out while the client stays enabled — `audiences` carries
+the admin API's own resource identifier, `grant_types`,
+`token_endpoint_auth_method` and `redirect_uris` decide how a token is
+obtained at all, and recovery from any of them is through `psql`.
+Disabling it (`enabled: false`) carries its own reason. Stated this way
+round, a column added to `clients` or `client_oidc_config` later is
+refused on this one client until somebody judges it safe, rather than
+opening a fresh door by default. The guard reads the `builtin_admin`
+column, not `client_id`, so renaming the client does not evade it. An
+**ordinary** admin-capable client carries no such guard and may be
+disabled even by the caller whose own token runs through it — the built-in
+client is the recovery path that makes that permissible.
+
+Captured against the sixth stack, on `demo`'s `demo-operator`
+(`01a0ea51-a1c1-7d69-8096-b390ced5d3ae`), created there with `grant_types: ["client_credentials"]` and no
+`redirect_uris`. Amending a list field without `If-Match`, and amending a
+field the exclusion list names — the refusal carries the reason, not just
+the refusal:
+
+```
+{"type":"about:blank","title":"Precondition Required","status":428,"detail":"If-Match is required to amend redirect_uris","instance":"01a0ea53-394d-77b8-8fa9-0ef9dde49b4a"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"client_id: identity: changing it breaks every relying party and orphans the azp of every issued token","errors":[{"path":"client_id","message":"identity: changing it breaks every relying party and orphans the azp of every issued token"}],"instance":"01a0ea53-3967-791d-a6f7-72e8aa69cc7b"}
+```
+
+The revalidation is not a formality. Widening `demo-operator`'s grants
+alone, with the `ETag` its `GET` answered, is refused, because the merged
+metadata no longer satisfies the rule that excused the empty list:
+
+```bash
+curl -sS -X PATCH \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H 'If-Match: "9a99d753974a797db81c3312be5dfd4561b0ce23d6a745327fcd33eb0cb49dd6"' \
+  -d '{"grant_types": ["client_credentials","refresh_token"]}' \
+  http://localhost:3080/admin/tenants/demo/clients/01a0ea51-a1c1-7d69-8096-b390ced5d3ae
+```
+
+```
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"redirect_uris is required unless grant_types is exactly [\"client_credentials\"]","errors":[{"path":"redirect_uris","message":"redirect_uris is required unless grant_types is exactly [\"client_credentials\"]"}],"instance":"01a0ea53-3999-799e-9952-cf9f15f5e76d"}
+```
+
+An amendment that does pass, with that same `ETag`, and the fresh one it
+returns — its headers only:
+
+```bash
+curl -sS -D - -o /dev/null -X PATCH \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H 'If-Match: "9a99d753974a797db81c3312be5dfd4561b0ce23d6a745327fcd33eb0cb49dd6"' \
+  -d '{"audiences": ["https://api.demo.example"]}' \
+  http://localhost:3080/admin/tenants/demo/clients/01a0ea51-a1c1-7d69-8096-b390ced5d3ae
+```
+
+```
+HTTP/1.1 200 OK
+x-request-id: 01a0ea53-39ba-7146-928f-85dda6dfb19e
+cache-control: no-store
+etag: "e335431c15716303952cbc244782d48ecc95f6977db109346f1241c3b4d10605"
+content-type: application/json; charset=utf-8
+content-length: 1704
+Date: Mon, 28 Sep 2026 23:21:57 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+```
+
+Replaying the identical request — same `If-Match`, now one generation
+stale — is refused and changes nothing:
+
+```
+{"type":"about:blank","title":"Precondition Failed","status":412,"detail":"If-Match no longer matches","instance":"01a0ea53-39d7-7d1c-ba87-0816be13e08d"}
+```
+
+**The two `409`s that disabling produces are told apart by one column, and
+the admin API does not expose it**, so it is read from the database beside
+them rather than asserted. `client-facts-demo` holds the two clients this
+guard needs: its own built-in one, and `demo-backend` above:
+
+```bash
+docker compose exec -T postgres psql -U odudu -d odudu -c \
+  "select client_id, builtin_admin, enabled from clients
+     where tenant_id = '01a109b6-1dce-7bad-9a5c-7e40b43faa4c' order by client_id;"
+```
+
+```
+  client_id   | builtin_admin | enabled
+--------------+---------------+---------
+ demo-backend | f             | t
+ odudu-admin  | t             | t
+(2 rows)
+```
+
+`demo-backend`, `builtin_admin` false, disables — and the response is the
+whole client, so `enabled` can be read back from it, alongside
+`builtin_admin` itself:
+
+```bash
+curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" -d '{"enabled": false}' \
+  http://localhost:3082/admin/tenants/client-facts-demo/clients/01a109b6-1fa9-7304-8ae5-f714f746785e
+```
+
+```
+{"id":"01a109b6-1fa9-7304-8ae5-f714f746785e","client_id":"demo-backend","name":"demo-backend","description":null,"type":"confidential","enabled":false,"full_scope_allowed":false,"registration_origin":"operator","created_at":"2026-10-05T01:38:13.006Z","redirect_uris":[],"grant_types":["client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":[],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a109b6-1f8f-725e-9c2c-53656397b36c","scopes":[{"id":"01a109b6-1dd0-7600-9e14-7816d44df6e6","name":"openid","assignment":"default"},{"id":"01a109b6-1dd0-7600-9e14-7817de7c7d68","name":"profile","assignment":"default"},{"id":"01a109b6-1dd1-715a-b073-4693dd489102","name":"email","assignment":"default"},{"id":"01a109b6-1dd1-715a-b073-4694a189e4be","name":"address","assignment":"default"},{"id":"01a109b6-1dd2-747c-97bd-c431358429af","name":"phone","assignment":"default"},{"id":"01a109b6-1dd2-747c-97bd-c432be4c4a58","name":"roles","assignment":"default"},{"id":"01a109b6-1dd3-7b41-8bf3-e8da34d0a2c0","name":"groups","assignment":"default"},{"id":"01a109b6-1dd3-7b41-8bf3-e8db9126a263","name":"offline_access","assignment":"optional"}]}
+```
+
+`odudu-admin`, `builtin_admin` true, the same request against the other id
+in that listing, does not:
+
+```bash
+curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" -d '{"enabled": false}' \
+  http://localhost:3082/admin/tenants/client-facts-demo/clients/01a109b6-1dd6-7fb7-834f-b09b02db9a21
+```
+
+```
+{"type":"about:blank","title":"Conflict","status":409,"detail":"odudu-admin is this tenant's built-in admin client and cannot be disabled","instance":"01a109b7-36b0-7956-84af-4f859db85838"}
+```
+
+## A client's pages and its ID token settings
+
+`description` is the administrators' own note on the client, at most 1000
+characters and shown nowhere else. `client_uri`, `policy_uri` and `tos_uri`
+are RFC 7591 §2's pages about the client, which the consent screen links
+under the client's name ([The consent screen](../request-paths/rp-initiated-logout.md#the-consent-screen)).
+`id_token_signed_response_alg`, `default_max_age` and `require_auth_time`
+are OpenID Connect Dynamic Client Registration §2's: the algorithm the
+client's ID tokens are signed with (`RS256` or `ES256`, and only one a
+non-retired key of the tenant produces; `null` signs with the active key),
+the age past which a session is re-authenticated when a request carries no
+`max_age` of its own, and whether every ID token carries `auth_time`.
+Dynamic registration accepts the same six and echoes them. Captured in a
+tenant `client-pages-demo` created for it, on the stack the settings above
+were captured on:
+
+```bash
+curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"client_id": "billing", "redirect_uris": ["https://billing.example/callback"], "grant_types": ["authorization_code", "client_credentials"], "description": "Invoices and payment runs", "client_uri": "https://billing.example/about", "policy_uri": "https://billing.example/privacy", "tos_uri": "https://billing.example/terms", "id_token_signed_response_alg": "ES256", "default_max_age": 3600, "require_auth_time": true}' \
+  http://localhost:3082/admin/tenants/client-pages-demo/clients
+```
+
+```
+{"id":"01a10931-8140-71a8-821f-c964f28b806c","client_id":"billing","name":"billing","description":"Invoices and payment runs","type":"confidential","enabled":true,"full_scope_allowed":false,"registration_origin":"operator","created_at":"2026-10-04T23:13:21.637Z","redirect_uris":["https://billing.example/callback"],"grant_types":["authorization_code","client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":[],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":"https://billing.example/about","policy_uri":"https://billing.example/privacy","tos_uri":"https://billing.example/terms","id_token_signed_response_alg":"ES256","default_max_age":3600,"require_auth_time":true,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a10931-80eb-7dae-b54e-9fa1635b3c01","scopes":[{"id":"01a10931-8088-7f03-b2a1-02e5841d33fb","name":"openid","assignment":"default"},{"id":"01a10931-8089-78fa-af76-02832be0f387","name":"profile","assignment":"default"},{"id":"01a10931-808a-7df9-b8dd-eef4a7ba67b8","name":"email","assignment":"default"},{"id":"01a10931-808a-7df9-b8dd-eef579ac3d13","name":"address","assignment":"default"},{"id":"01a10931-808b-7b6a-aa6a-cb9a3de3321a","name":"phone","assignment":"default"},{"id":"01a10931-808c-7c37-a054-dcb2bb72400b","name":"roles","assignment":"default"},{"id":"01a10931-808c-7c37-a054-dcb33bbe225d","name":"groups","assignment":"default"},{"id":"01a10931-808d-7164-b419-e79b3fa4803a","name":"offline_access","assignment":"optional"}],"client_secret":"0QtbcTY6v9PH8oi75MThTIvTX8f8HOlb1y0EBpx0mjE"}
+```
+
+A page that is not https, or an algorithm no key of the tenant produces,
+is refused by name — the tenant holds only the `ES256` key it was created
+with:
+
+```bash
+curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" -d '{"policy_uri": "http://billing.example/privacy"}' \
+  http://localhost:3082/admin/tenants/client-pages-demo/clients/01a10931-8140-71a8-821f-c964f28b806c
+curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" -d '{"id_token_signed_response_alg": "RS256"}' \
+  http://localhost:3082/admin/tenants/client-pages-demo/clients/01a10931-8140-71a8-821f-c964f28b806c
+```
+
+```
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"policy_uri must be an absolute https URI, or http on a loopback host, with no fragment","errors":[{"path":"policy_uri","message":"policy_uri must be an absolute https URI, or http on a loopback host, with no fragment"}],"instance":"01a10931-8168-7b92-ab09-89bf0be6bfba"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"id_token_signed_response_alg: id_token_signed_response_alg RS256 is not produced by any of this tenant's signing keys (ES256)","errors":[{"path":"id_token_signed_response_alg","message":"id_token_signed_response_alg RS256 is not produced by any of this tenant's signing keys (ES256)"}],"instance":"01a10931-8181-7d3b-b46c-a81077826a7c"}
+```

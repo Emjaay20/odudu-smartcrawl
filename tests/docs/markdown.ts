@@ -25,9 +25,9 @@ export function loadDocument(relativePath: string): Document {
   };
 }
 
-export const PROTOCOL_PAGES = 'apps/docs/content/en/reference/protocol';
-export const ADMIN_PAGES = 'apps/docs/content/en/reference/admin-api-paths';
-export const CONSOLE_PAGES = 'apps/docs/content/en/admin-console/paths';
+export const PROTOCOL_PAGES = 'apps/docs/content/en/reference/transcripts/request-paths';
+export const ADMIN_PAGES = 'apps/docs/content/en/reference/transcripts/admin-paths';
+export const CONSOLE_PAGES = 'apps/docs/content/en/reference/transcripts/console-paths';
 
 const FRONT_MATTER = /^---\n[\s\S]*?\n---\n\n?/u;
 
