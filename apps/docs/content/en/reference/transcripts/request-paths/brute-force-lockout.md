@@ -51,12 +51,12 @@ one nobody else can reproduce.
 were deleted first, on a stack where the transcripts before it had already
 run, so the count below starts from zero.
 
-One thing about reproducing it: eight submissions in a minute from one
-address is past the [per-origin throttle](#the-per-origin-throttle) below,
-so the runs in this section were captured against a stack started with
-`ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000 docker compose up -d`
-— at the defaults, the later submissions answer `429` (the per-origin budget
-at ten, the per-username one at five) and never reach the lockout at all.
+One thing about reproducing it: eight submissions in a minute from one address
+is past the [per-origin throttle](#the-per-origin-throttle) below, so the runs
+in this section ran against a stack started with `ODUDU_THROTTLE_LIMIT=1000
+ODUDU_LOGIN_THROTTLE_LIMIT=1000 docker compose up -d` — at the defaults, the
+later submissions answer `429` (the per-origin budget at ten, the per-username
+one at five) and never reach the lockout at all.
 
 ```bash
 post() {
@@ -89,14 +89,14 @@ echo "8  unknown username  $(post nobody wrong-password)"
 8  unknown username  afb5a54113c56b88e7f98987507863c2
 ```
 
-The normalised values vary between responses — `date`, the request id and
-the nonce between any two, the session id between any two parked requests,
-and the typed name and the length that follows it between two submissions
-that typed different names — so none of them distinguishes an account that
-exists from one that does not, or a locked account from a wrong password.
-`packages/protocol-oidc/tests/login-refusal.int.test.ts` makes the same comparison against a real
-database for four causes at once — a wrong password, an unknown name, a
-locked account and a disabled one — with the typed name masked.
+The normalised values vary between responses — `date`, the request id and the
+nonce between any two, the session id between any two parked requests, and the
+typed name and the length that follows it between two submissions that typed
+different names — so none of them distinguishes an account that exists from one
+that does not, or a locked account from a wrong password. An integration test
+makes the same comparison against a real database for four causes at once — a
+wrong password, an unknown name, a locked account and a disabled one — with the
+typed name masked.
 
 ## A wrong second-factor code counts too
 
@@ -117,18 +117,15 @@ through; a recovery code checked against a locked account is not hashed, so
 it answers faster than one that is, which tells a holder of the password
 nothing the lockout's own effect does not.
 
-The run below was captured on a stack of its own: the `infra/docker` compose
-file as the project `odudu-17g` on `http://localhost:3000`, its `odudu`
-service built from commit `7fc38b58`, started on an empty volume with
-`ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000` so no throttle
-refuses first. It uses a tenant and a user nothing else in this document
-holds, since the run ends with the account locked: `otp-lock` and `grace`,
-enrolled for a second factor the way
-[Two-factor authentication with TOTP](./two-factor-authentication-with-totp.md)
-shows, and the `tenants` row at its defaults (five failures, a minute).
-`$SID` is an `auth_session_id` whose password step has just passed, and
-`$RIGHT` is the code the authenticator would show now, made with the same
-implementation that section used:
+The run below is on a stack of its own on `http://localhost:3000`, started on an
+empty volume with `ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000` so
+no throttle refuses first. It uses a tenant and a user nothing else in this
+document holds, since the run ends with the account locked: `otp-lock` and
+`grace`, enrolled for a second factor the way [Two-factor authentication with
+TOTP](./two-factor-authentication-with-totp.md) shows, and the `tenants` row at
+its defaults (five failures, a minute). `$SID` is an `auth_session_id` whose
+password step has just passed, and `$RIGHT` is the code the authenticator would
+show now, made with the same implementation that section used:
 
 ```bash
 post_code() {
@@ -237,13 +234,13 @@ back. It also means retrying extends the wait. Five wrong passwords, then
 the right one refused, then the same right password once the second lockout
 has run out.
 
-**This run needs an account with no failures behind it**, so it was captured
-against a tenant of its own — `lockout-demo`, seeded exactly as
+**This run needs an account with no failures behind it**, so it runs against a
+tenant of its own — `lockout-demo`, seeded exactly as
 [Bootstrap](./bootstrap.md) seeds `demo` — rather than continuing the eight
-submissions above. Those left `ada` at seven failures in `demo`, and five
-more would take the count to twelve and the wait to the fifteen-minute
-ceiling: the arithmetic this transcript demonstrates is the arithmetic of a
-run that starts from zero.
+submissions above. Those left `ada` at seven failures in `demo`, and five more
+would take the count to twelve and the wait to the fifteen-minute ceiling: the
+arithmetic this transcript demonstrates is the arithmetic of a run that starts
+from zero.
 
 ```bash
 LOGIN='http://localhost:3000/tenants/lockout-demo/login-actions/authenticate'
@@ -281,11 +278,11 @@ set-cookie: lockout-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Ma
 location: http://localhost:8080/callback?code=QnWfcy1CggMc-sXu1mjrahD5SrkuKrVuVx8wdy7AYug&state=xyz-123&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Flockout-demo
 ```
 
-(`sid` is the `/authorize` request above with the hidden field read out of
-the page it renders, against `lockout-demo`. This block was captured again,
-against a fresh `lockout-demo`, after the session cookie gained its secret.
-The wait is 125 seconds rather than 60 because the refused right password
-counted as the sixth failure and re-locked for two minutes.)
+(`sid` is the `/authorize` request above with the hidden field read out of the
+page it renders, against `lockout-demo`. This block is from a fresh
+`lockout-demo`, run after the session cookie gained its secret. The wait is 125
+seconds rather than 60 because the refused right password counted as the sixth
+failure and re-locked for two minutes.)
 
 A correct password accepted by an **unlocked** account deletes the row, so a
 run of failures ends when the account is signed into rather than decaying.
@@ -305,11 +302,11 @@ page is throttled. ADR 0023 is why it is a window in this process's memory
 rather than a row.
 
 Two things about the run below, since it is the one section that needs the
-default budget rather than the raised one every other transcript here was
-captured with. It was captured against a stack started plainly
-(`docker compose up -d`), and `demo`'s `reset_password_allowed` was turned
-on for it — the route answers `404` in a tenant that has it off, and a `404`
-is not what the ten `200`s below are demonstrating:
+default budget rather than the raised one every other transcript here ran with.
+It ran against a stack started plainly (`docker compose up -d`), and `demo`'s
+`reset_password_allowed` was turned on for it — the route answers `404` in a
+tenant that has it off, and a `404` is not what the ten `200`s below are
+demonstrating:
 
 ```bash
 odudu seed tenant --name demo --set reset_password_allowed=true
@@ -438,21 +435,21 @@ slower one, since the window slides rather than resetting. The three `400`s
 are `invalid_grant` on a code that never existed — an OAuth refusal, which
 is the point.
 
-**A `429` is the throttle and nothing else.** A lockout refusal is `200`
-with the sign-in form, byte-identical to a wrong password, so the two
-mechanisms are never confusable from a response — and a burst of wrong
-passwords big enough to lock an account is also big enough to exhaust the
-budget, which is why the transcripts above this section were captured with
-`ODUDU_THROTTLE_LIMIT` raised.
+**A `429` is the throttle and nothing else.** A lockout refusal is `200` with
+the sign-in form, byte-identical to a wrong password, so the two mechanisms are
+never confusable from a response — and a burst of wrong passwords big enough to
+lock an account is also big enough to exhaust the budget, which is why the
+transcripts above this section ran with `ODUDU_THROTTLE_LIMIT` raised.
 
-Two limits this cannot show. The window lives in one process's memory, so
-**it is per instance**: N replicas behind a load balancer would each allow
-the full budget, and there is no load balancer and no second replica in this
-repository to demonstrate that against — so this is a statement, not a
-transcript. And the key is `request.ip`, which with `ODUDU_TRUST_PROXY=true`
-comes from `X-Forwarded-For`: a proxy that appends rather than overwrites
-that header leaves the key client-controlled. Both are in
-[README.md](https://github.com/wizzywit/odudu/blob/main/README.md) as deployment requirements.
+Two limits this cannot show. The window lives in one process's memory, so **it
+is per instance**: N replicas behind a load balancer would each allow the full
+budget, and there is no load balancer and no second replica in this repository
+to demonstrate that against — so this is a statement, not a transcript. And the
+key is `request.ip`, which with `ODUDU_TRUST_PROXY=true` comes from
+`X-Forwarded-For`: a proxy that appends rather than overwrites that header
+leaves the key client-controlled. Both are in [the
+README](https://github.com/wizzywit/odudu/blob/main/README.md) as deployment
+requirements.
 
 ## The per-username budget on sign-in
 
@@ -471,14 +468,12 @@ here, and neither are registration or the reset request. A wrong second-factor
 code is bounded per account instead, by the lockout
 ([a wrong second-factor code counts too](#a-wrong-second-factor-code-counts-too)).
 
-The run below was captured on a stack of its own: the `infra/docker` compose
-file as the project `odudu-17h` on `http://localhost:3171`, its `odudu`
-service started with
-`ODUDU_THROTTLE_LIMIT=1000` and the login budget left at its default, so the
-only budget in play is this one. It needs a user nothing else in this
-document uses, because the fifth wrong password also locks the account:
-`lena`, in the `demo` tenant, seeded for this run alone (`demo` already held
-`demo-spa` and `ada`, and `seed` does not add a user to an existing client,
+The run below is on a stack of its own on `http://localhost:3171`, its `odudu`
+service started with `ODUDU_THROTTLE_LIMIT=1000` and the login budget left at
+its default, so the only budget in play is this one. It needs a user nothing
+else in this document uses, because the fifth wrong password also locks the
+account: `lena`, in the `demo` tenant, seeded for this run alone (`demo` already
+held `demo-spa` and `ada`, and `seed` does not add a user to an existing client,
 so it is `seed user`).
 
 ```bash
@@ -637,14 +632,14 @@ retry-after: 60
 content-length: 0
 ```
 
-Same status, same headers, same empty body as `demo-limited`'s own sixth
-attempt above, and the same budget: five attempts either way before the
-sixth is refused. What this does not claim is that the two are
-indistinguishable in general — an unknown `client_id` is refused at the
-client lookup, before `verifyClientSecret` runs, while a wrong secret
-against a real client pays the Argon2id comparison first, so the two paths
-differ in latency even though their response bytes and budget consumption
-match. ADR 0023's amendment records why that gap is accepted rather than
-closed with a dummy hash. Like the throttle above, this one **is per
-instance** for the same reason — a window in one process's memory — and
-that limitation is [README.md](https://github.com/wizzywit/odudu/blob/main/README.md)'s to state.
+Same status, same headers, same empty body as `demo-limited`'s own sixth attempt
+above, and the same budget: five attempts either way before the sixth is
+refused. What this does not claim is that the two are indistinguishable in
+general — an unknown `client_id` is refused at the client lookup, before
+`verifyClientSecret` runs, while a wrong secret against a real client pays the
+Argon2id comparison first, so the two paths differ in latency even though their
+response bytes and budget consumption match. ADR 0023's amendment records why
+that gap is accepted rather than closed with a dummy hash. Like the throttle
+above, this one **is per instance** for the same reason — a window in one
+process's memory — and that limitation is [the
+README](https://github.com/wizzywit/odudu/blob/main/README.md)'s to state.

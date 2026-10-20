@@ -14,8 +14,8 @@ or, past 10,000 rows, refuses the whole export with `413`
 the whole trail. Each export is itself audited as `audit.export`, since it
 hands the trail over in bulk.
 
-Against the tenth stack, the two rows `POST /subjects/bulk` left under
-`uma`'s name; then `uma` deleted, and the same export again:
+The two rows `POST /subjects/bulk` left under `uma`'s name; then `uma` deleted,
+and the same export again:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/audit/count?action=subject.amend"; echo

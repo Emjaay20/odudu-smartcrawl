@@ -13,11 +13,8 @@ gate and the sign-in flow. Each area is a chunk of its own, fetched when its
 route is first opened, which is why the shell names only the entry, the
 chunks every page needs, and their stylesheets.
 
-**The stack for this section only.** A stack of its own, the project
-`odudu-fix18b` on `http://localhost:3187`, built at the close of P4d from the
-tree at `126ad3b7`, whose console is the one this document describes
-(nothing under `apps/admin-console` or `packages/console-gateway` has changed
-since) and removed afterwards. The shell reads no cookie, so none is sent.
+This section runs on a stack of its own, on `http://localhost:3187`. The shell
+reads no cookie, so none is sent.
 
 ```bash
 curl -sS -D - http://localhost:3187/console/
@@ -62,10 +59,9 @@ Keep-Alive: timeout=72
 
 The two style hashes are React Aria's own injected `<style>` elements —
 `usePress`'s pressable style and, on iOS WebKit only, `usePreventScroll`'s
-`overscroll-behavior: contain` rule — recomputed from the installed
-react-aria by `packages/console-gateway/src/view/react-aria-style.test.ts`.
-The stylesheets are Instrument's tokens and fonts and the shared pieces'
-styles, built and hashed like any other asset.
+`overscroll-behavior: contain` rule — recomputed from the installed react-aria
+by a test. The stylesheets are Instrument's tokens and fonts and the shared
+pieces' styles, built and hashed like any other asset.
 
 ```bash
 curl -sS -D - -o /dev/null http://localhost:3187/console/assets/index-Cf7KEx-q.js

@@ -14,9 +14,8 @@ to move along.
 
 The policy is two tenant settings, so `seed tenant --set` carries both. The
 `psql` that follows has no alternative and never will: nothing can make a
-password ninety days old in less than ninety days. Captured on its own
-stack, the project `odudu-t8d` on `http://localhost:3086` at commit
-`511db0fd`:
+password ninety days old in less than ninety days. On its own stack, on
+`http://localhost:3086`:
 
 ```bash
 odudu seed \

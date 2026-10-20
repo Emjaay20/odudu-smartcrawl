@@ -5,30 +5,29 @@ description: 'All five require manage-tenant; the list, GET /groups, is also rea
 
 ## `GET /groups`, `POST /groups`, `GET /groups/:id`, `PATCH /groups/:id` and `DELETE /groups/:id`
 
-All five require `manage-tenant`; the list, `GET /groups`, is also
-readable with `view-users` (below). `path` is derived, never accepted: a root
-group's is `/name`, a child's is its parent's with `/name` appended, and
-`groupRepository` (`packages/domain-authz/src/repository/groups.ts`) is the
-only writer of it. A group carries a `description`, as a role does: at
+All five require `manage-tenant`; the list, `GET /groups`, is also readable with
+`view-users` (below). `path` is derived, never accepted: a root group's is
+`/name`, a child's is its parent's with `/name` appended, and `groupRepository`
+is the only writer of it. A group carries a `description`, as a role does: at
 most 1000 characters on `POST` and `PATCH`, `null` to clear, exported and
 imported with the group. `PATCH` amends `description` and `parent_id` —
-reparenting, which recomputes `path` for the group and every descendant —
-and every other field is refused with a reason. A `parent_id` naming no group answers `400`, the
-same refusal `POST /groups` gives for the same input. Reparenting into the
-group's own subtree answers `409` (`group_reparent_cycle`), and so does a
-parent already holding a group of that name, the same way a
-role composite's cycle does.
-Both doors that choose a parent carry the same capability ceiling: naming
-a parent whose own roles — or any ancestor's — reach a capability the
-caller does not hold answers `403`, on `POST /groups` as on `PATCH`, since
-every subject later placed in the group would inherit it.
+reparenting, which recomputes `path` for the group and every descendant — and
+every other field is refused with a reason. A `parent_id` naming no group
+answers `400`, the same refusal `POST /groups` gives for the same input.
+Reparenting into the group's own subtree answers `409` (`group_reparent_cycle`),
+and so does a parent already holding a group of that name, the same way a role
+composite's cycle does. Both doors that choose a parent carry the same
+capability ceiling: naming a parent whose own roles — or any ancestor's — reach
+a capability the caller does not hold answers `403`, on `POST /groups` as on
+`PATCH`, since every subject later placed in the group would inherit it.
 `DELETE` **deletes the whole subtree**, not one group: `groups_parent_fk`
-cascades on the parent, so every descendant is deleted with it, and each
-of those takes its own `group_roles` mappings and `subject_groups`
-memberships along. A child does not survive as a new root, and there is no
-confirmation step — a `DELETE` of a group near the top of a tree removes
-everything under it. Both a reparent and a `DELETE` are also held to what
-they take away ([a removal is judged by what it removes](./get-groupsidroles-and-put-groupsidroles.md#a-removal-is-judged-by-what-it-removes)).
+cascades on the parent, so every descendant is deleted with it, and each of
+those takes its own `group_roles` mappings and `subject_groups` memberships
+along. A child does not survive as a new root, and there is no confirmation step
+— a `DELETE` of a group near the top of a tree removes everything under it. Both
+a reparent and a `DELETE` are also held to what they take away ([a removal is
+judged by what it
+removes](./get-groupsidroles-and-put-groupsidroles.md#a-removal-is-judged-by-what-it-removes)).
 
 ```bash
 curl -sS -X POST \
@@ -53,11 +52,10 @@ curl -sS -X PATCH \
   http://localhost:3082/admin/tenants/reparent-demo/groups/01a10bd5-db89-7667-aef3-c72b84512143
 ```
 
-Against the fourteenth stack, in a tenant `reparent-demo` made for it: two
-roots, `engineering`, created with a `description`, and `platform`, then
-`platform` reparented under `engineering` — `path` is recomputed by the
-write, never sent — then the reverse, refused. Each write answers the
-group's record, with the derived fields described
+In a tenant `reparent-demo` made for it: two roots, `engineering`, created with
+a `description`, and `platform`, then `platform` reparented under `engineering`
+— `path` is recomputed by the write, never sent — then the reverse, refused.
+Each write answers the group's record, with the derived fields described
 [below](#what-a-group-hands-out-admin_reach-subtree_admin_reach-and-holds_default_group):
 
 ```
@@ -67,11 +65,10 @@ group's record, with the derived fields described
 {"type":"about:blank","title":"Conflict","status":409,"detail":"would create a group reparent cycle","instance":"01a10bd5-dbe3-782c-9496-99259a4c56c7"}
 ```
 
-**Search** is `?name=`, the same prefix match `GET /roles` above describes,
-over `groups.name_search`; it matches a group's own name, not its `path`.
-Captured against the fourteenth stack, whose `demo` was made for it and held
-no groups until `engineering`, `Engineering-Ops` and `finance` were created
-there as roots:
+**Search** is `?name=`, the same prefix match `GET /roles` above describes, over
+`groups.name_search`; it matches a group's own name, not its `path`. Whose
+`demo` was made for it and held no groups until `engineering`, `Engineering-Ops`
+and `finance` were created there as roots:
 
 ```bash
 curl -sS -X POST \
@@ -131,18 +128,17 @@ curl -sS \
 ### The list a user manager picks from
 
 `GET /groups` alone is also readable with `view-users`, and so with
-`manage-users`, for the reason and within the limits the same subsection
-under `GET /roles` gives, where it was captured.
+`manage-users`, for the reason and within the limits the same subsection under
+`GET /roles` gives, where it is shown.
 
 ### One level of the tree
 
-`?parent=<id>` lists a group's children and `?parent=root` the groups with
-no parent, so a tree is drawn a level at a time rather than from every page
-of groups; `GET /groups/count` takes it too, and it `AND`s with `?name=`. A
-value that is neither a UUID nor `root` is refused with `400`. Against the
-fourteenth stack, in an `ops-demo` of its own holding `/finance` and
-`/finance/payables` alone, made there with `POST /groups`, `$P` its
-`http://localhost:3082/admin/tenants/ops-demo`:
+`?parent=<id>` lists a group's children and `?parent=root` the groups with no
+parent, so a tree is drawn a level at a time rather than from every page of
+groups; `GET /groups/count` takes it too, and it `AND`s with `?name=`. A value
+that is neither a UUID nor `root` is refused with `400`. In an `ops-demo` of its
+own holding `/finance` and `/finance/payables` alone, made there with `POST
+/groups`, `$P` its `http://localhost:3082/admin/tenants/ops-demo`:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/groups?parent=root"; echo
@@ -174,11 +170,10 @@ a role (`PUT /groups/:id/default` below). A subject's own groups
 (`GET /groups/:id/roles`) carry each role's own `admin_reach`. All of them are
 derived, outside the `ETag`, and refused by `PATCH` with a reason.
 
-Captured against the fourteenth stack, in `reach-demo`: `/ops` mapped to
-`audit-bundle` above, its child `/ops/oncall`, and `/ops/oncall/pager` mapped to
-`odudu-admin:manage-keys`, each made there for it with `POST /groups` and
-`PUT /groups/:id/roles`. `/ops/oncall` maps nothing itself, hands out what
-`/ops` does, and would take `manage-keys` too:
+In `reach-demo`: `/ops` mapped to `audit-bundle` above, its child `/ops/oncall`,
+and `/ops/oncall/pager` mapped to `odudu-admin:manage-keys`, each made there for
+it with `POST /groups` and `PUT /groups/:id/roles`. `/ops/oncall` maps nothing
+itself, hands out what `/ops` does, and would take `manage-keys` too:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" $P/groups/01a10bd6-2d5b-707e-9610-8bb4deb9a2d8; echo
@@ -192,14 +187,14 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/groups?parent=01a10bd6-2d3d
 
 ### A reparent onto a name already taken
 
-A move rewrites the group's `path`, so a parent already holding a group of
-the same name refuses it with `409`, before anything is written — the same
-refusal `POST /groups` gives for the same name. A sibling that takes the name
-between that check and the rewrite is refused by the unique index on `path`
-at the write, and answers the same `409`, with the move and any description
-change taken back together. On the same stack, with a `/finance/oncall` made
-there beside `/ops/oncall`, both listed first, then the move, then the group
-read back:
+A move rewrites the group's `path`, so a parent already holding a group of the
+same name refuses it with `409`, before anything is written — the same refusal
+`POST /groups` gives for the same name. A sibling that takes the name between
+that check and the rewrite is refused by the unique index on `path` at the
+write, and answers the same `409`, with the move and any description change
+taken back together. In the same tenant, with a `/finance/oncall` made there
+beside `/ops/oncall`, both listed first, then the move, then the group read
+back:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/groups?parent=01a10bd6-2e1f-7da2-b99d-8af7b7e7dc57" | jq -c '.items[] | {path}'

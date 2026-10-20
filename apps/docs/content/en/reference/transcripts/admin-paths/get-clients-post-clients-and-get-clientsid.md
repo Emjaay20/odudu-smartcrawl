@@ -1,14 +1,13 @@
 ---
 title: 'GET /clients, POST /clients and GET /clients/{id}'
-description: 'The client transcripts in this section, and those under PATCH, DELETE and POST …/secret below, were captured before a client answered…'
+description: 'The client transcripts here and under PATCH, DELETE and POST …/secret predate service_account_admin_reach; each such response now carries it.'
 ---
 
 # `GET /clients`, `POST /clients` and `GET /clients/{id}`
 
 The client transcripts in this section, and those under `PATCH`, `DELETE` and
-`POST …/secret` below, were captured before a client answered
-`service_account_admin_reach`; each such response now carries it as the capture
-under `PATCH /clients/{id}` shows.
+`POST …/secret` below, predate `service_account_admin_reach`; each such response
+now carries it, as the transcript under `PATCH /clients/{id}` shows.
 
 Lists, reads and creates clients — the `clients` row and its OIDC
 configuration (`client_oidc_config`), joined into one resource keyed by the
@@ -19,55 +18,51 @@ a population to browse. A `GET` on a single client carries an `ETag`, which
 `PATCH /clients/{id}` below reads back through `If-Match`.
 
 A create body names `client_id` — chosen by the operator, unlike RFC 7591
-dynamic registration (`clients-registrations/openid-connect`,
-[the request paths](../request-paths/bootstrap.md#dynamic-client-registration))
-where the server assigns it — plus the same RFC 7591 client metadata dynamic
-registration accepts, narrowed by the identical validator
-(`parseClientMetadata`, `packages/protocol-oidc/src/service/client-metadata.ts`):
-a `redirect_uris` entry it rejects, or `jwks` and `jwks_uri` sent together,
-is refused here with the identical `400` detail. `odudu-admin` is refused
-as a `client_id` with `409` — reserved for the built-in admin client every
-tenant is provisioned with, and creation is a door dynamic registration
-never opens to it in the first place, since RFC 7591 §2 already assigns
-`client_id` there and refuses a caller that names one itself. A `client_id`
-that collides with an existing client in the tenant is refused the same
-way, also `409`, rather than surfacing as the database's own unique-index
-violation.
+dynamic registration (`clients-registrations/openid-connect`, [the request
+paths](../request-paths/bootstrap.md#dynamic-client-registration)) where the
+server assigns it — plus the same RFC 7591 client metadata dynamic registration
+accepts, narrowed by the identical validator (`parseClientMetadata`): a
+`redirect_uris` entry it rejects, or `jwks` and `jwks_uri` sent together, is
+refused here with the identical `400` detail. `odudu-admin` is refused as a
+`client_id` with `409` — reserved for the built-in admin client every tenant is
+provisioned with, and creation is a door dynamic registration never opens to it
+in the first place, since RFC 7591 §2 already assigns `client_id` there and
+refuses a caller that names one itself. A `client_id` that collides with an
+existing client in the tenant is refused the same way, also `409`, rather than
+surfacing as the database's own unique-index violation.
 
-A create body may also carry any field `PATCH /clients/{id}` below
-amends — `description`, `client_uri`, `policy_uri`, `tos_uri`, `audiences`, `web_origins`, `post_logout_redirect_uris`,
-`client_credentials_scopes`, `access_token_ttl_seconds`,
-`id_token_ttl_seconds`, `refresh_token_ttl_seconds`, `consent_required`,
-`token_exchange_impersonation_allowed`, `enabled`, `full_scope_allowed` and
-`name` — each checked by the identical validation `PATCH` runs. A field
-`PATCH` refuses to amend, such as `type`, is refused here with `PATCH`'s own
-reason; a key that names nothing on the client at all is refused with `400`
-and the detail `<field>: <field> is not a client field`, naming it rather
-than silently ignoring it; `name` sent alongside a different `client_name`
-is refused the same way. `access_token_ttl_seconds` or `id_token_ttl_seconds`
-outside 1 to 3600 and `refresh_token_ttl_seconds` below 1 are refused with
-`400`, naming the field, on a create and a `PATCH` alike — the ranges the
-database's own CHECK constraints hold (`0013_access_token_ttl_ceiling.sql`,
-`0014_refresh_token_ttl_floor.sql`, `0082_tenant_lifetimes.sql`), which
-otherwise surfaced as a `500`. Each of the three may be `null`, which a
-client created without one already is: the client then takes the tenant's
-setting of the same name ([`GET /settings`](./get-settings-and-patch-settings.md)).
-No transcript shows that refusal;
-`packages/protocol-admin/tests/client-ttl-check.int.test.ts` covers it.
+A create body may also carry any field `PATCH /clients/{id}` below amends —
+`description`, `client_uri`, `policy_uri`, `tos_uri`, `audiences`,
+`web_origins`, `post_logout_redirect_uris`, `client_credentials_scopes`,
+`access_token_ttl_seconds`, `id_token_ttl_seconds`, `refresh_token_ttl_seconds`,
+`consent_required`, `token_exchange_impersonation_allowed`, `enabled`,
+`full_scope_allowed` and `name` — each checked by the identical validation
+`PATCH` runs. A field `PATCH` refuses to amend, such as `type`, is refused here
+with `PATCH`'s own reason; a key that names nothing on the client at all is
+refused with `400` and the detail `<field>: <field> is not a client field`,
+naming it rather than silently ignoring it; `name` sent alongside a different
+`client_name` is refused the same way. `access_token_ttl_seconds` or
+`id_token_ttl_seconds` outside 1 to 3600 and `refresh_token_ttl_seconds` below 1
+are refused with `400`, naming the field, on a create and a `PATCH` alike — the
+ranges the database's own CHECK constraints hold
+(`0013_access_token_ttl_ceiling.sql`, `0014_refresh_token_ttl_floor.sql`,
+`0082_tenant_lifetimes.sql`), which otherwise surfaced as a `500`. Each of the
+three may be `null`, which a client created without one already is: the client
+then takes the tenant's setting of the same name ([`GET
+/settings`](./get-settings-and-patch-settings.md)). No transcript shows that
+refusal; An integration test covers it.
 
-A `jwks` is served public members only, by the read, the list and every
-response that carries a client, the same stripping export applies
-(`publicJwks`, `packages/protocol-admin/src/service/public-jwks.ts`).
-Registration and this API refuse a private member, so only a row written
-before they did can hold one; a `PATCH` that reruns the metadata is judged
-on the stripped set, and writes it back without the member. No transcript
-shows it, since no stack this document was captured on holds such a row;
-`packages/protocol-admin/tests/clients.int.test.ts` writes one directly.
+A `jwks` is served public members only, by the read, the list and every response
+that carries a client, the same stripping export applies (`publicJwks`).
+Registration and this API refuse a private member, so only a row written before
+they did can hold one; a `PATCH` that reruns the metadata is judged on the
+stripped set, and writes it back without the member. No transcript shows it,
+since none of these runs produced such a row; an integration test writes one
+directly.
 
-Creating a client that names both, against `demo`, then reading it back.
-Recaptured against the twelfth stack, in a `demo` created there, which by
-then held the four clients the search below names; the `etag` the create
-answers is the one the read does:
+Creating a client that names both, against `demo`, then reading it back. In a
+`demo` created there, which by then held the four clients the search below
+names; the `etag` the create answers is the one the read does:
 
 ```bash
 curl -sS -D - -X POST \
@@ -156,17 +151,14 @@ given a generated secret, returned **exactly once, in the creation
 response**. Nothing reads it back afterward — `clients.secret_hash` is the
 only thing stored.
 
-The disable and delete guards further down read `builtin_admin`, and a
-client's representation carries it and `service_subject_id` too. This
-create, the psql listing and the disable/delete/rotate blocks under
-`PATCH /clients/{id}`, `DELETE /clients/{id}` and `POST /clients/{id}/secret`
-below were captured together against the sixth stack, in a tenant of their
-own, `client-facts-demo`, created for them the same way `GET /admin/tenants`
-above shows, as `ada`, and recaptured together, in the same order, against
-the twelfth stack in a `client-facts-demo` of its own there, so the ids in
-them are that run's; the `demo`-tenant blocks between them (the amendment
-and `If-Match` narrative) come from an earlier, already-torn-down stack,
-and say so where they appear:
+The disable and delete guards further down read `builtin_admin`, and a client's
+representation carries it and `service_subject_id` too. This create, the psql
+listing and the disable/delete/rotate blocks under `PATCH /clients/{id}`,
+`DELETE /clients/{id}` and `POST /clients/{id}/secret` below are one run, in a
+tenant of their own, `client-facts-demo`, created for them the same way `GET
+/admin/tenants` above shows, as `ada`, so the ids in them are that run's; the
+`demo`-tenant blocks between them (the amendment and `If-Match` narrative) are
+from another, and say so where they appear:
 
 ```bash
 curl -sS -D - -X POST \
@@ -202,7 +194,7 @@ delete guards below check, not asserted — the psql listing under
 `PATCH /clients/{id}` shows both rows.
 
 The reserved `client_id`, refused against `demo` (this tenant's own history,
-captured separately):
+from a separate run):
 
 ```
 {"type":"about:blank","title":"Conflict","status":409,"detail":"the client_id \"odudu-admin\" is reserved","instance":"01a0d6ff-8816-7f15-827d-118b7b6ee5ed"}
@@ -210,9 +202,8 @@ captured separately):
 
 Listing pages the same way `GET /admin/tenants` does — `?limit=`, `?cursor=`,
 ordered by `id`, a `Link: rel="next"` header and a `next` body member once a
-further page exists, no total (`GET /clients/count` below has one). On this
-stack the page held two clients, the tenant's own `odudu-admin` and
-`demo-backend` above:
+further page exists, no total (`GET /clients/count` below has one). Here the
+page held two clients, the tenant's own `odudu-admin` and `demo-backend` above:
 
 ```bash
 curl -sS \
@@ -221,14 +212,13 @@ curl -sS \
 ```
 
 **Search and filters** follow `GET /admin/tenants` above: a prefix of
-`?client_id=` or `?name=`, never both, over the stored `client_id_search`
-and `name_search` columns (`0074_list_indexes_tenants_clients.sql`),
-ordered by that folded column then by `id`; exact filters
-`?type=public|confidential` and `?enabled=true|false`, `AND`ed with it and
-with each other; a cursor bound to every filter; any other parameter
-refused with `400` naming it. Recaptured against the twelfth stack, whose
-`demo` held `demo-backend`, `demo-exchanger`, `demo-fields-check` and
-`demo-operator` (confidential) and `demo-spa` (public):
+`?client_id=` or `?name=`, never both, over the stored `client_id_search` and
+`name_search` columns (`0074_list_indexes_tenants_clients.sql`), ordered by that
+folded column then by `id`; exact filters `?type=public|confidential` and
+`?enabled=true|false`, `AND`ed with it and with each other; a cursor bound to
+every filter; any other parameter refused with `400` naming it. Whose `demo`
+held `demo-backend`, `demo-exchanger`, `demo-fields-check` and `demo-operator`
+(confidential) and `demo-spa` (public):
 
 ```bash
 curl -sS -D - \
@@ -275,9 +265,9 @@ curl -sS \
 {"type":"about:blank","title":"Bad Request","status":400,"detail":"cursor is invalid or expired","errors":[{"path":"cursor","message":"is invalid or expired"}],"instance":"01a109b6-b459-7bbd-8cb7-d533f4439711"}
 ```
 
-A `type` outside the enum, then two search fields at once (the second refusal was
-recaptured on the fifteenth stack, after `client_id_exact` joined the searches
-that may not be combined, so it names all three):
+A `type` outside the enum, then two search fields at once (the second refusal
+names all three searches that may not be combined, `client_id_exact` among
+them):
 
 ```bash
 curl -sS \
@@ -309,9 +299,8 @@ content-type: application/json; charset=utf-8
 content-length: 1594
 ```
 
-The create response above was 1656 bytes and this one is 1594: the
-difference is the secret, present there and absent here. (This read shows
-headers only, from `demo` — a different, already-torn-down stack than
-`client-facts-demo` above; the two never share an id.) Not re-run for the
-`cache-control: no-store` pass, for the same reason: that stack, and the
-client this id names, are gone.
+The create response above was 1656 bytes and this one is 1594: the difference is
+the secret, present there and absent here. (This read shows headers only, from
+`demo`, a different run than `client-facts-demo` above; the two never share an
+id.) It predates the `cache-control: no-store` header and was not re-run: the
+client this id names is gone.

@@ -12,10 +12,9 @@ request touches the filesystem; a path that is not a file of the build is `404`.
 It reads no database and takes nothing from the request, so it says nothing
 about any tenant. `ODUDU_DOCS=false` registers nothing.
 
-Captured against the project `odudu-p4g-docs`, a new stack on port `3261` built
-from the branch commit `580d1937` plus this change's Dockerfile, with no tenant
-seeded: the site is the same on any stack. `date`, `x-request-id`, `connection`
-and `keep-alive` change on every response and are filtered out in the command.
+On a new stack on port `3261`, with no tenant seeded: the site is the same on
+any stack. `date`, `x-request-id`, `connection` and `keep-alive` change on every
+response and are filtered out in the command.
 
 A bare `/docs` is sent to the directory. Every response the route produces
 carries `x-robots-tag: noindex, nofollow`, redirect included. Fastify's own `400`
@@ -128,6 +127,6 @@ content-type: application/problem+json; charset=utf-8
 The site must be at the root of the origin `ODUDU_PUBLIC_BASE_URL` names. Its
 links name `/docs/`, so a reverse proxy that mounts the server under a path
 prefix breaks them; that is unsupported. The route never builds an address from
-`Host` or a forwarded header (`apps/server/src/docs.test.ts` sends hostile ones
-and asserts none appears in any response), and the pages carry no absolute link
-to another origin but the repository (`apps/docs/tests/csp.test.ts`).
+`Host` or a forwarded header (a test sends hostile ones and asserts none appears
+in any response), and the pages carry no absolute link to another origin but the
+repository.

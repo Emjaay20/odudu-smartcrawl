@@ -17,11 +17,12 @@ API.
 
 ## Pick how you are running it
 
-[README.md](https://github.com/wizzywit/odudu/blob/main/README.md) describes three ways to run this: everything in
-Docker, Postgres in Docker with the server on your host, and everything on
-your host against a PostgreSQL you operate. They differ in exactly one thing
-this document depends on — **how the seed command is invoked** — because the
-container runs a built bundle and a host run has the source.
+[The README](https://github.com/wizzywit/odudu/blob/main/README.md) describes
+three ways to run this: everything in Docker, Postgres in Docker with the server
+on your host, and everything on your host against a PostgreSQL you operate. They
+differ in exactly one thing this document depends on — **how the seed command is
+invoked** — because the container runs a built bundle and a host run has the
+source.
 
 So the rest of this document calls the CLI through a shell function named
 `odudu`. Define it once for the way you are running, from the repository
@@ -60,12 +61,12 @@ odudu() { node --env-file=.env apps/server/src/main.ts "$@"; }
 
 What else the choice settles:
 
-| What it settles                                | Everything in Docker              | Server on your host                               |
-| ---------------------------------------------- | --------------------------------- | ------------------------------------------------- |
-| What the CLI executes                          | the bundle built into the image   | `apps/server/src/main.ts`, types stripped by Node |
-| Configuration the server and the CLI both read | `infra/docker/.env`               | the repository-root `.env`                        |
-| Base URL of every endpoint                     | `http://localhost:3000`           | `http://localhost:3000`                           |
-| PostgreSQL                                     | compose's, published on port 5442 | compose's on 5442, or one you run yourself        |
+| What it settles                                | Everything in Docker              | Server on your host                           |
+| ---------------------------------------------- | --------------------------------- | --------------------------------------------- |
+| What the CLI executes                          | the bundle built into the image   | the TypeScript source, types stripped by Node |
+| Configuration the server and the CLI both read | `infra/docker/.env`               | the repository-root `.env`                    |
+| Base URL of every endpoint                     | `http://localhost:3000`           | `http://localhost:3000`                       |
+| PostgreSQL                                     | compose's, published on port 5442 | compose's on 5442, or one you run yourself    |
 
 The base URL is the same in all three, so no URL below is mode-specific:
 compose publishes `127.0.0.1:3000:3000`, and a host run defaults to the same
@@ -78,13 +79,14 @@ the same reason. **The seed command does not run migrations**; it expects a
 schema the server put there on boot, and a seed run in that gap fails with
 `relation "tenants" does not exist`.
 
-Running everything on your host needs the database and the restricted
-serving role to exist before any of this — one `CREATE DATABASE` and one
-`CREATE USER`, in [README.md](https://github.com/wizzywit/odudu/blob/main/README.md#running-it), against a PostgreSQL
-whose owner role can `CREATE ROLE`. Nothing after that bootstrap differs from
-the second column above. The run behind this document used a throwaway
-cluster made for it — `initdb -D /tmp/odudu-pg -U postgres`, started with
-`pg_ctl` on port 5433, PostgreSQL 18.6 — rather than the compose stack, so
+Running everything on your host needs the database and the restricted serving
+role to exist before any of this — one `CREATE DATABASE` and one `CREATE USER`,
+in [the
+README](https://github.com/wizzywit/odudu/blob/main/README.md#running-it),
+against a PostgreSQL whose owner role can `CREATE ROLE`. Nothing after that
+bootstrap differs from the second column above. The no-Docker run below used a
+throwaway cluster made for it — `initdb -D /tmp/odudu-pg -U postgres`, started
+with `pg_ctl` on port 5433, PostgreSQL 18.6 — rather than the compose stack, so
 that "no Docker at all" meant it.
 
 ## The key that has to be the same on both sides
@@ -318,15 +320,14 @@ curl -sS -o /dev/null -w '%{http_code}\n' \
 ```
 
 Registration accepts, beside the redirect and authentication metadata the
-transcripts below register, RFC 7591's `client_uri`, `policy_uri` and
-`tos_uri` (absolute https, or http on a loopback host, no fragment — the
-consent screen links them, [The client's own pages](./rp-initiated-logout.md#the-clients-own-pages))
-and OpenID Connect Dynamic Client Registration §2's
-`id_token_signed_response_alg` (an algorithm a non-retired key of the tenant
-produces), `default_max_age` and `require_auth_time`; a response echoes each
-one registered, and none that was not. No transcript here registers them;
-`packages/protocol-admin/tests/client-metadata.int.test.ts` and
-`client-id-token-settings.int.test.ts` do.
+transcripts below register, RFC 7591's `client_uri`, `policy_uri` and `tos_uri`
+(absolute https, or http on a loopback host, no fragment — the consent screen
+links them, [The client's own
+pages](./rp-initiated-logout.md#the-clients-own-pages)) and OpenID Connect
+Dynamic Client Registration §2's `id_token_signed_response_alg` (an algorithm a
+non-retired key of the tenant produces), `default_max_age` and
+`require_auth_time`; a response echoes each one registered, and none that was
+not. No transcript here registers them; integration tests do.
 
 `client_registration_policy` is `disabled` on every tenant by default (ADR
 0026). Registering before it is opened, or against a tenant that does not
@@ -443,16 +444,13 @@ TOKEN=$(odudu seed registration-token --tenant reg-demo --uses 1 --ttl 3600)
 j4B_nsJYIJSe8AgjA9xVsFU28J6L67yYzVinAYXXP4w
 ```
 
-It is stored as its SHA-256 digest, the same shape
-`packages/account/src/repository/action-tokens.ts` uses, and spent by one
-`UPDATE … RETURNING`
-(`packages/domain-tenant/src/repository/client-registration-tokens.ts`) so
-two concurrent registrations against a one-use token cannot both win —
-answering the request and consuming the token happen in the one transaction
-that inserts the client, never earlier. Presenting it registers a client
-whose `registration_origin` is `'token'`, with `consent_required` defaulting
-`false`: an initial access token is an operator's own authorization, as
-much as `seed client` naming a client directly is.
+It is stored as its SHA-256 digest, the same shape the account action tokens
+use, and spent by one `UPDATE … RETURNING` so two concurrent registrations
+against a one-use token cannot both win — answering the request and consuming
+the token happen in the one transaction that inserts the client, never earlier.
+Presenting it registers a client whose `registration_origin` is `'token'`, with
+`consent_required` defaulting `false`: an initial access token is an operator's
+own authorization, as much as `seed client` naming a client directly is.
 
 ```bash
 curl -sS -X POST http://localhost:3000/tenants/reg-demo/clients-registrations/openid-connect \
@@ -475,32 +473,31 @@ generated or returned — RFC 6749 §10.1 gives no client that cannot keep one
 confidential a credential to keep.
 
 A tenant at its `max_clients` cap refuses further registration with 403 and
-`invalid_client_metadata`, taken under `SELECT … FOR UPDATE` on the tenant
-row before the count so two concurrent registrations cannot both observe
-room that only one of them will actually get
-(`packages/domain-tenant/src/repository/clients.ts`'s `lockCapacity`,
-exercised concurrently in
-`packages/protocol-oidc/tests/client-registration.int.test.ts`).
+`invalid_client_metadata`, taken under `SELECT … FOR UPDATE` on the tenant row
+before the count so two concurrent registrations cannot both observe room that
+only one of them will actually get.
 
-A registered `backchannel_logout_uri` is stored, echoed back in the
-registration response, and now read: discovery advertises
-`backchannel_logout_supported` and its front-channel twin for every tenant
-(see [discovery](./path-a-authorization-code-with-pkce.md#1-discovery) above), and ending a session delivers to it
-(see [front-channel and back-channel logout](./rp-initiated-logout.md#front-channel-and-back-channel-logout)
-below). `userinfo_signed_response_alg` is stored, echoed, and now read: a
-client that registers `RS256` or `ES256` gets a signed `/userinfo`
-response, and one that registers `none` gets a JWT `/userinfo` response
-that is not signed — an RFC 7519 §6 unsecured JWT (`alg: "none"`, no
-signature). Both are `application/jwt` and carry `iss` and `aud` (OIDC Core
-§5.3.2 for the "If signed" case; OIDC Registration §2 and Discovery §3 for
-why `none` still serializes as a JWT at all — see the reading note in
-`docs/protocols/oidc-core.md`). Registration refuses a value the _tenant's own_ active signing
-key cannot produce, and discovery's `userinfo_signing_alg_values_supported`
-is that same tenant's answer — `[key.alg, "none"]` — never a fixed pair
-advertised to every tenant regardless of which key it actually holds (a
-tenant holds exactly one). `userinfo_encrypted_response_alg` and `_enc` are
-stored, echoed and now read too — see
-[Encrypted and nested UserInfo responses](./path-a-authorization-code-with-pkce.md#encrypted-and-nested-userinfo-responses)
+A registered `backchannel_logout_uri` is stored, echoed back in the registration
+response, and now read: discovery advertises `backchannel_logout_supported` and
+its front-channel twin for every tenant (see
+[discovery](./path-a-authorization-code-with-pkce.md#1-discovery) above), and
+ending a session delivers to it (see [front-channel and back-channel
+logout](./rp-initiated-logout.md#front-channel-and-back-channel-logout) below).
+`userinfo_signed_response_alg` is stored, echoed, and now read: a client that
+registers `RS256` or `ES256` gets a signed `/userinfo` response, and one that
+registers `none` gets a JWT `/userinfo` response that is not signed — an RFC
+7519 §6 unsecured JWT (`alg: "none"`, no signature). Both are `application/jwt`
+and carry `iss` and `aud` (OIDC Core §5.3.2 for the "If signed" case; OIDC
+Registration §2 and Discovery §3 for why `none` still serializes as a JWT at all
+— see [the OIDC Core reading
+note](https://github.com/wizzywit/odudu/blob/main/docs/protocols/oidc-core.md)).
+Registration refuses a value the _tenant's own_ active signing key cannot
+produce, and discovery's `userinfo_signing_alg_values_supported` is that same
+tenant's answer — `[key.alg, "none"]` — never a fixed pair advertised to every
+tenant regardless of which key it actually holds (a tenant holds exactly one).
+`userinfo_encrypted_response_alg` and `_enc` are stored, echoed and now read too
+— see [Encrypted and nested UserInfo
+responses](./path-a-authorization-code-with-pkce.md#encrypted-and-nested-userinfo-responses)
 below for the transcript.
 
 The metadata checks below are shown anonymously, so the policy goes back to
@@ -559,9 +556,8 @@ curl -sS -X POST http://localhost:3000/tenants/reg-demo/clients-registrations/op
 
 A client holds at most 200 redirect URIs, the bound every list on a client
 shares ([the admin paths](../admin-paths/patch-clientsid.md)); a longer list is
-refused with the count and the limit, and 200 exactly is registered. Captured
-on the stack the admin paths calls its fifteenth, in the tenant
-`client-reach-demo`, with registration opened:
+refused with the count and the limit, and 200 exactly is registered. In the
+tenant `client-reach-demo`, with registration opened:
 
 ```bash
 curl -sS -X POST http://localhost:3082/tenants/client-reach-demo/clients-registrations/openid-connect \
@@ -637,20 +633,16 @@ curl -sS -X POST http://localhost:3000/tenants/reg-demo/clients-registrations/op
 }
 ```
 
-A registered `jwks` carries public keys only. A key holding any private
-member — `d`, `p`, `q`, `dp`, `dq`, `qi` or `k` — is refused, on
-registration here and on `POST` and `PATCH /admin/tenants/{tenant}/clients`
-alike, since all three validate through the same client metadata check: a
-stored private half would be handed back by every read and export of the
-client. These three calls were captured later than the rest of this
-section, against a different stack: a compose project of their own,
-published on port 3080 and built from the branch that made an admin `400`
-name its field under `errors`, in a tenant `jwks-demo` created through
-`POST /admin/tenants` with `client_registration_policy` set to `open`
-through `PATCH /settings`, so the refusal is the key's and not the
-policy's. That stack was torn down afterwards. A private key is refused
-by registration and by the admin API, and the first key without its private
-member then registers:
+A registered `jwks` carries public keys only. A key holding any private member —
+`d`, `p`, `q`, `dp`, `dq`, `qi` or `k` — is refused, on registration here and on
+`POST` and `PATCH /admin/tenants/{tenant}/clients` alike, since all three
+validate through the same client metadata check: a stored private half would be
+handed back by every read and export of the client. These three calls are from a
+different stack, published on port 3080, in a tenant `jwks-demo` created through
+`POST /admin/tenants` with `client_registration_policy` set to `open` through
+`PATCH /settings`, so the refusal is the key's and not the policy's. A private
+key is refused by registration and by the admin API, and the first key without
+its private member then registers:
 
 ```bash
 curl -sS -X POST http://localhost:3080/tenants/jwks-demo/clients-registrations/openid-connect \

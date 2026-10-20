@@ -5,17 +5,16 @@ description: 'Requires manage-users. The body names the required actions the lin
 
 # `POST /subjects/:id/actions-email`
 
-Requires `manage-users`. The body names the required actions the link takes
-the subject through — `{"actions": […]}`, at least one of `update-password`,
+Requires `manage-users`. The body names the required actions the link takes the
+subject through — `{"actions": […]}`, at least one of `update-password`,
 `configure-totp`, `configure-passkey` and `generate-recovery-codes`, the
 vocabulary `PUT /subjects/:id/required-actions` takes, anything else refused
-with `400`, as is any other field, `client_id` and `redirect_uri` included.
-The link is minted and mailed to the subject's own address by
-`enqueueActionsLink` (`@odudu/account`), and the answer is `202` with no
-body. The two routes above are the same core with a fixed link: one
-`sendAccountEmail` (`packages/protocol-admin/src/usecase/account-email.ts`)
-does the lookups, the target ceiling, the three `409`s, the mail and the
-audit row for all three, so they cannot drift.
+with `400`, as is any other field, `client_id` and `redirect_uri` included. The
+link is minted and mailed to the subject's own address by `enqueueActionsLink`
+(`@odudu/account`), and the answer is `202` with no body. The two routes above
+are the same core with a fixed link: one `sendAccountEmail` does the lookups,
+the target ceiling, the three `409`s, the mail and the audit row for all three,
+so they cannot drift.
 
 **What the link does.** Opening it shows the actions, and consumes nothing,
 so a mail scanner's `GET` does not spend it. Submitting it sets a new
@@ -45,17 +44,15 @@ the sign-in, registration and reset submissions, as the two routes above
 are. The link is never in the response, and the audit row,
 `subject.actions_email_send`, names the actions and nothing else.
 
-Against the `odudu-t8d2` stack named under the twelfth stack above, in a tenant `required-actions-demo` made for it,
-with a relay at the stack's own `postgres` container, port 25, where nothing
-listens, and `grace` made through `POST /subjects`
-with an address and no password; `P=http://localhost:3086/admin/tenants/required-actions-demo`.
-These five commands were recaptured on a later stack, the compose project
-`odudu-8d3` on port 3086, built at the commit that dropped the redirect pair
-and torn down with `down -v` afterwards; `grace`'s id and the request ids are
-that run's own. The mail and link pages below are the earlier stack's, whose
-link has the same page. A link asking for a password while the tenant's reset
-is off, the setting turned on, the removed `client_id` and `redirect_uri`, an action the server
-does not take, then the send that is accepted, and its audit row:
+In a tenant `required-actions-demo` made for it, with a relay at the stack's own
+`postgres` container, port 25, where nothing listens, and `grace` made through
+`POST /subjects` with an address and no password;
+`P=http://localhost:3086/admin/tenants/required-actions-demo`. `grace`'s id and
+the request ids are this run's own. The mail and link pages below are from an
+earlier run, whose link has the same page. A link asking for a password while
+the tenant's reset is off, the setting turned on, the removed `client_id` and
+`redirect_uri`, an action the server does not take, then the send that is
+accepted, and its audit row:
 
 ```bash
 G=01a10c6a-8a75-7017-a32b-2c65e85ba94d
@@ -120,15 +117,13 @@ You received this because an administrator at ⁨required-actions-demo⁩ asked 
 The mail text is the mail package's catalogue, with the tenant name inside
 Unicode isolates (U+2068 and U+2069, invisible here), and after the `--` line
 the reason it was sent and the footer, whose year is that of the moment it was
-queued. The block above was captured again on 2026-10-19, after the mail got
-its designed shell, on a stack of its own, the compose project
-`odudu-p4g-mail` (tenant `required-actions-demo`, `grace`, the same request),
-so its link is that run's, on `localhost:3000` because the server there was
-told that was its public base URL, and names nothing from the run above. Its
-relay was a Mailpit container, so the message was delivered as well as queued,
-and Mailpit shows what arrived: the mark is an inline image, which the SMTP
-sender attaches because the markup names it `cid:odudu-mark` (`ID` is the
-message's id in Mailpit's list):
+queued. The block above is from a second run (tenant `required-actions-demo`,
+`grace`, the same request), so its link is that run's, on `localhost:3000`
+because the server there was told that was its public base URL, and names
+nothing from the run above. Its relay was a Mailpit container, so the message
+was delivered as well as queued, and Mailpit shows what arrived: the mark is an
+inline image, which the SMTP sender attaches because the markup names it
+`cid:odudu-mark` (`ID` is the message's id in Mailpit's list):
 
 ```bash
 curl -s "http://localhost:18925/api/v1/message/$ID" | jq -c '{To: [.To[].Address], From: .From.Address, Subject, Inline: [.Inline[] | {FileName, ContentType, ContentID, Size}]}'

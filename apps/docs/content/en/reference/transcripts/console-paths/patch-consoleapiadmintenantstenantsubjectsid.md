@@ -1,13 +1,14 @@
 ---
 title: 'PATCH /console/api/admin/tenants/{tenant}/subjects/{id}'
-description: "From the eighth run, on grace's session. If-Match is one of the four request headers the proxy forwards, and every write names the session's subject…"
+description: "A write through the console proxy carries If-Match and names the session's subject in the X-Odudu-Console-Subject header."
 ---
 
 # `PATCH /console/api/admin/tenants/{tenant}/subjects/{id}`
 
-From the eighth run, on `grace`'s session. `If-Match` is one of the four
-request headers the proxy forwards, and every write names the session's
-subject in `X-Odudu-Console-Subject` ([below](./post-consoleapiadmintenantstenantsubjects-refused-for-another-principal.md#post-consoleapiadmintenantstenantsubjects-refused-for-another-principal)).
+On `grace`'s session. `If-Match` is one of the four request headers the proxy
+forwards, and every write names the session's subject in
+`X-Odudu-Console-Subject`
+([below](./post-consoleapiadmintenantstenantsubjects-refused-for-another-principal.md#post-consoleapiadmintenantstenantsubjects-refused-for-another-principal)).
 The `ETag` comes from a read of `hopper`:
 
 ```bash

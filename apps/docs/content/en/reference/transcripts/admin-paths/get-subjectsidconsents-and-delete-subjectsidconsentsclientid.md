@@ -5,45 +5,41 @@ description: 'The read requires view-users, the delete manage-users.'
 
 ## `GET /subjects/:id/consents` and `DELETE /subjects/:id/consents/:clientId`
 
-The read requires `view-users`, the delete `manage-users`. A consent is what
-the consent screen (`packages/protocol-oidc/src/usecase/consent-submission.ts`)
-records when a `consent_required` client asks and a subject allows — paged
-by keyset on the client's own `client_id`, as every other collection is
-(`limit` up to 200, `link` and `next` as `GET /subjects` carries them), because
-the number of clients a subject has consented to is not bounded by anything the
-subject does. Each entry names the client by both ids: `client_id`
-is its row id, what `:clientId` on the delete names, and `client_key` its own
-OAuth `client_id` string, the one an operator actually recognises.
-`scope_names` is every scope currently granted, and `granted_at` is when the
-grant, as it now reads, was last written — the consent screen replaces the
-whole granted set on every submission (`consentRepository.record`'s own
-comment, `packages/domain-tenant/src/repository/consents.ts`), so this is
-never older than the most recent consent decision. `DELETE` withdraws the
-grant outright: the row and every scope under it are gone, `consent_scopes`
-cascading on `consents.id` (`packages/db/drizzle/0046_consents.sql`), and the
-next `/authorize` that reaches this client finds nothing recorded and asks
+The read requires `view-users`, the delete `manage-users`. A consent is what the
+consent screen records when a `consent_required` client asks and a subject
+allows — paged by keyset on the client's own `client_id`, as every other
+collection is (`limit` up to 200, `link` and `next` as `GET /subjects` carries
+them), because the number of clients a subject has consented to is not bounded
+by anything the subject does. Each entry names the client by both ids:
+`client_id` is its row id, what `:clientId` on the delete names, and
+`client_key` its own OAuth `client_id` string, the one an operator actually
+recognises. `scope_names` is every scope currently granted, and `granted_at` is
+when the grant, as it now reads, was last written — the consent screen replaces
+the whole granted set on every submission, so this is never older than the most
+recent consent decision. `DELETE` withdraws the grant outright: the row and
+every scope under it are gone, `consent_scopes` cascading on `consents.id`, and
+the next `/authorize` that reaches this client finds nothing recorded and asks
 again. An unknown subject on the read, or a subject with no consent to that
 client on the delete, answers `404`.
 
 **Revoking a consent also revokes every token issued under it, live or
-offline.** An `offline_access` family rotates indefinitely — bounded only
-by its own TTL per rotation, never by the consent it was first granted
-under (`refresh-rotation.ts`'s own comment on `grant.sessionId === null`)
-— so leaving it alone would mean a subject who revoked access is still
-impersonated by whatever refresh token that client already holds. This
-route revokes the grant in the same transaction it deletes the consent:
-the next refresh answers `invalid_grant`, and an outstanding access token
-introspects `active: false`, immediately, not at its own expiry.
+offline.** An `offline_access` family rotates indefinitely — bounded only by its
+own TTL per rotation, never by the consent it was first granted under
+(`refresh-rotation.ts`'s own comment on `grant.sessionId === null`) — so leaving
+it alone would mean a subject who revoked access is still impersonated by
+whatever refresh token that client already holds. This route revokes the grant
+in the same transaction it deletes the consent: the next refresh answers
+`invalid_grant`, and an outstanding access token introspects `active: false`,
+immediately, not at its own expiry.
 `tokenGrantRepository.revokeForSubjectClient` is the same idempotent
-`coalesce(revoked_at, …)` write `revokeForSession` already makes for a
-session's own grants (`token_grants_by_subject` serves its lookup; the
-Performance section of `docs/phases/p4d.md` has the plan). Demonstrated below, on the same stack.
+`coalesce(revoked_at, …)` write `revokeForSession` already makes for a session's
+own grants (`token_grants_by_subject` serves its lookup). Demonstrated below.
 
-Captured against a tenant `consents-demo2` made for this section, on a
-confidential client `consents-demo-app2` created with `consent_required`
-true and a subject `grace` seeded with a real password (`odudu seed user`,
-so no `update-password` detour is needed first). `/authorize`, asking for
-`offline_access` too, followed by logging in:
+In a tenant `consents-demo2` made for this section, on a confidential client
+`consents-demo-app2` created with `consent_required` true and a subject `grace`
+seeded with a real password (`odudu seed user`, so no `update-password` detour
+is needed first). `/authorize`, asking for `offline_access` too, followed by
+logging in:
 
 ```bash
 curl -sS \
@@ -260,9 +256,9 @@ Keep-Alive: timeout=72
 
 ### Paging a subject's consents
 
-Against a stack of its own (`perf-demo`, a subject `grace` and four clients
-`alpha-app` to `delta-app`, one consent each, written with `insert into
-consents` because the consent screen records one per sign-in), the first two:
+In `perf-demo` (a subject `grace` and four clients `alpha-app` to `delta-app`,
+one consent each, written with `insert into consents` because the consent screen
+records one per sign-in), the first two:
 
 ```bash
 curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" \

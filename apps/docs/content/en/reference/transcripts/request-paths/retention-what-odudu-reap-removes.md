@@ -9,18 +9,16 @@ Everything above leaves rows behind, and nothing in any repository deletes
 one. `odudu reap` is the pass that does, on a stated window per table
 ([ADR 0021](https://github.com/wizzywit/odudu/blob/main/docs/adr/0021-retention-is-bounded-by-the-detection-window.md)).
 
-**The counts in this section are the whole point of it, so they were
-captured against a stack driven only as far as
-[Path A](./path-a-authorization-code-with-pkce.md) plus one refresh rotation** —
-a freshly built compose stack, `demo` seeded as [Bootstrap](./bootstrap.md)
-seeds it, one login, one code redeemed, one refresh rotated, and nothing
-else. Following this document end to end instead leaves dozens of sessions
-and grants behind, and a pass over those reports numbers that say nothing
-about which rule kept which row. Every report below was captured once the
-pass reported `cleared` too, against such a stack built from this branch —
-compose project `odudu-t8c2`, on port 3082, brought up from an empty volume
-with `ODUDU_REAP_ENABLED=false` so that no pass but these ran, and torn down
-afterwards. Run against that minimal stack, the pass removes nothing at all:
+**The counts in this section are the whole point of it, so they come from a
+stack driven only as far as [Path A](./path-a-authorization-code-with-pkce.md)
+plus one refresh rotation** — a freshly built compose stack, `demo` seeded as
+[Bootstrap](./bootstrap.md) seeds it, one login, one code redeemed, one refresh
+rotated, and nothing else. Following this document end to end instead leaves
+dozens of sessions and grants behind, and a pass over those reports numbers that
+say nothing about which rule kept which row. Every report below is from such a
+stack, once the pass reported `cleared` too, brought up from an empty volume
+with `ODUDU_REAP_ENABLED=false` so that no pass but these ran. Run against that
+minimal stack, the pass removes nothing at all:
 
 ```bash
 odudu reap
@@ -137,24 +135,23 @@ odudu reap
 {"ran":true,"deleted":{"refresh_tokens":0,"authorization_codes":0,"token_grants":0,"authentication_sessions":0,"action_tokens":0,"client_registration_tokens":0,"login_failures":0,"email_outbox":0,"backchannel_logout_deliveries":0,"client_assertion_jti":0,"console_sessions":2,"console_logins":1,"sessions":0,"audit_events":0},"cleared":{"client_previous_secrets":0}}
 ```
 
-The idle session and the expired one are removed, and so is the expired
-login. The live session and the live login remain. A console session ends
-after thirty minutes idle or at its own `expires_at`, whichever comes first.
-A pending login ends at its `expires_at`. Neither table keeps a row past
-that point, because a row past either bound cannot be used again, so
-keeping it would serve no detection. The pass revokes no grant with the
-row: a console session's grant is bound to the tenant's SSO session, and
-its refresh token answers `invalid_grant` once that session idles out
-(`apps/server/tests/console-session.int.test.ts`). The gateway itself
-revokes the grant when a request finds the session over.
+The idle session and the expired one are removed, and so is the expired login.
+The live session and the live login remain. A console session ends after thirty
+minutes idle or at its own `expires_at`, whichever comes first. A pending login
+ends at its `expires_at`. Neither table keeps a row past that point, because a
+row past either bound cannot be used again, so keeping it would serve no
+detection. The pass revokes no grant with the row: a console session's grant is
+bound to the tenant's SSO session, and its refresh token answers `invalid_grant`
+once that session idles out. The gateway itself revokes the grant when a request
+finds the session over.
 
 ## When the pass refuses, or finds nothing to look at
 
-Three answers are not a report of rows, and each says which it is. Before
-any tenant exists there is nothing to enumerate, and the pass says so rather
-than reporting a clean sweep of zeros — captured on a stack that had been
-migrated and not yet seeded, so it is the one command in this document that
-answers differently once [Bootstrap](./bootstrap.md) has been followed:
+Three answers are not a report of rows, and each says which it is. Before any
+tenant exists there is nothing to enumerate, and the pass says so rather than
+reporting a clean sweep of zeros — on a stack that had been migrated and not yet
+seeded, so it is the one command in this document that answers differently once
+[Bootstrap](./bootstrap.md) has been followed:
 
 ```bash
 odudu reap
@@ -213,16 +210,15 @@ than guessed at from an empty result, which is the same fact arriving too
 late to act on.
 
 The server also runs this pass itself, every `ODUDU_REAP_INTERVAL_SECONDS`
-(default `3600`) plus up to a tenth of that as jitter, which is why the
-counts above are reproducible only if the backdating and the command follow
-each other inside one interval. `ODUDU_REAP_ENABLED=false` switches the
-schedule off for a deployment that runs the command on its own timetable
-([ADR 0024](https://github.com/wizzywit/odudu/blob/main/docs/adr/0024-a-scheduled-pass-is-a-command-first.md)) — and, as of
-2026-09-17, `compose.yaml` passes that variable through, which it did not
-before: `ODUDU_REAP_ENABLED=false docker compose up -d` left it out of the
-container's environment entirely and the schedule ran anyway. The first
-tick is one interval away rather than immediate, which is why the counts
-above survived that gap.
+(default `3600`) plus up to a tenth of that as jitter, which is why the counts
+above are reproducible only if the backdating and the command follow each other
+inside one interval. `ODUDU_REAP_ENABLED=false` switches the schedule off for a
+deployment that runs the command on its own timetable ([ADR
+0024](https://github.com/wizzywit/odudu/blob/main/docs/adr/0024-a-scheduled-pass-is-a-command-first.md))
+— and, the compose file passes that variable through: `ODUDU_REAP_ENABLED=false
+docker compose up -d` left it out of the container's environment entirely and
+the schedule ran anyway. The first tick is one interval away rather than
+immediate, which is why the counts above survived that gap.
 
 Running it from more than one place at once is safe, whether the other
 place is a cron entry or another replica's own schedule: the pass takes a

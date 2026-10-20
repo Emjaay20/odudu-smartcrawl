@@ -5,52 +5,47 @@ description: 'Requires manage-tenant. The body is {"default": true} or {"default
 
 # `PUT /groups/:id/default`
 
-Requires `manage-tenant`. The body is `{"default": true}` or
-`{"default": false}`, and the answer is the group with its `ETag`; the
-group's `default_for_new_subjects` shows the flag on every read, and
-`PATCH /groups/:id` refuses it with a reason naming this route. `If-Match`
-is optional, and a stale one is refused with `412`. A default group is
-joined by **every subject created afterwards** — through `POST /subjects`,
-self-registration and `odudu seed` (`seed user`, the bootstrap user and
-`seed admin`), all through `grantNewSubjectDefaults`
-(`packages/domain-authz/src/repository/new-subject-defaults.ts`), which
-hands out the default roles in the same pass — and by none that already
-exist. A subject an import brings is one being moved rather than created:
-it arrives with exactly the groups and roles its document lists, a default
-group's membership included where it held one, so the import never hands
-back a membership an administrator removed, and a tenant re-exports what it
-imported. Each change is audited as `group.default_set`, with the
-flag's before and after in `detail`.
+Requires `manage-tenant`. The body is `{"default": true}` or `{"default":
+false}`, and the answer is the group with its `ETag`; the group's
+`default_for_new_subjects` shows the flag on every read, and `PATCH /groups/:id`
+refuses it with a reason naming this route. `If-Match` is optional, and a stale
+one is refused with `412`. A default group is joined by **every subject created
+afterwards** — through `POST /subjects`, self-registration and `odudu seed`
+(`seed user`, the bootstrap user and `seed admin`), all through
+`grantNewSubjectDefaults`, which hands out the default roles in the same pass —
+and by none that already exist. A subject an import brings is one being moved
+rather than created: it arrives with exactly the groups and roles its document
+lists, a default group's membership included where it held one, so the import
+never hands back a membership an administrator removed, and a tenant re-exports
+what it imported. Each change is audited as `group.default_set`, with the flag's
+before and after in `detail`.
 
-**A default group may reach no admin capability**, on the rule
-`PUT /roles/:id/default` holds a role to: membership hands out the roles
-mapped to the group and to every ancestor (ADR 0040's ceiling reaches as
-far), so `true` is refused with `403`, whoever the caller is, when any of
-them reaches a role of the built-in admin client. While a group is a
-default, each write that could widen what it hands out is refused the same
-way, with a `refused` row: `PUT /groups/:id/roles` on it or on an ancestor
-mapping a role that reaches a capability, `POST /roles/:id/composites`
-nesting one under a role it reaches, and `PATCH /groups/:id` moving it or
-an ancestor under a chain that reaches one. Every one of these takes the
-lock the role defaults take (`lockDefaultReach`,
-`packages/protocol-admin/src/usecase/default-reach.ts`), so two writers
-cannot each pass the check alone, and takes it only once every row it will
-write, or its foreign keys will check, is locked — the roles a group is
-given, the subtree a reparent rewrites and its new parent — so no writer
+**A default group may reach no admin capability**, on the rule `PUT
+/roles/:id/default` holds a role to: membership hands out the roles mapped to
+the group and to every ancestor (ADR 0040's ceiling reaches as far), so `true`
+is refused with `403`, whoever the caller is, when any of them reaches a role of
+the built-in admin client. While a group is a default, each write that could
+widen what it hands out is refused the same way, with a `refused` row: `PUT
+/groups/:id/roles` on it or on an ancestor mapping a role that reaches a
+capability, `POST /roles/:id/composites` nesting one under a role it reaches,
+and `PATCH /groups/:id` moving it or an ancestor under a chain that reaches one.
+Every one of these takes the lock the role defaults take (`lockDefaultReach`),
+so two writers cannot each pass the check alone, and takes it only once every
+row it will write, or its foreign keys will check, is locked — the roles a group
+is given, the subtree a reparent rewrites and its new parent — so no writer
 holding it ever waits on a row another writer holds while waiting for it
-(`default-reach-locks.int.test.ts`). An import is held to
-the same rule: a document marking a group default whose chain reaches a
-capability is refused at that group's `default_for_new_subjects`.
-A group's record says which groups that reaches: `holds_default_group` is
-`true` for a default group and for every group above it, since each of them
-hands its roles down to the default, so a client can refuse the move or the
-role before sending it.
+(`default-reach-locks.int.test.ts`). An import is held to the same rule: a
+document marking a group default whose chain reaches a capability is refused at
+that group's `default_for_new_subjects`. A group's record says which groups that
+reaches: `holds_default_group` is `true` for a default group and for every group
+above it, since each of them hands its roles down to the default, so a client
+can refuse the move or the role before sending it.
 
-Against the fourteenth stack, in a tenant `defaults-demo` made for it: a root
-group `staff`, made with a `description`, and its child `everyone`, neither
-mapping a role. `everyone` made a default, then a subject created
-afterwards, its memberships narrowed with `jq`, then `staff` read, whose
-`holds_default_group` is now `true` for the default beneath it:
+In a tenant `defaults-demo` made for it: a root group `staff`, made with a
+`description`, and its child `everyone`, neither mapping a role. `everyone` made
+a default, then a subject created afterwards, its memberships narrowed with
+`jq`, then `staff` read, whose `holds_default_group` is now `true` for the
+default beneath it:
 
 ```bash
 curl -sS -D - -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" \

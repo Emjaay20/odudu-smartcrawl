@@ -37,9 +37,8 @@ batches. Sending `{"enabled": false}` to a tenant already disabled ends any
 session still live. `PATCH /settings` with `{"enabled": false}` does the same.
 Re-enabling restores nothing.
 
-Captured against the sixth stack, on the `showcase` tenant
-`POST /admin/tenants` created there with `display_name: "Showcase"`. The
-read, then an amendment, then the two refusals:
+On the `showcase` tenant `POST /admin/tenants` created there with `display_name:
+"Showcase"`. The read, then an amendment, then the two refusals:
 
 ```bash
 curl -sS -D - \
@@ -88,10 +87,10 @@ amendment — is refused and changes nothing:
 {"type":"about:blank","title":"Precondition Failed","status":412,"detail":"If-Match no longer matches","instance":"01a0ea4e-ac11-7806-9118-fbea0bdb05e3"}
 ```
 
-The name refusal's text was changed after the capture above: a rename is not
-offered, permanently, by ADR 0039, and the refusal now says so rather than
-pointing at an operation that will never exist. Against the tenth stack, the
-tenant's and, for the same reason, a group's:
+The name refusal's text was changed after the transcript above was recorded: a
+rename is not offered, permanently, by ADR 0039, and the refusal now says so
+rather than pointing at an operation that will never exist. The tenant's and,
+for the same reason, a group's:
 
 ```bash
 curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \

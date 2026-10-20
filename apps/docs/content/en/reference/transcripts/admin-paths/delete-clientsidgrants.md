@@ -16,9 +16,8 @@ alone and counted under `beyond_ceiling`, and the route is held to the
 ceiling on the client's service account, as every client mutation is.
 `client.grants_revoke` carries both counts. An unknown client answers `404`.
 
-Against the tenth stack, after `linus` signed in again asking for
-`offline_access`, and `sam` again (`$SAM_TOKEN`): `sam` first, then
-`$ADMIN_TOKEN`, then `mona`'s grants:
+After `linus` signed in again asking for `offline_access`, and `sam` again
+(`$SAM_TOKEN`): `sam` first, then `$ADMIN_TOKEN`, then `mona`'s grants:
 
 ```bash
 curl -sS -X DELETE -H "Authorization: Bearer $SAM_TOKEN" \
@@ -37,11 +36,10 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
 
 ## How many one call revokes
 
-Likewise at most 10,000 grants per call, with `remaining` counting what is
-left. The transcript above is the tenth stack's, run on 2026-09-29
-before the cap existed, so its answer lacks `remaining`; the one below is
-the current shape. Against `perf-demo`, with one grant
-for `grace` through `alpha-app` written by `insert into token_grants`:
+Likewise at most 10,000 grants per call, with `remaining` counting what is left.
+The transcript above predates the cap, so its answer lacks `remaining`; the one
+below is the current shape. Against `perf-demo`, with one grant for `grace`
+through `alpha-app` written by `insert into token_grants`:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/subjects/$G/grants"; echo

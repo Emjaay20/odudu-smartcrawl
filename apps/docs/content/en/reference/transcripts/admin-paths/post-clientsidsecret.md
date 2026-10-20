@@ -26,10 +26,10 @@ the window ends whether or not that pass has run. A public client
 (`token_endpoint_auth_method: "none"`) has no secret to rotate, refused with
 `409`.
 
-Captured on the same client, with an hour's grace: the response, narrowed,
-then `client_credentials` at `/token` with the secret the create above
-answered and with the new one, then a week and a second asked for, then the
-audit row the rotation wrote:
+On the same client, with an hour's grace: the response, narrowed, then
+`client_credentials` at `/token` with the secret the create above answered and
+with the new one, then a week and a second asked for, then the audit row the
+rotation wrote:
 
 ```bash
 curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -63,10 +63,10 @@ curl -sS -X POST \
   http://localhost:3082/admin/tenants/client-facts-demo/clients/01a109b6-1fa9-7304-8ae5-f714f746785e/secret
 ```
 
-Captured immediately after the disable above, which is why `enabled` reads
-`false` here: rotating a disabled client's secret is allowed, the guard
-being on the built-in client rather than on a disabled one. `demo-backend`
-was deleted afterward, in the `DELETE` section above.
+Straight after the disable above, which is why `enabled` reads `false` here:
+rotating a disabled client's secret is allowed, the guard being on the built-in
+client rather than on a disabled one. `demo-backend` was deleted afterward, in
+the `DELETE` section above.
 
 ```
 {"id":"01a109b6-1fa9-7304-8ae5-f714f746785e","client_id":"demo-backend","name":"demo-backend","description":null,"type":"confidential","enabled":false,"full_scope_allowed":false,"registration_origin":"operator","created_at":"2026-10-05T01:38:13.006Z","redirect_uris":[],"grant_types":["client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":[],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a109b6-1f8f-725e-9c2c-53656397b36c","scopes":[{"id":"01a109b6-1dd0-7600-9e14-7816d44df6e6","name":"openid","assignment":"default"},{"id":"01a109b6-1dd0-7600-9e14-7817de7c7d68","name":"profile","assignment":"default"},{"id":"01a109b6-1dd1-715a-b073-4693dd489102","name":"email","assignment":"default"},{"id":"01a109b6-1dd1-715a-b073-4694a189e4be","name":"address","assignment":"default"},{"id":"01a109b6-1dd2-747c-97bd-c431358429af","name":"phone","assignment":"default"},{"id":"01a109b6-1dd2-747c-97bd-c432be4c4a58","name":"roles","assignment":"default"},{"id":"01a109b6-1dd3-7b41-8bf3-e8da34d0a2c0","name":"groups","assignment":"default"},{"id":"01a109b6-1dd3-7b41-8bf3-e8db9126a263","name":"offline_access","assignment":"optional"}],"client_secret":"IcaN1Ciqg5Lvi62CjT1hwWAKWl1MDWWUYavbJo97oi8"}
@@ -74,38 +74,36 @@ was deleted afterward, in the `DELETE` section above.
 
 ## The service account's ceiling
 
-**A confidential client authenticates as its service account, so every
-route that mutates one client is held to the target ceiling on that
-subject** — the one the [subjects' target ceiling](./post-subjectsidpassword.md#the-target-ceiling)
-applies to `/subjects/{id}`. That is `PATCH`, `DELETE` and `POST …/secret`
-on `/clients/{id}`, and `PUT` and `DELETE` on
-`/scopes/{id}/clients/{clientId}`. Without it, a caller holding only
-`manage-clients` could rotate the secret of a client whose service account
-holds `tenant-admin`, or swap its `jwks`, and then act as `tenant-admin`
-through `client_credentials`. A caller missing any admin capability the
-service account holds is refused with `403` naming what it lacks, before
-anything else about the request is looked at, and the attempt writes a
+**A confidential client authenticates as its service account, so every route
+that mutates one client is held to the target ceiling on that subject** — the
+one the [subjects' target
+ceiling](./post-subjectsidpassword.md#the-target-ceiling) applies to
+`/subjects/{id}`. That is `PATCH`, `DELETE` and `POST …/secret` on
+`/clients/{id}`, and `PUT` and `DELETE` on `/scopes/{id}/clients/{clientId}`.
+Without it, a caller holding only `manage-clients` could rotate the secret of a
+client whose service account holds `tenant-admin`, or swap its `jwks`, and then
+act as `tenant-admin` through `client_credentials`. A caller missing any admin
+capability the service account holds is refused with `403` naming what it lacks,
+before anything else about the request is looked at, and the attempt writes a
 `refused` row on the client (on the scope, for the two scope routes) with
-`detail.denied`. A client with no service account, or one whose service
-account holds no capability, is unaffected. `tests/target-ceiling.int.test.ts`
-reads these routes from the route table too.
+`detail.denied`. A client with no service account, or one whose service account
+holds no capability, is unaffected. An integration test reads these routes from
+the route table too.
 
-Captured against a tenant `ceiling-clients` created for it, holding three
-`client_credentials` clients with the admin audience, each created through
-`POST /clients`: `ops-robot`, whose service account was given
-`manage-clients` through `PUT /subjects/:id/roles`, so `$OPS_TOKEN` is its
-`client_credentials` token and carries that capability alone;
-`root-robot` (`01a0e58a-ac43-7148-8881-6c3fdc6cf1ae`), whose service
-account was given `tenant-admin` the same way; and `plain-robot`
-(`01a0e58a-aca8-786f-a574-21674f047897`), whose service account holds
-nothing. The rotation, a `jwks` swap and the delete on `root-robot` are
-refused, a rotation on `plain-robot` is not, and the refused rows are the
-three on `root-robot`:
+In a tenant `ceiling-clients` created for it, holding three `client_credentials`
+clients with the admin audience, each created through `POST /clients`:
+`ops-robot`, whose service account was given `manage-clients` through `PUT
+/subjects/:id/roles`, so `$OPS_TOKEN` is its `client_credentials` token and
+carries that capability alone; `root-robot`
+(`01a0e58a-ac43-7148-8881-6c3fdc6cf1ae`), whose service account was given
+`tenant-admin` the same way; and `plain-robot`
+(`01a0e58a-aca8-786f-a574-21674f047897`), whose service account holds nothing.
+The rotation, a `jwks` swap and the delete on `root-robot` are refused, a
+rotation on `plain-robot` is not, and the refused rows are the three on
+`root-robot`:
 
-Recaptured against the tenth stack, once each row answered `actor_name` and
-`actor_origin`, after the same three clients were made there in a tenant of
-the same name and their service accounts given the same roles, so the ids
-are that run's, not those above:
+The same again, now that each row answers `actor_name` and `actor_origin`; the
+ids are a fresh run's, not those above:
 
 ```bash
 ROOT=http://localhost:3082/admin/tenants/ceiling-clients/clients/01a0ee8d-9a7c-7c78-85bd-60906ed648c4

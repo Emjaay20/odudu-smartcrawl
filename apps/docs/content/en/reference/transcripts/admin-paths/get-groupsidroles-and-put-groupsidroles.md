@@ -23,12 +23,11 @@ with `412`. The list is read under the same lock the replacement runs
 under, so two callers sent at once are serialised — the second sees what
 the first wrote rather than matching the same pre-write state.
 
-Captured against the fourteenth stack, on `demo`'s `engineering` group from
-the search above, a role `billing-viewer` made there first, and `auditor`, a
-tenant role nesting `odudu-admin:view-audit`, made there with `POST /roles`
-and `POST /roles/:id/composites`. Each role in the answer carries its own
-`admin_reach`, so a page judging a change to the mapping reads one answer, not
-one role at a time:
+On `demo`'s `engineering` group from the search above, a role `billing-viewer`
+made there first, and `auditor`, a tenant role nesting `odudu-admin:view-audit`,
+made there with `POST /roles` and `POST /roles/:id/composites`. Each role in the
+answer carries its own `admin_reach`, so a page judging a change to the mapping
+reads one answer, not one role at a time:
 
 ```bash
 curl -sS -X POST \
@@ -104,21 +103,19 @@ does not hold", apart from what a write would grant, which a reparent or a
 replacement names first — and a `refused` row with `detail.denied` under the
 action attempted.
 
-Captured against a tenant `ceiling-removal` created for it. `admins` is a
-group mapped to `tenant-admin`, with `on-call` beneath it; `ops-bundle` is a
-tenant role nesting `tenant-admin`; `ops` is a scope mapped to it; and
-`bundle-app` is a client with a role `operator` scoped to it, nesting
-`tenant-admin`. `bundle-app` was created through `POST /clients`, `ops`
-through `POST /scopes`, `operator` through `POST /roles` scoped to
-`bundle-app`, and `tenant-admin` nested under `operator` through
-`POST /roles/:id/composites`, all against `ceiling-removal`.
-`$TENANT_TOKEN` and `$CLIENTS_TOKEN` are the
-`client_credentials` tokens of two clients whose service accounts were
-given `manage-tenant` alone and `manage-clients` alone. Emptying `admins`,
-deleting it, moving `on-call`
-out from under it, deleting `ops-bundle`, taking `tenant-admin` out of it,
-deleting `ops` and deleting `bundle-app` are each refused, and the rows
-since `RUN_START` are those seven:
+In a tenant `ceiling-removal` created for it. `admins` is a group mapped to
+`tenant-admin`, with `on-call` beneath it; `ops-bundle` is a tenant role nesting
+`tenant-admin`; `ops` is a scope mapped to it; and `bundle-app` is a client with
+a role `operator` scoped to it, nesting `tenant-admin`. `bundle-app` was created
+through `POST /clients`, `ops` through `POST /scopes`, `operator` through `POST
+/roles` scoped to `bundle-app`, and `tenant-admin` nested under `operator`
+through `POST /roles/:id/composites`, all against `ceiling-removal`.
+`$TENANT_TOKEN` and `$CLIENTS_TOKEN` are the `client_credentials` tokens of two
+clients whose service accounts were given `manage-tenant` alone and
+`manage-clients` alone. Emptying `admins`, deleting it, moving `on-call` out
+from under it, deleting `ops-bundle`, taking `tenant-admin` out of it, deleting
+`ops` and deleting `bundle-app` are each refused, and the rows since `RUN_START`
+are those seven:
 
 ```bash
 RUN_START=$(date -u +%FT%T.000Z)

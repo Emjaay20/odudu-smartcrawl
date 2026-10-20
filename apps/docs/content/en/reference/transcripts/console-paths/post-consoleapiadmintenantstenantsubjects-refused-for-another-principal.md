@@ -1,16 +1,15 @@
 ---
 title: 'POST …/subjects, refused for another principal'
-description: "From the eighth run, on the same tenant. Every tab of a browser shares the console cookie, so another tab's sign-in can replace the session under a…"
+description: "Every tab shares the console cookie, so another tab's sign-in can replace the session; the console names the subject it expects on each request."
 ---
 
 ## `POST /console/api/admin/tenants/{tenant}/subjects`, refused for another principal
 
-From the eighth run, on the same tenant. Every tab of a browser
-shares the console cookie, so another tab's sign-in can replace the session
-under a page that still shows the old administrator. The console therefore
-names, on each admin request, the subject its tab believes is signed in, in
-`X-Odudu-Console-Subject`. The session this run's `jar` carries is
-`grace`'s:
+On the same tenant. Every tab of a browser shares the console cookie, so another
+tab's sign-in can replace the session under a page that still shows the old
+administrator. The console therefore names, on each admin request, the subject
+its tab believes is signed in, in `X-Odudu-Console-Subject`. The session this
+run's `jar` carries is `grace`'s:
 
 ```bash
 curl -sS -D - -c jar -b jar http://localhost:3185/console/api/session

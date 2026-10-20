@@ -30,19 +30,18 @@ curl -sS \
   "http://localhost:3000/admin/tenants?limit=50"
 ```
 
-Captured after `POST /admin/tenants` below had created `demo`, so both
-tenants this stack ever held are in it — the collection fits one page, and
-there is no `next`:
+After `POST /admin/tenants` below had created `demo`, so both tenants the
+installation holds are in it — the collection fits one page, and there is no
+`next`:
 
 ```
 {"items":[{"id":"0199aa00-0000-7000-8000-000000000001","name":"system","display_name":"System","enabled":true,"created_at":"2026-09-25T05:12:51.138Z"},{"id":"01a0d6fc-3626-7e23-94d7-3b1b666e278f","name":"demo","display_name":"Demo","enabled":true,"created_at":"2026-09-25T05:14:08.294Z"}]}
 ```
 
-The searches below ran against the sixth stack (the note at the top of
-this document), as `ada`. Its tenants were `acme`, `demo`, `etags-demo`,
-`register-audit`, `registration-audit`, `reset-audit`, `signup-audit` and
-`system`, only `system` carrying a display name. `RE` finds three, in
-folded order:
+The searches below are run as `ada`. Its tenants were `acme`, `demo`,
+`etags-demo`, `register-audit`, `registration-audit`, `reset-audit`,
+`signup-audit` and `system`, only `system` carrying a display name. `RE` finds
+three, in folded order:
 
 ```bash
 curl -sS \

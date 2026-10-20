@@ -88,14 +88,15 @@ log instead of an inbox:
 }
 ```
 
-(Captured on the project `odudu-p4g-mail` the section above names, so its key is that run's, not the one the commands below follow.)
+(From a second run, so its key is that run's, not the one the commands below
+follow.)
 
-A username holding a bidirectional control character, one that would reorder
-the text around it wherever it is shown (U+202A to U+202E or U+2066 to U+2069),
-is refused on its own sentence and nothing is created, the form's other fields
+A username holding a bidirectional control character, one that would reorder the
+text around it wherever it is shown (U+202A to U+202E or U+2066 to U+2069), is
+refused on its own sentence and nothing is created, the form's other fields
 being as valid as they were. It is refused rather than stripped, because
-stripping would let two different usernames collide. Captured on the project
-`odudu-p4g-17`, port `3197`, posting `ada` followed by U+202E:
+stripping would let two different usernames collide. On port `3197`, posting
+`ada` followed by U+202E:
 
 ```bash
 curl -sS -D - -X POST http://localhost:3197/tenants/register-demo/login-actions/registration \
@@ -272,8 +273,8 @@ set-cookie: register-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; M
 location: http://localhost:8080/callback?code=8DR6gZGbEKhkDcC7a0dilL9k2gDcZjHo8ZMOuZ6mnqM&state=xyz123&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fregister-demo
 ```
 
-(Captured before the session cookie carried a secret, so the cookie shown
-is a truncated bare id; it is now `<session id>:<secret>`.)
+(This predates the session cookie's secret, so the cookie shown is a truncated
+bare id; it is now `<session id>:<secret>`.)
 
 `users.email` is unique per tenant, not globally — `email` alone would be a
 tenancy bug — so a second registration for an address already held **in
@@ -310,10 +311,9 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 ```
 
 (400; the same address remains free to register again in a different tenant,
-since the uniqueness `packages/db/drizzle/0023_users_email_unique.sql` adds
-is `(tenant_id, email)`, not `email` alone.) A duplicate **username** and a
-malformed address are both refused the same way — 400, with a message
-naming which — rather than an unhandled error.
+since the uniqueness constraint is `(tenant_id, email)`, not `email` alone.) A
+duplicate **username** and a malformed address are both refused the same way —
+400, with a message naming which — rather than an unhandled error.
 
 Every tenant also carries a password policy, and registration is one of its
 writers. The default policy only floors the length at 8, so a short

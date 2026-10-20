@@ -20,9 +20,9 @@ tenant's sessions locked for the length of a large one. One
 `session.end_all` row, filed on the tenant, carries all three counts. The
 caller's own session ends with the rest when it is one of them.
 
-Against the tenth stack, after `sam`, granted `odudu-admin:manage-sessions`
-alone, signed in to the tenant's own admin client (`$SAM_TOKEN`), and `mona`
-signed in through `ops-app`:
+After `sam`, granted `odudu-admin:manage-sessions` alone, signed in to the
+tenant's own admin client (`$SAM_TOKEN`), and `mona` signed in through
+`ops-app`:
 
 ```bash
 curl -sS -H "Authorization: Bearer $SAM_TOKEN" "$P/whoami"; echo

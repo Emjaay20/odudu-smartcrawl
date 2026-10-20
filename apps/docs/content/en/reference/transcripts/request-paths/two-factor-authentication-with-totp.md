@@ -14,13 +14,11 @@ subject with no TOTP credential is given the `configure-totp` required
 action at their next login, and the login does not complete until they have
 enrolled.
 
-Captured on a stack of its own: the `infra/docker` compose file as the
-project `odudu-17a` on `http://localhost:3094`, its `odudu` service built
-from commit `a29df187`, started on an empty volume, with this section, the
-`otp-demo` half of [Recovery codes](./recovery-codes.md) and its `rc8-demo` half
-run front to back against it. The HTML
-bodies are the bytes it served, line breaks, indentation and all. A fenced
-response block carries no language tag, so Prettier leaves them alone.
+On a stack of its own, on `http://localhost:3094`, started on an empty volume,
+with this section, the `otp-demo` half of [Recovery codes](./recovery-codes.md)
+and its `rc8-demo` half run front to back against it. The HTML bodies are the
+bytes it served, line breaks, indentation and all. A fenced response block
+carries no language tag, so Prettier leaves them alone.
 
 `otp_required` is a tenant setting, which `seed tenant --set` applies:
 
@@ -102,14 +100,13 @@ curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authentica
 `otpauth://` URI printed underneath it, so an app with a camera and an app
 without reach the same secret.)
 
-The secret travels in a hidden field and **nothing is stored yet**. A
-credential written before its first correct code would lock the account out
-of its own second factor if the app never actually scanned it, so the
-credential is created by the submission that proves a code, not by the page
-that offers a secret. An abandoned enrolment leaves no row behind at all.
-The submission that proves a code also writes the one `credential` audit
-row, `otp.enrolled`, naming the subject; a wrong code writes none
-(`packages/protocol-oidc/tests/audit-credentials.int.test.ts`).
+The secret travels in a hidden field and **nothing is stored yet**. A credential
+written before its first correct code would lock the account out of its own
+second factor if the app never actually scanned it, so the credential is created
+by the submission that proves a code, not by the page that offers a secret. An
+abandoned enrolment leaves no row behind at all. The submission that proves a
+code also writes the one `credential` audit row, `otp.enrolled`, naming the
+subject; a wrong code writes none.
 
 ## Confirming the secret enrols it, and is the login's second factor
 
@@ -312,11 +309,10 @@ ada; a code says which secret produced it, never who is signing in, so a
 form that named the account would let a second factor answer for somebody
 who never passed the first one.
 
-Submitting the code that confirmed the enrolment does **not** work — it
-answers with the same form again, saying so. (This one and the two recovery
-code refusals below were captured again on the project `odudu-17g` on
-`http://localhost:3000`, built from commit `7fc38b58`, where the enrolment's
-code was `380681`, once a refusal began to carry a message.)
+Submitting the code that confirmed the enrolment does **not** work — it answers
+with the same form again, saying so. (This one and the two recovery code
+refusals below are from a later run on `http://localhost:3000`, where the
+enrolment's code was `380681`, once a refusal began to carry a message.)
 
 ```bash
 curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authenticate \

@@ -71,11 +71,10 @@ writes one `tenant.import` row into the new tenant's trail, whose `detail`
 carries the document's `version` and how many clients, roles, groups,
 scopes and subjects it held.
 
-So a document exported from the imported tenant equals the one imported,
-apart from `settings.display_name` when the request names another, the
-`omitted` list — no client secret, SMTP password or credential was carried
-across — and each subject's `required_actions`, which gains
-`update-password`. `packages/protocol-admin/tests/tenant-import.int.test.ts`
+So a document exported from the imported tenant equals the one imported, apart
+from `settings.display_name` when the request names another, the `omitted` list
+— no client secret, SMTP password or credential was carried across — and each
+subject's `required_actions`, which gains `update-password`. An integration test
 holds a round trip to exactly that.
 
 A document with the export's full 10,000 subjects runs to several
@@ -86,16 +85,12 @@ A document holding more subjects than export would ever write — more than
 the same text export's own `413` gives, since a smaller body can still hold
 that many.
 
-The import itself, through its trail row below, was captured against the
-sixth stack (the note at the top of this document), as `ada`.
-`import-source` was built there for it through the endpoints in this
-document: a confidential `client_credentials` client `billing-app`, a
-tenant role `billing-reader`, a group `finance` holding it, and a subject
-`grace` who belongs to it and owes `update-password`. The import names the
-tenant `import-demo2`, as the capture it replaced did. Both tenants and the
-secret below are throwaway, and that stack was torn down. The refusals from
-the broken document on were captured against the fourth stack and are
-unchanged by what the sixth adds.
+The import itself, through its trail row below, is run as `ada`. `import-source`
+is built for it through the endpoints in these pages: a confidential
+`client_credentials` client `billing-app`, a tenant role `billing-reader`, a
+group `finance` holding it, and a subject `grace` who belongs to it and owes
+`update-password`. The import names the tenant `import-demo2`. Both tenants and
+the secret below are throwaway.
 
 The export, saved, then imported under a new name:
 
@@ -162,9 +157,8 @@ trail, scoped to the tenant `resource_id` this import created — the only
 row it could ever hold, since an import always creates a fresh tenant
 rather than writing into one that already exists:
 
-Recaptured against the tenth stack, once each row answered `actor_name` and
-`actor_origin`, after the same export and import were made there between
-tenants of the same names, so the ids are that run's, not those above:
+The same again, now that each row answers `actor_name` and `actor_origin`; the
+ids are a fresh run's, not those above:
 
 ```bash
 for tenant in import-source import-demo2; do
@@ -258,9 +252,8 @@ curl -sS -X POST \
 {"type":"about:blank","title":"FastifyError","status":413,"detail":"Request body is too large","instance":"01a0e4ef-bb76-7124-83a5-7b6d680169cf"}
 ```
 
-And a document of 10,001 copies of `grace`, each under its own username,
-built from a fresh export of `import-source` on the stack this document's
-latest sections were captured on — refused, and no tenant created:
+And a document of 10,001 copies of `grace`, each under its own username, built
+from a fresh export of `import-source` — refused, and no tenant created:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \

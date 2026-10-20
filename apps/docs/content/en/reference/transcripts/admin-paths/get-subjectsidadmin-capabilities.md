@@ -18,9 +18,9 @@ nothing may be judged from it. It is what a console decides a subject's reach
 by, and what a write would take from the caller itself. An unknown subject
 answers `404`.
 
-Against the stack of its own (`perf-demo`, `grace` assigned `manage-users` and
-a role `key-keepers` that nests `manage-keys`, and a member of `/auditors`,
-which maps `view-audit`); `manage-users` nests `view-users`:
+In `perf-demo` (`grace` assigned `manage-users` and a role `key-keepers` that
+nests `manage-keys`, and a member of `/auditors`, which maps `view-audit`);
+`manage-users` nests `view-users`:
 
 ```bash
 curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" "$P/subjects/$G/admin-capabilities"

@@ -1,16 +1,15 @@
 ---
 title: 'A refresh that cannot take the lock'
-description: 'From the seventh run, on the same session, about 4.5 minutes after the refresh above.'
+description: "A refresh waits at most five seconds for the session's row lock, so two refreshes of one session never present its refresh token twice."
 ---
 
 # A refresh that cannot take the lock
 
-From the seventh run, on the same session, about 4.5 minutes after the refresh
-above. A refresh holds the session's row lock, waiting at most 5 s for it,
-so that two refreshes of one session never present its refresh token
-twice. Here `psql` holds that lock for 12 s while a request that needs a
-refresh arrives. The lock is taken by this file, `q-lock.sql`, through the
-same `psql`:
+On the same session, about 4.5 minutes after the refresh above. A refresh holds
+the session's row lock, waiting at most 5 s for it, so that two refreshes of one
+session never present its refresh token twice. Here `psql` holds that lock for
+12 s while a request that needs a refresh arrives. The lock is taken by this
+file, `q-lock.sql`, through the same `psql`:
 
 ```sql
 BEGIN;

@@ -6,22 +6,20 @@ description: 'Requires manage-tenant. Assigns the scope to the client as default
 # `PUT /scopes/:id/clients/:clientId`
 
 Requires `manage-tenant`. Assigns the scope to the client as `default` or
-`optional`, narrowing or widening any existing assignment rather than
-colliding with it (`clientScopeRepository.assignOrUpdate`,
-`packages/domain-tenant/src/repository/client-scopes.ts`) — the same
-behaviour the seed CLI's own assign-scope command depends on. Answers with
-the client's scope assignments — `client_id` and `scopes` — so the result
-is visible immediately without a second `GET /clients/:id`, and **nothing
-else**: this route asks for `manage-tenant`, where reading a client asks
-for the stricter `manage-clients`, so answering with the client's own
-representation would hand the weaker holder `redirect_uris`, `jwks`,
-`audiences` and every grant setting through a side door. An unknown scope
-or client id answers `404`, and a client whose service account holds an
-admin capability the caller does not is refused with `403`
-([the service account's ceiling](./post-clientsidsecret.md#the-service-accounts-ceiling)).
+`optional`, narrowing or widening any existing assignment rather than colliding
+with it (`clientScopeRepository.assignOrUpdate`) — the same behaviour the seed
+CLI's own assign-scope command depends on. Answers with the client's scope
+assignments — `client_id` and `scopes` — so the result is visible immediately
+without a second `GET /clients/:id`, and **nothing else**: this route asks for
+`manage-tenant`, where reading a client asks for the stricter `manage-clients`,
+so answering with the client's own representation would hand the weaker holder
+`redirect_uris`, `jwks`, `audiences` and every grant setting through a side
+door. An unknown scope or client id answers `404`, and a client whose service
+account holds an admin capability the caller does not is refused with `403`
+([the service account's
+ceiling](./post-clientsidsecret.md#the-service-accounts-ceiling)).
 
-Re-captured against the same later stack the SMTP section names, so the
-ids below are that run's rather than the ones the sections above show.
+The ids below are a later run's rather than the ones the sections above show.
 
 ```bash
 curl -sS -X PUT \
@@ -146,9 +144,8 @@ content-length: 270
 ```
 
 The OpenAPI document declares that same shape as the `200`'s body —
-`assignScopeToClientResponseSchema`, not the client's own. Captured
-against the fifth stack, the published document's entry for this route,
-extracted with the filter shown:
+`assignScopeToClientResponseSchema`, not the client's own. The published
+document's entry for this route, extracted with the filter shown:
 
 ```bash
 curl -sS http://localhost:3080/admin/openapi.json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const d=JSON.parse(s);console.log(JSON.stringify(d.paths["/admin/tenants/{tenant}/scopes/{id}/clients/{clientId}"].put.responses["200"]))})'
@@ -160,13 +157,12 @@ curl -sS http://localhost:3080/admin/openapi.json | node -e 'let s="";process.st
 
 ## The client's new `ETag`
 
-The client's own representation carries its `scopes`, so an assignment
-changes the `ETag` `GET /clients/:id` answers. The `PUT` answers that new
-`ETag`, and so does `DELETE /scopes/:id/clients/:clientId` beside its
-`204`, so a caller editing the client can save its next change without
-reading it again — the `ETag` is a digest, and hands the `manage-tenant`
-holder none of what it covers. Captured against the fifth stack in
-`etags-demo`, on a public client `etags-app`
+The client's own representation carries its `scopes`, so an assignment changes
+the `ETag` `GET /clients/:id` answers. The `PUT` answers that new `ETag`, and so
+does `DELETE /scopes/:id/clients/:clientId` beside its `204`, so a caller
+editing the client can save its next change without reading it again — the
+`ETag` is a digest, and hands the `manage-tenant` holder none of what it covers.
+In `etags-demo`, on a public client `etags-app`
 (`01a0e9ec-d64a-7d5d-a0ac-a01efd56b6f3`) and a scope `billing`
 (`01a0e9ec-d68e-7463-8023-bd155594d026`), both created there for it:
 

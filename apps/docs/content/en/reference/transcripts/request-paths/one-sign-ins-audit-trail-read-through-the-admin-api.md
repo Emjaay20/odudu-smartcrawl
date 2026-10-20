@@ -85,12 +85,10 @@ The refresh's status, the logout's, then the `token` page and the
 {"items":[{"id":"01a0ee96-885c-7fc5-aef6-3fd42f3b388f","occurred_at":"2026-09-29T19:13:57.851Z","event_type":"session","action":"session.ended","outcome":"allowed","actor_tenant_id":"01a0ee8f-032e-718b-b030-be2b154a9e99","actor_subject_id":"01a0ee96-6112-7cc3-a854-5f4ba72b225c","actor_client_id":null,"actor_name":"ada","actor_origin":"tenant","resource_type":"session","resource_id":"01a0ee96-874e-7f1b-a875-ff5846806788","request_id":"trail-logout","ip":"172.22.0.1","detail":{"via":"logout"}},{"id":"01a0ee96-8750-7584-aab5-50435e2d0819","occurred_at":"2026-09-29T19:13:57.577Z","event_type":"session","action":"session.created","outcome":"allowed","actor_tenant_id":"01a0ee8f-032e-718b-b030-be2b154a9e99","actor_subject_id":"01a0ee96-6112-7cc3-a854-5f4ba72b225c","actor_client_id":"01a0ee96-84ed-7dd5-9923-92767eef6df0","actor_name":"ada","actor_origin":"tenant","resource_type":"session","resource_id":"01a0ee96-874e-7f1b-a875-ff5846806788","request_id":"trail-sign-in","ip":"172.22.0.1","detail":{}}]}
 ```
 
-Recaptured against the tenth stack
-([the admin paths](../admin-paths/index.md)), after `demo-spa`
-was created in its `demo` through `POST /clients` as a public client and
-`ada` seeded there with `odudu seed user`, so each row answers `actor_name`
-and `actor_origin` as well; the ids are that run's.
-The ids the rows name:
+After `demo-spa` was created in `demo` through `POST /clients` as a public
+client and `ada` seeded there with `odudu seed user`, so each row answers
+`actor_name` and `actor_origin` as well; the ids are a fresh run's. The ids the
+rows name:
 
 ```bash
 docker compose exec -T postgres psql -U odudu -d odudu -c \

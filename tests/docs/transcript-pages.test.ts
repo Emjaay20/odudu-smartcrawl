@@ -130,3 +130,55 @@ describe('the contributing page that says how the transcripts were captured', ()
     ]);
   });
 });
+
+// A transcript page is read by someone looking up a route, not by the person
+// who recorded it. Which stack a run used, which commit it was built from and
+// which source file implements the behaviour belong on the contributing page
+// or in the code; on a page they are noise a reader must step over.
+const ORDINAL =
+  '(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|' +
+  'thirteenth|fourteenth|fifteenth|sixteenth|seventeenth|eighteenth|nineteenth|twentieth|' +
+  'twenty-(?:first|second|third))';
+const CONTRIBUTOR_PROSE: readonly (readonly [RegExp, string])[] = [
+  [/\bre-?captured\b/iu, 'a recapture note'],
+  [/\bcaptured (?:on|against|again)\b/iu, 'a note on where it was captured'],
+  [new RegExp(`\\b${ORDINAL} stack\\b`, 'iu'), 'an ordinal stack'],
+  [/\b(?:compose )?project `?odudu-[\w-]+/iu, 'a compose project name'],
+  [/-p odudu-[\w-]+/u, 'a compose project flag'],
+  [/\bcompose project\b/iu, 'a compose project'],
+  [/\bnote at the top of this (?:document|page)\b/iu, 'a pointer to a note that is gone'],
+  [/\btorn down\b/iu, 'a teardown note'],
+  [/\bbuilt from (?:the )?(?:tree|commit|branch)\b/iu, 'a build provenance note'],
+  [/`[0-9a-f]{8}`/u, 'a commit hash'],
+  [/(?<![\w/.-])(?:packages|apps|tests)\/[\w./@{}*-]+/u, 'a repository source path'],
+];
+
+function proseOf(file: string): { line: number; text: string }[] {
+  const document = loadDocument(file);
+  const { fenced } = scanFences(document);
+  return document.lines.flatMap((text, index) =>
+    fenced[index] === true
+      ? []
+      : [{ line: index + 1, text: text.replaceAll(/\]\([^)\s]*\)/gu, '](link)') }],
+  );
+}
+
+describe.each(GROUPS)(
+  'the prose of $pages is written for a reader of the reference',
+  ({ pages }) => {
+    it('holds no note about how it was recorded and no path into the source', () => {
+      const order = loadPages(pages).sources ?? [];
+      const found: string[] = [];
+      for (const { file } of order) {
+        const relative = path.relative(REPO_ROOT, path.join(REPO_ROOT, file));
+        for (const { line, text } of proseOf(relative)) {
+          for (const [pattern, what] of CONTRIBUTOR_PROSE) {
+            if (pattern.test(text)) found.push(`${relative}:${String(line)} has ${what}`);
+          }
+        }
+      }
+
+      expect(found).toEqual([]);
+    });
+  },
+);

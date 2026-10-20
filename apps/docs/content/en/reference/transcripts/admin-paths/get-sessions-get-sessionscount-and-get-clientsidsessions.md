@@ -14,7 +14,7 @@ sessions holding a grant through that client, by its row id;
 `GET /clients/:id/sessions` is the same narrowing, answering `404` for a client
 that does not exist. The count is capped like every other.
 
-Against the tenth stack, with the three sessions its sign-ins left:
+With the three sessions its sign-ins left:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/sessions/count"; echo

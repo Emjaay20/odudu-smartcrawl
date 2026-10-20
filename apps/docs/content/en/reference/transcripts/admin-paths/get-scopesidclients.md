@@ -14,13 +14,12 @@ The list is in row-id order and pages the way every list here does; a
 cursor is bound to its scope, so one minted for another scope is refused
 with `400`. An unknown scope, or another tenant's, answers `404`.
 
-Captured against the fifth stack in `etags-demo`, on the scope `billing`
+In `etags-demo`, on the scope `billing`
 (`01a0e9ec-d68e-7463-8023-bd155594d026`), after a second public client
-`etags-reports` was created there and assigned it as `default` — so two
-clients carry it, `etags-app` as `optional` from the capture under
-"The client's new `ETag`" below, which ran first. As `ada-t2`, who holds every capability; that `manage-tenant` alone
-suffices is what `packages/protocol-admin/tests/scopes.int.test.ts` shows,
-and was not captured:
+`etags-reports` was created there and assigned it as `default` — so two clients
+carry it, `etags-app` as `optional` from the transcript under "The client's new
+`ETag`" below, which ran first. As `ada-t2`, who holds every capability; that
+`manage-tenant` alone suffices is shown by an integration test, not here:
 
 ```bash
 curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" \

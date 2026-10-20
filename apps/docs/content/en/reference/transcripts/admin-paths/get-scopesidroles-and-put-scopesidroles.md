@@ -25,12 +25,12 @@ and outside the `ETag`, so the tag over the stored fields is the same before
 and after a role's nesting changes. The console judges a role already mapped by
 it.
 
-Captured against the eighteenth stack, in `scope-reach-demo`, on a scope
-`billing` (`01a12d29-72a6-77f6-9e8b-c2fcbb928cd2`) and two roles: the tenant role
-`billing-viewer` (`01a12d29-72f8-74a0-a73a-0fa6dd6d4d76`) and the built-in
-admin client's `view-audit` (`01a12d29-71bb-7e4c-91c8-845063e60e93`). The read
-of the empty list, the write under its tag, and the read back, whose `etag`
-is the write's:
+In `scope-reach-demo`, on a scope `billing`
+(`01a12d29-72a6-77f6-9e8b-c2fcbb928cd2`) and two roles: the tenant role
+`billing-viewer` (`01a12d29-72f8-74a0-a73a-0fa6dd6d4d76`) and the built-in admin
+client's `view-audit` (`01a12d29-71bb-7e4c-91c8-845063e60e93`). The read of the
+empty list, the write under its tag, and the read back, whose `etag` is the
+write's:
 
 ```bash
 curl -sS -D - \

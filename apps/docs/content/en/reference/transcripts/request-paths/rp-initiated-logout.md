@@ -5,16 +5,17 @@ description: 'GET/POST /tenants/{tenant}/protocol/openid-connect/logout implemen
 
 # RP-initiated logout
 
-`GET`/`POST /tenants/{tenant}/protocol/openid-connect/logout` implements
-[OpenID Connect RP-Initiated Logout
-1.0](https://github.com/wizzywit/odudu/blob/main/docs/protocols/oidc-rpinitiated.md). Ending a session revokes it and every
-grant whose `session_id` names it. The access tokens those grants minted
-are self-contained `at+jwt` JWTs, so a resource server that only checks a
-signature locally keeps accepting one until its own `exp` regardless — but
+`GET`/`POST /tenants/{tenant}/protocol/openid-connect/logout` implements [OpenID
+Connect RP-Initiated Logout
+1.0](https://github.com/wizzywit/odudu/blob/main/docs/protocols/oidc-rpinitiated.md).
+Ending a session revokes it and every grant whose `session_id` names it. The
+access tokens those grants minted are self-contained `at+jwt` JWTs, so a
+resource server that only checks a signature locally keeps accepting one until
+its own `exp` regardless — but
 [`/introspect`](#token-introspection-and-revocation) reports it inactive
-immediately, and `/userinfo` refuses it outright with `invalid_token`,
-which is what closes that gap before `exp` for both doors. README.md's own
-logout section has the same account.
+immediately, and `/userinfo` refuses it outright with `invalid_token`, which is
+what closes that gap before `exp` for both doors. The README's own logout
+section has the same account.
 
 A client registers its `post_logout_redirect_uri` values ahead of time.
 `seed client --post-logout-redirect-uri` registers them **as it creates** a
@@ -121,14 +122,13 @@ that is the session the hint's `sid` names, not the clock: the `sid` has to
 equal a session still live in this browser's own cookies. At `/authorize`
 the hint only constrains the request; it authenticates nobody.
 
-This section ran against a fresh stack of its own (compose project
-`odudu-17e2`, `ODUDU_REAP_ENABLED=false`) published on **port 3172**, so
-every URL below is the port it ran on, seeded only with `demo`, `demo-spa`
-and `ada` as [Bootstrap](./bootstrap.md) does. The redirect list from the
-section above is in place, and `demo-spa`'s ID token lifetime is lowered to
-its minimum of five seconds, so a hint can be shown past its `exp` in the
-time it takes to run the next block. `psql` is a function for the compose
-stack's database, the way `odudu` is for its CLI:
+This section ran against a fresh stack of its own (`ODUDU_REAP_ENABLED=false`)
+published on **port 3172**, so every URL below is the port it ran on, seeded
+only with `demo`, `demo-spa` and `ada` as [Bootstrap](./bootstrap.md) does. The
+redirect list from the section above is in place, and `demo-spa`'s ID token
+lifetime is lowered to its minimum of five seconds, so a hint can be shown past
+its `exp` in the time it takes to run the next block. `psql` is a function for
+the compose stack's database, the way `odudu` is for its CLI:
 
 ```bash
 psql() { docker compose -f infra/docker/compose.yaml exec -T postgres psql -U odudu -d odudu "$@"; }
@@ -379,12 +379,11 @@ docker compose -f infra/docker/compose.yaml exec -T postgres \
   "
 ```
 
-`revoke-doc-client` now names itself in its own `audiences`, which is what
-lets it call `/introspect` for its own tokens — `callerIsAddressed`
-(`packages/protocol-oidc/src/usecase/introspection.ts`) entitles a caller
+`revoke-doc-client` now names itself in its own `audiences`, which is what lets
+it call `/introspect` for its own tokens — `callerIsAddressed` entitles a caller
 through its own `client_id` or any of its registered `audiences`, and this
 client's request for no particular `resource` resolves to exactly that set
-(`resolveAudience`, `packages/protocol-oidc/src/usecase/token-issuance.ts`).
+(`resolveAudience`).
 
 Signing in as `revoke-doc-client` — the same PKCE flow as
 [Path A](./path-a-authorization-code-with-pkce.md), against this client instead
@@ -429,15 +428,13 @@ curl -sS -u revoke-doc-client:revoke-doc-secret \
 { "active": false }
 ```
 
-`exp` above is `1790114523`; this second call landed at `1790114223` —
-300 seconds still on the clock, and every one of them made no difference,
-because logout revoked the grant this token names along with the session
-(`tokenGrantRepository(tx).revokeForSession`,
-`packages/protocol-oidc/src/index.ts`'s `endSession`), and introspection
-checks that `revoked_at` before it ever looks at the session
-(`docs/protocols/rfc7662.md`'s §8.2 reading note) — not merely the token's
-own signature. A resource server that only verified the JWT locally would
-still be accepting this token.
+`exp` above is `1790114523`; this second call landed at `1790114223` — 300
+seconds still on the clock, and every one of them made no difference, because
+logout revoked the grant this token names along with the session
+(`tokenGrantRepository(tx).revokeForSession`, called by `endSession`), and
+introspection checks that `revoked_at` before it ever looks at the session (RFC
+7662 §8.2) — not merely the token's own signature. A resource server that only
+verified the JWT locally would still be accepting this token.
 
 `/revoke` (RFC 7009) is the other half — ending a grant deliberately, from
 either side of it, rather than waiting for a session to end one. A fresh
@@ -471,10 +468,9 @@ curl -sS -u revoke-doc-client:revoke-doc-secret \
 { "error": "invalid_grant" }
 ```
 
-and so does its sibling access token — the two name the same
-`token_grants` row, so revoking either invalidates both
-(`docs/protocols/rfc7009.md`'s "Both revocation directions go through the
-grant, not the token"):
+and so does its sibling access token — the two name the same `token_grants` row,
+so revoking either invalidates both (RFC 7009: "Both revocation directions go
+through the grant, not the token"):
 
 ```bash
 curl -sS -u revoke-doc-client:revoke-doc-secret \
@@ -601,12 +597,10 @@ content-length: 770
 </html>
 ```
 
-(`x-request-id`, `Date` and the keep-alive headers are omitted. This page
-and the refusal were captured after the form gained its token, against a
-fresh sign-in into `cookies2.txt`, on the project `odudu-17a` at
-`http://localhost:3094`, built from commit `a29df187`, with `demo` seeded as
-[Bootstrap](./bootstrap.md) does. `cache-control` comes last of the page
-headers, where `pageHeaders` puts it.)
+(`x-request-id`, `Date` and the keep-alive headers are omitted. This page and
+the refusal come from a fresh sign-in into `cookies2.txt`, on
+`http://localhost:3094`, with `demo` seeded as [Bootstrap](./bootstrap.md) does.
+`cache-control` comes last of the page headers, where `pageHeaders` puts it.)
 
 A `post_logout_redirect_uri` that is not an exact match to a registered
 value — a trailing slash, a query string, a different host — is refused,
@@ -687,15 +681,16 @@ ip               | 172.20.0.1
 detail           | {"via": "logout"}
 ```
 
-Captured against the same stack as [what a refused login leaves
-behind](./path-a-authorization-code-with-pkce.md#what-a-refused-login-leaves-behind): `ada` is subject
-`01a0db22-1c92-…`, and `resource_id` is the session the `demo-session`
-cookie's entry named — its id half, never its secret. `detail.via` says how
-a session ended: `logout` here, `admin` when the admin API's `DELETE
-…/sessions/{sid}` ends it (beside that route's own `admin_mutation` row),
-and `evicted` when a login past the tenant's `max_sessions_per_browser` ends
-the browser's least recently active session, naming that session's own
-subject. Ending a session that has already ended writes no second row.
+On the same stack as [what a refused login leaves
+behind](./path-a-authorization-code-with-pkce.md#what-a-refused-login-leaves-behind):
+`ada` is subject `01a0db22-1c92-…`, and `resource_id` is the session the
+`demo-session` cookie's entry named — its id half, never its secret.
+`detail.via` says how a session ended: `logout` here, `admin` when the admin
+API's `DELETE …/sessions/{sid}` ends it (beside that route's own
+`admin_mutation` row), and `evicted` when a login past the tenant's
+`max_sessions_per_browser` ends the browser's least recently active session,
+naming that session's own subject. Ending a session that has already ended
+writes no second row.
 
 ## The same request over `POST`
 
@@ -892,13 +887,13 @@ docker compose -f infra/docker/compose.yaml exec -T postgres \
   "
 ```
 
-(`http://localhost:9100` is for reachability in this local walkthrough
-only. `isValidLogoutUri` refuses `http` unconditionally for a URI
-registered through dynamic registration or `seed client` — see
-`docs/protocols/oidc-frontchannel.md`'s clause table — and this direct
-`UPDATE` is the one path in this document that bypasses that check
-entirely, the same way it bypasses the domain/port/scheme-matching check
-on `frontchannel_logout_uri` itself.)
+(`http://localhost:9100` is for reachability in this local walkthrough only.
+`isValidLogoutUri` refuses `http` unconditionally for a URI registered through
+dynamic registration or `seed client` — see [the front-channel logout reading
+note](https://github.com/wizzywit/odudu/blob/main/docs/protocols/oidc-frontchannel.md)'s
+clause table — and this direct `UPDATE` is the one path in this document that
+bypasses that check entirely, the same way it bypasses the
+domain/port/scheme-matching check on `frontchannel_logout_uri` itself.)
 
 Signing in as [Path A](./path-a-authorization-code-with-pkce.md) does, then
 reusing that same session's cookie for a second, consent-free authorization
@@ -972,37 +967,33 @@ content-length: 318
 </html>
 ```
 
-(`sid` shortened; it is the id half of the session cookie's entry, and `iss`
-is this tenant's issuer. Captured on the same `odudu-17a` stack at
-`http://localhost:3094`, with the two commands above run against it and
-`x-request-id`, `Date` and the keep-alive headers omitted.) `sid` is present because `reports-widget`
-registered `frontchannel_logout_session_required`; a client that had not
-would be framed with `iss` alone. `demo-spa` itself is not framed here — it
-registered no `frontchannel_logout_uri` at all, and §2's own rule is that a
-client without one is not framed and contributes no origin, which
-`frame-src` above bears out: it names `reports-widget`'s origin and nothing
-else.
+(`sid` shortened; it is the id half of the session cookie's entry, and `iss` is
+this tenant's issuer. From the same stack at `http://localhost:3094`, with the
+two commands above run against it and `x-request-id`, `Date` and the keep-alive
+headers omitted.) `sid` is present because `reports-widget` registered
+`frontchannel_logout_session_required`; a client that had not would be framed
+with `iss` alone. `demo-spa` itself is not framed here — it registered no
+`frontchannel_logout_uri` at all, and §2's own rule is that a client without one
+is not framed and contributes no origin, which `frame-src` above bears out: it
+names `reports-widget`'s origin and nothing else.
 
-**This is an attempt, not a delivered notification.** The iframe's
-response is never read back, and whether `reports-widget` ever sees the
-request depends on browser behaviour this OP does not control:
-`docs/superpowers/p3b-spike-frontchannel.md` found that a cookie with no
-explicit `SameSite` is never sent on this framed cross-site request at
-all, in every browser tested, and a cookie that opts in with
-`SameSite=None; Secure` is still subject to third-party-cookie blocking
-that Safari and Firefox apply by default and Chrome allows a user or
-administrator to apply. ADR 0034 has the full reasoning.
+**This is an attempt, not a delivered notification.** The iframe's response is
+never read back, and whether `reports-widget` ever sees the request depends on
+browser behaviour this OP does not control: A spike found that a cookie with no
+explicit `SameSite` is never sent on this framed cross-site request at all, in
+every browser tested, and a cookie that opts in with `SameSite=None; Secure` is
+still subject to third-party-cookie blocking that Safari and Firefox apply by
+default and Chrome allows a user or administrator to apply. ADR 0034 has the
+full reasoning.
 
-**Back-channel logout is a server-to-server `POST`, so none of that
-applies to it — but it went through the same logout above**, because
-`reports-widget` registered `backchannel_logout_uri` alongside
-`frontchannel_logout_uri` in the `UPDATE` further up, and ending a session
-enqueues a delivery for every client that registered either. This
-sub-section's own commands were re-run against a fresh session on the
-same compose stack (`docker compose -f infra/docker/compose.yaml up -d
---build`, per [Bootstrap](./bootstrap.md)), started with
-`ODUDU_LOGOUT_SENDER_ENABLED=false` on the environment so the one-shot
-command below is what claims the row, not the server's own schedule.
+**Back-channel logout is a server-to-server `POST`, so none of that applies to
+it — but it went through the same logout above**, because `reports-widget`
+registered `backchannel_logout_uri` alongside `frontchannel_logout_uri` in the
+`UPDATE` further up, and ending a session enqueues a delivery for every client
+that registered either. This sub-section's own commands were re-run against a
+fresh session on the same compose stack (per [Bootstrap](./bootstrap.md)),
+started with `ODUDU_LOGOUT_SENDER_ENABLED=false` on the environment so the
+one-shot command below is what claims the row, not the server's own schedule.
 Queried straight after that same `GET .../logout` call:
 
 ```bash
@@ -1044,35 +1035,31 @@ Querying the same row again shows why, in the queue's own words:
 (1 row)
 ```
 
-`assertPublicAddress` (`packages/protocol-oidc/src/service/remote-address.ts`)
-refuses `127.0.0.0/8` unconditionally, ahead of any override — the same
-guard `clientKeySet`'s `jwks_uri` fetch uses (ADR 0028). `attempts` reads
-`1`: `claimDue` spends the attempt when it claims the row, and `markFailed`
-records only the error and when the row is next due, so
+`assertPublicAddress` refuses `127.0.0.0/8` unconditionally, ahead of any
+override — the same guard `clientKeySet`'s `jwks_uri` fetch uses (ADR 0028).
+`attempts` reads `1`: `claimDue` spends the attempt when it claims the row, and
+`markFailed` records only the error and when the row is next due, so
 `BACKCHANNEL_LOGOUT_MAX_ATTEMPTS` is the number of times a token is really
-offered. The pass and this second query were recaptured against the tenth
-stack of [the admin paths](../admin-paths/index.md) once `markFailed` stopped
-spending a second attempt: `reports-widget` created in its `demo` through
-`POST /clients` with this back-channel URI, `ada` signed in through it and
-signed out through the confirmation page, as
-[One sign-in's audit trail](./one-sign-ins-audit-trail-read-through-the-admin-api.md)
-does, then the same query, which answered the first query's row above byte
-for byte, the same pass and the same query again.
+offered. The pass and this second query are from after `markFailed` stopped
+spending a second attempt: `reports-widget` created in its `demo` through `POST
+/clients` with this back-channel URI, `ada` signed in through it and signed out
+through the confirmation page, as [One sign-in's audit
+trail](./one-sign-ins-audit-trail-read-through-the-admin-api.md) does, then the
+same query, which answered the first query's row above byte for byte, the same
+pass and the same query again.
 
-**A private-range address is a different branch of that same guard, and
-one an operator can open.** `ODUDU_ALLOW_PRIVATE_CLIENT_URLS` — already
-read at boot for `jwks_uri` — now reaches
-`createLogoutDeliveryTransport` too, at both call sites that build one
-(`apps/server/src/main.ts`, `apps/server/src/cli/send-logouts.ts`). With
-it set, delivery to a real listener actually happens. Continuing this
-same stack: the container was recreated with
-`ODUDU_ALLOW_PRIVATE_CLIENT_URLS=true` on the environment (`docker compose
-up -d`), a plain Node `https` listener was started on this host's own LAN
-address (`192.168.1.71:9444`, standing in for a relying party — a private
-address is exactly what this variable exists to admit; a _public_ one
-needs no such override), its self-signed certificate was copied into the
-container (`docker cp cert.pem docker-odudu-1:/tmp/listener-cert.pem`),
-and `reports-widget`'s `backchannel_logout_uri` was pointed at it instead:
+**A private-range address is a different branch of that same guard, and one an
+operator can open.** `ODUDU_ALLOW_PRIVATE_CLIENT_URLS` — already read at boot
+for `jwks_uri` — now reaches `createLogoutDeliveryTransport` too, at both call
+sites that build one. With it set, delivery to a real listener actually happens.
+Continuing this same stack: the container was recreated with
+`ODUDU_ALLOW_PRIVATE_CLIENT_URLS=true` on the environment (`docker compose up
+-d`), a plain Node `https` listener was started on this host's own LAN address
+(`192.168.1.71:9444`, standing in for a relying party — a private address is
+exactly what this variable exists to admit; a _public_ one needs no such
+override), its self-signed certificate was copied into the container (`docker cp
+cert.pem docker-odudu-1:/tmp/listener-cert.pem`), and `reports-widget`'s
+`backchannel_logout_uri` was pointed at it instead:
 
 ```bash
 docker compose -f infra/docker/compose.yaml exec -T postgres \
@@ -1143,26 +1130,26 @@ tenant (see [Discovery](./path-a-authorization-code-with-pkce.md#1-discovery) ab
 ## Offline access
 
 `offline_access` is a scope, seeded into every tenant alongside
-`openid`/`profile`/`email` and assigned to `demo-spa` too — the one scope
-here assigned `'optional'` rather than `'default'`, which is what lets the
-consent screen ([below](#the-consent-screen)) tell it apart from a scope
-pre-approved the moment a client is assigned it (it maps no claims either
-way — see [Discovery](./path-a-authorization-code-with-pkce.md#1-discovery) above). `demo-spa`'s own
-`consent_required` is `false` — `seed client` names no way to set it (see
-[What is not implemented](../../../roadmap.md#what-is-not-implemented)'s `seed client` row;
-`PATCH /admin/tenants/{tenant}/clients/{id}` does, without `If-Match`,
-being no list field) — so every seeded client keeps the column's own
-default — so the transcript
-below reuses without ever seeing that screen; the consent section
+`openid`/`profile`/`email` and assigned to `demo-spa` too — the one scope here
+assigned `'optional'` rather than `'default'`, which is what lets the consent
+screen ([below](#the-consent-screen)) tell it apart from a scope pre-approved
+the moment a client is assigned it (it maps no claims either way — see
+[Discovery](./path-a-authorization-code-with-pkce.md#1-discovery) above).
+`demo-spa`'s own `consent_required` is `false` — `seed client` names no way to
+set it (see [What is not
+implemented](../../../roadmap.md#what-is-not-implemented)'s `seed client` row;
+`PATCH /admin/tenants/{tenant}/clients/{id}` does, without `If-Match`, being no
+list field) — so every seeded client keeps the column's own default — so the
+transcript below reuses without ever seeing that screen; the consent section
 demonstrates asking, against an anonymously self-registered client, whose
 `consent_required` defaults `true` (ADR 0027, and the registration section
-above). Requesting it produces a
-grant with no session, which is what nothing here can expire and no logout
-can end (OpenID Connect Back-Channel Logout 1.0 §2.7's second sentence,
-[docs/protocols/oidc-backchannel.md](https://github.com/wizzywit/odudu/blob/main/docs/protocols/oidc-backchannel.md)). A
-fresh login, keeping its cookie, redeems one code for a plain
-`scope=openid` grant and then reuses the same live session — no new
-login — to redeem a second code for `scope=openid offline_access`:
+above). Requesting it produces a grant with no session, which is what nothing
+here can expire and no logout can end (OpenID Connect Back-Channel Logout 1.0
+§2.7's second sentence, [the back-channel logout reading
+note](https://github.com/wizzywit/odudu/blob/main/docs/protocols/oidc-backchannel.md)).
+A fresh login, keeping its cookie, redeems one code for a plain `scope=openid`
+grant and then reuses the same live session — no new login — to redeem a second
+code for `scope=openid offline_access`:
 
 ```bash
 VERIFIER=$(openssl rand -hex 32)
@@ -1240,13 +1227,13 @@ OFFLINE_REFRESH_TOKEN=$(printf '%s' "$OFFLINE_TOKENS" | sed -n 's/.*"refresh_tok
 }
 ```
 
-No `sid` — every other access token in this document carries one
-([docs/protocols/oidc-backchannel.md](https://github.com/wizzywit/odudu/blob/main/docs/protocols/oidc-backchannel.md) §2.1),
-and this is the one grant here with no session for it to name. `grant_id`
-carries no such exception; it names the grant itself, not a session, so
-it is on this token exactly as it is on every other. The ID token,
-decoded, is missing `sid` the same way, but still carries `amr` and
-`acr`:
+No `sid` — every other access token in this document carries one ([the
+back-channel logout reading
+note](https://github.com/wizzywit/odudu/blob/main/docs/protocols/oidc-backchannel.md)
+§2.1), and this is the one grant here with no session for it to name. `grant_id`
+carries no such exception; it names the grant itself, not a session, so it is on
+this token exactly as it is on every other. The ID token, decoded, is missing
+`sid` the same way, but still carries `amr` and `acr`:
 
 ```json
 {
@@ -1369,28 +1356,28 @@ curl -sS \
 }
 ```
 
-(Both token values truncated.) A session-bound refresh token dies the
-moment its session does, whether that session was ended by this logout or
-by its own idle timeout expiring underneath it —
-`packages/protocol-oidc/src/usecase/refresh-rotation.ts` checks the
-session's own liveness, not just the grant's `revoked_at`, for exactly that
-second case. An offline grant has neither: no session to end, and no idle
-window to outlive, so it is bounded only by its own
-`refresh_token_ttl_seconds` and by retention (see [What is not
-implemented](../../../roadmap.md#what-is-not-implemented)) — nothing about ending a session
-ages it out early. An administrator revokes one with
-`DELETE /admin/tenants/{tenant}/subjects/{id}/grants/{clientId}`, or every
+(Both token values truncated.) A session-bound refresh token dies the moment its
+session does, whether that session was ended by this logout or by its own idle
+timeout expiring underneath it — refresh rotation checks the session's own
+liveness, not just the grant's `revoked_at`, for exactly that second case. An
+offline grant has neither: no session to end, and no idle window to outlive, so
+it is bounded only by its own `refresh_token_ttl_seconds` and by retention (see
+[What is not implemented](../../../roadmap.md#what-is-not-implemented)) —
+nothing about ending a session ages it out early. An administrator revokes one
+with `DELETE /admin/tenants/{tenant}/subjects/{id}/grants/{clientId}`, or every
 grant a client holds with `DELETE /admin/tenants/{tenant}/clients/{id}/grants`
-([Admin paths](../admin-paths/get-subjectsidgrants-and-delete-subjectsidgrantsclientid.md)). A client is only handed this scope if the tenant's
-operator assigned it — `demo-spa` has it because `odudu seed` assigns every
-default scope, `offline_access` included, though `'optional'` rather than
-`'default'`; a request for it from a client whose assignment was withdrawn
-between `/authorize` accepting the request and the code being redeemed
-gets an ordinary session-bound grant back instead, since the resolved
-scope at redemption is the authority, not the request `/authorize` saw. A
-client never assigned the scope at all is refused outright, with
-`invalid_scope`, before a code is ever issued — the same rule any other
-unassigned scope gets (see [Discovery](./path-a-authorization-code-with-pkce.md#1-discovery) above).
+([Admin
+paths](../admin-paths/get-subjectsidgrants-and-delete-subjectsidgrantsclientid.md)).
+A client is only handed this scope if the tenant's operator assigned it —
+`demo-spa` has it because `odudu seed` assigns every default scope,
+`offline_access` included, though `'optional'` rather than `'default'`; a
+request for it from a client whose assignment was withdrawn between `/authorize`
+accepting the request and the code being redeemed gets an ordinary session-bound
+grant back instead, since the resolved scope at redemption is the authority, not
+the request `/authorize` saw. A client never assigned the scope at all is
+refused outright, with `invalid_scope`, before a code is ever issued — the same
+rule any other unassigned scope gets (see
+[Discovery](./path-a-authorization-code-with-pkce.md#1-discovery) above).
 
 ## The consent screen
 
@@ -1405,15 +1392,13 @@ every anonymously self-registered client (`consent_required` defaults
 `true` there, per [Dynamic client registration](./bootstrap.md#dynamic-client-registration)
 and ADR 0027) — and for `prompt=consent` on any client at all.
 
-The screen and the reuse and `prompt=none` answers below were captured on a
-stack of its own: the project `odudu-17a` on `http://localhost:3094`, built
-from commit `a29df187` and started on an empty volume, with `demo` seeded the
-way [Bootstrap](./bootstrap.md) seeds it. The subsections from "The client's own
-pages" on keep the earlier stack they name, `odudu-t8d` at `511db0fd`, whose
-transcripts show no response header.
-`client_registration_policy` is `disabled` on `demo` by default, the same as
-every tenant, so the anonymously self-registered client this section needs
-it open:
+The screen and the reuse and `prompt=none` answers below come from a stack of
+its own on `http://localhost:3094`, started on an empty volume, with `demo`
+seeded the way [Bootstrap](./bootstrap.md) seeds it. The subsections from "The
+client's own pages" on come from an earlier stack, whose transcripts show no
+response header. `client_registration_policy` is `disabled` on `demo` by
+default, the same as every tenant, so the anonymously self-registered client
+this section needs it open:
 
 ```bash
 odudu seed tenant --name demo --set client_registration_policy=open
@@ -1605,17 +1590,16 @@ Connection: keep-alive
 Keep-Alive: timeout=72
 ```
 
-The gate applies to a live SSO session exactly as it does to a fresh
-login, which is the reason this section exists rather than being folded
-into the login-form walkthrough above: a second `/authorize` request,
-against the same cookie, asking for a wider scope than what the first
-consent recorded, renders this same screen again rather than reusing the
-session straight through to a code — `packages/protocol-oidc/tests/consent.int.test.ts`'s
-`asks for consent on a reused SSO session, not only on a fresh login` is
-the case that would ship broken if the gate lived only on the form path.
-The cookie from Allow above (`openid profile`, `offline_access` declined)
-asking again with `offline_access` in scope, this time with no login form
-in between — the session is still live:
+The gate applies to a live SSO session exactly as it does to a fresh login,
+which is the reason this section exists rather than being folded into the
+login-form walkthrough above: a second `/authorize` request, against the same
+cookie, asking for a wider scope than what the first consent recorded, renders
+this same screen again rather than reusing the session straight through to a
+code — a test named `asks for consent on a reused SSO session, not only on a
+fresh login` is the case that would ship broken if the gate lived only on the
+form path. The cookie from Allow above (`openid profile`, `offline_access`
+declined) asking again with `offline_access` in scope, this time with no login
+form in between — the session is still live:
 
 ```bash
 curl -sS -D - -b cookies-consent.txt --get \
@@ -1713,16 +1697,16 @@ Keep-Alive: timeout=72
 
 ### The client's own pages
 
-A client that registered RFC 7591's `client_uri`, `policy_uri` or `tos_uri`
-has each linked under its name, so the End-User can read them before
-answering. Every link is escaped through the renderer's own `escapeHtml`,
-attribute and text alike, and the page's policy is the one every
-continuing page sends: a link is a navigation, which `default-src 'none'`
-does not govern. Captured on the earlier stack named above (`odudu-t8d`),
-with a tenant of its own, `email-demo`, holding `grace`
-(`odudu seed tenant --name email-demo`, then `odudu seed user` with an
-address), `$ADMIN_TOKEN` got the way [the admin paths](../admin-paths/getting-the-token.md)
-shows, and a public client created through the admin API for it:
+A client that registered RFC 7591's `client_uri`, `policy_uri` or `tos_uri` has
+each linked under its name, so the End-User can read them before answering.
+Every link is escaped through the renderer's own `escapeHtml`, attribute and
+text alike, and the page's policy is the one every continuing page sends: a link
+is a navigation, which `default-src 'none'` does not govern. On the earlier
+stack named above, with a tenant of its own, `email-demo`, holding `grace`
+(`odudu seed tenant --name email-demo`, then `odudu seed user` with an address),
+`$ADMIN_TOKEN` got the way [the admin
+paths](../admin-paths/getting-the-token.md) shows, and a public client created
+through the admin API for it:
 
 ```bash
 curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H 'Content-Type: application/json' \

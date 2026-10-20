@@ -1,15 +1,15 @@
 ---
 title: 'A refresh the server refuses'
-description: 'From the seventh run, on the same session, straight after the lock section.'
+description: 'When the server refuses a refresh, the grant is revoked, the next call answers a session-ended 401 and clears its cookie, and the row is gone.'
 ---
 
 # A refresh the server refuses
 
-From the seventh run, on the same session, straight after the lock section. Its
-grant is revoked through the console itself, by ending the SSO session the grant is
-bound to; a write names the session's subject in `X-Odudu-Console-Subject`, as
-every write must, or it is refused as another principal's. `ada` holds two live
-sessions on this stack, the first sign-in's loopback one and this run's own,
+On the same session, straight after the lock section. Its grant is revoked
+through the console itself, by ending the SSO session the grant is bound to; a
+write names the session's subject in `X-Odudu-Console-Subject`, as every write
+must, or it is refused as another principal's. `ada` holds two live sessions at
+this point, the first sign-in's loopback one and this run's own,
 `01a1203e-f2ca-…`, the one in its `system-session` cookie:
 
 ```bash

@@ -23,5 +23,4 @@ content-type: application/json; charset=utf-8
 {"id":"01a0d6fd-9453-7bf0-9823-a5fc6ea34836","type":"user","username":"ada","email":"ada@demo.example","enabled":true,"created_at":"2026-09-25T05:15:37.939Z"}
 ```
 
-_(Not re-run for the `cache-control: no-store` pass: this `ada`, from the
-first stack, is gone.)_
+_(This read predates the `cache-control: no-store` header and was not re-run.)_

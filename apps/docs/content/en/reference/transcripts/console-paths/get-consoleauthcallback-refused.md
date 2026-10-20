@@ -1,16 +1,15 @@
 ---
 title: 'GET /console/auth/callback, refused'
-description: "The sign-in and the refusals up to the authorization endpoint's error were recaptured on a ninth run, after a first refusal began to answer a…"
+description: 'A callback whose state does not match the login cookie restarts the sign-in once; a second refusal inside the minute shows a page that links back.'
 ---
 
 # `GET /console/auth/callback`, refused
 
-The sign-in and the refusals up to the authorization endpoint's error were
-recaptured on a ninth run, after a first refusal began to answer a restart and
-the page began to link back to the console; what follows them is from the
-second run. The sign-in used the same `login`, authorization-endpoint and
-`authenticate` requests as the first run, against `odudu-p4g-12f`. The two
-that set what this section uses answered:
+The sign-in and the refusals up to the authorization endpoint's error are from a
+later run, once a first refusal began to answer a restart and the page began to
+link back to the console; what follows them is from an earlier one. The sign-in
+used the same `login`, authorization-endpoint and `authenticate` requests as the
+first run. The two that set what this section uses answered:
 
 ```
 HTTP/1.1 302 Found
@@ -40,11 +39,10 @@ A copy of the jar, `jar-before-callback`, was taken here. A refused callback
 clears the login cookie, so each refused request below is sent without
 `-c`, and the jar it reads still holds the login cookie.
 
-**A `state` that does not match the login cookie.** The code and `iss` are
-the real ones; the `state` keeps the tenant half and replaces the secret. Each
-callback here ran on the ninth run's stack, the project `odudu-p4g-12f` on
-`http://localhost:3513`, with `jar` holding the login cookie that sign-in set
-and `$BAD` the callback below:
+**A `state` that does not match the login cookie.** The code and `iss` are the
+real ones; the `state` keeps the tenant half and replaces the secret. Each
+callback here ran on `http://localhost:3513`, with `jar` holding the login
+cookie that sign-in set and `$BAD` the callback below:
 
 ```bash
 curl -sS -D - -b jar "$BAD"
@@ -212,7 +210,7 @@ Keep-Alive: timeout=72
 ```
 
 `$CB` is the `location` the tenant's `authenticate` answered, `$BAD` is `$CB`
-with the secret replaced, and both are on this stack. The first callback took
+with the secret replaced, and both are from this run. The first callback took
 the pending sign-in, so the replay found none and was refused before the code
 was presented again.
 

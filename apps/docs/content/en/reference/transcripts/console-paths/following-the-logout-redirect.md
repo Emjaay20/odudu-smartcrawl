@@ -1,12 +1,12 @@
 ---
 title: 'Following the logout redirect'
-description: 'From the seventh run. $REDIRECT is the redirect above.'
+description: 'After a console logout the browser follows the redirect, and the console cookie it held from before the logout is an ended session.'
 ---
 
 # Following the logout redirect
 
-From the seventh run. `$REDIRECT` is the `redirect` above. The jar still holds
-`system-session` from the sign-in.
+`$REDIRECT` is the `redirect` above. The jar still holds `system-session` from
+the sign-in.
 
 ```bash
 curl -sS -D - -c jar -b jar "$REDIRECT"
@@ -25,13 +25,12 @@ Connection: keep-alive
 Keep-Alive: timeout=72
 ```
 
-What is left, read from the database as the superuser, with these three
-queries in a file piped to
-`docker compose -p odudu-docs-12b exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'`.
-Each query is scoped to this session's `console_sessions` row or to the SSO
-session id `01a12040-c04d-…`, the one in the `system-session` cookie and the
-ID token's `sid`. psql ends each header line with a space, which the
-formatter trims below; nothing else differs from what it printed:
+What is left, read from the database as the superuser, with these three queries
+in a file piped to `psql` in the `postgres` container. Each query is scoped to
+this session's `console_sessions` row or to the SSO session id
+`01a12040-c04d-…`, the one in the `system-session` cookie and the ID token's
+`sid`. psql ends each header line with a space, which the formatter trims below;
+nothing else differs from what it printed:
 
 ```sql
 select count(*) as console_sessions from console_sessions where tenant_id = '0199aa00-0000-7000-8000-000000000001' and id = '01a12040-c096-7eef-8eac-4c64f5f6d0a4';

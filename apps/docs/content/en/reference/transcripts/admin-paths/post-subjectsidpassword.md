@@ -6,18 +6,15 @@ description: "Requires manage-users, and takes no body. An administrator restori
 # `POST /subjects/:id/password`
 
 Requires `manage-users`, and takes no body. An administrator restoring a
-subject's access never chooses the password: the server generates one —
-the same 24 random bytes, base64url, that `odudu seed admin` prints
-(`generateOneTimePassword`, `packages/domain-identity/src/service/one-time-password.ts`)
-— replaces the subject's password credential with its hash, or creates one
-for a subject who had none, and owes `update-password`, so the next sign-in
-with it parks on the change-password page. The password is in this `201`
-response's body and nowhere else: never stored in the clear, never logged
-(the request logger records a response's status and allowlisted headers,
-never its body — `apps/server/src/logger.ts`), and the
-`subject.password_issue` audit row's `detail` is empty.
-`apps/server/tests/seed-admin.int.test.ts` searches every captured log line
-and every audit row for it.
+subject's access never chooses the password: the server generates one — the same
+24 random bytes, base64url, that `odudu seed admin` prints
+(`generateOneTimePassword`) — replaces the subject's password credential with
+its hash, or creates one for a subject who had none, and owes `update-password`,
+so the next sign-in with it parks on the change-password page. The password is
+in this `201` response's body and nowhere else: never stored in the clear, never
+logged (the request logger records a response's status and allowlisted headers,
+never its body), and the `subject.password_issue` audit row's `detail` is empty.
+An integration test searches every captured log line and every audit row for it.
 
 Three things are done alongside it. **Any lockout is cleared**: an
 administrator restoring access is not the attacker a lockout exists to
@@ -30,13 +27,12 @@ policy, while the issued password itself is not: the policy governs a
 password somebody chooses, and a sign-in only verifies a password against
 its hash.
 
-Like a redeemed reset link (`completePasswordReset`,
-`packages/account/src/usecase/reset-password.ts`), it **ends no session and
-revokes no grant**: a subject already signed in somewhere stays signed in
-there. **For a compromised account, issue the password and then end every
-session** (`DELETE /subjects/:id/sessions`, below). Neither reaches a grant
-bound to no session: an `offline_access` refresh token survives both, and
-is revoked per client through `DELETE /subjects/:id/consents/:clientId`.
+Like a redeemed reset link (`completePasswordReset`), it **ends no session and
+revokes no grant**: a subject already signed in somewhere stays signed in there.
+**For a compromised account, issue the password and then end every session**
+(`DELETE /subjects/:id/sessions`, below). Neither reaches a grant bound to no
+session: an `offline_access` refresh token survives both, and is revoked per
+client through `DELETE /subjects/:id/consents/:clientId`.
 
 A subject with no `users` row — a service or `agent_instance` subject,
 which has no sign-in to restore — answers `404`, the same as an unknown
@@ -44,34 +40,31 @@ subject or one in another tenant.
 
 ## The target ceiling
 
-**Every route that mutates one subject refuses a caller who does not hold
-every admin capability that subject holds.** That is every non-`GET` route
-under `/admin/tenants/{tenant}/subjects/{id}`: `PATCH` and `DELETE` on the
-subject itself, `PATCH …/profile`, `DELETE …/credentials/{credentialId}`,
-`DELETE …/consents/{clientId}`, `POST …/password`, `POST …/password-reset`,
-`POST …/verification`, `POST …/actions-email`, `DELETE …/lockout`,
-`PUT …/required-actions`, `PUT …/roles`, `PUT …/groups`, `DELETE …/sessions`
-and `DELETE …/sessions/{sid}`. It is the reverse of the ceiling
-`PUT /subjects/:id/roles` enforces on what a caller grants, and it applies
-to roles and groups as well as that one: a ceiling only on doors that take
-an account over would leave the demotion that comes first open, since
-`PUT …/roles` with an empty list checks nothing it grants, and a
-`tenant-admin` emptied of its roles has nothing left for any later check to
-compare. The rule is checked first, under the subject's row lock, by one
-function (`targetOverreach`,
-`packages/protocol-admin/src/service/capability-ceiling.ts`), which
+**Every route that mutates one subject refuses a caller who does not hold every
+admin capability that subject holds.** That is every non-`GET` route under
+`/admin/tenants/{tenant}/subjects/{id}`: `PATCH` and `DELETE` on the subject
+itself, `PATCH …/profile`, `DELETE …/credentials/{credentialId}`, `DELETE
+…/consents/{clientId}`, `POST …/password`, `POST …/password-reset`, `POST
+…/verification`, `POST …/actions-email`, `DELETE …/lockout`, `PUT
+…/required-actions`, `PUT …/roles`, `PUT …/groups`, `DELETE …/sessions` and
+`DELETE …/sessions/{sid}`. It is the reverse of the ceiling `PUT
+/subjects/:id/roles` enforces on what a caller grants, and it applies to roles
+and groups as well as that one: a ceiling only on doors that take an account
+over would leave the demotion that comes first open, since `PUT …/roles` with an
+empty list checks nothing it grants, and a `tenant-admin` emptied of its roles
+has nothing left for any later check to compare. The rule is checked first,
+under the subject's row lock, by one function (`targetOverreach`), which
 resolves the target's capabilities through `effectiveRoles` — groups, their
-ancestors and composites included — and compares them with the caller's
-own. A caller missing any of them is refused with `403` naming what it
-lacks, and the attempt writes a `refused` row under the action it
-attempted, with `detail.denied`. A caller holding everything the target
-holds — a `tenant-admin` acting on another — is admitted, and so is anybody
-with the route's own capability acting on a subject holding none.
-`tests/target-ceiling.int.test.ts` reads the routes it sweeps from the route
-table, so a new mutating route under `/subjects/{id}` without the check
-fails it. A client's service account is held to the same ceiling by every
-route that mutates the client
-([the service account's ceiling](./post-clientsidsecret.md#the-service-accounts-ceiling)).
+ancestors and composites included — and compares them with the caller's own. A
+caller missing any of them is refused with `403` naming what it lacks, and the
+attempt writes a `refused` row under the action it attempted, with
+`detail.denied`. A caller holding everything the target holds — a `tenant-admin`
+acting on another — is admitted, and so is anybody with the route's own
+capability acting on a subject holding none. An integration test reads the
+routes it sweeps from the route table, so a new mutating route under
+`/subjects/{id}` without the check fails it. A client's service account is held
+to the same ceiling by every route that mutates the client ([the service
+account's ceiling](./post-clientsidsecret.md#the-service-accounts-ceiling)).
 
 ## Captured
 
@@ -173,15 +166,13 @@ echo
 {"type":"about:blank","title":"Forbidden","status":403,"detail":"the subject holds what the caller does not: manage-clients, manage-tenant, manage-keys, manage-sessions, view-audit","instance":"01a0e305-355e-7948-94aa-bd9f7b23958d"}
 ```
 
-The demotion that would come first, refused the same way, then `lin`'s
-roles, unchanged, and the two `refused` rows it and a lockout clear wrote.
-Captured against the sixth stack, in a tenant also named `recovery-demo`
-created there for it, with its own `mo` (`manage-users`) and `lin`
-(`tenant-admin`) set up the same way:
+The demotion that would come first, refused the same way, then `lin`'s roles,
+unchanged, and the two `refused` rows it and a lockout clear wrote. In a tenant
+also named `recovery-demo` created there for it, with its own `mo`
+(`manage-users`) and `lin` (`tenant-admin`) set up the same way:
 
-Recaptured against the tenth stack, once each row answered `actor_name` and
-`actor_origin`, in a tenant of the same name with `mo` and `lin` set up the
-same way, so the ids are that run's, not those above:
+The same again, now that each row answers `actor_name` and `actor_origin`; the
+ids are a fresh run's, not those above:
 
 ```bash
 LIN=http://localhost:3082/admin/tenants/recovery-demo/subjects/01a0ee90-8113-7860-8d43-2175e6975b6d
@@ -220,16 +211,15 @@ echo
 
 The rows these sections wrote, newest first — the three refusals with
 `detail.denied`, then the issue with an empty `detail`, the end of every
-session, the lockout clear, and `lin`'s role assignment from the setup —
-and the service's own log searched for the issued password. Bounded with
-`to=` at a point between this capture and the ceiling demonstration
-recaptured further above, since an unscoped `limit=7` now surfaces that
-later demonstration's own rows instead of these:
+session, the lockout clear, and `lin`'s role assignment from the setup — and the
+service's own log searched for the issued password. Bounded with `to=` at a
+point between this run and the ceiling demonstration further above, since an
+unscoped `limit=7` now surfaces that later demonstration's own rows instead of
+these:
 
-Recaptured against the tenth stack, once each row answered `actor_name` and
-`actor_origin`, after the same recovery was made there in the tenant of the
-same name above, before its ceiling demonstration, and bounded the same way;
-the ids and the issued password are that run's, not those above:
+With `actor_name` and `actor_origin` on each row, after the same recovery in the
+tenant of the same name above, before its ceiling demonstration, and bounded the
+same way; the ids and the issued password are a fresh run's, not those above:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \

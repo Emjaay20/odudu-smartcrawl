@@ -22,9 +22,9 @@ subject has consented to, which may be fewer. `scope` is at most 2048
 characters. Each evaluation is audited as `client.evaluate`. An unknown
 client or subject answers `404`.
 
-Against the tenth stack, for `grace`, her profile given its name claims
-through `PATCH /subjects/:id/profile` beforehand; once naming a scope, once
-not, and the row it left:
+For `grace`, her profile given its name claims through `PATCH
+/subjects/:id/profile` beforehand; once naming a scope, once not, and the row it
+left:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \

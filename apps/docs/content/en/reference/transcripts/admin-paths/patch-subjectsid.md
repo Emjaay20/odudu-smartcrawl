@@ -74,18 +74,16 @@ once. A password equal to the new username is not re-checked against
 `password_not_username` until it is next changed, which is when every
 password policy applies.
 
-Captured against `infra/docker` after a rebuild of the `odudu` service that
-applied `0077_username_editable.sql`, as a new system admin `ada-rename`
-(`seed admin`), in a tenant `rename-demo` created for it through
-`POST /admin/tenants`, on a subject `grace` seeded with a real password
-(`odudu seed user`), a second subject `ada` created through
-`POST /subjects`, and a confidential client `rename-demo-app` created
-through `POST /clients` with `https://app.example/callback` registered and
-the `authorization_code` and `refresh_token` grants; `$CLIENT_SECRET` is the
-secret that create returned. `$GRACE` is `01a0e37c-9f28-77e3-8579-d0907e90b1c3`, and `signin` is the
-helper [`DELETE /subjects/:id/lockout`](./delete-subjectsidlockout.md) defines,
-pointed at this client with `profile` in the scope and taking the username
-as its argument:
+As a new system admin `ada-rename` (`seed admin`), in a tenant `rename-demo`
+created for it through `POST /admin/tenants`, on a subject `grace` seeded with a
+real password (`odudu seed user`), a second subject `ada` created through `POST
+/subjects`, and a confidential client `rename-demo-app` created through `POST
+/clients` with `https://app.example/callback` registered and the
+`authorization_code` and `refresh_token` grants; `$CLIENT_SECRET` is the secret
+that create returned. `$GRACE` is `01a0e37c-9f28-77e3-8579-d0907e90b1c3`, and
+`signin` is the helper [`DELETE
+/subjects/:id/lockout`](./delete-subjectsidlockout.md) defines, pointed at this
+client with `profile` in the scope and taking the username as its argument:
 
 ```bash
 AUTHORIZE='http://localhost:3000/tenants/rename-demo/protocol/openid-connect/auth?response_type=code&client_id=rename-demo-app&redirect_uri=https%3A%2F%2Fapp.example%2Fcallback&scope=openid%20profile&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'
@@ -100,11 +98,10 @@ signin() {
 }
 ```
 
-With the setting still at its default, the rename is refused. This one
-refusal was captured against the sixth stack, in a tenant also named
-`rename-demo` created there for it, on its own `grace`
-(`01a0ea54-d24b-7445-9226-9123b58e9e4e`), since the first stack's `rename-demo` is gone; the rest
-of this section is that first capture:
+With the setting still at its default, the rename is refused. This one refusal
+is from a separate run, in a tenant also named `rename-demo` created for it, on
+its own `grace` (`01a0ea54-d24b-7445-9226-9123b58e9e4e`); the rest of this
+section is from the first:
 
 ```bash
 curl -sS -D - -X PATCH \
@@ -317,10 +314,8 @@ The audit trail for `grace` holds the two renames and nothing for the
 refused ones — the `409` rolled back with its transaction, and the `400`
 and `428` were refused before anything was written:
 
-Recaptured against the tenth stack, once each row answered `actor_name` and
-`actor_origin`, after the same renames and refusals were made there against
-a `grace` seeded in a tenant of the same name, `username_editable` on, so the
-ids are that run's, not those above:
+The same again, now that each row answers `actor_name` and `actor_origin`; the
+ids are a fresh run's, not those above:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \

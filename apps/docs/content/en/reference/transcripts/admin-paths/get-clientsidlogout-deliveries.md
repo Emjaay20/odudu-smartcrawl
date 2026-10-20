@@ -12,8 +12,8 @@ once every attempt `send-logouts` makes is spent
 endpoint. Never the token itself. `?status=` narrows it; an unknown client
 answers `404`.
 
-Against the tenth stack, after `DELETE /sessions` above queued a token for each
-of `ops-app`'s two sessions it ended, and one pass of the sender, run by hand:
+After `DELETE /sessions` above queued a token for each of `ops-app`'s two
+sessions it ended, and one pass of the sender, run by hand:
 
 ```bash
 docker compose exec -T odudu node dist/main.js send-logouts 2>/dev/null

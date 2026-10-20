@@ -25,27 +25,27 @@ are bounded per browser by `max_sessions_per_browser`, but unbounded across
 however many browsers hold one, so this listing pages exactly like the
 others rather than trusting that bound.
 
-`DELETE` ends one session through the same call the RP-Initiated Logout
-usecase makes (`endSession`, `packages/protocol-oidc/src/usecase/end-session.ts`) —
-there is one path that ends a session, not two. It revokes every grant the
-session holds and enqueues a Back-Channel Logout Token for each registered
-client that used it and has a `backchannel_logout_uri` configured (§2.5 of
-the spec). **Front-Channel Logout does not apply here**: §3 renders an
-iframe per relying party in the End-User's own browser, and an
-admin-initiated end has no browser to render one in, so only the
-back-channel delivery is attempted. Beside its own `admin_mutation` row,
-`session.end`, it writes the `session.ended` row every session end writes,
-with `detail.via` `admin` ([request paths](../request-paths/rp-initiated-logout.md#what-a-session-leaves-in-the-audit-log)).
-A second `DELETE` of the same session is idempotent and answers `204`:
-ending an already-ended session moves neither stamp, and a repeat delivery
-for the same client is deduped by `backchannel_logout_deliveries_dedupe`.
-`expires_at` moves only while it is still ahead of now, and
-`coalesce(revoked_at, now)` keeps the first revocation — a bare assignment
-would push both stamps forward on every repeat, so a second `DELETE` at a
-later moment would delay the reaping the first one started rather than
-changing nothing. The repeat writes its own `admin_mutation` row, since it
-is a request an administrator made, but no second `session.ended`. An
-unknown session id, or one belonging to a different subject, answers `404`.
+`DELETE` ends one session through the same call the RP-Initiated Logout usecase
+makes (`endSession`) — there is one path that ends a session, not two. It
+revokes every grant the session holds and enqueues a Back-Channel Logout Token
+for each registered client that used it and has a `backchannel_logout_uri`
+configured (§2.5 of the spec). **Front-Channel Logout does not apply here**: §3
+renders an iframe per relying party in the End-User's own browser, and an
+admin-initiated end has no browser to render one in, so only the back-channel
+delivery is attempted. Beside its own `admin_mutation` row, `session.end`, it
+writes the `session.ended` row every session end writes, with `detail.via`
+`admin` ([request
+paths](../request-paths/rp-initiated-logout.md#what-a-session-leaves-in-the-audit-log)).
+A second `DELETE` of the same session is idempotent and answers `204`: ending an
+already-ended session moves neither stamp, and a repeat delivery for the same
+client is deduped by `backchannel_logout_deliveries_dedupe`. `expires_at` moves
+only while it is still ahead of now, and `coalesce(revoked_at, now)` keeps the
+first revocation — a bare assignment would push both stamps forward on every
+repeat, so a second `DELETE` at a later moment would delay the reaping the first
+one started rather than changing nothing. The repeat writes its own
+`admin_mutation` row, since it is a request an administrator made, but no second
+`session.ended`. An unknown session id, or one belonging to a different subject,
+answers `404`.
 
 A session needs a login, and a subject this API created has no password, so
 this section runs against `bob` — seeded with
@@ -84,5 +84,4 @@ x-request-id: 01a0d6fe-9e09-7004-9844-b3c1b3abb219
 {"items":[]}
 ```
 
-_(Not re-run for the `cache-control: no-store` pass: this `bob`, and the
-first stack he lived on, are gone.)_
+_(This read predates the `cache-control: no-store` header and was not re-run.)_

@@ -17,7 +17,7 @@ interface Floors {
 
 const DOCUMENTS: readonly (readonly [name: string, floors: Floors])[] = [
   ['README.md', { pnpm: 4, paths: 6 }],
-  [PROTOCOL_PAGES, { pnpm: 0, paths: 5 }],
+  [PROTOCOL_PAGES, { pnpm: 0, paths: 4 }],
 ];
 
 function scriptsOf(packageJson: string): Set<string> {

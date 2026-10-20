@@ -19,37 +19,37 @@ surface — sent as `Authorization: Bearer …`. Two authorities can hold one:
   tenant-local view of `/admin/tenants`, since a tenant-local admin already
   knows which tenant they administer.
 - **A system admin.** A subject in the `system` tenant, holding
-  `manage-tenants`. Reaches every tenant's `/admin/tenants/{tenant}/**`,
-  plus `/admin/tenants` itself. `manage-tenants` authorizes the hop into
-  another tenant and nothing more: the route's own capability is checked
-  after it, on the same `system` admin client, so reading another tenant's
-  subjects takes `manage-tenants` **and** `view-users`, amending its
-  settings `manage-tenants` **and** `manage-tenant`, and so on — a system
-  admin carrying only `manage-tenants` is refused with `403` by every route
-  that names a capability of its own (`authorizeAdmin`,
-  `packages/protocol-admin/src/usecase/authorize-admin.ts`). `/admin/tenants`
-  and `whoami` are what it reaches alone: the first names `manage-tenants`
-  as its own capability, the second names none.
+  `manage-tenants`. Reaches every tenant's `/admin/tenants/{tenant}/**`, plus
+  `/admin/tenants` itself. `manage-tenants` authorizes the hop into another
+  tenant and nothing more: the route's own capability is checked after it, on
+  the same `system` admin client, so reading another tenant's subjects takes
+  `manage-tenants` **and** `view-users`, amending its settings `manage-tenants`
+  **and** `manage-tenant`, and so on — a system admin carrying only
+  `manage-tenants` is refused with `403` by every route that names a capability
+  of its own (`authorizeAdmin`). `/admin/tenants` and `whoami` are what it
+  reaches alone: the first names `manage-tenants` as its own capability, the
+  second names none.
 
 Either way, the token must carry an `aud` naming this admin API,
-`urn:odudu:params:admin-api` — an ordinary access token minted for the
-protocol surface does not authorize anything here — and the request is refused if the grant behind the token
-has been revoked, its session has ended, its client has since been
-disabled, or its subject has. A `client_credentials` token has no session
-behind it, and is refused only on the other three counts. `docs/archive/specs/2026-09-24-p4c-admin-api-design.md`
-section 7 has the full authentication and authorization sequence;
-[README.md](https://github.com/wizzywit/odudu/blob/main/README.md) explains why the built-in admin client is shaped
-the way it is, and "Getting the token" below is the run every transcript
-here used.
+`urn:odudu:params:admin-api` — an ordinary access token minted for the protocol
+surface does not authorize anything here — and the request is refused if the
+grant behind the token has been revoked, its session has ended, its client has
+since been disabled, or its subject has. A `client_credentials` token has no
+session behind it, and is refused only on the other three counts. [The admin
+API's
+design](https://github.com/wizzywit/odudu/blob/main/docs/archive/specs/2026-09-24-p4c-admin-api-design.md)
+section 7 has the full authentication and authorization sequence; [the
+README](https://github.com/wizzywit/odudu/blob/main/README.md) explains why the
+built-in admin client is shaped the way it is, and "Getting the token" below is
+the run every transcript here used.
 
-**Disabling a subject ends nothing it holds**, so without that last check
-an access token issued before would reach this API for the rest of its
-lifetime; with it, the next request is refused exactly as a token that was
-never valid is. Against the eighth stack, after
-[`GET /subjects/username-policy`](./get-subjectsusername-policy.md) below had
-been captured with `vera` still enabled: `vera`'s token read, then `vera`
-disabled with `$ADMIN_TOKEN`, then the same token again, then a string that
-is no token at all:
+**Disabling a subject ends nothing it holds**, so without that last check an
+access token issued before would reach this API for the rest of its lifetime;
+with it, the next request is refused exactly as a token that was never valid is.
+After [`GET /subjects/username-policy`](./get-subjectsusername-policy.md) below,
+with `vera` still enabled: `vera`'s token read, then `vera` disabled with
+`$ADMIN_TOKEN`, then the same token again, then a string that is no token at
+all:
 
 ```bash
 P=http://localhost:3080/admin/tenants/policy-demo
@@ -89,14 +89,13 @@ accepts — the hyphenless and brace-wrapped forms are refused here. A tenant is
 document declares each of these parameters, so a generated client knows the
 shape of what it is filling.
 
-**Every admin API route's response carries `cache-control: no-store`**,
-set once for every route in the route table (`registerAdminRoutes`,
-`packages/protocol-admin/src/view/routes/router.ts`), refusals included —
-`/admin/openapi.json`, which is public and the same for every caller, is
-not one of them: each is specific to the caller that asked, and several
-carry a secret shown once — a registration token, a client secret, a
-one-time password. A handful of header blocks below predate this and were
-not re-run — each says so, and why, where it appears.
+**Every admin API route's response carries `cache-control: no-store`**, set once
+for every route in the route table (`registerAdminRoutes`), refusals included —
+`/admin/openapi.json`, which is public and the same for every caller, is not one
+of them: each is specific to the caller that asked, and several carry a secret
+shown once — a registration token, a client secret, a one-time password. A
+handful of header blocks below predate this and were not re-run — each says so,
+and why, where it appears.
 
 | Method   | Path                                                             | What it is                                 |
 | -------- | ---------------------------------------------------------------- | ------------------------------------------ |
@@ -215,17 +214,16 @@ not re-run — each says so, and why, where it appears.
 
 ### A refusal names its field
 
-A `400` that names something in the request carries `errors` beside
-`detail`, one entry per field: `path` is the field's JSON path within the
-query string or body — `port`, `document.clients[0].redirect_uris`,
-`[1].authenticator` for the second step of a flow — and `message` is what
-is wrong with it. An entry may also carry a `code`, a stable name a
-client can act on without reading the message; the only one today is
-`bidi_control_refused`. `detail` is unchanged prose, so a caller that reads it
-still can. A refusal of the request as a whole, such as a flow with no
-steps or a test send to a tenant with no SMTP configuration, names no
-field and carries no `errors`. Captured against the fifth stack, in a
-tenant `fields-demo` created for it, as `ada-t2`:
+A `400` that names something in the request carries `errors` beside `detail`,
+one entry per field: `path` is the field's JSON path within the query string or
+body — `port`, `document.clients[0].redirect_uris`, `[1].authenticator` for the
+second step of a flow — and `message` is what is wrong with it. An entry may
+also carry a `code`, a stable name a client can act on without reading the
+message; the only one today is `bidi_control_refused`. `detail` is unchanged
+prose, so a caller that reads it still can. A refusal of the request as a whole,
+such as a flow with no steps or a test send to a tenant with no SMTP
+configuration, names no field and carries no `errors`. In a tenant `fields-demo`
+created for it, as `ada-t2`:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -272,13 +270,12 @@ curl -sS -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: applic
 
 ### A create answers its `ETag`
 
-Every `POST` that creates a record answers `ETag` beside its `201` — the
-same one the record's own `GET` answers, so the first save after a create
-needs no read first. A signing key and a registration token have no read
-of their own; theirs is the one their entry in the list is taken over,
-never over the one-time `token`. `POST /subjects/:id/password` creates no
-record, and answers none. Captured against the fourteenth stack, in a tenant
-`etags-demo` created for it:
+Every `POST` that creates a record answers `ETag` beside its `201` — the same
+one the record's own `GET` answers, so the first save after a create needs no
+read first. A signing key and a registration token have no read of their own;
+theirs is the one their entry in the list is taken over, never over the one-time
+`token`. `POST /subjects/:id/password` creates no record, and answers none. In a
+tenant `etags-demo` created for it:
 
 ```bash
 curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \

@@ -33,9 +33,8 @@ with `412`. The list is read under the same lock the replacement runs
 under, so two callers sent at once are serialised — the second sees what
 the first wrote rather than matching the same pre-write state.
 
-Captured against the sixth stack, on a subject `grace` and a role
-`billing-viewer` created in its `demo` for it. The read, then the write
-carrying what the read answered:
+On a subject `grace` and a role `billing-viewer` created in its `demo` for it.
+The read, then the write carrying what the read answered:
 
 ```bash
 curl -sS -D - \
@@ -97,15 +96,12 @@ deleting a group, deleting a role or removing a composite that nests it,
 and deleting a client whose roles do. A tenant with no holder to begin
 with is refused nothing.
 
-Captured against the fifth stack in `admins-demo`, as `ada-t2`, on
-`grace`, the tenant's only holder — her roles emptied under the `ETag` her
-last write answered, then disabling her, then deleting her, then her
-refused rows, newest first:
+In `admins-demo`, as `ada-t2`, on `grace`, the tenant's only holder — her roles
+emptied under the `ETag` her last write answered, then disabling her, then
+deleting her, then her refused rows, newest first:
 
-Recaptured against the tenth stack, once each row answered `actor_name` and
-`actor_origin`, as `ada-t8b2`, on a `grace` seeded as the only holder of
-`tenant-admin` in a tenant of the same name, her roles emptied under the
-`ETag` a read of them answered, so the ids are that run's, not those above:
+The same again, now that each row answers `actor_name` and `actor_origin`; the
+ids are a fresh run's, not those above:
 
 ```bash
 curl -sS -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
@@ -128,18 +124,17 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
 {"items":[{"id":"01a0ee91-5d41-742d-8e36-8d689e236e62","occurred_at":"2026-09-29T19:08:19.116Z","event_type":"admin_mutation","action":"subject.delete","outcome":"refused","actor_tenant_id":"0199aa00-0000-7000-8000-000000000001","actor_subject_id":"01a0ee8a-bfb8-763c-ac22-0c8d97b0fada","actor_client_id":"01a0ee8a-bf72-77c9-a423-f61084924d9f","actor_name":null,"actor_origin":"system","resource_type":"subject","resource_id":"01a0ee91-5901-7963-a2e4-c73142de6325","request_id":"01a0ee91-5d11-7b93-acf2-8a3f1ac1ced3","ip":"172.22.0.1","detail":{"reason":"this would leave no enabled subject holding tenant-admin"}},{"id":"01a0ee91-5cf2-7d9e-b589-044ea71896ad","occurred_at":"2026-09-29T19:08:19.040Z","event_type":"admin_mutation","action":"subject.amend","outcome":"refused","actor_tenant_id":"0199aa00-0000-7000-8000-000000000001","actor_subject_id":"01a0ee8a-bfb8-763c-ac22-0c8d97b0fada","actor_client_id":"01a0ee8a-bf72-77c9-a423-f61084924d9f","actor_name":null,"actor_origin":"system","resource_type":"subject","resource_id":"01a0ee91-5901-7963-a2e4-c73142de6325","request_id":"01a0ee91-5ccd-7e16-b183-e33e0b17cee3","ip":"172.22.0.1","detail":{"reason":"this would leave no enabled subject holding tenant-admin"}},{"id":"01a0ee91-5cb4-72e7-aa73-3ead5e69f32c","occurred_at":"2026-09-29T19:08:18.980Z","event_type":"admin_mutation","action":"subject.roles_set","outcome":"refused","actor_tenant_id":"0199aa00-0000-7000-8000-000000000001","actor_subject_id":"01a0ee8a-bfb8-763c-ac22-0c8d97b0fada","actor_client_id":"01a0ee8a-bf72-77c9-a423-f61084924d9f","actor_name":null,"actor_origin":"system","resource_type":"subject","resource_id":"01a0ee91-5901-7963-a2e4-c73142de6325","request_id":"01a0ee91-5c87-7b01-bee7-d60919b3f51a","ip":"172.22.0.1","detail":{"reason":"this would leave no enabled subject holding tenant-admin"}}]}
 ```
 
-The group, role and client doors, the system tenant's `manage-tenants`,
-and two removals racing each other are what
-`packages/protocol-admin/tests/administrators.int.test.ts` shows; none of
-those was captured here.
+The group, role and client doors, the system tenant's `manage-tenants`, and two
+removals racing each other are shown by an integration test; none of those is
+captured here.
 
 ## The size of a replacement
 
 Every `PUT` that replaces a set — a subject's roles and groups, a group's roles,
 a scope's roles — refuses more than 200 ids with `400`, before it reads
-anything, so the set a `GET` answers and an `ETag` hashes is never larger than
-a page. Against the same stack as the other transcripts of this increment
-(`perf-demo`), 201 random ids:
+anything, so the set a `GET` answers and an `ETag` hashes is never larger than a
+page. In `perf-demo`, the tenant of the other transcripts of this section, 201
+random ids:
 
 ```bash
 curl -sS -D - -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" \

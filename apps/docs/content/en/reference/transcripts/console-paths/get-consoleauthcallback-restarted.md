@@ -1,16 +1,13 @@
 ---
 title: 'GET /console/auth/callback, restarted'
-description: 'From the fifth run, recaptured on its own stack after the page headers changed: the infra/docker compose file as the project odudu-17a, on…'
+description: 'A refused callback no longer ends on a refusal page: it restarts the sign-in once, for the tenant its state is bound to, with a fresh state.'
 ---
 
 # `GET /console/auth/callback`, restarted
 
-From **the fifth run**, recaptured on its own stack after the page headers
-changed: the `infra/docker` compose file as the project `odudu-17a`, on
-`http://localhost:3094`, built from commit `a29df187`, with a throwaway tenant,
-`signin-restart`, holding `grace` as its administrator. A curl cookie jar,
-`jar`, plays one browser throughout. With `COMPOSE_PROJECT_NAME=odudu-17a` set,
-the seed printed:
+This section runs on its own stack, on `http://localhost:3094`, with a throwaway
+tenant, `signin-restart`, holding `grace` as its administrator. A curl cookie
+jar, `jar`, plays one browser throughout. The seed printed:
 
 ```bash
 docker compose exec -T odudu node dist/main.js seed tenant --name signin-restart

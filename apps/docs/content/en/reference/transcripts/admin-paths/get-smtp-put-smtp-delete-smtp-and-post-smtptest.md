@@ -50,13 +50,12 @@ deployment whose relay genuinely is internal, the same escape hatch
 `ODUDU_ALLOW_PRIVATE_CLIENT_URLS` gives that fetcher; loopback and
 link-local stay refused either way.
 
-`GET` and `PUT` answer an `ETag` over the configuration as they answer it.
-`PUT` honours `If-Match` when it is sent, taken under a lock on the row it
-replaces, and refuses a stale one with `412`; it does not require one,
-since a tenant with no row has nothing another writer could have changed
-under it. Captured against the sixth stack in `etags-demo`, which had no
-SMTP row — the `GET`, a `PUT` with an `If-Match` that matches nothing,
-and the same `PUT` under the `GET`'s own:
+`GET` and `PUT` answer an `ETag` over the configuration as they answer it. `PUT`
+honours `If-Match` when it is sent, taken under a lock on the row it replaces,
+and refuses a stale one with `412`; it does not require one, since a tenant with
+no row has nothing another writer could have changed under it. In `etags-demo`,
+which had no SMTP row — the `GET`, a `PUT` with an `If-Match` that matches
+nothing, and the same `PUT` under the `GET`'s own:
 
 ```bash
 curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3080/admin/tenants/etags-demo/smtp
@@ -81,14 +80,12 @@ etag: "f9ba93780f589e0cc3b6f2606f67d0d7b01c5a2ed5d04880f94052f64d4e1d80"
 {"configured":true,"host":"smtp.example.test","port":587,"from_address":"noreply@etags.example","username":null,"password_set":false,"starttls":false,"effective":"tenant"}
 ```
 
-Resolution order when this tenant's mail is actually sent
-(`apps/server/src/email.ts`'s `resolveSender`): this row first, then the
-deployment's own `ODUDU_SMTP_*` sender, then the log-only adapter. ADR
-0015 is unaffected — it governs where a deployment's own credentials live,
-and this is a credential the deployment itself never holds.
+Resolution order when this tenant's mail is actually sent: this row first, then
+the deployment's own `ODUDU_SMTP_*` sender, then the log-only adapter. ADR 0015
+is unaffected — it governs where a deployment's own credentials live, and this
+is a credential the deployment itself never holds.
 
-The transcripts below were captured against the sixth stack, whose `demo`
-had no SMTP row until this section's `PUT`s.
+In the transcripts below `demo` has no SMTP row until this section's `PUT`s.
 
 ```bash
 curl -sS -X PUT \
@@ -119,14 +116,13 @@ in any of these.
 
 ## A kept password
 
-Captured against the sixth stack, in a tenant `smtp-keep-demo` created
-for it with no row: the `GET`; a `PUT` with a password; a `PUT` changing
-only `from_address` and leaving `password` out, which keeps it; the same
-with `starttls` off, refused for the password it would keep; a `PUT`
-moving the host and leaving `password` out, refused naming `password`; and
-a `PUT` sending `"password": null` without a `username`, which clears it.
-None of these shows `deployment`: this stack sets no `ODUDU_SMTP_HOST`, so
-a tenant with no row is on `none`.
+In a tenant `smtp-keep-demo` created for it with no row: the `GET`; a `PUT` with
+a password; a `PUT` changing only `from_address` and leaving `password` out,
+which keeps it; the same with `starttls` off, refused for the password it would
+keep; a `PUT` moving the host and leaving `password` out, refused naming
+`password`; and a `PUT` sending `"password": null` without a `username`, which
+clears it. None of these shows `deployment`: this server sets no
+`ODUDU_SMTP_HOST`, so a tenant with no row is on `none`.
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3080/admin/tenants/smtp-keep-demo/smtp
@@ -185,15 +181,16 @@ probe this endpoint would otherwise be:
 {"type":"about:blank","title":"Bad Request","status":400,"detail":"this server will not connect to 127.0.0.1: address 127.0.0.1 is a loopback address","instance":"01a0ea60-0b2b-7f39-b3aa-85c093b26882"}
 ```
 
-No `502` is shown: this stack has no mail server and no host it is willing
-to dial, so nothing here reaches a transport for one to be reported from.
+No `502` is shown: this installation has no mail server and no host it is
+willing to dial, so nothing here reaches a transport for one to be reported
+from.
 
-Every test send is recorded as `tenant.smtp_test`, whatever it came to: `allowed`
-when the relay accepted the message, `refused` for no configuration or a
-destination this server will not dial, `failed` for a transport error, with
+Every test send is recorded as `tenant.smtp_test`, whatever it came to:
+`allowed` when the relay accepted the message, `refused` for no configuration or
+a destination this server will not dial, `failed` for a transport error, with
 `detail.result` naming which. The recipient is not recorded, and the password
-never is. Captured on the twenty-second stack, in a tenant `smtp-audit-demo`
-given a relay at `127.0.0.1` with a password, then sent to `ops@demo.example`:
+never is. In a tenant `smtp-audit-demo` given a relay at `127.0.0.1` with a
+password, then sent to `ops@demo.example`:
 
 ```bash
 curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -209,10 +206,10 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
 {"action":"tenant.smtp_test","outcome":"refused","resource_type":"tenant","detail":{"result":"refused_destination"}}
 ```
 
-`DELETE`, captured against the sixth stack in a tenant `smtp-delete-demo`
-created for it with no row, then after a `PUT` had stored one. `404` first,
-`204` second, and a `GET` afterwards showing the tenant back on the
-deployment's own sender — `none` here, since this stack has none:
+`DELETE`, in a tenant `smtp-delete-demo` created for it with no row, then after
+a `PUT` had stored one. `404` first, `204` second, and a `GET` afterwards
+showing the tenant back on the deployment's own sender — `none` here, since this
+installation has none:
 
 ```bash
 curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \

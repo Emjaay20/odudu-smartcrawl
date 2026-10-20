@@ -184,11 +184,11 @@ The ID token says less about this login than the two-factor one above:
 ```
 
 `acr` is `"2"` — two factors ran — and `amr` names only one of them.
-Deliberately: RFC 8176's registry has no value that describes a
-pre-generated code off a printed list, and reporting it as `otp` would
-mislead a relying party that reads that value as a live generator. The
-reading note in [docs/protocols/oidc-core.md](https://github.com/wizzywit/odudu/blob/main/docs/protocols/oidc-core.md) has
-the full argument, including why an omission is recoverable where a
+Deliberately: RFC 8176's registry has no value that describes a pre-generated
+code off a printed list, and reporting it as `otp` would mislead a relying party
+that reads that value as a live generator. The reading note in [the OIDC Core
+note](https://github.com/wizzywit/odudu/blob/main/docs/protocols/oidc-core.md)
+has the full argument, including why an omission is recoverable where a
 mislabelling is not.
 
 ## The same code again is refused _as_ a used code
@@ -324,14 +324,13 @@ both would succeed.
 
 ## The last code, and the set that replaces it
 
-A list that runs out is the lockout recovery codes exist to prevent, so
-spending the last one owes `generate-recovery-codes` again — in the login
-that spent it, not the next one. The section below was captured against a
-tenant of its own, `rc8-demo`, on the stack named above, with
-`otp_required` on: ada
-enrolled through the same two pages as above, acknowledged her ten, and then
-spent them one login at a time, each a fresh `/authorize` and the password
-first. The numbers above belong to `otp-demo` and are untouched by it.
+A list that runs out is the lockout recovery codes exist to prevent, so spending
+the last one owes `generate-recovery-codes` again — in the login that spent it,
+not the next one. The section below runs in a tenant of its own, `rc8-demo`, on
+the stack above, with `otp_required` on: ada enrolled through the same two pages
+as above, acknowledged her ten, and then spent them one login at a time, each a
+fresh `/authorize` and the password first. The numbers above belong to
+`otp-demo` and are untouched by it.
 
 The ninth code signs in the way every earlier one did, with one still
 unspent behind it:
@@ -363,8 +362,7 @@ curl -sS -i -X POST http://localhost:3094/tenants/rc8-demo/login-actions/authent
 ```
 
 The codes themselves are elided here — the set shown above is the one this
-document prints, and `tests/docs/recovery-codes.test.ts` holds it to exactly
-one:
+document prints, and a test holds it to exactly one:
 
 ```
 HTTP/1.1 200 OK

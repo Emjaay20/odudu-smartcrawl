@@ -22,24 +22,22 @@ to the client. A link
 that sets a password is stopped by `reset_password_allowed` the way a reset
 link is, and every link is spent once.
 
-Against a stack of its own, the compose project `odudu-17a` on
-`http://localhost:3094` built from commit `a29df187`, started on an empty volume
+On a stack of its own, on `http://localhost:3094`, started on an empty volume
 with `ODUDU_OUTBOX_ENABLED=false`, `ODUDU_REAP_ENABLED=false` and
 `ODUDU_ALLOW_PRIVATE_SMTP_HOSTS=true`, with `seed admin --username ada` run
-against it and `$ADMIN_TOKEN` got the way
-[Admin paths](../admin-paths/getting-the-token.md) shows. Its tenant
+against it and `$ADMIN_TOKEN` got the way [Admin
+paths](../admin-paths/getting-the-token.md) shows. Its tenant
 `required-actions-demo` came from `odudu seed --tenant required-actions-demo
 --client actions-app --redirect-uri https://app.example/callback --user seeder
---password correct-horse-battery`, a relay at the `postgres` container's port
-25 was set with `PUT /smtp`, `grace` was made with an address and no password,
-and the link was mailed by `POST /subjects/:id/actions-email` for
-`configure-totp` and `update-password` and read from `email_outbox`. The link
-there is that run's own, not the one [Admin paths](../admin-paths/index.md)'s section
-shows. Its page, the
-submission, then what `grace` now owes, read through the admin API with
-`$ADMIN_TOKEN` as there, and the same submission again — its page is the
-spent-link one, not the missing- or weak-password one the same endpoint
-also answers `400` with:
+--password correct-horse-battery`, a relay at the `postgres` container's port 25
+was set with `PUT /smtp`, `grace` was made with an address and no password, and
+the link was mailed by `POST /subjects/:id/actions-email` for `configure-totp`
+and `update-password` and read from `email_outbox`. The link there is that run's
+own, not the one [Admin paths](../admin-paths/index.md)'s section shows. Its
+page, the submission, then what `grace` now owes, read through the admin API
+with `$ADMIN_TOKEN` as there, and the same submission again — its page is the
+spent-link one, not the missing- or weak-password one the same endpoint also
+answers `400` with:
 
 ```bash
 curl -sS -D - \

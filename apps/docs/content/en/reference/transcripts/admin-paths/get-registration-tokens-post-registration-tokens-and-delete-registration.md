@@ -20,22 +20,20 @@ appears in an audit `detail`. `DELETE` revokes one by `id`, answering
 zero uses or expired answers `404` the same way an id nothing ever minted
 does, since `GET` was already hiding it from the caller.
 
-`GET` never lists a token that has been spent to zero uses or has expired
-— the same two conditions `spend`
-(`packages/domain-tenant/src/repository/client-registration-tokens.ts`)
-already refuses under, so the list a caller sees is exactly the set of
-tokens that would still redeem. It pages in SQL, like every other listing
-here: a page anchored on a token that has since expired, been spent out or
-been revoked still resumes from the same place, because the cursor is a
-plain `id` comparison rather than a position inside a snapshot of the
-whole set. Minting records `uses` and `ttl_seconds` in the audit trail;
-revoking records what was revoked (`remaining_uses`, `expires_at`) the
-same way a client's own amendment does, through the same allowlisted diff
-— never the token or its hash, on either action.
+`GET` never lists a token that has been spent to zero uses or has expired — the
+same two conditions `spend` already refuses under, so the list a caller sees is
+exactly the set of tokens that would still redeem. It pages in SQL, like every
+other listing here: a page anchored on a token that has since expired, been
+spent out or been revoked still resumes from the same place, because the cursor
+is a plain `id` comparison rather than a position inside a snapshot of the whole
+set. Minting records `uses` and `ttl_seconds` in the audit trail; revoking
+records what was revoked (`remaining_uses`, `expires_at`) the same way a
+client's own amendment does, through the same allowlisted diff — never the token
+or its hash, on either action.
 
-`demo`'s own policy is `disabled`; this capture opens it to `token` first,
-the same door `PATCH /settings` opens to `open` for the sections above,
-and closes it again at the end, in the same transcript:
+`demo`'s own policy is `disabled`; this run opens it to `token` first, the same
+door `PATCH /settings` opens to `open` for the sections above, and closes it
+again at the end, in the same transcript:
 
 ```bash
 curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -112,9 +110,8 @@ The audit trail for that mint and that revoke, each scoped to the second
 token's own `resource_id` so this prints only the row it describes rather
 than every mint or revoke `demo` has ever recorded:
 
-Recaptured against the tenth stack, once each row answered `actor_name` and
-`actor_origin`, after a token was minted in its `demo` and revoked the same
-way, so the id is that run's, not the one above:
+With `actor_name` and `actor_origin` on each row, after a token is minted in its
+`demo` and revoked the same way, the id is a fresh run's, not the one above:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \

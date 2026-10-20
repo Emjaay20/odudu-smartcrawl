@@ -22,20 +22,20 @@ the document means the same thing in whichever tenant it is imported into.
 travel under `registration_policy`; every other tenant setting is under
 `settings`.
 
-No secret is in it: no client secret, SMTP password, password hash, TOTP
-seed, passkey, recovery code or private signing key, and no session,
-consent, grant, registration token or audit row. Each secret a reader would
-expect is named under `omitted` by its JSON path instead —
-`clients[<i>].secret` for each confidential client, `smtp.password` when
-one is set and `subjects[<i>].credentials` for each exported subject that
-has any — so the gap is visible in the file rather than silent.
-A client's `jwks` is exported with any private member (`d`, `p`, `q`,
-`dp`, `dq`, `qi`, `k`) removed from each key, and each key that lost one is
-named under `omitted` as `clients[<i>].jwks.keys[<j>]`. Registration and
-`POST`/`PATCH /clients` refuse such a key
-([the request paths](../request-paths/bootstrap.md#dynamic-client-registration)
-shows the refusal), so only a row stored before that check can hold one;
-none on this stack does, so no stripped key appears below.
+No secret is in it: no client secret, SMTP password, password hash, TOTP seed,
+passkey, recovery code or private signing key, and no session, consent, grant,
+registration token or audit row. Each secret a reader would expect is named
+under `omitted` by its JSON path instead — `clients[<i>].secret` for each
+confidential client, `smtp.password` when one is set and
+`subjects[<i>].credentials` for each exported subject that has any — so the gap
+is visible in the file rather than silent. A client's `jwks` is exported with
+any private member (`d`, `p`, `q`, `dp`, `dq`, `qi`, `k`) removed from each key,
+and each key that lost one is named under `omitted` as
+`clients[<i>].jwks.keys[<j>]`. Registration and `POST`/`PATCH /clients` refuse
+such a key ([the request
+paths](../request-paths/bootstrap.md#dynamic-client-registration) shows the
+refusal), so only a row stored before that check can hold one; none in this
+tenant does, so no stripped key appears below.
 
 What a new tenant provisions for itself is marked rather than left out:
 each role on the built-in `odudu-admin` client and each default scope
@@ -47,32 +47,27 @@ its own. A role on it is still referenced as
 same name as a capability, and a reference that dropped the client would
 not tell the two apart.
 
-`?include=subjects` adds `subjects` — each user with a sign-in, its
-profile claims and verification flags, its direct roles, its groups by
-path and its required actions — and additionally requires `view-users`
-(which `manage-users` also reaches), refused with `403` otherwise. Above
-10,000 such subjects it is refused with `413` and
-`"type": "about:blank#export-too-large"`, naming P7, whose inbound
-provisioning is the tool for moving users in bulk; nothing on this stack
-holds that many, so that refusal is not shown here —
-`packages/protocol-admin/tests/tenant-export.int.test.ts` covers it. Any
-other `include` is refused with `400`. Every export writes a
-`tenant.export` row into the tenant's trail whose `detail` says whether
-subjects were included.
+`?include=subjects` adds `subjects` — each user with a sign-in, its profile
+claims and verification flags, its direct roles, its groups by path and its
+required actions — and additionally requires `view-users` (which `manage-users`
+also reaches), refused with `403` otherwise. Above 10,000 such subjects it is
+refused with `413` and `"type": "about:blank#export-too-large"`, naming P7,
+whose inbound provisioning is the tool for moving users in bulk; nothing here
+holds that many, so that refusal is not shown — an integration test covers it.
+Any other `include` is refused with `400`. Every export writes a `tenant.export`
+row into the tenant's trail whose `detail` says whether subjects were included.
 
-Captured against the fourth stack (the note at the top of this document),
-still running and not rebuilt for this recapture, as a new admin subject
-`ada-export2` in the system tenant, reusing the `export-demo` tenant an
-earlier capture created: its confidential client `billing-app`, tenant role
-`billing-reader`, group `finance`, subject `grace` who belongs to it, and
-SMTP relay whose password is `relay-password-shown-nowhere`, are all still
-there. `tenant-operator`, also still there, was issued a fresh one-time
-password through `POST /subjects/:id/password` and signed back in through
-the tenant's own `odudu-admin` client, whose token is `$OPERATOR_TOKEN`
-below. `RUN_START=$(date -u +%FT%T.000Z)` was captured first, so every
-trail read below is scoped to `from=$RUN_START` rather than walking the
-whole (and, on a reused tenant, already long) history of exports and
-refusals against `export-demo`.
+As a new admin subject `ada-export2` in the system tenant, reusing the
+`export-demo` tenant an earlier run created: its confidential client
+`billing-app`, tenant role `billing-reader`, group `finance`, subject `grace`
+who belongs to it, and SMTP relay whose password is
+`relay-password-shown-nowhere`, are all still there. `tenant-operator`, also
+still there, was issued a fresh one-time password through `POST
+/subjects/:id/password` and signed back in through the tenant's own
+`odudu-admin` client, whose token is `$OPERATOR_TOKEN` below. `RUN_START=$(date
+-u +%FT%T.000Z)` is set first, so every trail read below is scoped to
+`from=$RUN_START` rather than walking the whole (and, on a reused tenant,
+already long) history of exports and refusals against `export-demo`.
 
 The export, without subjects:
 
@@ -83,7 +78,10 @@ curl -sS -D - \
   http://localhost:3082/admin/tenants/export-demo/export
 ```
 
-Recaptured against the twelfth stack (the note at the top of this document), in a tenant also named `export-demo` set up there the same way through the endpoints below — the confidential client `billing-app`, the role `billing-reader`, the group `finance` mapping it with `grace` in it, and the same SMTP relay — so its ids and timestamps are that run's, not those of the blocks around it:
+In a tenant also named `export-demo` set up the same way through the endpoints
+below — the confidential client `billing-app`, the role `billing-reader`, the
+group `finance` mapping it with `grace` in it, and the same SMTP relay — so its
+ids and timestamps are that run's, not those of the blocks around it:
 
 ```
 HTTP/1.1 200 OK
@@ -133,9 +131,8 @@ curl -sS -o /dev/null -w '%{http_code} %{content_type}\n' \
 403 application/problem+json; charset=utf-8
 ```
 
-An `include` other than `subjects` is refused by the generated schema,
-naming the parameter — captured against the sixth stack, in a tenant also
-named `export-demo`, created there for it:
+An `include` other than `subjects` is refused by the generated schema, naming
+the parameter, in a tenant also named `export-demo`, created there for it:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -150,10 +147,8 @@ The trail, scoped to this run — the exports (`$ADMIN_TOKEN`'s, allowed)
 and then the two refusals (`tenant-operator`'s, naming `manage-clients`
 both times):
 
-Recaptured against the tenth stack, once each row answered `actor_name` and
-`actor_origin`, after the same requests were made there in a tenant of the
-same name — the same client, role, group, SMTP relay, `grace` and
-`tenant-operator` — so the ids are that run's, not those above:
+The same again, now that each row answers `actor_name` and `actor_origin`; the
+ids are a fresh run's, not those above:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -184,13 +179,13 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
 ["clients[0].secret","smtp.password","subjects[1].credentials"]
 ```
 
-A caller holding `manage-tenant` without `manage-clients` is refused with
-`403`, writing the same `capability.refused` row the router writes for a
-route's own capability, naming `manage-clients`. Captured against
-`ceiling-removal` from
-[a removal is judged by what it removes](./get-groupsidroles-and-put-groupsidroles.md#a-removal-is-judged-by-what-it-removes),
-whose `$TENANT_TOKEN` holds `manage-tenant` alone, with the row read back
-as the system administrator:
+A caller holding `manage-tenant` without `manage-clients` is refused with `403`,
+writing the same `capability.refused` row the router writes for a route's own
+capability, naming `manage-clients`. On `ceiling-removal` from [a removal is
+judged by what it
+removes](./get-groupsidroles-and-put-groupsidroles.md#a-removal-is-judged-by-what-it-removes),
+whose `$TENANT_TOKEN` holds `manage-tenant` alone, with the row read back as the
+system administrator:
 
 ```bash
 RUN_START=$(date -u +%FT%T.000Z)

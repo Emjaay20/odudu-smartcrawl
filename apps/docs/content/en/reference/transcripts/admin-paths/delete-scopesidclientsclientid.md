@@ -5,32 +5,28 @@ description: "Requires manage-tenant. Removes the client's assignment of the sco
 
 # `DELETE /scopes/:id/clients/:clientId`
 
-Requires `manage-tenant`. Removes the client's assignment of the scope,
-whether it was `default` or `optional` — the inverse of
-`PUT /scopes/:id/clients/:clientId` above, and the only way to take a scope
-back off a client once assigned; `clientScopeRepository.unassign`
-(`packages/domain-tenant/src/repository/client-scopes.ts`) deletes the row
-outright rather than narrowing it. Answers `204`; a scope not currently
-assigned to the client, an unknown scope id or an unknown client id all
-answer `404`; and the same `403` as `PUT` above refuses a client whose
-service account holds what the caller does not.
+Requires `manage-tenant`. Removes the client's assignment of the scope, whether
+it was `default` or `optional` — the inverse of `PUT
+/scopes/:id/clients/:clientId` above, and the only way to take a scope back off
+a client once assigned; `clientScopeRepository.unassign` deletes the row
+outright rather than narrowing it. Answers `204`; a scope not currently assigned
+to the client, an unknown scope id or an unknown client id all answer `404`; and
+the same `403` as `PUT` above refuses a client whose service account holds what
+the caller does not.
 
-**The tenant's built-in admin client keeps every scope assignment**:
-unassigning one answers `409`, naming the scope and the client. That
-client is public, with no secret, and supports no grant but
-`authorization_code`/`refresh_token` (`provisionAdminClient`,
-`packages/protocol-oidc/src/usecase/provision-admin-client.ts`) — an
-administrator's only path to a fresh admin token is `/authorize`, and
-`scopesAreGrantable` (`packages/protocol-oidc/src/service/authorize-validation.ts`)
-refuses any scope the client is not assigned, `openid` included, which a
-request naming no `scope` asks for by default. Unassigning `openid` from
-this one client, or any of the others, would lock every administrator of
-the tenant out of a fresh login once their existing refresh token expired
-— the same lockout `PATCH /clients/{id}` and `DELETE /roles/:id` refuse for
-the same client, read from the same `builtin_admin` column. An ordinary
-client's own assignments carry no such guard: unassigning its `openid`
-narrows what `/authorize` grants it next, exactly as an unknown scope
-would.
+**The tenant's built-in admin client keeps every scope assignment**: unassigning
+one answers `409`, naming the scope and the client. That client is public, with
+no secret, and supports no grant but `authorization_code`/`refresh_token`
+(`provisionAdminClient`) — an administrator's only path to a fresh admin token
+is `/authorize`, and `scopesAreGrantable` refuses any scope the client is not
+assigned, `openid` included, which a request naming no `scope` asks for by
+default. Unassigning `openid` from this one client, or any of the others, would
+lock every administrator of the tenant out of a fresh login once their existing
+refresh token expired — the same lockout `PATCH /clients/{id}` and `DELETE
+/roles/:id` refuse for the same client, read from the same `builtin_admin`
+column. An ordinary client's own assignments carry no such guard: unassigning
+its `openid` narrows what `/authorize` grants it next, exactly as an unknown
+scope would.
 
 The guard, against a tenant `scope-guard-demo` made for it, on its
 built-in admin client `odudu-admin` and its own `openid` assignment:
@@ -53,11 +49,10 @@ Keep-Alive: timeout=72
 {"type":"about:blank","title":"Conflict","status":409,"detail":"the scope openid on odudu-admin, this tenant’s built-in admin client, cannot be unassigned: it could leave every administrator of this tenant locked out of /authorize","instance":"01a0e54e-328a-7b7e-b4c1-59ffbdc17acf"}
 ```
 
-Recaptured against the twelfth stack, in a tenant `scope-unassign-demo` made
-for this section, on a public client `scope-unassign-app` registered for
-`authorization_code`.
-`POST /clients` assigned it the tenant's default vocabulary, `openid`
-included, so `/authorize` first renders the login form:
+In a tenant `scope-unassign-demo` made for this section, on a public client
+`scope-unassign-app` registered for `authorization_code`. `POST /clients`
+assigned it the tenant's default vocabulary, `openid` included, so `/authorize`
+first renders the login form:
 
 ```bash
 curl -sS -o /dev/null -w '%{http_code}\n' \

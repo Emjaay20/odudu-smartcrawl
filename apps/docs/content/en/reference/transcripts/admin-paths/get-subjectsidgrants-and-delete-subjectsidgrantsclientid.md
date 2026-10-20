@@ -18,9 +18,9 @@ ones included, with the write revoking a consent makes
 how many; it ends no session. It is held to the target ceiling, and writes
 `grant.revoke`. An unknown subject answers `404`.
 
-Against the tenth stack, `grace`'s two grants through `ops-app`, the offline
-one's refresh token (`$GRACE_OFFLINE_REFRESH_TOKEN`) presented after the
-revocation, and what is left:
+`grace`'s two grants through `ops-app`, the offline one's refresh token
+(`$GRACE_OFFLINE_REFRESH_TOKEN`) presented after the revocation, and what is
+left:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \

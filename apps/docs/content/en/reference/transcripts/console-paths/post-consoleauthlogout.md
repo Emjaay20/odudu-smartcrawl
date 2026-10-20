@@ -1,13 +1,13 @@
 ---
 title: 'POST /console/auth/logout'
-description: "From the seventh run, on a second console session of ada's, signed in with its own jar and ended here, so the sections around it keep the first."
+description: 'A console logout ends the console session. It is sent with no body, under the same CSRF guard as every other write.'
 ---
 
 # `POST /console/auth/logout`
 
-From the seventh run, on a second console session of `ada`'s, signed in with its
-own `jar` and ended here, so the sections around it keep the first. Sent with no
-body. The same CSRF guard applies here. `$SINCE` is the second before it:
+On a second console session of `ada`'s, signed in with its own `jar` and ended
+here, so the sections around it keep the first. Sent with no body. The same CSRF
+guard applies here. `$SINCE` is the second before it:
 
 ```bash
 curl -sS -D - -c jar -b jar -X POST \

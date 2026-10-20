@@ -1,17 +1,15 @@
 ---
 title: 'GET /admin/openapi.json'
-description: 'The reference this document points at: an OpenAPI 3.1 description of every route above, generated from the same route table the router registers…'
+description: 'The reference these pages point at: an OpenAPI 3.1 description of every route above, generated from the same route table the router registers…'
 ---
 
 # `GET /admin/openapi.json`
 
-The reference this document points at: an OpenAPI 3.1 description of every
-route above, generated from the same route table the router registers from,
-so the two cannot drift. It takes no `{tenant}` — it describes the API
-rather than reaching into one — and is served without authentication, since
-a client that cannot read it cannot generate against it. Captured again at the close of P4d, against a stack of its own — the
-project `odudu-fix18b` on `http://localhost:3187`, built from the tree at
-`126ad3b7` on an empty volume:
+The reference these pages point at: an OpenAPI 3.1 description of every route
+above, generated from the same route table the router registers from, so the two
+cannot drift. It takes no `{tenant}` — it describes the API rather than reaching
+into one — and is served without authentication, since a client that cannot read
+it cannot generate against it.
 
 ```bash
 curl -sS -D - -o openapi.json http://localhost:3187/admin/openapi.json
@@ -32,13 +30,12 @@ Keep-Alive: timeout=72
 ```
 
 319 KB and 75 paths, which is the whole route table. It is the one admin
-response readable from any origin, so a viewer served from another port can
-load it — the local stack's optional Swagger UI does exactly that (see
-`README.md`, "Browsing the admin API"). No admin route carries that header,
-so a page on another origin can read the description but cannot call the
-API with it. Its first bytes, and
-the `bearerAuth` scheme it declares — `head -c 180 openapi.json` and the
-substring at `securitySchemes`:
+response readable from any origin, so a viewer served from another port can load
+it — the local stack's optional Swagger UI does exactly that (see "Browsing the
+admin API" in the README). No admin route carries that header, so a page on
+another origin can read the description but cannot call the API with it. Its
+first bytes, and the `bearerAuth` scheme it declares — `head -c 180
+openapi.json` and the substring at `securitySchemes`:
 
 ```
 {"openapi":"3.1.0","info":{"title":"Odudu admin API","version":"0.0.0"},"security":[{"bearerAuth":[]}],"paths":{"/admin/tenants/{tenant}/whoami":{"get":{"summary":"Requires an auth

@@ -11,20 +11,18 @@ scope's claims land in; `PATCH` amends either, plus `description` and
 `default_client_assignment` — `name` is refused, since it is the scope token
 a client requests and a token carries. A duplicate name answers `409`.
 
-**`default_client_assignment` is the tenant's default client scopes.** A
-scope marked `default` or `optional` is assigned, that way, to every client
-created afterwards — by `POST /clients`, by dynamic registration, by
-`odudu seed` and by `seed client`, which all call `provisionClientDefaults`
-(`packages/domain-tenant/src/usecase/provision-defaults.ts`) — and `null`
-leaves it to be assigned deliberately. A new tenant marks the vocabulary it
-provisions as that code always assigned it: `openid`, `profile`, `email`,
-`address`, `phone`, `roles` and `groups` `default`, `offline_access`
-`optional`, and `0089_scope_client_default.sql` marked an upgraded tenant's
-scopes of those names the same way. A mark changes no client that already
-exists. It is a scope's own column rather than a tenant setting listing
-names, because the assignment kind belongs to each scope, and a deleted
-scope takes its mark with it instead of leaving a name that matches
-nothing.
+**`default_client_assignment` is the tenant's default client scopes.** A scope
+marked `default` or `optional` is assigned, that way, to every client created
+afterwards — by `POST /clients`, by dynamic registration, by `odudu seed` and by
+`seed client`, which all call `provisionClientDefaults` — and `null` leaves it
+to be assigned deliberately. A new tenant marks the vocabulary it provisions as
+that code always assigned it: `openid`, `profile`, `email`, `address`, `phone`,
+`roles` and `groups` `default`, `offline_access` `optional`, and
+`0089_scope_client_default.sql` marked an upgraded tenant's scopes of those
+names the same way. A mark changes no client that already exists. It is a
+scope's own column rather than a tenant setting listing names, because the
+assignment kind belongs to each scope, and a deleted scope takes its mark with
+it instead of leaving a name that matches nothing.
 
 **`consent_text` and `display_order` are what the consent screen shows.**
 The screen lists a client's requested scopes by `display_order` (an integer,
@@ -36,16 +34,13 @@ it still carries no script. The text is one string for now; a text per
 locale is P4b's, with the rest of the translated pages. Both travel in the
 tenant document and are amended by `PATCH`.
 
-On the `odudu-17a` stack's `demo` (the compose project `odudu-17a` on
-`http://localhost:3094`, built from commit `a29df187`, with `$ADMIN_TOKEN` got
-as above for its own system administrator), with `billing` created and marked
-as above: a public
-client `consent-portal`, named `Consent <Portal>`, made with
-`consent_required` and given the vocabulary — `billing` among it — by
-`POST /clients`; `profile` given a text and an order; `grace` seeded with
-`odudu seed user`; then a sign-in asking for the four scopes in another
-order. The pre-approved pair is listed `openid` then `profile`, by their
-`display_order` of `0` and `5`, the optional pair `offline_access` then
+In `demo` (with `$ADMIN_TOKEN` got as above for its own system administrator),
+with `billing` created and marked as above: a public client `consent-portal`,
+named `Consent <Portal>`, made with `consent_required` and given the vocabulary
+— `billing` among it — by `POST /clients`; `profile` given a text and an order;
+`grace` seeded with `odudu seed user`; then a sign-in asking for the four scopes
+in another order. The pre-approved pair is listed `openid` then `profile`, by
+their `display_order` of `0` and `5`, the optional pair `offline_access` then
 `billing`, by `0` and `10`, each with its text where it has one, escaped:
 
 ```bash
@@ -136,11 +131,10 @@ curl -sS -X POST \
   http://localhost:3082/admin/tenants/demo/scopes
 ````
 
-Captured against the twelfth stack's `demo`, as are the three requests after
-it: `billing` given a consent text, a place on the consent screen and a
-client default, then a default that is none of the three values refused by
-name, then a client created afterwards — its `scopes`, narrowed with `jq`,
-carry `billing` as `optional` beside the vocabulary a new tenant marks:
+In `demo`: `billing` given a consent text, a place on the consent screen and a
+client default, then a default that is none of the three values refused by name,
+then a client created afterwards — its `scopes`, narrowed with `jq`, carry
+`billing` as `optional` beside the vocabulary a new tenant marks:
 
 ```
 {"id":"01a109bb-41fa-7343-8d50-a86f9070aefc","name":"billing","description":null,"include_in_id_token":false,"include_in_access_token":true,"default_client_assignment":null,"consent_text":null,"display_order":0,"created_at":"2026-10-05T01:43:49.498Z"}
@@ -186,10 +180,9 @@ Keep-Alive: timeout=72
 ```
 
 **Search** is `?name=`, the same prefix match `GET /roles` describes, over
-`client_scopes.name_search`. Captured against the sixth stack, whose
-`demo` held the eight scopes a tenant is provisioned with, each cut down
-with `jq` to the fields that show the point; then a cursor minted under
-`?name=p` replayed under `?name=o`:
+`client_scopes.name_search`. Whose `demo` held the eight scopes a tenant is
+provisioned with, each cut down with `jq` to the fields that show the point;
+then a cursor minted under `?name=p` replayed under `?name=o`:
 
 ```bash
 curl -sS \

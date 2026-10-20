@@ -20,10 +20,9 @@ and as a whole address, so `<Grace@Navy.Example>` is masked as surely as the
 address as stored, and so is its local part followed by `@` on its own. `manage-tenant` alone says that mail went
 and whether it failed, not to whom.
 
-Against the tenth stack, after the two links above were queued: one pass of the
-sender, run by hand, which the relay at `postgres:25` refuses; the outbox as
-`$ADMIN_TOKEN` reads it; then as `mona`, signed in to the tenant's own admin
-client (`$MONA_TOKEN`):
+After the two links above were queued: one pass of the sender, run by hand,
+which the relay at `postgres:25` refuses; the outbox as `$ADMIN_TOKEN` reads it;
+then as `mona`, signed in to the tenant's own admin client (`$MONA_TOKEN`):
 
 ```bash
 docker compose exec -T odudu node dist/main.js send-mail 2>/dev/null

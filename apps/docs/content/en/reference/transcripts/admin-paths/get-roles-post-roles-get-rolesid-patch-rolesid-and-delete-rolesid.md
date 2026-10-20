@@ -5,21 +5,18 @@ description: 'All five require manage-tenant; the list, GET /roles, is also read
 
 ## `GET /roles`, `POST /roles`, `GET /roles/:id`, `PATCH /roles/:id` and `DELETE /roles/:id`
 
-All five require `manage-tenant`; the list, `GET /roles`, is also
-readable with `view-users` (below). A role is either a tenant role
-(`client_id` is `null`) or scoped to one client, in which case a token's
-`roles` claim carries it qualified by that client's own name rather than
-plain — `packages/domain-authz/src/service/role-name.ts` has the format.
-`PATCH` amends only `description` — at most 1000 characters, a CHECK
-holds it there, and `null` clears it; every other field, `name`,
-`client_id` and `default_for_new_subjects` included, is refused with a
-reason — the last naming `PUT /roles/:id/default`, which is where it is
-set — the same shape `PATCH /subjects/:id` refuses `id`, `type` and
-`username`. A duplicate name — per tenant for a tenant role, per client for
-a client-scoped one — answers `409`, and a `client_id` naming no client
-answers `400`. `DELETE` cascades: every
-`role_composites` edge, `subject_roles` assignment and `client_scope_roles`
-mapping naming the role goes with it.
+All five require `manage-tenant`; the list, `GET /roles`, is also readable with
+`view-users` (below). A role is either a tenant role (`client_id` is `null`) or
+scoped to one client, in which case a token's `roles` claim carries it qualified
+by that client's own name rather than plain. `PATCH` amends only `description` —
+at most 1000 characters, a CHECK holds it there, and `null` clears it; every
+other field, `name`, `client_id` and `default_for_new_subjects` included, is
+refused with a reason — the last naming `PUT /roles/:id/default`, which is where
+it is set — the same shape `PATCH /subjects/:id` refuses `id`, `type` and
+`username`. A duplicate name — per tenant for a tenant role, per client for a
+client-scoped one — answers `409`, and a `client_id` naming no client answers
+`400`. `DELETE` cascades: every `role_composites` edge, `subject_roles`
+assignment and `client_scope_roles` mapping naming the role goes with it.
 
 That cascade is why **a role belonging to the tenant's built-in admin
 client cannot be deleted at all** — `409`, naming the role and the client.
@@ -33,7 +30,7 @@ column, so renaming the client in the database does not evade it. Any
 other role is deleted unless it reaches an admin capability the caller does
 not hold ([a removal is judged by what it removes](./get-groupsidroles-and-put-groupsidroles.md#a-removal-is-judged-by-what-it-removes)).
 
-A create, captured against the fourteenth stack in its `showcase` tenant:
+A create, in its `showcase` tenant:
 
 ```bash
 curl -sS -X POST \
@@ -47,17 +44,17 @@ curl -sS -X POST \
 {"id":"01a10bd4-d376-748b-a43b-f40458d88100","name":"billing-viewer","description":"read-only access to invoices","client_id":null,"client_key":null,"default_for_new_subjects":false,"created_at":"2026-10-05T11:30:59.574Z","admin_reach":[]}
 ```
 
-**Search and filters** follow `GET /subjects`: `?name=` is a prefix,
-matched case-insensitively as a range over the stored `name_search` column
-(`0075_list_indexes_roles_groups_scopes.sql`), and a searched listing is
-ordered by that folded name, then by `id`. **`?client=`** is the one exact
-filter, `AND`ed with it: `tenant` for the tenant roles alone, or a client's
-id for the roles scoped to that client. A cursor is bound to every filter
-it was minted under, and any other parameter is refused with `400` naming
-it. Captured against the fourteenth stack, in a tenant `roles-demo` created
-there for it, which held no roles of its own but the built-in admin client's
-until these four were created, the last scoped to a public client `demo-spa`
-(`01a10bd4-d668-7670-afe0-844b224421c5`) made there with `seed client` first:
+**Search and filters** follow `GET /subjects`: `?name=` is a prefix, matched
+case-insensitively as a range over the stored `name_search` column
+(`0075_list_indexes_roles_groups_scopes.sql`), and a searched listing is ordered
+by that folded name, then by `id`. **`?client=`** is the one exact filter,
+`AND`ed with it: `tenant` for the tenant roles alone, or a client's id for the
+roles scoped to that client. A cursor is bound to every filter it was minted
+under, and any other parameter is refused with `400` naming it. In a tenant
+`roles-demo` created there for it, which held no roles of its own but the
+built-in admin client's until these four were created, the last scoped to a
+public client `demo-spa` (`01a10bd4-d668-7670-afe0-844b224421c5`) made there
+with `seed client` first:
 
 ```bash
 curl -sS -X POST \
@@ -182,12 +179,12 @@ curl -sS -X PATCH \
 {"type":"about:blank","title":"Bad Request","status":400,"detail":"name_search: name_search is not a role field","errors":[{"path":"name_search","message":"name_search is not a role field"}],"instance":"01a10bd4-d7ec-77d2-8e3f-858092080816"}
 ```
 
-Every `409` that guards the built-in admin client's roles writes a
-`refused` row with the refusal's text under `detail.reason`, the way a
-`403` does (ADR 0037's amendment of 2026-09-28): deleting one of those
-roles here, and adding or removing a composite of one below. Captured
-against `ceiling-removal`, from
-[a removal is judged by what it removes](./get-groupsidroles-and-put-groupsidroles.md#a-removal-is-judged-by-what-it-removes),
+Every `409` that guards the built-in admin client's roles writes a `refused` row
+with the refusal's text under `detail.reason`, the way a `403` does (ADR 0037's
+amendment of 2026-09-28): deleting one of those roles here, and adding or
+removing a composite of one below. On `ceiling-removal`, from [a removal is
+judged by what it
+removes](./get-groupsidroles-and-put-groupsidroles.md#a-removal-is-judged-by-what-it-removes),
 as the system administrator, whose subject the row names:
 
 ```bash
@@ -208,17 +205,16 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
 
 ### The owning client, by name
 
-A role names its owning client twice: `client_id`, the client's row id,
-and `client_key`, that client's own `client_id` — the name a person tells
-it apart by, since a tenant role and a client's may share a name. Both are
-`null` for a tenant role. The same pair rides on every role list: a role's
-composites, and the `items` a subject's, a group's and a scope's roles
-answer beside `id` and `name`. `client_key` is refused
-by `PATCH` like `client_id`. Captured against the fourteenth stack in
-`etags-demo`, whose public client `etags-app` was made with `seed client` and
-whose subject `ines` with `POST /subjects`: a role `reader` created on the
-client, the tenant's roles filtered to it, and `ines` given `reader` and the
-tenant role `billing-viewer` from above under the `ETag` of her empty list:
+A role names its owning client twice: `client_id`, the client's row id, and
+`client_key`, that client's own `client_id` — the name a person tells it apart
+by, since a tenant role and a client's may share a name. Both are `null` for a
+tenant role. The same pair rides on every role list: a role's composites, and
+the `items` a subject's, a group's and a scope's roles answer beside `id` and
+`name`. `client_key` is refused by `PATCH` like `client_id`. In `etags-demo`,
+whose public client `etags-app` was made with `seed client` and whose subject
+`ines` with `POST /subjects`: a role `reader` created on the client, the
+tenant's roles filtered to it, and `ines` given `reader` and the tenant role
+`billing-viewer` from above under the `ETag` of her empty list:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
@@ -240,24 +236,23 @@ curl -sS -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: applic
 
 ### What a role reaches: `admin_reach`
 
-Every role answer — the list, a role's own read and every write that answers
-it, and a role's composites — carries `admin_reach`: the admin capabilities
-the role hands out, expanded through `role_composites` however deep it nests
-them, by `capabilitiesReachableFrom`
-(`packages/protocol-admin/src/service/capability-ceiling.ts`), the same
-computation every capability ceiling here judges a write by, and read for a
-whole page in one query. It names capabilities in the order `whoami` does,
-never `tenant-admin` itself, whose holding is the capabilities it nests. It is
-derived on each read and never stored: the `ETag` is taken over the stored
-fields alone, so a composite added somewhere below a role does not stale a
-write to its description, and `PATCH` refuses it with a reason.
+Every role answer — the list, a role's own read and every write that answers it,
+and a role's composites — carries `admin_reach`: the admin capabilities the role
+hands out, expanded through `role_composites` however deep it nests them, by
+`capabilitiesReachableFrom`, the same computation every capability ceiling here
+judges a write by, and read for a whole page in one query. It names capabilities
+in the order `whoami` does, never `tenant-admin` itself, whose holding is the
+capabilities it nests. It is derived on each read and never stored: the `ETag`
+is taken over the stored fields alone, so a composite added somewhere below a
+role does not stale a write to its description, and `PATCH` refuses it with a
+reason.
 
-Captured against the fourteenth stack: a tenant role `audit-lead` nesting
-`odudu-admin:view-audit`, and `audit-bundle` nesting `audit-lead`, each made
-there with `POST /roles` and `POST /roles/:id/composites` for it, `$P`
-that stack's `http://localhost:3082/admin/tenants/reach-demo`. `audit-bundle`
-names no capability itself and reaches one two levels down — what its
-default is then refused for:
+A tenant role `audit-lead` nesting `odudu-admin:view-audit`, and `audit-bundle`
+nesting `audit-lead`, each made there with `POST /roles` and `POST
+/roles/:id/composites` for it, `$P` the tenant's
+`http://localhost:3082/admin/tenants/reach-demo`. `audit-bundle` names no
+capability itself and reaches one two levels down — what its default is then
+refused for:
 
 ```bash
 curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" $P/roles/01a10bd6-2cbc-706c-8d46-891aad99d5bb
@@ -279,19 +274,17 @@ etag: "7ecd0c326f94377e60c254866472c0d0b033d159f60df4629dc6ffd41ef7ecde"
 ### The list a user manager picks from
 
 `GET /roles` alone is also readable with `view-users`, and so with
-`manage-users`, which composes it: a user manager assigns roles to a
-subject and needs the list to pick from. `GET /groups` is widened the same
-way. Nothing else under either path is — a role's own read, its
-composites and both counts still require `manage-tenant` — and what a user
-manager may assign is still held to its own capabilities by the ceiling
-(ADR 0040). A caller refused one of these lists gets the usual `403`, and
-its `capability.refused` row names `view-users` under `detail.also_admits`
-beside the `manage-tenant` it names as `capability`, since either would
-have admitted it. Captured against the fourteenth stack in a tenant `admins-demo`
-created there for it, as `hana`, a subject seeded there with `seed user`,
-granted `odudu-admin:view-users` alone with `seed grant-role` and signed in
-through the tenant's own admin client, first `whoami`, then two lists and a
-count:
+`manage-users`, which composes it: a user manager assigns roles to a subject and
+needs the list to pick from. `GET /groups` is widened the same way. Nothing else
+under either path is — a role's own read, its composites and both counts still
+require `manage-tenant` — and what a user manager may assign is still held to
+its own capabilities by the ceiling (ADR 0040). A caller refused one of these
+lists gets the usual `403`, and its `capability.refused` row names `view-users`
+under `detail.also_admits` beside the `manage-tenant` it names as `capability`,
+since either would have admitted it. In a tenant `admins-demo` created there for
+it, as `hana`, a subject seeded there with `seed user`, granted
+`odudu-admin:view-users` alone with `seed grant-role` and signed in through the
+tenant's own admin client, first `whoami`, then two lists and a count:
 
 ```bash
 curl -sS -H "Authorization: Bearer $HANA_TOKEN" http://localhost:3082/admin/tenants/admins-demo/whoami
@@ -310,9 +303,8 @@ curl -sS -H "Authorization: Bearer $HANA_TOKEN" http://localhost:3082/admin/tena
 Then `kai`, created there the same way holding `manage-clients` alone,
 refused the list, and the row that refusal wrote:
 
-Recaptured against the tenth stack, once each row answered `actor_name` and
-`actor_origin`, with a `kai` seeded in a tenant of the same name holding
-`manage-clients` alone, so the ids are that run's, not those above:
+The same again, now that each row answers `actor_name` and `actor_origin`; the
+ids are a fresh run's, not those above:
 
 ```bash
 curl -sS -H "Authorization: Bearer $KAI_TOKEN" http://localhost:3082/admin/tenants/admins-demo/roles; echo

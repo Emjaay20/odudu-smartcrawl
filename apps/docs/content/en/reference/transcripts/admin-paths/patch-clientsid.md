@@ -6,15 +6,14 @@ description: 'Requires manage-clients, as every client route does.'
 # `PATCH /clients/{id}`
 
 Requires `manage-clients`, as every client route does. Amends the fields a
-general-purpose amendment can safely touch — every
-column of `clients` and `client_oidc_config` except identity (`id`,
-`client_id`, `tenant_id`), history (`created_at`), provenance
-(`registration_origin`), the security-model switch (`type`), the secret
-(rotated only through `POST /secret` below) and `builtin_admin` itself. A
-field this excludes is refused with `400`, naming the field and the reason
-(`refusalFor`, `packages/protocol-admin/src/service/client-patch.ts`) —
-`client_id` answers "identity: changing it breaks every relying party and
-orphans the azp of every issued token", for instance, not merely "refused".
+general-purpose amendment can safely touch — every column of `clients` and
+`client_oidc_config` except identity (`id`, `client_id`, `tenant_id`), history
+(`created_at`), provenance (`registration_origin`), the security-model switch
+(`type`), the secret (rotated only through `POST /secret` below) and
+`builtin_admin` itself. A field this excludes is refused with `400`, naming the
+field and the reason (`refusalFor`) — `client_id` answers "identity: changing it
+breaks every relying party and orphans the azp of every issued token", for
+instance, not merely "refused".
 
 A list field — `redirect_uris`, `post_logout_redirect_uris`, `web_origins`,
 `audiences`, `grant_types`, `client_credentials_scopes` — is replaced
@@ -220,11 +219,10 @@ column, not `client_id`, so renaming the client does not evade it. An
 disabled even by the caller whose own token runs through it — the built-in
 client is the recovery path that makes that permissible.
 
-Captured against the sixth stack, on `demo`'s `demo-operator`
-(`01a0ea51-a1c1-7d69-8096-b390ced5d3ae`), created there with `grant_types: ["client_credentials"]` and no
-`redirect_uris`. Amending a list field without `If-Match`, and amending a
-field the exclusion list names — the refusal carries the reason, not just
-the refusal:
+On `demo`'s `demo-operator` (`01a0ea51-a1c1-7d69-8096-b390ced5d3ae`), created
+there with `grant_types: ["client_credentials"]` and no `redirect_uris`.
+Amending a list field without `If-Match`, and amending a field the exclusion
+list names — the refusal carries the reason, not just the refusal:
 
 ```
 {"type":"about:blank","title":"Precondition Required","status":428,"detail":"If-Match is required to amend redirect_uris","instance":"01a0ea53-394d-77b8-8fa9-0ef9dde49b4a"}
@@ -328,18 +326,17 @@ curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 ## A client's pages and its ID token settings
 
 `description` is the administrators' own note on the client, at most 1000
-characters and shown nowhere else. `client_uri`, `policy_uri` and `tos_uri`
-are RFC 7591 §2's pages about the client, which the consent screen links
-under the client's name ([The consent screen](../request-paths/rp-initiated-logout.md#the-consent-screen)).
-`id_token_signed_response_alg`, `default_max_age` and `require_auth_time`
-are OpenID Connect Dynamic Client Registration §2's: the algorithm the
-client's ID tokens are signed with (`RS256` or `ES256`, and only one a
-non-retired key of the tenant produces; `null` signs with the active key),
-the age past which a session is re-authenticated when a request carries no
-`max_age` of its own, and whether every ID token carries `auth_time`.
-Dynamic registration accepts the same six and echoes them. Captured in a
-tenant `client-pages-demo` created for it, on the stack the settings above
-were captured on:
+characters and shown nowhere else. `client_uri`, `policy_uri` and `tos_uri` are
+RFC 7591 §2's pages about the client, which the consent screen links under the
+client's name ([The consent
+screen](../request-paths/rp-initiated-logout.md#the-consent-screen)).
+`id_token_signed_response_alg`, `default_max_age` and `require_auth_time` are
+OpenID Connect Dynamic Client Registration §2's: the algorithm the client's ID
+tokens are signed with (`RS256` or `ES256`, and only one a non-retired key of
+the tenant produces; `null` signs with the active key), the age past which a
+session is re-authenticated when a request carries no `max_age` of its own, and
+whether every ID token carries `auth_time`. Dynamic registration accepts the
+same six and echoes them. In a tenant `client-pages-demo` created for it:
 
 ```bash
 curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \

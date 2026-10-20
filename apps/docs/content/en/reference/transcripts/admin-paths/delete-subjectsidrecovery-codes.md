@@ -42,10 +42,9 @@ another tenant, or one with no `users` row answers `404`, and a subject
 holding an admin capability the caller does not is refused with `403`
 ([the target ceiling](./post-subjectsidpassword.md#the-target-ceiling)).
 
-Captured against the seventh stack, described at the top of this page, on `ines` in
-`lockout-demo` — the subject [`GET /subjects/:id/lockout`](./get-subjectsidlockout.md)
-below also uses. Its required actions first, for the `ETag` the `PUT`
-sends:
+Described at the top of this page, on `ines` in `lockout-demo` — the subject
+[`GET /subjects/:id/lockout`](./get-subjectsidlockout.md) below also uses. Its
+required actions first, for the `ETag` the `PUT` sends:
 
 ```bash
 INES=http://localhost:3080/admin/tenants/lockout-demo/subjects/01a0ec85-0c4c-7ab4-821c-a4fad1d15482
@@ -76,16 +75,15 @@ HTTP/1.1 200 OK
 {"items":[{"id":"01a0ec85-0c6d-75c9-a720-81d3b70c0811","type":"password","created_at":"2026-09-29T09:35:37.542Z","expired":false},{"type":"recovery-code","created_at":"2026-09-29T09:36:10.866Z","recovery_code_count":10}]}
 ```
 
-The rest was captured on 2026-10-19 on the stack the credential section above
-names (project `odudu-p4g-recovery`, tenant `recovery-life`, a public client
-`life-app` with `https://app.example/callback`), on `olga` and `noor`, each
-seeded with `seed user` and then given as the database owner a TOTP credential
-and ten recovery-code rows. The id variables are their subject ids,
+The rest is on the tenant the credential section above names (`recovery-life`, a
+public client `life-app` with `https://app.example/callback`), on `olga` and
+`noor`, each seeded with `seed user` and then given as the database owner a TOTP
+credential and ten recovery-code rows. The id variables are their subject ids,
 `OLGA=01a1554b-be61-7ac8-b5d5-5cedc64a4492` and
-`NOOR=01a1554b-fca4-73b7-ad55-6a4150567782`. `olga` is revoked with the
-default: her `required-actions` first (empty, with the `ETag`), the revoke,
-what is owed after, the credentials (the TOTP stays, no recovery-code entry),
-the audit row for this action, and her mail:
+`NOOR=01a1554b-fca4-73b7-ad55-6a4150567782`. `olga` is revoked with the default:
+her `required-actions` first (empty, with the `ETag`), the revoke, what is owed
+after, the credentials (the TOTP stays, no recovery-code entry), the audit row
+for this action, and her mail:
 
 ```bash
 S=http://localhost:3187/admin/tenants/recovery-life/subjects
@@ -126,9 +124,9 @@ You received this because the recovery codes on your account at ⁨recovery-life
 © 2026 Odudu · Powered by odudu
 ```
 
-The mail above, for `olga`, was captured the same way, on the same project
-`odudu-p4g-mail`, with `olga` seeded with `seed user` and given a TOTP
-credential and ten recovery-code rows as `ines` was.
+The mail above, for `olga`, is from the same setup, with `olga` seeded with
+`seed user` and given a TOTP credential and ten recovery-code rows as `ines`
+was.
 
 `noor` is revoked with `require_new_set=false`, after a value that is neither
 `true` nor `false` was refused and the ten codes counted to show it changed
@@ -169,8 +167,8 @@ signin noor code "$(python3 totp.py GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ)"
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$NOOR/required-actions"; echo
 ```
 
-The `400` is cut to the lines that identify it: the capture dropped its
-`x-request-id`, `cache-control`, `date` and keep-alive lines with `grep -v`, which
+The `400` is cut to the lines that identify it: its `x-request-id`,
+`cache-control`, `date` and keep-alive lines are dropped with `grep -v`, which
 the commands above do not show. The status lines and titles are what `signin`
 prints, status and title after the password, then status, any `location` and
 title after the code. The wrong value is refused by the router's own query
@@ -195,9 +193,8 @@ HTTP/1.1 200 OK
 
 A revoke that asks for a new set, followed by the removal of the last TOTP,
 leaves nothing owed, and the next sign-in is not refused for a page that cannot
-be shown. Captured on 2026-10-19 on a fresh `odudu-p4g-recovery` volume (the
-same names as above, so the ids are that run's: `olga` is
-`01a155ef-96aa-7aff-86c2-84b67d1c3a3d`, her TOTP row
+be shown. On a fresh volume (the same names as above, so the ids are that run's:
+`olga` is `01a155ef-96aa-7aff-86c2-84b67d1c3a3d`, her TOTP row
 `d3c306d7-002d-487c-8d4b-acdd5817707d`), seeded with a TOTP and ten code rows as
 the database owner. `AUTHORIZE` is the helper's own URL for this tenant and
 client:

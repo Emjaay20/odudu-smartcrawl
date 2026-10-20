@@ -31,17 +31,15 @@ failed one, and the login falls through to the password exactly as if the
 button had not been pressed. Reading it as an attempt would hand the
 ALTERNATIVE group to a factor nobody could satisfy.
 
-**No transcript here was executed, and this document does not show output
-for it.** The same limit applies as to
-[Enrolling a passkey](./enrolling-a-passkey.md), for the same reason: only
-`navigator.credentials.get()` inside a browser, talking to an authenticator,
-can produce an assertion — `curl` cannot sign one, and inventing a response
-body would make this section a claim dressed as evidence. What is verified
-instead is `packages/authn-flows/tests/passkey-login.int.test.ts`, which
-drives the whole journey against real PostgreSQL with a software
-authenticator producing real ES256 assertions, and checks each step and each
-refusal below. The steps are that test's steps, and the server-side
-behaviour is what it asserts.
+**No transcript here was executed, and this page does not show output for it.**
+The same limit applies as to [Enrolling a passkey](./enrolling-a-passkey.md),
+for the same reason: only `navigator.credentials.get()` inside a browser,
+talking to an authenticator, can produce an assertion — `curl` cannot sign one,
+and inventing a response body would make this section a claim dressed as
+evidence. What is verified instead is an integration test, which drives the
+whole journey against real PostgreSQL with a software authenticator producing
+real ES256 assertions, and checks each step and each refusal below. The steps
+are that test's steps, and the server-side behaviour is what it asserts.
 
 What the flow is, stated rather than shown:
 

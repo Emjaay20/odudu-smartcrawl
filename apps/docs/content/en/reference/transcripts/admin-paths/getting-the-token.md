@@ -10,12 +10,8 @@ and its signing key, and a subject holding `tenant-admin` there — which
 composites every capability plus `manage-tenants`, so this one subject
 reaches every route in the table above, in every tenant.
 
-Captured again on 2026-10-09, after `odudu-admin` became a confidential
-client, on a stack of its own — the project `odudu-docs-12b` on
-`http://localhost:3082`, built from commit `b4efbb72`, started on an empty
-volume with a console key made for it by `infra/docker/console-key.sh` — so
-its `ada`, password, code and cookie are that run's own and name nothing in
-the sections after it:
+From an empty volume with a console key made for it, so its `ada`, password,
+code and cookie are that run's own and name nothing in the sections after it:
 
 ```bash
 docker compose -p odudu-docs-12b exec -T odudu node dist/main.js seed admin --username ada
@@ -213,9 +209,9 @@ indented — the other, because the bytes on the wire are a signed JWT:
 ```
 
 `expires_in` is 300 seconds, so a capture session longer than five minutes
-refreshes with the `refresh_token` the same response carried — presenting
-its own assertion, since a refresh authenticates the client the way the
-exchange did. The probe that says the token works at all, on the same stack:
+refreshes with the `refresh_token` the same response carried — presenting its
+own assertion, since a refresh authenticates the client the way the exchange
+did. The probe that says the token works at all:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -228,14 +224,13 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
 
 ## The admin client itself
 
-Its representation, read back through the route this document's clients
-section describes, on the same stack and with the same token. The filter is
-the exact `client_id`, so the page holds the one client whatever else the
-tenant holds. `type` is `confidential` and `token_endpoint_auth_method` is
-`private_key_jwt`; `jwks` is the console's public key, the only half of it
-the server ever stores, and `kid` is its RFC 7638 thumbprint. There is no
-`client_secret` anywhere in the tenant for it, and `service_subject_id` is
-`null` because it holds no `client_credentials` grant:
+Its representation, read back through the route the clients section describes,
+with the same token. The filter is the exact `client_id`, so the page holds the
+one client whatever else the tenant holds. `type` is `confidential` and
+`token_endpoint_auth_method` is `private_key_jwt`; `jwks` is the console's
+public key, the only half of it the server ever stores, and `kid` is its RFC
+7638 thumbprint. There is no `client_secret` anywhere in the tenant for it, and
+`service_subject_id` is `null` because it holds no `client_credentials` grant:
 
 ```bash
 curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -303,8 +298,8 @@ README's "Rotating the console's key".
 A tenant seeded with the console off holds a public `odudu-admin`, as every
 tenant did before the console existed; `odudu console provision` makes it
 confidential, registering the console's key on it, and a second run writes
-nothing. On the same stack, a second tenant, `legacy`, seeded with
-`ODUDU_CONSOLE=false` for this one command, beside `system`:
+nothing. A second tenant, `legacy`, seeded with `ODUDU_CONSOLE=false` for this
+one command, beside `system`:
 
 ```bash
 docker compose -p odudu-docs-12b exec -T -e ODUDU_CONSOLE=false odudu node dist/main.js seed tenant --name legacy
@@ -378,11 +373,11 @@ provisioned 2 tenants
 
 ## Rotating the console's key
 
-The README's four steps, on the same two tenants, with `$A` the key the stack runs
-on and `$B` the one `console keygen` printed (cut to its first 60 characters here, which is the
-variable's name and the first 35 of the key's; the line is the whole configuration
-entry). The query reads each tenant's registered key
-set:
+The README's four steps, on the same two tenants, with `$A` the key the server
+runs on and `$B` the one `console keygen` printed (cut to its first 60
+characters here, which is the variable's name and the first 35 of the key's; the
+line is the whole configuration entry). The query reads each tenant's registered
+key set:
 
 ```bash
 docker compose -p odudu-docs-12b exec -T odudu node dist/main.js console keygen
@@ -444,8 +439,8 @@ provisioned 2 tenants
 (2 rows)
 ```
 
-This stack's gateway still signs with `$A`, so the capture ends by putting it
-back, the same command with the container's own environment:
+The gateway still signs with `$A`, so the run ends by putting it back, the same
+command with the container's own environment:
 
 ```bash
 docker compose -p odudu-docs-12b exec -T odudu node dist/main.js console provision
@@ -466,17 +461,15 @@ provisioned 2 tenants
 ## The admin client's registered URIs
 
 `odudu-admin` is registered the loopback redirect URI
-`http://127.0.0.1:8080/callback` that the flow above ends on, and — while
-the console is on (`ODUDU_CONSOLE`, `true` by default) — two more built
-from `ODUDU_PUBLIC_BASE_URL`: the redirect URI
-`${ODUDU_PUBLIC_BASE_URL}/console/auth/callback` and the post-logout
-redirect URI `${ODUDU_PUBLIC_BASE_URL}/console/`. `seed admin`,
-`seed tenant`, `seed --tenant`, `POST /admin/tenants` and
-`POST /admin/tenant-imports` write them; none is ever taken from a
-request's `Host`. The query is scoped to the `system` tenant's own admin
-client, captured on the compose stack with this branch's image, whose
-database held 31 tenants. psql ends each header line with a space, trimmed
-in every block below:
+`http://127.0.0.1:8080/callback` that the flow above ends on, and — while the
+console is on (`ODUDU_CONSOLE`, `true` by default) — two more built from
+`ODUDU_PUBLIC_BASE_URL`: the redirect URI
+`${ODUDU_PUBLIC_BASE_URL}/console/auth/callback` and the post-logout redirect
+URI `${ODUDU_PUBLIC_BASE_URL}/console/`. `seed admin`, `seed tenant`, `seed
+--tenant`, `POST /admin/tenants` and `POST /admin/tenant-imports` write them;
+none is ever taken from a request's `Host`. The query is scoped to the `system`
+tenant's own admin client; the database held 31 tenants. psql ends each header
+line with a space, trimmed in every block below:
 
 ```bash
 docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
@@ -515,9 +508,8 @@ and the same query then reads:
 (1 row)
 ```
 
-A run under another base replaces both console URIs rather than adding a
-second pair, and keeps the loopback. Captured again after rebuilding the
-image at this commit:
+A run under another base replaces both console URIs rather than adding a second
+pair, and keeps the loopback. After rebuilding the image:
 
 ```bash
 docker compose exec -T -e ODUDU_PUBLIC_BASE_URL=http://127.0.0.1:3000 odudu \
@@ -537,7 +529,7 @@ The same psql query then reads:
 (1 row)
 ```
 
-Running the plain command again, under the stack's own base:
+Running the plain command again, under the server's own base:
 
 ```bash
 docker compose exec -T odudu node dist/main.js console provision 2>/dev/null

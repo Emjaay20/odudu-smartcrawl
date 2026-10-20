@@ -309,20 +309,17 @@ reason line and footer after a `--` line. The mails as a mail client draws
 them, in both palettes, at 600px and 375px, are in the
 [mail gallery](https://github.com/wizzywit/odudu/blob/main/docs/phases/p4g.md#mail-gallery).
 
-The text of every mail comes from the mail package's own message catalogue
-(`en` today), in the language of the recipient's `locale` where the sender
-knows it and in English otherwise. A tenant name is somebody else's text, so
-the plain-text part wraps it in Unicode isolates (U+2068 before it and U+2069
-after, invisible in most viewers but present in the captures on this page),
-the HTML part in `<bdi>`, and the subject carries it with bidirectional
-controls and line breaks removed, since a header can hold neither. The four
-mail captures in this document were taken on 2026-10-19 from a live run of
-the same three mails (`demo`, `register-demo` and `reset-demo`) on the compose
-project `odudu-p4g-mail`, published on a port of its own with
-`ODUDU_PUBLIC_BASE_URL` set to `http://localhost:3000` so the links read as
-the rest of this document's do. Their keys are that run's, so the commands
-below that follow a link follow the keys of the earlier run they were
-captured against, not these.
+The text of every mail comes from the mail package's own message catalogue (`en`
+today), in the language of the recipient's `locale` where the sender knows it
+and in English otherwise. A tenant name is somebody else's text, so the
+plain-text part wraps it in Unicode isolates (U+2068 before it and U+2069 after,
+invisible in most viewers but present in the captures on this page), the HTML
+part in `<bdi>`, and the subject carries it with bidirectional controls and line
+breaks removed, since a header can hold neither. The four mail captures here are
+from a second run of the same three mails (`demo`, `register-demo` and
+`reset-demo`), with `ODUDU_PUBLIC_BASE_URL` set to `http://localhost:3000` so
+the links read as the rest of these pages do. Their keys are that run's, so the
+commands below that follow a link follow the keys of the earlier run, not these.
 
 Before following it, `ada`'s ID token still reads the way every one earlier
 in this document does:
@@ -375,7 +372,7 @@ looks, but not one worth taking for free.
 already exist — seeded in this same run or a previous one — or the command
 refuses with `seed_invalid_options` before touching the database.
 
-Every `ada` token or UserInfo response captured **above** this section in
-this document was captured before this run — that is why they read `false`
-and this section's own capture reads `true`: the account whose Bootstrap
-this document shares was verified here, not earlier.
+Every `ada` token or UserInfo response **above** this section was recorded
+before this run — that is why they read `false` and this section's own capture
+reads `true`: the account whose Bootstrap this document shares was verified
+here, not earlier.

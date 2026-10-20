@@ -1,17 +1,16 @@
 ---
 title: 'GET /subjects'
-description: 'Requires view-users. manage-users also reaches it: provisionAdminClient (packages/domain-tenant/src/usecase/provision-admin-client.ts) composites…'
+description: 'Requires view-users, and manage-users reaches it too: every manage-* role is composited to its view-* counterpart through role_composites.'
 ---
 
 # `GET /subjects`
 
 Requires `view-users`. `manage-users` also reaches it: `provisionAdminClient`
-(`packages/domain-tenant/src/usecase/provision-admin-client.ts`) composites
-every `manage-*` role to its `view-*` counterpart through `role_composites`,
-so a caller holding only `manage-users` already holds `view-users` by the
-time `authorizeAdmin` resolves its effective roles — nothing in the route
-special-cases it. Pages by an opaque cursor, `?limit=` and `?cursor=`,
-ordered by `id`, the same convention every other listing in this API
+composites every `manage-*` role to its `view-*` counterpart through
+`role_composites`, so a caller holding only `manage-users` already holds
+`view-users` by the time `authorizeAdmin` resolves its effective roles — nothing
+in the route special-cases it. Pages by an opaque cursor, `?limit=` and
+`?cursor=`, ordered by `id`, the same convention every other listing in this API
 follows.
 
 **Search** is a prefix of one named field, case-insensitive: `?username=`,
@@ -57,11 +56,10 @@ the seeded user the sessions section needs:
 {"items":[{"id":"01a0d6fc-e571-7685-b843-00be9303dd03","type":"service","username":null,"email":null,"enabled":true,"created_at":"2026-09-25T05:14:53.164Z"},{"id":"01a0d6fd-9453-7bf0-9823-a5fc6ea34836","type":"user","username":"ada","email":"ada@demo.example","enabled":true,"created_at":"2026-09-25T05:15:37.939Z"},{"id":"01a0d6fd-ede7-704b-8d83-fa3801d427a0","type":"user","username":"bob","email":"bob@demo.example","enabled":true,"created_at":"2026-09-25T05:16:00.867Z"}]}
 ```
 
-The searches below ran against the sixth stack (the note at the top of
-this document), whose `demo` held `ada` (`ada@example.com`, created by
-`POST /subjects` below) and the service subjects of its confidential
-clients; `Adaline` and `adam` were created through `POST /subjects` just
-before, with no email. `ADA` finds all three, in folded order:
+In the searches below `demo` holds `ada` (`ada@example.com`, created by `POST
+/subjects` below) and the service subjects of its confidential clients;
+`Adaline` and `adam` were created through `POST /subjects` just before, with no
+email. `ADA` finds all three, in folded order:
 
 ```bash
 curl -sS \
@@ -136,12 +134,10 @@ curl -sS \
 
 ## Filtering by capability
 
-Captured against the fifth stack, in a tenant `admins-demo` created for it,
-as `ada-t2` — a system administrator, so no holder of anything in
-`admins-demo` itself. `grace`
+In a tenant `admins-demo` created for it, as `ada-t2` — a system administrator,
+so no holder of anything in `admins-demo` itself. `grace`
 (`01a0ea0f-36a4-7377-b18e-c6e48982a5cf`) was created there and given
-`tenant-admin` alone, which nests `view-users`, so she is listed under
-both:
+`tenant-admin` alone, which nests `view-users`, so she is listed under both:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -155,32 +151,28 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
 {"items":[{"id":"01a0ea0f-36a4-7377-b18e-c6e48982a5cf","type":"user","username":"grace","email":null,"enabled":true,"created_at":"2026-09-28T22:07:40.707Z"}]}
 ```
 
-Holding through a group or a composite is what
-`packages/protocol-admin/tests/administrators.int.test.ts` shows; it was
-not captured.
+Holding through a group or a composite is shown by an integration test, not
+here.
 
 ## Holders of any capability, and what each holds
 
 `capability=any` lists every subject holding at least one admin capability,
-however it holds it, and `/subjects/count?capability=any` counts them. Under
-any `capability` filter each item also carries `admin_capabilities`: every
-name it holds effectively, `tenant-admin` among them, each with `direct` —
-whether it is assigned to the subject itself rather than only through a group
-or a role that nests it. It is read for the whole page in one query
-(`adminCapabilitiesOf`, `packages/protocol-admin/src/service/capability-ceiling.ts`),
-so a list of holders never asks per row; which group or role carries a
-holding is `GET /subjects/:id/effective-roles`' answer. A listing with no
-`capability` filter carries no such field.
+however it holds it, and `/subjects/count?capability=any` counts them. Under any
+`capability` filter each item also carries `admin_capabilities`: every name it
+holds effectively, `tenant-admin` among them, each with `direct` — whether it is
+assigned to the subject itself rather than only through a group or a role that
+nests it. It is read for the whole page in one query (`adminCapabilitiesOf`), so
+a list of holders never asks per row; which group or role carries a holding is
+`GET /subjects/:id/effective-roles`' answer. A listing with no `capability`
+filter carries no such field.
 
-Against a stack of its own: compose project `odudu-t9` on port 3082, from an
-empty volume, torn down with `down -v`, as `ada-t9`, a system administrator
-seeded with `seed user` and `seed grant-role --role odudu-admin:tenant-admin`.
-In a tenant `holders-demo`, all through `seed`: `grace` assigned
-`tenant-admin`; `linus` a member of `/auditors`, which is mapped to
-`view-audit`; `mei` assigned `view-users` and `manage-sessions`; and `bob`,
-who holds nothing. The listing, its count, a page of two with its `link`, and
-`bob` found by name, carrying no `admin_capabilities` since that listing is
-not filtered by capability:
+As `ada-t9`, a system administrator seeded with `seed user` and `seed grant-role
+--role odudu-admin:tenant-admin`. In a tenant `holders-demo`, all through
+`seed`: `grace` assigned `tenant-admin`; `linus` a member of `/auditors`, which
+is mapped to `view-audit`; `mei` assigned `view-users` and `manage-sessions`;
+and `bob`, who holds nothing. The listing, its count, a page of two with its
+`link`, and `bob` found by name, carrying no `admin_capabilities` since that
+listing is not filtered by capability:
 
 ```bash
 P=http://localhost:3082/admin/tenants/holders-demo
@@ -213,12 +205,12 @@ neither list nor count.
 
 ## Filtering by type, lockout and name
 
-Against the tenth stack, after `grace`'s profile was given `name`,
-`given_name` and `family_name` through `PATCH /subjects/:id/profile` and five
-wrong passwords were submitted for `linus` inside a minute: two name
-searches, the refusal of two at once, `linus`'s lockout as the per-subject
-read answers it, the locked subjects and their count, and the one subject
-of type `service`, `ops-app`'s service account, beside the count of users:
+After `grace`'s profile was given `name`, `given_name` and `family_name` through
+`PATCH /subjects/:id/profile` and five wrong passwords were submitted for
+`linus` inside a minute: two name searches, the refusal of two at once,
+`linus`'s lockout as the per-subject read answers it, the locked subjects and
+their count, and the one subject of type `service`, `ops-app`'s service account,
+beside the count of users:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/subjects?name=grace%20h"; echo

@@ -27,9 +27,9 @@ An edge between ordinary roles is removed whatever it nests, unless what
 the child reaches includes an admin capability the caller does not hold
 ([a removal is judged by what it removes](./get-groupsidroles-and-put-groupsidroles.md#a-removal-is-judged-by-what-it-removes)).
 
-Captured against the fourteenth stack in `composites-demo`, created through
-`POST /admin/tenants` for it. `billing-admin` nests `billing-viewer` and
-`invoice-editor`, each nested there through `POST /roles/:id/composites`:
+In `composites-demo`, created through `POST /admin/tenants` for it.
+`billing-admin` nests `billing-viewer` and `invoice-editor`, each nested there
+through `POST /roles/:id/composites`:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -104,10 +104,9 @@ The trail holds the removal that landed; the guarded one wrote its
 the parent role's `resource_id`, since the action alone would also match
 every other role's removals in this tenant:
 
-Recaptured against the tenth stack, once each row answered `actor_name` and
-`actor_origin`, after the same three roles were nested in a tenant of the
-same name and the same edge removed twice, so the ids are that run's, not
-those above. The guarded removal there came after this capture, and is
+With `actor_name` and `actor_origin` on each row, after the same three roles are
+nested in a tenant of the same name and the same edge removed twice, the ids are
+a fresh run's, not those above. The guarded removal there came later, and is
 outside its scope either way:
 
 ```bash
@@ -125,9 +124,9 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
 composite writes answer the list's new one — `POST` beside its `204`, and
 `DELETE` beside its. `If-Match` is optional on both, as it has always been:
 honoured when sent, and a stale one is refused with `412` before anything
-changes. Captured against the fourteenth stack in `etags-demo`, on its
-`billing-viewer` and a second role `billing-reader`
-(`01a10bd4-90c5-717d-b188-344280ce610d`), starting from no composites:
+changes. In `etags-demo`, on its `billing-viewer` and a second role
+`billing-reader` (`01a10bd4-90c5-717d-b188-344280ce610d`), starting from no
+composites:
 
 ```bash
 curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" \

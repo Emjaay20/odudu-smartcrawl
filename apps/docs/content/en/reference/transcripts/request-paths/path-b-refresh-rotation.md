@@ -161,12 +161,13 @@ correct redemption of the same code still returned 200.
 
 A refusal at `/token`, `/revoke` or `/introspect` rolls its own transaction
 back, so its row is written afterwards, in a transaction of its own, and a
-failure to write it is logged rather than returned: the response is the one
-the caller would have had with no audit at all. Which refusals write a row
-is decided by what the request names ([ADR 0037](https://github.com/wizzywit/odudu/blob/main/docs/adr/0037-refusal-rows-are-bounded-by-the-principal-they-name.md)).
-Every command below carries its own `x-request-id` and every query is
-scoped to those ids. All of it was captured against the same stack as
-[what a refused login leaves behind](./path-a-authorization-code-with-pkce.md#what-a-refused-login-leaves-behind),
+failure to write it is logged rather than returned: the response is the one the
+caller would have had with no audit at all. Which refusals write a row is
+decided by what the request names ([ADR
+0037](https://github.com/wizzywit/odudu/blob/main/docs/adr/0037-refusal-rows-are-bounded-by-the-principal-they-name.md)).
+Every command below carries its own `x-request-id` and every query is scoped to
+those ids. All of it ran against the same stack as [what a refused login leaves
+behind](./path-a-authorization-code-with-pkce.md#what-a-refused-login-leaves-behind),
 with `demo-backend` seeded as in [Bootstrap](./bootstrap.md).
 
 A wrong secret for a registered client, and a `client_id` nobody
@@ -265,9 +266,8 @@ request_id       | token-refused-replay-after-reuse
 detail           | {"reason": "replayed"}
 ```
 
-(Captured on the stack rebuilt from the current tree, after a revocation
-row came to be written only by the request that revoked; the request ids
-are new because an earlier capture left rows under the old ones.)
+(Run after a revocation row came to be written only by the request that revoked;
+the request ids are new because an earlier run left rows under the old ones.)
 
 - **The request that revokes writes what the server did and what it
   refused.** The `grant.revoked_on_*` row is written in the transaction

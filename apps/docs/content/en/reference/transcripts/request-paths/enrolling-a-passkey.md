@@ -14,17 +14,16 @@ only when something adds it (today: a row in `user_required_actions`).
 Signing in _with_ the credential this enrols is
 [Signing in with a passkey](./signing-in-with-a-passkey-and-no-username.md).
 
-**No transcript here was executed, and this document does not show output
-for it.** Every other command in this file was run against a running stack;
-this one cannot be. A registration response can only be produced by
+**No transcript here was executed, and this page does not show output for it.**
+Every other command in these pages was run against a running stack; this one
+cannot be. A registration response can only be produced by
 `navigator.credentials.create()` inside a browser, talking to a real
 authenticator or a virtual one in the browser's own devtools — `curl` cannot
 sign an attestation, and inventing a response body would make this section a
-claim dressed as evidence. What is verified instead is
-`packages/authn-flows/tests/passkey-enrolment.int.test.ts`, which drives the
-enrolment against real PostgreSQL with a software authenticator producing
-`none`-format attestations, and checks the stored credential, the challenge
-being spent, and each refusal below.
+claim dressed as evidence. What is verified instead is an integration test,
+which drives the enrolment against real PostgreSQL with a software authenticator
+producing `none`-format attestations, and checks the stored credential, the
+challenge being spent, and each refusal below.
 
 What the flow is, stated rather than shown:
 
@@ -39,16 +38,15 @@ What the flow is, stated rather than shown:
 3. The page posts the response JSON back in the `credential` field, with
    `auth_session_id` and an optional `label`.
 4. The server reads and clears the challenge in one statement, verifies the
-   response against it with `@simplewebauthn/server`, and only then writes
-   the credential: `lookup_key` is the credential id, and `secret_data`
-   holds the COSE public key, the authenticator's signature counter at
-   registration, and its transports. The `configure-passkey` action is
-   cleared last, so a refused ceremony leaves it owed, and one `credential`
-   audit row, `passkey.enrolled`, is written in the same transaction; a
-   refused ceremony writes none. The parked login then resumes: the
-   recovery codes the enrolment owes come next, and acknowledging them
-   answers the `302` to the client, with no second password
-   (`packages/protocol-oidc/tests/required-action-resume.int.test.ts`).
+   response against it with `@simplewebauthn/server`, and only then writes the
+   credential: `lookup_key` is the credential id, and `secret_data` holds the
+   COSE public key, the authenticator's signature counter at registration, and
+   its transports. The `configure-passkey` action is cleared last, so a refused
+   ceremony leaves it owed, and one `credential` audit row, `passkey.enrolled`,
+   is written in the same transaction; a refused ceremony writes none. The
+   parked login then resumes: the recovery codes the enrolment owes come next,
+   and acknowledging them answers the `302` to the client, with no second
+   password.
 5. The page's script is inline, because only a script can reach an
    authenticator. The response's `Content-Security-Policy` names a
    per-response `nonce` and that script carries it — not `unsafe-inline`, so

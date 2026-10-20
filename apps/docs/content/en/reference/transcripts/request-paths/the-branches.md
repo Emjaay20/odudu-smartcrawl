@@ -18,13 +18,12 @@ This is the most security-sensitive ordering decision in the server. RFC
   delivered there as query parameters, which is the only channel back to a
   client that is waiting at a redirect URI.
 
-Getting a check on the wrong side of that line is not a taxonomy mistake —
-it is an open redirector (RFC 6749 §10.15) wearing the identity provider's
-domain. The rule is therefore that `client_id` and `redirect_uri` are
-validated strictly before any other failure decides how to report itself.
-OIDC Core §3.1.2.6 gives the rendered case its shape: HTTP 400 with no error
-response parameters. The long-form reading is in
-`docs/protocols/rfc6749.md`, under "The §4.1.2.1 split".
+Getting a check on the wrong side of that line is not a taxonomy mistake — it is
+an open redirector (RFC 6749 §10.15) wearing the identity provider's domain. The
+rule is therefore that `client_id` and `redirect_uri` are validated strictly
+before any other failure decides how to report itself. OIDC Core §3.1.2.6 gives
+the rendered case its shape: HTTP 400 with no error response parameters. The
+long-form reading is in the RFC 6749 reading note, under "The §4.1.2.1 split".
 
 A rendered refusal looks like this — the error code is in the page, not in a
 `Location` header:
@@ -483,27 +482,25 @@ saying it will not accept an interaction — that turns the same state into
 `login_required`. A subject a `verify_email` tenant has not verified is
 refused on the same two terms.
 
-`sessions` also carries `remembered`, a boolean set at establishment and
-never rewritten, and a tenant carries `max_sessions_per_browser` (1–32,
-default 25) — a CHECK constraint bounding the **setting's own value**, and
-also the ceiling `admitSession` evicts a browser's own least recently
-active sessions down to before establishing a new one, read from the
-entries its cookies already prove rather than by subject
-(`packages/authn-flows/src/usecase/session-admission.ts`, ADR 0033).
-`odudu seed tenant --set max_sessions_per_browser=10` changes the stored
-value the same way as every other tenant setting, and every login after
-that is measured against the new ceiling.
+`sessions` also carries `remembered`, a boolean set at establishment and never
+rewritten, and a tenant carries `max_sessions_per_browser` (1–32, default 25) —
+a CHECK constraint bounding the **setting's own value**, and also the ceiling
+`admitSession` evicts a browser's own least recently active sessions down to
+before establishing a new one, read from the entries its cookies already prove
+rather than by subject (ADR 0033). `odudu seed tenant --set
+max_sessions_per_browser=10` changes the stored value the same way as every
+other tenant setting, and every login after that is measured against the new
+ceiling.
 
-A tenant also carries the pair a remembered login's session is measured
-against instead of `sso_session_idle_seconds`/`sso_session_max_seconds`:
+A tenant also carries the pair a remembered login's session is measured against
+instead of `sso_session_idle_seconds`/`sso_session_max_seconds`:
 `remember_me_allowed` (boolean, default `false`), `remember_me_idle_seconds`
 (60–31536000, default 604800, one week) and `remember_me_max_seconds`
-(60–31536000, default 2592000, thirty days), each settable the same way —
-`odudu seed tenant --set remember_me_idle_seconds=1209600`. Which pair a
-session uses is picked by its own `remembered` column
-(`packages/authn-flows/src/service/session-lifespan.ts`), set to `true`
-when a login ticks the `remember_me` checkbox on a tenant that allows it —
-see [A remembered login](./path-a-authorization-code-with-pkce.md#a-remembered-login) above.
+(60–31536000, default 2592000, thirty days), each settable the same way — `odudu
+seed tenant --set remember_me_idle_seconds=1209600`. Which pair a session uses
+is picked by its own `remembered` column, set to `true` when a login ticks the
+`remember_me` checkbox on a tenant that allows it — see [A remembered
+login](./path-a-authorization-code-with-pkce.md#a-remembered-login) above.
 
 ### The session cap
 
@@ -554,11 +551,10 @@ is accepted rather than fixed now.
 ### Choosing among sessions
 
 More than one live session in the same browser — or a client asking with
-`prompt=select_account` — answers neither with the login form nor with a
-silent reuse: `decideReuse` (`packages/protocol-oidc/src/usecase/session-reuse.ts`)
-returns a `select` outcome, `/authorize` renders a chooser instead, and its
-own POST, `login-actions/select-account`, is where a pick is honoured or
-refused.
+`prompt=select_account` — answers neither with the login form nor with a silent
+reuse: `decideReuse` returns a `select` outcome, `/authorize` renders a chooser
+instead, and its own POST, `login-actions/select-account`, is where a pick is
+honoured or refused.
 
 A second user seeded into `demo` so this browser can hold sessions for two
 subjects at once. `demo` has had `verify_email` on since
@@ -729,10 +725,10 @@ curl -sS -b cookies.txt -o /dev/null -w '%{http_code}\n' \
 400
 ```
 
-(A well-formed but foreign uuid stands in here for a stranger's real
-session id — see `packages/protocol-oidc/tests/select-account.int.test.ts`
-for the version of this with an actual second browser's live session,
-which is what the integration suite proves this refusal against.)
+(A well-formed but foreign uuid stands in here for a stranger's real session id
+— see the integration suite for the version of this with an actual second
+browser's live session, which is what the integration suite proves this refusal
+against.)
 
 `use_other=1` in place of `session_id` falls through to the ordinary login
 form instead, on the same parked authentication session — nobody was ever
@@ -797,14 +793,14 @@ malformed request rather than answered with the prompt's own
 request carrying a hint this server cannot read is not yet a request to
 answer that way.
 
-An access token this tenant minted for the same user is refused too, and for
-two independent reasons rather than one: it carries `typ: at+jwt` (RFC 9068
-§2.1), which the hint check demands a JWT not be, _and_ its own `aud` is
-this tenant's issuer (RFC 9068 §2.2) rather than the requesting client, which
-the check above now also refuses. Deleting either check on its own still
-leaves this token refused by the other — `docs/protocols/oidc-core.md`'s
-reading note has the reasoning for both. `/userinfo` makes the mirror image
-of the `typ` check of the token presented to it.
+An access token this tenant minted for the same user is refused too, and for two
+independent reasons rather than one: it carries `typ: at+jwt` (RFC 9068 §2.1),
+which the hint check demands a JWT not be, _and_ its own `aud` is this tenant's
+issuer (RFC 9068 §2.2) rather than the requesting client, which the check above
+now also refuses. Deleting either check on its own still leaves this token
+refused by the other — the OIDC Core reading note has the reasoning for both.
+`/userinfo` makes the mirror image of the `typ` check of the token presented to
+it.
 
 The tenant row is the point of the whole check that predates the client
 check above. Both tokens are RS256, both have the shape of an ID token, and
@@ -968,29 +964,28 @@ success or failure, carries `cache-control: no-store` and `pragma:
 no-cache`.
 
 `tls_client_auth` (RFC 8705 §2.1) registers with a `tls_client_auth_subject_dn`
-metadata field — the exact string the client's certificate's subject must
-equal, byte for byte after trimming surrounding whitespace, for the
-comparison to pass (no `distinguishedNameMatch`, a deliberate
-simplification: `packages/protocol-oidc/src/service/tls-client-auth.ts`).
-Registering `token_endpoint_auth_method: "tls_client_auth"` without it is
+metadata field — the exact string the client's certificate's subject must equal,
+byte for byte after trimming surrounding whitespace, for the comparison to pass
+(no `distinguishedNameMatch`, a deliberate simplification). Registering
+`token_endpoint_auth_method: "tls_client_auth"` without it is
 `invalid_client_metadata`. At `/token`, the subject arrives as a header a
-trusted reverse proxy sets — its name is `ODUDU_TLS_CLIENT_CERT_HEADER`
-(default `x-ssl-client-s-dn`), and the method is refused outright, not
-downgraded, whenever `ODUDU_TRUST_PROXY` is off (README.md's deployment
-section has the proxy's own obligations). Off means the method is
-unavailable end to end, not only at `/token`: discovery's
-`token_endpoint_auth_methods_supported` does not name `tls_client_auth`
-either — off on this stack, which is why the transcript above does not
-list it — and registering a client for it is itself `invalid_client_metadata`,
-the same as an unknown `token_endpoint_auth_method` would be.
+trusted reverse proxy sets — its name is `ODUDU_TLS_CLIENT_CERT_HEADER` (default
+`x-ssl-client-s-dn`), and the method is refused outright, not downgraded,
+whenever `ODUDU_TRUST_PROXY` is off (the README's deployment section has the
+proxy's own obligations). Off means the method is unavailable end to end, not
+only at `/token`: discovery's `token_endpoint_auth_methods_supported` does not
+name `tls_client_auth` either — off on this stack, which is why the transcript
+above does not list it — and registering a client for it is itself
+`invalid_client_metadata`, the same as an unknown `token_endpoint_auth_method`
+would be.
 
 `/revoke` and `/introspect` take the same certificate subject under the same
-rule, from the same header, and discovery lists the method for both exactly
-when it lists it for `/token`. Captured on a stack of its own, the project
-`odudu-docs-12b` on `http://localhost:3082` at `b4efbb72` plus this change, with
-`ODUDU_TRUST_PROXY=true` added by a compose override (`ODUDU_TLS_CLIENT_CERT_HEADER`
-left at its default). A tenant, `tls-demo`, with registration open, and a client
-registered dynamically for `tls_client_auth` with the subject `CN=tls-demo-client,O=Example`:
+rule, from the same header, and discovery lists the method for both exactly when
+it lists it for `/token`. On a stack of its own, on `http://localhost:3082`,
+with `ODUDU_TRUST_PROXY=true` added by a compose override
+(`ODUDU_TLS_CLIENT_CERT_HEADER` left at its default). A tenant, `tls-demo`, with
+registration open, and a client registered dynamically for `tls_client_auth`
+with the subject `CN=tls-demo-client,O=Example`:
 
 ```bash
 docker compose exec -T odudu node dist/main.js seed tenant --name tls-demo --set client_registration_policy=open
@@ -1191,13 +1186,12 @@ redeeming: `{"error":"invalid_grant"}`. Refresh-token expiry was not waited
 out — the lifetime is 14 days — but expiry, reuse and an unknown token all
 leave the same atomic consume returning nothing, and so answer identically.
 
-`unauthorized_client` is the one row with no command above it. The seed
-command always provisions a confidential client with a service account, so
-the compose stack cannot produce a client that lacks one; the row's evidence
-is `packages/protocol-oidc/tests/client-credentials.int.test.ts`, which
-builds that client against a real database. It is distinct from
-`invalid_client` on purpose: the client is who it says it is, and the
-refusal is about how it was provisioned (RFC 6749 §5.2).
+`unauthorized_client` is the one row with no command above it. The seed command
+always provisions a confidential client with a service account, so the compose
+stack cannot produce a client that lacks one; the row's evidence is an
+integration test, which builds that client against a real database. It is
+distinct from `invalid_client` on purpose: the client is who it says it is, and
+the refusal is about how it was provisioned (RFC 6749 §5.2).
 
 ### Client authentication is by the registered method and no other
 
@@ -1385,24 +1379,22 @@ do not, and its page is the same "Unknown or disabled client" a live tenant
 shows for a `client_id` it does not know — so a probe cannot tell a missing
 tenant from a missing client.
 
-A disabled tenant is refused everywhere an unknown one is but two places:
-its discovery document and `/certs` still answer `200`. Public keys are not
-secret, and the relying parties the disable queued Back-Channel Logout Tokens
-for need them to validate those tokens (Back-Channel Logout 1.0 §2.6); a
-tenant that stopped publishing its keys at the moment it queued them would
-have every one rejected. Deleting the tenant removes its keys, and both then
-answer `404`. Everything else — `/token`, `/userinfo`, and `/authorize`'s
-rendered page — cannot tell a disabled tenant from one that never existed.
-Captured on 2026-09-29 from the repository root against compose project
-`odudu-t8b2` on port 3082, its image built from this branch at `cd930b59` and
-brought up from an empty volume for
-[the admin paths](../admin-paths/index.md)'s `DELETE /admin/tenants/{tenant}`. A
-tenant `lapsed` is seeded and answers, then is disabled through `psql`, in
-the column `PATCH /admin/tenants/{tenant}` with `enabled: false` and the
-console's Disable both write, and is asked again beside `nope`. The `diff`
-compares `lapsed`'s and `nope`'s rendered `/auth` page, headers included but
-for `date` and `x-request-id`; it printed nothing and exited 0. The last
-line counts the keys `lapsed` still publishes:
+A disabled tenant is refused everywhere an unknown one is but two places: its
+discovery document and `/certs` still answer `200`. Public keys are not secret,
+and the relying parties the disable queued Back-Channel Logout Tokens for need
+them to validate those tokens (Back-Channel Logout 1.0 §2.6); a tenant that
+stopped publishing its keys at the moment it queued them would have every one
+rejected. Deleting the tenant removes its keys, and both then answer `404`.
+Everything else — `/token`, `/userinfo`, and `/authorize`'s rendered page —
+cannot tell a disabled tenant from one that never existed. From the repository
+root, on port 3082, brought up from an empty volume for [the admin
+paths](../admin-paths/index.md)'s `DELETE /admin/tenants/{tenant}`. A tenant
+`lapsed` is seeded and answers, then is disabled through `psql`, in the column
+`PATCH /admin/tenants/{tenant}` with `enabled: false` and the console's Disable
+both write, and is asked again beside `nope`. The `diff` compares `lapsed`'s and
+`nope`'s rendered `/auth` page, headers included but for `date` and
+`x-request-id`; it printed nothing and exited 0. The last line counts the keys
+`lapsed` still publishes:
 
 ```bash
 export COMPOSE_PROJECT_NAME=odudu-t8b2

@@ -1,18 +1,18 @@
 ---
 title: 'A refresh'
-description: "From the seventh run, on the session 01a1203f-0879-… of ada's first sign-in."
+description: 'Within 30 seconds of expiry the gateway refreshes the access token as odudu-admin before it forwards a call; the browser sees no difference.'
 ---
 
 # A refresh
 
-From the seventh run, on the session `01a1203f-0879-…` of `ada`'s first sign-in.
-Every request before it ran on an access token with more than 30 s left. The
-gateway refreshes before forwarding when less is left, and the token lives 300 s,
-so this section waited until the stored expiry was 18 s away. The refresh is a
-call to the tenant's token endpoint as `odudu-admin`, carrying the assertion it
-signs; the server's own `token` audit row names the grant and the client, and
-the proxied `GET` shows no difference to the browser. These ran one after another,
-`$FROM` being the timestamp printed first:
+On the session `01a1203f-0879-…` of `ada`'s first sign-in. Every request before
+it ran on an access token with more than 30 s left. The gateway refreshes before
+forwarding when less is left, and the token lives 300 s, so this section waited
+until the stored expiry was 18 s away. The refresh is a call to the tenant's
+token endpoint as `odudu-admin`, carrying the assertion it signs; the server's
+own `token` audit row names the grant and the client, and the proxied `GET`
+shows no difference to the browser. These ran one after another, `$FROM` being
+the timestamp printed first:
 
 ```bash
 python3 -c "import datetime;print(datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.')+'%03dZ'%(datetime.datetime.now().microsecond//1000))"
@@ -24,9 +24,8 @@ curl -sS -D - -b jar \
   "http://localhost:3082/console/api/admin/tenants/system/audit?action=grant.revoked_on_reuse&from=$FROM"
 ```
 
-with this query, on the standard input of `docker compose -p odudu-docs-12b exec -T
-postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'`, run before the
-`GET` and again after it:
+with this query, on the standard input of `psql` in the `postgres` container,
+run before the `GET` and again after it:
 
 ```sql
 select access_expires_at, access_expires_at - now() as remaining from console_sessions where id = '01a1203f-0879-7a1c-bfb3-9ede557fa475';

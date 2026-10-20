@@ -35,8 +35,8 @@ A flow has no row to lock when it is empty, so the advisory lock
 route takes it before the read rather than after — otherwise two callers
 holding the same fresh tag would both pass.
 
-Captured against the sixth stack. `demo`'s flow as `provisionTenant`
-created it — the four steps every tenant starts with — and its `ETag`:
+`demo`'s flow as `provisionTenant` created it — the four steps every tenant
+starts with — and its `ETag`:
 
 ```bash
 curl -sS -D - \
@@ -94,15 +94,14 @@ the request is wrong whatever generation it is against:
 {"type":"about:blank#flow-empty","title":"Bad Request","status":400,"detail":"a flow needs at least one step; a tenant with no flow cannot be logged into","instance":"01a13029-154d-7c38-902a-842ee08e96a4"}
 ```
 
-Each of the five `400`s a `PUT` can answer has a type of its own, so a
-caller tells them apart without reading `detail`: `about:blank#flow-empty`,
+Each of the five `400`s a `PUT` can answer has a type of its own, so a caller
+tells them apart without reading `detail`: `about:blank#flow-empty`,
 `#flow-no-enabled-step`, `#flow-no-first-challenge` (no step could run when a
 login starts, since only `password` is applicable before a subject is bound),
-`#flow-unknown-authenticator` and `#flow-duplicate-authenticator`. The last
-two carry `errors` with the path of the step at fault, as `[1].authenticator`;
-the others name no step. `detail` is unchanged. Captured against the nineteenth
-stack, in `flow-demo`, under the `ETag` of the flow the tenant starts with,
-one request each:
+`#flow-unknown-authenticator` and `#flow-duplicate-authenticator`. The last two
+carry `errors` with the path of the step at fault, as `[1].authenticator`; the
+others name no step. `detail` is unchanged. In `flow-demo`, under the `ETag` of
+the flow the tenant starts with, one request each:
 
 ```bash
 curl -sS -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
@@ -134,11 +133,10 @@ attempt rather than caching them.
 
 Both answers carry `available` beside `items`: every authenticator name the
 registry a login dispatches through resolves, in its own order, so a caller
-offering to add a step needs no list of its own. The `ETag` covers `items`
-alone — `available` is the registry's, and no write here changes it — so
-the `ETag` below is the one "A refusal names its field" sent as `If-Match`
-before `available` existed, on the same untouched flow. Captured against
-the fifth stack in `fields-demo`:
+offering to add a step needs no list of its own. The `ETag` covers `items` alone
+— `available` is the registry's, and no write here changes it — so the `ETag`
+below is the one "A refusal names its field" sent as `If-Match` before
+`available` existed, on the same untouched flow. In `fields-demo`:
 
 ```bash
 curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" \

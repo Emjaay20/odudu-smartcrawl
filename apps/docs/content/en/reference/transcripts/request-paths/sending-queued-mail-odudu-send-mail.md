@@ -1,17 +1,16 @@
 ---
 title: 'Sending queued mail: odudu send-mail'
-description: 'No request in this document sends mail. Address verification, self-registration and password reset each write the message to email_outbox in the…'
+description: 'No request in these pages sends mail. Address verification, self-registration and password reset each write the message to email_outbox in the…'
 ---
 
 # Sending queued mail: `odudu send-mail`
 
-No request in this document sends mail. Address verification,
-self-registration and password reset each write the message to
-`email_outbox` in the transaction that mints the token it carries, and
-answer; a second pass hands it to the transport. That is what keeps an SMTP
-round trip out of a response — and out of the _timing_ of one, which is
-what the two indistinguishable answers in [Password reset](./password-reset.md)
-would otherwise have leaked.
+No request in these pages sends mail. Address verification, self-registration
+and password reset each write the message to `email_outbox` in the transaction
+that mints the token it carries, and answer; a second pass hands it to the
+transport. That is what keeps an SMTP round trip out of a response — and out of
+the _timing_ of one, which is what the two indistinguishable answers in
+[Password reset](./password-reset.md) would otherwise have leaked.
 
 The server runs this pass itself every `ODUDU_OUTBOX_INTERVAL_SECONDS`
 (default `15`) plus up to a tenth as jitter, which is why the captures

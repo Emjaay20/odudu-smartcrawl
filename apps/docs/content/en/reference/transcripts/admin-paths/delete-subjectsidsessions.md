@@ -22,9 +22,9 @@ revoke, and is left alone; `DELETE /subjects/:id/grants/:clientId` is what
 reaches it, and `DELETE /subjects/:id/consents/:clientId` too where a consent
 was recorded.
 
-Captured after `DELETE /subjects/:id/lockout`, against the same `hana` and
-`recovery-demo-app`. The two codes the sign-ins there bought, redeemed,
-each response cut to its refresh token:
+After `DELETE /subjects/:id/lockout`, against the same `hana` and
+`recovery-demo-app`. The two codes the sign-ins there bought, redeemed, each
+response cut to its refresh token:
 
 ```bash
 redeem() {

@@ -13,10 +13,9 @@ and a form that could not read it would have to offer the username and let
 [`PATCH /subjects/:id`](./patch-subjectsid.md) refuse it. It answers no `ETag`:
 nothing is written against it.
 
-Against the eighth stack, as `vera`, who holds `view-users` alone, captured
-before the disable run under "The shape of it" above: the
-policy, then the settings it comes from, refused to her, then the policy
-again once `$ADMIN_TOKEN` turned renaming on (`PATCH /settings` with
+As `vera`, who holds `view-users` alone, before the disable run under "The shape
+of it" above: the policy, then the settings it comes from, refused to her, then
+the policy again once `$ADMIN_TOKEN` turned renaming on (`PATCH /settings` with
 `{"username_editable":true}`, printing only its status):
 
 ```bash

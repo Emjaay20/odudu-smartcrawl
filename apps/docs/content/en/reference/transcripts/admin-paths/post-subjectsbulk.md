@@ -18,14 +18,12 @@ problem `type` and `detail`; `end-sessions` adds how many were `ended`. More
 than 100 ids, none, an id that is not a UUID or an action not in the list is
 refused with `400`.
 
-Against the tenth stack, as `uma`, a subject seeded in `ops-demo` and granted
-`odudu-admin:manage-users` alone (`$UMA_TOKEN`), after `temp-1`
-(`01a0ee8c-67c6-7752-904b-584bbc614619`) and `temp-2`
-(`01a0ee8c-67ea-7049-b5d2-57c68046736c`) were created through
-`POST /subjects`: a disable of `temp-1`, of `mona`, who holds
-`manage-tenant`, and of an id no subject holds; `end-sessions` without
-`manage-sessions`; then a delete by `$ADMIN_TOKEN`, and the rows the first
-request left, each naming its id:
+As `uma`, a subject seeded in `ops-demo` and granted `odudu-admin:manage-users`
+alone (`$UMA_TOKEN`), after `temp-1` (`01a0ee8c-67c6-7752-904b-584bbc614619`)
+and `temp-2` (`01a0ee8c-67ea-7049-b5d2-57c68046736c`) were created through `POST
+/subjects`: a disable of `temp-1`, of `mona`, who holds `manage-tenant`, and of
+an id no subject holds; `end-sessions` without `manage-sessions`; then a delete
+by `$ADMIN_TOKEN`, and the rows the first request left, each naming its id:
 
 ```bash
 curl -sS -X POST -H "Authorization: Bearer $UMA_TOKEN" -H 'content-type: application/json' \

@@ -1,15 +1,15 @@
 ---
 title: 'A path that escapes /admin/'
-description: 'From the second run, on its session. The proxy resolves the path it would forward, dot segments and their percent-encoded form included, and refuses…'
+description: 'The proxy resolves the path it would forward, dot segments included, and refuses with a 404 before it reads the session.'
 ---
 
 # A path that escapes `/admin/`
 
-From the second run, on its session. The proxy resolves the path it would
-forward, dot segments and their percent-encoded form included, and refuses
-`404` before reading the session when the result is outside `/admin/`.
-`--path-as-is` stops curl from resolving the dot segments itself. Both
-requests were sent between the two timestamps printed around them:
+The proxy resolves the path it would forward, dot segments and their
+percent-encoded form included, and refuses `404` before reading the session when
+the result is outside `/admin/`. `--path-as-is` stops curl from resolving the
+dot segments itself. Both requests were sent between the two timestamps printed
+around them:
 
 ```bash
 node -e 'console.log(new Date().toISOString())'

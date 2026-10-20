@@ -1,18 +1,17 @@
 ---
 title: 'The gateway is a confidential client'
-description: "From the seventh run. The callback above exchanges the code it was given at the tenant's token endpoint, and odudu-admin, the client it does so as…"
+description: "The gateway signs an RFC 7523 assertion with the console's key for the code exchange, the refresh and the revocation; without one they are refused."
 ---
 
 # The gateway is a confidential client
 
-From the seventh run. The callback above exchanges the code it was given at
-the tenant's token endpoint, and `odudu-admin`, the client it does so as, is
-confidential: that exchange carries an RFC 7523 assertion signed with the
-console's key, and so do the refresh and the revocation. The sign-in is as
-the first run showed it, `ada` through the tenant's form with no password
-change owed this time; the callback, and the server's request log for that
-second, which names the call the gateway made in between (`$SINCE` is the
-second before it):
+The callback above exchanges the code it was given at the tenant's token
+endpoint, and `odudu-admin`, the client it does so as, is confidential: that
+exchange carries an RFC 7523 assertion signed with the console's key, and so do
+the refresh and the revocation. The sign-in is as the first run showed it, `ada`
+through the tenant's form with no password change owed this time; the callback,
+and the server's request log for that second, which names the call the gateway
+made in between (`$SINCE` is the second before it):
 
 ```bash
 curl -sS -D - -c jar -b jar "$LOCATION"
@@ -49,12 +48,11 @@ exchange, and it was answered `200`:
 ["01a1203f-07e2-7fbe-a009-7453e2a8df37",302,null]
 ```
 
-What the assertion buys is what the same calls are without it. The
-loopback client's session at `system` left a refresh token from the first
-sign-in of the stack ("Getting the token" in the admin paths is the same
-stack), `$R1`, and `console assertion` prints a signed assertion. The refresh
-and the revocation, each without one, are refused, and a refusal spends
-nothing:
+What the assertion buys is what the same calls are without it. The loopback
+client's session at `system` left a refresh token from the first sign-in
+("Getting the token" in the admin paths shows it), `$R1`, and `console
+assertion` prints a signed assertion. The refresh and the revocation, each
+without one, are refused, and a refusal spends nothing:
 
 ```bash
 curl -sS -D - --data-urlencode grant_type=refresh_token --data-urlencode "refresh_token=$R1" \

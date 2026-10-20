@@ -6,22 +6,20 @@ description: 'Requires manage-tenants, the capability every other route over the
 # `DELETE /admin/tenants/{tenant}`
 
 Requires `manage-tenants`, the capability every other route over the tenant
-collection takes, so only a system administrator reaches it. Deletes the
-tenant and every row it holds, in one statement: every table holding a
-tenant's rows is reached by a cascade from `tenants`, directly or through a
-subject or a client, and `packages/protocol-admin/tests/tenant-delete.int.test.ts`
-counts every table carrying a `tenant_id`, read from the catalogue, before
-and after.
-`confirm` must be the tenant's own name — a slip of the path deletes nothing —
-refused with `400` naming it otherwise. The `system` tenant is refused with
-`409`: every cross-tenant administrator authenticates against it. So is a
-caller who does not hold every admin capability some subject of the tenant
-holds, with `403`: deleting the tenant takes all of it at once (ADR 0040's
-target ceiling, over every subject). The tenant's own trail goes with it, so
-`tenant.delete` is recorded in the `system` tenant's, in the same transaction
-(`withTenantThen`, `@odudu/db`), and so are its refusals. No
-last-administrator guard is needed beside the refusal of `system`: a
-system administrator's authority lives in `system`, which no deletion reaches.
+collection takes, so only a system administrator reaches it. Deletes the tenant
+and every row it holds, in one statement: every table holding a tenant's rows is
+reached by a cascade from `tenants`, directly or through a subject or a client,
+and an integration test counts every table carrying a `tenant_id`, read from the
+catalogue, before and after. `confirm` must be the tenant's own name — a slip of
+the path deletes nothing — refused with `400` naming it otherwise. The `system`
+tenant is refused with `409`: every cross-tenant administrator authenticates
+against it. So is a caller who does not hold every admin capability some subject
+of the tenant holds, with `403`: deleting the tenant takes all of it at once
+(ADR 0040's target ceiling, over every subject). The tenant's own trail goes
+with it, so `tenant.delete` is recorded in the `system` tenant's, in the same
+transaction (`withTenantThen`, `@odudu/db`), and so are its refusals. No
+last-administrator guard is needed beside the refusal of `system`: a system
+administrator's authority lives in `system`, which no deletion reaches.
 
 No relying party is left signed in without having been sent a Back-Channel
 Logout Token. So an enabled tenant is refused with `409`,
@@ -63,14 +61,12 @@ that raced it and began second fails its foreign-key check once the
 deletion commits, and answers `500`; nothing is orphaned, since the row it
 needed is gone and it writes nothing.
 
-Against a stack of its own, the project `odudu-fix18b` on 3187, brought up
-from an empty volume at the close of P4d with `ada` seeded in `system`
-(`ODUDU_ALLOW_PRIVATE_CLIENT_URLS=true` and the server's own logout sender
-off, so the passes below are the ones the transcript runs), its image built
-from the tree at `126ad3b7` — a tenant `doomed` created through
-`POST /admin/tenants`, given a client through `POST /clients`, its id
-`01a140bf-2b2b-7e8f-a63a-c6c8b0f964d9`. `count-rows.sql` counts that id's rows
-in every table with a `tenant_id` column, as the database's owner:
+`ada` seeded in `system`, `ODUDU_ALLOW_PRIVATE_CLIENT_URLS=true` and the
+server's own logout sender off, so the passes below are the ones the transcript
+runs: a tenant `doomed` created through `POST /admin/tenants`, given a client
+through `POST /clients`, its id `01a140bf-2b2b-7e8f-a63a-c6c8b0f964d9`.
+`count-rows.sql` counts that id's rows in every table with a `tenant_id` column,
+as the database's owner:
 
 ```
 SELECT table_name,

@@ -15,22 +15,20 @@ the browser sent. Both require the session `GET /console/api/session`
 above shows; a session whose own tenant is neither `system` nor the one
 named answers `403`, and a tenant unknown to the server answers `404`.
 
-**The stack for this section only.** Not `docker-odudu-1`: a throwaway
-compose project, `odudu-task3`, built from this branch (`40e9e43f`) and
-removed afterwards, on `http://localhost:3080`. Two administrators: `ada`,
-`seed admin`'s system-tenant administrator, signed in through the forced
-password change the request paths documents; and `grace`,
+This section runs on a throwaway stack, on `http://localhost:3080`. Two
+administrators: `ada`, `seed admin`'s system-tenant administrator, signed in
+through the forced password change the request paths documents; and `grace`,
 `odudu-admin:tenant-admin` on a second throwaway tenant, `console-paths-disc`,
 signed in the same way `console-paths`' `grace` is above. Neither sign-in is
 re-shown here.
 
 A request to `ada`'s own session, with a forged `Host` the gateway never
-consults for this call, still answers with the public base's issuer. This
-block alone was captured again, on the seventh run, `ada` being that run's
-`system` administrator and `$ADA_SESSION` the `odudu-console` cookie of her
-sign-in on `http://localhost:3082`, because the discovery document now lists
+consults for this call, still answers with the public base's issuer. This block
+alone is from a later run, `ada` being that run's `system` administrator and
+`$ADA_SESSION` the `odudu-console` cookie of her sign-in on
+`http://localhost:3082`, because the discovery document now lists
 `private_key_jwt` among the methods `/introspect` and `/revoke` accept; the
-blocks after it are from the stack named above:
+blocks after it are from the first:
 
 ```bash
 curl -sS -D - -H 'Host: evil.example' -H "Cookie: $ADA_SESSION" \

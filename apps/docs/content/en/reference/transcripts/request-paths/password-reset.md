@@ -121,16 +121,16 @@ moment after both answers had gone out, and there exactly once:
 }
 ```
 
-(Reduced to the fields that matter, the same way
-[Address verification](./path-a-as-a-confidential-client.md#address-verification) reduces its own capture, with
-`htmlBytes` for the markup; the key is shortened nowhere in this section because a reader needs
-the whole thing to follow the link. It was captured on the project
-`odudu-p4g-mail` that section names, so its key is that run's.) The link's host is `ODUDU_PUBLIC_BASE_URL`, never
-the request's `Host` header — the same rule and the same reasoning
-[Self-registration](./self-registration.md) establishes for the verification
-link, and unset it refuses the request the same way: 500, logged as a
-misconfiguration, for every address alike, so a missing configuration never
-becomes a way to tell addresses apart either.
+(Reduced to the fields that matter, the same way [Address
+verification](./path-a-as-a-confidential-client.md#address-verification) reduces
+its own capture, with `htmlBytes` for the markup; the key is shortened nowhere
+in this section because a reader needs the whole thing to follow the link. It is
+from a second run, so its key is that run's.) The link's host is
+`ODUDU_PUBLIC_BASE_URL`, never the request's `Host` header — the same rule and
+the same reasoning [Self-registration](./self-registration.md) establishes for
+the verification link, and unset it refuses the request the same way: 500,
+logged as a misconfiguration, for every address alike, so a missing
+configuration never becomes a way to tell addresses apart either.
 
 `GET`ting the link does not reset anything by itself — a reset-password
 token needs a password to consume it with, unlike a verify-email link, so
@@ -339,8 +339,8 @@ set-cookie: reset-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-
 location: http://localhost:8080/callback?code=IO_8jS6voHd3FYEquHGgvuUlTYOYFKJBc7qJj8SZFBQ&state=xyz123&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Freset-demo
 ```
 
-(Captured before the session cookie carried a secret, so the cookie shown
-is a truncated bare id; it is now `<session id>:<secret>`.)
+(This predates the session cookie's secret, so the cookie shown is a truncated
+bare id; it is now `<session id>:<secret>`.)
 
 The same link a second time is refused — minted for one redemption, the
 same as a verify-email token, and `action_tokens.consumed_at` is now set:

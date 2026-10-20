@@ -300,13 +300,12 @@ page and the passkey enrolment page are the two whose policy is not
 content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-uYonuarTnJ+02aAWxgis8g=='; connect-src 'self'
 ```
 
-(Captured on its own stack, the project `odudu-t8d` on
-`http://localhost:3086` at commit `511db0fd`, for the same `demo-spa`
+(From its own stack, on `http://localhost:3086`, for the same `demo-spa`
 request.) `form-action` names `http://localhost:8080` beside `'self'`: the
-form's answer is a `302` to this request's `redirect_uri`, and a browser
-holds the redirect a form submission follows to the directive too. The
-origin comes from the request `/authorize` parked, never from the
-submission ([ADR 0018](https://github.com/wizzywit/odudu/blob/main/docs/adr/0018-framing-defence-on-rendered-pages.md)'s
+form's answer is a `302` to this request's `redirect_uri`, and a browser holds
+the redirect a form submission follows to the directive too. The origin comes
+from the request `/authorize` parked, never from the submission ([ADR
+0018](https://github.com/wizzywit/odudu/blob/main/docs/adr/0018-framing-defence-on-rendered-pages.md)'s
 second amendment).
 
 That `nonce` is the one on the `<script>` element of the page it came with, minted
@@ -618,13 +617,11 @@ ip               | 172.20.0.1
 detail           | {"factor": "password", "reason": "unknown_subject"}
 ```
 
-That was captured against the compose stack this document's other audit
-transcripts share, rebuilt from the current tree, where `ada` is subject
-`01a0db22-1c92-7730-9d37-4085f28eca2c` in `users` and whose `/authorize`
-rendered `auth_session_id`
-`01a0de54-cffa-72f6-a6c3-90dd30a1809a` for this run. The request ids are
-this run's own, since an earlier capture of this section left rows under
-the names it used before.
+That ran against the compose stack the other audit transcripts share, where
+`ada` is subject `01a0db22-1c92-7730-9d37-4085f28eca2c` in `users` and whose
+`/authorize` rendered `auth_session_id` `01a0de54-cffa-72f6-a6c3-90dd30a1809a`
+for this run. The request ids are this run's own, since an earlier run of this
+section left rows under the names it used before.
 
 - **`resource_id` is a digest, never the `auth_session_id` itself.** The
   hidden field is what lets a browser finish a login that has already
@@ -711,12 +708,12 @@ GET carries a small script that reloads it on `pageshow` when
 `event.persisted` is true; a page that answers a POST carries none, because a
 reload would send the POST again. ADR 0029's amendment has the reasoning.
 
-Captured on its own stack, not the one above: the `infra/docker` compose file
-as the project `odudu-17a` on `http://localhost:3094`, built from commit
-`a29df187`, with `demo` seeded as [Bootstrap](./bootstrap.md) does. A form fetched
-from the authorization endpoint parked the request as
-`01a137db-8c45-74c1-94ea-205ea7fded94`. The row, as stored, then the same row expired with
-`psql` and shown to be (the `-x` listing and the header spaces trimmed):
+On its own stack, not the one above, on `http://localhost:3094`, with `demo`
+seeded as [Bootstrap](./bootstrap.md) does. A form fetched from the
+authorization endpoint parked the request as
+`01a137db-8c45-74c1-94ea-205ea7fded94`. The row, as stored, then the same row
+expired with `psql` and shown to be (the `-x` listing and the header spaces
+trimmed):
 
 ```sql
 select expires_at - created_at as lifetime, pending_request from authentication_sessions
@@ -1063,14 +1060,15 @@ does, through the same statements, so the form says nothing about which
 addresses exist. A wrong password counts towards the lockout of the
 subject the address resolves to.
 
-Captured on the project `odudu-17h` on `http://localhost:3171`, in a tenant `email-demo` seeded for it with
-`odudu seed --tenant email-demo --client email-spa --redirect-uri http://localhost:8080/callback --user grace --password correct-horse-battery --email Grace@Example.com`,
-the setting turned on with
-`odudu seed tenant --name email-demo --set login_with_email=true`, and the
-address marked verified directly, with
-`update users set email_verified = true where email = 'Grace@Example.com'`
-in that tenant, in place of the admin API's profile `PATCH`. The form names
-the field for both, and the address signs in typed in another case:
+On `http://localhost:3171`, in a tenant `email-demo` seeded for it with `odudu
+seed --tenant email-demo --client email-spa --redirect-uri
+http://localhost:8080/callback --user grace --password correct-horse-battery
+--email Grace@Example.com`, the setting turned on with `odudu seed tenant --name
+email-demo --set login_with_email=true`, and the address marked verified
+directly, with `update users set email_verified = true where email =
+'Grace@Example.com'` in that tenant, in place of the admin API's profile
+`PATCH`. The form names the field for both, and the address signs in typed in
+another case:
 
 ```bash
 AUTHORIZE='http://localhost:3171/tenants/email-demo/protocol/openid-connect/auth?response_type=code&client_id=email-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&state=s&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'
@@ -1175,14 +1173,14 @@ resource audiences the client is configured for, because a token that
 cannot be used at the issuer's own endpoints would be unusable for what
 OIDC promised the client.
 
-`grant_id` is a private claim: the `token_grants` row this access token
-was minted from, present on every access token without exception —
-unlike `sid`, absent below on a grant with no session. It is what lets
-introspection (and `/revoke`) name one grant precisely; see
-[docs/protocols/rfc9068.md](https://github.com/wizzywit/odudu/blob/main/docs/protocols/rfc9068.md)'s reading note on
-private claims. Shown here in full rather than truncated, because `jti`
-and `grant_id` are minted close enough together that their first 13
-characters — this document's usual truncation — coincide.
+`grant_id` is a private claim: the `token_grants` row this access token was
+minted from, present on every access token without exception — unlike `sid`,
+absent below on a grant with no session. It is what lets introspection (and
+`/revoke`) name one grant precisely; see [the RFC 9068 reading
+note](https://github.com/wizzywit/odudu/blob/main/docs/protocols/rfc9068.md) on
+private claims. Shown here in full rather than truncated, because `jti` and
+`grant_id` are minted close enough together that their first 13 characters —
+this document's usual truncation — coincide.
 
 **A `resource` at `/token` narrows what the code already carries, and can
 never widen it.** The same `resource` `/authorize` resolves and stores on
@@ -1237,23 +1235,21 @@ already single-use spent by then, and the answer is `invalid_grant`, not
 `invalid_target` — the two are easy to conflate by output shape alone, and
 only a fresh code isolates which one actually fired.
 
-`demo-spa` has no registered `audiences` — every client seeded by this
-document does not, `odudu seed` has no flag for one yet — so its code's
-stored `resource` is `[]`, and no `resource` named at `/token` is ever
-found in it; the ordinary redemption above, naming none, still succeeds
-with `aud` the issuer alone, exactly as it did before this existed. A
-client registered for at least one audience — `audiences`, set directly on
-`client_oidc_config` today, since no seed flag or registration field
-exposes it — would see `resource` narrow `aud` to that one value instead;
-`packages/protocol-oidc/tests/resource-token.int.test.ts` is where that
-case, and the refresh grant's own derivation, are exercised. The refresh
-path narrows from the grant that the original redemption already
-resolved, not from the client's current configuration, so a
-narrowing made when the code was redeemed survives every later refresh; a
-`resource` named on a refresh request itself narrows only that one
-response and is not written back to the grant, so the refresh after it
-returns to the grant's own (already-resolved) audience rather than
-whatever the previous refresh asked for.
+`demo-spa` has no registered `audiences` — every client seeded by this document
+does not, `odudu seed` has no flag for one yet — so its code's stored `resource`
+is `[]`, and no `resource` named at `/token` is ever found in it; the ordinary
+redemption above, naming none, still succeeds with `aud` the issuer alone,
+exactly as it did before this existed. A client registered for at least one
+audience — `audiences`, set directly on `client_oidc_config` today, since no
+seed flag or registration field exposes it — would see `resource` narrow `aud`
+to that one value instead; an integration test exercises that case, and the
+refresh grant's own derivation. The refresh path narrows from the grant that the
+original redemption already resolved, not from the client's current
+configuration, so a narrowing made when the code was redeemed survives every
+later refresh; a `resource` named on a refresh request itself narrows only that
+one response and is not written back to the grant, so the refresh after it
+returns to the grant's own (already-resolved) audience rather than whatever the
+previous refresh asked for.
 
 Requesting `profile` and `email` grants them (they are in `scope` above)
 without putting `name`, `email` or `email_verified` on this token: an
@@ -1405,10 +1401,9 @@ client's tokens carry every role the subject holds, unfiltered.
 
 ## `assign-scope`, and `default` versus `optional`
 
-A client-scoped role — one qualified as `clientId:roleName` — needs the
-client it is scoped to seeded first, because `roles_client_fk`
-(`packages/db/drizzle/0017_roles.sql`) is a real foreign key: a role naming
-a client that does not exist cannot be inserted, let alone granted.
+A client-scoped role — one qualified as `clientId:roleName` — needs the client
+it is scoped to seeded first, because `roles_client_fk` is a real foreign key: a
+role naming a client that does not exist cannot be inserted, let alone granted.
 
 ```bash
 odudu seed client \
@@ -1778,13 +1773,11 @@ AUTH_SESSION_ID=$(printf '%s' "$STARTED" | sed -n '/name="auth_session_id"/{s/.*
 name="password"
 ```
 
-That form is not itself the enforcement — only where it starts. Somebody
-still has to sign in, and the request named bob: ada signing in at the very
-form this request produced is refused, not completed as ada.
-`packages/authn-flows/src/schema/authentication-sessions.ts`'s
-`PendingRequest.claimsSubject` is what makes this possible — parked the same
-way `idTokenHintSubject` already is, and re-checked at the same door,
-`packages/protocol-oidc/src/usecase/login-submission.ts`'s
+That form is not itself the enforcement — only where it starts. Somebody still
+has to sign in, and the request named bob: ada signing in at the very form this
+request produced is refused, not completed as ada.
+`PendingRequest.claimsSubject` is what makes this possible — parked the same way
+`idTokenHintSubject` already is, and re-checked at the same door,
 `handleLoginSubmission`, once a password actually identifies somebody:
 
 ```bash
@@ -1838,19 +1831,19 @@ honours it the same way, so there is no per-tenant derivation:
 { "claims_parameter_supported": true }
 ```
 
-**The narrowing travels with the grant, so a refresh keeps it.** The code
-minted at /authorize carries the `claims` request onto the grant its
-redemption creates (`token_grants.requested_userinfo_claims`), and every
-access token minted from that grant embeds it as
-`requested_userinfo_claims`, a third private access-token claim alongside
-`grant_id` and `sid` (see [docs/protocols/rfc9068.md](https://github.com/wizzywit/odudu/blob/main/docs/protocols/rfc9068.md)'s
-reading note above). That covers the code's own token, each
-`refresh_token` redemption's, and a token exchanged from one. Redeeming the
-`claims={"userinfo":{"email":null}}` request above with `scope=openid email`,
-with `$ACCESS_TOKEN` and `$REFRESH_TOKEN` taken from its token response the
-way [the shell variables above](./bootstrap.md#the-shell-variables-the-rest-of-this-document-uses)
-take them, and then refreshing (captured against the stack that the
-refused-login transcript uses, where ada is `01a0db22-1c92-…`):
+**The narrowing travels with the grant, so a refresh keeps it.** The code minted
+at /authorize carries the `claims` request onto the grant its redemption creates
+(`token_grants.requested_userinfo_claims`), and every access token minted from
+that grant embeds it as `requested_userinfo_claims`, a third private
+access-token claim alongside `grant_id` and `sid` (see [the RFC 9068 reading
+note](https://github.com/wizzywit/odudu/blob/main/docs/protocols/rfc9068.md)
+above). That covers the code's own token, each `refresh_token` redemption's, and
+a token exchanged from one. Redeeming the `claims={"userinfo":{"email":null}}`
+request above with `scope=openid email`, with `$ACCESS_TOKEN` and
+`$REFRESH_TOKEN` taken from its token response the way [the shell variables
+above](./bootstrap.md#the-shell-variables-the-rest-of-this-document-uses) take
+them, and then refreshing (on the stack the refused-login transcript uses, where
+ada is `01a0db22-1c92-…`):
 
 ```bash
 curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "$BASE/userinfo"
@@ -1946,10 +1939,9 @@ curl -sS -X POST http://localhost:3000/tenants/demo/clients-registrations/openid
 ```
 
 Discovery's two new members are this tenant's own answer, the same way
-[discovery](#1-discovery) above shows `userinfo_signing_alg_values_supported`
-— except these two never vary by tenant, since no server key is involved,
-only what the installed jose can produce
-(`docs/superpowers/p3b-spike-jwe.md`):
+[discovery](#1-discovery) above shows `userinfo_signing_alg_values_supported` —
+except these two never vary by tenant, since no server key is involved, only
+what the installed jose can produce:
 
 ```json
 {
@@ -1996,12 +1988,11 @@ JWT. Its protected header, decoded:
 { "alg": "RSA-OAEP-256", "enc": "A256GCM", "cty": "JWT" }
 ```
 
-`cty: "JWT"` is the only signal the plaintext is itself a JWT rather than
-JSON — decrypting with the private key matching the registered `jwks`
+`cty: "JWT"` is the only signal the plaintext is itself a JWT rather than JSON —
+decrypting with the private key matching the registered `jwks`
 (`jose.compactDecrypt`) and reading that plaintext back shows a complete
-`userinfo+jwt` response in its own right, the same shape described in "A
-signed UserInfo response" (`docs/protocols/oidc-core.md`'s reading note),
-now wrapped in encryption:
+`userinfo+jwt` response in its own right, the same shape described in "A signed
+UserInfo response" (the OIDC Core reading note), now wrapped in encryption:
 
 ```json
 { "alg": "RS256", "kid": "01a0cb07-4e73-…", "typ": "userinfo+jwt" }
@@ -2078,36 +2069,28 @@ Decrypted:
 
 (This client requested `scope=openid` alone, hence one claim.)
 
-A client whose key cannot be retrieved or selected — a dead `jwks_uri`, an
-empty JWKS, two equally good candidates, or one the `kty`/`use`/`alg`
-filters reject — never falls back to the JSON or signed form it would
-otherwise have gotten: `/userinfo` answers 500 with no body at all, the
-same shape `docs/protocols/oidc-core.md`'s signing-mismatch case uses, and
-for the same reason — answering in clear text would publish exactly what
-the client asked to have protected.
-`packages/protocol-oidc/tests/userinfo-encrypted.int.test.ts` exercises all
-four causes; running one such request against this stack is not reproduced
-here because reaching the "no candidate" and "ambiguous" cases needs no
-network at all, and the "dead `jwks_uri`" case is a timing property, not a
-fixed transcript.
+A client whose key cannot be retrieved or selected — a dead `jwks_uri`, an empty
+JWKS, two equally good candidates, or one the `kty`/`use`/`alg` filters reject —
+never falls back to the JSON or signed form it would otherwise have gotten:
+`/userinfo` answers 500 with no body at all, the same shape the signing-mismatch
+case uses, and for the same reason — answering in clear text would publish
+exactly what the client asked to have protected. An integration test exercises
+all four causes; running one such request against this stack is not reproduced
+here because reaching the "no candidate" and "ambiguous" cases needs no network
+at all, and the "dead `jwks_uri`" case is a timing property, not a fixed
+transcript.
 
-**What a dead `jwks_uri` costs, on this path specifically.** Until this
-task, `clientKeySet.fetch` (the same fetcher, shared with `/token`'s
-`private_key_jwt` authentication) only ever sat on a misconfigured client's
-own request. Here it sits between a resource server's `/userinfo` call and
-the answer it is waiting on, for a client the resource server has no
-visibility into. A first, cold request against a dead `jwks_uri` pays: an
-unbounded DNS lookup this codebase does not bound itself (`node:dns`'s
-`lookup`, no timeout wrapped around it — the OS resolver's own retry
-behaviour is what actually bounds it), then, if that resolves, up to 5
-seconds to connect and 10 seconds total transport
-(`apps/server/src/client-key-transport.ts`'s `DEFAULT_CONNECT_TIMEOUT_MS`/
-`DEFAULT_TOTAL_TIMEOUT_MS`). `NEGATIVE_CACHE_TTL_MS` (30 seconds,
-`packages/protocol-oidc/src/repository/client-keys.ts`) means only the
-first request against a given dead `jwks_uri` in that window pays it —
-every other request for that client, **in the same tenant**, gets a cached
-refusal instead: the negative cache is keyed by tenant and URI together, so
-a second tenant pointed at the same dead `jwks_uri` pays the full cost
-again, independently. `docs/superpowers/p3b-spike-jwe.md`'s "Question 2"
-has the full measurement; `docs/NEXT.md` records that this is now a
-second consumer of the same unbounded lookup.
+**What a dead `jwks_uri` costs, on this path specifically.** Until this task,
+`clientKeySet.fetch` (the same fetcher, shared with `/token`'s `private_key_jwt`
+authentication) only ever sat on a misconfigured client's own request. Here it
+sits between a resource server's `/userinfo` call and the answer it is waiting
+on, for a client the resource server has no visibility into. A first, cold
+request against a dead `jwks_uri` pays: an unbounded DNS lookup this codebase
+does not bound itself (`node:dns`'s `lookup`, no timeout wrapped around it — the
+OS resolver's own retry behaviour is what actually bounds it), then, if that
+resolves, up to 5 seconds to connect and 10 seconds total transport.
+`NEGATIVE_CACHE_TTL_MS` (30 seconds) means only the first request against a
+given dead `jwks_uri` in that window pays it — every other request for that
+client, **in the same tenant**, gets a cached refusal instead: the negative
+cache is keyed by tenant and URI together, so a second tenant pointed at the
+same dead `jwks_uri` pays the full cost again, independently.

@@ -15,13 +15,13 @@ it was in `detail.cleared`. An unknown subject, one in another tenant, or a
 subject with no `users` row — a service or `agent_instance` subject, which
 has no sign-in to be locked out of — answers `404`.
 
-A locked account refuses its right password with the same sign-in page a
-wrong one gets (README.md's brute-force section), so the run below shows
-the lock by submitting the right password last. `signin` is a helper
-defined for these captures: a fresh `/authorize` against
-`recovery-demo-app`, a confidential client created for them with
-`https://app.example/callback` registered, then one password submission as
-`hana`, printing the status, any `location`, and the page's title.
+A locked account refuses its right password with the same sign-in page a wrong
+one gets (the brute-force section of the README), so the run below shows the
+lock by submitting the right password last. `signin` is a helper defined for
+these runs: a fresh `/authorize` against `recovery-demo-app`, a confidential
+client created for them with `https://app.example/callback` registered, then one
+password submission as `hana`, printing the status, any `location`, and the
+page's title.
 
 ```bash
 AUTHORIZE='http://localhost:3000/tenants/recovery-demo/protocol/openid-connect/auth?response_type=code&client_id=recovery-demo-app&redirect_uri=https%3A%2F%2Fapp.example%2Fcallback&scope=openid&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'

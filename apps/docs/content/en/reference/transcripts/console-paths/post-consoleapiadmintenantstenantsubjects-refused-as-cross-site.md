@@ -1,17 +1,16 @@
 ---
 title: 'POST …/subjects, refused as cross-site'
-description: 'From the eighth run, on its session. A request to /console/api/ or /console/auth/ other than GET, HEAD or OPTIONS is refused 403 before anything…'
+description: "A write to /console/api/ or /console/auth/ is refused with a 403 unless it carries the base's own Origin and the X-Odudu-Console: 1 header."
 ---
 
 ## `POST /console/api/admin/tenants/{tenant}/subjects`, refused as cross-site
 
-From the eighth run, on its session. A request to `/console/api/` or
-`/console/auth/` other than `GET`, `HEAD` or `OPTIONS` is refused `403`
-before anything else runs, unless it carries `Origin` equal to the base's
-origin and `X-Odudu-Console: 1`. The refusal has the admin API's own `403`
-type, `about:blank`, and says why in `detail`. All three requests below
-have the same valid session cookie, the same subject header and the same
-body. The first sends another origin:
+A request to `/console/api/` or `/console/auth/` other than `GET`, `HEAD` or
+`OPTIONS` is refused `403` before anything else runs, unless it carries `Origin`
+equal to the base's origin and `X-Odudu-Console: 1`. The refusal has the admin
+API's own `403` type, `about:blank`, and says why in `detail`. All three
+requests below have the same valid session cookie, the same subject header and
+the same body. The first sends another origin:
 
 ```bash
 curl -sS -D - -c jar -b jar -X POST \

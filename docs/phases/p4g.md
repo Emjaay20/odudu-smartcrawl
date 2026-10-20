@@ -1971,7 +1971,7 @@ reads first.
   pages after their index, and holds the opening to the contributing page in order. **Still in the
   transcript bodies:** "recaptured on..." and run-provenance sentences inside individual pages, and
   repository paths in prose. They are the transcripts' own record and the original documents still
-  carry them; Placed: Increment 23, Task 23c in the plan ("strip run-provenance sentences and repository paths from the transcript pages; the split test's locked openings move with it"). Increment 23 retires the originals and is where they can be edited.
+  carry them. Done in Increment 23.
 - **One heading per page.** 67 route pages had a plain `title` rendered as `h1` and the same route as
   a code `h2`. Where the heading is at most 60 characters its page now opens with it as the `# ` (its
   sub-headings moved up one level, as `loadPages` already allows) and the title is its text without
@@ -2003,3 +2003,41 @@ Before and after, light and dark, 1280 px and 375 px (the try stack's pages are 
 ![A journey, after](p4g-docs/22b-after-journey-desktop-light.webp)
 
 The other variants are `p4g-docs/22b-{before,after}-{home,console,reference,transcripts,journey}-{desktop,phone}-{light,dark}.webp`.
+
+## Increment 23: the roadmap page, the citations, the retirement
+
+- **Roadmap.** `apps/docs/content/en/roadmap.md` holds the "What is not implemented" list and the
+  P4d gap-audit list, with a note that the hosted service is planned and unscheduled (ADR 0042).
+  Read against the phases that closed: every marker still names an open phase or a decision. One
+  line was corrected (translated pages and mail: the catalogue mechanism exists, P4b ships the
+  locales, P4h the console's catalogue). "No published image or release process" stays under P4g
+  because no image has been published yet. The page sits in the Reference category of the sidebar,
+  is linked from the introduction and the reference index, and is two clicks from home.
+  `not-implemented-placement` and `gap-audit-placement` read it; `phase-references` holds it to 49
+  citations, the protocol pages to 4.
+- **Retirement.** The three path documents under `docs/` (request, admin and console) are deleted. 50
+  files outside `docs/archive` cited them; each citation now names the page (README, ADRs, phase
+  and protocol notes, source comments), with heading anchors resolved through the headings of the
+  original against the pages (github-slugger) rather than typed. `retired-documents.test.ts` fails
+  on any citation of a retired path outside the archive and on the files existing.
+- **What replaced the split test.** `split-preserves-the-documents` compared every line of each
+  original with its pages and has nothing to compare with now. `transcript-pages.test.ts` keeps
+  its order, front-matter, Markdown-only and repository-link checks, adds a floor per group on
+  fenced blocks (656, 616, 161), and keeps the capture-notes page to one section per group.
+  `apps/docs/tests/transcripts.test.ts` still holds every fenced block to the built page. The
+  floors of `references.test.ts` (protocol pages: repository paths 5 to 4) moved with the prose
+  that no longer names a path.
+- **Link check.** `lychee` is not installed here and was not downloaded, so the heading-anchor half
+  of the brief is `tests/docs/link-fragments.test.ts`: every link with a `#fragment` into a Markdown
+  file outside the archive and the generated reference must reach a heading, with a site page's
+  `h1` carrying no anchor. Its first run found no dead anchor in the moved pages; a scratch file
+  with a broken anchor failed it. File-level links were already held by `references.test.ts`.
+- **Transcript pages for readers.** Run provenance and source paths are gone from the prose of the
+  three groups: ordinal stacks, compose project names, commits, "captured against", "From the
+  seventh run", and 150 sentences naming `packages/...`, `apps/...` or `tests/...`. Fenced blocks
+  are byte-identical (checked per file against HEAD). Front matter descriptions that carried the
+  provenance were rewritten. `transcript-pages.test.ts` fails on any of these patterns in prose; it
+  was shown to fail on a planted line. `contributing/transcripts.md` keeps the stack notes.
+- **Left as it was.** The 18 pages whose long multi-route heading stays an `h2` under a short
+  `title`: the breadcrumb test requires the last crumb to equal the `h1`, so promoting them needs a
+  decision on title length, not a script.

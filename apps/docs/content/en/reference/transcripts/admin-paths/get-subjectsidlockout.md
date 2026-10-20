@@ -5,22 +5,23 @@ description: "Requires view-users. The subject's run of failed sign-ins as the l
 
 # `GET /subjects/:id/lockout`
 
-Requires `view-users`. The subject's run of failed sign-ins as the
-lockout reads it: `failure_count`, `last_failure_at`, `locked_until`, and
-`locked` — whether an attempt made now would be refused, judged by the
-server's clock so a caller never compares `locked_until` against its own.
-A lock that has run out answers `locked: false` with its count kept, since
-the run is only forgotten after `brute_force_failure_reset_seconds` of
-quiet ([README.md](https://github.com/wizzywit/odudu/blob/main/README.md)'s brute-force section has the arithmetic).
-A subject that has never failed answers a zero count and nulls. An unknown
-subject, one in another tenant, or one with no `users` row answers `404`.
+Requires `view-users`. The subject's run of failed sign-ins as the lockout reads
+it: `failure_count`, `last_failure_at`, `locked_until`, and `locked` — whether
+an attempt made now would be refused, judged by the server's clock so a caller
+never compares `locked_until` against its own. A lock that has run out answers
+`locked: false` with its count kept, since the run is only forgotten after
+`brute_force_failure_reset_seconds` of quiet ([the
+README](https://github.com/wizzywit/odudu/blob/main/README.md)'s brute-force
+section has the arithmetic). A subject that has never failed answers a zero
+count and nulls. An unknown subject, one in another tenant, or one with no
+`users` row answers `404`.
 
-Captured against the seventh stack, described at the top of this page, in a tenant
-`lockout-demo` made by `odudu seed --tenant lockout-demo --client
-lockout-demo-app --redirect-uri https://app.example/callback --user hana`,
-on `ines`, a second subject seeded there with `odudu seed user` and
-signed in by nothing before this. `signin` is the helper the section below
-defines, pointed at this tenant, this client, `ines` and port 3080 — as run:
+Described at the top of this page, in a tenant `lockout-demo` made by `odudu
+seed --tenant lockout-demo --client lockout-demo-app --redirect-uri
+https://app.example/callback --user hana`, on `ines`, a second subject seeded
+there with `odudu seed user` and signed in by nothing before this. `signin` is
+the helper the section below defines, pointed at this tenant, this client,
+`ines` and port 3080 — as run:
 
 ```bash
 AUTHORIZE='http://localhost:3080/tenants/lockout-demo/protocol/openid-connect/auth?response_type=code&client_id=lockout-demo-app&redirect_uri=https%3A%2F%2Fapp.example%2Fcallback&scope=openid&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'

@@ -26,8 +26,8 @@ resets `email_verified` to `false` whenever `PATCH /subjects/:id` changes
 the address. Resubmitting the same number — an echoed full-object
 `PATCH`, say — leaves a verified flag exactly as it was.
 
-Captured against the fourth stack, after a further rebuild, in a tenant of
-its own, `profile-demo2`, on a fresh subject `grace`:
+After a further rebuild, in a tenant of its own, `profile-demo2`, on a fresh
+subject `grace`:
 
 ```bash
 curl -sS -D - \
@@ -98,10 +98,10 @@ Keep-Alive: timeout=72
 {"name":null,"given_name":"Grace","family_name":"Hopper","middle_name":null,"nickname":null,"preferred_username":null,"profile":null,"picture":null,"website":null,"gender":null,"birthdate":null,"zoneinfo":null,"locale":null,"phone_number":null,"phone_number_verified":false,"email_verified":true,"address_formatted":null,"address_street":null,"address_locality":null,"address_region":null,"address_postal_code":null,"address_country":null,"profile_updated_at":"2026-09-27T23:50:41.782Z"}
 ```
 
-`email` in the same body is refused, naming the route that owns it instead
-of `about:blank`'s usual bare wording. Captured against the sixth stack, in
-a tenant also named `profile-demo2` created there for it, on its own
-`grace` (`01a0ea55-4091-7b5b-b743-8a713272538b`):
+`email` in the same body is refused, naming the route that owns it instead of
+`about:blank`'s usual bare wording. In a tenant also named `profile-demo2`
+created there for it, on its own `grace`
+(`01a0ea55-4091-7b5b-b743-8a713272538b`):
 
 ```bash
 curl -sS -D - -X PATCH \
@@ -227,15 +227,12 @@ The `ETag` and `profile_updated_at` are unchanged from the call before —
 nothing was written at all, `phone_number` included, since the value it
 carried was already there.
 
-`amendProfile` (`packages/protocol-admin/src/usecase/profile.ts`) computes
-the row's final state — this patch's values layered over what is already
-there — before writing anything, so verifying a malformed number is
-refused without ever reaching `users_verified_phone_is_e164`
-(`packages/db/drizzle/0024_verified_phone_is_e164.sql`) or writing a
-number the caller asked to leave unverified. `isValidE164`
-(`packages/domain-identity/src/service/profile.ts`) mirrors that CHECK,
-the same way `isValidBirthdate` mirrors `users_birthdate_shape`. Captured
-against the sixth stack, on the `grace` the `email` refusal above names:
+`amendProfile` computes the row's final state — this patch's values layered over
+what is already there — before writing anything, so verifying a malformed number
+is refused without ever reaching `users_verified_phone_is_e164` or writing a
+number the caller asked to leave unverified. `isValidE164` mirrors that CHECK,
+the same way `isValidBirthdate` mirrors `users_birthdate_shape`. On the `grace`
+the `email` refusal above names:
 
 ```bash
 curl -sS -D - -X PATCH \

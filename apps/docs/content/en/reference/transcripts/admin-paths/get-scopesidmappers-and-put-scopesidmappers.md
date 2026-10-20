@@ -30,10 +30,11 @@ other scope's in the same tenant.
 while `bound` is empty. It comes from code, so a write never changes it and the
 `ETag` does not cover it, as it does not cover `available`.
 
-Captured against the eighteenth stack, in `scope-reach-demo`. The scope `email`
-(`01a12d29-70d3-7b41-8b8f-2b3bcf07e79d`) is one every tenant starts with, and the
-`email` mapper declares it; `billing` (`01a12d29-72a6-77f6-9e8b-c2fcbb928cd2`) is
-declared by none. The read, then the write under its tag, then the read back:
+In `scope-reach-demo`. The scope `email`
+(`01a12d29-70d3-7b41-8b8f-2b3bcf07e79d`) is one every tenant starts with, and
+the `email` mapper declares it; `billing`
+(`01a12d29-72a6-77f6-9e8b-c2fcbb928cd2`) is declared by none. The read, then the
+write under its tag, then the read back:
 
 ```bash
 curl -sS -D - \
@@ -106,9 +107,8 @@ curl -sS -X PUT \
 {"type":"about:blank","title":"Precondition Required","status":428,"detail":"If-Match is required to replace a scope’s claim mapper bindings","instance":"01a12d29-b389-725f-abd1-4064b5d48e63"}
 ```
 
-A name the registry does not carry, refused with the names it does —
-captured against the sixth stack, on the `billing` scope in its `demo`,
-under the `ETag` its `GET …/mappers` answered:
+A name the registry does not carry, refused with the names it does, on the
+`billing` scope in its `demo`, under the `ETag` its `GET …/mappers` answered:
 
 ```bash
 curl -sS -X PUT \

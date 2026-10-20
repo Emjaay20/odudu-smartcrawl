@@ -16,8 +16,8 @@ it cleared, sorted, at most 100 of them, so the per-subject trail the single
 door leaves is not lost; a subject left beyond the ceiling writes no refused
 row of its own (ADR 0037).
 
-Against the tenth stack, after five wrong passwords for `linus`, which lock
-him, and two for `grace`, which do not:
+After five wrong passwords for `linus`, which lock him, and two for `grace`,
+which do not:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/subjects?locked=true"; echo
@@ -40,12 +40,11 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
 ## How many one call clears
 
 One call clears at most 10,000 subjects, in subject id order, and answers how
-many are left under `remaining` (counted to 10,000 and no further), so a
-tenant with more is cleared by calling again until `remaining` is `0`. The
-transcript above is the tenth stack's, run on 2026-09-29 before the field
-existed, so its answer lacks it; the one below is the current shape. Against
-`perf-demo`, with a run of five
-failures written for `grace` by `insert into login_failures`:
+many are left under `remaining` (counted to 10,000 and no further), so a tenant
+with more is cleared by calling again until `remaining` is `0`. The transcript
+above predates the field, so its answer lacks it; the one below is the current
+shape. Against `perf-demo`, with a run of five failures written for `grace` by
+`insert into login_failures`:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/subjects?locked=true"; echo

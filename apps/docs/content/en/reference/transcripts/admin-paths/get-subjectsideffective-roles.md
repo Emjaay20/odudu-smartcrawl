@@ -18,11 +18,11 @@ no `ETag`: `GET /subjects/:id/roles` is
 the list `PUT /subjects/:id/roles` replaces, and this is what follows from it.
 An unknown subject answers `404`.
 
-Against the tenth stack, after two tenant roles `billing-reader` and
-`billing-auditor`, a group `/finance` with `/finance/payables` beneath it, and,
-through the endpoints above, `billing-auditor` nesting `billing-reader`,
-`/finance` mapped to `billing-reader`, `grace` assigned `billing-auditor` and
-made a member of `/finance/payables`. Her assignments, then what she holds:
+After two tenant roles `billing-reader` and `billing-auditor`, a group
+`/finance` with `/finance/payables` beneath it, and, through the endpoints
+above, `billing-auditor` nesting `billing-reader`, `/finance` mapped to
+`billing-reader`, `grace` assigned `billing-auditor` and made a member of
+`/finance/payables`. Her assignments, then what she holds:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -42,9 +42,8 @@ name neither.
 
 ## Paging what a subject holds
 
-Against the stack of its own (`perf-demo`, `grace` assigned five tenant roles
-`role-reader`, `role-writer`, `role-auditor`, `role-billing` and `role-ops`),
-two at a time:
+In `perf-demo` (`grace` assigned five tenant roles `role-reader`, `role-writer`,
+`role-auditor`, `role-billing` and `role-ops`), two at a time:
 
 ```bash
 curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" \

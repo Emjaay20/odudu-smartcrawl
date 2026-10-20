@@ -12,10 +12,9 @@ that checks what still depends on one. `If-Match` is optional; a stale one is
 refused with `412`. Writes `key.delete`, naming the `kid`. An unknown key
 answers `404`.
 
-Against the tenth stack, a key staged with `POST /keys`
-(`01a0ee8c-6b4e-7479-a229-78e90920c309`), retired and then deleted, then the keys
-left and the key's own trail (the refusal of deleting it before it was retired is
-shown with the typed refusals above):
+A key staged with `POST /keys` (`01a0ee8c-6b4e-7479-a229-78e90920c309`), retired
+and then deleted, then the keys left and the key's own trail (the refusal of
+deleting it before it was retired is shown with the typed refusals above):
 
 ```bash
 K=01a0ee8c-6b4e-7479-a229-78e90920c309

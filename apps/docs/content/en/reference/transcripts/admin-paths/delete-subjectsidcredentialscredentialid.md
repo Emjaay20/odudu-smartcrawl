@@ -47,12 +47,10 @@ audit row then carries `detail.ended_sessions`, the count, and the sessions
 end through their own `session.end_all` and `session.ended` rows. The console's
 removal dialog offers it, unticked, when the factor is the last one.
 
-Captured on 2026-10-19 against a stack of its own, project
-`odudu-p4g-recovery`, built from this branch on an empty volume, with
-`seed admin --username rae` for the token, a tenant `recovery-life`, and in it
-a subject `ines` seeded with `seed user` and then given, as the database
-owner, a TOTP credential and ten recovery-code rows, the state an enrolment
-and its saved set leave. The credentials list first:
+From an empty volume, with `seed admin --username rae` for the token, a tenant
+`recovery-life`, and in it a subject `ines` seeded with `seed user` and then
+given, as the database owner, a TOTP credential and ten recovery-code rows, the
+state an enrolment and its saved set leave. The credentials list first:
 
 ```bash
 S=http://localhost:3187/admin/tenants/recovery-life/subjects
@@ -113,22 +111,20 @@ You received this because a sign-in method on your account at ⁨recovery-life�
 © 2026 Odudu · Powered by odudu
 ```
 
-The mail block above was captured again on 2026-10-19, after the mail got its
-designed shell, on a stack of its own, the compose project `odudu-p4g-mail`,
-with the same tenant name, subject name and steps, so it names no id from the
-run above; its footer year is that of the moment the mail was queued.
+The mail block above is from a second run with the same tenant name, subject
+name and steps, so it names no id from the run above; its footer year is that of
+the moment the mail was queued.
 
-Ending the sessions with the removal was captured on the same project after it
-was rebuilt from the commit that made it one request, on a fresh volume, with
-the same names (`seed admin --username rae`, tenant `recovery-life`, public
-client `life-app`) and so ids of that run, not those above: `ines` signed in
-once with her password (a `302` carrying a code, which left one live session),
-and was then given, as the database owner, a TOTP credential and ten
-recovery-code rows. `INES=01a15574-77e8-7b37-9d44-350fca4ada8c` and
-`TOTP=55284e9a-8ea8-40ff-878b-5ea7f2957653`. Her sessions first, a value that
-is not `true` or `false` (refused, so nothing changed), the removal with the
-sessions ended, her sessions again, and the audit rows for her, cut to
-`action`, `outcome` and `detail` by the filter in the command:
+Ending the sessions with the removal is a third run, on a fresh volume, with the
+same names (`seed admin --username rae`, tenant `recovery-life`, public client
+`life-app`) and so ids of that run, not those above: `ines` signed in once with
+her password (a `302` carrying a code, which left one live session), and was
+then given, as the database owner, a TOTP credential and ten recovery-code rows.
+`INES=01a15574-77e8-7b37-9d44-350fca4ada8c` and
+`TOTP=55284e9a-8ea8-40ff-878b-5ea7f2957653`. Her sessions first, a value that is
+not `true` or `false` (refused, so nothing changed), the removal with the
+sessions ended, her sessions again, and the audit rows for her, cut to `action`,
+`outcome` and `detail` by the filter in the command:
 
 ```bash
 S=http://localhost:3187/admin/tenants/recovery-life/subjects
@@ -144,9 +140,8 @@ import json,sys
 for r in json.load(sys.stdin)['items']: print(json.dumps({k:r[k] for k in ('action','outcome','detail')}))"
 ```
 
-The captured run printed only the status line and body of the `400` (the
-`grep -E '^HTTP|^\{' | cut -c1-200` it was piped through is not shown above), and dropped
-the `date`, `connection` and keep-alive lines of the `204`:
+The `400` is shown as its status line and body only, and the `204` without its
+`date`, `connection` and keep-alive lines:
 
 ```
 1 session(s); client_ids []
@@ -163,4 +158,4 @@ cache-control: no-store
 ```
 
 The one session was `session.end_all`'s, and the count is on the removal's own
-row as `ended_sessions`. The `400` line is cut at 200 characters in the capture (`cut -c1-200`).
+row as `ended_sessions`. The `400` line is cut at 200 characters.

@@ -5,17 +5,17 @@ description: "Requires manage-users. Each queues a link to the subject's own add
 
 ## `POST /subjects/:id/password-reset` and `POST /subjects/:id/verification`
 
-Requires `manage-users`. Each queues a link to the subject's own address,
-minted and mailed by the same write the self-service door makes
-(`enqueueResetLink` and `enqueueVerificationLink`, `@odudu/account`), and
-answers `202` with no body: the link is never in the response, nor in the
-audit row, `subject.password_reset_send` or `subject.verification_send`,
-whose `detail` is empty. Each is held to the target ceiling like every other
-write under `/subjects/:id`, and each is throttled per origin with the
-sign-in, registration and reset-request submissions (ADR 0023; not shown
-here, since this stack raised the budget — `apps/server/tests/throttle.int.test.ts`
-holds it). A subject with no `users` row answers `404`. Each refusal a link
-would otherwise meet later, silently, is a `409` of its own type:
+Requires `manage-users`. Each queues a link to the subject's own address, minted
+and mailed by the same write the self-service door makes (`enqueueResetLink` and
+`enqueueVerificationLink`, `@odudu/account`), and answers `202` with no body:
+the link is never in the response, nor in the audit row,
+`subject.password_reset_send` or `subject.verification_send`, whose `detail` is
+empty. Each is held to the target ceiling like every other write under
+`/subjects/:id`, and each is throttled per origin with the sign-in, registration
+and reset-request submissions (ADR 0023; not shown here, since the budget was
+raised for these runs — an integration test holds it). A subject with no `users`
+row answers `404`. Each refusal a link would otherwise meet later, silently, is
+a `409` of its own type:
 
 - `about:blank#no-email` — the subject has no address;
 - `about:blank#reset-password-off`, a reset only — the tenant's
@@ -25,10 +25,9 @@ would otherwise meet later, silently, is a `409` of its own type:
   only be logged.
 
 None of the three writes a row: each is a conflict with the data, not a guard
-(ADR 0037's amendment of 2026-09-28). Against the tenth stack, for `grace`
-and then `linus`, who has no address, taking each refusal in turn: the
-setting, then a relay for `ops-demo` at the stack's own `postgres` container,
-port 25, where nothing listens:
+(ADR 0037's amendment of 2026-09-28). For `grace` and then `linus`, who has no
+address, taking each refusal in turn: the setting, then a relay for `ops-demo`
+at the stack's own `postgres` container, port 25, where nothing listens:
 
 ```bash
 G=01a109f6-6f97-7579-a5ed-5c486dcd23aa

@@ -69,12 +69,12 @@ own status is `active`), `#key-algorithm-needed` (a client's
 `userinfo_signed_response_alg` or `id_token_signed_response_alg` is one no remaining
 non-retired key produces) and, for `DELETE`, `#key-not-retired`.
 
-The algorithm refusal names at most 20 clients, in `client_id` order, as `errors`
-entries of path `clients` (the id is the `message`), and the number it left out as one
-entry of path `clients.more`; `detail` carries the same cut list ending `and N more`.
-Captured against the twentieth stack, in `key-refusals`, which starts with one `ES256`
-key that is `active`: that key retired, an `RS256` key staged, that key deleted, a
-client `billing` registered with `userinfo_signed_response_alg` `RS256` (which the
+The algorithm refusal names at most 20 clients, in `client_id` order, as
+`errors` entries of path `clients` (the id is the `message`), and the number it
+left out as one entry of path `clients.more`; `detail` carries the same cut list
+ending `and N more`. In `key-refusals`, which starts with one `ES256` key that
+is `active`: that key retired, an `RS256` key staged, that key deleted, a client
+`billing` registered with `userinfo_signed_response_alg` `RS256` (which the
 staged key makes producible), the keys listed to show the staged key is the only
 non-retired `RS256` one, and the staged key retired:
 
@@ -119,12 +119,11 @@ curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$P/keys/$STAGED/retire
 Whether a key may be promoted before relying parties have fetched it is not refused:
 the console shows when it is ready and leaves the choice to the operator.
 
-**Filters.** `?status=active|rotating|retired` and `?alg=RS256|ES256` are
-exact, `AND`ed with each other, and bound into the cursor like every other
-listing's filters; any other parameter is refused with `400` naming it.
-Neither has an index: a tenant holds a handful of keys. Captured against
-the sixth stack, whose `demo` held one key, `active` and `ES256`, so the
-first filter matches nothing and the second finds it:
+**Filters.** `?status=active|rotating|retired` and `?alg=RS256|ES256` are exact,
+`AND`ed with each other, and bound into the cursor like every other listing's
+filters; any other parameter is refused with `400` naming it. Neither has an
+index: a tenant holds a handful of keys. Whose `demo` held one key, `active` and
+`ES256`, so the first filter matches nothing and the second finds it:
 
 ```bash
 curl -sS \
@@ -150,11 +149,10 @@ curl -sS \
 
 ### A key's `ETag`
 
-`POST /keys`, promote and retire each answer an `ETag` over the key they
-answer. Promote and retire honour it as `If-Match` when it is sent, taken
-over the key as it stands under the write's own lock, and refuse a stale
-one with `412`; neither requires it. Captured against the fifth stack in
-`etags-demo`:
+`POST /keys`, promote and retire each answer an `ETag` over the key they answer.
+Promote and retire honour it as `If-Match` when it is sent, taken over the key
+as it stands under the write's own lock, and refuse a stale one with `412`;
+neither requires it. In `etags-demo`:
 
 ```bash
 curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \

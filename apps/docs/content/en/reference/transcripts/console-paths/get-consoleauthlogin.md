@@ -26,13 +26,12 @@ Keep-Alive: timeout=72
 ```
 
 The login cookie's value is the `state` sent to the authorization endpoint:
-`<tenant id>.<secret>`. The pending sign-in is stored with the secret's
-hash, the PKCE verifier and the nonce. It lasted 600 seconds when this run
-was captured, as the cookie's `Max-Age` says, and every login cookie below
-says the same. It lasts 1800 seconds now — as long as the tenant's own
-sign-in lasts by default (`login_ttl_seconds`), since that is where the time
-goes. The same request on **a sixth run**, on a stack of its own, the
-project `odudu-t10` on `http://localhost:3082` at `511db0fd`, in a tenant
+`<tenant id>.<secret>`. The pending sign-in is stored with the secret's hash,
+the PKCE verifier and the nonce. It lasted 600 seconds in this run, as the
+cookie's `Max-Age` says, and every login cookie below says the same. It lasts
+1800 seconds now — as long as the tenant's own sign-in lasts by default
+(`login_ttl_seconds`), since that is where the time goes. The same request
+later, on a stack of its own on `http://localhost:3082`, in a tenant
 `reach-demo` made there with `odudu seed tenant`, after the change:
 
 ```bash

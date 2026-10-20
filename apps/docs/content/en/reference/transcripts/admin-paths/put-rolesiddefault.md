@@ -5,18 +5,15 @@ description: 'Requires manage-tenant. The body is {"default": true} or {"default
 
 # `PUT /roles/:id/default`
 
-Requires `manage-tenant`. The body is `{"default": true}` or
-`{"default": false}`, and the answer is the role with its `ETag`.
-`If-Match` is optional: sent, it is compared with the role as it stands
-under the write's own lock, and a stale one is refused with `412`. A role
-marked default is granted to **every subject created afterwards** —
-through `POST /subjects`, self-registration and `odudu seed` alike, which
-all call `grantNewSubjectDefaults`
-(`packages/domain-authz/src/repository/new-subject-defaults.ts`) — and to
-none that already exist, nor to a subject an import moves in with the roles
-its document lists; unmarking it takes it from nobody who
-already holds it. Each change is audited as `role.default_set`, with the
-flag's before and after in `detail`.
+Requires `manage-tenant`. The body is `{"default": true}` or `{"default":
+false}`, and the answer is the role with its `ETag`. `If-Match` is optional:
+sent, it is compared with the role as it stands under the write's own lock, and
+a stale one is refused with `412`. A role marked default is granted to **every
+subject created afterwards** — through `POST /subjects`, self-registration and
+`odudu seed` alike, which all call `grantNewSubjectDefaults` — and to none that
+already exist, nor to a subject an import moves in with the roles its document
+lists; unmarking it takes it from nobody who already holds it. Each change is
+audited as `role.default_set`, with the flag's before and after in `detail`.
 
 **A default role may reach no admin capability at all.** `true` is refused
 with `403`, and a `refused` row written to the trail naming what it would
@@ -33,10 +30,9 @@ each with a `refused` row too — the create's with no `resource_id`, since
 no role came of it.
 `false` is never refused.
 
-Captured against the fourteenth stack in `composites-demo`, with roles
-`member` and `helpdesk-lead`, the second nesting `manage-users`, created there
-for it. `member` marked default, then a subject `rosa2` created and its roles
-read:
+In `composites-demo`, with roles `member` and `helpdesk-lead`, the second
+nesting `manage-users`, created there for it. `member` marked default, then a
+subject `rosa2` created and its roles read:
 
 ```bash
 curl -sS -D - -X PUT \
@@ -143,10 +139,8 @@ have handed out, and `member`'s two changes. Two roles are named here, so
 point before the composite-door demonstration below repeats
 `role.default_set` against the same `member` role:
 
-Recaptured against the tenth stack, once each row answered `actor_name` and
-`actor_origin`, after `member` and `helpdesk-lead`, nesting `manage-users`,
-were made in the same tenant and the same three writes sent, bounded the
-same way, so the ids are that run's, not those above:
+The same again, now that each row answers `actor_name` and `actor_origin`; the
+ids are a fresh run's, not those above:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \

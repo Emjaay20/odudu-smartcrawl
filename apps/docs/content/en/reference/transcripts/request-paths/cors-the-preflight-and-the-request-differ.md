@@ -209,6 +209,6 @@ content-type: application/problem+json; charset=utf-8
 No `access-control-allow-origin` — the browser gets nothing to read this
 response with. The `Vary: Origin` here is a side effect of `@fastify/cors`
 answering every unmatched `OPTIONS` request from one global fallback route
-regardless of which encapsulated scope registered it (`docs/superpowers/p2a-spike-log.md`
-records the mechanism); it is harmless — nothing downstream keys a cache
-entry on it — but it is not hidden here as something it is not.
+regardless of which encapsulated scope registered it; it is harmless — nothing
+downstream keys a cache entry on it — but it is not hidden here as something it
+is not.

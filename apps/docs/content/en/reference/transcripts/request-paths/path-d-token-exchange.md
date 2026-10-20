@@ -141,13 +141,12 @@ docker compose -f infra/docker/compose.yaml exec -T postgres \
 (2 rows)
 ```
 
-`exdoc-exchange-restricted` is registered for the grant — the allowlist
-below is a separate check, already satisfied — but is refused before its
-`subject_token` is ever read, so a garbage `subject_token` refuses exactly
-the same way a live one would
-(`packages/protocol-oidc/tests/token-exchange.int.test.ts`'s
-`ODUDU-TOKEN-EXCHANGE-ORACLE-01`). `x-request-id`, `Date` and the
-keep-alive headers are omitted below, as elsewhere in this document:
+`exdoc-exchange-restricted` is registered for the grant — the allowlist below is
+a separate check, already satisfied — but is refused before its `subject_token`
+is ever read, so a garbage `subject_token` refuses exactly the same way a live
+one would (held by the test `ODUDU-TOKEN-EXCHANGE-ORACLE-01`). `x-request-id`,
+`Date` and the keep-alive headers are omitted below, as elsewhere in this
+document:
 
 ```bash
 curl -sS -D - -u exdoc-exchange-restricted:exdoc-exchange-restricted-secret \
@@ -510,41 +509,35 @@ content-type: application/json; charset=utf-8
 {"error":"invalid_client"}
 ```
 
-An `id_token` names no grant to revoke — `resolveIdToken`
-(`packages/protocol-oidc/src/usecase/token-exchange-subject.ts`) returns
-`grantId: null` — so exchanging one reads `clients.enabled` directly rather
-than through a grant, the one branch a revoked-grant check could never have
-reached. This transcript's last refusal cannot prove that read fired,
-though: an id_token's audience must name the requesting client, which makes
-this necessarily a self-exchange, and a disabled client can no longer
-authenticate at `/token` for **any** grant —
-`verifyClientSecret` (`packages/domain-tenant/src/service/client.ts`)
-already refuses a disabled client's own client_secret, private_key_jwt or
-tls_client_auth attempt, the same way [The branches](./the-branches.md) below
-documents for every other grant, and `invalid_client` above is that refusal,
-not `resolveIdToken`'s. `packages/protocol-admin/tests/disabled-client.int.test.ts`
-covers the id_token branch's own read directly, the way [the impersonation
+An `id_token` names no grant to revoke — `resolveIdToken` returns `grantId:
+null` — so exchanging one reads `clients.enabled` directly rather than through a
+grant, the one branch a revoked-grant check could never have reached. This
+transcript's last refusal cannot prove that read fired, though: an id_token's
+audience must name the requesting client, which makes this necessarily a
+self-exchange, and a disabled client can no longer authenticate at `/token` for
+**any** grant — `verifyClientSecret` already refuses a disabled client's own
+client_secret, private_key_jwt or tls_client_auth attempt, the same way [The
+branches](./the-branches.md) below documents for every other grant, and
+`invalid_client` above is that refusal, not `resolveIdToken`'s. An integration
+test covers the id_token branch's own read directly, the way [the impersonation
 refusal above](#impersonation-gated-by-a-column-no-flag-sets) covers
-`unauthorized_client`'s own oracle: by calling `resolveExchangeToken`
-itself rather than through the client-authentication gate in front of it.
+`unauthorized_client`'s own oracle: by calling `resolveExchangeToken` itself
+rather than through the client-authentication gate in front of it.
 
 ## A subject disabled after a token was issued to it
 
-The same five calls again, for the other half of the same question:
-disabling a **subject** ends nothing it holds either — its grants, its
-session and its client are all untouched — so each of `/userinfo`,
-`/introspect` and the exchange grant reads the token's subject beside its
-client (`subjectIsEnabled`, `packages/domain-identity/src/service/subject-enabled.ts`,
-the same predicate the refresh grant and the admin API ask). Captured
-against a stack of its own: compose project `odudu-t8c` on port 3080,
-built from this branch and brought up from an empty volume, torn down with
-`docker compose down -v` afterwards. Its tenant `subjdoc` is set up exactly
-as `disableddoc` is above, under its own names — `subjdoc-spa`,
+The same five calls again, for the other half of the same question: disabling a
+**subject** ends nothing it holds either — its grants, its session and its
+client are all untouched — so each of `/userinfo`, `/introspect` and the
+exchange grant reads the token's subject beside its client (`subjectIsEnabled`,
+the same predicate the refresh grant and the admin API ask). On a stack of its
+own, on port 3080, brought up from an empty volume. Its tenant `subjdoc` is set
+up exactly as `disableddoc` is above, under its own names — `subjdoc-spa`,
 `subjdoc-reader` with secret `subjdoc-reader-secret`, the audience
-`https://api.subjdoc.example`, and `ada` — and `$ACCESS_TOKEN`,
-`$REFRESH_TOKEN` and `$ID_TOKEN` come from one sign-in the same way. The
-`Date`, `Connection` and `Keep-Alive` lines are left out of each header
-block, and each issued `access_token` is cut after its first bytes.
+`https://api.subjdoc.example`, and `ada` — and `$ACCESS_TOKEN`, `$REFRESH_TOKEN`
+and `$ID_TOKEN` come from one sign-in the same way. The `Date`, `Connection` and
+`Keep-Alive` lines are left out of each header block, and each issued
+`access_token` is cut after its first bytes.
 
 While `ada` is enabled, all five succeed. `/userinfo`, `/introspect`, the
 access-token exchange, the refresh-token exchange and the `id_token`

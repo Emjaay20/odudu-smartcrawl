@@ -33,17 +33,16 @@ which rewrites its `path`, changes the tag even though the membership did
 not; an empty membership answers the same `"eef46741…"` every empty list
 here does.
 
-Captured against the twelfth stack, in a tenant `groups-demo` created
-through `POST /admin/tenants` for it. There, `platform-admins` is mapped to
-`tenant-admin` through `PUT /groups/:id/roles`, `oncall` is its child with
-no role of its own, `support` has none either, and `mei2` is a subject
-created through `POST /subjects`. `$HELPDESK_TOKEN` belongs to `helpdesk`,
-a user of that tenant created through `POST /subjects`, granted
-`manage-users` alone through `PUT /subjects/:id/roles`, and signed in with
-the one-time password `POST /subjects/:id/password` issued it;
-`$ADMIN_TOKEN` is `ada`'s. The refusal
-below turns on two facts, shown first — what `helpdesk` holds, and that
-`oncall` carries nothing itself while its parent carries `tenant-admin`:
+In a tenant `groups-demo` created through `POST /admin/tenants` for it. There,
+`platform-admins` is mapped to `tenant-admin` through `PUT /groups/:id/roles`,
+`oncall` is its child with no role of its own, `support` has none either, and
+`mei2` is a subject created through `POST /subjects`. `$HELPDESK_TOKEN` belongs
+to `helpdesk`, a user of that tenant created through `POST /subjects`, granted
+`manage-users` alone through `PUT /subjects/:id/roles`, and signed in with the
+one-time password `POST /subjects/:id/password` issued it; `$ADMIN_TOKEN` is
+`ada`'s. The refusal below turns on two facts, shown first — what `helpdesk`
+holds, and that `oncall` carries nothing itself while its parent carries
+`tenant-admin`:
 
 ```bash
 curl -sS -H "Authorization: Bearer $HELPDESK_TOKEN" \
@@ -185,7 +184,7 @@ Both writes that reached the ceiling are in the trail, scoped here to
 `mei2` — the refusal naming what was denied, the replacement the ids
 before and after:
 
-On the same stack and tenant:
+In the same tenant:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \

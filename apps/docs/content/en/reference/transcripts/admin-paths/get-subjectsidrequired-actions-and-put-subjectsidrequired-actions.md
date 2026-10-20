@@ -18,9 +18,9 @@ with `412`. The list is read under the same lock the replacement runs
 under, so two callers sent at once are serialised — the second sees what
 the first wrote rather than matching the same pre-write state.
 
-Captured against the second stack, on `grace`, who was created through
-`POST /subjects` and so carries `update-password` and nothing else. The
-read first, for the `ETag` the write needs:
+On `grace`, who was created through `POST /subjects` and so carries
+`update-password` and nothing else. The read first, for the `ETag` the write
+needs:
 
 ```bash
 curl -sS -D - \
@@ -38,8 +38,7 @@ content-length: 31
 {"actions":["update-password"]}
 ```
 
-_(Not re-run for the `cache-control: no-store` pass: this `grace`, and the
-second stack she lived on, are gone.)_
+_(This read predates the `cache-control: no-store` header and was not re-run.)_
 
 The same write twice: without the header, then with it.
 
