@@ -91,9 +91,8 @@ describe('each concept page embeds one diagram', () => {
     expect($(svgs[0]).find('title').text()).toBe(title);
     expect($(svgs[0]).find('desc').text()).toBe(desc);
     expect($('article img[src*="diagrams"]').length).toBe(0);
-    const labelled = ($(svgs[0]).attr('aria-labelledby') ?? '').split(' ');
-    expect(labelled).toHaveLength(2);
-    for (const id of labelled) expect($(svgs[0]).find(`[id="${id}"]`).length).toBe(1);
+    expect($(svgs[0]).attr('aria-labelledby')).toBe($(svgs[0]).find('title').attr('id'));
+    expect($(svgs[0]).attr('aria-describedby')).toBe($(svgs[0]).find('desc').attr('id'));
   });
 
   it.each(PAGES)('the Markdown copy of %s keeps the words and drops the drawing', (page) => {
@@ -284,7 +283,12 @@ describe('the concept pages', () => {
     const unknown = PAGES.flatMap((page) =>
       [...body(page).matchAll(NAME)]
         .map((match) => ({ page, name: match[1] ?? '' }))
-        .filter(({ name }) => !corpus.includes(name.split('.').at(-1) ?? name)),
+        .filter(({ name }) => {
+          if (corpus.includes(name)) return false;
+          // A field named through the object that holds it, as in `settings.audit_retention_days`.
+          const [owner = '', ...rest] = name.split('.');
+          return !(owner === 'settings' && rest.length === 1 && corpus.includes(rest.join('.')));
+        }),
     );
     expect(unknown).toEqual([]);
   });

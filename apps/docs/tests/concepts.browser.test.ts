@@ -78,6 +78,7 @@ interface Measured {
     readonly words: string;
     readonly colour: string;
     readonly surface: string;
+    readonly straddles: boolean;
     readonly rendered: number;
     readonly inside: boolean;
   }[];
@@ -86,6 +87,10 @@ interface Measured {
   readonly overflow: boolean;
 }
 
+// The surface behind a text is found by where the text is drawn: the smallest
+// rectangle of the drawing that holds its whole box, or the page when none
+// does. A text that is only partly over a rectangle is reported, because
+// neither surface then decides how readable it is.
 async function measure(page: Page): Promise<Measured> {
   return page.evaluate(() => {
     const svg = document.querySelector('article svg[role="img"]');
@@ -99,19 +104,42 @@ async function measure(page: Page): Promise<Measured> {
       }
       return 'rgb(255, 255, 255)';
     };
-    const surfaces: Record<string, string> = { page: pageColour() };
-    for (const rect of svg.querySelectorAll('rect[data-surface]')) {
-      const tone = rect.getAttribute('data-surface') ?? '';
-      surfaces[tone] ??= getComputedStyle(rect).fill;
-    }
+    const background = pageColour();
+    const rects = [...svg.querySelectorAll('rect')].map((rect) => ({
+      x: rect.x.baseVal.value,
+      y: rect.y.baseVal.value,
+      width: rect.width.baseVal.value,
+      height: rect.height.baseVal.value,
+      fill: getComputedStyle(rect).fill,
+    }));
     const texts = [...svg.querySelectorAll('text')].map((text) => {
       const bounds = text.getBBox();
+      const right = bounds.x + bounds.width;
+      const bottom = bounds.y + bounds.height;
+      const holding = rects
+        .filter(
+          (rect) =>
+            bounds.x >= rect.x &&
+            bounds.y >= rect.y &&
+            right <= rect.x + rect.width &&
+            bottom <= rect.y + rect.height,
+        )
+        .sort((a, b) => a.width * a.height - b.width * b.height);
+      const straddles = rects.some(
+        (rect) =>
+          bounds.x < rect.x + rect.width &&
+          right > rect.x &&
+          bounds.y < rect.y + rect.height &&
+          bottom > rect.y &&
+          !holding.includes(rect),
+      );
       return {
         words: text.textContent,
         colour: getComputedStyle(text).fill,
-        surface: surfaces[text.getAttribute('data-on') ?? 'page'] ?? '',
+        surface: holding[0]?.fill ?? background,
+        straddles,
         rendered: Number.parseFloat(getComputedStyle(text).fontSize) * scale,
-        inside: bounds.x >= 0 && bounds.x + bounds.width <= box.width,
+        inside: bounds.x >= 0 && right <= box.width && bounds.y >= 0 && bottom <= box.height,
       };
     });
     const arrows = [...svg.querySelectorAll('path[marker-end]')].map(
@@ -120,7 +148,7 @@ async function measure(page: Page): Promise<Measured> {
     return {
       texts,
       arrows,
-      page: surfaces.page ?? '',
+      page: background,
       overflow: document.documentElement.scrollWidth > window.innerWidth,
     };
   });
@@ -177,6 +205,7 @@ describe('the concept diagrams in a browser, following the site toggle', () => {
               where,
             ).toBeGreaterThanOrEqual(4.5);
             expect(text.inside, `${where} leaves the drawing`).toBe(true);
+            expect(text.straddles, `${where} is only partly over a box`).toBe(false);
             if (size.width === 375) {
               expect(text.rendered, `${where} renders small`).toBeGreaterThanOrEqual(
                 LEAST_PHONE_TEXT,

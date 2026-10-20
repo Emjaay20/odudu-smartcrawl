@@ -6,7 +6,7 @@
 .svg {
   display: block;
   inline-size: 100%;
-  max-inline-size: 22rem;
+  max-inline-size: 30rem;
   block-size: auto;
   margin-inline: auto;
 }

@@ -48,7 +48,7 @@ The third is the one that saves work. Ada belongs to `/engineering/backend` and 
 
 Two claims carry this to your app, and they do not agree on purpose.
 
-- The **`roles` claim** lists every role the person holds, including those that came from groups above. Ada's lists both `reviewer` and `engineering-lead`.
+- The **`roles` claim** lists every role the person holds, including those that came from groups above. Ada's lists both `reviewer` and `engineering-lead`. A role that belongs to one client appears with the client's id in front, as in `reports-api:reader`.
 - The **`groups` claim** lists only the groups the person belongs to directly. Ada's lists `/engineering/backend` and nothing else.
 
 If your app checks `groups` for `/engineering`, it will not find Ada, even though she holds everything engineering grants. Check roles, and your app agrees with what Odudu allows. Use `groups` when you want the person's own memberships, for example to show where they sit.

@@ -41,7 +41,7 @@ One browser can hold several sessions, for example when two people share it. The
 - **On purpose**, when an app sends the person to the tenant's end-session address. [Refresh and end a session](../guides/refresh-and-end-a-session.md) shows it.
 - **By an administrator**, who can end one person's sessions, or call `DELETE /admin/tenants/{tenant}/sessions` to end a tenant's live sessions a few hundred at a time.
 
-Ending a session also ends the refresh tokens it issued. An API that checks only an access token's signature keeps accepting it until it expires, which is why access tokens are short. One that asks the introspection endpoint is told at once that it is inactive.
+Ending a session ends the refresh tokens bound to it, which is what a sign-in in a browser produces. A grant made with the `offline_access` scope has no session, so ending sessions leaves it alone: its refresh tokens work until their own lifetime runs out or an administrator revokes them. `GET /admin/tenants/{tenant}/subjects/{id}/grants` lists what a person holds, with `offline` set on those grants, and `DELETE /admin/tenants/{tenant}/subjects/{id}/grants/{clientId}` revokes every grant the person holds through one client, offline ones included. An API that checks only an access token's signature keeps accepting it until it expires, which is why access tokens are short. One that asks the introspection endpoint is told at once that it is inactive.
 
 ## Recovery codes
 
@@ -64,7 +64,7 @@ The person is told by email when their set is revoked, whether an administrator 
 1. Choose the two limits for your tenant, shorter for sensitive tenants.
 2. Decide whether to offer "stay signed in", and set its limits.
 3. Make sure each app ends the session when its own sign-out is chosen.
-4. When somebody loses a phone, remove the authenticator, end their sessions, and let them enrol a new one.
+4. When somebody loses a phone, remove the authenticator, end their sessions, revoke their grants so no offline refresh token survives, and let them enrol a new one.
 
 ## Where to go next
 

@@ -47,7 +47,6 @@ interface TextProps {
   readonly y: number;
   readonly children: ReactNode;
   readonly ink?: Ink;
-  readonly on?: Tone | 'page';
   readonly size?: 13 | 14 | 15;
   readonly bold?: boolean;
   readonly mono?: boolean;
@@ -59,7 +58,6 @@ export function Txt({
   y,
   children,
   ink = 'ink',
-  on = 'page',
   size = 13,
   bold = false,
   mono = false,
@@ -74,7 +72,6 @@ export function Txt({
       fontWeight={bold ? 600 : 400}
       fontFamily={mono ? 'var(--font-mono)' : undefined}
       textAnchor={anchor}
-      data-on={on}
     >
       {children}
     </text>

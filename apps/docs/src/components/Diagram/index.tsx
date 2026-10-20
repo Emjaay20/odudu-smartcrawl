@@ -21,7 +21,8 @@ export default function Diagram({ name, title, desc }: Props): ReactElement {
         className={styles.svg}
         viewBox={`0 0 ${String(WIDTH)} ${String(drawing.height)}`}
         role="img"
-        aria-labelledby={`${id}-title ${id}-desc`}
+        aria-labelledby={`${id}-title`}
+        aria-describedby={`${id}-desc`}
         data-diagram={name}
       >
         <title id={`${id}-title`}>{title}</title>

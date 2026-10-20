@@ -9,6 +9,7 @@ import {
   RECOVERY_CODE_COUNT,
   recoveryApplicable,
 } from '../../packages/authn-flows/src/service/authenticators/recovery.js';
+import { qualifiedRoleName } from '../../packages/domain-authz/src/service/role-name.js';
 import { decideConsent } from '../../packages/protocol-oidc/src/service/consent.js';
 import { REPO_ROOT } from './markdown.js';
 
@@ -121,5 +122,40 @@ describe('the recovery code rules the sessions page states are the ones the sign
     expect(RECOVERY_CODE_COUNT).toBe(10);
     expect(new Set(generateRecoveryCodes(RECOVERY_CODE_COUNT)).size).toBe(RECOVERY_CODE_COUNT);
     expect(body('sessions')).toContain('ten recovery codes');
+  });
+});
+
+describe('what the sessions page says ends with a session, and what does not', () => {
+  const rotation = readFileSync(
+    path.join(REPO_ROOT, 'packages/protocol-oidc/src/usecase/refresh-rotation.ts'),
+    'utf8',
+  );
+  const grants = readFileSync(
+    path.join(REPO_ROOT, 'packages/protocol-admin/src/usecase/grants.ts'),
+    'utf8',
+  );
+
+  it('a refresh family is bound to its session only when it has one, so an offline family outlives it', () => {
+    expect(rotation).toMatch(
+      /if \(grant\.sessionId !== null\) \{\s*const session = await sessionRepository\(tx\)\.liveById/u,
+    );
+    expect(rotation).toMatch(/An\s+(?:\/\/\s*)?offline family has no session/u);
+    const page = body('sessions');
+    expect(page).toContain('bound to it');
+    expect(page).toContain('`offline_access`');
+  });
+
+  it('an administrator revokes a client’s grants, offline ones included, without ending a session', () => {
+    expect(grants).toMatch(/Revoking a grant ends no session/u);
+    expect(grants).toMatch(/client\.grants_revoke/u);
+    expect(body('sessions')).toContain('/grants/{clientId}');
+  });
+});
+
+describe('the roles claim the roles and groups page describes', () => {
+  it('writes a client role with its client in front, and a tenant role bare', () => {
+    expect(qualifiedRoleName({ name: 'reader' }, 'reports-api')).toBe('reports-api:reader');
+    expect(qualifiedRoleName({ name: 'reviewer' }, null)).toBe('reviewer');
+    expect(body('roles-and-groups')).toContain('`reports-api:reader`');
   });
 });

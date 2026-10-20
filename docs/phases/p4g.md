@@ -2193,3 +2193,26 @@ https://www.rfc-editor.org/rfc/rfc8414.txt | grep -m2 oauth-authorization-server
 - **Screenshots.** `docs/phases/p4g-docs/concept-sessions-*` and `concept-tokens-*`, desktop and 375 px, light and dark.
 - **Sidebar test.** `ia.test.ts` read the section list from the concepts page; with the concepts opened it now reads it
   from the quick start and asserts the seven pages beneath concepts in order.
+
+### Increment 25, fix round
+
+- **Refresh tokens and sessions.** The sessions page said ending a session ends the refresh tokens it issued. Only a
+  session-bound family does (`refresh-rotation.ts` checks the session when `grant.sessionId` is set); a grant made with
+  `offline_access` has none, is bounded by its own lifetime, and ending sessions leaves it alone. The page now says so and
+  names the two admin calls that exist today, `GET` and `DELETE /admin/tenants/{tenant}/subjects/{id}/grants[/{clientId}]`,
+  which list grants with an `offline` flag and revoke a client's grants, offline ones included, without ending a session.
+  No roadmap entry is needed: the way exists. `concept-claims.test.ts` holds both the rotation rule and the revoke route.
+- **Contrast is measured where the text is drawn.** The browser test no longer trusts an author's `data-on`; it takes the
+  smallest drawn rectangle that holds a text's whole box (or the page), reads that rectangle's computed fill, and fails a
+  text that is only partly over a box or outside the viewBox. Mutation checked: one box filled with the ink colour fails
+  "Users" at contrast 1; a text moved between two boxes fails as "only partly over a box".
+- **Diagram changes.** The SVG names itself by `aria-labelledby` (the title) and describes itself by `aria-describedby`
+  (the desc). The sessions diagram now shows a quiet stretch longer than the idle limit ending the session; the clients
+  diagram labels the arrows with the code, verifier and secret that make the hop; the tokens diagram joins its three cards
+  with a bracket. Diagrams may draw 30rem wide on desktop (text renders about 1.4 times the phone size).
+- **Wording.** The roles claim writes a client role with its client in front (`reports-api:reader`, from
+  `qualifiedRoleName`); the unsourced "cannot lock you out" rationale is gone from the tenants page; the audit page points
+  at the generated configuration and command references for the retention schedule instead of the Operating section
+  (Increment 27's plan names configuration and deploying pages, not the retention schedule, so the page does not rely on it).
+- `resolveTarget` in `references.test.ts` is removed (no site-root link remains); the code-font name check now needs the
+  full name, except a field named through `settings.`.

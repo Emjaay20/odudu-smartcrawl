@@ -199,15 +199,6 @@ export function linkResolves(absolute: string, planned: ReadonlySet<string>): bo
   return underGenerated(absolute) ? planned.has(absolute) : existsSync(absolute);
 }
 
-// A link beginning with a slash, in a page of the site, is an address on the site,
-// and the site serves `static/` at its root.
-const SITE_ROOT = 'apps/docs/static';
-
-function resolveTarget(document: string, from: string, target: string): string {
-  const onTheSite = document.startsWith('apps/docs/content/') && target.startsWith('/');
-  return onTheSite ? path.join(REPO_ROOT, SITE_ROOT, target) : path.resolve(from, target);
-}
-
 function everyDocument(): string[] {
   return globSync('**/*.md', {
     cwd: REPO_ROOT,
@@ -248,9 +239,7 @@ describe('every link in every document resolves', () => {
       const from = path.dirname(path.join(REPO_ROOT, name));
       for (const target of linkTargets(document)) {
         links += 1;
-        if (!linkResolves(resolveTarget(name, from, target), planned)) {
-          broken.push(`${name} -> ${target}`);
-        }
+        if (!linkResolves(path.resolve(from, target), planned)) broken.push(`${name} -> ${target}`);
       }
     }
 
