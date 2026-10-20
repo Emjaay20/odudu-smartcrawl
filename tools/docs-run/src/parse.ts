@@ -4,22 +4,21 @@ export interface RunnableBlock {
   readonly command: string;
   readonly expect: readonly string[];
   readonly env: Readonly<Record<string, string>>;
+  readonly timeoutSeconds?: number;
 }
-
-export const TIMEOUT_ENV = 'ODUDU_DOCS_RUN_TIMEOUT_S';
 
 const OPENING = /^(`{3,})(.*)$/u;
 const RUNNABLE_INFO = /^sh\s+\{run((?:\s+[^}]*)?)\}\s*$/u;
 const ATTRIBUTE = /expect="([^"]*)"|timeout=(\d+)/gu;
 
-function attributes(raw: string): Pick<RunnableBlock, 'expect' | 'env'> {
+function attributes(raw: string): Pick<RunnableBlock, 'expect' | 'env' | 'timeoutSeconds'> {
   const expect: string[] = [];
-  const env: Record<string, string> = {};
+  let timeoutSeconds: number | undefined;
   for (const match of raw.matchAll(ATTRIBUTE)) {
     if (match[1] !== undefined) expect.push(match[1]);
-    if (match[2] !== undefined) env[TIMEOUT_ENV] = match[2];
+    if (match[2] !== undefined) timeoutSeconds = Number(match[2]);
   }
-  return { expect, env };
+  return timeoutSeconds === undefined ? { expect, env: {} } : { expect, env: {}, timeoutSeconds };
 }
 
 /**
@@ -56,9 +55,9 @@ export function extractRunnable(markdown: string, file: string): RunnableBlock[]
 }
 
 const CHARACTERS: readonly { readonly pattern: RegExp; readonly what: string }[] = [
-  { pattern: /[‘’“”]/u, what: 'a smart quote' },
-  { pattern: /[‐-―−]/u, what: 'a non-ASCII hyphen or dash' },
-  { pattern: /[​﻿]/u, what: 'a zero-width character' },
+  { pattern: /[\u2018\u2019\u201c\u201d]/u, what: 'a smart quote' },
+  { pattern: /[\u2010-\u2015\u2212]/u, what: 'a non-ASCII hyphen or dash' },
+  { pattern: /[\u200b\ufeff]/u, what: 'a zero-width character' },
 ];
 
 function codePoint(character: string): string {
@@ -66,7 +65,11 @@ function codePoint(character: string): string {
   return `U+${value.toString(16).toUpperCase().padStart(4, '0')}`;
 }
 
-/** What would make a copied command differ from the one that was run. */
+/**
+ * What would make a copied command differ from the one that was run. A `&&`
+ * chain is one line and allowed; `set -e` does not stop inside one, so a
+ * guide checks a chained step with `expect`.
+ */
 export function lintCommand(block: RunnableBlock): string[] {
   const where = `${block.file}:${String(block.line)}`;
   const findings: string[] = [];

@@ -8,7 +8,7 @@
 set -euo pipefail
 
 cd "$(dirname "$0")"
-export COMPOSE_PROJECT_NAME="${ODUDU_STACK_PROJECT:-odudu-quickstart-prove}"
+export COMPOSE_PROJECT_NAME="${ODUDU_STACK_PROJECT:-odudu-quickstart-stack}"
 
 case "${1:-}" in
   up)

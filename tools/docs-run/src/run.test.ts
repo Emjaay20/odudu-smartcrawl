@@ -13,6 +13,7 @@ const block = (over: Partial<RunnableBlock> & { command: string }): RunnableBloc
 type Exec = (
   command: string,
   env: Record<string, string>,
+  options: { timeoutSeconds?: number },
 ) => Promise<{ status: number; output: string }>;
 
 describe('runBlocks', () => {
@@ -74,5 +75,18 @@ describe('runBlocks', () => {
     expect(fail[0]?.ok).toBe(false);
     expect(fail[0]?.failure).toContain('g.md:4');
     expect(fail[0]?.failure).toContain('missing text');
+  });
+
+  it('passes a block timeout to the runner as an option, not through the environment', async () => {
+    const seen: { env: Record<string, string>; options: { timeoutSeconds?: number } }[] = [];
+    const exec: Exec = (_c, env, options) => {
+      seen.push({ env, options });
+      return Promise.resolve({ status: 0, output: '' });
+    };
+    await runBlocks([block({ command: 'a', timeoutSeconds: 7 }), block({ command: 'b' })], exec);
+    expect(seen).toEqual([
+      { env: {}, options: { timeoutSeconds: 7 } },
+      { env: {}, options: {} },
+    ]);
   });
 });

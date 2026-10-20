@@ -3,6 +3,10 @@ name: docs-commands
 # Runs every command a guide marks runnable against the quickstart stack. A
 # command in a guide is a runnable block or it is not in the guide;
 # an illustrative one is tagged `text`.
+#
+# This is a workflow of its own, so verify.yml's `gate` cannot wait for it:
+# a branch ruleset has to require `docs-commands` by name for it to block a
+# merge.
 on:
   pull_request:
 

@@ -181,4 +181,16 @@ describe('the CI workflow', () => {
       expect(action).toContain(`${String(smokeProject)}-odudu\n`);
     });
   });
+
+  it("runs the guides' commands in a workflow of its own, on pull requests, and always tears down", async () => {
+    const workflow = await read('.github/workflows/docs-commands.yml');
+    expect(workflow).toMatch(/^on:\n {2}pull_request:\s*$/mu);
+    expect(jobNames(workflow)).toEqual(['docs-commands']);
+    expect(workflow).toContain(
+      'node tools/docs-run/src/index.ts apps/docs/content/en/guides apps/docs/content/en/quick-start',
+    );
+    expect(workflow).toContain('quickstart/stack.sh up odudu-smoke-odudu 3195');
+    expect(workflow).toContain('ODUDU_BASE=http://localhost:3195');
+    expect(workflow).toMatch(/if: always\(\)\n\s+run: quickstart\/stack\.sh down/u);
+  });
 });

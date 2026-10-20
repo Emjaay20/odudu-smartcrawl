@@ -8,10 +8,23 @@ export interface Result {
   readonly failure?: string;
 }
 
+export interface ExecOptions {
+  readonly timeoutSeconds?: number;
+}
+
 type Exec = (
   command: string,
   env: Record<string, string>,
+  options: ExecOptions,
 ) => Promise<{ status: number; output: string }>;
+
+function failureOf(block: RunnableBlock, status: number, output: string): string | undefined {
+  const where = `${block.file}:${String(block.line)}`;
+  if (status !== 0) return `${where}: exit ${String(status)}\n${output}`;
+  const missing = block.expect.find((text) => !output.includes(text));
+  if (missing !== undefined) return `${where}: output does not contain "${missing}"\n${output}`;
+  return undefined;
+}
 
 /**
  * Runs each file's blocks in document order and stops that file at its first
@@ -23,15 +36,10 @@ export async function runBlocks(blocks: readonly RunnableBlock[], exec: Exec): P
   const failed = new Set<string>();
   for (const block of blocks) {
     if (failed.has(block.file)) continue;
-    const { status, output } = await exec(block.command, { ...block.env });
-    const where = `${block.file}:${String(block.line)}`;
-    const missing = block.expect.find((text) => !output.includes(text));
-    const failure =
-      status !== 0
-        ? `${where}: exit ${String(status)}\n${output}`
-        : missing !== undefined
-          ? `${where}: output does not contain "${missing}"\n${output}`
-          : undefined;
+    const options: ExecOptions =
+      block.timeoutSeconds === undefined ? {} : { timeoutSeconds: block.timeoutSeconds };
+    const { status, output } = await exec(block.command, { ...block.env }, options);
+    const failure = failureOf(block, status, output);
     if (failure === undefined) {
       results.push({ file: block.file, line: block.line, ok: true, output });
     } else {

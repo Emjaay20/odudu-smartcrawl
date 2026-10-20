@@ -24,7 +24,8 @@ describe('extractRunnable', () => {
         line: 3,
         command: 'echo hi',
         expect: ['signed in', 'ok'],
-        env: { ODUDU_DOCS_RUN_TIMEOUT_S: '30' },
+        env: {},
+        timeoutSeconds: 30,
       },
     ]);
   });
