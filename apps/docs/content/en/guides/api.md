@@ -8,7 +8,7 @@ sidebar_position: 7
 
 Callers reach your API with an access token in the `Authorization` header. Your API's job is to decide, on its own and without asking Odudu each time, whether to trust it. You will get a token to test with, read it, find the keys that sign it and run the checks your API runs.
 
-You need the stack from the [quick start](../quick-start/index.md) with its `demo` tenant. Run the commands in the folder that holds `compose.yaml`, in bash or zsh, with `curl` and `openssl` installed.
+You need the stack from the [quick start](../quick-start/index.mdx) with its `demo` tenant. Run the commands in the folder that holds `compose.yaml`, in bash or zsh, with `curl` and `openssl` installed.
 
 ## 1. Point the commands at your server
 

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { DOCS_ROOT } from '#docs/tests/support/dist.ts';
 
 const FRONT_MATTER = /^---\n[\s\S]*?\n---\n/u;
-const source = readFileSync(path.join(DOCS_ROOT, 'content/en/quick-start/index.md'), 'utf8');
+const source = readFileSync(path.join(DOCS_ROOT, 'content/en/quick-start/index.mdx'), 'utf8');
 const nodes = fromMarkdown(source.replace(FRONT_MATTER, '')).children;
 
 type Node = (typeof nodes)[number];
@@ -74,5 +74,20 @@ describe('the quick start', () => {
     expect(removal).toBeGreaterThan(logs);
     const prose = toString(nodes[removal - 1]);
     expect(prose).toMatch(/log/iu);
+  });
+
+  it('makes no claim about how long it takes, which nothing measures', () => {
+    expect(source).not.toMatch(/\b(ten|10|few|five|\d+) minutes?\b/iu);
+  });
+
+  it('gives every setup step a Console and a Command line tab, the console first', () => {
+    const tabs = [...source.matchAll(/<Tabs[^>]*>([\s\S]*?)<\/Tabs>/gu)].map(
+      (match) => match[1] ?? '',
+    );
+    expect(tabs.length).toBeGreaterThanOrEqual(4);
+    for (const body of tabs) {
+      const labels = [...body.matchAll(/<TabItem [^>]*label="([^"]+)"/gu)].map((m) => m[1]);
+      expect(labels).toEqual(['Console', 'Command line']);
+    }
   });
 });

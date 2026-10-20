@@ -1,0 +1,34 @@
+{
+  "sign-in-tenant": {
+    "width": 1100,
+    "height": 820
+  },
+  "sign-in": {
+    "width": 1100,
+    "height": 820
+  },
+  "new-tenant": {
+    "width": 1100,
+    "height": 820
+  },
+  "new-client": {
+    "width": 1100,
+    "height": 820
+  },
+  "clients": {
+    "width": 1100,
+    "height": 820
+  },
+  "new-subject": {
+    "width": 1100,
+    "height": 820
+  },
+  "subjects": {
+    "width": 1100,
+    "height": 820
+  },
+  "issue-password": {
+    "width": 1100,
+    "height": 820
+  }
+}

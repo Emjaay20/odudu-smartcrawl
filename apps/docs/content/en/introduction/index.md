@@ -13,7 +13,7 @@ Odudu is not ready for production yet. It runs as one instance, and the [roadmap
 
 ## Where to start
 
-1. **Run it.** The [quick start](../quick-start/index.md) gets a server running and you signed in to its console, then signs a person in to an app. It takes about ten minutes.
+1. **Run it.** The [quick start](../quick-start/index.mdx) gets a server running and you signed in to its console, then signs a person in to an app. It takes about ten minutes.
 2. **Connect your app.** Pick the [guide](../guides/index.md) for what you are building: a web app, a single-page app, an API or a service. A guide ends with a working sign-in.
 3. **Learn the ideas.** [Concepts](../concepts/index.md) explains tenants, clients, tokens and sessions, once you have seen them work.
 

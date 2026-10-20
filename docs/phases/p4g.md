@@ -2102,3 +2102,32 @@ https://www.rfc-editor.org/rfc/rfc8414.txt | grep -m2 oauth-authorization-server
 - **Left for the example applications.** Each integration guide ends at a working sign-in done with
   `curl`, playing the browser. The example application of its kind arrives with the increments that build
   them and adds its section to the guide.
+
+## Increment 24b: the quick start through the console
+
+- **Tabs.** `quick-start/index.mdx` (the first `.mdx` page) gives each setup step a Console and a Command
+  line tab, `groupId="route"`, the console first. The command-line tabs are the runnable blocks as
+  before (59, run by docs-run). The llms plugin already turns tabs into bold labels and drops components;
+  `plugins/agent-mdx.ts` drops the import lines it leaves, `llms.test.ts` fails on an import or component
+  tag in an `.mdx` page's copy, and the copy keeps no screenshot. A fence inside a tab sits at column 0
+  between blank lines, which `extractRunnable` reads unchanged.
+- **What the console does differently.** It cannot choose a person's password: `POST /subjects` writes an
+  `update-password` action by rule, and the Credentials tab issues a one-time password. The page says so in
+  one sentence and the roadmap places it as a decision. Creating a tenant is two steps in the console (the
+  tenant, then its first administrator); the tenant exists after the first, which the page states. The
+  console's sign-in first asks which tenant you administer (`system`), which the old page never said.
+- **Names.** Every bold name on the page must be defined in the console's sources or the sign-in
+  messages (`console-labels.test.ts`; a template such as `Enter ${name}` defines "Enter demo").
+- **Captures.** `pnpm docs:screenshots` (`apps/docs/scripts/console-shots/`): `screens.ts` is the list a
+  later page extends; `capture.ts` signs in as the stack's administrator (`ODUDU_BASE`,
+  `ODUDU_ADMIN_EMAIL`, `ODUDU_ADMIN_PASSWORD`, so a generated, not yet changed password is refused),
+  creates `demo`, `my-app` and `ada` through the console itself when they are missing, checks each
+  screen's expected headings and controls, and writes a light and a dark WebP (Chromium's canvas encodes
+  them) with `manifest.json` to `static/console/`. `guard.ts` refuses a capture that shows the given
+  password, a filled password field, a dialog saying "the only time ... is shown", or a banner password
+  line. `ConsoleShot` shows the capture of the page's theme, sized, lazy, with alt text and a caption;
+  `console-shots.test.ts` ties pages, screens and files together. verified: a run against the quickstart
+  stack on port 3195 wrote 16 files, twice (the second run found the data and skipped creating it).
+- **Not done.** The guides' own registration steps stay command-line only, and the capture is not yet a
+  CI job (the tour increment wires it, with the e2e stack).
+- `.webp` joins the types the docs route serves (`DOCS_TYPES`).

@@ -85,7 +85,10 @@ describe('the information architecture', () => {
 
   it('gives every section at least one page that exists', () => {
     for (const section of SECTIONS) {
-      expect(existsSync(path.join(CONTENT, `${section.id}.md`)), section.id).toBe(true);
+      const found = ['.md', '.mdx'].some((extension) =>
+        existsSync(path.join(CONTENT, `${section.id}${extension}`)),
+      );
+      expect(found, section.id).toBe(true);
     }
   });
 

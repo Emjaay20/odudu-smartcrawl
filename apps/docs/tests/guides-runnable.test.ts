@@ -7,7 +7,7 @@ import { DOCS_ROOT } from '#docs/tests/support/dist.ts';
 // The pages whose commands the docs-run job executes. The journey guides
 // excerpt recorded transcripts instead, and tests/journeys.test.ts holds them.
 const PAGES = [
-  'quick-start/index.md',
+  'quick-start/index.mdx',
   'guides/web-app.md',
   'guides/single-page-app.md',
   'guides/api.md',

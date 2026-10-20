@@ -8,7 +8,7 @@ sidebar_position: 6
 
 A single-page app runs in the person's browser, so anything you put in it can be read. It cannot keep a secret. That makes it a public client: instead of a secret it uses PKCE, a one-time proof that only the app that started a sign-in can finish it. You will register the app, check that its browser may call Odudu, and sign a person in.
 
-You need the stack from the [quick start](../quick-start/index.md), with its `demo` tenant and its user `ada`. Run the commands in the folder that holds `compose.yaml`, in bash or zsh, with `curl` and `openssl` installed. Mobile apps follow the same steps.
+You need the stack from the [quick start](../quick-start/index.mdx), with its `demo` tenant and its user `ada`. Run the commands in the folder that holds `compose.yaml`, in bash or zsh, with `curl` and `openssl` installed. Mobile apps follow the same steps.
 
 ## 1. Point the commands at your server
 

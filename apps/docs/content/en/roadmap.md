@@ -344,6 +344,12 @@ session lifecycle. A citation of either half here means that half.
   give every client column two doors to keep in step.
 - **SAML, LDAP federation, identity brokering, authorization services.**
   P6–P9.
+- **Choosing a person's password in the console or the admin API.** A
+  decision: `POST /subjects` writes an `update-password` action so that no
+  operator handles a password, and the console's Credentials tab issues a
+  one-time password instead. `odudu seed user --password` is the bootstrap
+  exception, so the quick start's console route and its command-line route
+  leave `ada` with different passwords.
 - **SCIM 2.0 inbound provisioning, and moving more than the 10,000
   subjects a tenant export carries.** P7. An export refuses a tenant above
   that size and names inbound provisioning as the tool for it.

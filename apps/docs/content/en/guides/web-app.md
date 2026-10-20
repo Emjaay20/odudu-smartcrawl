@@ -8,7 +8,7 @@ sidebar_position: 5
 
 Your web app has a server, and the server can keep a secret. That makes it a confidential client: it proves who it is to Odudu when it swaps a sign-in code for tokens. You will register the app, send a person to Odudu, and finish with their ID token in your hands.
 
-You need the stack from the [quick start](../quick-start/index.md), with its `demo` tenant and its user `ada`. Run the commands in the folder that holds `compose.yaml`, in bash or zsh, with `curl` and `openssl` installed.
+You need the stack from the [quick start](../quick-start/index.mdx), with its `demo` tenant and its user `ada`. Run the commands in the folder that holds `compose.yaml`, in bash or zsh, with `curl` and `openssl` installed.
 
 ## 1. Point the commands at your server
 

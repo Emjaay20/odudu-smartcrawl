@@ -41,12 +41,24 @@ export function routeOfCopy(entry: Entry, target: Target): string {
 
 export function sourceOf(contentDir: string, copy: string): string | null {
   const stem = copy.replace(/\.md$/u, '');
-  const candidates = [`${stem}.md`, `${stem}/index.md`];
+  const candidates = [`${stem}.md`, `${stem}.mdx`, `${stem}/index.md`, `${stem}/index.mdx`];
   return candidates.find((candidate) => existsSync(path.join(contentDir, candidate))) ?? null;
 }
 
+// What the copy of an MDX page keeps: its tabs as bold labels, no components,
+// no imports.
+function asMarkdown(text: string): string {
+  return text
+    .replace(/^import .+;$/gmu, '')
+    .replace(/<ConsoleShot[\s\S]*?\/>/gu, '')
+    .replace(/<\/?Tabs[^>]*>/gu, '')
+    .replace(/<TabItem [^>]*label="([^"]+)"[^>]*>/gu, '**$1**')
+    .replace(/<\/TabItem>/gu, '');
+}
+
 export function readSource(contentDir: string, relative: string): string {
-  return readFileSync(path.join(contentDir, relative), 'utf8');
+  const text = readFileSync(path.join(contentDir, relative), 'utf8');
+  return relative.endsWith('.mdx') ? asMarkdown(text) : text;
 }
 
 export const CONTENT_DIR = path.join(DOCS_ROOT, 'content/en');

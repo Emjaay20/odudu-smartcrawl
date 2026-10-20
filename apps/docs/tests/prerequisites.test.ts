@@ -1,12 +1,15 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { DOCS_ROOT } from '#docs/tests/support/dist.ts';
 
 const REPO = path.resolve(DOCS_ROOT, '../..');
 const read = (relative: string): string => readFileSync(path.join(REPO, relative), 'utf8');
-const page = (name: string): string =>
-  readFileSync(path.join(DOCS_ROOT, 'content/en', name, 'index.md'), 'utf8');
+const page = (name: string): string => {
+  const directory = path.join(DOCS_ROOT, 'content/en', name);
+  const file = existsSync(path.join(directory, 'index.md')) ? 'index.md' : 'index.mdx';
+  return readFileSync(path.join(directory, file), 'utf8');
+};
 
 const manifest = JSON.parse(read('package.json')) as {
   packageManager: string;

@@ -10,4 +10,4 @@ Odudu means "authority" in Ibibio, a language of Akwa Ibom, Nigeria.
 
 An identity provider holds authority on behalf of the people who run it. It decides who someone is, what an app may do for them, and when that stops. You run Odudu, you keep its data, and you decide who signs in.
 
-Continue to [how Odudu compares with other identity providers](./compare.md), or go straight to the [quick start](../quick-start/index.md).
+Continue to [how Odudu compares with other identity providers](./compare.md), or go straight to the [quick start](../quick-start/index.mdx).

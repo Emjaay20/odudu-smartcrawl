@@ -1,0 +1,29 @@
+.shot {
+  margin-block: 1.25rem;
+}
+
+.shot img {
+  display: block;
+  max-inline-size: 100%;
+  block-size: auto;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 6px;
+}
+
+.dark {
+  display: none !important;
+}
+
+:global([data-theme='dark']) .light {
+  display: none !important;
+}
+
+:global([data-theme='dark']) .dark {
+  display: block !important;
+}
+
+.shot figcaption {
+  margin-block-start: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--ifm-color-emphasis-700);
+}

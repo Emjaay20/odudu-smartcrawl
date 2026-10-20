@@ -6,6 +6,7 @@ import llms from 'docusaurus-plugin-llms';
 import { MACHINE_READABLE_REFERENCES } from '../nav';
 import { parseEntries } from './agent-entries';
 import { rewriteLinks, type LinkTarget } from './agent-links';
+import { dropImports } from './agent-mdx';
 import { dropRepeatedTitle } from './agent-title';
 import { appendReferences } from './agent-references';
 
@@ -21,8 +22,8 @@ const FIRST_SECTION = /\n\n(?=## )/u;
 
 function sourceOf(docsRoot: string, copy: string): string {
   const stem = copy.replace(/\.md$/u, '');
-  const found = [`${stem}.md`, `${stem}/index.md`].find((candidate) =>
-    existsSync(path.join(docsRoot, candidate)),
+  const found = [`${stem}.md`, `${stem}.mdx`, `${stem}/index.md`, `${stem}/index.mdx`].find(
+    (candidate) => existsSync(path.join(docsRoot, candidate)),
   );
   if (found === undefined) throw new Error(`No source page for the Markdown copy ${copy}`);
   return found;
@@ -61,7 +62,7 @@ export default function agentCopies(
       for (const { copy, title } of copies) {
         const file = path.join(outDir, copy);
         const source = sources.get(copy) ?? '';
-        const text = dropRepeatedTitle(await readFile(file, 'utf8'), title, 1);
+        const text = dropRepeatedTitle(dropImports(await readFile(file, 'utf8')), title, 1);
         await writeFile(file, rewriteLinks(text, source, target));
       }
 
@@ -82,7 +83,7 @@ export default function agentCopies(
           );
         }
         return rewriteLinks(
-          dropRepeatedTitle(section, entry.title, 2),
+          dropRepeatedTitle(dropImports(section), entry.title, 2),
           sources.get(entry.copy) ?? '',
           target,
         );

@@ -43,7 +43,7 @@ curl -fsS "$TENANT/.well-known/openid-configuration" | sed -E 's/,"/,\n"/g' | gr
 
 ## 3. Rebuild a realm's roles and groups
 
-You need the stack from the [quick start](../quick-start/index.md), with its `demo` tenant and its user `ada`, and you run these in the folder that holds `compose.yaml`. This stands in for a realm with one role, one group that carries it and one member.
+You need the stack from the [quick start](../quick-start/index.mdx), with its `demo` tenant and its user `ada`, and you run these in the folder that holds `compose.yaml`. This stands in for a realm with one role, one group that carries it and one member.
 
 Create the role.
 

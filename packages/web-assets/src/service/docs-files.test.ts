@@ -38,6 +38,7 @@ describe('what the documentation is served as', () => {
     expect(DOCS_TYPES['.txt']).toBe('text/plain; charset=utf-8');
     expect(DOCS_TYPES['.md']).toBe('text/markdown; charset=utf-8');
     expect(DOCS_TYPES['.js']).toBe('text/javascript; charset=utf-8');
+    expect(DOCS_TYPES['.webp']).toBe('image/webp');
   });
 
   it('bounds the tree at 5,000 files and 64 MiB', () => {

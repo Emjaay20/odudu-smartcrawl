@@ -8,7 +8,7 @@ sidebar_position: 8
 
 Some callers are not people: a nightly job, a backend that calls another backend. They sign in as themselves, with a secret, and get a token that stands for the service. You will register a service, get a token and read it.
 
-You need the stack from the [quick start](../quick-start/index.md) with its `demo` tenant. Run the commands in the folder that holds `compose.yaml`, in bash or zsh, with `curl` and `openssl` installed.
+You need the stack from the [quick start](../quick-start/index.mdx) with its `demo` tenant. Run the commands in the folder that holds `compose.yaml`, in bash or zsh, with `curl` and `openssl` installed.
 
 ## 1. Point the commands at your server
 

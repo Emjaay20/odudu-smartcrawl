@@ -145,7 +145,14 @@ describe('the image build', () => {
 });
 
 describe('the documentation sources', () => {
-  it('has no .mdx page, whose Markdown copy would keep its imports and lose its components', () => {
-    expect(walk(CONTENT_DIR).filter((file) => file.endsWith('.mdx'))).toEqual([]);
+  it('keeps no import line and no component tag in the copy of an .mdx page', () => {
+    const pages = walk(CONTENT_DIR).filter((file) => file.endsWith('.mdx'));
+    expect(pages.length).toBeGreaterThan(0);
+    const dirty = pages.flatMap((file) => {
+      const relative = path.relative(CONTENT_DIR, file).replace(/(\/index)?\.mdx$/u, '.md');
+      const copy = readFileSync(path.join(distDir('pages'), relative), 'utf8');
+      return /^import |<(Tabs|TabItem|ConsoleShot)\b/mu.test(copy) ? [relative] : [];
+    });
+    expect(dirty).toEqual([]);
   });
 });
