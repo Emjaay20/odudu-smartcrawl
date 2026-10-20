@@ -2053,3 +2053,45 @@ The other variants are `p4g-docs/22b-{before,after}-{home,console,reference,tran
   README, CLAUDE, NEXT, the ADRs, phase notes, specs, the archive and the site source. Source
   comments cite the page, not the directory. NEXT's localization row and sentence say the catalogue
   mechanism exists and name what P4b and P4h still own.
+
+## Increment 24: the introduction, the quick start and the integration guides
+
+- **Pages.** `introduction/{index,odudu,compare}`, `quick-start`, and in `guides/` the web app, the
+  single-page app, the API, the service and Keycloak guides. The introduction's two sub-pages sit in a
+  collapsed category under Introduction so they have a sidebar and a breadcrumb (`seo-html.test.ts`
+  requires both of every docs page). `compare.md` links no site outside the repository, because the
+  image build allows no anchor to another origin (`csp.test.ts`); the four projects are named in a
+  table that says "see their documentation".
+- **Runnable.** 59 commands carry `sh {run}`; `MINIMUM_BLOCKS` is 59. `docs-commands.yml` runs the quick
+  start before the guides, since it makes the `demo` tenant and `ada`, and exports `COMPOSE_FILE` (an
+  absolute path) and `COMPOSE_PROJECT_NAME` so `docker compose exec odudu ...` in a guide finds the CI
+  stack as it finds a reader's. `quickstart/stack.sh` unsets `COMPOSE_FILE` because it runs in its own
+  directory. verified: `quickstart/stack.sh up odudu-p4g24:latest 3195` on a fresh volume, then
+  `node tools/docs-run/src/index.ts apps/docs/content/en/quick-start apps/docs/content/en/guides`:
+  `59 runnable blocks, 0 failed`.
+- **Found while running them.**
+  - `docker compose exec odudu odudu seed ...` failed on the quickstart stack: its configuration is
+    `quickstart.env` on the state volume, read through `node --env-file=` by the server's own command, not
+    in the container's environment. `infra/docker/odudu` now loads that file when it exists, and sets
+    `NODE_NO_WARNINGS` so a command's output is not led by two experimental-API warnings
+    (`tests/lint/odudu-shim.test.ts`).
+  - `docker compose exec` reads standard input, so a block that ran it swallowed the rest of the session's
+    script. The runner gives each block empty standard input (`session.test.ts`).
+  - `seed client --client-secret` with no `--redirect-uri` surfaced the CHECK
+    `client_oidc_config_redirect_uris_present` as a raw database stack trace. It is now
+    `seed_invalid_options` naming `--redirect-uri` and the `--grant-type client_credentials` alone that a
+    service client uses (`seed.int.test.ts`).
+  - The seed examples for `--group` read `staff`, which the command refuses (`no group at path "staff"`):
+    a group is addressed by its path, `/staff`. The registry examples, and so the generated command
+    reference, now say so (`registry.test.ts`).
+  - The runner ignored an attribute it could not read: an `expect=` without quotes asserted nothing.
+    `extractRunnable` now refuses it. Prettier also rewrites a backslash-escaped quote in a fence's info
+    string, so no `expect` text holds a double quote.
+- **Not written.** A guide for protecting an MCP server. verified: `curl
+  $ODUDU_BASE/.well-known/oauth-authorization-server/tenants/demo` answers 404 and the demo tenant's
+  discovery document names no `registration_endpoint` (registration is closed until a tenant's policy or a
+  registration token opens it). The plan names the guide in the increment's preface but not in the task's
+  file list; it needs a decision on where the gap is placed before a page can describe it.
+- **Left for the example applications.** Each integration guide ends at a working sign-in done with
+  `curl`, playing the browser. The example application of its kind arrives with the increments that build
+  them and adds its section to the guide.

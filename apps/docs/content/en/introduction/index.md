@@ -9,21 +9,23 @@ Odudu is an OpenID Connect and OAuth 2.0 identity provider that you run yourself
 
 You will get the most from it if you build or run apps that need people to sign in: a web app, a single-page app, an API, or a service that calls another service.
 
-## How to read these pages
+Odudu is not ready for production yet. It runs as one instance, and the [roadmap](../roadmap.md) lists what is missing and which phase brings it. Try it, build against it and tell us what you find.
 
-The pages follow the order you will need them in.
+## Where to start
 
-1. [Quick start](../quick-start/index.md) gets a server running and you signed in to its console.
-2. [Guides](../guides/index.md) follow one journey each, with real requests and the answers that came back:
-   - [Sign a user in](../guides/sign-a-user-in.md)
-   - [Refresh and end a session](../guides/refresh-and-end-a-session.md)
-   - [An admin signs in and changes a user](../guides/admin-signs-in-and-changes-a-user.md)
-   - [Read a refusal](../guides/read-a-refusal.md)
-3. [Concepts](../concepts/index.md) explain the ideas the guides rely on: tenants, clients, tokens and sessions.
-4. [Admin console](../admin-console/index.md) shows what the console manages.
-5. [Operating Odudu](../operating/index.md) is for the person who deploys it.
-6. [Reference](../reference/index.md) is where you look things up, and where the full recorded transcripts live.
+1. **Run it.** The [quick start](../quick-start/index.md) gets a server running and you signed in to its console, then signs a person in to an app. It takes about ten minutes.
+2. **Connect your app.** Pick the [guide](../guides/index.md) for what you are building: a web app, a single-page app, an API or a service. A guide ends with a working sign-in.
+3. **Learn the ideas.** [Concepts](../concepts/index.md) explains tenants, clients, tokens and sessions, once you have seen them work.
 
-The [roadmap](../roadmap.md) says what Odudu does not do yet. [Security](../security/index.md) says how Odudu protects what it holds. [Contributing](../contributing/index.md) is for building Odudu from source.
+## Read more about Odudu
 
-<!-- filled by Increment 24 -->
+- [The name Odudu](./odudu.md) says where the name comes from.
+- [Odudu next to other identity providers](./compare.md) says what Odudu does today, what it does not, and where to read about the alternatives.
+
+## Where everything else is
+
+- [Admin console](../admin-console/index.md) shows what the console manages.
+- [Operating Odudu](../operating/index.md) is for the person who deploys it.
+- [Reference](../reference/index.md) is where you look things up, and where the full recorded transcripts live.
+- [Security](../security/index.md) says how Odudu protects what it holds.
+- [Contributing](../contributing/index.md) is for building Odudu from source.

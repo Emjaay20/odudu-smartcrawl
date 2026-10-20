@@ -3,8 +3,6 @@ import { SECTIONS } from './nav';
 
 type SidebarItemConfig = Extract<SidebarsConfig[string], readonly unknown[]>[number];
 
-const START_HERE = ['introduction/index', 'quick-start/index'];
-
 function section(id: string): (typeof SECTIONS)[number] {
   const found = SECTIONS.find((candidate) => candidate.id === id);
   if (found === undefined) throw new Error(`nav.ts has no section ${id}`);
@@ -43,7 +41,10 @@ export const SIDEBAR_ITEMS: SidebarItemConfig[] = [
     label: 'Start here',
     collapsible: false,
     collapsed: false,
-    items: START_HERE.map(page),
+    items: [
+      directory(section('introduction/index').label, 'introduction'),
+      page('quick-start/index'),
+    ],
   },
   directory(section('guides/index').label, 'guides'),
   page('concepts/index'),

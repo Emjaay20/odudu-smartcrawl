@@ -7,20 +7,21 @@ description: Sign users in from a web app, a single-page app, an API or a machin
 
 Sign users in from a web app, a single-page app, an API or a machine.
 
-## The journeys
+The guides assume you have done the [quick start](../quick-start/index.md), so a stack is running with its `demo` tenant. Their commands run in bash or zsh, in the folder that holds `compose.yaml`, with `curl` and `openssl` installed. Every command is the one that was run, and each guide ends with a working sign-in or a token in your hands.
 
-Read these in order. Each shows trimmed pieces of a real run and links to the full recording.
+## Pick the one for what you are building
+
+1. [A web app with a server](./web-app.md) keeps a secret, so it is a confidential client and proves who it is when it swaps the sign-in code.
+2. [A single-page app or a mobile app](./single-page-app.md) cannot keep a secret, so it is a public client and uses PKCE alone.
+3. [An API](./api.md) receives access tokens and decides whether to trust them.
+4. [A service calling a service](./machine-to-machine.md) has no person to sign in, so it signs in as itself.
+5. [Coming from Keycloak](./keycloak.md) maps its ideas to Odudu's and says what does not move.
+
+## Then learn what happens underneath
+
+Each of these follows one journey and shows trimmed pieces of a real run, with a link to the full recording.
 
 1. [Sign a user in](./sign-a-user-in.md): send a person to Odudu and get tokens back.
 2. [Refresh and end a session](./refresh-and-end-a-session.md): keep a person signed in, catch a stolen refresh token and sign them out.
 3. [An admin signs in and changes a user](./admin-signs-in-and-changes-a-user.md): sign in to the console and make a safe change.
 4. [Read a refusal](./read-a-refusal.md): what an error looks like and why it happened.
-
-## Pick the one for what you are building
-
-- **A single-page app or a mobile app.** It has no secret to keep, so it is a public client. Start with [Sign a user in](./sign-a-user-in.md), which uses one.
-- **A web app with a server.** It keeps a secret, so it is a confidential client and proves who it is when it swaps the code. The flow is the same; see [Path A as a confidential client](../reference/transcripts/request-paths/path-a-as-a-confidential-client.md).
-- **An API.** It receives access tokens and checks them. Sign a user in to get one, then see [token introspection and revocation](../reference/transcripts/request-paths/rp-initiated-logout.md#token-introspection-and-revocation).
-- **A machine or a service.** No person signs in. See [client credentials](../reference/transcripts/request-paths/path-c-client_credentials.md), and [token exchange](../reference/transcripts/request-paths/path-d-token-exchange.md) for acting on behalf of someone.
-
-<!-- filled by Increment 24 -->

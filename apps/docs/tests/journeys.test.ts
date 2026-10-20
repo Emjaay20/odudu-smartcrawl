@@ -76,19 +76,23 @@ function stepsOf(file: string): Step[] {
   return steps;
 }
 
-const journeyPages = readdirSync(GUIDES)
-  .filter((name) => name.endsWith('.md') && name !== 'index.md')
-  .map((name) => path.join(GUIDES, name));
+// The guides that follow one recorded run. The other pages in the directory
+// teach by commands a reader runs, held by the docs-run job instead.
+const JOURNEYS = [
+  'admin-signs-in-and-changes-a-user',
+  'read-a-refusal',
+  'refresh-and-end-a-session',
+  'sign-a-user-in',
+];
+const journeyPages = JOURNEYS.map((name) => path.join(GUIDES, `${name}.md`));
 const steps = journeyPages.flatMap((file) => stepsOf(file));
 
 describe('the journey guides', () => {
   it('has the journeys the adopter needs and enough steps to be a check', () => {
-    expect(journeyPages.map((file) => path.basename(file, '.md')).sort()).toEqual([
-      'admin-signs-in-and-changes-a-user',
-      'read-a-refusal',
-      'refresh-and-end-a-session',
-      'sign-a-user-in',
-    ]);
+    const onDisk = readdirSync(GUIDES)
+      .filter((name) => name.endsWith('.md') && name !== 'index.md')
+      .map((name) => path.basename(name, '.md'));
+    expect(onDisk.filter((name) => JOURNEYS.includes(name)).sort()).toEqual(JOURNEYS);
     expect(steps.flatMap((step) => step.blocks).length).toBeGreaterThan(25);
   });
 
