@@ -2131,3 +2131,30 @@ https://www.rfc-editor.org/rfc/rfc8414.txt | grep -m2 oauth-authorization-server
 - **Not done.** The guides' own registration steps stay command-line only, and the capture is not yet a
   CI job (the tour increment wires it, with the e2e stack).
 - `.webp` joins the types the docs route serves (`DOCS_TYPES`).
+
+### Increment 24b, fix round
+
+- **Names.** `console-labels.test.ts` is a table: each bold name on the page, the one console file that
+  renders it and the exact text there; a template (`Create ${noun}`) lists the file that binds each part and
+  is expanded, with no wildcard. A name not in the table fails; a console label renamed fails (mutation
+  checked with `label="Kind"` renamed, and with "Create a widget" on the page).
+- **Capture safety.** The guard now scans all text nodes (hidden ones too), every attribute value and every
+  field for the given strings, a token with the length and alphabet of a generated secret (mixed case, a digit,
+  few hyphens, UUIDs removed), the shown-once sentence anywhere, and the banner line; it is given the admin
+  password and any admin username other than the published default. The rail's "Signed in as" is rewritten to
+  the published default, the stack's origin to `http://localhost:3000`, and every time to "just now". The
+  secret-issuing requests (`POST .../subjects/{id}/password`, `.../clients/{id}/secret`) are aborted and fail
+  the capture; a run that clicked **Issue password** failed with the request named (mutation checked), a
+  guard with the token rule removed failed its test, and a token appended to a record failed
+  `console-shots.test.ts`. The run refuses a host other than this machine, and the lists must hold exactly
+  `odudu-admin` and `my-app`, and `ada`.
+- **A record beside the images.** `record/<screen>-<theme>.txt` holds the text each page held, committed, and
+  scanned by a test for the shapes above, for the rows and for the published origin.
+- **Not byte-identical.** Two captures of one screen differ in a few pixels from run to run (a flake of one
+  to three of sixteen images in repeated runs; a settle wait, `animations: 'disabled'`, a hidden caret and
+  a moved mouse did not remove it, the last made it worse). The records are identical, so `--check` compares
+  records and the manifest, and says so.
+- **Minor, not done.** A narrower viewport for larger text on screen (the images are 1100 px wide in a column
+  of about 750; a smaller capture changes every layout and every alt text, left for the tour increment, which
+  owns the capture and its CI job); no-JavaScript readers see the first tab only, and a dark-OS reader without
+  JavaScript sees the light image (standard Docusaurus tabs; the agent copies carry both routes).

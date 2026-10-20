@@ -1,0 +1,40 @@
+Sign in
+odudu
+Sign in
+to continue to 
+Odudu administration
+system
+Username 
+Password 
+Sign in
+Sign in with a passkey
+<p>Signing in with a passkey needs JavaScript, because only the browser can talk to your authenticator. Use your username and password above.</p>
+const form = document.getElementById('passkey-form');
+const field = document.getElementById('passkey-assertion');
+const failure = document.getElementById('passkey-error');
+const fromBase64Url = (value) =>
+  Uint8Array.from(atob(value.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
+form.addEventListener('submit', async (event) => {
+  if (field.value !== '') return;
+  event.preventDefault();
+  failure.hidden = true;
+  try {
+    const offered = await fetch('/tenants/system/login-actions/passkey-challenge', {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ auth_session_id: form.auth_session_id.value }),
+    });
+    if (!offered.ok) throw new Error(form.dataset.notOffered);
+    const options = await offered.json();
+    const assertion = await navigator.credentials.get({
+      publicKey: { ...options, challenge: fromBase64Url(options.challenge) },
+    });
+    field.value = JSON.stringify(assertion.toJSON());
+    form.submit();
+  } catch (caught) {
+    const reason = caught && caught.message ? caught.message : form.dataset.cancelled;
+    failure.textContent = form.dataset.failed.replace('{reason}', () => reason);
+    failure.hidden = false;
+  }
+});
+window.addEventListener('pageshow', function (event) { if (event.persisted) location.reload(); });

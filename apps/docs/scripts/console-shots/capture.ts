@@ -7,11 +7,17 @@ import type { Context, Expectation, Screen } from './screen.ts';
 export const THEMES = ['light', 'dark'] as const;
 export type Theme = (typeof THEMES)[number];
 
+// What the quick start's pages say, whatever port the stack was reached on.
+export const PUBLISHED_ORIGIN = 'http://localhost:3000';
+export const PUBLISHED_ADMIN = 'admin@odudu.local';
+
 export interface Options {
   readonly base: string;
   readonly adminUsername: string;
   readonly adminPassword: string;
   readonly outDir: string;
+  // A text sidecar per capture: what the page held, scanned again by a test.
+  readonly recordDir: string;
   readonly width?: number;
   readonly height?: number;
 }
@@ -22,17 +28,22 @@ export interface ManifestEntry {
 }
 
 const QUALITY = 0.86;
+// Requests that would make the console show a secret once: issuing a person a
+// one-time password, and issuing or rotating a client secret.
+export const SECRET_REQUEST = /\/(subjects|clients)\/[^/]+\/(password|secret)$/u;
+
+async function rowsOf(page: Page): Promise<string[]> {
+  return page.evaluate(() =>
+    [...document.querySelectorAll('[role=row], tr')]
+      .filter((row) => row.querySelector('[role=columnheader], th') === null)
+      .map((row) => (row as HTMLElement).innerText.replace(/\s+/gu, ' ').trim()),
+  );
+}
 
 async function expectShown(page: Page, screen: Screen): Promise<void> {
-  const locate = (expectation: Expectation): ReturnType<Page['locator']> =>
-    'heading' in expectation
-      ? page.getByRole('heading', { name: expectation.heading, exact: true }).first()
-      : 'label' in expectation
-        ? page.getByLabel(expectation.label, { exact: true }).first()
-        : page.getByRole(expectation.role, { name: expectation.name, exact: true }).first();
   for (const expectation of screen.expect) {
     try {
-      await locate(expectation).waitFor({ timeout: 10_000 });
+      await check(page, expectation);
     } catch {
       throw new Error(
         `screen ${screen.name}: the console does not show ${JSON.stringify(expectation)}`,
@@ -41,19 +52,75 @@ async function expectShown(page: Page, screen: Screen): Promise<void> {
   }
 }
 
+async function check(page: Page, expectation: Expectation): Promise<void> {
+  if ('rows' in expectation) {
+    const rows = await rowsOf(page);
+    const matched = expectation.rows.every(
+      (text) => rows.filter((row) => row.includes(text)).length === 1,
+    );
+    if (!matched || rows.length !== expectation.rows.length) {
+      throw new Error(`rows are ${JSON.stringify(rows)}`);
+    }
+    return;
+  }
+  const locator =
+    'heading' in expectation
+      ? page.getByRole('heading', { name: expectation.heading, exact: true }).first()
+      : 'label' in expectation
+        ? page.getByLabel(expectation.label, { exact: true }).first()
+        : page.getByRole(expectation.role, { name: expectation.name, exact: true }).first();
+  await locator.waitFor({ timeout: 10_000 });
+}
+
+// The page as a reader of the quick start sees it: the stack's own address is
+// the published one, the administrator is the default one, and every time
+// reads "just now", so the same console gives the same bytes.
+async function present(page: Page, options: Options): Promise<void> {
+  await page.evaluate(
+    ({ origin, published, admin, publishedAdmin }) => {
+      // A blinking caret is the one thing that moves in a still page.
+      document.documentElement.style.caretColor = 'transparent';
+      // A time reads differently on every run, and its width moves the columns.
+      for (const time of document.querySelectorAll('time')) time.textContent = 'just now';
+      const replace = (text: string): string =>
+        text.replaceAll(origin, published).replaceAll(admin, publishedAdmin);
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+        node.nodeValue = replace(node.nodeValue ?? '');
+      }
+      for (const field of document.querySelectorAll('input:not([type=password]), textarea')) {
+        (field as HTMLInputElement).value = replace((field as HTMLInputElement).value);
+      }
+    },
+    {
+      origin: options.base,
+      published: PUBLISHED_ORIGIN,
+      admin: options.adminUsername,
+      publishedAdmin: PUBLISHED_ADMIN,
+    },
+  );
+}
+
 async function visible(page: Page): Promise<Visible> {
-  return page.evaluate(() => ({
-    text: document.body.innerText,
-    fieldValues: [...document.querySelectorAll('input:not([type=password]), textarea')].map(
-      (element) => (element as HTMLInputElement).value,
-    ),
-    passwordFieldsFilled: [...document.querySelectorAll('input[type=password]')].filter(
-      (element) => (element as HTMLInputElement).value !== '',
-    ).length,
-    dialogTexts: [...document.querySelectorAll('[role=dialog], [role=alertdialog]')].map(
-      (element) => (element as HTMLElement).innerText,
-    ),
-  }));
+  return page.evaluate(() => {
+    const text: string[] = [];
+    const walker = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+      text.push(node.nodeValue ?? '');
+    }
+    return {
+      text: text.join('\n'),
+      attributes: [...document.querySelectorAll('*')].flatMap((element) =>
+        [...element.attributes].map((attribute) => attribute.value),
+      ),
+      fieldValues: [...document.querySelectorAll('input:not([type=password]), textarea')].map(
+        (element) => (element as HTMLInputElement).value,
+      ),
+      passwordFieldsFilled: [...document.querySelectorAll('input[type=password]')].filter(
+        (element) => (element as HTMLInputElement).value !== '',
+      ).length,
+    };
+  });
 }
 
 // Chromium encodes WebP from a canvas, so no image library is needed.
@@ -93,33 +160,58 @@ async function signIn(page: Page, options: Options): Promise<void> {
   }
 }
 
+function refused(options: Options): readonly string[] {
+  return [
+    options.adminPassword,
+    ...(options.adminUsername === PUBLISHED_ADMIN ? [] : [options.adminUsername]),
+  ];
+}
+
+export interface Captured {
+  readonly name: string;
+  readonly theme: Theme;
+  readonly webp: Buffer;
+  readonly record: string;
+}
+
 async function shoot(
   page: Page,
   screen: Screen,
   context: Context,
   options: Options,
-): Promise<Buffer> {
+): Promise<{ png: Buffer; record: string }> {
   await screen.open(page, context);
   await expectShown(page, screen);
+  await present(page, options);
   await page.evaluate(() => document.fonts.ready.then(() => true));
-  const secrets = findSecrets(await visible(page), [options.adminPassword]);
+  await page.waitForTimeout(400);
+  const png = await page.screenshot({ type: 'png', animations: 'disabled', caret: 'hide' });
+  // Scanned after the shot and before anything is kept, so a late render is caught.
+  const seen = await visible(page);
+  const secrets = findSecrets(seen, refused(options));
   if (secrets.length > 0) {
-    throw new Error(`screen ${screen.name} was not captured: ${secrets.join('; ')}`);
+    throw new Error(`screen ${screen.name} was not kept: ${secrets.join('; ')}`);
   }
-  return page.screenshot({ type: 'png' });
+  return {
+    png,
+    record: `${seen.text
+      .split('\n')
+      .filter((line) => line.trim() !== '')
+      .join('\n')}\n`,
+  };
 }
 
 /**
- * Photographs each screen in each theme, signed out screens first, and writes
- * `<name>-light.webp`, `<name>-dark.webp` and a manifest of sizes.
+ * Photographs each screen in each theme, signed out screens first. Returns
+ * what it made; `writeCaptures` puts it on disk.
  */
 export async function captureScreens(
   screens: readonly Screen[],
   options: Options,
-): Promise<Record<string, ManifestEntry>> {
-  mkdirSync(options.outDir, { recursive: true });
+): Promise<{ captures: Captured[]; manifest: Record<string, ManifestEntry> }> {
   const viewport = { width: options.width ?? 1100, height: options.height ?? 820 };
   const manifest: Record<string, ManifestEntry> = {};
+  const captures: Captured[] = [];
   const context: Context = { base: options.base, tenant: 'demo' };
   const browser: Browser = await chromium.launch();
   try {
@@ -129,6 +221,16 @@ export async function captureScreens(
         colorScheme: theme,
         reducedMotion: 'reduce',
       });
+      const sent: string[] = [];
+      await browserContext.route(
+        (url) => SECRET_REQUEST.test(url.pathname),
+        async (route) => {
+          if (route.request().method() === 'POST') {
+            sent.push(route.request().url());
+            await route.abort();
+          } else await route.continue();
+        },
+      );
       const page = await browserContext.newPage();
       let signedIn = false;
       const ordered = [...screens].sort((a, b) => Number(a.signedIn) - Number(b.signedIn));
@@ -137,20 +239,41 @@ export async function captureScreens(
           await signIn(page, options);
           signedIn = true;
         }
-        const png = await shoot(page, screen, context, options);
-        const webp = await toWebp(browserContext, png);
-        writeFileSync(path.join(options.outDir, `${screen.name}-${theme}.webp`), webp);
+        const { png, record } = await shoot(page, screen, context, options);
+        captures.push({
+          name: screen.name,
+          theme,
+          webp: await toWebp(browserContext, png),
+          record,
+        });
         manifest[screen.name] = viewport;
         await screen.leave?.(page, context);
+        if (sent.length > 0) {
+          throw new Error(
+            `screen ${screen.name} sent a request that issues a secret: ${sent.join(', ')}`,
+          );
+        }
       }
       await browserContext.close();
     }
   } finally {
     await browser.close();
   }
+  return { captures, manifest };
+}
+
+export function writeCaptures(
+  result: { captures: Captured[]; manifest: Record<string, ManifestEntry> },
+  options: Pick<Options, 'outDir' | 'recordDir'>,
+): void {
+  mkdirSync(options.outDir, { recursive: true });
+  mkdirSync(options.recordDir, { recursive: true });
+  for (const { name, theme, webp, record } of result.captures) {
+    writeFileSync(path.join(options.outDir, `${name}-${theme}.webp`), webp);
+    writeFileSync(path.join(options.recordDir, `${name}-${theme}.txt`), record);
+  }
   writeFileSync(
     path.join(options.outDir, 'manifest.json'),
-    `${JSON.stringify(manifest, null, 2)}\n`,
+    `${JSON.stringify(result.manifest, null, 2)}\n`,
   );
-  return manifest;
 }

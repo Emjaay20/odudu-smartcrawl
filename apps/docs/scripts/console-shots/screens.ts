@@ -43,7 +43,7 @@ export const SCREENS: readonly Screen[] = [
   },
   {
     name: 'new-tenant',
-    alt: 'The Create a tenant form with the name demo typed in and its issuer shown beneath.',
+    alt: 'The Create a tenant form with the name demo typed in and its issuer, http://localhost:3000/tenants/demo, shown beneath.',
     caption: 'A tenant needs only a name. The issuer follows from it.',
     signedIn: true,
     expect: [
@@ -96,10 +96,14 @@ export const SCREENS: readonly Screen[] = [
   },
   {
     name: 'clients',
-    alt: "The demo tenant's Clients list, with the client my-app and a Create a client button.",
-    caption: 'The demo tenant now lists the client.',
+    alt: "The demo tenant's Clients list: the built-in odudu-admin client and my-app, with a Create a client button.",
+    caption: 'The demo tenant lists my-app beside its built-in administration client.',
     signedIn: true,
-    expect: [{ heading: 'Clients' }, { role: 'link', name: 'Create a client' }],
+    expect: [
+      { heading: 'Clients' },
+      { role: 'link', name: 'Create a client' },
+      { rows: ['odudu-admin', CLIENT] },
+    ],
     open: (page, context) => openList(page, context, 'clients'),
   },
   {
@@ -130,7 +134,11 @@ export const SCREENS: readonly Screen[] = [
     alt: "The demo tenant's Subjects list, with the person ada and a Create a subject button.",
     caption: 'The demo tenant now lists the person.',
     signedIn: true,
-    expect: [{ heading: 'Subjects' }, { role: 'link', name: 'Create a subject' }],
+    expect: [
+      { heading: 'Subjects' },
+      { role: 'link', name: 'Create a subject' },
+      { rows: [PERSON] },
+    ],
     open: (page, context) => openList(page, context, 'subjects'),
   },
   {

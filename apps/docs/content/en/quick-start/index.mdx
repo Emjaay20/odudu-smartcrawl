@@ -119,7 +119,7 @@ The tenant is the home of its own people, apps and keys. Call it `demo`.
 
 <ConsoleShot
   name="new-tenant"
-  alt="The Create a tenant form with the name demo typed in and its issuer shown beneath."
+  alt="The Create a tenant form with the name demo typed in and its issuer, http://localhost:3000/tenants/demo, shown beneath."
   caption="A tenant needs only a name. The issuer follows from it."
 />
 
@@ -150,7 +150,7 @@ Call it `my-app`. It is a single-page app, which cannot keep a secret, so it is 
 2. Choose **Create a client**.
 3. Type `my-app` in **Client ID**.
 4. In **Kind**, choose **Public application**.
-5. Type `http://localhost:8080/callback` in **Redirect URI**.
+5. Type `http://localhost:8080/callback` in the first row of **Redirect URIs**.
 6. Choose **Create client**. A public client has no secret, so nothing is shown once.
 
 <ConsoleShot
@@ -163,8 +163,8 @@ The tenant's client list now shows it.
 
 <ConsoleShot
   name="clients"
-  alt="The demo tenant's Clients list, with the client my-app and a Create a client button."
-  caption="The demo tenant now lists the client."
+  alt="The demo tenant's Clients list: the built-in odudu-admin client and my-app, with a Create a client button."
+  caption="The demo tenant lists my-app beside its built-in administration client."
 />
 
 </TabItem>

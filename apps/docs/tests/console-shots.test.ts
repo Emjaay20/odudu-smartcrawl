@@ -1,10 +1,13 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { SECRET_REQUEST } from '#docs/scripts/console-shots/capture.ts';
+import { findSecrets } from '#docs/scripts/console-shots/guard.ts';
 import { SCREENS } from '#docs/scripts/console-shots/screens.ts';
 import { DOCS_ROOT } from '#docs/tests/support/dist.ts';
 
 const OUT = path.join(DOCS_ROOT, 'static/console');
+const RECORD = path.join(DOCS_ROOT, 'scripts/console-shots/record');
 const PAGES = ['quick-start/index.mdx'];
 const manifest = JSON.parse(readFileSync(path.join(OUT, 'manifest.json'), 'utf8')) as Record<
   string,
@@ -80,8 +83,34 @@ describe('the console captures', () => {
     expect(SCREENS.map((screen) => screen.name).filter((name) => !names.has(name))).toEqual([]);
   });
 
-  it('never presses the button that makes the console show a one-time password', () => {
-    const source = readFileSync(path.join(DOCS_ROOT, 'scripts/console-shots/screens.ts'), 'utf8');
-    expect(source).not.toMatch(/getByRole\('button', \{ name: 'Issue password'[^)]*\)\s*\.click/u);
+  it('intercepts exactly the requests that make the console show a secret', () => {
+    const at = (tail: string): string => `/console/api/admin/tenants/demo/${tail}`;
+    expect(SECRET_REQUEST.test(at('subjects/0199aa00-0000/password'))).toBe(true);
+    expect(SECRET_REQUEST.test(at('clients/0199aa00-0000/secret'))).toBe(true);
+    expect(SECRET_REQUEST.test(at('subjects/0199aa00-0000/password-reset'))).toBe(false);
+    expect(SECRET_REQUEST.test(at('subjects'))).toBe(false);
+  });
+
+  it('keeps beside each image the text its page held, free of secrets', () => {
+    for (const screen of SCREENS) {
+      for (const theme of ['light', 'dark']) {
+        const file = path.join(RECORD, `${screen.name}-${theme}.txt`);
+        expect(existsSync(file), file).toBe(true);
+        const text = readFileSync(file, 'utf8');
+        expect(text.length, file).toBeGreaterThan(100);
+        const seen = { text, attributes: [], fieldValues: [], passwordFieldsFilled: 0 };
+        expect(findSecrets(seen, []), file).toEqual([]);
+        expect(/localhost:(?!3000\b)\d+/u.test(text), file).toBe(false);
+      }
+    }
+  });
+
+  it('shows in each capture the rows and the issuer its alt text names', () => {
+    const record = (name: string): string =>
+      readFileSync(path.join(RECORD, `${name}-light.txt`), 'utf8');
+    expect(record('clients')).toContain('odudu-admin');
+    expect(record('clients')).toContain('my-app');
+    expect(record('subjects')).toContain('ada');
+    expect(record('new-tenant')).toContain('http://localhost:3000/tenants/demo');
   });
 });

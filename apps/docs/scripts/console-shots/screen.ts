@@ -4,7 +4,9 @@ import type { Page } from '@playwright/test';
 export type Expectation =
   | { readonly heading: string }
   | { readonly role: 'button' | 'link' | 'tab'; readonly name: string }
-  | { readonly label: string };
+  | { readonly label: string }
+  // The data rows of the list on the page, exactly: one entry each, matched as text in a row.
+  | { readonly rows: readonly string[] };
 
 export interface Context {
   readonly base: string;
