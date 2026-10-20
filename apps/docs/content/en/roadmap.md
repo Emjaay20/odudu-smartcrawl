@@ -344,6 +344,17 @@ session lifecycle. A citation of either half here means that half.
   give every client column two doors to keep in step.
 - **SAML, LDAP federation, identity brokering, authorization services.**
   P6–P9.
+- **SCIM 2.0 inbound provisioning, and moving more than the 10,000
+  subjects a tenant export carries.** P7. An export refuses a tenant above
+  that size and names inbound provisioning as the tool for it.
+- **The MCP authorization profile, and the guide "Protect an MCP server
+  with Odudu".** P5a. The server publishes no authorization-server metadata
+  at the RFC 8414 well-known path (`/.well-known/oauth-authorization-server`
+  answers 404), no protected-resource metadata for an MCP server (RFC 9728,
+  `/.well-known/oauth-protected-resource`), and keeps dynamic client
+  registration closed until a tenant's policy or a registration token opens
+  it, with no registration policy written for MCP clients. P5a builds those
+  and writes the guide against the passing profile.
 
 **Operational**
 

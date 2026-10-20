@@ -7,7 +7,7 @@ description: Sign users in from a web app, a single-page app, an API or a machin
 
 Sign users in from a web app, a single-page app, an API or a machine.
 
-The guides assume you have done the [quick start](../quick-start/index.md), so a stack is running with its `demo` tenant. Their commands run in bash or zsh, in the folder that holds `compose.yaml`, with `curl` and `openssl` installed. Every command is the one that was run, and each guide ends with a working sign-in or a token in your hands.
+The guides assume you have done the [quick start](../quick-start/index.md), so a stack is running with its `demo` tenant. Their commands run in bash or zsh, in the folder that holds `compose.yaml`, with `curl` and `openssl` installed. Every command is the one that was run, and each guide ends with a working sign-in or a token in your hands. Each guide registers clients with fixed names, so run it once on a stack from the quick start; to run one again, start over with `docker compose down -v` and the quick start.
 
 ## Pick the one for what you are building
 

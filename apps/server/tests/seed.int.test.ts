@@ -1046,6 +1046,9 @@ describe('seed client --grant-type', () => {
         'secret',
       ]),
     ).rejects.toThrow(/--redirect-uri/u);
+    await expect(
+      seed(['client', '--tenant', options.tenant, '--client-id', 'web2', '--client-secret', 's']),
+    ).rejects.toMatchObject({ code: 'seed_invalid_options' });
   });
 
   it('still gives a public client two grants and no client_credentials', async () => {

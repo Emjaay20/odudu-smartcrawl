@@ -53,17 +53,17 @@ docker compose exec odudu odudu seed role --tenant demo --name editor
 
 Create the group and give its members the role.
 
-```sh {run expect="groupId"}
+```sh {run expect="/staff"}
 docker compose exec odudu odudu seed group --tenant demo --name staff
 ```
 
-```sh {run expect="map-group-role"}
+```sh {run expect="/staff"}
 docker compose exec odudu odudu seed map-group-role --tenant demo --group /staff --role editor
 ```
 
 Put a user in the group.
 
-```sh {run expect="join-group"}
+```sh {run expect="/staff"}
 docker compose exec odudu odudu seed join-group --tenant demo --username ada --group /staff
 ```
 

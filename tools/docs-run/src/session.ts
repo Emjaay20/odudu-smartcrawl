@@ -16,9 +16,10 @@ export interface Session {
 /**
  * One bash for a whole file, so `cd` and exported variables carry from block
  * to block. A block's standard input is empty, so a command that reads it
- * cannot take the rest of the script. `set -e` ends the shell at the first failing command, which is
- * read as that block's status. The shell leads its own process group so a
- * timeout takes down whatever it started as well.
+ * cannot take the rest of the script.
+ * `set -e` ends the shell at the first failing command, which is read as
+ * that block's status. The shell leads its own process group so a timeout
+ * takes down whatever it started as well.
  */
 export function openSession(): Session {
   const marker = `__odudu_docs_run_${randomUUID()}__`;

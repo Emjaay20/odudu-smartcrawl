@@ -54,7 +54,7 @@ The setup step prints the console address, the administrator's email and a gener
 docker compose logs setup
 ```
 
-You will see something like this. Your password is different.
+You will see something like this, each line led by the container name that `docker compose logs` adds. Your password is different.
 
 ```text
 Odudu is ready.
@@ -105,7 +105,7 @@ Register an app called `my-app`. It is a single-page app, which cannot keep a se
 docker compose exec odudu odudu seed client --tenant demo --client-id my-app --public --redirect-uri http://localhost:8080/callback
 ```
 
-Make a person called `ada`. Use a password of your own.
+Make a person called `ada`. The guides sign `ada` in with the password shown here, so keep it for now and choose your own for real users.
 
 ```sh {run expect="userSubjectId"}
 docker compose exec odudu odudu seed user --tenant demo --username ada --password 'a long and unremarkable passphrase'

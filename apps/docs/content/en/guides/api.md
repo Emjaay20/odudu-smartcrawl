@@ -50,7 +50,7 @@ decode "$TOKEN" 1
 
 The claims say who issued it, who it is for and until when.
 
-```sh {run expect="iss"}
+```sh {run expect="my-api-caller"}
 decode "$TOKEN" 2
 ```
 

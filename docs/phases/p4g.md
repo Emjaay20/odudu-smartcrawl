@@ -2087,11 +2087,18 @@ The other variants are `p4g-docs/22b-{before,after}-{home,console,reference,tran
   - The runner ignored an attribute it could not read: an `expect=` without quotes asserted nothing.
     `extractRunnable` now refuses it. Prettier also rewrites a backslash-escaped quote in a fence's info
     string, so no `expect` text holds a double quote.
-- **Not written.** A guide for protecting an MCP server. verified: `curl
+- **Not written, and placed.** The "Protect an MCP server with Odudu" guide. verified: `curl
 $ODUDU_BASE/.well-known/oauth-authorization-server/tenants/demo` answers 404 and the demo tenant's
-  discovery document names no `registration_endpoint` (registration is closed until a tenant's policy or a
-  registration token opens it). The plan names the guide in the increment's preface but not in the task's
-  file list; it needs a decision on where the gap is placed before a page can describe it.
+  discovery document names no `registration_endpoint`. The RFC paths: `curl -sS
+https://www.rfc-editor.org/rfc/rfc8414.txt | grep -m2 oauth-authorization-server` and the same on
+  `rfc9728.txt` with `oauth-protected-resource`. The gap is a roadmap item under P5a (the MCP authorization
+  profile and this guide), and design spec section 11's P5a row now says the guide is written against the
+  passing profile instead of being a P4g deliverable. A guide for behaviour the tenant lacks would show
+  nothing that runs.
+- **Roadmap claims.** SCIM inbound provisioning and moving more than 10,000 subjects were placed in the
+  design spec (P7) but missing from the roadmap page; pages said the roadmap named them. The P7 item is
+  on the page, and `tests/docs/roadmap-claims.test.ts` fails when a sentence about the roadmap names a
+  listed capability the page does not (the list of terms is short; add one when a page first uses it).
 - **Left for the example applications.** Each integration guide ends at a working sign-in done with
   `curl`, playing the browser. The example application of its kind arrives with the increments that build
   them and adds its section to the guide.

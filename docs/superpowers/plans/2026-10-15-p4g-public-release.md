@@ -799,7 +799,7 @@ Sizes (`wc -l`): `request-paths` 11,291, `admin-paths` 10,172, `console-paths` 2
 
 ## Increment 24: Introduction, quick start, the four integration guides (4 to 6 h)
 
-Content written against what exists, including a guide "Protect an MCP server with Odudu" (`guides/mcp-server.md`: the authorization-server metadata, dynamic client registration and PKCE flow an MCP client uses, run against the quick-start stack). Every command is a runnable block (Task 21) or tagged `text`. Written for a reader who reaches a working sign-in before a concept (§11).
+Content written against what exists. The guide "Protect an MCP server with Odudu" is not written here: the tenant has no RFC 8414 or RFC 9728 metadata and keeps registration closed, so it is a roadmap item under P5a and the guide is written there. Every command is a runnable block (Task 21) or tagged `text`. Written for a reader who reaches a working sign-in before a concept (§11).
 
 ### Task 24: The first ten minutes
 
