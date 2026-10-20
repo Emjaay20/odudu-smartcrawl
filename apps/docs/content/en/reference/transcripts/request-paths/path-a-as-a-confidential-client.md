@@ -188,7 +188,7 @@ dynamically all leave `token_endpoint_auth_method` at its default — so no
 transcript for it appears here. `POST /admin/tenants/{tenant}/clients`
 ([Admin paths](../admin-paths/get-clients-post-clients-and-get-clientsid.md))
 can produce one, and dynamic registration always could; see
-[What is not implemented](../../../roadmap.md#what-is-not-implemented)'s `seed client` row for
+[the roadmap](../../../roadmap.md#decided-against-and-why)'s entry on `odudu seed` for
 why this document does not, and the [`/token`](./the-branches.md#token) refusal table for
 the bytes each of its failures answers with.
 

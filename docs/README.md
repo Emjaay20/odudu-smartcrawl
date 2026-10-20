@@ -13,7 +13,7 @@ drifts from what the server serves.
 | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | [`apps/docs/content/en/`](../apps/docs/content/en/)                                    | The documentation site: guides, concepts, reference, and the roadmap    |
 | [`.../reference/transcripts/`](../apps/docs/content/en/reference/transcripts/index.md) | Every protocol, admin API and console request, run against a real stack |
-| [`.../roadmap.md`](../apps/docs/content/en/roadmap.md)                                 | What is not implemented, each gap placed in a phase or a decision       |
+| [`.../roadmap.md`](../apps/docs/content/en/roadmap.md)                                 | What ships, what is next, what is later and what was decided against    |
 | [`NEXT.md`](NEXT.md)                                                                   | Where the project stands, what is open, what was deferred               |
 | [`adr/`](adr/)                                                                         | Decisions and their rejected alternatives                               |
 | [`protocols/`](protocols/)                                                             | One reading note per RFC or specification, clause by clause             |

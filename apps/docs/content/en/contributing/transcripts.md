@@ -183,8 +183,8 @@ shape of each request and, once a live stack has been brought up to capture
 it against, the real response. [README.md](https://github.com/wizzywit/odudu/blob/main/README.md) is the **entry
 point** — how to get a token that can call any of this at all.
 
-There is one "What is not implemented" list for the whole server, and it
-stays in [the roadmap](../roadmap.md#what-is-not-implemented);
+There is one list of what is missing or refused for the whole server, and it
+stays in [the roadmap](../roadmap.md#later);
 this document never starts a second one. An admin endpoint that does not do
 yet what its name suggests says so in its own section below, and points at
 that list rather than duplicating it.
@@ -543,9 +543,9 @@ cookie.
 [README.md](https://github.com/wizzywit/odudu/blob/main/README.md) is the **entry point** — what each route does and
 which settings turn the console on. [the admin paths](../reference/transcripts/admin-paths/index.md)
 is the admin API the proxy forwards to, and this document shows only enough
-of it to show the forwarding. There is one "What is not implemented" list
+of it to show the forwarding. There is one list of what is missing or refused
 for the whole server, in
-[the roadmap](../roadmap.md#what-is-not-implemented); this
+[the roadmap](../roadmap.md#later); this
 document never starts a second one.
 
 Every transcript below is captured output, under the same discipline as

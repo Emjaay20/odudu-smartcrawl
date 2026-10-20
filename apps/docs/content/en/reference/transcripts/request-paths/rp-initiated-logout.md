@@ -360,8 +360,7 @@ above is still a validly signed JWT until its own `exp` — so the two walks
 below use a freshly seeded tenant and confidential client of their own,
 `revokedoc`/`revoke-doc-client`, so a resource server that wants to see a
 revocation before `exp` has something to call. `seed client` has no
-`--audience` flag (see [What is not
-implemented](../../../roadmap.md#what-is-not-implemented)'s `seed client` row), so the
+`--audience` flag (see [the roadmap](../../../roadmap.md#decided-against-and-why)'s entry on `odudu seed`), so the
 client's own `client_oidc_config.audiences` is set directly, the same way
 [the section above](./rp-initiated-logout.md) sets `post_logout_redirect_uris`
 directly. `PATCH /admin/tenants/{tenant}/clients/{id}` sets it too, with
@@ -863,7 +862,7 @@ a grant under that session. [Back-Channel Logout 1.0](https://github.com/wizzywi
 asks it to also `POST` a signed Logout Token to every client that
 registered a `backchannel_logout_uri` and held a grant under that session.
 `seed client` has no flag for either URI (see
-[What is not implemented](../../../roadmap.md#what-is-not-implemented)'s `seed client` row),
+[the roadmap](../../../roadmap.md#decided-against-and-why)'s entry on `odudu seed`),
 so a second client is seeded and given both directly, the same way
 `post_logout_redirect_uris` was set above.
 `PATCH /admin/tenants/{tenant}/clients/{id}` sets both, revalidating them
@@ -1136,8 +1135,7 @@ screen ([below](#the-consent-screen)) tell it apart from a scope pre-approved
 the moment a client is assigned it (it maps no claims either way — see
 [Discovery](./path-a-authorization-code-with-pkce.md#1-discovery) above).
 `demo-spa`'s own `consent_required` is `false` — `seed client` names no way to
-set it (see [What is not
-implemented](../../../roadmap.md#what-is-not-implemented)'s `seed client` row;
+set it (see [the roadmap](../../../roadmap.md#decided-against-and-why)'s entry on `odudu seed`;
 `PATCH /admin/tenants/{tenant}/clients/{id}` does, without `If-Match`, being no
 list field) — so every seeded client keeps the column's own default — so the
 transcript below reuses without ever seeing that screen; the consent section
@@ -1362,7 +1360,7 @@ timeout expiring underneath it — refresh rotation checks the session's own
 liveness, not just the grant's `revoked_at`, for exactly that second case. An
 offline grant has neither: no session to end, and no idle window to outlive, so
 it is bounded only by its own `refresh_token_ttl_seconds` and by retention (see
-[What is not implemented](../../../roadmap.md#what-is-not-implemented)) —
+[the roadmap](../../../roadmap.md#decided-against-and-why)) —
 nothing about ending a session ages it out early. An administrator revokes one
 with `DELETE /admin/tenants/{tenant}/subjects/{id}/grants/{clientId}`, or every
 grant a client holds with `DELETE /admin/tenants/{tenant}/clients/{id}/grants`

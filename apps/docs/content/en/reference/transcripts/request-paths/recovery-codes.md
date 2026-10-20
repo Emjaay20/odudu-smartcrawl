@@ -87,7 +87,7 @@ password for the account. It is bounded — a password gets past the first
 factor, and acknowledging the page ends it — but it is a heavier multiplier
 than verification's, and the per-account lockout does not reach it: that
 counts failures, and this path needs a password that works
-([what is not implemented](../../../roadmap.md#what-is-not-implemented)). Re-serving the same
+([the roadmap's reasoning](https://github.com/wizzywit/odudu/blob/main/docs/phases/roadmap-reasoning-2026-10-20.md)). Re-serving the same
 set instead would cost less and be worse: a second render of a live secret
 is the one thing this page must not do.
 

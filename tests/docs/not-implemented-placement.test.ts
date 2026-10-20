@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { loadDocument } from './markdown.js';
 
 const GUIDE = 'apps/docs/content/en/roadmap.md';
-const HEADING = '## What is not implemented';
+// The sections that say what is missing or refused; "Shipped" claims nothing
+// is missing, so it needs no place.
+const HEADINGS = ['## Next', '## Later', '## Decided against, and why'];
 
 // A phase (P3, P4b, P13), a decision, or an ADR. Anything else is an item
 // whose reader cannot tell a deliberate omission from a forgotten one, which
@@ -16,14 +18,22 @@ interface Item {
 
 function itemsUnderHeading(): Item[] {
   const { lines } = loadDocument(GUIDE);
-  const start = lines.findIndex((line) => line.startsWith(HEADING));
-  if (start === -1) throw new Error(`${GUIDE} has no ${JSON.stringify(HEADING)} section`);
-
   const items: Item[] = [];
+  let inside = false;
   let current: Item | null = null;
-  for (let index = start + 1; index < lines.length; index += 1) {
-    const line = lines[index] ?? '';
-    if (line.startsWith('## ')) break;
+  for (const heading of HEADINGS) {
+    if (!lines.some((line) => line.startsWith(heading))) {
+      throw new Error(`${GUIDE} has no ${JSON.stringify(heading)} section`);
+    }
+  }
+  for (const [index, line] of lines.entries()) {
+    if (line.startsWith('## ')) {
+      if (current !== null) items.push(current);
+      current = null;
+      inside = HEADINGS.some((heading) => line.startsWith(heading));
+      continue;
+    }
+    if (!inside) continue;
     if (line.startsWith('- ')) {
       if (current !== null) items.push(current);
       current = { text: line, lineNumber: index + 1 };

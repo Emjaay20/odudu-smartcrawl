@@ -3,7 +3,7 @@ import { loadDocument } from './markdown.js';
 
 // An item placed in a phase only on the roadmap page is placed nowhere that
 // phase reads: its own exit criterion is what decides whether it closes.
-const HEADING = '**Administrative capabilities placed by the P4d gap audit**';
+const HEADING = '**Smaller capabilities, each placed on a phase**';
 const ITEM = /^- \*\*(.+?)\*\*: (P\d+[a-z]?)\b/u;
 const ROW = /^\| (P\d+[a-z]?) +\|/u;
 

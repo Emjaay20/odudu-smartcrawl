@@ -144,7 +144,7 @@ client it creates. The walk-through below asks for three of them — `openid`,
 The issuer is derived from the request, so it is `http://` on this
 plain-HTTP local stack. A deployment terminates TLS in front of the server
 and the issuer becomes `https://` — see
-[What is not implemented](../../../roadmap.md#what-is-not-implemented).
+[the roadmap](../../../roadmap.md#decided-against-and-why).
 
 The public keys are a separate fetch, and are what a client verifies an ID
 token against:
@@ -1185,7 +1185,7 @@ this document's usual truncation — coincide.
 **A `resource` at `/token` narrows what the code already carries, and can
 never widen it.** The same `resource` `/authorize` resolves and stores on
 the code (see its own bullet under
-[What is not implemented](../../../roadmap.md#what-is-not-implemented)) is what `/token`
+[the roadmap](../../../roadmap.md#decided-against-and-why)) is what `/token`
 derives `aud` from — a `resource` on the token request itself may select
 one value out of what the code carries, but naming one the code does not
 carry refuses with `invalid_target` rather than being ignored, on a public

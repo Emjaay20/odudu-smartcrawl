@@ -209,7 +209,7 @@ and so does an operator's `odudu reap`.
   accepted.
 - **An operator will be able to reach an orphan once the administrative
   "end somebody else's session" surface is built** — [What is not
-  implemented](../../apps/docs/content/en/roadmap.md#what-is-not-implemented) tracks it
+  implemented](../../apps/docs/content/en/roadmap.md) tracks it
   against P4. That surface does not exist yet; until it does, nothing but
   the orphan's own idle timeout (or `odudu reap`, once it is idle) ends it.
 

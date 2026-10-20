@@ -33,8 +33,7 @@ odudu seed client \
   --grant-type authorization_code --grant-type refresh_token
 ```
 
-`seed client` has no `--audience` or impersonation flag (see [What is not
-implemented](../../../roadmap.md#what-is-not-implemented)), so `exdoc-exchange` and
+`seed client` has no `--audience` or impersonation flag (see [the roadmap](../../../roadmap.md#decided-against-and-why)), so `exdoc-exchange` and
 `exdoc-exchange-restricted` both get an audience set directly, and only the
 first gets `token_exchange_impersonation_allowed` flipped on:
 
@@ -284,7 +283,7 @@ odudu seed client \
 ```
 
 The top-level `odudu seed` has no `--grant-type`, `--audience` or
-impersonation flag at all (see [What is not implemented](../../../roadmap.md#what-is-not-implemented)),
+impersonation flag at all (see [the roadmap](../../../roadmap.md#decided-against-and-why)),
 so `disableddoc-spa` — created through it, not through `seed client` — gets
 the exchange grant and `https://api.disableddoc.example` named in its own
 `audiences` directly, the same way an id_token self-exchange needs

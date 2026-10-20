@@ -12,6 +12,12 @@ const CONSOLE = 'apps/admin-console';
 // package alone, so each package's results can be cached on their own.
 const scope = relative(REPO_ROOT, process.cwd());
 
+// The docs site's own `@site/…` imports, which Docusaurus resolves, for the
+// tests that load a component.
+const DOCS_ALIAS = {
+  alias: scope === 'apps/docs' ? { '@site': join(REPO_ROOT, 'apps/docs') } : {},
+};
+
 function globs(): { unit: string[]; integration: string[]; dom: string[]; plans: string[] } {
   if (scope === '') {
     return {
@@ -67,9 +73,7 @@ export default defineConfig({
     shard: shard === undefined || shard === '' ? undefined : shard,
     projects: [
       {
-        // The docs site's own `@site/…` imports, which Docusaurus resolves, for the
-        // tests that load a component.
-        resolve: { alias: scope === 'apps/docs' ? { '@site': join(REPO_ROOT, 'apps/docs') } : {} },
+        resolve: DOCS_ALIAS,
         test: {
           name: 'unit',
           include: unit,
@@ -100,6 +104,7 @@ export default defineConfig({
         },
       },
       {
+        resolve: DOCS_ALIAS,
         test: {
           name: 'browser',
           include: browser,

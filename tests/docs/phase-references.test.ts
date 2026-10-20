@@ -22,7 +22,7 @@ const CITING_DOCUMENTS: readonly (readonly [name: string, atLeast: number])[] = 
   [PROTOCOL_PAGES, 4],
   // The roadmap carries most of the citations: the transcripts hold the
   // request paths without the list of what is not implemented.
-  ['apps/docs/content/en/roadmap.md', 49],
+  ['apps/docs/content/en/roadmap.md', 30],
 ];
 
 function roadmapPhases(): Set<string> {

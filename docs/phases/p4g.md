@@ -2264,3 +2264,25 @@ https://www.rfc-editor.org/rfc/rfc8414.txt | grep -m2 oauth-authorization-server
   text outside the viewBox. verified: with the outer `let x` put back, the unit test fails and the browser test fails with
   "sessions after coming back to it leaves the drawing". Captures: `docs/phases/p4g-docs/concept-sessions-diagram-desktop-*.png`.
 - **Captures** are 1100x900 now, so the menu's "Signed in as" is whole; the signing keys shot starts at the page title.
+
+### Increment 26b: the roadmap page for adopters
+
+- **The page** (`apps/docs/content/en/roadmap.md`) is four parts: Shipped (grouped by capability), Next (the spec's order from P4g:
+  P4g, P4b, P5a, P4f, P4h, P5, P5b), Later (P6 to P13, then the smaller capabilities each placed on a phase) and Decided against, and
+  why. It cites no closed phase and cites P4g only as "this release".
+- **Where the old entries went.** The full text of the previous page, from "What is not implemented" on, is
+  `docs/phases/roadmap-reasoning-2026-10-20.md` (links rewritten to resolve from there). Entries with detail the new page drops, and
+  where each is now: the `resource` reading (RFC 8707 query component) and the front-channel logout code path, the recovery-code
+  re-issue cost, the `seed client` flag inventory, the 22-name claims registry and `entitlements`, the audit-reader list and the
+  refresh-token retention argument are in that note; the decisions behind them stay in their ADRs (0016, 0020, 0021, 0024, 0037, 0043).
+  Transcript pages that cited a roadmap row now cite the page's Decided against section or the note.
+- **Tests.** New `tests/docs/roadmap-shape.test.ts`: the four headings in order; Next ordered as the spec's table orders it; every later
+  phase in Later and none in both; no closed phase cited (closed = every phase before P4g in the spec's table), P4g only with "this
+  release"; no dates or "used to"; and 50 phrases from the old page, each still said in an item that names the phase, decision or ADR
+  the old page named. `not-implemented-placement.test.ts` now reads the Next, Later and Decided sections; `gap-audit-placement.test.ts`
+  reads the heading "Smaller capabilities, each placed on a phase" (same twelve items, same check against the spec's criteria);
+  `phase-references.test.ts` expects at least 30 phase citations instead of 49; `link-fragments` had thirteen links to the old anchor,
+  repointed. `roadmap-claims` and `references` passed unchanged. Mutation: a closed phase cited fails the shape test; a placement
+  reworded away ("DPoP") fails it.
+- **Browser project.** `vitest.config.ts` gives the browser project the `@site` alias too (the concept browser test now loads the diagrams); once,
+  the quick-start capture-loading browser test failed on a lazy-image race and passed on three reruns.
