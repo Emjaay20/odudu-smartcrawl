@@ -24,7 +24,7 @@ curl -sS http://localhost:3000/tenants/demo/.well-known/openid-configuration
   "token_endpoint": "http://localhost:3000/tenants/demo/protocol/openid-connect/token",
 ```
 
-Full transcript: [Path A, discovery](../reference/transcripts/request-paths/path-a-authorization-code-with-pkce.md#1-discovery).
+These are the first members of the answer. Full transcript: [Path A, discovery](../reference/transcripts/request-paths/path-a-authorization-code-with-pkce.md#1-discovery).
 
 ## 2. Make a PKCE pair
 
@@ -33,6 +33,7 @@ Before you send anyone anywhere, make a random secret, the verifier, and its fin
 ```bash
 VERIFIER=$(openssl rand -hex 32)
 CHALLENGE=$(printf '%s' "$VERIFIER" | openssl dgst -binary -sha256 \
+  | openssl base64 | tr '+/' '-_' | tr -d '=')
 ```
 
 Full transcript: [Path A, /authorize](../reference/transcripts/request-paths/path-a-authorization-code-with-pkce.md#2-authorize).
@@ -51,9 +52,10 @@ curl -sS -D - --get \
   --data-urlencode 'nonce=n-0S6_WzA2Mj' \
   --data-urlencode "code_challenge=$CHALLENGE" \
   --data-urlencode 'code_challenge_method=S256' \
+  'http://localhost:3171/tenants/demo/protocol/openid-connect/auth'
 ```
 
-Odudu answers with its own sign-in page, named for your client and the tenant.
+(This run used another port, 3171.) Odudu answers with its own sign-in page, named for your client and the tenant.
 
 ```
 HTTP/1.1 200 OK

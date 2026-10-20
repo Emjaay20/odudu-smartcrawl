@@ -18,7 +18,8 @@ export const SECTIONS: readonly Section[] = [
     label: 'Quick start',
     id: 'quick-start/index',
     route: 'quick-start/',
-    summary: 'Run Odudu with one command and sign in to the console in ten minutes.',
+    summary:
+      'Start Odudu with Docker Compose and sign in to the console as the first administrator.',
   },
   {
     label: 'Guides',

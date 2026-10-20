@@ -19,7 +19,7 @@ A client is an app registered with a tenant. It has a `client_id` and a list of 
 
 ## Tokens
 
-An **access token** is what you send to an API. Here it lives 300 seconds. An **ID token** says who signed in. A **refresh token** gets new tokens later, and each one works once. See [Sign a user in](../guides/sign-a-user-in.md#5-swap-the-code-for-tokens) and [Refresh and end a session](../guides/refresh-and-end-a-session.md).
+An **access token** is what you send to an API. In the examples it lives 300 seconds. An **ID token** says who signed in. A **refresh token** gets new tokens later, and each one works once. See [Sign a user in](../guides/sign-a-user-in.md#5-swap-the-code-for-tokens) and [Refresh and end a session](../guides/refresh-and-end-a-session.md).
 
 ## Session
 

@@ -791,6 +791,10 @@ Sizes (`wc -l`): `docs/request-paths.md` 11,291, `docs/admin-paths.md` 10,172, `
 - [ ] **CLAUDE.md retargeting.** Rewrite "The documentation an increment owns" so `README.md` and `apps/docs/content/en/` describe the server now, the transcript rules apply to the site's reference transcripts and to runnable blocks, and `tests/docs/` compares the site to the server; "The pass that closes a phase" item 1 names `apps/docs/content/en/roadmap.md`; item 4 names it; "Server-rendered pages" and "NEXT.md" paragraphs repointed. Change nothing else in the file. `tests/lint/comment-block-length.test.ts` and the commit-message test do not read CLAUDE.md.
 - [ ] Run the full docs and lint suites and `build:pages`; commit in three: `Repoint citations of the path documents`, `Retire the three path documents`, `Retarget CLAUDE.md's documentation rules at the site`. Push; CI green. (`docs/NEXT.md` mentions `request-paths.md#what-is-not-implemented` at line 308: repoint, check budget.)
 
+### Task 23c: Transcript pages lose their contributor prose (placed from Increment 22b)
+
+- [ ] deferred: strip run-provenance sentences and repository paths from the transcript pages under `apps/docs/content/en/reference/transcripts/` (27 pages carry "recaptured on ... project odudu-..." notes, `tests/docs` names or source paths); the split test's locked openings move with it, since retiring the originals in Task 23b removes what locks them. Increment 22b moved only each group's opening to `contributing/transcripts.md`.
+
 ---
 
 ## Increment 24: Introduction, quick start, the four integration guides (4 to 6 h)

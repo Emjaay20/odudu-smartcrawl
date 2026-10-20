@@ -81,6 +81,8 @@ Full transcript: [GET /console/api/session](../reference/transcripts/console-pat
 
 ## 5. Read the user
 
+This step is from a later run, so the administrator's id here is not the one step 4 showed.
+
 Fetch `hopper`. Every admin call names the administrator it acts for in `X-Odudu-Console-Subject`. The answer carries an `ETag`, which stands for this version of the user.
 
 ```bash

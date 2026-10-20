@@ -1971,7 +1971,7 @@ reads first.
   pages after their index, and holds the opening to the contributing page in order. **Still in the
   transcript bodies:** "recaptured on..." and run-provenance sentences inside individual pages, and
   repository paths in prose. They are the transcripts' own record and the original documents still
-  carry them; Increment 23 retires the originals and is where they can be edited.
+  carry them; Placed: Increment 23, Task 23c in the plan ("strip run-provenance sentences and repository paths from the transcript pages; the split test's locked openings move with it"). Increment 23 retires the originals and is where they can be edited.
 - **One heading per page.** 67 route pages had a plain `title` rendered as `h1` and the same route as
   a code `h2`. Where the heading is at most 60 characters its page now opens with it as the `# ` (its
   sub-headings moved up one level, as `loadPages` already allows) and the title is its text without

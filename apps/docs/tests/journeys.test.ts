@@ -31,6 +31,7 @@ interface Step {
   readonly page: string;
   readonly heading: string;
   readonly blocks: readonly string[];
+  readonly commands: readonly string[];
   readonly transcripts: readonly string[];
 }
 
@@ -38,7 +39,12 @@ interface Step {
 // links are where its excerpts must have come from.
 function stepsOf(file: string): Step[] {
   const steps: Step[] = [];
-  let current: { heading: string; blocks: string[]; urls: string[] } | null = null;
+  let current: {
+    heading: string;
+    blocks: string[];
+    commands: string[];
+    urls: string[];
+  } | null = null;
   const close = (): void => {
     if (current === null) return;
     const base = path.dirname(file);
@@ -46,6 +52,7 @@ function stepsOf(file: string): Step[] {
       page: path.relative(CONTENT, file),
       heading: current.heading,
       blocks: current.blocks,
+      commands: current.commands,
       transcripts: current.urls
         .filter((url) => !/^[a-z]+:|^#/iu.test(url))
         .map((url) => path.resolve(base, url.split('#')[0] ?? ''))
@@ -57,10 +64,12 @@ function stepsOf(file: string): Step[] {
     if (node.type === 'heading' && node.depth === 2) {
       close();
       const text = node.children.map((child) => ('value' in child ? child.value : '')).join('');
-      current = { heading: text, blocks: [], urls: [] };
+      current = { heading: text, blocks: [], commands: [], urls: [] };
     } else if (current !== null) {
-      if (node.type === 'code') current.blocks.push(node.value);
-      else current.urls.push(...links(node));
+      if (node.type === 'code') {
+        current.blocks.push(node.value);
+        if (node.lang === 'bash') current.commands.push(node.value);
+      } else current.urls.push(...links(node));
     }
   }
   close();
@@ -101,6 +110,20 @@ describe('the journey guides', () => {
       .filter((step) => step.blocks.length > 0 && step.transcripts.length === 0)
       .map((step) => `${step.page} "${step.heading}"`);
     expect(unlinked).toEqual([]);
+  });
+
+  it('shows each command whole: no trailing continuation, quotes closed', () => {
+    const broken = steps.flatMap((step) =>
+      step.commands.flatMap((command) => {
+        const problems: string[] = [];
+        if (command.trimEnd().endsWith('\\')) problems.push('ends in a line continuation');
+        const singles = command.split("'").length - 1;
+        const doubles = command.split('"').length - 1;
+        if (singles % 2 === 1 || doubles % 2 === 1) problems.push('has an unclosed quote');
+        return problems.map((problem) => `${step.page} "${step.heading}": ${problem}`);
+      }),
+    );
+    expect(broken).toEqual([]);
   });
 
   it('keeps every excerpt short enough to read in place', () => {
