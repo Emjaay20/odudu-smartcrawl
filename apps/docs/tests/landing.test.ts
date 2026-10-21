@@ -3,8 +3,8 @@ import path from 'node:path';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { describe, expect, it } from 'vitest';
 import { JOURNEYS, SECTIONS } from '#docs/nav.ts';
-import { FOLLOW_UP, RELEASE_CAVEAT } from '#docs/src/components/Landing/content.ts';
-import { LAYOUTS, travelKeyframes } from '#docs/src/components/Landing/geometry.ts';
+import { FOLLOW_UP, RELEASE_CAVEAT } from '#docs/src/features/landing/service/content.ts';
+import { LAYOUTS, travelKeyframes } from '#docs/src/features/landing/service/geometry.ts';
 import { PAGES_BASE } from '#docs/site.config.ts';
 import { TIME_CLAIM, TIME_CLAIM_EXAMPLES } from '#docs/tests/support/claims.ts';
 import { DOCS_ROOT, distDir, fileOf, load, walk } from '#docs/tests/support/dist.ts';
@@ -272,9 +272,9 @@ describe('the hero terminal', () => {
 
 describe('the landing page keeps its promises small', () => {
   const landingSources = [
-    ...readdirSync(path.join(DOCS_ROOT, 'src/components/Landing'))
-      .filter((file) => /\.(?:tsx?)$/u.test(file))
-      .map((file) => `src/components/Landing/${file}`),
+    ...walk(path.join(DOCS_ROOT, 'src/features/landing'))
+      .filter((file) => /\.tsx?$/u.test(file) && !/\.test\.tsx?$/u.test(file))
+      .map((file) => path.relative(DOCS_ROOT, file)),
     'src/pages/index.tsx',
   ];
   const text = (file: string): string => load(path.join(distDir('pages'), file))('body').text();
@@ -319,7 +319,7 @@ describe('the landing page keeps its promises small', () => {
 
   it('ships the travelling-signal keyframes once, in the stylesheet, and not in the markup or the script', () => {
     const generated = readFileSync(
-      path.join(DOCS_ROOT, 'src/components/Landing/travel.css'),
+      path.join(DOCS_ROOT, 'src/features/landing/view/Scene/travel.css'),
       'utf8',
     );
     expect(generated.trim(), 'run: node scripts/landing-keyframes.ts').toBe(travelKeyframes());

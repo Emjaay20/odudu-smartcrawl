@@ -12,10 +12,20 @@ const CONSOLE = 'apps/admin-console';
 // package alone, so each package's results can be cached on their own.
 const scope = relative(REPO_ROOT, process.cwd());
 
-// The docs site's own `@site/…` imports, which Docusaurus resolves, for the
-// tests that load a component.
+// The docs site's own `@site/…` imports, which Docusaurus resolves, and the
+// framework's components and hooks as small stand-ins, for the tests that
+// render a view or a usecase.
+const DOCUSAURUS_STUBS = join(REPO_ROOT, 'apps/docs/tests/support/docusaurus');
 const DOCS_ALIAS = {
-  alias: scope === 'apps/docs' ? { '@site': join(REPO_ROOT, 'apps/docs') } : {},
+  alias: {
+    '@site': join(REPO_ROOT, 'apps/docs'),
+    '@docusaurus/Link': join(DOCUSAURUS_STUBS, 'Link.tsx'),
+    '@docusaurus/Head': join(DOCUSAURUS_STUBS, 'Head.tsx'),
+    '@docusaurus/useBaseUrl': join(DOCUSAURUS_STUBS, 'useBaseUrl.ts'),
+    '@docusaurus/useIsBrowser': join(DOCUSAURUS_STUBS, 'useIsBrowser.ts'),
+    '@docusaurus/useDocusaurusContext': join(DOCUSAURUS_STUBS, 'useDocusaurusContext.ts'),
+    '@theme/Layout': join(DOCUSAURUS_STUBS, 'Layout.tsx'),
+  },
 };
 
 function globs(): { unit: string[]; integration: string[]; dom: string[]; plans: string[] } {
@@ -37,7 +47,7 @@ function globs(): { unit: string[]; integration: string[]; dom: string[]; plans:
   if (scope === 'tests') return { unit: ['**/*.test.ts'], integration: [], dom: [], plans: [] };
   if (scope === 'apps/docs') {
     return {
-      unit: ['tests/**/*.test.ts', 'scripts/**/*.test.ts'],
+      unit: ['tests/**/*.test.ts', 'scripts/**/*.test.ts', 'src/**/*.test.{ts,tsx}'],
       integration: [],
       dom: [],
       plans: [],

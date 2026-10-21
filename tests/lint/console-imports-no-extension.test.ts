@@ -6,14 +6,15 @@ import { describe, expect, it } from 'vitest';
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..');
 
 // Matches `from '…'`, `import '…'`, `import('…')` and `import type … from '…'`
-// whose specifier is relative or the `#/` alias and ends in .ts or .tsx.
-const EXTENSIONED = /(?:from|import)\s*\(?\s*['"]((?:\.{1,2}\/|#\/)[^'"]*\.tsx?)['"]/g;
+// whose specifier is relative, the `#/` alias or the docs app's `@site/` alias and ends in .ts or .tsx.
+const EXTENSIONED = /(?:from|import)\s*\(?\s*['"]((?:\.{1,2}\/|#\/|@site\/)[^'"]*\.tsx?)['"]/g;
 
 const TREES = [
   'apps/admin-console/src/**/*.{ts,tsx}',
   'apps/admin-console/tests/**/*.{ts,tsx}',
   'apps/admin-console/e2e/**/*.{ts,tsx}',
   'apps/admin-console/scripts/**/*.{ts,tsx}',
+  'apps/docs/src/**/*.{ts,tsx}',
 ];
 
 describe('console imports carry no file extension', { timeout: 60_000 }, () => {

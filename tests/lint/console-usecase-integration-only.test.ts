@@ -295,6 +295,9 @@ function scopes(): string[] {
   return [
     `${SRC}/shared/{usecase,repository}/**/*.ts`,
     `${SRC}/features/*/{usecase,repository}/**/*.ts`,
+    // The docs app has no repositories: its usecases are held to the same rule.
+    'apps/docs/src/shared/usecase/**/*.ts',
+    'apps/docs/src/features/*/usecase/**/*.ts',
   ];
 }
 

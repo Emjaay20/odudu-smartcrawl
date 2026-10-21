@@ -1,0 +1,39 @@
+import Link from '@docusaurus/Link';
+import type { ReactElement } from 'react';
+import { Section } from '@site/src/features/landing/view/Section/Section';
+import styles from '@site/src/features/landing/view/Compare/Compare.module.css';
+
+export function Compare(): ReactElement {
+  return (
+    <Section
+      id="home-compare"
+      kicker="How it compares"
+      title="Honest about where it stands"
+      section="compare"
+      tone="sunken"
+    >
+      <p className={styles.sectionLede} data-reveal="">
+        You may be choosing between Odudu and another identity provider you run yourself. The
+        comparison page lists what Odudu does today, each with a page that shows it working, and
+        what it does not do. It says nothing about other products, because facts about them go
+        stale.
+      </p>
+      <p className={styles.callout} data-reveal="">
+        <strong>Odudu is not ready for production.</strong> It has not been security reviewed and it
+        runs as one instance. The roadmap lists what is built, what comes next and what is decided
+        against.
+      </p>
+      <p className={styles.links} data-reveal="">
+        <Link className={styles.inline} to="/introduction/compare/">
+          How Odudu compares
+        </Link>
+        <Link className={styles.inline} to="/guides/keycloak/">
+          Coming from Keycloak
+        </Link>
+        <Link className={styles.inline} to="/roadmap/">
+          The roadmap
+        </Link>
+      </p>
+    </Section>
+  );
+}

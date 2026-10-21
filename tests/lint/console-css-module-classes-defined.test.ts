@@ -14,6 +14,7 @@ import { describe, expect, it } from 'vitest';
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..');
 const CONSOLE = 'apps/admin-console';
+const DOCS = 'apps/docs';
 const FIXTURES = 'tests/lint/fixtures/console-css-module-classes-defined';
 const CLASS = /\.(-?[_a-zA-Z][\w-]*)/gu;
 
@@ -67,6 +68,8 @@ function byPlace(a: string, b: string): number {
 
 function resolve(from: string, specifier: string): string {
   if (specifier.startsWith('#/')) return `src/${specifier.slice(2)}`;
+  // The docs app's alias for its own root.
+  if (specifier.startsWith('@site/')) return specifier.slice('@site/'.length);
   return path.posix.join(path.posix.dirname(from), specifier);
 }
 
@@ -242,6 +245,13 @@ describe('console CSS modules', { timeout: 60_000 }, () => {
     const names = [...files.keys()];
     expect(names.filter((file) => file.endsWith('.module.css')).length).toBeGreaterThan(50);
     expect(names).toContain('src/shared/view/RecordTab/index.ts');
+    expect(violations(files)).toEqual([]);
+  });
+
+  it('hold in the docs app too', async () => {
+    const files = await read(DOCS);
+    const names = [...files.keys()];
+    expect(names.filter((file) => file.endsWith('.module.css')).length).toBeGreaterThan(10);
     expect(violations(files)).toEqual([]);
   });
 

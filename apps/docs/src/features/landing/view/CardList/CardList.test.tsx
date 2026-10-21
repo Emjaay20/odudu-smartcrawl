@@ -1,0 +1,27 @@
+import { describe, expect, it } from 'vitest';
+import { CardList } from '@site/src/features/landing/view/CardList/CardList';
+import { markupOf } from '@site/tests/support/markup';
+import { PAGES_BASE } from '@site/site.config';
+
+const CARDS = [
+  { title: 'One', body: 'First card.', to: '/a/' },
+  { title: 'Two', body: 'Second card.', to: '/b/' },
+] as const;
+
+describe('CardList', () => {
+  it('lists each card once, its title the one link to its page', () => {
+    const $ = markupOf(<CardList cards={CARDS} columns={4} />);
+    expect($('li')).toHaveLength(2);
+    expect(
+      $('li a')
+        .map((_, link) => $(link).attr('href'))
+        .get(),
+    ).toEqual([`${PAGES_BASE}a/`, `${PAGES_BASE}b/`]);
+    expect($('li').first().find('p').text()).toBe('First card.');
+  });
+
+  it('marks every card to be revealed as it comes into view', () => {
+    const $ = markupOf(<CardList cards={CARDS} columns={2} />);
+    expect($('li[data-reveal]')).toHaveLength(2);
+  });
+});

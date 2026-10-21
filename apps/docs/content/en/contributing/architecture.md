@@ -5,7 +5,7 @@ description: The five layers every package follows, the imports each may make an
 
 # Architecture
 
-You will learn how the code is organised so you can put a new piece in the right place the first time. Odudu is a TypeScript monorepo. Every part of it, the server and the admin console alike, is built from the same five layers, and the build checks the rules between them.
+You will learn how the code is organised so you can put a new piece in the right place the first time. Odudu is a TypeScript monorepo. Every part of it, the server and the admin console alike, is built from the same five layers, and the build checks the rules between them. This documentation site follows the same layout with the three layers it needs.
 
 ## The five layers
 
@@ -30,6 +30,8 @@ Read the last column as a rule about where decisions live. A rule, a message, th
 | service    | nothing                             | everything else           |
 
 A feature exposes one `index.ts`, and no feature reaches into another's internals. Domain packages never import protocol packages, and protocol packages never import each other. `pnpm boundaries` checks these rules and fails the build on a breach, because a convention that nothing checks decays within weeks.
+
+The documentation site has no remote data, so it has only `view`, `usecase` and `service`. Each feature under `apps/docs/src/features` holds those three folders and one `index.ts`; what two features use is under `shared`. Each component is a folder with its markup, its CSS module and its test, its props are `readonly`, and anything the browser provides that a service needs, such as a clock or an observer, is passed in by the usecase. The build holds this by the same kinds of checks.
 
 Inside a package, imports use `#/` and never a relative path. Across packages they use the package name, such as `@odudu/kernel`, and resolve only through that package's `index.ts`. In the console an import never carries a `.ts` or `.tsx` extension.
 

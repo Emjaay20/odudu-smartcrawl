@@ -1,0 +1,81 @@
+// A small deterministic random source, so a test can fix the typing rhythm.
+export function seeded(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let mixed = Math.imul(state ^ (state >>> 15), 1 | state);
+    mixed = (mixed + Math.imul(mixed ^ (mixed >>> 7), 61 | mixed)) ^ mixed;
+    return ((mixed ^ (mixed >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// The clock the rhythm runs on, so a test can drive it and nothing here reads a global.
+export interface Timers {
+  readonly set: (run: () => void, ms: number) => unknown;
+  readonly clear: (handle: unknown) => void;
+}
+
+export interface Rhythm {
+  // Mean time per keystroke; about 22 characters a second.
+  readonly keyMs: number;
+  // Each keystroke lasts keyMs times a factor in 1 +- jitter.
+  readonly jitter: number;
+  // The pause after the command and the beat before each next line.
+  readonly afterCommandMs: number;
+  readonly lineBeatMs: number;
+  readonly random: () => number;
+  readonly timers: Timers;
+}
+
+export const DEFAULT_RHYTHM: Omit<Rhythm, 'random' | 'timers'> = {
+  keyMs: 45,
+  jitter: 0.45,
+  afterCommandMs: 400,
+  lineBeatMs: 250,
+};
+
+// Types `length` characters, then shows `lines` more lines one by one. Returns
+// the function that stops it. Loaded once the page is idle.
+export function playTerminal(
+  length: number,
+  lines: number,
+  rhythm: Rhythm,
+  on: {
+    readonly count: (typed: number) => void;
+    readonly commandDone: () => void;
+    readonly line: (shown: number) => void;
+    readonly done: () => void;
+  },
+): () => void {
+  let timer: unknown;
+  const later = (ms: number, next: () => void): void => {
+    timer = rhythm.timers.set(next, ms);
+  };
+  const showLine = (shown: number): void => {
+    on.line(shown);
+    if (shown >= lines) on.done();
+    else
+      later(rhythm.lineBeatMs, () => {
+        showLine(shown + 1);
+      });
+  };
+  const key = (typed: number): void => {
+    on.count(typed);
+    if (typed >= length) {
+      on.commandDone();
+      later(rhythm.afterCommandMs, () => {
+        showLine(1);
+      });
+      return;
+    }
+    later(rhythm.keyMs * (1 + rhythm.jitter * (rhythm.random() * 2 - 1)), () => {
+      key(typed + 1);
+    });
+  };
+  later(rhythm.keyMs, () => {
+    key(1);
+  });
+  return () => {
+    rhythm.timers.clear(timer);
+  };
+}

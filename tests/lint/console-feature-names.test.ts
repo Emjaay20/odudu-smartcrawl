@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..');
 const CONSOLE_SRC = 'apps/admin-console/src';
+const DOCS_SRC = 'apps/docs/src';
 const FIXTURES = 'tests/lint/fixtures/console-features';
 const FEATURE_NAME = /^[a-z][a-z-]*$/u;
 
@@ -30,6 +31,12 @@ describe("the console's feature folders", () => {
   it('are named in lowercase letters and hyphens', async () => {
     expect(existsSync(path.join(REPO_ROOT, CONSOLE_SRC, 'app/App/App.tsx'))).toBe(true);
     expect(misnamed(await featureFolders(CONSOLE_SRC))).toEqual([]);
+  });
+
+  it('are named the same way in the docs app, whose rules substitute them too', async () => {
+    const folders = await featureFolders(DOCS_SRC);
+    expect(folders).toEqual(['docs-home', 'landing']);
+    expect(misnamed(folders)).toEqual([]);
   });
 
   it('refuse a folder name outside that pattern in the fixtures', async () => {

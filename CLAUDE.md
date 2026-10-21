@@ -501,7 +501,7 @@ then it is a rule somebody has to follow.
 
 ## Layering
 
-Five functional layers, in the consoles and on the server alike:
+Five functional layers, in the consoles, on the server and, with three of them, in the docs app:
 
 | Layer      | Contains                                | Business logic    |
 | ---------- | --------------------------------------- | ----------------- |
@@ -518,6 +518,23 @@ Permitted imports:
 - `repository` → adapter, service.
 - `adapter` → transport, service.
 - `service` → nothing.
+
+**The docs app** (`apps/docs/src`) has no remote data, so only `view`, `usecase`
+and `service` apply, laid out as the console lays them out:
+`features/<name>/{view,usecase,service}` with one `index.ts` each, and
+`shared/{view,usecase,service}` for what two features use. A component is a
+folder with `Component.tsx`, `Component.module.css` and `Component.test.tsx`;
+its props are `readonly`; hooks live in `usecase` and views render. Browser
+access a service needs (a clock, an observer, a random source) is handed to it
+by the usecase, so the service stays a pure function a test can drive.
+Docusaurus pins `src/pages`, `src/image-pages`, `src/theme` and `src/css`; the
+route files there are thin views over a feature's `index.ts`. Imports use
+`@site/src/…`, never a relative path and never a `.ts` or `.tsx` extension.
+The dependency rules (`docs-*` in `.dependency-cruiser.cjs`), the
+`complexity: 8` cap on usecases, the react-hooks rules and
+`tests/lint/docs-props-readonly.test.ts` hold it; the console's lints for
+duplicate exports, module state, manual memoisation, custom properties, CSS
+module classes, file extensions and usecase logic read the docs app too.
 
 Features expose one `index.ts`. No feature reaches into another's
 internals.

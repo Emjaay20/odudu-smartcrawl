@@ -35,6 +35,7 @@ export default tseslint.config(
             // service already owns it; matching it here too is a parse error.
             'apps/*/!(site).config.ts',
             '.dependency-cruiser.cjs',
+            '.dependency-cruiser-resolve.cjs',
           ],
           defaultProject: 'tsconfig.base.json',
         },
@@ -70,7 +71,7 @@ export default tseslint.config(
     extends: [tseslint.configs.disableTypeChecked],
   },
   {
-    files: ['apps/admin-console/**/*.{ts,tsx}'],
+    files: ['apps/admin-console/**/*.{ts,tsx}', 'apps/docs/src/**/*.{ts,tsx}'],
     extends: [reactHooks.configs.flat.recommended],
     // `eslint .` passes on a warning, so a finding at warning severity would ship.
     rules: {
@@ -82,7 +83,10 @@ export default tseslint.config(
   {
     // A usecase or repository decides nothing (ADR 0010's amendment), and a
     // function this branchy is deciding: the decision is a service function.
-    files: ['apps/admin-console/src/**/{usecase,repository}/**/*.ts'],
+    files: [
+      'apps/admin-console/src/**/{usecase,repository}/**/*.ts',
+      'apps/docs/src/**/usecase/**/*.ts',
+    ],
     ignores: ['**/*.test.ts'],
     rules: { complexity: ['error', 8] },
   },

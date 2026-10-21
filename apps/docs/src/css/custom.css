@@ -72,6 +72,8 @@
 
   --ifm-font-family-base: var(--font-sans);
   --ifm-font-family-monospace: var(--font-mono);
+  /* Infima's own value, named here because the landing's sections scroll to clear it. */
+  --ifm-navbar-height: 3.75rem;
   --ifm-font-size-base: 100%;
   --ifm-line-height-base: 1.65;
   --ifm-heading-font-weight: 600;

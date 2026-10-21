@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest';
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..');
 const CONSOLE = 'apps/admin-console';
+const DOCS = 'apps/docs';
 const FIXTURES = 'tests/lint/fixtures/console-css-vars-defined';
 const USE = /var\(\s*(--[\w-]+)\s*(,)?/gu;
 const DECLARATION = /(?:^|[\s{;'"])(--[\w-]+)\s*:|@property\s+(--[\w-]+)/gu;
@@ -233,6 +234,17 @@ describe('console custom properties', { timeout: 60_000 }, () => {
     const vendor = await vendorProperties(path.join(REPO_ROOT, CONSOLE), packages);
     expect(vendor.has('--trigger-width')).toBe(true);
     expect(violations(files, vendor)).toEqual([]);
+  });
+
+  it('are each declared in the docs app, the console tokens it imports, or a package it imports', async () => {
+    const files = await read(DOCS);
+    // custom.css imports Instrument's tokens and fonts from the console by path.
+    for (const name of ['tokens.css', 'fonts.css']) {
+      const text = await readFile(path.join(REPO_ROOT, CONSOLE, 'src/shared/view', name), 'utf8');
+      files.set(`console/${name}`, text);
+    }
+    expect(files.has('src/css/custom.css')).toBe(true);
+    expect(violations(files, new Set())).toEqual([]);
   });
 
   it('refuses to pass for a package that is imported and not installed', async () => {

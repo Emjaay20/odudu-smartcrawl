@@ -1,0 +1,303 @@
+.scene {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  overflow: hidden;
+  border-radius: var(--radius-m);
+}
+
+.scene[data-layout='tall'] {
+  display: none;
+  max-inline-size: 26rem;
+  margin-inline: auto;
+}
+
+@media (max-width: 899px) {
+  .scene[data-layout='wide'] {
+    display: none;
+  }
+
+  .scene[data-layout='tall'] {
+    display: block;
+  }
+}
+
+/* Surfaces: three levels, a window, the hub, and what lifts when it is active. */
+.window {
+  fill: var(--surface-panel);
+  stroke: var(--border-strong);
+  stroke-width: 1;
+  filter: drop-shadow(0 6px 14px var(--shadow-soft));
+}
+
+.hub {
+  fill: var(--surface-panel);
+  stroke: var(--border-strong);
+  stroke-width: 1;
+  filter: drop-shadow(0 14px 30px var(--shadow-deep));
+}
+
+.sheen {
+  fill: none;
+  stroke: var(--sheen);
+  stroke-width: 1;
+}
+
+.glowCore,
+.glowMid,
+.glowEdge {
+  stop-color: var(--signal-active-ink);
+}
+
+.glowCore {
+  stop-opacity: 0.42;
+}
+
+.glowMid {
+  stop-opacity: 0.16;
+}
+
+.glowEdge {
+  stop-opacity: 0;
+}
+
+:global([data-theme='dark']) .glowCore {
+  stop-opacity: 0.3;
+}
+
+:global([data-theme='dark']) .glowMid {
+  stop-opacity: 0.1;
+}
+
+.ring {
+  fill: none;
+  stroke: var(--signal-active-ink);
+  stroke-opacity: 0.18;
+  stroke-width: 1;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.halo {
+  fill: none;
+  stroke: var(--signal-active-ink);
+  stroke-width: 2;
+  opacity: 0;
+}
+
+.halo[data-on='true'] {
+  opacity: 1;
+}
+
+.rule {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.lamp {
+  fill: var(--border-strong);
+}
+
+.block {
+  fill: var(--signal-active);
+}
+
+.avatar {
+  fill: var(--border-strong);
+}
+
+.field {
+  fill: var(--surface-sunken);
+  stroke: var(--border-strong);
+  stroke-width: 1;
+}
+
+.cta {
+  fill: var(--signal-active-ink);
+}
+
+.bar {
+  fill: var(--border);
+}
+
+.tag {
+  fill: var(--ink-muted);
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+
+.hubName {
+  fill: var(--ink-primary);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+.staff {
+  fill: none;
+  stroke: var(--signal-active-ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.chip {
+  fill: var(--surface-sunken);
+  stroke: var(--border-strong);
+  stroke-width: 1;
+}
+
+.chipOn {
+  fill: var(--signal-active);
+  stroke: var(--signal-active-ink);
+  stroke-width: 1.5;
+  opacity: 0;
+}
+
+.chipText {
+  fill: var(--ink-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  text-anchor: middle;
+}
+
+.pass {
+  fill: var(--signal-active-ink);
+}
+
+.check,
+.checkLine {
+  fill: none;
+  stroke: var(--surface-panel);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tick {
+  fill: none;
+  stroke: var(--surface-panel);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.7;
+}
+
+.signed {
+  opacity: 0;
+}
+
+.signed[data-on='true'] {
+  opacity: 1;
+}
+
+.route {
+  fill: none;
+  stroke: var(--ink-muted);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 0.1 7;
+}
+
+.routeOn {
+  fill: none;
+  stroke: var(--signal-active-ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 0.1 7;
+  opacity: 0;
+}
+
+.routeOn[data-on='true'] {
+  opacity: 1;
+}
+
+.head {
+  fill: var(--ink-muted);
+}
+
+.headOn {
+  fill: var(--signal-active-ink);
+}
+
+.dot {
+  fill: var(--signal-active-ink);
+}
+
+.late[data-away='true'] {
+  transform: translateY(16px);
+}
+
+.late[data-away='true'] .window {
+  stroke-dasharray: 5 5;
+}
+
+/* The picture rests on its composed state: no motion until a step is chosen. */
+.node,
+.late {
+  transform-box: view-box;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .node,
+  .late {
+    transition: transform var(--motion-panel) var(--ease);
+  }
+
+  .node[data-on='true'] {
+    transform: translateY(-4px);
+  }
+
+  .halo,
+  .signed,
+  .routeOn {
+    transition: opacity 300ms var(--ease);
+  }
+
+  .dot {
+    animation-duration: 1.7s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-fill-mode: both;
+  }
+
+  .ticket {
+    animation-duration: 1.5s;
+    animation-timing-function: ease-in-out;
+    animation-fill-mode: both;
+  }
+
+  .ring[data-pulse='true'] {
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+
+  .chipOn[data-lit='true'] {
+    animation: lit 1.1s ease-in-out both;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(1.035);
+  }
+}
+
+@keyframes lit {
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  30%,
+  70% {
+    opacity: 1;
+  }
+}

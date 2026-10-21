@@ -176,6 +176,76 @@ module.exports = {
       },
     },
     {
+      name: 'docs-feature-imports-only-index',
+      severity: 'error',
+      comment:
+        "A docs feature's index.ts is its only importable surface, to other features and to the " +
+        'route files Docusaurus pins (pages/, image-pages/); everything else in it can change ' +
+        'without anything outside noticing.',
+      // From a route file the group is empty, so no feature is exempt; from a
+      // feature it is that feature, which may reach its own internals.
+      from: { path: '(^|/)apps/docs/src/(?:pages/|image-pages/|features/([^/]+)/)' },
+      // $2 is substituted unescaped; tests/lint/console-feature-names.test.ts keeps it regex-safe.
+      to: { path: '(^|/)apps/docs/src/features/(?!$2/)[^/]+/(?!index\\.ts$)' },
+    },
+    {
+      name: 'docs-service-imports-only-service',
+      severity: 'error',
+      comment:
+        'A docs service is pure: it imports other services, its own or shared/service, the ' +
+        "site's nav.ts and the console picture manifest, and nothing else. A feature index.ts " +
+        'is refused too, since it reaches views and usecases.',
+      from: {
+        path: '(^|/)apps/docs/src/(?:service|.*/service)(?:/|\\.tsx?$)',
+        pathNot: '\\.test\\.tsx?$',
+      },
+      to: {
+        pathNot:
+          '(^|/)apps/docs/src/(?:service|.*/service)(?:/|\\.tsx?$)|(^|/)apps/docs/nav\\.ts$|(^|/)apps/docs/static/console/manifest\\.json$',
+      },
+    },
+    {
+      name: 'docs-usecase-imports-no-view',
+      severity: 'error',
+      comment:
+        'A docs usecase orchestrates for a view and is called by it; a usecase that reached ' +
+        'back into a view would make the two one thing.',
+      from: {
+        path: '(^|/)apps/docs/src/(?:usecase|.*/usecase)(?:/|\\.tsx?$)',
+        pathNot: '\\.test\\.tsx?$',
+      },
+      to: { path: '(^|/)apps/docs/src/(?:view|.*/view)(?:/|\\.tsx?$)' },
+    },
+    {
+      name: 'docs-index-exports-view-usecase-service',
+      severity: 'error',
+      comment:
+        "A docs feature's index.ts publishes its own views, usecases and services; a type-only " +
+        'export of anything is allowed.',
+      from: { path: '(^|/)apps/docs/src/features/([^/]+)/index\\.ts$' },
+      // $2 is substituted unescaped; tests/lint/console-feature-names.test.ts keeps it regex-safe.
+      to: {
+        pathNot: '(^|/)apps/docs/src/features/$2/(?:view|usecase|service)(?:/|\\.tsx?$)',
+        dependencyTypesNot: ['type-only'],
+      },
+    },
+    {
+      name: 'docs-shared-imports-no-feature',
+      severity: 'error',
+      comment: 'shared/ holds only what two or more features use, so it depends on none of them.',
+      from: { path: '(^|/)apps/docs/src/shared/' },
+      to: { path: '(^|/)apps/docs/src/features/' },
+    },
+    {
+      name: 'docs-nothing-imports-routes',
+      severity: 'error',
+      comment:
+        'pages/ and image-pages/ are the routes Docusaurus pins: thin views over a feature, ' +
+        'and nothing below them sees them.',
+      from: { path: '(^|/)apps/docs/src/(?:shared|features)/' },
+      to: { path: '(^|/)apps/docs/src/(?:pages|image-pages)/' },
+    },
+    {
       name: 'console-nothing-ships-testing',
       severity: 'error',
       comment:
@@ -311,5 +381,7 @@ module.exports = {
     tsPreCompilationDeps: true,
     tsConfig: { fileName: 'tsconfig.base.json' },
     enhancedResolveOptions: { exportsFields: ['exports'], conditionNames: ['import', 'default'] },
+    // Only for the docs app's own `@site/…` imports, which Docusaurus resolves to its root.
+    webpackConfig: { fileName: '.dependency-cruiser-resolve.cjs' },
   },
 };

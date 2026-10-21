@@ -1,0 +1,103 @@
+.controls {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.controlRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+}
+
+.transport {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.stepper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.stepButton,
+.control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: 2.75rem;
+  min-inline-size: 2.75rem;
+  padding-inline: var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-panel);
+  color: var(--ink-primary);
+  font-family: var(--font-sans);
+  font-size: var(--type-13);
+  cursor: pointer;
+}
+
+.control {
+  min-inline-size: 5rem;
+  background: var(--surface-sunken);
+}
+
+.stepButton[aria-current='step'] {
+  border-color: var(--signal-active-ink);
+  background: var(--signal-active-ink);
+  color: var(--surface-panel);
+}
+
+.stepNumber {
+  font-family: var(--font-mono);
+  font-weight: 400;
+}
+
+@media (max-width: 1099px) {
+  .stepButton {
+    min-inline-size: 2.5rem;
+    padding-inline: 0;
+  }
+
+  .stepLabel {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+.live {
+  min-block-size: 3.2em;
+  margin: var(--space-3) 0 0;
+  color: var(--ink-primary);
+  line-height: 1.5;
+}
+
+@media (max-width: 899px) {
+  .live {
+    min-block-size: 5em;
+  }
+}
+
+@media (max-width: 599px) {
+  .live {
+    min-block-size: 8em;
+  }
+}
+
+@media (scripting: none) {
+  .controls {
+    display: none;
+  }
+}
+
+@media print {
+  .controls {
+    display: none;
+  }
+}

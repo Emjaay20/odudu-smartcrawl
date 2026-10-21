@@ -2525,3 +2525,18 @@ and copyright lines are `LICENSES/OFL-1.1-IBM-Plex-{Sans,Mono}.txt` (copied from
 family served from a font file in either build has no notice, no published text or no copyright line. The console's own
 build and the server's pages ship the same fonts; their copy of the notice is not yet published beside them. That belongs to Increment 33 (community and notice files): serve
 the same two files from the console's and the server pages' static output and extend the test to those builds.
+
+### Increment 31f, the docs app follows the console's layering
+
+`apps/docs/src` is `features/{landing,docs-home}/{view,usecase,service}` and `shared/{view,usecase,service}`, with the
+Docusaurus-pinned `pages/`, `image-pages/`, `css/` as they were; a view calls its feature's usecase, a usecase hands the
+browser it needs (a clock, an observer, a random source) to a pure service, and a component is a folder of its markup, its
+CSS module and its test. Held by the `docs-*` dependency-cruiser rules (resolved through `.dependency-cruiser-resolve.cjs`,
+since `@site/…` is not in the base tsconfig), the react-hooks and `complexity: 8` eslint rules,
+`tests/lint/docs-props-readonly.test.ts`, and the console's lints for duplicate exports, module state, manual memoisation,
+custom properties, CSS module classes, file extensions and usecase logic, which now read the docs app too (each shown to
+fail on a planted violation). The lints found three things the old layout hid: a CSS class (`prompt`) used and never defined,
+a custom property (`--below-height`) read and never set, and `--ifm-navbar-height` used without being declared.
+**verified:** `landing-*` pictures of the home page at 1280 and 375 px, both colour modes, reduced motion, are pixel-identical
+to the ones before the move (26 captures, 0 differing pixels in 24, the two hero captures that include the 9 s float and
+typing differ by animation phase only).
