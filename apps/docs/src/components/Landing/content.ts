@@ -102,7 +102,7 @@ export const READERS: readonly Card[] = [
   },
   {
     title: 'I administer people and apps',
-    body: 'A ten-minute tour of the console: tenants, people, apps, keys and the audit trail.',
+    body: 'A tour of the console: tenants, people, apps, keys and the audit trail.',
     to: '/admin-console/tour/',
   },
   {
@@ -142,3 +142,10 @@ export const EXAMPLES: readonly Card[] = [
 
 export const EXAMPLES_URL_PATH = '/tree/main/examples';
 export const LICENSING_URL_PATH = '/blob/main/LICENSING.md';
+
+// What the quick start's second step shows, which the hero's terminal plays
+// after the command. A test holds each line to the quick start's own text.
+export const FOLLOW_UP = {
+  command: 'docker compose logs setup',
+  output: ['Odudu is ready.', ' console:  http://localhost:3000/console/'],
+} as const;

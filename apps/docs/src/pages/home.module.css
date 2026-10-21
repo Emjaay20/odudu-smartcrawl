@@ -55,6 +55,15 @@
   mask: url('../../static/brand/lockup.svg') center / contain no-repeat;
 }
 
+/* A mask is not painted on paper by every browser; the file itself is. */
+@media print {
+  .lockup {
+    background: url('../../static/brand/lockup.svg') center / contain no-repeat;
+    mask: none;
+    print-color-adjust: exact;
+  }
+}
+
 @media (forced-colors: active) {
   .lockup {
     background-color: CanvasText;
@@ -239,6 +248,66 @@
   overflow-wrap: break-word;
 }
 
+/* The command is the layout; the typed copy sits exactly over it. */
+.typeWrap {
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: var(--type-13);
+  line-height: 1.6;
+}
+
+.typed {
+  position: absolute;
+  inset: 0;
+  color: var(--ink-rail);
+  font-family: var(--font-mono);
+  font-size: var(--type-13);
+  line-height: 1.6;
+  overflow-wrap: break-word;
+  pointer-events: none;
+}
+
+.rest {
+  visibility: hidden;
+}
+
+.typed::after {
+  content: '';
+  display: inline-block;
+  inline-size: 0.5ch;
+  block-size: 1em;
+  margin-block: -0.15em;
+  margin-inline-start: 1px;
+  background: var(--rail-accent);
+}
+
+.panel code[data-typing='on'] {
+  color: transparent;
+}
+
+.followUp {
+  display: grid;
+  gap: 2px;
+  margin-block-start: var(--space-3);
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--border-rail);
+}
+
+.followUp code {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-rail-muted);
+  font-family: var(--font-mono);
+  font-size: var(--type-13);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.followUp .output {
+  color: var(--ink-rail);
+}
+
 .installNote {
   margin: var(--space-2) 0 0;
   color: var(--ink-muted);
@@ -298,8 +367,9 @@
   color: var(--ink-muted);
 }
 
+/* Plex at 400 and 600 only on this page: each further weight is another file before the first paint. */
 .inline {
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .links {
@@ -389,7 +459,6 @@
   color: var(--ink-muted);
   font-family: var(--font-mono);
   font-size: var(--type-12);
-  font-weight: 500;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   vertical-align: 2px;
@@ -545,6 +614,18 @@
  */
 
 @media (prefers-reduced-motion: no-preference) {
+  .typed::after {
+    animation: caret 1s steps(1) infinite;
+  }
+
+  .followUp {
+    transition: opacity var(--motion-panel) var(--ease);
+  }
+
+  .followUp[data-typing='on'] {
+    opacity: 0;
+  }
+
   .card,
   .pane,
   .primary,
@@ -572,6 +653,46 @@
     scale: 0.97;
   }
 
+  [data-motion='ok'] [data-reveal][data-pending] {
+    --i: 0;
+  }
+
+  [data-motion='ok'] [data-reveal][data-pending]:nth-child(4n + 2) {
+    --i: 1;
+  }
+
+  [data-motion='ok'] [data-reveal][data-pending]:nth-child(4n + 3) {
+    --i: 2;
+  }
+
+  [data-motion='ok'] [data-reveal][data-pending]:nth-child(4n + 4) {
+    --i: 3;
+  }
+
+  @supports (animation-timeline: view()) {
+    [data-motion='ok'] [data-reveal][data-pending] {
+      animation: reveal linear both;
+      animation-timeline: view();
+      animation-range: entry calc(var(--i) * 5%) entry calc(45% + var(--i) * 5%);
+    }
+  }
+
+  @supports not (animation-timeline: view()) {
+    [data-motion='ok'] [data-reveal] {
+      transition:
+        opacity 500ms var(--ease) calc(var(--i, 0) * 60ms),
+        transform 500ms var(--ease) calc(var(--i, 0) * 60ms);
+    }
+
+    [data-motion='ok'] [data-reveal][data-pending] {
+      opacity: 0.94;
+      transform: translateY(16px);
+    }
+  }
+}
+
+/* The hero's entrance is for wide screens: on a phone the first screen is the measured one and simply appears. */
+@media (prefers-reduced-motion: no-preference) and (min-width: 997px) {
   .lockup {
     animation: enterFade 500ms var(--ease) both;
   }
@@ -588,50 +709,15 @@
     animation: enter 800ms var(--ease) 120ms both;
   }
 
-  [data-motion='ok'] [data-reveal] {
-    --i: 0;
-  }
-
-  [data-motion='ok'] [data-reveal]:nth-child(4n + 2) {
-    --i: 1;
-  }
-
-  [data-motion='ok'] [data-reveal]:nth-child(4n + 3) {
-    --i: 2;
-  }
-
-  [data-motion='ok'] [data-reveal]:nth-child(4n + 4) {
-    --i: 3;
-  }
-
-  @supports (animation-timeline: view()) {
-    [data-motion='ok'] [data-reveal] {
-      animation: reveal linear both;
-      animation-timeline: view();
-      animation-range: entry calc(var(--i) * 5%) entry calc(45% + var(--i) * 5%);
-    }
-  }
-
-  @supports not (animation-timeline: view()) {
-    [data-motion='ok'] [data-reveal] {
-      opacity: 0;
-      transform: translateY(16px);
-      transition:
-        opacity 500ms var(--ease) calc(var(--i) * 60ms),
-        transform 500ms var(--ease) calc(var(--i) * 60ms);
-    }
-
-    [data-motion='ok'] [data-reveal][data-revealed] {
-      opacity: 1;
-      transform: none;
-    }
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) and (min-width: 997px) {
   .heroShot figure {
     animation: float 9s ease-in-out 1.5s infinite;
     will-change: transform;
+  }
+}
+
+@keyframes caret {
+  50% {
+    opacity: 0;
   }
 }
 
@@ -647,7 +733,7 @@
 
 @keyframes enterFade {
   from {
-    opacity: 0;
+    opacity: 0.4;
     transform: translateY(12px);
   }
 
@@ -659,7 +745,7 @@
 
 @keyframes reveal {
   from {
-    opacity: 0;
+    opacity: 0.94;
     transform: translateY(16px);
   }
 
@@ -673,4 +759,29 @@
   50% {
     transform: translateY(-5px);
   }
+}
+
+.early {
+  margin: var(--space-3) 0 0;
+  color: var(--ink-muted);
+  font-size: var(--type-13);
+}
+
+.examples {
+  margin-block-start: var(--space-6);
+}
+
+.exampleList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+
+.stack {
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
 }

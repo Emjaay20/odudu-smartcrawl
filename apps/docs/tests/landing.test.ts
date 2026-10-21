@@ -1,9 +1,11 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { describe, expect, it } from 'vitest';
 import { JOURNEYS, SECTIONS } from '#docs/nav.ts';
+import { FOLLOW_UP } from '#docs/src/components/Landing/content.ts';
 import { PAGES_BASE } from '#docs/site.config.ts';
+import { TIME_CLAIM } from '#docs/tests/support/claims.ts';
 import { DOCS_ROOT, distDir, fileOf, load } from '#docs/tests/support/dist.ts';
 
 const REPO_ROOT = path.resolve(DOCS_ROOT, '../..');
@@ -107,9 +109,13 @@ describe('the landing page as built', () => {
   });
 
   it('has four reader paths, each linking to a page the build wrote', () => {
-    const readers = landing.find('[data-section="readers"] a[href]');
+    const readers = landing
+      .find('[data-section="readers"] a[href]')
+      .not('[data-section="examples"] a');
     expect(readers).toHaveLength(4);
-    for (const href of hrefs(landing.find('[data-section="readers"]'))) {
+    for (const href of hrefs(landing.find('[data-section="readers"]')).filter((href) =>
+      href.startsWith(PAGES_BASE),
+    )) {
       expect(exists(href), href).toBe(true);
     }
   });
@@ -191,16 +197,20 @@ const EVIDENCE: Record<string, [string, RegExp]> = {
   'back-channel-logout': [shipped, /back-channel logout delivered to the apps that registered/u],
 };
 
-describe('the sign-in pictures', () => {
+describe('the sign-in scene', () => {
   const flow = landing.find('[data-section="signin"]');
-  const steps = flow.find('ol[data-flow] > li');
+  const captions = flow.find('[data-flow-captions] > li');
 
-  it('has nine steps in three acts, each with a caption and a text alternative', () => {
-    expect(flow.find('ol[data-flow]')).toHaveLength(3);
-    expect(steps).toHaveLength(9);
-    steps.each((_, element) => {
-      expect($(element).find('p').text().length).toBeGreaterThan(15);
-      expect($(element).find('svg[role="img"]').attr('aria-label') ?? '').not.toBe('');
+  it('has seven captions in order, and a scene for each layout with its own text alternative', () => {
+    expect(captions).toHaveLength(7);
+    captions.each((_, element) => {
+      expect($(element).find('p').first().text().length).toBeGreaterThan(15);
+    });
+    const scenes = flow.find('svg[data-layout]');
+    expect(scenes).toHaveLength(2);
+    scenes.each((_, element) => {
+      expect($(element).find('title').text()).not.toBe('');
+      expect($(element).find('desc').text().length).toBeGreaterThan(40);
     });
   });
 
@@ -228,23 +238,15 @@ describe('the sign-in pictures', () => {
       const [source, pattern] = EVIDENCE[claim] ?? ['', /^$/u];
       expect(source, claim).toMatch(pattern);
     }
+    const chips = flow
+      .find('[data-claim-chip]')
+      .map((_, element) => $(element).attr('data-claim-chip') ?? '')
+      .get();
+    expect(new Set(chips)).toEqual(new Set(['passwords', 'passkeys', 'authenticator-codes']));
     expect(sessions).toMatch(/sent straight back signed in/u);
-    expect(
-      flow.text() +
-        flow
-          .find('svg')
-          .toArray()
-          .map((svg) => $(svg).attr('aria-label'))
-          .join(' '),
-    ).not.toMatch(
+    expect(flow.text()).not.toMatch(
       /saml|google|github|social|ldap|federat|brokering|every app\b(?! of that tenant)|all apps/iu,
     );
-    expect(
-      flow
-        .find('ul li')
-        .map((_, element) => $(element).text())
-        .get(),
-    ).toEqual(['Password', 'Passkey', 'Authenticator code']);
   });
 
   it('links the pages that give the detail', () => {
@@ -253,5 +255,50 @@ describe('the sign-in pictures', () => {
       `${PAGES_BASE}concepts/tokens/`,
       `${PAGES_BASE}guides/sign-a-user-in/`,
     ]);
+  });
+});
+
+describe('the hero terminal', () => {
+  it('replays only what the quick start shows', () => {
+    const quick = readFileSync(path.join(DOCS_ROOT, 'content/en/quick-start/index.mdx'), 'utf8');
+    expect(quick).toContain(FOLLOW_UP.command);
+    for (const line of FOLLOW_UP.output) expect(quick).toContain(line);
+    const shown = landing.find('[data-panel="unix"]').text();
+    expect(shown).toContain(FOLLOW_UP.command);
+    for (const line of FOLLOW_UP.output) expect(shown).toContain(line);
+  });
+});
+
+describe('the landing page keeps its promises small', () => {
+  const sources = [
+    'src/pages/index.tsx',
+    'src/components/Landing/content.ts',
+    'src/components/Landing/Install.tsx',
+    'src/components/Landing/SignInFlow.tsx',
+  ];
+
+  it('promises no length of time, in its source or in what it builds', () => {
+    for (const file of sources) {
+      expect(readFileSync(path.join(DOCS_ROOT, file), 'utf8'), file).not.toMatch(TIME_CLAIM);
+    }
+    expect(landing.text()).not.toMatch(TIME_CLAIM);
+  });
+
+  it('says the command arrives with the first release for as long as there is no release workflow', () => {
+    const released = existsSync(path.join(REPO_ROOT, '.github/workflows/release.yml'));
+    const note = landing.find('[data-install-note]').text();
+    expect(note.includes('Arrives with the first release')).toBe(!released);
+  });
+
+  it('has at most eight bands, with one console picture and no second one', () => {
+    expect(landing.find('> header, > section').length).toBeLessThanOrEqual(8);
+    expect(landing.find('img')).toHaveLength(2);
+  });
+
+  it('keeps the mark printable: the mask gives way to the file itself', () => {
+    const css = readdirSync(path.join(distDir('pages'), 'assets/css'))
+      .map((file) => readFileSync(path.join(distDir('pages'), 'assets/css', file), 'utf8'))
+      .join('');
+    expect(css).toMatch(/@media print\{[^@]*lockup[^@]*mask:none/u);
   });
 });

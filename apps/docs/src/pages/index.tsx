@@ -5,6 +5,9 @@ import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import { JOURNEYS, REPOSITORY_URL, SECTIONS } from '@site/nav';
 import { landingJsonLd } from '@site/seo';
+import mono400 from '@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2';
+import sans400 from '@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2';
+import sans600 from '@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff2';
 import ConsoleShot from '@site/src/components/ConsoleShot';
 import CardList from '@site/src/components/Landing/CardList';
 import {
@@ -43,6 +46,10 @@ function Hero(): ReactNode {
               Follow the quick start
             </Link>
           </p>
+          <p className={styles.early}>
+            Early software, not ready for production.{' '}
+            <Link to="/roadmap/">What is built and what is next</Link>
+          </p>
         </div>
         <div className={styles.heroShot}>
           <ConsoleShot
@@ -59,7 +66,12 @@ function Hero(): ReactNode {
 
 function Steps(): ReactNode {
   return (
-    <Section id="home-steps" kicker="First run" title="Ten minutes to a working sign-in">
+    <Section
+      id="home-steps"
+      kicker="First run"
+      title="From docker compose up to your first sign-in"
+      tone="sunken"
+    >
       <ol className={styles.steps}>
         {STEPS.map((step) => (
           <li key={step.title} className={styles.step} data-reveal="">
@@ -78,33 +90,30 @@ function Steps(): ReactNode {
   );
 }
 
-function Console(): ReactNode {
+function Ways(): ReactNode {
   return (
-    <Section
-      id="home-console"
-      kicker="The console"
-      title="Run it with a mouse, or with a script"
-      tone="sunken"
-    >
-      <p className={styles.sectionLede} data-reveal="">
-        Every area of a tenant has a page: people, groups, roles, apps, scopes, signing keys, the
-        sign-in flow, sessions, mail and the audit trail. The console calls the same admin API your
-        scripts can, so a change made in either place is checked and recorded the same way.{' '}
-        <Link className={styles.inline} to="/admin-console/tour/">
-          Take the tour
-        </Link>
-      </p>
-      <div className={styles.shots} data-reveal="">
-        <ConsoleShot
-          name="clients"
-          alt="A tenant's Clients list in the console: the built-in administration client and one registered app, with a Create a client button."
-          caption="Apps registered in a tenant."
-        />
-        <ConsoleShot
-          name="audit"
-          alt="The audit trail in the console: a filter bar above a table of events, each with its time, actor and what it did."
-          caption="Everything done, and by whom."
-        />
+    <Section id="home-readers" kicker="Start where you are" title="Four ways in" section="readers">
+      <CardList cards={READERS} columns={4} />
+      <div className={styles.examples} data-section="examples" data-reveal="">
+        <h3 className={styles.cardTitle}>Four small apps that work</h3>
+        <ul className={styles.exampleList}>
+          {EXAMPLES.map((example) => (
+            <li key={example.to}>
+              <Link to={example.to}>{example.title}</Link>
+            </li>
+          ))}
+        </ul>
+        <p className={styles.cardBody}>
+          Each has a guide that walks through it. The source is in the{' '}
+          <a
+            href={`${REPOSITORY_URL}${EXAMPLES_URL_PATH}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            examples folder<span className="visually-hidden"> (opens in a new tab)</span>
+          </a>
+          .
+        </p>
       </div>
     </Section>
   );
@@ -117,6 +126,7 @@ function Compare(): ReactNode {
       kicker="How it compares"
       title="Honest about where it stands"
       section="compare"
+      tone="sunken"
     >
       <p className={styles.sectionLede} data-reveal="">
         You may be choosing between Odudu and another identity provider you run yourself. The
@@ -144,37 +154,6 @@ function Compare(): ReactNode {
   );
 }
 
-function Agents(): ReactNode {
-  const llms = useBaseUrl('/llms.txt');
-  return (
-    <Section
-      id="home-agents"
-      kicker="AI-ready"
-      title="Written for assistants as well as people"
-      tone="sunken"
-      section="agents"
-    >
-      <div className={styles.pair}>
-        <div data-reveal="" className={styles.pane}>
-          <h3 className={styles.cardTitle}>Today</h3>
-          <p className={styles.cardBody}>
-            Every page of this site is also plain Markdown, and <a href={llms}>llms.txt</a> lists
-            them all, so an AI assistant can read the documentation without scraping it.
-          </p>
-        </div>
-        <div data-reveal="" className={styles.pane}>
-          <h3 className={styles.cardTitle}>Planned</h3>
-          <p className={styles.cardBody}>
-            An MCP server is planned (P5a): the admin API as tools for an AI agent, read-only by
-            default and held to the same capabilities as every other caller. It is not built yet.{' '}
-            <Link to="/roadmap/#next">See where it sits on the roadmap.</Link>
-          </p>
-        </div>
-      </div>
-    </Section>
-  );
-}
-
 function Where(): ReactNode {
   return (
     <Section id="home-where" kicker="Where it runs" title="Self-hosted today, hosted in the works">
@@ -197,11 +176,18 @@ function Where(): ReactNode {
           </p>
         </div>
       </div>
+      <p className={styles.after} data-reveal="" data-section="licence">
+        Free software: the server, the console and the command-line tool are AGPL-3.0, and the
+        documentation text and the examples are Apache-2.0. An app that only talks to Odudu over
+        OpenID Connect or the admin API is not a derivative work of it.{' '}
+        <a href={`${REPOSITORY_URL}${LICENSING_URL_PATH}`}>How the licences fit together</a>
+      </p>
     </Section>
   );
 }
 
 function Browse(): ReactNode {
+  const llms = useBaseUrl('/llms.txt');
   return (
     <Section
       id="home-browse"
@@ -220,41 +206,34 @@ function Browse(): ReactNode {
             </li>
           ))}
         </ul>
-        <div data-reveal="" className={styles.pane}>
-          <h3 className={styles.cardTitle}>Four journeys, in order</h3>
-          <p className={styles.cardBody}>
-            Each follows one path with real requests, and links to the full recording.
-          </p>
-          <ol className={styles.journeys}>
-            {JOURNEYS.map((journey) => (
-              <li key={journey.route}>
-                <Link className={styles.inline} to={`/${journey.route}`}>
-                  {journey.label}
-                </Link>
-              </li>
-            ))}
-          </ol>
+        <div className={styles.stack}>
+          <div data-reveal="" className={styles.pane}>
+            <h3 className={styles.cardTitle}>Four journeys, in order</h3>
+            <p className={styles.cardBody}>
+              Each follows one path with real requests, and links to the full recording.
+            </p>
+            <ol className={styles.journeys}>
+              {JOURNEYS.map((journey) => (
+                <li key={journey.route}>
+                  <Link className={styles.inline} to={`/${journey.route}`}>
+                    {journey.label}
+                  </Link>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <div data-reveal="" className={styles.pane} data-section="agents">
+            <h3 className={styles.cardTitle}>For AI assistants</h3>
+            <p className={styles.cardBody}>
+              Every page of this site is also plain Markdown, and <a href={llms}>llms.txt</a> lists
+              them all, so an assistant can read the documentation without scraping it. An MCP
+              server, which would let an agent administer Odudu through the same checks as everyone
+              else, is planned (P5a) and is not built yet.{' '}
+              <Link to="/roadmap/#next">See where it sits on the roadmap.</Link>
+            </p>
+          </div>
         </div>
       </div>
-    </Section>
-  );
-}
-
-function Licence(): ReactNode {
-  return (
-    <Section
-      id="home-licence"
-      kicker="Open source"
-      title="Free software, with a clear licence"
-      section="licence"
-    >
-      <p className={styles.sectionLede} data-reveal="">
-        The server, the console and the command-line tool are AGPL-3.0. The documentation text and
-        the examples are Apache-2.0, so copying a guide or starting from an example is never
-        constrained. An app that only talks to Odudu over OpenID Connect or the admin API is not a
-        derivative work of it.{' '}
-        <a href={`${REPOSITORY_URL}${LICENSING_URL_PATH}`}>How the licences fit together</a>
-      </p>
     </Section>
   );
 }
@@ -268,6 +247,16 @@ export default function Home(): ReactNode {
       description="Odudu is an OpenID Connect and OAuth 2.0 identity provider you run yourself: one container and Postgres, an admin console and a command-line tool."
     >
       <Head>
+        {[sans400, sans600, mono400].map((href) => (
+          <link
+            key={href}
+            rel="preload"
+            as="font"
+            type="font/woff2"
+            href={href}
+            crossOrigin="anonymous"
+          />
+        ))}
         <script type="application/ld+json">
           {landingJsonLd(`${siteConfig.url}${siteConfig.baseUrl}`)}
         </script>
@@ -294,41 +283,11 @@ export default function Home(): ReactNode {
         >
           <CardList cards={CAPABILITIES} columns={4} />
         </Section>
-        <Console />
         <Steps />
-        <Section
-          id="home-readers"
-          kicker="Start where you are"
-          title="Four ways in"
-          section="readers"
-          tone="sunken"
-        >
-          <CardList cards={READERS} columns={4} />
-        </Section>
-        <Section
-          id="home-examples"
-          kicker="Examples"
-          title="Four small apps that work"
-          section="examples"
-        >
-          <CardList cards={EXAMPLES} columns={4} />
-          <p className={styles.after} data-reveal="">
-            Each has a guide here that walks through it, and its source is in the{' '}
-            <a
-              href={`${REPOSITORY_URL}${EXAMPLES_URL_PATH}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              examples folder<span className="visually-hidden"> (opens in a new tab)</span>
-            </a>
-            .
-          </p>
-        </Section>
+        <Ways />
         <Compare />
-        <Agents />
         <Where />
         <Browse />
-        <Licence />
       </main>
     </Layout>
   );

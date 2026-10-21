@@ -1,11 +1,350 @@
-.replayRow {
-  display: flex;
-  justify-content: flex-end;
-  margin: 0 0 var(--space-3);
+.flow {
+  --shadow-soft: light-dark(rgb(17 21 20 / 10%), rgb(0 0 0 / 38%));
+  --shadow-deep: light-dark(rgb(17 21 20 / 16%), rgb(0 0 0 / 55%));
+  --sheen: light-dark(rgb(255 255 255 / 85%), rgb(255 255 255 / 8%));
+  min-inline-size: 0;
 }
 
-.replay {
-  min-block-size: 2.25rem;
+.stage {
+  position: relative;
+}
+
+.scene {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  overflow: hidden;
+  border-radius: var(--radius-m);
+}
+
+.scene[data-layout='tall'] {
+  display: none;
+  max-inline-size: 26rem;
+  margin-inline: auto;
+}
+
+@media (max-width: 899px) {
+  .scene[data-layout='wide'] {
+    display: none;
+  }
+
+  .scene[data-layout='tall'] {
+    display: block;
+  }
+}
+
+/* Surfaces: three levels, a window, the hub, and what lifts when it is active. */
+
+.window {
+  fill: var(--surface-panel);
+  stroke: var(--border-strong);
+  stroke-width: 1;
+  filter: drop-shadow(0 6px 14px var(--shadow-soft));
+}
+
+.hub {
+  fill: var(--surface-panel);
+  stroke: var(--border-strong);
+  stroke-width: 1;
+  filter: drop-shadow(0 14px 30px var(--shadow-deep));
+}
+
+.sheen {
+  fill: none;
+  stroke: var(--sheen);
+  stroke-width: 1;
+}
+
+.glowStop {
+  stop-color: var(--signal-active-ink);
+}
+
+.ring {
+  fill: none;
+  stroke: var(--signal-active-ink);
+  stroke-opacity: 0.18;
+  stroke-width: 1;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.halo {
+  fill: none;
+  stroke: var(--signal-active-ink);
+  stroke-width: 2;
+  opacity: 0;
+}
+
+.halo[data-on='true'] {
+  opacity: 1;
+}
+
+.rule {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.lamp {
+  fill: var(--border-strong);
+}
+
+.block {
+  fill: var(--signal-active);
+}
+
+.bar {
+  fill: var(--border);
+}
+
+.tag {
+  fill: var(--ink-muted);
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+
+.hubName {
+  fill: var(--ink-primary);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+.staff {
+  fill: none;
+  stroke: var(--signal-active-ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.chip {
+  fill: var(--surface-sunken);
+  stroke: var(--border-strong);
+  stroke-width: 1;
+}
+
+.chipOn {
+  fill: var(--signal-active);
+  stroke: var(--signal-active-ink);
+  stroke-width: 1.5;
+  opacity: 0;
+}
+
+.chipText {
+  fill: var(--ink-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  text-anchor: middle;
+}
+
+.pass {
+  fill: var(--signal-active-ink);
+}
+
+.check,
+.checkLine {
+  fill: none;
+  stroke: var(--surface-panel);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tick {
+  fill: none;
+  stroke: var(--surface-panel);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.7;
+}
+
+.signed {
+  opacity: 0;
+}
+
+.signed[data-on='true'] {
+  opacity: 1;
+}
+
+.route {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 0.1 7;
+}
+
+.routeOn {
+  fill: none;
+  stroke: var(--signal-active-ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 0.1 7;
+  opacity: 0;
+}
+
+.routeOn[data-on='true'] {
+  opacity: 1;
+}
+
+.head {
+  fill: var(--border-strong);
+}
+
+.headOn {
+  fill: var(--signal-active-ink);
+}
+
+.dot {
+  fill: var(--signal-active-ink);
+}
+
+.late[data-away='true'] {
+  transform: translateY(16px);
+}
+
+.late[data-away='true'] .window {
+  stroke-dasharray: 5 5;
+}
+
+/* The picture rests on its composed state: no motion until a step is chosen. */
+
+.node,
+.late {
+  transform-box: view-box;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .node,
+  .late {
+    transition: transform var(--motion-panel) var(--ease);
+  }
+
+  .node[data-on='true'] {
+    transform: translateY(-4px);
+  }
+
+  .halo,
+  .signed,
+  .routeOn {
+    transition: opacity 300ms var(--ease);
+  }
+
+  .dot {
+    animation-duration: 1.7s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-fill-mode: both;
+  }
+
+  .ticket {
+    animation-duration: 1.5s;
+    animation-timing-function: ease-in-out;
+    animation-fill-mode: both;
+  }
+
+  .ring[data-pulse='true'] {
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+
+  .chipOn[data-lit='true'] {
+    animation: lit 1.1s ease-in-out both;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(1.035);
+  }
+}
+
+@keyframes lit {
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  30%,
+  70% {
+    opacity: 1;
+  }
+}
+
+/* Controls */
+
+.controls {
+  display: grid;
+  gap: var(--space-3);
+  margin-block-start: var(--space-6);
+}
+
+.stepper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.stepButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 2.75rem;
+  min-inline-size: 2.75rem;
+  padding-inline: var(--space-3);
+  justify-content: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-panel);
+  color: var(--ink-primary);
+  font-family: var(--font-sans);
+  font-size: var(--type-13);
+  cursor: pointer;
+}
+
+.stepButton[aria-current='step'] {
+  border-color: var(--signal-active-ink);
+  background: var(--signal-active-ink);
+  color: var(--surface-panel);
+}
+
+.stepNumber {
+  font-family: var(--font-mono);
+  font-weight: 400;
+}
+
+@media (max-width: 1099px) {
+  .stepButton {
+    min-inline-size: 2.5rem;
+    padding-inline: 0;
+  }
+
+  .stepLabel {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+.transport {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.control {
+  min-block-size: 2.5rem;
+  min-inline-size: 5.5rem;
   padding-inline: var(--space-4);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-m);
@@ -16,72 +355,59 @@
   cursor: pointer;
 }
 
-/* Reserved while script has not run, so nothing moves when it does. */
-.replay[hidden] {
-  display: inline-block;
-  visibility: hidden;
+.live {
+  min-block-size: 4.5em;
+  margin: 0;
+  color: var(--ink-primary);
+  line-height: 1.5;
 }
 
-.act {
-  margin-block-end: var(--space-8);
+@media (max-width: 899px) {
+  .live {
+    min-block-size: 7.5em;
+  }
 }
 
-.actTitle {
-  margin: 0 0 var(--space-3);
-  color: var(--ink-muted);
-  font-family: var(--font-mono);
-  font-size: var(--type-13);
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
+/* Without script, or with reduced motion: the seven captions, in order. */
 
-.flow {
+.captions {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-4);
-  margin: 0;
+  gap: var(--space-3) var(--space-6);
+  margin: var(--space-6) 0 0;
   padding: 0;
   list-style: none;
   counter-reset: beat;
 }
 
-.step {
-  counter-increment: beat;
-  min-inline-size: 0;
-  padding: var(--space-4);
-  border: var(--hairline);
-  border-radius: 6px;
-  background: var(--surface-panel);
+.captions[hidden] {
+  display: none;
 }
 
-.picture {
-  display: block;
-  inline-size: 100%;
-  block-size: auto;
-  max-inline-size: 16rem;
-  margin: 0 auto var(--space-3);
+.captions > li {
+  counter-increment: beat;
+  padding-inline-start: var(--space-6);
+  position: relative;
+}
+
+.captions > li::before {
+  content: counter(beat);
+  position: absolute;
+  inset-inline-start: 0;
+  color: var(--signal-active-ink);
+  font-family: var(--font-mono);
 }
 
 .caption {
   margin: 0;
-  color: var(--ink-primary);
-  font-size: 0.9375rem;
   line-height: 1.5;
-}
-
-.caption::before {
-  content: counter(beat) '. ';
-  color: var(--signal-active-ink);
-  font-family: var(--font-mono);
-  font-weight: 600;
 }
 
 .methods {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-  margin: var(--space-3) 0 0;
+  margin: var(--space-2) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -91,193 +417,16 @@
   border: 1px solid var(--border-strong);
   border-radius: 999px;
   background: var(--surface-sunken);
-  color: var(--ink-primary);
   font-size: var(--type-13);
 }
 
-.more {
-  margin: var(--space-2) 0 0;
-  color: var(--ink-muted);
-}
-
-/* Drawing: every colour is a token, so both colour modes follow the toggle. */
-
-.panel {
-  fill: var(--surface-sunken);
-  stroke: var(--border-strong);
-  stroke-width: 1.5;
-}
-
-.accent {
-  fill: var(--signal-active);
-  stroke: var(--signal-active-ink);
-  stroke-width: 1.5;
-}
-
-.tileBox {
-  fill: var(--surface-panel);
-  stroke: var(--border-strong);
-  stroke-width: 1.5;
-}
-
-.line {
-  fill: none;
-  stroke: var(--border-strong);
-  stroke-width: 1.5;
-  stroke-linecap: round;
-}
-
-.dot,
-.fill {
-  fill: var(--ink-muted);
-}
-
-.stroke {
-  fill: none;
-  stroke: var(--ink-muted);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.staff {
-  fill: none;
-  stroke: var(--signal-active-ink);
-  stroke-width: 2;
-  stroke-linecap: round;
-}
-
-.pass {
-  fill: var(--signal-active-ink);
-  stroke: none;
-}
-
-.check {
-  fill: none;
-  stroke: var(--surface-panel);
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.dim {
-  opacity: 0.6;
-}
-
-@media (min-width: 600px) {
-  .flow {
+@media (min-width: 900px) {
+  .captions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (min-width: 997px) {
-  .flow[data-flow='first'],
-  .flow[data-flow='second'] {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .flow[data-flow='out'] {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-/* Motion: armed by script, then played once. Only opacity and transform move. */
-
-@media (prefers-reduced-motion: no-preference) {
-  .flow[data-armed]:not([data-playing]) .step {
-    opacity: 0;
-  }
-
-  .flow[data-playing] .step {
-    animation: stepIn 500ms var(--ease) both;
-    animation-delay: calc(var(--n, 0) * 900ms);
-  }
-
-  .flow[data-playing] .step:nth-child(2) {
-    --n: 1;
-  }
-
-  .flow[data-playing] .step:nth-child(3) {
-    --n: 2;
-  }
-
-  .flow[data-playing] .step:nth-child(4) {
-    --n: 3;
-  }
-
-  .flow[data-playing] .arrow {
-    transform-box: fill-box;
-    transform-origin: left center;
-    animation: grow 500ms var(--ease) both;
-    animation-delay: calc(var(--n, 0) * 900ms + 300ms);
-  }
-
-  .flow[data-playing] .tile {
-    animation: pop 350ms var(--ease) both;
-    animation-delay: calc(var(--n, 0) * 900ms + 250ms);
-  }
-
-  .flow[data-playing] .tile[data-t='2'] {
-    animation-delay: calc(var(--n, 0) * 900ms + 400ms);
-  }
-
-  .flow[data-playing] .tile[data-t='3'] {
-    animation-delay: calc(var(--n, 0) * 900ms + 550ms);
-  }
-
-  .flow[data-playing] .badge {
-    animation: travel 800ms var(--ease) both;
-    animation-delay: calc(var(--n, 0) * 900ms + 300ms);
-  }
-
-  .flow[data-playing] .appear {
-    animation: pop 500ms var(--ease) both;
-    animation-delay: calc(var(--n, 0) * 900ms + 250ms);
-  }
-}
-
-@keyframes stepIn {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes grow {
-  from {
-    transform: scaleX(0);
-  }
-
-  to {
-    transform: none;
-  }
-}
-
-@keyframes pop {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes travel {
-  from {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
-
-  to {
-    opacity: 1;
-    transform: none;
-  }
+.more {
+  margin: var(--space-6) 0 0;
+  color: var(--ink-muted);
 }

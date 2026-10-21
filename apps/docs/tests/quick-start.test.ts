@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { describe, expect, it } from 'vitest';
+import { TIME_CLAIM } from '#docs/tests/support/claims.ts';
 import { DOCS_ROOT } from '#docs/tests/support/dist.ts';
 
 const FRONT_MATTER = /^---\n[\s\S]*?\n---\n/u;
@@ -77,7 +78,7 @@ describe('the quick start', () => {
   });
 
   it('makes no claim about how long it takes, which nothing measures', () => {
-    expect(source).not.toMatch(/\b(ten|10|few|five|\d+) minutes?\b/iu);
+    expect(source).not.toMatch(TIME_CLAIM);
   });
 
   it('gives every setup step a Console and a Command line tab, the console first', () => {
