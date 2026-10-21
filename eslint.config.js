@@ -12,6 +12,9 @@ export default tseslint.config(
       '**/test-results/**',
       'tests/boundaries/fixtures/**',
       'tests/lint/fixtures/**',
+      // Standalone projects with their own lockfiles, copied out of the
+      // repository by readers; the examples job runs them.
+      'examples/**',
     ],
   },
   // A disable comment that no longer suppresses anything is a claim about the

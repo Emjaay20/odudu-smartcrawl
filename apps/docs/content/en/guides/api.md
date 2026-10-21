@@ -98,6 +98,10 @@ For the audience, the token above names the tenant's own address. A token that n
 
 Checking a token yourself is fast, and it cannot know that a session just ended or that the token was revoked. Until the token's `exp`, a signature check still passes. For an API where that matters, ask Odudu: [token introspection](../reference/transcripts/request-paths/rp-initiated-logout.md#token-introspection-and-revocation) answers whether a token is still active, immediately. Keep access tokens short, as Odudu does by default at five minutes, and a local check is usually enough.
 
+## 7. Run a finished API
+
+A JOSE library runs the checks above in one call: the signature against the tenant's keys, the issuer, the audience, the type and the expiry. [The API example](https://github.com/wizzywit/odudu/tree/main/examples/api) is a small server that does exactly that with `jose`, answers a token it trusts and refuses an ID token, a token for another audience and an expired one. Its README says how to run it against your stack.
+
 ## Where to go next
 
 - Get a token for a person with [Sign people in to a web app](./web-app.md) or [Sign people in to a single-page app](./single-page-app.md).

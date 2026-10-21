@@ -2309,3 +2309,23 @@ BYPASSRLS`, `CREATE ROLE odudu_svc LOGIN`, `CREATE DATABASE odudu OWNER odudu_ow
   page. The docs-run job now also runs the operating pages (64 blocks, `MINIMUM_BLOCKS` raised from 59), proven on a fresh quick-start stack.
 - **Titles.** A page titled Configuration collides with the generated reference's title in `llms-full.txt`, so the operating page is "Production
   settings" (file `configuration.md`).
+
+## Increment 28: the examples
+
+- **Shape.** `examples/` is outside the pnpm workspace; each of `web-app`, `api` and `machine-to-machine` is a standalone npm project with
+  its own lockfile, Apache-2.0 `LICENSE` and README, run by Node 24's type stripping. `_shared/provision.sh` is the one script that makes
+  the tenant, `ada` and the two clients (`example-web`, `example-m2m`; published demo secrets) and is safe to run twice;
+  `_shared/browser.ts` drives the web app's sign-in with the docs app's Playwright (`createRequire` from `apps/docs/package.json`).
+- **Job.** `examples` in `verify.yml` (needs `changes`, `buildImage`, in `gate`'s needs): matrix of the three, the image built from the
+  commit, stack on port 3205, provision, `npm ci --ignore-scripts`, `npm test`; the log names the image id. Each `test.ts` starts the
+  subject itself, so the job has nothing to start. The single-page app and the tag trigger belong to the next increment.
+- **verified:** `npm view openid-client@6.8.8 time` gives 2026-09-05, `npm view jose@6.2.12 time` 2026-09-05, both past the 1440-minute
+  age; `npm ci --ignore-scripts` from the committed lockfiles installs each.
+- **verified:** a fresh `quickstart/stack.sh up` then `examples/_shared/provision.sh` (twice) then `npm test` in each example: web-app 3,
+  api 6, machine-to-machine 2 tests pass. A second `provision.sh` run changes nothing (`seed` reports "already exists" for the user and
+  the clients).
+- **Finding: no scope in the example.** `seed` has no flag for a `client_credentials` scope allowlist (`clientCredentialsScopes: []` in
+  `apps/server/src/cli/seed.ts`), so a seeded service can only get an empty scope and asking for another gives `invalid_scope`. The API example
+  therefore does not check scope, and its README says so. The admin API sets the allowlist.
+- **Finding: audience.** Odudu names the tenant issuer as `aud` unless a client says otherwise; the API example trusts that by default
+  (`API_AUDIENCE` changes it), and its test shows a second instance expecting another audience refuses the same token.

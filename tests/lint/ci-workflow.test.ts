@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -138,7 +138,7 @@ describe('the CI workflow', () => {
     it('is one action every job that runs the image uses, with one writer of the cache', async () => {
       const workflow = await read('.github/workflows/verify.yml');
       const uses = workflow.match(/uses: \.\/\.github\/actions\/image/gu) ?? [];
-      expect(uses).toHaveLength(3);
+      expect(uses).toHaveLength(4);
       expect(workflow).toContain(
         "save-cache: ${{ strategy.job-index == 0 && github.event_name == 'push' }}",
       );
@@ -222,6 +222,41 @@ describe('the CI workflow', () => {
       expect(classifyChanges(['docs/NEXT.md']).buildImage).toBe(false);
       expect(classifyChanges(['apps/admin-console/src/main.tsx']).buildImage).toBe(true);
       expect(classifyChanges(['apps/docs/content/en/roadmap.md']).buildImage).toBe(true);
+    });
+  });
+
+  describe('the examples job', () => {
+    async function job(): Promise<string> {
+      const workflow = await read('.github/workflows/verify.yml');
+      const from = workflow.slice(workflow.indexOf('\n  examples:\n'));
+      return from.slice(0, from.indexOf('\n  # Photographs'));
+    }
+
+    it('runs every example on the image built from this commit, and the gate waits for it', async () => {
+      const block = await job();
+      expect(block).toContain('needs: changes');
+      expect(block).toMatch(/^ {4}if: needs\.changes\.outputs\.buildImage == 'true'$/mu);
+      expect(block).toContain('uses: ./.github/actions/image');
+      expect(block).toContain('quickstart/stack.sh up odudu-smoke-odudu 3205');
+      expect(block).toContain('examples/_shared/provision.sh');
+      expect(block).toContain('npm ci --ignore-scripts');
+      expect(block).toContain('npm test');
+      expect(block).toMatch(/if: always\(\)\n\s+run: quickstart\/stack\.sh down/u);
+      const workflow = await read('.github/workflows/verify.yml');
+      expect(gateNeeds(workflow)).toContain('examples');
+    });
+
+    it('has one matrix leg per example directory with a lockfile and a test', async () => {
+      const block = await job();
+      const legs = /example: \[([^\]]+)\]/u.exec(block)?.[1]?.split(', ').sort() ?? [];
+      const directories = (await readdir(path.join(REPO_ROOT, 'examples'), { withFileTypes: true }))
+        .filter((entry) => entry.isDirectory() && !entry.name.startsWith('_'))
+        .map((entry) => entry.name)
+        .sort();
+      expect(legs).toEqual(directories);
+      for (const name of directories) {
+        await read(`examples/${name}/test.ts`);
+      }
     });
   });
 

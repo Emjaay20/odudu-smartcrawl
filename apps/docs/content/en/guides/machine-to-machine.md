@@ -82,6 +82,10 @@ curl -sS -u "my-service:not-the-secret" --data-urlencode grant_type=client_crede
 
 [Read a refusal](./read-a-refusal.md) explains the errors Odudu returns and what to do about each.
 
+## 7. Run a finished service
+
+[The machine-to-machine example](https://github.com/wizzywit/odudu/tree/main/examples/machine-to-machine) is this guide as a single file with no dependencies: it gets a token as itself and calls [the API example](https://github.com/wizzywit/odudu/tree/main/examples/api) with it. Its README says how to run it against your stack.
+
 ## Where to go next
 
 - A service that acts for a person, rather than as itself, uses [token exchange](../reference/transcripts/request-paths/path-d-token-exchange.md).

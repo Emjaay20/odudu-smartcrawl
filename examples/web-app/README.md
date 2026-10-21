@@ -1,0 +1,28 @@
+# Web app example
+
+A web app with a server, signing a person in with Odudu. The server keeps a secret, so it is a confidential client: it proves who it is when it swaps a sign-in code for tokens. This example is one file, `app.ts`, and one dependency, [`openid-client`](https://github.com/panva/openid-client).
+
+## What happens
+
+1. The person opens `http://localhost:8081` and chooses **Sign in**.
+2. The app makes a one-time proof (PKCE), a `state` and a `nonce`, keeps them in a session, and sends the person's browser to Odudu.
+3. The person signs in on Odudu's page. The app never sees the password.
+4. Odudu sends the browser back with a code. The app checks that `state` is the one it sent and that the answer came from the tenant it started with, then swaps the code for tokens. It checks the ID token's signature and `nonce`.
+5. The app shows who signed in.
+
+The redirect address the app sends is built from its own address, so it equals the registered one exactly.
+
+## Run it
+
+You need Node 24 or later and the quick start stack. Run `../_shared/provision.sh` once, then:
+
+```text
+npm ci
+npm start
+```
+
+Open `http://localhost:8081` and sign in as `ada`, with the password the quick start gave her. `npm test` signs `ada` in through a browser and checks the page; it needs Chromium from this repository's Playwright.
+
+## What is only for the example
+
+Sessions live in memory and never expire. The cookie is not `Secure` because the example runs over plain http. A production app needs HTTPS, `Secure` cookies and a session store that expires.

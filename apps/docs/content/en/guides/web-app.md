@@ -108,6 +108,10 @@ curl -fsS "$TENANT/protocol/openid-connect/certs" | sed -E 's/"n":"[^"]*"/"n":"â
 
 Use your language's OpenID Connect or JOSE library for that check. Give it the tenant's address, `$TENANT` above, and it finds these keys from the discovery document.
 
+## 7. Run a finished app
+
+The steps above are what a web app's server does, by hand. A working version is one short file, written with the `openid-client` library, which makes the `state`, the `nonce` and the PKCE pair, checks them when the person comes back, and verifies the ID token for you. [The web app example](https://github.com/wizzywit/odudu/tree/main/examples/web-app) signs `ada` in and shows who she is. Its README says how to run it against your stack.
+
 ## Where to go next
 
 - Keep people signed in with [Refresh and end a session](./refresh-and-end-a-session.md).

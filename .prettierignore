@@ -8,3 +8,4 @@ test-results
 .docusaurus
 apps/docs/content/en/reference/generated
 apps/docs/static/openapi
+examples/*/package-lock.json
