@@ -16,6 +16,9 @@
     "lint/fixtures/console-css-module-classes-defined/**",
     "lint/fixtures/console-query-keys/**",
     "lint/fixtures/renderer-without-shell/**",
-    "lint/fixtures/literals/**"
+    "lint/fixtures/literals/**",
+    "lint/fixtures/docs-no-readonly/**",
+    "lint/fixtures/docs-service-no-dom/**",
+    "boundaries/fixtures/apps/docs/**"
   ]
 }
