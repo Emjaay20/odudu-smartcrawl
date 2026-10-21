@@ -1,7 +1,7 @@
 import { REPOSITORY_URL } from './nav';
 
 export interface HeadTag {
-  tagName: 'meta';
+  tagName: 'meta' | 'link';
   attributes: Record<string, string>;
 }
 
@@ -13,6 +13,20 @@ export function siteHeadTags(): HeadTag[] {
   return [
     { tagName: 'meta', attributes: { property: 'og:site_name', content: SITE_NAME } },
     { tagName: 'meta', attributes: { property: 'og:type', content: 'website' } },
+  ];
+}
+
+// The icon file for browsers that do not read an SVG icon, and the touch icon.
+export function iconTags(base: string): HeadTag[] {
+  return [
+    {
+      tagName: 'link',
+      attributes: { rel: 'icon', href: `${base}brand/favicon.ico`, sizes: '48x48' },
+    },
+    {
+      tagName: 'link',
+      attributes: { rel: 'apple-touch-icon', href: `${base}brand/apple-touch-icon.png` },
+    },
   ];
 }
 

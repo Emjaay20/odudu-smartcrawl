@@ -1,0 +1,17 @@
+.line {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-inline-size: 100%;
+}
+
+.mark {
+  flex: none;
+  inline-size: 20px;
+  block-size: 20px;
+}
+
+.name {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}

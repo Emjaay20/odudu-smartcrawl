@@ -40,6 +40,7 @@ await rm(DIST, { recursive: true, force: true });
 await mkdir(join(DIST, 'fonts'), { recursive: true });
 await writeFile(join(DIST, 'instrument.css'), css);
 await copyFile(join(PACKAGE, 'src/mark.svg'), join(DIST, 'mark.svg'));
+await copyFile(join(PACKAGE, 'src/apple-touch-icon.png'), join(DIST, 'apple-touch-icon.png'));
 await Promise.all(
   [...fonts].map(([file, content]) => writeFile(join(DIST, 'fonts', file), content)),
 );

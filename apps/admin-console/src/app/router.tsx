@@ -12,8 +12,9 @@ import { RouterProvider as AriaRouterProvider } from 'react-aria-components';
 import { lazyFeatureRoute } from '#/app/lazyFeatureRoute';
 import { NavigationGuard } from '#/app/NavigationGuard';
 import { ConsoleHome, SessionGate } from '#/features/session';
-import { pendingPage, PendingFrame, TenantShell } from '#/features/shell';
+import { pendingPage, PendingFrame, PRODUCT_NAME, TenantShell } from '#/features/shell';
 import { parseSearch, stringifySearch } from '#/shared/service/search';
+import { LostFrame } from '#/shared/view/LostFrame';
 import { PageNotFound } from '#/shared/view/PageNotFound';
 
 // React Aria's links navigate through the router, so a rail link is still a
@@ -37,9 +38,9 @@ function Root() {
 
 function Lost() {
   return (
-    <main id="main" tabIndex={-1}>
+    <LostFrame brand={PRODUCT_NAME}>
       <PageNotFound />
-    </main>
+    </LostFrame>
   );
 }
 

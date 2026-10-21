@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { landingJsonLd, siteHeadTags, stripForImage } from '#docs/seo.ts';
+import { iconTags, landingJsonLd, siteHeadTags, stripForImage } from '#docs/seo.ts';
 import {
   codeFrontMatter,
   missingDescriptions,
@@ -22,6 +22,24 @@ describe('the site-wide head tags', () => {
       tagName: 'meta',
       attributes: { property: 'og:type', content: 'website' },
     });
+    expect(JSON.stringify(tags)).not.toMatch(/https?:/u);
+  });
+});
+
+describe('the icon tags', () => {
+  it('offer the icon file and the touch icon under the site base, with no address', () => {
+    const tags = iconTags('/docs/');
+    expect(tags).toEqual([
+      {
+        tagName: 'link',
+        attributes: { rel: 'icon', href: '/docs/brand/favicon.ico', sizes: '48x48' },
+      },
+      {
+        tagName: 'link',
+        attributes: { rel: 'apple-touch-icon', href: '/docs/brand/apple-touch-icon.png' },
+      },
+    ]);
+    expect(JSON.stringify(iconTags('/odudu/'))).toContain('/odudu/brand/favicon.ico');
     expect(JSON.stringify(tags)).not.toMatch(/https?:/u);
   });
 });

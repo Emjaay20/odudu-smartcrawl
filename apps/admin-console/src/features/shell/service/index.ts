@@ -26,6 +26,7 @@ export {
 } from '#/features/shell/service/pending';
 export {
   brandText,
+  PRODUCT_NAME,
   areasLabel,
   signedInFrom,
   checkingText,

@@ -21,6 +21,13 @@ function shell() {
   );
 }
 
+it('carries the staff mark beside the product name in the top bar', () => {
+  render(shell());
+  const bar = screen.getByRole('banner');
+  expect(within(bar).getByText('Odudu')).toBeInTheDocument();
+  expect(bar.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+});
+
 it('lays out the rail, the context bar and the main content', () => {
   render(shell());
   expect(screen.getByRole('navigation', { name: 'acme' })).toBeInTheDocument();

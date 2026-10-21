@@ -10,17 +10,18 @@ short crossbar.
 
 ## Files
 
-| File                                       | What it is                                                                    |
-| ------------------------------------------ | ----------------------------------------------------------------------------- |
-| `mark.svg`                                 | The staff on a 32 grid, one colour (`currentColor`), so it themes             |
-| `wordmark.svg`                             | `odudu` as five outlines, one colour                                          |
-| `lockup.svg`                               | Mark left, wordmark right, one baseline                                       |
-| `favicon.svg`, `favicon.ico`               | Mark on the Instrument rail surface, amber ring; the icon holds 16, 32 and 48 |
-| `apple-touch-icon.png`, `icon-192/512.png` | The same tile, full bleed                                                     |
-| `social.svg`, `social.png`                 | 1200 x 630 share image: lockup and tagline on the rail surface                |
-| `LICENSE-IBM-Plex-Mono.txt`                | The font licence that covers the wordmark outlines                            |
-| `geometry.ts`, `tsconfig.json`             | Where the mark sits in each tile; the type-check of `build.ts` and this file  |
-| `build.ts`                                 | Exports every PNG and the ICO from the SVGs: `node brand/build.ts`            |
+| File                                       | What it is                                                                                                                                  |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mark.svg`                                 | The staff on a 32 grid, one colour (`currentColor`), so it themes                                                                           |
+| `wordmark.svg`                             | `odudu` as five outlines, one colour                                                                                                        |
+| `mark-ink.svg`, `mark-paper.svg`           | The mark in the Instrument ink for a light and for a dark surface, for places that cannot take `currentColor` (an image tag, the docs logo) |
+| `lockup.svg`                               | Mark left, wordmark right, one baseline                                                                                                     |
+| `favicon.svg`, `favicon.ico`               | Mark on the Instrument rail surface, amber ring; the icon holds 16, 32 and 48                                                               |
+| `apple-touch-icon.png`, `icon-192/512.png` | The same tile, full bleed                                                                                                                   |
+| `social.svg`, `social.png`                 | 1200 x 630 share image: lockup and tagline on the rail surface                                                                              |
+| `LICENSE-IBM-Plex-Mono.txt`                | The font licence that covers the wordmark outlines                                                                                          |
+| `geometry.ts`, `tsconfig.json`             | Where the mark sits in each tile; the type-check of `build.ts` and this file                                                                |
+| `build.ts`                                 | Exports every PNG and the ICO from the SVGs: `node brand/build.ts`                                                                          |
 
 ## Construction
 
@@ -99,3 +100,13 @@ machines, so the comparison is by pixel: no more than 0.5% of pixels may differ
 by more than 12 in a channel, and none by more than 64. The brand test runs the
 check. The same test reads the mark out of `lockup.svg`, `favicon.svg` and
 `social.svg` and fails if any differs from `mark.svg`.
+
+## Where the mark is used
+
+`packages/instrument/src/mark.svg` (the icon every server page links and the
+mark inlined by their four renderers), the console's `BrandLine` component, the
+mail rasteriser and the documentation site each carry the same three shapes, and
+`tests/lint/brand-assets.test.ts` fails when any differs from `mark.svg`. The
+touch icon in `packages/instrument/src` and the files under
+`apps/docs/static/brand` are copies of the files here, held byte for byte by
+the same test.

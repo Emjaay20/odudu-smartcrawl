@@ -22,6 +22,7 @@ async function builtDir(): Promise<string> {
   await mkdir(join(dir, 'fonts'));
   await writeFile(join(dir, 'instrument.css'), 'body{margin:0}');
   await writeFile(join(dir, 'mark.svg'), '<svg xmlns="http://www.w3.org/2000/svg"/>');
+  await writeFile(join(dir, 'apple-touch-icon.png'), 'png-bytes');
   await writeFile(join(dir, 'fonts', FONT), 'woff2-bytes');
   await writeFile(join(dir, 'fonts', '.hidden.woff2'), 'x');
   await writeFile(join(dir, 'notes.txt'), 'not a served type');
@@ -88,6 +89,14 @@ describe('instrumentRoutes', () => {
     expect(response.headers['content-type']).toBe('image/svg+xml');
     expect(response.headers['x-content-type-options']).toBe('nosniff');
     expect(response.headers['cache-control']).toBe('no-cache');
+  });
+
+  it('serves the touch icon as a png that cannot be sniffed as anything else', async () => {
+    const server = await served(await builtDir());
+    const response = await server.inject('/instrument/apple-touch-icon.png');
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-type']).toBe('image/png');
+    expect(response.headers['x-content-type-options']).toBe('nosniff');
   });
 
   it('refuses a path outside the manifest', async () => {

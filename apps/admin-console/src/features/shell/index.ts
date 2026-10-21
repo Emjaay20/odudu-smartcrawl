@@ -9,6 +9,7 @@ export {
   holds,
   OVERVIEW,
   pendingPage,
+  PRODUCT_NAME,
   type Area,
   type AreaAccess,
 } from '#/features/shell/service';

@@ -2,6 +2,7 @@ import { brandText, type PendingPage } from '#/features/shell/service';
 import { usePendingFrame } from '#/features/shell/usecase/usePendingFrame';
 import styles from '#/features/shell/view/PendingFrame/PendingFrame.module.css';
 import { AppShell } from '#/shared/view/AppShell';
+import { BrandLine } from '#/shared/view/BrandLine';
 import { PageHeader } from '#/shared/view/PageHeader';
 import { RailSkeleton } from '#/shared/view/Rail';
 import { PageSkeleton } from '#/shared/view/Skeleton';
@@ -14,7 +15,15 @@ export function PendingFrame({ tenant, shape, title }: PendingPage) {
     <AppShell
       brand={brandText(tenant)}
       collapsed={collapsed}
-      rail={<RailSkeleton header={<strong className={styles.brand}>{brandText(tenant)}</strong>} />}
+      rail={
+        <RailSkeleton
+          header={
+            <strong className={styles.brand}>
+              <BrandLine>{brandText(tenant)}</BrandLine>
+            </strong>
+          }
+        />
+      }
     >
       {title === null ? null : <PageHeader kicker={tenant} title={title} />}
       <PageSkeleton label="Reading your session" shape={shape} />

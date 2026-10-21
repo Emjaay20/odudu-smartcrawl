@@ -2433,3 +2433,45 @@ The assets live in `brand/`; `node brand/build.ts` regenerates every PNG and the
   (`Font.getPath`), one path per letter; the dependency is not added to the repository.
 - The plan's shaft started at y=9, inside the ring's stroke, so its round cap poked into the hole; it starts at y=10. At 16 px the one-pixel stroke
   straddles two pixel columns, and the test asserts continuity and an open hole rather than pixel-exact edges.
+
+### Increment 30, fix round 1 (review of the mark)
+
+- **Copies tied to the source.** `brand-assets.test.ts` reads the ring, shaft and collar out of `lockup.svg`, `favicon.svg`, `social.svg` and the two
+  fixed-ink marks and fails unless each equals `mark.svg`'s. verified by mutation: the bar moved to y=20 in each of `lockup.svg`, `favicon.svg` and
+  `social.svg` failed the named test (the last two also fail the regeneration check).
+- **Derivatives reproduced.** `node brand/build.ts --check` rebuilds the PNGs and the ICO from the SVGs and compares them with the committed files.
+  verified: two consecutive builds on this machine gave identical SHA-1 for every PNG and the ICO, so Chromium's output is byte-stable here; the check
+  still compares by pixel (at most 0.5% of pixels differ by more than 12 in a channel, none by more than 64), because another machine's rasteriser is not
+  promised to match. The brand test runs it.
+- **The amber ring.** The shaft and collar are drawn first and the ring last, so the shaft's cap no longer notches it. The test samples the ring every
+  10 degrees in the touch icon, the 512 icon and the social image (all within 30 of the amber, and the hole is the rail colour).
+- **Tiles.** The favicon is inset to 87.5% of its tile and the touch and install icons to 75% (`brand/geometry.ts`); the README's clear space is for the
+  mark on its own. The lockup gap is 34 units, not 42.
+- **Rasteriser.** `rasteriseMark` honours `stroke-linecap` (butt, round, square), refuses another value and a zero-length stroke, and its tests sample
+  anti-aliased edge pixels.
+- **Not done, with the reason.** The wordmark outline script is not committed: it needs `opentype.js`, which the repository does not depend on, and the
+  outputs are committed and tested. `brand/build.ts` and `geometry.ts` are now type-checked by `brand/tsconfig.json` in `pnpm typecheck`, and the
+  `allowDefaultProject` entry for them is gone.
+
+### Increment 30c: the mark where people see the product
+
+- **Console.** `BrandLine` (shared view: the staff beside a name) is the rail header and the top bar's brand, on the pending frame, on the screens the
+  console draws without a tenant (`LostFrame`: not-found screens) and on the sign-in, signing-in and signed-in-elsewhere screens (`SessionStatus`). The
+  mark is decorative (`aria-hidden`, no title) because the product name is always beside it. The console draws it from the same three shapes in JSX,
+  not a second SVG file: importing `packages/instrument` would pull its server code into the bundle, and a test ties the JSX to `mark.svg`.
+  Tenant branding stays with P4b.
+- **Icons.** `apps/admin-console/index.html` links the same icon the server pages use (`/instrument/mark.svg`) and the touch icon, which the
+  instrument package now serves as `/instrument/apple-touch-icon.png` (a copy of the brand file; the build copies it, `routes.test.ts` serves it).
+  The console gateway serves that index.html, so it has no shell of its own. The server pages do not link a touch icon: a sign-in page is not
+  something a person pins, and adding the tag would change every recorded page.
+- **Documentation site.** The navbar and footer carry the mark (`brand/mark-ink.svg` and `mark-paper.svg`, switched by colour mode), alt empty beside
+  the title; the head carries `favicon.ico` and the touch icon under the site's base path (`iconTags`). The 404 page shows the navbar.
+- **Every server page kind.** All 15 `*-html.ts` renderers return their markup through `page()` of the package's `document.ts`, which carries the mark
+  (a test checks the file list and the call), so the 37 kinds in `p4g-pages/` all have it; none was found without.
+- **Captures.** The 50 console images were recaptured (`with-stack.sh`, platform pin); the 50 records and the manifest did not change, because the mark
+  adds no text. `--check` passed twice on macOS and once from the Linux Playwright container (`mcr.microsoft.com/playwright:v1.63.0-noble`, localhost
+  forwarded to the stack on the host). The pictures that show the header are these images; there are no others in the tour or quick start.
+- **Not run.** The console e2e (`apps/admin-console/e2e`) signs in through a full stack and the capture already does that against the built image;
+  nothing it asserts about the shell changed.
+- Screenshots: `docs/phases/p4g-docs/brand-wired-*.png` (docs home, 404 and footer; the console header in the gallery at desktop and 375 px, and as
+  captured; a server page), light and dark.

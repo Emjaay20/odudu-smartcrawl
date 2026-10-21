@@ -43,6 +43,7 @@ it('lists every area when whoami could not answer', async () => {
 it('shows the not-found page for a name no tenant can have', async () => {
   renderConsoleAt('/console/Not_A_Tenant', { 'GET /console/api/session': json(GRACE) });
   expect(await screen.findByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible();
+  expect(screen.getByRole('main').querySelector('svg[aria-hidden="true"]')).not.toBeNull();
 });
 
 it('offers a system administrator inside a tenant the way back to its record', async () => {
@@ -90,6 +91,7 @@ it('tells a system administrator that no tenant has the name, with no rail to of
     '/console/?choose',
   );
   expect(screen.queryByRole('navigation', { name: 'Areas of no-such' })).toBeNull();
+  expect(screen.getByRole('main').querySelector('svg[aria-hidden="true"]')).not.toBeNull();
 });
 
 it('passes axe in both themes on the tenant-not-found page', async () => {

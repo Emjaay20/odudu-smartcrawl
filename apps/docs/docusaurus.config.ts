@@ -8,7 +8,7 @@ import { requireDescriptions } from './plugins/descriptions';
 import imageStrip from './plugins/image-strip';
 import robots from './plugins/robots';
 import { FOOTER_ROUTES, NAVBAR_ROUTES, REPOSITORY_URL, SECTIONS } from './nav';
-import { siteHeadTags } from './seo';
+import { iconTags, siteHeadTags } from './seo';
 import { PAGES_BASE, SITE_ORIGIN } from './site.config';
 
 const CONTENT = contentDir(process.env.DOCS_CONTENT);
@@ -48,6 +48,8 @@ const themeConfig: Preset.ThemeConfig = {
   ...(image ? {} : { image: 'brand/social.png' }),
   navbar: {
     title: 'Odudu',
+    // Beside the title, which names it: decorative, and it links home with it.
+    logo: { alt: '', src: 'brand/mark-ink.svg', srcDark: 'brand/mark-paper.svg' },
     items: [
       ...NAVBAR_ROUTES.flatMap((route) => {
         const section = SECTIONS.find((candidate) => candidate.route === route);
@@ -60,6 +62,13 @@ const themeConfig: Preset.ThemeConfig = {
   },
   footer: {
     style: 'light',
+    logo: {
+      alt: '',
+      src: 'brand/mark-ink.svg',
+      srcDark: 'brand/mark-paper.svg',
+      width: 24,
+      height: 24,
+    },
     links: [
       ...FOOTER_ROUTES.flatMap((route) => {
         const section = SECTIONS.find((candidate) => candidate.route === route);
@@ -96,6 +105,7 @@ const config: Config = {
   i18n: { defaultLocale: 'en', locales: ['en'] },
   headTags: [
     ...siteHeadTags(),
+    ...iconTags(image ? '/docs/' : PAGES_BASE),
     ...(image
       ? [{ tagName: 'meta' as const, attributes: { name: 'robots', content: 'noindex' } }]
       : []),

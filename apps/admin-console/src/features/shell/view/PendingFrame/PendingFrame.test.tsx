@@ -12,6 +12,12 @@ it('holds the rail and the page, and says once that it is reading', () => {
   expect(screen.getByRole('status')).toHaveTextContent('Reading your session');
 });
 
+it("carries the staff mark with the tenant's name in the rail and the top bar", () => {
+  render(<PendingFrame tenant="acme" shape="list" title="Subjects" />);
+  expect(screen.getAllByText('odudu · acme')).toHaveLength(2);
+  expect(document.querySelectorAll('svg[aria-hidden="true"]').length).toBeGreaterThanOrEqual(2);
+});
+
 it('draws no heading for a page whose title is its own', () => {
   render(<PendingFrame tenant="acme" shape="record" title={null} />);
   expect(screen.queryByRole('heading', { level: 1 })).toBeNull();

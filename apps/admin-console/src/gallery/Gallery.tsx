@@ -12,6 +12,7 @@ import { AuditDetail } from '#/shared/view/AuditDetail';
 import { AuditTable } from '#/shared/view/AuditTable';
 import { AppShell } from '#/shared/view/AppShell';
 import { Breadcrumb } from '#/shared/view/Breadcrumb';
+import { BrandLine } from '#/shared/view/BrandLine';
 import { Button } from '#/shared/view/Button';
 import { CreationActions, CreationForm } from '#/shared/view/CreationForm';
 import { DeleteZone } from '#/shared/view/DeleteZone';
@@ -932,6 +933,9 @@ function RecordPieces() {
         >
           <p>The page</p>
         </AccessGate>
+      </Specimen>
+      <Specimen label="BrandLine: the staff mark beside the product name">
+        <BrandLine>odudu · acme</BrandLine>
       </Specimen>
       <Specimen label="PageNotFound: an address that is no page">
         <PageNotFound />

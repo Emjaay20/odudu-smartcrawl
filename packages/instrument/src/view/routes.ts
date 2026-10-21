@@ -11,9 +11,10 @@ const TYPES: Readonly<Record<string, string>> = {
   '.css': 'text/css; charset=utf-8',
   '.woff2': 'font/woff2',
   '.svg': 'image/svg+xml',
+  '.png': 'image/png',
 };
 
-// A stylesheet, a mark and twelve fonts under one directory; the bounds
+// A stylesheet, a mark, a touch icon and twelve fonts under one directory; the bounds
 // refuse a directory that is not the build.
 const LIMITS = {
   maxFileBytes: 1024 * 1024,

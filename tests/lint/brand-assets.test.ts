@@ -229,6 +229,11 @@ describe('brand assets: every SVG', () => {
     }
   });
 
+  it('draws the two fixed-ink marks in the Instrument inks for each theme', () => {
+    expect(read('mark-ink.svg')).toContain(tokenPair('ink-primary').light);
+    expect(read('mark-paper.svg')).toContain(tokenPair('ink-primary').dark);
+  });
+
   it('keeps the mark, wordmark and lockup to one colour so they theme', () => {
     for (const file of ['mark.svg', 'wordmark.svg', 'lockup.svg']) {
       expect(read(file), file).not.toMatch(/#[0-9a-f]{6}/iu);
@@ -388,7 +393,7 @@ describe('brand assets: derivatives', () => {
 describe('brand assets: every copy of the mark is the mark', () => {
   const source = parseMark(read('mark.svg'));
 
-  it.each(['lockup.svg', 'favicon.svg', 'social.svg'])(
+  it.each(['lockup.svg', 'favicon.svg', 'social.svg', 'mark-ink.svg', 'mark-paper.svg'])(
     'draws the ring, the shaft and the collar of mark.svg in %s',
     (file) => {
       const svg = read(file);
@@ -506,9 +511,58 @@ describe('brand assets: the README', () => {
   });
 });
 
+describe('the copies every page and the console link', () => {
+  it('serve the touch icon the brand directory builds', () => {
+    const served = readFileSync(
+      path.join(REPO_ROOT, 'packages/instrument/src/apple-touch-icon.png'),
+    );
+    expect(served.equals(readFileSync(path.join(BRAND, 'apple-touch-icon.png')))).toBe(true);
+  });
+
+  it('is linked from the console shell beside its mark', () => {
+    const html = readFileSync(path.join(REPO_ROOT, 'apps/admin-console/index.html'), 'utf8');
+    expect(html).toContain('rel="icon" href="/instrument/mark.svg"');
+    expect(html).toContain('rel="apple-touch-icon" href="/instrument/apple-touch-icon.png"');
+  });
+
+  it('is drawn by the console from the same three shapes as mark.svg', () => {
+    const source = readFileSync(
+      path.join(REPO_ROOT, 'apps/admin-console/src/shared/view/BrandLine/BrandLine.tsx'),
+      'utf8',
+    );
+    const own = parseMark(read('mark.svg'));
+    expect(source).toContain(
+      `<circle cx="${String(own.ring.cx)}" cy="${String(own.ring.cy)}" r="${String(own.ring.r)}" />`,
+    );
+    expect(source).toContain(
+      `<path d="M${String(own.shaft.x)} ${String(own.shaft.from)}V${String(own.shaft.to)}" />`,
+    );
+    expect(source).toContain(
+      `<path d="M${String(own.crossbar.from)} ${String(own.crossbar.y)}H${String(own.crossbar.to)}" />`,
+    );
+    expect(source).toContain(`strokeWidth="${String(own.strokeWidth)}"`);
+    expect(source).toContain('strokeLinecap="round"');
+  });
+
+  it('reach every server page through the one shell each package renders', () => {
+    const renderers = globSync('packages/*/src/view/*-html.ts', { cwd: REPO_ROOT });
+    expect(renderers.length).toBeGreaterThanOrEqual(15);
+    for (const file of renderers) {
+      expect(readFileSync(path.join(REPO_ROOT, file), 'utf8'), file).toMatch(/\bpage\(/u);
+    }
+  });
+});
+
 describe('the copies the documentation site serves', () => {
   it('are the brand files byte for byte', () => {
-    for (const file of ['favicon.svg', 'favicon.ico', 'apple-touch-icon.png', 'social.png']) {
+    for (const file of [
+      'favicon.svg',
+      'favicon.ico',
+      'apple-touch-icon.png',
+      'social.png',
+      'mark-ink.svg',
+      'mark-paper.svg',
+    ]) {
       const served = readFileSync(path.join(REPO_ROOT, 'apps/docs/static/brand', file));
       expect(served.equals(readFileSync(path.join(BRAND, file))), file).toBe(true);
     }
