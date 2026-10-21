@@ -287,6 +287,15 @@ describe('boundary rules', { timeout: 60_000 }, () => {
     expect(found.some((v) => v.from.endsWith('shared/view/Leaky.tsx'))).toBe(true);
   });
 
+  it('rejects a docs view importing shared/platform, and permits a usecase', async () => {
+    const found = await violations('docs-view-imports-no-platform');
+    expect(found.some((v) => v.from.endsWith('features/alpha/view/UsesPlatform.ts'))).toBe(true);
+    expect(found.some((v) => v.from.endsWith('features/alpha/view/UsesFeaturePlatform.ts'))).toBe(
+      true,
+    );
+    expect(found.some((v) => v.from.endsWith('features/alpha/usecase/useWatch.ts'))).toBe(false);
+  });
+
   it('rejects a docs feature importing a route', async () => {
     const found = await violations('docs-nothing-imports-routes');
     expect(found.some((v) => v.from.endsWith('features/beta/view/routeLeak.ts'))).toBe(true);

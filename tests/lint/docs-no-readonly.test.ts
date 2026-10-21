@@ -3,17 +3,12 @@ import path from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
-// The docs app writes no `readonly` in a type: React props are immutable by
-// React's own contract, and arrays, tuples, Maps and Sets stay plain, so a
-// signature says what it takes and not how carefully. Found in apps/docs/src,
-// tests included: a `readonly` modifier on a property, parameter property or
-// index signature; the `readonly` type operator (`readonly T[]`,
-// `readonly [A, B]`); a reference to ReadonlyArray, ReadonlyMap, ReadonlySet or
-// Readonly<…>. A constant that must be immutable is `as const`, which is a
-// value's assertion and not an annotation, and passes. Not seen: a type that
-// is readonly because a library declared it so, one inferred from an `as const`
-// value, `Object.freeze`, and a `readonly` written in a .js or .mjs file. Where
-// the compiler or a library forces one, raise it: nothing here is waived.
+// The docs app writes no `readonly` in a type: not a modifier, the type operator (`readonly T[]`),
+// nor ReadonlyArray, ReadonlyMap, ReadonlySet or Readonly<…>. A constant that must be immutable is
+// `as const`, a value's assertion, which passes. Read from apps/docs/src, tests included.
+// Not seen: a type readonly because a library declared it so, one inferred from an `as const`
+// value, `Object.freeze`, and a `readonly` in a .js or .mjs file. Where the compiler or a library
+// forces one, raise it; nothing here is waived.
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..');
 const DOCS = 'apps/docs';

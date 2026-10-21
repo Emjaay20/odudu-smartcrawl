@@ -232,9 +232,23 @@ module.exports = {
     {
       name: 'docs-shared-imports-no-feature',
       severity: 'error',
-      comment: 'shared/ holds only what two or more features use, so it depends on none of them.',
+      comment:
+        'shared/ holds what more than one feature, or the MDX content, uses, so it depends on none of the features.',
       from: { path: '(^|/)apps/docs/src/shared/' },
       to: { path: '(^|/)apps/docs/src/features/' },
+    },
+    {
+      name: 'docs-view-imports-no-platform',
+      severity: 'error',
+      comment:
+        'A platform/ folder, shared or in a feature, is where the page touches the browser (observers, measuring, ' +
+        'visibility). A view reaches it through its usecase, so markup never decides anything ' +
+        'from the DOM.',
+      from: {
+        path: '(^|/)apps/docs/src/(?:view|.*/view)(?:/|\\.tsx?$)',
+        pathNot: '\\.test\\.tsx?$',
+      },
+      to: { path: '(^|/)apps/docs/src/(?:shared|features/[^/]+)/platform/' },
     },
     {
       name: 'docs-nothing-imports-routes',
