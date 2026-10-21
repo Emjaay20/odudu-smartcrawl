@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { chromium, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import { findSecrets, type Visible } from './guard.ts';
+import { untilSettled } from './poll.ts';
 import type { Context, Expectation, Screen } from './screen.ts';
 
 export const THEMES = ['light', 'dark'] as const;
@@ -44,9 +45,10 @@ async function expectShown(page: Page, screen: Screen): Promise<void> {
   for (const expectation of screen.expect) {
     try {
       await check(page, expectation);
-    } catch {
+    } catch (cause) {
+      const seen = cause instanceof Error ? `: ${cause.message}` : '';
       throw new Error(
-        `screen ${screen.name}: the console does not show ${JSON.stringify(expectation)}`,
+        `screen ${screen.name}: the console does not show ${JSON.stringify(expectation)}${seen}`,
       );
     }
   }
@@ -54,13 +56,13 @@ async function expectShown(page: Page, screen: Screen): Promise<void> {
 
 async function check(page: Page, expectation: Expectation): Promise<void> {
   if ('rows' in expectation) {
-    const rows = await rowsOf(page);
-    const matched = expectation.rows.every(
-      (text) => rows.filter((row) => row.includes(text)).length === 1,
-    );
-    if (!matched || rows.length !== expectation.rows.length) {
-      throw new Error(`rows are ${JSON.stringify(rows)}`);
-    }
+    const wanted = expectation.rows;
+    const matches = (rows: readonly string[]): boolean =>
+      rows.length === wanted.length &&
+      wanted.every((text) => rows.filter((row) => row.includes(text)).length === 1);
+    // A list is read while it may still be loading: the answer is the rows it
+    // settles on, and a failure says which rows it had.
+    await untilSettled(() => rowsOf(page), matches, { timeoutMs: 15_000, intervalMs: 250 });
     return;
   }
   const locator =
@@ -201,26 +203,41 @@ export interface Captured {
 }
 
 // A toast or an alert at shot time is a message the console is telling, and the
-// one place a one-time value could appear; a capture shows none.
+// one place a one-time value could appear; a capture shows none. A status line
+// that announces a list loading goes when the list has loaded, so the page is
+// read until none is left; every read is scanned for secrets, so one shown and
+// gone while it waits is still refused. What is left after the wait is named.
 async function refuseSecrets(
   page: Page,
   screen: Screen,
   known: readonly string[],
 ): Promise<Visible> {
-  const told = await page.evaluate(
-    () =>
-      [...document.querySelectorAll('[role=alert], [role=status]')].filter(
-        (element) => (element as HTMLElement).innerText.trim() !== '',
-      ).length,
-  );
-  const seen = await visible(page);
-  const secrets = [
-    ...findSecrets(seen, known),
-    ...(told > 0 ? ['an alert or a status message is on the page'] : []),
-  ];
-  if (secrets.length > 0) {
-    throw new Error(`screen ${screen.name} was not kept: ${secrets.join('; ')}`);
+  let seen: Visible | undefined;
+  const refuse = (found: readonly string[]): never => {
+    throw new Error(`screen ${screen.name} was not kept: ${found.join('; ')}`);
+  };
+  try {
+    await untilSettled(
+      async () => {
+        const messages = await page.evaluate(() =>
+          [...document.querySelectorAll('[role=alert], [role=status]')]
+            .map((element) => (element as HTMLElement).innerText.trim())
+            .filter((text) => text !== ''),
+        );
+        seen = await visible(page);
+        const secrets = findSecrets(seen, known);
+        if (secrets.length > 0) refuse(secrets);
+        return messages;
+      },
+      (messages) => messages.length === 0,
+      { timeoutMs: 10_000, intervalMs: 250 },
+    );
+  } catch (cause) {
+    if (cause instanceof Error && cause.message.startsWith('screen ')) throw cause;
+    const left = cause instanceof Error ? cause.message : '';
+    return refuse([`an alert or a status message is on the page (${left})`]);
   }
+  if (seen === undefined) throw new Error(`screen ${screen.name} was not read`);
   return seen;
 }
 
