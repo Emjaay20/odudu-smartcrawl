@@ -77,7 +77,7 @@ Placed on a phase, in order, and not started. Each line names the phase that wil
 - **P9, authorization services.** Policy evaluation and UMA 2.0, and a resource server as a first-class thing.
 - **P10, extensibility.** Third-party providers loaded without a rebuild. A tenant can choose which claim mappers a scope carries but cannot add a new mapper, and an `EventListener` delivering audit events to a SIEM or a webhook belongs here: today only the admin API and the console read the trail.
 - **P11, many instances and performance.** One instance only today, because migrations run at boot with no lock and the throttle lives in one process. Also a deadline for the two outbound lookups on `/token` and `/userinfo`, and a metrics endpoint.
-- **P12, operational readiness.** Secrets read from somewhere other than the process environment, and written backup and restore guidance proven by a restore.
+- **P12, operational readiness.** Secrets read from somewhere other than the process environment, written backup and restore guidance proven by a restore, and a start-up check that the serving role is neither a superuser nor able to bypass row-level security.
 - **P13, FAPI 2.0 and the deferred grants.** Pushed authorization requests (PAR), so request objects are refused until then; DPoP and mTLS-bound tokens; the device authorization grant; `client_secret_jwt` and `self_signed_tls_client_auth` client authentication; and a requested `acr_values` that forces re-authentication, which is accepted and ignored today.
 
 **Smaller capabilities, each placed on a phase**
