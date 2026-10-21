@@ -5,6 +5,50 @@ import { findSecrets, type Visible } from './guard.ts';
 import { untilSettled } from './poll.ts';
 import type { Context, Expectation, Screen } from './screen.ts';
 
+// The console words its key hints for the platform it is read on: Return on a
+// Mac, Enter elsewhere. The pages show Return, so every capture claims to be a
+// Mac. A Windows or Linux reader sees Enter where the pages say Return; that
+// is the one thing the pin hides. Runs inside the page, so it names nothing
+// from this file.
+export function pinPlatform(): void {
+  Object.defineProperty(navigator, 'platform', { get: () => 'MacIntel' });
+  Object.defineProperty(navigator, 'userAgentData', {
+    get: () => ({
+      platform: 'macOS',
+      getHighEntropyValues: () => Promise.resolve({ platform: 'macOS' }),
+    }),
+  });
+}
+
+interface PinnableContext {
+  addInitScript(script: () => void): unknown;
+}
+
+// What a page words by machine, fixed, so a record is the same on every one.
+export async function newPinnedContext<T extends PinnableContext>(
+  browser: {
+    newContext(options: {
+      viewport: { width: number; height: number };
+      colorScheme: 'light' | 'dark';
+      timezoneId: string;
+      locale: string;
+      reducedMotion: 'reduce';
+    }): Promise<T>;
+  },
+  viewport: { width: number; height: number },
+  colorScheme: 'light' | 'dark',
+): Promise<T> {
+  const context = await browser.newContext({
+    viewport,
+    colorScheme,
+    timezoneId: 'UTC',
+    locale: 'en-US',
+    reducedMotion: 'reduce',
+  });
+  await context.addInitScript(pinPlatform);
+  return context;
+}
+
 export const THEMES = ['light', 'dark'] as const;
 export type Theme = (typeof THEMES)[number];
 
@@ -284,19 +328,7 @@ export async function captureScreens(
   const browser: Browser = await chromium.launch();
   try {
     for (const theme of THEMES) {
-      const browserContext = await browser.newContext({
-        viewport,
-        colorScheme: theme,
-        timezoneId: 'UTC',
-        locale: 'en-US',
-        reducedMotion: 'reduce',
-      });
-      // The console words its key hints for the platform it is read on (Return on a Mac, Enter
-      // elsewhere). The pages show one, whatever machine takes the shots.
-      await browserContext.addInitScript(() => {
-        Object.defineProperty(navigator, 'platform', { get: () => 'MacIntel' });
-        Object.defineProperty(navigator, 'userAgentData', { get: () => ({ platform: 'macOS' }) });
-      });
+      const browserContext = await newPinnedContext(browser, viewport, theme);
       const sent: string[] = [];
       await browserContext.route(
         (url) => SECRET_REQUEST.test(url.pathname),

@@ -75,3 +75,21 @@ test('asks for a token once, and again only when the one it holds is about to ex
   assert.notEqual(await source(), first);
   assert.equal(requests, 2);
 });
+
+test('makes one token request when two calls arrive together', async () => {
+  const base = process.env.ODUDU_BASE ?? 'http://localhost:3000';
+  let requests = 0;
+  const source = createTokenSource({
+    issuer: `${base}/tenants/demo`,
+    clientId: 'example-m2m',
+    clientSecret: 'example-m2m-secret',
+    scope: 'reports:read',
+    fetch: (input, init) => {
+      requests += 1;
+      return fetch(input, init);
+    },
+  });
+  const [first, second] = await Promise.all([source(), source()]);
+  assert.equal(first, second);
+  assert.equal(requests, 1);
+});

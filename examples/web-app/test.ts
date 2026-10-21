@@ -87,6 +87,8 @@ test('refuses a callback whose state is not the one it issued, though the code i
   assert.doesNotMatch(reason, /nonce|invalid_grant/u);
 });
 
+// The library also fails closed when no nonce is expected, with wording that
+// names the nonce too, so only the sign-in test shows the check itself removed.
 test('refuses an ID token minted for another sign-in, by its nonce', async () => {
   const reason = await refusalAfter(() =>
     browse(async (page) => {

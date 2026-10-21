@@ -34,7 +34,13 @@ const READS: readonly { file: string; targets: readonly string[] }[] = [
   },
   {
     file: 'apps/docs/tests/example-links.test.ts',
-    targets: ['examples/*/README.md', 'examples/*/package.json', 'examples/*/test.ts'],
+    targets: [
+      'examples/README.md',
+      'examples/*/README.md',
+      'examples/*/package.json',
+      'examples/*/test.ts',
+      'examples/_shared/**',
+    ],
   },
   {
     file: 'packages/protocol-admin/src/service/problem-types.test.ts',

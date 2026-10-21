@@ -1193,7 +1193,7 @@ async function runClientCommand(
   const redirectUris = values['redirect-uri'] ?? [];
   const postLogoutRedirectUris = values['post-logout-redirect-uri'] ?? [];
   const webOrigins = values['web-origin'] ?? [];
-  const clientCredentialsScopes = values['client-credentials-scope'] ?? [];
+  const clientCredentialsScopes = [...new Set(values['client-credentials-scope'] ?? [])];
   for (const [field, entries] of [
     ['redirect_uris', redirectUris],
     ['post_logout_redirect_uris', postLogoutRedirectUris],
@@ -1239,10 +1239,13 @@ async function runClientCommand(
     );
   }
 
-  if (clientCredentialsScopes.length > 0 && !grantTypes.includes('client_credentials')) {
+  if (
+    clientCredentialsScopes.length > 0 &&
+    (type === 'public' || !grantTypes.includes('client_credentials'))
+  ) {
     throw new OduduError(
       'seed_invalid_options',
-      '--client-credentials-scope needs a client that may use the client_credentials grant',
+      '--client-credentials-scope needs a confidential client that may use the client_credentials grant',
     );
   }
 

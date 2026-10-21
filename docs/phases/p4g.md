@@ -2349,3 +2349,14 @@ BYPASSRLS`, `CREATE ROLE odudu_svc LOGIN`, `CREATE DATABASE odudu OWNER odudu_ow
   `ben` so each stays under it.
 - **Typecheck.** Each example has a `tsconfig.json`, `typescript` 6.0.3 and `@types/node` 24.19.1 as dev dependencies and an
   `npm run typecheck` that the examples job runs. `web-app` overrides `jose` to 6.2.12, so both lockfiles resolve the same version.
+
+### Increment 28, fix round 2
+
+- Closed: `seed client --client-credentials-scope` refuses a quote, backslash or non-ASCII scope and a scope on a public client (naming the
+  flag), and stores a repeated scope once in the order first named; the console capture's platform pin is one exported function
+  (`pinPlatform`, with `getHighEntropyValues`) and one context factory (`newPinnedContext`) that a test calls with a fake browser and runs
+  in a `vm`, and `run.ts` says what the pin hides; the examples link test's reads (`examples/README.md`, `_shared/**`, link targets) are in
+  `READS` and `docs#test`'s inputs, and a test fails when a README link leaves them; the machine-to-machine token source shares one
+  in-flight request.
+- Accepted: the nonce test cannot tell a removed `expectedNonce` from a present one, because the library fails closed with wording that
+  names the nonce; the sign-in test catches the removal. Noted in the test.

@@ -46,6 +46,34 @@ describe('links between the examples', () => {
     expect(readmes.length).toBeGreaterThanOrEqual(4);
   });
 
+  // What this file reads must be among the inputs that decide whether its
+  // cached result is still good.
+  const declared = (() => {
+    const turbo: { tasks: Record<string, { inputs?: string[] }> } = JSON.parse(
+      readFileSync(repoPath('turbo.json'), 'utf8'),
+    );
+    return (turbo.tasks['@odudu/docs#test']?.inputs ?? [])
+      .filter((input) => input.startsWith('$TURBO_ROOT$/examples/'))
+      .map((input) => input.slice('$TURBO_ROOT$/'.length));
+  })();
+  const isDeclared = (file: string): boolean =>
+    declared.some((glob) => path.matchesGlob(file, glob));
+
+  it.each(readmes)('%s and every file it links to are inputs of the docs test', (readme) => {
+    expect(isDeclared(readme), readme).toBe(true);
+    const text = readFileSync(repoPath(readme), 'utf8');
+    for (const [, target] of text.matchAll(/\]\((\.{1,2}\/[^)#\s]*)\)/gu)) {
+      const resolved = path.relative(
+        REPO_ROOT,
+        path.resolve(path.dirname(repoPath(readme)), target ?? ''),
+      );
+      const file = existsSync(path.join(repoPath(resolved), 'README.md'))
+        ? `${resolved}/README.md`
+        : resolved;
+      expect(isDeclared(file), `${readme} links ${target ?? ''}`).toBe(true);
+    }
+  });
+
   it.each(readmes)('%s links only to files and folders that exist', (readme) => {
     const text = readFileSync(repoPath(readme), 'utf8');
     const relative = [...text.matchAll(/\]\((\.{1,2}\/[^)#\s]*)\)/gu)].map((m) => m[1] ?? '');

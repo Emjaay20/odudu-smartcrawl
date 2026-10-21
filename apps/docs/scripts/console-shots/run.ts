@@ -5,7 +5,9 @@
 // page held). Through the console it creates the tenant demo, the client my-app
 // and the person ada if missing: use a stack made for this, on this machine.
 // ODUDU_BASE, ODUDU_ADMIN_EMAIL and ODUDU_ADMIN_PASSWORD name it; any other
-// host than this machine needs ODUDU_SCREENSHOTS_ALLOW_REMOTE=1.
+// host than this machine needs ODUDU_SCREENSHOTS_ALLOW_REMOTE=1. The browser
+// claims to be a Mac in UTC with en-US (capture.ts pinPlatform), so key hints
+// read Return; a reader on Windows or Linux sees Enter.
 import { existsSync, mkdtempSync, readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';

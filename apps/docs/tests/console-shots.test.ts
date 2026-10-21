@@ -1,7 +1,12 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { SECRET_REQUEST } from '#docs/scripts/console-shots/capture.ts';
+import { runInNewContext } from 'node:vm';
+import {
+  SECRET_REQUEST,
+  newPinnedContext,
+  pinPlatform,
+} from '#docs/scripts/console-shots/capture.ts';
 import { findSecrets } from '#docs/scripts/console-shots/guard.ts';
 import { SCREENS } from '#docs/scripts/console-shots/screens.ts';
 import { DOCS_ROOT } from '#docs/tests/support/dist.ts';
@@ -129,11 +134,38 @@ describe('the console captures', () => {
     expect(record('new-tenant')).toContain('http://localhost:3000/tenants/demo');
   });
 
-  it('pins what a page words by machine, so a record is the same on every one', () => {
-    const capture = readFileSync(path.join(DOCS_ROOT, 'scripts/console-shots/capture.ts'), 'utf8');
-    expect(capture).toContain("timezoneId: 'UTC'");
-    expect(capture).toContain("locale: 'en-US'");
-    expect(capture).toContain("'MacIntel'");
+  it('creates each context pinned to one timezone, locale and platform, whatever machine runs it', async () => {
+    const made: { options: unknown; scripts: unknown[] }[] = [];
+    const factory = {
+      newContext: (options: unknown) => {
+        const entry = { options, scripts: [] as unknown[] };
+        made.push(entry);
+        return Promise.resolve({ addInitScript: (script: unknown) => entry.scripts.push(script) });
+      },
+    };
+    const viewport = { width: 800, height: 600 };
+    await newPinnedContext(factory, viewport, 'dark');
+    expect(made).toHaveLength(1);
+    expect(made[0]?.options).toEqual({
+      viewport,
+      colorScheme: 'dark',
+      timezoneId: 'UTC',
+      locale: 'en-US',
+      reducedMotion: 'reduce',
+    });
+    expect(made[0]?.scripts).toEqual([pinPlatform]);
+  });
+
+  it('makes the page believe it runs on a Mac, through every way it can ask', async () => {
+    const page = { navigator: {} as Record<string, unknown> };
+    runInNewContext(`(${pinPlatform.toString()})()`, { navigator: page.navigator });
+    expect(page.navigator.platform).toBe('MacIntel');
+    const data = page.navigator.userAgentData as {
+      platform: string;
+      getHighEntropyValues(hints: string[]): Promise<{ platform: string }>;
+    };
+    expect(data.platform).toBe('macOS');
+    expect(await data.getHighEntropyValues(['platform'])).toEqual({ platform: 'macOS' });
     expect(readFileSync(path.join(RECORD, 'subjects-light.txt'), 'utf8')).toContain('Return');
   });
 });

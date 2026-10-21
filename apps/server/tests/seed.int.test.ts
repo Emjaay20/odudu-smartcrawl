@@ -1031,13 +1031,55 @@ describe('seed client --client-credentials-scope', () => {
     ).rejects.toThrow(/--client-credentials-scope.*client_credentials/u);
   });
 
-  it.each(['', 'two words'])('refuses the scope %j, which is not one scope name', async (name) => {
+  it('stores a scope once, in the order first named', async () => {
+    const options = uniqueOptions();
+    await seed(options);
+    await seed(
+      service(
+        options.tenant,
+        'twice',
+        '--client-credentials-scope',
+        'b:read',
+        '--client-credentials-scope',
+        'a:read',
+        '--client-credentials-scope',
+        'b:read',
+      ),
+    );
+    expect(await clientCredentialsScopesOf(options.tenant, 'twice')).toEqual(['b:read', 'a:read']);
+  });
+
+  it('refuses a scope on a public client, naming the flag, though it names the grant', async () => {
     const options = uniqueOptions();
     await seed(options);
     await expect(
-      seed(service(options.tenant, 'odd', '--client-credentials-scope', name)),
-    ).rejects.toThrow(/--client-credentials-scope/u);
+      seed([
+        'client',
+        '--tenant',
+        options.tenant,
+        '--client-id',
+        'public-service',
+        '--public',
+        '--redirect-uri',
+        'https://app.example/callback',
+        '--grant-type',
+        'client_credentials',
+        '--client-credentials-scope',
+        'reports:read',
+      ]),
+    ).rejects.toThrow(/--client-credentials-scope.*confidential/u);
   });
+
+  it.each(['', 'two words', 'a"b', 'a\\b', 'é'])(
+    'refuses the scope %j, which is not one scope name',
+    async (name) => {
+      const options = uniqueOptions();
+      await seed(options);
+      await expect(
+        seed(service(options.tenant, 'odd', '--client-credentials-scope', name)),
+      ).rejects.toThrow(/--client-credentials-scope/u);
+    },
+  );
 
   it('refuses more scopes than a client list may hold, in the words the API uses', async () => {
     const options = uniqueOptions();

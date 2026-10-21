@@ -25,9 +25,9 @@ export function createTokenSource(options: TokenSourceOptions): () => Promise<st
     `${encodeURIComponent(clientId)}:${encodeURIComponent(clientSecret)}`,
   ).toString('base64');
   let held: { token: string; renewAt: number } | undefined;
+  let pending: Promise<string> | undefined;
 
-  return async () => {
-    if (held !== undefined && now() < held.renewAt) return held.token;
+  async function renew(): Promise<string> {
     const grant = await send(`${issuer}/protocol/openid-connect/token`, {
       method: 'POST',
       headers: { authorization: `Basic ${basic}` },
@@ -38,6 +38,15 @@ export function createTokenSource(options: TokenSourceOptions): () => Promise<st
     const body = (await grant.json()) as { access_token: string; expires_in: number };
     held = { token: body.access_token, renewAt: now() + body.expires_in * 1000 - SKEW_MS };
     return body.access_token;
+  }
+
+  return () => {
+    if (held !== undefined && now() < held.renewAt) return Promise.resolve(held.token);
+    // Calls that arrive while a request is out share it.
+    pending ??= renew().finally(() => {
+      pending = undefined;
+    });
+    return pending;
   };
 }
 
