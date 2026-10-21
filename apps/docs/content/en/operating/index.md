@@ -24,7 +24,7 @@ The quick start's compose file is for trying Odudu out and is not a deployment. 
 ## The pages
 
 1. [Deploying](./deploying.md) takes you from an empty Postgres to a server people sign in to.
-2. [Configuration](./configuration.md) says which variables the server refuses to start without, and links the full list.
+2. [Production settings](./configuration.md) says which variables the server refuses to start without, and links the full list.
 3. [Upgrading](./upgrading.md) moves a running server to a newer version.
 4. [Backups](./backups.md) says what to copy and what is not yet proven.
 5. [Scaling](./scaling.md) says why there is one instance and where more are placed.

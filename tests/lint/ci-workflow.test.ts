@@ -236,6 +236,8 @@ describe('the CI workflow', () => {
     // which a reader's own folder and project name stand in for.
     expect(workflow).toContain('COMPOSE_FILE=$GITHUB_WORKSPACE/quickstart/compose.yaml');
     expect(workflow).toContain('COMPOSE_PROJECT_NAME=odudu-quickstart-stack');
+    // `docker compose run` resolves the image, which `exec` never does.
+    expect(workflow).toContain('ODUDU_IMAGE=odudu-smoke-odudu');
     expect(workflow).toContain('quickstart/stack.sh up odudu-smoke-odudu 3195');
     expect(workflow).toContain('ODUDU_BASE=http://localhost:3195');
     expect(workflow).toMatch(/if: always\(\)\n\s+run: quickstart\/stack\.sh down/u);

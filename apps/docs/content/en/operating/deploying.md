@@ -23,7 +23,7 @@ No version is published yet. Until the first one is, build the image from a copy
 
 Odudu uses two roles. The owner runs the migrations when the server starts. The serving role handles requests and is held to row-level security, which is what keeps one tenant's rows from another's.
 
-On your PostgreSQL 17, as an administrator, create both and a database the owner owns. Choose your own passwords.
+On your PostgreSQL 17, as an administrator, create both and a database the owner owns. Choose your own passwords, without a quote in them. Run these once: creating a role that exists is an error.
 
 ```text
 CREATE ROLE odudu_owner LOGIN CREATEROLE BYPASSRLS PASSWORD '<owner password>';
@@ -53,7 +53,7 @@ It prints a line to set as `ODUDU_CONSOLE_CLIENT_KEY`.
 
 ## 4. Start the server
 
-Give the container these variables, from your own secret handling. Odudu reads its secrets from the environment, and does not yet read them from a secret store ([Roadmap](../roadmap.md), P12). The first block is what the server will not start without; [Configuration](./configuration.md) lists them all.
+Give the container these variables, from your own secret handling. Odudu reads its secrets from the environment, and does not yet read them from a secret store ([Roadmap](../roadmap.md), P12). The first block is what the server will not start without; [Production settings](./configuration.md) lists them all.
 
 ```text
 NODE_ENV=production
@@ -120,7 +120,7 @@ The server runs three background passes by itself, and you should leave them on.
 - **Mail.** It sends queued mail every 15 seconds. With nothing sending, every verification and reset link sits unsent, and the flows that queued them answer exactly as they do when mail is going out.
 - **Back-channel logout.** It delivers logout tokens to the apps that registered for them.
 
-To schedule one yourself instead, set its `ODUDU_REAP_ENABLED`, `ODUDU_OUTBOX_ENABLED` or `ODUDU_LOGOUT_SENDER_ENABLED` to `false` and run `odudu reap`, `odudu send-mail` or `odudu send-logouts` from cron or a Kubernetes CronJob. Do one or the other. Doing both is harmless: the retention pass takes a Postgres advisory lock, and whoever loses a tick skips it.
+To schedule one yourself instead, set its `ODUDU_REAP_ENABLED`, `ODUDU_OUTBOX_ENABLED` or `ODUDU_LOGOUT_SENDER_ENABLED` to `false` and run `odudu reap`, `odudu send-mail` or `odudu send-logouts` from cron or a Kubernetes CronJob. Do one or the other. Doing both is harmless: the retention pass takes a Postgres advisory lock and whoever loses a tick skips it, and the mail and logout senders claim each message so none is sent twice.
 
 The retention pass needs `ODUDU_APP_DATABASE_URL`, because its deletes are scoped by the row-level-security policy that the owner role escapes. Its one transaction covers every tenant, which is what to watch if a deployment has many tenants and very large tables.
 
@@ -130,4 +130,4 @@ To send real mail, set `ODUDU_SMTP_HOST` and `ODUDU_SMTP_FROM`, and `ODUDU_SMTP_
 
 ## What is not here yet
 
-Odudu runs as one container beside one Postgres. Secret storage beyond environment variables, written and proven backup and restore, running several instances, and a Helm chart are all on the [roadmap](../roadmap.md), not in the product today.
+Odudu runs as one container beside one Postgres. Secret storage beyond environment variables, written and proven backup and restore, and running several instances are all on the [roadmap](../roadmap.md), not in the product today.

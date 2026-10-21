@@ -30,7 +30,7 @@ To run one package's tests from its directory, run `pnpm test` there. To run one
 node_modules/.bin/vitest run --project unit tests/docs tests/lint
 ```
 
-The projects are `unit`, `integration` and `plans`. `plans` checks the query plan of each list endpoint against an index, and runs with `pnpm test:plans`.
+The projects are `unit`, `integration`, `plans`, `browser` and `dom`. `plans` checks the query plan of each list endpoint against an index, and runs with `pnpm test:plans`.
 
 ## 4. The documentation site
 

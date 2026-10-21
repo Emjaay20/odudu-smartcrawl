@@ -16,7 +16,7 @@ Keep two things, and keep them apart.
 - **The database.** Every tenant's people, clients, keys, settings and audit trail are rows in the one database `ODUDU_DATABASE_URL` points at.
 - **The secrets.** `ODUDU_KEK` wraps every signing key and every console token stored in that database, and `ODUDU_CONSOLE_CLIENT_KEY` is registered on every tenant. A dump restored without the same `ODUDU_KEK` holds keys nobody can unwrap, so the signing keys and the stored console sessions cannot be read. Keep both values in your secret store, in a different place from the dumps. A dump with its key beside it hands both to anyone who finds it.
 
-The two database roles are not in a dump, because roles belong to the PostgreSQL cluster. Recreate them first ([Deploying](./deploying.md), step 2) before you restore into a new cluster.
+The database roles are not in a dump, because roles belong to the PostgreSQL cluster. A restore into a new cluster needs them first, and needs the owner role to have the same name it had when the dump was taken: the dump records default privileges for that role by name, and the restore stops with `role does not exist` without it. Step 3 gives the commands.
 
 ## 1. Dump the database
 
@@ -40,9 +40,35 @@ A dump that exists is not a dump that restores. List its contents, which reads t
 docker compose exec postgres pg_restore --list /tmp/odudu.dump
 ```
 
-You should see a line of `TABLE DATA` for each table. Then restore it into a scratch database on a Postgres of the same major version, and sign in to a server started against it with the same `ODUDU_KEK`. That is the proof that matters, and it is yours to run for now.
+You should see a line of `TABLE DATA` for each table.
 
-## 3. Keep the copy
+## 3. Restore it into a new cluster
+
+Do this once on a scratch PostgreSQL 17, so you know it works before you need it. The steps below were run end to end against a dump of the quick start's stack: the restored database served the `system` tenant's discovery document and signing keys to a server started with the same `ODUDU_KEK`. The project has not yet run a restore against a full sign-in, which is what [the roadmap](../roadmap.md) (P12) promises.
+
+1. As an administrator, create the owner under the name it had when you dumped (`odudu` on the quick start's stack, `odudu_owner` if you followed [Deploying](./deploying.md)), the serving role and an empty database. Also create `odudu_app` and give it to the serving role. The migrations normally do this, but a restore brings the record that they already ran, so they never run again, and without the grant the serving role has no privileges while `/health/ready` still answers `200`.
+
+```text
+CREATE ROLE odudu_owner LOGIN CREATEROLE BYPASSRLS PASSWORD '<owner password>';
+CREATE ROLE odudu_svc LOGIN PASSWORD '<serving password>';
+CREATE DATABASE odudu OWNER odudu_owner;
+CREATE ROLE odudu_app NOLOGIN;
+GRANT odudu_app TO odudu_svc;
+```
+
+2. Restore the dump with the owner role, stopping at the first error.
+
+```text
+pg_restore --no-owner --exit-on-error --dbname "postgres://odudu_owner:<owner password>@<host>:5432/odudu" odudu-2026-01-01.dump
+```
+
+3. Start a server against the restored database with the `ODUDU_KEK` and `ODUDU_CONSOLE_CLIENT_KEY` you kept, and check a tenant's keys are served.
+
+```text
+curl -fsS https://id.example.com/tenants/system/protocol/openid-connect/certs
+```
+
+## 4. Keep the copy
 
 Copy the dump off the machine that made it, on a schedule that matches how much you can afford to lose, and keep several.
 

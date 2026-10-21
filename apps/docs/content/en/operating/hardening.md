@@ -1,6 +1,6 @@
 ---
 title: Hardening
-description: A checklist of every guard the server starts under and the settings around them, to go through before real people sign in.
+description: A checklist of the guards the server starts under and the settings around them, to go through before real people sign in.
 ---
 
 # Hardening
@@ -13,7 +13,7 @@ Tick each item by checking the thing named, not by remembering that you did it.
 
 These are the checks the server makes when it starts. Each one stops it with a message that names the variable.
 
-- [ ] **The serving role is not the owner.** `ODUDU_APP_DATABASE_URL` is set to a role that is neither a superuser nor able to bypass row-level security, and is not the owner's `ODUDU_DATABASE_URL`. Check: `SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = 'odudu_svc';` shows two `f`.
+- [ ] **The serving role is configured.** `ODUDU_APP_DATABASE_URL` is set, so the owner's `ODUDU_DATABASE_URL` is for migrations only. The server refuses to start without it. What role it names is the first item under "Around the guards".
 - [ ] **The encryption key is yours.** `ODUDU_KEK` is a key you generated, kept in your secret store and in your backups, and not the example from the repository, which the server refuses.
 - [ ] **TLS ends in front.** `ODUDU_TLS=true`, and a proxy really does end TLS. The server cannot tell. Check that `https://id.example.com/health/live` answers, and that plain http to the same host is refused or redirected.
 - [ ] **Clients cannot point the server inward.** `ODUDU_ALLOW_PRIVATE_CLIENT_URLS` is unset. On, a client could make the server fetch a private address, which is server-side request forgery.
@@ -22,6 +22,9 @@ These are the checks the server makes when it starts. Each one stops it with a m
 
 ## Around the guards
 
+These the server does not check when it starts, so only you can.
+
+- [ ] **The serving role is restricted.** `ODUDU_APP_DATABASE_URL` names a role that is neither a superuser nor able to bypass row-level security, and is not the owner's. The server only refuses to start when the variable is missing. The commands that serve every tenant at once, `odudu reap`, `odudu send-mail` and `odudu send-logouts`, check the role and refuse a bad one, but a server started on the wrong role runs. Check: `SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = 'odudu_svc';` shows two `f`. A boot check for this is on the [roadmap](../roadmap.md) with P12.
 - [ ] **The proxy overwrites `X-Forwarded-*`.** Appending is not enough. See [Deploying](./deploying.md), step 5.
 - [ ] **The proxy strips the client-certificate header and verifies the certificate**, if you use `tls_client_auth`.
 - [ ] **Odudu has a host of its own**, served at the root, not under a path.

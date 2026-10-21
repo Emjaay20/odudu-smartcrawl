@@ -18,9 +18,9 @@ const OPERATING = [
   'releasing',
 ];
 
-// The variables each exported guard in config-guard.ts reads or names: the
-// page has to name every one of them, so a guard added there fails here
-// until the pages say what it refuses.
+// The settings each exported guard reads off `config`, in the order the
+// guards are declared. A guard added, removed or re-pointed there changes
+// these lists, and the tests below compare the pages to them exactly.
 function guards(): Map<string, string[]> {
   const source = repoFile('apps/server/src/config-guard.ts');
   const found = new Map<string, string[]>();
@@ -28,32 +28,67 @@ function guards(): Map<string, string[]> {
   starts.forEach((match, index) => {
     const end = starts[index + 1]?.index ?? source.length;
     const body = source.slice(match.index, end);
-    found.set(match[1] ?? '', [...new Set(body.match(/ODUDU_[A-Z0-9_]+/gu) ?? [])].sort());
+    const reads = [...body.matchAll(/config\.(ODUDU_[A-Z0-9_]+)/gu)].map((read) => read[1] ?? '');
+    found.set(match[1] ?? '', [...new Set(reads)]);
   });
   return found;
 }
 
+// The first backticked name of each row of each table on a page.
+function tableVariables(text: string): string[][] {
+  const tables: string[][] = [];
+  let current: string[] | undefined;
+  for (const line of text.split('\n')) {
+    const row = /^\| `([A-Z_]+)`/u.exec(line);
+    if (row !== null) {
+      current ??= [];
+      current.push(row[1] ?? '');
+    } else if (!line.startsWith('|') && current !== undefined) {
+      tables.push(current);
+      current = undefined;
+    }
+  }
+  return tables;
+}
+
 describe('the guards the server boots under', () => {
+  const all = guards();
+  const production = [...all].filter(([name]) => name.startsWith('assertProduction'));
+  const readsOf = (name: string): string[] => all.get(name) ?? [];
+
   it('finds the guards in config-guard.ts', () => {
-    expect([...guards().keys()]).toContain('assertProductionTls');
-    expect(guards().size).toBeGreaterThanOrEqual(6);
+    expect([...all.keys()]).toEqual([
+      'assertProductionAppDatabaseUrl',
+      'assertProductionKekNotExample',
+      'assertProductionTls',
+      'assertProductionNoPrivateClientUrls',
+      'assertProductionPasskeyRelyingParty',
+      'assertConsoleConfigured',
+    ]);
   });
 
-  it.each(['operating/configuration.md', 'operating/hardening.md'])(
-    '%s names every variable a guard reads, with the guard it belongs to',
-    (file) => {
-      const text = page(file);
-      for (const [guard, variables] of guards()) {
-        for (const variable of variables) {
-          expect(text, `${guard}: ${variable}`).toContain(variable);
-        }
-      }
-    },
-  );
+  it('lists in the first table of configuration.md exactly the settings the production guards read', () => {
+    const expected = [...new Set(production.flatMap(([, reads]) => reads))].sort();
+    const [table] = tableVariables(page('operating/configuration.md'));
+    expect([...(table ?? [])].sort()).toEqual(expected);
+  });
 
-  it('hardening.md lists one checklist item for each guard', () => {
-    const items = page('operating/hardening.md').match(/^- \[ \] /gmu) ?? [];
-    expect(items.length).toBeGreaterThanOrEqual(guards().size);
+  it('lists in the second table exactly the settings the console guard reads, bar the one that switches it on', () => {
+    const expected = readsOf('assertConsoleConfigured')
+      .filter((name) => name !== 'ODUDU_CONSOLE')
+      .sort();
+    const table = tableVariables(page('operating/configuration.md'))[1];
+    expect([...(table ?? [])].sort()).toEqual(expected);
+  });
+
+  it('gives hardening.md one checklist item per guard, in the guards order, each naming what the guard reads first', () => {
+    const text = page('operating/hardening.md');
+    const section = text.slice(text.indexOf('## The guards'), text.indexOf('## Around the guards'));
+    const items = section.split('\n').filter((line) => line.startsWith('- [ ] '));
+    expect(items).toHaveLength(all.size);
+    [...all.values()].forEach((reads, index) => {
+      expect(items[index], reads[0]).toContain(reads[0] ?? '?');
+    });
   });
 });
 
@@ -134,6 +169,22 @@ describe('the operating section', () => {
   });
 });
 
+describe('the pages that say no release exists', () => {
+  it('stop saying so when the release files appear', () => {
+    const published = ['RELEASING.md', 'CHANGELOG.md'].some((file) =>
+      existsSync(path.join(REPO, file)),
+    );
+    const saying = [
+      ['operating/upgrading.md', 'Odudu has published no release yet'],
+      ['operating/deploying.md', 'No version is published yet'],
+      ['operating/releasing.md', 'No version of Odudu has been published yet'],
+    ] as const;
+    for (const [file, sentence] of saying) {
+      expect(page(file).includes(sentence), file).toBe(!published);
+    }
+  });
+});
+
 describe('the security section', () => {
   const ADR_LINK = /docs\/adr\/(\d{4}-[a-z0-9-]+\.md)/gu;
 
@@ -155,6 +206,21 @@ describe('the security section', () => {
   it('says plainly that no outside review has been done, as SECURITY.md does', () => {
     expect(page('security/threat-model.md')).toMatch(/not been (security )?reviewed/u);
     expect(repoFile('SECURITY.md')).toMatch(/not been security reviewed/u);
+  });
+
+  it('gives the fallback email and the scope SECURITY.md gives', () => {
+    const policy = repoFile('SECURITY.md');
+    const email = /[\w.+-]+@[\w.-]+\.\w+/u.exec(policy)?.[0] ?? '';
+    expect(email).not.toBe('');
+    const text = page('security/disclosure.md');
+    expect(text).toContain(email);
+    for (const heading of ['Reporting a vulnerability', 'What to expect', 'Scope']) {
+      expect(policy, heading).toContain(`## ${heading}`);
+    }
+    for (const area of ['token issuance', 'tenant isolation', 'signing key handling']) {
+      expect(policy.toLowerCase(), area).toContain(area);
+      expect(text.toLowerCase(), area).toContain(area);
+    }
   });
 
   it('gives the reporting address SECURITY.md gives', () => {

@@ -42,6 +42,7 @@ jobs:
             echo "ODUDU_BASE=http://localhost:3195"
             echo "COMPOSE_FILE=$GITHUB_WORKSPACE/quickstart/compose.yaml"
             echo "COMPOSE_PROJECT_NAME=odudu-quickstart-stack"
+            echo "ODUDU_IMAGE=odudu-smoke-odudu"
           } >> "$GITHUB_ENV"
 
       - name: Start the quickstart stack
