@@ -128,4 +128,12 @@ describe('the console captures', () => {
     expect(record('subjects')).toContain('ada');
     expect(record('new-tenant')).toContain('http://localhost:3000/tenants/demo');
   });
+
+  it('pins what a page words by machine, so a record is the same on every one', () => {
+    const capture = readFileSync(path.join(DOCS_ROOT, 'scripts/console-shots/capture.ts'), 'utf8');
+    expect(capture).toContain("timezoneId: 'UTC'");
+    expect(capture).toContain("locale: 'en-US'");
+    expect(capture).toContain("'MacIntel'");
+    expect(readFileSync(path.join(RECORD, 'subjects-light.txt'), 'utf8')).toContain('Return');
+  });
 });

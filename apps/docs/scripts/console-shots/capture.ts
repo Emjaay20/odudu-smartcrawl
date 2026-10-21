@@ -291,6 +291,12 @@ export async function captureScreens(
         locale: 'en-US',
         reducedMotion: 'reduce',
       });
+      // The console words its key hints for the platform it is read on (Return on a Mac, Enter
+      // elsewhere). The pages show one, whatever machine takes the shots.
+      await browserContext.addInitScript(() => {
+        Object.defineProperty(navigator, 'platform', { get: () => 'MacIntel' });
+        Object.defineProperty(navigator, 'userAgentData', { get: () => ({ platform: 'macOS' }) });
+      });
       const sent: string[] = [];
       await browserContext.route(
         (url) => SECRET_REQUEST.test(url.pathname),

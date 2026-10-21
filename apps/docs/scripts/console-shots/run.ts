@@ -6,10 +6,12 @@
 // and the person ada if missing: use a stack made for this, on this machine.
 // ODUDU_BASE, ODUDU_ADMIN_EMAIL and ODUDU_ADMIN_PASSWORD name it; any other
 // host than this machine needs ODUDU_SCREENSHOTS_ALLOW_REMOTE=1.
-import { mkdtempSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { captureScreens, writeCaptures } from './capture.ts';
+import { unifiedDiff } from './diff.ts';
+import { findSecrets } from './guard.ts';
 import { SCREENS } from './screens.ts';
 
 const required = (name: string): string => {
@@ -61,8 +63,30 @@ if (process.argv.includes('--check')) {
       ? []
       : ['manifest.json']),
   ];
-  if (differing.length > 0)
+  if (differing.length > 0) {
+    // What differs is printed, so a failure on another machine can be read from its log. The
+    // records are page text; the guard runs over each diff before it is shown.
+    for (const file of differing.filter((name) => name.endsWith('.txt'))) {
+      const left = existsSync(path.join(final.recordDir, file))
+        ? readFileSync(path.join(final.recordDir, file), 'utf8')
+        : '';
+      const right = existsSync(path.join(fresh.recordDir, file))
+        ? readFileSync(path.join(fresh.recordDir, file), 'utf8')
+        : '';
+      const diff = unifiedDiff(left, right, {
+        left: `committed/${file}`,
+        right: `captured/${file}`,
+      });
+      const secrets = findSecrets(
+        { text: diff, attributes: [], fieldValues: [], passwordFieldsFilled: 0 },
+        [options.adminPassword],
+      );
+      process.stderr.write(
+        `${secrets.length > 0 ? `${file}: not shown, the guard refused it (${secrets.join('; ')})` : diff}\n`,
+      );
+    }
     throw new Error(`the console no longer matches: ${differing.join(', ')}`);
+  }
   process.stdout.write(`${String(result.captures.length)} captures match the committed records\n`);
 } else {
   writeCaptures(result, final);
