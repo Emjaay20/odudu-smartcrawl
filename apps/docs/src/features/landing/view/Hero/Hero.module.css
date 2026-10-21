@@ -166,7 +166,7 @@
   }
 }
 
-@media (prefers-reduced-motion: no-preference) and (min-width: 997px) {
+@media (prefers-reduced-motion: no-preference) and (scripting: enabled) and (min-width: 997px) {
   .lockup {
     animation: enterFade 500ms var(--ease) both;
   }

@@ -202,7 +202,7 @@
   }
 }
 
-@media (prefers-reduced-motion: no-preference) and (min-width: 997px) {
+@media (prefers-reduced-motion: no-preference) and (scripting: enabled) and (min-width: 997px) {
   .install {
     animation: enter 600ms var(--ease) 80ms both;
   }

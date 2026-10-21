@@ -1,5 +1,5 @@
 @import '../../../admin-console/src/shared/view/tokens.css';
-@import '../../../admin-console/src/shared/view/fonts.css';
+@import './fonts.css';
 
 /*
  * What shows while Plex downloads. Each face is a system font scaled to Plex's
@@ -10,9 +10,9 @@
   font-family: 'IBM Plex Sans Fallback';
   font-weight: 400;
   src: local('Arial'), local('Liberation Sans');
-  size-adjust: 100.7%;
-  ascent-override: 101.8%;
-  descent-override: 27.3%;
+  size-adjust: 100.3%;
+  ascent-override: 102.2%;
+  descent-override: 27.4%;
   line-gap-override: 0%;
 }
 
@@ -20,7 +20,7 @@
   font-family: 'IBM Plex Sans Fallback';
   font-weight: 600;
   src: local('Arial Bold'), local('Arial-BoldMT'), local('Liberation Sans Bold');
-  size-adjust: 96.3%;
+  size-adjust: 96.2%;
   ascent-override: 106.5%;
   descent-override: 28.6%;
   line-gap-override: 0%;

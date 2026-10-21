@@ -352,8 +352,14 @@ describe('the landing page in a browser', () => {
     }
   }
 
-  it('shows the headline, the one command and every section link with JavaScript disabled', async () => {
-    const { page, close } = await visit({ javaScriptEnabled: false });
+  // A slow machine, which is what showed a page that is still moving when it should be still.
+  const slowCpu = async (target: Page): Promise<void> => {
+    const session = await target.context().newCDPSession(target);
+    await session.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+  };
+
+  it('shows the headline, the one command and every section link with JavaScript disabled, nothing moving', async () => {
+    const { page, close } = await visit({ javaScriptEnabled: false }, slowCpu);
     expect(await page.locator('h1').isVisible()).toBe(true);
     expect(await page.locator('code[data-shell]:visible').count()).toBe(1);
     expect(await page.locator('code[data-shell="unix"]').isVisible()).toBe(true);
@@ -361,7 +367,15 @@ describe('the landing page in a browser', () => {
       const link = page.locator(`main a[href="${PAGES_BASE}${route}"]`).first();
       expect(await link.isVisible(), route).toBe(true);
     }
-    await page.getByText(WINDOWS_LABEL, { exact: true }).click();
+    const moving = await page.evaluate(() =>
+      document.getAnimations().map((animation) => {
+        const target = animation.effect instanceof KeyframeEffect ? animation.effect.target : null;
+        const name = animation instanceof CSSAnimation ? animation.animationName : 'a transition';
+        return `${name} on ${target?.tagName.toLowerCase() ?? 'nothing'} .${target?.getAttribute('class') ?? ''}`;
+      }),
+    );
+    expect(moving, 'nothing animates without script').toEqual([]);
+    await page.getByText(WINDOWS_LABEL, { exact: true }).click({ timeout: 5000 });
     expect(await page.locator('code[data-shell="windows"]').isVisible()).toBe(true);
     expect(await page.locator('code[data-shell="unix"]').isVisible()).toBe(false);
     await close();
@@ -754,31 +768,53 @@ describe('the landing page in a browser', () => {
     await close();
   });
 
-  it('shifts nothing when the fonts arrive late', async () => {
-    if (browser === undefined) throw new Error('the browser did not launch');
-    const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
-    const page = await context.newPage();
-    await page.route('**/*.woff2', async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-      await route.continue();
+  for (const width of [320, 375, 390, 768, 1280]) {
+    it(`shifts almost nothing when the fonts arrive late, at ${String(width)} px`, async () => {
+      if (browser === undefined) throw new Error('the browser did not launch');
+      const context = await browser.newContext({ viewport: { width, height: 844 } });
+      const page = await context.newPage();
+      await slowCpu(page);
+      await page.route('**/*.woff2', async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        await route.continue();
+      });
+      await page.addInitScript(() => {
+        const holder = window as unknown as { shift: number; seen: string[] };
+        holder.shift = 0;
+        holder.seen = [];
+        new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            const record = entry as PerformanceEntry & {
+              value: number;
+              hadRecentInput: boolean;
+              sources: { node: Node | null }[];
+            };
+            if (record.hadRecentInput) continue;
+            holder.shift += record.value;
+            holder.seen.push(
+              `${record.value.toFixed(4)} ${record.sources.map((source) => source.node?.parentElement?.className ?? '').join(' ')}`,
+            );
+          }
+        }).observe({ type: 'layout-shift', buffered: true });
+      });
+      // Stop at the first byte: the page is drawn in the fallback faces, and the
+      // swap to Plex happens when the delayed files arrive.
+      await page.goto(home(), { waitUntil: 'commit' });
+      await page.waitForFunction(
+        () =>
+          [...document.fonts].some(
+            (face) => face.family === 'IBM Plex Sans' && face.status === 'loaded',
+          ),
+        undefined,
+        { timeout: 15_000 },
+      );
+      await page.waitForTimeout(700);
+      const result = await page.evaluate(() => {
+        const holder = window as unknown as { shift: number; seen: string[] };
+        return { shift: holder.shift, seen: holder.seen };
+      });
+      expect(result.shift, result.seen.join(' | ')).toBeLessThan(0.02);
+      await context.close();
     });
-    await page.addInitScript(() => {
-      const holder = window as unknown as { shift: number };
-      holder.shift = 0;
-      new PerformanceObserver((list) => {
-        for (const entry of list.getEntries()) {
-          const record = entry as PerformanceEntry & { value: number; hadRecentInput: boolean };
-          if (!record.hadRecentInput) holder.shift += record.value;
-        }
-      }).observe({ type: 'layout-shift', buffered: true });
-    });
-    await page.goto(home());
-    await page.evaluate(async () => {
-      await document.fonts.ready;
-    });
-    await page.waitForTimeout(500);
-    const shift = await page.evaluate(() => (window as unknown as { shift: number }).shift);
-    expect(shift).toBeLessThan(0.02);
-    await context.close();
-  });
+  }
 });
