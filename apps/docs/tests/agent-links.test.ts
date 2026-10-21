@@ -8,7 +8,7 @@ const SOURCE = 'reference/generated/example.md';
 // Each row is written out by hand for both bases: the input, then what a copy must say.
 const FORMS: { form: string; input: string; pages: string; image: string }[] = [
   {
-    form: 'a site-absolute link',
+    form: 'a non-document site path, kept at the site root (not a supported way to link a page)',
     input: 'See [a](/quick-start/).',
     pages: 'See [a](https://site.test/odudu/quick-start/).',
     image: 'See [a](/docs/quick-start/).',
@@ -38,7 +38,7 @@ const FORMS: { form: string; input: string; pages: string; image: string }[] = [
     image: '[o](/docs/reference/generated/other/?v=2#x)',
   },
   {
-    form: 'a site-absolute link with a query and a fragment',
+    form: 'a non-document site path with a query and a fragment, kept at the site root',
     input: '[a](/guides/?q=1&r=2#top)',
     pages: '[a](https://site.test/odudu/guides/?q=1&r=2#top)',
     image: '[a](/docs/guides/?q=1&r=2#top)',

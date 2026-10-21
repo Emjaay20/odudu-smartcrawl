@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { REPOSITORY_URL } from '#docs/nav.ts';
-import { PAGES_DOCS_BASE } from '#docs/site.config.ts';
+import { PAGES_BASE } from '#docs/site.config.ts';
 import { distDir, htmlFiles, load, walk } from '#docs/tests/support/dist.ts';
 
 function sha256(text: string): string {
@@ -185,13 +185,20 @@ describe('the policy computed from the image build', () => {
 });
 
 describe('the Pages build', () => {
-  it('contains no link to /docs/, the copy in the image, unless the site itself serves its docs there', () => {
+  // Under a base of its own, a link to `/docs/` leaves the site for the server's mount;
+  // under the root base `/docs/` is the site's own directory and starts with that base.
+  it("links nothing in the image server's mount outside its own base", () => {
     const dir = distDir('pages');
-    const offenders = htmlFiles(dir).filter(
-      (file) =>
-        !PAGES_DOCS_BASE.startsWith('/docs/') &&
-        /(?:href|src)=["']?\/docs\//u.test(readFileSync(file, 'utf8')),
+    const offenders = htmlFiles(dir).flatMap((file) =>
+      [...readFileSync(file, 'utf8').matchAll(/(?:href|src)=["']?(\/docs\/[^"'\s>]*)/gu)]
+        .map((match) => match[1] ?? '')
+        .filter((address) => !address.startsWith(PAGES_BASE))
+        .map((address) => `${path.relative(dir, file)}: ${address}`),
     );
-    expect(offenders.map((file) => path.relative(dir, file))).toEqual([]);
+    expect(offenders).toEqual([]);
+  });
+
+  it('carries no policy file of the image', () => {
+    expect(existsSync(path.join(distDir('pages'), 'csp.json'))).toBe(false);
   });
 });

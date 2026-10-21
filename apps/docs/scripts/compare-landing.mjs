@@ -1,5 +1,6 @@
 // Compares the landing page of two built sites pixel by pixel.
-//   node scripts/compare-landing.mjs <dist/pages A> <dist/pages B> [--base /odudu/]
+//   node --no-warnings scripts/compare-landing.mjs <dist/pages A> <dist/pages B> [--base <path>]
+// The base defaults to the Pages base in site.config.ts.
 // Each build is served by serve.mjs, captured in Chromium under reduced motion
 // (so nothing animates) at 1280 and 375 px wide in both colour schemes, and the
 // PNGs are decoded and compared on a canvas in the same Chromium, so no image
@@ -11,14 +12,15 @@ import { mkdir, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
+import { PAGES_BASE } from '../site.config.ts';
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
-  options: { base: { type: 'string', default: '/odudu/' } },
+  options: { base: { type: 'string', default: PAGES_BASE } },
 });
 const [dirA, dirB] = positionals;
 if (dirA === undefined || dirB === undefined) {
-  console.error('usage: compare-landing.mjs <dist/pages A> <dist/pages B> [--base /odudu/]');
+  console.error('usage: compare-landing.mjs <dist/pages A> <dist/pages B> [--base <path>]');
   process.exit(2);
 }
 const base = values.base;

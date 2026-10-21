@@ -16,15 +16,39 @@ function isDocumentation(route: string, base: string): boolean {
   return rest !== '' && rest !== '404.html' && rest !== 'search/';
 }
 
+// The documentation pages that sit outside the docs directory.
+function outsideDocs(list: string[]): string[] {
+  return list.filter(
+    (route) => isDocumentation(route, PAGES_BASE) && !route.startsWith(PAGES_DOCS_BASE),
+  );
+}
+
 describe('where the documentation lives', () => {
+  it('finds a page beside the docs directory, not only one far from it', () => {
+    expect(
+      outsideDocs([
+        PAGES_BASE,
+        PAGES_DOCS_BASE,
+        `${PAGES_DOCS_BASE}guides/`,
+        `${PAGES_BASE}docs-extra/`,
+        `${PAGES_BASE}guides/`,
+        `${PAGES_BASE}404.html`,
+      ]),
+    ).toEqual([`${PAGES_BASE}docs-extra/`, `${PAGES_BASE}guides/`]);
+  });
+
   it('puts every documentation page of the Pages build under the docs directory', () => {
-    const outside = routes('pages', PAGES_BASE).filter(
-      (route) =>
-        isDocumentation(route, PAGES_BASE) &&
-        !route.startsWith(PAGES_DOCS_BASE) &&
-        !route.startsWith(`${PAGES_BASE}docs`),
-    );
-    expect(outside).toEqual([]);
+    expect(outsideDocs(routes('pages', PAGES_BASE))).toEqual([]);
+  });
+
+  it('gives every built page one main landmark', () => {
+    const missing = ['pages', 'image'].flatMap((target) => {
+      const dir = distDir(target as Target);
+      return htmlFiles(dir)
+        .filter((file) => load(file)('main').length !== 1)
+        .map((file) => `${target}: ${path.relative(dir, file)}`);
+    });
+    expect(missing).toEqual([]);
   });
 
   it('has the landing at the site root and the docs home at the docs directory', () => {

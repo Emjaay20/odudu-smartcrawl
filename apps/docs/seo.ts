@@ -90,3 +90,12 @@ export function stripForImage(html: string): string {
   const links = html.replace(LINK_TAG, (tag) => (isPublicLink(tag) ? '' : tag));
   return PUBLIC_SIGNALS.reduce((text, pattern) => text.replace(pattern, ''), links);
 }
+
+// A page the host answers an unknown address with is no page of the site: it
+// has no address of its own to name and nothing to index.
+export function stripForNotFound(html: string): string {
+  const stripped = stripForImage(html);
+  return /<meta\b[^>]*\bname="?robots"?/u.test(stripped)
+    ? stripped
+    : stripped.replace('</head>', '<meta name="robots" content="noindex"></head>');
+}

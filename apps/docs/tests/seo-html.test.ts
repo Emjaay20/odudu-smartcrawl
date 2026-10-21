@@ -256,6 +256,14 @@ describe('the Pages build is indexable HTML', () => {
     expect(locs.filter((loc) => excluded.includes(loc))).toEqual([]);
   });
 
+  it('gives the not-found page no address of its own and keeps it out of an index', () => {
+    const $ = load(path.join(distDir('pages'), '404.html'));
+    expect($('link[rel="canonical"], link[rel="alternate"], meta[property="og:url"]')).toHaveLength(
+      0,
+    );
+    expect($('meta[name="robots"][content="noindex"]')).toHaveLength(1);
+  });
+
   it('says nothing to keep a page out of an index', () => {
     expect(
       violations((page) => {

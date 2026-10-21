@@ -2566,4 +2566,15 @@ registers its results page at `<base>search`; `tests/layout.test.ts` names them 
 verified: `pnpm test` (exit 0), docs browser project 83, `tests/docs tests/lint tests/boundaries` 713, `pnpm typecheck`,
 `pnpm lint`, `pnpm boundaries`; Lighthouse 12.6.1 simulated mobile on the landing, two runs: performance 0.92, LCP 3.4 s,
 FCP 1.1 s, TBT 30 to 40 ms, CLS 0, other categories 1.00 (before: 0.92 to 0.93, 3.3 s). axe on `/`, `docs/` and `docs/guides/`
-at 390 px, both schemes: no violation; the search results page has `landmark-one-main` and `region` (the search plugin's page, which this change does not touch).
+at 390 px, both schemes: no violation; the search page is covered below.
+
+**Review follow-ups.** The search plugin's page put its content in the layout with no `<main>`, so it failed `landmark-one-main` and
+`region`. `src/theme/SearchPage` wraps the plugin's page in a `LandmarkProvider` and `src/theme/Layout` wraps the theme's layout, putting
+its children in `<main>` only when a page asked (a context, so the plugin's page is not copied); `tests/search.browser.test.ts` runs axe on
+`search/` in both builds, both schemes, at 1280 and 390 px, and `layout.test.ts` holds every built page to one `<main>`.
+The 404 page carried canonical and `og:url` `<base>404.html/` before this increment too (verified: `b48016ea` built in a temporary
+worktree); the `not-found` plugin strips them on the Pages build and adds `noindex`. `docusaurus clear` removes `node_modules/.cache`
+whole, fixture trees included, so the test harness removes only `.docusaurus` and the bundler's `rspack` cache between builds.
+**A root-relative Markdown link on the Pages build:** verified by planting a root-relative link to the quick start in a copy of the content: the build fails
+under `onBrokenLinks: 'throw'` ("Broken link on source page path = /odudu/docs/introduction/ -> linking to /odudu/quick-start/"), and
+`tests/docs/root-relative-links.test.ts` now fails at the source, naming file and line.

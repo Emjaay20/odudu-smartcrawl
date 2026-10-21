@@ -94,9 +94,13 @@ describe('the two builds', () => {
         (file) => load(file)('meta[name="robots"][content="noindex"]').length === 1,
       ).length;
     expect(noindex('image')).toBe(htmlFiles(distDir('image')).length);
-    const search = path.join(distDir('pages'), 'search/index.html');
+    // The search page and the not-found page keep themselves out of an index.
+    const apart = ['search/index.html', '404.html'].map((file) =>
+      path.join(distDir('pages'), file),
+    );
     const pagesWithRobots = htmlFiles(distDir('pages')).filter(
-      (file) => file !== search && load(file)('meta[name="robots"][content="noindex"]').length > 0,
+      (file) =>
+        !apart.includes(file) && load(file)('meta[name="robots"][content="noindex"]').length > 0,
     );
     expect(pagesWithRobots).toEqual([]);
   });

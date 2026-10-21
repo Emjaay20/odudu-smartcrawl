@@ -6,6 +6,7 @@ import agentCopies from './plugins/agent-copies';
 import { contentDir } from './plugins/content-dir';
 import { requireDescriptions } from './plugins/descriptions';
 import imageStrip from './plugins/image-strip';
+import notFound from './plugins/not-found';
 import robots from './plugins/robots';
 import { FOOTER_ROUTES, NAVBAR_ROUTES, REPOSITORY_URL, SECTIONS } from './nav';
 import { iconTags, siteHeadTags } from './seo';
@@ -143,7 +144,7 @@ const config: Config = {
         description: DESCRIPTION,
       },
     ],
-    ...(image ? [imageStrip, robots] : [robots]),
+    ...(image ? [imageStrip, robots] : [notFound, robots]),
   ],
   presets: [['classic', preset]],
   themeConfig,

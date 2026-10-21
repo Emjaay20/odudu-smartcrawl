@@ -2,7 +2,13 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { iconTags, landingJsonLd, siteHeadTags, stripForImage } from '#docs/seo.ts';
+import {
+  iconTags,
+  landingJsonLd,
+  siteHeadTags,
+  stripForImage,
+  stripForNotFound,
+} from '#docs/seo.ts';
 import {
   codeFrontMatter,
   missingDescriptions,
@@ -99,6 +105,26 @@ describe('stripping the public signals for the private image', () => {
   it('leaves a page without the signals as it was', () => {
     const html = `<head>${keep.join('')}</head>`;
     expect(stripForImage(html)).toBe(html);
+  });
+});
+
+describe('stripForNotFound', () => {
+  const signals = [
+    '<link data-rh=true rel=canonical href=https://s.test/404.html/ />',
+    '<meta data-rh=true property=og:url content=https://s.test/404.html/ />',
+    '<link rel=alternate hreflang=en href=https://s.test/404.html/ />',
+  ];
+  const keep = '<title>Page Not Found</title>';
+
+  it('drops the public address signals and says noindex', () => {
+    expect(stripForNotFound(`<head>${signals.join('')}${keep}</head>`)).toBe(
+      `<head>${keep}<meta name="robots" content="noindex"></head>`,
+    );
+  });
+
+  it('adds no second robots tag to a page that has one', () => {
+    const html = `<head>${keep}<meta name="robots" content="noindex"></head>`;
+    expect(stripForNotFound(html)).toBe(html);
   });
 });
 
