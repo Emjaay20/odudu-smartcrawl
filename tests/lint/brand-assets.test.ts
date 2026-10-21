@@ -582,14 +582,32 @@ describe('brand assets: the amber ring', () => {
   });
 });
 
+// The pixel rebuild launches Chromium. A job with none skips it, by name and with
+// the reason; the job that installs Chromium sets ODUDU_REQUIRE_CHROMIUM=1, and
+// there a missing browser fails the test like any other failure.
+const REQUIRED = process.env.ODUDU_REQUIRE_CHROMIUM === '1';
+const NO_BROWSER = "Executable doesn't exist";
+
 describe('brand assets: the derivatives come from the SVGs', () => {
-  it('rebuilds the PNGs and the ICO from the SVGs and finds them as committed', () => {
-    const output = execFileSync(process.execPath, ['brand/build.ts', '--check'], {
-      cwd: REPO_ROOT,
-      encoding: 'utf8',
-      timeout: 90_000,
-    });
-    expect(output).toContain('brand derivatives reproduced');
+  it('rebuilds the PNGs and the ICO from the SVGs and finds them as committed', (context) => {
+    try {
+      const output = execFileSync(process.execPath, ['brand/build.ts', '--check'], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        timeout: 90_000,
+      });
+      expect(output).toContain('brand derivatives reproduced');
+    } catch (error) {
+      const stderr =
+        typeof error === 'object' && error !== null && 'stderr' in error
+          ? String(error.stderr)
+          : '';
+      if (!REQUIRED && stderr.includes(NO_BROWSER)) {
+        context.skip('no Chromium is installed here; the docs job requires it');
+      }
+      throw error;
+    }
   }, 100_000);
 });
 

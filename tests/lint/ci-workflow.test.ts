@@ -185,6 +185,36 @@ describe('the CI workflow', () => {
     });
   });
 
+  describe('the brand derivative check', () => {
+    it('runs in the docs job, after Chromium is installed, and fails there if it cannot run', async () => {
+      const workflow = await read('.github/workflows/verify.yml');
+      const from = workflow.slice(workflow.indexOf('\n  docs:\n'));
+      const block = from.slice(0, from.indexOf('\n  # The four steps'));
+      const install = block.indexOf('uses: ./.github/actions/playwright');
+      const step = block.indexOf('ODUDU_REQUIRE_CHROMIUM');
+      expect(install).toBeGreaterThan(0);
+      expect(step).toBeGreaterThan(install);
+      expect(block).toContain('tests/lint/brand-assets.test.ts');
+      expect(block).toMatch(/ODUDU_REQUIRE_CHROMIUM: '1'/u);
+    });
+
+    it('skips by name where no Chromium is installed, and never when it is required', async () => {
+      const test = await read('tests/lint/brand-assets.test.ts');
+      expect(test).toContain("process.env.ODUDU_REQUIRE_CHROMIUM === '1'");
+      expect(test).toContain('if (!REQUIRED && stderr.includes(NO_BROWSER))');
+      expect(test).toContain('context.skip(');
+    });
+
+    it('leaves the jobs without a browser out of it', async () => {
+      const workflow = await read('.github/workflows/verify.yml');
+      const rest = workflow.slice(
+        workflow.indexOf('\n  test-rest:\n'),
+        workflow.indexOf('\n  trace:\n'),
+      );
+      expect(rest).not.toContain('ODUDU_REQUIRE_CHROMIUM');
+    });
+  });
+
   describe('the console capture job', () => {
     async function job(): Promise<string> {
       const workflow = await read('.github/workflows/verify.yml');
@@ -207,6 +237,46 @@ describe('the CI workflow', () => {
       expect(block).toContain('ODUDU_REVISION: ${{ github.sha }}');
       expect(block).toContain('uses: ./.github/actions/image');
       expect(block).toContain('cp infra/docker/.env.example infra/docker/.env');
+    });
+
+    it('never closes a pipe early on a command that prints more, which fails the run under pipefail', async () => {
+      const shots = await read('apps/docs/scripts/console-shots/with-stack.sh');
+      const code = shots
+        .split('\n')
+        .filter((line) => !line.trimStart().startsWith('#'))
+        .join('\n');
+      expect(code).not.toMatch(/\|\s*head\b/u);
+      expect(code).not.toMatch(/\|\s*grep -q\b/u);
+    });
+
+    it('names the step and the command that failed, with the line and the status', async () => {
+      const shots = await read('apps/docs/scripts/console-shots/with-stack.sh');
+      expect(shots).toMatch(/^trap '[^']*BASH_COMMAND[^']*LINENO[^']*' ERR$/mu);
+      expect(shots).toContain('set -E');
+      for (const step of [
+        'start the stack',
+        'wait for the console',
+        'make the administrator',
+        'run the capture',
+      ]) {
+        expect(shots, step).toContain(`step '${step}'`);
+      }
+    });
+
+    it('keeps what the password step prints to stderr out of the void', async () => {
+      const shots = await read('apps/docs/scripts/console-shots/with-stack.sh');
+      const line =
+        shots.split('\n').find((l) => !l.trimStart().startsWith('#') && l.includes('seed admin')) ??
+        '';
+      expect(line).not.toBe('');
+      expect(line).not.toContain('2>/dev/null');
+    });
+
+    it('waits for the console itself, not only the health check, for a bounded time', async () => {
+      const shots = await read('apps/docs/scripts/console-shots/with-stack.sh');
+      expect(shots).toMatch(/for attempt in \$\(seq 1 \d+\)/u);
+      expect(shots).toContain('/console/');
+      expect(shots).toContain('the console did not answer');
     });
 
     it('is the same capture a writer runs: one script starts the stack, whose records the check reads', async () => {

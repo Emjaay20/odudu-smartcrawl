@@ -10,7 +10,7 @@
 #                                  of building one; it must carry the revision
 #                                  label of ODUDU_REVISION, or of HEAD if unset
 #   SHOTS_KEEP_STACK=1             leave the stack up afterwards
-set -euo pipefail
+set -Eeuo pipefail
 
 REPO="$(cd "$(dirname "$0")/../../../.." && pwd)"
 DOCKER_DIR="$REPO/infra/docker"
@@ -44,6 +44,13 @@ if [ "${SHOTS_PREBUILT:-}" = "1" ]; then
   fi
 fi
 
+# Every step names itself, and a command that fails says which, where and how,
+# so a failure is never a bare exit status. BASH_COMMAND is the command as
+# written, so no variable's value (the password) is in it.
+STEP="starting"
+step() { STEP="$1"; echo "with-stack: $1" >&2; }
+trap 'echo "with-stack: failed while trying to $STEP: \`$BASH_COMMAND\` (line $LINENO, status $?)" >&2' ERR
+
 compose() { docker compose --project-directory "$DOCKER_DIR" "$@"; }
 
 cleanup() {
@@ -59,15 +66,49 @@ cleanup() {
 }
 trap cleanup EXIT
 
+step 'start the stack'
 compose up -d ${build_flag[@]+"${build_flag[@]}"} --wait --wait-timeout 180 postgres odudu
+
+# Healthy is not the same as answering: the first request has been seen to fail
+# the moment the stack reported healthy, so wait, for a bounded time, for the
+# console's own page.
+step 'wait for the console'
+ready=""
+for attempt in $(seq 1 30); do
+  if curl -fsS -o /dev/null "http://localhost:$ODUDU_HOST_PORT/console/"; then
+    ready=1
+    break
+  fi
+  sleep 2
+done
+if [ -z "$ready" ]; then
+  echo "with-stack: the console did not answer on http://localhost:$ODUDU_HOST_PORT/console/ within 60 seconds" >&2
+  exit 1
+fi
 
 # The first line `seed admin` prints is the administrator's generated password,
 # which the console would ask to change at the first sign-in; clearing that one
 # required action stands in for the change, so the capture signs straight in.
-password="$(compose exec -T odudu node dist/main.js seed admin --username "$ADMIN_EMAIL" 2>/dev/null | head -n 1)"
+# The whole output is read before the first line is taken: closing the pipe
+# after one line made the command's next write fail, and the run with it.
+step 'make the administrator'
+seed_errors="$(mktemp)"
+seeded="$(compose exec -T odudu node dist/main.js seed admin --username "$ADMIN_EMAIL" 2>"$seed_errors")" || {
+  echo "with-stack: seed admin failed; its error output follows" >&2
+  cat "$seed_errors" >&2
+  rm -f "$seed_errors"
+  exit 1
+}
+rm -f "$seed_errors"
+password="${seeded%%$'\n'*}"
+if [ -z "$password" ]; then
+  echo "with-stack: seed admin printed no password" >&2
+  exit 1
+fi
 compose exec -T postgres sh -c \
   'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -qc "delete from user_required_actions"'
 
+step 'run the capture'
 cd "$REPO/apps/docs"
 ODUDU_BASE="http://localhost:$ODUDU_HOST_PORT" \
   ODUDU_ADMIN_EMAIL="$ADMIN_EMAIL" \

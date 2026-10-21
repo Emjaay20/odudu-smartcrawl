@@ -289,6 +289,14 @@ jobs:
         timeout-minutes: 4
         run: pnpm --filter @odudu/docs test:browser
 
+      # The one place the brand's PNG and ICO are rebuilt from their SVGs: the
+      # test skips in a job with no Chromium, and here it may not.
+      - name: Rebuild the brand derivatives and compare them with the committed files
+        timeout-minutes: 3
+        run: node_modules/.bin/vitest run --project unit tests/lint/brand-assets.test.ts
+        env:
+          ODUDU_REQUIRE_CHROMIUM: '1'
+
       - name: Collect the test report
         if: success()
         run: |
