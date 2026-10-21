@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { LAYOUTS } from '@site/src/features/landing/service/geometry';
+import { LAYOUTS, type Step } from '@site/src/features/landing/service/geometry';
 import {
   CHIPS,
+  buildScene,
   checkPath,
   chipStarts,
   flag,
@@ -53,5 +54,24 @@ describe('the sign-in scene drawing', () => {
     expect(headTransform([3, 4], 90)).toBe('translate(3 4) rotate(90)');
     expect(flag(true)).toBe('true');
     expect(flag(false)).toBe('false');
+  });
+});
+
+describe('the sign-in scene model', () => {
+  const steps: Step[] = [0, 1, 2, 3, 4, 5, 6, 7];
+
+  it('draws a line for each base route and never for the return route', () => {
+    for (const step of steps) {
+      const ids = buildScene('wide', step).lines.map((line) => line.id);
+      expect(ids).toEqual(['dh', 'da', 'db', 'ha', 'hb']);
+    }
+  });
+
+  it('draws the return arrowhead only while that route is active', () => {
+    const shown = steps.filter((step) =>
+      buildScene('wide', step).heads.some((head) => head.id === 'bh'),
+    );
+    expect(shown).toEqual([6]);
+    expect(buildScene('wide', 6).heads.find((head) => head.id === 'bh')?.look).toBe('lit');
   });
 });

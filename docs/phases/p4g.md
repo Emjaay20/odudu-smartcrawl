@@ -2537,4 +2537,12 @@ since `@site/…` is not in the base tsconfig), the react-hooks and `complexity:
 custom properties, CSS module classes, file extensions and usecase logic, which now read the docs app too (each shown to
 fail on a planted violation). The lints found three things the old layout hid: a CSS class (`prompt`) used and never defined,
 a custom property (`--below-height`) read and never set, and `--ifm-navbar-height` used without being declared.
-**Pixel comparison:** PIXEL_PLACEHOLDER
+**Pixel comparison**, reproducible with `apps/docs/scripts/compare-landing.mjs <dist/pages A> <dist/pages B>`: each
+build is served and captured in Chromium under reduced motion (1280 and 375 px, both colour schemes; fold, full page and
+the four scene steps, 24 captures) and the PNGs are compared on a canvas in that Chromium. Run on one machine against a
+`git worktree` of each commit, built with `pnpm build:pages`. 325fd8d0 against 780eab7a (the CI fix): 22 identical, the
+two mobile full-page captures differ by about 585 pixels (the font and hero changes, not the layering). 780eab7a against
+the review round's HEAD: all 24 identical in three runs and one run in which a capture differed, so a capture is not
+deterministic to the pixel. The hero's float and typing are not compared, because they move.
+The first run of the review round found that the scene model drew the return route's line, which the old view never did;
+that changed about 200 pixels and is now a `lines` and a `heads` list with a test that the return line is never drawn.

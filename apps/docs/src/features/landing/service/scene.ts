@@ -144,13 +144,18 @@ export interface ChipModel {
   lit: string;
 }
 
-export interface RouteModel {
+// A route's line, drawn for the base routes only.
+export interface LineModel {
   id: RouteId;
   d: string;
   on: string;
-  headAt: string;
-  headLook: 'lit' | 'dim';
-  headShown: boolean;
+}
+
+// An arrowhead, drawn for each base route and for the return route while it is active.
+export interface HeadModel {
+  id: RouteId;
+  at: string;
+  look: 'lit' | 'dim';
 }
 
 export interface DotModel {
@@ -170,7 +175,8 @@ export interface SceneModel {
   viewBox: string;
   glow: { cx: number; cy: number; r: number };
   rings: { r: number; delay: number; pulse: string }[];
-  routes: RouteModel[];
+  lines: LineModel[];
+  heads: HeadModel[];
   device: WindowModel;
   appA: WindowModel;
   appB: WindowModel;
@@ -251,14 +257,18 @@ export function buildScene(layout: LayoutName, step: Step): SceneModel {
       delay: index * 220,
       pulse: flag(activity.pulse),
     })),
-    routes: HEAD_ROUTES.map((id) => ({
+    lines: BASE_ROUTES.map((id) => ({
       id,
       d: pathData(geometry.routes[id].points),
       on: flag(withBase(id)),
-      headAt: headTransform(geometry.routes[id].head.at, geometry.routes[id].head.angle),
-      headLook: activity.routes.includes(id) ? 'lit' : 'dim',
-      headShown: BASE_ROUTES.includes(id) || activity.routes.includes(id),
     })),
+    heads: HEAD_ROUTES.filter((id) => BASE_ROUTES.includes(id) || activity.routes.includes(id)).map(
+      (id) => ({
+        id,
+        at: headTransform(geometry.routes[id].head.at, geometry.routes[id].head.angle),
+        look: activity.routes.includes(id) ? 'lit' : 'dim',
+      }),
+    ),
     device: windowOf(geometry.device, 'Their browser', 'form', activity.device, undefined, false),
     appA: windowOf(geometry.appA, 'App A', 'app', activity.appA, appASigned(step), false),
     appB: windowOf(

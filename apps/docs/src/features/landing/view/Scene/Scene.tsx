@@ -55,22 +55,20 @@ export function Scene({ layout, step, uid }: Props): ReactElement {
         />
       ))}
 
-      {scene.routes.map((route) => (
-        <g key={route.id}>
-          <path className={styles.route} d={route.d} />
-          <path className={styles.routeOn} data-on={route.on} d={route.d} />
+      {scene.lines.map((line) => (
+        <g key={line.id}>
+          <path className={styles.route} d={line.d} />
+          <path className={styles.routeOn} data-on={line.on} d={line.d} />
         </g>
       ))}
-      {scene.routes.map((route) =>
-        route.headShown ? (
-          <path
-            key={`head-${route.id}`}
-            className={HEADS[route.headLook]}
-            d="M-10 -6L0 0L-10 6z"
-            transform={route.headAt}
-          />
-        ) : null,
-      )}
+      {scene.heads.map((head) => (
+        <path
+          key={`head-${head.id}`}
+          className={HEADS[head.look]}
+          d="M-10 -6L0 0L-10 6z"
+          transform={head.at}
+        />
+      ))}
 
       <g className={styles.node} data-on={scene.device.on}>
         <SceneWindow window={scene.device} />
