@@ -92,6 +92,10 @@ TOKENS=$(curl -fsS -H "Origin: http://localhost:8080" --data-urlencode grant_typ
 
 The access token is what the app sends to your API. The ID token says who signed in. The refresh token gets new tokens later, and Odudu replaces it each time it is used, so a stolen one is caught. Keep all three in memory rather than in `localStorage`, where any script on the page can read them.
 
+## 7. Run a finished app
+
+The steps above are what a single-page app does, by hand. A working version is one short file, written with the `oauth4webapi` library, which makes the `state`, the `nonce` and the PKCE pair, checks them when the person comes back, and verifies the ID token for you. [The single-page app example](https://github.com/wizzywit/odudu/tree/main/examples/single-page-app) signs `ada` in from the browser, shows who she is and when her access token expires, and keeps the tokens in memory. Its README says how to run it against your stack.
+
 ## Where to go next
 
 - Keep people signed in with [Refresh and end a session](./refresh-and-end-a-session.md), which also covers signing out.

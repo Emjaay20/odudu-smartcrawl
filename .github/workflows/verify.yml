@@ -465,7 +465,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        example: [web-app, api, machine-to-machine]
+        example: [web-app, single-page-app, api, machine-to-machine]
     env:
       ODUDU_BASE: http://localhost:3205
       COMPOSE_FILE: ${{ github.workspace }}/quickstart/compose.yaml
@@ -478,9 +478,10 @@ jobs:
 
       - uses: ./.github/actions/setup
 
-      # Only the web app drives a browser, and borrows the docs app's Playwright.
+      # The two apps that sign a person in drive a browser, and borrow the docs
+      # app's Playwright.
       - uses: ./.github/actions/playwright
-        if: matrix.example == 'web-app'
+        if: matrix.example == 'web-app' || matrix.example == 'single-page-app'
         with:
           package: '@odudu/docs'
 

@@ -21,6 +21,10 @@ updates:
     schedule:
       interval: weekly
   - package-ecosystem: npm
+    directory: /examples/single-page-app
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
     directory: /examples/api
     schedule:
       interval: weekly

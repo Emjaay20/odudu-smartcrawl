@@ -149,6 +149,10 @@ curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
 
 Full transcript: [Path A, /userinfo](../reference/transcripts/request-paths/path-a-authorization-code-with-pkce.md#5-userinfo).
 
+## Run a finished app
+
+Everything above is what an app does for you. To see it done in code, run [the single-page app example](https://github.com/wizzywit/odudu/tree/main/examples/single-page-app), which signs a person in from the browser, or [the web app example](https://github.com/wizzywit/odudu/tree/main/examples/web-app), whose server keeps a secret. Each README says how to run it against your stack.
+
 ## Where to go next
 
 - [Refresh and end a session](./refresh-and-end-a-session.md) keeps the person signed in and signs them out.

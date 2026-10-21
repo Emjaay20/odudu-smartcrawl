@@ -20,8 +20,21 @@ describe('links from the documentation to the examples', () => {
 
   it('is made by the integration guides', () => {
     expect(new Set(linked.map(({ directory }) => directory))).toEqual(
-      new Set(['examples/web-app', 'examples/api', 'examples/machine-to-machine']),
+      new Set([
+        'examples/web-app',
+        'examples/single-page-app',
+        'examples/api',
+        'examples/machine-to-machine',
+      ]),
     );
+  });
+
+  it.each([
+    ['apps/docs/content/en/guides/single-page-app.md', 'examples/single-page-app'],
+    ['apps/docs/content/en/guides/sign-a-user-in.md', 'examples/single-page-app'],
+    ['apps/docs/content/en/guides/sign-a-user-in.md', 'examples/web-app'],
+  ])('%s links %s', (page, directory) => {
+    expect(linked).toContainEqual({ page, directory });
   });
 
   it.each(linked.map(({ page, directory }) => [page, directory] as const))(

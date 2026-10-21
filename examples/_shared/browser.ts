@@ -6,6 +6,8 @@ interface Fetched {
   headers(): Record<string, string>;
 }
 interface Route {
+  request(): { url(): string };
+  continue(options?: { url?: string }): Promise<void>;
   fetch(options: { maxRedirects: number }): Promise<Fetched>;
   fulfill(options: { response: Fetched; headers: Record<string, string> }): Promise<void>;
 }
@@ -26,6 +28,9 @@ export interface Page {
   url(): string;
   route(pattern: string, handler: (route: Route) => Promise<void>): Promise<void>;
   context(): Context;
+  reload(): Promise<unknown>;
+  evaluate<T>(run: () => T): Promise<T>;
+  on(event: 'console', listener: (message: { type(): string; text(): string }) => void): void;
 }
 interface Browser {
   newPage(): Promise<Page>;
@@ -69,10 +74,32 @@ export function rewriteRedirect(
   });
 }
 
+// Changes a request on its way out, as if a script or an extension had altered
+// it. For what an app sends from script, where no redirect hop carries it.
+export function rewriteRequest(
+  page: Page,
+  pattern: string,
+  change: (url: URL) => void,
+): Promise<void> {
+  return page.route(pattern, (route) => {
+    const target = new URL(route.request().url());
+    change(target);
+    return route.continue({ url: target.href });
+  });
+}
+
 // From the app's front page to Odudu's sign-in form, typed in and submitted.
-export async function signIn(page: Page, app: string, username: string, password: string) {
+// The control that starts it is a link in a server-side app and a button in a
+// single-page one.
+export async function signIn(
+  page: Page,
+  app: string,
+  username: string,
+  password: string,
+  control: 'link' | 'button' = 'link',
+) {
   await page.goto(`${app}/`);
-  await page.getByRole('link', { name: /sign in/i }).click();
+  await page.getByRole(control, { name: /sign in/i }).click();
   await page.locator('input[name=username]').fill(username);
   await page.locator('input[name=password]').fill(password);
   await page.getByRole('button', { name: /^sign in$/i }).click();
@@ -83,7 +110,8 @@ export async function signInAndWaitForApp(
   app: string,
   username: string,
   password: string,
+  control: 'link' | 'button' = 'link',
 ): Promise<void> {
-  await signIn(page, app, username, password);
+  await signIn(page, app, username, password, control);
   await page.waitForURL(`${app}/`, { timeout: 15_000 });
 }

@@ -243,6 +243,9 @@ describe('the CI workflow', () => {
       expect(block).toContain('npm ci --ignore-scripts');
       expect(block).toContain('npm test');
       expect(block).toContain('npm run typecheck');
+      expect(block).toMatch(
+        /if: matrix\.example == 'web-app' \|\| matrix\.example == 'single-page-app'/u,
+      );
       expect(block).toMatch(/^ {4}timeout-minutes: \d+$/mu);
       expect(block).not.toMatch(/:3000\b/u);
       expect(block).toMatch(/if: always\(\)\n\s+run: quickstart\/stack\.sh down/u);

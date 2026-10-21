@@ -1,0 +1,24 @@
+{
+  "name": "odudu-example-single-page-app",
+  "version": "0.0.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "vite --port 8084 --strictPort",
+    "build": "vite build",
+    "test": "node --test test.ts",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "oauth4webapi": "3.8.8"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.1",
+    "typescript": "6.0.3",
+    "vite": "8.3.1"
+  }
+}

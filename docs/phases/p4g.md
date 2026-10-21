@@ -2360,3 +2360,25 @@ BYPASSRLS`, `CREATE ROLE odudu_svc LOGIN`, `CREATE DATABASE odudu OWNER odudu_ow
   in-flight request.
 - Accepted: the nonce test cannot tell a removed `expectedNonce` from a present one, because the library fails closed with wording that
   names the nonce; the sign-in test catches the removal. Noted in the test.
+
+## Increment 29: the single-page app, and the examples job for all four
+
+- **verified:** a fresh `quickstart/stack.sh up` then `examples/_shared/provision.sh` then `npm test` in `examples/single-page-app`: 9 tests,
+  RED first (empty `src/main.ts`: every browser test timed out), then GREEN. The test builds with `vite build` and serves with
+  `vite preview`, so what runs is what ships.
+- **verified:** `oauth4webapi` 3.8.8 with `None()` client authentication is the public-client path; `validateAuthResponse` checks `state` and
+  the `iss` parameter, `processAuthorizationCodeResponse` checks the ID token (signature, issuer, audience, nonce). Discovery and `/certs`
+  answer every origin; the token endpoint answers only a registered `web_origin`, so the sign-in itself proves the registration.
+- **verified:** the token response carries a `refresh_token` for `openid profile` (`Object.keys(tokens)` logged from the built app). The app
+  ignores it and keeps tokens in a variable. After a reload, choosing Sign in again returns signed in without the password form (the
+  tenant session still lives), which the test asserts.
+- **verified:** `/logout` resolves the registered post-logout addresses from the `client_id` parameter, not from the hint's audience; with
+  `id_token_hint` alone the person is signed out but not returned to the app ("not one this client has registered"). The app sends both.
+- Mutations, each failing the named test: `skipStateCheck` (state), `state` not sent, `S256` to `plain`, a trailing slash on the redirect
+  address (authorize parameters, sign-in), wrong verifier (sign-in), `expectedNonce` dropped (sign-in; the nonce test cannot tell, as in the
+  web app), pending values not deleted (replay, storage), tokens written to `localStorage` (storage), a logout that skips Odudu, a logout
+  without `client_id` (sign-out).
+- Sign-in is throttled per person (five a minute), so a second run of the browser tests inside a minute times out; CI runs each example
+  once on a fresh stack.
+- The `examples` job stays in `verify.yml` with one matrix leg per example directory, now four. No tag-triggered run exists yet because
+  `release.yml` has not been written on this branch; the leg that runs against the published image waits for that workflow (release workflow task of the plan).
