@@ -35,7 +35,6 @@ export default tseslint.config(
             // service already owns it; matching it here too is a parse error.
             'apps/*/!(site).config.ts',
             '.dependency-cruiser.cjs',
-            'brand/*.ts',
           ],
           defaultProject: 'tsconfig.base.json',
         },

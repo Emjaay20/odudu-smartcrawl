@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
+import { FAVICON_INSET, TOUCH_INSET, insetTransform } from './geometry.ts';
 
 // Exports the PNG and ICO derivatives from the SVGs in this directory with the
 // Chromium that the documentation's browser tests already install.
@@ -13,6 +14,7 @@ const PREVIEWS = path.join(ROOT, 'docs/phases/p4g-docs');
 interface Page {
   setViewportSize(size: { width: number; height: number }): Promise<void>;
   setContent(html: string): Promise<void>;
+  evaluate(expression: string): Promise<unknown>;
   screenshot(options: {
     type: 'png';
     omitBackground?: boolean;
@@ -57,6 +59,34 @@ function write(directory: string, file: string, content: Buffer): void {
   writeFileSync(path.join(directory, file), content);
 }
 
+type Render = (
+  markup: string,
+  width: number,
+  height: number,
+  surface: string,
+  ink: string,
+) => Promise<Buffer>;
+
+const ICO_SIZES = [16, 32, 48] as const;
+
+// Every derivative that is committed beside the SVGs it comes from.
+async function brandOutputs(render: Render): Promise<Map<string, Buffer>> {
+  const favicon = svg('favicon.svg');
+  const touch = favicon
+    .replace('rx="6"', 'rx="0"')
+    .replace(insetTransform(FAVICON_INSET), insetTransform(TOUCH_INSET));
+  const out = new Map<string, Buffer>();
+  const icons = await Promise.all(
+    ICO_SIZES.map((size) => render(favicon, size, size, 'transparent', 'black')),
+  );
+  out.set('favicon.ico', packIco(ICO_SIZES, icons));
+  out.set('apple-touch-icon.png', await render(touch, 180, 180, 'transparent', 'black'));
+  out.set('icon-192.png', await render(touch, 192, 192, 'transparent', 'black'));
+  out.set('icon-512.png', await render(touch, 512, 512, 'transparent', 'black'));
+  out.set('social.png', await render(svg('social.svg'), 1200, 630, 'transparent', 'black'));
+  return out;
+}
+
 async function main(): Promise<void> {
   const required: unknown = createRequire(path.join(ROOT, 'apps/docs/package.json'))(
     '@playwright/test',
@@ -65,33 +95,23 @@ async function main(): Promise<void> {
   const browser = await required.chromium.launch();
   const page = await browser.newPage();
 
-  async function render(
-    markup: string,
-    width: number,
-    height: number,
-    surface: string,
-    ink: string,
-  ): Promise<Buffer> {
+  const render: Render = async (markup, width, height, surface, ink) => {
     await page.setViewportSize({ width, height });
     await page.setContent(
       `<!doctype html><body style="margin:0;background:${surface};color:${ink};line-height:0">${sized(markup, width, height)}</body>`,
     );
     return page.screenshot({ type: 'png', omitBackground: surface === 'transparent' });
-  }
+  };
 
   try {
-    const favicon = svg('favicon.svg');
-    const touch = favicon.replace('rx="6"', 'rx="0"');
-    const sizes = [16, 32, 48] as const;
-    const icons = await Promise.all(
-      sizes.map((size) => render(favicon, size, size, 'transparent', 'black')),
-    );
-    write(BRAND, 'favicon.ico', packIco(sizes, icons));
-    write(BRAND, 'apple-touch-icon.png', await render(touch, 180, 180, 'transparent', 'black'));
-    write(BRAND, 'icon-192.png', await render(touch, 192, 192, 'transparent', 'black'));
-    write(BRAND, 'icon-512.png', await render(touch, 512, 512, 'transparent', 'black'));
-    write(BRAND, 'social.png', await render(svg('social.svg'), 1200, 630, 'transparent', 'black'));
+    const outputs = await brandOutputs(render);
+    if (process.argv.includes('--check')) {
+      await checkOutputs(page, outputs);
+      return;
+    }
+    for (const [file, content] of outputs) write(BRAND, file, content);
 
+    const favicon = svg('favicon.svg');
     const mark = svg('mark.svg');
     const lockup = svg('lockup.svg');
     for (const [name, theme] of Object.entries(THEMES)) {
@@ -105,7 +125,7 @@ async function main(): Promise<void> {
       write(
         PREVIEWS,
         `brand-lockup-${name}.png`,
-        await render(lockup, 472, 128, theme.surface, theme.ink),
+        await render(lockup, 440, 128, theme.surface, theme.ink),
       );
     }
     for (const size of [16, 32]) {
@@ -121,6 +141,95 @@ async function main(): Promise<void> {
   } finally {
     await browser.close();
   }
+}
+
+// Chromium's rasteriser is not promised to be byte-identical across machines,
+// so a derivative counts as reproduced when no more than 0.5% of its pixels
+// differ by more than 12 in any channel and none by more than 64.
+const MAX_CHANNEL = 64;
+const NOTICEABLE = 12;
+const MAX_NOTICEABLE_SHARE = 0.005;
+
+function embeddedPngs(ico: Buffer): Buffer[] {
+  const count = ico.readUInt16LE(4);
+  return Array.from({ length: count }, (_, index) => {
+    const entry = 6 + index * 16;
+    const start = ico.readUInt32LE(entry + 12);
+    return ico.subarray(start, start + ico.readUInt32LE(entry + 8));
+  });
+}
+
+async function difference(
+  page: Page,
+  a: Buffer,
+  b: Buffer,
+): Promise<{ max: number; share: number }> {
+  const result = await page.evaluate(`(async () => {
+    const load = (b64) => new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = 'data:image/png;base64,' + b64;
+    });
+    const [first, second] = await Promise.all([load('${a.toString('base64')}'), load('${b.toString('base64')}')]);
+    if (first.width !== second.width || first.height !== second.height) return { max: 255, share: 1 };
+    const read = (image) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const context = canvas.getContext('2d');
+      context.drawImage(image, 0, 0);
+      return context.getImageData(0, 0, image.width, image.height).data;
+    };
+    const x = read(first);
+    const y = read(second);
+    let max = 0;
+    let noticeable = 0;
+    for (let i = 0; i < x.length; i += 4) {
+      let worst = 0;
+      for (let c = 0; c < 4; c += 1) worst = Math.max(worst, Math.abs(x[i + c] - y[i + c]));
+      max = Math.max(max, worst);
+      if (worst > ${String(NOTICEABLE)}) noticeable += 1;
+    }
+    return { max, share: noticeable / (x.length / 4) };
+  })()`);
+  if (
+    typeof result === 'object' &&
+    result !== null &&
+    'max' in result &&
+    'share' in result &&
+    typeof result.max === 'number' &&
+    typeof result.share === 'number'
+  ) {
+    return { max: result.max, share: result.share };
+  }
+  throw new Error('the page returned no difference');
+}
+
+async function checkOutputs(page: Page, outputs: Map<string, Buffer>): Promise<void> {
+  const failures: string[] = [];
+  for (const [file, rebuilt] of outputs) {
+    const committed = readFileSync(path.join(BRAND, file));
+    const pairs = file.endsWith('.ico')
+      ? embeddedPngs(rebuilt).map((png, index) => [png, embeddedPngs(committed)[index]] as const)
+      : [[rebuilt, committed] as const];
+    for (const [fresh, kept] of pairs) {
+      if (kept === undefined) {
+        failures.push(`${file}: an image is missing`);
+        continue;
+      }
+      const { max, share } = await difference(page, fresh, kept);
+      if (max > MAX_CHANNEL || share > MAX_NOTICEABLE_SHARE) {
+        failures.push(`${file}: max ${String(max)}, ${(share * 100).toFixed(2)}% of pixels differ`);
+      }
+    }
+  }
+  if (failures.length > 0) {
+    throw new Error(
+      `brand derivatives are stale, run node brand/build.ts:\n${failures.join('\n')}`,
+    );
+  }
+  process.stdout.write(`brand derivatives reproduced: ${String(outputs.size)} files\n`);
 }
 
 // The record of the crossbar choice: at y=20 and y=25 the figure reads as the

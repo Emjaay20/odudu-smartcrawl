@@ -19,14 +19,15 @@ short crossbar.
 | `apple-touch-icon.png`, `icon-192/512.png` | The same tile, full bleed                                                     |
 | `social.svg`, `social.png`                 | 1200 x 630 share image: lockup and tagline on the rail surface                |
 | `LICENSE-IBM-Plex-Mono.txt`                | The font licence that covers the wordmark outlines                            |
+| `geometry.ts`, `tsconfig.json`             | Where the mark sits in each tile; the type-check of `build.ts` and this file  |
 | `build.ts`                                 | Exports every PNG and the ICO from the SVGs: `node brand/build.ts`            |
 
 ## Construction
 
 The grid is 32 by 32. The shaft is a line at x=16 from y=10 to y=30. The ring
-is a circle centred on (16, 6) with radius 4, and the shaft starts where the
-ring ends, so its round cap meets the ring's inner edge without entering the
-hole. The crossbar, a collar, is a line at y=14 from x=12 to x=20. One stroke width, 2,
+is a circle centred on (16, 6) with radius 4, and the shaft starts on the
+ring's lower stroke, on its centreline, so its round cap meets the ring's inner
+edge without entering the hole. The crossbar, a collar, is a line at y=14 from x=12 to x=20. One stroke width, 2,
 with round caps, is set once on a group. Everything sits on whole grid units
 and the mark is symmetric about x=16.
 
@@ -60,7 +61,9 @@ the SIL Open Font License 1.1, which permits embedding glyph outlines in a
 logo; the licence text is `LICENSE-IBM-Plex-Mono.txt`. The tagline on the
 social image is the same font at weight 400, also outlined.
 
-The outlines were produced once with opentype.js 1.3.4 from
+The script that produced them is not committed: it needs opentype.js, which the
+repository does not depend on, and the outputs are committed and held by
+`tests/lint/brand-assets.test.ts`. The outlines were produced once with opentype.js 1.3.4 from
 `@fontsource/ibm-plex-mono` 5.3.0 (`ibm-plex-mono-latin-500-normal.woff`),
 `Font.getPath(character, x, 31, 26)` with the advance of one glyph, 15.6 units,
 between letters. The repository does not depend on opentype.js; the outputs are
@@ -68,7 +71,10 @@ committed.
 
 ## Use
 
-- Clear space: at least the height of the ring (8 units) on every side.
+- Clear space: at least the height of the ring (8 units) on every side of the
+  mark on its own. The app tiles carry the mark inside their own padding instead:
+  the favicon at 87.5% of the tile, the touch and install icons at 75%
+  (`geometry.ts`).
 - Minimum size: the mark 16 px high, the lockup 96 px wide.
 - Put the mark on a surface that gives it 4.5:1; Instrument's pairs do.
 - Do not recolour the ring except to the system amber, outline the strokes,
@@ -83,3 +89,13 @@ licences; see `LICENSING.md`. An informal web search on 2026-10-15 found no
 product, company or trademark filing named Odudu in identity or software. It
 cannot compare logos by eye and is not a clearance; a formal trademark and
 design search stays an optional step before any commercial use.
+
+## Keeping the derivatives honest
+
+`node brand/build.ts` rebuilds every PNG and the ICO from the SVGs.
+`node brand/build.ts --check` rebuilds them in memory and compares each with
+the committed file. Chromium's output is not promised to be byte-identical across
+machines, so the comparison is by pixel: no more than 0.5% of pixels may differ
+by more than 12 in a channel, and none by more than 64. The brand test runs the
+check. The same test reads the mark out of `lockup.svg`, `favicon.svg` and
+`social.svg` and fails if any differs from `mark.svg`.

@@ -129,6 +129,54 @@ describe('rasteriseMark geometry', () => {
   });
 });
 
+describe('rasteriseMark strokes', () => {
+  const colours = { background: '#000000', ink: '#ffffff', edge: '#000000' };
+  const drawn = (linecap: string): Buffer =>
+    rasteriseMark(
+      `<svg viewBox="0 0 32 32"><g stroke-width="2"${linecap}><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/></g></svg>`,
+      colours,
+    );
+
+  // Pixels, not grid units: the shaft's end is at row 64.5, its centre line at column 40.
+  const pixel = (png: Buffer, column: number, row: number): number =>
+    png[(row * MARK_SIZE + column) * 4] ?? -1;
+
+  it('ends a butt stroke at its end and carries a round or square one past it', () => {
+    expect(pixel(drawn(''), 40, 65)).toBe(0);
+    expect(pixel(drawn(' stroke-linecap="butt"'), 40, 65)).toBe(0);
+    expect(pixel(drawn(' stroke-linecap="round"'), 40, 65)).toBeGreaterThan(100);
+    expect(pixel(drawn(' stroke-linecap="square"'), 40, 65)).toBeGreaterThan(100);
+  });
+
+  it('keeps the corner of a square cap and rounds it off for a round one', () => {
+    const square = pixel(drawn(' stroke-linecap="square"'), 41, 65);
+    const round = pixel(drawn(' stroke-linecap="round"'), 41, 65);
+    expect(square).toBeGreaterThan(round + 20);
+  });
+
+  it('anti-aliases the edge of a stroke into a value between ink and background', () => {
+    const png = drawn(' stroke-linecap="round"');
+    const edge = (): number[] =>
+      Array.from({ length: 40 }, (_, step) => {
+        const px = 20 + step;
+        return png[(60 * MARK_SIZE + px) * 4] ?? -1;
+      });
+    const partial = edge().filter((value) => value > 0 && value < 255);
+    expect(partial.length).toBeGreaterThanOrEqual(2);
+    expect(partial.every((value) => value > 100 && value < 230)).toBe(true);
+  });
+
+  it('refuses a cap it does not know and a stroke with no length', () => {
+    expect(() => drawn(' stroke-linecap="bevel"')).toThrow(/linecap/u);
+    expect(() =>
+      rasteriseMark(
+        '<svg viewBox="0 0 32 32" stroke-width="2"><circle cx="1" cy="1" r="1"/><path d="M5 5V5"/></svg>',
+        colours,
+      ),
+    ).toThrow(/length/u);
+  });
+});
+
 describe('encodePng', () => {
   it('writes a PNG whose pixels read back as given', () => {
     const rgba = Buffer.from([1, 2, 3, 255, 4, 5, 6, 128]);

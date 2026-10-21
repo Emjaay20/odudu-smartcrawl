@@ -34,7 +34,23 @@ function number(source: string, pattern: RegExp, what: string): number {
 
 // Only a circle and straight M-then-h/v/H/V strokes are read; anything else
 // is refused so a redrawn mark cannot be rasterised as part of itself.
-function readMark(svg: string): { circle: Circle; stems: Stem[]; width: number; size: number } {
+type Linecap = 'butt' | 'round' | 'square';
+
+function readLinecap(svg: string): Linecap {
+  const found = /stroke-linecap="([^"]*)"/u.exec(svg)?.[1] ?? 'butt';
+  if (found !== 'butt' && found !== 'round' && found !== 'square') {
+    throw new Error(`mark.svg: stroke-linecap "${found}" is not butt, round or square`);
+  }
+  return found;
+}
+
+function readMark(svg: string): {
+  circle: Circle;
+  stems: Stem[];
+  width: number;
+  size: number;
+  linecap: Linecap;
+} {
   const size = number(svg, /viewBox="0 0 (\d+(?:\.\d+)?) \d+(?:\.\d+)?"/u, 'viewBox');
   const width = number(svg, /stroke-width="(\d+(?:\.\d+)?)"/u, 'stroke-width');
   const tag = /<circle\b([^>]*)\/>/u.exec(svg)?.[1];
@@ -54,11 +70,14 @@ function readMark(svg: string): { circle: Circle; stems: Stem[]; width: number; 
     const y1 = Number(y);
     const along = Number(value);
     const absolute = axis === 'H' || axis === 'V';
+    if (along === 0 || (absolute && along === (axis === 'V' ? y1 : x1))) {
+      throw new Error(`mark.svg: path has no length: ${path}`);
+    }
     const end = absolute ? along : (axis === 'v' ? y1 : x1) + along;
     return axis === 'v' || axis === 'V' ? { x1, y1, x2: x1, y2: end } : { x1, y1, x2: end, y2: y1 };
   });
   if (stems.length === 0) throw new Error('mark.svg: no path');
-  return { circle, stems, width, size };
+  return { circle, stems, width, size, linecap: readLinecap(svg) };
 }
 
 function channels(hex: string): [number, number, number] {
@@ -82,19 +101,25 @@ function insideTile(x: number, y: number, inset = 0): boolean {
   );
 }
 
-// Round caps, as the mark's own stroke-linecap draws them.
-function insideStem(stem: Stem, half: number, x: number, y: number): boolean {
+// A stroke along a segment, with the end caps its stroke-linecap asks for.
+function insideStem(stem: Stem, half: number, linecap: Linecap, x: number, y: number): boolean {
   const dx = stem.x2 - stem.x1;
   const dy = stem.y2 - stem.y1;
-  const along = ((x - stem.x1) * dx + (y - stem.y1) * dy) / (dx * dx + dy * dy);
-  const t = Math.max(0, Math.min(1, along));
-  return Math.hypot(x - (stem.x1 + t * dx), y - (stem.y1 + t * dy)) <= half;
+  const length = Math.hypot(dx, dy);
+  const along = ((x - stem.x1) * dx + (y - stem.y1) * dy) / length;
+  const across = Math.abs((x - stem.x1) * dy - (y - stem.y1) * dx) / length;
+  if (linecap === 'round') {
+    const t = Math.max(0, Math.min(length, along));
+    return Math.hypot(along - t, across) <= half;
+  }
+  const reach = linecap === 'square' ? half : 0;
+  return across <= half && along >= -reach && along <= length + reach;
 }
 
 // The mark in `ink` on a rounded tile of `background`, as straight RGBA with
 // the corners transparent, anti-aliased by supersampling.
 export function rasteriseMark(svg: string, colours: MarkColours): Buffer {
-  const { circle, stems, width, size } = readMark(svg);
+  const { circle, stems, width, size, linecap } = readMark(svg);
   const half = width / 2;
   const scale = (MARK_SIZE * 0.7) / size;
   const origin = (MARK_SIZE - size * scale) / 2;
@@ -117,7 +142,7 @@ export function rasteriseMark(svg: string, colours: MarkColours): Buffer {
           const mx = (x - origin) / scale;
           const my = (y - origin) / scale;
           const ring = Math.abs(Math.hypot(mx - circle.cx, my - circle.cy) - circle.r) <= half;
-          if (ring || stems.some((stem) => insideStem(stem, half, mx, my))) drawn += 1;
+          if (ring || stems.some((stem) => insideStem(stem, half, linecap, mx, my))) drawn += 1;
         }
       }
       const inkWeight = tile === 0 ? 0 : drawn / tile;

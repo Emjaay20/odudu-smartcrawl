@@ -1,6 +1,9 @@
+import { execFileSync } from 'node:child_process';
 import { existsSync, globSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { inflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
+import { FAVICON_INSET, TOUCH_INSET, insetTransform } from '../../brand/geometry.ts';
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..');
 const BRAND = path.join(REPO_ROOT, 'brand');
@@ -58,8 +61,76 @@ interface Mark {
   strokeWidth: number;
 }
 
+interface Raster {
+  width: number;
+  height: number;
+  at(x: number, y: number): [number, number, number, number];
+}
+
+// Chromium writes 8-bit RGB or RGBA, non-interlaced, with all five row filters.
+function decodePng(file: string): Raster {
+  const buffer = readFileSync(path.join(BRAND, file));
+  const width = buffer.readUInt32BE(16);
+  const height = buffer.readUInt32BE(20);
+  const colourType = buffer[25];
+  expect([buffer[24], buffer[28]], `${file} is 8-bit, not interlaced`).toEqual([8, 0]);
+  expect([2, 6], `${file} is RGB or RGBA`).toContain(colourType);
+  const bytes = colourType === 6 ? 4 : 3;
+  const data: Buffer[] = [];
+  for (let at = 8; at < buffer.length;) {
+    const length = buffer.readUInt32BE(at);
+    if (buffer.subarray(at + 4, at + 8).toString('latin1') === 'IDAT') {
+      data.push(buffer.subarray(at + 8, at + 8 + length));
+    }
+    at += 12 + length;
+  }
+  const raw = inflateSync(Buffer.concat(data));
+  const stride = width * bytes;
+  const out = Buffer.alloc(stride * height);
+  for (let y = 0; y < height; y += 1) {
+    const filter = raw[y * (stride + 1)] ?? 0;
+    for (let x = 0; x < stride; x += 1) {
+      const value = raw[y * (stride + 1) + 1 + x] ?? 0;
+      const left = x >= bytes ? (out[y * stride + x - bytes] ?? 0) : 0;
+      const up = y > 0 ? (out[(y - 1) * stride + x] ?? 0) : 0;
+      const upLeft = x >= bytes && y > 0 ? (out[(y - 1) * stride + x - bytes] ?? 0) : 0;
+      const paeth = (): number => {
+        const p = left + up - upLeft;
+        const [pa, pb, pc] = [Math.abs(p - left), Math.abs(p - up), Math.abs(p - upLeft)];
+        return pa <= pb && pa <= pc ? left : pb <= pc ? up : upLeft;
+      };
+      const predictor = [0, left, up, (left + up) >> 1, paeth()][filter] ?? 0;
+      out[y * stride + x] = (value + predictor) & 255;
+    }
+  }
+  return {
+    width,
+    height,
+    at: (x, y) => {
+      const start = (y * width + x) * bytes;
+      const alpha = bytes === 4 ? (out[start + 3] ?? 0) : 255;
+      return [out[start] ?? 0, out[start + 1] ?? 0, out[start + 2] ?? 0, alpha];
+    },
+  };
+}
+
+// Within what anti-aliasing at a ring's edge can move a colour.
+function near(actual: string, expected: string, tolerance = 30): boolean {
+  return [1, 3, 5].every(
+    (at) =>
+      Math.abs(
+        Number.parseInt(actual.slice(at, at + 2), 16) -
+          Number.parseInt(expected.slice(at, at + 2), 16),
+      ) <= tolerance,
+  );
+}
+
+function hexOf([r, g, b]: readonly number[]): string {
+  return `#${[r, g, b].map((v) => (v ?? 0).toString(16).padStart(2, '0')).join('')}`;
+}
+
 function parseMark(svg: string): Mark {
-  const circle = /<circle cx="(\d+)" cy="(\d+)" r="(\d+)"\/>/u.exec(svg);
+  const circle = /<circle cx="(\d+)" cy="(\d+)" r="(\d+)"[^>]*\/>/u.exec(svg);
   const shaft = /<path d="M(\d+) (\d+)V(\d+)"\/>/u.exec(svg);
   const crossbar = /<path d="M(\d+) (\d+)H(\d+)"\/>/u.exec(svg);
   const width = /stroke-width="(\d+)"/u.exec(svg);
@@ -314,6 +385,102 @@ describe('brand assets: derivatives', () => {
   });
 });
 
+describe('brand assets: every copy of the mark is the mark', () => {
+  const source = parseMark(read('mark.svg'));
+
+  it.each(['lockup.svg', 'favicon.svg', 'social.svg'])(
+    'draws the ring, the shaft and the collar of mark.svg in %s',
+    (file) => {
+      const svg = read(file);
+      expect(svg.match(/<circle /gu), `${file} circles`).toHaveLength(1);
+      expect(svg.match(/<path d="M\d+ \d+[HV]\d+"\/>/gu), `${file} strokes`).toHaveLength(2);
+      expect(parseMark(svg), file).toEqual(source);
+    },
+  );
+
+  it('places the mark in the favicon and the touch icons inside their tiles', () => {
+    expect(read('favicon.svg')).toContain(insetTransform(FAVICON_INSET));
+    expect(FAVICON_INSET.offset + FAVICON_INSET.scale).toBeLessThanOrEqual(32);
+    expect(TOUCH_INSET.offset).toBeGreaterThan(FAVICON_INSET.offset);
+    expect(TOUCH_INSET.scale).toBeLessThan(FAVICON_INSET.scale);
+  });
+
+  it('keeps the wordmark off the mark by less than the mark is wide', () => {
+    const shift = /<g fill="currentColor" transform="translate\((\d+) 0\)">/u.exec(
+      read('lockup.svg'),
+    )?.[1];
+    expect(Number(shift)).toBeLessThanOrEqual(34);
+    expect(read('lockup.svg')).toContain(`viewBox="0 0 ${String(Number(shift) + 76)} 32"`);
+  });
+});
+
+describe('brand assets: the amber ring', () => {
+  const amber = tokenPair('signal-system-ink').dark;
+  const rail = tokenPair('surface-rail').light;
+  const ink = tokenPair('ink-rail').light;
+  const source = parseMark(read('mark.svg'));
+
+  it('reads against the rail at 3:1 or better, as a graphic must', () => {
+    expect(contrast(amber, rail)).toBeGreaterThanOrEqual(3);
+  });
+
+  // A pixel of the mark's own grid, through the tile's inset.
+  function pixelAt(
+    raster: Raster,
+    grid: { offset: number; scale: number },
+    tile: number,
+    x: number,
+    y: number,
+  ): string {
+    const unit = raster.width / tile;
+    const at = (value: number): number => Math.floor((grid.offset + grid.scale * value) * unit);
+    return hexOf(raster.at(at(x), at(y)));
+  }
+
+  it.each([
+    ['apple-touch-icon.png', TOUCH_INSET],
+    ['icon-512.png', TOUCH_INSET],
+  ] as const)('is one continuous amber annulus in %s, shaft cap included', (file, inset) => {
+    const raster = decodePng(file);
+    for (let degrees = 0; degrees < 360; degrees += 10) {
+      const angle = (degrees * Math.PI) / 180;
+      const x = source.ring.cx + source.ring.r * Math.cos(angle);
+      const y = source.ring.cy + source.ring.r * Math.sin(angle);
+      expect(
+        near(pixelAt(raster, inset, 32, x, y), amber),
+        `${file} at ${String(degrees)} degrees`,
+      ).toBe(true);
+    }
+    expect(pixelAt(raster, inset, 32, source.ring.cx, source.ring.cy)).toBe(rail);
+    expect(pixelAt(raster, inset, 32, 16, 25)).toBe(ink);
+    expect(pixelAt(raster, inset, 32, 19, source.crossbar.y)).toBe(ink);
+  });
+
+  it('is the same annulus in the social image', () => {
+    const raster = decodePng('social.png');
+    expect([raster.width, raster.height]).toEqual([1200, 630]);
+    const grid = { offset: 0, scale: 5 };
+    const at = (value: number, origin: number): number => Math.floor(origin + grid.scale * value);
+    for (let degrees = 0; degrees < 360; degrees += 10) {
+      const angle = (degrees * Math.PI) / 180;
+      const x = at(source.ring.cx + source.ring.r * Math.cos(angle), 120);
+      const y = at(source.ring.cy + source.ring.r * Math.sin(angle), 170);
+      expect(near(hexOf(raster.at(x, y)), amber), `${String(degrees)} degrees`).toBe(true);
+    }
+  });
+});
+
+describe('brand assets: the derivatives come from the SVGs', () => {
+  it('rebuilds the PNGs and the ICO from the SVGs and finds them as committed', () => {
+    const output = execFileSync(process.execPath, ['brand/build.ts', '--check'], {
+      cwd: REPO_ROOT,
+      encoding: 'utf8',
+      timeout: 90_000,
+    });
+    expect(output).toContain('brand derivatives reproduced');
+  }, 100_000);
+});
+
 describe('brand assets: the README', () => {
   it('says the name and mark are not licensed', () => {
     expect(read('README.md')).toContain('The name Odudu and the staff mark are not licensed');
@@ -326,6 +493,12 @@ describe('brand assets: the README', () => {
     expect(readme).toMatch(/sceptre/u);
   });
 
+  it("says the shaft starts on the ring's lower stroke", () => {
+    expect(read('README.md').replaceAll(/\s+/gu, ' ')).toContain(
+      "starts on the ring's lower stroke",
+    );
+  });
+
   it('no longer calls anything proposed', () => {
     for (const file of [...svgFiles(), 'README.md']) {
       expect(read(file), file).not.toMatch(/proposed|awaiting owner/iu);
@@ -335,7 +508,7 @@ describe('brand assets: the README', () => {
 
 describe('the copies the documentation site serves', () => {
   it('are the brand files byte for byte', () => {
-    for (const file of ['favicon.svg', 'social.png']) {
+    for (const file of ['favicon.svg', 'favicon.ico', 'apple-touch-icon.png', 'social.png']) {
       const served = readFileSync(path.join(REPO_ROOT, 'apps/docs/static/brand', file));
       expect(served.equals(readFileSync(path.join(BRAND, file))), file).toBe(true);
     }
