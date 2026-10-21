@@ -3,8 +3,8 @@ import { siteAddress } from '@site/src/features/landing/service/site';
 
 describe('the site address', () => {
   it('is the origin followed by the base path', () => {
-    expect(siteAddress({ url: 'https://example.test', baseUrl: '/odudu/' })).toBe(
-      'https://example.test/odudu/',
+    expect(siteAddress({ url: 'https://example.test', baseUrl: '/base/' })).toBe(
+      'https://example.test/base/',
     );
   });
 });
