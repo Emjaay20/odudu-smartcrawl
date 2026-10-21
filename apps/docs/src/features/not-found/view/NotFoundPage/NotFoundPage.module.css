@@ -1,0 +1,21 @@
+.page {
+  max-inline-size: 36rem;
+}
+
+.title {
+  font-size: var(--type-28);
+  margin-block-end: var(--space-3);
+}
+
+.message {
+  color: var(--ink-muted);
+  margin-block-end: var(--space-6);
+}
+
+.links {
+  display: grid;
+  gap: var(--space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}

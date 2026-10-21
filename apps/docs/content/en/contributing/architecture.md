@@ -89,6 +89,7 @@ Every directory of the workspace, grouped by what it is for.
 **Testing and tooling**
 
 - `packages/testkit` holds what tests share: a real PostgreSQL in a container and a software authenticator.
+- `tools/bench` holds benchmarks that are not part of the test run, such as the burst against an unknown address.
 - `tools/ci` works out which CI jobs a change needs.
 - `tools/commit-message` checks commit messages.
 - `tools/docs-run` runs the commands in the guides against a live stack.
