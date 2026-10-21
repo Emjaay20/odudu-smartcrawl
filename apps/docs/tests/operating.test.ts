@@ -271,9 +271,13 @@ describe('the contributing section', () => {
 
   it('summarises the phase sequence in order', () => {
     const text = page('contributing/the-phase-process.md').toLowerCase();
-    const order = ['1. **brainstorm', '2. **write the plan', '3. **execute', '4. **finish'].map(
-      (step) => text.indexOf(step),
-    );
+    const order = [
+      '1. **start the phase',
+      '2. **brainstorm',
+      '3. **write the plan',
+      '4. **execute',
+      '5. **finish',
+    ].map((step) => text.indexOf(step));
     expect(order.every((at) => at >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
