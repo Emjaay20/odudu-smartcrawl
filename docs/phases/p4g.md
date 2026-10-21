@@ -2399,3 +2399,40 @@ authorization_code` it gets none (`Object.keys(tokens)` logged from the built ap
 - **verified:** a public client registered with `--grant-type authorization_code` gets no `refresh_token`; the example is registered that way.
 - Example: `expiryOf` returns nothing for an opaque token or a missing `exp` (`expiry.test.ts`); the storage test also checks cookies and
   IndexedDB; a forged `iss` on the callback is refused (library message pinned); README says what happens after the access token lapses.
+
+## Increment 30: the mark, proposed, awaiting owner approval
+
+Owner gate 1 is open: nothing in this section is wired anywhere. The console, the pages, the documentation site (`apps/docs/static/brand/` still holds
+its earlier placeholders), the README and the mail shell keep what they had. The assets live in `brand/` and the previews in `docs/phases/p4g-docs/`;
+`node brand/build.ts` regenerates every PNG and the ICO from the SVGs.
+
+What to look at, in this order:
+
+| Preview                                                                                                                   | Shows                                                   |
+| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| ![The staff mark at 16, 24, 32 and 180 px, light](p4g-docs/brand-mark-16-light.png) `brand-mark-{16,24,32,180}-light.png` | The mark on Instrument's light page surface             |
+| `brand-mark-{16,24,32,180}-dark.png`                                                                                      | The same on the dark page surface                       |
+| ![Lockup, light](p4g-docs/brand-lockup-light.png) `brand-lockup-light.png`, `brand-lockup-dark.png`                       | Mark and wordmark on one baseline                       |
+| ![Candidates](p4g-docs/brand-candidates.png) `brand-candidates.png`                                                       | Three crossbar heights at five sizes, light and dark    |
+| ![Social image](p4g-docs/brand-social.png) `brand-social.png`                                                             | The 1200 x 630 share image (also `brand/social.png`)    |
+| `brand-favicon-16.png`, `brand-favicon-32.png`, `brand-mail-mark.png`                                                     | The tile at favicon sizes, and at the mail mark's 80 px |
+
+- **Decision for the owner: approve the mark, and choose the crossbar height.** The plan's geometry (bar at y=20) is committed, and it reads as the
+  sign for Venus (a ring on a shaft with a bar two thirds down). A collar under the ring (y=14) reads as a sceptre. The builder recommends
+  y=14 (candidate B); the change is one path in each SVG, plus `brand/build.ts`'s sheet losing its first row. Candidate C (y=25) is a low grip.
+- **Decision for the owner: confirm the monospace wordmark** (IBM Plex Mono Medium outlines, SIL OFL, licence kept in `brand/`).
+- **Amber ring.** The favicon, touch icons and social image draw the ring in Instrument's system amber (`#f7c95a`), the one place amber is allowed to mean
+  authority; `mark.svg`, `wordmark.svg` and `lockup.svg` stay single-colour. The owner can ask for the ring in ink instead.
+- No Nsibidi-inspired detail is drawn; none was confirmed by anyone who knows the tradition.
+- **Not wired, on purpose.** On approval: replace `packages/instrument/src/mark.svg`, which `packages/email/scripts/generate-assets.ts` rasterises through
+  `rasteriseMark` in `packages/email/src/service/mark-png.ts`. That reader accepts exactly one circle and one stem, so a mark with a crossbar needs the
+  rasteriser extended and `pnpm --filter @odudu/email generate` re-run, with the mail shell's tests. The docs favicon, logo and social image move to
+  `brand/` in the documentation build, and the README takes `brand/lockup.svg` (Task 32).
+- **verified:** `node brand/build.ts` exports the PNGs with the Chromium `apps/docs` already installs (`@playwright/test` 1.63.0, resolved from
+  `apps/docs/package.json`); `social.png` is 1200 x 630 and 23 KB, `favicon.svg` is 381 bytes.
+- **verified:** the wordmark outlines come from `opentype.js` 1.3.4 reading `ibm-plex-mono-latin-500-normal.woff` of `@fontsource/ibm-plex-mono` 5.3.0
+  (`Font.getPath`), one path per letter; the dependency is not added to the repository.
+- Found while drawing: the plan's shaft started at y=9, inside the ring's stroke, so its round cap poked one unit into the hole (visible at 180 px).
+  The shaft starts at y=10 and the test holds the cap to the ring's inner edge. The mark is symmetric on a 32 grid, so at 16 px its one-pixel stroke
+  straddles two pixel columns; the test asserts the shaft stays continuous and the hole open rather than pixel-exact.
+- Owner reply on the mark and the wordmark: not yet received.
