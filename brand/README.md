@@ -4,9 +4,8 @@ Status: **approved by the owner on 2026-10-21**, with the crossbar as a collar
 under the ring. The mark is what every server page, the mail shell and the
 documentation site carry.
 
-"Odudu" means authority in Ibibio, spoken in Akwa Ibom, Nigeria. The mark is a
-staff, the sign of that authority carried: a ring on a straight shaft with a
-short crossbar.
+The mark is a staff, the sign of authority carried: a ring on a straight shaft
+with a short crossbar.
 
 ## Files
 

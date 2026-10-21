@@ -12,8 +12,6 @@
 > This notice will be removed only after a deliberate hardening pass, and
 > its removal will be announced in the changelog.
 
-_Odudu_ — power, authority. Ibibio, Akwa Ibom, Nigeria.
-
 An identity and access management platform: an OAuth 2.1 / OpenID Connect
 provider with Keycloak feature parity, plus a first-class agent identity
 layer for delegated authority, guardrails, and machine-readable

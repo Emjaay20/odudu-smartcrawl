@@ -19,7 +19,7 @@ Odudu is not ready for production yet. It runs as one instance, and the [roadmap
 
 ## Read more about Odudu
 
-- [The name Odudu](./odudu.md) says where the name comes from.
+- [The name Odudu](./odudu.md) says what an identity provider holds and why you run it yourself.
 - [Odudu next to other identity providers](./compare.md) says what Odudu does today, what it does not, and where to read about the alternatives.
 
 ## Where everything else is

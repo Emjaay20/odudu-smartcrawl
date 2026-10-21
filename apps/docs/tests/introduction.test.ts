@@ -7,11 +7,22 @@ const page = (name: string): string =>
   readFileSync(path.join(DOCS_ROOT, 'content/en/introduction', name), 'utf8');
 
 describe('the introduction', () => {
-  it('states the meaning of the name once, in the page about the name', () => {
-    expect(page('odudu.md').match(/Ibibio/gu)).toHaveLength(1);
-    expect(page('odudu.md')).toContain('Akwa Ibom, Nigeria');
-    expect(page('index.md')).not.toContain('Ibibio');
-    expect(page('compare.md')).not.toContain('Ibibio');
+  it('says nothing of where the name comes from, on any introduction page', () => {
+    for (const name of ['index.md', 'odudu.md', 'compare.md']) {
+      expect(page(name), name).not.toMatch(/Ibibio|Akwa Ibom|coined/iu);
+    }
+  });
+
+  it('leaves the origin out of the repository front door and the brand notes', () => {
+    for (const file of ['README.md', 'brand/README.md']) {
+      const text = readFileSync(path.join(DOCS_ROOT, '../..', file), 'utf8');
+      expect(text, file).not.toMatch(/Ibibio|Akwa Ibom|coined/iu);
+    }
+  });
+
+  it('keeps the page about the name, saying what an identity provider holds', () => {
+    expect(page('odudu.md')).toContain('# The name Odudu');
+    expect(page('odudu.md')).toContain('holds authority on behalf of the people who run it');
   });
 
   it('compares with Keycloak, Ory, Zitadel and Authentik without asserting facts about them', () => {
