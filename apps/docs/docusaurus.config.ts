@@ -49,7 +49,13 @@ const themeConfig: Preset.ThemeConfig = {
   navbar: {
     title: 'Odudu',
     // Beside the title, which names it: decorative, and it links home with it.
-    logo: { alt: '', src: 'brand/mark-ink.svg', srcDark: 'brand/mark-paper.svg' },
+    logo: {
+      alt: '',
+      src: 'brand/mark-ink.svg',
+      srcDark: 'brand/mark-paper.svg',
+      width: 28,
+      height: 28,
+    },
     items: [
       ...NAVBAR_ROUTES.flatMap((route) => {
         const section = SECTIONS.find((candidate) => candidate.route === route);

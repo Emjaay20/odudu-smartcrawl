@@ -97,9 +97,21 @@
 }
 
 .footer .footer__bottom {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
   order: -1;
   padding: 0;
   text-align: start;
+}
+
+/* The mark sits on the licence's line, not above it. */
+.footer .footer__bottom .footer__logo {
+  margin: 0;
+}
+
+.footer .footer__bottom > .margin-bottom--sm {
+  line-height: 0;
 }
 
 .footer .footer__link-item {
