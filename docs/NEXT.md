@@ -326,6 +326,14 @@ a phase note.
   **P4b**, whose criterion names it: the remedy is to render the frames and
   navigate afterwards, which gives the redirecting branch the page it lacks,
   and P4b is the phase that owes every page the server renders a theme.
+- `/logout` has two hardening gaps that predate P4g's change to it. The
+  confirmation form's `client_id` and `post_logout_redirect_uri` fields are
+  not covered by the anti-forgery HMAC (reaching nothing new today, since only a
+  registered address is ever honoured). And a verified hint whose `sid` is the
+  cookie's own session ends it by `GET` with no confirmation and no bound on
+  the hint's age, so a leaked ID token forces that sign-out, limited by the
+  session's lifetime and the victim's cookie. **P4b**, whose criterion names
+  both: it rewrites that page and the branch that serves it.
 - The `codes`/`spent` count of `user_credentials` in `apps/docs/content/en/reference/transcripts/request-paths/`'s
   recovery-code section is unscoped, and correct only in document order — the
   unspent count after it names its tenant. Re-scoping it needs a re-run

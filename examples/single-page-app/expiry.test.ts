@@ -22,3 +22,8 @@ test('gives no time for an opaque token, a missing exp or one that is not a numb
     assert.equal(expiryOf(token), undefined, token);
   }
 });
+
+test('gives no time for a null or zero exp, which would read as 1970', () => {
+  assert.equal(expiryOf(jwt({ exp: null })), undefined);
+  assert.equal(expiryOf(jwt({ exp: 0 })), undefined);
+});

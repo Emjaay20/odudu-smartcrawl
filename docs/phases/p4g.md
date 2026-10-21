@@ -2373,8 +2373,9 @@ BYPASSRLS`, `CREATE ROLE odudu_svc LOGIN`, `CREATE DATABASE odudu OWNER odudu_ow
 authorization_code` it gets none (`Object.keys(tokens)` logged from the built app against each registration). The example is
   registered without the grant and keeps tokens in a variable. After a reload, choosing Sign in again returns signed in without the password form (the
   tenant session still lives), which the test asserts.
-- **verified:** `/logout` resolves the registered post-logout addresses from the `client_id` parameter, not from the hint's audience; with
-  `id_token_hint` alone the person is signed out but not returned to the app ("not one this client has registered"). The app sends both.
+- **verified:** before fix round 1, `/logout` resolved the registered post-logout addresses from the `client_id` parameter only, so a hint
+  alone signed the person out but did not return them to the app. It now takes the client from a hint's single audience (fix round 1
+  below); the examples still send `client_id` beside the hint.
 - Mutations, each failing the named test: `skipStateCheck` (state), `state` not sent, `S256` to `plain`, a trailing slash on the redirect
   address (authorize parameters, sign-in), wrong verifier (sign-in), `expectedNonce` dropped (sign-in; the nonce test cannot tell, as in the
   web app), pending values not deleted (replay, storage), tokens written to `localStorage` (storage), a logout that skips Odudu, a logout
@@ -2392,8 +2393,8 @@ authorization_code` it gets none (`Object.keys(tokens)` logged from the built ap
   tenant, an unregistered address and another client's address are all refused with the session still ended; a `client_id` that disagrees with
   the hint is dropped as before. The confirmation form carries the resolved client. `[ODUDU-LOGOUT-HINT-CLIENT-01]` in `logout.int.test.ts`
   (GET and POST, expired hint, hint from another tenant, client only another tenant has); reading note in `docs/protocols/oidc-rpinitiated.md`.
-  The OIDF plans in `infra/conformance` hold no RP-initiated logout test, so no plan variant covers this path. This supersedes the finding
-  above; the examples still send `client_id` beside the hint and say so.
+  The OIDF plans in `infra/conformance` hold no RP-initiated logout test, so no plan variant covers this path. The examples still send
+  `client_id` beside the hint and say so.
 - **Plan:** the published-image run and the `v0.1.0-rc.2` cut are Task 6c.
 - **verified:** a public client registered with `--grant-type authorization_code` gets no `refresh_token`; the example is registered that way.
 - Example: `expiryOf` returns nothing for an opaque token or a missing `exp` (`expiry.test.ts`); the storage test also checks cookies and

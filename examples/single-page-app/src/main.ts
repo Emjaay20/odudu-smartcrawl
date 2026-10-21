@@ -1,7 +1,8 @@
 // A single-page app: it signs a person in with the authorization code grant
 // and PKCE, as a public client with no secret. The tokens live in a variable,
-// so a reload signs the person out of the app. The client is registered without
-// the refresh_token grant, so there is no refresh token to steal. Only the short-lived values the redirect needs, the PKCE verifier, the
+// so a reload signs the person out of the app. The client is registered
+// without the refresh_token grant, so there is no refresh token to steal.
+// Only the short-lived values the redirect needs, the PKCE verifier, the
 // state and the nonce, wait in sessionStorage while the person is on Odudu's
 // page. `allowInsecureRequests` lets the library talk to an http issuer; a
 // real app serves everything over HTTPS and never sets it.

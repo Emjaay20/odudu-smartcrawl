@@ -1142,7 +1142,7 @@ describe('[ODUDU-LOGOUT-HINT-CLIENT-01] a valid hint with no client_id names the
       expect(await ended(sessionId)).toBe(true);
     });
 
-    it('refuses an address the audience client did not register, and still ends the session', async () => {
+    it('guards against loosening: refuses an address the audience client did not register, session ended', async () => {
       const tenantName = nameFor(`bad-${method.toLowerCase()}`);
       const { tenantId } = await setupTenant(tenantName);
       const cookie = await signIn(tenantName);
@@ -1161,7 +1161,7 @@ describe('[ODUDU-LOGOUT-HINT-CLIENT-01] a valid hint with no client_id names the
       expect(await ended(sessionId)).toBe(true);
     });
 
-    it('refuses another client’s registered address: the hint names only its own audience', async () => {
+    it('guards against loosening: refuses another client’s registered address, session ended', async () => {
       const tenantName = nameFor(`other-${method.toLowerCase()}`);
       const { tenantId } = await setupTenant(tenantName);
       await addClient(tenantId, 'other-client', OTHER_REDIRECT);
@@ -1178,16 +1178,47 @@ describe('[ODUDU-LOGOUT-HINT-CLIENT-01] a valid hint with no client_id names the
 
       expect(res.statusCode).toBe(400);
       expect(res.headers.location).toBeUndefined();
+      expect(await ended(sessionId)).toBe(true);
     });
 
-    it('refuses a hint with several audiences, and still ends the session', async () => {
-      const tenantName = nameFor(`multi-${method.toLowerCase()}`);
+    it.each([
+      ['the registered client last', ['other-client', CLIENT_ID]],
+      ['the registered client first', [CLIENT_ID, 'other-client']],
+    ])(
+      'refuses a hint with several audiences, %s, and still ends the session',
+      async (_order, aud) => {
+        const tenantName = nameFor(`multi-${method.toLowerCase()}`);
+        const { tenantId } = await setupTenant(tenantName);
+        await addClient(tenantId, 'other-client', OTHER_REDIRECT);
+        const cookie = await signIn(tenantName);
+        const sessionId = sessionIdFromCookie(cookie);
+        const hint = await hintFor(tenantName, {
+          aud,
+          sub: await subjectIdOf(tenantId, USERNAME),
+          sid: sessionId,
+        });
+
+        // The address is registered to the registered client, so taking
+        // either end of the list as the client would honour it.
+        const res = await requestLogout(
+          method,
+          tenantName,
+          { id_token_hint: hint, post_logout_redirect_uri: POST_LOGOUT_REDIRECT_URI },
+          cookie,
+        );
+        expect(res.headers.location).toBeUndefined();
+        expect(res.statusCode).toBe(400);
+        expect(await ended(sessionId)).toBe(true);
+      },
+    );
+
+    it('treats a one-element audience array as that client', async () => {
+      const tenantName = nameFor(`array-${method.toLowerCase()}`);
       const { tenantId } = await setupTenant(tenantName);
-      await addClient(tenantId, 'other-client', OTHER_REDIRECT);
       const cookie = await signIn(tenantName);
       const sessionId = sessionIdFromCookie(cookie);
       const hint = await hintFor(tenantName, {
-        aud: [CLIENT_ID, 'other-client'],
+        aud: [CLIENT_ID],
         sub: await subjectIdOf(tenantId, USERNAME),
         sid: sessionId,
       });
@@ -1198,12 +1229,11 @@ describe('[ODUDU-LOGOUT-HINT-CLIENT-01] a valid hint with no client_id names the
         { id_token_hint: hint, post_logout_redirect_uri: POST_LOGOUT_REDIRECT_URI },
         cookie,
       );
-      expect(res.headers.location).toBeUndefined();
-      expect(res.statusCode).toBe(400);
-      expect(await ended(sessionId)).toBe(true);
+      expect(res.statusCode).toBe(302);
+      expect(res.headers.location).toBe(POST_LOGOUT_REDIRECT_URI);
     });
 
-    it('refuses an audience that is no client of this tenant', async () => {
+    it('guards against loosening: refuses an audience that is no client of this tenant, session ended', async () => {
       const tenantName = nameFor(`noclient-${method.toLowerCase()}`);
       const { tenantId } = await setupTenant(tenantName);
       const cookie = await signIn(tenantName);
@@ -1224,6 +1254,7 @@ describe('[ODUDU-LOGOUT-HINT-CLIENT-01] a valid hint with no client_id names the
 
       expect(res.statusCode).toBe(400);
       expect(res.headers.location).toBeUndefined();
+      expect(await ended(sessionId)).toBe(true);
     });
   });
 
@@ -1250,7 +1281,7 @@ describe('[ODUDU-LOGOUT-HINT-CLIENT-01] a valid hint with no client_id names the
     expect(res.headers.location).toBe(POST_LOGOUT_REDIRECT_URI);
   });
 
-  it('takes no audience from a hint another tenant signed, nor a client only another tenant has', async () => {
+  it('guards against loosening: takes no audience from a hint another tenant signed, nor a client only another tenant has', async () => {
     const tenantName = nameFor('tenant-a');
     const foreignName = nameFor('tenant-b');
     const { tenantId } = await setupTenant(tenantName);
@@ -1269,6 +1300,7 @@ describe('[ODUDU-LOGOUT-HINT-CLIENT-01] a valid hint with no client_id names the
     );
     expect(viaForeignHint.statusCode).toBe(200);
     expect(viaForeignHint.headers.location).toBeUndefined();
+    expect(await ended(sessionId)).toBe(false);
 
     const foreignClient = await mintIdToken(tenantName, subjectId, sessionId, 'only-in-b');
     const viaForeignClient = await requestLogout(
@@ -1279,6 +1311,7 @@ describe('[ODUDU-LOGOUT-HINT-CLIENT-01] a valid hint with no client_id names the
     );
     expect(viaForeignClient.statusCode).toBe(400);
     expect(viaForeignClient.headers.location).toBeUndefined();
+    expect(await ended(sessionId)).toBe(true);
   });
 
   it('carries the audience client through the confirmation form, which then redirects', async () => {

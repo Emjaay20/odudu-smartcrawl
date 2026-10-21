@@ -6,8 +6,9 @@ export function expiryOf(accessToken: string): Date | undefined {
     const payload = accessToken.split('.')[1] ?? '';
     const claims: unknown = JSON.parse(atob(payload.replace(/-/gu, '+').replace(/_/gu, '/')));
     if (typeof claims !== 'object' || claims === null || !('exp' in claims)) return undefined;
-    const date = new Date(Number(claims.exp) * 1000);
-    return Number.isNaN(date.getTime()) ? undefined : date;
+    const seconds = typeof claims.exp === 'number' ? claims.exp : Number.NaN;
+    const date = new Date(seconds * 1000);
+    return seconds > 0 && !Number.isNaN(date.getTime()) ? date : undefined;
   } catch {
     return undefined;
   }
