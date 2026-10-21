@@ -1,1 +1,1 @@
-export { BrandLine, Mark } from '#/shared/view/BrandLine/BrandLine';
+export { BrandLine } from '#/shared/view/BrandLine/BrandLine';

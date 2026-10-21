@@ -102,7 +102,6 @@ const config: Config = {
   url: image ? 'http://localhost' : SITE_ORIGIN,
   baseUrl: image ? '/docs/' : PAGES_BASE,
   trailingSlash: true,
-  favicon: 'brand/favicon.svg',
   baseUrlIssueBanner: false,
   onBrokenLinks: 'throw',
   onBrokenAnchors: 'throw',

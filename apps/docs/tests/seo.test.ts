@@ -36,6 +36,15 @@ describe('the icon tags', () => {
       },
       {
         tagName: 'link',
+        attributes: {
+          rel: 'icon',
+          href: '/docs/brand/favicon.svg',
+          type: 'image/svg+xml',
+          sizes: 'any',
+        },
+      },
+      {
+        tagName: 'link',
         attributes: { rel: 'apple-touch-icon', href: '/docs/brand/apple-touch-icon.png' },
       },
     ]);

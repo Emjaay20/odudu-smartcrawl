@@ -97,6 +97,14 @@ describe('instrumentRoutes', () => {
     expect(response.statusCode).toBe(200);
     expect(response.headers['content-type']).toBe('image/png');
     expect(response.headers['x-content-type-options']).toBe('nosniff');
+    expect(response.headers['cache-control']).toBe('no-cache');
+    const etag = response.headers.etag;
+    expect(etag).toMatch(/^"?W?\/?"?[\w-]+/u);
+    const again = await server.inject({
+      url: '/instrument/apple-touch-icon.png',
+      headers: { 'if-none-match': String(etag) },
+    });
+    expect(again.statusCode).toBe(304);
   });
 
   it('refuses a path outside the manifest', async () => {

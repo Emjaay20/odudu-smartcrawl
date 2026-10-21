@@ -24,7 +24,7 @@ function shell() {
 it('carries the staff mark beside the product name in the top bar', () => {
   render(shell());
   const bar = screen.getByRole('banner');
-  expect(within(bar).getByText('Odudu')).toBeInTheDocument();
+  expect(within(bar).getByText('odudu')).toBeInTheDocument();
   expect(bar.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
 });
 
@@ -96,7 +96,7 @@ it('passes axe in both themes', async () => {
 it('puts the narrow top bar in a banner, so none of the shell sits outside a landmark', () => {
   render(shell());
   const banner = screen.getByRole('banner');
-  expect(within(banner).getByText('Odudu')).toBeInTheDocument();
+  expect(within(banner).getByText('odudu')).toBeInTheDocument();
   expect(within(banner).getByRole('button', { name: 'Menu' })).toBeInTheDocument();
 });
 

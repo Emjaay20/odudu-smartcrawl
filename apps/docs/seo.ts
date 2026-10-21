@@ -16,12 +16,24 @@ export function siteHeadTags(): HeadTag[] {
   ];
 }
 
-// The icon file for browsers that do not read an SVG icon, and the touch icon.
+// The icon file for browsers that do not read an SVG icon, the SVG icon, and
+// the touch icon, in the order a browser should weigh them.
 export function iconTags(base: string): HeadTag[] {
   return [
     {
       tagName: 'link',
       attributes: { rel: 'icon', href: `${base}brand/favicon.ico`, sizes: '48x48' },
+    },
+    // After the icon file and marked `any`, so a browser that reads an SVG
+    // icon takes it, as the usual order lets it.
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'icon',
+        href: `${base}brand/favicon.svg`,
+        type: 'image/svg+xml',
+        sizes: 'any',
+      },
     },
     {
       tagName: 'link',

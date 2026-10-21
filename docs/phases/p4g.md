@@ -2473,5 +2473,20 @@ The assets live in `brand/`; `node brand/build.ts` regenerates every PNG and the
   forwarded to the stack on the host). The pictures that show the header are these images; there are no others in the tour or quick start.
 - **Not run.** The console e2e (`apps/admin-console/e2e`) signs in through a full stack and the capture already does that against the built image;
   nothing it asserts about the shell changed.
-- Screenshots: `docs/phases/p4g-docs/brand-wired-*.png` (docs home, 404 and footer; the console header in the gallery at desktop and 375 px, and as
-  captured; a server page), light and dark.
+- Screenshots (`docs/phases/p4g-docs/`, light and dark): `brand-wired-docs-{home,404,footer}-*` (docs), `brand-wired-server-page-*`,
+  `console-pending-*` (the real rail header and top bar on the pending frame, desktop and 375 px), `console-lost-*` (`LostFrame`),
+  `console-status-*` (`SessionStatus`), and `brand-wired-console-rail-captured-*` (the rail header cropped from the captured console images).
+  The earlier gallery pictures, whose rail has a plain header of its own, were removed.
+
+### Increment 30c, review follow-up
+
+- README wording for the touch icons; `Mark` is no longer exported; the product name has two constants in `shared/service/product.ts` (`PRODUCT_NAME`,
+  the lowercase wordmark, and `CONSOLE_TITLE`, `Odudu console`), AppShell's default brand and the session screens use them, and a test fails on a
+  stray literal in that markup. The renderer test reads each exported function (and what it calls in its own file) for `page()`, proven on a rogue
+  export added to `reset-html.ts`; the console-copy test compares parsed JSX attributes, proven by moving the bar in `BrandLine.tsx`.
+- Docs head: the icon file, then the SVG icon (`type`, `sizes="any"`), then the touch icon, read from the built head by `seo-html.test.ts`; the
+  Docusaurus `favicon` option is gone so nothing precedes them. verified: `<link rel=icon href=/odudu/brand/favicon.ico sizes=48x48>`,
+  `<link rel=icon href=/odudu/brand/favicon.svg type=image/svg+xml sizes=any>`, `<link rel=apple-touch-icon ...>` in `dist/pages/index.html`.
+- The touch icon route test asserts `no-cache`, an etag and a 304; the console dev server proxies `/instrument` to the server.
+- `tests/lint/capture-keeps-secrets.test.ts` fails on `set -x`, `bash -x` or a line that writes the password in `with-stack.sh`, the capture scripts, or
+  any workflow (traces only for workflows, which may write a masked secret to their environment file); proven by running with `set -euxo`.

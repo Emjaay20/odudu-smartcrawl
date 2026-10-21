@@ -1,8 +1,5 @@
 import { type Area } from '#/features/shell/service/areas';
 
-// What the console calls itself where no tenant is in the frame.
-export const PRODUCT_NAME = 'odudu';
-
 export function brandText(tenant: string): string {
   return `odudu · ${tenant}`;
 }

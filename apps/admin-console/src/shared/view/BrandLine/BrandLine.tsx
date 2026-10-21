@@ -3,7 +3,7 @@ import styles from '#/shared/view/BrandLine/BrandLine.module.css';
 
 // The staff, drawn from the same three shapes as packages/instrument/src/mark.svg
 // (tests/lint/brand-assets.test.ts holds the two to each other).
-export function Mark() {
+function Mark() {
   return (
     <svg
       className={styles.mark}

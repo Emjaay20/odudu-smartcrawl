@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, globSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import ts from 'typescript';
 import { inflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { FAVICON_INSET, TOUCH_INSET, insetTransform } from '../../brand/geometry.ts';
@@ -179,6 +180,112 @@ function coverage(mark: Mark, size: number, pixelX: number, pixelY: number): num
     }
   }
   return inside / (samples * samples);
+}
+
+interface JsxMark {
+  circle: { cx: number; cy: number; r: number } | undefined;
+  paths: string[];
+  strokeWidth: number | undefined;
+  linecap: string | undefined;
+}
+
+// The mark as the console's JSX draws it, read from attributes rather than
+// from how the source happens to be formatted.
+function jsxMark(source: string): JsxMark {
+  const file = ts.createSourceFile(
+    'BrandLine.tsx',
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  );
+  const found: JsxMark = {
+    circle: undefined,
+    paths: [],
+    strokeWidth: undefined,
+    linecap: undefined,
+  };
+  const attribute = (
+    node: ts.JsxSelfClosingElement | ts.JsxOpeningElement,
+    name: string,
+  ): string | undefined => {
+    for (const property of node.attributes.properties) {
+      if (ts.isJsxAttribute(property) && property.name.getText() === name) {
+        const value = property.initializer;
+        if (value !== undefined && ts.isStringLiteral(value)) return value.text;
+      }
+    }
+    return undefined;
+  };
+  const visit = (node: ts.Node): void => {
+    if (ts.isJsxSelfClosingElement(node)) {
+      const tag = node.tagName.getText();
+      if (tag === 'circle') {
+        found.circle = {
+          cx: Number(attribute(node, 'cx')),
+          cy: Number(attribute(node, 'cy')),
+          r: Number(attribute(node, 'r')),
+        };
+      }
+      if (tag === 'path') found.paths.push(attribute(node, 'd') ?? '');
+    }
+    if (ts.isJsxOpeningElement(node) && node.tagName.getText() === 'svg') {
+      const width = attribute(node, 'strokeWidth');
+      found.strokeWidth = width === undefined ? undefined : Number(width);
+      found.linecap = attribute(node, 'strokeLinecap');
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return found;
+}
+
+// Exported functions of a renderer file that neither call page() nor call a
+// function of the same file that does.
+function exportsWithoutPage(source: string): string[] {
+  const file = ts.createSourceFile('x-html.ts', source, ts.ScriptTarget.Latest, true);
+  const calls = new Map<string, Set<string>>();
+  const exported: string[] = [];
+  const register = (name: string, body: ts.Node, isExported: boolean): void => {
+    const called = new Set<string>();
+    const visit = (node: ts.Node): void => {
+      if (ts.isCallExpression(node) && ts.isIdentifier(node.expression))
+        called.add(node.expression.text);
+      ts.forEachChild(node, visit);
+    };
+    visit(body);
+    // A sender takes a page already rendered, so its markup came through page().
+    if (
+      ts.isFunctionDeclaration(body) &&
+      body.parameters.some((parameter) => parameter.type?.getText() === 'RenderedPage')
+    ) {
+      called.add('page');
+    }
+    calls.set(name, called);
+    if (isExported) exported.push(name);
+  };
+  for (const statement of file.statements) {
+    const isExported =
+      ts.canHaveModifiers(statement) &&
+      (ts.getModifiers(statement) ?? []).some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
+    if (ts.isFunctionDeclaration(statement) && statement.name !== undefined) {
+      register(statement.name.text, statement, isExported);
+    }
+    if (ts.isVariableStatement(statement)) {
+      for (const declaration of statement.declarationList.declarations) {
+        if (ts.isIdentifier(declaration.name) && declaration.initializer !== undefined) {
+          register(declaration.name.text, declaration.initializer, isExported);
+        }
+      }
+    }
+  }
+  const reaches = (name: string, seen = new Set<string>()): boolean => {
+    if (seen.has(name)) return false;
+    seen.add(name);
+    const called = calls.get(name) ?? new Set<string>();
+    return called.has('page') || [...called].some((next) => calls.has(next) && reaches(next, seen));
+  };
+  return exported.filter((name) => !reaches(name));
 }
 
 describe('brand assets: every SVG', () => {
@@ -531,25 +638,77 @@ describe('the copies every page and the console link', () => {
       'utf8',
     );
     const own = parseMark(read('mark.svg'));
-    expect(source).toContain(
-      `<circle cx="${String(own.ring.cx)}" cy="${String(own.ring.cy)}" r="${String(own.ring.r)}" />`,
-    );
-    expect(source).toContain(
-      `<path d="M${String(own.shaft.x)} ${String(own.shaft.from)}V${String(own.shaft.to)}" />`,
-    );
-    expect(source).toContain(
-      `<path d="M${String(own.crossbar.from)} ${String(own.crossbar.y)}H${String(own.crossbar.to)}" />`,
-    );
-    expect(source).toContain(`strokeWidth="${String(own.strokeWidth)}"`);
-    expect(source).toContain('strokeLinecap="round"');
+    const drawn = jsxMark(source);
+    expect(drawn.circle).toEqual(own.ring);
+    expect(drawn.paths).toEqual([
+      `M${String(own.shaft.x)} ${String(own.shaft.from)}V${String(own.shaft.to)}`,
+      `M${String(own.crossbar.from)} ${String(own.crossbar.y)}H${String(own.crossbar.to)}`,
+    ]);
+    expect(drawn.strokeWidth).toBe(own.strokeWidth);
+    expect(drawn.linecap).toBe('round');
   });
 
-  it('reach every server page through the one shell each package renders', () => {
+  it('notices a console mark that has drifted, however the source is formatted', () => {
+    const one =
+      '<svg strokeWidth="2" strokeLinecap="round"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg>';
+    const moved = one.replace('M12 14H20', 'M12 20H20');
+    expect(jsxMark(`const x = (${one});`).paths[1]).toBe('M12 14H20');
+    expect(
+      jsxMark(
+        `const x = (\n<svg strokeWidth="2" strokeLinecap="round">\n<circle\n cx="16" cy="6" r="4"\n />\n<path d="M16 10V30" />\n<path d="M12 14H20" />\n</svg>\n);`,
+      ).paths,
+    ).toEqual(['M16 10V30', 'M12 14H20']);
+    expect(jsxMark(`const x = (${moved});`).paths[1]).toBe('M12 20H20');
+    expect(jsxMark(`const x = (${one.replace('r="4"', 'r="5"')});`).circle?.r).toBe(5);
+  });
+
+  it('is proxied to the server by the console dev server, so the icons load there too', () => {
+    const config = readFileSync(path.join(REPO_ROOT, 'apps/admin-console/vite.config.ts'), 'utf8');
+    expect(config).toContain("'/instrument': upstream");
+  });
+
+  it('has every exported renderer return its markup through page()', () => {
     const renderers = globSync('packages/*/src/view/*-html.ts', { cwd: REPO_ROOT });
     expect(renderers.length).toBeGreaterThanOrEqual(15);
     for (const file of renderers) {
-      expect(readFileSync(path.join(REPO_ROOT, file), 'utf8'), file).toMatch(/\bpage\(/u);
+      const source = readFileSync(path.join(REPO_ROOT, file), 'utf8');
+      expect(exportsWithoutPage(source), file).toEqual([]);
     }
+  });
+
+  it('would notice a renderer that builds its own document', () => {
+    expect(
+      exportsWithoutPage(
+        'export function good() { return page({}); }\nexport function bad() { return `<!doctype html>`; }',
+      ),
+    ).toEqual(['bad']);
+    expect(
+      exportsWithoutPage(
+        'export function send(reply: R, rendered: RenderedPage) { return reply.send(rendered.html); }\nfunction inner() { return page({}); }\nexport function viaInner() { return inner(); }\nexport const arrow = () => `<p>`;',
+      ),
+    ).toEqual(['arrow']);
+  });
+});
+
+describe('the console names the product through its constants', () => {
+  const withoutComments = (source: string): string =>
+    source.replaceAll(/\/\/.*$/gmu, '').replaceAll(/\/\*[\s\S]*?\*\//gu, '');
+
+  it.each([
+    'apps/admin-console/src/shared/view/AppShell/AppShell.tsx',
+    'apps/admin-console/src/features/session/view/SessionGate/SessionGate.tsx',
+    'apps/admin-console/src/features/session/view/SessionStatus/SessionStatus.tsx',
+  ])('has no product name typed in the markup of %s', (file) => {
+    const source = withoutComments(readFileSync(path.join(REPO_ROOT, file), 'utf8'));
+    expect(source).not.toMatch(/['"`>]\s*odudu/iu);
+  });
+
+  it('would notice one', () => {
+    expect(withoutComments('<p>Odudu console</p>')).toMatch(/['"`>]\s*odudu/iu);
+    expect(withoutComments("brand = 'Odudu'")).toMatch(/['"`>]\s*odudu/iu);
+    expect(withoutComments('// Odudu console\nbrand = PRODUCT_NAME')).not.toMatch(
+      /['"`>]\s*odudu/iu,
+    );
   });
 });
 

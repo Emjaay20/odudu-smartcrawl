@@ -271,6 +271,31 @@ describe('the Pages build is indexable HTML', () => {
     expect(robots).not.toMatch(/^Disallow:\s*\S/mu);
   });
 
+  it('offers the icon file, then the SVG icon marked any, then the touch icon', () => {
+    expect(
+      violations((page) => {
+        const icons = page
+          .$('head link[rel~="icon"], head link[rel="apple-touch-icon"]')
+          .map((_, element) => {
+            const link = page.$(element);
+            return [
+              link.attr('rel'),
+              link.attr('href'),
+              link.attr('type') ?? '',
+              link.attr('sizes') ?? '',
+            ].join(' ');
+          })
+          .get();
+        const expected = [
+          `icon ${BASE}brand/favicon.ico  48x48`,
+          `icon ${BASE}brand/favicon.svg image/svg+xml any`,
+          `apple-touch-icon ${BASE}brand/apple-touch-icon.png  `,
+        ];
+        return JSON.stringify(icons) === JSON.stringify(expected) ? null : JSON.stringify(icons);
+      }),
+    ).toEqual([]);
+  });
+
   it('gives every image alt text and a size', () => {
     expect(
       violations((page) => {

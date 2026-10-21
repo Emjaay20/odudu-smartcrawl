@@ -9,6 +9,7 @@ import {
   type RefObject,
 } from 'react';
 import { Dialog, DialogTrigger, Modal, ModalOverlay } from 'react-aria-components';
+import { PRODUCT_NAME } from '#/shared/service/product';
 import { BrandLine } from '#/shared/view/BrandLine';
 import { Button } from '#/shared/view/Button';
 import { KeyHint } from '#/shared/view/KeyHint';
@@ -85,7 +86,7 @@ function Toggle({
 export function AppShell({
   rail,
   contextBar,
-  brand = 'Odudu',
+  brand = PRODUCT_NAME,
   collapsed = false,
   onCollapsedChange,
   shortcutsPaused = false,

@@ -5,10 +5,11 @@ import {
   useTenantAccess,
   useTenantMissing,
 } from '#/features/session';
-import { areasLabel, brandText, PRODUCT_NAME } from '#/features/shell/service';
+import { areasLabel, brandText } from '#/features/shell/service';
 import { useShell } from '#/features/shell/usecase/useShell';
 import { RailFooter } from '#/features/shell/view/RailFooter';
 import { TenantNotFound } from '#/features/shell/view/TenantNotFound';
+import { PRODUCT_NAME } from '#/shared/service/product';
 import { isTenantName, type Principal } from '#/shared/service/principal';
 import { AppShell } from '#/shared/view/AppShell';
 import { BrandLine } from '#/shared/view/BrandLine';

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { CONSOLE_TITLE } from '#/shared/service/product';
 import { BrandLine } from '#/shared/view/BrandLine';
 import styles from '#/features/session/view/SessionStatus/SessionStatus.module.css';
 
@@ -9,7 +10,7 @@ export function SessionStatus({ title, children }: { title: string; children: Re
     <main id="main" tabIndex={-1} className={styles.page}>
       <div className={styles.panel}>
         <p className={styles.brand}>
-          <BrandLine>Odudu console</BrandLine>
+          <BrandLine>{CONSOLE_TITLE}</BrandLine>
         </p>
         <h1 className={styles.title}>{title}</h1>
         {children}

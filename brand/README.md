@@ -17,7 +17,7 @@ short crossbar.
 | `mark-ink.svg`, `mark-paper.svg`           | The mark in the Instrument ink for a light and for a dark surface, for places that cannot take `currentColor` (an image tag, the docs logo) |
 | `lockup.svg`                               | Mark left, wordmark right, one baseline                                                                                                     |
 | `favicon.svg`, `favicon.ico`               | Mark on the Instrument rail surface, amber ring; the icon holds 16, 32 and 48                                                               |
-| `apple-touch-icon.png`, `icon-192/512.png` | The same tile, full bleed                                                                                                                   |
+| `apple-touch-icon.png`, `icon-192/512.png` | The same tile, the mark inset to 75%, square corners                                                                                        |
 | `social.svg`, `social.png`                 | 1200 x 630 share image: lockup and tagline on the rail surface                                                                              |
 | `LICENSE-IBM-Plex-Mono.txt`                | The font licence that covers the wordmark outlines                                                                                          |
 | `geometry.ts`, `tsconfig.json`             | Where the mark sits in each tile; the type-check of `build.ts` and this file                                                                |

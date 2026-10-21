@@ -3,8 +3,9 @@ import { defineConfig } from 'vite';
 import { reactCompiler } from './reactCompiler.ts';
 
 // The gateway serves the build under /console/, from /app/console in the
-// image. In development the dev server forwards the gateway's two routes
-// to the running server, on :3000 unless ODUDU_CONSOLE_UPSTREAM names it.
+// image. In development the dev server forwards the gateway's two routes, and
+// the Instrument assets the shell's icons link to, to the running server, on
+// :3000 unless ODUDU_CONSOLE_UPSTREAM names it.
 const upstream = process.env.ODUDU_CONSOLE_UPSTREAM ?? 'http://localhost:3000';
 
 export default defineConfig({
@@ -30,6 +31,7 @@ export default defineConfig({
     proxy: {
       '/console/api': upstream,
       '/console/auth': upstream,
+      '/instrument': upstream,
     },
   },
 });
