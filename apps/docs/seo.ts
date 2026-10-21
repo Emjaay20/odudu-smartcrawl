@@ -49,6 +49,8 @@ export function landingJsonLd(siteUrl: string): string {
       '@type': 'SoftwareApplication',
       name: SITE_NAME,
       url: siteUrl,
+      description:
+        'A self-hosted OpenID Connect and OAuth 2.0 identity provider with an admin console and a command-line tool.',
       applicationCategory: 'SecurityApplication',
       operatingSystem: 'Any system that runs a container',
       license: 'https://www.gnu.org/licenses/agpl-3.0.html',

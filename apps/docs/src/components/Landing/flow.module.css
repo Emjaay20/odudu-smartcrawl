@@ -1,0 +1,283 @@
+.replayRow {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 var(--space-3);
+}
+
+.replay {
+  min-block-size: 2.25rem;
+  padding-inline: var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-m);
+  background: var(--surface-panel);
+  color: var(--ink-primary);
+  font-family: var(--font-mono);
+  font-size: var(--type-13);
+  cursor: pointer;
+}
+
+/* Reserved while script has not run, so nothing moves when it does. */
+.replay[hidden] {
+  display: inline-block;
+  visibility: hidden;
+}
+
+.act {
+  margin-block-end: var(--space-8);
+}
+
+.actTitle {
+  margin: 0 0 var(--space-3);
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: var(--type-13);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: beat;
+}
+
+.step {
+  counter-increment: beat;
+  min-inline-size: 0;
+  padding: var(--space-4);
+  border: var(--hairline);
+  border-radius: 6px;
+  background: var(--surface-panel);
+}
+
+.picture {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  max-inline-size: 16rem;
+  margin: 0 auto var(--space-3);
+}
+
+.caption {
+  margin: 0;
+  color: var(--ink-primary);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.caption::before {
+  content: counter(beat) '. ';
+  color: var(--signal-active-ink);
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.methods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.methods li {
+  padding: 2px var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  color: var(--ink-primary);
+  font-size: var(--type-13);
+}
+
+.more {
+  margin: var(--space-2) 0 0;
+  color: var(--ink-muted);
+}
+
+/* Drawing: every colour is a token, so both colour modes follow the toggle. */
+
+.panel {
+  fill: var(--surface-sunken);
+  stroke: var(--border-strong);
+  stroke-width: 1.5;
+}
+
+.accent {
+  fill: var(--signal-active);
+  stroke: var(--signal-active-ink);
+  stroke-width: 1.5;
+}
+
+.tileBox {
+  fill: var(--surface-panel);
+  stroke: var(--border-strong);
+  stroke-width: 1.5;
+}
+
+.line {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.dot,
+.fill {
+  fill: var(--ink-muted);
+}
+
+.stroke {
+  fill: none;
+  stroke: var(--ink-muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.staff {
+  fill: none;
+  stroke: var(--signal-active-ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.pass {
+  fill: var(--signal-active-ink);
+  stroke: none;
+}
+
+.check {
+  fill: none;
+  stroke: var(--surface-panel);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dim {
+  opacity: 0.6;
+}
+
+@media (min-width: 600px) {
+  .flow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 997px) {
+  .flow[data-flow='first'],
+  .flow[data-flow='second'] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .flow[data-flow='out'] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Motion: armed by script, then played once. Only opacity and transform move. */
+
+@media (prefers-reduced-motion: no-preference) {
+  .flow[data-armed]:not([data-playing]) .step {
+    opacity: 0;
+  }
+
+  .flow[data-playing] .step {
+    animation: stepIn 500ms var(--ease) both;
+    animation-delay: calc(var(--n, 0) * 900ms);
+  }
+
+  .flow[data-playing] .step:nth-child(2) {
+    --n: 1;
+  }
+
+  .flow[data-playing] .step:nth-child(3) {
+    --n: 2;
+  }
+
+  .flow[data-playing] .step:nth-child(4) {
+    --n: 3;
+  }
+
+  .flow[data-playing] .arrow {
+    transform-box: fill-box;
+    transform-origin: left center;
+    animation: grow 500ms var(--ease) both;
+    animation-delay: calc(var(--n, 0) * 900ms + 300ms);
+  }
+
+  .flow[data-playing] .tile {
+    animation: pop 350ms var(--ease) both;
+    animation-delay: calc(var(--n, 0) * 900ms + 250ms);
+  }
+
+  .flow[data-playing] .tile[data-t='2'] {
+    animation-delay: calc(var(--n, 0) * 900ms + 400ms);
+  }
+
+  .flow[data-playing] .tile[data-t='3'] {
+    animation-delay: calc(var(--n, 0) * 900ms + 550ms);
+  }
+
+  .flow[data-playing] .badge {
+    animation: travel 800ms var(--ease) both;
+    animation-delay: calc(var(--n, 0) * 900ms + 300ms);
+  }
+
+  .flow[data-playing] .appear {
+    animation: pop 500ms var(--ease) both;
+    animation-delay: calc(var(--n, 0) * 900ms + 250ms);
+  }
+}
+
+@keyframes stepIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes grow {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: none;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes travel {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

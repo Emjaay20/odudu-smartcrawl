@@ -25,6 +25,7 @@ Everything here works in the version you can run today.
 - Refresh tokens that rotate, a stolen one caught on reuse, and offline access.
 - Client credentials, and token exchange for acting on someone's behalf.
 - RP-initiated logout with back-channel logout delivered to the apps that registered. Front-channel logout frames are shown unless the request names a matched post-logout redirect, which P4b closes.
+- Single sign-on across the apps of one tenant, through one Odudu session.
 - "Remember me" and several sessions per browser, consent, and client registration by hand or by an app itself with a registration token.
 - Client authentication by secret, by signed assertion (`private_key_jwt`), by mutual TLS (`tls_client_auth`, when a proxy forwards the certificate and `ODUDU_TRUST_PROXY` is on), or by nothing for a public app.
 

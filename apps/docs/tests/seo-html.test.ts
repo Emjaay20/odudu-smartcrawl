@@ -321,7 +321,11 @@ describe('the Pages build is indexable HTML', () => {
       .filter((file) => file.endsWith('.css'))
       .map((file) => readFileSync(file, 'utf8'))
       .join('\n');
-    const faces = css.match(/@font-face\{[^}]*\}/gu) ?? [];
+    // A face that names only installed fonts is a metric-matched fallback: it
+    // fetches nothing, so it has no source to check and no swap to time.
+    const faces = (css.match(/@font-face\{[^}]*\}/gu) ?? []).filter((face) =>
+      face.includes('url('),
+    );
     expect(faces.length).toBeGreaterThan(0);
     const bad = faces.filter((face) => {
       const sources = [...face.matchAll(/url\(([^)]*)\)/gu)].map((match) => match[1] ?? '');

@@ -1,0 +1,676 @@
+.page {
+  color: var(--ink-primary);
+}
+
+.wrap {
+  box-sizing: border-box;
+  inline-size: 100%;
+  max-inline-size: 72rem;
+  margin-inline: auto;
+  padding-inline: var(--space-4);
+}
+
+/* Hero */
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  background: var(--surface-page);
+  border-block-end: var(--hairline);
+  padding-block: var(--space-8) 3rem;
+}
+
+/* Instrument's grid, drawn behind the page and faded out toward the content. */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(var(--surface-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--surface-grid) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, #000 35%, transparent);
+}
+
+.heroGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-8);
+  align-items: center;
+}
+
+.heroText {
+  min-inline-size: 0;
+}
+
+/* The brand file as a mask, so the ink follows the colour mode with one drawing. */
+.lockup {
+  display: block;
+  inline-size: 6.875rem;
+  block-size: 2rem;
+  margin-block-end: var(--space-6);
+  background-color: var(--ink-primary);
+  mask: url('../../static/brand/lockup.svg') center / contain no-repeat;
+}
+
+@media (forced-colors: active) {
+  .lockup {
+    background-color: CanvasText;
+    forced-color-adjust: none;
+  }
+}
+
+.title {
+  margin: 0 0 var(--space-4);
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 3.25rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.lede {
+  max-inline-size: 38rem;
+  margin: 0 0 var(--space-6);
+  color: var(--ink-muted);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: var(--space-6) 0 0;
+}
+
+.primary,
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+  padding-inline: 1.25rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-m);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.primary,
+.primary:hover {
+  background: var(--signal-active-ink);
+  color: var(--surface-panel);
+  text-decoration: none;
+}
+
+.primary:hover {
+  background: color-mix(in srgb, var(--signal-active-ink) 88%, var(--ink-primary));
+}
+
+.secondary,
+.secondary:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-panel);
+  color: var(--ink-primary);
+  text-decoration: none;
+}
+
+.secondary:hover {
+  border-color: var(--ink-muted);
+}
+
+.heroShot {
+  min-inline-size: 0;
+}
+
+.heroShot figure {
+  margin: 0;
+}
+
+.heroShot img {
+  border-radius: 8px;
+  box-shadow: var(--shadow-overlay);
+}
+
+/* The one command */
+
+.install {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.installBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 var(--space-2);
+  min-block-size: 2.75rem;
+  padding-inline: var(--space-1) var(--space-2);
+  border: 1px solid var(--border-rail);
+  border-block-end: 0;
+  border-start-start-radius: 8px;
+  border-start-end-radius: 8px;
+  background: var(--surface-rail);
+}
+
+.shells {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.shells label {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+  padding-inline: var(--space-3);
+  border-block-end: 2px solid transparent;
+  color: var(--ink-rail-muted);
+  font-family: var(--font-mono);
+  font-size: var(--type-13);
+  cursor: pointer;
+}
+
+.shellRadio[data-shell='unix']:checked ~ .installBar label[data-shell='unix'],
+.shellRadio[data-shell='windows']:checked ~ .installBar label[data-shell='windows'] {
+  border-block-end-color: var(--rail-accent);
+  color: var(--ink-rail);
+}
+
+.shellRadio[data-shell='unix']:focus-visible ~ .installBar label[data-shell='unix'],
+.shellRadio[data-shell='windows']:focus-visible ~ .installBar label[data-shell='windows'] {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.copy {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 2.25rem;
+  min-inline-size: 5.5rem;
+  padding-inline: var(--space-3);
+  border: 1px solid var(--ink-rail-muted);
+  border-radius: var(--radius-m);
+  background: transparent;
+  color: var(--ink-rail);
+  font-family: var(--font-mono);
+  font-size: var(--type-13);
+  cursor: pointer;
+}
+
+.copy:hover {
+  background: var(--surface-rail-raised);
+}
+
+/* Reserved, not removed, so the bar does not change height when script arrives. */
+.copy[hidden] {
+  display: inline-flex;
+  visibility: hidden;
+}
+
+.panel {
+  display: none;
+  padding: var(--space-4);
+  border: 1px solid var(--border-rail);
+  border-end-start-radius: 8px;
+  border-end-end-radius: 8px;
+  background: var(--surface-rail);
+}
+
+.shellRadio[data-shell='unix']:checked ~ .panel[data-panel='unix'],
+.shellRadio[data-shell='windows']:checked ~ .panel[data-panel='windows'] {
+  display: block;
+}
+
+.panel code {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-rail);
+  font-family: var(--font-mono);
+  font-size: var(--type-13);
+  line-height: 1.6;
+  overflow-wrap: break-word;
+}
+
+.installNote {
+  margin: var(--space-2) 0 0;
+  color: var(--ink-muted);
+  font-size: var(--type-13);
+  line-height: 1.5;
+}
+
+/* Bands */
+
+.band,
+.bandSunken {
+  padding-block: 3.5rem;
+}
+
+.bandSunken {
+  border-block: var(--hairline);
+  background: var(--surface-sunken);
+}
+
+.kicker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: var(--type-12);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.kicker::before {
+  content: '';
+  inline-size: 1.25rem;
+  block-size: 2px;
+  background: var(--rail-accent);
+}
+
+.heading {
+  max-inline-size: 40rem;
+  margin: 0 0 var(--space-6);
+  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2.125rem);
+  font-weight: 600;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.sectionLede {
+  max-inline-size: 44rem;
+  margin: 0 0 var(--space-6);
+  color: var(--ink-muted);
+  line-height: 1.6;
+}
+
+.after {
+  margin: var(--space-6) 0 0;
+  color: var(--ink-muted);
+}
+
+.inline {
+  font-weight: 500;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  margin: var(--space-6) 0 0;
+}
+
+/* Cards */
+
+.cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card,
+.pane {
+  position: relative;
+  min-inline-size: 0;
+  padding: var(--space-4) var(--space-4) var(--space-6);
+  border: var(--hairline);
+  border-radius: 6px;
+  background: var(--surface-sunken);
+}
+
+.bandSunken .card,
+.bandSunken .pane {
+  background: var(--surface-panel);
+}
+
+.card:hover {
+  border-color: var(--signal-active-ink);
+}
+
+.cardTitle {
+  margin: 0 0 var(--space-2);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.cardLink,
+.cardLink:hover {
+  color: inherit;
+  text-decoration: none;
+}
+
+.cardLink:hover {
+  text-decoration: underline;
+}
+
+.cardLink::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+}
+
+.cardLink:focus-visible {
+  outline: none;
+}
+
+.cardLink:focus-visible::after {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.cardBody {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.badge {
+  display: inline-block;
+  margin-inline-start: var(--space-2);
+  padding: 2px var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: var(--type-12);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: 2px;
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.step {
+  padding-inline-start: var(--space-4);
+  border-inline-start: 2px solid var(--rail-accent);
+  counter-increment: step;
+}
+
+.step::before {
+  content: counter(step, decimal-leading-zero);
+  display: block;
+  margin-block-end: var(--space-1);
+  color: var(--signal-active-ink);
+  font-family: var(--font-mono);
+  font-size: var(--type-13);
+}
+
+.shots {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+}
+
+.shots > figure {
+  margin: 0;
+}
+
+.callout {
+  max-inline-size: 44rem;
+  margin: 0;
+  padding: var(--space-4);
+  border-inline-start: 3px solid var(--ink-muted);
+  border-radius: var(--radius-m);
+  background: var(--surface-sunken);
+  line-height: 1.6;
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+}
+
+.pair > .pane {
+  align-self: start;
+}
+
+.rows {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row,
+.row:hover {
+  display: grid;
+  gap: 2px;
+  padding-block: var(--space-3);
+  border-block-end: var(--hairline);
+  color: inherit;
+  text-decoration: none;
+}
+
+.rowLabel {
+  font-weight: 600;
+}
+
+.row:hover .rowLabel {
+  text-decoration: underline;
+}
+
+.rowSummary {
+  color: var(--ink-muted);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.journeys {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding-inline-start: 1.25rem;
+}
+
+@media (min-width: 600px) {
+  .cards2,
+  .cards4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 800px) {
+  .steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .shots,
+  .pair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 997px) {
+  .wrap {
+    padding-inline: var(--space-6);
+  }
+
+  .hero {
+    padding-block: 4.5rem 5rem;
+  }
+
+  .heroGrid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 3.5rem;
+  }
+
+  .lede {
+    font-size: 1.125rem;
+  }
+
+  .band,
+  .bandSunken {
+    padding-block: 5rem;
+  }
+}
+
+@media (min-width: 1100px) {
+  .cards4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/*
+ * Motion. Only opacity and transform move. The hero's headline, text and
+ * picture are painted in full from the first frame: they only travel, so
+ * nothing the page is measured on waits for an animation. Items below it
+ * stay visible until script adds [data-motion], and never when motion is
+ * reduced.
+ */
+
+@media (prefers-reduced-motion: no-preference) {
+  .card,
+  .pane,
+  .primary,
+  .secondary,
+  .copy,
+  .shells label,
+  .row {
+    transition:
+      translate var(--motion-panel) var(--ease),
+      scale var(--motion-fast) var(--ease),
+      border-color var(--motion-panel) var(--ease),
+      background-color var(--motion-panel) var(--ease),
+      color var(--motion-panel) var(--ease);
+  }
+
+  .card:hover,
+  .primary:hover,
+  .secondary:hover {
+    translate: 0 -2px;
+  }
+
+  .copy:active,
+  .primary:active,
+  .secondary:active {
+    scale: 0.97;
+  }
+
+  .lockup {
+    animation: enterFade 500ms var(--ease) both;
+  }
+
+  .install {
+    animation: enter 600ms var(--ease) 80ms both;
+  }
+
+  .actions {
+    animation: enter 600ms var(--ease) 160ms both;
+  }
+
+  .heroShot {
+    animation: enter 800ms var(--ease) 120ms both;
+  }
+
+  [data-motion='ok'] [data-reveal] {
+    --i: 0;
+  }
+
+  [data-motion='ok'] [data-reveal]:nth-child(4n + 2) {
+    --i: 1;
+  }
+
+  [data-motion='ok'] [data-reveal]:nth-child(4n + 3) {
+    --i: 2;
+  }
+
+  [data-motion='ok'] [data-reveal]:nth-child(4n + 4) {
+    --i: 3;
+  }
+
+  @supports (animation-timeline: view()) {
+    [data-motion='ok'] [data-reveal] {
+      animation: reveal linear both;
+      animation-timeline: view();
+      animation-range: entry calc(var(--i) * 5%) entry calc(45% + var(--i) * 5%);
+    }
+  }
+
+  @supports not (animation-timeline: view()) {
+    [data-motion='ok'] [data-reveal] {
+      opacity: 0;
+      transform: translateY(16px);
+      transition:
+        opacity 500ms var(--ease) calc(var(--i) * 60ms),
+        transform 500ms var(--ease) calc(var(--i) * 60ms);
+    }
+
+    [data-motion='ok'] [data-reveal][data-revealed] {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) and (min-width: 997px) {
+  .heroShot figure {
+    animation: float 9s ease-in-out 1.5s infinite;
+    will-change: transform;
+  }
+}
+
+@keyframes enter {
+  from {
+    transform: translateY(12px);
+  }
+
+  to {
+    transform: none;
+  }
+}
+
+@keyframes enterFade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes float {
+  50% {
+    transform: translateY(-5px);
+  }
+}

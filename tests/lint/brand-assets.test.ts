@@ -721,6 +721,7 @@ describe('the copies the documentation site serves', () => {
       'social.png',
       'mark-ink.svg',
       'mark-paper.svg',
+      'lockup.svg',
     ]) {
       const served = readFileSync(path.join(REPO_ROOT, 'apps/docs/static/brand', file));
       expect(served.equals(readFileSync(path.join(BRAND, file))), file).toBe(true);
