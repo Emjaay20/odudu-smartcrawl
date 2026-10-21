@@ -16,14 +16,14 @@ import { usePrefersReducedMotion } from '@site/src/features/landing/usecase/useP
 import { useIdle } from '@site/src/features/landing/usecase/useIdle';
 
 export interface Install {
-  readonly shell: Shell;
-  readonly status: CopyStatus;
-  readonly typing: Typing;
-  readonly typed: number;
-  readonly lines: number;
-  readonly interactive: boolean;
-  readonly choose: (shell: Shell) => void;
-  readonly copy: () => void;
+  shell: Shell;
+  status: CopyStatus;
+  typing: Typing;
+  typed: number;
+  lines: number;
+  interactive: boolean;
+  choose: (shell: Shell) => void;
+  copy: () => void;
 }
 
 // The page's own clock, handed to the typewriter service.

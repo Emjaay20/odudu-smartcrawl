@@ -15,9 +15,9 @@ export function waitFor(step: Step): number {
 }
 
 export interface Advance {
-  readonly step: Step;
+  step: Step;
   // False where the round ends for good: a rest under reduced motion.
-  readonly keepPlaying: boolean;
+  keepPlaying: boolean;
 }
 
 export function advance(step: Step, motion: boolean): Advance {

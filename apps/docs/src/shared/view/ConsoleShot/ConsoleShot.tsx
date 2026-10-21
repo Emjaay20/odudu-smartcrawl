@@ -3,11 +3,11 @@ import { useConsoleShot } from '@site/src/shared/usecase/useConsoleShot';
 import styles from '@site/src/shared/view/ConsoleShot/ConsoleShot.module.css';
 
 interface Props {
-  readonly name: string;
-  readonly alt: string;
-  readonly caption: string;
+  name: string;
+  alt: string;
+  caption: string;
   // The picture the page is waiting for: fetched first, never lazily.
-  readonly priority?: boolean;
+  priority?: boolean;
 }
 
 // One capture per colour scheme; the one that matches the page's theme shows.

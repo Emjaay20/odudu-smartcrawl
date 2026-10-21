@@ -22,7 +22,7 @@ describe('the reveal decisions', () => {
 });
 
 interface Fake extends RevealItem {
-  readonly name: string;
+  name: string;
   held: boolean;
   at: number;
 }

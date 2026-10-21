@@ -4,8 +4,8 @@ import useReveal from '@site/src/features/landing/usecase/useReveal';
 
 export interface LandingPage {
   // True once the reveal has taken hold; the page marks itself for the stylesheet.
-  readonly motion: boolean;
-  readonly jsonLd: string;
+  motion: boolean;
+  jsonLd: string;
 }
 
 export function useLandingPage(): LandingPage {

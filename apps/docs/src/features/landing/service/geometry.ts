@@ -2,30 +2,30 @@
 // of the picture are active at each step. Pure, so a test can read it.
 
 export type LayoutName = 'wide' | 'tall';
-export type Point = readonly [number, number];
+export type Point = [number, number];
 export type RouteId = 'dh' | 'da' | 'db' | 'ha' | 'hb' | 'bh';
 
 export interface Box {
-  readonly x: number;
-  readonly y: number;
-  readonly w: number;
-  readonly h: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
 export interface Route {
-  readonly points: readonly Point[];
+  points: Point[];
   // Where the arrowhead sits and which way it points, in degrees.
-  readonly head: { readonly at: Point; readonly angle: number };
+  head: { at: Point; angle: number };
 }
 
 export interface Layout {
-  readonly width: number;
-  readonly height: number;
-  readonly device: Box;
-  readonly hub: Box;
-  readonly appA: Box;
-  readonly appB: Box;
-  readonly routes: Readonly<Record<RouteId, Route>>;
+  width: number;
+  height: number;
+  device: Box;
+  hub: Box;
+  appA: Box;
+  appB: Box;
+  routes: Record<RouteId, Route>;
 }
 
 const SAMPLES = 14;
@@ -45,14 +45,14 @@ function curve(a: Point, b: Point, axis: 'h' | 'v'): Point[] {
   });
 }
 
-function at(list: readonly Point[], index: number): Point {
+function at(list: Point[], index: number): Point {
   const found = list[index];
   if (found === undefined) throw new Error(`no point at ${String(index)}`);
   return found;
 }
 
 // A polyline through `corners` with each corner rounded by `radius`.
-function rail(corners: readonly Point[], radius: number): Point[] {
+function rail(corners: Point[], radius: number): Point[] {
   const out: Point[] = [at(corners, 0)];
   for (let index = 1; index < corners.length - 1; index += 1) {
     const [px, py] = at(corners, index - 1);
@@ -152,9 +152,9 @@ const TALL: Layout = {
   },
 };
 
-export const LAYOUTS: Readonly<Record<LayoutName, Layout>> = { wide: WIDE, tall: TALL };
+export const LAYOUTS: Record<LayoutName, Layout> = { wide: WIDE, tall: TALL };
 
-export function pathData(points: readonly Point[]): string {
+export function pathData(points: Point[]): string {
   return points
     .map(([x, y], index) => `${index === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`)
     .join('');
@@ -194,15 +194,15 @@ export function travelKeyframes(): string {
 export type Step = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 export interface Activity {
-  readonly device: boolean;
-  readonly hub: boolean;
-  readonly appA: boolean;
-  readonly appB: boolean;
-  readonly routes: readonly RouteId[];
-  readonly pass: 'a' | 'b' | null;
-  readonly chips: boolean;
-  readonly pulse: boolean;
-  readonly bArrived: boolean;
+  device: boolean;
+  hub: boolean;
+  appA: boolean;
+  appB: boolean;
+  routes: RouteId[];
+  pass: 'a' | 'b' | null;
+  chips: boolean;
+  pulse: boolean;
+  bArrived: boolean;
 }
 
 const NONE: Activity = {
@@ -218,7 +218,7 @@ const NONE: Activity = {
 };
 
 // Step 0 is the composed picture at rest: nothing moving, everything in place.
-export const ACTIVITY: Readonly<Record<Step, Activity>> = {
+export const ACTIVITY: Record<Step, Activity> = {
   0: NONE,
   1: { ...NONE, device: true, appA: true, routes: ['da'], bArrived: false },
   2: { ...NONE, device: true, hub: true, routes: ['dh'], bArrived: false },
@@ -230,13 +230,13 @@ export const ACTIVITY: Readonly<Record<Step, Activity>> = {
 };
 
 export interface Beat {
-  readonly label: string;
-  readonly caption: string;
-  readonly ms: number;
-  readonly claims: readonly string[];
+  label: string;
+  caption: string;
+  ms: number;
+  claims: string[];
 }
 
-export const BEATS: readonly Beat[] = [
+export const BEATS: Beat[] = [
   { label: 'Open the app', caption: 'A person opens your app.', ms: 1800, claims: [] },
   {
     label: 'Go to Odudu',

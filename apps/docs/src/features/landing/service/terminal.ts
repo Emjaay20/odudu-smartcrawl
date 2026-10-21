@@ -8,7 +8,7 @@ export type Typing = 'off' | 'on' | 'after' | 'done' | 'skip';
 export const COPIED_FOR_MS = 2000;
 export const TYPING_SEED = 7;
 
-const NOTES: Readonly<Record<CopyStatus, string>> = {
+const NOTES: Record<CopyStatus, string> = {
   idle: `${RELEASE_CAVEAT} Needs Docker with Compose v2.`,
   copied: 'Copied to your clipboard.',
   failed: 'Your browser would not copy it. Select the command and copy it by hand.',
@@ -32,8 +32,8 @@ export function segments(text: string): string[] {
 }
 
 export interface TypedSegment {
-  readonly shown: string;
-  readonly hidden: string;
+  shown: string;
+  hidden: string;
 }
 
 // The same pieces with only the first `count` characters shown, so the line

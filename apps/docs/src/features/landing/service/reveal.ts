@@ -16,19 +16,19 @@ export function reached(top: number, viewport: number): boolean {
 }
 
 export interface RevealItem {
-  readonly top: () => number;
+  top: () => number;
   // Puts the item low and transparent, and lets it settle again.
-  readonly hold: () => void;
-  readonly release: () => void;
+  hold: () => void;
+  release: () => void;
 }
 
 export interface RevealHost<T extends RevealItem> {
-  readonly items: () => readonly T[];
-  readonly viewport: () => number;
+  items: () => T[];
+  viewport: () => number;
   // Calls `seen` for an item that enters the screen; returns the function that stops watching.
-  readonly watch: (items: readonly T[], seen: (item: T) => void) => () => void;
-  readonly scrolled: (handler: () => void) => () => void;
-  readonly frame: (run: () => void) => () => void;
+  watch: (items: T[], seen: (item: T) => void) => () => void;
+  scrolled: (handler: () => void) => () => void;
+  frame: (run: () => void) => () => void;
 }
 
 // Holds back what is below the first screen and releases each item as it is

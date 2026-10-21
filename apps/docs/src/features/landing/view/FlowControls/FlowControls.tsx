@@ -4,12 +4,12 @@ import { toggleLabel } from '@site/src/features/landing/service/playback';
 import styles from '@site/src/features/landing/view/FlowControls/FlowControls.module.css';
 
 interface Props {
-  readonly step: Step;
-  readonly playing: boolean;
-  readonly live: string;
-  readonly onChoose: (step: Step) => void;
-  readonly onToggle: () => void;
-  readonly onReplay: () => void;
+  step: Step;
+  playing: boolean;
+  live: string;
+  onChoose: (step: Step) => void;
+  onToggle: () => void;
+  onReplay: () => void;
 }
 
 // Pause and Replay first, then the seven steps, then what the current step says.

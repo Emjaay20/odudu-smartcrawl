@@ -7,8 +7,8 @@ import {
 
 // The parts of a browser the reveal needs, handed in by whoever runs it.
 export interface RevealEnv {
-  readonly document: Pick<Document, 'querySelectorAll'>;
-  readonly window: Pick<
+  document: Pick<Document, 'querySelectorAll'>;
+  window: Pick<
     Window,
     | 'innerHeight'
     | 'addEventListener'
@@ -16,11 +16,11 @@ export interface RevealEnv {
     | 'requestAnimationFrame'
     | 'cancelAnimationFrame'
   >;
-  readonly Observer: typeof IntersectionObserver;
+  Observer: typeof IntersectionObserver;
 }
 
 interface Marked extends RevealItem {
-  readonly element: Element;
+  element: Element;
 }
 
 // The reveal over a page's `[data-reveal]` elements, held back with `data-pending`.

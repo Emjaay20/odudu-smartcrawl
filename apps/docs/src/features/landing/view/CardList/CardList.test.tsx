@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import type { Card } from '@site/src/features/landing/service/content';
 import { CardList } from '@site/src/features/landing/view/CardList/CardList';
 import { markupOf } from '@site/tests/support/markup';
 import { PAGES_BASE } from '@site/site.config';
 
-const CARDS = [
+const CARDS: Card[] = [
   { title: 'One', body: 'First card.', to: '/a/' },
   { title: 'Two', body: 'Second card.', to: '/b/' },
-] as const;
+];
 
 describe('CardList', () => {
   it('lists each card once, its title the one link to its page', () => {

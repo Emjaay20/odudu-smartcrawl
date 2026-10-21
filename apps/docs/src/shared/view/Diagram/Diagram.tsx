@@ -5,9 +5,9 @@ import { WIDTH } from '@site/src/shared/view/Diagram/parts';
 import styles from '@site/src/shared/view/Diagram/Diagram.module.css';
 
 interface Props {
-  readonly name: DiagramName;
-  readonly title: string;
-  readonly desc: string;
+  name: DiagramName;
+  title: string;
+  desc: string;
 }
 
 // An inline drawing in the site's own colours. The page repeats `desc` as a

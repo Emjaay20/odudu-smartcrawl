@@ -19,11 +19,11 @@ const SURFACE: Record<Tone, { fill: string; stroke: string }> = {
 export const WIDTH = 340;
 
 interface BoxProps {
-  readonly x: number;
-  readonly y: number;
-  readonly w: number;
-  readonly h: number;
-  readonly tone?: Tone;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  tone?: Tone;
 }
 
 export function Box({ x, y, w, h, tone = 'panel' }: BoxProps): ReactElement {
@@ -43,14 +43,14 @@ export function Box({ x, y, w, h, tone = 'panel' }: BoxProps): ReactElement {
 }
 
 interface TextProps {
-  readonly x: number;
-  readonly y: number;
-  readonly children: ReactNode;
-  readonly ink?: Ink;
-  readonly size?: 13 | 14 | 15;
-  readonly bold?: boolean;
-  readonly mono?: boolean;
-  readonly anchor?: 'start' | 'middle' | 'end';
+  x: number;
+  y: number;
+  children: ReactNode;
+  ink?: Ink;
+  size?: 13 | 14 | 15;
+  bold?: boolean;
+  mono?: boolean;
+  anchor?: 'start' | 'middle' | 'end';
 }
 
 export function Txt({
@@ -79,9 +79,9 @@ export function Txt({
 }
 
 interface ArrowProps {
-  readonly d: string;
-  readonly head: string;
-  readonly dashed?: boolean;
+  d: string;
+  head: string;
+  dashed?: boolean;
 }
 
 export function Arrow({ d, head, dashed = false }: ArrowProps): ReactElement {
@@ -97,7 +97,7 @@ export function Arrow({ d, head, dashed = false }: ArrowProps): ReactElement {
   );
 }
 
-export function Wall({ y }: { readonly y: number }): ReactElement {
+export function Wall({ y }: { y: number }): ReactElement {
   return (
     <line
       x1={10}

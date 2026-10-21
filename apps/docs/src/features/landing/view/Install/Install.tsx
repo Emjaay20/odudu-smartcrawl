@@ -12,7 +12,7 @@ import { useInstall } from '@site/src/features/landing/usecase/useInstall';
 import styles from '@site/src/features/landing/view/Install/Install.module.css';
 
 // A command broken after each slash, so a long address wraps at a slash.
-function Wrapped({ text }: { readonly text: string }): ReactElement {
+function Wrapped({ text }: { text: string }): ReactElement {
   return (
     <>
       {segments(text).map((part, index) => (
@@ -26,13 +26,7 @@ function Wrapped({ text }: { readonly text: string }): ReactElement {
 }
 
 // The same breaks as the real text, with only the first `count` characters shown.
-function WrappedTyped({
-  text,
-  count,
-}: {
-  readonly text: string;
-  readonly count: number;
-}): ReactElement {
+function WrappedTyped({ text, count }: { text: string; count: number }): ReactElement {
   return (
     <>
       {typedSegments(text, count).map(({ shown, hidden }, index) => (

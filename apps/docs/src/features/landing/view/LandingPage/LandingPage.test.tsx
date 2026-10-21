@@ -15,7 +15,7 @@ describe('LandingPage', () => {
     const $ = markupOf(<LandingPage />);
     expect($('link[rel="preload"][as="font"]')).toHaveLength(3);
     const graph = JSON.parse($('script[type="application/ld+json"]').text()) as {
-      readonly '@graph': readonly { readonly '@type': string }[];
+      '@graph': { '@type': string }[];
     };
     expect(graph['@graph'].map((node) => node['@type'])).toEqual([
       'SoftwareApplication',

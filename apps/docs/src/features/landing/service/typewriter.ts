@@ -11,20 +11,20 @@ export function seeded(seed: number): () => number {
 
 // The clock the rhythm runs on, so a test can drive it and nothing here reads a global.
 export interface Timers {
-  readonly set: (run: () => void, ms: number) => unknown;
-  readonly clear: (handle: unknown) => void;
+  set: (run: () => void, ms: number) => unknown;
+  clear: (handle: unknown) => void;
 }
 
 export interface Rhythm {
   // Mean time per keystroke; about 22 characters a second.
-  readonly keyMs: number;
+  keyMs: number;
   // Each keystroke lasts keyMs times a factor in 1 +- jitter.
-  readonly jitter: number;
+  jitter: number;
   // The pause after the command and the beat before each next line.
-  readonly afterCommandMs: number;
-  readonly lineBeatMs: number;
-  readonly random: () => number;
-  readonly timers: Timers;
+  afterCommandMs: number;
+  lineBeatMs: number;
+  random: () => number;
+  timers: Timers;
 }
 
 export const DEFAULT_RHYTHM: Omit<Rhythm, 'random' | 'timers'> = {
@@ -41,10 +41,10 @@ export function playTerminal(
   lines: number,
   rhythm: Rhythm,
   on: {
-    readonly count: (typed: number) => void;
-    readonly commandDone: () => void;
-    readonly line: (shown: number) => void;
-    readonly done: () => void;
+    count: (typed: number) => void;
+    commandDone: () => void;
+    line: (shown: number) => void;
+    done: () => void;
   },
 ): () => void {
   let timer: unknown;

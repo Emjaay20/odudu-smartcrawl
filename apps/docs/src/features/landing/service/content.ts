@@ -11,12 +11,12 @@ export const RELEASE_CAVEAT = 'Arrives with the first release.';
 export type Shell = 'unix' | 'windows';
 
 export interface ShellCommand {
-  readonly shell: Shell;
-  readonly label: string;
-  readonly command: string;
+  shell: Shell;
+  label: string;
+  command: string;
 }
 
-export const COMMANDS: readonly ShellCommand[] = [
+export const COMMANDS: ShellCommand[] = [
   {
     shell: 'unix',
     label: 'bash or zsh',
@@ -30,12 +30,12 @@ export const COMMANDS: readonly ShellCommand[] = [
 ];
 
 export interface Card {
-  readonly title: string;
-  readonly body: string;
-  readonly to: string;
+  title: string;
+  body: string;
+  to: string;
 }
 
-export const CAPABILITIES: readonly Card[] = [
+export const CAPABILITIES: Card[] = [
   {
     title: 'Standard sign-in',
     body: 'The authorization code flow with PKCE always on, and discovery, signing keys, user info, introspection and revocation for every tenant.',
@@ -79,11 +79,11 @@ export const CAPABILITIES: readonly Card[] = [
 ];
 
 export interface Step {
-  readonly title: string;
-  readonly body: string;
+  title: string;
+  body: string;
 }
 
-export const STEPS: readonly Step[] = [
+export const STEPS: Step[] = [
   {
     title: 'Start it',
     body: 'One command downloads the Compose file and starts Postgres, a one-time setup step and the server.',
@@ -98,7 +98,7 @@ export const STEPS: readonly Step[] = [
   },
 ];
 
-export const READERS: readonly Card[] = [
+export const READERS: Card[] = [
   {
     title: 'I am building an app',
     body: 'Pick the guide for a web app, a single-page app, an API or a service. Each ends with a working sign-in.',
@@ -121,7 +121,7 @@ export const READERS: readonly Card[] = [
   },
 ];
 
-export const EXAMPLES: readonly Card[] = [
+export const EXAMPLES: Card[] = [
   {
     title: 'Web app',
     body: 'A server-side app that signs a person in with the authorization code grant and PKCE, and keeps them in a session.',
@@ -154,7 +154,7 @@ export const FOLLOW_UP = {
   output: ['Odudu is ready.', ' console:  http://localhost:3000/console/'],
 } as const;
 
-const CLAIM_TEXT: Readonly<Record<string, string>> = {
+const CLAIM_TEXT: Record<string, string> = {
   passwords: 'Passwords',
   passkeys: 'Passkeys',
   'authenticator-codes': 'Authenticator codes',

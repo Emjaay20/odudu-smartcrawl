@@ -1,9 +1,9 @@
 import useBaseUrl from '@docusaurus/useBaseUrl';
 
 export interface AssetUrls {
-  readonly llms: string;
-  readonly sansLicence: string;
-  readonly monoLicence: string;
+  llms: string;
+  sansLicence: string;
+  monoLicence: string;
 }
 
 // The files the page links that the build publishes beside it.

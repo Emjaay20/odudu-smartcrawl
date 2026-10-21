@@ -3,4 +3,4 @@ import sans400 from '@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-nor
 import sans600 from '@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff2';
 
 // The three Plex files the first screen draws with, fetched before the stylesheet names them.
-export const FONT_PRELOADS: readonly string[] = [sans400, sans600, mono400];
+export const FONT_PRELOADS: string[] = [sans400, sans600, mono400];

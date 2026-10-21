@@ -11,15 +11,15 @@ import {
 import { usePrefersReducedMotion } from '@site/src/features/landing/usecase/usePrefersReducedMotion';
 
 export interface SignInFlow {
-  readonly uid: string;
-  readonly stage: RefObject<HTMLDivElement | null>;
-  readonly step: Step;
-  readonly wantsPlay: boolean;
-  readonly caption: string;
-  readonly live: string;
-  readonly choose: (step: Step) => void;
-  readonly toggle: () => void;
-  readonly replay: () => void;
+  uid: string;
+  stage: RefObject<HTMLDivElement | null>;
+  step: Step;
+  wantsPlay: boolean;
+  caption: string;
+  live: string;
+  choose: (step: Step) => void;
+  toggle: () => void;
+  replay: () => void;
 }
 
 // Sign-in as one scene: it plays once when it comes into view, loops after a

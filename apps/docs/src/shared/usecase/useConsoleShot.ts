@@ -2,9 +2,9 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 import { captureAddress, sizeOf, type ShotSize } from '@site/src/shared/service/consoleShot';
 
 export interface ConsoleShotView {
-  readonly light: string;
-  readonly dark: string;
-  readonly size: ShotSize;
+  light: string;
+  dark: string;
+  size: ShotSize;
 }
 
 // The two captures of one console page, under the site's base address.

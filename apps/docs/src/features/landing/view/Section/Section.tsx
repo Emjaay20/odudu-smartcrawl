@@ -3,12 +3,12 @@ import { Wrap } from '@site/src/features/landing/view/Wrap/Wrap';
 import styles from '@site/src/features/landing/view/Section/Section.module.css';
 
 interface Props {
-  readonly id: string;
-  readonly kicker: string;
-  readonly title: string;
-  readonly section?: string;
-  readonly tone?: 'plain' | 'sunken';
-  readonly children: ReactNode;
+  id: string;
+  kicker: string;
+  title: string;
+  section?: string;
+  tone?: 'plain' | 'sunken';
+  children: ReactNode;
 }
 
 // One band of the landing page: a kicker, a heading and its content.

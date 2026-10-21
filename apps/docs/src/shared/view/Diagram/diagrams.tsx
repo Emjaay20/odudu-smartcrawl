@@ -2,8 +2,8 @@ import type { ReactElement } from 'react';
 import { Arrow, Box, Txt, vertical, Wall, WIDTH } from '@site/src/shared/view/Diagram/parts';
 
 export interface Drawing {
-  readonly height: number;
-  readonly draw: (head: string) => ReactElement;
+  height: number;
+  draw: (head: string) => ReactElement;
 }
 
 const MID = WIDTH / 2;

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { startDomReveal, type RevealEnv } from '@site/src/features/landing/service/revealDom';
 
 class Spot {
-  readonly attributes = new Set<string>();
+  attributes = new Set<string>();
   constructor(public top: number) {}
   getBoundingClientRect(): { top: number } {
     return { top: this.top };
@@ -16,10 +16,10 @@ class Spot {
 }
 
 interface Fake {
-  readonly env: RevealEnv;
-  readonly seen: (target: Spot) => void;
-  readonly scroll: () => void;
-  readonly listeners: Map<string, () => void>;
+  env: RevealEnv;
+  seen: (target: Spot) => void;
+  scroll: () => void;
+  listeners: Map<string, () => void>;
 }
 
 function fakeEnv(spots: Spot[]): Fake {

@@ -7,9 +7,9 @@ function sectionOf(route: string): Section {
 }
 
 export interface HomeMapSections {
-  readonly start: readonly Section[];
-  readonly guides: Section;
-  readonly deeper: readonly Section[];
+  start: Section[];
+  guides: Section;
+  deeper: Section[];
 }
 
 // Where to begin, the guides the journeys belong to, and every other section.
