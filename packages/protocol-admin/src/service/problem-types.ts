@@ -87,10 +87,6 @@ export const ADMIN_PROBLEM_TYPES: Readonly<Record<string, AdminProblemType>> = {
       'The tenant has no SMTP relay and the deployment no sender, so the mail would only be ' +
       'logged.',
   },
-  'not-found': {
-    status: 404,
-    summary: 'The path is not an admin route.',
-  },
   'reset-password-off': {
     status: 409,
     summary:

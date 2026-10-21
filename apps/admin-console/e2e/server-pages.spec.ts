@@ -1,5 +1,9 @@
+import { execFileSync } from 'node:child_process';
 import { createHmac, randomBytes } from 'node:crypto';
-import { expect, test, type Problem } from './fixtures';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { z } from 'zod';
+import { expect, forgive, test, type Problem } from './fixtures';
 import { inspect } from './page-inspection';
 import { inTenant, psql, seed, sqlText } from './stack';
 import type { Page } from '@playwright/test';
@@ -400,4 +404,101 @@ test('registration, the unverified account, password reset and their links', asy
   await expect(page.getByRole('heading', { level: 1 })).toContainText("can't be used");
   await inspect(page, 'reset-link-failed');
   forgiveRefusals(problems);
+});
+
+test('an address nothing serves', async ({ page, problems }) => {
+  // A browser's own navigation, so the server sees the Accept it sends.
+  const missing = await page.goto('/nope');
+  expect(missing?.status()).toBe(404);
+  expect(missing?.headers()['cache-control']).toBe('no-store');
+  expect(missing?.headers().vary).toContain('Accept');
+  await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Read the documentation' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Open the console' })).toBeVisible();
+  await expect(page.locator('body')).not.toContainText('nope');
+  const animation = (selector: string): Promise<string> =>
+    page.locator(selector).evaluate((element) => getComputedStyle(element).animationName);
+  // The run's default is reduced motion: the final frame, nothing playing.
+  expect(await animation('.lost-route-a')).toBe('none');
+  expect(await animation('.lost-staff')).toBe('none');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  expect(await animation('.lost-route-a')).toBe('lost-draw-a');
+  expect(await animation('.lost-badge')).toBe('lost-settle');
+  expect(await animation('.lost-staff')).toBe('lost-lean');
+  // A pointer over the drawing replays it from the start.
+  await page.locator('svg.lost').hover();
+  expect(await animation('.lost-route-a')).toBe('lost-draw-a-again');
+  const elapsed = await page
+    .locator('.lost-route-a')
+    .evaluate((element) => Number(element.getAnimations()[0]?.currentTime ?? Number.NaN));
+  expect(elapsed).toBeLessThan(1500);
+  await page.mouse.move(0, 0);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.locator('svg.lost').hover();
+  expect(await animation('.lost-route-a')).toBe('none');
+  await page.mouse.move(0, 0);
+  await inspect(page, 'not-found');
+
+  // The page a tenant that does not exist gets is this one, byte for byte.
+  const unknownTenant = await page.request.get('/tenants/no-such-tenant/nope', {
+    headers: { accept: 'text/html' },
+  });
+  expect(unknownTenant.status()).toBe(404);
+  expect(await unknownTenant.text()).toBe(await missing?.text());
+
+  const program = await page.request.get('/nope', { headers: { accept: 'application/json' } });
+  expect(program.headers()['content-type']).toContain('application/problem+json');
+  expect(z.object({ detail: z.string() }).parse(await program.json()).detail).toBe(
+    'No resource at this path',
+  );
+  forgiveRefusals(problems);
+});
+
+// A failure cannot be caused on a healthy stack, so this page is the renderer's
+// own output, served under the headers a real response carries.
+const ROOT = path.resolve(import.meta.dirname, '../../..');
+const RENDER_SERVER_ERROR = `
+const { renderServerErrorPage } = await import(process.env.RENDERER);
+const { pageHeaders } = await import(process.env.HEADERS);
+const page = renderServerErrorPage('01JEXAMPLEREQUESTID', { tag: 'en', dir: 'ltr' });
+process.stdout.write(JSON.stringify({ html: page.html, headers: Object.fromEntries(pageHeaders(page)) }));
+`;
+
+test('the server-error page, renderer only', async ({ page, problems }) => {
+  const rendered = z.object({ html: z.string(), headers: z.record(z.string(), z.string()) }).parse(
+    JSON.parse(
+      execFileSync('node', ['--no-warnings', '--input-type=module', '-e', RENDER_SERVER_ERROR], {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          RENDERER: pathToFileURL(
+            path.join(ROOT, 'packages/protocol-oidc/src/view/server-error-html.ts'),
+          ).href,
+          HEADERS: pathToFileURL(path.join(ROOT, 'packages/kernel/src/page.ts')).href,
+        },
+      }),
+    ),
+  );
+  const view = `${BASE}/server-error-view`;
+  await page.route(view, (route) =>
+    route.fulfill({
+      status: 500,
+      contentType: 'text/html',
+      headers: rendered.headers,
+      body: rendered.html,
+    }),
+  );
+  await page.goto(view);
+  await expect(page.getByRole('heading', { level: 1, name: 'Something went wrong' })).toBeVisible();
+  await expect(page.getByText('Request ID: 01JEXAMPLEREQUESTID')).toBeVisible();
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  for (const selector of ['.lost-route-a', '.lost-route-b', '.lost-badge', '.lost-staff']) {
+    expect(
+      await page.locator(selector).evaluate((element) => getComputedStyle(element).animationName),
+      selector,
+    ).toBe('none');
+  }
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await inspect(page, 'server-error');
+  forgive(problems, '/server-error-view');
 });

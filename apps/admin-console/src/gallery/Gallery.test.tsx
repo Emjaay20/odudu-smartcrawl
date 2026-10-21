@@ -14,6 +14,7 @@ const PARTS = new Set([
   'SectionNoticeOf',
   'VisuallyHidden',
   'LostFrame',
+  'LostArt',
   'DataTable/DataTableShape',
 ]);
 

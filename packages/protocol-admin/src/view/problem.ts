@@ -187,12 +187,4 @@ export function installProblemDetailsHandler(app: FastifyInstance): void {
     const body = problem(status, 'about:blank', error.name, detail);
     sendProblem(reply, request, errors.length === 0 ? body : { ...body, errors });
   });
-
-  app.setNotFoundHandler((request, reply) => {
-    sendProblem(
-      reply,
-      request,
-      problem(404, 'about:blank#not-found', 'Not Found', `No admin route for ${request.url}`),
-    );
-  });
 }

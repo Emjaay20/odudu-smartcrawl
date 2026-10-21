@@ -36,7 +36,10 @@ import { adminRoutes, composeUserSubject } from '@odudu/protocol-admin';
 import {
   clientKeySet,
   oidcRoutes,
+  answerNotFound,
+  answerServerError,
   sendThrottledPage,
+  type UnroutedDeps,
   standardClaimMappers,
   type AuditRefusalBudget,
 } from '@odudu/protocol-oidc';
@@ -297,21 +300,21 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     reply.header('x-request-id', request.id);
   });
 
-  // The root handler, for every route that has no scope of its own (the admin
-  // and console scopes keep theirs). A server error is a fixed document: the
-  // driver's message carries the query and its parameters, so it is logged by
-  // kind only and never sent. A client error keeps Fastify's own answer.
-  app.setErrorHandler<FastifyError>((error, request, reply) => {
-    const status = error.statusCode ?? 500;
-    if (status < 500) return reply.send(error);
-    request.log.error({ err: { type: error.name, code: error.code } }, 'request failed');
-    return reply.code(500).type('application/problem+json').send({
-      type: 'about:blank',
-      title: 'Internal Server Error',
-      status: 500,
-      instance: request.id,
-    });
-  });
+  // The root answers for every path nothing claims and every route with no
+  // error scope of its own (the admin and console scopes keep theirs). A
+  // browser navigation gets a page, anything else a problem document.
+  const unrouted: UnroutedDeps = {
+    links: {
+      ...(deps.consoleBaseUrl === undefined
+        ? {}
+        : { console: new URL('/console/', deps.consoleBaseUrl).href }),
+      ...(deps.docsDir === undefined ? {} : { docs: '/docs/' }),
+    },
+  };
+  app.setNotFoundHandler((request, reply) => answerNotFound(request, reply, unrouted));
+  app.setErrorHandler<FastifyError>((error, request, reply) =>
+    answerServerError(error, request, reply, unrouted),
+  );
 
   const throttle: RateLimiter = slidingWindow({
     ...(deps.throttle ?? DEFAULT_THROTTLE),

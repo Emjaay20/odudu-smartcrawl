@@ -1026,6 +1026,8 @@ desktop layout.
 - ![reset-done](p4g-pages/reset-done.webp) `reset-done`: Password reset.
 - ![reset-link-failed](p4g-pages/reset-link-failed.webp) `reset-link-failed`: A reset link that cannot be used.
 - ![console-refusal](p4g-pages/console-refusal.webp) `console-refusal`: The admin console's sign-in refusal.
+- ![not-found](p4g-pages/not-found.webp) `not-found`: An address nothing serves, shown to a browser (final frame of the drawing).
+- ![server-error](p4g-pages/server-error.webp) `server-error`: The failure page with a request id (renderer only; the drawing is still).
 
 - verified: `docker compose` project `odudu-p4g-vis`, the image built from the branch,
   14 console screenshots (seven pages, light and dark) byte-identical before and after.
@@ -2578,3 +2580,53 @@ whole, fixture trees included, so the test harness removes only `.docusaurus` an
 **A root-relative Markdown link on the Pages build:** verified by planting a root-relative link to the quick start in a copy of the content: the build fails
 under `onBrokenLinks: 'throw'` ("Broken link on source page path = /odudu/docs/introduction/ -> linking to /odudu/quick-start/"), and
 `tests/docs/root-relative-links.test.ts` now fails at the source, naming file and line.
+
+### Increment 31e, standard 404 and 500 pages
+
+**Server.** An address no route claims, and a failure no handler claims, are answered by the root of `apps/server/src/app.ts`
+through `answerNotFound` and `answerServerError` (`packages/protocol-oidc/src/view/routes/unrouted.ts`). A browser navigation (GET or
+HEAD, `Accept` naming `text/html` outright and ranking it at least as high as any JSON type) gets `not-found-html.ts` or
+`server-error-html.ts`: platform look, the shell's mark, one line, and links to the console and `/docs/` only where this deployment has
+them. Everything else, and every path under `/admin`, `/console/api`, `/health*`, `/instrument`, `/.well-known` and
+`/tenants/:t/(protocol|.well-known)`, keeps `application/problem+json` with the detail "No resource at this path". Both answers on a
+negotiable path carry `Vary: Accept, Accept-Language, Cookie` and `no-store`. The not-found page names nothing of the request, and an
+unknown tenant and an unknown path are the same bytes (`apps/server/tests/unrouted.int.test.ts`). The 500 page prints the request id
+only when it is a plain token (the id is client-supplied through `x-request-id`) and never the error.
+**Moved:** the admin plugin's own `setNotFoundHandler` (it was global in effect, and worded "No admin route for <path>", which echoed the
+path) is gone, and `about:blank#not-found` left the admin problem vocabulary because that package no longer emits it; the console gateway
+still emits it under `/console/api`, and the errors page now says so in prose.
+**Console gateway, decided:** unknown `/console/*` stays the shell with status 200. The route table is the client router's, under a
+tenant segment the server cannot enumerate, so a server-side list would be a second copy that drifts; the client's not-found screen is
+the answer, and `console-shell.int.test.ts` pins the behaviour.
+**Docs 404:** `src/theme/NotFound/Content` renders `features/not-found` (mark, one line, links to the documentation home, the quick start
+and search); the theme's route keeps its metadata, so the page stays noindex. `tests/not-found.test.ts` reads both built 404 pages.
+**The drawing.** One source, `packages/instrument/src/lost.svg` (a browser window, a route that breaks at a gap, a `?` badge, the leaning
+staff; under 1 KB, decorative, `aria-hidden`, no text). It is inlined on the server's 404 through `view/lost-art.ts`, drawn by the docs
+`LostArt` and the console's `shared/view/LostArt` (used by `PageNotFound`, so it shows inside the signed-in shell and in `LostFrame`),
+and `tests/lint/lost-art.test.ts` holds every copy to the source's elements and geometry, as the staff mark is held to `mark.svg`. The
+server 500 page shows the same drawing still (`lost-calm`: upright staff, route bridged, no badge). **Motion decision:** the sequence
+(route draws, badge settles, staff leans) runs twice back to back, 2.4 s each, 4.8 s in all, then rests on its last frame, so it stops by
+itself inside the five seconds WCAG 2.2.2 allows and needs no pause control; a pointer over it replays it (user-initiated, so exempt),
+by swapping to an identical set of keyframes under another name, in CSS alone and with no script (the server pages' policy has none).
+There is no keyboard replay: the drawing is decorative and takes no focus, and a tab stop for it would only confuse the page. Under
+`prefers-reduced-motion: reduce` it shows the final frame and never replays. Only transform, opacity and stroke-dashoffset move. A true
+loop would need a pause control and is the owner's call to ask for later. The pages' stylesheet budget moved from 360 to 600 lines
+and the `main > svg` rule that whitens the QR code now leaves the drawing out. Frames (start, middle, end; light and dark; desktop and
+phone) are `server-404-*-frames.webp`, `docs-404-*-frames.webp` and `console-lost-*` in `p4g-docs/`.
+**Preview server:** `apps/docs/scripts/serve.mjs` now behaves as Pages does: a directory without its slash is a 308 to the slash form
+(query kept), every miss under the base is the build's `404.html` with status 404 (plain text only if the build has none), a path
+outside the base is plain 404, HEAD answers headers only; `tests/serve.test.ts` spawns it on an ephemeral port against a temporary build.
+**Gallery:** `not-found` and `server-error` are captured by `server-pages.spec.ts` (the 500 on a second server whose application
+database is unreachable, so it is a real failure), with axe in both themes, phone fit and card width, so the gallery has 39 kinds.
+**Transcripts:** none re-derived. The unknown-path responses the guides show (`ODUDU_DOCS=false`, the `OPTIONS` preflight) are requests
+without a browser `Accept`, and their shown headers and bodies are unchanged; the only response whose detail changed is the one nobody
+had recorded.
+
+**Performance of the unauthenticated path** (`tools/bench/unrouted.mjs`, a real-socket burst with keep-alive over a database that throws on
+any use, so Postgres connections stay at zero by construction; 20,000 requests, 32 connections, this machine, Node 24):
+404 problem document 24,506 req/s, p50 1.26 ms, p99 1.77 ms; 404 page 19,814 req/s, p50 1.53 ms, p99 2.18 ms (a tenant path is the same:
+19,937); 500 problem document 20,764 req/s; 500 page 15,121 req/s, p50 2.06 ms, p99 2.79 ms. The page costs 1.2 to 1.4 times the
+document, inside the 2x line, so nothing was precomputed. Bounds: no query on either answer (`apps/server/src/unrouted.test.ts` uses a
+database that throws); `Accept` over 2 KB is no preference and is refused before it is read, `Accept-Language` is capped by the
+negotiator (bytes and entries), a path is lower-cased and decoded once, so every step is linear in a request line Node already caps at
+16 KB; nothing keys on a path or keeps per-request state.

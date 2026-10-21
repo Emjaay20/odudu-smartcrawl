@@ -10,6 +10,15 @@ export const en = {
     'Try again in {seconds, plural, one {{seconds, number, ::group-off} second} other {{seconds, number, ::group-off} seconds}}.',
   'throttled.goBack': 'Go back to the previous page when the time is up.',
 
+  'notFound.title': 'Page not found',
+  'notFound.body': 'There is nothing at this address.',
+  'notFound.link.console': 'Open the console',
+  'notFound.link.docs': 'Read the documentation',
+
+  'serverError.title': 'Something went wrong',
+  'serverError.body': 'The server could not complete this request. Try again in a moment.',
+  'serverError.requestId': 'Request ID: {id}',
+
   'error.title': 'Sign-in error',
   'error.heading': "Can't continue",
   'error.wayOn.restart': 'Start sign-in again',

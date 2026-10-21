@@ -321,7 +321,7 @@ button.choice {
   margin-block-start: var(--space-2);
 }
 
-main > svg:not(.mark) {
+main > svg:not(.mark, .lost) {
   display: block;
   inline-size: min(100%, 14rem);
   block-size: auto;
@@ -345,8 +345,221 @@ iframe {
   pointer-events: none;
 }
 
+/* The not-found drawing plays once and rests on its last frame; the 500 page
+   shows it still. Only transform, opacity and stroke-dashoffset move. */
+.lost {
+  display: block;
+  inline-size: min(100%, 20rem);
+  block-size: auto;
+  margin-block-end: var(--space-4);
+  color: var(--ink-primary);
+}
+
+.lost-route,
+.lost-bridge {
+  opacity: 0.55;
+}
+
+.lost-route {
+  stroke-dasharray: 1;
+}
+
+.lost-bridge {
+  display: none;
+}
+
+.lost-staff {
+  transform-box: view-box;
+  transform-origin: 214px 84px;
+  transform: rotate(-7deg);
+}
+
+@keyframes lost-draw-a {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  1% {
+    opacity: 0.55;
+  }
+  40%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.55;
+  }
+}
+
+@keyframes lost-draw-a-again {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  1% {
+    opacity: 0.55;
+  }
+  40%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.55;
+  }
+}
+
+@keyframes lost-draw-b {
+  0%,
+  35% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  36% {
+    opacity: 0.55;
+  }
+  55%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.55;
+  }
+}
+
+@keyframes lost-draw-b-again {
+  0%,
+  35% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  36% {
+    opacity: 0.55;
+  }
+  55%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.55;
+  }
+}
+
+@keyframes lost-settle {
+  0%,
+  55% {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(2px);
+  }
+  78%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lost-settle-again {
+  0%,
+  55% {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(2px);
+  }
+  78%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lost-lean {
+  0%,
+  75% {
+    transform: rotate(0);
+  }
+  100% {
+    transform: rotate(-7deg);
+  }
+}
+
+@keyframes lost-lean-again {
+  0%,
+  75% {
+    transform: rotate(0);
+  }
+  100% {
+    transform: rotate(-7deg);
+  }
+}
+
+.lost-route-a {
+  animation: lost-draw-a 2.4s ease-out 2 both;
+}
+
+.lost-route-b {
+  animation: lost-draw-b 2.4s ease-out 2 both;
+}
+
+.lost-badge {
+  animation: lost-settle 2.4s ease-out 2 both;
+}
+
+.lost-staff {
+  animation: lost-lean 2.4s ease-out 2 both;
+}
+
+/* A pointer over the drawing replays it. There is no keyboard replay: the
+   drawing is decorative and takes no focus. */
+.lost:hover .lost-route-a {
+  animation-name: lost-draw-a-again;
+}
+
+.lost:hover .lost-route-b {
+  animation-name: lost-draw-b-again;
+}
+
+.lost:hover .lost-badge {
+  animation-name: lost-settle-again;
+}
+
+.lost:hover .lost-staff {
+  animation-name: lost-lean-again;
+}
+
+.lost-calm .lost-route-a,
+.lost-calm .lost-route-b,
+.lost-calm .lost-badge,
+.lost-calm .lost-staff,
+.lost-calm:hover .lost-route-a,
+.lost-calm:hover .lost-route-b,
+.lost-calm:hover .lost-badge,
+.lost-calm:hover .lost-staff {
+  animation: none;
+}
+
+.lost-calm .lost-badge {
+  display: none;
+}
+
+.lost-calm .lost-bridge {
+  display: inline;
+}
+
+.lost-calm .lost-staff {
+  transform: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   button {
     transition: none;
+  }
+
+  .lost .lost-route-a,
+  .lost:hover .lost-route-a,
+  .lost .lost-route-b,
+  .lost:hover .lost-route-b,
+  .lost .lost-badge,
+  .lost:hover .lost-badge,
+  .lost .lost-staff,
+  .lost:hover .lost-staff {
+    animation: none;
   }
 }
