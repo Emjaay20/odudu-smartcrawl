@@ -1,17 +1,29 @@
-import type { Box, Point, RouteId } from '@site/src/features/landing/service/geometry';
+import {
+  ACTIVITY,
+  LAYOUTS,
+  keyframeName,
+  pathData,
+  type Box,
+  type LayoutName,
+  type Point,
+  type RouteId,
+  type Step,
+} from '@site/src/features/landing/service/geometry';
 
-// The arithmetic of the sign-in scene's drawing, apart from the drawing.
+// The sign-in scene as plain data: every position, every flag and every
+// animation name the drawing needs, so the view only maps it to elements.
 
 export type ShapeClass = 'bar' | 'field' | 'cta' | 'avatar' | 'block';
 
 export interface Shape {
-  readonly kind: 'rect' | 'circle';
-  readonly look: ShapeClass;
-  readonly x: number;
-  readonly y: number;
-  readonly width?: number;
-  readonly height?: number;
-  readonly radius: number;
+  // A circle, with `radius` and its centre at (x, y); otherwise a rectangle.
+  round: boolean;
+  look: ShapeClass;
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  radius: number;
 }
 
 // What a window shows: a form for the browser, a page for an app.
@@ -20,21 +32,21 @@ export function skeleton(box: Box, top: number, kind: 'form' | 'app'): Shape[] {
   const w = box.w - 32;
   if (kind === 'form') {
     return [
-      { kind: 'rect', look: 'bar', x, y: top, width: w * 0.34, height: 7, radius: 3.5 },
-      { kind: 'rect', look: 'field', x, y: top + 14, width: w, height: 24, radius: 8 },
-      { kind: 'rect', look: 'bar', x, y: top + 52, width: w * 0.42, height: 7, radius: 3.5 },
-      { kind: 'rect', look: 'field', x, y: top + 66, width: w, height: 24, radius: 8 },
-      { kind: 'rect', look: 'cta', x, y: top + 106, width: w * 0.5, height: 26, radius: 9 },
+      { round: false, look: 'bar', x, y: top, width: w * 0.34, height: 7, radius: 3.5 },
+      { round: false, look: 'field', x, y: top + 14, width: w, height: 24, radius: 8 },
+      { round: false, look: 'bar', x, y: top + 52, width: w * 0.42, height: 7, radius: 3.5 },
+      { round: false, look: 'field', x, y: top + 66, width: w, height: 24, radius: 8 },
+      { round: false, look: 'cta', x, y: top + 106, width: w * 0.5, height: 26, radius: 9 },
     ];
   }
   const block = Math.min(box.h * 0.2, 26);
   return [
-    { kind: 'circle', look: 'avatar', x: x + 9, y: top + 9, radius: 9 },
-    { kind: 'rect', look: 'bar', x: x + 26, y: top + 2, width: w * 0.5, height: 7, radius: 3.5 },
-    { kind: 'rect', look: 'bar', x: x + 26, y: top + 13, width: w * 0.3, height: 6, radius: 3 },
-    { kind: 'rect', look: 'block', x, y: top + 28, width: w, height: block, radius: 8 },
+    { round: true, look: 'avatar', x: x + 9, y: top + 9, radius: 9 },
+    { round: false, look: 'bar', x: x + 26, y: top + 2, width: w * 0.5, height: 7, radius: 3.5 },
+    { round: false, look: 'bar', x: x + 26, y: top + 13, width: w * 0.3, height: 6, radius: 3 },
+    { round: false, look: 'block', x, y: top + 28, width: w, height: block, radius: 8 },
     {
-      kind: 'rect',
+      round: false,
       look: 'bar',
       x,
       y: top + 28 + block + 10,
@@ -47,16 +59,16 @@ export function skeleton(box: Box, top: number, kind: 'form' | 'app'): Shape[] {
 
 // The three lamps in a window's title bar.
 export function lamps(box: Box): Point[] {
-  return [0, 1, 2].map((index) => [box.x + 18 + index * 12, box.y + 18] as const);
+  return [0, 1, 2].map((index) => [box.x + 18 + index * 12, box.y + 18]);
 }
 
 export interface Chip {
-  readonly label: string;
-  readonly width: number;
-  readonly claim: string;
+  label: string;
+  width: number;
+  claim: string;
 }
 
-export const CHIPS: readonly Chip[] = [
+export const CHIPS: Chip[] = [
   { label: 'Password', width: 78, claim: 'passwords' },
   { label: 'Passkey', width: 68, claim: 'passkeys' },
   { label: 'Authenticator', width: 98, claim: 'authenticator-codes' },
@@ -75,9 +87,9 @@ export function chipStarts(centre: number): number[] {
   );
 }
 
-export const RING_SCALES: readonly number[] = [0.74, 0.98, 1.22];
+export const RING_SCALES: number[] = [0.74, 0.98, 1.22];
 
-const PASS_ROUTES: Readonly<Record<'a' | 'b', RouteId>> = { a: 'ha', b: 'hb' };
+const PASS_ROUTES: Record<'a' | 'b', RouteId> = { a: 'ha', b: 'hb' };
 
 export function passRouteOf(pass: 'a' | 'b' | null): RouteId | undefined {
   return pass === null ? undefined : PASS_ROUTES[pass];
@@ -96,4 +108,201 @@ export function headTransform(at: Point, angle: number): string {
 
 export function flag(on: boolean): string {
   return on ? 'true' : 'false';
+}
+
+export interface CheckModel {
+  x: number;
+  y: number;
+  r: number;
+  path: string;
+  on: string;
+}
+
+export interface WindowModel {
+  label: string;
+  kind: 'form' | 'app';
+  on: string;
+  away: string;
+  halo: Box;
+  frame: Box;
+  rule: string;
+  lamps: Point[];
+  labelAt: Point;
+  shapes: Shape[];
+  signed: CheckModel | undefined;
+}
+
+export interface ChipModel {
+  label: string;
+  claim: string;
+  x: number;
+  y: number;
+  width: number;
+  textAt: Point;
+  delay: number;
+  lit: string;
+}
+
+export interface RouteModel {
+  id: RouteId;
+  d: string;
+  on: string;
+  headAt: string;
+  headLit: boolean;
+  headShown: boolean;
+}
+
+export interface DotModel {
+  key: string;
+  at: Point;
+  name: string;
+  delay: number;
+}
+
+export interface TicketModel {
+  start: Point;
+  name: string;
+  delay: number;
+}
+
+export interface SceneModel {
+  viewBox: string;
+  glow: { cx: number; cy: number; r: number };
+  rings: { r: number; delay: number; pulse: string }[];
+  routes: RouteModel[];
+  device: WindowModel;
+  appA: WindowModel;
+  appB: WindowModel;
+  bAway: string;
+  hub: {
+    on: string;
+    told: string;
+    halo: Box;
+    card: Box;
+    sheen: Box;
+    staff: string;
+    check: CheckModel;
+    nameAt: Point;
+    chips: ChipModel[];
+  };
+  dots: DotModel[];
+  ticket: TicketModel | undefined;
+}
+
+const BASE_ROUTES: RouteId[] = ['dh', 'da', 'db', 'ha', 'hb'];
+const HEAD_ROUTES: RouteId[] = ['dh', 'da', 'db', 'ha', 'hb', 'bh'];
+
+function grown(box: Box, by: number): Box {
+  return { x: box.x - by, y: box.y - by, w: box.w + 2 * by, h: box.h + 2 * by };
+}
+
+function checkOf(x: number, y: number, r: number, on: boolean): CheckModel {
+  return { x, y, r, path: checkPath(x, y, r), on: flag(on) };
+}
+
+function windowOf(
+  box: Box,
+  label: string,
+  kind: 'form' | 'app',
+  on: boolean,
+  signed: boolean | undefined,
+  away: boolean,
+): WindowModel {
+  return {
+    label,
+    kind,
+    on: flag(on),
+    away: flag(away),
+    halo: grown(box, 5),
+    frame: box,
+    rule: `M${String(box.x)} ${String(box.y + 36)}H${String(box.x + box.w)}`,
+    lamps: lamps(box),
+    labelAt: [box.x + 68, box.y + 23],
+    shapes: skeleton(box, box.y + 52, kind),
+    signed: signed === undefined ? undefined : checkOf(box.x + box.w - 24, box.y + 18, 9, signed),
+  };
+}
+
+// Whether a step shows the app's own check: signed in from the pass until the sign-out.
+function appASigned(step: Step): boolean {
+  return step === 0 || (step >= 4 && step <= 6);
+}
+
+// The scene at a step, in one layout.
+export function buildScene(layout: LayoutName, step: Step): SceneModel {
+  const geometry = LAYOUTS[layout];
+  const activity = ACTIVITY[step];
+  const { hub } = geometry;
+  const cx = hub.x + hub.w / 2;
+  const cy = hub.y + hub.h / 2;
+  const starts = chipStarts(cx);
+  const passRoute = passRouteOf(activity.pass);
+  const atRest = step === 0;
+  const hubSigned = atRest || step === 6;
+  const withBase = (id: RouteId): boolean =>
+    activity.routes.includes(id) || (id === 'hb' && activity.routes.includes('bh'));
+  return {
+    viewBox: `0 0 ${String(geometry.width)} ${String(geometry.height)}`,
+    glow: { cx, cy, r: hub.w * 0.95 },
+    rings: RING_SCALES.map((scale, index) => ({
+      r: hub.w * scale,
+      delay: index * 220,
+      pulse: flag(activity.pulse),
+    })),
+    routes: HEAD_ROUTES.map((id) => ({
+      id,
+      d: pathData(geometry.routes[id].points),
+      on: flag(withBase(id)),
+      headAt: headTransform(geometry.routes[id].head.at, geometry.routes[id].head.angle),
+      headLit: activity.routes.includes(id),
+      headShown: BASE_ROUTES.includes(id) || activity.routes.includes(id),
+    })),
+    device: windowOf(geometry.device, 'Their browser', 'form', activity.device, undefined, false),
+    appA: windowOf(geometry.appA, 'App A', 'app', activity.appA, appASigned(step), false),
+    appB: windowOf(
+      geometry.appB,
+      'App B',
+      'app',
+      activity.appB,
+      atRest || step === 6,
+      !activity.bArrived,
+    ),
+    bAway: flag(!activity.bArrived),
+    hub: {
+      on: flag(activity.hub),
+      told: flag(step === 7),
+      halo: grown(hub, 6),
+      card: hub,
+      sheen: { x: hub.x + 1, y: hub.y + 1, w: hub.w - 2, h: hub.h - 2 },
+      staff: `translate(${String(cx)} ${String(hub.y + 62)}) scale(3.3)`,
+      check: checkOf(cx + 38, hub.y + 44, 15, hubSigned),
+      nameAt: [cx, hub.y + 182],
+      chips: CHIPS.map((chip, index) => ({
+        label: chip.label,
+        claim: chip.claim,
+        x: starts[index] ?? 0,
+        y: hub.y + 208,
+        width: chip.width,
+        textAt: [(starts[index] ?? 0) + chip.width / 2, hub.y + 227],
+        delay: index * 1100,
+        lit: flag(activity.chips),
+      })),
+    },
+    dots: activity.routes.flatMap((id) =>
+      [0, 1, 2].map((index) => ({
+        key: `${id}-${String(index)}`,
+        at: geometry.routes[id].points[0] ?? [0, 0],
+        name: keyframeName(layout, id),
+        delay: index * 520 + (id === 'hb' && step === 6 ? 1300 : 0),
+      })),
+    ),
+    ticket:
+      passRoute === undefined
+        ? undefined
+        : {
+            start: geometry.routes[passRoute].points[0] ?? [0, 0],
+            name: keyframeName(layout, passRoute, 'pass'),
+            delay: step === 6 ? 1300 : 300,
+          },
+  };
 }

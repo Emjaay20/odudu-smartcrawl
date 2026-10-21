@@ -22,14 +22,6 @@
   }
 }
 
-/* Surfaces: three levels, a window, the hub, and what lifts when it is active. */
-.window {
-  fill: var(--surface-panel);
-  stroke: var(--border-strong);
-  stroke-width: 1;
-  filter: drop-shadow(0 6px 14px var(--shadow-soft));
-}
-
 .hub {
   fill: var(--surface-panel);
   stroke: var(--border-strong);
@@ -87,43 +79,6 @@
 
 .halo[data-on='true'] {
   opacity: 1;
-}
-
-.rule {
-  stroke: var(--border);
-  stroke-width: 1;
-}
-
-.lamp {
-  fill: var(--border-strong);
-}
-
-.block {
-  fill: var(--signal-active);
-}
-
-.avatar {
-  fill: var(--border-strong);
-}
-
-.field {
-  fill: var(--surface-sunken);
-  stroke: var(--border-strong);
-  stroke-width: 1;
-}
-
-.cta {
-  fill: var(--signal-active-ink);
-}
-
-.bar {
-  fill: var(--border);
-}
-
-.tag {
-  fill: var(--ink-muted);
-  font-family: var(--font-sans);
-  font-size: 14px;
 }
 
 .hubName {
@@ -227,10 +182,6 @@
 
 .late[data-away='true'] {
   transform: translateY(16px);
-}
-
-.late[data-away='true'] .window {
-  stroke-dasharray: 5 5;
 }
 
 /* The picture rests on its composed state: no motion until a step is chosen. */

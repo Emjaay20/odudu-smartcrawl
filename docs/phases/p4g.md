@@ -2533,10 +2533,8 @@ Docusaurus-pinned `pages/`, `image-pages/`, `css/` as they were; a view calls it
 browser it needs (a clock, an observer, a random source) to a pure service, and a component is a folder of its markup, its
 CSS module and its test. Held by the `docs-*` dependency-cruiser rules (resolved through `.dependency-cruiser-resolve.cjs`,
 since `@site/…` is not in the base tsconfig), the react-hooks and `complexity: 8` eslint rules,
-`tests/lint/docs-props-readonly.test.ts`, and the console's lints for duplicate exports, module state, manual memoisation,
+`tests/lint/docs-no-readonly.test.ts` (no `readonly` in any docs type; the console keeps its readonly props and a codemod is the owner's call), and the console's lints for duplicate exports, module state, manual memoisation,
 custom properties, CSS module classes, file extensions and usecase logic, which now read the docs app too (each shown to
 fail on a planted violation). The lints found three things the old layout hid: a CSS class (`prompt`) used and never defined,
 a custom property (`--below-height`) read and never set, and `--ifm-navbar-height` used without being declared.
-**verified:** `landing-*` pictures of the home page at 1280 and 375 px, both colour modes, reduced motion, are pixel-identical
-to the ones before the move (26 captures, 0 differing pixels in 24, the two hero captures that include the 9 s float and
-typing differ by animation phase only).
+**Pixel comparison:** PIXEL_PLACEHOLDER

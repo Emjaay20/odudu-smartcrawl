@@ -522,17 +522,22 @@ Permitted imports:
 **The docs app** (`apps/docs/src`) has no remote data, so only `view`, `usecase`
 and `service` apply, laid out as the console lays them out:
 `features/<name>/{view,usecase,service}` with one `index.ts` each, and
-`shared/{view,usecase,service}` for what two features use. A component is a
+`shared/{view,usecase,service}` for what more than one feature, or MDX
+content, uses. A component is a
 folder with `Component.tsx`, `Component.module.css` and `Component.test.tsx`;
-its props are `readonly`; hooks live in `usecase` and views render. Browser
+no type in the docs app carries `readonly` (no `readonly` modifier, tuple or
+array, no `ReadonlyArray`, `ReadonlyMap`, `ReadonlySet` or `Readonly<…>`;
+immutable constants use `as const`), and if a compiler or library forces one,
+raise it rather than suppressing the rule; the console keeps its readonly
+props; hooks live in `usecase` and views render. Browser
 access a service needs (a clock, an observer, a random source) is handed to it
 by the usecase, so the service stays a pure function a test can drive.
-Docusaurus pins `src/pages`, `src/image-pages`, `src/theme` and `src/css`; the
+Docusaurus pins `src/pages`, `src/image-pages` and `src/css`; the
 route files there are thin views over a feature's `index.ts`. Imports use
 `@site/src/…`, never a relative path and never a `.ts` or `.tsx` extension.
 The dependency rules (`docs-*` in `.dependency-cruiser.cjs`), the
 `complexity: 8` cap on usecases, the react-hooks rules and
-`tests/lint/docs-props-readonly.test.ts` hold it; the console's lints for
+`tests/lint/docs-no-readonly.test.ts` hold it; the console's lints for
 duplicate exports, module state, manual memoisation, custom properties, CSS
 module classes, file extensions and usecase logic read the docs app too.
 
