@@ -1,6 +1,6 @@
 # Web app example
 
-A web app with a server, signing a person in with Odudu. The server keeps a secret, so it is a confidential client: it proves who it is when it swaps a sign-in code for tokens. This example is one file, `app.ts`, and one dependency, [`openid-client`](https://github.com/panva/openid-client).
+This is a web app with a server that signs a person in with Odudu. The server keeps a secret, so it is a confidential client: it proves who it is when it swaps a sign-in code for tokens. The app is `app.ts`, with one dependency, [`openid-client`](https://github.com/panva/openid-client).
 
 ## What happens
 
@@ -8,7 +8,7 @@ A web app with a server, signing a person in with Odudu. The server keeps a secr
 2. The app makes a one-time proof (PKCE), a `state` and a `nonce`, keeps them in a session, and sends the person's browser to Odudu.
 3. The person signs in on Odudu's page. The app never sees the password.
 4. Odudu sends the browser back with a code. The app checks that `state` is the one it sent and that the answer came from the tenant it started with, then swaps the code for tokens. It checks the ID token's signature and `nonce`.
-5. The app shows who signed in. **Sign out** ends the session in the app, then sends the browser to Odudu's end-session address with the ID token as a hint, so the person is signed out there too, and back to the app.
+5. The app shows who signed in. **Sign out** ends the session in the app, then sends the browser to Odudu's end-session address with the ID token as a hint, so the person is signed out there too, and back to the app. The library sends the `client_id` beside the hint, which every OpenID provider accepts; Odudu would find the client from the hint alone.
 
 The redirect address the app sends is built from its own address, so it equals the registered one exactly.
 

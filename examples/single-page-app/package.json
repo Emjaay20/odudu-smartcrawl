@@ -10,7 +10,7 @@
   "scripts": {
     "start": "vite --port 8084 --strictPort",
     "build": "vite build",
-    "test": "node --test test.ts",
+    "test": "node --test expiry.test.ts test.ts",
     "typecheck": "tsc"
   },
   "dependencies": {

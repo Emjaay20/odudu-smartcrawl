@@ -1073,3 +1073,245 @@ describe('a disabled client is not a logout target', () => {
     expect(row?.expiresAt.getTime()).toBeLessThanOrEqual(Date.now());
   });
 });
+
+describe('[ODUDU-LOGOUT-HINT-CLIENT-01] a valid hint with no client_id names the client by its audience', () => {
+  const nameFor = (tag: string) => `lh-${tag}-${newId().slice(-10)}`;
+  const OTHER_REDIRECT = 'https://other.example/after-logout';
+
+  async function addClient(tenantId: string, clientId: string, redirect: string): Promise<void> {
+    await withTenant(app.db, tenantId, async (tx: TenantScopedDatabase) => {
+      const dbId = newId();
+      await tx.insert(clients).values({
+        id: dbId,
+        tenantId,
+        clientId,
+        name: clientId,
+        type: 'confidential',
+        secretHash: await hashPassword('unused-secret'),
+      });
+      await provisionClientDefaults(tx, dbId);
+      await clientOidcConfigRepository(tx).create({
+        clientId: dbId,
+        tenantId,
+        redirectUris: ['https://other.example/callback'],
+        grantTypes: ['authorization_code'],
+        tokenEndpointAuthMethod: 'client_secret_basic',
+        audiences: [],
+        accessTokenTtlSeconds: 300,
+        refreshTokenTtlSeconds: 1_209_600,
+        postLogoutRedirectUris: [redirect],
+      });
+    });
+  }
+
+  async function hintFor(
+    tenantName: string,
+    claims: { aud?: string | string[]; sub: string; sid: string; exp?: number },
+  ): Promise<string> {
+    const key = signingKeyOf.get(tenantName);
+    if (key === undefined) throw new Error(`no signing key for ${tenantName}`);
+    const now = Math.floor(Date.now() / 1000);
+    return signJwt(
+      { iss: await issuerFor(tenantName), iat: now, ...claims, exp: claims.exp ?? now + 300 },
+      { key, kek: KEK },
+    );
+  }
+
+  async function ended(sessionId: string): Promise<boolean> {
+    const row = await sessionRowFor(sessionId);
+    return (row?.expiresAt.getTime() ?? Number.MAX_SAFE_INTEGER) <= Date.now();
+  }
+
+  describe.each(['GET', 'POST'] as const)('over %s', (method) => {
+    it('redirects to the audience client’s registered address', async () => {
+      const tenantName = `logout-hintonly-${method.toLowerCase()}-${newId()}`;
+      const { tenantId } = await setupTenant(tenantName);
+      const cookie = await signIn(tenantName);
+      const sessionId = sessionIdFromCookie(cookie);
+      const hint = await mintIdToken(tenantName, await subjectIdOf(tenantId, USERNAME), sessionId);
+
+      const res = await requestLogout(
+        method,
+        tenantName,
+        { id_token_hint: hint, post_logout_redirect_uri: POST_LOGOUT_REDIRECT_URI, state: 's' },
+        cookie,
+      );
+
+      expect(res.statusCode).toBe(302);
+      expect(res.headers.location).toBe(`${POST_LOGOUT_REDIRECT_URI}?state=s`);
+      expect(await ended(sessionId)).toBe(true);
+    });
+
+    it('refuses an address the audience client did not register, and still ends the session', async () => {
+      const tenantName = nameFor(`bad-${method.toLowerCase()}`);
+      const { tenantId } = await setupTenant(tenantName);
+      const cookie = await signIn(tenantName);
+      const sessionId = sessionIdFromCookie(cookie);
+      const hint = await mintIdToken(tenantName, await subjectIdOf(tenantId, USERNAME), sessionId);
+
+      const res = await requestLogout(
+        method,
+        tenantName,
+        { id_token_hint: hint, post_logout_redirect_uri: 'https://evil.example/after-logout' },
+        cookie,
+      );
+
+      expect(res.statusCode).toBe(400);
+      expect(res.headers.location).toBeUndefined();
+      expect(await ended(sessionId)).toBe(true);
+    });
+
+    it('refuses another client’s registered address: the hint names only its own audience', async () => {
+      const tenantName = nameFor(`other-${method.toLowerCase()}`);
+      const { tenantId } = await setupTenant(tenantName);
+      await addClient(tenantId, 'other-client', OTHER_REDIRECT);
+      const cookie = await signIn(tenantName);
+      const sessionId = sessionIdFromCookie(cookie);
+      const hint = await mintIdToken(tenantName, await subjectIdOf(tenantId, USERNAME), sessionId);
+
+      const res = await requestLogout(
+        method,
+        tenantName,
+        { id_token_hint: hint, post_logout_redirect_uri: OTHER_REDIRECT },
+        cookie,
+      );
+
+      expect(res.statusCode).toBe(400);
+      expect(res.headers.location).toBeUndefined();
+    });
+
+    it('refuses a hint with several audiences, and still ends the session', async () => {
+      const tenantName = nameFor(`multi-${method.toLowerCase()}`);
+      const { tenantId } = await setupTenant(tenantName);
+      await addClient(tenantId, 'other-client', OTHER_REDIRECT);
+      const cookie = await signIn(tenantName);
+      const sessionId = sessionIdFromCookie(cookie);
+      const hint = await hintFor(tenantName, {
+        aud: [CLIENT_ID, 'other-client'],
+        sub: await subjectIdOf(tenantId, USERNAME),
+        sid: sessionId,
+      });
+
+      const res = await requestLogout(
+        method,
+        tenantName,
+        { id_token_hint: hint, post_logout_redirect_uri: POST_LOGOUT_REDIRECT_URI },
+        cookie,
+      );
+      expect(res.headers.location).toBeUndefined();
+      expect(res.statusCode).toBe(400);
+      expect(await ended(sessionId)).toBe(true);
+    });
+
+    it('refuses an audience that is no client of this tenant', async () => {
+      const tenantName = nameFor(`noclient-${method.toLowerCase()}`);
+      const { tenantId } = await setupTenant(tenantName);
+      const cookie = await signIn(tenantName);
+      const sessionId = sessionIdFromCookie(cookie);
+      const hint = await mintIdToken(
+        tenantName,
+        await subjectIdOf(tenantId, USERNAME),
+        sessionId,
+        'no-such-client',
+      );
+
+      const res = await requestLogout(
+        method,
+        tenantName,
+        { id_token_hint: hint, post_logout_redirect_uri: POST_LOGOUT_REDIRECT_URI },
+        cookie,
+      );
+
+      expect(res.statusCode).toBe(400);
+      expect(res.headers.location).toBeUndefined();
+    });
+  });
+
+  it('keeps accepting a hint whose exp has passed, as it does with a client_id', async () => {
+    const tenantName = nameFor('expired');
+    const { tenantId } = await setupTenant(tenantName);
+    const cookie = await signIn(tenantName);
+    const sessionId = sessionIdFromCookie(cookie);
+    const hint = await hintFor(tenantName, {
+      aud: CLIENT_ID,
+      sub: await subjectIdOf(tenantId, USERNAME),
+      sid: sessionId,
+      exp: Math.floor(Date.now() / 1000) - 3600,
+    });
+
+    const res = await requestLogout(
+      'GET',
+      tenantName,
+      { id_token_hint: hint, post_logout_redirect_uri: POST_LOGOUT_REDIRECT_URI },
+      cookie,
+    );
+
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toBe(POST_LOGOUT_REDIRECT_URI);
+  });
+
+  it('takes no audience from a hint another tenant signed, nor a client only another tenant has', async () => {
+    const tenantName = nameFor('tenant-a');
+    const foreignName = nameFor('tenant-b');
+    const { tenantId } = await setupTenant(tenantName);
+    const foreign = await setupTenant(foreignName);
+    await addClient(foreign.tenantId, 'only-in-b', OTHER_REDIRECT);
+    const cookie = await signIn(tenantName);
+    const sessionId = sessionIdFromCookie(cookie);
+    const subjectId = await subjectIdOf(tenantId, USERNAME);
+
+    const foreignHint = await mintIdToken(foreignName, subjectId, sessionId);
+    const viaForeignHint = await requestLogout(
+      'GET',
+      tenantName,
+      { id_token_hint: foreignHint, post_logout_redirect_uri: POST_LOGOUT_REDIRECT_URI },
+      cookie,
+    );
+    expect(viaForeignHint.statusCode).toBe(200);
+    expect(viaForeignHint.headers.location).toBeUndefined();
+
+    const foreignClient = await mintIdToken(tenantName, subjectId, sessionId, 'only-in-b');
+    const viaForeignClient = await requestLogout(
+      'GET',
+      tenantName,
+      { id_token_hint: foreignClient, post_logout_redirect_uri: OTHER_REDIRECT },
+      cookie,
+    );
+    expect(viaForeignClient.statusCode).toBe(400);
+    expect(viaForeignClient.headers.location).toBeUndefined();
+  });
+
+  it('carries the audience client through the confirmation form, which then redirects', async () => {
+    const tenantName = nameFor('confirm');
+    await setupTenant(tenantName);
+    const cookie = await signIn(tenantName);
+    const sessionId = sessionIdFromCookie(cookie);
+    // Names a subject other than the session's, so confirmation is asked for.
+    const hint = await mintIdToken(tenantName, newId(), newId());
+
+    const page = await http.inject({
+      url: logoutUrl(tenantName, {
+        id_token_hint: hint,
+        post_logout_redirect_uri: POST_LOGOUT_REDIRECT_URI,
+      }),
+      headers: { cookie },
+    });
+    expect(page.body).toContain('<title>Sign out?</title>');
+    expect(String(page.headers['content-security-policy'])).toContain(
+      "form-action 'self' https://app.example",
+    );
+    const field = (name: string) =>
+      new RegExp(`name="${name}" value="([^"]*)"`, 'u').exec(page.body)?.[1] ?? '';
+    expect(field('client_id')).toBe(CLIENT_ID);
+
+    const confirmed = await postConfirmation(tenantName, cookie, {
+      session_id: field('session_id'),
+      csrf: field('csrf'),
+      client_id: field('client_id'),
+      post_logout_redirect_uri: field('post_logout_redirect_uri'),
+    });
+    expect(confirmed.statusCode).toBe(302);
+    expect(confirmed.headers.location).toBe(POST_LOGOUT_REDIRECT_URI);
+    expect(await ended(sessionId)).toBe(true);
+  });
+});

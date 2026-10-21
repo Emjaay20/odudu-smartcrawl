@@ -32,7 +32,9 @@ describe('findSecrets', () => {
   });
 
   it('lets the public half of a published key through and refuses a private member', () => {
-    const point = randomBytes(32).toString('base64url');
+    // Fixed, because a random point sometimes lacks a digit or a capital and
+    // then fails the guard's own shape test for a reason this test is not about.
+    const point = 'f9Qz2LkT7vXe1RmN8pYcA4uWbH6sJdG0oIq5ZtVnE3k';
     const jwks = (member: string): string =>
       `{"keys":[{"kty":"EC","crv":"P-256","${member}":"${point}"}]}`;
     expect(point).toHaveLength(43);

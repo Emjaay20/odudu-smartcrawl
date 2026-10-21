@@ -2369,8 +2369,9 @@ BYPASSRLS`, `CREATE ROLE odudu_svc LOGIN`, `CREATE DATABASE odudu OWNER odudu_ow
 - **verified:** `oauth4webapi` 3.8.8 with `None()` client authentication is the public-client path; `validateAuthResponse` checks `state` and
   the `iss` parameter, `processAuthorizationCodeResponse` checks the ID token (signature, issuer, audience, nonce). Discovery and `/certs`
   answer every origin; the token endpoint answers only a registered `web_origin`, so the sign-in itself proves the registration.
-- **verified:** the token response carries a `refresh_token` for `openid profile` (`Object.keys(tokens)` logged from the built app). The app
-  ignores it and keeps tokens in a variable. After a reload, choosing Sign in again returns signed in without the password form (the
+- **verified:** a public client with the default grants gets a `refresh_token` for `openid profile`; registered with `--grant-type
+authorization_code` it gets none (`Object.keys(tokens)` logged from the built app against each registration). The example is
+  registered without the grant and keeps tokens in a variable. After a reload, choosing Sign in again returns signed in without the password form (the
   tenant session still lives), which the test asserts.
 - **verified:** `/logout` resolves the registered post-logout addresses from the `client_id` parameter, not from the hint's audience; with
   `id_token_hint` alone the person is signed out but not returned to the app ("not one this client has registered"). The app sends both.
@@ -2381,4 +2382,19 @@ BYPASSRLS`, `CREATE ROLE odudu_svc LOGIN`, `CREATE DATABASE odudu OWNER odudu_ow
 - Sign-in is throttled per person (five a minute), so a second run of the browser tests inside a minute times out; CI runs each example
   once on a fresh stack.
 - The `examples` job stays in `verify.yml` with one matrix leg per example directory, now four. No tag-triggered run exists yet because
-  `release.yml` has not been written on this branch; the leg that runs against the published image waits for that workflow (release workflow task of the plan).
+  `release.yml` has not been written on this branch; the run against the published image and the `v0.1.0-rc.2` cut are Task 6c of the plan, and
+  the criterion stays open until it has run.
+
+### Increment 29, fix round 1
+
+- **Server:** `handleLogoutRequest` resolves the client from a verified hint's single `aud` when `client_id` is absent, so an RP that sends only
+  `id_token_hint` and `post_logout_redirect_uri` is returned to a registered address. Several audiences, an audience that is no client of the
+  tenant, an unregistered address and another client's address are all refused with the session still ended; a `client_id` that disagrees with
+  the hint is dropped as before. The confirmation form carries the resolved client. `[ODUDU-LOGOUT-HINT-CLIENT-01]` in `logout.int.test.ts`
+  (GET and POST, expired hint, hint from another tenant, client only another tenant has); reading note in `docs/protocols/oidc-rpinitiated.md`.
+  The OIDF plans in `infra/conformance` hold no RP-initiated logout test, so no plan variant covers this path. This supersedes the finding
+  above; the examples still send `client_id` beside the hint and say so.
+- **Plan:** the published-image run and the `v0.1.0-rc.2` cut are Task 6c.
+- **verified:** a public client registered with `--grant-type authorization_code` gets no `refresh_token`; the example is registered that way.
+- Example: `expiryOf` returns nothing for an opaque token or a missing `exp` (`expiry.test.ts`); the storage test also checks cookies and
+  IndexedDB; a forged `iss` on the callback is refused (library message pinned); README says what happens after the access token lapses.

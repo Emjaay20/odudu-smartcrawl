@@ -1,11 +1,12 @@
 // A single-page app: it signs a person in with the authorization code grant
 // and PKCE, as a public client with no secret. The tokens live in a variable,
-// so a reload signs the person out of the app, and there is no refresh token to
-// steal. Only the short-lived values the redirect needs, the PKCE verifier, the
+// so a reload signs the person out of the app. The client is registered without
+// the refresh_token grant, so there is no refresh token to steal. Only the short-lived values the redirect needs, the PKCE verifier, the
 // state and the nonce, wait in sessionStorage while the person is on Odudu's
 // page. `allowInsecureRequests` lets the library talk to an http issuer; a
 // real app serves everything over HTTPS and never sets it.
 import * as oauth from 'oauth4webapi';
+import { expiryOf } from './expiry.ts';
 
 const BASE = import.meta.env.VITE_ODUDU_BASE ?? 'http://localhost:3000';
 const ISSUER = new URL(`${BASE}/tenants/${import.meta.env.VITE_TENANT ?? 'demo'}`);
@@ -18,7 +19,7 @@ interface Person {
   name: string;
   sub: string;
   idToken: string;
-  accessTokenExp: number;
+  accessTokenExpiry: Date | undefined;
 }
 let person: Person | undefined;
 
@@ -93,18 +94,8 @@ async function finishSignIn(): Promise<Person> {
     name: String(claims.preferred_username ?? claims.sub),
     sub: claims.sub,
     idToken: String(tokens.id_token),
-    accessTokenExp: expiryOf(tokens.access_token),
+    accessTokenExpiry: expiryOf(tokens.access_token),
   };
-}
-
-// Odudu's access tokens are JWTs. The app reads `exp` only to show it; the API
-// that receives the token is the one that verifies it.
-function expiryOf(accessToken: string): number {
-  const payload = accessToken.split('.')[1] ?? '';
-  const claims: unknown = JSON.parse(atob(payload.replace(/-/gu, '+').replace(/_/gu, '/')));
-  return typeof claims === 'object' && claims !== null && 'exp' in claims
-    ? Number(claims.exp)
-    : Number.NaN;
 }
 
 async function signOut(): Promise<void> {
@@ -112,6 +103,8 @@ async function signOut(): Promise<void> {
   person = undefined;
   const as = await discover();
   const target = new URL(as.end_session_endpoint ?? '');
+  // Odudu resolves the return address from the hint alone, but `client_id`
+  // beside it is what every OpenID provider accepts, so the app sends both.
   target.search = new URLSearchParams({
     client_id: CLIENT.client_id,
     id_token_hint: idToken,
@@ -120,6 +113,9 @@ async function signOut(): Promise<void> {
   location.assign(target);
 }
 
+// The page keeps saying "signed in" after the access token lapses, because the
+// app calls no API. An app that does checks the expiry before each call and
+// signs the person in again when it has passed.
 function render(): void {
   if (person === undefined) {
     show('You are signed out.', { label: 'Sign in', run: () => attempt(signIn()) });
@@ -127,7 +123,7 @@ function render(): void {
   }
   show(
     `Signed in as ${person.name} (${person.sub}). ` +
-      `Access token expires ${new Date(person.accessTokenExp * 1000).toISOString()}`,
+      `Access token expires ${person.accessTokenExpiry?.toISOString() ?? 'at a time this app cannot read'}`,
     { label: 'Sign out', run: () => attempt(signOut()) },
   );
 }

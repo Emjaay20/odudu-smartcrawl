@@ -31,6 +31,6 @@ seed client --tenant demo --client-id example-web --client-secret example-web-se
   --redirect-uri "$WEB_APP_ORIGIN/callback" --post-logout-redirect-uri "$WEB_APP_ORIGIN/"
 seed client --tenant demo --client-id example-m2m --client-secret example-m2m-secret \
   --grant-type client_credentials --client-credentials-scope reports:read
-seed client --tenant demo --client-id example-spa --public \
+seed client --tenant demo --client-id example-spa --public --grant-type authorization_code \
   --redirect-uri "$SPA_ORIGIN/callback" --post-logout-redirect-uri "$SPA_ORIGIN/" \
   --web-origin "$SPA_ORIGIN"

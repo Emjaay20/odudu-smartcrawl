@@ -90,11 +90,16 @@ test('signs a person in, shows who and when the token expires, keeps tokens out 
     const until = Date.parse(expiry) - Date.now();
     assert.ok(until > 0 && until <= 24 * 3600 * 1000, `expiry ${expiry}`);
 
-    const stored = await page.evaluate(() =>
-      JSON.stringify([{ ...localStorage }, { ...sessionStorage }]),
+    const stored = await page.evaluate(async () =>
+      JSON.stringify([
+        { ...localStorage },
+        { ...sessionStorage },
+        document.cookie,
+        await indexedDB.databases(),
+      ]),
     );
-    assert.doesNotMatch(stored, /eyJ/u, 'a token reached web storage');
-    assert.equal(stored, '[{},{}]');
+    assert.doesNotMatch(stored, /eyJ/u, 'a token reached the browser');
+    assert.equal(stored, '[{},{},"",[]]');
 
     // A reload drops the tokens; Odudu still holds the session, so signing in
     // again needs no password.
@@ -114,6 +119,20 @@ test('refuses a callback whose state is not the one it issued, though the code i
     const reason = logged.join('\n');
     assert.match(reason, /state/u);
     assert.doesNotMatch(reason, /nonce|invalid_grant/u);
+  });
+});
+
+test('refuses an answer that names another issuer', async () => {
+  await browse(async (page) => {
+    const logged = watchConsole(page);
+    await rewriteRedirect(page, AUTHENTICATE, (url) =>
+      url.searchParams.set('iss', 'https://another-issuer.example'),
+    );
+    await signIn(page, APP, 'ben', PASSWORD, 'button');
+    await refused(page);
+    const reason = logged.join('\n');
+    assert.match(reason, /unexpected "iss" \(issuer\) response parameter/u);
+    assert.doesNotMatch(reason, /state|nonce|invalid_grant/u);
   });
 });
 
