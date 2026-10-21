@@ -228,8 +228,9 @@ describe('the CI workflow', () => {
   describe('the examples job', () => {
     async function job(): Promise<string> {
       const workflow = await read('.github/workflows/verify.yml');
-      const from = workflow.slice(workflow.indexOf('\n  examples:\n'));
-      return from.slice(0, from.indexOf('\n  # Photographs'));
+      const from = workflow.slice(workflow.indexOf('\n  examples:\n') + 1);
+      const next = /\n {2}[a-z][\w-]*:\n/u.exec(from.slice(1));
+      return next === null ? from : from.slice(0, next.index + 1);
     }
 
     it('runs every example on the image built from this commit, and the gate waits for it', async () => {
@@ -241,6 +242,9 @@ describe('the CI workflow', () => {
       expect(block).toContain('examples/_shared/provision.sh');
       expect(block).toContain('npm ci --ignore-scripts');
       expect(block).toContain('npm test');
+      expect(block).toContain('npm run typecheck');
+      expect(block).toMatch(/^ {4}timeout-minutes: \d+$/mu);
+      expect(block).not.toMatch(/:3000\b/u);
       expect(block).toMatch(/if: always\(\)\n\s+run: quickstart\/stack\.sh down/u);
       const workflow = await read('.github/workflows/verify.yml');
       expect(gateNeeds(workflow)).toContain('examples');

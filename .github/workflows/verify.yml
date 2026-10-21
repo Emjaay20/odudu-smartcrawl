@@ -484,6 +484,9 @@ jobs:
         with:
           package: '@odudu/docs'
 
+      # Each leg builds against the layer cache the first one reads, so the
+      # image is a cache hit after the first; one shared build would need an
+      # artifact to carry the image between runners, which costs more than it saves.
       - uses: ./.github/actions/image
         with:
           revision: ${{ github.sha }}
@@ -501,6 +504,10 @@ jobs:
       - name: Install the example
         working-directory: examples/${{ matrix.example }}
         run: npm ci --ignore-scripts
+
+      - name: Type-check the example
+        working-directory: examples/${{ matrix.example }}
+        run: npm run typecheck
 
       # The client's test starts the API example, which has its own lockfile.
       - name: Install the API the client calls

@@ -5,8 +5,8 @@ A service that is not a person: a nightly job, or a backend calling another back
 ## What happens
 
 1. The service sends its client id and secret to the tenant's token endpoint, in the `Authorization` header (`client_secret_basic`), and asks for the `client_credentials` grant.
-2. Odudu answers with an access token that lasts five minutes. There is no refresh token and no ID token, because nobody signed in. When the token expires, the service asks again.
-3. The service calls the API with the token and prints what came back.
+2. Odudu answers with an access token that lasts five minutes. There is no refresh token and no ID token, because nobody signed in. The service keeps the token and reuses it until 30 seconds before it expires, then asks again with the credentials it already holds.
+3. The service calls the API with the token, asking for the `reports:read` scope that its registration allows, and prints what came back.
 
 ## Run it
 
@@ -16,7 +16,7 @@ You need Node 24 or later, the quick start stack and the API example running. Ru
 npm start
 ```
 
-`npm test` starts the API itself, runs the client and checks that it is answered, and checks that a wrong secret is refused.
+`npm test` starts the API itself, runs the client and checks that it is answered, checks that a wrong secret is refused, and checks that the token is asked for once and asked for again only when it is nearly expired.
 
 ## What is only for the example
 

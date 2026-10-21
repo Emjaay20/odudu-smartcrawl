@@ -1,10 +1,9 @@
-// Calls the running API with the tokens Odudu issues and with tokens it must
-// refuse. Needs a stack provisioned by ../_shared/provision.sh.
+// Calls the running API with the tokens Odudu issues. Needs a stack provisioned
+// by ../_shared/provision.sh. The checks on a token that is wrong in some way
+// are in verifier.test.ts.
 import assert from 'node:assert/strict';
 import { type ChildProcess, spawn } from 'node:child_process';
 import { after, before, test } from 'node:test';
-import { SignJWT, createLocalJWKSet, exportJWK, generateKeyPair } from 'jose';
-import { makeVerifier } from './server.ts';
 
 const BASE = process.env.ODUDU_BASE ?? 'http://localhost:3000';
 const ISSUER = `${BASE}/tenants/${process.env.TENANT ?? 'demo'}`;
@@ -52,7 +51,7 @@ function field(value: unknown, name: string): string {
 }
 
 // The same steps a browser takes, so the test can hold a person's tokens.
-async function personsTokens(): Promise<unknown> {
+async function signInAsBen(): Promise<unknown> {
   const verifier = 'v'.repeat(64);
   const challenge = (await import('node:crypto'))
     .createHash('sha256')
@@ -82,7 +81,7 @@ async function personsTokens(): Promise<unknown> {
     headers: { cookie },
     body: new URLSearchParams({
       auth_session_id: session,
-      username: 'ada',
+      username: 'ben',
       password: 'a long and unremarkable passphrase',
     }),
   });
@@ -102,12 +101,19 @@ async function personsTokens(): Promise<unknown> {
 let api = '';
 let otherAudience = '';
 let serviceToken = '';
+let unscopedToken = '';
+let persons: unknown;
 
 before(async () => {
   api = await start('8082', ISSUER);
   otherAudience = await start('8083', 'https://another-api.example');
-  const grant = new URLSearchParams({ grant_type: 'client_credentials' });
-  serviceToken = field(await tokenFor(grant, 'example-m2m', 'example-m2m-secret'), 'access_token');
+  const grant = (scope?: string) =>
+    new URLSearchParams({ grant_type: 'client_credentials', ...(scope && { scope }) });
+  const service = async (scope?: string) =>
+    field(await tokenFor(grant(scope), 'example-m2m', 'example-m2m-secret'), 'access_token');
+  persons = await signInAsBen();
+  serviceToken = await service('reports:read');
+  unscopedToken = await service();
 });
 
 after(() => {
@@ -126,10 +132,15 @@ test('answers a service holding an access token', async () => {
   assert.equal(field(await response.json(), 'caller'), 'example-m2m');
 });
 
-test('answers a person holding an access token', async () => {
-  const tokens = await personsTokens();
-  const response = await get(api, field(tokens, 'access_token'));
-  assert.equal(response.status, 200);
+test('refuses a service whose token has no scope, with 403 and not 401', async () => {
+  const response = await get(api, unscopedToken);
+  assert.equal(response.status, 403);
+  assert.match(response.headers.get('www-authenticate') ?? '', /insufficient_scope/u);
+});
+
+test('refuses a person whose access token has no scope for this API', async () => {
+  const tokens = persons;
+  assert.equal((await get(api, field(tokens, 'access_token'))).status, 403);
 });
 
 test('refuses a call with no token', async () => {
@@ -141,24 +152,6 @@ test('refuses a token issued for another audience', async () => {
 });
 
 test('refuses an ID token', async () => {
-  const tokens = await personsTokens();
+  const tokens = persons;
   assert.equal((await get(api, field(tokens, 'id_token'))).status, 401);
-});
-
-test('refuses an expired token', async () => {
-  const { publicKey, privateKey } = await generateKeyPair('RS256');
-  const jwk = { ...(await exportJWK(publicKey)), kid: 'local', alg: 'RS256' };
-  const verify = makeVerifier(createLocalJWKSet({ keys: [jwk] }), ISSUER, ISSUER);
-  const sign = (expiresAt: number) =>
-    new SignJWT({})
-      .setProtectedHeader({ alg: 'RS256', kid: 'local', typ: 'at+jwt' })
-      .setIssuer(ISSUER)
-      .setAudience(ISSUER)
-      .setSubject('someone')
-      .setIssuedAt(expiresAt - 600)
-      .setExpirationTime(expiresAt)
-      .sign(privateKey);
-  const now = Math.floor(Date.now() / 1000);
-  await assert.doesNotReject(async () => verify(await sign(now + 300)));
-  await assert.rejects(async () => verify(await sign(now - 60)), /exp/u);
 });

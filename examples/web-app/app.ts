@@ -1,7 +1,9 @@
 // A web app with a server: it signs a person in with the authorization code
-// grant and PKCE, and keeps who they are in a server-side session. For the
-// example, sessions live in memory, never expire and travel over plain http;
-// a production app needs HTTPS, `Secure` cookies and a real session store.
+// grant and PKCE, keeps who they are in a server-side session, and signs them
+// out of Odudu too. For the example, sessions live in memory, never expire and
+// travel over plain http, and `allowInsecureRequests` lets the library talk to
+// an http issuer; a production app needs HTTPS, `Secure` cookies and a real
+// session store, and never allows insecure requests.
 import { createServer } from 'node:http';
 import { randomBytes } from 'node:crypto';
 import * as client from 'openid-client';
@@ -24,21 +26,28 @@ const config = await client.discovery(
 
 interface Session {
   pending?: { verifier: string; state: string; nonce: string };
-  person?: { sub: string; name: string };
+  person?: { sub: string; name: string; idToken: string };
 }
 const sessions = new Map<string, Session>();
+const cookieFor = (id: string, maxAge = '') => `sid=${id}; HttpOnly; SameSite=Lax; Path=/${maxAge}`;
 
 createServer((request, response) => {
   const cookie = /(?:^|; )sid=([^;]+)/u.exec(request.headers.cookie ?? '')?.[1] ?? '';
   const session = sessions.get(cookie) ?? {};
   const url = new URL(request.url ?? '/', ORIGIN);
-  const send = (status: number, body: string, headers: Record<string, string> = {}) => {
-    response.writeHead(status, { 'content-type': 'text/html; charset=utf-8', ...headers });
+  const send = (status: number, body: string) => {
+    response.writeHead(status, { 'content-type': 'text/html; charset=utf-8' });
     response.end(body);
   };
-  const redirect = (to: string, headers: Record<string, string> = {}) => {
-    response.writeHead(302, { location: to, ...headers });
+  const redirect = (to: string, setCookie: string) => {
+    response.writeHead(302, { location: to, 'set-cookie': setCookie });
     response.end();
+  };
+  // A new session id at each step, so a stale one cannot be fixed on a person.
+  const begin = (value: Session) => {
+    const id = randomBytes(24).toString('base64url');
+    sessions.set(id, value);
+    return id;
   };
 
   if (url.pathname === '/login') {
@@ -47,8 +56,7 @@ createServer((request, response) => {
       state: client.randomState(),
       nonce: client.randomNonce(),
     };
-    const id = randomBytes(24).toString('base64url');
-    sessions.set(id, { pending });
+    const id = begin({ pending });
     client.calculatePKCECodeChallenge(pending.verifier).then(
       (challenge) => {
         const target = client.buildAuthorizationUrl(config, {
@@ -59,20 +67,13 @@ createServer((request, response) => {
           state: pending.state,
           nonce: pending.nonce,
         });
-        // A new session id at each login, so a stale one cannot be fixed on a person.
-        redirect(target.href, { 'set-cookie': `sid=${id}; HttpOnly; SameSite=Lax; Path=/` });
+        redirect(target.href, cookieFor(id));
       },
       () => send(500, '<p>Could not start sign-in.</p>'),
     );
-    return;
-  }
-
-  if (url.pathname === '/callback') {
+  } else if (url.pathname === '/callback') {
     const { pending } = session;
-    if (pending === undefined) {
-      send(400, '<p>No sign-in is under way.</p>');
-      return;
-    }
+    if (pending === undefined) return send(400, '<p>No sign-in is under way.</p>');
     sessions.delete(cookie);
     // Checks state, the issuer, the code's PKCE proof and the ID token's signature and nonce.
     client
@@ -85,26 +86,48 @@ createServer((request, response) => {
       .then(
         (tokens) => {
           const claims = tokens.claims();
-          const id = randomBytes(24).toString('base64url');
-          const name = String(claims?.preferred_username ?? claims?.sub);
-          sessions.set(id, { person: { sub: String(claims?.sub), name } });
-          redirect('/', { 'set-cookie': `sid=${id}; HttpOnly; SameSite=Lax; Path=/` });
+          const sub = String(claims?.sub);
+          const name = String(claims?.preferred_username ?? sub);
+          const idToken = tokens.id_token ?? '';
+          redirect('/', cookieFor(begin({ person: { sub, name, idToken } })));
         },
-        () => send(400, '<p>Sign-in was refused.</p>'),
+        (error: unknown) => {
+          console.error(`sign-in refused: ${why(error)}`);
+          send(400, '<p>Sign-in was refused.</p>');
+        },
       );
-    return;
+  } else if (url.pathname === '/logout' && request.method === 'POST') {
+    sessions.delete(cookie);
+    // Ends the person's session at Odudu too, which the id_token_hint names.
+    const target = session.person
+      ? client.buildEndSessionUrl(config, {
+          post_logout_redirect_uri: `${ORIGIN}/`,
+          id_token_hint: session.person.idToken,
+        }).href
+      : '/';
+    redirect(target, cookieFor('', '; Max-Age=0'));
+  } else {
+    const { person } = session;
+    send(
+      200,
+      person
+        ? `<p>Signed in as ${esc(person.name)} (${esc(person.sub)})</p>` +
+            '<form method="post" action="/logout"><button>Sign out</button></form>'
+        : '<p>You are signed out. <a href="/login">Sign in</a></p>',
+    );
   }
-
-  const { person } = session;
-  send(
-    200,
-    person
-      ? `<p>Signed in as ${esc(person.name)} (${esc(person.sub)})</p>`
-      : '<p>You are signed out. <a href="/login">Sign in</a></p>',
-  );
 }).listen(PORT, () => {
   console.log(`web app on ${ORIGIN}, trusting ${ISSUER}`);
 });
+
+// The library's own wording for what failed, never the values it compared:
+// those hold the code and the state.
+function why(error: unknown): string {
+  const parts = [String(error)];
+  if (error instanceof Error && error.cause instanceof Error) parts.push(error.cause.message);
+  if (error instanceof client.ResponseBodyError) parts.push(error.error);
+  return parts.join(': ');
+}
 
 function esc(text: string): string {
   return text.replace(/[&<>"']/gu, (c) => `&#${String(c.charCodeAt(0))};`);

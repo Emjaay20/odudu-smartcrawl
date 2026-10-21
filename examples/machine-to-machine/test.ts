@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import { type ChildProcess, execFileSync, spawn } from 'node:child_process';
 import { after, before, test } from 'node:test';
+import { createTokenSource } from './client.ts';
 
 const API_PORT = '8082';
 let api: ChildProcess;
@@ -46,4 +47,31 @@ test('is refused with the wrong secret', () => {
       }),
     /invalid_client/u,
   );
+});
+
+test('asks for a token once, and again only when the one it holds is about to expire', async () => {
+  const base = process.env.ODUDU_BASE ?? 'http://localhost:3000';
+  let requests = 0;
+  let clock = Date.now();
+  const source = createTokenSource({
+    issuer: `${base}/tenants/demo`,
+    clientId: 'example-m2m',
+    clientSecret: 'example-m2m-secret',
+    scope: 'reports:read',
+    fetch: (input, init) => {
+      requests += 1;
+      return fetch(input, init);
+    },
+    now: () => clock,
+  });
+  const first = await source();
+  assert.equal(await source(), first);
+  assert.equal(requests, 1);
+  // The token lives 300 seconds and is renewed 30 seconds early.
+  clock += 269_000;
+  assert.equal(await source(), first);
+  assert.equal(requests, 1);
+  clock += 2_000;
+  assert.notEqual(await source(), first);
+  assert.equal(requests, 2);
 });

@@ -1193,10 +1193,12 @@ async function runClientCommand(
   const redirectUris = values['redirect-uri'] ?? [];
   const postLogoutRedirectUris = values['post-logout-redirect-uri'] ?? [];
   const webOrigins = values['web-origin'] ?? [];
+  const clientCredentialsScopes = values['client-credentials-scope'] ?? [];
   for (const [field, entries] of [
     ['redirect_uris', redirectUris],
     ['post_logout_redirect_uris', postLogoutRedirectUris],
     ['web_origins', webOrigins],
+    ['client_credentials_scopes', clientCredentialsScopes],
   ] as const) {
     if (entries.length > CLIENT_LIST_LIMIT) {
       throw new OduduError('seed_invalid_options', listLimitProblem(field, entries.length));
@@ -1215,6 +1217,17 @@ async function runClientCommand(
     );
   }
 
+  const badScopes = clientCredentialsScopes.filter(
+    (name) => !/^[\x21\x23-\x5b\x5d-\x7e]+$/u.test(name),
+  );
+  if (badScopes.length > 0) {
+    throw new OduduError(
+      'seed_invalid_options',
+      `--client-credentials-scope names ${JSON.stringify(badScopes)}, which is not a scope name: ` +
+        'a scope is one token of printable characters with no space, quote or backslash (RFC 6749 3.3)',
+    );
+  }
+
   const type: ClientRecord['type'] = values.public === true ? 'public' : 'confidential';
   const requestedGrantTypes = values['grant-type'];
   const grantTypes = requestedGrantTypes ?? defaultGrantsFor(type);
@@ -1223,6 +1236,13 @@ async function runClientCommand(
     throw new OduduError(
       'seed_unknown_grant_type',
       `--grant-type names ${unknownGrantTypes.join(', ')}, which this server does not implement`,
+    );
+  }
+
+  if (clientCredentialsScopes.length > 0 && !grantTypes.includes('client_credentials')) {
+    throw new OduduError(
+      'seed_invalid_options',
+      '--client-credentials-scope needs a client that may use the client_credentials grant',
     );
   }
 
@@ -1280,7 +1300,7 @@ async function runClientCommand(
       // Null takes the tenant's lifetimes, as every other door's client does.
       accessTokenTtlSeconds: null,
       refreshTokenTtlSeconds: null,
-      clientCredentialsScopes: [],
+      clientCredentialsScopes,
       webOrigins,
       postLogoutRedirectUris,
     });

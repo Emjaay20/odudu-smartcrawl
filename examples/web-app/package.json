@@ -9,9 +9,17 @@
   },
   "scripts": {
     "start": "node app.ts",
-    "test": "node --test test.ts"
+    "test": "node --test test.ts",
+    "typecheck": "tsc"
   },
   "dependencies": {
     "openid-client": "6.8.8"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.1",
+    "typescript": "6.0.3"
+  },
+  "overrides": {
+    "jose": "6.2.12"
   }
 }

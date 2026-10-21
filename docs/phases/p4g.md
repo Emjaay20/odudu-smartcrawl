@@ -2324,8 +2324,28 @@ BYPASSRLS`, `CREATE ROLE odudu_svc LOGIN`, `CREATE DATABASE odudu OWNER odudu_ow
 - **verified:** a fresh `quickstart/stack.sh up` then `examples/_shared/provision.sh` (twice) then `npm test` in each example: web-app 3,
   api 6, machine-to-machine 2 tests pass. A second `provision.sh` run changes nothing (`seed` reports "already exists" for the user and
   the clients).
-- **Finding: no scope in the example.** `seed` has no flag for a `client_credentials` scope allowlist (`clientCredentialsScopes: []` in
-  `apps/server/src/cli/seed.ts`), so a seeded service can only get an empty scope and asking for another gives `invalid_scope`. The API example
-  therefore does not check scope, and its README says so. The admin API sets the allowlist.
+- **Scope.** `seed client` had no flag for the `client_credentials` scope allowlist (`clientCredentialsScopes: []` was hard-coded), so a
+  seeded service could only get an empty scope. The examples expose that, so it is this phase's: `--client-credentials-scope` (repeatable)
+  is parsed beside the sibling list flags, bounded by `CLIENT_LIST_LIMIT`, refused on a client that cannot use the grant and for a
+  value that is not one scope token, and appears in the generated CLI reference. The API example now returns `403` for a token without
+  `reports:read`, and the machine-to-machine example asks for it.
 - **Finding: audience.** Odudu names the tenant issuer as `aud` unless a client says otherwise; the API example trusts that by default
   (`API_AUDIENCE` changes it), and its test shows a second instance expecting another audience refuses the same token.
+
+### Increment 28, fix round 1
+
+- **Web app proof.** `test.ts` drives Chromium and alters one request at a time, then reads the reason the app logs for a refusal: a forged
+  `state` with a valid code (state), an authorize request carrying another nonce (nonce), a code bound to another PKCE challenge
+  (`invalid_grant`), the same callback replayed (no sign-in under way), plus the authorize URL's parameters and the sign-out. Mutations,
+  each failing the named test: `expectedState` skipped, `state` not sent, `S256` changed to `plain`, redirect address given a trailing slash,
+  wrong verifier sent (sign-in fails), pending session not deleted (replay), logout that skips Odudu. Dropping `expectedNonce` is caught by the
+  success test: the library refuses an ID token with a nonce nobody expected, so that check fails closed.
+- **API proof.** `verifier.test.ts` (no stack) covers issuer, audience, `typ`, expiry, bad signature, unknown key, key rotation, `alg: none`,
+  HMAC keyed by the public key, an ES256 token from a published key, and the scope check. Removing `issuer`, `audience`, `typ`, or
+  `algorithms` from `makeVerifier`, using fixed keys instead of the remote set, or a scope check that always says yes each fails a test.
+  `alg: none` and the HMAC token are refused by `jose` even without `algorithms`; the ES256 case is what that option decides.
+- **verified:** sign-in is limited to five tries a minute for one person and ten for one address (`DEFAULT_LOGIN_THROTTLE`,
+  `DEFAULT_THROTTLE` in `apps/server/src/app.ts`); a 429 from it made the browser tests time out. The provisioning script makes `ada` and
+  `ben` so each stays under it.
+- **Typecheck.** Each example has a `tsconfig.json`, `typescript` 6.0.3 and `@types/node` 24.19.1 as dev dependencies and an
+  `npm run typecheck` that the examples job runs. `web-app` overrides `jose` to 6.2.12, so both lockfiles resolve the same version.

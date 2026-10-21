@@ -50,7 +50,8 @@ user who is not present; this client can repeat the request whenever it
 likes with the credentials it already holds.
 
 The seed command gives a new client an empty `client_credentials` scope
-allowlist, so the empty `scope` above is the only scope it can get. Asking
+allowlist unless `--client-credentials-scope` names some, so the empty `scope`
+above is the only scope it can get. Asking
 for anything, including `openid`, is refused:
 
 ```bash

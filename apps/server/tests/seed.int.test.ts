@@ -952,6 +952,106 @@ describe('seed client --post-logout-redirect-uri', () => {
   });
 });
 
+async function clientCredentialsScopesOf(
+  tenantName: string,
+  oauthClientId: string,
+): Promise<string[]> {
+  const tenantId = (await owner.db.select().from(tenants).where(eq(tenants.name, tenantName)))[0]
+    ?.id;
+  if (tenantId === undefined) throw new Error(`expected tenant ${tenantName}`);
+  return withTenant(owner.db, tenantId, async (tx) => {
+    const rows = await tx
+      .select()
+      .from(clients)
+      .where(and(eq(clients.tenantId, tenantId), eq(clients.clientId, oauthClientId)));
+    const client = rows[0];
+    if (client === undefined) throw new Error(`expected client ${oauthClientId}`);
+    const config = await clientOidcConfigRepository(tx).byClientId(client.id);
+    if (config === null) throw new Error(`no oidc config for client ${oauthClientId}`);
+    return config.clientCredentialsScopes;
+  });
+}
+
+describe('seed client --client-credentials-scope', () => {
+  const service = (tenant: string, clientId: string, ...extra: string[]) => [
+    'client',
+    '--tenant',
+    tenant,
+    '--client-id',
+    clientId,
+    '--client-secret',
+    'a-service-secret',
+    '--grant-type',
+    'client_credentials',
+    ...extra,
+  ];
+
+  it('stores the scopes a service may ask for', async () => {
+    const options = uniqueOptions();
+    await seed(options);
+    await seed(
+      service(
+        options.tenant,
+        'reporter',
+        '--client-credentials-scope',
+        'reports:read',
+        '--client-credentials-scope',
+        'reports:write',
+      ),
+    );
+    expect(await clientCredentialsScopesOf(options.tenant, 'reporter')).toEqual([
+      'reports:read',
+      'reports:write',
+    ]);
+  });
+
+  it('leaves a service with no scope when the flag is absent', async () => {
+    const options = uniqueOptions();
+    await seed(options);
+    await seed(service(options.tenant, 'plain'));
+    expect(await clientCredentialsScopesOf(options.tenant, 'plain')).toEqual([]);
+  });
+
+  it('refuses a scope on a client that cannot use the grant', async () => {
+    const options = uniqueOptions();
+    await seed(options);
+    await expect(
+      seed([
+        'client',
+        '--tenant',
+        options.tenant,
+        '--client-id',
+        'spa',
+        '--public',
+        '--redirect-uri',
+        'https://app.example/callback',
+        '--client-credentials-scope',
+        'reports:read',
+      ]),
+    ).rejects.toThrow(/--client-credentials-scope.*client_credentials/u);
+  });
+
+  it.each(['', 'two words'])('refuses the scope %j, which is not one scope name', async (name) => {
+    const options = uniqueOptions();
+    await seed(options);
+    await expect(
+      seed(service(options.tenant, 'odd', '--client-credentials-scope', name)),
+    ).rejects.toThrow(/--client-credentials-scope/u);
+  });
+
+  it('refuses more scopes than a client list may hold, in the words the API uses', async () => {
+    const options = uniqueOptions();
+    await seed(options);
+    const flags = Array.from({ length: CLIENT_LIST_LIMIT + 1 }, (_, i) => [
+      '--client-credentials-scope',
+      `s${String(i)}`,
+    ]).flat();
+    await expect(seed(service(options.tenant, 'many', ...flags))).rejects.toThrow(
+      listLimitProblem('client_credentials_scopes', CLIENT_LIST_LIMIT + 1),
+    );
+  });
+});
+
 async function grantTypesOf(tenantName: string, oauthClientId: string): Promise<string[]> {
   const tenantId = (await owner.db.select().from(tenants).where(eq(tenants.name, tenantName)))[0]
     ?.id;

@@ -45,6 +45,9 @@ export const CLIENT_OPTIONS = {
   'post-logout-redirect-uri': texts('A URI the client may send users to after logout.'),
   'web-origin': texts('A browser origin allowed to call the endpoints.'),
   'grant-type': texts('A grant type the client may use.'),
+  'client-credentials-scope': texts(
+    'A scope a service may ask for with the client_credentials grant; a service gets none without it.',
+  ),
 } as const;
 
 export const USER_OPTIONS = {

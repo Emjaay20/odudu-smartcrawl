@@ -41,6 +41,25 @@ describe('CLI_COMMANDS', () => {
     }
   });
 
+  it('writes only options the command has in its example', () => {
+    for (const command of everyCommand(CLI_COMMANDS)) {
+      const known = new Set([
+        command.name.replace(/^--/, ''),
+        ...command.options.map((o) => o.name),
+      ]);
+      for (const [, flag] of command.example.matchAll(/ --([a-z][a-z-]*)/g)) {
+        expect(known.has(flag ?? ''), `${command.name} --${flag ?? ''}`).toBe(true);
+      }
+    }
+  });
+
+  it('describes the client_credentials scope flag of seed client', () => {
+    const seed = CLI_COMMANDS.find((command) => command.name === 'seed');
+    const client = seed?.subcommands.find((command) => command.name === 'client');
+    const option = client?.options.find((o) => o.name === 'client-credentials-scope');
+    expect(option?.summary).toMatch(/client_credentials/);
+  });
+
   it('has an example that starts with odudu', () => {
     for (const command of everyCommand(CLI_COMMANDS)) {
       expect(command.example, command.name).toMatch(/^odudu /);
