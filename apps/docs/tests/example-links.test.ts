@@ -49,9 +49,9 @@ describe('links between the examples', () => {
   // What this file reads must be among the inputs that decide whether its
   // cached result is still good.
   const declared = (() => {
-    const turbo: { tasks: Record<string, { inputs?: string[] }> } = JSON.parse(
-      readFileSync(repoPath('turbo.json'), 'utf8'),
-    );
+    const turbo = JSON.parse(readFileSync(repoPath('turbo.json'), 'utf8')) as {
+      tasks: Record<string, { inputs?: string[] }>;
+    };
     return (turbo.tasks['@odudu/docs#test']?.inputs ?? [])
       .filter((input) => input.startsWith('$TURBO_ROOT$/examples/'))
       .map((input) => input.slice('$TURBO_ROOT$/'.length));
