@@ -1,9 +1,10 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { MACHINE_READABLE_REFERENCES } from '#docs/nav.ts';
 import { PAGES_BASE, SITE_ORIGIN } from '#docs/site.config.ts';
 import {
+  DOCS_ROOT,
   distDir,
   htmlFiles,
   isDocumentRoute,
@@ -101,6 +102,8 @@ describe.each(TARGETS)('the agent copies of the %s build', (target) => {
       'llms.txt',
       'llms-full.txt',
       'robots.txt',
+      // The licence texts of the fonts, published beside them (static/licenses).
+      ...readdirSync(path.join(DOCS_ROOT, 'static/licenses')).map((file) => `licenses/${file}`),
       ...entries.map((entry) => copyPath(entry, target)),
       ...MACHINE_READABLE_REFERENCES.map((reference) => reference.file).filter((file) =>
         /\.(?:md|txt)$/u.test(file),

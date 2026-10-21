@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 
-// Content below the first screen starts a few pixels low and settles as it
-// comes into view. Nothing changes until this has confirmed that the browser
-// has an IntersectionObserver, motion is allowed and no automation is driving
-// (a capture or an audit must see the page as laid out); any failure puts the
-// page back as the server sent it.
+// Nothing changes until this has confirmed that the browser has an
+// IntersectionObserver, motion is allowed and no automation is driving (a
+// capture or an audit must see the page as laid out). The work itself is
+// fetched once the page is idle.
 export default function useReveal(): boolean {
   const [active, setActive] = useState(false);
   useEffect(() => {
@@ -15,34 +14,25 @@ export default function useReveal(): boolean {
     ) {
       return undefined;
     }
-    const pending = [...document.querySelectorAll('[data-reveal]')].filter(
-      (item) => item.getBoundingClientRect().top >= window.innerHeight,
-    );
-    let seen: IntersectionObserver | undefined;
-    try {
-      for (const item of pending) item.setAttribute('data-pending', '');
-      if (!CSS.supports('animation-timeline', 'view()')) {
-        const observer = new IntersectionObserver(
-          (entries) => {
-            for (const entry of entries) {
-              if (!entry.isIntersecting) continue;
-              entry.target.removeAttribute('data-pending');
-              observer.unobserve(entry.target);
-            }
-          },
-          { rootMargin: '0px 0px -8% 0px' },
-        );
-        seen = observer;
-        for (const item of pending) observer.observe(item);
-      }
-      setActive(true);
-    } catch {
-      for (const item of pending) item.removeAttribute('data-pending');
-      return undefined;
-    }
+    let stop: (() => void) | undefined;
+    let cancelled = false;
+    const run = (): void => {
+      import('@site/src/components/Landing/reveal').then(
+        ({ startReveal }) => {
+          if (cancelled) return;
+          stop = startReveal();
+          setActive(stop !== undefined);
+        },
+        () => undefined,
+      );
+    };
+    const handle =
+      typeof requestIdleCallback === 'function' ? requestIdleCallback(run) : setTimeout(run, 200);
     return () => {
-      seen?.disconnect();
-      for (const item of pending) item.removeAttribute('data-pending');
+      cancelled = true;
+      if (typeof requestIdleCallback === 'function') cancelIdleCallback(Number(handle));
+      else clearTimeout(handle);
+      stop?.();
     };
   }, []);
   return active;

@@ -315,11 +315,26 @@
   line-height: 1.5;
 }
 
+/* With script the lines wait, in place and at full size, for the typing to end;
+   without it, in print and under reduced motion they are simply there. */
+@media (scripting: enabled) {
+  .followUp code[data-visible='false'] {
+    visibility: hidden;
+  }
+}
+
+@media print {
+  .followUp code {
+    visibility: visible !important;
+  }
+}
+
 /* Bands */
 
 .band,
 .bandSunken {
   padding-block: 3.5rem;
+  scroll-margin-top: calc(var(--ifm-navbar-height) + var(--space-3));
 }
 
 .bandSunken {
@@ -618,14 +633,6 @@
     animation: caret 1s steps(1) infinite;
   }
 
-  .followUp {
-    transition: opacity var(--motion-panel) var(--ease);
-  }
-
-  .followUp[data-typing='on'] {
-    opacity: 0;
-  }
-
   .card,
   .pane,
   .primary,
@@ -653,45 +660,44 @@
     scale: 0.97;
   }
 
-  [data-motion='ok'] [data-reveal][data-pending] {
+  /* A section's items follow one another by about 100 ms; the heading goes first and travels further. */
+  [data-motion='ok'] [data-reveal] {
     --i: 0;
+    transition:
+      opacity 650ms var(--ease) calc(var(--i) * 100ms),
+      transform 650ms var(--ease) calc(var(--i) * 100ms);
   }
 
-  [data-motion='ok'] [data-reveal][data-pending]:nth-child(4n + 2) {
+  [data-motion='ok'] [data-reveal]:nth-child(4n + 2) {
     --i: 1;
   }
 
-  [data-motion='ok'] [data-reveal][data-pending]:nth-child(4n + 3) {
+  [data-motion='ok'] [data-reveal]:nth-child(4n + 3) {
     --i: 2;
   }
 
-  [data-motion='ok'] [data-reveal][data-pending]:nth-child(4n + 4) {
+  [data-motion='ok'] [data-reveal]:nth-child(4n + 4) {
     --i: 3;
   }
 
-  @supports (animation-timeline: view()) {
-    [data-motion='ok'] [data-reveal][data-pending] {
-      animation: reveal linear both;
-      animation-timeline: view();
-      animation-range: entry calc(var(--i) * 5%) entry calc(45% + var(--i) * 5%);
-    }
+  [data-motion='ok'] [data-reveal][data-pending] {
+    opacity: 0;
+    transform: translateY(32px);
   }
 
-  @supports not (animation-timeline: view()) {
-    [data-motion='ok'] [data-reveal] {
-      transition:
-        opacity 500ms var(--ease) calc(var(--i, 0) * 60ms),
-        transform 500ms var(--ease) calc(var(--i, 0) * 60ms);
-    }
+  [data-motion='ok'] [data-reveal='heading'][data-pending] {
+    transform: translateY(48px);
+  }
 
-    [data-motion='ok'] [data-reveal][data-pending] {
-      opacity: 0.94;
-      transform: translateY(16px);
-    }
+  [data-motion='ok'] [data-reveal] img {
+    transition: transform 650ms var(--ease);
+  }
+
+  [data-motion='ok'] [data-reveal][data-pending] img {
+    transform: scale(0.98);
   }
 }
 
-/* The hero's entrance is for wide screens: on a phone the first screen is the measured one and simply appears. */
 @media (prefers-reduced-motion: no-preference) and (min-width: 997px) {
   .lockup {
     animation: enterFade 500ms var(--ease) both;
@@ -735,18 +741,6 @@
   from {
     opacity: 0.4;
     transform: translateY(12px);
-  }
-
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes reveal {
-  from {
-    opacity: 0.94;
-    transform: translateY(16px);
   }
 
   to {

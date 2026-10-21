@@ -52,16 +52,24 @@ async function visit(
 ): Promise<{ page: Page; close: () => Promise<void> }> {
   if (browser === undefined) throw new Error('the browser did not launch');
   const context = await browser.newContext(options);
-  // Automation says so through navigator.webdriver and the page then skips its
-  // reveal; the tests want the page a visitor gets.
-  await context.addInitScript(() => {
-    Object.defineProperty(navigator, 'webdriver', { get: () => false });
-  });
   const page = await context.newPage();
   await prepare?.(page);
   await page.goto(home());
   return { page, close: () => context.close() };
 }
+
+// Automation says so through navigator.webdriver and the page then skips its
+// reveal; the reveal's own tests want the page a visitor gets.
+const visitHuman = (
+  options: BrowserContextOptions = {},
+  prepare?: (page: Page) => Promise<void>,
+): ReturnType<typeof visit> =>
+  visit(options, async (target) => {
+    await target.context().addInitScript(() => {
+      Object.defineProperty(navigator, 'webdriver', { get: () => false });
+    });
+    await prepare?.(target);
+  });
 
 const WINDOWS_LABEL = 'PowerShell';
 
@@ -156,57 +164,6 @@ describe('the landing page in a browser', () => {
     await close();
   });
 
-  it('reveals sections with a scroll timeline, and the hero text and picture never wait on one', async () => {
-    const { page, close } = await visit({ reducedMotion: 'no-preference' });
-    await page.locator('[data-motion="ok"]').waitFor({ state: 'attached' });
-    const timelines = await page.evaluate(
-      () =>
-        [...document.querySelectorAll('[data-reveal]')].filter((element) =>
-          getComputedStyle(element).animationTimeline.includes('view'),
-        ).length,
-    );
-    expect(timelines).toBeGreaterThan(10);
-    const waiting = await page.evaluate(() => {
-      const first = [
-        document.querySelector('h1'),
-        document.querySelector('[data-page="landing"] header p'),
-        document.querySelector('[data-page="landing"] header img'),
-      ];
-      return first.flatMap((element) =>
-        element === null
-          ? ['missing']
-          : element.getAnimations({ subtree: false }).map(() => element.tagName),
-      );
-    });
-    expect(waiting).toEqual([]);
-    const painted = await page.evaluate(() => {
-      const hero = document.querySelector('[data-page="landing"] header');
-      return [...(hero?.querySelectorAll('h1, p, img, code') ?? [])].filter(
-        (element) => getComputedStyle(element).opacity !== '1',
-      ).length;
-    });
-    expect(painted).toBe(0);
-    await close();
-  });
-
-  it('plays nothing and shows everything under reduced motion', async () => {
-    const { page, close } = await visit({ reducedMotion: 'reduce' });
-    await page.waitForTimeout(300);
-    const state = await page.evaluate(() => {
-      const items = [...document.querySelectorAll('[data-page="landing"] *')].filter(
-        (element) => element instanceof HTMLElement,
-      );
-      return {
-        motionClass: document.querySelector('[data-motion]') !== null,
-        running: document.getAnimations().length,
-        hidden: items.filter((element) => getComputedStyle(element).opacity !== '1').length,
-        moved: items.filter((element) => getComputedStyle(element).transform !== 'none').length,
-      };
-    });
-    expect(state).toEqual({ motionClass: false, running: 0, hidden: 0, moved: 0 });
-    await close();
-  });
-
   it('shows every section and every step with JavaScript disabled', async () => {
     const { page, close } = await visit({ javaScriptEnabled: false });
     const state = await page.evaluate(() => {
@@ -222,88 +179,6 @@ describe('the landing page in a browser', () => {
     expect(state.count).toBeGreaterThan(20);
     expect(state.hidden).toBe(0);
     await close();
-  });
-
-  const withoutTimelines = async (target: Page): Promise<void> => {
-    await target.addInitScript(() => {
-      const supports = CSS.supports.bind(CSS);
-      CSS.supports = (property: string, value?: string): boolean =>
-        property.startsWith('animation-timeline') ? false : supports(property, value ?? '');
-    });
-    await target.route('**/*.css', async (route) => {
-      const response = await route.fetch();
-      const body = (await response.text()).replaceAll('animation-timeline', 'animation-timelinx');
-      await route.fulfill({ response, body });
-    });
-  };
-
-  for (const [name, prepare] of [
-    ['with scroll timelines', undefined],
-    ['with the observer fallback', withoutTimelines],
-  ] as const) {
-    it(`never leaves the page blank before, during or after scrolling, ${name}`, async () => {
-      const { page, close } = await visit({ viewport: { width: 1280, height: 800 } }, prepare);
-      await page.locator('[data-motion="ok"]').waitFor({ state: 'attached' });
-      await page.waitForTimeout(900);
-      const settle = (): Promise<{ least: number; offset: number; count: number }> =>
-        page.evaluate(() => {
-          const items = [
-            ...document.querySelectorAll('[data-reveal], [data-flow-captions] > li'),
-          ].map((item) => {
-            const style = getComputedStyle(item);
-            return {
-              opacity: Number(style.opacity),
-              moved: !['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(style.transform),
-            };
-          });
-          return {
-            count: items.length,
-            least: Math.min(...items.map((item) => item.opacity)),
-            offset: items.filter((item) => item.moved).length,
-          };
-        });
-      const first = await settle();
-      expect(first.count).toBeGreaterThan(20);
-      expect(first.least).toBeGreaterThanOrEqual(0.85);
-      expect(first.offset).toBeGreaterThan(5);
-      const capture = await page.screenshot({ fullPage: true });
-      expect(capture.byteLength).toBeGreaterThan(50_000);
-      const axe = await new AxeBuilder({ page })
-        .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
-        .analyze();
-      expect(axe.violations.map((violation: Result) => violation.id)).toEqual([]);
-      await page.evaluate(async () => {
-        for (let y = 0; y <= document.documentElement.scrollHeight; y += 250) {
-          window.scrollTo(0, y);
-          await new Promise((resolve) => setTimeout(resolve, 60));
-        }
-      });
-      await page.waitForTimeout(4500);
-      const last = await settle();
-      expect(last.least).toBe(1);
-      expect(last.offset).toBe(0);
-      await close();
-    });
-  }
-
-  it('does not reveal for automation, and does nothing without an observer', async () => {
-    if (browser === undefined) throw new Error('the browser did not launch');
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    await page.goto(home());
-    await page.waitForTimeout(500);
-    expect(await page.locator('[data-pending]').count()).toBe(0);
-    await context.close();
-    const bare = await visit({}, async (target) => {
-      await withoutTimelines(target);
-      await target.addInitScript(() => {
-        Reflect.deleteProperty(window, 'IntersectionObserver');
-      });
-    });
-    await bare.page.waitForTimeout(500);
-    expect(await bare.page.locator('[data-pending]').count()).toBe(0);
-    expect(await bare.page.locator('[data-motion]').count()).toBe(0);
-    await bare.close();
   });
 
   it('shifts nothing while loading and scrolling', async () => {
@@ -333,66 +208,6 @@ describe('the landing page in a browser', () => {
     expect(shift).toBeLessThan(0.001);
     await context.close();
   });
-
-  it('plays the sign-in scene one step after another, then rests', async () => {
-    const { page, close } = await visit(
-      { viewport: { width: 1280, height: 800 } },
-      async (target) => {
-        await target.clock.install();
-      },
-    );
-    await page.locator('[data-flow]').waitFor();
-    await page.evaluate(() => {
-      document.querySelector('[data-flow]')?.scrollIntoView({ block: 'center' });
-    });
-    const seen: string[] = [];
-    await page.locator('[data-flow][data-step="1"]').waitFor();
-    for (const beat of BEATS) {
-      seen.push((await page.locator('[data-flow]').getAttribute('data-step')) ?? '');
-      await page.clock.runFor(beat.ms);
-    }
-    seen.push((await page.locator('[data-flow]').getAttribute('data-step')) ?? '');
-    expect(seen).toEqual(['1', '2', '3', '4', '5', '6', '7', '0']);
-    await close();
-  });
-
-  it('lets a step be chosen from the keyboard, pauses there and plays again on request', async () => {
-    const { page, close } = await visit({ viewport: { width: 1280, height: 800 } });
-    await page.locator('[data-flow] [role="group"]').waitFor();
-    const third = page.getByRole('button', { name: /Sign in once/u });
-    await third.focus();
-    await page.keyboard.press('Enter');
-    expect(await third.getAttribute('aria-current')).toBe('step');
-    expect(await page.locator('[data-flow]').getAttribute('data-step')).toBe('3');
-    expect(await page.locator('[data-flow] [role="status"]').innerText()).toContain(
-      'Step 3 of 7: They sign in on Odudu',
-    );
-    await page.waitForTimeout(1200);
-    expect(await page.locator('[data-flow]').getAttribute('data-step')).toBe('3');
-    expect(await page.locator('[aria-current="step"]').count()).toBe(1);
-    await page.getByRole('button', { name: 'Replay' }).click();
-    expect(await page.locator('[data-flow]').getAttribute('data-step')).toBe('1');
-    expect(await page.getByRole('button', { name: 'Pause' }).count()).toBe(1);
-    await page.getByRole('button', { name: 'Pause' }).click();
-    expect(await page.getByRole('button', { name: 'Resume' }).count()).toBe(1);
-    await close();
-  });
-
-  for (const options of [{ reducedMotion: 'reduce' as const }, { javaScriptEnabled: false }]) {
-    it(`shows the composed scene and all seven captions without motion: ${JSON.stringify(options)}`, async () => {
-      const { page, close } = await visit({ viewport: { width: 1280, height: 800 }, ...options });
-      expect(await page.locator('[data-flow] [role="group"]').count()).toBe(0);
-      expect(await page.locator('[data-flow]').getAttribute('data-step')).toBe('0');
-      const captions = page.locator('[data-flow-captions] > li');
-      expect(await captions.count()).toBe(7);
-      for (let index = 0; index < 7; index += 1) {
-        expect(await captions.nth(index).isVisible()).toBe(true);
-      }
-      expect(await page.locator('svg[data-layout="wide"]').isVisible()).toBe(true);
-      expect(await page.locator('[data-flow] circle[class*="dot"]').count()).toBe(0);
-      await close();
-    });
-  }
 
   for (const [width, shown, hidden] of [
     [375, 'tall', 'wide'],
@@ -549,6 +364,335 @@ describe('the landing page in a browser', () => {
     await page.getByText(WINDOWS_LABEL, { exact: true }).click();
     expect(await page.locator('code[data-shell="windows"]').isVisible()).toBe(true);
     expect(await page.locator('code[data-shell="unix"]').isVisible()).toBe(false);
+    await close();
+  });
+
+  it('keeps the sign-in section the same height from the first paint to the settled page', async () => {
+    if (browser === undefined) throw new Error('the browser did not launch');
+    for (const width of [1280, 768, 375]) {
+      const context = await browser.newContext({ viewport: { width, height: 900 } });
+      const page = await context.newPage();
+      await page.goto(home(), { waitUntil: 'domcontentloaded' });
+      const height = (): Promise<number> =>
+        page
+          .locator('[data-section="signin"]')
+          .evaluate((section) => section.getBoundingClientRect().height);
+      const before = await height();
+      await page.locator('[data-flow] [role="group"]').waitFor();
+      await page.waitForTimeout(800);
+      const after = await height();
+      await page.getByRole('button', { name: /Already signed in/u }).click();
+      const stepped = await height();
+      await context.close();
+      expect(
+        Math.abs(after - before),
+        `${String(width)} px: ${String(before)} then ${String(after)}`,
+      ).toBeLessThanOrEqual(3);
+      expect(Math.abs(stepped - after), `${String(width)} px, a step chosen`).toBeLessThanOrEqual(
+        3,
+      );
+    }
+  });
+
+  it('keeps the terminal output hidden until it is final: it never shows and then vanishes', async () => {
+    const { page, close } = await visit({ viewport: { width: 1280, height: 900 } });
+    const seen: string[] = [];
+    for (let index = 0; index < 60; index += 1) {
+      seen.push(
+        await page
+          .locator('[data-panel="unix"] [class*="followUp"]')
+          .evaluate((element) => getComputedStyle(element).visibility),
+      );
+      await page.waitForTimeout(60);
+    }
+    const firstVisible = seen.indexOf('visible');
+    expect(firstVisible).toBeGreaterThan(-1);
+    expect(seen.slice(firstVisible).every((state) => state === 'visible')).toBe(true);
+    await close();
+  });
+
+  it('draws the resting routes at 3:1 against the surface they sit on, in both colour modes', async () => {
+    for (const scheme of ['light', 'dark'] as const) {
+      const { page, close } = await visit({ colorScheme: scheme, reducedMotion: 'reduce' });
+      const ratio = await page.evaluate(() => {
+        const channel = (value: number): number => {
+          const unit = value / 255;
+          return unit <= 0.03928 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4;
+        };
+        const luminance = (css: string): number => {
+          const [r = 0, g = 0, b = 0] = (css.match(/[\d.]+/gu) ?? []).map(Number);
+          return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+        };
+        const route = document.querySelector('svg[data-layout="wide"] path[class*="route"]');
+        const section = document.querySelector('[data-section="signin"]');
+        if (route === null || section === null) return 0;
+        const light = Math.max(
+          luminance(getComputedStyle(route).stroke),
+          luminance(getComputedStyle(section).backgroundColor),
+        );
+        const dark = Math.min(
+          luminance(getComputedStyle(route).stroke),
+          luminance(getComputedStyle(section).backgroundColor),
+        );
+        return (light + 0.05) / (dark + 0.05);
+      });
+      expect(ratio, scheme).toBeGreaterThanOrEqual(3);
+      await close();
+    }
+  });
+
+  it('leaves room under the navbar when a section is the target of a link', async () => {
+    const { page, close } = await visit({ viewport: { width: 1280, height: 800 } });
+    const margins = await page.evaluate(() => {
+      const bar = document.querySelector('nav.navbar');
+      const navbar = bar === null ? 0 : bar.getBoundingClientRect().height;
+      return [
+        ...document.querySelectorAll(
+          '[data-page="landing"] section[id], [data-page="landing"] section[aria-labelledby]',
+        ),
+      ].map((section) => Number.parseFloat(getComputedStyle(section).scrollMarginTop) - navbar);
+    });
+    expect(margins.length).toBeGreaterThanOrEqual(7);
+    for (const margin of margins) expect(margin).toBeGreaterThanOrEqual(8);
+    await close();
+  });
+
+  it('plays nothing and shows everything under reduced motion', async () => {
+    const { page, close } = await visit({ reducedMotion: 'reduce' });
+    await page.waitForTimeout(400);
+    const state = await page.evaluate(() => {
+      const items = [...document.querySelectorAll('[data-page="landing"] *')].filter(
+        (element) => element instanceof HTMLElement,
+      );
+      return {
+        pending: document.querySelectorAll('[data-pending]').length,
+        running: document.getAnimations().length,
+        hidden: items.filter((element) => getComputedStyle(element).opacity !== '1').length,
+        moved: items.filter((element) => getComputedStyle(element).transform !== 'none').length,
+      };
+    });
+    expect(state).toEqual({ pending: 0, running: 0, hidden: 0, moved: 0 });
+    await close();
+  });
+
+  it('is fully visible for automation: no offset, no hidden band, on a capture without scrolling', async () => {
+    const { page, close } = await visit({ viewport: { width: 1280, height: 800 } });
+    await page.waitForTimeout(1200);
+    expect(await page.locator('[data-pending]').count()).toBe(0);
+    const least = await page.evaluate(() =>
+      Math.min(
+        ...[...document.querySelectorAll('[data-reveal], [data-flow-captions] > li')].map((item) =>
+          Number(getComputedStyle(item).opacity),
+        ),
+      ),
+    );
+    expect(least).toBe(1);
+    expect((await page.screenshot({ fullPage: true })).byteLength).toBeGreaterThan(50_000);
+    await close();
+  });
+
+  it('reveals below-the-fold items for a visitor: each is fully visible within 1.5 s of entering view', async () => {
+    const { page, close } = await visitHuman({ viewport: { width: 1280, height: 800 } });
+    await page.locator('[data-motion="ok"]').waitFor({ state: 'attached' });
+    await page.waitForTimeout(900);
+    const first = await page.evaluate(() => {
+      const items = [...document.querySelectorAll('[data-reveal]')];
+      return {
+        pending: items.filter((item) => item.hasAttribute('data-pending')).length,
+        hidden: items.filter((item) => getComputedStyle(item).opacity === '0').length,
+        above: items
+          .filter((item) => item.getBoundingClientRect().top < window.innerHeight)
+          .filter((item) => getComputedStyle(item).opacity !== '1').length,
+      };
+    });
+    expect(first.pending).toBeGreaterThan(10);
+    expect(first.hidden).toBeGreaterThan(10);
+    expect(first.above).toBe(0);
+    for (const heading of await page.locator('[data-reveal="heading"]').all()) {
+      await heading.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(1500);
+      const settled = await heading.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return [style.opacity, new DOMMatrix(style.transform).m42];
+      });
+      expect(settled).toEqual(['1', 0]);
+    }
+    await close();
+  });
+
+  it('lets the reveal finish before it measures contrast, in both colour modes', async () => {
+    for (const scheme of ['light', 'dark'] as const) {
+      const { page, close } = await visitHuman({ colorScheme: scheme });
+      await page.locator('[data-motion="ok"]').waitFor({ state: 'attached' });
+      await page.evaluate(async () => {
+        for (let y = 0; y <= document.documentElement.scrollHeight; y += 300) {
+          window.scrollTo(0, y);
+          await new Promise((resolve) => setTimeout(resolve, 40));
+        }
+        window.scrollTo(0, 0);
+        await Promise.all(
+          document
+            .getAnimations()
+            .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
+            .map((animation) => animation.finished.catch(() => undefined)),
+        );
+      });
+      await page.waitForTimeout(1200);
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+        .analyze();
+      expect(
+        results.violations.map((violation: Result) => violation.id),
+        scheme,
+      ).toEqual([]);
+      await close();
+    }
+  });
+
+  it('releases items that were scrolled past in one jump', async () => {
+    const { page, close } = await visitHuman({ viewport: { width: 1280, height: 800 } });
+    await page.locator('[data-motion="ok"]').waitFor({ state: 'attached' });
+    expect(await page.locator('[data-pending]').count()).toBeGreaterThan(10);
+    await page.evaluate(() => {
+      window.scrollTo(0, document.documentElement.scrollHeight);
+    });
+    await page.waitForTimeout(1500);
+    expect(await page.locator('[data-pending]').count()).toBe(0);
+    await close();
+  });
+
+  it('plays the sign-in scene in order, rests for about three seconds, then loops', async () => {
+    const { page, close } = await visit(
+      { viewport: { width: 1280, height: 800 } },
+      async (target) => {
+        await target.clock.install();
+      },
+    );
+    await page.locator('[data-flow] [role="group"]').waitFor();
+    await page.evaluate(() => {
+      document.querySelector('[data-flow]')?.scrollIntoView({ block: 'center' });
+    });
+    const step = async (): Promise<string> =>
+      (await page.locator('[data-flow]').getAttribute('data-step')) ?? '';
+    await page.locator('[data-flow][data-step="1"]').waitFor();
+    const seen: string[] = [];
+    for (const beat of BEATS) {
+      seen.push(await step());
+      await page.clock.runFor(beat.ms);
+    }
+    seen.push(await step());
+    await page.clock.runFor(2900);
+    seen.push(await step());
+    await page.clock.runFor(200);
+    seen.push(await step());
+    expect(seen).toEqual(['1', '2', '3', '4', '5', '6', '7', '0', '0', '1']);
+    await close();
+  });
+
+  it('pauses when the scene leaves the screen and resumes on the same beat', async () => {
+    const { page, close } = await visit(
+      { viewport: { width: 1280, height: 800 } },
+      async (target) => {
+        await target.clock.install();
+      },
+    );
+    await page.locator('[data-flow] [role="group"]').waitFor();
+    await page.evaluate(() => {
+      document.querySelector('[data-flow]')?.scrollIntoView({ block: 'center' });
+    });
+    await page.locator('[data-flow][data-step="1"]').waitFor();
+    await page.clock.runFor((BEATS[0]?.ms ?? 0) + 100);
+    expect(await page.locator('[data-flow]').getAttribute('data-step')).toBe('2');
+    await page.evaluate(() => {
+      window.scrollTo(0, 0);
+    });
+    await page.waitForTimeout(300);
+    await page.clock.runFor(60_000);
+    expect(await page.locator('[data-flow]').getAttribute('data-step')).toBe('2');
+    await page.evaluate(() => {
+      document.querySelector('[data-flow]')?.scrollIntoView({ block: 'center' });
+    });
+    await page.waitForTimeout(300);
+    await page.clock.runFor((BEATS[1]?.ms ?? 0) + 100);
+    expect(await page.locator('[data-flow]').getAttribute('data-step')).toBe('3');
+    await close();
+  });
+
+  it('pauses on a step that was chosen, and the toggle works from the keyboard', async () => {
+    const { page, close } = await visit(
+      { viewport: { width: 1280, height: 800 } },
+      async (target) => {
+        await target.clock.install();
+      },
+    );
+    await page.locator('[data-flow] [role="group"]').waitFor();
+    await page.evaluate(() => {
+      document.querySelector('[data-flow]')?.scrollIntoView({ block: 'center' });
+    });
+    await page.locator('[data-flow][data-step="1"]').waitFor();
+    const order = await page
+      .locator('[data-flow] button')
+      .evaluateAll((buttons) => buttons.map((button) => (button as HTMLElement).innerText.trim()));
+    expect(order[0]).toBe('Pause');
+    await page.getByRole('button', { name: /Sign in once/u }).click();
+    await page.clock.runFor(BEATS.reduce((sum, beat) => sum + beat.ms, 0) * 2);
+    expect(await page.locator('[data-flow]').getAttribute('data-step')).toBe('3');
+    const toggle = page.getByRole('button', { name: /autoplay$/u });
+    expect(await toggle.getAttribute('aria-pressed')).toBe('false');
+    await toggle.focus();
+    await page.keyboard.press('Enter');
+    expect(await toggle.getAttribute('aria-pressed')).toBe('true');
+    await page.clock.runFor((BEATS[2]?.ms ?? 0) + 50);
+    expect(await page.locator('[data-flow]').getAttribute('data-step')).toBe('4');
+    await page.keyboard.press('Space');
+    expect(await toggle.getAttribute('aria-pressed')).toBe('false');
+    expect(await page.locator('[data-flow] [role="status"]').getAttribute('aria-live')).toBe(
+      'polite',
+    );
+    await close();
+  });
+
+  it('does not autoplay under reduced motion, but can be stepped by hand and played on request', async () => {
+    const { page, close } = await visit({
+      reducedMotion: 'reduce',
+      viewport: { width: 1280, height: 800 },
+    });
+    await page.locator('[data-flow] [role="group"]').waitFor();
+    await page.evaluate(() => {
+      document.querySelector('[data-flow]')?.scrollIntoView({ block: 'center' });
+    });
+    await page.waitForTimeout(2500);
+    expect(await page.locator('[data-flow]').getAttribute('data-step')).toBe('0');
+    expect(await page.locator('[data-flow-captions] > li').count()).toBe(7);
+    await page.getByRole('button', { name: /Already signed in/u }).click();
+    expect(await page.locator('[data-flow]').getAttribute('data-step')).toBe('6');
+    expect(await page.getByRole('button', { name: 'Play autoplay' }).count()).toBe(1);
+    await close();
+  });
+
+  it('starts the scene on a short landscape screen', async () => {
+    const { page, close } = await visit({ viewport: { width: 740, height: 390 } });
+    await page.locator('[data-flow] [role="group"]').waitFor();
+    await page.evaluate(() => {
+      document.querySelector('[data-flow]')?.scrollIntoView({ block: 'start' });
+    });
+    await page.locator('[data-flow][data-step="1"]').waitFor({ timeout: 5000 });
+    await close();
+  });
+
+  it('shows the composed scene and all seven captions with JavaScript disabled', async () => {
+    const { page, close } = await visit({
+      viewport: { width: 1280, height: 800 },
+      javaScriptEnabled: false,
+    });
+    expect(await page.locator('[data-flow] [role="group"]').isVisible()).toBe(false);
+    expect(await page.locator('[data-flow]').getAttribute('data-step')).toBe('0');
+    const captions = page.locator('[data-flow-captions] > li');
+    expect(await captions.count()).toBe(7);
+    for (let index = 0; index < 7; index += 1) {
+      expect(await captions.nth(index).isVisible()).toBe(true);
+    }
+    expect(await page.locator('svg[data-layout="wide"]').isVisible()).toBe(true);
     await close();
   });
 

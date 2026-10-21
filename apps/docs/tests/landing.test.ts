@@ -3,10 +3,11 @@ import path from 'node:path';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { describe, expect, it } from 'vitest';
 import { JOURNEYS, SECTIONS } from '#docs/nav.ts';
-import { FOLLOW_UP } from '#docs/src/components/Landing/content.ts';
+import { FOLLOW_UP, RELEASE_CAVEAT } from '#docs/src/components/Landing/content.ts';
+import { LAYOUTS, travelKeyframes } from '#docs/src/components/Landing/geometry.ts';
 import { PAGES_BASE } from '#docs/site.config.ts';
-import { TIME_CLAIM } from '#docs/tests/support/claims.ts';
-import { DOCS_ROOT, distDir, fileOf, load } from '#docs/tests/support/dist.ts';
+import { TIME_CLAIM, TIME_CLAIM_EXAMPLES } from '#docs/tests/support/claims.ts';
+import { DOCS_ROOT, distDir, fileOf, load, walk } from '#docs/tests/support/dist.ts';
 
 const REPO_ROOT = path.resolve(DOCS_ROOT, '../..');
 const NOTICE =
@@ -270,24 +271,38 @@ describe('the hero terminal', () => {
 });
 
 describe('the landing page keeps its promises small', () => {
-  const sources = [
+  const landingSources = [
+    ...readdirSync(path.join(DOCS_ROOT, 'src/components/Landing'))
+      .filter((file) => /\.(?:tsx?)$/u.test(file))
+      .map((file) => `src/components/Landing/${file}`),
     'src/pages/index.tsx',
-    'src/components/Landing/content.ts',
-    'src/components/Landing/Install.tsx',
-    'src/components/Landing/SignInFlow.tsx',
   ];
+  const text = (file: string): string => load(path.join(distDir('pages'), file))('body').text();
 
-  it('promises no length of time, in its source or in what it builds', () => {
-    for (const file of sources) {
+  it('recognises the phrasings it bans, and only those', () => {
+    for (const phrase of TIME_CLAIM_EXAMPLES.caught) expect(phrase).toMatch(TIME_CLAIM);
+    for (const phrase of TIME_CLAIM_EXAMPLES.allowed) expect(phrase).not.toMatch(TIME_CLAIM);
+  });
+
+  it('promises no length of time, in any source of the page or in what it builds', () => {
+    expect(landingSources.length).toBeGreaterThan(8);
+    for (const file of landingSources) {
       expect(readFileSync(path.join(DOCS_ROOT, file), 'utf8'), file).not.toMatch(TIME_CLAIM);
     }
     expect(landing.text()).not.toMatch(TIME_CLAIM);
+    expect(text('index.html')).not.toMatch(TIME_CLAIM);
+    expect(text('quick-start/index.html')).not.toMatch(TIME_CLAIM);
   });
 
-  it('says the command arrives with the first release for as long as there is no release workflow', () => {
+  it('carries the release caveat on the landing page and the Quick start while no release workflow exists', () => {
     const released = existsSync(path.join(REPO_ROOT, '.github/workflows/release.yml'));
+    const quick = readFileSync(path.join(DOCS_ROOT, 'content/en/quick-start/index.mdx'), 'utf8');
     const note = landing.find('[data-install-note]').text();
-    expect(note.includes('Arrives with the first release')).toBe(!released);
+    const advice = released
+      ? `.github/workflows/release.yml exists: remove "${RELEASE_CAVEAT}" from Install.tsx and the Quick start once the first release is TAGGED and the download address answers, and not before`
+      : `no release workflow yet: "${RELEASE_CAVEAT}" must stay in Install.tsx and in the Quick start until the first release is published`;
+    expect(note.includes(RELEASE_CAVEAT), advice).toBe(!released);
+    expect(quick.includes(RELEASE_CAVEAT), advice).toBe(!released);
   });
 
   it('has at most eight bands, with one console picture and no second one', () => {
@@ -300,5 +315,52 @@ describe('the landing page keeps its promises small', () => {
       .map((file) => readFileSync(path.join(distDir('pages'), 'assets/css', file), 'utf8'))
       .join('');
     expect(css).toMatch(/@media print\{[^@]*lockup[^@]*mask:none/u);
+  });
+
+  it('ships the travelling-signal keyframes once, in the stylesheet, and not in the markup or the script', () => {
+    const generated = readFileSync(
+      path.join(DOCS_ROOT, 'src/components/Landing/travel.css'),
+      'utf8',
+    );
+    expect(generated.trim(), 'run: node scripts/landing-keyframes.ts').toBe(travelKeyframes());
+    expect(readFileSync(path.join(distDir('pages'), 'index.html'), 'utf8')).not.toContain(
+      '@keyframes travel-',
+    );
+    const css = readdirSync(path.join(distDir('pages'), 'assets/css'))
+      .map((file) => readFileSync(path.join(distDir('pages'), 'assets/css', file), 'utf8'))
+      .join('');
+    expect(css.match(/@keyframes travel-wide-dh/gu)).toHaveLength(1);
+    const scripts = walk(path.join(distDir('pages'), 'assets/js'))
+      .filter((file) => file.endsWith('.js'))
+      .filter((file) => readFileSync(file, 'utf8').includes('@keyframes travel-'));
+    expect(scripts).toEqual([]);
+  });
+
+  it('keeps the scene apart: no window touches another, with App B at its lowest offset', () => {
+    for (const layout of Object.values(LAYOUTS)) {
+      const boxes = [
+        layout.device,
+        layout.hub,
+        layout.appA,
+        { ...layout.appB, y: layout.appB.y + 16 },
+      ];
+      boxes.forEach((first, index) => {
+        boxes.slice(index + 1).forEach((second) => {
+          const gapX = Math.max(first.x - (second.x + second.w), second.x - (first.x + first.w));
+          const gapY = Math.max(first.y - (second.y + second.h), second.y - (first.y + first.h));
+          expect(Math.max(gapX, gapY), JSON.stringify([first, second])).toBeGreaterThanOrEqual(12);
+        });
+      });
+    }
+  });
+
+  it('names the font licences beside the licence line', () => {
+    const licence = landing.find('[data-section="licence"]');
+    expect(hrefs(licence)).toEqual(
+      expect.arrayContaining([
+        `${PAGES_BASE}licenses/IBM-Plex-Sans-OFL-1.1.txt`,
+        `${PAGES_BASE}licenses/IBM-Plex-Mono-OFL-1.1.txt`,
+      ]),
+    );
   });
 });

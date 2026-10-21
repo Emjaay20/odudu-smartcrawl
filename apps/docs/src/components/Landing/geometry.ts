@@ -77,49 +77,49 @@ function rail(corners: readonly Point[], radius: number): Point[] {
 const WIDE: Layout = {
   width: 960,
   height: 440,
-  device: { x: 30, y: 120, w: 200, h: 210 },
+  device: { x: 30, y: 110, w: 200, h: 220 },
   hub: { x: 340, y: 80, w: 280, h: 280 },
-  appA: { x: 730, y: 50, w: 200, h: 150 },
-  appB: { x: 750, y: 220, w: 200, h: 150 },
+  appA: { x: 730, y: 36, w: 190, h: 140 },
+  appB: { x: 760, y: 248, w: 190, h: 140 },
   routes: {
-    dh: { points: curve([230, 225], [338, 215], 'h'), head: { at: [338, 215], angle: 0 } },
+    dh: { points: curve([230, 220], [338, 216], 'h'), head: { at: [338, 216], angle: 0 } },
     da: {
       points: rail(
         [
-          [130, 118],
-          [130, 24],
-          [830, 24],
-          [830, 48],
+          [130, 108],
+          [130, 16],
+          [825, 16],
+          [825, 34],
         ],
-        22,
+        14,
       ),
-      head: { at: [830, 48], angle: 90 },
+      head: { at: [825, 34], angle: 90 },
     },
     db: {
       points: rail(
         [
           [130, 332],
-          [130, 412],
-          [850, 412],
-          [850, 372],
+          [130, 420],
+          [855, 420],
+          [855, 390],
         ],
         22,
       ),
-      head: { at: [850, 372], angle: -90 },
+      head: { at: [855, 390], angle: -90 },
     },
-    ha: { points: curve([622, 140], [728, 125], 'h'), head: { at: [728, 125], angle: 0 } },
-    hb: { points: curve([622, 300], [748, 295], 'h'), head: { at: [748, 295], angle: 0 } },
-    bh: { points: curve([748, 295], [622, 300], 'h'), head: { at: [622, 300], angle: 180 } },
+    ha: { points: curve([622, 140], [728, 106], 'h'), head: { at: [728, 106], angle: 0 } },
+    hb: { points: curve([622, 300], [758, 318], 'h'), head: { at: [758, 318], angle: 0 } },
+    bh: { points: curve([758, 318], [622, 300], 'h'), head: { at: [622, 300], angle: 180 } },
   },
 };
 
 const TALL: Layout = {
   width: 360,
-  height: 800,
+  height: 770,
   device: { x: 80, y: 10, w: 200, h: 170 },
-  hub: { x: 30, y: 250, w: 300, h: 290 },
-  appA: { x: 18, y: 610, w: 160, h: 120 },
-  appB: { x: 182, y: 664, w: 160, h: 120 },
+  hub: { x: 30, y: 250, w: 300, h: 262 },
+  appA: { x: 14, y: 574, w: 150, h: 120 },
+  appB: { x: 196, y: 626, w: 150, h: 120 },
   routes: {
     dh: { points: curve([180, 182], [180, 248], 'v'), head: { at: [180, 248], angle: 90 } },
     da: {
@@ -127,28 +127,28 @@ const TALL: Layout = {
         [
           [78, 95],
           [8, 95],
-          [8, 670],
-          [16, 670],
+          [8, 634],
+          [12, 634],
         ],
         20,
       ),
-      head: { at: [16, 670], angle: 0 },
+      head: { at: [12, 634], angle: 0 },
     },
     db: {
       points: rail(
         [
           [282, 95],
           [352, 95],
-          [352, 724],
-          [344, 724],
+          [352, 686],
+          [350, 686],
         ],
         20,
       ),
-      head: { at: [344, 724], angle: 180 },
+      head: { at: [350, 686], angle: 180 },
     },
-    ha: { points: curve([100, 542], [98, 608], 'v'), head: { at: [98, 608], angle: 90 } },
-    hb: { points: curve([260, 542], [262, 662], 'v'), head: { at: [262, 662], angle: 90 } },
-    bh: { points: curve([262, 662], [260, 542], 'v'), head: { at: [260, 542], angle: -90 } },
+    ha: { points: curve([100, 514], [89, 572], 'v'), head: { at: [89, 572], angle: 90 } },
+    hb: { points: curve([260, 514], [271, 624], 'v'), head: { at: [271, 624], angle: 90 } },
+    bh: { points: curve([271, 624], [260, 514], 'v'), head: { at: [260, 514], angle: -90 } },
   },
 };
 
@@ -237,43 +237,43 @@ export interface Beat {
 }
 
 export const BEATS: readonly Beat[] = [
-  { label: 'Open the app', caption: 'A person opens your app.', ms: 2200, claims: [] },
+  { label: 'Open the app', caption: 'A person opens your app.', ms: 1800, claims: [] },
   {
     label: 'Go to Odudu',
     caption: 'Your app sends them to Odudu to sign in.',
-    ms: 2200,
+    ms: 1800,
     claims: [],
   },
   {
     label: 'Sign in once',
     caption:
       "They sign in on Odudu's own page. Odudu supports passwords, passkeys and codes from an authenticator app.",
-    ms: 3600,
+    ms: 3000,
     claims: ['passwords', 'passkeys', 'authenticator-codes'],
   },
   {
     label: 'Back with a signed pass',
     caption: 'Odudu sends them back with a signed pass, and your app lets them in.',
-    ms: 2600,
+    ms: 2200,
     claims: [],
   },
   {
     label: 'Open a second app',
     caption: 'Later, they open a second app, and it sends them to Odudu too.',
-    ms: 2200,
+    ms: 1800,
     claims: [],
   },
   {
     label: 'Already signed in',
     caption:
       'Odudu sees they are already signed in, so it shows no sign-in page. Straight back, with no password asked. Sign in once, and use every app of that tenant that trusts Odudu.',
-    ms: 3400,
+    ms: 2800,
     claims: ['single-sign-on'],
   },
   {
     label: 'Signed out where registered',
     caption: 'Sign out of one, and the apps that registered for it are told.',
-    ms: 2600,
+    ms: 2200,
     claims: ['back-channel-logout'],
   },
 ];

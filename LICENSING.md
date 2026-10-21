@@ -30,6 +30,13 @@ so that copying a guide or starting from an example is never constrained.
 [ADR 0042](docs/adr/0042-distribution-licensing-and-the-paid-boundary.md)
 has the reasoning and the alternatives rejected.
 
+## Third-party material
+
+The fonts the product serves are IBM Plex Sans and IBM Plex Mono, under the SIL
+Open Font License 1.1. [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) lists
+them with their copyright lines, and the documentation site publishes the
+licence text beside the fonts.
+
 ## Headers
 
 No per-file header is required. The directory decides, and a file copied out

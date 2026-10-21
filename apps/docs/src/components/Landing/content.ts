@@ -4,6 +4,10 @@
 export const RELEASE_URL =
   'https://github.com/wizzywit/odudu/releases/latest/download/compose.yaml';
 
+// The caveat both the landing page and the Quick start carry while no release
+// is published; a test removes it with the first release workflow.
+export const RELEASE_CAVEAT = 'Arrives with the first release.';
+
 export type Shell = 'unix' | 'windows';
 
 export interface ShellCommand {

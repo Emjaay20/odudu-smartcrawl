@@ -26,25 +26,40 @@ const CHIPS = [
 
 const flag = (on: boolean): string => (on ? 'true' : 'false');
 
-function Skeleton({ box, top }: { readonly box: Box; readonly top: number }): ReactElement {
+function Skeleton({
+  box,
+  top,
+  kind,
+}: {
+  readonly box: Box;
+  readonly top: number;
+  readonly kind: 'form' | 'app';
+}): ReactElement {
   const x = box.x + 16;
   const w = box.w - 32;
+  if (kind === 'form') {
+    return (
+      <>
+        <rect className={styles.bar} x={x} y={top} width={w * 0.34} height={7} rx={3.5} />
+        <rect className={styles.field} x={x} y={top + 14} width={w} height={24} rx={8} />
+        <rect className={styles.bar} x={x} y={top + 52} width={w * 0.42} height={7} rx={3.5} />
+        <rect className={styles.field} x={x} y={top + 66} width={w} height={24} rx={8} />
+        <rect className={styles.cta} x={x} y={top + 106} width={w * 0.5} height={26} rx={9} />
+      </>
+    );
+  }
+  const block = Math.min(box.h * 0.2, 26);
   return (
     <>
-      <rect className={styles.block} x={x} y={top} width={w} height={box.h * 0.26} rx={8} />
+      <circle className={styles.avatar} cx={x + 9} cy={top + 9} r={9} />
+      <rect className={styles.bar} x={x + 26} y={top + 2} width={w * 0.5} height={7} rx={3.5} />
+      <rect className={styles.bar} x={x + 26} y={top + 13} width={w * 0.3} height={6} rx={3} />
+      <rect className={styles.block} x={x} y={top + 28} width={w} height={block} rx={8} />
       <rect
         className={styles.bar}
         x={x}
-        y={top + box.h * 0.26 + 14}
-        width={w}
-        height={7}
-        rx={3.5}
-      />
-      <rect
-        className={styles.bar}
-        x={x}
-        y={top + box.h * 0.26 + 30}
-        width={w * 0.7}
+        y={top + 28 + block + 10}
+        width={w * 0.72}
         height={7}
         rx={3.5}
       />
@@ -56,11 +71,13 @@ function Window({
   box,
   label,
   on,
+  kind,
   extra,
 }: {
   readonly box: Box;
   readonly label: string;
   readonly on: boolean;
+  readonly kind: 'form' | 'app';
   readonly extra?: ReactElement;
 }): ReactElement {
   return (
@@ -91,7 +108,7 @@ function Window({
       <text className={styles.tag} x={box.x + 68} y={box.y + 23}>
         {label}
       </text>
-      <Skeleton box={box} top={box.y + 52} />
+      <Skeleton box={box} top={box.y + 52} kind={kind} />
       {extra}
     </>
   );
@@ -154,9 +171,9 @@ export default function Scene({ layout, step, uid }: Props): ReactElement {
       </desc>
       <defs>
         <radialGradient id={glow}>
-          <stop offset="0" className={styles.glowStop} stopOpacity={0.26} />
-          <stop offset="0.55" className={styles.glowStop} stopOpacity={0.09} />
-          <stop offset="1" className={styles.glowStop} stopOpacity={0} />
+          <stop offset="0" className={styles.glowCore} />
+          <stop offset="0.55" className={styles.glowMid} />
+          <stop offset="1" className={styles.glowEdge} />
         </radialGradient>
       </defs>
 
@@ -199,12 +216,13 @@ export default function Scene({ layout, step, uid }: Props): ReactElement {
       })}
 
       <g className={styles.node} data-on={flag(activity.device)}>
-        <Window box={geometry.device} label="Their browser" on={activity.device} />
+        <Window box={geometry.device} label="Their browser" on={activity.device} kind="form" />
       </g>
       <g className={styles.node} data-on={flag(activity.appA)}>
         <Window
           box={geometry.appA}
           label="App A"
+          kind="app"
           on={activity.appA}
           extra={
             <g className={styles.signed} data-on={flag(step === 0 || (step >= 4 && step <= 6))}>
@@ -218,6 +236,7 @@ export default function Scene({ layout, step, uid }: Props): ReactElement {
           <Window
             box={geometry.appB}
             label="App B"
+            kind="app"
             on={activity.appB}
             extra={
               <g className={styles.signed} data-on={flag(step === 0 || step === 6)}>

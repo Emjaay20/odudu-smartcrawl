@@ -26,11 +26,13 @@ You also need `curl`, which macOS, Linux and current Windows ship. Postgres and 
 
 ## 1. Start Odudu
 
-One command downloads the file that describes the stack and starts it. The first start pulls the images, so give it a minute.
+One command downloads the file that describes the stack and starts it. The first start pulls the images, so it is slower than the starts after it.
 
 ```text
 curl -fsSLO https://github.com/wizzywit/odudu/releases/latest/download/compose.yaml && docker compose up -d
 ```
+
+Arrives with the first release. Until that release is published, this address does not serve the file yet.
 
 The file starts three things: Postgres, a one-time setup step that creates the database roles and the first administrator, and the server.
 

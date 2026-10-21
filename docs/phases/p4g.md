@@ -2490,3 +2490,38 @@ The assets live in `brand/`; `node brand/build.ts` regenerates every PNG and the
 - The touch icon route test asserts `no-cache`, an etag and a 304; the console dev server proxies `/instrument` to the server.
 - `tests/lint/capture-keeps-secrets.test.ts` fails on `set -x`, `bash -x` or a line that writes the password in `with-stack.sh`, the capture scripts, or
   any workflow (traces only for workflows, which may write a masked secret to their environment file); proven by running with `set -euxo`.
+
+### Increment 31, Lighthouse method and what the cost is
+
+- **verified:** `npx --yes lighthouse@12.6.1 <url> --throttling-method=simulate|devtools [--preset=desktop]
+--only-categories=performance,accessibility,best-practices,seo --chrome-flags="--headless=new --no-sandbox"`, with
+  `CHROME_PATH` set to the Chromium Playwright installs, against a copy of `apps/docs/dist/pages` served by
+  `node apps/docs/scripts/serve.mjs dist/pages --base /odudu/ --port <free>` (gzip, as a host serves it). Nothing is added to
+  the repository; 31b's `@lhci/cli` runs the same engine.
+- **Numbers on the shipped home page** (two runs each): simulated mobile (Lighthouse's default, Lantern) performance 0.92 to
+  0.93, LCP 3.3 s, FCP 1.1 s, CLS 0, TBT 50 to 70 ms; devtools-throttled mobile (4x CPU, 1.6 Mbps, 150 ms RTT, applied for
+  real) performance 0.97, LCP 1.9 s, FCP 1.9 s, TBT 90 to 110 ms. Desktop preset: 1.00 and LCP 0.7 s simulated, 0.1 s
+  devtools. Accessibility, best practices and SEO are 1.00 in every run.
+- **Finding:** the simulated LCP is not the hero. The LCP element is the lede paragraph, which natively paints at 50 to 100 ms.
+  Lantern's pessimistic graph counts every script, font and image that finishes before it as blocking. Removing all script
+  tags (diagnostic only) takes simulated LCP from 3.2 s to 1.9 to 2.0 s: the cost is the shared Docusaurus bundle (`main.js`,
+  174 KB gzip, plus a 7 KB runtime), not the landing chunk (12 KB gzip) and not the hero. Removing the hero image preload
+  changes nothing; removing the three font preloads makes FCP worse (1.05 s to 1.65 s); inlining the whole 24 KB stylesheet
+  saves about 0.3 s.
+- **Cheap wins taken:** the 13 KB of generated travelling-signal keyframes are written once into the stylesheet
+  (`travel.css`, held to `geometry.ts` by a test) and no longer ride in the markup and the script; the reveal and the
+  typewriter load after idle; the three Plex files the first screen uses are preloaded. **Not taken:** inlining critical CSS
+  (Docusaurus has no switch for it without a plugin, which this phase does not add) and anything inside the 174 KB bundle.
+- **For 31b:** the 2.5 s LCP budget is met under real throttling (1.9 s) and not under the simulated profile (3.3 s) while
+  the bundle is what it is. The spec must say which method asserts the number before the job enforces it; the home page
+  would pass only the devtools method today.
+
+### Increment 31, font licences
+
+IBM Plex Sans and Mono (SIL OFL 1.1) are served by the console, the server's pages and the documentation. Their licence texts
+and copyright lines are `LICENSES/OFL-1.1-IBM-Plex-{Sans,Mono}.txt` (copied from the `@fontsource` 5.3.0 packages),
+`THIRD-PARTY-NOTICES.md` lists them, `LICENSING.md` points there, and the documentation builds publish the texts under
+`/licenses/` (`apps/docs/static/licenses/`, held byte for byte to `LICENSES/`). `tests/font-licences.test.ts` fails when a
+family served from a font file in either build has no notice, no published text or no copyright line. The console's own
+build and the server's pages ship the same fonts; their copy of the notice is not yet published beside them. That belongs to Increment 33 (community and notice files): serve
+the same two files from the console's and the server pages' static output and extend the test to those builds.

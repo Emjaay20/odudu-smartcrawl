@@ -55,8 +55,30 @@
   stroke-width: 1;
 }
 
-.glowStop {
+.glowCore,
+.glowMid,
+.glowEdge {
   stop-color: var(--signal-active-ink);
+}
+
+.glowCore {
+  stop-opacity: 0.42;
+}
+
+.glowMid {
+  stop-opacity: 0.16;
+}
+
+.glowEdge {
+  stop-opacity: 0;
+}
+
+:global([data-theme='dark']) .glowCore {
+  stop-opacity: 0.3;
+}
+
+:global([data-theme='dark']) .glowMid {
+  stop-opacity: 0.1;
 }
 
 .ring {
@@ -90,6 +112,20 @@
 
 .block {
   fill: var(--signal-active);
+}
+
+.avatar {
+  fill: var(--border-strong);
+}
+
+.field {
+  fill: var(--surface-sunken);
+  stroke: var(--border-strong);
+  stroke-width: 1;
+}
+
+.cta {
+  fill: var(--signal-active-ink);
 }
 
 .bar {
@@ -168,7 +204,7 @@
 
 .route {
   fill: none;
-  stroke: var(--border-strong);
+  stroke: var(--ink-muted);
   stroke-width: 2.4;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -190,7 +226,7 @@
 }
 
 .head {
-  fill: var(--border-strong);
+  fill: var(--ink-muted);
 }
 
 .headOn {
@@ -281,10 +317,26 @@
 
 /* Controls */
 
+.below {
+  min-block-size: var(--below-height, 0);
+  margin-block-start: var(--space-6);
+}
+
 .controls {
   display: grid;
   gap: var(--space-3);
-  margin-block-start: var(--space-6);
+}
+
+.controlRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+}
+
+.transport {
+  display: flex;
+  gap: var(--space-2);
 }
 
 .stepper {
@@ -293,14 +345,15 @@
   gap: var(--space-2);
 }
 
-.stepButton {
+.stepButton,
+.control {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-2);
   min-block-size: 2.75rem;
   min-inline-size: 2.75rem;
   padding-inline: var(--space-3);
-  justify-content: center;
   border: 1px solid var(--border-strong);
   border-radius: 999px;
   background: var(--surface-panel);
@@ -308,6 +361,11 @@
   font-family: var(--font-sans);
   font-size: var(--type-13);
   cursor: pointer;
+}
+
+.control {
+  min-inline-size: 5rem;
+  background: var(--surface-sunken);
 }
 
 .stepButton[aria-current='step'] {
@@ -337,35 +395,11 @@
   }
 }
 
-.transport {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.control {
-  min-block-size: 2.5rem;
-  min-inline-size: 5.5rem;
-  padding-inline: var(--space-4);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-m);
-  background: var(--surface-panel);
-  color: var(--ink-primary);
-  font-family: var(--font-mono);
-  font-size: var(--type-13);
-  cursor: pointer;
-}
-
 .live {
-  min-block-size: 4.5em;
-  margin: 0;
+  min-block-size: 3.2em;
+  margin: var(--space-3) 0 0;
   color: var(--ink-primary);
   line-height: 1.5;
-}
-
-@media (max-width: 899px) {
-  .live {
-    min-block-size: 7.5em;
-  }
 }
 
 /* Without script, or with reduced motion: the seven captions, in order. */
@@ -378,10 +412,6 @@
   padding: 0;
   list-style: none;
   counter-reset: beat;
-}
-
-.captions[hidden] {
-  display: none;
 }
 
 .captions > li {
@@ -429,4 +459,50 @@
 .more {
   margin: var(--space-6) 0 0;
   color: var(--ink-muted);
+}
+
+@media (max-width: 899px) {
+  .live {
+    min-block-size: 5em;
+  }
+}
+
+@media (max-width: 599px) {
+  .live {
+    min-block-size: 8em;
+  }
+}
+
+/* The controls are there from the first paint wherever script runs; where it
+   does not, the captions stand in. Reduced motion shows both. */
+.captions {
+  display: grid;
+}
+
+@media (scripting: enabled) {
+  .captions {
+    display: none;
+  }
+}
+
+@media (scripting: enabled) and (prefers-reduced-motion: reduce) {
+  .captions {
+    display: grid;
+  }
+}
+
+@media (scripting: none) {
+  .controls {
+    display: none;
+  }
+}
+
+@media print {
+  .controls {
+    display: none;
+  }
+
+  .captions {
+    display: grid;
+  }
 }

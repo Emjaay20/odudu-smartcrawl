@@ -1,12 +1,17 @@
 import useIsBrowser from '@docusaurus/useIsBrowser';
 import { Fragment, useEffect, useState, type ReactElement } from 'react';
-import { COMMANDS, FOLLOW_UP, type Shell } from '@site/src/components/Landing/content';
+import {
+  COMMANDS,
+  FOLLOW_UP,
+  RELEASE_CAVEAT,
+  type Shell,
+} from '@site/src/components/Landing/content';
 import styles from '@site/src/pages/home.module.css';
 
 const COPIED_FOR_MS = 2000;
-const TYPE_EVERY_MS = 25;
+const SEED = 7;
 
-type Typing = 'off' | 'on' | 'done';
+type Typing = 'off' | 'on' | 'after' | 'done' | 'skip';
 
 // The same breaks as the real text, with only the first `count` characters shown,
 // so the line breaks are final from the first character.
@@ -54,7 +59,7 @@ function Wrapped({ text }: { readonly text: string }): ReactElement {
 type Status = 'idle' | 'copied' | 'failed';
 
 const NOTES: Record<Status, string> = {
-  idle: 'Arrives with the first release. Needs Docker with Compose v2.',
+  idle: `${RELEASE_CAVEAT} Needs Docker with Compose v2.`,
   copied: 'Copied to your clipboard.',
   failed: 'Your browser would not copy it. Select the command and copy it by hand.',
 };
@@ -67,33 +72,53 @@ export default function Install(): ReactElement {
   const interactive = useIsBrowser();
   const [typing, setTyping] = useState<Typing>('off');
   const [typed, setTyped] = useState(0);
+  const [lines, setLines] = useState(0);
   const unix = COMMANDS[0]?.command ?? '';
 
   // The command is real text from the first paint. Once the page is idle a
   // visual copy types over it at about 40 characters a second, then rests.
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
-    let timer: ReturnType<typeof setInterval> | undefined;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setTyping('skip');
+      return undefined;
+    }
+    let stop: (() => void) | undefined;
+    let cancelled = false;
     const start = (): void => {
-      let count = 0;
-      setTyping('on');
-      timer = setInterval(() => {
-        count += 1;
-        setTyped(count);
-        if (count >= unix.length) {
-          clearInterval(timer);
-          setTyping('done');
-        }
-      }, TYPE_EVERY_MS);
+      import('@site/src/components/Landing/typewriter').then(
+        ({ DEFAULT_RHYTHM, playTerminal, seeded }) => {
+          if (cancelled) return;
+          setTyping('on');
+          stop = playTerminal(
+            unix.length,
+            FOLLOW_UP.output.length + 1,
+            { ...DEFAULT_RHYTHM, random: seeded(SEED) },
+            {
+              count: setTyped,
+              commandDone: () => {
+                setTyping('after');
+              },
+              line: setLines,
+              done: () => {
+                setTyping('done');
+              },
+            },
+          );
+        },
+        () => {
+          setTyping('skip');
+        },
+      );
     };
     const wait =
       typeof requestIdleCallback === 'function'
         ? requestIdleCallback(start)
         : setTimeout(start, 400);
     return () => {
+      cancelled = true;
       if (typeof requestIdleCallback === 'function') cancelIdleCallback(Number(wait));
       else clearTimeout(wait);
-      clearInterval(timer);
+      stop?.();
     };
   }, [unix]);
 
@@ -135,7 +160,7 @@ export default function Install(): ReactElement {
           onChange={() => {
             setShell(entry.shell);
             setStatus('idle');
-            setTyping((now) => (now === 'on' ? 'done' : now));
+            setTyping((now) => (now === 'on' ? 'after' : now));
           }}
         />
       ))}
@@ -164,10 +189,15 @@ export default function Install(): ReactElement {
               </span>
             ) : null}
           </div>
-          <div className={styles.followUp} data-typing={entry.shell === 'unix' ? typing : 'off'}>
-            <code className={styles.prompt}>{FOLLOW_UP.command}</code>
-            {FOLLOW_UP.output.map((line) => (
-              <code key={line} className={styles.output}>
+          <div className={styles.followUp}>
+            {[FOLLOW_UP.command, ...FOLLOW_UP.output].map((line, index) => (
+              <code
+                key={line}
+                className={index === 0 ? styles.prompt : styles.output}
+                data-visible={String(
+                  entry.shell !== 'unix' || typing === 'skip' || typing === 'done' || index < lines,
+                )}
+              >
                 {line}
               </code>
             ))}

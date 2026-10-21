@@ -27,7 +27,7 @@ export default function Section({
       data-section={section}
     >
       <div className={styles.wrap}>
-        <div data-reveal="">
+        <div data-reveal="heading">
           <p className={styles.kicker}>{kicker}</p>
           <h2 id={id} className={styles.heading}>
             {title}

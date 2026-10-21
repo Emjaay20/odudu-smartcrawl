@@ -155,6 +155,8 @@ function Compare(): ReactNode {
 }
 
 function Where(): ReactNode {
+  const sansLicence = useBaseUrl('/licenses/IBM-Plex-Sans-OFL-1.1.txt');
+  const monoLicence = useBaseUrl('/licenses/IBM-Plex-Mono-OFL-1.1.txt');
   return (
     <Section id="home-where" kicker="Where it runs" title="Self-hosted today, hosted in the works">
       <div className={styles.pair}>
@@ -180,7 +182,9 @@ function Where(): ReactNode {
         Free software: the server, the console and the command-line tool are AGPL-3.0, and the
         documentation text and the examples are Apache-2.0. An app that only talks to Odudu over
         OpenID Connect or the admin API is not a derivative work of it.{' '}
-        <a href={`${REPOSITORY_URL}${LICENSING_URL_PATH}`}>How the licences fit together</a>
+        <a href={`${REPOSITORY_URL}${LICENSING_URL_PATH}`}>How the licences fit together</a>. The
+        fonts are IBM Plex Sans and Mono under the SIL Open Font License 1.1 (
+        <a href={sansLicence}>Sans</a>, <a href={monoLicence}>Mono</a>)
       </p>
     </Section>
   );
