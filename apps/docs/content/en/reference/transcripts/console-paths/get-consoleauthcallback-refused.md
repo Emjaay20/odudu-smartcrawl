@@ -88,7 +88,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 778
+content-length: 822
 Date: Mon, 19 Oct 2026 02:02:53 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -105,7 +105,7 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
 <h1>Sign-in failed</h1>
 <p>The sign-in could not be completed.</p>
 <p><a href="/console/">Sign in again</a></p>
@@ -183,7 +183,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 778
+content-length: 822
 Date: Mon, 19 Oct 2026 02:02:53 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -200,7 +200,7 @@ Keep-Alive: timeout=72
 </head>
 <body>
 <main class="page">
-<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
 <h1>Sign-in failed</h1>
 <p>The sign-in could not be completed.</p>
 <p><a href="/console/">Sign in again</a></p>

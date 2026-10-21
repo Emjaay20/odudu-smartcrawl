@@ -19,12 +19,12 @@ export function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
-// A plain ring on a shaft in `currentColor`, so the page's own ink colours
+// A staff, a ring on a shaft with a collar, in `currentColor`, so the page's own ink colours
 // it in either theme, with no inline style for the policy to refuse.
 const MARK =
   '<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" ' +
-  'stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">' +
-  '<circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg>';
+  'stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false">' +
+  '<circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg>';
 
 // Present only for a choice of light or dark: with none the stylesheet
 // follows the operating system, and nothing but one of the two constants is

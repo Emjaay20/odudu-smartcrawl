@@ -130,7 +130,7 @@ curl -s "http://localhost:18925/api/v1/message/$ID" | jq -c '{To: [.To[].Address
 ```
 
 ```
-{"To":["grace@example.test"],"From":"odudu@actions.test","Subject":"Update your required-actions-demo account","Inline":[{"FileName":"odudu.png","ContentType":"image/png","ContentID":"odudu-mark","Size":881}]}
+{"To":["grace@example.test"],"From":"odudu@actions.test","Subject":"Update your required-actions-demo account","Inline":[{"FileName":"odudu.png","ContentType":"image/png","ContentID":"odudu-mark","Size":893}]}
 ```
 
 The same mail rendered through `renderRequiredActions` with these inputs gives

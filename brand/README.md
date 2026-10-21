@@ -1,8 +1,8 @@
 # Odudu brand assets
 
-Status: **proposed, awaiting owner approval.** Nothing here is wired into the
-console, the pages, the documentation site, the README or the mail shell yet.
-The mark and the wordmark ship as final only after the owner says yes.
+Status: **approved by the owner on 2026-10-21**, with the crossbar as a collar
+under the ring. The mark is what every server page, the mail shell and the
+documentation site carry.
 
 "Odudu" means authority in Ibibio, spoken in Akwa Ibom, Nigeria. The mark is a
 staff, the sign of that authority carried: a ring on a straight shaft with a
@@ -26,7 +26,7 @@ short crossbar.
 The grid is 32 by 32. The shaft is a line at x=16 from y=10 to y=30. The ring
 is a circle centred on (16, 6) with radius 4, and the shaft starts where the
 ring ends, so its round cap meets the ring's inner edge without entering the
-hole. The crossbar is a line at y=20 from x=12 to x=20. One stroke width, 2,
+hole. The crossbar, a collar, is a line at y=14 from x=12 to x=20. One stroke width, 2,
 with round caps, is set once on a group. Everything sits on whole grid units
 and the mark is symmetric about x=16.
 
@@ -34,10 +34,13 @@ At 16 px the stroke is one pixel wide and lands between two pixels, so the
 shaft renders as two half-covered columns; the ring's hole stays open. The
 test in `tests/lint/brand-assets.test.ts` holds both facts.
 
-The crossbar's height is the open question for the owner. At y=20 the figure
-reads as the astronomical sign for Venus. At y=14 (a collar under the ring) it
-reads as a sceptre. The candidate sheet in `docs/phases/p4g-docs/` shows three
-heights; changing one means editing one path in each SVG and running the build.
+### The crossbar
+
+The owner chose the collar on 2026-10-21 from three heights, the sheet
+`docs/phases/p4g-docs/brand-candidates.png`. With the bar at y=20 or y=25 the
+figure reads as the sign for Venus, which is not what a carried sign of
+authority should say. At y=14, directly under the ring, it reads as a sceptre.
+The test holds the bar to the top quarter of the shaft.
 
 ## Colour
 
@@ -45,7 +48,8 @@ The mark, wordmark and lockup take the colour of the text around them. The
 favicon and social image use Instrument's own tokens
 (`apps/admin-console/src/shared/view/tokens.css`) and nothing else: the rail
 surface `#111514`, the rail ink `#e4e9e7`, the system amber `#f7c95a` for the
-ring (amber means authority and nothing else), and the jade `#4fc894` rule.
+ring (amber means authority and nothing else; the owner kept the amber ring
+on 2026-10-21, and the plan does not ask for another), and the jade `#4fc894` rule.
 
 ## Wordmark
 

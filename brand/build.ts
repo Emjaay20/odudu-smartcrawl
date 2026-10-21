@@ -123,19 +123,19 @@ async function main(): Promise<void> {
   }
 }
 
-// The crossbar's height decides whether the staff reads as a staff or as a
-// planetary symbol, so the sheet shows three heights side by side.
+// The record of the crossbar choice: at y=20 and y=25 the figure reads as the
+// sign for Venus, at y=14 as a sceptre.
 const CANDIDATES = [
-  { label: 'A  bar y=20 (as drawn)', bar: 'M12 20H20' },
-  { label: 'B  bar y=14 (collar)', bar: 'M12 14H20' },
-  { label: 'C  bar y=25 (low grip)', bar: 'M12 25H20' },
+  { label: 'A  bar y=20 (reads as Venus)', bar: 'M12 20H20' },
+  { label: 'B  bar y=14 (collar, chosen)', bar: 'M12 14H20' },
+  { label: 'C  bar y=25 (low grip, reads as Venus)', bar: 'M12 25H20' },
 ] as const;
 const CANDIDATE_SIZES = [16, 24, 32, 64, 180] as const;
 
 async function renderCandidates(page: Page, mark: string): Promise<Buffer> {
   const panel = (theme: (typeof THEMES)[keyof typeof THEMES], bar: string): string =>
     `<div style="background:${theme.surface};color:${theme.ink};padding:16px;display:flex;gap:20px;align-items:flex-end">${CANDIDATE_SIZES.map(
-      (size) => sized(mark.replace('M12 20H20', bar), size, size),
+      (size) => sized(mark.replace('M12 14H20', bar), size, size),
     ).join('')}</div>`;
   const rows = CANDIDATES.map(
     ({ label, bar }) =>

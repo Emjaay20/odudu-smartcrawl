@@ -32,9 +32,9 @@ function number(source: string, pattern: RegExp, what: string): number {
   return Number(found);
 }
 
-// Only the two shapes the mark is made of are read; anything else is refused
-// so a redrawn mark cannot be rasterised as half of itself.
-function readMark(svg: string): { circle: Circle; stem: Stem; width: number; size: number } {
+// Only a circle and straight M-then-h/v/H/V strokes are read; anything else
+// is refused so a redrawn mark cannot be rasterised as part of itself.
+function readMark(svg: string): { circle: Circle; stems: Stem[]; width: number; size: number } {
   const size = number(svg, /viewBox="0 0 (\d+(?:\.\d+)?) \d+(?:\.\d+)?"/u, 'viewBox');
   const width = number(svg, /stroke-width="(\d+(?:\.\d+)?)"/u, 'stroke-width');
   const tag = /<circle\b([^>]*)\/>/u.exec(svg)?.[1];
@@ -44,18 +44,21 @@ function readMark(svg: string): { circle: Circle; stem: Stem; width: number; siz
     cy: number(tag, /\bcy="(-?\d+(?:\.\d+)?)"/u, 'circle cy'),
     r: number(tag, /\br="(\d+(?:\.\d+)?)"/u, 'circle r'),
   };
-  const path = /<path\b[^>]*\bd="([^"]*)"/u.exec(svg)?.[1];
-  const line = /^M(-?[\d.]+)[ ,](-?[\d.]+)([vh])(-?[\d.]+)$/u.exec(path ?? '');
-  if (line === null)
-    throw new Error(`mark.svg: path is not a single M, v or h segment: ${path ?? ''}`);
-  const [, x, y, axis, delta] = line;
-  const x1 = Number(x);
-  const y1 = Number(y);
-  const stem =
-    axis === 'v'
-      ? { x1, y1, x2: x1, y2: y1 + Number(delta) }
-      : { x1, y1, x2: x1 + Number(delta), y2: y1 };
-  return { circle, stem, width, size };
+  const stems = [...svg.matchAll(/<path\b[^>]*\bd="([^"]*)"/gu)].map((found) => {
+    const path = found[1] ?? '';
+    const line = /^M(-?[\d.]+)[ ,](-?[\d.]+)([vhVH])(-?[\d.]+)$/u.exec(path);
+    if (line === null)
+      throw new Error(`mark.svg: path is not a single M and H, V, h or v segment: ${path}`);
+    const [, x, y, axis, value] = line;
+    const x1 = Number(x);
+    const y1 = Number(y);
+    const along = Number(value);
+    const absolute = axis === 'H' || axis === 'V';
+    const end = absolute ? along : (axis === 'v' ? y1 : x1) + along;
+    return axis === 'v' || axis === 'V' ? { x1, y1, x2: x1, y2: end } : { x1, y1, x2: end, y2: y1 };
+  });
+  if (stems.length === 0) throw new Error('mark.svg: no path');
+  return { circle, stems, width, size };
 }
 
 function channels(hex: string): [number, number, number] {
@@ -79,19 +82,19 @@ function insideTile(x: number, y: number, inset = 0): boolean {
   );
 }
 
+// Round caps, as the mark's own stroke-linecap draws them.
 function insideStem(stem: Stem, half: number, x: number, y: number): boolean {
-  const [x0, x3] = [Math.min(stem.x1, stem.x2), Math.max(stem.x1, stem.x2)];
-  const [y0, y3] = [Math.min(stem.y1, stem.y2), Math.max(stem.y1, stem.y2)];
-  const vertical = stem.x1 === stem.x2;
-  return vertical
-    ? Math.abs(x - stem.x1) <= half && y >= y0 && y <= y3
-    : Math.abs(y - stem.y1) <= half && x >= x0 && x <= x3;
+  const dx = stem.x2 - stem.x1;
+  const dy = stem.y2 - stem.y1;
+  const along = ((x - stem.x1) * dx + (y - stem.y1) * dy) / (dx * dx + dy * dy);
+  const t = Math.max(0, Math.min(1, along));
+  return Math.hypot(x - (stem.x1 + t * dx), y - (stem.y1 + t * dy)) <= half;
 }
 
 // The mark in `ink` on a rounded tile of `background`, as straight RGBA with
 // the corners transparent, anti-aliased by supersampling.
 export function rasteriseMark(svg: string, colours: MarkColours): Buffer {
-  const { circle, stem, width, size } = readMark(svg);
+  const { circle, stems, width, size } = readMark(svg);
   const half = width / 2;
   const scale = (MARK_SIZE * 0.7) / size;
   const origin = (MARK_SIZE - size * scale) / 2;
@@ -114,7 +117,7 @@ export function rasteriseMark(svg: string, colours: MarkColours): Buffer {
           const mx = (x - origin) / scale;
           const my = (y - origin) / scale;
           const ring = Math.abs(Math.hypot(mx - circle.cx, my - circle.cy) - circle.r) <= half;
-          if (ring || insideStem(stem, half, mx, my)) drawn += 1;
+          if (ring || stems.some((stem) => insideStem(stem, half, mx, my))) drawn += 1;
         }
       }
       const inkWeight = tile === 0 ? 0 : drawn / tile;

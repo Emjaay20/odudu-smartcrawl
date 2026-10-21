@@ -74,7 +74,7 @@ curl -sS -X POST http://localhost:3000/tenants/reset-demo/login-actions/reset-pa
 </head>
 <body>
 <main class="page">
-<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
 <h1>Check your email</h1>
 <p>If that address has an account, we&#39;ve sent a link to reset its password.</p>
 </main>
@@ -92,7 +92,7 @@ curl -sS -X POST http://localhost:3000/tenants/reset-demo/login-actions/reset-pa
 </head>
 <body>
 <main class="page">
-<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
 <h1>Check your email</h1>
 <p>If that address has an account, we&#39;ve sent a link to reset its password.</p>
 </main>
@@ -154,7 +154,7 @@ curl -sS 'http://localhost:3000/tenants/reset-demo/login-actions/action-token?ke
 </head>
 <body>
 <main class="page">
-<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
 <header class="intro">
 <h1>Choose a new password</h1>
 <p class="tenant"><bdi>reset-demo</bdi></p>
@@ -193,7 +193,7 @@ curl -sS -X POST http://localhost:3000/tenants/reset-demo/login-actions/action-t
 </head>
 <body>
 <main class="page">
-<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t reset your password</h1>
 <ul>
 <li>Password must be at least 8 characters long.</li>
@@ -223,7 +223,7 @@ curl -sS -i -X POST http://localhost:3000/tenants/reset2-demo/login-actions/acti
 ```
 HTTP/1.1 400 Bad Request
 content-type: text/html
-content-length: 787
+content-length: 831
 
 <!doctype html>
 <html lang="en" dir="ltr">
@@ -237,7 +237,7 @@ content-length: 787
 </head>
 <body>
 <main class="page">
-<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t reset your password</h1>
 <ul>
 <li>Password must not be one you have used before.</li>
@@ -275,7 +275,7 @@ curl -sS -X POST http://localhost:3000/tenants/reset-demo/login-actions/action-t
 </head>
 <body>
 <main class="page">
-<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="16" cy="8" r="5"/><path d="M16 13v16"/></svg><span class="wordmark">odudu</span></p>
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
 <h1>Your password has been reset</h1>
 <p>You can close this page and sign in with your new password.</p>
 </main>

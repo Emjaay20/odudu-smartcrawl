@@ -184,7 +184,7 @@ describe('brand assets: the staff mark', () => {
     expect((mark.crossbar.from + mark.crossbar.to) / 2).toBe(16);
   });
 
-  it('sits on whole grid units, with the ring clear of the crossbar', () => {
+  it('sits on whole grid units, with the crossbar a collar just under the ring', () => {
     const numbers = [
       ...Object.values(mark.ring),
       ...Object.values(mark.shaft),
@@ -192,9 +192,16 @@ describe('brand assets: the staff mark', () => {
     ];
     expect(numbers.every(Number.isInteger)).toBe(true);
     expect(mark.crossbar.y - (mark.ring.cy + mark.ring.r)).toBeGreaterThanOrEqual(
-      3 * mark.strokeWidth,
+      2 * mark.strokeWidth,
     );
     expect(mark.crossbar.to - mark.crossbar.from).toBeGreaterThanOrEqual(4 * mark.strokeWidth);
+  });
+
+  it('keeps the crossbar in the top quarter of the shaft, so it reads as a sceptre', () => {
+    const length = mark.shaft.to - mark.shaft.from;
+    const down = (mark.crossbar.y - mark.shaft.from) / length;
+    expect(down).toBeGreaterThan(0);
+    expect(down).toBeLessThanOrEqual(0.25);
   });
 
   it('starts the shaft on the ring, so its cap does not poke into the hole', () => {
@@ -312,7 +319,49 @@ describe('brand assets: the README', () => {
     expect(read('README.md')).toContain('The name Odudu and the staff mark are not licensed');
   });
 
-  it('marks the mark as proposed until the owner approves it', () => {
-    expect(read('README.md')).toMatch(/proposed, awaiting owner approval/u);
+  it('records the owner approving the collar crossbar on 2026-10-21', () => {
+    const readme = read('README.md');
+    expect(readme).toContain('2026-10-21');
+    expect(readme).toMatch(/Venus/u);
+    expect(readme).toMatch(/sceptre/u);
+  });
+
+  it('no longer calls anything proposed', () => {
+    for (const file of [...svgFiles(), 'README.md']) {
+      expect(read(file), file).not.toMatch(/proposed|awaiting owner/iu);
+    }
+  });
+});
+
+describe('the copies the documentation site serves', () => {
+  it('are the brand files byte for byte', () => {
+    for (const file of ['favicon.svg', 'social.png']) {
+      const served = readFileSync(path.join(REPO_ROOT, 'apps/docs/static/brand', file));
+      expect(served.equals(readFileSync(path.join(BRAND, file))), file).toBe(true);
+    }
+  });
+
+  it('are the mark every page carries', () => {
+    const instrument = readFileSync(
+      path.join(REPO_ROOT, 'packages/instrument/src/mark.svg'),
+      'utf8',
+    );
+    const own = parseMark(instrument);
+    expect(own).toEqual(parseMark(read('mark.svg')));
+    expect(instrument).toContain('stroke-linecap="round"');
+    for (const pkg of ['account', 'authn-flows', 'console-gateway', 'protocol-oidc']) {
+      const renderer = readFileSync(
+        path.join(REPO_ROOT, `packages/${pkg}/src/view/document.ts`),
+        'utf8',
+      );
+      for (const shape of [
+        '<circle cx="16" cy="6" r="4"/>',
+        '<path d="M16 10V30"/>',
+        '<path d="M12 14H20"/>',
+      ]) {
+        expect(renderer, `${pkg} draws ${shape}`).toContain(shape);
+      }
+      expect(renderer, pkg).toContain('stroke-linecap="round"');
+    }
   });
 });

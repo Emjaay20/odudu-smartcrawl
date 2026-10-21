@@ -97,6 +97,38 @@ describe('rasteriseMark', () => {
   });
 });
 
+describe('rasteriseMark geometry', () => {
+  const staff = [
+    '<svg viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">',
+    '<circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></g></svg>',
+  ].join('');
+  const colours = { background: '#000000', ink: '#ffffff', edge: '#000000' };
+  // The mark is drawn at 70% of the tile, centred: 1.75 pixels per grid unit
+  // from an origin of 12.
+  const at = (x: number, y: number): number => {
+    const px = Math.round(12 + x * 1.75);
+    const py = Math.round(12 + y * 1.75);
+    return rasteriseMark(staff, colours)[(py * MARK_SIZE + px) * 4] ?? -1;
+  };
+
+  it('draws the collar across the shaft, to both ends, and nothing beside it', () => {
+    expect(at(12.5, 14)).toBe(255);
+    expect(at(19.5, 14)).toBe(255);
+    expect(at(10, 14)).toBe(0);
+    expect(at(22, 14)).toBe(0);
+    expect(at(14, 18)).toBe(0);
+    expect(at(18, 18)).toBe(0);
+  });
+
+  it('draws the ring, its open hole and the shaft below the collar', () => {
+    expect(at(16, 2)).toBe(255);
+    expect(at(16, 6)).toBe(0);
+    expect(at(12, 6)).toBe(255);
+    expect(at(16, 24)).toBe(255);
+    expect(at(16, 30.5)).toBe(255);
+  });
+});
+
 describe('encodePng', () => {
   it('writes a PNG whose pixels read back as given', () => {
     const rgba = Buffer.from([1, 2, 3, 255, 4, 5, 6, 128]);
