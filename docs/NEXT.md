@@ -2,16 +2,28 @@
 
 ## Start here
 
-**P0, P1, P2a, P2b, P3a, P3b, P4a, P4c and P4e are complete, the tenant
-rename is done, and P4d, whose four parts are all built, is under its
-whole-branch review and awaits the merge into `main`. P4 has been split five ways.** Phases are section 11 of
+**P0, P1, P2a, P2b, P3a, P3b, P4a, P4c, P4d and P4e are complete, the tenant
+rename is done, and P4g is the phase in progress. P4 has been split five
+ways.** Phases are section 11 of
 [the umbrella spec](superpowers/specs/2026-09-10-odudu-design.md), whose
 "P4 became four phases, then five" subsection has the reasoning.
 
-**P4g, the public release, is in progress on `p4g-public-release`:** its notes are in
-[`docs/phases/p4g.md`](phases/p4g.md) and the licences are `LICENSING.md`.
+**P4g, the public release, is in progress on `p4g-public-release`** (draft
+pull request #64). Built and reviewed: the release workflow and process, the
+CLI help registry, `odudu init` and the one-file quickstart, every server
+page under Instrument with a catalogue, the documentation site and its
+generated reference, the three path documents moved into it and retired, the
+guides, concepts, console tour and operating pages, the four examples and the
+job that runs them, and the staff mark across the console, the docs and the
+server pages. **What remains** is the landing page and its Core Web Vitals
+gate, the README, the community files, the CLA, the Pages deployment with the
+domain procedure, and the closing pass. Its notes are in
+[`docs/phases/p4g.md`](phases/p4g.md), the licences in `LICENSING.md`, and the
+work it placed on later phases is on
+[the roadmap page](../apps/docs/content/en/roadmap.md).
 
-The order is **P4a → P4c → P4e → P4d → P4g → P4b → P5a → P4f → P4h**, and the letters deliberately
+The order is **P4a → P4c → P4e → P4d → P4g → P4b → P5a → P4f → P4h**, so P4b
+(theming and client branding) is the next phase after P4g, and the letters deliberately
 do not read in execution order, because `P4b` was spent on theming before P4
 split and an accepted ADR cites it. P4a was token exchange
 ([spec](archive/specs/2026-09-23-p4a-token-exchange-design.md)); P4c was
@@ -61,7 +73,7 @@ extra statement, an aborted transaction, a lock (P4e).
 amendment (the admin API is its first JSON surface), ADR 0036 (UserInfo's
 claims narrowing) and [p4c.md](phases/p4c.md) (`client.enabled`).
 
-**A bare `P4` below means P4d, which is complete and awaits the merge into `main`,** unless it concerns token exchange, the grant
+**A bare `P4` below means P4d, which is complete and merged into `main`,** unless it concerns token exchange, the grant
 allowlist, the admin API, audit events, the grant's UserInfo claims,
 theming or client branding — the
 same disambiguation the P2 split used, and for the same reason: a citation
@@ -77,6 +89,7 @@ issuer included, as a hard cutover nothing deployed had to survive
 The running records, split out of this file on 2026-09-17: P2b reached
 1,873 lines here, of which the part describing where the project stood was 58.
 
+- [P4g — the public release](phases/p4g.md), still being written
 - [P4d — the admin console and the admin API it needs](phases/p4d.md)
 - [P4e — authentication and token audit events](phases/p4e.md)
 - [P4c — the admin API](phases/p4c.md)
