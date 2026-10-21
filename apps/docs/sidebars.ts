@@ -49,7 +49,7 @@ export const SIDEBAR_ITEMS: SidebarItemConfig[] = [
   directory(section('guides/index').label, 'guides'),
   directory(section('concepts/index').label, 'concepts'),
   directory(section('admin-console/index').label, 'admin-console'),
-  page('operating/index'),
+  directory(section('operating/index').label, 'operating'),
   {
     type: 'category' as const,
     label: section('reference/index').label,
@@ -61,7 +61,7 @@ export const SIDEBAR_ITEMS: SidebarItemConfig[] = [
       TRANSCRIPTS,
     ],
   },
-  page('security/index'),
+  directory(section('security/index').label, 'security'),
   directory(section('contributing/index').label, 'contributing'),
 ];
 

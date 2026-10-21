@@ -2286,3 +2286,26 @@ https://www.rfc-editor.org/rfc/rfc8414.txt | grep -m2 oauth-authorization-server
   reworded away ("DPoP") fails it.
 - **Browser project.** `vitest.config.ts` gives the browser project the `@site` alias too (the concept browser test now loads the diagrams); once,
   the quick-start capture-loading browser test failed on a lazy-image race and passed on three reruns.
+
+## Increment 27: operating, security, contributing
+
+- **What was not there to copy from.** `RELEASING.md`, `release.yml` and `CHANGELOG.md` do not exist on this branch, so the deploying page
+  cannot show a `cosign verify` command and says so; `operating/releasing.md` says no version is published. `operating.test.ts` copies every
+  `cosign verify` line of `RELEASING.md` onto the deploying page once the file exists, and until then asserts the page shows none.
+  `SECURITY.md` is not embedded either (no include mechanism in the site; Increment 33 rewrites it): `disclosure.md` carries only the private
+  advisory address, and a test requires it to equal the one in `SECURITY.md`.
+- **verified:** a deployment with a least-privilege owner. In a scratch network, `postgres:17-alpine`, `CREATE ROLE odudu_owner LOGIN CREATEROLE
+BYPASSRLS`, `CREATE ROLE odudu_svc LOGIN`, `CREATE DATABASE odudu OWNER odudu_owner`, then the image with `ODUDU_DATABASE_URL`,
+  `ODUDU_APP_DATABASE_URL`, a fresh `ODUDU_KEK`, `odudu console keygen`, `ODUDU_PUBLIC_BASE_URL=https://id.example.test`, `ODUDU_TLS=true` and
+  `ODUDU_TRUST_PROXY=true` booted (`migrations applied`, listening), `/health/ready` answered `{"status":"ok","checks":{"database":"ok"}}`,
+  `odudu seed admin --username ada` printed a one-time password, and discovery with `x-forwarded-proto: https` named an `https://` issuer. So the
+  owner needs `CREATEROLE` and `BYPASSRLS`, not a superuser. `odudu init` is not a production route: `assertLoopbackBase` refuses a base that is
+  not loopback.
+- **Guard order.** Without `ODUDU_TLS`, the server stops with `ODUDU_TLS must be true when NODE_ENV=production` before it connects; the
+  hardening page runs that refusal in the docs-run job (`docker compose run --rm --no-deps -e NODE_ENV=production -e ODUDU_TLS=false odudu`).
+- **Tests.** `apps/docs/tests/operating.test.ts`: every variable each exported `assert*` in `config-guard.ts` reads appears on the production
+  settings page and on the hardening page, with at least one checklist item per guard; the deploying page's proxy warnings and the root-of-origin
+  sentence; the threat model cites only ADRs that exist; every workspace directory of `apps`, `packages` and `tools` is named on the architecture
+  page. The docs-run job now also runs the operating pages (64 blocks, `MINIMUM_BLOCKS` raised from 59), proven on a fresh quick-start stack.
+- **Titles.** A page titled Configuration collides with the generated reference's title in `llms-full.txt`, so the operating page is "Production
+  settings" (file `configuration.md`).

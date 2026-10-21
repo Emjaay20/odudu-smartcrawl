@@ -230,7 +230,7 @@ describe('the CI workflow', () => {
     expect(workflow).toMatch(/^on:\n {2}pull_request:\s*$/mu);
     expect(jobNames(workflow)).toEqual(['docs-commands']);
     expect(workflow).toContain(
-      'node tools/docs-run/src/index.ts apps/docs/content/en/quick-start apps/docs/content/en/guides',
+      'node tools/docs-run/src/index.ts apps/docs/content/en/quick-start apps/docs/content/en/guides apps/docs/content/en/operating',
     );
     // `docker compose exec` in a guide finds the stack by these two variables,
     // which a reader's own folder and project name stand in for.

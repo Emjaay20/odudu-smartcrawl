@@ -48,9 +48,10 @@ jobs:
         run: quickstart/stack.sh up odudu-smoke-odudu 3195
 
       # The quick start creates the tenant, the user and the first client the
-      # guides sign in with, so it runs first.
+      # guides sign in with, so it runs first. The operating pages run last,
+      # against the stack the rest have left.
       - name: Run the guides' commands
-        run: node tools/docs-run/src/index.ts apps/docs/content/en/quick-start apps/docs/content/en/guides
+        run: node tools/docs-run/src/index.ts apps/docs/content/en/quick-start apps/docs/content/en/guides apps/docs/content/en/operating
 
       - name: Stop the stack
         if: always()

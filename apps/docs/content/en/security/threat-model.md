@@ -1,0 +1,55 @@
+---
+title: The threat model
+description: What Odudu protects, who it assumes an attacker is, how each defence works, where each one stops and what is not covered at all.
+---
+
+# The threat model
+
+You will read what Odudu defends against, so you can check it against what you need. Each defence names the decision that made it and how it is held in place, and each says where it stops. Odudu has not been reviewed by anyone outside the project, so treat this as the project's own account and test the parts you depend on.
+
+## What Odudu protects
+
+- **People's credentials:** passwords, passkeys, authenticator secrets and recovery codes.
+- **The tokens it issues:** authorization codes, access, ID and refresh tokens.
+- **Each tenant's data,** against every other tenant on the same server.
+- **The keys it signs with,** and the console's own access.
+- **The administrators' authority,** so one cannot quietly widen their own.
+
+## Who it assumes the attacker is
+
+- Someone who can reach the server over the network and send any request, including to endpoints that need no sign-in.
+- Someone who controls a client app a tenant registered, or a web page a signed-in person visits.
+- A tenant's administrator trying to reach beyond what they were given.
+- A bug in Odudu's own code that lets a request reach data it should not.
+
+It does not assume an attacker who already controls the server's machine, its database or its environment. That attacker holds the keys, and Odudu has nothing left to defend.
+
+## What stands in each attacker's way
+
+| Threat                                               | Defence                                                                                                                                                                                                                                                                                                         | Where it stops                                                                                                                                                                                                                                 |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A tenant reads another tenant's rows                 | Two independent layers: code cannot build a query without a tenant, and the database forces row-level security on the serving role ([ADR 0009](https://github.com/wizzywit/odudu/blob/main/docs/adr/0009-tenancy-and-rls.md)). Every repository method is tested with another tenant's id.                      | The owner connection bypasses row-level security, because it must resolve which tenant a request names. A bug on that path is not caught by the database. The owner role is for migrations and that one read.                                  |
+| Credentials read in transit                          | The server refuses to start in production unless `ODUDU_TLS=true`, and cookies take the `__Host-` prefix and `Secure` when it is ([ADR 0020](https://github.com/wizzywit/odudu/blob/main/docs/adr/0020-session-cookie-name-follows-tls.md)).                                                                    | Odudu ends no TLS. `ODUDU_TLS` is your statement that a proxy does, and the server cannot check it.                                                                                                                                            |
+| An authorization code intercepted and replayed       | PKCE is required of every client with no exception ([ADR 0016](https://github.com/wizzywit/odudu/blob/main/docs/adr/0016-mandatory-pkce-over-basic-op.md)). A replayed code revokes the grant it produced.                                                                                                      | An app that cannot do PKCE cannot use Odudu.                                                                                                                                                                                                   |
+| A stolen refresh token used                          | Refresh tokens rotate, and presenting a spent one revokes the whole family. The grant is decided again inside the rotating transaction ([ADR 0019](https://github.com/wizzywit/odudu/blob/main/docs/adr/0019-refresh-grant-decided-before-rotation.md)).                                                        | A thief who uses the token before its owner is not caught until the owner uses the older one.                                                                                                                                                  |
+| Guessing a password                                  | Passwords are hashed with Argon2id, accounts lock after repeated failures, and sign-in is throttled per origin, address and username ([ADR 0023](https://github.com/wizzywit/odudu/blob/main/docs/adr/0023-brute-force-authority-is-split.md)).                                                                 | The throttle is a window in one process's memory. It is exact for the one instance Odudu runs and would not be shared between several.                                                                                                         |
+| A page framed by another site                        | Every page is sent with `frame-ancestors 'none'` and a strict policy, from one place ([ADR 0018](https://github.com/wizzywit/odudu/blob/main/docs/adr/0018-framing-defence-on-rendered-pages.md), [ADR 0029](https://github.com/wizzywit/odudu/blob/main/docs/adr/0029-a-pages-headers-have-one-authority.md)). | A page that is meant to be shown by a client in a frame, such as a front-channel logout page, declares the origins it frames ([ADR 0034](https://github.com/wizzywit/odudu/blob/main/docs/adr/0034-a-page-declares-the-origins-it-frames.md)). |
+| The server tricked into fetching an internal address | A client's `jwks_uri` or logout address must be `https`, and the address a lookup returns is checked, every one of them, before the connection is made to it ([ADR 0028](https://github.com/wizzywit/odudu/blob/main/docs/adr/0028-a-client-supplied-url-is-bounded-before-the-socket.md)).                     | `ODUDU_ALLOW_PRIVATE_CLIENT_URLS` opens this on purpose for development, and production refuses to start with it on. The lookups have no deadline yet (P11 on the [roadmap](../roadmap.md)).                                                   |
+| An administrator widening their own power            | A change that alters who can sign in as a subject, or which capabilities a subject holds, is held to the caller's own capabilities, at every route that reaches it ([ADR 0040](https://github.com/wizzywit/odudu/blob/main/docs/adr/0040-the-capability-ceiling-covers-every-door-to-what-a-subject-holds.md)). | The rule covers the routes the decision names. A new route that changes who can sign in must be added to it.                                                                                                                                   |
+| Tokens stolen from the browser through the console   | The console keeps tokens on the server, encrypted, behind an `HttpOnly` cookie, and the browser never holds one ([ADR 0038](https://github.com/wizzywit/odudu/blob/main/docs/adr/0038-the-admin-console-and-its-gateway.md)).                                                                                   | The encryption key is `ODUDU_KEK`, held in the server's environment.                                                                                                                                                                           |
+| The audit trail filled with noise to hide something  | A refusal becomes a row only where something bounds how many a caller can cause ([ADR 0037](https://github.com/wizzywit/odudu/blob/main/docs/adr/0037-refusal-rows-are-bounded-by-the-principal-they-name.md)).                                                                                                 | A refusal that names no known caller is a line in the server's log, not a row in the trail. Only the admin API and the console read the trail. Nothing delivers it to a monitoring system yet (P10).                                           |
+
+## What is not covered
+
+These are gaps, not choices, and each is placed on the [roadmap](../roadmap.md).
+
+- **No outside review,** and no penetration test.
+- **Secrets live in the environment.** The encryption key and the database passwords are read from environment variables, with no secret store (P12).
+- **One instance.** The throttles and the migration step are not safe to share between instances (P11).
+- **No deadline on two outbound lookups** the token and user info endpoints make (P11).
+- **The deployment is yours.** Odudu cannot see that TLS really ends in front of it, that the database is not reachable from the internet, or that the proxy overwrites the forwarding headers. [Hardening](../operating/hardening.md) lists every one.
+- **Features it does not have,** such as DPoP, pushed authorization requests and SAML, are not partly done. They are absent (P13, P8).
+
+## How these claims are checked
+
+Each row names a decision record that argues the defence and the alternatives it rejected. Most are also held by a test that attacks the defence rather than exercising it, and a guard in the server's start-up refuses the settings that would undo it. If you find a row that is not true of the code, that is a vulnerability, and [Disclosure](./disclosure.md) is how to tell us.

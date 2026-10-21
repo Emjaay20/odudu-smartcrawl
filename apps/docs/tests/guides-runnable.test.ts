@@ -13,6 +13,9 @@ const PAGES = [
   'guides/api.md',
   'guides/machine-to-machine.md',
   'guides/keycloak.md',
+  'operating/upgrading.md',
+  'operating/backups.md',
+  'operating/hardening.md',
 ];
 
 const SHELLS = new Set(['sh', 'bash', 'zsh', 'shell', 'console']);
