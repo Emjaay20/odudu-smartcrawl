@@ -42,7 +42,8 @@ describe('CLI_COMMANDS', () => {
   });
 
   it('writes only options the command has in its example', () => {
-    for (const command of everyCommand(CLI_COMMANDS)) {
+    // A command with subcommands shows one of theirs, with that one's options.
+    for (const command of everyCommand(CLI_COMMANDS).filter((c) => c.subcommands.length === 0)) {
       const known = new Set([
         command.name.replace(/^--/, ''),
         ...command.options.map((o) => o.name),
