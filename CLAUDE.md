@@ -28,8 +28,10 @@ The sequence, in order:
    because a placement written under an old number is still a placement.
    **Anything the roadmap placed on the phase is in scope** unless the
    brainstorm rules it out in writing, with its reason and the phase that
-   takes it instead. `tests/docs/roadmap-section-11.test.ts` keeps the
-   roadmap and the phase's row agreeing, so the row is a complete list.
+   takes it instead. `tests/docs/roadmap-section-11.test.ts` maps
+   each sentence of the roadmap's "Next" and "Later" bullets for a phase to
+   words in its row, and fails on a bullet with no phase tag. "Decided against"
+   and a clause added to a mapped sentence are read by a person, not checked.
 
 2. **Brainstorm the phase** (`superpowers:brainstorming`) — scope, the
    design decisions specific to it, 2–3 approaches per contested call.
@@ -188,27 +190,86 @@ one by asserting a fix that is not pushed.
 
 `README.md` and the documentation site under `apps/docs/content/en/` describe
 what the server does **now**, not what it did when they were written. A
-change updates what the table below names for it in the same commit as the
+change updates what the list below names for it in the same commit as the
 code — the documents are part of finishing the work, in the way a test is,
 not a tidy-up afterwards.
 
-**A change owns its documentation.** The last column is the honest one: a
-row says "no check" where nothing fails when the prose is wrong, and that is
+**A change owns its documentation.** The "Checked by" line is the honest one: an
+entry says "no check" where nothing fails when the prose is wrong, and that is
 where to read the page again rather than trust a green build.
 
-| A change to                                                      | Updates, in the same commit                                                                                                                                                              | Checked by                                                                                                                                                                                                                                                                                                                                                  |
-| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| An HTTP route or response (protocol, admin API, console gateway) | The transcript under `reference/transcripts/` for it, **re-run** on a live stack; the generated endpoints and OpenAPI reference follow from the code                                     | `tests/docs/endpoints.test.ts` (documented routes against Fastify's, both ways), `admin-paths.test.ts`, `console-paths.test.ts`, `discovery.test.ts`, `error-codes.test.ts`; `apps/docs/tests/transcripts.test.ts` (each fenced block against the built page). That the transcript was re-run: no check                                                     |
-| A console screen or control                                      | The area's page under `admin-console/` and `tour.mdx`, then `pnpm docs:screenshots`                                                                                                      | `apps/docs/tests/console-areas.test.ts` (a page per feature, its menu entries, tabs and capability), `console-labels.test.ts` (a quoted label exists in the source), `console-shots.test.ts` and the `console-shots` CI job; `tests/lint/console-covers-admin-routes.test.ts` for a route no screen calls. That the prose describes the behaviour: no check |
-| Token, session, scope or consent behaviour                       | The page under `concepts/` (`tokens`, `sessions`, `scopes`, `consent-and-audit`), the guide that uses it and the transcript that shows it                                                | `tests/docs/concept-claims.test.ts`, `access-token-claims.test.ts`, `id-token-claims.test.ts`, `session-lifespans.test.ts`, `session-cookie-shape.test.ts`: the claims they list. `apps/docs/tests/concepts.test.ts`, which holds the pages' structure and the settings, claims and actions they name to the code. Every other sentence: no check           |
-| A CLI command or flag                                            | The command's entry in the help registry (the generated `cli.md` follows), the guides and `README.md` that name it                                                                       | `apps/docs/scripts/cli-page.test.ts` (the page against the registry), `tests/docs/init-readme.test.ts` (for `init`), `apps/docs/tests/guides-runnable.test.ts` and the `docs-commands` workflow, which runs a guide's runnable blocks. A command named in prose outside a runnable block: no check                                                          |
-| A configuration variable                                         | The loader's declaration (the generated configuration reference follows) and, if a production guard reads it, "Production settings" in `operating/configuration.md` and `deploying.md`   | `tests/docs/env-reads.test.ts` (every `ODUDU_*` read is documented), `config-defaults.test.ts`, `apps/docs/scripts/config-page.test.ts`, `apps/docs/tests/operating.test.ts` (the guards against the pages)                                                                                                                                                 |
-| A recovery, second-factor, password or lockout rule              | The transcript, the concept or guide page that states it, and the console's `sign-in-flow` page when a setting changes                                                                   | `tests/docs/recovery-codes.test.ts`, `password-policy.test.ts`, `required-action-order.test.ts`, `brute-force.test.ts`, `throttle.test.ts`: the values they read from code. Wording around them: no check                                                                                                                                                   |
-| The mark or any brand asset                                      | `brand/` (the PNGs and the ICO are rebuilt from the SVGs by `brand/build.ts`), `brand/README.md`, the copies in the console, the docs and the server pages, then `pnpm docs:screenshots` | `tests/lint/brand-assets.test.ts` (the geometry, the derivatives, every copy against `mark.svg`); the `console-shots` CI job for the header a screenshot shows                                                                                                                                                                                              |
-| A roadmap placement (a deferral, a gap, a phase's scope)         | `apps/docs/content/en/roadmap.md`, the phase's row in section 11, a `docs/NEXT.md` entry under its argument's address, an ADR when it is a decision                                      | `tests/docs/roadmap-section-11.test.ts`, `roadmap-shape.test.ts`, `roadmap-claims.test.ts`, `not-implemented-placement.test.ts`, `gap-audit-placement.test.ts`, `phase-references.test.ts`, `next-budget.test.ts`. That a marker is still true: no check, the closing pass reads it                                                                         |
-| Any page: a link, a heading, a path a reader follows             | The page that holds it                                                                                                                                                                   | `tests/docs/references.test.ts`, `link-fragments.test.ts`, `apps/docs/tests/links.test.ts`. Prose truth: no check                                                                                                                                                                                                                                           |
+- **An HTTP route or response** (protocol, admin API, console gateway)
+  - Update: the transcript under `reference/transcripts/` for it, **re-run**
+    on a live stack. The generated endpoints and OpenAPI reference follow
+    from the code.
+  - Checked by: `tests/docs/endpoints.test.ts` (documented routes against
+    Fastify's, both ways), `admin-paths.test.ts`, `console-paths.test.ts`,
+    `discovery.test.ts`, `error-codes.test.ts`; `apps/docs/tests/transcripts.test.ts`
+    (each fenced block against the built page). That the transcript was
+    re-run: no check.
+- **A console screen or control**
+  - Update: the area's page under `admin-console/` and `tour.mdx`, then
+    `pnpm docs:screenshots`.
+  - Checked by: `apps/docs/tests/console-areas.test.ts` (a page per feature,
+    its menu entries, tabs and capability), `console-labels.test.ts` (a
+    quoted label exists in the source), `console-shots.test.ts` and the
+    `console-shots` CI job; `tests/lint/console-covers-admin-routes.test.ts`
+    for a route no screen calls. That the prose describes the behaviour: no
+    check.
+- **Token, session, scope or consent behaviour**
+  - Update: the page under `concepts/` (`tokens`, `sessions`, `scopes`,
+    `consent-and-audit`), the guide that uses it and the transcript that
+    shows it.
+  - Checked by: `tests/docs/concept-claims.test.ts`,
+    `access-token-claims.test.ts`, `id-token-claims.test.ts`,
+    `session-lifespans.test.ts`, `session-cookie-shape.test.ts`, and
+    `apps/docs/tests/concepts.test.ts` (structure, and the settings, claims
+    and actions the pages name, against the code). Every other sentence: no
+    check.
+- **A CLI command or flag**
+  - Update: the command's entry in the help registry (the generated `cli.md`
+    follows), the guides and `README.md` that name it.
+  - Checked by: `apps/docs/scripts/cli-page.test.ts` (the page against the
+    registry), `tests/docs/init-readme.test.ts` (for `init`),
+    `apps/docs/tests/guides-runnable.test.ts` and the `docs-commands`
+    workflow, which runs a guide's runnable blocks. A command named in prose
+    outside a runnable block: no check.
+- **A configuration variable**
+  - Update: the loader's declaration (the generated configuration reference
+    follows) and, if a production guard reads it, "Production settings" in
+    `operating/configuration.md` and `deploying.md`.
+  - Checked by: `tests/docs/env-reads.test.ts` (every `ODUDU_*` read is
+    documented), `config-defaults.test.ts`,
+    `apps/docs/scripts/config-page.test.ts`, `apps/docs/tests/operating.test.ts`
+    (the guards against the pages).
+- **A recovery, second-factor, password or lockout rule**
+  - Update: the transcript, the concept or guide page that states it, and
+    the console's `sign-in-flow` page when a setting changes.
+  - Checked by: `tests/docs/recovery-codes.test.ts`, `password-policy.test.ts`,
+    `required-action-order.test.ts`, `brute-force.test.ts`, `throttle.test.ts`:
+    the values they read from code. Wording around them: no check.
+- **The mark or any brand asset**
+  - Update: `brand/` (the PNGs and the ICO are rebuilt from the SVGs by
+    `brand/build.ts`), `brand/README.md`, the copies in the console, the docs
+    and the server pages, then `pnpm docs:screenshots`.
+  - Checked by: `tests/lint/brand-assets.test.ts` (the geometry, the
+    derivatives, every copy against `mark.svg`); the `console-shots` CI job
+    for the header a screenshot shows.
+- **A roadmap placement** (a deferral, a gap, a phase's scope)
+  - Update: `apps/docs/content/en/roadmap.md`, the phase's row in section 11,
+    a `docs/NEXT.md` entry under its argument's address, an ADR when it is a
+    decision.
+  - Checked by: `tests/docs/roadmap-section-11.test.ts`, `roadmap-shape.test.ts`,
+    `roadmap-claims.test.ts`, `not-implemented-placement.test.ts`,
+    `gap-audit-placement.test.ts`, `phase-references.test.ts`,
+    `next-budget.test.ts`. That a marker is still true: no check, the closing
+    pass reads it.
+- **Any page: a link, a heading, a path a reader follows**
+  - Update: the page that holds it.
+  - Checked by: `tests/docs/references.test.ts`, `link-fragments.test.ts`,
+    `apps/docs/tests/links.test.ts`. Prose truth: no check.
 
-`tests/docs/documentation-owner-table.test.ts` holds every test this table
+`tests/docs/documentation-owner-table.test.ts` holds every test this list
 names to a file that exists.
 
 The transcripts under `apps/docs/content/en/reference/transcripts/` carry a

@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { loadDocument } from './markdown.js';
 
-// A phase's exit criterion is the only thing its own brainstorm is sure to read,
-// so work the roadmap places on a phase has to be written there, and work the
-// criterion or NEXT.md places on a phase has to be on the roadmap. Each
-// direction is checked here instead of by the closing pass's step 4.
+// Complements the closing pass's reading of the roadmap against section 11:
+// this checks that each roadmap sentence for a phase (Next and Later; not
+// Decided against, which places nothing) has its words in that phase's row,
+// that each gap-audit capability and NEXT.md placement has a roadmap line, and
+// that a bullet which is not phase-tagged fails rather than being skipped. It
+// works per sentence, so a clause added to a mapped sentence still needs a
+// reader; whether each mapping is still true is the pass's reading.
 const ROADMAP = 'apps/docs/content/en/roadmap.md';
 const SPEC = 'docs/superpowers/specs/2026-09-10-odudu-design.md';
 const NEXT = 'docs/NEXT.md';
@@ -45,7 +48,9 @@ function phaseBullets(): Bullet[] {
   return ['## Next', '## Later'].flatMap((heading) =>
     bullets(heading, roadmapLines()).flatMap((item) => {
       const match = /^\*\*(P\d+[a-z]?)\b[^*]*\*\*\s*(.*)$/u.exec(item);
-      return match?.[1] === undefined ? [] : [{ phase: match[1], text: match[2] ?? '' }];
+      if (match?.[1] !== undefined) return [{ phase: match[1], text: match[2] ?? '' }];
+      if (/^\*\*[^*]+\*\*: P\d+[a-z]?\b/u.test(item)) return [];
+      throw new Error(`${ROADMAP} ${heading}: a bullet with no phase tag: ${item.slice(0, 60)}`);
     }),
   );
 }
@@ -85,10 +90,10 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'A published, signed container image',
     'signed, with an sbom',
     'pinned by digest',
-    'one-file',
-    'release process',
-    'documentation site',
-    'landing page',
+    'one-file `compose.yaml`',
+    'release process and changelog written down',
+    'a documentation site built with docusaurus',
+    'a landing page;',
     'example applications',
   ],
   ['P4g', 'Until it ships'],
@@ -112,13 +117,29 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'owner notice by mail',
     "end the subject's other sessions",
   ],
-  ['P4f', 'Re-issuing recovery codes while the action is owed', 'argon2id'],
-  ['P4h', 'Every string in the admin console', 'catalogue', 'locale switch', 'right-to-left'],
-  ['P5', 'Budgets, attenuation and approval', 'ciba'],
+  [
+    'P4f',
+    'Re-issuing recovery codes while the action is owed',
+    'ten argon2id hashes per login submission',
+  ],
+  [
+    'P4h',
+    'Every string in the admin console',
+    'read from a catalogue',
+    'a locale switch',
+    'right-to-left locale',
+  ],
+  ['P5', 'Budgets, attenuation and approval', 'ciba approvals'],
   ['P5b', 'The irreversible tools', 'out-of-band approval'],
   ['P6', 'Sign in with Google', 'upstream oidc idp'],
-  ['P7', 'LDAP-backed sign-in', 'ldap', 'scim 2.0', '10,000'],
-  ['P8', 'Odudu as a SAML identity provider', 'saml 2.0'],
+  [
+    'P7',
+    'LDAP-backed sign-in',
+    'ldap-backed authentication',
+    'scim 2.0 inbound provisioning',
+    'beyond the 10,000',
+  ],
+  ['P8', 'Odudu as a SAML identity provider', 'saml 2.0 idp'],
   ['P9', 'Policy evaluation and UMA 2.0', 'uma 2.0', 'resource server as a first-class thing'],
   ['P10', 'Third-party providers loaded', 'third-party provider loads without a rebuild'],
   [
@@ -128,21 +149,21 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'eventlistener',
   ],
   ['P11', 'One instance only today', 'advisory lock', 'per-origin throttle'],
-  ['P11', 'Also a deadline', 'deadline', 'metrics endpoint'],
+  ['P11', 'Also a deadline', 'deadline to the outbound dns lookups', 'a metrics endpoint'],
   ['P11', 'Audit events are partitioned', 'partitioned by month', 'chunked and resumable'],
   [
     'P12',
     'Secrets read from somewhere',
     'secrets sourced',
     'restoring into an empty database',
-    'superuser',
+    'neither a superuser nor able to bypass row-level security',
   ],
   [
     'P13',
     'Pushed authorization requests',
     'pushed authorization requests',
-    'dpop',
-    'device-code client',
+    'dpop (rfc 9449)',
+    'a device-code client (rfc 8628)',
     'client_secret_jwt',
     'self_signed_tls_client_auth',
     'acr_values',
