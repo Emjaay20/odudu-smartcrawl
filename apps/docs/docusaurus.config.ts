@@ -9,7 +9,7 @@ import imageStrip from './plugins/image-strip';
 import robots from './plugins/robots';
 import { FOOTER_ROUTES, NAVBAR_ROUTES, REPOSITORY_URL, SECTIONS } from './nav';
 import { iconTags, siteHeadTags } from './seo';
-import { PAGES_BASE, SITE_ORIGIN } from './site.config';
+import { IMAGE_BASE, PAGES_BASE, SITE_ORIGIN, docsRoute } from './site.config';
 
 const CONTENT = contentDir(process.env.DOCS_CONTENT);
 requireDescriptions(path.resolve(__dirname, CONTENT));
@@ -18,6 +18,7 @@ const DESCRIPTION =
   'Odudu is a self-hosted OpenID Connect and OAuth 2.0 identity provider. Each page below is plain Markdown.';
 
 const image = process.env.DOCS_TARGET === 'image';
+const docs = docsRoute(image);
 
 type PrismTheme = typeof themes.github;
 
@@ -28,7 +29,7 @@ function withSurface(theme: PrismTheme): PrismTheme {
 const preset: Preset.Options = {
   docs: {
     path: CONTENT,
-    routeBasePath: '/',
+    routeBasePath: image ? '/' : 'docs',
     sidebarPath: './sidebars.ts',
     // A directory's index is the page its category links to, so it is not
     // also listed among the category's items.
@@ -61,7 +62,7 @@ const themeConfig: Preset.ThemeConfig = {
         const section = SECTIONS.find((candidate) => candidate.route === route);
         return section === undefined
           ? []
-          : [{ to: `/${route}`, label: section.label, position: 'left' as const }];
+          : [{ to: `/${docs}${route}`, label: section.label, position: 'left' as const }];
       }),
       { href: REPOSITORY_URL, label: 'GitHub', position: 'right' },
     ],
@@ -78,7 +79,7 @@ const themeConfig: Preset.ThemeConfig = {
     links: [
       ...FOOTER_ROUTES.flatMap((route) => {
         const section = SECTIONS.find((candidate) => candidate.route === route);
-        return section === undefined ? [] : [{ label: section.label, to: `/${route}` }];
+        return section === undefined ? [] : [{ label: section.label, to: `/${docs}${route}` }];
       }),
       {
         html: `<a class="footer__link-item" href="${REPOSITORY_URL}" target="_blank" rel="noopener noreferrer">GitHub<span class="visually-hidden"> (opens in a new tab)</span></a>`,
@@ -100,7 +101,8 @@ const config: Config = {
   title: 'Odudu',
   // The image names no public address: the theme needs a URL, and it is bundled.
   url: image ? 'http://localhost' : SITE_ORIGIN,
-  baseUrl: image ? '/docs/' : PAGES_BASE,
+  baseUrl: image ? IMAGE_BASE : PAGES_BASE,
+  customFields: { docsRoute: docs },
   trailingSlash: true,
   baseUrlIssueBanner: false,
   onBrokenLinks: 'throw',
@@ -110,7 +112,7 @@ const config: Config = {
   i18n: { defaultLocale: 'en', locales: ['en'] },
   headTags: [
     ...siteHeadTags(),
-    ...iconTags(image ? '/docs/' : PAGES_BASE),
+    ...iconTags(image ? IMAGE_BASE : PAGES_BASE),
     ...(image
       ? [{ tagName: 'meta' as const, attributes: { name: 'robots', content: 'noindex' } }]
       : []),
@@ -125,7 +127,7 @@ const config: Config = {
         indexPages: !image,
         // The image's pages say noindex to crawlers; its own search must still read them.
         forceIgnoreNoIndex: image,
-        docsRouteBasePath: '/',
+        docsRouteBasePath: image ? '/' : 'docs',
         docsDir: CONTENT,
       },
     ],
@@ -136,6 +138,7 @@ const config: Config = {
       {
         docsDir: CONTENT,
         useRelativeUrls: image,
+        docsRoute: docs,
         title: 'Odudu documentation',
         description: DESCRIPTION,
       },

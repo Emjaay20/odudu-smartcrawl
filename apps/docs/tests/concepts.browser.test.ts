@@ -3,7 +3,7 @@ import path from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import { chromium, type Browser, type Page } from '@playwright/test';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { PAGES_BASE } from '#docs/site.config.ts';
+import { PAGES_BASE, PAGES_DOCS_BASE } from '#docs/site.config.ts';
 import { declaredTexts } from '#docs/tests/support/diagram-markup.ts';
 import { DOCS_ROOT, distDir } from '#docs/tests/support/dist.ts';
 
@@ -214,10 +214,10 @@ describe('the concept diagrams in a browser, following the site toggle', () => {
           if (message.type() === 'error') problems.push(message.text());
         });
         for (const name of PAGES) {
-          await page.goto(`${origin}${PAGES_BASE}concepts/${name}/`);
+          await page.goto(`${origin}${PAGES_DOCS_BASE}concepts/${name}/`);
           await setTheme(page, theme);
           // The toggle's choice is kept, so a fresh load shows the page with the menu shut.
-          await page.goto(`${origin}${PAGES_BASE}concepts/${name}/`);
+          await page.goto(`${origin}${PAGES_DOCS_BASE}concepts/${name}/`);
           expect(await page.locator('html').getAttribute('data-theme')).toBe(theme);
           await shown(page);
           const seen = await measure(page);
@@ -253,7 +253,7 @@ describe('the concept diagrams in a browser, following the site toggle', () => {
             name,
           ).toEqual([]);
           // Reached by the router, the drawing is made in the browser, not read from the page.
-          await page.goto(`${origin}${PAGES_BASE}concepts/`);
+          await page.goto(`${origin}${PAGES_DOCS_BASE}concepts/`);
           await hydrated(page);
           await page.locator(`article a[href$="/concepts/${name}/"]`).first().click();
           await page.waitForURL(`**/concepts/${name}/`);

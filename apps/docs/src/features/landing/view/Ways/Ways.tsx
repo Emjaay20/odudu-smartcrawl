@@ -1,4 +1,4 @@
-import Link from '@docusaurus/Link';
+import { DocsLink } from '@site/src/shared/view/DocsLink/DocsLink';
 import type { ReactElement } from 'react';
 import { REPOSITORY_URL } from '@site/nav';
 import { EXAMPLES, EXAMPLES_URL_PATH, READERS } from '@site/src/features/landing/service/content';
@@ -15,7 +15,7 @@ export function Ways(): ReactElement {
         <ul className={styles.exampleList}>
           {EXAMPLES.map((example) => (
             <li key={example.to}>
-              <Link to={example.to}>{example.title}</Link>
+              <DocsLink to={example.to}>{example.title}</DocsLink>
             </li>
           ))}
         </ul>

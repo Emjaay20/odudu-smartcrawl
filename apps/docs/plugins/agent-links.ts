@@ -3,6 +3,8 @@ import path from 'node:path';
 export interface LinkTarget {
   readonly base: string;
   readonly origin: string | null;
+  // Where the docs plugin serves from, relative to the base: `docs/` or empty.
+  readonly docs: string;
 }
 
 const STATIC_FILE = 'pathname:///';
@@ -34,15 +36,15 @@ function rewriteTarget(raw: string, source: string, target: LinkTarget): string 
   const [, filePart = '', rest = ''] = /^([^#?]*)(.*)$/u.exec(raw) ?? [];
   if (filePart === '') return raw;
   const isDocument = /\.mdx?$/u.test(filePart);
-  let sitePath: string;
+  const site = `${target.origin ?? ''}${target.base}`;
   if (filePart.startsWith('/')) {
-    sitePath = isDocument ? routeOfDocument(filePart) : filePart;
-  } else if (isDocument) {
-    sitePath = routeOfDocument(path.posix.resolve('/', path.posix.dirname(source), filePart));
-  } else {
-    return raw;
+    return isDocument
+      ? `${site}${target.docs}${routeOfDocument(filePart).slice(1)}${rest}`
+      : `${site}${filePart.slice(1)}${rest}`;
   }
-  return `${target.origin ?? ''}${target.base}${sitePath.slice(1)}${rest}`;
+  if (!isDocument) return raw;
+  const route = routeOfDocument(path.posix.resolve('/', path.posix.dirname(source), filePart));
+  return `${site}${target.docs}${route.slice(1)}${rest}`;
 }
 
 function inBrackets(destination: string, replace: (raw: string) => string): string {

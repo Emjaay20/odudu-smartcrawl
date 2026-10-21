@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import * as cheerio from 'cheerio';
+import { DOCS_DIRECTORY, IMAGE_BASE, PAGES_DOCS_BASE } from '#docs/site.config.ts';
 
 export const DOCS_ROOT = path.resolve(import.meta.dirname, '../..');
 
@@ -12,6 +13,17 @@ export function distDir(target: Target): string {
     throw new Error(`${dir} is not built: run pnpm --filter @odudu/docs build:${target}`);
   }
   return dir;
+}
+
+// Where a build writes the documentation: under `docs/` beside the Pages
+// landing, at the root of the image, which the server mounts at `/docs/`.
+export function docsDir(target: Target): string {
+  return target === 'pages' ? path.join(distDir(target), DOCS_DIRECTORY) : distDir(target);
+}
+
+// The URL path the documentation starts at in a build.
+export function docsBase(target: Target): string {
+  return target === 'pages' ? PAGES_DOCS_BASE : IMAGE_BASE;
 }
 
 export function walk(dir: string): string[] {

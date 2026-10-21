@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { rewriteLinks, type LinkTarget } from '#docs/plugins/agent-links.ts';
 
-const PAGES: LinkTarget = { base: '/odudu/', origin: 'https://site.test' };
-const IMAGE: LinkTarget = { base: '/docs/', origin: null };
+const PAGES: LinkTarget = { base: '/odudu/', origin: 'https://site.test', docs: 'docs/' };
+const IMAGE: LinkTarget = { base: '/docs/', origin: null, docs: '' };
 const SOURCE = 'reference/generated/example.md';
 
 // Each row is written out by hand for both bases: the input, then what a copy must say.
@@ -14,21 +14,27 @@ const FORMS: { form: string; input: string; pages: string; image: string }[] = [
     image: 'See [a](/docs/quick-start/).',
   },
   {
+    form: 'a document link from the root of the documentation',
+    input: '[g](/guides/index.md#x)',
+    pages: '[g](https://site.test/odudu/docs/guides/#x)',
+    image: '[g](/docs/guides/#x)',
+  },
+  {
     form: 'a relative file link up and across',
     input: '[i](../../introduction/index.md)',
-    pages: '[i](https://site.test/odudu/introduction/)',
+    pages: '[i](https://site.test/odudu/docs/introduction/)',
     image: '[i](/docs/introduction/)',
   },
   {
     form: 'a sibling file link with a fragment',
     input: '[o](./other.md#x)',
-    pages: '[o](https://site.test/odudu/reference/generated/other/#x)',
+    pages: '[o](https://site.test/odudu/docs/reference/generated/other/#x)',
     image: '[o](/docs/reference/generated/other/#x)',
   },
   {
     form: 'a sibling file link with a query and a fragment',
     input: '[o](other.md?v=2#x)',
-    pages: '[o](https://site.test/odudu/reference/generated/other/?v=2#x)',
+    pages: '[o](https://site.test/odudu/docs/reference/generated/other/?v=2#x)',
     image: '[o](/docs/reference/generated/other/?v=2#x)',
   },
   {
@@ -41,7 +47,7 @@ const FORMS: { form: string; input: string; pages: string; image: string }[] = [
     form: 'a link whose text is inline code',
     input: 'See [`GET /x`](./other.md#x) and `code` then [`a`](/guides/) twice.',
     pages:
-      'See [`GET /x`](https://site.test/odudu/reference/generated/other/#x) and `code` then [`a`](https://site.test/odudu/guides/) twice.',
+      'See [`GET /x`](https://site.test/odudu/docs/reference/generated/other/#x) and `code` then [`a`](https://site.test/odudu/guides/) twice.',
     image:
       'See [`GET /x`](/docs/reference/generated/other/#x) and `code` then [`a`](/docs/guides/) twice.',
   },
@@ -49,7 +55,7 @@ const FORMS: { form: string; input: string; pages: string; image: string }[] = [
     form: 'a link whose text is wrapped onto the next line',
     input: 'See [the first part\nand the second](./other.md#x) there.',
     pages:
-      'See [the first part\nand the second](https://site.test/odudu/reference/generated/other/#x) there.',
+      'See [the first part\nand the second](https://site.test/odudu/docs/reference/generated/other/#x) there.',
     image: 'See [the first part\nand the second](/docs/reference/generated/other/#x) there.',
   },
   {
@@ -85,13 +91,13 @@ const FORMS: { form: string; input: string; pages: string; image: string }[] = [
   {
     form: 'a destination in angle brackets',
     input: '[a](<../a b.md>)',
-    pages: '[a](<https://site.test/odudu/reference/a b/>)',
+    pages: '[a](<https://site.test/odudu/docs/reference/a b/>)',
     image: '[a](</docs/reference/a b/>)',
   },
   {
     form: 'a reference definition with a title',
     input: '[ref]: ../../concepts/index.md "Concepts"',
-    pages: '[ref]: https://site.test/odudu/concepts/ "Concepts"',
+    pages: '[ref]: https://site.test/odudu/docs/concepts/ "Concepts"',
     image: '[ref]: /docs/concepts/ "Concepts"',
   },
   {
@@ -111,7 +117,7 @@ const FORMS: { form: string; input: string; pages: string; image: string }[] = [
   {
     form: 'a raw anchor to a sibling file',
     input: '<a class="x" href="./other.md">o</a>',
-    pages: '<a class="x" href="https://site.test/odudu/reference/generated/other/">o</a>',
+    pages: '<a class="x" href="https://site.test/odudu/docs/reference/generated/other/">o</a>',
     image: '<a class="x" href="/docs/reference/generated/other/">o</a>',
   },
 ];

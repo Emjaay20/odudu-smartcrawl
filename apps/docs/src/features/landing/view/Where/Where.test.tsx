@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Where } from '@site/src/features/landing/view/Where/Where';
 import { markupOf } from '@site/tests/support/markup';
-import { PAGES_BASE } from '@site/site.config';
+import { PAGES_DOCS_BASE } from '@site/site.config';
 
 describe('Where', () => {
   it('presents the hosted service as in the works, linking only the roadmap', () => {
@@ -13,7 +13,7 @@ describe('Where', () => {
         .find('a')
         .map((_, link) => $(link).attr('href'))
         .get(),
-    ).toEqual([`${PAGES_BASE}roadmap/`]);
+    ).toEqual([`${PAGES_DOCS_BASE}roadmap/`]);
     expect(hosted.find('form, input, button')).toHaveLength(0);
   });
 

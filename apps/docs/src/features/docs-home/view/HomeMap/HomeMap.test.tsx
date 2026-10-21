@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { JOURNEYS, SECTIONS } from '@site/nav';
 import { HomeMap } from '@site/src/features/docs-home/view/HomeMap/HomeMap';
 import { markupOf } from '@site/tests/support/markup';
-import { PAGES_BASE } from '@site/site.config';
+import { PAGES_DOCS_BASE } from '@site/site.config';
 
 describe('HomeMap', () => {
   it('links every section once, and every journey, under three headings', () => {
@@ -11,7 +11,7 @@ describe('HomeMap', () => {
     const hrefs = $('a')
       .map((_, link) => $(link).attr('href'))
       .get();
-    for (const section of SECTIONS) expect(hrefs).toContain(`${PAGES_BASE}${section.route}`);
-    for (const journey of JOURNEYS) expect(hrefs).toContain(`${PAGES_BASE}${journey.route}`);
+    for (const section of SECTIONS) expect(hrefs).toContain(`${PAGES_DOCS_BASE}${section.route}`);
+    for (const journey of JOURNEYS) expect(hrefs).toContain(`${PAGES_DOCS_BASE}${journey.route}`);
   });
 });

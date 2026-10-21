@@ -2,10 +2,10 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } f
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { PAGES_BASE, SITE_ORIGIN } from '#docs/site.config.ts';
+import { DOCS_DIRECTORY, PAGES_BASE, SITE_ORIGIN } from '#docs/site.config.ts';
 import { buildSite } from '#docs/tests/support/build.ts';
 import { DOCS_ROOT } from '#docs/tests/support/dist.ts';
-import { CONTENT_DIR, addressPrefix, entriesOf } from '#docs/tests/support/llms.ts';
+import { CONTENT_DIR, docsRouteOf, entriesOf, siteAddress } from '#docs/tests/support/llms.ts';
 import { referencesOf, unresolved } from '#docs/tests/support/links.ts';
 
 const EXAMPLE = `---
@@ -15,7 +15,7 @@ description: A generated page.
 
 # Example
 
-See [the intro](../../introduction/index.md), [a section](/quick-start/), [here](#here), [out](https://example.com/x), [next](./other.md#there) and ![icon](/brand/favicon.svg).
+See [the intro](../../introduction/index.md), [a section](/), [here](#here), [out](https://example.com/x), [next](./other.md#there) and ![icon](/brand/favicon.svg).
 
 A [reference link][ref], an autolink <https://example.com/auto>.
 
@@ -68,34 +68,35 @@ describe('a generated page added to the documentation', () => {
 
   const read = (dir: string, file: string): string => readFileSync(path.join(dir, file), 'utf8');
   const site = `${SITE_ORIGIN}${PAGES_BASE}`;
+  const docsSite = `${site}${DOCS_DIRECTORY}`;
 
   it('is listed with the others and has a copy, with no registration', () => {
     const urls = entriesOf(read(pagesOut, 'llms.txt')).map((entry) => entry.url);
-    expect(urls).toContain(`${site}reference/generated/example.md`);
-    expect(urls).toContain(`${site}reference/generated/other.md`);
+    expect(urls).toContain(`${docsSite}reference/generated/example.md`);
+    expect(urls).toContain(`${docsSite}reference/generated/other.md`);
     const imageUrls = entriesOf(read(imageOut, 'llms.txt')).map((entry) => entry.url);
     expect(imageUrls).toContain('/docs/reference/generated/example.md');
   });
 
   it('has its links resolved under the Pages base, in its copy and in llms-full.txt', () => {
     const expected = [
-      `[the intro](${site}introduction/)`,
-      `[a section](${site}quick-start/)`,
+      `[the intro](${docsSite}introduction/)`,
+      `[a section](${site})`,
       '[here](#here)',
       '[out](https://example.com/x)',
-      `[next](${site}reference/generated/other/#there)`,
+      `[next](${docsSite}reference/generated/other/#there)`,
       `![icon](${site}brand/favicon.svg)`,
       '[left alone](/quick-start/)',
-      `[ref]: ${site}concepts/ "Concepts"`,
+      `[ref]: ${docsSite}concepts/ "Concepts"`,
       '<https://example.com/auto>',
     ];
-    const copy = read(pagesOut, 'reference/generated/example.md');
+    const copy = read(pagesOut, `${DOCS_DIRECTORY}reference/generated/example.md`);
     const full = read(pagesOut, 'llms-full.txt');
     for (const link of expected) {
       expect(copy).toContain(link);
       expect(full).toContain(link);
     }
-    expect(full).toContain(`[the example](${site}reference/generated/example/)`);
+    expect(full).toContain(`[the example](${docsSite}reference/generated/example/)`);
   });
 
   it('has its links origin-relative under the image base', () => {
@@ -113,14 +114,15 @@ describe('a generated page added to the documentation', () => {
     ['image', 'imageOut'],
   ] as const)('points every reference of the %s build at something it wrote', (target, which) => {
     const dir = which === 'pagesOut' ? pagesOut : imageOut;
-    const prefix = addressPrefix(target);
+    const prefix = siteAddress(target);
+    const docs = docsRouteOf(target);
     const stray = [
-      'reference/generated/example.md',
-      'reference/generated/other.md',
+      `${docs}reference/generated/example.md`,
+      `${docs}reference/generated/other.md`,
       'llms-full.txt',
     ].flatMap((file) => unresolved(read(dir, file), dir, prefix));
     expect(stray).toEqual([]);
-    const all = referencesOf(read(dir, 'reference/generated/example.md'));
+    const all = referencesOf(read(dir, `${docs}reference/generated/example.md`));
     expect(all.filter((address) => address.startsWith('/') && !address.startsWith(prefix))).toEqual(
       [],
     );

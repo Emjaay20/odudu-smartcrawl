@@ -2,10 +2,12 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { MACHINE_READABLE_REFERENCES } from '#docs/nav.ts';
-import { PAGES_BASE, SITE_ORIGIN } from '#docs/site.config.ts';
+import { IMAGE_BASE, PAGES_BASE, SITE_ORIGIN } from '#docs/site.config.ts';
 import {
   DOCS_ROOT,
   distDir,
+  docsBase,
+  docsDir,
   htmlFiles,
   isDocumentRoute,
   load,
@@ -15,23 +17,19 @@ import {
 } from '#docs/tests/support/dist.ts';
 import {
   CONTENT_DIR,
-  IMAGE_BASE,
-  addressPrefix,
+  copyFile,
   copyPath,
   entriesOf,
   pagesOf,
   normalised,
   readSource,
   routeOfCopy,
+  siteAddress,
   sourceOf,
 } from '#docs/tests/support/llms.ts';
 import { shapeOf, unresolved } from '#docs/tests/support/links.ts';
 
 const TARGETS: Target[] = ['pages', 'image'];
-
-function baseOf(target: Target): string {
-  return target === 'pages' ? PAGES_BASE : IMAGE_BASE;
-}
 
 function read(target: Target, file: string): string {
   return readFileSync(path.join(distDir(target), file), 'utf8');
@@ -39,8 +37,8 @@ function read(target: Target, file: string): string {
 
 // Every documentation page of the build; the landing and the image's home are not documents.
 function documentRoutes(target: Target): string[] {
-  const dir = distDir(target);
-  const base = baseOf(target);
+  const dir = docsDir(target);
+  const base = docsBase(target);
   return htmlFiles(dir)
     .map((file) => routeOf(dir, file, base))
     .filter((route) => isDocumentRoute(route, base) && route !== base)
@@ -65,7 +63,7 @@ describe.each(TARGETS)('the agent copies of the %s build', (target) => {
         wrong.push(`${copy}: no source page`);
         continue;
       }
-      const written = readFileSync(path.join(distDir(target), copy), 'utf8');
+      const written = readFileSync(path.join(docsDir(target), copy), 'utf8');
       const copyShape = shapeOf(normalised(written, entry.description));
       const sourceShape = shapeOf(normalised(readSource(CONTENT_DIR, source), entry.description));
       if (copyShape.join('\n') !== sourceShape.join('\n')) wrong.push(copy);
@@ -77,15 +75,15 @@ describe.each(TARGETS)('the agent copies of the %s build', (target) => {
   it('lists each machine-readable reference the build is told to write', () => {
     const listed = new Set(entriesOf(read(target, 'llms.txt')).map((entry) => entry.url));
     const missing = MACHINE_READABLE_REFERENCES.filter(
-      (reference) => !listed.has(`${addressPrefix(target)}${reference.file}`),
+      (reference) => !listed.has(`${siteAddress(target)}${reference.file}`),
     );
     expect(missing).toEqual([]);
   });
 
   it('points every link of every copy at something the build wrote', () => {
-    const prefix = addressPrefix(target);
+    const prefix = siteAddress(target);
     const dir = distDir(target);
-    const files = ['llms.txt', 'llms-full.txt', ...entries.map((entry) => copyPath(entry, target))];
+    const files = ['llms.txt', 'llms-full.txt', ...entries.map((entry) => copyFile(entry, target))];
     const stray = files.flatMap((file) =>
       unresolved(read(target, file), dir, prefix).map((address) => `${file}: ${address}`),
     );
@@ -104,7 +102,7 @@ describe.each(TARGETS)('the agent copies of the %s build', (target) => {
       'robots.txt',
       // The licence texts of the fonts, published beside them (static/licenses).
       ...readdirSync(path.join(DOCS_ROOT, 'static/licenses')).map((file) => `licenses/${file}`),
-      ...entries.map((entry) => copyPath(entry, target)),
+      ...entries.map((entry) => copyFile(entry, target)),
       ...MACHINE_READABLE_REFERENCES.map((reference) => reference.file).filter((file) =>
         /\.(?:md|txt)$/u.test(file),
       ),
@@ -153,7 +151,7 @@ describe('the documentation sources', () => {
     expect(pages.length).toBeGreaterThan(0);
     const dirty = pages.flatMap((file) => {
       const relative = path.relative(CONTENT_DIR, file).replace(/(\/index)?\.mdx$/u, '.md');
-      const copy = readFileSync(path.join(distDir('pages'), relative), 'utf8');
+      const copy = readFileSync(path.join(docsDir('pages'), relative), 'utf8');
       return /^import |<(Tabs|TabItem|ConsoleShot|Diagram)\b/mu.test(copy) ? [relative] : [];
     });
     expect(dirty).toEqual([]);

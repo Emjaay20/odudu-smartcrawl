@@ -2,11 +2,9 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { describe, expect, it } from 'vitest';
-import { PAGES_BASE } from '#docs/site.config.ts';
-import { DOCS_ROOT, distDir, load, type Target } from '#docs/tests/support/dist.ts';
+import { DOCS_ROOT, docsBase, docsDir, load } from '#docs/tests/support/dist.ts';
 
 const CONTENT = path.join(DOCS_ROOT, 'content/en');
-const BASES: Record<Target, string> = { pages: PAGES_BASE, image: '/docs/' };
 
 // The transcripts are captured output. A page that renders one differently
 // from its source shows a reader bytes the server never sent.
@@ -50,8 +48,8 @@ function renderedBlocks(file: string): string[] {
 describe('the transcript pages', () => {
   for (const target of ['pages', 'image'] as const) {
     it(`renders a fenced transcript byte for byte in the ${target} build`, () => {
-      const dir = distDir(target);
-      const base = BASES[target];
+      const dir = docsDir(target);
+      const base = docsBase(target);
       let blocks = 0;
       const different: string[] = [];
       for (const directory of DIRECTORIES) {

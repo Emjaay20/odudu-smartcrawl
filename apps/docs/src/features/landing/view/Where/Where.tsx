@@ -1,4 +1,4 @@
-import Link from '@docusaurus/Link';
+import { DocsLink } from '@site/src/shared/view/DocsLink/DocsLink';
 import type { ReactElement } from 'react';
 import { REPOSITORY_URL } from '@site/nav';
 import { LICENSING_URL_PATH } from '@site/src/features/landing/service/content';
@@ -16,7 +16,8 @@ export function Where(): ReactElement {
           <p className={styles.cardBody}>
             This is what exists. Odudu is one container beside Postgres, and the quick start has it
             running on your machine with the console open.{' '}
-            <Link to="/operating/">Operating Odudu</Link> covers a server other people can reach.
+            <DocsLink to="/operating/">Operating Odudu</DocsLink> covers a server other people can
+            reach.
           </p>
         </div>
         <div data-reveal="" className={styles.pane} data-section="hosted">
@@ -25,7 +26,7 @@ export function Where(): ReactElement {
           </h3>
           <p className={styles.cardBody}>
             A hosted Odudu, run for you, is in the works. It has no date. Nothing in the open source
-            server waits for it. <Link to="/roadmap/">Read the roadmap</Link>
+            server waits for it. <DocsLink to="/roadmap/">Read the roadmap</DocsLink>
           </p>
         </div>
       </div>

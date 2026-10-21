@@ -1,4 +1,4 @@
-import Link from '@docusaurus/Link';
+import { DocsLink } from '@site/src/shared/view/DocsLink/DocsLink';
 import type { ReactElement } from 'react';
 import { captions } from '@site/src/features/landing/service/playback';
 import { useSignInFlow } from '@site/src/features/landing/usecase/useSignInFlow';
@@ -47,9 +47,9 @@ export function SignInFlow(): ReactElement {
         </ol>
       </div>
       <p className={styles.more}>
-        The ideas are in <Link to="/concepts/sessions/">Sessions</Link> and{' '}
-        <Link to="/concepts/tokens/">Tokens</Link>, and{' '}
-        <Link to="/guides/sign-a-user-in/">Sign a user in</Link> shows every request.
+        The ideas are in <DocsLink to="/concepts/sessions/">Sessions</DocsLink> and{' '}
+        <DocsLink to="/concepts/tokens/">Tokens</DocsLink>, and{' '}
+        <DocsLink to="/guides/sign-a-user-in/">Sign a user in</DocsLink> shows every request.
       </p>
     </div>
   );

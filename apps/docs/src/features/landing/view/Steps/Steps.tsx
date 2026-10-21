@@ -1,4 +1,4 @@
-import Link from '@docusaurus/Link';
+import { DocsLink } from '@site/src/shared/view/DocsLink/DocsLink';
 import type { ReactElement } from 'react';
 import { STEPS } from '@site/src/features/landing/service/content';
 import { Section } from '@site/src/features/landing/view/Section/Section';
@@ -21,9 +21,9 @@ export function Steps(): ReactElement {
         ))}
       </ol>
       <p className={styles.after} data-reveal="">
-        <Link className={styles.inline} to="/quick-start/">
+        <DocsLink className={styles.inline} to="/quick-start/">
           The quick start
-        </Link>{' '}
+        </DocsLink>{' '}
         has every step, with what you should see.
       </p>
     </Section>

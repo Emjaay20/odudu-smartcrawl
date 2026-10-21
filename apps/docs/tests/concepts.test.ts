@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { DOCS_ROOT, distDir, load } from '#docs/tests/support/dist.ts';
+import { DOCS_ROOT, docsDir, load } from '#docs/tests/support/dist.ts';
 
 const REPO = path.resolve(DOCS_ROOT, '../..');
 const CONTENT = path.join(DOCS_ROOT, 'content/en/concepts');
@@ -84,7 +84,7 @@ describe('each concept page embeds one diagram', () => {
   });
 
   it.each(PAGES)('the built %s page carries one described svg inline', (page) => {
-    const $ = load(path.join(distDir('pages'), 'concepts', page, 'index.html'));
+    const $ = load(path.join(docsDir('pages'), 'concepts', page, 'index.html'));
     const svgs = $('article svg[role="img"]').toArray();
     expect(svgs).toHaveLength(1);
     const [, , title = '', desc = ''] = [...body(page).matchAll(DIAGRAM)][0] ?? [];
@@ -96,7 +96,7 @@ describe('each concept page embeds one diagram', () => {
   });
 
   it.each(PAGES)('the Markdown copy of %s keeps the words and drops the drawing', (page) => {
-    const copy = readFileSync(path.join(distDir('pages'), 'concepts', `${page}.md`), 'utf8');
+    const copy = readFileSync(path.join(docsDir('pages'), 'concepts', `${page}.md`), 'utf8');
     const [, , , desc = ''] = [...body(page).matchAll(DIAGRAM)][0] ?? [];
     expect(copy).toContain(desc);
     expect(copy).not.toMatch(/<Diagram|<svg|import Diagram/u);

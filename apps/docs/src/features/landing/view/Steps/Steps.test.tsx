@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { STEPS } from '@site/src/features/landing/service/content';
 import { Steps } from '@site/src/features/landing/view/Steps/Steps';
 import { markupOf } from '@site/tests/support/markup';
-import { PAGES_BASE } from '@site/site.config';
+import { PAGES_DOCS_BASE } from '@site/site.config';
 
 describe('Steps', () => {
   it('names the three steps in order and links the quick start', () => {
@@ -13,6 +13,6 @@ describe('Steps', () => {
         .map((_, heading) => $(heading).text())
         .get(),
     ).toEqual(STEPS.map((step) => step.title));
-    expect($('a').attr('href')).toBe(`${PAGES_BASE}quick-start/`);
+    expect($('a').attr('href')).toBe(`${PAGES_DOCS_BASE}quick-start/`);
   });
 });

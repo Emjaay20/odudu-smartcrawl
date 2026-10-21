@@ -6,7 +6,7 @@ import { chromium, type Browser, type BrowserContextOptions, type Page } from '@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { JOURNEYS, SECTIONS } from '#docs/nav.ts';
 import { BEATS } from '#docs/src/features/landing/service/geometry.ts';
-import { PAGES_BASE } from '#docs/site.config.ts';
+import { PAGES_BASE, PAGES_DOCS_BASE } from '#docs/site.config.ts';
 import { DOCS_ROOT, distDir } from '#docs/tests/support/dist.ts';
 
 let origin = '';
@@ -322,7 +322,7 @@ describe('the landing page in a browser', () => {
         for (const scrolled of route === '' ? [false, true] : [false]) {
           it(`passes axe: ${scheme}, motion ${motion}, /${route}${scrolled ? ', scrolled' : ''}`, async () => {
             const { page, close } = await visit({ colorScheme: scheme, reducedMotion: motion });
-            if (route !== '') await page.goto(`${home()}${route}`);
+            if (route !== '') await page.goto(`${origin}${PAGES_DOCS_BASE}${route}`);
             await page.evaluate(async () => {
               await document.fonts.ready;
             });
@@ -364,7 +364,7 @@ describe('the landing page in a browser', () => {
     expect(await page.locator('code[data-shell]:visible').count()).toBe(1);
     expect(await page.locator('code[data-shell="unix"]').isVisible()).toBe(true);
     for (const route of [...SECTIONS.map((s) => s.route), ...JOURNEYS.map((j) => j.route)]) {
-      const link = page.locator(`main a[href="${PAGES_BASE}${route}"]`).first();
+      const link = page.locator(`main a[href="${PAGES_DOCS_BASE}${route}"]`).first();
       expect(await link.isVisible(), route).toBe(true);
     }
     const moving = await page.evaluate(() =>

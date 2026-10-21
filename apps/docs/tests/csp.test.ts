@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { REPOSITORY_URL } from '#docs/nav.ts';
+import { PAGES_DOCS_BASE } from '#docs/site.config.ts';
 import { distDir, htmlFiles, load, walk } from '#docs/tests/support/dist.ts';
 
 function sha256(text: string): string {
@@ -184,10 +185,12 @@ describe('the policy computed from the image build', () => {
 });
 
 describe('the Pages build', () => {
-  it('contains no link to /docs/, the copy in the image', () => {
+  it('contains no link to /docs/, the copy in the image, unless the site itself serves its docs there', () => {
     const dir = distDir('pages');
-    const offenders = htmlFiles(dir).filter((file) =>
-      /(?:href|src)=["']?\/docs\//u.test(readFileSync(file, 'utf8')),
+    const offenders = htmlFiles(dir).filter(
+      (file) =>
+        !PAGES_DOCS_BASE.startsWith('/docs/') &&
+        /(?:href|src)=["']?\/docs\//u.test(readFileSync(file, 'utf8')),
     );
     expect(offenders.map((file) => path.relative(dir, file))).toEqual([]);
   });

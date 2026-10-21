@@ -5,7 +5,7 @@ import type { Result } from 'axe-core';
 import { chromium, type Browser } from '@playwright/test';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PAGES_BASE } from '#docs/site.config.ts';
-import { DOCS_ROOT, distDir, type Target } from '#docs/tests/support/dist.ts';
+import { DOCS_ROOT, distDir, docsBase, type Target } from '#docs/tests/support/dist.ts';
 
 const BASES: Record<Target, string> = { pages: PAGES_BASE, image: '/docs/' };
 const origins: Partial<Record<Target, string>> = {};
@@ -48,7 +48,8 @@ afterAll(async () => {
   await browser?.close();
 });
 
-const address = (target: Target): string => `${origins[target] ?? ''}${BASES[target]}quick-start/`;
+const address = (target: Target): string =>
+  `${origins[target] ?? ''}${docsBase(target)}quick-start/`;
 
 describe('the quick start in a browser', () => {
   for (const target of ['pages', 'image'] as const) {

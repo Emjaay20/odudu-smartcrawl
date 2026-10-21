@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { JOURNEYS, SECTIONS } from '#docs/nav.ts';
 import { FOLLOW_UP, RELEASE_CAVEAT } from '#docs/src/features/landing/service/content.ts';
 import { LAYOUTS, travelKeyframes } from '#docs/src/features/landing/service/geometry.ts';
-import { PAGES_BASE } from '#docs/site.config.ts';
+import { PAGES_BASE, PAGES_DOCS_BASE } from '#docs/site.config.ts';
 import { TIME_CLAIM, TIME_CLAIM_EXAMPLES } from '#docs/tests/support/claims.ts';
 import { DOCS_ROOT, distDir, fileOf, load, walk } from '#docs/tests/support/dist.ts';
 
@@ -82,7 +82,7 @@ describe('the landing page as built', () => {
     expect(hosted.text()).toContain('in the works');
     expect(hosted.find('form, input, button, textarea, select')).toHaveLength(0);
     const links = hosted.find('a');
-    expect(hrefs(hosted)).toEqual([`${PAGES_BASE}roadmap/`]);
+    expect(hrefs(hosted)).toEqual([`${PAGES_DOCS_BASE}roadmap/`]);
     const forbidden = /pricing|price|buy|checkout|sign.?up|subscribe|trial|waitlist|\$\d/iu;
     links.each((_, element) => {
       expect($(element).text()).not.toMatch(forbidden);
@@ -115,7 +115,7 @@ describe('the landing page as built', () => {
       .not('[data-section="examples"] a');
     expect(readers).toHaveLength(4);
     for (const href of hrefs(landing.find('[data-section="readers"]')).filter((href) =>
-      href.startsWith(PAGES_BASE),
+      href.startsWith(PAGES_DOCS_BASE),
     )) {
       expect(exists(href), href).toBe(true);
     }
@@ -125,28 +125,28 @@ describe('the landing page as built', () => {
     const examples = landing.find('[data-section="examples"] li');
     expect(examples).toHaveLength(4);
     const guides = hrefs(landing.find('[data-section="examples"]')).filter((href) =>
-      href.startsWith(`${PAGES_BASE}guides/`),
+      href.startsWith(`${PAGES_DOCS_BASE}guides/`),
     );
     expect(guides.sort()).toEqual(
       ['web-app', 'single-page-app', 'api', 'machine-to-machine']
-        .map((name) => `${PAGES_BASE}guides/${name}/`)
+        .map((name) => `${PAGES_DOCS_BASE}guides/${name}/`)
         .sort(),
     );
   });
 
   it('links every section of the documentation and every journey', () => {
     const all = hrefs(landing);
-    for (const section of SECTIONS) expect(all).toContain(`${PAGES_BASE}${section.route}`);
-    for (const journey of JOURNEYS) expect(all).toContain(`${PAGES_BASE}${journey.route}`);
+    for (const section of SECTIONS) expect(all).toContain(`${PAGES_DOCS_BASE}${section.route}`);
+    for (const journey of JOURNEYS) expect(all).toContain(`${PAGES_DOCS_BASE}${journey.route}`);
   });
 
   it('links the comparison pages and the roadmap', () => {
     const compare = landing.find('[data-section="compare"]');
     expect(hrefs(compare)).toEqual(
       expect.arrayContaining([
-        `${PAGES_BASE}introduction/compare/`,
-        `${PAGES_BASE}guides/keycloak/`,
-        `${PAGES_BASE}roadmap/`,
+        `${PAGES_DOCS_BASE}introduction/compare/`,
+        `${PAGES_DOCS_BASE}guides/keycloak/`,
+        `${PAGES_DOCS_BASE}roadmap/`,
       ]),
     );
   });
@@ -252,9 +252,9 @@ describe('the sign-in scene', () => {
 
   it('links the pages that give the detail', () => {
     expect(hrefs(flow)).toEqual([
-      `${PAGES_BASE}concepts/sessions/`,
-      `${PAGES_BASE}concepts/tokens/`,
-      `${PAGES_BASE}guides/sign-a-user-in/`,
+      `${PAGES_DOCS_BASE}concepts/sessions/`,
+      `${PAGES_DOCS_BASE}concepts/tokens/`,
+      `${PAGES_DOCS_BASE}guides/sign-a-user-in/`,
     ]);
   });
 });
@@ -291,7 +291,7 @@ describe('the landing page keeps its promises small', () => {
     }
     expect(landing.text()).not.toMatch(TIME_CLAIM);
     expect(text('index.html')).not.toMatch(TIME_CLAIM);
-    expect(text('quick-start/index.html')).not.toMatch(TIME_CLAIM);
+    expect(text('docs/quick-start/index.html')).not.toMatch(TIME_CLAIM);
   });
 
   it('carries the release caveat on the landing page and the Quick start while no release workflow exists', () => {

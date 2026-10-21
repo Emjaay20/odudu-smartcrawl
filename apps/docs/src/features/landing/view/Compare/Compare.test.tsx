@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Compare } from '@site/src/features/landing/view/Compare/Compare';
 import { markupOf } from '@site/tests/support/markup';
-import { PAGES_BASE } from '@site/site.config';
+import { PAGES_DOCS_BASE } from '@site/site.config';
 
 describe('Compare', () => {
   it('says plainly that it is not ready for production', () => {
@@ -16,9 +16,9 @@ describe('Compare', () => {
         .map((_, link) => $(link).attr('href'))
         .get(),
     ).toEqual([
-      `${PAGES_BASE}introduction/compare/`,
-      `${PAGES_BASE}guides/keycloak/`,
-      `${PAGES_BASE}roadmap/`,
+      `${PAGES_DOCS_BASE}introduction/compare/`,
+      `${PAGES_DOCS_BASE}guides/keycloak/`,
+      `${PAGES_DOCS_BASE}roadmap/`,
     ]);
   });
 });

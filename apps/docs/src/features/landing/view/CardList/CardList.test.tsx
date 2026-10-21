@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Card } from '@site/src/features/landing/service/content';
 import { CardList } from '@site/src/features/landing/view/CardList/CardList';
 import { markupOf } from '@site/tests/support/markup';
-import { PAGES_BASE } from '@site/site.config';
+import { PAGES_DOCS_BASE } from '@site/site.config';
 
 const CARDS: Card[] = [
   { title: 'One', body: 'First card.', to: '/a/' },
@@ -17,7 +17,7 @@ describe('CardList', () => {
       $('li a')
         .map((_, link) => $(link).attr('href'))
         .get(),
-    ).toEqual([`${PAGES_BASE}a/`, `${PAGES_BASE}b/`]);
+    ).toEqual([`${PAGES_DOCS_BASE}a/`, `${PAGES_DOCS_BASE}b/`]);
     expect($('li').first().find('p').text()).toBe('First card.');
   });
 

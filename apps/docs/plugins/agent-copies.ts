@@ -13,6 +13,8 @@ import { appendReferences } from './agent-references';
 export interface AgentCopiesOptions {
   docsDir: string;
   useRelativeUrls: boolean;
+  // Where the docs plugin serves from, relative to the base: `docs/` or empty.
+  docsRoute: string;
   title: string;
   description: string;
 }
@@ -48,8 +50,10 @@ export default function agentCopies(
       const target: LinkTarget = {
         base: siteConfig.baseUrl,
         origin: options.useRelativeUrls ? null : siteConfig.url,
+        docs: options.docsRoute,
       };
-      const prefix = `${target.origin ?? ''}${target.base}`;
+      const site = `${target.origin ?? ''}${target.base}`;
+      const prefix = `${site}${options.docsRoute}`;
 
       const llmsFile = path.join(outDir, 'llms.txt');
       const llmsText = await readFile(llmsFile, 'utf8');
@@ -60,7 +64,7 @@ export default function agentCopies(
 
       const sources = new Map(copies.map(({ copy }) => [copy, sourceOf(docsRoot, copy)]));
       for (const { copy, title } of copies) {
-        const file = path.join(outDir, copy);
+        const file = path.join(outDir, options.docsRoute, copy);
         const source = sources.get(copy) ?? '';
         const text = dropRepeatedTitle(dropImports(await readFile(file, 'utf8')), title, 1);
         await writeFile(file, rewriteLinks(text, source, target));
@@ -95,7 +99,7 @@ export default function agentCopies(
           throw new Error(`Machine-readable reference ${reference.file} was not written`);
         }
       }
-      await writeFile(llmsFile, appendReferences(llmsText, MACHINE_READABLE_REFERENCES, prefix));
+      await writeFile(llmsFile, appendReferences(llmsText, MACHINE_READABLE_REFERENCES, site));
     },
   };
 }

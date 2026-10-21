@@ -1,4 +1,4 @@
-import Link from '@docusaurus/Link';
+import { DocsLink } from '@site/src/shared/view/DocsLink/DocsLink';
 import type { ReactElement } from 'react';
 import { JOURNEYS, SECTIONS } from '@site/nav';
 import { useAssetUrls } from '@site/src/features/landing/usecase/useAssetUrls';
@@ -18,12 +18,20 @@ export function Browse(): ReactElement {
         <ul className={styles.rows}>
           {SECTIONS.map((section) => (
             <li key={section.id} data-reveal="">
-              <Link className={styles.row} to={`/${section.route}`}>
+              <DocsLink className={styles.row} to={section.route}>
                 <span className={styles.rowLabel}>{section.label}</span>
                 <span className={styles.rowSummary}>{section.summary}</span>
-              </Link>
+              </DocsLink>
             </li>
           ))}
+          <li data-reveal="">
+            <DocsLink className={styles.row} to="/" data-docs-home="">
+              <span className={styles.rowLabel}>Documentation home</span>
+              <span className={styles.rowSummary}>
+                Every section and the four journeys on one page.
+              </span>
+            </DocsLink>
+          </li>
         </ul>
         <div className={styles.stack}>
           <div data-reveal="" className={styles.pane}>
@@ -34,9 +42,9 @@ export function Browse(): ReactElement {
             <ol className={styles.journeys}>
               {JOURNEYS.map((journey) => (
                 <li key={journey.route}>
-                  <Link className={styles.inline} to={`/${journey.route}`}>
+                  <DocsLink className={styles.inline} to={journey.route}>
                     {journey.label}
-                  </Link>
+                  </DocsLink>
                 </li>
               ))}
             </ol>
@@ -48,7 +56,7 @@ export function Browse(): ReactElement {
               them all, so an assistant can read the documentation without scraping it. An MCP
               server, which would let an agent administer Odudu through the same checks as everyone
               else, is planned (P5a) and is not built yet.{' '}
-              <Link to="/roadmap/#next">See where it sits on the roadmap.</Link>
+              <DocsLink to="/roadmap/#next">See where it sits on the roadmap.</DocsLink>
             </p>
           </div>
         </div>

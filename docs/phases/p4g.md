@@ -2546,3 +2546,24 @@ the review round's HEAD: all 24 identical in three runs and one run in which a c
 deterministic to the pixel. The hero's float and typing are not compared, because they move.
 The first run of the review round found that the scene model drew the return route's line, which the old view never did;
 that changed about 200 pixels and is now a `lines` and a `heads` list with a test that the return line is never drawn.
+
+### Increment 31d, the documentation under `docs/`
+
+Both builds put every page at `docs/<page>/` under the root of the site that serves them. The Pages build keeps the
+landing at its base and sets the docs plugin's `routeBasePath` to `docs`, so a page is `<origin><base>docs/<page>/`; the
+image keeps base `/docs/` and `routeBasePath: '/'`, so the server's `/docs/<page>/` is the same shape. `site.config.ts` holds
+`DOCS_DIRECTORY`, `IMAGE_BASE`, `PAGES_DOCS_BASE` and `docsRoute()`, and everything else derives from them: the navbar and
+footer links, the search plugin's `docsRouteBasePath`, the agent copies (written under `docs/`, their links rewritten
+with the docs route, `llms.txt` and the OpenAPI reference staying at the site root) and `customFields.docsRoute`, which a
+`DocsLink` view reads through `useDocsAddress` so the landing's and the home map's links follow the build.
+The old unprefixed routes are not kept. A `docs/` page (`src/pages/docs/index.tsx`, the home map with the public intro) fills
+the address the docs plugin serves nothing at, and the landing links it, since nothing else would.
+**Left where the theme fixes them:** `search/` and `search-index.json` stay beside the landing, because the search plugin
+registers its results page at `<base>search`; `tests/layout.test.ts` names them in its allowlist.
+**Two traps hit while building:** a root-relative Markdown link (`/quick-start/`) is base-prefixed only, so with the docs under
+`docs/` it is a broken link (the generated-page test now links `/`); and a build after a build of the other target without
+`docusaurus clear` bakes the first one's base into the font URLs (the package scripts clear, a hand-run sequence must).
+verified: `pnpm test` (exit 0), docs browser project 83, `tests/docs tests/lint tests/boundaries` 713, `pnpm typecheck`,
+`pnpm lint`, `pnpm boundaries`; Lighthouse 12.6.1 simulated mobile on the landing, two runs: performance 0.92, LCP 3.4 s,
+FCP 1.1 s, TBT 30 to 40 ms, CLS 0, other categories 1.00 (before: 0.92 to 0.93, 3.3 s). axe on `/`, `docs/` and `docs/guides/`
+at 390 px, both schemes: no violation; the search results page has `landmark-one-main` and `region` (the search plugin's page, which this change does not touch).

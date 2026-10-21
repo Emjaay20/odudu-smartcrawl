@@ -43,6 +43,10 @@ A page the sign-in flow shows is a function that returns markup and nothing else
 
 Every increment is designed for one volume: a million subjects and ten thousand clients in a tenant, ten thousand tenants and a hundred million audit events. A collection read is bounded, a list or search is served by an index, and a list endpoint makes a constant number of queries. The console renders nothing unbounded.
 
+## Where the documentation is served
+
+Both builds of the documentation site put every page at `docs/<page>/` under the root of the site that serves them. On the public site the landing page is the site root, so the pages are at `<root>docs/<page>/`; inside the image the server mounts the build at its `docs/` path, and the build serves its pages from its own root, which gives the same shape. `apps/docs/site.config.ts` is the one file that names the public address and these two shapes. The `llms.txt`, `sitemap.xml` and `robots.txt` files stay at the root of the public site, as crawlers expect, and the search results page sits beside them because the search plugin fixes its address.
+
 ## The map
 
 Every directory of the workspace, grouped by what it is for.

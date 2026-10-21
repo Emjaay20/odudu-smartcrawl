@@ -1,4 +1,4 @@
-import Link from '@docusaurus/Link';
+import { DocsLink } from '@site/src/shared/view/DocsLink/DocsLink';
 import { JOURNEYS } from '@site/nav';
 import { homeMapSections } from '@site/src/features/docs-home/service/homeMap';
 import type { ReactNode } from 'react';
@@ -19,10 +19,10 @@ export function HomeMap(): ReactNode {
         <ul className={styles.start}>
           {start.map(({ section, look }) => (
             <li key={section.id}>
-              <Link className={classNames(styles.card, LOOKS[look])} to={`/${section.route}`}>
+              <DocsLink className={classNames(styles.card, LOOKS[look])} to={section.route}>
                 <span className={styles.label}>{section.label}</span>
                 <span className={styles.summary}>{section.summary}</span>
-              </Link>
+              </DocsLink>
             </li>
           ))}
         </ul>
@@ -33,15 +33,15 @@ export function HomeMap(): ReactNode {
         </h2>
         <p className={styles.lede}>
           Four short guides, in order. Each one shows real requests and links to the full recording.{' '}
-          <Link to={`/${guides.route}`}>All guides</Link>
+          <DocsLink to={guides.route}>All guides</DocsLink>
         </p>
         <ol className={styles.journeys}>
           {JOURNEYS.map((journey) => (
             <li key={journey.route}>
-              <Link className={styles.card} to={`/${journey.route}`}>
+              <DocsLink className={styles.card} to={journey.route}>
                 <span className={styles.label}>{journey.label}</span>
                 <span className={styles.summary}>{journey.summary}</span>
-              </Link>
+              </DocsLink>
             </li>
           ))}
         </ol>
@@ -53,10 +53,10 @@ export function HomeMap(): ReactNode {
         <ul className={styles.deeper}>
           {deeper.map((section) => (
             <li key={section.id}>
-              <Link className={styles.row} to={`/${section.route}`}>
+              <DocsLink className={styles.row} to={section.route}>
                 <span className={styles.label}>{section.label}</span>
                 <span className={styles.summary}>{section.summary}</span>
-              </Link>
+              </DocsLink>
             </li>
           ))}
         </ul>

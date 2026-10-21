@@ -5,6 +5,7 @@ import { FOOTER_ROUTES, REPOSITORY_URL } from '#docs/nav.ts';
 import { PAGES_BASE } from '#docs/site.config.ts';
 import {
   distDir,
+  docsBase,
   fileOf,
   htmlFiles,
   load,
@@ -37,9 +38,12 @@ for (const target of ['pages', 'image'] as const) {
     it('links the chosen sections and the repository, and each section exists in the build', () => {
       const links = home('footer a').toArray();
       const hrefs = links.map((link) => home(link).attr('href'));
-      expect(hrefs).toEqual([...FOOTER_ROUTES.map((route) => `${base}${route}`), REPOSITORY_URL]);
+      expect(hrefs).toEqual([
+        ...FOOTER_ROUTES.map((route) => `${docsBase(target)}${route}`),
+        REPOSITORY_URL,
+      ]);
       for (const route of FOOTER_ROUTES) {
-        const file = fileOf(dir, base, `${base}${route}`);
+        const file = fileOf(dir, base, `${docsBase(target)}${route}`);
         expect(file !== null && existsSync(file), route).toBe(true);
       }
     });

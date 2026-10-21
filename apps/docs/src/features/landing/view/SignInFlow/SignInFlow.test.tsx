@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SignInFlow } from '@site/src/features/landing/view/SignInFlow/SignInFlow';
 import { markupOf } from '@site/tests/support/markup';
-import { PAGES_BASE } from '@site/site.config';
+import { PAGES_DOCS_BASE } from '@site/site.config';
 
 describe('SignInFlow', () => {
   it('starts at rest with a scene for each layout and the controls in place', () => {
@@ -24,9 +24,9 @@ describe('SignInFlow', () => {
         .map((_, link) => $(link).attr('href'))
         .get(),
     ).toEqual([
-      `${PAGES_BASE}concepts/sessions/`,
-      `${PAGES_BASE}concepts/tokens/`,
-      `${PAGES_BASE}guides/sign-a-user-in/`,
+      `${PAGES_DOCS_BASE}concepts/sessions/`,
+      `${PAGES_DOCS_BASE}concepts/tokens/`,
+      `${PAGES_DOCS_BASE}guides/sign-a-user-in/`,
     ]);
   });
 });

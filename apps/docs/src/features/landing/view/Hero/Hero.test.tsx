@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Hero } from '@site/src/features/landing/view/Hero/Hero';
 import { markupOf } from '@site/tests/support/markup';
-import { PAGES_BASE } from '@site/site.config';
+import { PAGES_DOCS_BASE } from '@site/site.config';
 
 describe('Hero', () => {
   it('says what Odudu is in one headline and offers the docs and the quick start', () => {
@@ -11,7 +11,11 @@ describe('Hero', () => {
       $('a')
         .map((_, link) => $(link).attr('href'))
         .get(),
-    ).toEqual([`${PAGES_BASE}introduction/`, `${PAGES_BASE}quick-start/`, `${PAGES_BASE}roadmap/`]);
+    ).toEqual([
+      `${PAGES_DOCS_BASE}introduction/`,
+      `${PAGES_DOCS_BASE}quick-start/`,
+      `${PAGES_DOCS_BASE}roadmap/`,
+    ]);
   });
 
   it('shows the console in a picture that is fetched first and never lazily', () => {

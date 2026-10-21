@@ -3,10 +3,11 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SECTIONS } from '#docs/nav.ts';
-import { PAGES_BASE, SITE_ORIGIN } from '#docs/site.config.ts';
+import { IMAGE_BASE, PAGES_BASE, PAGES_DOCS_BASE, SITE_ORIGIN } from '#docs/site.config.ts';
 import {
   DOCS_ROOT,
   distDir,
+  docsBase,
   htmlFiles,
   load,
   routeOf,
@@ -14,7 +15,7 @@ import {
   type Target,
 } from '#docs/tests/support/dist.ts';
 
-const BASES: Record<Target, string> = { pages: PAGES_BASE, image: '/docs/' };
+const BASES: Record<Target, string> = { pages: PAGES_BASE, image: IMAGE_BASE };
 
 describe('the site address', () => {
   afterEach(() => {
@@ -25,6 +26,11 @@ describe('the site address', () => {
   it('is one origin and one base, the host project path for now', () => {
     expect(SITE_ORIGIN).toBe('https://wizzywit.github.io');
     expect(PAGES_BASE).toBe('/odudu/');
+  });
+
+  it('puts the docs in a docs directory beside the landing, as the image serves them', () => {
+    expect(PAGES_DOCS_BASE).toBe(`${PAGES_BASE}docs/`);
+    expect(IMAGE_BASE).toBe('/docs/');
   });
 
   it('moves when the environment names another origin and base', async () => {
@@ -68,14 +74,13 @@ describe('the two builds', () => {
 
     it(`indexes every section for search in the ${target} build`, () => {
       const dir = distDir(target);
-      const base = BASES[target];
       const index = JSON.parse(readFileSync(path.join(dir, 'search-index.json'), 'utf8')) as {
         documents: { u: string }[];
       }[];
       const indexed = new Set(
         index.flatMap((part) => part.documents.map((document) => document.u)),
       );
-      const missing = SECTIONS.map((section) => `${base}${section.route}`).filter(
+      const missing = SECTIONS.map((section) => `${docsBase(target)}${section.route}`).filter(
         (route) => !indexed.has(route),
       );
       expect(missing).toEqual([]);

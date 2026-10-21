@@ -4,7 +4,7 @@ import * as cheerio from 'cheerio';
 import { describe, expect, it } from 'vitest';
 import { expectLandingNodes, jsonLdNodes, type JsonLdNode } from '#docs/tests/support/jsonld.ts';
 import { SECTIONS } from '#docs/nav.ts';
-import { PAGES_BASE, SITE_ORIGIN } from '#docs/site.config.ts';
+import { PAGES_BASE, PAGES_DOCS_BASE, SITE_ORIGIN } from '#docs/site.config.ts';
 import {
   DOCS_ROOT,
   distDir,
@@ -199,7 +199,7 @@ describe('the Pages build is indexable HTML', () => {
             .map((_, element) => page.$(element).attr('href'))
             .get(),
         );
-        const absent = SECTIONS.map((section) => `${BASE}${section.route}`).filter(
+        const absent = SECTIONS.map((section) => `${PAGES_DOCS_BASE}${section.route}`).filter(
           (route) => !hrefs.has(route),
         );
         return absent.length === 0 ? null : `no link to ${absent.join(', ')}`;
@@ -221,7 +221,7 @@ describe('the Pages build is indexable HTML', () => {
   });
 
   it('gives every docs page a breadcrumb that ends at its own heading, with absolute addresses', () => {
-    const docs = pages().filter((page) => page.$('[data-page="landing"]').length === 0);
+    const docs = pages().filter((page) => page.$('[data-page]').length === 0);
     expect(
       docs.flatMap((page) => {
         const lists = jsonLd(page).filter((node) => node['@type'] === 'BreadcrumbList') as {

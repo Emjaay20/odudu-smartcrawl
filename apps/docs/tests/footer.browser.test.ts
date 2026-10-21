@@ -5,7 +5,7 @@ import type { Result } from 'axe-core';
 import { chromium, type Browser } from '@playwright/test';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PAGES_BASE } from '#docs/site.config.ts';
-import { DOCS_ROOT, distDir, type Target } from '#docs/tests/support/dist.ts';
+import { DOCS_ROOT, distDir, docsBase, type Target } from '#docs/tests/support/dist.ts';
 
 const BASES: Record<Target, string> = { pages: PAGES_BASE, image: '/docs/' };
 const origins: Partial<Record<Target, string>> = {};
@@ -62,7 +62,7 @@ describe('the footer in a browser', () => {
           if (browser === undefined) throw new Error('the browser did not launch');
           const context = await browser.newContext({ colorScheme: scheme });
           const page = await context.newPage();
-          await page.goto(`${origins[target] ?? ''}${BASES[target]}${route}`);
+          await page.goto(`${origins[target] ?? ''}${docsBase(target)}${route}`);
           const results = await new AxeBuilder({ page }).include('footer').analyze();
           expect(results.violations.map((violation: Result) => violation.id)).toEqual([]);
           await context.close();

@@ -1,9 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { PAGES_BASE, SITE_ORIGIN } from '#docs/site.config.ts';
+import { DOCS_DIRECTORY, IMAGE_BASE, PAGES_BASE, SITE_ORIGIN } from '#docs/site.config.ts';
 import { DOCS_ROOT, type Target } from '#docs/tests/support/dist.ts';
-
-export const IMAGE_BASE = '/docs/';
 
 export interface Entry {
   title: string;
@@ -11,9 +9,19 @@ export interface Entry {
   description: string;
 }
 
-// What every address in a target's llms.txt begins with.
-export function addressPrefix(target: Target): string {
+// What every address of a target's files begins with, the machine-readable references among them.
+export function siteAddress(target: Target): string {
   return target === 'pages' ? `${SITE_ORIGIN}${PAGES_BASE}` : IMAGE_BASE;
+}
+
+// Where a target writes the documentation and its copies, relative to its output.
+export function docsRouteOf(target: Target): string {
+  return target === 'pages' ? DOCS_DIRECTORY : '';
+}
+
+// What every page address in a target's llms.txt begins with.
+export function addressPrefix(target: Target): string {
+  return `${siteAddress(target)}${docsRouteOf(target)}`;
 }
 
 export function entriesOf(llmsTxt: string): Entry[] {
@@ -30,9 +38,14 @@ export function pagesOf(llmsTxt: string): Entry[] {
   return entriesOf(llmsTxt.split('\n## Machine-readable references')[0] ?? '');
 }
 
-// The Markdown copy's path inside the build, from its listed address.
+// The Markdown copy's path inside the documentation, from its listed address.
 export function copyPath(entry: Entry, target: Target): string {
   return entry.url.slice(addressPrefix(target).length);
+}
+
+// The Markdown copy's path inside the build's output.
+export function copyFile(entry: Entry, target: Target): string {
+  return `${docsRouteOf(target)}${copyPath(entry, target)}`;
 }
 
 export function routeOfCopy(entry: Entry, target: Target): string {

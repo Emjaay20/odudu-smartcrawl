@@ -1,4 +1,4 @@
-import Link from '@docusaurus/Link';
+import { DocsLink } from '@site/src/shared/view/DocsLink/DocsLink';
 import type { ReactElement } from 'react';
 import { Section } from '@site/src/features/landing/view/Section/Section';
 import styles from '@site/src/features/landing/view/Compare/Compare.module.css';
@@ -24,15 +24,15 @@ export function Compare(): ReactElement {
         against.
       </p>
       <p className={styles.links} data-reveal="">
-        <Link className={styles.inline} to="/introduction/compare/">
+        <DocsLink className={styles.inline} to="/introduction/compare/">
           How Odudu compares
-        </Link>
-        <Link className={styles.inline} to="/guides/keycloak/">
+        </DocsLink>
+        <DocsLink className={styles.inline} to="/guides/keycloak/">
           Coming from Keycloak
-        </Link>
-        <Link className={styles.inline} to="/roadmap/">
+        </DocsLink>
+        <DocsLink className={styles.inline} to="/roadmap/">
           The roadmap
-        </Link>
+        </DocsLink>
       </p>
     </Section>
   );

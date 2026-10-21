@@ -1,4 +1,4 @@
-import Link from '@docusaurus/Link';
+import { DocsLink } from '@site/src/shared/view/DocsLink/DocsLink';
 import type { ReactElement } from 'react';
 import type { Card } from '@site/src/features/landing/service/content';
 import styles from '@site/src/features/landing/view/CardList/CardList.module.css';
@@ -17,9 +17,9 @@ export function CardList({ cards, columns }: Props): ReactElement {
       {cards.map((card) => (
         <li key={card.to} className={styles.card} data-reveal="">
           <h3 className={styles.cardTitle}>
-            <Link to={card.to} className={styles.cardLink}>
+            <DocsLink to={card.to} className={styles.cardLink}>
               {card.title}
-            </Link>
+            </DocsLink>
           </h3>
           <p className={styles.cardBody}>{card.body}</p>
         </li>

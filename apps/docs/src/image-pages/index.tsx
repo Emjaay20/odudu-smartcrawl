@@ -9,7 +9,7 @@ export default function ImageHome(): ReactElement {
       title="Documentation"
       description="The Odudu documentation that ships with this installation."
     >
-      <DocsHome />
+      <DocsHome audience="installation" />
     </Layout>
   );
 }

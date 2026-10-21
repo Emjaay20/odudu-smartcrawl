@@ -1,4 +1,4 @@
-import Link from '@docusaurus/Link';
+import { DocsLink } from '@site/src/shared/view/DocsLink/DocsLink';
 import type { ReactElement } from 'react';
 import { ConsoleShot } from '@site/src/shared/view/ConsoleShot';
 import { Install } from '@site/src/features/landing/view/Install/Install';
@@ -19,16 +19,16 @@ export function Hero(): ReactElement {
           </p>
           <Install />
           <p className={styles.actions}>
-            <Link className={styles.primary} to="/introduction/">
+            <DocsLink className={styles.primary} to="/introduction/">
               Read the docs
-            </Link>
-            <Link className={styles.secondary} to="/quick-start/">
+            </DocsLink>
+            <DocsLink className={styles.secondary} to="/quick-start/">
               Follow the quick start
-            </Link>
+            </DocsLink>
           </p>
           <p className={styles.early}>
             Early software, not ready for production.{' '}
-            <Link to="/roadmap/">What is built and what is next</Link>
+            <DocsLink to="/roadmap/">What is built and what is next</DocsLink>
           </p>
         </div>
         <div className={styles.heroShot}>
