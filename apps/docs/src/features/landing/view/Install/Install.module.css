@@ -25,6 +25,10 @@
   flex-wrap: wrap;
 }
 
+.shellLabel {
+  composes: lift from '@site/src/shared/view/lift.module.css';
+}
+
 .shells label {
   display: inline-flex;
   align-items: center;
@@ -50,6 +54,7 @@
 }
 
 .copy {
+  composes: lift from '@site/src/shared/view/lift.module.css';
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
@@ -185,16 +190,6 @@
 @media (prefers-reduced-motion: no-preference) {
   .typed::after {
     animation: caret 1s steps(1) infinite;
-  }
-
-  .copy,
-  .shells label {
-    transition:
-      translate var(--motion-panel) var(--ease),
-      scale var(--motion-fast) var(--ease),
-      border-color var(--motion-panel) var(--ease),
-      background-color var(--motion-panel) var(--ease),
-      color var(--motion-panel) var(--ease);
   }
 
   .copy:active {

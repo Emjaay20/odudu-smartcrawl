@@ -1,26 +1,34 @@
-import { useEffect, useId, useRef, useState, type RefObject } from 'react';
+import { useEffect, useId, useReducer, useRef, type RefObject } from 'react';
 import type { Step } from '@site/src/features/landing/service/geometry';
 import {
-  advance,
-  captionOf,
-  isPlaying,
-  liveText,
-  startsOnEntry,
+  FLOW_START,
+  flowReducer,
+  playing,
+  stepper,
+  viewOf,
   waitFor,
+  type StepperButton,
 } from '@site/src/features/landing/service/playback';
 import { usePrefersReducedMotion } from '@site/src/features/landing/usecase/usePrefersReducedMotion';
+import { canObserve, watchVisible } from '@site/src/shared/platform/observe';
+import { watchPageShown } from '@site/src/shared/platform/page';
 
 export interface SignInFlow {
   uid: string;
   stage: RefObject<HTMLDivElement | null>;
   step: Step;
   wantsPlay: boolean;
-  caption: string;
+  label: 'Pause' | 'Play';
   live: string;
+  politeness: 'off' | 'polite';
+  buttons: StepperButton[];
   choose: (step: Step) => void;
   toggle: () => void;
   replay: () => void;
 }
+
+// A margin as well as a share, so a short landscape screen still counts the scene as in view.
+const IN_VIEW = { rootMargin: '20% 0px 20% 0px', threshold: 0.4 };
 
 // Sign-in as one scene: it plays once when it comes into view, loops after a
 // rest, and waits while it is off screen, the page is hidden, or a reader has
@@ -28,84 +36,56 @@ export interface SignInFlow {
 export function useSignInFlow(): SignInFlow {
   const uid = useId().replaceAll(':', '');
   const stage = useRef<HTMLDivElement>(null);
-  const chosen = useRef(false);
-  const motion = useRef(false);
-  const [step, setStep] = useState<Step>(0);
-  const [wantsPlay, setWantsPlay] = useState(false);
-  const [inView, setInView] = useState(false);
-  const [pageShown, setPageShown] = useState(true);
+  const [flow, dispatch] = useReducer(flowReducer, FLOW_START);
   const reduced = usePrefersReducedMotion();
 
   useEffect(() => {
-    motion.current = !reduced && typeof IntersectionObserver !== 'undefined';
-    const onVisibility = (): void => {
-      setPageShown(!document.hidden);
-    };
-    document.addEventListener('visibilitychange', onVisibility);
+    dispatch({ type: 'motion', allowed: !reduced && canObserve() });
+    const stopPage = watchPageShown((shown) => {
+      dispatch({ type: 'page', shown });
+    });
     const target = stage.current;
-    let observer: IntersectionObserver | undefined;
-    if (target !== null && typeof IntersectionObserver !== 'undefined') {
-      let started = false;
-      // A margin as well as a share, so a short landscape screen still counts the scene as in view.
-      observer = new IntersectionObserver(
-        (entries) => {
-          const visible = entries.some((entry) => entry.isIntersecting);
-          setInView(visible);
-          if (visible && startsOnEntry(chosen.current, started, reduced)) {
-            started = true;
-            setStep(1);
-            setWantsPlay(true);
-          }
-        },
-        { rootMargin: '20% 0px 20% 0px', threshold: 0.4 },
-      );
-      observer.observe(target);
-    }
+    const stopView =
+      target === null
+        ? undefined
+        : watchVisible(target, IN_VIEW, (visible) => {
+            dispatch({ type: 'view', visible });
+          });
     return () => {
-      document.removeEventListener('visibilitychange', onVisibility);
-      observer?.disconnect();
+      stopPage();
+      stopView?.();
     };
   }, [reduced]);
 
-  const playing = isPlaying(wantsPlay, inView, pageShown);
-
+  const running = playing(flow);
   useEffect(() => {
-    if (!playing) return undefined;
+    if (!running) return undefined;
     const timer = setTimeout(() => {
-      const next = advance(step, motion.current);
-      setStep(next.step);
-      if (!next.keepPlaying) setWantsPlay(false);
-    }, waitFor(step));
+      dispatch({ type: 'tick' });
+    }, waitFor(flow.step));
     return () => {
       clearTimeout(timer);
     };
-  }, [playing, step]);
+  }, [running, flow.step]);
 
+  const view = viewOf(flow);
   return {
     uid,
     stage,
-    step,
-    wantsPlay,
-    caption: captionOf(step),
-    live: liveText(step),
-    choose: (next) => {
-      chosen.current = true;
-      setStep(next);
-      setWantsPlay(false);
+    step: flow.step,
+    wantsPlay: flow.wantsPlay,
+    label: view.label,
+    live: view.live,
+    politeness: view.politeness,
+    buttons: stepper(flow.step),
+    choose: (step) => {
+      dispatch({ type: 'choose', step });
     },
     toggle: () => {
-      chosen.current = true;
-      if (wantsPlay) {
-        setWantsPlay(false);
-        return;
-      }
-      if (step === 0) setStep(1);
-      setWantsPlay(true);
+      dispatch({ type: 'toggle' });
     },
     replay: () => {
-      chosen.current = true;
-      setStep(1);
-      setWantsPlay(true);
+      dispatch({ type: 'replay' });
     },
   };
 }

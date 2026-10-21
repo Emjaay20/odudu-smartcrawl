@@ -10,12 +10,12 @@ export function seeded(seed: number): () => number {
 }
 
 // The clock the rhythm runs on, so a test can drive it and nothing here reads a global.
-export interface Timers {
-  set: (run: () => void, ms: number) => unknown;
-  clear: (handle: unknown) => void;
+export interface Timers<Handle> {
+  set: (run: () => void, ms: number) => Handle;
+  clear: (handle: Handle | undefined) => void;
 }
 
-export interface Rhythm {
+export interface Rhythm<Handle> {
   // Mean time per keystroke; about 22 characters a second.
   keyMs: number;
   // Each keystroke lasts keyMs times a factor in 1 +- jitter.
@@ -24,10 +24,10 @@ export interface Rhythm {
   afterCommandMs: number;
   lineBeatMs: number;
   random: () => number;
-  timers: Timers;
+  timers: Timers<Handle>;
 }
 
-export const DEFAULT_RHYTHM: Omit<Rhythm, 'random' | 'timers'> = {
+export const DEFAULT_RHYTHM: Omit<Rhythm<never>, 'random' | 'timers'> = {
   keyMs: 45,
   jitter: 0.45,
   afterCommandMs: 400,
@@ -36,10 +36,10 @@ export const DEFAULT_RHYTHM: Omit<Rhythm, 'random' | 'timers'> = {
 
 // Types `length` characters, then shows `lines` more lines one by one. Returns
 // the function that stops it. Loaded once the page is idle.
-export function playTerminal(
+export function playTerminal<Handle>(
   length: number,
   lines: number,
-  rhythm: Rhythm,
+  rhythm: Rhythm<Handle>,
   on: {
     count: (typed: number) => void;
     commandDone: () => void;
@@ -47,7 +47,7 @@ export function playTerminal(
     done: () => void;
   },
 ): () => void {
-  let timer: unknown;
+  let timer: Handle | undefined;
   const later = (ms: number, next: () => void): void => {
     timer = rhythm.timers.set(next, ms);
   };

@@ -71,3 +71,8 @@ export function startReveal<T extends RevealItem>(host: RevealHost<T>): (() => v
   }
   return putBack;
 }
+
+// What the page marks itself with once the reveal has taken hold, for the stylesheet.
+export function motionMark(active: boolean): 'ok' | undefined {
+  return active ? 'ok' : undefined;
+}

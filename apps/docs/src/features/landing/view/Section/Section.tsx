@@ -11,6 +11,8 @@ interface Props {
   children: ReactNode;
 }
 
+const BANDS = { plain: styles.band, sunken: styles.bandSunken };
+
 // One band of the landing page: a kicker, a heading and its content.
 export function Section({
   id,
@@ -21,11 +23,7 @@ export function Section({
   children,
 }: Props): ReactElement {
   return (
-    <section
-      className={tone === 'sunken' ? styles.bandSunken : styles.band}
-      aria-labelledby={id}
-      data-section={section}
-    >
+    <section className={BANDS[tone]} aria-labelledby={id} data-section={section}>
       <Wrap>
         <div data-reveal="heading">
           <p className={styles.kicker}>{kicker}</p>

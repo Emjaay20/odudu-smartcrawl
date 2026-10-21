@@ -6,8 +6,13 @@ function sectionOf(route: string): Section {
   return found;
 }
 
+export interface StartCard {
+  section: Section;
+  look: 'primary' | 'plain';
+}
+
 export interface HomeMapSections {
-  start: Section[];
+  start: StartCard[];
   guides: Section;
   deeper: Section[];
 }
@@ -16,7 +21,11 @@ export interface HomeMapSections {
 export function homeMapSections(): HomeMapSections {
   const guides = sectionOf('guides/');
   return {
-    start: START_ROUTES.map(sectionOf),
+    // The first place to begin is the one the card list leads with.
+    start: START_ROUTES.map((route, index) => ({
+      section: sectionOf(route),
+      look: index === 0 ? 'primary' : 'plain',
+    })),
     guides,
     deeper: SECTIONS.filter(
       (section) => section !== guides && !START_ROUTES.includes(section.route),

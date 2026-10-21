@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { startDomReveal, type RevealEnv } from '@site/src/features/landing/service/revealDom';
+import { startDomReveal, type RevealEnv } from '@site/src/features/landing/platform/revealHost';
 
 class Spot {
   attributes = new Set<string>();

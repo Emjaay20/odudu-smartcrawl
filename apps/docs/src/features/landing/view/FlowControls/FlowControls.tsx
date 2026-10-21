@@ -1,12 +1,14 @@
 import type { ReactElement } from 'react';
-import { BEATS, type Step } from '@site/src/features/landing/service/geometry';
-import { toggleLabel } from '@site/src/features/landing/service/playback';
+import type { Step } from '@site/src/features/landing/service/geometry';
+import type { StepperButton } from '@site/src/features/landing/service/playback';
 import styles from '@site/src/features/landing/view/FlowControls/FlowControls.module.css';
 
 interface Props {
-  step: Step;
+  buttons: StepperButton[];
   playing: boolean;
+  label: 'Pause' | 'Play';
   live: string;
+  politeness: 'off' | 'polite';
   onChoose: (step: Step) => void;
   onToggle: () => void;
   onReplay: () => void;
@@ -14,14 +16,15 @@ interface Props {
 
 // Pause and Replay first, then the seven steps, then what the current step says.
 export function FlowControls({
-  step,
+  buttons,
   playing,
+  label,
   live,
+  politeness,
   onChoose,
   onToggle,
   onReplay,
 }: Props): ReactElement {
-  const label = toggleLabel(playing);
   return (
     <div className={styles.controls}>
       <div className={styles.controlRow}>
@@ -40,23 +43,23 @@ export function FlowControls({
           </button>
         </div>
         <div className={styles.stepper} role="group" aria-label="Steps">
-          {BEATS.map((beat, index) => (
+          {buttons.map((button) => (
             <button
-              key={beat.label}
+              key={button.label}
               type="button"
               className={styles.stepButton}
-              aria-current={step === index + 1 ? 'step' : undefined}
+              aria-current={button.current}
               onClick={() => {
-                onChoose((index + 1) as Step);
+                onChoose(button.step);
               }}
             >
-              <span className={styles.stepNumber}>{String(index + 1)}</span>
-              <span className={styles.stepLabel}>{beat.label}</span>
+              <span className={styles.stepNumber}>{button.number}</span>
+              <span className={styles.stepLabel}>{button.label}</span>
             </button>
           ))}
         </div>
       </div>
-      <p className={styles.live} role="status" aria-live={playing ? 'off' : 'polite'}>
+      <p className={styles.live} role="status" aria-live={politeness}>
         {live}
       </p>
     </div>

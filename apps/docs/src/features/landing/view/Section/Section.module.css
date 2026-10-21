@@ -63,6 +63,7 @@
 }
 
 .pane {
+  composes: lift from '@site/src/shared/view/lift.module.css';
   position: relative;
   min-inline-size: 0;
   padding: var(--space-4) var(--space-4) var(--space-6);
@@ -105,16 +106,5 @@
   .band,
   .bandSunken {
     padding-block: 5rem;
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .pane {
-    transition:
-      translate var(--motion-panel) var(--ease),
-      scale var(--motion-fast) var(--ease),
-      border-color var(--motion-panel) var(--ease),
-      background-color var(--motion-panel) var(--ease),
-      color var(--motion-panel) var(--ease);
   }
 }

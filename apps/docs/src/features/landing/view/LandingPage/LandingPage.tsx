@@ -16,7 +16,7 @@ import styles from '@site/src/features/landing/view/LandingPage/LandingPage.modu
 
 // The home page's content, under the site's own header and footer.
 export function LandingPage(): ReactElement {
-  const { motion, jsonLd } = useLandingPage();
+  const { mark, jsonLd } = useLandingPage();
   return (
     <>
       <Head>
@@ -32,7 +32,7 @@ export function LandingPage(): ReactElement {
         ))}
         <script type="application/ld+json">{jsonLd}</script>
       </Head>
-      <main className={styles.page} data-page="landing" data-motion={motion ? 'ok' : undefined}>
+      <main className={styles.page} data-page="landing" data-motion={mark}>
         <Hero />
         <Section
           id="home-flow"

@@ -5,7 +5,12 @@ import {
   copyLabel,
   copyText,
   lineVisible,
+  TYPED_COMMAND,
+  followUpLines,
   noteFor,
+  panelTyping,
+  pieces,
+  shellChoices,
   overlayShown,
   segments,
   typedSegments,
@@ -60,5 +65,44 @@ describe('the hero terminal', () => {
     expect(copyLabel('idle')).toBe('Copy');
     expect(commandOf('unix')).toBe(COMMAND);
     expect(commandOf('windows')).toContain('curl.exe');
+  });
+});
+
+describe('the terminal model', () => {
+  it('types the first shell command, taken from the one table', () => {
+    expect(TYPED_COMMAND).toBe(COMMAND);
+    expect(TYPED_COMMAND).toBe(commandOf('unix'));
+  });
+
+  it('marks a break before every piece but the first', () => {
+    const list = pieces('a/b/c');
+    expect(list.map((piece) => piece.breakBefore)).toEqual([false, true, true]);
+    expect(list.map((piece) => piece.text).join('')).toBe('a/b/c');
+  });
+
+  it('says which typed pieces still hold hidden text', () => {
+    const typed = typedSegments('ab/cd', 3);
+    expect(typed.map((part) => part.hasHidden)).toEqual([false, true]);
+    expect(typed.map((part) => part.breakBefore)).toEqual([false, true]);
+  });
+
+  it('lists the follow-up command first, then its output', () => {
+    const lines = followUpLines();
+    expect(lines[0]?.kind).toBe('command');
+    expect(lines.slice(1).every((line) => line.kind === 'output')).toBe(true);
+  });
+
+  it('gives only the first shell the typing state', () => {
+    expect(panelTyping('unix', 'on')).toBe('on');
+    expect(panelTyping('windows', 'on')).toBe('off');
+  });
+
+  it('lists every shell with its command and checks only the chosen one', () => {
+    const choices = shellChoices('windows');
+    expect(choices.map((choice) => choice.shell)).toEqual(COMMANDS.map((entry) => entry.shell));
+    expect(choices.filter((choice) => choice.checked).map((choice) => choice.shell)).toEqual([
+      'windows',
+    ]);
+    expect(choices.map((choice) => choice.command)).toEqual(COMMANDS.map((entry) => entry.command));
   });
 });

@@ -1,17 +1,22 @@
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import { landingJsonLd } from '@site/seo';
-import useReveal from '@site/src/features/landing/usecase/useReveal';
+import { motionMark } from '@site/src/features/landing/service/reveal';
+import { siteAddress } from '@site/src/features/landing/service/site';
+import { useReveal } from '@site/src/features/landing/usecase/useReveal';
 
 export interface LandingPage {
   // True once the reveal has taken hold; the page marks itself for the stylesheet.
   motion: boolean;
+  mark: 'ok' | undefined;
   jsonLd: string;
 }
 
 export function useLandingPage(): LandingPage {
   const { siteConfig } = useDocusaurusContext();
+  const motion = useReveal();
   return {
-    motion: useReveal(),
-    jsonLd: landingJsonLd(`${siteConfig.url}${siteConfig.baseUrl}`),
+    motion,
+    mark: motionMark(motion),
+    jsonLd: landingJsonLd(siteAddress(siteConfig)),
   };
 }

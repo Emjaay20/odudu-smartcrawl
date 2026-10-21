@@ -72,7 +72,9 @@
 
   --ifm-font-family-base: var(--font-sans);
   --ifm-font-family-monospace: var(--font-mono);
-  /* Infima's own value, named here because the landing's sections scroll to clear it. */
+  /* Infima's own value, named here because the landing's sections scroll to clear it.
+     The css-vars lint cannot read it from Infima: pnpm does not expose a transitive
+     package to this app, and theme-classic ships no dist that sets it. */
   --ifm-navbar-height: 3.75rem;
   --ifm-font-size-base: 100%;
   --ifm-line-height-base: 1.65;

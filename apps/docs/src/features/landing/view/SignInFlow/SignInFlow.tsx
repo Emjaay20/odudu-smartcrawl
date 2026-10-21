@@ -1,7 +1,6 @@
 import Link from '@docusaurus/Link';
 import type { ReactElement } from 'react';
-import { BEATS } from '@site/src/features/landing/service/geometry';
-import { claimText } from '@site/src/features/landing/service/content';
+import { captions } from '@site/src/features/landing/service/playback';
 import { useSignInFlow } from '@site/src/features/landing/usecase/useSignInFlow';
 import { FlowControls } from '@site/src/features/landing/view/FlowControls/FlowControls';
 import { Scene } from '@site/src/features/landing/view/Scene/Scene';
@@ -11,7 +10,8 @@ import styles from '@site/src/features/landing/view/SignInFlow/SignInFlow.module
 // composed picture and the seven captions as a list; where script runs it plays
 // once when it comes into view, then loops, and the stepper lets the reader take over.
 export function SignInFlow(): ReactElement {
-  const { uid, stage, step, wantsPlay, live, choose, toggle, replay } = useSignInFlow();
+  const { uid, stage, step, wantsPlay, label, live, politeness, buttons, choose, toggle, replay } =
+    useSignInFlow();
   return (
     <div className={styles.flow} data-flow="" data-step={String(step)}>
       <div className={styles.stage} ref={stage}>
@@ -20,26 +20,28 @@ export function SignInFlow(): ReactElement {
       </div>
       <div className={styles.below}>
         <FlowControls
-          step={step}
+          buttons={buttons}
           playing={wantsPlay}
+          label={label}
           live={live}
+          politeness={politeness}
           onChoose={choose}
           onToggle={toggle}
           onReplay={replay}
         />
         <ol className={styles.captions} data-flow-captions="">
-          {BEATS.map((beat) => (
-            <li key={beat.label}>
-              <p className={styles.caption}>{beat.caption}</p>
-              {beat.claims.length === 0 ? null : (
+          {captions().map((item) => (
+            <li key={item.label}>
+              <p className={styles.caption}>{item.caption}</p>
+              {item.hasClaims ? (
                 <ul className={styles.methods}>
-                  {beat.claims.map((claim) => (
-                    <li key={claim} data-claim={claim}>
-                      {claimText(claim)}
+                  {item.claims.map((claim) => (
+                    <li key={claim.id} data-claim={claim.id}>
+                      {claim.text}
                     </li>
                   ))}
                 </ul>
-              )}
+              ) : null}
             </li>
           ))}
         </ol>

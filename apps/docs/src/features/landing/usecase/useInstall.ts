@@ -1,12 +1,14 @@
 import useIsBrowser from '@docusaurus/useIsBrowser';
 import { useEffect, useState } from 'react';
-import { COMMANDS, FOLLOW_UP, type Shell } from '@site/src/features/landing/service/content';
+import type { Shell } from '@site/src/features/landing/service/content';
 import {
   COPIED_FOR_MS,
+  TYPED_COMMAND,
   TYPING_SEED,
   commandOf,
   copyText,
   effectiveTyping,
+  followUpLines,
   typingAfterChoice,
   type CopyStatus,
   type Typing,
@@ -27,14 +29,12 @@ export interface Install {
 }
 
 // The page's own clock, handed to the typewriter service.
-const WINDOW_TIMERS: Timers = {
+const WINDOW_TIMERS: Timers<ReturnType<typeof setTimeout>> = {
   set: (run, ms) => setTimeout(run, ms),
   clear: (handle) => {
-    clearTimeout(handle as ReturnType<typeof setTimeout>);
+    clearTimeout(handle);
   },
 };
-
-const UNIX_COMMAND = COMMANDS[0]?.command ?? '';
 
 // The command is real text from the first paint. Once the page is idle a
 // visual copy types over it, then the quick start's next step appears line by
@@ -56,8 +56,8 @@ export function useInstall(): Install {
         if (cancelled) return;
         setTyping('on');
         stop = playTerminal(
-          UNIX_COMMAND.length,
-          FOLLOW_UP.output.length + 1,
+          TYPED_COMMAND.length,
+          followUpLines().length,
           { ...DEFAULT_RHYTHM, random: seeded(TYPING_SEED), timers: WINDOW_TIMERS },
           {
             count: setTyped,

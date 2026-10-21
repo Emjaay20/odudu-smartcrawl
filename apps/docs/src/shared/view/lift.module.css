@@ -1,0 +1,10 @@
+@media (prefers-reduced-motion: no-preference) {
+  .lift {
+    transition:
+      translate var(--motion-panel) var(--ease),
+      scale var(--motion-fast) var(--ease),
+      border-color var(--motion-panel) var(--ease),
+      background-color var(--motion-panel) var(--ease),
+      color var(--motion-panel) var(--ease);
+  }
+}

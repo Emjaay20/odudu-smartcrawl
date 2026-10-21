@@ -129,7 +129,8 @@ export interface WindowModel {
   lamps: Point[];
   labelAt: Point;
   shapes: Shape[];
-  signed: CheckModel | undefined;
+  // The app's own check once signed in: none, or one.
+  signs: CheckModel[];
 }
 
 export interface ChipModel {
@@ -148,7 +149,7 @@ export interface RouteModel {
   d: string;
   on: string;
   headAt: string;
-  headLit: boolean;
+  headLook: 'lit' | 'dim';
   headShown: boolean;
 }
 
@@ -186,7 +187,8 @@ export interface SceneModel {
     chips: ChipModel[];
   };
   dots: DotModel[];
-  ticket: TicketModel | undefined;
+  // The pass travelling a route: none, or one.
+  tickets: TicketModel[];
 }
 
 const BASE_ROUTES: RouteId[] = ['dh', 'da', 'db', 'ha', 'hb'];
@@ -219,7 +221,7 @@ function windowOf(
     lamps: lamps(box),
     labelAt: [box.x + 68, box.y + 23],
     shapes: skeleton(box, box.y + 52, kind),
-    signed: signed === undefined ? undefined : checkOf(box.x + box.w - 24, box.y + 18, 9, signed),
+    signs: signed === undefined ? [] : [checkOf(box.x + box.w - 24, box.y + 18, 9, signed)],
   };
 }
 
@@ -254,7 +256,7 @@ export function buildScene(layout: LayoutName, step: Step): SceneModel {
       d: pathData(geometry.routes[id].points),
       on: flag(withBase(id)),
       headAt: headTransform(geometry.routes[id].head.at, geometry.routes[id].head.angle),
-      headLit: activity.routes.includes(id),
+      headLook: activity.routes.includes(id) ? 'lit' : 'dim',
       headShown: BASE_ROUTES.includes(id) || activity.routes.includes(id),
     })),
     device: windowOf(geometry.device, 'Their browser', 'form', activity.device, undefined, false),
@@ -296,13 +298,15 @@ export function buildScene(layout: LayoutName, step: Step): SceneModel {
         delay: index * 520 + (id === 'hb' && step === 6 ? 1300 : 0),
       })),
     ),
-    ticket:
+    tickets:
       passRoute === undefined
-        ? undefined
-        : {
-            start: geometry.routes[passRoute].points[0] ?? [0, 0],
-            name: keyframeName(layout, passRoute, 'pass'),
-            delay: step === 6 ? 1300 : 300,
-          },
+        ? []
+        : [
+            {
+              start: geometry.routes[passRoute].points[0] ?? [0, 0],
+              name: keyframeName(layout, passRoute, 'pass'),
+              delay: step === 6 ? 1300 : 300,
+            },
+          ],
   };
 }

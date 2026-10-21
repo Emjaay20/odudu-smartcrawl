@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   belowFold,
+  motionMark,
   reached,
   startReveal,
   type RevealHost,
@@ -120,5 +121,12 @@ describe('starting the reveal', () => {
     });
     expect(startReveal(host)).toBeUndefined();
     expect(items[0]?.held).toBe(false);
+  });
+});
+
+describe('the page mark', () => {
+  it('marks the page only once the reveal has taken hold', () => {
+    expect(motionMark(true)).toBe('ok');
+    expect(motionMark(false)).toBeUndefined();
   });
 });

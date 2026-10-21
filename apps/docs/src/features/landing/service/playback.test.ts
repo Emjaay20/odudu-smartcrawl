@@ -4,13 +4,18 @@ import {
   LAST,
   REST_MS,
   REST_NOTE,
+  FLOW_START,
   advance,
+  captions,
+  flowReducer,
+  playing,
+  stepper,
+  viewOf,
+  type Flow,
+  type FlowEvent,
   captionOf,
-  isPlaying,
   liveText,
-  startsOnEntry,
   stepOf,
-  toggleLabel,
   waitFor,
 } from '@site/src/features/landing/service/playback';
 
@@ -38,26 +43,123 @@ describe('the sign-in scene playback', () => {
     expect(advance(3, false)).toEqual({ step: 4, keepPlaying: true });
   });
 
-  it('plays only while wanted, on screen and on a shown page', () => {
-    expect(isPlaying(true, true, true)).toBe(true);
-    expect(isPlaying(false, true, true)).toBe(false);
-    expect(isPlaying(true, false, true)).toBe(false);
-    expect(isPlaying(true, true, false)).toBe(false);
-  });
-
-  it('starts on entry once, unless a reader has chosen or motion is reduced', () => {
-    expect(startsOnEntry(false, false, false)).toBe(true);
-    expect(startsOnEntry(true, false, false)).toBe(false);
-    expect(startsOnEntry(false, true, false)).toBe(false);
-    expect(startsOnEntry(false, false, true)).toBe(false);
-  });
-
   it('words the caption and the announcement, and the toggle by its action', () => {
     expect(captionOf(0)).toBe(REST_NOTE);
     expect(captionOf(1)).toBe(BEATS[0]?.caption);
     expect(liveText(0)).toBe(REST_NOTE);
     expect(liveText(3)).toBe(`Step 3 of 7: ${BEATS[2]?.caption ?? ''}`);
-    expect(toggleLabel(true)).toBe('Pause');
-    expect(toggleLabel(false)).toBe('Play');
+  });
+
+  it('words the toggle by its action', () => {
+    expect(viewOf({ ...FLOW_START, wantsPlay: true }).label).toBe('Pause');
+    expect(viewOf(FLOW_START).label).toBe('Play');
+    expect(viewOf({ ...FLOW_START, wantsPlay: true }).politeness).toBe('off');
+    expect(viewOf(FLOW_START).politeness).toBe('polite');
+    expect(viewOf({ ...FLOW_START, step: stepOf(3) }).live).toBe(liveText(3));
+  });
+
+  it('marks the current step button and numbers each from one', () => {
+    const buttons = stepper(3);
+    expect(buttons.map((button) => button.number)).toEqual(['1', '2', '3', '4', '5', '6', '7']);
+    expect(
+      buttons.filter((button) => button.current === 'step').map((button) => button.step),
+    ).toEqual([3]);
+    expect(stepper(0).every((button) => button.current === undefined)).toBe(true);
+  });
+
+  it('lists each beat with the methods it names', () => {
+    const list = captions();
+    expect(list).toHaveLength(LAST);
+    list.forEach((item, index) => {
+      expect(item.hasClaims).toBe((BEATS[index]?.claims.length ?? 0) > 0);
+      expect(item.claims).toHaveLength(BEATS[index]?.claims.length ?? 0);
+    });
+  });
+});
+
+function run(from: Flow, ...events: FlowEvent[]): Flow {
+  return events.reduce(flowReducer, from);
+}
+
+const READY: Flow = run(FLOW_START, { type: 'motion', allowed: true });
+
+describe('the sign-in scene state machine', () => {
+  it('plays only while wanted, on screen and on a shown page', () => {
+    const on = { ...READY, wantsPlay: true, inView: true };
+    expect(playing(on)).toBe(true);
+    expect(playing({ ...on, wantsPlay: false })).toBe(false);
+    expect(playing({ ...on, inView: false })).toBe(false);
+    expect(playing({ ...on, pageShown: false })).toBe(false);
+  });
+
+  it('starts on first entry only', () => {
+    const entered = run(READY, { type: 'view', visible: true });
+    expect(entered).toMatchObject({ step: 1, wantsPlay: true, started: true });
+    const again = run(entered, { type: 'view', visible: false }, { type: 'view', visible: true });
+    expect(again.step).toBe(1);
+    expect(
+      run(
+        again,
+        { type: 'tick' },
+        { type: 'view', visible: false },
+        { type: 'view', visible: true },
+      ).step,
+    ).toBe(2);
+  });
+
+  it('does not start when a reader has chosen, or motion is not allowed', () => {
+    expect(run(READY, { type: 'choose', step: 4 }, { type: 'view', visible: true })).toMatchObject({
+      step: 4,
+      wantsPlay: false,
+    });
+    expect(run(FLOW_START, { type: 'view', visible: true }).wantsPlay).toBe(false);
+  });
+
+  it('starts again on entry when motion becomes allowed after being refused', () => {
+    const refused = run(FLOW_START, { type: 'view', visible: true });
+    expect(
+      run(refused, { type: 'motion', allowed: true }, { type: 'view', visible: true }).wantsPlay,
+    ).toBe(true);
+  });
+
+  it('ticks through the steps, loops, and ends a round at the rest without motion', () => {
+    const last: Flow = { ...READY, step: stepOf(LAST), wantsPlay: true };
+    expect(run(last, { type: 'tick' })).toMatchObject({ step: 0, wantsPlay: true });
+    expect(run({ ...FLOW_START, wantsPlay: true }, { type: 'tick' })).toMatchObject({
+      step: 0,
+      wantsPlay: false,
+    });
+  });
+
+  it('lets a reader choose, toggle and replay, each taking over', () => {
+    const playingNow = run(READY, { type: 'view', visible: true }, { type: 'tick' });
+    expect(run(playingNow, { type: 'toggle' })).toMatchObject({
+      step: 2,
+      wantsPlay: false,
+      chosen: true,
+    });
+    expect(run(FLOW_START, { type: 'toggle' })).toMatchObject({
+      step: 1,
+      wantsPlay: true,
+      chosen: true,
+    });
+    expect(run({ ...READY, step: stepOf(5) }, { type: 'toggle' })).toMatchObject({
+      step: 5,
+      wantsPlay: true,
+    });
+    expect(run({ ...READY, step: stepOf(5) }, { type: 'replay' })).toMatchObject({
+      step: 1,
+      wantsPlay: true,
+      chosen: true,
+    });
+    expect(run(playingNow, { type: 'choose', step: 6 })).toMatchObject({
+      step: 6,
+      wantsPlay: false,
+      chosen: true,
+    });
+  });
+
+  it('follows the page being hidden', () => {
+    expect(run(READY, { type: 'page', shown: false }).pageShown).toBe(false);
   });
 });

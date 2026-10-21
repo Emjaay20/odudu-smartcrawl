@@ -1,24 +1,29 @@
 import { Fragment, type ReactElement } from 'react';
-import { COMMANDS, FOLLOW_UP } from '@site/src/features/landing/service/content';
 import {
+  TYPED_COMMAND,
   copyLabel,
+  followUpLines,
   lineVisible,
   noteFor,
   overlayShown,
-  segments,
+  panelTyping,
+  pieces,
+  shellChoices,
   typedSegments,
 } from '@site/src/features/landing/service/terminal';
 import { useInstall } from '@site/src/features/landing/usecase/useInstall';
 import styles from '@site/src/features/landing/view/Install/Install.module.css';
 
+const LINE_LOOKS = { command: undefined, output: styles.output };
+
 // A command broken after each slash, so a long address wraps at a slash.
 function Wrapped({ text }: { text: string }): ReactElement {
   return (
     <>
-      {segments(text).map((part, index) => (
-        <Fragment key={`${part}-${String(index)}`}>
-          {index > 0 ? <wbr /> : null}
-          {part}
+      {pieces(text).map((piece, index) => (
+        <Fragment key={`${piece.text}-${String(index)}`}>
+          {piece.breakBefore ? <wbr /> : null}
+          {piece.text}
         </Fragment>
       ))}
     </>
@@ -29,11 +34,11 @@ function Wrapped({ text }: { text: string }): ReactElement {
 function WrappedTyped({ text, count }: { text: string; count: number }): ReactElement {
   return (
     <>
-      {typedSegments(text, count).map(({ shown, hidden }, index) => (
+      {typedSegments(text, count).map(({ shown, hidden, hasHidden, breakBefore }, index) => (
         <Fragment key={`${shown}${hidden}-${String(index)}`}>
-          {index > 0 ? <wbr /> : null}
+          {breakBefore ? <wbr /> : null}
           {shown}
-          {hidden === '' ? null : <span className={styles.rest}>{hidden}</span>}
+          {hasHidden ? <span className={styles.rest}>{hidden}</span> : null}
         </Fragment>
       ))}
     </>
@@ -44,11 +49,10 @@ function WrappedTyped({ text, count }: { text: string; count: number }): ReactEl
 // selectors in Install.module.css; the copy button appears once React has run.
 export function Install(): ReactElement {
   const { shell, status, typing, typed, lines, interactive, choose, copy } = useInstall();
-  const unix = COMMANDS[0]?.command ?? '';
   return (
     <fieldset className={styles.install}>
       <legend className="visually-hidden">Your shell</legend>
-      {COMMANDS.map((entry) => (
+      {shellChoices(shell).map((entry) => (
         <input
           key={entry.shell}
           className={[styles.shellRadio, 'visually-hidden'].join(' ')}
@@ -56,7 +60,7 @@ export function Install(): ReactElement {
           name="shell"
           id={`shell-${entry.shell}`}
           data-shell={entry.shell}
-          checked={shell === entry.shell}
+          checked={entry.checked}
           onChange={() => {
             choose(entry.shell);
           }}
@@ -64,8 +68,13 @@ export function Install(): ReactElement {
       ))}
       <div className={styles.installBar}>
         <div className={styles.shells}>
-          {COMMANDS.map((entry) => (
-            <label key={entry.shell} htmlFor={`shell-${entry.shell}`} data-shell={entry.shell}>
+          {shellChoices(shell).map((entry) => (
+            <label
+              key={entry.shell}
+              className={styles.shellLabel}
+              htmlFor={`shell-${entry.shell}`}
+              data-shell={entry.shell}
+            >
               {entry.label}
             </label>
           ))}
@@ -75,26 +84,26 @@ export function Install(): ReactElement {
           <span className="visually-hidden"> the command</span>
         </button>
       </div>
-      {COMMANDS.map((entry) => (
+      {shellChoices(shell).map((entry) => (
         <div key={entry.shell} className={styles.panel} data-panel={entry.shell}>
           <div className={styles.typeWrap}>
-            <code data-shell={entry.shell} data-typing={entry.shell === 'unix' ? typing : 'off'}>
+            <code data-shell={entry.shell} data-typing={panelTyping(entry.shell, typing)}>
               <Wrapped text={entry.command} />
             </code>
             {overlayShown(entry.shell, shell, typing) ? (
               <span className={styles.typed} aria-hidden="true">
-                <WrappedTyped text={unix} count={typed} />
+                <WrappedTyped text={TYPED_COMMAND} count={typed} />
               </span>
             ) : null}
           </div>
           <div className={styles.followUp}>
-            {[FOLLOW_UP.command, ...FOLLOW_UP.output].map((line, index) => (
+            {followUpLines().map((line, index) => (
               <code
-                key={line}
-                className={index === 0 ? undefined : styles.output}
+                key={line.text}
+                className={LINE_LOOKS[line.kind]}
                 data-visible={String(lineVisible(entry.shell, typing, lines, index))}
               >
-                {line}
+                {line.text}
               </code>
             ))}
           </div>

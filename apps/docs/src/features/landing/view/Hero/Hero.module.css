@@ -81,6 +81,14 @@
   margin: var(--space-6) 0 0;
 }
 
+.primary {
+  composes: lift from '@site/src/shared/view/lift.module.css';
+}
+
+.secondary {
+  composes: lift from '@site/src/shared/view/lift.module.css';
+}
+
 .primary,
 .secondary {
   display: inline-flex;
@@ -145,16 +153,6 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .primary,
-  .secondary {
-    transition:
-      translate var(--motion-panel) var(--ease),
-      scale var(--motion-fast) var(--ease),
-      border-color var(--motion-panel) var(--ease),
-      background-color var(--motion-panel) var(--ease),
-      color var(--motion-panel) var(--ease);
-  }
-
   .primary:hover,
   .secondary:hover {
     translate: 0 -2px;

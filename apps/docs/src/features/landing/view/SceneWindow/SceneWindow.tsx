@@ -18,7 +18,7 @@ interface Props {
 
 // A window of the scene: its halo, frame, title bar and a skeleton of what it shows.
 export function SceneWindow({ window }: Props): ReactElement {
-  const { halo, frame, signed } = window;
+  const { halo, frame, signs } = window;
   return (
     <>
       <rect
@@ -67,11 +67,11 @@ export function SceneWindow({ window }: Props): ReactElement {
           />
         ),
       )}
-      {signed === undefined ? null : (
-        <g className={styles.signed} data-on={signed.on}>
+      {signs.map((signed) => (
+        <g key="signed" className={styles.signed} data-on={signed.on}>
           <SceneCheck check={signed} />
         </g>
-      )}
+      ))}
     </>
   );
 }

@@ -2,7 +2,10 @@ import Link from '@docusaurus/Link';
 import { JOURNEYS } from '@site/nav';
 import { homeMapSections } from '@site/src/features/docs-home/service/homeMap';
 import type { ReactNode } from 'react';
+import { classNames } from '@site/src/shared/service/classNames';
 import styles from '@site/src/features/docs-home/view/HomeMap/HomeMap.module.css';
+
+const LOOKS = { primary: styles.primary, plain: undefined };
 
 // Where to begin, then the journeys in the order to read them, then the rest.
 export function HomeMap(): ReactNode {
@@ -14,12 +17,9 @@ export function HomeMap(): ReactNode {
           Start here
         </h2>
         <ul className={styles.start}>
-          {start.map((section, index) => (
+          {start.map(({ section, look }) => (
             <li key={section.id}>
-              <Link
-                className={[styles.card, index === 0 ? styles.primary : undefined].join(' ')}
-                to={`/${section.route}`}
-              >
+              <Link className={classNames(styles.card, LOOKS[look])} to={`/${section.route}`}>
                 <span className={styles.label}>{section.label}</span>
                 <span className={styles.summary}>{section.summary}</span>
               </Link>

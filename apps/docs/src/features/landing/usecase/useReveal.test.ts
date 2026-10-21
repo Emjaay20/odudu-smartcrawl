@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import useReveal from '@site/src/features/landing/usecase/useReveal';
+import { useReveal } from '@site/src/features/landing/usecase/useReveal';
 import { resultOf } from '@site/tests/support/hook';
 
 describe('useReveal', () => {

@@ -1,21 +1,30 @@
 import { describe, expect, it, vi } from 'vitest';
+import { FLOW_START, stepOf, stepper, viewOf } from '@site/src/features/landing/service/playback';
 import { FlowControls } from '@site/src/features/landing/view/FlowControls/FlowControls';
 import { markupOf } from '@site/tests/support/markup';
 
 const NOOP = vi.fn();
 
+function controls(step: number, wantsPlay: boolean, live: string): React.ReactElement {
+  const flow = { ...FLOW_START, step: stepOf(step), wantsPlay };
+  const view = viewOf(flow);
+  return (
+    <FlowControls
+      buttons={stepper(flow.step)}
+      playing={wantsPlay}
+      label={view.label}
+      live={live}
+      politeness={view.politeness}
+      onChoose={NOOP}
+      onToggle={NOOP}
+      onReplay={NOOP}
+    />
+  );
+}
+
 describe('FlowControls', () => {
   it('puts the toggle first, named by its action and pressed while playing', () => {
-    const $ = markupOf(
-      <FlowControls
-        step={2}
-        playing
-        live="Step 2"
-        onChoose={NOOP}
-        onToggle={NOOP}
-        onReplay={NOOP}
-      />,
-    );
+    const $ = markupOf(controls(2, true, 'Step 2'));
     const first = $('button').first();
     expect(first.text()).toBe('Pause');
     expect(first.attr('aria-label')).toBe('Pause autoplay');
@@ -24,36 +33,14 @@ describe('FlowControls', () => {
   });
 
   it('lists the seven steps and marks only the current one', () => {
-    const $ = markupOf(
-      <FlowControls
-        step={3}
-        playing={false}
-        live=""
-        onChoose={NOOP}
-        onToggle={NOOP}
-        onReplay={NOOP}
-      />,
-    );
+    const $ = markupOf(controls(3, false, ''));
     expect($('[role="group"] button')).toHaveLength(7);
     expect($('[aria-current="step"]')).toHaveLength(1);
     expect($('[aria-current="step"]').text()).toContain('Sign in once');
   });
 
   it('announces politely when paused and not at all while playing', () => {
-    const playing = markupOf(
-      <FlowControls step={1} playing live="x" onChoose={NOOP} onToggle={NOOP} onReplay={NOOP} />,
-    );
-    const paused = markupOf(
-      <FlowControls
-        step={1}
-        playing={false}
-        live="x"
-        onChoose={NOOP}
-        onToggle={NOOP}
-        onReplay={NOOP}
-      />,
-    );
-    expect(playing('[role="status"]').attr('aria-live')).toBe('off');
-    expect(paused('[role="status"]').attr('aria-live')).toBe('polite');
+    expect(markupOf(controls(1, true, 'x'))('[role="status"]').attr('aria-live')).toBe('off');
+    expect(markupOf(controls(1, false, 'x'))('[role="status"]').attr('aria-live')).toBe('polite');
   });
 });

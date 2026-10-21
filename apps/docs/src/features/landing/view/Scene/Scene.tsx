@@ -6,6 +6,8 @@ import { SceneCheck } from '@site/src/features/landing/view/SceneCheck/SceneChec
 import { SceneWindow } from '@site/src/features/landing/view/SceneWindow/SceneWindow';
 import styles from '@site/src/features/landing/view/Scene/Scene.module.css';
 
+const HEADS = { lit: styles.headOn, dim: styles.head };
+
 interface Props {
   layout: LayoutName;
   step: Step;
@@ -63,7 +65,7 @@ export function Scene({ layout, step, uid }: Props): ReactElement {
         route.headShown ? (
           <path
             key={`head-${route.id}`}
-            className={route.headLit ? styles.headOn : styles.head}
+            className={HEADS[route.headLook]}
             d="M-10 -6L0 0L-10 6z"
             transform={route.headAt}
           />
@@ -156,15 +158,16 @@ export function Scene({ layout, step, uid }: Props): ReactElement {
             style={{ animationName: dot.name, animationDelay: `${String(dot.delay)}ms` }}
           />
         ))}
-        {scene.ticket === undefined ? null : (
+        {scene.tickets.map((ticket) => (
           <g
-            transform={`translate(${String(scene.ticket.start[0])} ${String(scene.ticket.start[1])})`}
+            key="ticket"
+            transform={`translate(${String(ticket.start[0])} ${String(ticket.start[1])})`}
           >
             <g
               className={styles.ticket}
               style={{
-                animationName: scene.ticket.name,
-                animationDelay: `${String(scene.ticket.delay)}ms`,
+                animationName: ticket.name,
+                animationDelay: `${String(ticket.delay)}ms`,
               }}
             >
               <rect className={styles.pass} x={-30} y={-13} width={60} height={26} rx={13} />
@@ -172,7 +175,7 @@ export function Scene({ layout, step, uid }: Props): ReactElement {
               <path className={styles.tick} d="M14 -4H22M14 3H20" />
             </g>
           </g>
-        )}
+        ))}
       </g>
     </svg>
   );

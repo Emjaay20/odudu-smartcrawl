@@ -1,4 +1,8 @@
 import {
+  observeIntersections,
+  type IntersectionConstructor,
+} from '@site/src/shared/platform/observe';
+import {
   startReveal,
   REVEAL_MARGIN,
   type RevealHost,
@@ -16,7 +20,7 @@ export interface RevealEnv {
     | 'requestAnimationFrame'
     | 'cancelAnimationFrame'
   >;
-  Observer: typeof IntersectionObserver;
+  Observer: IntersectionConstructor;
 }
 
 interface Marked extends RevealItem {
@@ -38,21 +42,16 @@ export function startDomReveal(env: RevealEnv): (() => void) | undefined {
         },
       })),
     viewport: () => env.window.innerHeight,
-    watch: (items, seen) => {
-      const observer = new env.Observer(
-        (entries) => {
-          for (const entry of entries) {
-            const item = items.find((candidate) => candidate.element === entry.target);
-            if (entry.isIntersecting && item !== undefined) seen(item);
-          }
-        },
+    watch: (items, seen) =>
+      observeIntersections(
+        items.map((item) => item.element),
         { rootMargin: REVEAL_MARGIN },
-      );
-      for (const item of items) observer.observe(item.element);
-      return () => {
-        observer.disconnect();
-      };
-    },
+        (target, intersecting) => {
+          const item = items.find((candidate) => candidate.element === target);
+          if (intersecting && item !== undefined) seen(item);
+        },
+        env.Observer,
+      ),
     scrolled: (handler) => {
       env.window.addEventListener('scroll', handler, { passive: true });
       return () => {

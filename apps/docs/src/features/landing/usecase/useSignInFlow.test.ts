@@ -8,7 +8,8 @@ describe('useSignInFlow', () => {
     const flow = resultOf(useSignInFlow);
     expect(flow.step).toBe(0);
     expect(flow.wantsPlay).toBe(false);
-    expect(flow.caption).toBe(REST_NOTE);
+    expect(flow.label).toBe('Play');
+    expect(flow.buttons).toHaveLength(7);
     expect(flow.live).toBe(REST_NOTE);
     expect(flow.uid).not.toContain(':');
   });
