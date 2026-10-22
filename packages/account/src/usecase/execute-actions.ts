@@ -38,7 +38,7 @@ export async function enqueueActionsLink(
     actions,
     ttlSeconds: await tokens.lifetimeOf(tenant.tenantId, 'execute_actions'),
   });
-  const url = actionLink(tenant.issuerBase, tenant.tenantName, token, null);
+  const url = actionLink(tenant.issuerBase, tenant.tenantName, token);
   await outboxRepository(tx).enqueue({
     tenantId: tenant.tenantId,
     ...renderRequiredActions({

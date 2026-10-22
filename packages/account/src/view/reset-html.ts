@@ -105,7 +105,6 @@ export function renderResetRequestFailedPage(
 export function renderResetPasswordForm(
   tenant: string,
   key: string,
-  signInPath: string | null,
   failure: PasswordFailure | undefined,
   locale: PageLocale,
 ): RenderedPage {
@@ -116,7 +115,7 @@ export function renderResetPasswordForm(
     t(locale, 'reset.form.title'),
     `${intro(tHtml(locale, 'reset.form.title'), tenant)}
 ${problemSummary(problems)}<form method="post" action="${action}">
-  <input type="hidden" name="key" value="${escapeHtml(key)}">${returnToField(signInPath)}
+  <input type="hidden" name="key" value="${escapeHtml(key)}">
   <label>${tHtml(locale, 'reset.form.newPassword')} <input type="password" name="password" autocomplete="new-password"${attributes}></label>
   <button type="submit">${tHtml(locale, 'reset.form.submit')}</button>
 </form>`,

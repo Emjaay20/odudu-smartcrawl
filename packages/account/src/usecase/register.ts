@@ -37,10 +37,10 @@ export interface RegisterDeps {
   // building a link some other way.
   readonly issuerBase: string | undefined;
   readonly verifyEmailEnabled: boolean;
-  // The authorize path the person registered from, already checked by
-  // signInPath: the mailed link carries a reduced form of it so the page it
-  // opens can lead back to sign-in.
-  readonly signInPath?: string | null;
+  // The sign-in the person registered from, when this browser holds it
+  // (referenceToResume): kept beside the token so the page the link opens can
+  // lead the same browser back to it, never put in the link.
+  readonly authenticationSessionId?: string | null;
   // The send time of the mail, from the caller's clock.
   readonly now: () => Date;
 
@@ -161,9 +161,12 @@ export async function register(
           subjectId: account.subjectId,
           type: 'verify_email',
           email: input.email,
+          ...(deps.authenticationSessionId === undefined
+            ? {}
+            : { authenticationSessionId: deps.authenticationSessionId }),
           ttlSeconds: await tokens.lifetimeOf(deps.tenantId, 'verify_email'),
         });
-        const link = actionLink(deps.issuerBase, deps.tenantName, token, deps.signInPath);
+        const link = actionLink(deps.issuerBase, deps.tenantName, token);
         await outboxRepository(tx).enqueue({
           tenantId: deps.tenantId,
           ...renderVerifyEmail({

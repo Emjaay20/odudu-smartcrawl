@@ -177,6 +177,7 @@ function buildHttpApp(): FastifyInstance {
   const instance = Fastify();
   instance.register(formbody);
   registerRegistrationRoute(instance, {
+    findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
     publicBaseUrl,
@@ -315,6 +316,7 @@ describe('self-registration', () => {
     const instance = Fastify();
     instance.register(formbody);
     registerRegistrationRoute(instance, {
+      findHeldSignIn: () => Promise.resolve(null),
       database: app,
       findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
       publicBaseUrl,
@@ -544,6 +546,7 @@ describe('self-registration', () => {
     const counting = Fastify();
     counting.register(formbody);
     registerRegistrationRoute(counting, {
+      findHeldSignIn: () => Promise.resolve(null),
       database: app,
       findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
       publicBaseUrl,
@@ -576,6 +579,7 @@ describe('self-registration', () => {
     const refusing = Fastify();
     refusing.register(formbody);
     registerRegistrationRoute(refusing, {
+      findHeldSignIn: () => Promise.resolve(null),
       database: app,
       findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
       publicBaseUrl,

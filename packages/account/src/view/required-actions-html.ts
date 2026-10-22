@@ -3,7 +3,6 @@ import { type LinkedRequiredAction } from '#/usecase/action-token';
 import { escapeHtml, intro, page } from '#/view/document';
 import { invalidAttributes, problemSummary } from '#/view/form-error';
 import { links } from '#/view/links';
-import { returnToField } from '#/view/return-to';
 import { bdi, t, tHtml, type MessageId } from '#/view/messages';
 import { passwordProblems, type PasswordFailure } from '#/view/password-rules';
 
@@ -33,7 +32,6 @@ export function renderRequiredActionsForm(
   key: string,
   actions: readonly LinkedRequiredAction[],
   setsPassword: boolean,
-  signInPath: string | null,
   failure: PasswordFailure | undefined,
   locale: PageLocale,
 ): RenderedPage {
@@ -49,7 +47,7 @@ export function renderRequiredActionsForm(
 <p>${tHtml(locale, 'requiredActions.intro')}</p>
 ${listHtml(actions, locale)}
 ${problemSummary(problems)}<form method="post" action="${action}">
-  <input type="hidden" name="key" value="${escapeHtml(key)}">${returnToField(signInPath)}${password}
+  <input type="hidden" name="key" value="${escapeHtml(key)}">${password}
   <button type="submit">${tHtml(locale, 'requiredActions.continue')}</button>
 </form>`,
     null,

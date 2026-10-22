@@ -224,7 +224,7 @@ function accountViolationFor(sentence: string): {
   const minLength = Number(/at least (\d+) characters/u.exec(sentence)?.[1] ?? 0);
   for (const rule of ACCOUNT_RULES) {
     const candidate = { rule, message: 'x', minLength };
-    const rendered = renderResetPasswordForm('t', 'k', null, [candidate], LOCALE).body;
+    const rendered = renderResetPasswordForm('t', 'k', [candidate], LOCALE).body;
     if (first(rendered, ENTRY) === sentence) return candidate;
   }
   return { rule: 'unknown', message: sentence };
@@ -255,7 +255,7 @@ function passwordFailureOf(body: string): PasswordFailure | undefined {
   if (!refused(body)) return undefined;
   const entries = entriesOf(body);
   return entries.length === 1 &&
-    entries[0] === first(renderResetPasswordForm('t', 'k', null, 'required', LOCALE).body, ENTRY)
+    entries[0] === first(renderResetPasswordForm('t', 'k', 'required', LOCALE).body, ENTRY)
     ? 'required'
     : entries.map(accountViolationFor);
 }
@@ -372,13 +372,7 @@ const RENDER_BACK: Record<string, (body: string) => string> = {
   "Can't send a reset link": (body) =>
     renderResetRequestFailedPage(tenantOf(body), null, LOCALE).body,
   'Choose a new password': (body) =>
-    renderResetPasswordForm(
-      tenantOf(body),
-      keyOf(body),
-      returnToOf(body),
-      passwordFailureOf(body),
-      LOCALE,
-    ).body,
+    renderResetPasswordForm(tenantOf(body), keyOf(body), passwordFailureOf(body), LOCALE).body,
   'Password reset': (body) => renderResetPasswordSucceededPage(backOf(body), LOCALE).body,
   "Can't use this link": (body) =>
     renderResetLinkFailedPage(
@@ -394,7 +388,6 @@ const RENDER_BACK: Record<string, (body: string) => string> = {
       keyOf(body),
       actionsOf(body),
       body.includes('name="password"'),
-      returnToOf(body),
       passwordFailureOf(body),
       LOCALE,
     ).body,

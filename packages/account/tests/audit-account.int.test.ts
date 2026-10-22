@@ -187,6 +187,7 @@ beforeAll(async () => {
   await http.register(formbody);
   const findTenant = (name: string) => tenantSettingsRepository(owner.db).byName(name);
   registerRegistrationRoute(http, {
+    findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant,
     publicBaseUrl: 'https://idp.example.test',
@@ -195,6 +196,7 @@ beforeAll(async () => {
     evaluatePassword,
   });
   registerActionTokenRoute(http, {
+    findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant,
     getCurrentEmail: async (tx, subjectId) =>

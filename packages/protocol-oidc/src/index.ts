@@ -969,6 +969,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
 // The admin API verifies a bearer token's `iss` the same way /userinfo
 // does (packages/protocol-admin/src/usecase/authenticate-admin.ts).
 export { tenantIssuer } from '#/service/issuer';
+export { restartAuthorizeLocation } from '#/service/restart-request';
 export { sendThrottledPage } from '#/view/routes/throttled';
 export { answerNotFound, answerServerError, type UnroutedDeps } from '#/view/routes/unrouted';
 export { isApiPath, wantsHtmlPage } from '#/service/page-negotiation';

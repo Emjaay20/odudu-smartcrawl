@@ -1,6 +1,7 @@
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { type FastifyInstance } from 'fastify';
 import { signInPath } from '#/service/sign-in-path';
+import { referenceToResume, type FindHeldSignIn } from '#/service/sign-in-resume';
 import { requestPasswordReset } from '#/usecase/reset-password';
 import {
   renderResetRequestedPage,
@@ -28,6 +29,9 @@ export interface ResetPasswordRouteDeps {
   // when unset; requestPasswordReset then refuses to send for any tenant
   // rather than building a link some other way.
   readonly publicBaseUrl: string | undefined;
+  // The sign-in this browser parked and can still finish, if any. A link
+  // mailed from a page names it only when the page carried that request too.
+  readonly findHeldSignIn: FindHeldSignIn;
   // The clock a mail's send time comes from.
   readonly now: () => Date;
   readonly findByEmail: (
@@ -103,6 +107,10 @@ export function registerResetPasswordRoute(
       );
     }
 
+    // Read before the address is looked up and whatever it names, so the one
+    // read is no part of what tells a known address from an unknown one.
+    const held =
+      returnTo === null ? null : await deps.findHeldSignIn(tenant, request.headers.cookie);
     // Composed before the lookup happens, and reached whether or not the
     // address matches an account — see requestPasswordReset for why: the
     // property this whole flow exists for is that these two paths cannot
@@ -115,7 +123,7 @@ export function registerResetPasswordRoute(
         tenantDisplayName: tenant.displayName ?? tenant.name,
         issuerBase: deps.publicBaseUrl,
         now: deps.now,
-        signInPath: returnTo,
+        authenticationSessionId: referenceToResume(held, returnTo),
         findByEmail: deps.findByEmail,
       },
       email,

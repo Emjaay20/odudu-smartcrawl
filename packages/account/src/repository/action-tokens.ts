@@ -30,6 +30,8 @@ export interface IssueActionToken {
   type: ActionTokenType;
   email?: string;
   actions?: readonly string[];
+  // The sign-in this link came out of; absent for an administrator's link.
+  authenticationSessionId?: string | null;
   ttlSeconds: number;
 }
 
@@ -45,6 +47,7 @@ function toRecord(row: typeof actionTokens.$inferSelect): ActionTokenRecord {
     createdAt: row.createdAt,
     expiresAt: row.expiresAt,
     consumedAt: row.consumedAt,
+    authenticationSessionId: row.authenticationSessionId,
   };
 }
 
@@ -79,6 +82,7 @@ export function actionTokenRepository(tx: TenantScopedDatabase) {
         actions: input.actions === undefined ? null : [...input.actions],
         expiresAt: new Date(Date.now() + input.ttlSeconds * 1000),
         consumedAt: null,
+        authenticationSessionId: input.authenticationSessionId ?? null,
       });
       return { token };
     },
@@ -128,16 +132,27 @@ export function actionTokenRepository(tx: TenantScopedDatabase) {
       return row === undefined ? null : toRecord(row);
     },
 
-    // What a link was for, whether or not it can still be used: a refused
-    // redemption says which next step to offer, never whose link it was. Read
-    // only after peek found nothing, so a usable link costs no extra query.
-    async typeOf(token: string): Promise<ActionTokenType | null> {
+    // What a link was for and which sign-in it came out of, whether or not it
+    // can still be used: a refused redemption says which next step to offer,
+    // never whose link it was. Read only after peek found nothing, so a
+    // usable link costs no extra query.
+    async describe(
+      token: string,
+    ): Promise<{ type: ActionTokenType; authenticationSessionId: string | null } | null> {
       const rows = await tx
-        .select({ type: actionTokens.type })
+        .select({
+          type: actionTokens.type,
+          authenticationSessionId: actionTokens.authenticationSessionId,
+        })
         .from(actionTokens)
         .where(eq(actionTokens.tokenHash, sha256Hex(token)));
-      const type = rows[0]?.type;
-      return type === undefined ? null : (type as ActionTokenType);
+      const row = rows[0];
+      return row === undefined
+        ? null
+        : {
+            type: row.type as ActionTokenType,
+            authenticationSessionId: row.authenticationSessionId,
+          };
     },
 
     // Called alongside a successful consume, in the same transaction:

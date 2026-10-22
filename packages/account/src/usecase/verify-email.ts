@@ -50,7 +50,7 @@ export async function enqueueVerificationLink(
     email: input.email,
     ttlSeconds: await tokens.lifetimeOf(tenant.tenantId, 'verify_email'),
   });
-  const link = actionLink(tenant.issuerBase, tenant.tenantName, token, null);
+  const link = actionLink(tenant.issuerBase, tenant.tenantName, token);
   await outboxRepository(tx).enqueue({
     tenantId: tenant.tenantId,
     ...renderVerifyEmail({

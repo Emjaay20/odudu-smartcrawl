@@ -213,6 +213,7 @@ function buildHttpApp(): FastifyInstance {
   const instance = Fastify();
   instance.register(formbody);
   registerResetPasswordRoute(instance, {
+    findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
     publicBaseUrl: 'https://idp.example.test',
@@ -220,6 +221,7 @@ function buildHttpApp(): FastifyInstance {
     findByEmail,
   });
   registerActionTokenRoute(instance, {
+    findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
     getCurrentEmail: async (tx, subjectId) =>
@@ -323,6 +325,7 @@ describe('password reset', () => {
     const instance = Fastify();
     await instance.register(formbody);
     registerResetPasswordRoute(instance, {
+      findHeldSignIn: () => Promise.resolve(null),
       database: app,
       findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
       publicBaseUrl: 'https://idp.example.test',
@@ -705,6 +708,7 @@ describe('password reset', () => {
     const instance = Fastify();
     await instance.register(formbody);
     registerResetPasswordRoute(instance, {
+      findHeldSignIn: () => Promise.resolve(null),
       database: app,
       findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
       publicBaseUrl: undefined,

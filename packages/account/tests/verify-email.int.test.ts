@@ -154,6 +154,7 @@ let httpApp: FastifyInstance;
 async function buildHttpApp(): Promise<FastifyInstance> {
   const instance = Fastify();
   registerActionTokenRoute(instance, {
+    findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
     getCurrentEmail: store.getCurrentEmail,

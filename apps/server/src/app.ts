@@ -53,6 +53,7 @@ import Fastify, {
 } from 'fastify';
 import { type IncomingMessage, type ServerResponse } from 'node:http';
 import { type Logger as PinoLogger } from 'pino';
+import { findHeldSignInIn } from '#/held-sign-in';
 import { createClientKeyRequest, defaultClientKeyLookup } from '#/client-key-transport';
 import { type ConsoleKeys, missingConsoleKey } from '#/console-key';
 import { registerHealth } from '#/health';
@@ -120,6 +121,12 @@ export interface AppDeps {
    * other path.
    */
   readonly docsDir?: string | undefined;
+  /**
+   * Whether the session and sign-in cookies take the `__Host-` / `__Secure-`
+   * prefix and `Secure`. One value for the cookie the login page sets and the
+   * pages that read it back, so the two cannot disagree. Defaults to `false`.
+   */
+  readonly tls?: boolean;
   /** The console gateway's clock, so a test can age a pending sign-in. */
   readonly consoleNow?: () => Date;
   /** Called with every route as it is registered, for a tool that lists what the app serves. */
@@ -294,6 +301,8 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     trustProxy: deps.trustProxy ?? false,
   });
 
+  const tls = deps.tls ?? false;
+
   if (deps.onRoute !== undefined) app.addHook('onRoute', deps.onRoute);
 
   app.addHook('onRequest', async (request, reply) => {
@@ -451,6 +460,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       auditRefusalBudget: auditRefusalBudget(() => new Date()),
       clientKeySet: privateKeyJwtKeySet,
       claimMappers,
+      tls,
       ...(deps.publicBaseUrl === undefined ? {} : { publicBaseUrl: deps.publicBaseUrl }),
       trustProxy: deps.trustProxy ?? false,
       ...(deps.tlsClientCertHeader === undefined
@@ -464,8 +474,11 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   // tables — injected here, at the composition root, so @odudu/account
   // itself stays free of that dependency
   // (packages/account/src/usecase/verify-email.ts explains why).
+  const findHeldSignIn = findHeldSignInIn(deps.database, tls);
+
   registerActionTokenRoute(app, {
     database: deps.database,
+    findHeldSignIn,
     findTenant: (name) => tenantSettingsRepository(deps.ownerDatabase.db).byName(name),
     getCurrentEmail: async (tx, subjectId) =>
       (await userRepository(tx).bySubjectId(subjectId))?.email ?? null,
@@ -514,6 +527,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
 
   registerRegistrationRoute(app, {
     database: deps.database,
+    findHeldSignIn,
     findTenant: (name) => tenantSettingsRepository(deps.ownerDatabase.db).byName(name),
     publicBaseUrl: deps.publicBaseUrl,
     now: () => systemClock.now(),
@@ -523,6 +537,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
 
   registerResetPasswordRoute(app, {
     database: deps.database,
+    findHeldSignIn,
     findTenant: (name) => tenantSettingsRepository(deps.ownerDatabase.db).byName(name),
     publicBaseUrl: deps.publicBaseUrl,
     now: () => systemClock.now(),

@@ -266,9 +266,10 @@ describe('peek', () => {
   });
 });
 
-describe('typeOf', () => {
-  const typeOf = (token: string) =>
-    withTenant(app.db, tenantId, (tx) => actionTokenRepository(tx).typeOf(token));
+describe('describe', () => {
+  const describeToken = (token: string) =>
+    withTenant(app.db, tenantId, (tx) => actionTokenRepository(tx).describe(token));
+  const SIGN_IN = newId();
 
   it('names what a token was for in every state, and nothing for an unknown one', async () => {
     const fresh = await issue({
@@ -289,10 +290,39 @@ describe('typeOf', () => {
       ttlSeconds: -1,
     });
 
-    expect(await typeOf(fresh.token)).toBe('reset_password');
-    expect(await typeOf(used.token)).toBe('verify_email');
-    expect(await typeOf(expired.token)).toBe('execute_actions');
-    expect(await typeOf('not-a-token')).toBeNull();
+    expect((await describeToken(fresh.token))?.type).toBe('reset_password');
+    expect((await describeToken(used.token))?.type).toBe('verify_email');
+    expect((await describeToken(expired.token))?.type).toBe('execute_actions');
+    expect(await describeToken('not-a-token')).toBeNull();
+  });
+
+  it('names the sign-in a link came out of, in every state, and none for an administrator link', async () => {
+    const fromSignIn = await issue({
+      subjectId: subject,
+      type: 'reset_password',
+      authenticationSessionId: SIGN_IN,
+      ttlSeconds: TEST_TTL_SECONDS,
+    });
+    const spent = await issue({
+      subjectId: subject,
+      type: 'verify_email',
+      authenticationSessionId: SIGN_IN,
+      ttlSeconds: TEST_TTL_SECONDS,
+    });
+    await consume(spent.token, 'verify_email');
+    const adminIssued = await issue({
+      subjectId: subject,
+      type: 'reset_password',
+      ttlSeconds: TEST_TTL_SECONDS,
+    });
+
+    expect((await describeToken(fromSignIn.token))?.authenticationSessionId).toBe(SIGN_IN);
+    expect((await describeToken(spent.token))?.authenticationSessionId).toBe(SIGN_IN);
+    expect((await describeToken(adminIssued.token))?.authenticationSessionId).toBeNull();
+    const peeked = await withTenant(app.db, tenantId, (tx) =>
+      actionTokenRepository(tx).peek(fromSignIn.token),
+    );
+    expect(peeked?.authenticationSessionId).toBe(SIGN_IN);
   });
 
   it('cannot see a token minted in another tenant', async () => {
@@ -304,19 +334,25 @@ describe('typeOf', () => {
           tenantId: seedTenantId,
           subjectId: seededSubject,
           type: 'reset_password',
+          authenticationSessionId: SIGN_IN,
           ttlSeconds: TEST_TTL_SECONDS,
         });
         return { token };
       },
       verifySeeded: async (tx, seeded) => {
-        expect(await actionTokenRepository(tx).typeOf(seeded.token)).toBe('reset_password');
+        expect(await actionTokenRepository(tx).describe(seeded.token)).toEqual({
+          type: 'reset_password',
+          authenticationSessionId: SIGN_IN,
+        });
       },
-      attempt: async (tx, seeded) => actionTokenRepository(tx).typeOf(seeded.token),
+      attempt: async (tx, seeded) => actionTokenRepository(tx).describe(seeded.token),
       expectBlocked: (result) => {
         expect(result).toBeNull();
       },
       verifyTenantAUnaffected: async (tx, seeded) => {
-        expect(await actionTokenRepository(tx).typeOf(seeded.token)).toBe('reset_password');
+        expect((await actionTokenRepository(tx).describe(seeded.token))?.type).toBe(
+          'reset_password',
+        );
       },
     });
   });

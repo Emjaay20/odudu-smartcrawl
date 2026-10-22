@@ -115,6 +115,7 @@ beforeEach(async () => {
   httpApp = Fastify();
   await httpApp.register(formbody);
   registerResetPasswordRoute(httpApp, {
+    findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
     publicBaseUrl: 'https://idp.example.test',

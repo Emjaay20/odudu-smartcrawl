@@ -18,10 +18,12 @@ export type PeekActionTokenResult =
       actions: readonly LinkedRequiredAction[];
       /** Whether an actions link asks for a new password. */
       setsPassword: boolean;
+      /** The sign-in the link came out of, when one did. */
+      authenticationSessionId: string | null;
     }
   // `type` says what an unusable link was for when the row is still held, so
   // the refusal can offer the step that fits it.
-  | { kind: 'invalid'; type?: ActionTokenType };
+  | { kind: 'invalid'; type?: ActionTokenType; authenticationSessionId?: string | null };
 
 // The read the action-token route needs before it can decide which page to
 // show: a reset-password link needs a form rendered before anything is
@@ -36,8 +38,8 @@ export async function peekActionToken(
     const tokens = actionTokenRepository(tx);
     const peeked = await tokens.peek(key);
     if (peeked !== null) return usable(peeked);
-    const type = await tokens.typeOf(key);
-    return type === null ? { kind: 'invalid' } : { kind: 'invalid', type };
+    const described = await tokens.describe(key);
+    return described === null ? { kind: 'invalid' } : { kind: 'invalid', ...described };
   });
 }
 
@@ -48,5 +50,6 @@ function usable(peeked: ActionTokenRecord): PeekActionTokenResult {
     type: peeked.type,
     actions,
     setsPassword: actions.includes('update-password'),
+    authenticationSessionId: peeked.authenticationSessionId,
   };
 }

@@ -27,7 +27,6 @@ describe('renderRequiredActionsForm', () => {
         'k"ey',
         ['update-password', 'configure-totp'],
         true,
-        null,
         undefined,
         EN,
       ).body,
@@ -50,7 +49,6 @@ describe('renderRequiredActionsForm', () => {
       'key',
       ['configure-passkey'],
       false,
-      null,
       undefined,
       EN,
     );
@@ -66,7 +64,6 @@ describe('renderRequiredActionsForm', () => {
       'key',
       ['update-password'],
       true,
-      null,
       [{ rule: 'require-digit', message: 'dev' }],
       EN,
     );
@@ -89,7 +86,6 @@ describe('renderRequiredActionsForm', () => {
       'key',
       ['configure-totp'],
       false,
-      null,
       'required',
       EN,
     );
@@ -102,7 +98,6 @@ describe('renderRequiredActionsForm', () => {
       'k',
       ['update-password', 'configure-totp', 'configure-passkey', 'generate-recovery-codes'],
       false,
-      null,
       undefined,
       EN,
     );
@@ -122,7 +117,6 @@ describe('renderRequiredActionsForm', () => {
       'k',
       ['configure-totp', 'update-password'],
       true,
-      null,
       undefined,
       FRENCH,
     );
@@ -135,9 +129,9 @@ describe('renderRequiredActionsForm', () => {
   });
 
   it('writes lang and dir for a right-to-left locale', () => {
-    expect(
-      renderRequiredActionsForm('acme', 'k', [], false, null, undefined, ARABIC).html,
-    ).toContain('<html lang="ar" dir="rtl">');
+    expect(renderRequiredActionsForm('acme', 'k', [], false, undefined, ARABIC).html).toContain(
+      '<html lang="ar" dir="rtl">',
+    );
   });
 
   it('escapes the tenant and key, and isolates an action code it has no wording for', () => {
@@ -148,7 +142,6 @@ describe('renderRequiredActionsForm', () => {
         '"><i>',
         [hostile],
         true,
-        null,
         undefined,
         locale,
       );
@@ -161,8 +154,7 @@ describe('renderRequiredActionsForm', () => {
 
   it('does not take an action named like an object member for a catalogue entry', () => {
     expect(
-      renderRequiredActionsForm('acme', 'k', ['constructor' as never], false, null, undefined, EN)
-        .body,
+      renderRequiredActionsForm('acme', 'k', ['constructor' as never], false, undefined, EN).body,
     ).toContain('<li><bdi>constructor</bdi></li>');
   });
 });
@@ -200,12 +192,10 @@ describe('renderRequiredActionsSucceededPage', () => {
 describe('the actions pages with the way back a mailed link carried', () => {
   const way = '/tenants/acme/protocol/openid-connect/auth?client_id=c&state=x';
 
-  it('carries it in the form and links back from the done page', () => {
+  it('keeps it out of the form and links back from the done page', () => {
     expect(
-      renderRequiredActionsForm('acme', 'k', ['update-password'], true, way, undefined, EN).body,
-    ).toContain(
-      'name="return_to" value="/tenants/acme/protocol/openid-connect/auth?client_id=c&amp;state=x"',
-    );
+      renderRequiredActionsForm('acme', 'k', ['update-password'], true, undefined, EN).body,
+    ).not.toContain('return_to');
     expect(renderRequiredActionsSucceededPage([], way, EN).body)
       .toBe(`<h1>Your account is updated</h1>
 <p class="links">

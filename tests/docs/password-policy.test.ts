@@ -61,7 +61,7 @@ function possibleMessages(): Set<string> {
   const messages = new Set<string>();
   for (const violation of reported) {
     for (const item of itemsOf(
-      renderResetPasswordForm('acme', 'key', null, [violation], DEFAULT_PAGE_LOCALE).body,
+      renderResetPasswordForm('acme', 'key', [violation], DEFAULT_PAGE_LOCALE).body,
     )) {
       expect(item, `no catalogue sentence for the rule ${violation.rule}`).not.toContain('<bdi>');
       messages.add(item);
@@ -85,7 +85,7 @@ function violationPageHeadings(): Set<string> {
   const headings = new Set<string>();
   for (const body of [
     renderRegistrationForm('acme', {}, DEFAULT_PAGE_LOCALE).body,
-    renderResetPasswordForm('acme', 'key', null, undefined, DEFAULT_PAGE_LOCALE).body,
+    renderResetPasswordForm('acme', 'key', undefined, DEFAULT_PAGE_LOCALE).body,
   ]) {
     const title = /<h1>(?<title>[^<]+)<\/h1>/u.exec(body)?.groups?.title;
     if (title !== undefined) headings.add(title);

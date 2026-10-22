@@ -158,14 +158,14 @@ describe('renderResetRequestFailedPage', () => {
 
 describe('renderResetPasswordForm', () => {
   it('returns a body fragment and a title beside the document', () => {
-    const page = renderResetPasswordForm('acme', 'token-key', null, undefined, EN);
+    const page = renderResetPasswordForm('acme', 'token-key', undefined, EN);
     expect(page.title).toBe('Choose a new password');
     expect(page.body).toContain('value="token-key"');
     expectFragment(page);
   });
 
   it('keeps the English markup exactly', () => {
-    expect(renderResetPasswordForm('acme', 'token-key', null, undefined, EN).body)
+    expect(renderResetPasswordForm('acme', 'token-key', undefined, EN).body)
       .toBe(`<header class="intro">
 <h1>Choose a new password</h1>
 <p class="tenant"><bdi>acme</bdi></p>
@@ -181,7 +181,6 @@ describe('renderResetPasswordForm', () => {
     const { body } = renderResetPasswordForm(
       'acme',
       'token-key',
-      null,
       [
         { rule: 'min-length', message: 'dev', minLength: 8 },
         { rule: 'not-reused', message: 'dev' },
@@ -203,10 +202,10 @@ describe('renderResetPasswordForm', () => {
   });
 
   it('says a password is required, in French where the fixture has it', () => {
-    expect(renderResetPasswordForm('acme', 'k', null, 'required', EN).body).toContain(
+    expect(renderResetPasswordForm('acme', 'k', 'required', EN).body).toContain(
       '<li id="form-error-0">A new password is required.</li>',
     );
-    expect(renderResetPasswordForm('acme', 'k', null, 'required', FRENCH).body).toContain(
+    expect(renderResetPasswordForm('acme', 'k', 'required', FRENCH).body).toContain(
       '<li id="form-error-0">Un nouveau mot de passe est obligatoire.</li>',
     );
   });
@@ -215,7 +214,6 @@ describe('renderResetPasswordForm', () => {
     const { body } = renderResetPasswordForm(
       'acme',
       'k',
-      null,
       [
         { rule: 'min-length', message: 'dev', minLength: 1000 },
         { rule: 'require-digit', message: 'dev' },
@@ -229,13 +227,13 @@ describe('renderResetPasswordForm', () => {
   });
 
   it('writes lang and dir for a right-to-left locale', () => {
-    expect(renderResetPasswordForm('acme', 'k', null, [], ARABIC).html).toContain(
+    expect(renderResetPasswordForm('acme', 'k', [], ARABIC).html).toContain(
       '<html lang="ar" dir="rtl">',
     );
   });
 
   it('reads French, keeps the key and tenant escaped, and has no script', () => {
-    const page = renderResetPasswordForm('<t>', '"><img src=x>', null, undefined, FRENCH);
+    const page = renderResetPasswordForm('<t>', '"><img src=x>', undefined, FRENCH);
     expect(page.body).toContain('<label>Nouveau mot de passe <input');
     expect(page.html).not.toContain('<img src=x>');
     expect(page.html).not.toContain('<t>');
@@ -297,14 +295,9 @@ describe('the reset pages a mailed link opens, with the way back it carried', ()
   const back =
     '<a href="/tenants/acme/protocol/openid-connect/auth?client_id=c&amp;state=x">Back to sign in</a>';
 
-  it('carries it in the form, so a refusal keeps it', () => {
-    const { body } = renderResetPasswordForm('acme', 'k', way, 'required', EN);
-    expect(body).toContain(
-      '<input type="hidden" name="return_to" value="/tenants/acme/protocol/openid-connect/auth?client_id=c&amp;state=x">',
-    );
-    expect(renderResetPasswordForm('acme', 'k', null, undefined, EN).body).not.toContain(
-      'return_to',
-    );
+  it('keeps the way back out of the form: it is held on the server, beside the token', () => {
+    expect(renderResetPasswordForm('acme', 'k', 'required', EN).body).not.toContain('return_to');
+    expect(renderResetPasswordForm('acme', 'k', undefined, EN).body).not.toContain('return_to');
   });
 
   it('links back from the done page and beside the new-link one on the failed page', () => {

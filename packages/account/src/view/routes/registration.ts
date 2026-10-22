@@ -10,6 +10,7 @@ import {
   type PolicyViolation,
 } from '#/usecase/register';
 import { signInPath } from '#/service/sign-in-path';
+import { referenceToResume, type FindHeldSignIn } from '#/service/sign-in-resume';
 import {
   renderRegistrationFailedPage,
   renderRegistrationForm,
@@ -43,6 +44,9 @@ export interface RegistrationRouteDeps {
   // tenant with verify_email on then refuses to register rather than
   // building a link some other way.
   readonly publicBaseUrl: string | undefined;
+  // The sign-in this browser parked and can still finish, if any. A link
+  // mailed from a page names it only when the page carried that request too.
+  readonly findHeldSignIn: FindHeldSignIn;
   // The clock a mail's send time comes from.
   readonly now: () => Date;
   readonly createAccount: (
@@ -149,6 +153,11 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
       return refuse(400, { missing });
     }
 
+    // Only a mail that will carry a link needs to know the sign-in it came out of.
+    const held =
+      tenant.verifyEmail && returnTo !== null
+        ? await deps.findHeldSignIn(tenant, request.headers.cookie)
+        : null;
     const outcome = await register(
       {
         database: deps.database,
@@ -158,7 +167,7 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
         request: requestContextFrom(request),
         issuerBase: deps.publicBaseUrl,
         verifyEmailEnabled: tenant.verifyEmail,
-        signInPath: returnTo,
+        authenticationSessionId: referenceToResume(held, returnTo),
         now: deps.now,
         createAccount: deps.createAccount,
         passwordPolicy: tenant.passwordPolicy,

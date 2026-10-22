@@ -59,6 +59,7 @@ beforeAll(async () => {
   http = Fastify();
   http.register(formbody);
   registerActionTokenRoute(http, {
+    findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
     getCurrentEmail: async (tx, subjectId) =>
