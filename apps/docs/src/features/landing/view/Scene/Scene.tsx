@@ -6,8 +6,6 @@ import { SceneCheck } from '@site/src/features/landing/view/SceneCheck/SceneChec
 import { SceneWindow } from '@site/src/features/landing/view/SceneWindow/SceneWindow';
 import styles from '@site/src/features/landing/view/Scene/Scene.module.css';
 
-const HEADS = { lit: styles.headOn, dim: styles.head };
-
 interface Props {
   layout: LayoutName;
   step: Step;
@@ -40,6 +38,26 @@ export function Scene({ layout, step, uid }: Props): ReactElement {
           <stop offset="0.55" className={styles.glowMid} />
           <stop offset="1" className={styles.glowEdge} />
         </radialGradient>
+        {scene.lines.map((line) => (
+          <mask
+            key={line.id}
+            id={`route-${uid}-${line.id}`}
+            maskUnits="userSpaceOnUse"
+            x={-50}
+            y={-50}
+            width={2000}
+            height={2000}
+          >
+            <path
+              className={styles.reveal}
+              data-on={line.on}
+              data-route-reveal={line.id}
+              d={line.d}
+              pathLength={1}
+              style={{ transitionDelay: `${String(line.delay)}ms` }}
+            />
+          </mask>
+        ))}
       </defs>
 
       <circle cx={scene.glow.cx} cy={scene.glow.cy} r={scene.glow.r} fill={`url(#glow-${uid})`} />
@@ -58,16 +76,29 @@ export function Scene({ layout, step, uid }: Props): ReactElement {
       {scene.lines.map((line) => (
         <g key={line.id}>
           <path className={styles.route} d={line.d} />
-          <path className={styles.routeOn} data-on={line.on} d={line.d} />
+          <path
+            className={styles.routeOn}
+            data-on={line.on}
+            d={line.d}
+            mask={`url(#route-${uid}-${line.id})`}
+          />
         </g>
       ))}
       {scene.heads.map((head) => (
-        <path
-          key={`head-${head.id}`}
-          className={HEADS[head.look]}
-          d="M-10 -6L0 0L-10 6z"
-          transform={head.at}
-        />
+        <g key={`head-${head.id}`} transform={head.at}>
+          <path
+            className={styles.head}
+            data-on={head.lit}
+            style={{ transitionDelay: `${String(head.delay)}ms` }}
+            d="M-10 -6L0 0L-10 6z"
+          />
+          <path
+            className={styles.headOn}
+            data-on={head.lit}
+            style={{ transitionDelay: `${String(head.delay)}ms` }}
+            d="M-10 -6L0 0L-10 6z"
+          />
+        </g>
       ))}
 
       <g className={styles.node} data-on={scene.device.on}>

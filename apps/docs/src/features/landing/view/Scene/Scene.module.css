@@ -161,19 +161,37 @@
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-dasharray: 0.1 7;
-  opacity: 0;
 }
 
-.routeOn[data-on='true'] {
-  opacity: 1;
+/* A route is shown through a mask whose own line is drawn along the path. */
+.reveal {
+  fill: none;
+  stroke: white;
+  stroke-width: 10;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+.reveal[data-on='true'] {
+  stroke-dashoffset: 0;
 }
 
 .head {
   fill: var(--ink-muted);
 }
 
+/* The dim head gives way to the lit one over it, so a lit head leaves no grey edge. */
+.head[data-on='true'] {
+  opacity: 0;
+}
+
 .headOn {
   fill: var(--signal-active-ink);
+  opacity: 0;
+}
+
+.headOn[data-on='true'] {
+  opacity: 1;
 }
 
 .dot {
@@ -190,10 +208,19 @@
   transform-box: view-box;
 }
 
+/* Staged delays are set inline per element, so reduced motion has to cancel them outright. */
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .head,
+  .headOn {
+    transition: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .node,
   .late {
-    transition: transform var(--motion-panel) var(--ease);
+    transition: transform var(--scene-fade) var(--scene-ease);
   }
 
   .node[data-on='true'] {
@@ -202,8 +229,13 @@
 
   .halo,
   .signed,
-  .routeOn {
-    transition: opacity 300ms var(--ease);
+  .head,
+  .headOn {
+    transition: opacity var(--scene-fade) var(--scene-ease);
+  }
+
+  .reveal {
+    transition: stroke-dashoffset var(--scene-draw) var(--scene-ease);
   }
 
   .dot {
@@ -215,7 +247,7 @@
 
   .ticket {
     animation-duration: 1.5s;
-    animation-timing-function: ease-in-out;
+    animation-timing-function: linear;
     animation-fill-mode: both;
   }
 

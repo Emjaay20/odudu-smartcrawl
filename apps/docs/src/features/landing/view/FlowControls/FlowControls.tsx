@@ -4,22 +4,33 @@ import type { StepperButton } from '@site/src/features/landing/service/playback'
 import styles from '@site/src/features/landing/view/FlowControls/FlowControls.module.css';
 
 interface Props {
+  step: Step;
   buttons: StepperButton[];
   playing: boolean;
+  running: boolean;
+  holdMs: number;
   label: 'Pause' | 'Play';
   live: string;
+  leaving: string;
+  moved: boolean;
   politeness: 'off' | 'polite';
   onChoose: (step: Step) => void;
   onToggle: () => void;
   onReplay: () => void;
 }
 
-// Pause and Replay first, then the seven steps, then what the current step says.
+// Pause and Replay first, then the seven steps under one sliding marker, then
+// what the current step says, handed over from what the last one said.
 export function FlowControls({
+  step,
   buttons,
   playing,
+  running,
+  holdMs,
   label,
   live,
+  leaving,
+  moved,
   politeness,
   onChoose,
   onToggle,
@@ -42,7 +53,17 @@ export function FlowControls({
             Replay
           </button>
         </div>
-        <div className={styles.stepper} role="group" aria-label="Steps">
+        <div className={styles.stepper} role="group" aria-label="Steps" data-step={String(step)}>
+          <span className={styles.pill} data-pill="" aria-hidden="true">
+            {running ? (
+              <span
+                key={String(step)}
+                className={styles.fill}
+                data-fill=""
+                style={{ animationDuration: `${String(holdMs)}ms` }}
+              />
+            ) : null}
+          </span>
           {buttons.map((button) => (
             <button
               key={button.label}
@@ -59,9 +80,21 @@ export function FlowControls({
           ))}
         </div>
       </div>
-      <p className={styles.live} role="status" aria-live={politeness}>
-        {live}
-      </p>
+      <div className={styles.live} role="status" aria-live={politeness} data-live="">
+        {moved ? (
+          <p key={`out-${live}`} className={styles.liveOut} data-caption="out" aria-hidden="true">
+            {leaving}
+          </p>
+        ) : null}
+        <p
+          key={`in-${live}`}
+          className={styles.liveIn}
+          data-caption="in"
+          data-moved={String(moved)}
+        >
+          {live}
+        </p>
+      </div>
     </div>
   );
 }

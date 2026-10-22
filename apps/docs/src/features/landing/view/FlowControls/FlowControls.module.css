@@ -16,11 +16,16 @@
 }
 
 .stepper {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+  --gap: var(--space-2);
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  flex: 1 1 36rem;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--gap);
 }
 
+/* Each step's face sits behind its text; the one marker slides over the faces. */
 .stepButton,
 .control {
   display: inline-flex;
@@ -44,10 +49,111 @@
   background: var(--surface-sunken);
 }
 
+.stepButton {
+  position: relative;
+  min-inline-size: 0;
+  padding-block: var(--space-1);
+  border-color: transparent;
+  background: transparent;
+  line-height: 1.2;
+  text-align: start;
+}
+
+.stepButton::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: inherit;
+  background: var(--surface-panel);
+}
+
 .stepButton[aria-current='step'] {
-  border-color: var(--signal-active-ink);
-  background: var(--signal-active-ink);
   color: var(--surface-panel);
+}
+
+.pill {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: calc((100% - 6 * var(--gap)) / 7);
+  border-radius: 999px;
+  background: var(--signal-active-ink);
+  pointer-events: none;
+  opacity: 0;
+}
+
+.stepper:not([data-step='0']) .pill {
+  opacity: 1;
+}
+
+.stepper[data-step='2'] .pill {
+  transform: translateX(calc(100% + var(--gap)));
+}
+
+.stepper[data-step='3'] .pill {
+  transform: translateX(calc(2 * (100% + var(--gap))));
+}
+
+.stepper[data-step='4'] .pill {
+  transform: translateX(calc(3 * (100% + var(--gap))));
+}
+
+.stepper[data-step='5'] .pill {
+  transform: translateX(calc(4 * (100% + var(--gap))));
+}
+
+.stepper[data-step='6'] .pill {
+  transform: translateX(calc(5 * (100% + var(--gap))));
+}
+
+.stepper[data-step='7'] .pill {
+  transform: translateX(calc(6 * (100% + var(--gap))));
+}
+
+/* A thin line along the foot of the marker, filling over the step's hold. */
+.fill {
+  position: absolute;
+  inset-inline: 14px;
+  inset-block-end: 5px;
+  block-size: 2px;
+  border-radius: 1px;
+  background: var(--surface-panel);
+  opacity: 0.6;
+  transform: scaleX(0);
+  transform-origin: left center;
+  animation-name: fill;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+
+@keyframes fill {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fill {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pill {
+    transition:
+      transform 400ms var(--scene-ease),
+      opacity 300ms var(--scene-ease);
+  }
+
+  .stepButton {
+    transition: color 300ms var(--scene-ease);
+  }
+
+  .stepButton::before {
+    transition: border-color 300ms var(--scene-ease);
+  }
 }
 
 .stepNumber {
@@ -56,8 +162,12 @@
 }
 
 @media (max-width: 1099px) {
+  .stepper {
+    flex: 0 1 22rem;
+  }
+
   .stepButton {
-    min-inline-size: 2.5rem;
+    justify-content: center;
     padding-inline: 0;
   }
 
@@ -71,22 +181,65 @@
   }
 }
 
+/* A fixed box, so the caption changing never moves what is below it. */
 .live {
-  min-block-size: 3.2em;
+  position: relative;
+  block-size: 3.2em;
   margin: var(--space-3) 0 0;
   color: var(--ink-primary);
   line-height: 1.5;
 }
 
+.liveIn,
+.liveOut {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+}
+
+.liveOut {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liveOut {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .liveOut {
+    animation: drift-out 200ms var(--scene-ease) both;
+  }
+
+  .liveIn[data-moved='true'] {
+    animation: rise-in 300ms var(--scene-ease) 450ms both;
+  }
+}
+
+@keyframes drift-out {
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
 @media (max-width: 899px) {
   .live {
-    min-block-size: 5em;
+    block-size: 5em;
   }
 }
 
 @media (max-width: 599px) {
   .live {
-    min-block-size: 8em;
+    block-size: 8em;
   }
 }
 

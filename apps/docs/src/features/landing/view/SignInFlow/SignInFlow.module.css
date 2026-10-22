@@ -2,6 +2,9 @@
   --shadow-soft: light-dark(rgb(17 21 20 / 10%), rgb(0 0 0 / 38%));
   --shadow-deep: light-dark(rgb(17 21 20 / 16%), rgb(0 0 0 / 55%));
   --sheen: light-dark(rgb(255 255 255 / 85%), rgb(255 255 255 / 8%));
+  --scene-ease: cubic-bezier(0.45, 0, 0.55, 1);
+  --scene-fade: 400ms;
+  --scene-draw: 700ms;
   min-inline-size: 0;
 }
 

@@ -1,19 +1,42 @@
 import { describe, expect, it, vi } from 'vitest';
-import { FLOW_START, stepOf, stepper, viewOf } from '@site/src/features/landing/service/playback';
+import {
+  FLOW_START,
+  liveText,
+  stepOf,
+  stepper,
+  viewOf,
+  waitFor,
+} from '@site/src/features/landing/service/playback';
 import { FlowControls } from '@site/src/features/landing/view/FlowControls/FlowControls';
 import { markupOf } from '@site/tests/support/markup';
 
 const NOOP = vi.fn();
 
-function controls(step: number, wantsPlay: boolean, live: string): React.ReactElement {
-  const flow = { ...FLOW_START, step: stepOf(step), wantsPlay };
+function controls(
+  step: number,
+  wantsPlay: boolean,
+  live: string,
+  previous = step,
+): React.ReactElement {
+  const flow = {
+    ...FLOW_START,
+    step: stepOf(step),
+    previous: stepOf(previous),
+    wantsPlay,
+    inView: true,
+  };
   const view = viewOf(flow);
   return (
     <FlowControls
+      step={flow.step}
       buttons={stepper(flow.step)}
       playing={wantsPlay}
+      running={view.running}
+      holdMs={view.holdMs}
       label={view.label}
       live={live}
+      leaving={view.leaving}
+      moved={view.moved}
       politeness={view.politeness}
       onChoose={NOOP}
       onToggle={NOOP}
@@ -42,5 +65,25 @@ describe('FlowControls', () => {
   it('announces politely when paused and not at all while playing', () => {
     expect(markupOf(controls(1, true, 'x'))('[role="status"]').attr('aria-live')).toBe('off');
     expect(markupOf(controls(1, false, 'x'))('[role="status"]').attr('aria-live')).toBe('polite');
+  });
+
+  it('has one marker, which says which step it is under and fills while the step runs', () => {
+    const playing = markupOf(controls(3, true, 'x'));
+    expect(playing('[data-pill]')).toHaveLength(1);
+    expect(playing('[role="group"]').attr('data-step')).toBe('3');
+    expect(playing('[data-fill]')).toHaveLength(1);
+    expect(playing('[data-fill]').attr('style')).toContain(`${String(waitFor(3))}ms`);
+    expect(markupOf(controls(3, false, 'x'))('[data-fill]')).toHaveLength(0);
+  });
+
+  it('shows the new caption alone at first, and hands over from the old one after a move', () => {
+    const first = markupOf(controls(1, true, 'now'));
+    expect(first('[data-caption="out"]')).toHaveLength(0);
+    expect(first('[data-caption="in"]').attr('data-moved')).toBe('false');
+    const moved = markupOf(controls(2, true, 'now', 1));
+    expect(moved('[data-caption="out"]').text()).toBe(liveText(1));
+    expect(moved('[data-caption="out"]').attr('aria-hidden')).toBe('true');
+    expect(moved('[data-caption="in"]').text()).toBe('now');
+    expect(moved('[data-caption="in"]').attr('data-moved')).toBe('true');
   });
 });

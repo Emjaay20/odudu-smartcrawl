@@ -10,24 +10,29 @@ import styles from '@site/src/features/landing/view/SignInFlow/SignInFlow.module
 // composed picture and the seven captions as a list; where script runs it plays
 // once when it comes into view, then loops, and the stepper lets the reader take over.
 export function SignInFlow(): ReactElement {
-  const { uid, stage, step, wantsPlay, label, live, politeness, buttons, choose, toggle, replay } =
-    useSignInFlow();
+  const flow = useSignInFlow();
+  const { uid, stage, step } = flow;
   return (
     <div className={styles.flow} data-flow="" data-step={String(step)}>
-      <div className={styles.stage} ref={stage}>
+      <div className={styles.stage} ref={stage} data-stage="">
         <Scene layout="wide" step={step} uid={`${uid}-w`} />
         <Scene layout="tall" step={step} uid={`${uid}-t`} />
       </div>
       <div className={styles.below}>
         <FlowControls
-          buttons={buttons}
-          playing={wantsPlay}
-          label={label}
-          live={live}
-          politeness={politeness}
-          onChoose={choose}
-          onToggle={toggle}
-          onReplay={replay}
+          step={step}
+          buttons={flow.buttons}
+          playing={flow.wantsPlay}
+          running={flow.running}
+          holdMs={flow.holdMs}
+          label={flow.label}
+          live={flow.live}
+          leaving={flow.leaving}
+          moved={flow.moved}
+          politeness={flow.politeness}
+          onChoose={flow.choose}
+          onToggle={flow.toggle}
+          onReplay={flow.replay}
         />
         <ol className={styles.captions} data-flow-captions="">
           {captions().map((item) => (
