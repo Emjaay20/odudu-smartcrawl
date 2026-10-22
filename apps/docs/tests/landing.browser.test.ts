@@ -5,7 +5,7 @@ import type { Result } from 'axe-core';
 import { chromium, type Browser, type BrowserContextOptions, type Page } from '@playwright/test';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { JOURNEYS, SECTIONS } from '#docs/nav.ts';
-import { BEATS } from '#docs/src/features/landing/service/geometry.ts';
+import { BEATS, SCENE_EASE } from '#docs/src/features/landing/service/geometry.ts';
 import { PAGES_BASE, PAGES_DOCS_BASE } from '#docs/site.config.ts';
 import { DOCS_ROOT, distDir } from '#docs/tests/support/dist.ts';
 
@@ -475,8 +475,10 @@ describe('the landing page in a browser', () => {
     const { page, close } = await visit({ reducedMotion: 'reduce' });
     await page.waitForTimeout(400);
     const state = await page.evaluate(() => {
+      // The step marker is decorative and marks nothing while the scene is at rest.
       const items = [...document.querySelectorAll('[data-page="landing"] *')].filter(
-        (element) => element instanceof HTMLElement,
+        (element) =>
+          element instanceof HTMLElement && element.closest('[aria-hidden="true"]') === null,
       );
       return {
         pending: document.querySelectorAll('[data-pending]').length,
@@ -600,6 +602,193 @@ describe('the landing page in a browser', () => {
     await page.clock.runFor(200);
     seen.push(await step());
     expect(seen).toEqual(['1', '2', '3', '4', '5', '6', '7', '0', '0', '1']);
+    await close();
+  });
+
+  it('eases the highlights, draws the routes and slides one marker, each defined in the CSS', async () => {
+    const { page, close } = await visit({ viewport: { width: 1280, height: 800 } });
+    await page.locator('[data-flow] [role="group"]').waitFor();
+    const styles = await page.evaluate(() => {
+      const read = (selector: string): { property: string; duration: string; ease: string } => {
+        const element = document.querySelector(selector);
+        if (element === null) throw new Error(`no ${selector}`);
+        const style = getComputedStyle(element);
+        return {
+          property: style.transitionProperty,
+          duration: style.transitionDuration,
+          ease: style.transitionTimingFunction,
+        };
+      };
+      return {
+        halo: read('svg[data-layout="wide"] [class*="halo"]'),
+        signed: read('svg[data-layout="wide"] [class*="signed"]'),
+        node: read('svg[data-layout="wide"] [class*="node"]'),
+        route: read('svg[data-layout="wide"] [data-route-reveal]'),
+        pill: read('[data-pill]'),
+        button: read('[data-flow] [role="group"] button'),
+      };
+    });
+    expect(styles.halo).toMatchObject({ property: 'opacity', duration: '0.4s', ease: SCENE_EASE });
+    expect(styles.signed.duration).toBe('0.4s');
+    expect(styles.node).toMatchObject({ property: 'transform', duration: '0.4s' });
+    expect(styles.route).toMatchObject({
+      property: 'stroke-dashoffset',
+      duration: '0.7s',
+      ease: SCENE_EASE,
+    });
+    expect(styles.pill.property).toContain('transform');
+    expect(styles.pill.duration).toContain('0.4s');
+    expect(styles.button.property).toBe('color');
+    await close();
+  });
+
+  it('has no transition and no animation under reduced motion, with the full scene and caption shown', async () => {
+    const { page, close } = await visit({
+      reducedMotion: 'reduce',
+      viewport: { width: 1280, height: 800 },
+    });
+    await page.locator('[data-flow] [role="group"]').waitFor();
+    await page.getByRole('button', { name: /Back with a signed/u }).click();
+    await page.getByRole('button', { name: /Already signed in/u }).click();
+    const result = await page.evaluate(() => {
+      const scope =
+        'svg[data-layout="wide"] *, [data-flow] [role="group"] *, [data-live] *, [data-pill]';
+      const timed = [...document.querySelectorAll(scope)].filter((element) => {
+        const style = getComputedStyle(element);
+        const moving = style.transitionDuration.split(',').some((value) => parseFloat(value) > 0);
+        return moving || (style.animationName !== 'none' && style.display !== 'none');
+      });
+      const out = document.querySelector('[data-caption="out"]');
+      const inside = document.querySelector('[data-caption="in"]');
+      return {
+        timed: timed.map((element) => element.getAttribute('class') ?? element.tagName),
+        outHidden: out === null || getComputedStyle(out).display === 'none',
+        caption: inside === null ? '' : getComputedStyle(inside).opacity,
+        running: document
+          .getAnimations()
+          .filter(
+            (animation) => animation instanceof CSSTransition && animation.playState === 'running',
+          ).length,
+      };
+    });
+    expect(result.timed.filter((name) => !/dot|ring|ticket|chipOn/u.test(name))).toEqual([]);
+    expect(result.outHidden).toBe(true);
+    expect(result.caption).toBe('1');
+    expect(result.running).toBe(0);
+    await close();
+  });
+
+  it('keeps the caption box the same height at every step and fits each caption in it', async () => {
+    for (const width of [375, 768, 1280]) {
+      const { page, close } = await visit({ viewport: { width, height: 900 } });
+      await page.locator('[data-flow] [role="group"]').waitFor();
+      const heights = new Set<number>();
+      for (const beat of BEATS) {
+        await page.getByRole('button', { name: new RegExp(beat.label, 'u') }).click();
+        await page.waitForTimeout(700);
+        const sizes = await page.evaluate(() => {
+          const box = document.querySelector('[data-live]');
+          const text = document.querySelector('[data-caption="in"]');
+          if (box === null || text === null) throw new Error('no caption box');
+          return { box: box.getBoundingClientRect().height, text: text.scrollHeight };
+        });
+        heights.add(sizes.box);
+        expect(sizes.text, `${beat.label} at ${String(width)}`).toBeLessThanOrEqual(sizes.box);
+      }
+      expect([...heights], `at ${String(width)}`).toHaveLength(1);
+      await close();
+    }
+  });
+
+  it('sits the one marker under the chosen step and fills it over the step clock', async () => {
+    for (const width of [375, 1280]) {
+      const { page, close } = await visit({ viewport: { width, height: 900 } });
+      await page.locator('[data-flow] [role="group"]').waitFor();
+      await page.evaluate(() => {
+        document.querySelector('[data-flow]')?.scrollIntoView({ block: 'center' });
+      });
+      await page.locator('[data-flow][data-step="1"]').waitFor();
+      expect(await page.locator('[data-pill]').count()).toBe(1);
+      expect(await page.locator('[data-fill]').count()).toBe(1);
+      const fill = await page.evaluate(() => {
+        const animation = document.querySelector('[data-fill]')?.getAnimations()[0];
+        return {
+          duration: animation?.effect?.getTiming().duration,
+          name: animation instanceof CSSAnimation ? animation.animationName : '',
+        };
+      });
+      expect(fill.duration).toBe(BEATS[0]?.ms);
+      expect(fill.name).toMatch(/^fill/u);
+      for (const index of [2, 5, 7]) {
+        const label = BEATS[index - 1]?.label ?? '';
+        await page.getByRole('button', { name: new RegExp(label, 'u') }).click();
+        await page.waitForTimeout(700);
+        const place = await page.evaluate((position) => {
+          const pill = document.querySelector('[data-pill]')?.getBoundingClientRect();
+          const buttons = [...document.querySelectorAll('[data-flow] [role="group"] button')];
+          const button = buttons[position - 1]?.getBoundingClientRect();
+          if (pill === undefined || button === undefined) throw new Error('no marker');
+          return { left: pill.left - button.left, width: pill.width - button.width };
+        }, index);
+        expect(Math.abs(place.left), `step ${String(index)} at ${String(width)}`).toBeLessThan(1.5);
+        expect(Math.abs(place.width)).toBeLessThan(1.5);
+        expect(await page.locator('[data-fill]').count(), 'a chosen step does not play').toBe(0);
+      }
+      await close();
+    }
+  });
+
+  it('restarts the fill from the start when playing resumes on the same beat', async () => {
+    const { page, close } = await visit({ viewport: { width: 1280, height: 800 } });
+    await page.locator('[data-flow] [role="group"]').waitFor();
+    await page.evaluate(() => {
+      document.querySelector('[data-flow]')?.scrollIntoView({ block: 'center' });
+    });
+    await page.locator('[data-flow][data-step="2"]').waitFor();
+    const progress = (): Promise<number> =>
+      page.evaluate(() => {
+        const animation = document.querySelector('[data-fill]')?.getAnimations()[0];
+        return Number(animation?.currentTime ?? -1);
+      });
+    const early = await progress();
+    expect(early).toBeGreaterThanOrEqual(0);
+    expect(early).toBeLessThan(BEATS[1]?.ms ?? 0);
+    await page.getByRole('button', { name: /Pause autoplay/u }).click();
+    expect(await page.locator('[data-fill]').count()).toBe(0);
+    await page.getByRole('button', { name: /Play autoplay/u }).click();
+    expect(await progress()).toBeLessThan(500);
+    await close();
+  });
+
+  it('hands the caption over: the old drifts out, the new rises in, and nothing below shifts', async () => {
+    const { page, close } = await visit({ viewport: { width: 1280, height: 800 } });
+    await page.locator('[data-flow] [role="group"]').waitFor();
+    const more = page.locator('[data-flow] p', { hasText: 'The ideas are in' });
+    await page.getByRole('button', { name: /Sign in once/u }).click();
+    await page.waitForTimeout(900);
+    const below = await more.evaluate((element) => element.getBoundingClientRect().top);
+    await page.getByRole('button', { name: /Back with a signed/u }).click();
+    const seen = await page.evaluate(
+      () =>
+        new Promise<{ out: string; inside: string; outText: string }>((resolve) => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              const out = document.querySelector('[data-caption="out"]');
+              const inside = document.querySelector('[data-caption="in"]');
+              resolve({
+                out: out === null ? '' : getComputedStyle(out).animationName,
+                inside: inside === null ? '' : getComputedStyle(inside).animationName,
+                outText: out?.textContent ?? '',
+              });
+            });
+          });
+        }),
+    );
+    expect(seen.out).toContain('drift-out');
+    expect(seen.inside).toContain('rise-in');
+    expect(seen.outText).toContain('Step 3 of 7');
+    await page.waitForTimeout(900);
+    expect(await more.evaluate((element) => element.getBoundingClientRect().top)).toBe(below);
     await close();
   });
 

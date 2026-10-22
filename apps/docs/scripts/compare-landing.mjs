@@ -70,6 +70,9 @@ async function capture(browser, port, out) {
         await page
           .locator('[data-section="signin"]')
           .screenshot({ path: path.join(out, `${stem}-step${step}.png`) });
+        await page
+          .locator('[data-flow] > div:first-child')
+          .screenshot({ path: path.join(out, `${stem}-scene${step}.png`) });
       }
       await context.close();
     }

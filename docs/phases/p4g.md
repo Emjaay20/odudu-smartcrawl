@@ -2776,3 +2776,40 @@ shows the Copy outcome after a click).
   plus 5 per cent, 258,000 B, by the file's own convention, with the reason beside it. The entry budget (153,000 B) is untouched.
 - **Docs coverage:** the tour covers a button that fails (nothing is drawn, the console in the browser holds the error) and the
   panel's real buttons; `tests/support/console-labels.ts` already holds every label the tour quotes.
+
+### Increment 31i, the sign-in scene moves smoothly
+
+A step used to switch at once. It now plays in stages, each overlapping the last: the nodes and their highlights ease
+over 400 ms with one shared ease-in-out (`SCENE_EASE`), each route then draws itself over 700 ms starting 150 ms in, its
+arrowhead lights as the line arrives, and the pass glides along the path from 600 ms. A step is held 2.5 s, 3 s for the
+step that names the sign-in methods and 3.4 s for the return step, which runs two routes one after the other.
+Only transform, opacity and stroke-dashoffset animate; nothing changes layout, and CLS stays 0.
+
+- **Routes draw through a mask.** The lit dotted route is shown through a mask whose own path has its
+  `stroke-dashoffset` transitioned, so the dotted look is the one the picture always had. The staged delays are inline
+  per element, so reduced motion cancels them with `transition: none !important`: a transition with a delay and no
+  duration still waits.
+- **The pass glides.** `@keyframes` for a pass are sampled at eased times and run on a linear clock; an
+  `ease-in-out` on each keyframe segment would have started and stopped at every sample.
+- **One marker.** The stepper is a grid of seven equal columns, and a single pill slides between them with `transform`;
+  its position is CSS alone (`data-step` on the group), so no layout is measured. A thin line in the pill fills over the
+  step's hold, and exists only while the step runs, so resuming restarts it with the step's timer. Labels wrap to two
+  lines at the widths that show them, which is what keeps the columns equal.
+- **Captions hand over.** The reducer remembers the step it came from (`previous`), `viewOf` turns that into the old
+  announcement (`leaving`), and the box holds both: the old drifts up and fades in 200 ms, the new rises in over 300 ms
+  from 450 ms. The box has a fixed height; a test measures it at every step at 375, 768 and 1280 px and checks that the
+  longest caption fits.
+- **Reduced motion:** no transition and no animation in the scene, the stepper or the caption box; the old caption
+  layer is `display: none`.
+- **Static frames.** `compare-landing.mjs` (now also capturing the scene alone) against the build before: at every step
+  end the scene differs from before in at most 145 pixels, by one level of one channel (the lit arrowhead sits over a
+  dim one that fades out, and the route passes through a mask); step 3 is identical. The controls differ by design: the
+  stepper is one row at desktop width (the page is 43 px shorter) and a grid at phone width.
+- **Mid-transition frames** are in `docs/phases/p4g-docs/landing-motion-*`: pauses at 200, 450 and 800 ms of the step 3 to 4
+  (desktop, light), 5 to 6 (desktop, dark), 6 to 7 (phone, light) and 3 to 4 (phone, dark) transitions, taken by setting
+  every running animation's time. A tall element screenshot resizes the viewport and restarts the page's animations,
+  so the capture viewport has to be taller than the section.
+- **Cost:** landing chunk 14,381 to 14,803 gzip. Lighthouse (12.6.1): simulated mobile 0.92 to 0.94 (LCP 3.1 to 3.4 s over
+  three runs), devtools mobile 0.97 (1.9 s), desktop 1.00 (0.7 s); CLS 0 throughout.
+- **Not done:** the glow behind the hub and the resting look of dimmed parts are unchanged, because static frames had to
+  stay identical; only their transitions moved.
