@@ -9,6 +9,7 @@ import {
   waitFor,
   type StepperButton,
 } from '@site/src/features/landing/service/playback';
+import { HAND_OVER_MS } from '@site/src/features/landing/service/timing';
 import { usePrefersReducedMotion } from '@site/src/features/landing/usecase/usePrefersReducedMotion';
 import { canObserve, watchVisible } from '@site/src/shared/platform/observe';
 import { watchPageShown } from '@site/src/shared/platform/page';
@@ -22,6 +23,9 @@ export interface SignInFlow {
   live: string;
   leaving: string;
   moved: boolean;
+  handOver: 'none' | 'timed' | 'click';
+  marker: Step;
+  widest: string;
   holdMs: number;
   running: boolean;
   politeness: 'off' | 'polite';
@@ -73,6 +77,17 @@ export function useSignInFlow(): SignInFlow {
   }, [running, flow.step]);
 
   const view = viewOf(flow);
+  const { handing } = view;
+  useEffect(() => {
+    if (!handing) return undefined;
+    const timer = setTimeout(() => {
+      dispatch({ type: 'settled' });
+    }, HAND_OVER_MS);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [handing, flow.step]);
+
   return {
     uid,
     stage,
@@ -82,6 +97,9 @@ export function useSignInFlow(): SignInFlow {
     live: view.live,
     leaving: view.leaving,
     moved: view.moved,
+    handOver: view.handOver,
+    marker: view.marker,
+    widest: view.widest,
     holdMs: view.holdMs,
     running: view.running,
     politeness: view.politeness,

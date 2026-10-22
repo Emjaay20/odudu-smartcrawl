@@ -43,10 +43,10 @@ export function Scene({ layout, step, uid }: Props): ReactElement {
             key={line.id}
             id={`route-${uid}-${line.id}`}
             maskUnits="userSpaceOnUse"
-            x={-50}
-            y={-50}
-            width={2000}
-            height={2000}
+            x={line.mask.x}
+            y={line.mask.y}
+            width={line.mask.w}
+            height={line.mask.h}
           >
             <path
               className={styles.reveal}

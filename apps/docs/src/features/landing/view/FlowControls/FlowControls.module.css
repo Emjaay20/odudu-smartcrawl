@@ -52,11 +52,11 @@
 .stepButton {
   position: relative;
   min-inline-size: 0;
-  padding-block: var(--space-1);
+  padding-inline: var(--space-2);
   border-color: transparent;
   background: transparent;
   line-height: 1.2;
-  text-align: start;
+  white-space: nowrap;
 }
 
 .stepButton::before {
@@ -69,17 +69,16 @@
   background: var(--surface-panel);
 }
 
-.stepButton[aria-current='step'] {
-  color: var(--surface-panel);
-}
-
+/* The marker is a soft tint under the labels, so label colour never changes as it passes. */
 .pill {
   position: absolute;
+  box-sizing: border-box;
   inset-block: 0;
   inset-inline-start: 0;
   inline-size: calc((100% - 6 * var(--gap)) / 7);
+  border: 1px solid var(--signal-active-ink);
   border-radius: 999px;
-  background: var(--signal-active-ink);
+  background: var(--signal-active);
   pointer-events: none;
   opacity: 0;
 }
@@ -88,27 +87,27 @@
   opacity: 1;
 }
 
-.stepper[data-step='2'] .pill {
+.stepper[data-marker='2'] .pill {
   transform: translateX(calc(100% + var(--gap)));
 }
 
-.stepper[data-step='3'] .pill {
+.stepper[data-marker='3'] .pill {
   transform: translateX(calc(2 * (100% + var(--gap))));
 }
 
-.stepper[data-step='4'] .pill {
+.stepper[data-marker='4'] .pill {
   transform: translateX(calc(3 * (100% + var(--gap))));
 }
 
-.stepper[data-step='5'] .pill {
+.stepper[data-marker='5'] .pill {
   transform: translateX(calc(4 * (100% + var(--gap))));
 }
 
-.stepper[data-step='6'] .pill {
+.stepper[data-marker='6'] .pill {
   transform: translateX(calc(5 * (100% + var(--gap))));
 }
 
-.stepper[data-step='7'] .pill {
+.stepper[data-marker='7'] .pill {
   transform: translateX(calc(6 * (100% + var(--gap))));
 }
 
@@ -116,11 +115,10 @@
 .fill {
   position: absolute;
   inset-inline: 14px;
-  inset-block-end: 5px;
+  inset-block-end: 4px;
   block-size: 2px;
   border-radius: 1px;
-  background: var(--surface-panel);
-  opacity: 0.6;
+  background: var(--signal-active-ink);
   transform: scaleX(0);
   transform-origin: left center;
   animation-name: fill;
@@ -145,14 +143,6 @@
     transition:
       transform 400ms var(--scene-ease),
       opacity 300ms var(--scene-ease);
-  }
-
-  .stepButton {
-    transition: color 300ms var(--scene-ease);
-  }
-
-  .stepButton::before {
-    transition: border-color 300ms var(--scene-ease);
   }
 }
 
@@ -181,20 +171,25 @@
   }
 }
 
-/* A fixed box, so the caption changing never moves what is below it. */
+/* One grid cell holds every layer; a hidden copy of the longest caption sizes it, so the
+   box follows its text and never changes height from one step to the next. */
 .live {
-  position: relative;
-  block-size: 3.2em;
+  display: grid;
   margin: var(--space-3) 0 0;
   color: var(--ink-primary);
   line-height: 1.5;
 }
 
+.liveSizer,
 .liveIn,
 .liveOut {
-  position: absolute;
-  inset: 0;
+  grid-area: 1 / 1;
   margin: 0;
+}
+
+.liveSizer {
+  visibility: hidden;
+  user-select: none;
 }
 
 .liveOut {
@@ -212,8 +207,12 @@
     animation: drift-out 200ms var(--scene-ease) both;
   }
 
-  .liveIn[data-moved='true'] {
+  .liveIn[data-hand-over='timed'] {
     animation: rise-in 300ms var(--scene-ease) 450ms both;
+  }
+
+  .liveIn[data-hand-over='click'] {
+    animation: rise-in 300ms var(--scene-ease) 80ms both;
   }
 }
 
@@ -221,6 +220,7 @@
   to {
     opacity: 0;
     transform: translateY(-6px);
+    visibility: hidden;
   }
 }
 
@@ -228,18 +228,6 @@
   from {
     opacity: 0;
     transform: translateY(8px);
-  }
-}
-
-@media (max-width: 899px) {
-  .live {
-    block-size: 5em;
-  }
-}
-
-@media (max-width: 599px) {
-  .live {
-    block-size: 8em;
   }
 }
 

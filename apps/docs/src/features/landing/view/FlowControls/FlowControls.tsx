@@ -13,6 +13,9 @@ interface Props {
   live: string;
   leaving: string;
   moved: boolean;
+  handOver: 'none' | 'timed' | 'click';
+  marker: Step;
+  widest: string;
   politeness: 'off' | 'polite';
   onChoose: (step: Step) => void;
   onToggle: () => void;
@@ -31,6 +34,9 @@ export function FlowControls({
   live,
   leaving,
   moved,
+  handOver,
+  marker,
+  widest,
   politeness,
   onChoose,
   onToggle,
@@ -53,7 +59,13 @@ export function FlowControls({
             Replay
           </button>
         </div>
-        <div className={styles.stepper} role="group" aria-label="Steps" data-step={String(step)}>
+        <div
+          className={styles.stepper}
+          role="group"
+          aria-label="Steps"
+          data-step={String(step)}
+          data-marker={String(marker)}
+        >
           <span className={styles.pill} data-pill="" aria-hidden="true">
             {running ? (
               <span
@@ -69,29 +81,32 @@ export function FlowControls({
               key={button.label}
               type="button"
               className={styles.stepButton}
+              aria-label={button.label}
               aria-current={button.current}
               onClick={() => {
                 onChoose(button.step);
               }}
             >
-              <span className={styles.stepNumber}>{button.number}</span>
-              <span className={styles.stepLabel}>{button.label}</span>
+              <span className={styles.stepNumber} aria-hidden="true">
+                {button.number}
+              </span>
+              <span className={styles.stepLabel} aria-hidden="true">
+                {button.short}
+              </span>
             </button>
           ))}
         </div>
       </div>
       <div className={styles.live} role="status" aria-live={politeness} data-live="">
+        <p className={styles.liveSizer} aria-hidden="true" data-caption="sizer">
+          {widest}
+        </p>
         {moved ? (
           <p key={`out-${live}`} className={styles.liveOut} data-caption="out" aria-hidden="true">
             {leaving}
           </p>
         ) : null}
-        <p
-          key={`in-${live}`}
-          className={styles.liveIn}
-          data-caption="in"
-          data-moved={String(moved)}
-        >
+        <p key={`in-${live}`} className={styles.liveIn} data-caption="in" data-hand-over={handOver}>
           {live}
         </p>
       </div>

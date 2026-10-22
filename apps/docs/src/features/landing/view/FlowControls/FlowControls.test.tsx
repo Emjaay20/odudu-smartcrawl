@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   FLOW_START,
   liveText,
+  widestLive,
   stepOf,
   stepper,
   viewOf,
@@ -20,6 +21,7 @@ function controls(
 ): React.ReactElement {
   const flow = {
     ...FLOW_START,
+    cause: previous === step ? ('none' as const) : ('timed' as const),
     step: stepOf(step),
     previous: stepOf(previous),
     wantsPlay,
@@ -37,6 +39,9 @@ function controls(
       live={live}
       leaving={view.leaving}
       moved={view.moved}
+      handOver={view.handOver}
+      marker={view.marker}
+      widest={view.widest}
       politeness={view.politeness}
       onChoose={NOOP}
       onToggle={NOOP}
@@ -79,11 +84,12 @@ describe('FlowControls', () => {
   it('shows the new caption alone at first, and hands over from the old one after a move', () => {
     const first = markupOf(controls(1, true, 'now'));
     expect(first('[data-caption="out"]')).toHaveLength(0);
-    expect(first('[data-caption="in"]').attr('data-moved')).toBe('false');
+    expect(first('[data-caption="in"]').attr('data-hand-over')).toBe('none');
     const moved = markupOf(controls(2, true, 'now', 1));
     expect(moved('[data-caption="out"]').text()).toBe(liveText(1));
     expect(moved('[data-caption="out"]').attr('aria-hidden')).toBe('true');
     expect(moved('[data-caption="in"]').text()).toBe('now');
-    expect(moved('[data-caption="in"]').attr('data-moved')).toBe('true');
+    expect(moved('[data-caption="in"]').attr('data-hand-over')).toBe('timed');
+    expect(moved('[data-caption="sizer"]').text()).toBe(widestLive());
   });
 });

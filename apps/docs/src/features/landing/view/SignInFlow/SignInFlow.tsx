@@ -29,6 +29,9 @@ export function SignInFlow(): ReactElement {
           live={flow.live}
           leaving={flow.leaving}
           moved={flow.moved}
+          handOver={flow.handOver}
+          marker={flow.marker}
+          widest={flow.widest}
           politeness={flow.politeness}
           onChoose={flow.choose}
           onToggle={flow.toggle}
