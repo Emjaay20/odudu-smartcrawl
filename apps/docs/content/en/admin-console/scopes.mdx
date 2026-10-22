@@ -39,7 +39,7 @@ A default scope goes to a request that names no scope. An optional scope goes on
 
 ## 5. Connect roles
 
-The **Roles** tab lists the roles whose claims a token carries when it is granted this scope. The **Claim mappers** tab chooses which mappers build the scope's claims, under **Bound mappers**. While none is bound, the mappers that declare the scope are used: they are listed ticked and greyed, each marked **Used because nothing is bound**. Tick another mapper and only that one is bound, so the greyed ones stop applying; clear every tick to go back to them.
+The **Roles** tab lists the roles a token carries when it is granted this scope. With none mapped, a client that has **Include all roles in tokens** off gets no roles from this scope. The **Claim mappers** tab chooses which mappers build the scope's claims, under **Bound mappers**. While none is bound, the console says "Nothing bound. These mappers run by default." and lists them ticked and greyed, each marked **Used because nothing is bound**. Tick another mapper and only that one is bound, so the greyed ones stop applying; clear every tick to go back to them.
 
 The **Activity** tab lists every change made to the scope.
 

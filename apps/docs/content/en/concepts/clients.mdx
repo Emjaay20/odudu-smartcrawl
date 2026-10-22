@@ -39,6 +39,44 @@ When a person signs in, Odudu does not hand the app a token straight away. It se
 
 Every sign-in that uses a code uses PKCE, for a public client and a confidential one alike, so there is nothing to switch on. A confidential client adds its secret on top.
 
+## How a client proves who it is
+
+A client shows who it is when it calls the token endpoint. The method is the client's `token_endpoint_auth_method`, and discovery lists the ones the server accepts.
+
+| Method                | What the client sends                                         | Fits                  |
+| --------------------- | ------------------------------------------------------------- | --------------------- |
+| `none`                | Nothing. PKCE protects the code.                              | A public client       |
+| `client_secret_basic` | The secret in the HTTP Basic header.                          | A confidential client |
+| `client_secret_post`  | The secret in the request body.                               | A confidential client |
+| `private_key_jwt`     | A short-lived token signed with its private key.              | A confidential client |
+| `tls_client_auth`     | A TLS certificate. A proxy passes its subject on in a header. | A confidential client |
+
+`tls_client_auth` is listed only while `ODUDU_TRUST_PROXY` is on. `client_secret_jwt` is not supported.
+
+With `private_key_jwt` no secret is stored on Odudu's side:
+
+- **You register** the client's public keys, as `jwks` or as a `jwks_uri` Odudu fetches. Never both, and never a private key.
+- **The client sends** a signed JWT as `client_assertion`, with `client_assertion_type` set to `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`. Its `iss` and `sub` are the `client_id`, its `aud` is the token endpoint, its `exp` is at most five minutes away, and its `jti` is new every time.
+- **Odudu checks** the signature against the registered keys, the audience and the expiry, and that the `jti` was never used before. Any failure is the same `invalid_client`.
+- **Why use it:** nothing secret sits on Odudu's side, and there is no secret in a header or a log to steal. To rotate, publish a new key set. A `jwks_uri` is read again at most every five minutes.
+
+Odudu's own console client signs in this way. [Getting the token](../reference/transcripts/admin-paths/getting-the-token.md) shows it registered.
+
+## When a client gets a service account
+
+A confidential client made through the console, the admin API, the CLI or registration gets a **service account**: the identity it holds when it signs in as itself with the `client_credentials` grant. A public client never has one. The built-in admin client has none either, because it signs people in and never signs in as itself.
+
+A client cannot change between public and confidential, so its account never has to follow. Switching the `client_credentials` grant off keeps the account, with its roles, but no token can be issued as it until the grant is back on. Deleting the client deletes the account.
+
+## Roles in a client's tokens
+
+**Include all roles in tokens** is a setting on the client's **Tokens** tab, and `full_scope_allowed` in the admin API. It is off by default, so a new client sees only the roles you chose to share with it.
+
+- **Off:** a token carries only the roles mapped to the scopes that were granted. You map a role on the scope's **Roles** tab, and the `roles` claim itself comes from the `roles` scope.
+- **On:** a token carries all of a person's roles, whatever scope asked.
+
+[Scopes](./scopes.mdx) has the rule in full.
+
 ## Who may register a client
 
 An administrator registers clients from the console or the admin API, or seeds them from the command line. A tenant can also let apps register themselves. A client that registered itself with no token starts out with the consent screen switched on, because nobody vouched for it. A client an administrator registered does not ask for consent unless you turn it on. [Consent and audit](./consent-and-audit.mdx) explains the screen.

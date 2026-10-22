@@ -247,6 +247,18 @@ const MORE_FACTS: readonly Fact[] = [
     holds: /CHECK \(max_sessions_per_browser BETWEEN 1 AND 32\)/u,
   },
   {
+    page: 'scopes',
+    says: 'full_scope_allowed',
+    file: 'packages/db/drizzle/0017_roles.sql',
+    holds: /full_scope_allowed boolean NOT NULL DEFAULT false/u,
+  },
+  {
+    page: 'scopes',
+    says: 'Include all roles in tokens',
+    file: 'apps/admin-console/src/features/clients/service/tokens.ts',
+    holds: /FULL_SCOPE_LABEL = 'Include all roles in tokens'/u,
+  },
+  {
     page: 'roles-and-groups',
     says: 'effective-roles',
     file: 'packages/protocol-admin/src/view/routes/subjects.ts',

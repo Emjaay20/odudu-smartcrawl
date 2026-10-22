@@ -95,6 +95,7 @@ Placed on a phase, in order, and not started. Each line names the phase that wil
 - **key import, encryption keys and scheduled key rotation**: P12.
 - **client registration policies and client policies**: P13.
 - **admin impersonation**: P13, with its own threat model.
+- **create a client's service account when its client credentials grant is switched on, not for every confidential client**: P5a, following Keycloak's model. Today every confidential client gets one.
 
 ## Decided against, and why
 

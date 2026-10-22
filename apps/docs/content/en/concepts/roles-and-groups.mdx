@@ -53,7 +53,7 @@ Two claims carry this to your app, and they do not agree on purpose.
 
 If your app checks `groups` for `/engineering`, it will not find Ada, even though she holds everything engineering grants. Check roles, and your app agrees with what Odudu allows. Use `groups` when you want the person's own memberships, for example to show where they sit.
 
-A role also reaches a token only when a scope carries it. You map the role to a scope, such as `roles`, and the claim appears when the client was granted that scope. [Scopes](./scopes.mdx) explains the mapping.
+A role also reaches a token only when a scope carries it, unless the client has **Include all roles in tokens** on (`full_scope_allowed`, off by default). You map the role to a scope, such as `roles`, and the claim appears when the client was granted that scope. [Scopes](./scopes.mdx) explains the mapping.
 
 ## Working with roles and groups
 
@@ -61,7 +61,7 @@ A role also reaches a token only when a scope carries it. You map the role to a 
 2. Create the roles, then the groups that match how people are organised.
 3. Give each group the roles its members should hold.
 4. Put people in groups. Prefer a group to a direct role: one change then covers everybody in it.
-5. Map the roles to a scope and give the client that scope, so they reach the token.
+5. Map the roles to a scope and give the client that scope, so they reach the token. Or turn on **Include all roles in tokens** for a client that should see every role.
 6. In your app, read `roles` from the access token. The access token carries it by default, and the ID token does not.
 
 An administrator cannot put a person in a group whose roles reach further than the administrator's own, so the admin API cannot be used to grant more than its caller holds.

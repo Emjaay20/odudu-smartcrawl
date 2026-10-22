@@ -10,6 +10,11 @@ import {
   recoveryApplicable,
 } from '../../packages/authn-flows/src/service/authenticators/recovery.js';
 import { qualifiedRoleName } from '../../packages/domain-authz/src/service/role-name.js';
+import { TOKEN_ENDPOINT_AUTH_METHODS_SUPPORTED } from '../../packages/contracts/src/token.js';
+import {
+  CLIENT_ASSERTION_TYPE,
+  MAX_ASSERTION_LIFETIME_SECONDS,
+} from '../../packages/protocol-oidc/src/service/client-assertion.js';
 import { decideConsent } from '../../packages/protocol-oidc/src/service/consent.js';
 import { REPO_ROOT } from './markdown.js';
 
@@ -157,5 +162,32 @@ describe('the roles claim the roles and groups page describes', () => {
     expect(qualifiedRoleName({ name: 'reader' }, 'reports-api')).toBe('reports-api:reader');
     expect(qualifiedRoleName({ name: 'reviewer' }, null)).toBe('reviewer');
     expect(body('roles-and-groups')).toContain('`reports-api:reader`');
+  });
+});
+
+describe('the clients page on how a client proves who it is', () => {
+  const clients = (): string => body('clients');
+
+  it('has a table row for every method the token endpoint accepts', () => {
+    const rows = clients()
+      .split('\n')
+      .filter((line) => line.startsWith('|'));
+    for (const method of TOKEN_ENDPOINT_AUTH_METHODS_SUPPORTED) {
+      expect(
+        rows.some((row) => row.startsWith(`| \`${method}\``)),
+        method,
+      ).toBe(true);
+    }
+  });
+
+  it('states the assertion type and the lifetime cap the code holds', () => {
+    expect(clients()).toContain(CLIENT_ASSERTION_TYPE);
+    expect(MAX_ASSERTION_LIFETIME_SECONDS).toBe(300);
+    expect(clients()).toContain('at most five minutes');
+  });
+
+  it('says client_secret_jwt is not supported, as discovery does', () => {
+    expect(TOKEN_ENDPOINT_AUTH_METHODS_SUPPORTED).not.toContain('client_secret_jwt');
+    expect(clients()).toContain('`client_secret_jwt` is not supported');
   });
 });

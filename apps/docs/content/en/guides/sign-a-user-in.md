@@ -89,7 +89,7 @@ Full transcript: [Path A, the login POST](../reference/transcripts/request-paths
 
 ## 5. Swap the code for tokens
 
-From your server, or from the app for a public client, send the code and the verifier to the token endpoint.
+From your server, or from the app for a public client, send the code and the verifier to the token endpoint. A confidential client also proves who it is: see [how a client proves who it is](../concepts/clients.mdx#how-a-client-proves-who-it-is).
 
 ```bash
 curl -sS -D - \
