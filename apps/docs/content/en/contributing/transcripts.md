@@ -182,7 +182,7 @@ of the branch, the project `odudu-p4g-31g` on port `3195` (throttles at `10000`)
 the blocks' text now names that port and the sessions and keys of those runs: in
 Self-registration the refused username, the taken address, the short password with one
 rule and with three, the two password-containing-the-name refusals, the duplicate
-address under the audit tenant, the unverified sign-in and the new section on the way
+address under the audit tenant and the new section on the way
 there and back; in Password reset the refused password and the unchanged-password
 refusal; in A refused login says so the refused page and the diff between the two
 refusals; in Two-factor authentication the replayed enrolment code, run against a

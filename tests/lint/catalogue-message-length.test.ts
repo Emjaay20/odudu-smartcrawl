@@ -11,7 +11,10 @@ export const MAX_SENTENCES = 2;
 // sentences. A longer explanation belongs on a docs page the message can name.
 // An ICU argument such as `{min, number}` is counted as the one word it
 // becomes; there is no allowlist and no waiver. What this cannot see: a
-// message assembled from several ids, and wording that is short but not plain.
+// message assembled from several ids; wording that is short but not plain;
+// ICU apostrophe quoting such as '{' (it would confuse the arm reader); a
+// catalogue built without createCatalogue( or createTranslators( in the file,
+// which is how the files are found.
 
 function closing(text: string, open: number): number {
   let depth = 0;
@@ -53,7 +56,8 @@ export function renderings(message: string): string[] {
 }
 
 function sentencesIn(text: string): number {
-  return text.split(/(?<=[.!?])\s+/u).filter((part) => /\p{L}/u.test(part)).length;
+  const spoken = text.replace(/\b(e\.g|i\.e|etc)\./giu, '$1');
+  return spoken.split(/(?<=[.!?])\s+/u).filter((part) => /\p{L}/u.test(part)).length;
 }
 
 export function tooLong(messages: Readonly<Record<string, string>>): string[] {
@@ -106,6 +110,10 @@ describe('the length check', () => {
     expect(tooLong({ a: `Hi. {m, select, sent {${arm}} other {${arm}}}` })).toHaveLength(2);
     expect(tooLong({ a: 'Hi. {m, select, sent {One.} other {Two.}}' })).toEqual([]);
     expect(renderings('A {n} b')).toEqual(['A x b']);
+  });
+
+  it('does not count e.g. as the end of a sentence', () => {
+    expect(tooLong({ a: 'Use a name, e.g. billing. Then save it.' })).toEqual([]);
   });
 
   it('flags a message of three sentences', () => {

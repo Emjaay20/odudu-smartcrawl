@@ -51,8 +51,8 @@ Where a sign-out may send the browser is set on the **Logout** tab, as **Post-lo
 The other tabs set how the client behaves.
 
 - **General** names the client, switches it on or off and says whether people must consent.
-- **Tokens** sets how long its tokens last and which grant types it may use. **Include all roles in tokens** decides whether a token carries all of a person's roles or only those mapped to the granted scopes. It is off by default. The [Scopes concept](../concepts/scopes.mdx) has the rule.
-- **Scopes** assigns the [scopes](./scopes.mdx) it may ask for, and **Evaluate claims** shows what a sign-in of one person would be issued, without issuing anything: what the app gets in the ID token, in the access token, and from the UserInfo endpoint.
+- **Tokens** sets how long its tokens last and which grant types it may use. **Include all roles in tokens** decides whether the `roles` scope carries all of a person's roles or only those mapped to the granted scopes. The client must still ask for the `roles` scope. It is off by default. The [Scopes concept](../concepts/scopes.mdx) has the rule.
+- **Scopes** assigns the [scopes](./scopes.mdx) it may ask for. **Evaluate claims** shows what one person's sign-in would get in the ID token, the access token and UserInfo, without issuing anything.
 - **Logout** holds the back-channel and front-channel logout addresses.
 - **Advanced** shows what an application is configured with, such as the issuer and discovery address, and holds keys, audiences and token exchange.
 - **Roles** lists the client's own [roles](./roles.mdx); **Service account** holds the roles a service acts with.

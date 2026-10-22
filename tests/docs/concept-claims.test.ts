@@ -180,10 +180,15 @@ describe('the clients page on how a client proves who it is', () => {
     }
   });
 
-  it('states the assertion type and the lifetime cap the code holds', () => {
-    expect(clients()).toContain(CLIENT_ASSERTION_TYPE);
+  it('points to the guide that states the assertion type and the lifetime cap the code holds', () => {
+    const guide = readFileSync(
+      path.join(REPO_ROOT, 'apps/docs/content/en/guides/machine-to-machine.md'),
+      'utf8',
+    );
+    expect(clients()).toContain('machine-to-machine.md#use-a-key-instead-of-a-secret');
+    expect(guide).toContain(CLIENT_ASSERTION_TYPE);
     expect(MAX_ASSERTION_LIFETIME_SECONDS).toBe(300);
-    expect(clients()).toContain('at most five minutes');
+    expect(guide).toContain('at most five minutes');
   });
 
   it('says client_secret_jwt is not supported, as discovery does', () => {

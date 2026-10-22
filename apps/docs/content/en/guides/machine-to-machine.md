@@ -88,6 +88,19 @@ To let a service ask for a scope, register it with `--client-credentials-scope`,
 
 [The machine-to-machine example](https://github.com/wizzywit/odudu/tree/main/examples/machine-to-machine) is this guide as a single file with no dependencies: it gets a token as itself and calls [the API example](https://github.com/wizzywit/odudu/tree/main/examples/api) with it. Its README says how to run it against your stack.
 
+## Use a key instead of a secret
+
+A service can prove who it is with a key pair, so Odudu stores no secret for it. Register the client with `token_endpoint_auth_method` set to `private_key_jwt`, and register its public keys as `jwks`, or as a `jwks_uri` Odudu fetches. Give one or the other, never both, and never a private key.
+
+To get a token, the service signs a short JWT and sends it as `client_assertion`, with `client_assertion_type` set to `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`.
+
+- `iss` and `sub` are the `client_id`.
+- `aud` is the full token endpoint address, as one string. The issuer address alone is refused.
+- `exp` is at most five minutes away.
+- `jti` is new each time. Odudu refuses one it has seen.
+
+Odudu checks the signature against the registered keys, then the audience, expiry and `jti`. Any failure is the same `invalid_client`. To rotate, publish a new key set. A `jwks_uri` is read again at most every five minutes. [Getting the token](../reference/transcripts/admin-paths/getting-the-token.md) shows a client registered this way.
+
 ## Where to go next
 
 - A service that acts for a person, rather than as itself, uses [token exchange](../reference/transcripts/request-paths/path-d-token-exchange.md).

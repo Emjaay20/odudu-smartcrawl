@@ -693,7 +693,7 @@ describe('the text of the sign-in pages', () => {
 <p><small>invalid_request</small></p>`);
     expect(renderEmailUnverifiedPage(false, null, DEFAULT_PAGE_LOCALE).body).toBe(
       `<h1>Can&#39;t sign in yet</h1>
-<p>This account has no email address to verify. Ask an administrator.</p>`,
+<p>You must verify your email to sign in, but this account has none. Ask an administrator.</p>`,
     );
   });
 

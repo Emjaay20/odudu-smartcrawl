@@ -29,7 +29,7 @@ Each client also has its own settings: how long its access tokens live, how long
 How an app can keep a secret decides the kind of client it is.
 
 - A **public** client cannot keep a secret. A single-page app and a mobile app are public, because anyone can read the code that ships to the device. A public client holds no secret at all.
-- A **confidential** client can keep one. A web app's server and a back-end service are confidential. It holds a client secret and proves it when it calls the token endpoint.
+- A **confidential** client can keep one. A web app's server and a back-end service are confidential. It holds a credential, usually a client secret, and proves it when it calls the token endpoint.
 
 You pick the kind when you register the client, and it decides which sign-in guide fits. A [web app](../guides/web-app.md) is confidential. A [single-page app](../guides/single-page-app.md) is public. A [service with no person involved](../guides/machine-to-machine.md) is confidential and uses the `client_credentials` grant.
 
@@ -37,7 +37,7 @@ You pick the kind when you register the client, and it decides which sign-in gui
 
 When a person signs in, Odudu sends the browser back with a short-lived **code**, and the app trades it for tokens. PKCE protects the code on the way. The app invents a secret for this one sign-in, sends only a fingerprint of it at the start, and shows the secret when it trades the code. Somebody who steals the code has the fingerprint, not the secret.
 
-Every sign-in that uses a code uses PKCE, public or confidential, so there is nothing to switch on. A confidential client adds its secret on top.
+Every sign-in that uses a code uses PKCE, public or confidential, so there is nothing to switch on. A confidential client adds its own proof on top.
 
 ## How a client proves who it is
 
@@ -53,18 +53,13 @@ A client shows who it is at the token endpoint. Its `token_endpoint_auth_method`
 
 `tls_client_auth` is listed only while `ODUDU_TRUST_PROXY` is on. `client_secret_jwt` is not supported.
 
-With `private_key_jwt` Odudu stores no secret:
-
-- **Register** the client's public keys as `jwks`, or as a `jwks_uri` Odudu fetches. Never both, never a private key.
-- **The client sends** a signed JWT as `client_assertion`, with `client_assertion_type` set to `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`. Its `iss` and `sub` are the `client_id`, its `aud` is the token endpoint, its `exp` is at most five minutes away, and its `jti` is new each time.
-- **Odudu checks** the signature, audience, expiry and that the `jti` is unused.
-- **Why use it:** no secret sits in a header or a log. To rotate, publish a new key set. Odudu's console client works this way, as [Getting the token](../reference/transcripts/admin-paths/getting-the-token.md) shows.
+With `private_key_jwt` the client signs a short-lived token with its private key, and Odudu stores no secret. In a standard install Odudu's own console client works this way. [Call an API as a service](../guides/machine-to-machine.md#use-a-key-instead-of-a-secret) shows how to set it up.
 
 ## Service accounts and roles
 
-A confidential client made through the console, the admin API, the CLI or registration gets a **service account**: the identity it holds when it signs in as itself with the `client_credentials` grant. A public client never has one, nor does the built-in admin client. A client cannot change between public and confidential. Switching the grant off keeps the account and its roles, but no token can be issued as it. Deleting the client deletes the account.
+A confidential client gets a **service account**, however it was created, including a tenant import. It is the identity the client uses when it signs in as itself with the `client_credentials` grant. A public client never has one, nor does the built-in admin client. A client cannot change between public and confidential. Switching the grant off keeps the account and its roles, but no token can be issued as it. Deleting the client deletes the account.
 
-**Include all roles in tokens** (`full_scope_allowed` in the API) is off by default: a token carries only the roles mapped to the granted scopes. [Scopes](./scopes.mdx) has the rule.
+**Include all roles in tokens** is off by default: a token carries only the roles mapped to the granted scopes. Switched on, the client still has to ask for the `roles` scope. [Scopes](./scopes.mdx) has the rule.
 
 ## Who may register a client
 
