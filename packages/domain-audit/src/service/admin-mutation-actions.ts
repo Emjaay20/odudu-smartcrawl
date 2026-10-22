@@ -36,6 +36,7 @@ export const ADMIN_MUTATION_ACTIONS = [
   'scope.create',
   'scope.delete',
   'scope.mappers_set',
+  'scope.restore_builtins',
   'scope.roles_set',
   'scope.unassign_from_client',
   'session.end',

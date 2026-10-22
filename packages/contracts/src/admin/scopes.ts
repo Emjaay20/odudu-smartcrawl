@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { noBidiControls } from '#/bidi';
+import { countResponseSchema } from '#/admin/counts';
 import { adminReachSchema } from '#/admin/roles';
 import { roleAssignmentSchema } from '#/admin/subjects';
 import {
@@ -120,3 +121,26 @@ export const listScopeClientsResponseSchema = z.object({
   next: z.string().optional(),
 });
 export type ListScopeClientsResponse = z.infer<typeof listScopeClientsResponseSchema>;
+
+// A built-in scope is deleted only by a caller who names it again: the scope's
+// own name, as a tenant is deleted by `confirm`. An ordinary scope ignores it.
+export const deleteScopeQuerySchema = z.object({ confirm: z.string().min(1).optional() }).strict();
+export type DeleteScopeQuery = z.infer<typeof deleteScopeQuerySchema>;
+
+// What deleting the scope would take with it: each count stops at the same
+// ceiling the list counts do, so the read costs no more than a bounded one.
+export const scopeImpactSchema = z.object({
+  builtin: z.boolean(),
+  client_assignments: countResponseSchema,
+  role_mappings: countResponseSchema,
+});
+export type ScopeImpact = z.infer<typeof scopeImpactSchema>;
+
+export const builtinScopeSchema = z.object({ name: z.string(), present: z.boolean() });
+export type BuiltinScope = z.infer<typeof builtinScopeSchema>;
+
+export const listBuiltinScopesResponseSchema = z.object({ items: z.array(builtinScopeSchema) });
+export type ListBuiltinScopesResponse = z.infer<typeof listBuiltinScopesResponseSchema>;
+
+export const restoreBuiltinScopesResponseSchema = z.object({ created: z.array(z.string()) });
+export type RestoreBuiltinScopesResponse = z.infer<typeof restoreBuiltinScopesResponseSchema>;

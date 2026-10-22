@@ -118,6 +118,7 @@ export const ADMIN_MUTATION_ACTION_DOCS: Record<AdminMutationAction, string> = {
   'scope.create': 'A client scope was created.',
   'scope.delete': 'A client scope was deleted.',
   'scope.mappers_set': 'The claim mappers of a client scope were replaced.',
+  'scope.restore_builtins': 'The built-in client scopes a tenant was missing were created again.',
   'scope.roles_set': 'The roles a client scope carries were replaced.',
   'scope.unassign_from_client': 'A client scope was unassigned from a client.',
   'session.end': 'One session was ended by an admin.',

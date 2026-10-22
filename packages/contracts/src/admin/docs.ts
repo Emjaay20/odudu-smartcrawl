@@ -65,10 +65,14 @@ import { scopeMappersSchema, setScopeMappersRequestSchema } from '#/admin/scope-
 import {
   assignScopeToClientRequestSchema,
   assignScopeToClientResponseSchema,
+  builtinScopeSchema,
   clientScopeAssignmentViewSchema,
   clientScopeSchema,
   createScopeRequestSchema,
+  listBuiltinScopesResponseSchema,
+  restoreBuiltinScopesResponseSchema,
   scopeClientSchema,
+  scopeImpactSchema,
   scopeRoleSchema,
 } from '#/admin/scopes';
 import {
@@ -480,6 +484,21 @@ describeFields(clientScopeAssignmentViewSchema, {
   name: 'The scope name.',
   assignment:
     '`default` is requested for the client without being asked for, `optional` only when the request names it.',
+});
+describeFields(scopeImpactSchema, {
+  builtin: 'True for a scope every tenant has, which is deleted only when `confirm` names it.',
+  client_assignments: 'How many clients carry the scope, each of which loses it on deletion.',
+  role_mappings: 'How many roles are mapped to the scope, each unmapped on deletion.',
+});
+describeFields(listBuiltinScopesResponseSchema, {
+  items: 'Every built-in scope, in the order a new tenant is given them.',
+});
+describeFields(builtinScopeSchema, {
+  name: 'The scope’s name.',
+  present: 'False when the tenant has no scope of that name, so a restore would create it.',
+});
+describeFields(restoreBuiltinScopesResponseSchema, {
+  created: 'The built-in scopes the call created, in order; empty when none was missing.',
 });
 describeFields(clientScopeSchema, {
   id: 'The scope’s identifier.',

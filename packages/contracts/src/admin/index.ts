@@ -341,6 +341,16 @@ export {
   type ScopeClient,
   listScopeClientsResponseSchema,
   type ListScopeClientsResponse,
+  deleteScopeQuerySchema,
+  type DeleteScopeQuery,
+  scopeImpactSchema,
+  type ScopeImpact,
+  builtinScopeSchema,
+  type BuiltinScope,
+  listBuiltinScopesResponseSchema,
+  type ListBuiltinScopesResponse,
+  restoreBuiltinScopesResponseSchema,
+  type RestoreBuiltinScopesResponse,
 } from '#/admin/scopes';
 export {
   scopeMappersSchema,
