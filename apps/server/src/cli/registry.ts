@@ -19,6 +19,8 @@ const SEED_SUMMARIES: Record<(typeof SEED_COMMANDS)[number], string> = {
   group: 'Create a group, optionally under a parent group.',
   scope: 'Create or update a client scope.',
   'assign-scope': 'Assign a client scope to a client as default or optional.',
+  'restore-scopes':
+    'Create the built-in client scopes a tenant has lost, with their shipped settings.',
   'map-role': 'Make a client scope carry a role.',
   'grant-role': 'Grant a role to a user.',
   'map-group-role': 'Give every member of a group a role.',
@@ -38,6 +40,7 @@ const SEED_EXAMPLES: Record<(typeof SEED_COMMANDS)[number], string> = {
   scope: 'odudu seed scope --tenant acme --name reports',
   'assign-scope':
     'odudu seed assign-scope --tenant acme \\\n    --client-id web --scope reports --assignment default',
+  'restore-scopes': 'odudu seed restore-scopes --tenant acme',
   'map-role': 'odudu seed map-role --tenant acme --scope reports --role editor',
   'grant-role': 'odudu seed grant-role --tenant acme --username ada --role editor',
   'map-group-role': 'odudu seed map-group-role --tenant acme --group /staff --role editor',

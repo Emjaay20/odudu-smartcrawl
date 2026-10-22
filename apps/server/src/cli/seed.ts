@@ -10,6 +10,7 @@ import {
   MAP_ROLE_OPTIONS,
   PROFILE_OPTIONS,
   REGISTRATION_TOKEN_OPTIONS,
+  RESTORE_SCOPES_OPTIONS,
   ROLE_OPTIONS,
   SCOPE_OPTIONS,
   SEED_COMMANDS,
@@ -17,7 +18,7 @@ import {
   USER_OPTIONS,
   type SeedCommand,
 } from '#/cli/seed-options';
-import { CLIENT_LIST_LIMIT, listLimitProblem } from '@odudu/contracts/admin';
+import { CLIENT_LIST_LIMIT, listLimitProblem, SCOPE_LIMIT } from '@odudu/contracts/admin';
 import { tenantSettingsRepository, sendVerificationEmail } from '@odudu/account';
 import { provisionTenant, requiredActionRepository } from '@odudu/authn-flows';
 import { grantNewSubjectDefaults, groupRepository, roleRepository } from '@odudu/domain-authz';
@@ -51,6 +52,7 @@ import {
   isSystemTenantName,
   isValidTenantName,
   provisionClientDefaults,
+  restoreBuiltinScopes,
   verifyClientSecret,
   SYSTEM_TENANT_ID,
   SYSTEM_TENANT_NAME,
@@ -811,6 +813,13 @@ export interface AssignScopeCommandResult {
   assignment: ClientScopeAssignment;
 }
 
+export interface RestoreScopesCommandResult {
+  command: 'restore-scopes';
+  tenant: string;
+  tenantId: string;
+  created: readonly string[];
+}
+
 export interface MapRoleCommandResult {
   command: 'map-role';
   tenant: string;
@@ -875,6 +884,7 @@ export type SeedCommandResult =
   | GroupCommandResult
   | ScopeCommandResult
   | AssignScopeCommandResult
+  | RestoreScopesCommandResult
   | MapRoleCommandResult
   | GrantRoleCommandResult
   | MapGroupRoleCommandResult
@@ -1504,6 +1514,33 @@ async function runScopeCommand(
   });
 }
 
+async function runRestoreScopesCommand(
+  ownerDb: Database,
+  runtimeDb: Database,
+  argv: readonly string[],
+): Promise<RestoreScopesCommandResult> {
+  const { values } = parseArgs({ args: [...argv], options: RESTORE_SCOPES_OPTIONS });
+  if (values.tenant === undefined) {
+    throw new OduduError('seed_invalid_options', 'seed restore-scopes requires --tenant');
+  }
+  const tenantName = values.tenant;
+  const tenantId = await requireTenantId(ownerDb, tenantName);
+
+  return withTenant(runtimeDb, tenantId, async (tx) => {
+    const outcome = await restoreBuiltinScopes(tx, tenantId);
+    if (outcome.kind === 'scope_limit') {
+      throw new OduduError(
+        'seed_invalid_options',
+        `a tenant defines at most ${String(SCOPE_LIMIT)} scopes: delete one first`,
+      );
+    }
+    if (outcome.kind === 'default_scope_limit') {
+      throw new OduduError('seed_invalid_options', outcome.message);
+    }
+    return { command: 'restore-scopes', tenant: tenantName, tenantId, created: outcome.created };
+  });
+}
+
 async function runAssignScopeCommand(
   ownerDb: Database,
   runtimeDb: Database,
@@ -1866,6 +1903,8 @@ async function runSeedCommand(argv: readonly string[]): Promise<SeedCommandResul
         return await runScopeCommand(owner.db, runtime.db, rest);
       case 'assign-scope':
         return await runAssignScopeCommand(owner.db, runtime.db, rest);
+      case 'restore-scopes':
+        return await runRestoreScopesCommand(owner.db, runtime.db, rest);
       case 'map-role':
         return await runMapRoleCommand(owner.db, runtime.db, rest);
       case 'grant-role':

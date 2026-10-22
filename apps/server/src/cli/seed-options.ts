@@ -12,6 +12,7 @@ export const SEED_COMMANDS = [
   'group',
   'scope',
   'assign-scope',
+  'restore-scopes',
   'map-role',
   'grant-role',
   'map-group-role',
@@ -85,6 +86,8 @@ export const ASSIGN_SCOPE_OPTIONS = {
   assignment: text('default or optional.', true),
 } as const;
 
+export const RESTORE_SCOPES_OPTIONS = { tenant: TENANT } as const;
+
 export const MAP_ROLE_OPTIONS = {
   tenant: TENANT,
   scope: text('Name of the client scope whose tokens carry the role.', true),
@@ -151,6 +154,7 @@ export const SEED_COMMAND_OPTIONS: Record<SeedCommand, readonly CliOption[]> = {
   group: cliOptions(GROUP_OPTIONS),
   scope: cliOptions(SCOPE_OPTIONS),
   'assign-scope': cliOptions(ASSIGN_SCOPE_OPTIONS),
+  'restore-scopes': cliOptions(RESTORE_SCOPES_OPTIONS),
   'map-role': cliOptions(MAP_ROLE_OPTIONS),
   'grant-role': cliOptions(GRANT_ROLE_OPTIONS),
   'map-group-role': cliOptions(MAP_GROUP_ROLE_OPTIONS),

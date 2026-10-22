@@ -871,6 +871,57 @@ describe('seed client and the tenant’s default scopes', () => {
   });
 });
 
+describe('seed restore-scopes', () => {
+  async function scopeNames(tenantId: string): Promise<string[]> {
+    return withTenant(owner.db, tenantId, async (tx) =>
+      (await clientScopeRepository(tx).allForTenant())
+        .filter((scope) => scope.tenantId === tenantId)
+        .map((scope) => scope.name)
+        .sort(),
+    );
+  }
+
+  async function deleteScopes(tenantId: string, names: readonly string[]): Promise<void> {
+    await withTenant(owner.db, tenantId, async (tx) => {
+      const scopes = clientScopeRepository(tx);
+      for (const name of names) {
+        const scope = (await scopes.allForTenant()).find(
+          (row) => row.tenantId === tenantId && row.name === name,
+        );
+        if (scope !== undefined) await scopes.delete(scope.id);
+      }
+    });
+  }
+
+  it('creates the built-in scopes a tenant has lost, and a second run creates none', async () => {
+    const options = uniqueOptions();
+    const first = await seed(options);
+    await deleteScopes(first.tenantId, ['roles', 'groups']);
+
+    const restored = await seed(['restore-scopes', '--tenant', options.tenant]);
+    const again = await seed(['restore-scopes', '--tenant', options.tenant]);
+
+    expect(restored).toEqual({
+      command: 'restore-scopes',
+      tenant: options.tenant,
+      tenantId: first.tenantId,
+      created: ['roles', 'groups'],
+    });
+    expect(again).toMatchObject({ command: 'restore-scopes', created: [] });
+    expect(await scopeNames(first.tenantId)).toEqual([...TENANT_DEFAULT_SCOPE_NAMES].sort());
+  });
+
+  it('refuses a tenant that does not exist', async () => {
+    await expect(seed(['restore-scopes', '--tenant', `no-such-${newId()}`])).rejects.toThrow(
+      /no tenant named/u,
+    );
+  });
+
+  it('refuses without --tenant', async () => {
+    await expect(seed(['restore-scopes'])).rejects.toThrow(/restore-scopes requires --tenant/u);
+  });
+});
+
 describe('seed client and the limit on a client’s lists', () => {
   it.each([
     ['--redirect-uri', 'redirect_uris', (i: number) => `https://app.example/cb/${String(i)}`],
