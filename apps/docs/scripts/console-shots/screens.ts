@@ -263,7 +263,7 @@ export const SCREENS: readonly Screen[] = [
   },
   {
     name: 'scopes',
-    alt: "The demo tenant's Scopes list: openid, profile, email, address, phone, roles, groups and offline_access, and a Create a scope button.",
+    alt: "The demo tenant's Scopes list: openid, profile, email, address, phone, roles, groups and offline_access, with Restore built-in scopes and Create a scope buttons.",
     caption: 'The eight scopes every tenant starts with.',
     signedIn: true,
     expect: [

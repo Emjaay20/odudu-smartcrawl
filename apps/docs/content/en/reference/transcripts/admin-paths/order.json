@@ -59,6 +59,7 @@
   "get-scopesidclients.md",
   "put-scopesidclientsclientid.md",
   "delete-scopesidclientsclientid.md",
+  "get-scopesidimpact-get-scopesbuiltins-and-post-scopesrestore-builtins.md",
   "get-scopesidmappers-and-put-scopesidmappers.md",
   "get-keys-post-keys-post-keysidpromote-and-post-keysidretire.md",
   "delete-keysid.md",

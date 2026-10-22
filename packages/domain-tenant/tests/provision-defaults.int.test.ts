@@ -123,7 +123,15 @@ describe('restoring the built-in scopes', () => {
     return withTenant(app.db, tenantId, async (tx) => {
       const rows = await clientScopeRepository(tx).allForTenant();
       return rows
-        .map(({ id: _id, tenantId: _tenant, createdAt: _created, ...settings }) => settings)
+        .map((scope) => ({
+          name: scope.name,
+          description: scope.description,
+          includeInIdToken: scope.includeInIdToken,
+          includeInAccessToken: scope.includeInAccessToken,
+          defaultClientAssignment: scope.defaultClientAssignment,
+          consentText: scope.consentText,
+          displayOrder: scope.displayOrder,
+        }))
         .sort((a, b) => a.name.localeCompare(b.name));
     });
   }

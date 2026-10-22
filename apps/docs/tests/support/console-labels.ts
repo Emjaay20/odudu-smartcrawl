@@ -210,6 +210,15 @@ export const DEFINED: Readonly<Record<string, Defined>> = {
   'Create a group': feature('groups/view/GroupsPage/GroupsPage.tsx', '> Create a group <'),
   'Create a role': feature('roles/view/RolesPage/RolesPage.tsx', '> Create a role <'),
   'Create a scope': feature('scopes/view/ScopesPage/ScopesPage.tsx', '> Create a scope <'),
+  'Restore built-in scopes': feature(
+    'scopes/view/ScopesPage/RestoreScopes.tsx',
+    '>Restore built-in scopes<',
+  ),
+  Restore: feature('scopes/view/ScopesPage/RestoreScopes.tsx', 'confirmLabel="Restore"'),
+  'Used because nothing is bound': feature(
+    'scopes/service/mappers.ts',
+    "DEFAULT_MAPPER_NOTE = 'Used because nothing is bound'",
+  ),
   'Create a copy': feature('roles/view/RoleRecordPage/RoleRecordPage.tsx', '> Create a copy <'),
   'Import a tenant': several(
     feature('tenants/view/TenantsPage/TenantsPage.tsx', '>Import a tenant<'),

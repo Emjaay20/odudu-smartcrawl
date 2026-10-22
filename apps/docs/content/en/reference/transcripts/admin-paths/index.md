@@ -72,6 +72,7 @@ How they were captured is in [How the transcripts are captured and checked](../.
 - [GET /scopes/:id/clients](./get-scopesidclients.md)
 - [PUT /scopes/:id/clients/:clientId](./put-scopesidclientsclientid.md)
 - [DELETE /scopes/:id/clients/:clientId](./delete-scopesidclientsclientid.md)
+- [GET /scopes/:id/impact, GET /scopes/builtins and POST…](./get-scopesidimpact-get-scopesbuiltins-and-post-scopesrestore-builtins.md)
 - [GET /scopes/:id/mappers and PUT /scopes/:id/mappers](./get-scopesidmappers-and-put-scopesidmappers.md)
 - [GET /keys, POST /keys, POST /keys/:id/promote and POST…](./get-keys-post-keys-post-keysidpromote-and-post-keysidretire.md)
 - [DELETE /keys/:id](./delete-keysid.md)

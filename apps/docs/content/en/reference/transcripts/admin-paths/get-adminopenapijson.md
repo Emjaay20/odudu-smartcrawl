@@ -12,24 +12,24 @@ into one — and is served without authentication, since a client that cannot re
 it cannot generate against it.
 
 ```bash
-curl -sS -D - -o openapi.json http://localhost:3187/admin/openapi.json
+curl -sS -D - -o openapi.json http://localhost:3192/admin/openapi.json
 jq '.paths | length' openapi.json
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a140be-1aa4-7732-9373-b578e205487c
+x-request-id: 01a163f6-cbed-7c2e-890d-c0cbc69af402
 access-control-allow-origin: *
 content-type: application/json; charset=utf-8
-content-length: 326972
-Date: Thu, 15 Oct 2026 18:06:02 GMT
+content-length: 432083
+Date: Thu, 22 Oct 2026 14:14:40 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-75
+78
 ```
 
-319 KB and 75 paths, which is the whole route table. It is the one admin
+422 KB and 78 paths, which is the whole route table. It is the one admin
 response readable from any origin, so a viewer served from another port can load
 it — the local stack's optional Swagger UI does exactly that (see "Browsing the
 admin API" in the README). No admin route carries that header, so a page on
@@ -46,7 +46,7 @@ openapi.json` and the substring at `securitySchemes`:
 ```
 
 `security` is declared once at the top level, so every path inherits it
-rather than repeating it. `/admin/openapi.json` is not among those 75
+rather than repeating it. `/admin/openapi.json` is not among those 78
 paths: the document does not describe itself, which is why serving it
 unauthenticated does not contradict the blanket `security` above.
 

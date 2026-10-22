@@ -121,7 +121,13 @@ the built-in admin client's included, which
 alone. Every other scope stays deletable whatever it is assigned to,
 unless the roles it maps reach an admin capability the caller does not hold
 ([a removal is judged by what it removes](#a-removal-is-judged-by-what-it-removes))
-— a tenant-wide decision, not a per-client one.
+— a tenant-wide decision, not a per-client one. A **built-in** scope, one every
+tenant is given, is deleted only when `?confirm=` names it again, so a script
+cannot take one by accident, and an ordinary scope needs no confirmation; the
+[built-in scopes page](./get-scopesidimpact-get-scopesbuiltins-and-post-scopesrestore-builtins.md)
+shows the refusal, the confirmation and how to get one back. Every delete's
+audit row carries `builtin` and how many client assignments and role mappings
+it took.
 
 ```bash
 curl -sS -X POST \

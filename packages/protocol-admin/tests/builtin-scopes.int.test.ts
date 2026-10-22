@@ -373,7 +373,15 @@ describe('POST /admin/tenants/{t}/scopes/restore-builtins', () => {
     const shipped = async (tenantId: string) =>
       withTenant(fixture.app.db, tenantId, async (tx) =>
         (await clientScopeRepository(tx).allForTenant())
-          .map(({ id: _id, tenantId: _tenant, createdAt: _created, ...rest }) => rest)
+          .map((scope) => ({
+            name: scope.name,
+            description: scope.description,
+            includeInIdToken: scope.includeInIdToken,
+            includeInAccessToken: scope.includeInAccessToken,
+            defaultClientAssignment: scope.defaultClientAssignment,
+            consentText: scope.consentText,
+            displayOrder: scope.displayOrder,
+          }))
           .sort((a, b) => a.name.localeCompare(b.name)),
       );
     expect(await shipped(t.id)).toEqual(await shipped(pristine.id));

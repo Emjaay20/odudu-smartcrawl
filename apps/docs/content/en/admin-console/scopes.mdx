@@ -12,7 +12,7 @@ A scope is a name an application uses to say what it wants, such as `profile` or
 
 <ConsoleShot
   name="scopes"
-  alt="The demo tenant's Scopes list: openid, profile, email, address, phone, roles, groups and offline_access, and a Create a scope button."
+  alt="The demo tenant's Scopes list: openid, profile, email, address, phone, roles, groups and offline_access, with Restore built-in scopes and Create a scope buttons."
   caption="The eight scopes every tenant starts with."
 />
 
@@ -39,14 +39,22 @@ A default scope goes to a request that names no scope. An optional scope goes on
 
 ## 5. Connect roles
 
-The **Roles** tab lists the roles whose claims a token carries when it is granted this scope. The **Claim mappers** tab chooses which mappers build the scope's claims, under **Bound mappers**. While none is bound, the mappers that declare the scope are used, and the tab says which.
+The **Roles** tab lists the roles whose claims a token carries when it is granted this scope. The **Claim mappers** tab chooses which mappers build the scope's claims, under **Bound mappers**. While none is bound, the mappers that declare the scope are used: they are listed ticked and greyed, each marked **Used because nothing is bound**. Tick another mapper and only that one is bound, so the greyed ones stop applying; clear every tick to go back to them.
 
 The **Activity** tab lists every change made to the scope.
 
+## 6. Bring back a built-in scope
+
+Every tenant starts with eight scopes, and you may delete all of them except `openid`. If one is gone and a client needs it again, choose **Restore built-in scopes** above the list. The dialog names the scopes this tenant is missing; choose **Restore** and it creates each of them again with the settings a new tenant is given. A scope that is still there is left exactly as you edited it, and when none is missing the dialog says so and offers nothing.
+
+Restoring does not bring back what the deletion took with it. The scope comes back without its client assignments and role mappings, so assign it to clients and map its roles again.
+
 ## Things that cannot be undone
 
-**Delete** on the **General** tab, named for the scope as in **Delete reports:read**, takes the scope off every client that carries it and unmaps every role mapped to it. Applications that asked for it will then be refused or issued less.
+**Delete** on the **General** tab, named for the scope as in **Delete reports:read**, takes the scope off every client that carries it and unmaps every role mapped to it. Before you confirm, the dialog counts both, for example 3 clients and 2 roles, and you type the scope's name to go ahead. Applications that asked for it will then be refused or issued less.
+
+For a built-in scope such as `roles` the dialog also says that it is one, and that **Restore built-in scopes** creates it again, though not the clients and roles it had. `openid` has no delete at all: it would be taken off every client, the built-in admin client included, and could lock every administrator out.
 
 ## Do the same through the API
 
-The calls are in the [scopes area of the admin API](../reference/generated/admin-api/scopes.md); assigning a scope to a client is on the [clients area](../reference/generated/admin-api/clients.md). To understand what a scope is, read the [Scopes concept](../concepts/scopes.mdx). From the command line, `odudu seed scope` and `odudu seed assign-scope` do the same for a first installation.
+The calls are in the [scopes area of the admin API](../reference/generated/admin-api/scopes.md); assigning a scope to a client is on the [clients area](../reference/generated/admin-api/clients.md). To understand what a scope is, read the [Scopes concept](../concepts/scopes.mdx). From the command line, `odudu seed scope` and `odudu seed assign-scope` do the same for a first installation, and `odudu seed restore-scopes` brings back the built-in scopes.

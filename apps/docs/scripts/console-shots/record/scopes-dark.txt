@@ -48,6 +48,7 @@ Back to system
 demo
 Scopes
 A scope is what a client asks to be let do, and what a token says it was granted. A search matches the start of a name.
+Restore built-in scopes
 Create a scope
 Name
 Clear

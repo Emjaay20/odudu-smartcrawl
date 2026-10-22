@@ -185,9 +185,12 @@ and why, where it appears.
 | `GET`    | `/admin/tenants/{tenant}/scopes`                                 | List client scopes                         |
 | `GET`    | `/admin/tenants/{tenant}/scopes/count`                           | Count client scopes                        |
 | `POST`   | `/admin/tenants/{tenant}/scopes`                                 | Create a client scope                      |
+| `GET`    | `/admin/tenants/{tenant}/scopes/builtins`                        | List the built-in scopes a tenant has      |
+| `POST`   | `/admin/tenants/{tenant}/scopes/restore-builtins`                | Create the missing built-in scopes         |
 | `GET`    | `/admin/tenants/{tenant}/scopes/:id`                             | Read a client scope                        |
 | `PATCH`  | `/admin/tenants/{tenant}/scopes/:id`                             | Amend a client scope                       |
 | `DELETE` | `/admin/tenants/{tenant}/scopes/:id`                             | Delete a client scope                      |
+| `GET`    | `/admin/tenants/{tenant}/scopes/:id/impact`                      | Count what deleting a scope would take     |
 | `GET`    | `/admin/tenants/{tenant}/scopes/:id/roles`                       | Read a scope's roles                       |
 | `PUT`    | `/admin/tenants/{tenant}/scopes/:id/roles`                       | Replace a scope's roles                    |
 | `GET`    | `/admin/tenants/{tenant}/scopes/:id/clients`                     | List the clients a scope is assigned to    |
