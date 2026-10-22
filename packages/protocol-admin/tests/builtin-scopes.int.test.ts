@@ -126,7 +126,7 @@ describe('DELETE /admin/tenants/{t}/scopes/{id} — a built-in scope', () => {
 
     const res = await del(token, t.name, id);
 
-    expect(res.statusCode).toBe(428);
+    expect(res.statusCode).toBe(422);
     const problem = res.json<Problem>();
     expect(problem.type).toBe('about:blank#builtin-scope-confirmation');
     expect(problem.detail).toContain('profile');
@@ -151,7 +151,7 @@ describe('DELETE /admin/tenants/{t}/scopes/{id} — a built-in scope', () => {
 
     const res = await del(token, t.name, id, '?confirm=profile');
 
-    expect(res.statusCode).toBe(428);
+    expect(res.statusCode).toBe(422);
     expect(
       await withTenant(fixture.app.db, t.id, (tx) => clientScopeRepository(tx).byId(id)),
     ).not.toBeNull();

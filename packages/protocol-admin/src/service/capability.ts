@@ -1127,7 +1127,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     description:
       'Cascades to every client’s assignment and role mapping naming the scope; ' +
       '`GET …/impact` counts them first. A built-in scope — one every tenant is ' +
-      'given — is deleted only when `confirm` names it again, refused with `428` ' +
+      'given — is deleted only when `confirm` names it again, refused with `422` ' +
       '`builtin-scope-confirmation` otherwise, the detail naming the scope and what ' +
       'would go with it; `POST …/scopes/restore-builtins` creates it again, without ' +
       'what the cascade took. Refused with 409 for the scope named `openid`, which ' +

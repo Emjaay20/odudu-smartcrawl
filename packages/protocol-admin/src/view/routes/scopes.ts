@@ -274,9 +274,9 @@ export function deleteScopeHandler(deps: ScopesRouteDeps): AdminRouteHandler {
           reply,
           request,
           problem(
-            428,
+            422,
             'about:blank#builtin-scope-confirmation',
-            'Precondition Required',
+            'Unprocessable Content',
             outcome.reason,
           ),
         );
