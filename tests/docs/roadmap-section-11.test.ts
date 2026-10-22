@@ -108,6 +108,14 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'protected-resource and authorization-server metadata',
     'protect an mcp server with odudu',
   ],
+  [
+    'P5a',
+    'Retries are made safe',
+    '`idempotency-key` header',
+    'same key with a different request fingerprint refused with 422',
+    'in-flight duplicate refused with 409',
+  ],
+  ['P5a', 'Today the admin API has no such header'],
   ['P4f', 'A "me" API', '"me" api', 'application-initiated actions'],
   [
     'P4f',
