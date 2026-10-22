@@ -18,6 +18,7 @@ const pkceChallenge = (verifier: string): string =>
   createHash('sha256').update(verifier).digest('base64url');
 const name = `return-${tag}`;
 const STATE = `app-state-${tag}`;
+const NONCE = `nonce-${tag}`;
 
 function authorizeUrl(state: string): string {
   const query = new URLSearchParams({
@@ -26,7 +27,7 @@ function authorizeUrl(state: string): string {
     redirect_uri: REDIRECT,
     scope: 'openid',
     state,
-    nonce: `nonce-${tag}`,
+    nonce: NONCE,
     code_challenge: pkceChallenge(VERIFIER),
     code_challenge_method: 'S256',
   });
@@ -67,7 +68,7 @@ test.beforeAll(() => {
 
 // The browser lands on the application's address with a code and the state;
 // the code exchanges for tokens with the verifier whose hash was the challenge.
-async function landed(page: Page, state: string | null): Promise<void> {
+async function landed(page: Page, state: string): Promise<void> {
   await page.waitForURL(/\/health\/ready\?/u);
   const url = new URL(page.url());
   expect(url.searchParams.get('state')).toBe(state);
@@ -83,9 +84,15 @@ async function landed(page: Page, state: string | null): Promise<void> {
     },
   });
   expect(exchanged.status()).toBe(200);
-  expect(
-    z.object({ access_token: z.string() }).parse(await exchanged.json()).access_token,
-  ).not.toBe('');
+  const tokens = z
+    .object({ access_token: z.string(), id_token: z.string() })
+    .parse(await exchanged.json());
+  expect(tokens.access_token).not.toBe('');
+  // The application's own nonce, which an application checks before it trusts the token.
+  const claims = z
+    .object({ nonce: z.string() })
+    .parse(JSON.parse(Buffer.from(tokens.id_token.split('.')[1] ?? '', 'base64url').toString()));
+  expect(claims.nonce).toBe(NONCE);
 }
 
 async function signIn(page: Page, username: string, password: string): Promise<void> {
@@ -146,7 +153,7 @@ test('resetting, after a refused first attempt, and coming back to the applicati
   forgiveRefusals(problems);
 });
 
-test('the mailed reset link leads back to a fresh sign-in, with no state', async ({
+test('the mailed reset link, opened in the same browser, resumes the original request: its state and nonce', async ({
   page,
   problems,
 }) => {
@@ -156,9 +163,11 @@ test('the mailed reset link leads back to a fresh sign-in, with no state', async
   await page.getByRole('button', { name: 'Send reset link' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Check your email' })).toBeVisible();
 
+  // Nothing of the request travels in the mail.
   const query = mailQuery(`resetter-${tag}@example.test`);
   expect(query).not.toContain('state');
   expect(query).not.toContain('nonce');
+  expect(query).not.toContain('return_to');
   await page.goto(`/tenants/${name}/login-actions/action-token?key=${query}`);
   await page.getByLabel('New password').fill('a');
   await page.getByRole('button', { name: 'Reset password' }).click();
@@ -171,8 +180,35 @@ test('the mailed reset link leads back to a fresh sign-in, with no state', async
   ).toBeVisible();
   await page.getByRole('link', { name: 'Continue to sign in' }).click();
 
-  // A new sign-in start for the same client, so the original state is not in it.
+  // The same request again, so the application's own state and nonce come back.
   await signIn(page, 'resetter', reset);
-  await landed(page, null);
+  await landed(page, STATE);
   forgiveRefusals(problems);
+});
+
+test('the same mailed link in another browser offers no way to sign in', async ({
+  page,
+  browser,
+}) => {
+  await page.goto(authorizeUrl(STATE));
+  await page.getByRole('link', { name: 'Forgot password?' }).click();
+  await page.getByLabel('Email').fill(`resetter-${tag}@example.test`);
+  await page.getByRole('button', { name: 'Send reset link' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Check your email' })).toBeVisible();
+  const query = mailQuery(`resetter-${tag}@example.test`);
+
+  const elsewhere = await browser.newContext({ baseURL: test.info().project.use.baseURL });
+  try {
+    const other = await elsewhere.newPage();
+    await other.goto(`/tenants/${name}/login-actions/action-token?key=${query}`);
+    await other.getByLabel('New password').fill(`${PASSWORD}-other`);
+    await other.getByRole('button', { name: 'Reset password' }).click();
+    await expect(
+      other.getByRole('heading', { level: 1, name: 'Your password has been reset' }),
+    ).toBeVisible();
+    await expect(other.getByRole('link')).toHaveCount(0);
+    await expect(other.getByText('Return to the application you were signing in to')).toBeVisible();
+  } finally {
+    await elsewhere.close();
+  }
 });
