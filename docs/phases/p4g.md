@@ -2970,3 +2970,42 @@ file per package (`form-error.ts`) for the same reason.
 `totp-enrolment`, `update-password-violations` and `second-factor-totp-error` were
 captured again. Each ran through axe in both themes, at the phone width and at one card
 width in `server-pages.spec.ts`, and was looked at.
+
+## Increment 31j: deleting and restoring built-in scopes
+
+**Decision.** A built-in scope (a name in `TENANT_DEFAULT_SCOPE_NAMES`, the set provisioning
+creates) is deletable, Keycloak-style, but only when the request names it again. The
+confirmation is `?confirm=<scope name>`, the same parameter `DELETE /admin/tenants/{tenant}`
+takes for a tenant, rather than a new `confirm_builtin` flag: a script has to know the name,
+and the console already makes a person type it. Without it the answer is `422`
+`builtin-scope-confirmation`, its detail naming the scope and the counts. `428` was rejected:
+the console gateway and every `If-Match` client read it as "send the precondition header" and
+report it as their own defect. `openid` stays `409` whatever `confirm` says. The ceiling check
+runs before the confirmation, so a caller who may not delete is not asked to confirm.
+
+**Audit.** `scope.delete` rows, allowed or refused, carry `builtin`, `client_assignments` and
+`role_mappings` (plus `counts_capped` past the ceiling). `scope.restore_builtins` writes a row
+naming what it created; a restore that creates nothing writes none.
+
+**Restore.** One function, `restoreBuiltinScopes` beside `provisionTenantDefaults`, creates a
+missing built-in through the same `createDefaultScope` provisioning uses, so the shipped
+settings have one author. It touches nothing that exists, brings back no assignment or role
+mapping, and refuses whole (nothing written) at `SCOPE_LIMIT` or at the 200 scopes marked for
+new clients, checked before the first insert. Reached by `POST …/scopes/restore-builtins`,
+`GET …/scopes/builtins` (what is missing) and `odudu seed restore-scopes --tenant`.
+
+**Console.** The delete dialog reads `GET …/scopes/{id}/impact` each time it opens (the old
+first-page client read is gone) and says how many clients and roles go and that the scope is
+built in. The typed name was already required for every scope, so it is unchanged and is what
+the console sends as `confirm`. The Bound mappers tab shows the registry's declared mappers
+ticked and greyed, "Used because nothing is bound", until one is bound; ticking another binds
+only that one.
+
+**Queries per path.** Impact: one scope read and two bounded counts (`limit cap + 1` over
+`client_scope_assignments_by_scope` and the `client_scope_roles` key), whatever the tenant
+holds. Delete: those plus the delete, constant. Builtins: one read over the name index.
+Restore: O(8) inserts under the tenant lock; a second call is one read.
+
+**Searched and reused.** `countAtMost`, `COUNT_CAP`, `CountResponse`, `useRead`,
+`useConfirmedRemoval`, `ConfirmDialog` (`settled` holds the restore when nothing is missing),
+the tenant delete's `confirm` convention, `deleteWarning.ts`'s mapper sentence.
