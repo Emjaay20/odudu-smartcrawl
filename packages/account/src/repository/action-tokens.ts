@@ -128,6 +128,18 @@ export function actionTokenRepository(tx: TenantScopedDatabase) {
       return row === undefined ? null : toRecord(row);
     },
 
+    // What a link was for, whether or not it can still be used: a refused
+    // redemption says which next step to offer, never whose link it was. Read
+    // only after peek found nothing, so a usable link costs no extra query.
+    async typeOf(token: string): Promise<ActionTokenType | null> {
+      const rows = await tx
+        .select({ type: actionTokens.type })
+        .from(actionTokens)
+        .where(eq(actionTokens.tokenHash, sha256Hex(token)));
+      const type = rows[0]?.type;
+      return type === undefined ? null : (type as ActionTokenType);
+    },
+
     // Called alongside a successful consume, in the same transaction:
     // whatever sets a subject's password retires every other outstanding
     // link that could set it — each reset link, and each actions link naming

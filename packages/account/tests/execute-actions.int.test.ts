@@ -297,19 +297,40 @@ describe('a link that takes its subject through required actions', () => {
     expect((await submit(seeded, keyOf(link), NEW_PASSWORD)).statusCode).toBe(200);
   });
 
+  it('puts the actions form back in place, with the list, the key and the reasons', async () => {
+    const seeded = await seed(true);
+    const link = await mail(seeded, ['update-password', 'configure-totp']);
+    const key = keyOf(link);
+
+    for (const [password, reason] of [
+      [undefined, 'A new password is required.'],
+      ['zq9xv', 'Password must be at least 8 characters long.'],
+    ] as const) {
+      const refused = await submit(seeded, key, password);
+      expect(refused.statusCode).toBe(400);
+      expect(refused.body).toContain('<form method="post"');
+      expect(refused.body).toContain(`name="key" value="${key}"`);
+      expect(refused.body).toContain('<li>Choose a new password</li>');
+      expect(refused.body).toContain('<li>Set up an authenticator app</li>');
+      expect(refused.body).toContain(reason);
+      expect(refused.body).toContain('aria-invalid="true" aria-describedby="form-error-0');
+      expect(refused.body).not.toContain('zq9xv');
+    }
+  });
+
   it('words a weak password from the catalogue with the tenant minimum, in the page language', async () => {
     const seeded = await seed(true);
     const link = await mail(seeded, ['update-password']);
 
     const english = await submit(seeded, keyOf(link), 'short');
     expect(english.statusCode).toBe(400);
-    expect(english.body).toContain('<li>Password must be at least 8 characters long.</li>');
-    expect(english.body).not.toContain('<bdi>');
+    expect(english.body).toContain('>Password must be at least 8 characters long.</li>');
+    expect(english.body).not.toMatch(/<li[^>]*><bdi>/u);
 
     const french = await submit(seeded, keyOf(link), 'short', 'fr');
     expect(french.headers['content-language']).toBe('fr');
-    expect(french.body).toContain('<li>Le mot de passe doit comporter au moins 8 caractères.</li>');
-    expect(french.body).not.toContain('<bdi>');
+    expect(french.body).toContain('>Le mot de passe doit comporter au moins 8 caractères.</li>');
+    expect(french.body).not.toMatch(/<li[^>]*><bdi>/u);
   });
 
   it('refuses a too-long password on an actions link and on a reset link, with the limit', async () => {
@@ -320,10 +341,8 @@ describe('a link that takes its subject through required actions', () => {
     for (const link of [actions, reset]) {
       const refused = await submit(seeded, keyOf(link), long, 'fr');
       expect(refused.statusCode).toBe(400);
-      expect(refused.body).toContain(
-        '<li>Le mot de passe ne doit pas dépasser 256 caractères.</li>',
-      );
-      expect(refused.body).not.toContain('<bdi>');
+      expect(refused.body).toContain('>Le mot de passe ne doit pas dépasser 256 caractères.</li>');
+      expect(refused.body).not.toMatch(/<li[^>]*><bdi>/u);
     }
     expect((await submit(seeded, keyOf(actions), NEW_PASSWORD)).statusCode).toBe(200);
   });

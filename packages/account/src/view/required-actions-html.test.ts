@@ -22,8 +22,14 @@ const EN = DEFAULT_PAGE_LOCALE;
 describe('renderRequiredActionsForm', () => {
   it('keeps the English markup exactly, with and without a password field', () => {
     expect(
-      renderRequiredActionsForm('acme', 'k"ey', ['update-password', 'configure-totp'], true, EN)
-        .body,
+      renderRequiredActionsForm(
+        'acme',
+        'k"ey',
+        ['update-password', 'configure-totp'],
+        true,
+        undefined,
+        EN,
+      ).body,
     ).toBe(`<header class="intro">
 <h1>Update your account</h1>
 <p class="tenant"><bdi>acme</bdi></p>
@@ -38,11 +44,52 @@ describe('renderRequiredActionsForm', () => {
   <label>New password <input type="password" name="password" autocomplete="new-password"></label>
   <button type="submit">Continue</button>
 </form>`);
-    const without = renderRequiredActionsForm('acme', 'key', ['configure-passkey'], false, EN);
+    const without = renderRequiredActionsForm(
+      'acme',
+      'key',
+      ['configure-passkey'],
+      false,
+      undefined,
+      EN,
+    );
     expect(without.body).not.toContain('password');
     expect(without.body).toContain('<li>Register a passkey</li>');
     expect(without.script).toBeNull();
     expect(without.title).toBe('Update your account');
+  });
+
+  it('comes back in place with the reasons above the form and the field marked', () => {
+    const { body } = renderRequiredActionsForm(
+      'acme',
+      'key',
+      ['update-password'],
+      true,
+      [{ rule: 'require-digit', message: 'dev' }],
+      EN,
+    );
+    expect(body).toContain(`<li>Choose a new password</li>
+</ul>
+<div class="alert" role="alert" id="form-error">
+<ul>
+<li id="form-error-0">Password must contain a digit.</li>
+</ul>
+</div>
+<form`);
+    expect(body).toContain(
+      'autocomplete="new-password" aria-invalid="true" aria-describedby="form-error-0" autofocus>',
+    );
+  });
+
+  it('marks nothing on a link that asks for no password', () => {
+    const { body } = renderRequiredActionsForm(
+      'acme',
+      'key',
+      ['configure-totp'],
+      false,
+      'required',
+      EN,
+    );
+    expect(body).not.toContain('aria-invalid');
   });
 
   it('words every action the link can carry', () => {
@@ -51,6 +98,7 @@ describe('renderRequiredActionsForm', () => {
       'k',
       ['update-password', 'configure-totp', 'configure-passkey', 'generate-recovery-codes'],
       false,
+      undefined,
       EN,
     );
     for (const text of [
@@ -69,6 +117,7 @@ describe('renderRequiredActionsForm', () => {
       'k',
       ['configure-totp', 'update-password'],
       true,
+      undefined,
       FRENCH,
     );
     expect(page.html).toContain('<html lang="fr" dir="ltr">');
@@ -80,7 +129,7 @@ describe('renderRequiredActionsForm', () => {
   });
 
   it('writes lang and dir for a right-to-left locale', () => {
-    expect(renderRequiredActionsForm('acme', 'k', [], false, ARABIC).html).toContain(
+    expect(renderRequiredActionsForm('acme', 'k', [], false, undefined, ARABIC).html).toContain(
       '<html lang="ar" dir="rtl">',
     );
   });
@@ -88,7 +137,14 @@ describe('renderRequiredActionsForm', () => {
   it('escapes the tenant and key, and isolates an action code it has no wording for', () => {
     const hostile = '<img src=x onerror=1>' as never;
     for (const locale of [EN, FRENCH]) {
-      const { html, body } = renderRequiredActionsForm('<t>', '"><i>', [hostile], true, locale);
+      const { html, body } = renderRequiredActionsForm(
+        '<t>',
+        '"><i>',
+        [hostile],
+        true,
+        undefined,
+        locale,
+      );
       expect(html).not.toContain('<img');
       expect(html).not.toContain('<t>');
       expect(html).not.toContain('"><i>');
@@ -98,7 +154,7 @@ describe('renderRequiredActionsForm', () => {
 
   it('does not take an action named like an object member for a catalogue entry', () => {
     expect(
-      renderRequiredActionsForm('acme', 'k', ['constructor' as never], false, EN).body,
+      renderRequiredActionsForm('acme', 'k', ['constructor' as never], false, undefined, EN).body,
     ).toContain('<li><bdi>constructor</bdi></li>');
   });
 });

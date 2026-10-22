@@ -1,7 +1,7 @@
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { requestContextFrom } from '@odudu/domain-audit';
 import { PASSWORD_TOO_LONG, readPasswordField } from '@odudu/kernel';
-import { type FastifyInstance } from 'fastify';
+import { type FastifyInstance, type FastifyReply } from 'fastify';
 import {
   register,
   type CreateAccountResult,
@@ -9,10 +9,13 @@ import {
   type PasswordPolicy,
   type PolicyViolation,
 } from '#/usecase/register';
+import { signInPath } from '#/service/sign-in-path';
 import {
   renderRegistrationFailedPage,
   renderRegistrationForm,
   renderRegistrationSucceededPage,
+  type RegistrationField,
+  type RegistrationFailure,
 } from '#/view/registration-html';
 import { sendVerificationHtml } from '#/view/verification-html';
 import { requestLocale } from '#/view/request-locale';
@@ -78,21 +81,25 @@ function tenantIsOpenForRegistration(
 // at all — 404, not a page saying registration is closed, the same way a
 // disabled tenant's action-token route refuses rather than explaining.
 export function registerRegistrationRoute(app: FastifyInstance, deps: RegistrationRouteDeps): void {
-  app.get<{ Params: { tenant: string } }>(
-    '/tenants/:tenant/login-actions/registration',
-    async (request, reply) => {
-      const locale = requestLocale(request, deps);
-      const tenant = await deps.findTenant(request.params.tenant);
-      if (!tenantIsOpenForRegistration(tenant)) {
-        return reply.code(404).send();
-      }
-      return sendVerificationHtml(
-        reply,
-        200,
-        renderRegistrationForm(request.params.tenant, locale),
-      );
-    },
-  );
+  app.get<{
+    Params: { tenant: string };
+    Querystring: Record<string, string | string[] | undefined>;
+  }>('/tenants/:tenant/login-actions/registration', async (request, reply) => {
+    const locale = requestLocale(request, deps);
+    const tenant = await deps.findTenant(request.params.tenant);
+    if (!tenantIsOpenForRegistration(tenant)) {
+      return reply.code(404).send();
+    }
+    return sendVerificationHtml(
+      reply,
+      200,
+      renderRegistrationForm(
+        request.params.tenant,
+        { signInPath: signInPath(request.params.tenant, request.query.return_to) },
+        locale,
+      ),
+    );
+  });
 
   app.post<{
     Params: { tenant: string };
@@ -108,23 +115,38 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
     const username = firstNonEmptyString(body.username);
     const email = firstNonEmptyString(body.email);
     const candidate = readPasswordField(body.password);
-    if (candidate.kind === 'too_long') {
-      return sendVerificationHtml(
+    const returnTo = signInPath(request.params.tenant, body.return_to);
+    // The form comes back in place, keeping the two values that are safe to
+    // keep; a password is never put into a field again.
+    const refuse = (status: number, failure: RegistrationFailure): FastifyReply =>
+      sendVerificationHtml(
         reply,
-        400,
-        renderRegistrationFailedPage({ violations: [PASSWORD_TOO_LONG] }, locale),
+        status,
+        renderRegistrationForm(
+          request.params.tenant,
+          {
+            signInPath: returnTo,
+            failure,
+            ...(username === undefined ? {} : { username }),
+            ...(email === undefined ? {} : { email }),
+          },
+          locale,
+        ),
       );
+    if (candidate.kind === 'too_long') {
+      return refuse(400, { violations: [PASSWORD_TOO_LONG] });
     }
     const password =
       candidate.kind === 'present' && candidate.password.length > 0
         ? candidate.password
         : undefined;
     if (username === undefined || email === undefined || password === undefined) {
-      return sendVerificationHtml(
-        reply,
-        400,
-        renderRegistrationFailedPage({ refusal: 'fields_required' }, locale),
-      );
+      const missing: RegistrationField[] = [
+        ...(username === undefined ? (['username'] as const) : []),
+        ...(email === undefined ? (['email'] as const) : []),
+        ...(password === undefined ? (['password'] as const) : []),
+      ];
+      return refuse(400, { missing });
     }
 
     const outcome = await register(
@@ -145,39 +167,15 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
     );
 
     if (outcome.kind === 'invalid_password') {
-      return sendVerificationHtml(
-        reply,
-        400,
-        renderRegistrationFailedPage({ violations: outcome.violations }, locale),
-      );
+      return refuse(400, { violations: outcome.violations });
     }
-    if (outcome.kind === 'email_taken') {
-      return sendVerificationHtml(
-        reply,
-        400,
-        renderRegistrationFailedPage({ refusal: 'email_taken' }, locale),
-      );
-    }
-    if (outcome.kind === 'username_taken') {
-      return sendVerificationHtml(
-        reply,
-        400,
-        renderRegistrationFailedPage({ refusal: 'username_taken' }, locale),
-      );
-    }
-    if (outcome.kind === 'invalid_email') {
-      return sendVerificationHtml(
-        reply,
-        400,
-        renderRegistrationFailedPage({ refusal: 'invalid_email' }, locale),
-      );
-    }
-    if (outcome.kind === 'invalid_username') {
-      return sendVerificationHtml(
-        reply,
-        400,
-        renderRegistrationFailedPage({ refusal: 'invalid_username' }, locale),
-      );
+    if (
+      outcome.kind === 'email_taken' ||
+      outcome.kind === 'username_taken' ||
+      outcome.kind === 'invalid_email' ||
+      outcome.kind === 'invalid_username'
+    ) {
+      return refuse(400, { refusal: outcome.kind });
     }
     if (outcome.kind === 'misconfigured') {
       request.log.error(
@@ -187,14 +185,14 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
       return sendVerificationHtml(
         reply,
         500,
-        renderRegistrationFailedPage({ refusal: 'unavailable' }, locale),
+        renderRegistrationFailedPage(request.params.tenant, returnTo, locale),
       );
     }
 
     return sendVerificationHtml(
       reply,
       201,
-      renderRegistrationSucceededPage(tenant.verifyEmail, locale),
+      renderRegistrationSucceededPage(tenant.verifyEmail, returnTo, locale),
     );
   });
 }

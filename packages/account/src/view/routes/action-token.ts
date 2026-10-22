@@ -2,7 +2,8 @@ import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { requestContextFrom } from '@odudu/domain-audit';
 import { PASSWORD_TOO_LONG, readPasswordField } from '@odudu/kernel';
 import { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
-import { peekActionToken } from '#/usecase/action-token';
+import { peekActionToken, type LinkedRequiredAction } from '#/usecase/action-token';
+import { type PasswordFailure } from '#/view/password-rules';
 import {
   completePasswordReset,
   type PasswordPolicy,
@@ -16,9 +17,7 @@ import { completeEmailVerification } from '#/usecase/verify-email';
 import {
   renderResetLinkFailedPage,
   renderResetPasswordForm,
-  renderResetPasswordRequiredPage,
   renderResetPasswordSucceededPage,
-  renderResetPasswordWeakPage,
 } from '#/view/reset-html';
 import {
   renderRequiredActionsForm,
@@ -94,25 +93,47 @@ function firstNonEmptyString(value: string | string[] | undefined): string | und
   return value;
 }
 
+// Where a person whose reset link failed asks for another: this tenant's
+// own request form, offered only while the tenant still allows resets.
+function newResetLink(tenantName: string, tenant: ActionTokenTenantLookup): string | null {
+  return tenant.resetPasswordAllowed
+    ? `/tenants/${encodeURIComponent(tenantName)}/login-actions/reset-password`
+    : null;
+}
+
 async function completeActionsLink(
-  request: FastifyRequest<{ Body: Record<string, string | string[] | undefined> }>,
+  request: FastifyRequest<{
+    Params: { tenant: string };
+    Body: Record<string, string | string[] | undefined>;
+  }>,
   reply: FastifyReply,
   deps: ActionTokenRouteDeps,
   tenant: ActionTokenTenantLookup,
   key: string,
-  setsPassword: boolean,
+  peeked: { actions: readonly LinkedRequiredAction[]; setsPassword: boolean },
 ): Promise<FastifyReply> {
   const locale = requestLocale(request, deps);
+  const { setsPassword } = peeked;
+  // The form the link opened, back in place with why the password was refused.
+  const again = (failure: PasswordFailure): FastifyReply =>
+    sendVerificationHtml(
+      reply,
+      400,
+      renderRequiredActionsForm(
+        request.params.tenant,
+        key,
+        peeked.actions,
+        setsPassword,
+        failure,
+        locale,
+      ),
+    );
   if (setsPassword && !tenant.resetPasswordAllowed) {
-    return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(locale));
+    return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(null, locale));
   }
   const candidate = readPasswordField(request.body.password);
   if (candidate.kind === 'too_long') {
-    return sendVerificationHtml(
-      reply,
-      400,
-      renderResetPasswordWeakPage([PASSWORD_TOO_LONG], locale),
-    );
+    return again([PASSWORD_TOO_LONG]);
   }
   const password =
     candidate.kind === 'present' && candidate.password.length > 0 ? candidate.password : undefined;
@@ -135,15 +156,11 @@ async function completeActionsLink(
   );
   switch (result.kind) {
     case 'invalid':
-      return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(locale));
+      return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(null, locale));
     case 'password_required':
-      return sendVerificationHtml(reply, 400, renderResetPasswordRequiredPage(locale));
+      return again('required');
     case 'invalid_password':
-      return sendVerificationHtml(
-        reply,
-        400,
-        renderResetPasswordWeakPage(result.violations, locale),
-      );
+      return again(result.violations);
     case 'done':
       return sendVerificationHtml(
         reply,
@@ -179,17 +196,29 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
     // it never changes the verify-email one's behaviour.
     const peeked = await peekActionToken({ database: deps.database, tenantId: tenant.id }, key);
     if (peeked.kind === 'invalid') {
+      // A reset or actions link the row of which is still held says so, and a
+      // reset link offers a new one; any other refusal stays the generic page.
+      if (peeked.type === 'reset_password' || peeked.type === 'execute_actions') {
+        return sendVerificationHtml(
+          reply,
+          400,
+          renderResetLinkFailedPage(
+            peeked.type === 'reset_password' ? newResetLink(request.params.tenant, tenant) : null,
+            locale,
+          ),
+        );
+      }
       return sendVerificationHtml(reply, 400, renderVerificationFailedPage(locale));
     }
 
     if (peeked.type === 'reset_password') {
       if (!tenant.resetPasswordAllowed) {
-        return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(locale));
+        return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(null, locale));
       }
       return sendVerificationHtml(
         reply,
         200,
-        renderResetPasswordForm(request.params.tenant, key, locale),
+        renderResetPasswordForm(request.params.tenant, key, undefined, locale),
       );
     }
 
@@ -197,7 +226,7 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
     // stops it the same way.
     if (peeked.type === 'execute_actions') {
       if (peeked.setsPassword && !tenant.resetPasswordAllowed) {
-        return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(locale));
+        return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(null, locale));
       }
       return sendVerificationHtml(
         reply,
@@ -207,6 +236,7 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
           key,
           peeked.actions,
           peeked.setsPassword,
+          undefined,
           locale,
         ),
       );
@@ -240,26 +270,29 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
     const tenant = key === undefined ? null : await deps.findTenant(request.params.tenant);
 
     if (key === undefined || !tenant?.enabled) {
-      return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(locale));
+      return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(null, locale));
     }
 
     const peeked = await peekActionToken({ database: deps.database, tenantId: tenant.id }, key);
     if (peeked.kind === 'usable' && peeked.type === 'execute_actions') {
-      return completeActionsLink(request, reply, deps, tenant, key, peeked.setsPassword);
+      return completeActionsLink(request, reply, deps, tenant, key, peeked);
     }
     if (!tenant.resetPasswordAllowed) {
-      return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(locale));
+      return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(null, locale));
     }
+    // The form this submission came from, back in place with why it was refused.
+    const again = (failure: PasswordFailure): FastifyReply =>
+      sendVerificationHtml(
+        reply,
+        400,
+        renderResetPasswordForm(request.params.tenant, key, failure, locale),
+      );
 
     // Listed as a rule of the policy, because to the person typing it that
     // is what it is — but decided here rather than in evaluatePassword, so
     // the length is bounded before anything hashes it.
     if (candidate.kind === 'too_long') {
-      return sendVerificationHtml(
-        reply,
-        400,
-        renderResetPasswordWeakPage([PASSWORD_TOO_LONG], locale),
-      );
+      return again([PASSWORD_TOO_LONG]);
     }
     const password =
       candidate.kind === 'present' && candidate.password.length > 0
@@ -271,7 +304,7 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
     // used" here would be false — it is a missing field, not a spent or
     // expired token.
     if (password === undefined) {
-      return sendVerificationHtml(reply, 400, renderResetPasswordRequiredPage(locale));
+      return again('required');
     }
 
     const result = await completePasswordReset(
@@ -291,14 +324,14 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
     );
 
     if (result.kind === 'invalid_password') {
+      return again(result.violations);
+    }
+    if (result.kind === 'invalid') {
       return sendVerificationHtml(
         reply,
         400,
-        renderResetPasswordWeakPage(result.violations, locale),
+        renderResetLinkFailedPage(newResetLink(request.params.tenant, tenant), locale),
       );
-    }
-    if (result.kind === 'invalid') {
-      return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(locale));
     }
     return sendVerificationHtml(reply, 200, renderResetPasswordSucceededPage(locale));
   });

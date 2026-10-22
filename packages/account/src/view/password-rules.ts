@@ -1,4 +1,5 @@
 import { MAX_PASSWORD_LENGTH, type PageLocale } from '@odudu/kernel';
+import { type Problem } from '#/view/form-error';
 import { bdi, tHtml, type MessageId } from '#/view/messages';
 
 // A rule a candidate password broke: `rule` is the code a catalogue entry is
@@ -33,7 +34,17 @@ export function ruleHtml(violation: PasswordViolation, locale: PageLocale): stri
   return tHtml(locale, id, { min: violation.minLength ?? 0, max: MAX_PASSWORD_LENGTH });
 }
 
-export function ruleListHtml(violations: readonly PasswordViolation[], locale: PageLocale): string {
-  const items = violations.map((violation) => `<li>${ruleHtml(violation, locale)}</li>`);
-  return `<ul>\n${items.join('\n')}\n</ul>`;
+// Why a new password was refused when the form comes back: none was given, or
+// every rule the one given broke.
+export type PasswordFailure = 'required' | readonly PasswordViolation[];
+
+export function passwordProblems(
+  failure: PasswordFailure | undefined,
+  locale: PageLocale,
+): Problem[] {
+  if (failure === undefined) return [];
+  if (failure === 'required') {
+    return [{ fields: ['password'], html: tHtml(locale, 'reset.required.reason') }];
+  }
+  return failure.map((violation) => ({ fields: ['password'], html: ruleHtml(violation, locale) }));
 }

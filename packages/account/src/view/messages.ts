@@ -5,6 +5,9 @@ import { escapeHtml } from '#/view/document';
 // source and complete; another locale may omit a key and shows English for
 // it. A message is plain text: markup stays in the renderer.
 export const en = {
+  'link.backToSignIn': 'Back to sign in',
+  'link.tryAgain': 'Try again',
+  'link.requestNewResetLink': 'Request a new link',
   'verification.succeeded.title': 'Email verified',
   'verification.succeeded.heading': 'Your email address is verified',
   'verification.succeeded.next': 'You can close this page and sign in.',
@@ -18,7 +21,9 @@ export const en = {
   'registration.password': 'Password',
   'registration.submit': 'Create account',
   'registration.failed.title': "Can't create this account",
-  'registration.refusal.fieldsRequired': 'Username, email and password are all required.',
+  'registration.refusal.usernameRequired': 'Enter a username.',
+  'registration.refusal.emailRequired': 'Enter an email address.',
+  'registration.refusal.passwordRequired': 'Enter a password.',
   'registration.refusal.emailTaken': 'That email address is already registered.',
   'registration.refusal.usernameTaken': 'That username is already taken.',
   'registration.refusal.invalidEmail': 'That is not an address the email claim may carry.',
@@ -58,7 +63,6 @@ export const en = {
   'reset.linkFailed.heading': "This link can't be used",
   'reset.linkFailed.reason':
     'It may have already been used or expired. Request a new one and try again.',
-  'reset.cannotReset.title': "Can't reset your password",
   'reset.required.reason': 'A new password is required.',
   'requiredActions.title': 'Update your account',
   'requiredActions.intro': 'Your administrator asks you to:',

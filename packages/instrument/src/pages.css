@@ -278,6 +278,25 @@ button.choice {
   display: none;
 }
 
+input[aria-invalid='true'] {
+  border-color: var(--signal-danger-ink);
+}
+
+/* The ways on from a form, set apart from its button; a link in the flow of a
+   sentence keeps its own height, so these take one to stay a target. */
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-4);
+  margin: var(--space-4) 0 0;
+  font-size: var(--type-13);
+}
+
+.links a {
+  display: inline-block;
+  padding-block: var(--space-2);
+}
+
 .brand {
   display: flex;
   align-items: center;

@@ -442,7 +442,7 @@ describe('password reset', () => {
 
     const rejected = await submitNewPassword(link, 'short');
     expect(rejected.statusCode).toBe(400);
-    expect(rejected.body).toContain('<li>Password must be at least 8 characters long.</li>');
+    expect(rejected.body).toContain('>Password must be at least 8 characters long.</li>');
     expect(await passwordWorksFor(tenantId, 'ada', 'correct horse battery')).toBe(true);
 
     // The link is still the same unconsumed token: a compliant password on
@@ -743,5 +743,141 @@ describe('password reset', () => {
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
     });
     expect(res.statusCode).toBe(400);
+  });
+});
+
+describe('password reset, refused in place and with ways on', () => {
+  const way = (tenantName: string): string =>
+    `/tenants/${tenantName}/protocol/openid-connect/auth?response_type=code&client_id=portal&state=a%20b`;
+  const escaped = (value: string): string => value.replaceAll('&', '&amp;');
+
+  async function mailedLink(tenantName: string): Promise<string> {
+    await requestReset(tenantName, 'ada@example.test');
+    const message = sender.sent[0];
+    if (message === undefined) throw new Error('no mail sent');
+    return extractLink(message);
+  }
+
+  async function post(url: string, fields: Record<string, string>) {
+    const res = await httpApp.inject({
+      method: 'POST',
+      url,
+      payload: new URLSearchParams(fields).toString(),
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    });
+    return { statusCode: res.statusCode, body: res.body };
+  }
+
+  it('carries the way back through the request form, a refusal and the sent page', async () => {
+    const { tenantName } = await seedTenant(`tenant-${newId()}`, { resetPasswordAllowed: true });
+    const path = way(tenantName);
+    const url = `/tenants/${tenantName}/login-actions/reset-password`;
+
+    const form = await httpApp.inject({ url: `${url}?return_to=${encodeURIComponent(path)}` });
+    expect(form.body).toContain(`<a href="${escaped(path)}">Back to sign in</a>`);
+    expect(form.body).toContain(`name="return_to" value="${escaped(path)}"`);
+    const direct = await httpApp.inject({ url });
+    expect(direct.body).not.toContain('Back to sign in');
+
+    const empty = await post(url, { email: '', return_to: path });
+    expect(empty.statusCode).toBe(400);
+    expect(empty.body).toContain('<form method="post"');
+    expect(empty.body).toContain('Email is required.');
+    expect(empty.body).toContain('aria-invalid="true" aria-describedby="form-error-0" autofocus');
+    expect(empty.body).toContain(`<a href="${escaped(path)}">Back to sign in</a>`);
+
+    const sent = await post(url, { email: 'ada@example.test', return_to: path });
+    expect(sent.statusCode).toBe(200);
+    expect(sent.body).toContain(`<a href="${escaped(path)}">Back to sign in</a>`);
+  });
+
+  it('keeps the sent page identical for a known and an unknown address, link included', async () => {
+    const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {
+      resetPasswordAllowed: true,
+    });
+    await seedAda(tenantId);
+    const url = `/tenants/${tenantName}/login-actions/reset-password`;
+    const known = await post(url, { email: 'ada@example.test', return_to: way(tenantName) });
+    const unknown = await post(url, { email: 'nobody@example.test', return_to: way(tenantName) });
+    expect(unknown.statusCode).toBe(known.statusCode);
+    expect(unknown.body).toBe(known.body);
+  });
+
+  it('drops a way back that is not this tenant authorize path', async () => {
+    const { tenantName } = await seedTenant(`tenant-${newId()}`, { resetPasswordAllowed: true });
+    const url = `/tenants/${tenantName}/login-actions/reset-password`;
+    for (const bad of [
+      'https://evil.example/x',
+      '//evil.example',
+      '/tenants/other/protocol/openid-connect/auth?a=b',
+    ]) {
+      const res = await post(url, { email: 'ada@example.test', return_to: bad });
+      expect(res.body, bad).not.toContain('Back to sign in');
+      expect(res.body, bad).not.toContain('evil.example');
+    }
+  });
+
+  it('puts the new-password form back in place with the key, the rules and no password', async () => {
+    const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {
+      resetPasswordAllowed: true,
+    });
+    await seedAda(tenantId);
+    const link = await mailedLink(tenantName);
+    const key = keyFromLink(link);
+
+    const weak = await submitNewPassword(link, 'zq9xv');
+    expect(weak.statusCode).toBe(400);
+    expect(weak.body).toContain('<form method="post"');
+    expect(weak.body).toContain(`name="key" value="${key}"`);
+    expect(weak.body).toContain('aria-invalid="true" aria-describedby="form-error-0');
+    expect(weak.body).not.toContain('zq9xv');
+
+    const missing = await submitNewPassword(link, undefined);
+    expect(missing.statusCode).toBe(400);
+    expect(missing.body).toContain('<form method="post"');
+    expect(missing.body).toContain('A new password is required.');
+  });
+
+  it('offers a new link when a reset link is used or expired and resets are still allowed', async () => {
+    const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {
+      resetPasswordAllowed: true,
+    });
+    await seedAda(tenantId);
+    const link = await mailedLink(tenantName);
+    expect((await submitNewPassword(link, 'first password')).statusCode).toBe(200);
+    const request = `<a href="/tenants/${tenantName}/login-actions/reset-password">Request a new link</a>`;
+
+    const again = await getResetForm(link);
+    expect(again.statusCode).toBe(400);
+    expect(again.body).toContain(request);
+    const submitted = await submitNewPassword(link, 'second password');
+    expect(submitted.statusCode).toBe(400);
+    expect(submitted.body).toContain(request);
+
+    await owner.db
+      .update(tenants)
+      .set({ resetPasswordAllowed: false })
+      .where(eq(tenants.id, tenantId));
+    const closed = await getResetForm(link);
+    expect(closed.body).not.toContain('Request a new link');
+  });
+
+  it('offers nothing for a key no row holds, and nothing across tenants', async () => {
+    const a = await seedTenant(`tenant-${newId()}`, { resetPasswordAllowed: true });
+    const b = await seedTenant(`tenant-${newId()}`, { resetPasswordAllowed: true });
+    await seedAda(a.tenantId);
+    const link = await mailedLink(a.tenantName);
+
+    const junk = await httpApp.inject({
+      url: `/tenants/${a.tenantName}/login-actions/action-token?key=${'x'.repeat(43)}`,
+    });
+    expect(junk.statusCode).toBe(400);
+    expect(junk.body).not.toContain('Request a new link');
+
+    const across = await httpApp.inject({
+      url: `/tenants/${b.tenantName}/login-actions/action-token?key=${keyFromLink(link)}`,
+    });
+    expect(across.statusCode).toBe(400);
+    expect(across.body).not.toContain('Request a new link');
   });
 });

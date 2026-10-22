@@ -1,5 +1,6 @@
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { type FastifyInstance } from 'fastify';
+import { signInPath } from '#/service/sign-in-path';
 import { requestPasswordReset } from '#/usecase/reset-password';
 import {
   renderResetRequestedPage,
@@ -58,17 +59,25 @@ export function registerResetPasswordRoute(
   app: FastifyInstance,
   deps: ResetPasswordRouteDeps,
 ): void {
-  app.get<{ Params: { tenant: string } }>(
-    '/tenants/:tenant/login-actions/reset-password',
-    async (request, reply) => {
-      const locale = requestLocale(request, deps);
-      const tenant = await deps.findTenant(request.params.tenant);
-      if (!tenantIsOpenForReset(tenant)) {
-        return reply.code(404).send();
-      }
-      return sendResetHtml(reply, 200, renderResetRequestForm(request.params.tenant, locale));
-    },
-  );
+  app.get<{
+    Params: { tenant: string };
+    Querystring: Record<string, string | string[] | undefined>;
+  }>('/tenants/:tenant/login-actions/reset-password', async (request, reply) => {
+    const locale = requestLocale(request, deps);
+    const tenant = await deps.findTenant(request.params.tenant);
+    if (!tenantIsOpenForReset(tenant)) {
+      return reply.code(404).send();
+    }
+    return sendResetHtml(
+      reply,
+      200,
+      renderResetRequestForm(
+        request.params.tenant,
+        { signInPath: signInPath(request.params.tenant, request.query.return_to) },
+        locale,
+      ),
+    );
+  });
 
   app.post<{
     Params: { tenant: string };
@@ -81,8 +90,17 @@ export function registerResetPasswordRoute(
     }
 
     const email = firstNonEmptyString(request.body.email);
+    const returnTo = signInPath(request.params.tenant, request.body.return_to);
     if (email === undefined) {
-      return sendResetHtml(reply, 400, renderResetRequestFailedPage('email_required', locale));
+      return sendResetHtml(
+        reply,
+        400,
+        renderResetRequestForm(
+          request.params.tenant,
+          { signInPath: returnTo, emailRequired: true },
+          locale,
+        ),
+      );
     }
 
     // Composed before the lookup happens, and reached whether or not the
@@ -107,9 +125,13 @@ export function registerResetPasswordRoute(
         { tenant: request.params.tenant },
         'password reset refused: ODUDU_PUBLIC_BASE_URL is unset',
       );
-      return sendResetHtml(reply, 500, renderResetRequestFailedPage('unavailable', locale));
+      return sendResetHtml(
+        reply,
+        500,
+        renderResetRequestFailedPage(request.params.tenant, returnTo, locale),
+      );
     }
 
-    return sendResetHtml(reply, 200, renderResetRequestedPage(locale));
+    return sendResetHtml(reply, 200, renderResetRequestedPage(returnTo, locale));
   });
 }

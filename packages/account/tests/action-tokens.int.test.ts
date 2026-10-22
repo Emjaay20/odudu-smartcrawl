@@ -266,6 +266,62 @@ describe('peek', () => {
   });
 });
 
+describe('typeOf', () => {
+  const typeOf = (token: string) =>
+    withTenant(app.db, tenantId, (tx) => actionTokenRepository(tx).typeOf(token));
+
+  it('names what a token was for in every state, and nothing for an unknown one', async () => {
+    const fresh = await issue({
+      subjectId: subject,
+      type: 'reset_password',
+      ttlSeconds: TEST_TTL_SECONDS,
+    });
+    const used = await issue({
+      subjectId: subject,
+      type: 'verify_email',
+      ttlSeconds: TEST_TTL_SECONDS,
+    });
+    await consume(used.token, 'verify_email');
+    const expired = await issue({
+      subjectId: subject,
+      type: 'execute_actions',
+      actions: ['configure-totp'],
+      ttlSeconds: -1,
+    });
+
+    expect(await typeOf(fresh.token)).toBe('reset_password');
+    expect(await typeOf(used.token)).toBe('verify_email');
+    expect(await typeOf(expired.token)).toBe('execute_actions');
+    expect(await typeOf('not-a-token')).toBeNull();
+  });
+
+  it('cannot see a token minted in another tenant', async () => {
+    await expectCrossTenantMethodProbe(app.db, {
+      seed: async (tx, seedTenantId) => {
+        await seedTenant(tx, seedTenantId);
+        const seededSubject = await insertSubject(tx, seedTenantId);
+        const { token } = await actionTokenRepository(tx).issue({
+          tenantId: seedTenantId,
+          subjectId: seededSubject,
+          type: 'reset_password',
+          ttlSeconds: TEST_TTL_SECONDS,
+        });
+        return { token };
+      },
+      verifySeeded: async (tx, seeded) => {
+        expect(await actionTokenRepository(tx).typeOf(seeded.token)).toBe('reset_password');
+      },
+      attempt: async (tx, seeded) => actionTokenRepository(tx).typeOf(seeded.token),
+      expectBlocked: (result) => {
+        expect(result).toBeNull();
+      },
+      verifyTenantAUnaffected: async (tx, seeded) => {
+        expect(await actionTokenRepository(tx).typeOf(seeded.token)).toBe('reset_password');
+      },
+    });
+  });
+});
+
 describe('invalidateOutstanding', () => {
   it('consumes every outstanding link that can set the password, and no other', async () => {
     const { token: first } = await issue({

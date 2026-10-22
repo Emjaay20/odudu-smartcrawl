@@ -200,11 +200,13 @@ beforeEach(async () => {
 async function submitRegistration(
   tenantName: string,
   input: NewAccountInput,
+  extra: Record<string, string> = {},
 ): Promise<{ statusCode: number; body: string }> {
   const form = new URLSearchParams({
     username: input.username,
     email: input.email,
     password: input.password,
+    ...extra,
   });
   const res = await httpApp.inject({
     method: 'POST',
@@ -336,8 +338,8 @@ describe('self-registration', () => {
     await instance.close();
 
     expect(res.statusCode).toBe(400);
-    expect(res.body).toContain('<li>Password must be at least 8 characters long.</li>');
-    expect(res.body).toContain('<li>Password must contain a digit.</li>');
+    expect(res.body).toContain('>Password must be at least 8 characters long.</li>');
+    expect(res.body).toContain('>Password must contain a digit.</li>');
     expect(res.body).not.toContain('DOMAIN-SENTENCE');
   });
 
@@ -351,7 +353,7 @@ describe('self-registration', () => {
     });
 
     expect(res.statusCode).toBe(400);
-    expect(res.body).toContain('<li>Password must be at most 256 characters long.</li>');
+    expect(res.body).toContain('>Password must be at most 256 characters long.</li>');
   });
 
   it('refuses an address another user in the tenant already holds', async () => {
@@ -725,5 +727,178 @@ describe('self-registration', () => {
     );
     expect(notCreated).toBeNull();
     expect(await outboxRows(tenantId)).toEqual([]);
+  });
+
+  describe('refused in place, with a way back to sign-in', () => {
+    const SIGN_IN = (tenant: string): string =>
+      `/tenants/${tenant}/protocol/openid-connect/auth?response_type=code&client_id=portal&state=a%20b`;
+    const escaped = (value: string): string => value.replaceAll('&', '&amp;');
+
+    async function open(): Promise<SeededTenant> {
+      return seedTenant(`tenant-${newId()}`, { registrationAllowed: true });
+    }
+
+    it('shows the sign-in link on the form only when a valid way was carried', async () => {
+      const { tenantName } = await open();
+      const path = SIGN_IN(tenantName);
+
+      const carried = await httpApp.inject({
+        url: `/tenants/${tenantName}/login-actions/registration?return_to=${encodeURIComponent(path)}`,
+      });
+      expect(carried.statusCode).toBe(200);
+      expect(carried.body).toContain(`<a href="${escaped(path)}">Back to sign in</a>`);
+      expect(carried.body).toContain(`name="return_to" value="${escaped(path)}"`);
+
+      const direct = await httpApp.inject({
+        url: `/tenants/${tenantName}/login-actions/registration`,
+      });
+      expect(direct.body).not.toContain('Back to sign in');
+      expect(direct.body).not.toContain('return_to');
+    });
+
+    it.each([
+      [
+        'another tenant',
+        (tenant: string) => `/tenants/other-${tenant}/protocol/openid-connect/auth?a=b`,
+      ],
+      [
+        'a foreign address',
+        () => 'https://evil.example/tenants/x/protocol/openid-connect/auth?a=b',
+      ],
+      ['a scheme-relative address', () => '//evil.example/x'],
+      ['a script', () => 'javascript:alert(1)'],
+    ])('drops a return_to naming %s, from the form and from the refusal', async (_label, build) => {
+      const { tenantName } = await open();
+      const bad = build(tenantName);
+
+      const form = await httpApp.inject({
+        url: `/tenants/${tenantName}/login-actions/registration?return_to=${encodeURIComponent(bad)}`,
+      });
+      expect(form.body).not.toContain('Back to sign in');
+      expect(form.body).not.toContain(escaped(bad));
+
+      const refused = await submitRegistration(
+        tenantName,
+        { username: 'ada', email: 'ada@example.test', password: '' },
+        { return_to: bad },
+      );
+      expect(refused.statusCode).toBe(400);
+      expect(refused.body).not.toContain('Back to sign in');
+      expect(refused.body).not.toContain('evil.example');
+    });
+
+    it('puts a short password back on the same form with its rules, the way back and the safe values', async () => {
+      const { tenantName } = await open();
+      const path = SIGN_IN(tenantName);
+
+      const res = await submitRegistration(
+        tenantName,
+        { username: 'ada', email: 'ada@example.test', password: 'zq9xv' },
+        { return_to: path },
+      );
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toContain('<form method="post" action="/tenants/');
+      expect(res.body).toContain('role="alert" id="form-error"');
+      expect(res.body).toContain('aria-invalid="true" aria-describedby="form-error-0');
+      expect(res.body).toContain('value="ada"');
+      expect(res.body).toContain('value="ada@example.test"');
+      expect(res.body).not.toContain('zq9xv');
+      expect(res.body).toContain(`name="return_to" value="${escaped(path)}"`);
+      expect(res.body).toContain(`<a href="${escaped(path)}">Back to sign in</a>`);
+    });
+
+    it('names each field left empty and keeps the others', async () => {
+      const { tenantName } = await open();
+
+      const res = await submitRegistration(tenantName, {
+        username: 'ada',
+        email: '',
+        password: '',
+      });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toContain('Enter an email address.');
+      expect(res.body).toContain('Enter a password.');
+      expect(res.body).not.toContain('Enter a username.');
+      expect(res.body).toContain('value="ada"');
+    });
+
+    it('answers a taken username and a taken address on their own fields, as a 400', async () => {
+      const { tenantName } = await open();
+      const first = await submitRegistration(tenantName, {
+        username: 'ada',
+        email: 'ada@example.test',
+        password: 'correct horse battery',
+      });
+      expect(first.statusCode).toBe(201);
+
+      const sameName = await submitRegistration(tenantName, {
+        username: 'ada',
+        email: 'other@example.test',
+        password: 'correct horse battery',
+      });
+      expect(sameName.statusCode).toBe(400);
+      expect(sameName.body).toContain('That username is already taken.');
+      expect(sameName.body).toMatch(/name="username"[^>]*aria-invalid="true"/u);
+
+      const sameMail = await submitRegistration(tenantName, {
+        username: 'grace',
+        email: 'ada@example.test',
+        password: 'correct horse battery',
+      });
+      expect(sameMail.statusCode).toBe(400);
+      expect(sameMail.body).toContain('That email address is already registered.');
+      expect(sameMail.body).toMatch(/name="email"[^>]*aria-invalid="true"/u);
+      expect(sameMail.body).toContain('value="grace"');
+    });
+
+    it('does not read another tenant: a taken name in one is free in the other', async () => {
+      const a = await open();
+      const b = await open();
+      await submitRegistration(a.tenantName, {
+        username: 'ada',
+        email: 'ada@example.test',
+        password: 'correct horse battery',
+      });
+
+      const inB = await submitRegistration(b.tenantName, {
+        username: 'ada',
+        email: 'ada@example.test',
+        password: 'correct horse battery',
+      });
+
+      expect(inB.statusCode).toBe(201);
+      expect(inB.body).not.toContain('already');
+    });
+
+    it('links the success page onward, and the unavailable page back and to a retry', async () => {
+      const { tenantName } = await open();
+      const path = SIGN_IN(tenantName);
+      const done = await submitRegistration(
+        tenantName,
+        { username: 'ada', email: 'ada@example.test', password: 'correct horse battery' },
+        { return_to: path },
+      );
+      expect(done.statusCode).toBe(201);
+      expect(done.body).toContain(`<a href="${escaped(path)}">Back to sign in</a>`);
+
+      const verifying = await seedTenant(`tenant-${newId()}`, {
+        registrationAllowed: true,
+        verifyEmail: true,
+      });
+      publicBaseUrl = undefined;
+      httpApp = buildHttpApp();
+      await httpApp.ready();
+      const unavailable = await submitRegistration(
+        verifying.tenantName,
+        { username: 'ada', email: 'ada@example.test', password: 'correct horse battery' },
+        { return_to: SIGN_IN(verifying.tenantName) },
+      );
+      expect(unavailable.statusCode).toBe(500);
+      expect(unavailable.body).toContain('>Try again</a>');
+      expect(unavailable.body).toContain('>Back to sign in</a>');
+      expect(unavailable.body).not.toContain('<form');
+    });
   });
 });

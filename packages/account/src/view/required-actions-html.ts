@@ -1,7 +1,9 @@
 import { type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { type LinkedRequiredAction } from '#/usecase/action-token';
 import { escapeHtml, intro, page } from '#/view/document';
+import { invalidAttributes, problemSummary } from '#/view/form-error';
 import { bdi, t, tHtml, type MessageId } from '#/view/messages';
+import { passwordProblems, type PasswordFailure } from '#/view/password-rules';
 
 const ACTION_MESSAGE: Readonly<Record<LinkedRequiredAction, MessageId>> = {
   'update-password': 'requiredActions.action.updatePassword',
@@ -22,24 +24,28 @@ function listHtml(actions: readonly LinkedRequiredAction[], locale: PageLocale):
 
 // An actions link's own page, shown before anything is consumed: a link
 // scanner's GET must not spend it. A password field only where the link
-// asks for one.
+// asks for one, and the page the form comes back to when the password was
+// refused, with the reasons in place.
 export function renderRequiredActionsForm(
   tenant: string,
   key: string,
   actions: readonly LinkedRequiredAction[],
   setsPassword: boolean,
+  failure: PasswordFailure | undefined,
   locale: PageLocale,
 ): RenderedPage {
   const action = `/tenants/${escapeHtml(tenant)}/login-actions/action-token`;
+  const problems = passwordProblems(failure, locale);
+  const attributes = `${invalidAttributes(problems, 'password')}${problems.length === 0 ? '' : ' autofocus'}`;
   const password = setsPassword
-    ? `\n  <label>${tHtml(locale, 'requiredActions.newPassword')} <input type="password" name="password" autocomplete="new-password"></label>`
+    ? `\n  <label>${tHtml(locale, 'requiredActions.newPassword')} <input type="password" name="password" autocomplete="new-password"${attributes}></label>`
     : '';
   return page(
     t(locale, 'requiredActions.title'),
     `${intro(tHtml(locale, 'requiredActions.title'), tenant)}
 <p>${tHtml(locale, 'requiredActions.intro')}</p>
 ${listHtml(actions, locale)}
-<form method="post" action="${action}">
+${problemSummary(problems)}<form method="post" action="${action}">
   <input type="hidden" name="key" value="${escapeHtml(key)}">${password}
   <button type="submit">${tHtml(locale, 'requiredActions.continue')}</button>
 </form>`,
