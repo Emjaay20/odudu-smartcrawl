@@ -41,7 +41,7 @@ export function renderUpdatePasswordPage(
   violations: readonly PasswordViolation[] = [],
   locale: PageLocale,
 ): RenderedPage {
-  const target = `/tenants/${escapeHtml(tenant)}/login-actions/required-action?action=update-password`;
+  const target = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/login-actions/required-action?action=update-password`;
   const problems = violations.map((violation) => ({
     fields: ['password'],
     html: ruleHtml(violation, locale),

@@ -52,20 +52,6 @@ export function intro(heading: string, tenant?: string, context: readonly string
   return `<header class="intro">\n<h1>${heading}</h1>\n${lines.join('')}</header>`;
 }
 
-// A way on from a page: a path on this server, `text` as escaped markup.
-export interface WayOn {
-  readonly href: string;
-  readonly text: string;
-}
-
-// The links that close a page, or nothing when there are none.
-export function links(ways: readonly (WayOn | null)[]): string {
-  const present = ways.filter((way): way is WayOn => way !== null);
-  if (present.length === 0) return '';
-  const anchors = present.map((way) => `<a href="${escapeHtml(way.href)}">${way.text}</a>`);
-  return `\n<p class="links">\n${anchors.join('\n')}\n</p>`;
-}
-
 // The one document shell for every page authn-flows renders. `body` is what a
 // theme may replace; `html` is what the server sends today. The stylesheet
 // link, favicon, mark and `<main>` belong to the shell, never to `body`.

@@ -27,7 +27,7 @@ export function renderLogoutConfirmationPage(
   fields: LogoutConfirmationFields,
   locale: PageLocale,
 ): RenderedPage {
-  const action = `/tenants/${escapeHtml(tenant)}/protocol/openid-connect/logout`;
+  const action = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/protocol/openid-connect/logout`;
   return page(
     t(locale, 'logout.confirm.title'),
     `<h1>${tHtml(locale, 'logout.confirm.title')}</h1>

@@ -37,7 +37,7 @@ export function renderTotpEnrolmentPage(
   error: EnrolmentRefusal | undefined,
   locale: PageLocale,
 ): RenderedPage {
-  const target = `/tenants/${escapeHtml(tenant)}/login-actions/required-action?action=configure-totp`;
+  const target = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/login-actions/required-action?action=configure-totp`;
   const problems = refusalProblems(locale, error, 'code');
   const code = `${invalidAttributes(problems, 'code')}${firstInvalidField(problems, ['code']) === null ? '' : ' autofocus'}`;
   return page(

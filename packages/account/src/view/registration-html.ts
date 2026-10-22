@@ -1,5 +1,6 @@
 import { type PageLocale, type RenderedPage } from '@odudu/kernel';
-import { escapeHtml, intro, links, page, type WayOn } from '#/view/document';
+import { escapeHtml, intro, page } from '#/view/document';
+import { links, type WayOn } from '#/view/links';
 import {
   echoedValue,
   firstInvalidField,
@@ -89,7 +90,7 @@ export function renderRegistrationForm(
   form: RegistrationForm,
   locale: PageLocale,
 ): RenderedPage {
-  const action = `/tenants/${escapeHtml(tenant)}/login-actions/registration`;
+  const action = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/login-actions/registration`;
   const problems = problemsOf(form.failure, locale);
   const focus = firstInvalidField(problems, FIELD_ORDER);
   const attributes = (field: RegistrationField): string =>

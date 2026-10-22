@@ -901,3 +901,25 @@ describe('renderEmailUnverifiedPage way on', () => {
     );
   });
 });
+
+describe('renderLoginForm with an unusual tenant name', () => {
+  it('writes the name into every path as a segment, and into the page as text', () => {
+    const page = renderLoginForm(
+      'a b?"<%',
+      'sid',
+      'password',
+      true,
+      false,
+      undefined,
+      false,
+      undefined,
+      {},
+      DEFAULT_PAGE_LOCALE,
+    );
+    expect(page.html).toContain('action="/tenants/a%20b%3F%22%3C%25/login-actions/authenticate"');
+    expect(page.html).toContain(
+      "fetch('/tenants/a%20b%3F%22%3C%25/login-actions/passkey-challenge'",
+    );
+    expect(page.html).toContain('<bdi>a b?&quot;&lt;%</bdi>');
+  });
+});

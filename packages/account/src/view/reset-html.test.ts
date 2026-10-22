@@ -93,8 +93,10 @@ describe('renderResetRequestForm', () => {
     expect(page.body).toContain(`<label>${en['reset.request.email']} <input`);
   });
 
-  it('escapes the tenant in the action', () => {
-    expect(renderResetRequestForm('"><b>', {}, EN).html).not.toContain('<b>');
+  it('writes the tenant into the action as a path segment', () => {
+    expect(renderResetRequestForm('a b"><b>', {}, EN).html).toContain(
+      'action="/tenants/a%20b%22%3E%3Cb%3E/login-actions/reset-password"',
+    );
   });
 });
 

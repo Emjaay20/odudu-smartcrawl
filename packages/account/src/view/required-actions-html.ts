@@ -34,7 +34,7 @@ export function renderRequiredActionsForm(
   failure: PasswordFailure | undefined,
   locale: PageLocale,
 ): RenderedPage {
-  const action = `/tenants/${escapeHtml(tenant)}/login-actions/action-token`;
+  const action = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/login-actions/action-token`;
   const problems = passwordProblems(failure, locale);
   const attributes = `${invalidAttributes(problems, 'password')}${problems.length === 0 ? '' : ' autofocus'}`;
   const password = setsPassword

@@ -220,3 +220,11 @@ describe('renderUpdatePasswordPage', () => {
     expect(html).toContain('<bdi>&lt;img src=x onerror=1&gt;</bdi>');
   });
 });
+
+describe('renderUpdatePasswordPage with an unusual tenant name', () => {
+  it('writes the name into the action as a path segment', () => {
+    expect(renderUpdatePasswordPage('a b"%', 's', [], DEFAULT_PAGE_LOCALE).html).toContain(
+      'action="/tenants/a%20b%22%25/login-actions/required-action?action=update-password"',
+    );
+  });
+});

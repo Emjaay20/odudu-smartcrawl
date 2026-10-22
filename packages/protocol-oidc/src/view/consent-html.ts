@@ -77,7 +77,7 @@ function renderPageLinks(
 // control. There is no script on this page, so `script` is null and
 // `default-src 'none'` describes it exactly.
 export function renderConsentPage(input: ConsentPageInput, locale: PageLocale): RenderedPage {
-  const action = `/tenants/${escapeHtml(input.tenant)}/login-actions/consent`;
+  const action = `/tenants/${escapeHtml(encodeURIComponent(input.tenant))}/login-actions/consent`;
   const granted = new Set(input.alreadyGranted);
   const defaultList = input.defaultScopes
     .map((scope) => renderDefaultScope(scope, input.scopeLabels))

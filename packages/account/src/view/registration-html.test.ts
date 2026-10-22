@@ -177,10 +177,11 @@ describe('renderRegistrationForm', () => {
     expect(renderRegistrationForm('acme', {}, ARABIC).html).toContain('<html lang="ar" dir="rtl">');
   });
 
-  it('escapes the tenant name in the action', () => {
-    const { html } = renderRegistrationForm('"><script>1</script>', {}, DEFAULT_PAGE_LOCALE);
-    expect(html).not.toContain('<script>1');
-    expect(html).toContain('/tenants/&quot;&gt;&lt;script&gt;1&lt;/script&gt;/login-actions');
+  it('writes a tenant name into the action as a path segment, and into the page as text', () => {
+    const { html } = renderRegistrationForm('a b?"<%', {}, DEFAULT_PAGE_LOCALE);
+    expect(html).toContain('action="/tenants/a%20b%3F%22%3C%25/login-actions/registration"');
+    expect(html).toContain('<bdi>a b?&quot;&lt;%</bdi>');
+    expect(html).not.toContain('<%');
   });
 });
 

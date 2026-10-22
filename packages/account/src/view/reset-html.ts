@@ -1,6 +1,7 @@
 import { type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { sendVerificationHtml } from '#/view/verification-html';
-import { escapeHtml, intro, links, page, type WayOn } from '#/view/document';
+import { escapeHtml, intro, page } from '#/view/document';
+import { links, type WayOn } from '#/view/links';
 import {
   echoedValue,
   firstInvalidField,
@@ -33,7 +34,7 @@ export function renderResetRequestForm(
   form: ResetRequestForm,
   locale: PageLocale,
 ): RenderedPage {
-  const action = `/tenants/${escapeHtml(tenant)}/login-actions/reset-password`;
+  const action = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/login-actions/reset-password`;
   const problems: Problem[] =
     form.emailRequired === true
       ? [{ fields: ['email'], html: tHtml(locale, 'reset.requestFailed.emailRequired') }]
@@ -107,7 +108,7 @@ export function renderResetPasswordForm(
   failure: PasswordFailure | undefined,
   locale: PageLocale,
 ): RenderedPage {
-  const action = `/tenants/${escapeHtml(tenant)}/login-actions/action-token`;
+  const action = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/login-actions/action-token`;
   const problems = passwordProblems(failure, locale);
   const attributes = `${invalidAttributes(problems, 'password')}${problems.length === 0 ? '' : ' autofocus'}`;
   return page(

@@ -1,6 +1,7 @@
 import { type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { type RequiredAction } from '#/schema/required-action';
-import { links, page } from '#/view/document';
+import { page } from '#/view/document';
+import { links } from '#/view/links';
 import { t, tHtml } from '#/view/messages';
 
 // Every action has a page of its own — #/view/totp-enrolment-html.ts,

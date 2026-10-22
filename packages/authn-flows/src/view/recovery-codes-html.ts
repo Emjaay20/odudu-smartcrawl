@@ -24,7 +24,7 @@ export function renderRecoveryCodesPage(
   error: EnrolmentRefusal | undefined,
   locale: PageLocale,
 ): RenderedPage {
-  const target = `/tenants/${escapeHtml(tenant)}/login-actions/required-action?action=generate-recovery-codes`;
+  const target = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/login-actions/required-action?action=generate-recovery-codes`;
   const replaced = offer.replaced ? `<p>${tHtml(locale, 'recoveryCodes.replaced')}</p>\n` : '';
   const items = offer.codes.map((code) => `  <li>${token(code)}</li>`).join('\n');
   const title = t(locale, 'recoveryCodes.title');

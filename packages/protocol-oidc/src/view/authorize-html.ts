@@ -1,5 +1,6 @@
 import { type PageLocale, scriptNonce, type RenderedPage } from '@odudu/kernel';
-import { escapeHtml, intro, links, page } from '#/view/document';
+import { escapeHtml, intro, page } from '#/view/document';
+import { links } from '#/view/links';
 import {
   firstInvalidField,
   invalidAttributes,
@@ -193,7 +194,7 @@ function renderPasskeyOption(
   locale: PageLocale,
 ): string {
   // The <p> keeps the button clear of the sign-in one (WCAG 2.2 target size).
-  const escaped = escapeHtml(tenant);
+  const escaped = escapeHtml(encodeURIComponent(tenant));
   return `
 <form method="post" action="/tenants/${escaped}/login-actions/authenticate" id="passkey-form" data-failed="${tHtml(locale, 'login.passkey.failed', { reason: REASON })}" data-cancelled="${tHtml(locale, 'login.passkey.cancelled')}" data-not-offered="${tHtml(locale, 'login.passkey.notOffered')}">
   <input type="hidden" name="auth_session_id" value="${escapeHtml(authSessionId)}">
@@ -281,7 +282,7 @@ export function renderLoginForm(
   ways: LoginWays,
   locale: PageLocale,
 ): RenderedPage {
-  const action = `/tenants/${escapeHtml(tenant)}/login-actions/authenticate`;
+  const action = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/login-actions/authenticate`;
   // Beside the password and nowhere else: a passkey is an alternative to
   // the first factor, not to a code asked for after one. The nonce is minted
   // here, where it is known whether a script is going to be rendered at

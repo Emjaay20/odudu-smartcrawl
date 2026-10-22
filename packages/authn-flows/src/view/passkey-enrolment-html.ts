@@ -50,7 +50,7 @@ export function renderPasskeyEnrolmentPage(
   // policy served with this page cannot name a different value — a refused
   // script is invisible in a response, so nothing else would notice.
   const nonce = scriptNonce();
-  const target = `/tenants/${escapeHtml(tenant)}/login-actions/required-action?action=configure-passkey`;
+  const target = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/login-actions/required-action?action=configure-passkey`;
   // The options are inline, so this script fetches nothing.
   const title = t(locale, 'passkey.title');
   const body = `${intro(tHtml(locale, 'passkey.title'), tenant)}

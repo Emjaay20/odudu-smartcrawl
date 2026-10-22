@@ -27,7 +27,7 @@ export function renderSelectAccountPage(
   input: SelectAccountInput,
   locale: PageLocale,
 ): RenderedPage {
-  const action = `/tenants/${escapeHtml(input.tenant)}/login-actions/select-account`;
+  const action = `/tenants/${escapeHtml(encodeURIComponent(input.tenant))}/login-actions/select-account`;
   const accountList = input.accounts.map(renderAccount).join('\n  ');
   return page(
     t(locale, 'selectAccount.title'),
