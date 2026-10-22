@@ -1,3 +1,5 @@
+import { containsBidiControl } from '@odudu/kernel';
+
 // A form refused in place says what is wrong in one alert above it, and each
 // field at fault points at its own entry there, so the problem is announced
 // once and read again only where the person is working. A problem names the
@@ -34,10 +36,13 @@ export function firstInvalidField(
 
 // Reflection is bounded, not validated: a value past this many code points is
 // not given back at all, because half of a megabyte string is still reflected
-// input. The length test short-circuits so a huge value is never walked.
+// input. The length test short-circuits so a huge value is never walked. A
+// value holding a bidirectional control is refused by the account it was
+// meant for, so it is not put back in a field to reorder the text around it.
 const MAX_ECHOED_LENGTH = 254;
 
 export function echoedValue(value: string): string | undefined {
   if (value.length === 0 || value.length > MAX_ECHOED_LENGTH * 2) return undefined;
+  if (containsBidiControl(value)) return undefined;
   return Array.from(value).length <= MAX_ECHOED_LENGTH ? value : undefined;
 }

@@ -70,6 +70,12 @@ describe('echoedValue', () => {
     expect(echoedValue('😀'.repeat(255))).toBeUndefined();
   });
 
+  it('gives nothing back for a value holding a bidirectional control', () => {
+    expect(echoedValue('ada\u202E')).toBeUndefined();
+    expect(echoedValue('x\u2066y')).toBeUndefined();
+    expect(echoedValue('مستخدم\u200F')).toBe('مستخدم\u200F');
+  });
+
   it('never walks a huge value', () => {
     expect(echoedValue('a'.repeat(1_000_000))).toBeUndefined();
   });
