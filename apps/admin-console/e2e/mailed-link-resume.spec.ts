@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import type { Page } from '@playwright/test';
 import { expect, signInAtTenant, test } from './fixtures';
+import { BASE } from './page-inspection';
 import { inTenant, psql, seed, sqlText } from './stack';
 
 // A link mailed out of the console's own sign-in (a password reset, an email
@@ -145,7 +146,7 @@ test('the same link opened in a different browser offers no way to sign in, and 
   const { tenant, email } = newTenant();
   const key = await askForReset(page, tenant, email);
 
-  const elsewhere = await browser.newContext({ baseURL: test.info().project.use.baseURL });
+  const elsewhere = await browser.newContext({ baseURL: BASE });
   try {
     const other = await elsewhere.newPage();
     await resetThrough(other, tenant, key, randomBytes(18).toString('base64url'));

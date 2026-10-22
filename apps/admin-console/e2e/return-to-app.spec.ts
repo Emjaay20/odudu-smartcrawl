@@ -197,7 +197,7 @@ test('the same mailed link in another browser offers no way to sign in', async (
   await expect(page.getByRole('heading', { level: 1, name: 'Check your email' })).toBeVisible();
   const query = mailQuery(`resetter-${tag}@example.test`);
 
-  const elsewhere = await browser.newContext({ baseURL: test.info().project.use.baseURL });
+  const elsewhere = await browser.newContext({ baseURL: BASE });
   try {
     const other = await elsewhere.newPage();
     await other.goto(`/tenants/${name}/login-actions/action-token?key=${query}`);
