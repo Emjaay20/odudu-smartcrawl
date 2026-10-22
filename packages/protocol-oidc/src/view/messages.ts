@@ -34,7 +34,7 @@ export const en = {
   'emailUnverified.title': 'Verify your email',
   'emailUnverified.heading': "Can't sign in yet",
   'emailUnverified.body':
-    'You need to verify your email address before you can sign in. {mail, select, sent {We sent a link to the address on this account — follow it, then sign in again.} other {This account has no email address on file, so there is nothing to verify yet. Contact an administrator.}}',
+    '{mail, select, sent {We sent you a link to verify your email address. Open it, then sign in again.} other {This account has no email address to verify. Ask an administrator.}}',
 
   'login.title': 'Sign in',
   'login.submit': 'Sign in',
