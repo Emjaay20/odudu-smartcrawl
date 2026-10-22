@@ -305,7 +305,7 @@ describe('a link that takes its subject through required actions', () => {
 
     for (const [password, reason] of [
       [undefined, 'A new password is required.'],
-      ['zq9xv', 'Password must be at least 8 characters long.'],
+      ['zq9xv', 'Password must be at least 15 characters long.'],
     ] as const) {
       const refused = await submit(seeded, key, password);
       expect(refused.statusCode).toBe(400);
@@ -319,18 +319,28 @@ describe('a link that takes its subject through required actions', () => {
     }
   });
 
+  it('refuses a common password on an actions link, without spending the link', async () => {
+    const seeded = await seed(true);
+    const link = await mail(seeded, ['update-password']);
+
+    const refused = await submit(seeded, keyOf(link), '1qaz2wsx3edc4rfv');
+    expect(refused.statusCode).toBe(400);
+    expect(refused.body).toContain('>That password is too common. Choose a different one.</li>');
+    expect((await submit(seeded, keyOf(link), NEW_PASSWORD)).statusCode).toBe(200);
+  });
+
   it('words a weak password from the catalogue with the tenant minimum, in the page language', async () => {
     const seeded = await seed(true);
     const link = await mail(seeded, ['update-password']);
 
     const english = await submit(seeded, keyOf(link), 'short');
     expect(english.statusCode).toBe(400);
-    expect(english.body).toContain('>Password must be at least 8 characters long.</li>');
+    expect(english.body).toContain('>Password must be at least 15 characters long.</li>');
     expect(english.body).not.toMatch(/<li[^>]*><bdi>/u);
 
     const french = await submit(seeded, keyOf(link), 'short', 'fr');
     expect(french.headers['content-language']).toBe('fr');
-    expect(french.body).toContain('>Le mot de passe doit comporter au moins 8 caractères.</li>');
+    expect(french.body).toContain('>Le mot de passe doit comporter au moins 15 caractères.</li>');
     expect(french.body).not.toMatch(/<li[^>]*><bdi>/u);
   });
 

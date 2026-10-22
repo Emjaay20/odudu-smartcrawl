@@ -76,6 +76,7 @@ export function tenantSettingsRepository(tx: TenantScopedDatabase) {
     async passwordPolicy(tenantId: string): Promise<PasswordPolicy> {
       const rows = await tx
         .select({
+          tenantName: tenants.name,
           minLength: tenants.passwordMinLength,
           requireDigit: tenants.passwordRequireDigit,
           requireUppercase: tenants.passwordRequireUppercase,

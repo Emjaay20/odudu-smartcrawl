@@ -2,9 +2,10 @@ import type { ReactNode } from 'react';
 import styles from '#/shared/view/Note/Note.module.css';
 
 // A dashed one-line aside: what a page cannot offer, and what it needs.
-export function Note({ children }: { children: ReactNode }) {
+// `warning` sets it apart as advice worth acting on, still not an error.
+export function Note({ children, tone }: { children: ReactNode; tone?: 'warning' | undefined }) {
   return (
-    <p role="note" className={styles.note}>
+    <p role="note" className={styles.note} data-tone={tone}>
       {children}
     </p>
   );

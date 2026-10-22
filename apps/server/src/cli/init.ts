@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { generateClientKey } from '@odudu/crypto';
 import { createDatabase, MIGRATIONS_DIR, runMigrations, withTenant } from '@odudu/db';
-import { SYSTEM_TENANT_ID } from '@odudu/domain-tenant';
+import { SYSTEM_TENANT_ID, SYSTEM_TENANT_NAME } from '@odudu/domain-tenant';
 import {
   evaluatePassword,
   isEmailAddress,
@@ -79,7 +79,8 @@ export function existingAdministratorMessage(
 // created with. It only spares a person a failed run: seedAdmin checks the stored
 // policy and has the last word.
 const SYSTEM_TENANT_POLICY: PasswordPolicy = {
-  minLength: 8,
+  tenantName: SYSTEM_TENANT_NAME,
+  minLength: 15,
   requireDigit: false,
   requireUppercase: false,
   requireLowercase: false,

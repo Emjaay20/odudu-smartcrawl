@@ -2,6 +2,7 @@ import type { SettingsSection } from '#/features/settings/service/sectionTypes';
 
 export const GENERAL_SECTION = 'general';
 export const LOCKOUT_SECTION = 'brute-force';
+export const PASSWORD_SECTION = 'password';
 
 export const ACCESS_SECTIONS: readonly SettingsSection[] = [
   {
@@ -132,7 +133,7 @@ export const ACCESS_SECTIONS: readonly SettingsSection[] = [
     ],
   },
   {
-    id: 'password',
+    id: PASSWORD_SECTION,
     title: 'Password policy',
     description: 'What a password must satisfy when somebody sets or changes one.',
     fields: [

@@ -3,7 +3,7 @@ import { type TenantScopedDatabase } from '@odudu/db';
 import {
   credentialRepository,
   generateOneTimePassword,
-  hashPassword,
+  hashUserPassword,
   isLockedOut,
   loginFailureRepository,
   users,
@@ -87,7 +87,7 @@ export async function issuePassword(
   if (refused !== null) return refused;
 
   const password = generateOneTimePassword();
-  const hash = await hashPassword(password);
+  const hash = await hashUserPassword(password);
   const credentials = credentialRepository(tx);
   if ((await credentials.passwordFor(input.subjectId)) === null) {
     await credentials.insert({

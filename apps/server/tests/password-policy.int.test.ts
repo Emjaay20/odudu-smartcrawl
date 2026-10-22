@@ -323,6 +323,123 @@ describe('the tenant password policy binds every writer', () => {
   });
 });
 
+// Long enough for every tenant default, so the only rule it breaks is the
+// common-password one.
+const COMMON_PASSWORD = '1qaz2wsx3edc4rfv';
+const TOO_COMMON = 'That password is too common.';
+
+describe('a common password is refused by every writer, with its reason', () => {
+  it('refuses it at registration, and the tenant name too', async () => {
+    const tenantName = `common-reg-${newId()}`;
+    const seeded = await seed({
+      tenant: tenantName,
+      clientId: 'policy-spa',
+      redirectUris: [REDIRECT_URI],
+    });
+    await setTenantSettings(seeded.tenantId, { registrationAllowed: true });
+
+    const app = buildTestApp();
+    await app.ready();
+    try {
+      for (const password of [COMMON_PASSWORD, tenantName.toUpperCase()]) {
+        const res = await formPost(app, `/tenants/${tenantName}/login-actions/registration`, {
+          username: 'ada',
+          email: 'ada@example.test',
+          password,
+        });
+        expect(res.statusCode, password).toBe(400);
+        expect(res.body, password).toContain(TOO_COMMON);
+        expect(res.body, password).not.toContain('at least');
+      }
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('refuses it at reset redemption', async () => {
+    const tenantName = `common-reset-${newId()}`;
+    const seeded = await seed({
+      tenant: tenantName,
+      clientId: 'policy-spa',
+      redirectUris: [REDIRECT_URI],
+      username: 'ada',
+      password: STRONG_PASSWORD,
+      email: 'ada@example.test',
+    });
+    await setTenantSettings(seeded.tenantId, { resetPasswordAllowed: true });
+
+    const sender = capturingSender();
+    const app = buildTestApp();
+    await app.ready();
+    try {
+      await formPost(app, `/tenants/${tenantName}/login-actions/reset-password`, {
+        email: 'ada@example.test',
+      });
+      await drainOutbox(sender);
+      const message = sender.sent[0];
+      if (message === undefined) throw new Error('no reset mail sent');
+      const link = extractLink(message);
+      const key = new URL(link).searchParams.get('key');
+      if (key === null) throw new Error(`no key in ${link}`);
+
+      const res = await formPost(app, new URL(link).pathname, { key, password: COMMON_PASSWORD });
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toContain(TOO_COMMON);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('refuses it from the seed CLI', async () => {
+    await expect(
+      seed({
+        tenant: `common-seed-${newId()}`,
+        clientId: 'policy-spa',
+        redirectUris: [REDIRECT_URI],
+        username: 'ada',
+        password: COMMON_PASSWORD,
+        email: 'ada@example.test',
+      }),
+    ).rejects.toThrow(/That password is too common/);
+  });
+
+  it('refuses it at the change-password required action', async () => {
+    const tenantName = `common-change-${newId()}`;
+    const seeded = await seed({
+      tenant: tenantName,
+      clientId: 'policy-spa',
+      redirectUris: [REDIRECT_URI],
+      username: 'ada',
+      password: STRONG_PASSWORD,
+      email: 'ada@example.test',
+    });
+    await setTenantSettings(seeded.tenantId, { passwordMaxAgeDays: 1 });
+    await agePassword(seeded.tenantId, 7);
+
+    const app = buildTestApp();
+    await app.ready();
+    try {
+      const authSessionId = await startAuthSession(app, tenantName);
+      await formPost(app, `/tenants/${tenantName}/login-actions/authenticate`, {
+        auth_session_id: authSessionId,
+        username: 'ada',
+        password: STRONG_PASSWORD,
+      });
+
+      const res = await formPost(
+        app,
+        `/tenants/${tenantName}/login-actions/required-action?action=update-password`,
+        { auth_session_id: authSessionId, password: COMMON_PASSWORD },
+      );
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toContain(TOO_COMMON);
+      expect(res.body).toContain('Change your password');
+    } finally {
+      await app.close();
+    }
+  });
+});
+
 // "No maximum" and "an Argon2id verification per attempt" are one defect
 // stated twice, and the login form is the reader that proves it needs
 // answering at the read: that route verifies rather than evaluates. All

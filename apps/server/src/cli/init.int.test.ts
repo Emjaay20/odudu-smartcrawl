@@ -277,7 +277,7 @@ describe('odudu init', () => {
       ...io,
       promptAdmin: (validate, presetEmail) => {
         asked.push(presetEmail);
-        expect(validate('short')).toMatch(/at least 8/u);
+        expect(validate('short')).toMatch(/at least 15/u);
         return Promise.resolve({ email: presetEmail ?? '', password: 'Typed-Passw0rd!77' });
       },
     });

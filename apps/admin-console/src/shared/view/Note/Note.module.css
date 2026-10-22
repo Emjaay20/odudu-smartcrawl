@@ -8,6 +8,13 @@
   background: var(--surface-sunken);
 }
 
+.note[data-tone='warning'] {
+  border-style: solid;
+  border-color: var(--signal-warning-ink);
+  color: var(--signal-warning-ink);
+  background: var(--signal-warning);
+}
+
 .capability {
   font-size: var(--type-12);
   color: var(--ink-primary);

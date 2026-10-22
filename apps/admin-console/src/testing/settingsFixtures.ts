@@ -15,7 +15,7 @@ export const SETTINGS = {
   reset_password_allowed: false,
   sso_session_idle_seconds: 1800,
   sso_session_max_seconds: 36000,
-  password_min_length: 8,
+  password_min_length: 15,
   password_require_digit: false,
   password_require_uppercase: false,
   password_require_lowercase: false,

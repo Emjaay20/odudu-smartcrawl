@@ -69,6 +69,9 @@ interface TenantPolicy {
   maxAgeDays?: number;
   historyDepth?: number;
   minLength?: number;
+  // A password stored as typed, the way every hash was made before
+  // passwords were normalised.
+  storedAsTyped?: string;
 }
 
 interface Account {
@@ -94,7 +97,7 @@ async function seedAccount(policy: TenantPolicy = {}): Promise<Account> {
       tenantId,
       subjectId: subject.id,
       type: 'password',
-      secretData: { hash: await hashPassword(PASSWORD) },
+      secretData: { hash: await hashPassword(policy.storedAsTyped ?? PASSWORD) },
     });
     return subject.id;
   });
@@ -335,6 +338,10 @@ describe('the tenant password policy binds the change-password action', () => {
           minLength: 20,
         },
         { rule: 'not-username', message: 'Password must not contain the username.' },
+        {
+          rule: 'common-password',
+          message: 'That password is too common. Choose a different one.',
+        },
       ],
     });
   });
@@ -400,5 +407,74 @@ describe('the change-password action writes one password.changed row', () => {
 
     expect(await superseded).toEqual({ kind: 'superseded' });
     expect(await credentialRows(account)).toEqual([]);
+  });
+});
+
+describe('the change-password action refuses common and expected passwords', () => {
+  const COMMON = {
+    rule: 'common-password',
+    message: 'That password is too common. Choose a different one.',
+  };
+
+  it('refuses a listed password, however it is cased, and writes nothing', async () => {
+    const account = await seedAccount();
+
+    expect(await change(account, 'BaseBall')).toEqual({ kind: 'rejected', violations: [COMMON] });
+    expect(await pending(account)).toEqual([]);
+    expect((await signIn(account, PASSWORD)).kind).not.toBe('failure');
+  });
+
+  it('refuses the tenant name on its own', async () => {
+    const account = await seedAccount();
+    const tenantName = `tenant-${account.tenantId}`;
+
+    expect(await change(account, tenantName.toUpperCase())).toEqual({
+      kind: 'rejected',
+      violations: [COMMON],
+    });
+  });
+
+  it("does not take another tenant's name as a word to refuse", async () => {
+    const mine = await seedAccount({ minLength: 8 });
+    const other = await seedAccount({ minLength: 8 });
+
+    expect(await change(mine, `tenant-${other.tenantId}`)).toEqual({ kind: 'updated' });
+  });
+
+  it('accepts a password that only contains a listed one', async () => {
+    const account = await seedAccount();
+
+    expect(await change(account, 'baseball and a long walk home')).toEqual({ kind: 'updated' });
+  });
+});
+
+describe('passwords are stored NFC-normalised and verified either way', () => {
+  const composed = 'caf\u00e9 au lait, deux sucres';
+  const decomposed = 'cafe\u0301 au lait, deux sucres';
+
+  it('signs in with either form of a password set through the change', async () => {
+    const account = await seedAccount();
+
+    expect(await change(account, decomposed)).toEqual({ kind: 'updated' });
+    expect((await signIn(account, composed)).kind).toBe('success');
+    expect((await signIn(account, decomposed)).kind).toBe('success');
+  });
+
+  it('still signs in a person whose stored hash was made from the typed bytes', async () => {
+    const account = await seedAccount({ storedAsTyped: decomposed });
+
+    expect((await signIn(account, decomposed)).kind).toBe('success');
+    expect((await signIn(account, 'another password entirely')).kind).toBe('failure');
+  });
+
+  it('refuses the password in force when its hash was made from the typed bytes', async () => {
+    const account = await seedAccount({ historyDepth: 2, storedAsTyped: decomposed });
+
+    expect(await change(account, decomposed)).toEqual({
+      kind: 'rejected',
+      violations: [
+        { rule: 'not-reused', message: 'Password must not be one you have used before.' },
+      ],
+    });
   });
 });

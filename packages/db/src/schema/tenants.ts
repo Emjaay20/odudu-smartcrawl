@@ -33,7 +33,7 @@ export const tenants = pgTable('tenants', {
   // CHECK can bound at the database, not a default a writer could bypass.
   // See packages/domain-identity/src/service/password-policy.ts for how
   // these are turned into pass/fail decisions.
-  passwordMinLength: integer('password_min_length').notNull().default(8),
+  passwordMinLength: integer('password_min_length').notNull().default(15),
   passwordRequireDigit: boolean('password_require_digit').notNull().default(false),
   passwordRequireUppercase: boolean('password_require_uppercase').notNull().default(false),
   passwordRequireLowercase: boolean('password_require_lowercase').notNull().default(false),

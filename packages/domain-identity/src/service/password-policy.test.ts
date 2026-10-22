@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { evaluatePassword, type PasswordPolicy } from '#/service/password-policy';
 
 const base: PasswordPolicy = {
+  tenantName: 'acme',
   minLength: 8,
   requireDigit: false,
   requireUppercase: false,
@@ -81,5 +82,55 @@ describe('evaluatePassword', () => {
 
   it('applies no email rule to a subject with no address', () => {
     expect(evaluatePassword('a-fine-password', base, { username: 'ada', email: null })).toEqual([]);
+  });
+
+  describe('common and expected passwords', () => {
+    it('refuses a listed password with the reason', () => {
+      expect(evaluatePassword('baseball', base, ada)).toEqual([
+        {
+          rule: 'common-password',
+          message: 'That password is too common. Choose a different one.',
+        },
+      ]);
+    });
+
+    it('refuses the tenant name, the username or the email name on its own', () => {
+      const policy = { ...base, notUsername: false, notEmail: false };
+      const subject = { username: 'adalovelace', email: 'countess.lovelace@example.com' };
+      expect(evaluatePassword('Adalovelace', policy, subject).map((v) => v.rule)).toEqual([
+        'common-password',
+      ]);
+      expect(evaluatePassword('countess.lovelace', policy, subject).map((v) => v.rule)).toEqual([
+        'common-password',
+      ]);
+      expect(
+        evaluatePassword('acmeacme', { ...policy, tenantName: 'acmeacme' }, subject).map(
+          (v) => v.rule,
+        ),
+      ).toEqual(['common-password']);
+    });
+
+    it('does not refuse a password that only contains a context word', () => {
+      const policy = { ...base, notUsername: false, notEmail: false };
+      expect(evaluatePassword('adalovelace is my name', policy, ada)).toEqual([]);
+    });
+
+    it('counts a decomposed password as normalised, in code points', () => {
+      const policy = { ...base, minLength: 10 };
+      const nine = 'e\u0301'.repeat(9);
+      expect(Array.from(nine).length).toBe(18);
+      expect(evaluatePassword(nine, policy, ada).map((v) => v.rule)).toEqual(['min-length']);
+      expect(evaluatePassword('e\u0301'.repeat(10), policy, ada)).toEqual([]);
+      expect(evaluatePassword('\u{1f511}'.repeat(9), policy, ada).map((v) => v.rule)).toEqual([
+        'min-length',
+      ]);
+      expect(evaluatePassword('\u{1f511}'.repeat(10), policy, ada)).toEqual([]);
+    });
+
+    it('counts the maximum in code points too', () => {
+      expect(
+        evaluatePassword('\u{1f511}'.repeat(MAX_PASSWORD_LENGTH), base, ada).map((v) => v.rule),
+      ).toEqual([]);
+    });
   });
 });

@@ -1,10 +1,10 @@
-import { hashPassword, verifyPassword } from '@odudu/domain-identity';
+import { hashUserPassword, verifyUserPassword } from '@odudu/domain-identity';
 import { type AuthenticatorResult } from '#/schema/authenticator';
 
 // Verify against a constant hash when the caller has no real one, so an
 // unknown username and a wrong password cost the same time as well as
 // returning the same result.
-const DUMMY_HASH = await hashPassword('odudu-dummy-verification-target');
+const DUMMY_HASH = await hashUserPassword('odudu-dummy-verification-target');
 
 export interface PasswordInput {
   username?: string;
@@ -30,9 +30,9 @@ export async function passwordStep(
   }
 
   // Same call shape whether the user exists or not: an unknown username
-  // reaches verifyPassword against DUMMY_HASH exactly as a wrong password
+  // reaches verifyUserPassword against DUMMY_HASH exactly as a wrong password
   // reaches it against the real one.
-  const valid = await verifyPassword(verification.storedHash ?? DUMMY_HASH, input.password);
+  const valid = await verifyUserPassword(verification.storedHash ?? DUMMY_HASH, input.password);
 
   if (verification.subjectId !== null && verification.storedHash !== null && valid) {
     return { kind: 'success', subjectId: verification.subjectId };

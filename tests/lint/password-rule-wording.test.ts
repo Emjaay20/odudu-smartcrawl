@@ -17,6 +17,19 @@ const SHARED = [
   'notUsername',
   'notEmail',
   'notReused',
+  'common',
+] as const;
+
+const HINTS = [
+  'heading',
+  'minLength',
+  'digit',
+  'uppercase',
+  'lowercase',
+  'special',
+  'notCommon',
+  'show',
+  'hide',
 ] as const;
 
 describe('a password rule is worded the same by both catalogues that word it', () => {
@@ -29,5 +42,16 @@ describe('a password rule is worded the same by both catalogues that word it', (
       .filter((id) => id.startsWith('password.rule.'))
       .map((id) => id.slice('password.rule.'.length));
     expect(held.sort()).toEqual([...SHARED].sort());
+  });
+
+  it.each(HINTS)('hint %s', (hint) => {
+    expect(account[`password.hint.${hint}`]).toBe(authnFlows[`updatePassword.hint.${hint}`]);
+  });
+
+  it('leaves no account hint unpinned', () => {
+    const held = Object.keys(account)
+      .filter((id) => id.startsWith('password.hint.'))
+      .map((id) => id.slice('password.hint.'.length));
+    expect(held.sort()).toEqual([...HINTS].sort());
   });
 });

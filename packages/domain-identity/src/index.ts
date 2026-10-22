@@ -1,4 +1,10 @@
-export { hashPassword, verifyPassword } from '#/service/password';
+export {
+  hashPassword,
+  hashUserPassword,
+  normalisePassword,
+  verifyPassword,
+  verifyUserPassword,
+} from '#/service/password';
 export { generateOneTimePassword } from '#/service/one-time-password';
 export { isEmailAddress } from '#/service/email';
 export { subjects, type SubjectRecord } from '#/schema/subjects';
@@ -10,12 +16,14 @@ export {
 } from '#/schema/user-credentials';
 export { parseCredentialSecret, type CredentialSecret } from '#/service/credential-secret';
 export {
+  COMMON_PASSWORD,
   evaluatePassword,
   REUSED_PASSWORD,
   type PasswordPolicy,
   type PasswordSubject,
   type PolicyViolation,
 } from '#/service/password-policy';
+export { COMMON_PASSWORD_COUNT } from '#/service/common-password';
 export { passwordExpired } from '#/service/password-age';
 export { isLockedOut, nextLockout, type LockoutPolicy, type LockoutState } from '#/service/lockout';
 export { loginFailures } from '#/schema/login-failures';

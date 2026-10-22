@@ -19,11 +19,11 @@ import { instrumentRoutes } from '@odudu/instrument';
 import {
   credentialRepository,
   evaluatePassword,
-  hashPassword,
+  hashUserPassword,
   REUSED_PASSWORD,
   subjectRepository,
   userRepository,
-  verifyPassword,
+  verifyUserPassword,
 } from '@odudu/domain-identity';
 import {
   DEFAULT_CONSOLE_DIR,
@@ -284,7 +284,7 @@ async function createAccount(
     tenantId,
     subjectId,
     type: 'password',
-    secret: { kind: 'password', hash: await hashPassword(input.password) },
+    secret: { kind: 'password', hash: await hashUserPassword(input.password) },
   });
   return { subjectId };
 }
@@ -491,7 +491,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     // it its first, the way `POST …/subjects/:id/password` creates one.
     setPassword: async (tx, subjectId, password) => {
       const credentials = credentialRepository(tx);
-      const hash = await hashPassword(password);
+      const hash = await hashUserPassword(password);
       if ((await credentials.passwordFor(subjectId)) !== null) {
         await credentials.setPassword(subjectId, hash);
         return;
@@ -516,7 +516,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     unchangedPasswordViolations: async (tx, subjectId, candidate) => {
       const current = await credentialRepository(tx).passwordFor(subjectId);
       if (current === null) return [];
-      return (await verifyPassword(current, candidate)) ? [REUSED_PASSWORD] : [];
+      return (await verifyUserPassword(current, candidate)) ? [REUSED_PASSWORD] : [];
     },
     clearPasswordUpdateAction: (tx, subjectId) =>
       requiredActionRepository(tx).complete(subjectId, 'update-password'),

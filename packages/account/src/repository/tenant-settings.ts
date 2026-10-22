@@ -9,6 +9,7 @@ import { eq } from 'drizzle-orm';
 // identical by convention, the same way RegistrationTenantLookup below
 // duplicates a subset of this file's own TenantSettings.
 export interface PasswordPolicy {
+  tenantName: string;
   minLength: number;
   requireDigit: boolean;
   requireUppercase: boolean;
@@ -60,6 +61,7 @@ export function tenantSettingsRepository(db: Database) {
             registrationAllowed: row.registrationAllowed,
             resetPasswordAllowed: row.resetPasswordAllowed,
             passwordPolicy: {
+              tenantName: row.name,
               minLength: row.passwordMinLength,
               requireDigit: row.passwordRequireDigit,
               requireUppercase: row.passwordRequireUppercase,

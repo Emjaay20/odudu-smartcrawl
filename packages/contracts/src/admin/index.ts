@@ -57,6 +57,12 @@ export {
   type DeleteTenantQuery,
 } from '#/admin/tenants';
 export {
+  PASSWORD_ALONE_MIN_LENGTH,
+  PASSWORD_WITH_SECOND_FACTOR_MIN_LENGTH,
+  passwordConformance,
+  type PasswordConformance,
+} from '#/admin/password-conformance';
+export {
   amendSettingsRequestSchema,
   type AmendSettingsRequest,
   settingsSchema,

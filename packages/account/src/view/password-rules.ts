@@ -20,6 +20,7 @@ const RULE_MESSAGE: Readonly<Record<string, MessageId>> = {
   'require-special': 'password.rule.requireSpecial',
   'not-username': 'password.rule.notUsername',
   'not-email': 'password.rule.notEmail',
+  'common-password': 'password.rule.common',
   'not-reused': 'password.rule.notReused',
 };
 

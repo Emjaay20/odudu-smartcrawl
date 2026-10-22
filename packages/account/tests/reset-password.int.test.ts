@@ -411,7 +411,7 @@ describe('password reset', () => {
     expect(form.body).toContain('New password');
 
     // Still redeemable: rendering the form must not have consumed it.
-    const submitted = await submitNewPassword(link, 'a new password');
+    const submitted = await submitNewPassword(link, 'a brand new password');
     expect(submitted.statusCode).toBe(200);
   });
 
@@ -426,10 +426,10 @@ describe('password reset', () => {
     if (message === undefined) throw new Error('no mail sent');
     const link = extractLink(message);
 
-    const submitted = await submitNewPassword(link, 'a new password');
+    const submitted = await submitNewPassword(link, 'a brand new password');
     expect(submitted.statusCode).toBe(200);
 
-    expect(await passwordWorksFor(tenantId, 'ada', 'a new password')).toBe(true);
+    expect(await passwordWorksFor(tenantId, 'ada', 'a brand new password')).toBe(true);
   });
 
   it('refuses a password that fails the tenant policy, without spending the link', async () => {
@@ -445,7 +445,7 @@ describe('password reset', () => {
 
     const rejected = await submitNewPassword(link, 'short');
     expect(rejected.statusCode).toBe(400);
-    expect(rejected.body).toContain('>Password must be at least 8 characters long.</li>');
+    expect(rejected.body).toContain('>Password must be at least 15 characters long.</li>');
     expect(await passwordWorksFor(tenantId, 'ada', 'correct horse battery')).toBe(true);
 
     // The link is still the same unconsumed token: a compliant password on
@@ -453,6 +453,29 @@ describe('password reset', () => {
     const retried = await submitNewPassword(link, 'a compliant password');
     expect(retried.statusCode).toBe(200);
     expect(await passwordWorksFor(tenantId, 'ada', 'a compliant password')).toBe(true);
+  });
+
+  it('refuses a common password or the tenant name, without spending the link', async () => {
+    const tenantName = `tenant-${newId()}`;
+    const { tenantId } = await seedTenant(tenantName, { resetPasswordAllowed: true });
+    await seedAda(tenantId);
+
+    await requestReset(tenantName, 'ada@example.test');
+    const message = sender.sent[0];
+    if (message === undefined) throw new Error('no mail sent');
+    const link = extractLink(message);
+
+    for (const candidate of ['1qaz2wsx3edc4rfv', tenantName]) {
+      const rejected = await submitNewPassword(link, candidate);
+      expect(rejected.statusCode, candidate).toBe(400);
+      expect(rejected.body, candidate).toContain(
+        '>That password is too common. Choose a different one.</li>',
+      );
+    }
+    expect(await passwordWorksFor(tenantId, 'ada', 'correct horse battery')).toBe(true);
+
+    const retried = await submitNewPassword(link, 'a compliant password');
+    expect(retried.statusCode).toBe(200);
   });
 
   it('stops the old password working', async () => {
@@ -464,10 +487,10 @@ describe('password reset', () => {
     await requestReset(tenantName, 'ada@example.test');
     const message = sender.sent[0];
     if (message === undefined) throw new Error('no mail sent');
-    await submitNewPassword(extractLink(message), 'a new password');
+    await submitNewPassword(extractLink(message), 'a brand new password');
 
     expect(await passwordWorksFor(tenantId, 'ada', 'correct horse battery')).toBe(false);
-    expect(await passwordWorksFor(tenantId, 'ada', 'a new password')).toBe(true);
+    expect(await passwordWorksFor(tenantId, 'ada', 'a brand new password')).toBe(true);
   });
 
   it('refuses a reset link a second time', async () => {
@@ -481,14 +504,14 @@ describe('password reset', () => {
     if (message === undefined) throw new Error('no mail sent');
     const link = extractLink(message);
 
-    const first = await submitNewPassword(link, 'first password');
+    const first = await submitNewPassword(link, 'my first password');
     expect(first.statusCode).toBe(200);
 
-    const second = await submitNewPassword(link, 'second password');
+    const second = await submitNewPassword(link, 'my second password');
     expect(second.statusCode).toBe(400);
 
-    expect(await passwordWorksFor(tenantId, 'ada', 'second password')).toBe(false);
-    expect(await passwordWorksFor(tenantId, 'ada', 'first password')).toBe(true);
+    expect(await passwordWorksFor(tenantId, 'ada', 'my second password')).toBe(false);
+    expect(await passwordWorksFor(tenantId, 'ada', 'my first password')).toBe(true);
   });
 
   it('kills a sibling reset link for the same subject once one is completed', async () => {
@@ -508,13 +531,13 @@ describe('password reset', () => {
     const secondLink = extractLink(secondMessage);
     expect(firstLink).not.toBe(secondLink);
 
-    const completedFirst = await submitNewPassword(firstLink, 'first password');
+    const completedFirst = await submitNewPassword(firstLink, 'my first password');
     expect(completedFirst.statusCode).toBe(200);
 
-    const attemptSecond = await submitNewPassword(secondLink, 'second password');
+    const attemptSecond = await submitNewPassword(secondLink, 'my second password');
     expect(attemptSecond.statusCode).toBe(400);
-    expect(await passwordWorksFor(tenantId, 'ada', 'second password')).toBe(false);
-    expect(await passwordWorksFor(tenantId, 'ada', 'first password')).toBe(true);
+    expect(await passwordWorksFor(tenantId, 'ada', 'my second password')).toBe(false);
+    expect(await passwordWorksFor(tenantId, 'ada', 'my first password')).toBe(true);
   });
 
   it('refuses a verify_email token presented to the reset-password submission', async () => {
@@ -617,9 +640,9 @@ describe('password reset', () => {
     const form = await getResetForm(link);
     expect(form.statusCode).toBe(400);
 
-    const submitted = await submitNewPassword(link, 'a new password');
+    const submitted = await submitNewPassword(link, 'a brand new password');
     expect(submitted.statusCode).toBe(400);
-    expect(await passwordWorksFor(tenantId, 'ada', 'a new password')).toBe(false);
+    expect(await passwordWorksFor(tenantId, 'ada', 'a brand new password')).toBe(false);
   });
 
   it('a verify_email link still redeems while reset_password_allowed is off', async () => {
@@ -665,7 +688,7 @@ describe('password reset', () => {
     expect(missingPassword.body).not.toContain("can't be used");
 
     // The link itself is still perfectly good.
-    const retried = await submitNewPassword(link, 'a new password');
+    const retried = await submitNewPassword(link, 'a brand new password');
     expect(retried.statusCode).toBe(200);
   });
 
@@ -848,13 +871,13 @@ describe('password reset, refused in place and with ways on', () => {
     });
     await seedAda(tenantId);
     const link = await mailedLink(tenantName);
-    expect((await submitNewPassword(link, 'first password')).statusCode).toBe(200);
+    expect((await submitNewPassword(link, 'my first password')).statusCode).toBe(200);
     const request = `<a href="/tenants/${tenantName}/login-actions/reset-password">Request a new link</a>`;
 
     const again = await getResetForm(link);
     expect(again.statusCode).toBe(400);
     expect(again.body).toContain(request);
-    const submitted = await submitNewPassword(link, 'second password');
+    const submitted = await submitNewPassword(link, 'my second password');
     expect(submitted.statusCode).toBe(400);
     expect(submitted.body).toContain(request);
 

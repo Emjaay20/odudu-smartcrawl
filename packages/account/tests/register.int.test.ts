@@ -11,9 +11,11 @@ import { effectiveRoles, roleRepository } from '@odudu/domain-authz';
 import {
   credentialRepository,
   evaluatePassword,
-  hashPassword,
+  hashUserPassword,
   subjectRepository,
   userRepository,
+  verifyPassword,
+  verifyUserPassword,
 } from '@odudu/domain-identity';
 import {
   emailOutbox,
@@ -96,7 +98,7 @@ async function createAccount(
     tenantId,
     subjectId: subject.id,
     type: 'password',
-    secret: { kind: 'password', hash: await hashPassword(input.password) },
+    secret: { kind: 'password', hash: await hashUserPassword(input.password) },
   });
   const defaults = await roleRepository(tx).defaultsForTenant();
   for (const role of defaults) {
@@ -340,9 +342,80 @@ describe('self-registration', () => {
     await instance.close();
 
     expect(res.statusCode).toBe(400);
-    expect(res.body).toContain('>Password must be at least 8 characters long.</li>');
+    expect(res.body).toContain('>Password must be at least 15 characters long.</li>');
     expect(res.body).toContain('>Password must contain a digit.</li>');
     expect(res.body).not.toContain('DOMAIN-SENTENCE');
+  });
+
+  it('refuses a common password with its reason, and creates nothing', async () => {
+    const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {
+      registrationAllowed: true,
+    });
+
+    const res = await submitRegistration(tenantName, {
+      username: 'ada',
+      email: 'ada@example.test',
+      password: '1QAZ2wsx3edc4rfv',
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toContain('>That password is too common. Choose a different one.</li>');
+    expect(
+      await withTenant(app.db, tenantId, (tx) => userRepository(tx).byUsername('ada')),
+    ).toBeNull();
+  });
+
+  it('refuses the tenant name, the username and the email name on their own', async () => {
+    const tenantName = `tenant-${newId()}`;
+    const { tenantId } = await seedTenant(tenantName, { registrationAllowed: true });
+    await owner.db
+      .update(tenants)
+      .set({ passwordMinLength: 8, passwordNotUsername: false, passwordNotEmail: false })
+      .where(eq(tenants.id, tenantId));
+
+    for (const password of [tenantName, 'adalovelace', 'countess.lovelace']) {
+      const res = await submitRegistration(tenantName, {
+        username: 'adalovelace',
+        email: 'countess.lovelace@example.test',
+        password: password.toUpperCase(),
+      });
+      expect(res.statusCode, password).toBe(400);
+      expect(res.body, password).toContain('That password is too common.');
+    }
+  });
+
+  it('takes a tenant name from its own tenant only', async () => {
+    const mine = await seedTenant(`tenant-${newId()}`, { registrationAllowed: true });
+    const other = await seedTenant(`tenant-${newId()}`, { registrationAllowed: true });
+
+    const res = await submitRegistration(mine.tenantName, {
+      username: 'ada',
+      email: 'ada@example.test',
+      password: other.tenantName,
+    });
+
+    expect(res.statusCode).toBe(201);
+  });
+
+  it('stores a password typed decomposed so either form signs in', async () => {
+    const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {
+      registrationAllowed: true,
+    });
+
+    const res = await submitRegistration(tenantName, {
+      username: 'ada',
+      email: 'ada@example.test',
+      password: 'cafe\u0301 au lait, deux sucres',
+    });
+    expect(res.statusCode).toBe(201);
+
+    const subjectId = await subjectIdForUsername(tenantId, 'ada');
+    const stored = await withTenant(app.db, tenantId, (tx) =>
+      credentialRepository(tx).passwordFor(subjectId),
+    );
+    expect(stored).not.toBeNull();
+    expect(await verifyUserPassword(stored ?? '', 'caf\u00e9 au lait, deux sucres')).toBe(true);
+    expect(await verifyPassword(stored ?? '', 'caf\u00e9 au lait, deux sucres')).toBe(true);
   });
 
   it('words a too-long password from the catalogue, with the limit it was refused at', async () => {

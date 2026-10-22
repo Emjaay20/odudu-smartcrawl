@@ -27,3 +27,23 @@ export async function verifyPassword(stored: string, plain: string): Promise<boo
     return false;
   }
 }
+
+export function normalisePassword(plain: string): string {
+  return plain.normalize('NFC');
+}
+
+// NIST SP 800-63B-4 asks that a password be NFC-normalised before it is
+// hashed. For client secrets and recovery codes use hashPassword: those are
+// generated, not typed.
+export async function hashUserPassword(plain: string): Promise<string> {
+  return hashPassword(normalisePassword(plain));
+}
+
+// A hash stored before normalising was made from the bytes as typed, so a
+// password set in decomposed form is tried that way when the normalised form
+// does not match. Already-NFC input, the common case, costs one verification.
+export async function verifyUserPassword(stored: string, plain: string): Promise<boolean> {
+  const normalised = normalisePassword(plain);
+  if (await verifyPassword(stored, normalised)) return true;
+  return normalised !== plain && (await verifyPassword(stored, plain));
+}

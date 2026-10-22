@@ -19,3 +19,14 @@ Version 1.1.
 
 The wordmark in `brand/` is IBM Plex Mono converted to outlines; its licence
 text is `brand/LICENSE-IBM-Plex-Mono.txt`.
+
+## Common-password list
+
+A password is refused when it is on a list of common ones, which the server
+holds in memory. The list is the entries of eight characters or more among the
+first 100,000 lines of `xato-net-10-million-passwords-100000.txt` in
+[SecLists](https://github.com/danielmiessler/SecLists), commit
+`4c0fd59432ab8508edc23b3c880127edb12e34d5`, lowercased and without duplicates:
+38,449 entries, in `packages/domain-identity/src/service/common-passwords-data.ts`.
+SecLists is licensed under the MIT licence, Copyright (c) 2018 Daniel Miessler;
+the licence text is [`LICENSES/MIT-SecLists.txt`](LICENSES/MIT-SecLists.txt).

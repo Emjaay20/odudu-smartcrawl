@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { hashPassword, verifyPassword } from '#/service/password';
+import {
+  hashPassword,
+  hashUserPassword,
+  normalisePassword,
+  verifyPassword,
+  verifyUserPassword,
+} from '#/service/password';
 
 describe('[ODUDU-PASSWORD-HASHING-01] password verification', () => {
   it('round-trips a password', async () => {
@@ -76,5 +82,43 @@ describe('[RFC6749-10.10-01] end-user passwords are protected by the stored hash
     const [, , , , salt, digest] = stored.split('$');
     expect(Buffer.from(salt ?? '', 'base64').byteLength).toBe(16);
     expect(Buffer.from(digest ?? '', 'base64').byteLength).toBe(32);
+  });
+});
+
+// A password is hashed in its NFC form, so a name typed composed or
+// decomposed is one password. Hashes stored before that were made from the
+// raw bytes, which is why verifying falls back to the form as typed.
+describe('user passwords are NFC-normalised', () => {
+  const composed = 'café au lait 123';
+  const decomposed = 'café au lait 123';
+
+  it('hashes the composed and decomposed forms to one password', async () => {
+    const hash = await hashUserPassword(decomposed);
+    expect(await verifyUserPassword(hash, composed)).toBe(true);
+    expect(await verifyUserPassword(hash, decomposed)).toBe(true);
+    expect(await verifyPassword(hash, composed)).toBe(true);
+  });
+
+  it('still accepts a hash made from the decomposed bytes before normalising', async () => {
+    const legacy = await hashPassword(decomposed);
+    expect(await verifyUserPassword(legacy, decomposed)).toBe(true);
+  });
+
+  it('does not accept the composed form for a legacy decomposed hash', async () => {
+    const legacy = await hashPassword(decomposed);
+    expect(await verifyUserPassword(legacy, composed)).toBe(false);
+  });
+
+  it('rejects a different password', async () => {
+    expect(await verifyUserPassword(await hashUserPassword(composed), 'other')).toBe(false);
+  });
+
+  it('leaves a client secret or recovery code as typed', async () => {
+    const hash = await hashPassword(decomposed);
+    expect(await verifyPassword(hash, composed)).toBe(false);
+  });
+
+  it('normalises to NFC', () => {
+    expect(normalisePassword(decomposed)).toBe(composed);
   });
 });

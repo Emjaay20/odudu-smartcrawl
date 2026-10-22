@@ -36,9 +36,11 @@ import {
   evaluatePassword,
   generateOneTimePassword,
   hashPassword,
+  hashUserPassword,
   subjectRepository,
   userRepository,
   verifyPassword,
+  verifyUserPassword,
   type PasswordPolicy,
   type ProfileUpdate,
 } from '@odudu/domain-identity';
@@ -293,7 +295,7 @@ async function assertMatchesExisting(
 
     const storedHash = await credentialRepository(tx).passwordFor(existingUser.subject.id);
     const passwordMatches =
-      storedHash !== null && (await verifyPassword(storedHash, opts.password));
+      storedHash !== null && (await verifyUserPassword(storedHash, opts.password));
     if (!passwordMatches) {
       throw new OduduError(
         'seed_conflict',
@@ -321,6 +323,7 @@ async function passwordPolicyFor(
 ): Promise<PasswordPolicy> {
   const rows = await ownerDb
     .select({
+      tenantName: tenants.name,
       passwordMinLength: tenants.passwordMinLength,
       passwordRequireDigit: tenants.passwordRequireDigit,
       passwordRequireUppercase: tenants.passwordRequireUppercase,
@@ -338,6 +341,7 @@ async function passwordPolicyFor(
     throw new OduduError('seed_not_found', `no tenant with id ${JSON.stringify(tenantId)}`);
   }
   return {
+    tenantName: row.tenantName,
     minLength: row.passwordMinLength,
     requireDigit: row.passwordRequireDigit,
     requireUppercase: row.passwordRequireUppercase,
@@ -508,7 +512,7 @@ async function performSeed(
         tenantId,
         subjectId: userSubject.id,
         type: 'password',
-        secret: { kind: 'password', hash: await hashPassword(opts.password) },
+        secret: { kind: 'password', hash: await hashUserPassword(opts.password) },
       });
     }
 
@@ -728,7 +732,7 @@ export async function seedAdmin(options: SeedAdminOptions): Promise<SeededAdmin>
         tenantId,
         subjectId: subject.id,
         type: 'password',
-        secret: { kind: 'password', hash: await hashPassword(password) },
+        secret: { kind: 'password', hash: await hashUserPassword(password) },
       });
 
       const admin = await roleRepository(tx).byName(TENANT_ADMIN, clientDbId);
@@ -1384,7 +1388,7 @@ async function runUserCommand(
       tenantId,
       subjectId: subject.id,
       type: 'password',
-      secret: { kind: 'password', hash: await hashPassword(password) },
+      secret: { kind: 'password', hash: await hashUserPassword(password) },
     });
     if (values['require-password-change'] === true) {
       await requiredActionRepository(tx).add(tenantId, subject.id, 'update-password');

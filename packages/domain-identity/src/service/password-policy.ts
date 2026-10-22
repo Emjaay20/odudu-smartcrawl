@@ -1,6 +1,10 @@
 import { MAX_PASSWORD_LENGTH, PASSWORD_TOO_LONG } from '@odudu/kernel';
+import { isCommonPassword } from '#/service/common-password';
+import { normalisePassword } from '#/service/password';
 
 export interface PasswordPolicy {
+  // The tenant's name, one of the words a password may not be on its own.
+  tenantName: string;
   minLength: number;
   requireDigit: boolean;
   requireUppercase: boolean;
@@ -32,16 +36,24 @@ export const REUSED_PASSWORD: PolicyViolation = {
   message: 'Password must not be one you have used before.',
 };
 
+export const COMMON_PASSWORD: PolicyViolation = {
+  rule: 'common-password',
+  message: 'That password is too common. Choose a different one.',
+};
+
 const SPECIAL_CHARACTER = /[^A-Za-z0-9]/u;
 
 // Every violation is collected, not just the first: a form that rejects one
 // rule at a time takes as many attempts as there are rules.
 export function evaluatePassword(
-  candidate: string,
+  typed: string,
   policy: PasswordPolicy,
   subject: PasswordSubject,
 ): PolicyViolation[] {
   const violations: PolicyViolation[] = [];
+  // Judged in the form that is hashed, so a password typed decomposed counts
+  // as many characters as the one stored.
+  const candidate = normalisePassword(typed);
 
   // Counts characters, not UTF-16 code units: '🔑'.length is 2, so .length
   // would wrongly accept a password one grapheme short of the minimum.
@@ -109,6 +121,12 @@ export function evaluatePassword(
       rule: 'not-email',
       message: 'Password must not contain the email address.',
     });
+  }
+
+  // Whole-password only, on every tenant and with no setting to turn it off:
+  // NIST SP 800-63B-4 asks that a common or expected password be refused.
+  if (isCommonPassword(candidate, [policy.tenantName, subject.username, emailLocalPart])) {
+    violations.push({ ...COMMON_PASSWORD });
   }
 
   return violations;

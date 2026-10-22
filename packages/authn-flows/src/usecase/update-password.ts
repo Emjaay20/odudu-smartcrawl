@@ -3,11 +3,11 @@ import { auditRepository } from '@odudu/domain-audit';
 import {
   credentialRepository,
   evaluatePassword,
-  hashPassword,
+  hashUserPassword,
   passwordExpired,
   REUSED_PASSWORD,
   userRepository,
-  verifyPassword,
+  verifyUserPassword,
 } from '@odudu/domain-identity';
 import { OduduError, systemClock, type Clock } from '@odudu/kernel';
 import { type PasswordViolation } from '#/schema/password-violation';
@@ -64,7 +64,7 @@ async function passwordState(
 // changing their own password, never by an anonymous caller.
 async function reusesAKnownPassword(candidate: string, state: PasswordState): Promise<boolean> {
   for (const hash of [state.current, ...state.history]) {
-    if (await verifyPassword(hash, candidate)) return true;
+    if (await verifyUserPassword(hash, candidate)) return true;
   }
   return false;
 }
@@ -121,7 +121,7 @@ export async function completeUpdatePassword(
 
   const rotated = await credentialRepository(tx).rotatePassword(
     input.subjectId,
-    { from: state.current, to: await hashPassword(input.password) },
+    { from: state.current, to: await hashUserPassword(input.password) },
     policy.historyDepth,
   );
   // A password change landed either way, so the action is satisfied and is
