@@ -551,6 +551,30 @@ token, got the way "Getting the token" shows, is `$ADMIN_TOKEN`, and a tenant
 `smtp-audit-demo` made through `POST /admin/tenants`. It was torn down with
 `docker compose down -v` when the capture finished.
 
+### Built-in scopes
+
+[The built-in scopes page](../reference/transcripts/admin-paths/get-scopesidimpact-get-scopesbuiltins-and-post-scopesrestore-builtins.md)
+was captured by a script that ran each command and wrote the command and its output
+as the blocks, so no output was typed. The stack was the project `odudu-p4g-31j` on
+`http://localhost:3192`, its `odudu` service built from commit `724badf2` plus the
+documentation under change, on an empty volume with a console key made for it.
+`seed admin` made the administrator, and the tenant `demo`, the public client `portal`
+and the role `auditor` mapped to `roles` were the only other state. The OpenAPI
+section of [the admin API's OpenAPI page](../reference/transcripts/admin-paths/get-adminopenapijson.md) was run again on the
+same stack with nothing seeded.
+
+### A value that changes with a build is not asserted
+
+A transcript may show a response that holds a hashed file name, a byte size, a path
+count or a `content-length` that depends on the build or on the contract, because the
+block is what that run printed. It may not state one in prose as a fact unless a test
+derives it from the built artefact. Where a test can, it does: the OpenAPI page's path
+count and byte size are compared with the document the code generates
+(`tests/docs/admin-paths.test.ts`). Where it cannot without a stack, the page says
+the value belongs to the build that ran and nothing depends on it, as the console
+shell and the documentation route's pages do. A new page that quotes such a value
+either adds the test or scopes the value in the same commit.
+
 ## Console path transcripts
 
 The console gateway: the routes under `/console` that sign an administrator

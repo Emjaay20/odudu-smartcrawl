@@ -1127,7 +1127,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     description:
       'Cascades to every client’s assignment and role mapping naming the scope; ' +
       '`GET …/impact` counts them first. A built-in scope — one every tenant is ' +
-      'given — is deleted only when `confirm` names it again, refused with `422` ' +
+      'given, decided by its name alone — is deleted only when `confirm` names it again, refused with `422` ' +
       '`builtin-scope-confirmation` otherwise, the detail naming the scope and what ' +
       'would go with it; `POST …/scopes/restore-builtins` creates it again, without ' +
       'what the cascade took. Refused with 409 for the scope named `openid`, which ' +
@@ -1144,7 +1144,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     description:
       'What deleting the scope would take with it: how many clients carry it and how many ' +
       'roles are mapped to it, each counted up to the same ceiling the list counts stop at, ' +
-      'and whether it is a built-in scope. Two bounded index reads, whatever the tenant holds.',
+      'and whether it is a built-in scope, which its name alone decides. Two bounded index reads, whatever the tenant holds.',
   },
   {
     method: 'GET',
@@ -1163,7 +1163,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     description:
       'Creates each built-in scope the tenant is missing with the settings a new tenant is ' +
       'given, and answers the names it created, none when none was missing: repeating it is ' +
-      'harmless. A scope that exists is not read or changed, edited or not, and the client ' +
+      'harmless. A name that exists is not recreated, whatever scope holds it, and that scope is not read or changed, edited or not, and the client ' +
       'assignments and role mappings a deletion took are not recreated. Refused with `409`, ' +
       'creating nothing, when the missing ones would pass the tenant’s scope limit or the ' +
       'limit on scopes marked for every new client.',

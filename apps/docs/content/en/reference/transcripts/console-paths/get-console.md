@@ -57,6 +57,10 @@ Keep-Alive: timeout=72
 </html>
 ```
 
+The hashed file names in this block, and the sizes in the two responses
+below, belong to the build that ran. Every build changes them, so nothing on
+this page depends on them and nothing here asserts them.
+
 The two style hashes are React Aria's own injected `<style>` elements —
 `usePress`'s pressable style and, on iOS WebKit only, `usePreventScroll`'s
 `overscroll-behavior: contain` rule — recomputed from the installed react-aria
@@ -78,9 +82,9 @@ Connection: keep-alive
 Keep-Alive: timeout=72
 ```
 
-The entry is 365,185 bytes. The Subjects area's chunk is not in the shell; it
-is fetched when `/console/<tenant>/subjects` is first opened, and is the
-largest chunk the build makes:
+The entry is the script the shell loads first. The Subjects area's chunk is
+not in the shell; it is fetched when `/console/<tenant>/subjects` is first
+opened, and is among the largest chunks the build makes:
 
 ```bash
 curl -sS -D - -o /dev/null http://localhost:3187/console/assets/subjects-WNaHQGIi.js

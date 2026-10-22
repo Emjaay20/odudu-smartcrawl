@@ -215,6 +215,29 @@ describe('DELETE /admin/tenants/{t}/scopes/{id} — a built-in scope', () => {
   });
 });
 
+describe('a scope created under a built-in name', () => {
+  it('is built in: its delete needs the confirmation, and a restore leaves it alone', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-tenant']);
+    const original = await scopeId(t.id, 'email');
+    expect((await del(token, t.name, original, '?confirm=email')).statusCode).toBe(204);
+    const created = await fixture.http.inject({
+      method: 'POST',
+      url: `/admin/tenants/${t.name}/scopes`,
+      headers: auth(token),
+      payload: { name: 'email', description: 'mine' },
+    });
+    const id = created.json<{ id: string }>().id;
+
+    expect((await del(token, t.name, id)).statusCode).toBe(422);
+    expect((await restore(token, t.name)).json()).toEqual({ created: [] });
+    expect(
+      (await get(token, `/admin/tenants/${t.name}/scopes/${id}`)).json<{ description: string }>()
+        .description,
+    ).toBe('mine');
+  });
+});
+
 describe('DELETE /admin/tenants/{t}/scopes/{id} — an ordinary scope', () => {
   it('needs no confirmation, and its audit row carries the cascade counts', async () => {
     const t = await fixture.createTenant(`acme-${newId()}`);

@@ -5,6 +5,7 @@ import {
   TENANT_CAPABILITIES,
 } from '../../packages/domain-tenant/src/index.js';
 import { ADMIN_ROUTES } from '../../packages/protocol-admin/src/index.js';
+import { buildAdminOpenApiDocument } from '../../packages/protocol-admin/src/view/routes/openapi.js';
 import { ADMIN_PAGES, backticked, loadSource, type Section, sections } from './markdown.js';
 
 const GUIDE = ADMIN_PAGES;
@@ -167,6 +168,19 @@ describe('the admin API pages say what the admin API actually requires', () => {
     const patterns = new Set(ADMIN_ROUTES.map((route) => route.pattern));
     expect(stated?.groups?.count, `${GUIDE} no longer states the path count`).toBe(
       String(patterns.size),
+    );
+  });
+
+  // The size is the served body's, which is the generated document serialised,
+  // so it is derived here rather than trusted: a new route changes it.
+  it('quotes the OpenAPI response size the generated document has', () => {
+    const bytes = Buffer.byteLength(JSON.stringify(buildAdminOpenApiDocument()));
+    const text = document.lines.join('\n');
+    expect(text, `${GUIDE} no longer quotes the content-length`).toContain(
+      `content-length: ${String(bytes)}`,
+    );
+    expect(text, `${GUIDE} no longer states the size in KB`).toContain(
+      `${String(Math.round(bytes / 1024))} KB and`,
     );
   });
 });

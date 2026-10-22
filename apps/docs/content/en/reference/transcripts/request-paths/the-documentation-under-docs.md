@@ -59,6 +59,9 @@ content-length: 10350
 
 ```
 
+The `content-length` above and the hashed file name below belong to the docs build
+that ran; every build changes them, so nothing here depends on them.
+
 A file named by its content, in the build's `assets` directory, is `immutable`. A file with a
 fixed name, such as the agent copy `llms.txt`, a Markdown copy of a page or the
 search index, revalidates, and carries the same `x-robots-tag`:
