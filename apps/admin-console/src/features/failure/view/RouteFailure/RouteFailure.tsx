@@ -7,6 +7,7 @@ import {
   SHELL_FAILURE_TEXT,
   TRY_AGAIN_LABEL,
 } from '#/features/failure/service';
+import styles from '#/features/failure/view/RouteFailure/RouteFailure.module.css';
 import { useRouteFailure } from '#/features/failure/usecase/useRouteFailure';
 import { PRODUCT_NAME } from '#/shared/service/product';
 import { Button } from '#/shared/view/Button';
@@ -21,16 +22,17 @@ export function RouteFailure({
   reset,
   standalone = false,
 }: ErrorComponentProps & { standalone?: boolean }) {
-  const failure = useRouteFailure(error);
+  const failure = useRouteFailure(error, reset);
   const panel = (
     <FailurePanel
       {...PANEL_WORDING}
       text={standalone ? SHELL_FAILURE_TEXT : ROUTE_FAILURE_TEXT}
       message={failure.message}
+      messageLabel={failure.messageLabel}
       details={failure.details}
       actions={
         <>
-          <Button variant="primary" onPress={reset}>
+          <Button variant="primary" onPress={failure.tryAgain}>
             {TRY_AGAIN_LABEL}
           </Button>
           <ButtonLink href={failure.overviewHref}>{BACK_TO_OVERVIEW_LABEL}</ButtonLink>
@@ -39,5 +41,9 @@ export function RouteFailure({
       }
     />
   );
-  return standalone ? <LostFrame brand={PRODUCT_NAME}>{panel}</LostFrame> : panel;
+  return standalone ? (
+    <LostFrame brand={PRODUCT_NAME}>{panel}</LostFrame>
+  ) : (
+    <div className={styles.inShell}>{panel}</div>
+  );
 }

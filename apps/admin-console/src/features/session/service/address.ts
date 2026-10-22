@@ -10,8 +10,6 @@ export {
   type Principal,
 } from '#/shared/service/principal';
 
-export { CONSOLE_ROOT };
-
 const ROOT = CONSOLE_ROOT;
 
 const RESOLVE_AGAINST = 'http://console.invalid';

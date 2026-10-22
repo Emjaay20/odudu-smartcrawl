@@ -2,7 +2,7 @@ export const FAILURE_KICKER = 'Unexpected error';
 export const FAILURE_TITLE = 'Something went wrong';
 
 export const ROUTE_FAILURE_TEXT =
-  'This page could not be shown. The rest of the console is still here, and anything you had not saved on another page is still held.';
+  'This page could not be shown. The rest of the console is still here. Changes you saved are kept; changes you had not saved on this page cannot be recovered.';
 export const SHELL_FAILURE_TEXT =
   'The console could not draw this page or the menu around it. Reloading starts it again.';
 export const ROOT_FAILURE_TEXT =
@@ -21,7 +21,6 @@ export const MESSAGE_LABEL = 'Message, shown in a development build only';
 export const PANEL_WORDING = {
   kicker: FAILURE_KICKER,
   title: FAILURE_TITLE,
-  messageLabel: MESSAGE_LABEL,
   detailsHeading: DETAILS_HEADING,
   detailsLabel: DETAILS_LABEL,
 } as const;

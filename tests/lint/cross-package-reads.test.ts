@@ -8,9 +8,6 @@ import { describe, expect, it } from 'vitest';
 // whose paths this check cannot bound is listed with what it reads, and each
 // target must be one of those inputs: its package's own, or `$TURBO_ROOT$/…`.
 const READS: readonly { file: string; targets: readonly string[] }[] = [
-  // Reads the build mode from import.meta.env, which the check takes for a
-  // path root; it opens no file, so there is no input to cover.
-  { file: 'apps/admin-console/src/features/failure/adapter/browser.ts', targets: [] },
   { file: 'apps/server/src/cli/registry.test.ts', targets: ['apps/server/src/**'] },
   { file: 'apps/server/src/cli/unknown-command.test.ts', targets: ['apps/server/src/main.ts'] },
   { file: 'apps/server/tests/seed-bidi.int.test.ts', targets: ['apps/server/src/**'] },
@@ -125,12 +122,17 @@ function calleeName(node: ts.CallExpression | ts.NewExpression): string {
   return ts.isPropertyAccessExpression(callee) ? callee.name.text : callee.getText();
 }
 
+// `import.meta.env` is the build's mode and variables, not a place on disk.
+function isBuildEnv(meta: ts.MetaProperty): boolean {
+  return ts.isPropertyAccessExpression(meta.parent) && meta.parent.name.text === 'env';
+}
+
 function hasImportMetaOrCwd(node: ts.Node): boolean {
   let found = false;
   const visit = (n: ts.Node): void => {
     if (found) return;
     if (
-      ts.isMetaProperty(n) ||
+      (ts.isMetaProperty(n) && !isBuildEnv(n)) ||
       (ts.isCallExpression(n) && n.expression.getText() === 'process.cwd')
     ) {
       found = true;
@@ -226,7 +228,7 @@ export function reachesOf(source: string): string[] {
   const metaReaches = nodes.flatMap((node) => {
     if (ts.isCallExpression(node) && node.expression.getText() === 'process.cwd')
       return ['unknown'];
-    if (!ts.isMetaProperty(node)) return [];
+    if (!ts.isMetaProperty(node) || isBuildEnv(node)) return [];
     const parent = node.parent;
     if (!ts.isPropertyAccessExpression(parent) || !['dirname', 'url'].includes(parent.name.text)) {
       return ['unknown'];
@@ -336,6 +338,9 @@ function testInputs(packageDir: string): readonly string[] {
 describe('escapesPackage', () => {
   it.each([
     ["join(import.meta.dirname, '..', '..', '..')", 'src/view/x.test.ts', true],
+    ['const dev = import.meta.env.DEV;', 'src/x.ts', false],
+    ['export const mode = import.meta.env.MODE;', 'src/x.ts', false],
+    ["import.meta.env.DEV ? join(import.meta.dirname, '../../..') : '';", 'src/x.ts', true],
     ["new URL('../drizzle', import.meta.url)", 'src/migrate.ts', false],
     ["join(import.meta.dirname, 'fixtures/../../../shared/../../../../a')", 'src/view/x.ts', true],
     ["join(import.meta.dirname, '../../fixtures/..')", 'src/view/x.test.ts', false],

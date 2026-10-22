@@ -2,9 +2,10 @@ import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { CopyValue } from '#/shared/view/CopyValue';
 import styles from '#/shared/view/FailurePanel/FailurePanel.module.css';
 
-// An alert, because the page a person was about to read is gone and this takes
-// its place without their asking; focus moves to the heading so a keyboard
-// does not stay on a control that no longer exists.
+// The page a person was about to read is gone and this takes its place without
+// their asking. Focus moves to the heading, which a screen reader reads; the
+// one-sentence summary is the alert, so the buttons and the details block are
+// not read out a second time on insertion.
 export function FailurePanel({
   kicker,
   title: heading,
@@ -40,15 +41,14 @@ export function FailurePanel({
     if (announced) titleRef.current?.focus();
   }, [announced]);
   return (
-    <Frame
-      className={styles.panel}
-      {...(announced ? { role: 'alert', 'aria-labelledby': headingId } : {})}
-    >
+    <Frame className={styles.panel} {...(announced ? { 'aria-labelledby': headingId } : {})}>
       <p className={styles.kicker}>{kicker}</p>
       <h1 id={headingId} ref={titleRef} tabIndex={-1} className={styles.title}>
         {heading}
       </h1>
-      <p className={styles.text}>{text}</p>
+      <p className={styles.text} {...(announced ? { role: 'alert' } : {})}>
+        {text}
+      </p>
       {message === null ? null : (
         <p className={styles.message}>
           <span className={styles.messageLabel}>{messageLabel}</span>

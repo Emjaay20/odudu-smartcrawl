@@ -15,6 +15,7 @@ export function RootFailure({ error, route }: { error: unknown; route: string })
         {...PANEL_WORDING}
         text={ROOT_FAILURE_TEXT}
         message={failure.message}
+        messageLabel={failure.messageLabel}
         details={failure.details}
         actions={
           <Button variant="primary" onPress={failure.reload}>

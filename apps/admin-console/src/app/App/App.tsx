@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
-import { RootBoundary, routeTemplate } from '#/features/failure';
+import { recordFailure, RootBoundary, routeTemplate } from '#/features/failure';
 import { Providers } from '#/app/Providers';
 import type { ConsoleRouter } from '#/app/router';
 import { ToastLayer } from '#/app/ToastLayer';
@@ -17,7 +17,12 @@ export function App({
   queryClient?: QueryClient;
 }) {
   return (
-    <RootBoundary route={() => routeTemplate(router.state.matches)}>
+    <RootBoundary
+      route={() => routeTemplate(router.state.matches)}
+      record={(error, componentStack) =>
+        recordFailure('rendering', error, routeTemplate(router.state.matches), componentStack)
+      }
+    >
       <Providers
         {...(transport === undefined ? {} : { transport })}
         {...(queryClient === undefined ? {} : { queryClient })}

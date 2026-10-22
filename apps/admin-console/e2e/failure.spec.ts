@@ -104,6 +104,35 @@ test('Copy details copies what the panel shows, and Try again draws a new id', a
   problems.splice(0, problems.length);
 });
 
+test('Try again recovers once the cause is gone, with focus in the page', async ({
+  page,
+  problems,
+}) => {
+  loggedFailures(page, problems);
+  await signIn(page, admin);
+  // The page throws while a flag the test holds is set, and draws once it is not.
+  await page.route('**/console/assets/signing-keys-*.js', (route) =>
+    route.fulfill({
+      contentType: 'text/javascript',
+      body: "export const SigningKeysPage = () => { if (window.__breakKeys) throw new Error('forced by the test'); return 'Signing keys came back'; };",
+    }),
+  );
+  await page.evaluate(() => Reflect.set(window, '__breakKeys', true));
+  await page
+    .getByRole('navigation', { name: `Areas of ${admin.tenant}` })
+    .getByRole('link', { name: 'Signing keys' })
+    .click();
+  await expect(page.getByRole('heading', { name: 'Something went wrong' })).toBeVisible();
+
+  await page.evaluate(() => Reflect.set(window, '__breakKeys', false));
+  await page.getByRole('button', { name: 'Try again' }).click();
+  await expect(page.getByText('Signing keys came back')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Something went wrong' })).toHaveCount(0);
+  await expect(page.locator('main')).toBeFocused();
+  await expect(page.getByRole('navigation', { name: `Areas of ${admin.tenant}` })).toBeVisible();
+  problems.splice(0, problems.length);
+});
+
 test('Back to overview leaves the failure behind, to a page that works', async ({
   page,
   problems,
@@ -118,7 +147,7 @@ test('Back to overview leaves the failure behind, to a page that works', async (
   problems.splice(0, problems.length);
 });
 
-test('a failure above every route shows the standalone fallback, and reloading tries again', async ({
+test('a failure above every route shows the standalone fallback, and its reload loads the page again', async ({
   page,
   context,
   problems,

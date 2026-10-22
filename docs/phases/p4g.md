@@ -2679,9 +2679,7 @@ showed TanStack's unbranded default with the raw message; one above the routes l
   variants, `CopyValue` (block form, so the copied text is the shown text), `Button`, `ButtonLink`, `useReloadConsole`,
   `currentTime`, `tenantPage`, `isTenantName`. A new feature rather than `shell` or `session`, because it is neither of theirs and
   both would otherwise import it back.
-- `role="alert"` on the panel, as `EmptyState`'s failed variant and `ChunkFailed` have: the page a person was about to read is
-  replaced without their asking, which is the case for an alert, and focus alone would not tell a screen reader what happened.
-  Heading focus is there so a keyboard does not stay on a control that is gone. A panel drawn as a gallery specimen takes neither
+- Heading focus, and `role="alert"` on the one-sentence summary only (see the fix round below). A panel drawn as a gallery specimen takes neither
   (`announced={false}`), and is a `div`, since two copies on one page would be two landmarks of one name.
 - A route reports its own id (state made once on mount, logged in an effect). `onCaughtError` is therefore told to log only what no
   panel shows an id for: the chunk boundary's `ChunkLoadError`, and any boundary that is not ours or the router's; an error a panel
@@ -2703,8 +2701,16 @@ showed TanStack's unbranded default with the raw message; one above the routes l
   console as an uncaught error with no id, and the page stays as it was (not blank, and not swallowed). The console's own calls
   return failures as values (`GatewayResult`), so this is not a path its pages use to fail. If one were added it would log with the
   same `recordFailure`; it would draw nothing, because there is no page to replace.
-- **The root fallback's Reload skips the unsaved-changes guard**: the guard's dialog lives in the tree that failed, and by then
-  there is no form left to hold unsaved.
+- **The root fallback's Reload skips the unsaved-changes guard**, because `RootBoundary` has already unmounted the whole tree: every
+  form, and the guard's dialog with them. Nothing more is lost by reloading; the browser's own `beforeunload` prompt is not available
+  either, since the listener lived in the failed tree. If drawing the root fallback fails too, `FallbackBoundary` logs the first
+  error under an id and draws `MinimalFailure` (a heading, a sentence, the id, a link to the same address); only an error in that
+  static page would leave a blank one, and `onUncaughtError` logs it with an id.
+- **Not caught by a boundary, by React's design:** an error in an event handler, a timer or an unawaited promise. The browser reports
+  it in the console, the page stays as it was and nothing is drawn (`RootBoundary.test.tsx` pins the handler case; the tour says so).
+  A route `loader` or `beforeLoad` error would reach the same panel (`Match.tsx` rethrows `match.error` inside the match boundary);
+  this app has none, so it is latent and untested. If a route panel itself throws, the next boundary up draws its panel for the
+  second error; the first is logged by the panel's own effect only once that panel commits.
 
 **Tests.** Services (`report`, `address`) were written first and watched fail on the missing module. The views and the router wiring
 were written after the services and checked by mutation: with `defaultErrorComponent` removed, the "inside the shell" test fails
@@ -2730,9 +2736,43 @@ path root.
 change on the happy path; the route panel and its hooks mount only on a failure. The entry chunk is 366.6 kB (117.6 kB gzip, Vite's
 figure) before and 375.6 kB (120.9 kB) after; the entry plus the chunks the HTML preloads is 765.6 kB raw and 240.0 kB gzip before,
 774.7 kB and 243.6 kB after (gzip -9; +9.1 kB and +3.6 kB). The panel, `CopyValue` and `ButtonLink` are static in the entry now,
-since the root fallback must draw with nothing else loaded. That took the first load past `console-phone-chunk`'s 242,000 B
-(244,138 B at the test's own measure); the budget is raised to 246,000 B with the reason beside it, as the file asks. The
-owner may prefer to find 2.2 kB elsewhere instead.
+since the root fallback must draw with nothing else loaded. That took the first load past `console-phone-chunk`'s
+242,000 B (see the fix round for the budget).
 
 **Screenshots** (`p4g-docs/console-failure-route-*` and `console-failure-root-*`, desktop and phone, light and dark; the root one
 shows the Copy outcome after a click).
+
+### Increment 31h, fix round
+
+- **Copy that claimed things the code does not do** is gone. The route panel says "Changes you saved are kept; changes you had not
+  saved on this page cannot be recovered" (the guard forgets a form when its page unmounts, so no other page holds unsaved work);
+  `wording.test.ts` fails on any of "held", "restored", "asks first" or "each of them". The tour now says which buttons ask:
+  **Back to overview** and **Reload the console** ask if another open form has unsaved changes; **Try again** does not, because it
+  leaves nothing. A failing shell draws the panel alone with the same three buttons; only a failure above the router has the single
+  Reload.
+- **Focus after Try again** goes to `main` (`useRouteFailure` marks the retry and the panel's unmount focuses `#main`, ahead of a
+  new panel's own heading focus if the page fails again). jsdom test and the new recovery e2e (`failure.spec.ts`: the page throws
+  while a flag the test holds is set, draws once it is not; `main` is focused).
+- **Announcement.** Focus moves to the heading, which a screen reader reads; only the one-sentence summary has `role="alert"`, so
+  the buttons and the details block are not read a second time on insertion. Not verified with a screen reader here.
+- **Dev-only label out of production.** `MESSAGE_LABEL` is named only inside `import.meta.env.DEV ? … : ''` in the adapter, which Vite
+  folds away; `tests/lint/console-no-dev-text.test.ts` reads the built chunks for it.
+- **Layout.** The in-shell panel has the page's block padding; the details block's Copy button is flush with the block's edge
+  (`CopyValue`'s block form, shared). Screenshots retaken.
+- **Failure inside the failure screen.** `FallbackBoundary` around `RootFailure`: the first error is logged under an id and
+  `MinimalFailure` draws (tested by forcing `RootFailure` to throw).
+- **Mutations, each killed by a named test:** removing `disableGlobalCatchBoundary` (`outsideRoutes.test.tsx`: every route panel throws,
+  so the page error must reach the console's root fallback, not the router's "Show Error" panel); the `caughtBy` classification for
+  the router's and the root boundary (`rootErrorOptions.test.tsx`, two tests); the guard on Reload (`failure.test.tsx`); the focus
+  move (`failure.test.tsx`); the link that goes through the guard on Back to overview (`failure.test.tsx`, two tests).
+- **CONSOLE_ROOT** consumers repointed at `shared/service/address`; the session re-export is gone.
+- **`tests/lint/cross-package-reads.test.ts`** ignores `import.meta.env` (build mode, not a path); the empty-target entry is gone and
+  three table rows pin it, including one where `import.meta.dirname` beside it still counts.
+- **Budget.** The route-level pieces cannot usefully be made lazy: with `RouteFailure` and `ShellFailure` (which carry
+  `useRouteFailure`, `overviewAddress`, `ButtonLink` and the route texts) behind `lazy()` in the router, the first load went from
+  244,138 B to 243,569 B gzipped, 0.2 per cent, not the 2.2 kB the old budget needed, and it would cost a degrade path for a chunk that
+  fails to load. The split was measured and not kept. The first load is now 244,911 B (the fix round added the minimal fallback and
+  focus move: +0.8 kB), the entry chunk 377.9 kB raw, 121.7 kB gzip (Vite; 120.3 kB by `gzip` default); the budget is reset to that
+  plus 5 per cent, 258,000 B, by the file's own convention, with the reason beside it. The entry budget (153,000 B) is untouched.
+- **Docs coverage:** the tour covers a button that fails (nothing is drawn, the console in the browser holds the error) and the
+  panel's real buttons; `tests/support/console-labels.ts` already holds every label the tour quotes.

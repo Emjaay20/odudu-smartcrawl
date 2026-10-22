@@ -21,6 +21,11 @@
   justify-items: start;
 }
 
+.copy[data-block] button {
+  /* The quiet button's own padding would indent its label from the block's edge. */
+  margin-inline-start: calc(var(--space-2) * -1);
+}
+
 .block {
   box-sizing: border-box;
   inline-size: 100%;

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import {
-  logFailure,
-  newFailureReport,
   inDevelopment,
+  logFailure,
+  messageLabel,
+  newFailureReport,
 } from '#/features/failure/repository/failureReport';
 import { failureDetails, shownMessage, type FailureReport } from '#/features/failure/service';
 
@@ -10,6 +11,8 @@ export interface FailureShown {
   report: FailureReport;
   details: string;
   message: string | null;
+  // Empty in production, where there is no message to label.
+  messageLabel: string;
 }
 
 // The id is made once, when the failure first appears, and logged with the
@@ -23,5 +26,6 @@ export function useFailureReport(error: unknown, route: string): FailureShown {
     report,
     details: failureDetails(report),
     message: shownMessage(error, inDevelopment()),
+    messageLabel: messageLabel(),
   };
 }

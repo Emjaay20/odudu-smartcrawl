@@ -1,4 +1,6 @@
 import {
+  developmentMessageLabel,
+  focusMain,
   isDevelopment,
   logError,
   randomBytes,
@@ -39,10 +41,18 @@ export function recordFailure(
   return report;
 }
 
+export function messageLabel(): string {
+  return developmentMessageLabel();
+}
+
 export function inDevelopment(): boolean {
   return isDevelopment();
 }
 
 export function reloadWindow(): void {
   reloadPage();
+}
+
+export function focusPageMain(): void {
+  focusMain();
 }

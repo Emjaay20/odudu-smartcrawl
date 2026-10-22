@@ -1,0 +1,4 @@
+/* A page draws under the shell's top bar with its own block spacing. */
+.inShell {
+  padding-block: var(--space-6);
+}

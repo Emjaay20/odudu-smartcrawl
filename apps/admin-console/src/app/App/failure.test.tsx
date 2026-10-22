@@ -80,7 +80,14 @@ describe('a page that fails', () => {
   it('shows the panel inside the shell, which stays, with focus on its heading', async () => {
     renderConsoleAt('/console/acme/subjects', routes());
     const heading = await screen.findByRole('heading', { level: 1, name: 'Something went wrong' });
-    expect(screen.getByRole('alert')).toContainElement(heading);
+    const region = screen.getByRole('region', { name: 'Something went wrong' });
+    expect(region).toContainElement(heading);
+    // Only the summary is the alert: the heading is read by taking focus, the
+    // buttons and details are not announced a second time.
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('This page could not be shown');
+    expect(alert).not.toContainElement(heading);
+    expect(alert).not.toContainElement(screen.getByRole('button', { name: 'Try again' }));
     expect(screen.getByRole('navigation', { name: 'Areas of acme' })).toBeVisible();
     expect(screen.getByRole('main')).toContainElement(heading);
     expect(heading).toHaveFocus();
@@ -137,6 +144,41 @@ describe('a page that fails', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  it('puts focus in the page, not on the document, once trying again recovers', async () => {
+    const user = userEvent.setup();
+    renderConsoleAt('/console/acme/subjects', routes());
+    await screen.findByRole('heading', { name: 'Something went wrong' });
+    broken.page = false;
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByRole('heading', { name: 'Subjects are fine' })).toBeVisible();
+    expect(screen.getByRole('main')).toHaveFocus();
+  });
+
+  it('does not ask the guard before trying again, since nothing is left', async () => {
+    const user = userEvent.setup();
+    renderConsoleAt('/console/acme/subjects', routes());
+    await screen.findByRole('heading', { name: 'Something went wrong' });
+    act(() => {
+      useUnsavedGuard.getState().setDirty('client/general', 'General');
+    });
+    broken.page = false;
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByRole('heading', { name: 'Subjects are fine' })).toBeVisible();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+
+  it('asks the guard before Back to overview leaves the page', async () => {
+    const user = userEvent.setup();
+    const { router } = renderConsoleAt('/console/acme/subjects', routes());
+    await screen.findByRole('heading', { name: 'Something went wrong' });
+    act(() => {
+      useUnsavedGuard.getState().setDirty('client/general', 'General');
+    });
+    await user.click(screen.getByRole('link', { name: 'Back to overview' }));
+    expect(await screen.findByRole('alertdialog', { name: 'Leave without saving?' })).toBeVisible();
+    expect(router.state.location.pathname).toBe('/acme/subjects');
+  });
+
   it('takes a new id when trying again fails again', async () => {
     const user = userEvent.setup();
     renderConsoleAt('/console/acme/subjects', routes());
@@ -163,14 +205,14 @@ describe('a page that fails', () => {
     renderConsoleAt('/console/acme/subjects', routes());
     const heading = await screen.findByRole('heading', { name: 'Something went wrong' });
     expect(heading).toHaveFocus();
-    const alert = screen.getByRole('alert');
+    const region = screen.getByRole('region', { name: 'Something went wrong' });
     const names: string[] = [];
     for (let step = 0; step < 4; step += 1) {
       await user.tab();
       names.push(document.activeElement?.textContent ?? '');
     }
     expect(names.slice(0, 3)).toEqual(['Try again', 'Back to overview', 'Reload the console']);
-    expect(within(alert).getByRole('button', { name: 'Try again' })).toBeVisible();
+    expect(within(region).getByRole('button', { name: 'Try again' })).toBeVisible();
   });
 
   it('still asks before a reload throws unsaved work away', async () => {

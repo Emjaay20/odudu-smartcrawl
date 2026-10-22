@@ -22,11 +22,14 @@ function panel(message: string | null = null) {
   );
 }
 
-it('is an alert named by its heading, and moves focus to that heading', () => {
+it('moves focus to its heading, and makes only the one-sentence summary an alert', () => {
   render(panel());
   const heading = screen.getByRole('heading', { level: 1, name: 'Something went wrong' });
-  expect(screen.getByRole('alert')).toHaveAccessibleName('Something went wrong');
+  expect(screen.getByRole('region', { name: 'Something went wrong' })).toBeVisible();
   expect(heading).toHaveFocus();
+  const alert = screen.getByRole('alert');
+  expect(alert).toHaveTextContent('This page could not be shown.');
+  expect(alert).not.toContainElement(screen.getByRole('button', { name: 'Do it' }));
 });
 
 it('announces nothing and takes no focus when it is a specimen', () => {

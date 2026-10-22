@@ -5,6 +5,7 @@ import { rootErrorOptions } from '#/app/rootErrorOptions/rootErrorOptions';
 import { RootBoundary } from '#/features/failure';
 import { ChunkLoadError } from '#/shared/service/chunkLoad';
 import { ChunkBoundary } from '#/shared/view/ChunkBoundary';
+import { failingAt } from '#/testing/mountFailing';
 
 const LINE = /^odudu console failure [0-9A-Z]{8} \((caught|uncaught|recoverable)\) at \/\$tenant$/u;
 
@@ -58,7 +59,7 @@ it('logs a chunk failure the chunk boundary caught, which draws no id of its own
 
 it('leaves an error a panel caught to that panel, which logs it once under the id it shows', () => {
   mount(
-    <RootBoundary route={() => '/$tenant'}>
+    <RootBoundary route={() => '/$tenant'} record={vi.fn()}>
       <ChunkBoundary onReload={vi.fn()}>
         <Throws error={new Error('plain')} />
       </ChunkBoundary>
@@ -67,6 +68,20 @@ it('leaves an error a panel caught to that panel, which logs it once under the i
   const shown = String(/Error ID: ([0-9A-Z]{8})/u.exec(container.textContent)?.[1]);
   expect(shown).toMatch(/^[0-9A-Z]{8}$/u);
   expect(logged()).toEqual([`odudu console failure ${shown} (rendering) at /$tenant`]);
+});
+
+it('leaves an error a route panel caught to that panel, which logs it once under its id', async () => {
+  mount(
+    failingAt('/acme/clients', () => {
+      throw new Error('plain');
+    }),
+  );
+  await vi.waitFor(() => {
+    expect(container.textContent).toContain('Error ID');
+  });
+  const shown = String(/Error ID: ([0-9A-Z]{8})/u.exec(container.textContent)?.[1]);
+  expect(shown).toMatch(/^[0-9A-Z]{8}$/u);
+  expect(logged()).toEqual([`odudu console failure ${shown} (rendering) at /$tenant/clients`]);
 });
 
 // Inside act React rethrows an uncaught render error to the test instead of

@@ -1,10 +1,19 @@
-import { useFailureReport, type FailureShown } from '#/features/failure/usecase/useFailureReport';
 import { reloadWindow } from '#/features/failure/repository/failureReport';
+import { useFailureReport, type FailureShown } from '#/features/failure/usecase/useFailureReport';
 
 export interface RootFailureShown extends FailureShown {
+  // Not through the unsaved-changes guard: the whole tree, every form and
+  // the guard's dialog included, is already gone.
   reload: () => void;
 }
 
 export function useRootFailure(error: unknown, route: string): RootFailureShown {
-  return { ...useFailureReport(error, route), reload: reloadWindow };
+  const shown = useFailureReport(error, route);
+  return {
+    report: shown.report,
+    details: shown.details,
+    message: shown.message,
+    messageLabel: shown.messageLabel,
+    reload: reloadWindow,
+  };
 }

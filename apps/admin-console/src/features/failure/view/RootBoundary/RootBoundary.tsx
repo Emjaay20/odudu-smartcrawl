@@ -1,9 +1,12 @@
 import { Component, type ReactNode } from 'react';
+import type { FailureReport } from '#/features/failure/service';
+import { FallbackBoundary } from '#/features/failure/view/FallbackBoundary';
 import { RootFailure } from '#/features/failure/view/RootFailure';
 
 interface RootBoundaryProps {
   // Read when something fails, so it names the route the router was on.
   route: () => string;
+  record: (error: unknown, componentStack?: string) => FailureReport;
   children: ReactNode;
 }
 
@@ -18,6 +21,10 @@ export class RootBoundary extends Component<RootBoundaryProps, { failed: [unknow
   override render(): ReactNode {
     const { failed } = this.state;
     if (failed === null) return this.props.children;
-    return <RootFailure error={failed[0]} route={this.props.route()} />;
+    return (
+      <FallbackBoundary first={failed[0]} record={this.props.record}>
+        <RootFailure error={failed[0]} route={this.props.route()} />
+      </FallbackBoundary>
+    );
   }
 }

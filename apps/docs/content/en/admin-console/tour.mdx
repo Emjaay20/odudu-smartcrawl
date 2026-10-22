@@ -100,11 +100,13 @@ Choose **Sign out** at the bottom of the menu, beside the name you are signed in
 
 ## If a page stops working
 
-Now and then a page fails to draw. The console replaces that page with a panel that says **Something went wrong**, and leaves the menu where it is, so you can go on elsewhere. **Try again** draws the page once more, **Back to overview** takes you to the tenant's overview and **Reload the console** starts the console over. Each of them asks first if you have changes you have not saved.
+Now and then a page fails to draw. The console replaces that page with a panel that says **Something went wrong**, and leaves the menu where it is, so you can go on elsewhere. Changes you had saved are kept; changes you had not saved on the page that failed cannot be recovered. **Try again** draws the page once more. It keeps you where you are, so it does not ask anything. **Back to overview** takes you to the tenant's overview and **Reload the console** starts the console over; both leave the page, so they ask first if another form still open holds changes you have not saved.
 
 Under the buttons is a short block with an **Error ID**, the page's address with its names left out, and the time. Choose **Copy** and send it to whoever runs your Odudu: the same ID is in the browser's developer console beside the full error, which is how they find it. The panel never shows what the error said, and the block holds nothing about you.
 
-If the failure is in the menu itself, or in the console as a whole, you get the same panel alone on the page, with a single **Reload the console** button.
+If the failure is in the menu itself, you get the same panel alone on the page, with the same three buttons. If it is in the console as a whole, you get that panel with a single **Reload the console** button.
+
+A failure that happens when you press a button, rather than while a page draws, shows no panel. The button simply does nothing and the page stays as it was; the browser's developer console holds the error. Reload if it keeps happening.
 
 ## What the console leaves to the command line
 
