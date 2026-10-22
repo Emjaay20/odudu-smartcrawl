@@ -3076,6 +3076,42 @@ its own increment.
   a lapsed sign-in show no link. `return-to-app.spec.ts` adds the ID token's `nonce` check for an
   application that verifies it, and the different-browser case.
 
+### Increment 31q, one setting for every cookie
+
+**The defect.** `serve.ts` never passed `ODUDU_TLS` into `buildApp`, and `buildApp` never handed a
+`tls` value to the OIDC routes, so the SSO session cookie was `<tenant>-session` without `Secure` and
+without `__Host-` even with `ODUDU_TLS=true`, in production. The console gateway decided its own `tls` from
+the base URL's scheme, so two settings could disagree. Found while adding the sign-in cookie in 31m.
+
+**The fix.** `apps/server/src/app-deps.ts` (`appDepsFromConfig`) is what `serve.ts` hands `buildApp`, and
+sets `tls: config.ODUDU_TLS`. `buildApp` gives that single value to the OIDC routes (the SSO session and
+remember-me cookies, the sign-in cookie), to the pages that read the sign-in cookie, and to the console
+gateway, whose `tls` is now a required dependency instead of the base's scheme. Boot refuses both
+disagreements: `ODUDU_TLS=true` with an `http` base (as before) and `ODUDU_TLS` off with an `https` base
+(new), while the console is on. What the server does when `ODUDU_TLS=true` but a request arrives over http
+(a proxy that does not forward its scheme) is unchanged and not guarded: the cookies carry `Secure`, a
+browser may refuse to keep them, and sign-in fails visibly.
+
+**Every cookie writer found** (`git grep` for `set-cookie`, `Max-Age`, `SameSite` in packages and
+`apps/server/src`): authn-flows `sessionCookies` and `clearedSessionCookies` (SSO session and persistent),
+authn-flows `signInHandleCookie` and its clearing, console-gateway `loginCookie`, `restartCookie`,
+`sessionCookie` and their clearings, and the theme cookie the console's script writes. The docs and
+instrument routes set none. The theme cookie is `Path=/; SameSite=Lax` with `Secure` when the page is https, no
+prefix (a preference the script owns, named by the server pages), not `HttpOnly`.
+
+**Checks.** `tests/cookies/cookie-writers.test.ts` holds every writer, under TLS and without, to prefix,
+`Secure`, `HttpOnly`, `SameSite`, `Path` and no `Domain`. `apps/server/tests/cookies-under-tls.int.test.ts`
+builds the app through `appDepsFromConfig` with `ODUDU_TLS` on and off and reads the real `Set-Cookie` of
+the sign-in handle, a remember-me sign-in, the OIDC logout and the console's login, session and logout.
+`tests/lint/cookie-writers-follow-tls.test.ts` fails on a helper called without `tls` or with a literal
+and on a hand-built `set-cookie` header; it cannot see a wrongly valued `tls` variable, an aliased helper
+or a spread. `tests/docs/cookie-names.test.ts` reads the configuration page's Cookie names table against
+the helpers. The local stacks stay plain http: the development and quickstart composes run with
+`NODE_ENV=development` and no `ODUDU_TLS`, the conformance stack sets it with an https base.
+
+**Cookie names change under TLS** (`__Host-<tenant>-session`, `__Secure-odudu-sign-in`, `__Host-odudu-console`).
+Nothing is public yet, so every signed-in browser signs in once more.
+
 ## Increment 31j: deleting and restoring built-in scopes
 
 **Decision.** A built-in scope (a name in `TENANT_DEFAULT_SCOPE_NAMES`, the set provisioning

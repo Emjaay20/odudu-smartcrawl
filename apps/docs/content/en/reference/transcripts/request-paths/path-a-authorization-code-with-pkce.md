@@ -285,7 +285,7 @@ form.addEventListener('submit', async (event) => {
 (`auth_session_id`, the script's `nonce`, the `x-request-id` and `Date`
 headers and the cookie's secret differ per run.)
 
-The `set-cookie` header is new with the sign-in page: `odudu-sign-in` names
+The `set-cookie` header is new with the sign-in page: `odudu-sign-in` (`__Secure-odudu-sign-in` when `ODUDU_TLS=true`) names
 the authentication session this response parked (the `auth_session_id` in
 the form) and proves the browser is the one that parked it, with a secret
 that appears nowhere else; the session's row keeps only a hash of it. It is

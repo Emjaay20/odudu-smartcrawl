@@ -20,7 +20,7 @@ _In words: A timeline from sign-in to a ceiling, with stretches of activity and 
 
 ## What a session is
 
-When a person signs in, Odudu records a session and sets a cookie in their browser. The cookie says which session is theirs. The next time any app in the same tenant sends the person to Odudu, the cookie is found and the person is sent straight back signed in.
+When a person signs in, Odudu records a session and sets a cookie in their browser. The cookie says which session is theirs, and with `ODUDU_TLS` on it is `Secure` and prefixed `__Host-` ([the names](../operating/configuration.md#cookie-names)). The next time any app in the same tenant sends the person to Odudu, the cookie is found and the person is sent straight back signed in.
 
 While the sign-in page is open, a second, short-lived cookie remembers which sign-in this browser started. It signs nobody in. It lets a link mailed during the sign-in, such as a password reset, bring that browser, and no other, back to the application's original request. Anyone using the same browser profile can continue that sign-in until it expires; the cookie is HttpOnly and lives only as long as the login lifetime.
 

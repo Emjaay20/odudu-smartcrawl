@@ -27,7 +27,7 @@ While the console is on, which it is by default, the server also checks its own 
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ODUDU_PUBLIC_BASE_URL`    | Starting without it. The console's redirect address is built from it, never from a request.                                                                          |
 | `ODUDU_TRUST_PROXY`        | An `https` base while it is off. The console reaches the server in-process, and only a trusted `x-forwarded-proto` lets it see the `https` address the browser sees. |
-| `ODUDU_TLS`                | `true` with an `http` base. The console's cookie follows the base's scheme and would lose `Secure` while every other cookie kept it.                                 |
+| `ODUDU_TLS`                | `true` with an `http` base, or off with an `https` base. Every cookie follows `ODUDU_TLS`, so the two must agree with the address the browser uses.                  |
 | `ODUDU_CONSOLE_CLIENT_KEY` | Starting without it. It is the private key the console signs in with. Set `ODUDU_CONSOLE=false` to run without a console at all.                                     |
 
 `ODUDU_DATABASE_URL` and `ODUDU_KEK` are required in every environment. Changing `ODUDU_KEK` later makes the stored keys unreadable, so treat it as data you must not lose: [Backups](./backups.md) says how.
@@ -35,6 +35,21 @@ While the console is on, which it is by default, the server also checks its own 
 ## Two guards rest on you
 
 `ODUDU_TLS` and `NODE_ENV` are statements the server cannot check. Setting `ODUDU_TLS=true` with nothing in front of it, or `NODE_ENV=development` on a public server, silences the guards rather than satisfying them. The server's protection here is to refuse the honest mistakes. It cannot refuse a false statement.
+
+## Cookie names
+
+One setting decides every cookie: `ODUDU_TLS`. Turn it on and each cookie gains `Secure` and a prefix the browser enforces. Turn it off, as local http needs, and the prefix and `Secure` go.
+
+| Cookie                      | With `ODUDU_TLS=true`                       | Without                              |
+| --------------------------- | ------------------------------------------- | ------------------------------------ |
+| Sign-in session             | `__Host-<tenant>-session`                   | `<tenant>-session`                   |
+| Remembered sign-in          | `__Host-<tenant>-session-persistent`        | `<tenant>-session-persistent`        |
+| Sign-in in progress         | `__Secure-odudu-sign-in`                    | `odudu-sign-in`                      |
+| Console session             | `__Host-odudu-console`                      | `odudu-console`                      |
+| Console sign-in in progress | `__Host-odudu-console-login` and `-restart` | `odudu-console-login` and `-restart` |
+| Theme choice                | `odudu-theme`, with `Secure`                | `odudu-theme`                        |
+
+All but the theme cookie are `HttpOnly`, none sets a `Domain`, and the sign-in in progress is scoped to its tenant's path, which is why it takes `__Secure-` rather than `__Host-`. The theme cookie is a preference the console's script writes, so it keeps its name. If a request reaches the server over http while `ODUDU_TLS=true` (a proxy not forwarding its scheme, for instance), the cookies still carry `Secure`, and a browser may refuse to keep them: sign-in fails visibly rather than working without protection.
 
 ## Related settings, by the job they do
 

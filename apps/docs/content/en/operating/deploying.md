@@ -66,6 +66,8 @@ ODUDU_TLS=true
 ODUDU_TRUST_PROXY=true
 ```
 
+`ODUDU_TLS=true` is what gives every cookie `Secure` and the `__Host-` prefix. Production refuses to start without it, and [Cookie names](./configuration.md#cookie-names) lists what each cookie becomes.
+
 The image already sets `NODE_ENV=production`, so what you leave out is refused, not defaulted. The first start applies the migrations, which create the `odudu_app` role and every table, then listens on port 3000. Run one container (see [Scaling](./scaling.md)).
 
 Check it is up from inside the container network:
