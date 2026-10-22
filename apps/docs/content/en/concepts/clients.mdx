@@ -43,13 +43,15 @@ Every sign-in that uses a code uses PKCE, public or confidential, so there is no
 
 A client shows who it is at the token endpoint. Its `token_endpoint_auth_method` says how.
 
-| Method                | What the client sends                                   | Fits                  |
-| --------------------- | ------------------------------------------------------- | --------------------- |
-| `none`                | Nothing. PKCE protects the code.                        | A public client       |
-| `client_secret_basic` | The secret in the HTTP Basic header.                    | A confidential client |
-| `client_secret_post`  | The secret in the request body.                         | A confidential client |
-| `private_key_jwt`     | A short-lived token signed with its private key.        | A confidential client |
-| `tls_client_auth`     | A TLS certificate, which a proxy passes on in a header. | A confidential client |
+| Method                | What the client sends                            |
+| --------------------- | ------------------------------------------------ |
+| `none`                | Nothing. PKCE protects the code.                 |
+| `client_secret_basic` | The secret in the HTTP Basic header.             |
+| `client_secret_post`  | The secret in the request body.                  |
+| `private_key_jwt`     | A short-lived token signed with its private key. |
+| `tls_client_auth`     | A TLS certificate, which a proxy passes on.      |
+
+A public client uses `none`. A confidential client uses any of the others.
 
 `tls_client_auth` is listed only while `ODUDU_TRUST_PROXY` is on. `client_secret_jwt` is not supported.
 
