@@ -28,7 +28,7 @@ export function passwordField(
     special: tHtml(locale, 'password.hint.special'),
     notCommon: tHtml(locale, 'password.hint.notCommon'),
     show: tHtml(locale, 'password.hint.show'),
-    hide: tHtml(locale, 'password.hint.hide'),
+    summary: tHtml(locale, 'password.hint.summary', { met: '{met}', total: '{total}' }),
   });
   const attributes = `${invalidAttributes(problems, 'password', [PASSWORD_RULES_LIST_ID])}${autofocus ? ' autofocus' : ''}`;
   return {

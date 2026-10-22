@@ -325,7 +325,9 @@ describe('a link that takes its subject through required actions', () => {
 
     const refused = await submit(seeded, keyOf(link), '1qaz2wsx3edc4rfv');
     expect(refused.statusCode).toBe(400);
-    expect(refused.body).toContain('>That password is too common. Choose a different one.</li>');
+    expect(refused.body).toContain(
+      '>That password is too easy to guess. Choose a different one.</li>',
+    );
     expect((await submit(seeded, keyOf(link), NEW_PASSWORD)).statusCode).toBe(200);
   });
 

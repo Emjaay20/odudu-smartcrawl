@@ -469,7 +469,7 @@ describe('password reset', () => {
       const rejected = await submitNewPassword(link, candidate);
       expect(rejected.statusCode, candidate).toBe(400);
       expect(rejected.body, candidate).toContain(
-        '>That password is too common. Choose a different one.</li>',
+        '>That password is too easy to guess. Choose a different one.</li>',
       );
     }
     expect(await passwordWorksFor(tenantId, 'ada', 'correct horse battery')).toBe(true);

@@ -89,7 +89,7 @@ describe('evaluatePassword', () => {
       expect(evaluatePassword('baseball', base, ada)).toEqual([
         {
           rule: 'common-password',
-          message: 'That password is too common. Choose a different one.',
+          message: 'That password is too easy to guess. Choose a different one.',
         },
       ]);
     });
@@ -132,5 +132,12 @@ describe('evaluatePassword', () => {
         evaluatePassword('\u{1f511}'.repeat(MAX_PASSWORD_LENGTH), base, ada).map((v) => v.rule),
       ).toEqual([]);
     });
+  });
+});
+
+describe('the maximum is counted on the normalised form', () => {
+  it('refuses a password that is within the raw bound but longer once normalised', () => {
+    const typed = '̈́'.repeat(MAX_PASSWORD_LENGTH);
+    expect(evaluatePassword(typed, base, ada).map((v) => v.rule)).toContain('max-length');
   });
 });

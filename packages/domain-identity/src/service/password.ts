@@ -39,11 +39,28 @@ export async function hashUserPassword(plain: string): Promise<string> {
   return hashPassword(normalisePassword(plain));
 }
 
-// A hash stored before normalising was made from the bytes as typed, so a
-// password set in decomposed form is tried that way when the normalised form
-// does not match. Already-NFC input, the common case, costs one verification.
-export async function verifyUserPassword(stored: string, plain: string): Promise<boolean> {
+export type PasswordMatch = 'normalised' | 'as-typed';
+
+// Which form of what was typed a stored hash was made from, if either. The
+// as-typed form is tried only when the caller says the hash may predate
+// normalising (`tryAsTyped`) and the typed form is not already normalised, so
+// a hash marked as normalised costs one verification whatever an attacker
+// types. `verify` is a seam for counting them.
+export async function matchUserPassword(
+  stored: string,
+  plain: string,
+  tryAsTyped: boolean,
+  verify: (stored: string, plain: string) => Promise<boolean> = verifyPassword,
+): Promise<PasswordMatch | null> {
   const normalised = normalisePassword(plain);
-  if (await verifyPassword(stored, normalised)) return true;
-  return normalised !== plain && (await verifyPassword(stored, plain));
+  if (await verify(stored, normalised)) return 'normalised';
+  if (tryAsTyped && normalised !== plain && (await verify(stored, plain))) return 'as-typed';
+  return null;
+}
+
+// For a check by somebody already authenticated (a reuse check, a seed): a
+// hash made before normalising was made from the bytes as typed, so both
+// forms are tried. A login uses matchUserPassword with the row's marker.
+export async function verifyUserPassword(stored: string, plain: string): Promise<boolean> {
+  return (await matchUserPassword(stored, plain, true)) !== null;
 }

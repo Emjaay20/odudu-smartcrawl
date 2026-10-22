@@ -359,7 +359,7 @@ describe('self-registration', () => {
     });
 
     expect(res.statusCode).toBe(400);
-    expect(res.body).toContain('>That password is too common. Choose a different one.</li>');
+    expect(res.body).toContain('>That password is too easy to guess. Choose a different one.</li>');
     expect(
       await withTenant(app.db, tenantId, (tx) => userRepository(tx).byUsername('ada')),
     ).toBeNull();
@@ -380,7 +380,7 @@ describe('self-registration', () => {
         password: password.toUpperCase(),
       });
       expect(res.statusCode, password).toBe(400);
-      expect(res.body, password).toContain('That password is too common.');
+      expect(res.body, password).toContain('That password is too easy to guess.');
     }
   });
 

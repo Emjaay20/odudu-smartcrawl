@@ -1,7 +1,9 @@
 export {
   hashPassword,
   hashUserPassword,
+  matchUserPassword,
   normalisePassword,
+  type PasswordMatch,
   verifyPassword,
   verifyUserPassword,
 } from '#/service/password';

@@ -23,7 +23,7 @@ beforeAll(async () => {
   const journal = JSON.parse(readFileSync(journalPath, 'utf8')) as {
     entries: { tag: string }[];
   };
-  journal.entries = journal.entries.filter((entry) => entry.tag !== TAG);
+  journal.entries = journal.entries.filter((entry) => entry.tag < TAG);
   writeFileSync(journalPath, JSON.stringify(journal));
   await runMigrations(dbHandle.db, before);
 }, 120_000);

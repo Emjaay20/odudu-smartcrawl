@@ -115,7 +115,7 @@ test('registering, after a refused first attempt, and coming back to the applica
   await page.getByLabel('Email').fill(`new-${tag}@example.test`);
   await page.getByLabel('Password').fill(COMMON_PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
-  await expect(page.getByRole('alert')).toContainText('That password is too common.');
+  await expect(page.getByRole('alert')).toContainText('That password is too easy to guess.');
   await expect(page.getByRole('link', { name: 'Back to sign in' })).toBeVisible();
 
   await page.getByLabel('Password').fill(PASSWORD);
@@ -171,7 +171,7 @@ test('the mailed reset link, opened in the same browser, resumes the original re
   await page.goto(`/tenants/${name}/login-actions/action-token?key=${query}`);
   await page.getByLabel('New password').fill(COMMON_PASSWORD);
   await page.getByRole('button', { name: 'Reset password' }).click();
-  await expect(page.getByRole('alert')).toContainText('That password is too common.');
+  await expect(page.getByRole('alert')).toContainText('That password is too easy to guess.');
   const reset = `${PASSWORD}-reset`;
   await page.getByLabel('New password').fill(reset);
   await page.getByRole('button', { name: 'Reset password' }).click();

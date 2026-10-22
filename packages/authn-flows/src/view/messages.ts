@@ -59,8 +59,8 @@ export const en = {
   'updatePassword.hint.special': 'A special character',
   'updatePassword.hint.notCommon': 'Not a common password',
   'updatePassword.hint.show': 'Show password',
-  'updatePassword.hint.hide': 'Hide password',
-  'updatePassword.rule.common': 'That password is too common. Choose a different one.',
+  'updatePassword.hint.summary': '{met} of {total} rules met',
+  'updatePassword.rule.common': 'That password is too easy to guess. Choose a different one.',
   'updatePassword.rule.notReused': 'Password must not be one you have used before.',
   'updatePassword.rule.superseded':
     'Your password was changed somewhere else before this form was submitted. Sign in again with the password you set there.',

@@ -62,9 +62,9 @@ describe('renderRegistrationForm', () => {
 <form method="post" action="/tenants/acme/login-actions/registration">
   <label>Username <input type="text" name="username" autocomplete="username"></label>
   <label>Email <input type="email" name="email" autocomplete="email"></label>
-  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" aria-describedby="password-rules-list"></label>
-  <div class="rules hint" id="password-rules" data-min="15">
-    <p class="rules-head"><span>Your password needs:</span><button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false" data-show="Show password" data-hide="Hide password">Show password</button></p>
+  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" spellcheck="false" autocapitalize="off" autocorrect="off" aria-describedby="password-rules-list"></label>
+  <div class="rules hint" id="password-rules" data-min="15" data-summary="{met} of {total} rules met">
+    <p class="rules-head"><span>Your password needs:</span> <button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false">Show password</button> <span role="status"></span></p>
     <ul id="password-rules-list">
       <li data-rule="length">At least 15 characters</li>
       <li>Not a common password</li>
@@ -108,7 +108,7 @@ describe('renderRegistrationForm', () => {
     expect(body).toContain('name="username" autocomplete="username" value="newcomer">');
     expect(body).toContain('name="email" autocomplete="email" value="new@example.test">');
     expect(body).toContain(
-      'name="password" autocomplete="new-password" id="password" minlength="15" aria-invalid="true" aria-describedby="form-error-0 form-error-1 password-rules-list" autofocus>',
+      'name="password" autocomplete="new-password" id="password" minlength="15" spellcheck="false" autocapitalize="off" autocorrect="off" aria-invalid="true" aria-describedby="form-error-0 form-error-1 password-rules-list" autofocus>',
     );
     expect(body).not.toMatch(/name="password"[^>]*value=/u);
   });
@@ -125,7 +125,7 @@ describe('renderRegistrationForm', () => {
       'name="email" autocomplete="email" aria-invalid="true" aria-describedby="form-error-0" autofocus>',
     );
     expect(body).toContain(
-      'name="password" autocomplete="new-password" id="password" minlength="15" aria-invalid="true" aria-describedby="form-error-1 password-rules-list">',
+      'name="password" autocomplete="new-password" id="password" minlength="15" spellcheck="false" autocapitalize="off" autocorrect="off" aria-invalid="true" aria-describedby="form-error-1 password-rules-list">',
     );
     expect(body).not.toMatch(/name="username"[^>]*aria-invalid/u);
   });

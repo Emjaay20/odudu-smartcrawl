@@ -53,3 +53,18 @@ describe('readPasswordField', () => {
     expect(PASSWORD_TOO_LONG.message).toContain(String(MAX_PASSWORD_LENGTH));
   });
 });
+
+describe('the raw bound and the NFC count', () => {
+  it('refuses a decomposed password over the bound as typed, though its NFC form would fit', () => {
+    const typed = `${'é'.repeat(128)}e`;
+    expect(Array.from(typed)).toHaveLength(257);
+    expect(Array.from(typed.normalize('NFC'))).toHaveLength(129);
+    expect(readPasswordField(typed)).toEqual({ kind: 'too_long' });
+  });
+
+  it('lets through what only exceeds the bound once normalised, for the policy to refuse', () => {
+    const typed = '̈́'.repeat(256);
+    expect(Array.from(typed.normalize('NFC')).length).toBeGreaterThan(256);
+    expect(readPasswordField(typed)).toEqual({ kind: 'present', password: typed });
+  });
+});

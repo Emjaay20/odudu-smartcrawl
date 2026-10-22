@@ -3174,23 +3174,29 @@ eight characters or more among the first 100,000 lines of `Passwords/Common-Cred
 in SecLists at commit `4c0fd59432ab8508edc23b3c880127edb12e34d5`, MIT, Copyright (c) 2018 Daniel Miessler
 (`LICENSES/MIT-SecLists.txt`, `THIRD-PARTY-NOTICES.md`). Shorter entries are dropped because the database
 CHECK holds the minimum at 8 or more, so they could never be reached; entries holding a backtick, a
-backslash or `$` (two) and three that a repository-wide word check refuses are dropped too. Lowercased,
+backslash or `$` (two) and three that a repository-wide word check refuses are dropped too (five entries in all). Lowercased,
 de-duplicated: 38,446 entries, 355 KB of source. `verified: node --expose-gc`: loading the module costs
 11.1 MB of heap, once per process, and `isCommonPassword` takes 0.66 microseconds. The comparison is
 whole-password, after NFKC and lowercase, against the list and against the tenant name, the username, the
 email name and `odudu`. A password that merely contains an entry is not refused.
 `verified: curl` on the source file's raw URL for the licence, the file and the commit.
 
-**NFC transition.** `hashUserPassword` hashes `plain.normalize('NFC')`; `verifyUserPassword` verifies the
-normalised form first and, only when it differs from what was typed, the form as typed. A hash made before
-this change from composed or ASCII text matches at the first attempt. A hash made from decomposed bytes
-matches at the second, so that person signs in unchanged. The one asymmetry is stated in the tests: a
-legacy decomposed hash does not accept the composed form until the password is next set. The cost is one
-extra Argon2id verification, only for a password that is not already NFC and did not match, and the same
-for an unknown username (the dummy hash goes through the same function), so timing does not tell them
-apart. `evaluatePassword` counts length and the 256 maximum in code points of the normalised form
-(`readPasswordField` still bounds the raw form first, so the work stays bounded); the history check uses
-`verifyUserPassword`.
+**NFC transition.** `hashUserPassword` hashes `plain.normalize('NFC')`. Migration
+`0103_password_hash_normalised.sql` adds a nullable `user_credentials.hash_nfc`: true on every hash written
+since (insert, set, rotate), null on one made before, with no rewrite. A login verifies the normalised form
+first and tries the form as typed only for a null row and only when it differs from the normalised form
+(`matchUserPassword`), so a marked account costs one Argon2id verification whatever an attacker types, and an
+unknown username (the dummy hash, marked) costs one as well. When a null row matches, `passwordStep` returns a
+`commit` that `advance` runs once the sign-in is known to be that subject's: a match as typed rehashes from the
+NFC form, and any match sets the marker (`upgradePassword`, a compare-and-swap on the hash read, `created_at`
+untouched so password age is unaffected). The asymmetry stands, tested: a legacy decomposed hash does not accept
+the composed form until it has been upgraded. Checks by somebody already authenticated (the reuse check,
+the reset's unchanged check, the seed) use `verifyUserPassword`, which tries both forms. A wrong legacy
+password costs two verifications when it is non-NFC, which leaks that an account is unmigrated by timing and
+nothing else. `evaluatePassword` counts length and the 256 maximum in code points of the normalised form;
+`readPasswordField` bounds the raw form first, and the comment there states the two cases where they differ
+(tested: a decomposed password of 257 code points is refused at the form, one of 256 that grows when
+normalised is refused by the policy).
 
 **New-tenant default.** Migration `0102_password_min_length_default.sql` sets the column default to 15;
 bounds, existing rows and `otp_required` are untouched (`password-min-length-default.int.test.ts` migrates
@@ -3203,9 +3209,15 @@ second factor and a plain note when a second factor covers it. Nothing blocks a 
 its transcript for no reader the console does not already serve.
 
 **Pages.** Registration, the reset form, the actions form and the change-password page list the tenant
-minimum, each enabled character rule and "Not a common password" as plain markup; one script of 1,224
+minimum, each enabled character rule and "Not a common password" as plain markup; one script of 1,422
 bytes (`PASSWORD_HINTS_SCRIPT` in `@odudu/kernel`, no request, no dependency) ticks them as the password
-is typed (code points of the NFC form, the same character classes as the server) and reveals a show toggle.
+is typed (code points of the NFC form, the same character classes as the server), says a short
+summary ("3 of 4 rules met") in a polite status line 800 ms after typing stops, and reveals a show toggle.
+The status line is visible, in the head row that already has the toggle's height, because the page
+stylesheet is at its line budget and a visually hidden class would not fit; it also helps everybody. The
+toggle keeps one label, "Show password", and states itself with `aria-pressed`: a label that changes and
+a pressed state together read as two statements. The field carries `spellcheck="false"`,
+`autocapitalize="off"` and `autocorrect="off"`, so a revealed password is never seen by a spellchecker.
 The page returns the script's nonce in `RenderedPage.script`, so `pageHeaders` derives `script-src`; a unit
 test per package reads it back. Without the script the toggle stays `hidden`, and the head row is as tall
 as the toggle, so nothing moves (`server-pages.spec.ts` compares the two heights).
@@ -3215,6 +3227,9 @@ as the toggle, so nothing moves (`server-pages.spec.ts` compares the two heights
 change-password states carry the list. The settings spec checks the note and axe on a minimum of 12. The
 browser refuses a password shorter than `minlength` before the server sees it, so the specs that used to
 post `a` for the policy's wording post a listed password of 16 characters instead.
+
+**Wording of the refusal.** "That password is too easy to guess. Choose a different one." for every blocklist and
+context refusal, since a password equal to the tenant's name is not "common" to the person.
 
 **Refusals are not audited.** Registration, reset, actions and change-password refusals write no audit
 row today (only the successful change does), so the common-password refusal does not either, in step with

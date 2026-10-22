@@ -88,6 +88,48 @@ export function credentialRepository(tx: TenantScopedDatabase) {
       return secret.hash;
     },
 
+    // The hash and whether it was made from the NFC form, which is what
+    // decides if a sign-in may try the password as typed as well.
+    async passwordCredentialFor(
+      subjectId: string,
+    ): Promise<{ hash: string; normalised: boolean } | null> {
+      const rows = await tx
+        .select({ secretData: userCredentials.secretData, hashNfc: userCredentials.hashNfc })
+        .from(userCredentials)
+        .where(and(eq(userCredentials.subjectId, subjectId), eq(userCredentials.type, 'password')));
+      const row = rows[0];
+      if (row === undefined) return null;
+      return {
+        hash: parseCredentialSecret('password', row.secretData).hash,
+        normalised: row.hashNfc === true,
+      };
+    },
+
+    // The lazy upgrade of a hash that predates normalising: marks it, and
+    // replaces it with `to` when the password was only accepted as typed. A
+    // compare-and-swap on the hash read at sign-in, so a password changed in
+    // between is left alone. Not a new password: created_at stays, so the
+    // tenant's maximum age is unaffected.
+    async upgradePassword(subjectId: string, from: string, to: string | null): Promise<boolean> {
+      const rows = await tx
+        .update(userCredentials)
+        .set({
+          hashNfc: true,
+          ...(to === null
+            ? {}
+            : { secretData: serializeCredentialSecret({ kind: 'password', hash: to }) }),
+        })
+        .where(
+          and(
+            eq(userCredentials.subjectId, subjectId),
+            eq(userCredentials.type, 'password'),
+            sql`${userCredentials.secretData}->>'hash' = ${from}`,
+          ),
+        )
+        .returning({ id: userCredentials.id });
+      return rows.length > 0;
+    },
+
     async listFor(subjectId: string, type: CredentialType): Promise<CredentialRecord[]> {
       const rows = await tx
         .select()
@@ -114,6 +156,8 @@ export function credentialRepository(tx: TenantScopedDatabase) {
         subjectId: input.subjectId,
         type: input.type,
         secretData: serializeCredentialSecret(input.secret),
+        // Every writer of a password hashes it with hashUserPassword.
+        hashNfc: input.type === 'password' ? true : null,
         label: input.label ?? null,
         lookupKey: input.lookupKey ?? null,
       });
@@ -289,6 +333,7 @@ export function credentialRepository(tx: TenantScopedDatabase) {
         // counts from here and not from the one it replaced.
         .set({
           secretData: serializeCredentialSecret({ kind: 'password', hash }),
+          hashNfc: true,
           createdAt: sql`now()`,
         })
         .where(and(eq(userCredentials.subjectId, subjectId), eq(userCredentials.type, 'password')))
@@ -339,6 +384,7 @@ export function credentialRepository(tx: TenantScopedDatabase) {
         // new password already expired and the action owed forever.
         .set({
           secretData: serializeCredentialSecret({ kind: 'password', hash: change.to }),
+          hashNfc: true,
           createdAt: sql`now()`,
         })
         .where(

@@ -16,7 +16,7 @@ const TEXT: PasswordHintText = {
   special: 'A special character',
   notCommon: 'Not a common password',
   show: 'Show password',
-  hide: 'Hide password',
+  summary: '{met} of {total} rules met',
 };
 
 const NONE: PasswordRules = {
@@ -65,6 +65,29 @@ describe('passwordHints', () => {
     expect(markup).toContain('data-min="15"');
   });
 
+  it('keeps the toggle label fixed, with its state in aria-pressed alone', () => {
+    const { markup } = passwordHints(NONE, TEXT);
+    expect(markup).toContain('aria-pressed="false"');
+    expect(markup).toContain('>Show password</button>');
+    expect(markup).not.toContain('data-hide');
+  });
+
+  it('carries one polite status line, empty until the script has something to say', () => {
+    const { markup } = passwordHints(NONE, TEXT);
+    expect(markup).toContain('<span role="status"></span>');
+    expect(markup).toContain('data-summary="{met} of {total} rules met"');
+    expect(markup).not.toContain('aria-live');
+  });
+
+  it('keeps autocorrect, spellcheck and capitals away from the field, which can be shown', () => {
+    const { field } = passwordHints(NONE, TEXT);
+    expect(field).toContain('spellcheck="false"');
+    expect(field).toContain('autocapitalize="off"');
+    expect(field).toContain('autocorrect="off"');
+    expect(field).toContain('id="password"');
+    expect(field).toContain('minlength="15"');
+  });
+
   it('carries the one nonce its script element names, and declares it', () => {
     const { markup, script } = passwordHints(NONE, TEXT);
     expect(script.fetchesSameOrigin).toBe(false);
@@ -79,12 +102,16 @@ describe('passwordHints', () => {
 });
 
 // The smallest document the script touches.
-function run(rules: PasswordRules, value: string): { met: Record<string, string | null> } {
+function run(rules: PasswordRules, value: string) {
   const { markup } = passwordHints(rules, TEXT);
   const rows = [...markup.matchAll(/<li data-rule="(\w+)"/gu)].map((match) => match[1] ?? '');
   const met: Record<string, string | null> = Object.fromEntries(rows.map((row) => [row, null]));
   const listeners: Record<string, () => void> = {};
-  const attributes = new Map<string, string>([['data-min', String(rules.minLength)]]);
+  const timers: (() => void)[] = [];
+  const attributes = new Map<string, string>([
+    ['data-min', String(rules.minLength)],
+    ['data-summary', TEXT.summary],
+  ]);
   const field = {
     value,
     type: 'password',
@@ -94,14 +121,8 @@ function run(rules: PasswordRules, value: string): { met: Record<string, string 
   };
   const toggle = {
     hidden: true,
-    textContent: '',
-    attributes: new Map<string, string>([
-      ['data-show', 'Show password'],
-      ['data-hide', 'Hide password'],
-    ]),
-    getAttribute(name: string) {
-      return this.attributes.get(name) ?? null;
-    },
+    textContent: 'Show password',
+    attributes: new Map<string, string>(),
     setAttribute(name: string, to: string) {
       this.attributes.set(name, to);
     },
@@ -109,9 +130,9 @@ function run(rules: PasswordRules, value: string): { met: Record<string, string 
       listeners[`toggle-${name}`] = fn;
     },
   };
+  const status = { textContent: '' };
   const box = {
     getAttribute: (name: string) => attributes.get(name) ?? null,
-    setAttribute: (name: string, to: string) => attributes.set(name, to),
     querySelectorAll: () =>
       rows.map((row) => ({
         getAttribute: () => row,
@@ -119,7 +140,7 @@ function run(rules: PasswordRules, value: string): { met: Record<string, string 
           met[row] = to;
         },
       })),
-    querySelector: () => toggle,
+    querySelector: (selector: string) => (selector === 'button' ? toggle : status),
   };
   runInNewContext(PASSWORD_HINTS_SCRIPT, {
     document: {
@@ -129,9 +150,26 @@ function run(rules: PasswordRules, value: string): { met: Record<string, string 
     Array,
     Number,
     String,
+    setTimeout: (fn: () => void) => timers.push(fn),
+    clearTimeout: () => {
+      timers.length = 0;
+    },
   });
-  listeners.input?.();
-  return { met };
+  return {
+    met,
+    status,
+    toggle,
+    field,
+    type: () => {
+      listeners.input?.();
+    },
+    settle: () => {
+      for (const fn of timers.splice(0)) fn();
+    },
+    press: () => {
+      listeners['toggle-click']?.();
+    },
+  };
 }
 
 describe('the live check', () => {
@@ -142,16 +180,21 @@ describe('the live check', () => {
     requireLowercase: true,
     requireSpecial: true,
   };
+  const lengthOnly = { ...all, requireDigit: false, requireUppercase: false };
 
   it('marks each rule met or not as the value is typed', () => {
-    expect(run(all, 'Abcdefghi1!').met).toEqual({
+    const good = run(all, 'Abcdefghi1!');
+    good.type();
+    expect(good.met).toEqual({
       length: 'true',
       digit: 'true',
       uppercase: 'true',
       lowercase: 'true',
       special: 'true',
     });
-    expect(run(all, 'abc').met).toEqual({
+    const poor = run(all, 'abc');
+    poor.type();
+    expect(poor.met).toEqual({
       length: 'false',
       digit: 'false',
       uppercase: 'false',
@@ -161,16 +204,38 @@ describe('the live check', () => {
   });
 
   it('counts the length in code points, after normalising, as the server does', () => {
-    const lengthOnly = {
-      ...all,
-      requireDigit: false,
-      requireUppercase: false,
-      requireLowercase: false,
-      requireSpecial: false,
-    };
-    expect(run(lengthOnly, '\u{1f511}'.repeat(10)).met.length).toBe('true');
-    expect(run(lengthOnly, '\u{1f511}'.repeat(9)).met.length).toBe('false');
-    expect(run(lengthOnly, 'é'.repeat(9)).met.length).toBe('false');
-    expect(run(lengthOnly, 'é'.repeat(10)).met.length).toBe('true');
+    const only = { ...lengthOnly, requireLowercase: false, requireSpecial: false };
+    for (const [value, expected] of [
+      ['\u{1f511}'.repeat(10), 'true'],
+      ['\u{1f511}'.repeat(9), 'false'],
+      ['é'.repeat(9), 'false'],
+      ['é'.repeat(10), 'true'],
+    ] as const) {
+      const page = run(only, value);
+      page.type();
+      expect(page.met.length).toBe(expected);
+    }
+  });
+
+  it('says nothing at load, then one short summary after typing pauses', () => {
+    const page = run(all, 'Abcdefghij1');
+    expect(page.status.textContent).toBe('');
+    page.type();
+    page.type();
+    expect(page.status.textContent).toBe('');
+    page.settle();
+    expect(page.status.textContent).toBe('4 of 5 rules met');
+  });
+
+  it('shows the toggle and flips the field without changing the label', () => {
+    const page = run(all, '');
+    expect(page.toggle.hidden).toBe(false);
+    page.press();
+    expect(page.field.type).toBe('text');
+    expect(page.toggle.attributes.get('aria-pressed')).toBe('true');
+    expect(page.toggle.textContent).toBe('Show password');
+    page.press();
+    expect(page.field.type).toBe('password');
+    expect(page.toggle.attributes.get('aria-pressed')).toBe('false');
   });
 });

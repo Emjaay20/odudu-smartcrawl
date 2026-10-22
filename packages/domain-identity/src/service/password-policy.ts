@@ -38,7 +38,7 @@ export const REUSED_PASSWORD: PolicyViolation = {
 
 export const COMMON_PASSWORD: PolicyViolation = {
   rule: 'common-password',
-  message: 'That password is too common. Choose a different one.',
+  message: 'That password is too easy to guess. Choose a different one.',
 };
 
 const SPECIAL_CHARACTER = /[^A-Za-z0-9]/u;
@@ -52,7 +52,8 @@ export function evaluatePassword(
 ): PolicyViolation[] {
   const violations: PolicyViolation[] = [];
   // Judged in the form that is hashed, so a password typed decomposed counts
-  // as many characters as the one stored.
+  // as many characters as the one stored. The raw bound that readPasswordField
+  // applies first is on the form as typed; see its comment for where they differ.
   const candidate = normalisePassword(typed);
 
   // Counts characters, not UTF-16 code units: '🔑'.length is 2, so .length

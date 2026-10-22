@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   hashPassword,
   hashUserPassword,
+  matchUserPassword,
   normalisePassword,
   verifyPassword,
   verifyUserPassword,
@@ -120,5 +121,48 @@ describe('user passwords are NFC-normalised', () => {
 
   it('normalises to NFC', () => {
     expect(normalisePassword(decomposed)).toBe(composed);
+  });
+});
+
+describe('matchUserPassword, which of the two forms a stored hash was made from', () => {
+  const composed = 'café au lait, deux sucres';
+  const decomposed = 'café au lait, deux sucres';
+
+  function counting() {
+    let calls = 0;
+    return {
+      verify: (stored: string, plain: string) => {
+        calls += 1;
+        return verifyPassword(stored, plain);
+      },
+      calls: () => calls,
+    };
+  }
+
+  it('does one verification for a hash made from the normalised form, whatever was typed', async () => {
+    const stored = await hashUserPassword(composed);
+    const count = counting();
+    expect(await matchUserPassword(stored, decomposed, false, count.verify)).toBe('normalised');
+    expect(count.calls()).toBe(1);
+    const wrong = counting();
+    expect(await matchUserPassword(stored, 'not it́', false, wrong.verify)).toBeNull();
+    expect(wrong.calls()).toBe(1);
+  });
+
+  it('tries the form as typed for an older hash only after the normalised form fails', async () => {
+    const older = await hashPassword(decomposed);
+    const count = counting();
+    expect(await matchUserPassword(older, decomposed, true, count.verify)).toBe('as-typed');
+    expect(count.calls()).toBe(2);
+  });
+
+  it('does one verification for an older hash when the typed form is already normalised', async () => {
+    const older = await hashPassword('plain ascii passphrase');
+    const count = counting();
+    expect(await matchUserPassword(older, 'plain ascii passphrase', true, count.verify)).toBe(
+      'normalised',
+    );
+    expect(await matchUserPassword(older, 'other ascii passphrase', true, count.verify)).toBeNull();
+    expect(count.calls()).toBe(2);
   });
 });

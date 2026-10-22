@@ -10,9 +10,11 @@ import { auditRepository, type AuditEventRecord } from '@odudu/domain-audit';
 import {
   credentialRepository,
   hashPassword,
+  hashUserPassword,
   subjectRepository,
   userCredentials,
   users,
+  verifyPassword,
 } from '@odudu/domain-identity';
 import { newId } from '@odudu/kernel';
 import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/testkit';
@@ -340,7 +342,7 @@ describe('the tenant password policy binds the change-password action', () => {
         { rule: 'not-username', message: 'Password must not contain the username.' },
         {
           rule: 'common-password',
-          message: 'That password is too common. Choose a different one.',
+          message: 'That password is too easy to guess. Choose a different one.',
         },
       ],
     });
@@ -413,7 +415,7 @@ describe('the change-password action writes one password.changed row', () => {
 describe('the change-password action refuses common and expected passwords', () => {
   const COMMON = {
     rule: 'common-password',
-    message: 'That password is too common. Choose a different one.',
+    message: 'That password is too easy to guess. Choose a different one.',
   };
 
   it('refuses a listed password, however it is cased, and writes nothing', async () => {
@@ -476,5 +478,99 @@ describe('passwords are stored NFC-normalised and verified either way', () => {
         { rule: 'not-reused', message: 'Password must not be one you have used before.' },
       ],
     });
+  });
+});
+
+describe('a hash made before passwords were normalised is upgraded at the next sign-in', () => {
+  const composed = 'café au lait, deux sucres';
+  const decomposed = 'café au lait, deux sucres';
+
+  function row(account: Account) {
+    return withTenant(app.db, account.tenantId, async (tx) => {
+      const [found] = await tx
+        .select()
+        .from(userCredentials)
+        .where(
+          and(
+            eq(userCredentials.subjectId, account.subjectId),
+            eq(userCredentials.type, 'password'),
+          ),
+        );
+      if (found === undefined) throw new Error('no password row');
+      return found;
+    });
+  }
+
+  it('signs in a decomposed legacy password, rehashes it from the normalised form and marks it', async () => {
+    const account = await seedAccount({ storedAsTyped: decomposed });
+    const before = await row(account);
+    expect(before.hashNfc).toBeNull();
+
+    expect((await signIn(account, decomposed)).kind).toBe('success');
+
+    const after = await row(account);
+    expect(after.hashNfc).toBe(true);
+    expect(after.secretData).not.toEqual(before.secretData);
+    expect(after.createdAt).toEqual(before.createdAt);
+    const hash = (after.secretData as { hash: string }).hash;
+    expect(await verifyPassword(hash, composed)).toBe(true);
+    expect((await signIn(account, composed)).kind).toBe('success');
+    expect((await signIn(account, decomposed)).kind).toBe('success');
+  });
+
+  it('marks a legacy hash that was already of the normalised form, without rewriting it', async () => {
+    const account = await seedAccount();
+    const before = await row(account);
+
+    expect((await signIn(account, PASSWORD)).kind).toBe('success');
+
+    const after = await row(account);
+    expect(after.hashNfc).toBe(true);
+    expect(after.secretData).toEqual(before.secretData);
+  });
+
+  it('leaves a legacy hash alone when the password was wrong', async () => {
+    const account = await seedAccount({ storedAsTyped: decomposed });
+
+    expect((await signIn(account, 'not the password')).kind).toBe('failure');
+
+    expect((await row(account)).hashNfc).toBeNull();
+  });
+
+  it('marks every password it writes', async () => {
+    const account = await seedAccount();
+    expect(await change(account, composed)).toEqual({ kind: 'updated' });
+    expect((await row(account)).hashNfc).toBe(true);
+  });
+
+  it('marks a password inserted through the repository, and a reset-style replacement', async () => {
+    const account = await seedAccount();
+    await withTenant(app.db, account.tenantId, async (tx) => {
+      await tx.delete(userCredentials).where(eq(userCredentials.subjectId, account.subjectId));
+      await credentialRepository(tx).insert({
+        tenantId: account.tenantId,
+        subjectId: account.subjectId,
+        type: 'password',
+        secret: { kind: 'password', hash: await hashUserPassword(decomposed) },
+      });
+    });
+    expect((await row(account)).hashNfc).toBe(true);
+    await withTenant(app.db, account.tenantId, async (tx) =>
+      credentialRepository(tx).setPassword(account.subjectId, await hashUserPassword(composed)),
+    );
+    expect((await row(account)).hashNfc).toBe(true);
+  });
+
+  it('does not upgrade a subject of another tenant', async () => {
+    const mine = await seedAccount({ storedAsTyped: decomposed });
+    const other = await seedAccount();
+    const stored = (await row(mine)).secretData as { hash: string };
+
+    const done = await withTenant(app.db, other.tenantId, (tx) =>
+      credentialRepository(tx).upgradePassword(mine.subjectId, stored.hash, null),
+    );
+
+    expect(done).toBe(false);
+    expect((await row(mine)).hashNfc).toBeNull();
   });
 });

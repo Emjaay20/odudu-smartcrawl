@@ -83,10 +83,20 @@ async function passwordAttemptFor(
   const byEmail = loginWithEmail ? await accounts.byVerifiedEmail(login) : null;
   const found = login.includes('@') ? (byEmail ?? byUsername) : (byUsername ?? byEmail);
   const keyedOn = found === null ? DUMMY_SUBJECT_ID : found.subject.id;
-  const storedHash = await credentialRepository(tx).passwordFor(keyedOn);
+  const credential = await credentialRepository(tx).passwordCredentialFor(keyedOn);
   const onRecord = await loginFailureRepository(tx).forSubject(keyedOn);
+  const storedHash = credential?.hash ?? null;
   return {
-    verification: { subjectId: found === null ? null : found.subject.id, storedHash },
+    verification: {
+      subjectId: found === null ? null : found.subject.id,
+      storedHash,
+      normalised: credential?.normalised ?? true,
+      upgrade: async (hash) => {
+        if (storedHash !== null) {
+          await credentialRepository(tx).upgradePassword(keyedOn, storedHash, hash);
+        }
+      },
+    },
     keyedOn,
     onRecord,
   };
@@ -105,7 +115,7 @@ async function runPasswordStep(
   context: StepContext,
 ): Promise<AuthenticatorResult> {
   if (input.username === undefined || input.password === undefined) {
-    return passwordStep(input, { subjectId: null, storedHash: null });
+    return passwordStep(input, { subjectId: null, storedHash: null, normalised: true });
   }
   const attempt = await passwordAttemptFor(tx, input.username, context.loginWithEmail);
   const outcome = await passwordStep(input, attempt.verification);

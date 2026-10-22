@@ -56,9 +56,9 @@ describe('renderRequiredActionsForm', () => {
 </ul>
 <form method="post" action="/tenants/acme/login-actions/action-token">
   <input type="hidden" name="key" value="k&quot;ey">
-  <label>New password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" aria-describedby="password-rules-list"></label>
-  <div class="rules hint" id="password-rules" data-min="15">
-    <p class="rules-head"><span>Your password needs:</span><button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false" data-show="Show password" data-hide="Hide password">Show password</button></p>
+  <label>New password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" spellcheck="false" autocapitalize="off" autocorrect="off" aria-describedby="password-rules-list"></label>
+  <div class="rules hint" id="password-rules" data-min="15" data-summary="{met} of {total} rules met">
+    <p class="rules-head"><span>Your password needs:</span> <button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false">Show password</button> <span role="status"></span></p>
     <ul id="password-rules-list">
       <li data-rule="length">At least 15 characters</li>
       <li>Not a common password</li>
@@ -101,7 +101,7 @@ describe('renderRequiredActionsForm', () => {
 </div>
 <form`);
     expect(body).toContain(
-      'autocomplete="new-password" id="password" minlength="15" aria-invalid="true" aria-describedby="form-error-0 password-rules-list" autofocus>',
+      'autocomplete="new-password" id="password" minlength="15" spellcheck="false" autocapitalize="off" autocorrect="off" aria-invalid="true" aria-describedby="form-error-0 password-rules-list" autofocus>',
     );
   });
 

@@ -29,7 +29,7 @@ const HINTS = [
   'special',
   'notCommon',
   'show',
-  'hide',
+  'summary',
 ] as const;
 
 describe('a password rule is worded the same by both catalogues that word it', () => {

@@ -43,8 +43,8 @@ A long password protects better than a complicated one, and the console's defaul
 - Length: a password used alone should have at least 15 characters. Where every sign-in also needs a second factor, 8 is enough. If your minimum is lower than 15 and a second factor is not required of everyone, a note under the section says so. The note is advice, and you can still save. To require the second factor, turn on **Ask every subject for a one-time password** in [Sign-in flow](./sign-in-flow.mdx).
 - Character rules: the digit, uppercase, lowercase and special-character rules are off by default. NIST advises against them, so turn one on only if you must. When one is on, the password pages list it for the person.
 - Expiry: **Password lifetime** is 0 by default, so a password never expires. NIST advises against changing passwords on a schedule.
-- Common passwords: a password is always refused when it is on a list of about 38,000 common ones, or when it is on its own the tenant's name, the person's username or the name part of their email. Only the whole password is compared, ignoring case: `baseball` is refused and `baseball and a long walk home` is not. This has no setting.
-- Typing: passwords are stored in Unicode NFC form, so `é` typed as one character or as `e` and an accent is one password. A password set before this change still works as it was typed.
+- Common passwords: a password is always refused when it is on a list of about 38,000 common ones, or when it is only the tenant's name, the username, or the name part of the email. Only the whole password is compared, ignoring case: `baseball` is refused and `baseball and a long walk home` is not. This has no setting.
+- Typing: passwords are stored in Unicode NFC form, so `é` typed as one character or as `e` and an accent is one password. A password set before this change still signs in.
 
 A person with a passkey signs in without a password, so none of this applies to that sign-in.
 

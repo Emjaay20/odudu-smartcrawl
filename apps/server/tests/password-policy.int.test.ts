@@ -326,7 +326,7 @@ describe('the tenant password policy binds every writer', () => {
 // Long enough for every tenant default, so the only rule it breaks is the
 // common-password one.
 const COMMON_PASSWORD = '1qaz2wsx3edc4rfv';
-const TOO_COMMON = 'That password is too common.';
+const TOO_COMMON = 'That password is too easy to guess.';
 
 describe('a common password is refused by every writer, with its reason', () => {
   it('refuses it at registration, and the tenant name too', async () => {
@@ -400,7 +400,7 @@ describe('a common password is refused by every writer, with its reason', () => 
         password: COMMON_PASSWORD,
         email: 'ada@example.test',
       }),
-    ).rejects.toThrow(/That password is too common/);
+    ).rejects.toThrow(/That password is too easy to guess/);
   });
 
   it('refuses it at the change-password required action', async () => {

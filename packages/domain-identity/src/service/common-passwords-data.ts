@@ -1,7 +1,8 @@
 // Generated: the 8-character-and-longer entries of the first 100,000 lines of
 // xato-net-10-million-passwords-100000.txt, SecLists 4c0fd59432ab8508edc23b3c880127edb12e34d5
 // (MIT, THIRD-PARTY-NOTICES.md), lowercased, one per line, most common first.
-// Three entries that a repository-wide word check refuses are left out.
+// Five entries are left out: three that a repository-wide word check refuses,
+// and two that hold a backtick, a backslash or a dollar sign.
 export const COMMON_PASSWORDS = `
 password
 12345678

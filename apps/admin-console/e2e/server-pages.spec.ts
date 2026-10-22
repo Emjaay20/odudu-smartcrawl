@@ -241,7 +241,7 @@ test('the required-action pages: password change, passkey enrolment', async ({
   await inspect(page, 'update-password');
   await page.getByLabel('New password').fill(COMMON_PASSWORD);
   await page.getByRole('button', { name: 'Update password' }).click();
-  await expect(page.getByRole('alert')).toContainText('That password is too common.');
+  await expect(page.getByRole('alert')).toContainText('That password is too easy to guess.');
   await inspect(page, 'update-password-violations');
 
   await page.goto(authorize(main, 'plain', { prompt: 'login' }));
@@ -340,14 +340,13 @@ test('the password hints are a plain list, and a script ticks them and shows the
 
   await field.fill('a long enough passphrase');
   await expect(length).toHaveAttribute('data-met', 'true');
+  await expect(rules.getByRole('status')).toHaveText('1 of 1 rules met');
   await toggle.click();
   await expect(field).toHaveAttribute('type', 'text');
-  await expect(rules.getByRole('button', { name: 'Hide password' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  await expect(toggle).toHaveText('Show password');
   await inspect(page, 'registration-hints-met-shown');
-  await rules.getByRole('button', { name: 'Hide password' }).click();
+  await toggle.click();
   await expect(field).toHaveAttribute('type', 'password');
   const withScript = await rules.boundingBox();
   expect(problems).toEqual([]);
@@ -393,7 +392,7 @@ test('registration, the unverified account, password reset and their links', asy
   await page.getByLabel('Email').fill(`newcomer-${run}@example.test`);
   await page.getByLabel('Password').fill(COMMON_PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
-  await expect(page.getByRole('alert')).toContainText('That password is too common.');
+  await expect(page.getByRole('alert')).toContainText('That password is too easy to guess.');
   await expect(page.getByLabel('Username')).toHaveValue('newcomer');
   await expect(page.getByLabel('Password')).toHaveValue('');
   await expect(page.getByLabel('Password')).toBeFocused();
@@ -460,7 +459,7 @@ test('registration, the unverified account, password reset and their links', asy
   await expect(
     page.getByRole('heading', { level: 1, name: 'Choose a new password' }),
   ).toBeVisible();
-  await expect(page.getByRole('alert')).toContainText('That password is too common.');
+  await expect(page.getByRole('alert')).toContainText('That password is too easy to guess.');
   await expect(page.getByLabel('New password')).toBeFocused();
   await inspect(page, 'reset-weak');
   await page.getByLabel('New password').fill(`${PASSWORD}-reset`);
