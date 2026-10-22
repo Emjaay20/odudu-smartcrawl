@@ -6,6 +6,7 @@ export { isUuid, newId, scriptNonce } from '#/ids';
 export {
   DEFAULT_PAGE_LOCALE,
   INSTRUMENT_STYLESHEET,
+  MAX_SIGN_IN_PATH_LENGTH,
   PRODUCT_NAME,
   type PageLocale,
   type PageScript,

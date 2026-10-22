@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_SIGN_IN_PATH_LENGTH, signInPath } from '#/service/sign-in-path';
+import { MAX_SIGN_IN_PATH_LENGTH } from '@odudu/kernel';
+import { signInPath } from '#/service/sign-in-path';
 
 const AUTH = '/tenants/acme/protocol/openid-connect/auth';
 const GOOD = `${AUTH}?response_type=code&client_id=portal&redirect_uri=https%3A%2F%2Fapp.example%2Fcb&state=a%20b`;

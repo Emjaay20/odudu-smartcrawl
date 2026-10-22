@@ -1,3 +1,5 @@
+import { MAX_SIGN_IN_PATH_LENGTH } from '@odudu/kernel';
+
 // Where an account page sends a person back to sign in: the authorize path
 // the sign-in page rebuilt from the parked request, carried through the
 // account pages as a `return_to` value. It is accepted only in exactly that
@@ -6,7 +8,6 @@
 // foreign address; /authorize validates the request again from scratch. The
 // parked request's id is never put in a URL, which is why the request travels
 // as its own parameters instead.
-export const MAX_SIGN_IN_PATH_LENGTH = 4096;
 
 const PRINTABLE_ASCII = /^[\x21-\x7e]+$/u;
 

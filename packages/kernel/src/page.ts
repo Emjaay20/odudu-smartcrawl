@@ -28,6 +28,13 @@ export interface PageLocale {
   readonly theme?: PageTheme;
 }
 
+// The longest authorize path an account page is handed as `return_to`. The page
+// that sends it and the page that accepts it read this one value. Encoded into
+// a query a path of this length is at most three times as long (every byte
+// `%XX`), about 12 KiB: under the 16 KiB Node allows a request line and its
+// headers together, so a link built within the bound is never refused with 431.
+export const MAX_SIGN_IN_PATH_LENGTH = 4096;
+
 export const DEFAULT_PAGE_LOCALE: PageLocale = { tag: 'en', dir: 'ltr' };
 
 // A page's theme rides with its negotiated language because every renderer
