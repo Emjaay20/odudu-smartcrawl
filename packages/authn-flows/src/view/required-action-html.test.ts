@@ -22,26 +22,37 @@ function expectFragment(page: { html: string; body: string }): void {
 
 describe('renderRequiredActionPage', () => {
   it('returns a body fragment and a title beside the document', () => {
-    const page = renderRequiredActionPage('configure-passkey', DEFAULT_PAGE_LOCALE);
+    const page = renderRequiredActionPage('configure-passkey', null, DEFAULT_PAGE_LOCALE);
     expect(page.title).toBe('One more step');
     expect(page.body).toContain('pending action');
     expectFragment(page);
   });
 
   it('keeps the English markup exactly, the action isolated', () => {
-    expect(renderRequiredActionPage('configure-passkey', DEFAULT_PAGE_LOCALE).body)
+    expect(renderRequiredActionPage('configure-passkey', null, DEFAULT_PAGE_LOCALE).body)
       .toBe(`<h1>One more step</h1>
 <p>This account has a pending action (<bdi>configure-passkey</bdi>) that cannot be completed here yet.</p>
 <p>Ask an administrator to finish setting up this account.</p>`);
   });
 
+  it('links back to sign-in only when told where that is', () => {
+    const way = '/tenants/acme/protocol/openid-connect/auth?client_id=portal&state=x';
+    const { body } = renderRequiredActionPage('configure-passkey', way, DEFAULT_PAGE_LOCALE);
+    expect(body).toContain(
+      '<p class="links">\n<a href="/tenants/acme/protocol/openid-connect/auth?client_id=portal&amp;state=x">Back to sign in</a>\n</p>',
+    );
+    expect(
+      renderRequiredActionPage('configure-passkey', null, DEFAULT_PAGE_LOCALE).body,
+    ).not.toContain('Back to sign in');
+  });
+
   it('names the action asked for', () => {
-    const page = renderRequiredActionPage('generate-recovery-codes', DEFAULT_PAGE_LOCALE);
+    const page = renderRequiredActionPage('generate-recovery-codes', null, DEFAULT_PAGE_LOCALE);
     expect(page.body).toContain('generate-recovery-codes');
   });
 
   it('reads French where the fixture has it and English for the rest', () => {
-    const page = renderRequiredActionPage('update-password', FRENCH);
+    const page = renderRequiredActionPage('update-password', null, FRENCH);
     expect(page.html).toContain('<html lang="fr" dir="ltr">');
     expect(page.title).toBe('Encore une étape');
     expect(page.body).toContain('action en attente (<bdi>update-password</bdi>)');
@@ -49,7 +60,7 @@ describe('renderRequiredActionPage', () => {
   });
 
   it('writes lang and dir for a right-to-left locale', () => {
-    expect(renderRequiredActionPage('configure-totp', ARABIC).html).toContain(
+    expect(renderRequiredActionPage('configure-totp', null, ARABIC).html).toContain(
       '<html lang="ar" dir="rtl">',
     );
   });
@@ -57,7 +68,7 @@ describe('renderRequiredActionPage', () => {
   it('keeps an action name that holds markup inside its isolate, in both languages', () => {
     const hostile = '</bdi><img src=x onerror=1>' as never;
     for (const locale of [DEFAULT_PAGE_LOCALE, FRENCH]) {
-      const page = renderRequiredActionPage(hostile, locale);
+      const page = renderRequiredActionPage(hostile, null, locale);
       expect(page.html).toContain('<bdi>&lt;/bdi&gt;&lt;img src=x onerror=1&gt;</bdi>');
       expect(page.html).not.toContain('<img');
     }

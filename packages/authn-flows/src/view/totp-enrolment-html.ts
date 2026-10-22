@@ -3,7 +3,8 @@ import { type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { type EnrolmentRefusal } from '#/schema/enrolment-refusal';
 import { escapeHtml, intro, page } from '#/view/document';
 import { t, tHtml, token } from '#/view/messages';
-import { refusalHtml } from '#/view/refusal';
+import { firstInvalidField, invalidAttributes, problemSummary } from '#/view/form-error';
+import { refusalProblems } from '#/view/refusal';
 
 // What an enrolment page has to show: the secret in the form the user's
 // authenticator app scans, and the same secret as text for an app that
@@ -37,17 +38,19 @@ export function renderTotpEnrolmentPage(
   locale: PageLocale,
 ): RenderedPage {
   const target = `/tenants/${escapeHtml(tenant)}/login-actions/required-action?action=configure-totp`;
+  const problems = refusalProblems(locale, error, 'code');
+  const code = `${invalidAttributes(problems, 'code')}${firstInvalidField(problems, ['code']) === null ? '' : ' autofocus'}`;
   return page(
     t(locale, 'totp.title'),
     `${intro(tHtml(locale, 'totp.title'), tenant)}
-${refusalHtml(locale, error)}<p>${tHtml(locale, 'totp.scan')}</p>
+${problemSummary(problems)}<p>${tHtml(locale, 'totp.scan')}</p>
 ${qrSvg(offer.uri)}
 <p>${token(offer.uri)}</p>
 <p>${tHtml(locale, 'totp.key')} ${token(offer.secret)}</p>
 <form method="post" action="${target}">
   <input type="hidden" name="auth_session_id" value="${escapeHtml(authSessionId)}">
   <input type="hidden" name="secret" value="${escapeHtml(offer.secret)}">
-  <label>${tHtml(locale, 'totp.codeLabel')} <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
+  <label>${tHtml(locale, 'totp.codeLabel')} <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"${code}></label>
   <button type="submit">${tHtml(locale, 'totp.confirm')}</button>
 </form>`,
     null,

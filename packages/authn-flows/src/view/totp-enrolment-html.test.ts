@@ -100,7 +100,11 @@ describe('renderTotpEnrolmentPage', () => {
 <h1>Set up your authenticator</h1>
 <p class="tenant"><bdi>acme</bdi></p>
 </header>
-<p class="alert" role="alert">That code did not match. Try the next one your app shows.</p>
+<div class="alert" role="alert" id="form-error">
+<ul>
+<li id="form-error-0">That code did not match. Try the next one your app shows.</li>
+</ul>
+</div>
 <p>Scan this with your authenticator app, or enter the key by hand.</p>
 <SVG>
 <p><bdi dir="ltr"><code>otpauth://totp/acme:ada?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&amp;issuer=acme&amp;algorithm=SHA1&amp;digits=6&amp;period=30</code></bdi></p>
@@ -108,7 +112,7 @@ describe('renderTotpEnrolmentPage', () => {
 <form method="post" action="/tenants/acme/login-actions/required-action?action=configure-totp">
   <input type="hidden" name="auth_session_id" value="sess-1">
   <input type="hidden" name="secret" value="GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ">
-  <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
+  <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" aria-invalid="true" aria-describedby="form-error-0" autofocus></label>
   <button type="submit">Confirm</button>
 </form>`);
   });
@@ -117,7 +121,7 @@ describe('renderTotpEnrolmentPage', () => {
     const page = renderTotpEnrolmentPage('acme', 's1', OFFER, 'code_mismatch', FRENCH);
     expect(page.html).toContain('<html lang="fr" dir="ltr">');
     expect(page.title).toBe("Configurez votre application d'authentification");
-    expect(page.body).toContain('<p class="alert" role="alert">Ce code ne correspond pas.</p>');
+    expect(page.body).toContain('<li id="form-error-0">Ce code ne correspond pas.</li>');
     expect(page.body).toContain('<p>Clé : <bdi dir="ltr"><code>');
     expect(page.body).toContain('<button type="submit">Confirmer</button>');
     expect(page.body).toContain(`<p>${en['totp.scan']}</p>`);

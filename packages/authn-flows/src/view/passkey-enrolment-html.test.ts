@@ -151,7 +151,11 @@ describe('renderPasskeyEnrolmentPage', () => {
 <h1>Add a passkey</h1>
 <p class="tenant"><bdi>acme</bdi></p>
 </header>
-<p class="alert" role="alert">That passkey could not be added. Try again.</p>
+<div class="alert" role="alert" id="form-error">
+<ul>
+<li id="form-error-0">That passkey could not be added. Try again.</li>
+</ul>
+</div>
 <p>Your device will ask you to confirm. Nothing is stored until it does.</p>
 <form method="post" action="/tenants/acme/login-actions/required-action?action=configure-passkey" id="passkey-form" data-failed="Your device did not finish adding the passkey — {reason}. You can try again." data-cancelled="the request was cancelled">
   <input type="hidden" name="auth_session_id" value="sess-1">
@@ -168,9 +172,7 @@ describe('renderPasskeyEnrolmentPage', () => {
     const page = renderPasskeyEnrolmentPage('acme', 's1', OFFER, 'passkey_not_added', FRENCH);
     expect(page.html).toContain('<html lang="fr" dir="ltr">');
     expect(page.title).toBe('Ajouter une clé d’accès');
-    expect(page.body).toContain(
-      '<p class="alert" role="alert">Cette clé n’a pas pu être ajoutée.</p>',
-    );
+    expect(page.body).toContain('<li id="form-error-0">Cette clé n’a pas pu être ajoutée.</li>');
     expect(page.body).toContain('<label>Nommez cette clé <input');
     expect(page.body).toContain('placeholder="Clé d’accès"');
     expect(page.body).toContain('>Ajouter</button>');

@@ -1,5 +1,6 @@
 import { type PageLocale } from '@odudu/kernel';
 import { type EnrolmentRefusal } from '#/schema/enrolment-refusal';
+import { type Problem } from '#/view/form-error';
 import { tHtml, type MessageId } from '#/view/messages';
 
 const REFUSAL_MESSAGE: Readonly<Record<EnrolmentRefusal, MessageId>> = {
@@ -8,9 +9,15 @@ const REFUSAL_MESSAGE: Readonly<Record<EnrolmentRefusal, MessageId>> = {
   passkey_not_added: 'refusal.passkeyNotAdded',
 };
 
-// The line above the form that says why it is back, or nothing on a first visit.
-export function refusalHtml(locale: PageLocale, refusal: EnrolmentRefusal | undefined): string {
+// Why an enrolment page is back, or nothing on a first visit. `field` names
+// the input the refusal is about, or null when it is about the step as a
+// whole.
+export function refusalProblems(
+  locale: PageLocale,
+  refusal: EnrolmentRefusal | undefined,
+  field: string | null,
+): Problem[] {
   return refusal === undefined
-    ? ''
-    : `<p class="alert" role="alert">${tHtml(locale, REFUSAL_MESSAGE[refusal])}</p>\n`;
+    ? []
+    : [{ fields: field === null ? [] : [field], html: tHtml(locale, REFUSAL_MESSAGE[refusal]) }];
 }

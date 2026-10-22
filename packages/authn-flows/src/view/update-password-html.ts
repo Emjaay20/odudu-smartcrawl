@@ -1,6 +1,7 @@
 import { MAX_PASSWORD_LENGTH, type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { type PasswordViolation } from '#/schema/password-violation';
 import { escapeHtml, intro, page } from '#/view/document';
+import { invalidAttributes, problemSummary } from '#/view/form-error';
 import { bdi, t, tHtml, type MessageId } from '#/view/messages';
 
 // Every rule a violation can name, by the code the domain reports it under.
@@ -41,16 +42,17 @@ export function renderUpdatePasswordPage(
   locale: PageLocale,
 ): RenderedPage {
   const target = `/tenants/${escapeHtml(tenant)}/login-actions/required-action?action=update-password`;
-  const listed =
-    violations.length === 0
-      ? ''
-      : `<div class="alert" role="alert">\n<ul>\n${violations.map((violation) => `<li>${ruleHtml(violation, locale)}</li>`).join('\n')}\n</ul>\n</div>\n`;
+  const problems = violations.map((violation) => ({
+    fields: ['password'],
+    html: ruleHtml(violation, locale),
+  }));
+  const focus = problems.length === 0 ? '' : ' autofocus';
   const title = t(locale, 'updatePassword.title');
   const body = `${intro(tHtml(locale, 'updatePassword.title'), tenant)}
 <p>${tHtml(locale, 'updatePassword.intro')}</p>
-${listed}<form method="post" action="${target}">
+${problemSummary(problems)}<form method="post" action="${target}">
   <input type="hidden" name="auth_session_id" value="${escapeHtml(authSessionId)}">
-  <label>${tHtml(locale, 'updatePassword.newPassword')} <input type="password" name="password" autocomplete="new-password"></label>
+  <label>${tHtml(locale, 'updatePassword.newPassword')} <input type="password" name="password" autocomplete="new-password"${invalidAttributes(problems, 'password')}${focus}></label>
   <button type="submit">${tHtml(locale, 'updatePassword.submit')}</button>
 </form>`;
   // No script: nothing on this page fetches anything, so the base

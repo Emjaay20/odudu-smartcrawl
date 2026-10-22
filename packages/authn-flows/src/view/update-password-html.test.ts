@@ -118,15 +118,15 @@ describe('renderUpdatePasswordPage', () => {
 <p class="tenant"><bdi>acme</bdi></p>
 </header>
 <p>This account needs a new password before you can continue.</p>
-<div class="alert" role="alert">
+<div class="alert" role="alert" id="form-error">
 <ul>
-<li>Password must be at least 12 characters long.</li>
-<li>Password must contain a digit.</li>
+<li id="form-error-0">Password must be at least 12 characters long.</li>
+<li id="form-error-1">Password must contain a digit.</li>
 </ul>
 </div>
 <form method="post" action="/tenants/acme/login-actions/required-action?action=update-password">
   <input type="hidden" name="auth_session_id" value="sess-1">
-  <label>New password <input type="password" name="password" autocomplete="new-password"></label>
+  <label>New password <input type="password" name="password" autocomplete="new-password" aria-invalid="true" aria-describedby="form-error-0 form-error-1" autofocus></label>
   <button type="submit">Update password</button>
 </form>`);
   });
@@ -139,10 +139,10 @@ describe('renderUpdatePasswordPage', () => {
 
   it('reads every rule from the catalogue by its code, with its numbers', () => {
     const { body } = renderUpdatePasswordPage('demo', 's', RULES, DEFAULT_PAGE_LOCALE);
-    expect(body).toContain('<li>Password must be at least 12 characters long.</li>');
-    expect(body).toContain('<li>Password must be at most 256 characters long.</li>');
-    expect(body).toContain(`<li>${en['updatePassword.rule.notReused']}</li>`);
-    expect(body).toContain(`<li>${en['updatePassword.rule.superseded']}</li>`);
+    expect(body).toContain('>Password must be at least 12 characters long.</li>');
+    expect(body).toContain('>Password must be at most 256 characters long.</li>');
+    expect(body).toContain(`>${en['updatePassword.rule.notReused']}</li>`);
+    expect(body).toContain(`>${en['updatePassword.rule.superseded']}</li>`);
     expect(body).not.toContain('dev');
   });
 
@@ -164,7 +164,7 @@ describe('renderUpdatePasswordPage', () => {
       [{ rule: 'min-length', message: 'Too short' }],
       DEFAULT_PAGE_LOCALE,
     );
-    expect(body).toContain('<li><bdi>Too short</bdi></li>');
+    expect(body).toContain('<li id="form-error-0"><bdi>Too short</bdi></li>');
     expect(body).not.toContain('at least 0');
   });
 
@@ -175,7 +175,7 @@ describe('renderUpdatePasswordPage', () => {
       [{ rule: 'future-rule', message: 'Must be <b>blue</b>' }],
       DEFAULT_PAGE_LOCALE,
     );
-    expect(body).toContain('<li><bdi>Must be &lt;b&gt;blue&lt;/b&gt;</bdi></li>');
+    expect(body).toContain('><bdi>Must be &lt;b&gt;blue&lt;/b&gt;</bdi></li>');
     expect(body).not.toContain('<b>');
   });
 
@@ -186,18 +186,18 @@ describe('renderUpdatePasswordPage', () => {
       [{ rule: 'constructor', message: 'dev' }],
       DEFAULT_PAGE_LOCALE,
     );
-    expect(body).toContain('<li><bdi>dev</bdi></li>');
+    expect(body).toContain('><bdi>dev</bdi></li>');
   });
 
   it('renders each rule it has in French, and English for the keys the fixture lacks', () => {
     const page = renderUpdatePasswordPage('demo', 's', RULES, FRENCH);
     expect(page.title).toBe('Changez votre mot de passe');
     expect(page.html).toContain('<html lang="fr" dir="ltr">');
-    expect(page.body).toContain('<li>Le mot de passe doit comporter au moins 12 caractères.</li>');
-    expect(page.body).toContain('<li>Le mot de passe ne doit pas dépasser 256 caractères.</li>');
-    expect(page.body).toContain('<li>Le mot de passe doit contenir un chiffre.</li>');
-    expect(page.body).toContain('<li>Le mot de passe ne doit pas avoir déjà servi.</li>');
-    expect(page.body).toContain(`<li>${en['updatePassword.rule.requireUppercase']}</li>`);
+    expect(page.body).toContain('>Le mot de passe doit comporter au moins 12 caractères.</li>');
+    expect(page.body).toContain('>Le mot de passe ne doit pas dépasser 256 caractères.</li>');
+    expect(page.body).toContain('>Le mot de passe doit contenir un chiffre.</li>');
+    expect(page.body).toContain('>Le mot de passe ne doit pas avoir déjà servi.</li>');
+    expect(page.body).toContain(`>${en['updatePassword.rule.requireUppercase']}</li>`);
     expect(page.body).toContain(`<h1>Changez votre mot de passe</h1>`);
   });
 

@@ -2,7 +2,8 @@ import { type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { type EnrolmentRefusal } from '#/schema/enrolment-refusal';
 import { escapeHtml, intro, page } from '#/view/document';
 import { t, tHtml, token } from '#/view/messages';
-import { refusalHtml } from '#/view/refusal';
+import { problemSummary } from '#/view/form-error';
+import { refusalProblems } from '#/view/refusal';
 
 // What the page has to show: the codes in plaintext, and whether they
 // displace a set the subject was issued earlier — a page that silently
@@ -28,7 +29,7 @@ export function renderRecoveryCodesPage(
   const items = offer.codes.map((code) => `  <li>${token(code)}</li>`).join('\n');
   const title = t(locale, 'recoveryCodes.title');
   const body = `${intro(tHtml(locale, 'recoveryCodes.title'), tenant)}
-${refusalHtml(locale, error)}<p>${tHtml(locale, 'recoveryCodes.use')} <strong>${tHtml(locale, 'recoveryCodes.onlyTime')}</strong> ${tHtml(locale, 'recoveryCodes.keep')}</p>
+${problemSummary(refusalProblems(locale, error, null))}<p>${tHtml(locale, 'recoveryCodes.use')} <strong>${tHtml(locale, 'recoveryCodes.onlyTime')}</strong> ${tHtml(locale, 'recoveryCodes.keep')}</p>
 ${replaced}<ol>
 ${items}
 </ol>

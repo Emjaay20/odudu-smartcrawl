@@ -28,6 +28,7 @@ export const en = {
   'recoveryCodes.replaced':
     'These replace the codes issued to this account before now, which no longer work.',
   'recoveryCodes.acknowledge': 'I have saved these codes',
+  'link.backToSignIn': 'Back to sign in',
   'requiredAction.title': 'One more step',
   'requiredAction.pending':
     'This account has a pending action ({action}) that cannot be completed here yet.',
