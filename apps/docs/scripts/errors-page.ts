@@ -20,8 +20,19 @@ const SURFACE_LABELS: Record<OAuthSurface, string> = {
   registration: 'client registration',
 };
 
+// Answered by the server's root for any address nothing serves, the admin API's
+// among them, so it is listed here with the admin types a client switches on.
+const UNROUTED_PROBLEM_TYPES = {
+  'not-found': {
+    status: 404,
+    summary:
+      'Nothing is served at the path, whichever API or tenant it names. `detail` is "No resource at this ' +
+      'path"; it named the path and the route before. A browser that asks for a page is shown one instead.',
+  },
+};
+
 function adminSection(): string {
-  const rows = Object.entries(ADMIN_PROBLEM_TYPES)
+  const rows = Object.entries({ ...ADMIN_PROBLEM_TYPES, ...UNROUTED_PROBLEM_TYPES })
     .sort(([a], [b]) => (a < b ? -1 : 1))
     .map(([name, entry]) => [
       codeCell(problemTypeUri(name)),
@@ -36,9 +47,9 @@ function adminSection(): string {
     'A `400` that names fields carries an `errors` list; an entry has a `code` when the refusal has ' +
       'one, such as `bidi_control_refused` for a bidirectional control character in a typed field. ' +
       'The shape of the problem document is under [problem details](./admin-api/index.md#problem-details).',
-    'An address nothing serves answers `404` with the type `about:blank#not-found` and the detail ' +
-      '"No resource at this path", whichever API or tenant it names; an unhandled failure answers ' +
-      '`500`. Both are problem documents whose `instance` is the request id. A browser that asks for a page, outside the admin, ' +
+    'An address nothing serves answers `404` with the type `about:blank#not-found`, and an unhandled ' +
+      'failure `500` (every failure of status 500 or above answers 500). Both are problem documents ' +
+      'whose `instance` is the request id. A browser that asks for a page, outside the admin, ' +
       'console API, health and protocol paths, is shown a branded page instead: the same page for ' +
       'every unknown address, with the request id on the failure page and nothing the request or ' +
       'the failure carried.',

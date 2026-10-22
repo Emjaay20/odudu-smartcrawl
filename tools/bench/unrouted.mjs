@@ -80,7 +80,7 @@ for (const accept of [BROWSER, 'application/json']) await burst('/warm', accept)
 const rows = [
   ['404 problem document ', '/nope', 'application/json'],
   ['404 page             ', '/nope', BROWSER],
-  ['404 page, tenant path', '/tenants/acme/nope', BROWSER],
+  ['404 page, tenant path', '/tenants/acme/login-actions/nope', BROWSER],
   ['500 problem document ', '/boom', 'application/json'],
   ['500 page             ', '/boom', BROWSER],
 ];

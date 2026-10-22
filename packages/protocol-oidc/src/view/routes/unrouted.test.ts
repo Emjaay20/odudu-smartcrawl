@@ -38,7 +38,7 @@ describe('an unknown path', () => {
     expect(res.headers['cache-control']).toBe('no-store');
     expect(res.headers['content-security-policy']).toContain("default-src 'none'");
     expect(res.headers['x-frame-options']).toBe('DENY');
-    expect(res.headers.vary).toContain('Accept');
+    expect(res.headers.vary).toBe('Accept, Accept-Language, Cookie');
     expect(res.body).toContain('<h1>Page not found</h1>');
     expect(res.body).toContain('href="/docs/"');
     expect(res.body).toContain('href="https://c.example.test/console/"');
@@ -49,7 +49,8 @@ describe('an unknown path', () => {
       const res = await build().inject({ url: '/nope', headers });
       expect(res.statusCode).toBe(404);
       expect(res.headers['content-type']).toMatch(/^application\/problem\+json/u);
-      expect(res.headers.vary).toContain('Accept');
+      expect(res.headers.vary).toBe('Accept');
+      expect(res.headers['cache-control']).toBe('no-store');
       expect(res.json()).toEqual({
         type: 'about:blank#not-found',
         title: 'Not Found',
@@ -62,15 +63,25 @@ describe('an unknown path', () => {
   });
 
   // light-my-request keeps the payload a socket would drop, so the length is
-  // what shows the HEAD answer describes the page a GET returns.
-  it('answers a HEAD navigation with the headers a GET gets', async () => {
+  // what shows the HEAD answer describes the page a GET returns; a real socket
+  // shows the body is not sent.
+  it('answers a HEAD navigation with the headers and length a GET gets, and no body on the wire', async () => {
     const headers = { accept: BROWSER };
     const get = await build().inject({ url: '/nope', headers });
     const head = await app?.inject({ method: 'HEAD', url: '/nope', headers });
     expect(head?.statusCode).toBe(404);
     expect(head?.headers['content-type']).toMatch(/^text\/html/u);
-    expect(head?.headers['content-length']).toBe(get.headers['content-length']);
+    expect(head?.headers['content-length']).toBe(String(Buffer.byteLength(get.body)));
     expect(head?.headers['cache-control']).toBe('no-store');
+    await app?.close();
+    const live = build();
+    await live.listen({ port: 0, host: '127.0.0.1' });
+    const address = live.server.address();
+    const port = typeof address === 'object' && address !== null ? address.port : 0;
+    const wire = await fetch(`http://127.0.0.1:${String(port)}/nope`, { method: 'HEAD', headers });
+    expect(wire.status).toBe(404);
+    expect(wire.headers.get('content-length')).toBe(String(Buffer.byteLength(get.body)));
+    expect(await wire.text()).toBe('');
   });
 
   it('keeps the problem document under an API prefix, whatever the browser sends', async () => {
@@ -105,8 +116,14 @@ describe('an unknown path', () => {
   });
 
   it('shows the same page for every path, so none says anything about what exists', async () => {
-    const a = await build().inject({ url: '/tenants/exists/nope', headers: { accept: BROWSER } });
-    const b = await app?.inject({ url: '/tenants/missing/nope', headers: { accept: BROWSER } });
+    const a = await build().inject({
+      url: '/tenants/exists/login-actions/nope',
+      headers: { accept: BROWSER },
+    });
+    const b = await app?.inject({
+      url: '/tenants/missing/login-actions/nope',
+      headers: { accept: BROWSER },
+    });
     expect(b?.statusCode).toBe(a.statusCode);
     expect(b?.body).toBe(a.body);
   });
@@ -132,7 +149,7 @@ describe('an unhandled error', () => {
     expect(res.statusCode).toBe(500);
     expect(res.headers['content-type']).toMatch(/^text\/html/u);
     expect(res.headers['cache-control']).toBe('no-store');
-    expect(res.headers.vary).toContain('Accept');
+    expect(res.headers.vary).toBe('Accept, Accept-Language, Cookie');
     expect(res.body).toContain('Something went wrong');
     expect(res.body).toContain('req-1');
     for (const leaked of ['select', 'secrets', 'token', 'Error:', 'at ']) {

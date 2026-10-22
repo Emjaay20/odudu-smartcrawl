@@ -1,4 +1,5 @@
-/* The drawing plays once and rests on its last frame. Only transform, opacity
+/* The drawing plays twice, about five seconds in all, and rests on its last
+   frame; a pointer over it replays it. Only transform, opacity
    and stroke-dashoffset move. */
 .lost {
   display: block;

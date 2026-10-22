@@ -134,11 +134,11 @@ describe('a browser asking for an address nothing serves', () => {
     });
     const app = withConsoleAndDocs();
     const known = await app.inject({
-      url: `/tenants/${name}/nope`,
+      url: `/tenants/${name}/login-actions/nope`,
       headers: { accept: BROWSER },
     });
     const unknown = await app.inject({
-      url: `/tenants/${name}-missing/nope`,
+      url: `/tenants/${name}-missing/login-actions/nope`,
       headers: { accept: BROWSER },
     });
     const bare = await app.inject({ url: '/nope', headers: { accept: BROWSER } });
@@ -150,11 +150,14 @@ describe('a browser asking for an address nothing serves', () => {
     await app.close();
   });
 
-  it('is answered the same for HEAD, with no body', async () => {
+  it('is answered the same for HEAD: the status, the headers and the length of the GET', async () => {
     const app = withConsoleAndDocs();
-    const head = await app.inject({ method: 'HEAD', url: '/nope', headers: { accept: BROWSER } });
+    const headers = { accept: BROWSER };
+    const get = await app.inject({ url: '/nope', headers });
+    const head = await app.inject({ method: 'HEAD', url: '/nope', headers });
     expect(head.statusCode).toBe(404);
     expect(head.headers['content-type']).toMatch(/^text\/html/u);
+    expect(head.headers['content-length']).toBe(String(Buffer.byteLength(get.body)));
     await app.close();
   });
 
@@ -167,6 +170,8 @@ describe('a browser asking for an address nothing serves', () => {
       '/console/api/nope',
       '/tenants/anything/protocol/openid-connect/nope',
       '/tenants/anything/.well-known/nope',
+      '/tenants/anything/clients-registrations/openid-connect/nope',
+      '/tenants/anything/nope',
     ]) {
       const res = await app.inject({
         url,

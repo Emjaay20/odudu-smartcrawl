@@ -3,9 +3,10 @@
 // after one percent-decoding, so a differently spelled path cannot slip past.
 const API_PREFIXES = ['/admin', '/console/api', '/health', '/instrument', '/.well-known'];
 
-// Under /tenants/:tenant, the protocol endpoints and discovery are called by
-// clients; the browser flows (login-actions) are the rest.
-const TENANT_API_SEGMENTS = new Set(['protocol', '.well-known']);
+// Under /tenants/:tenant the browser flows are the one place a person goes;
+// every other segment is a protocol, discovery or registration endpoint that a
+// program calls. Inverted so a prefix added later is an API until it is named.
+const TENANT_PAGE_SEGMENT = 'login-actions';
 
 function pathOf(url: string): string {
   const end = url.search(/[?#]/u);
@@ -29,7 +30,9 @@ function isApi(path: string): boolean {
   const lower = path.toLowerCase();
   if (API_PREFIXES.some((prefix) => underPrefix(lower, prefix))) return true;
   const [, first, , third] = lower.split('/');
-  return first === 'tenants' && third !== undefined && TENANT_API_SEGMENTS.has(third);
+  return (
+    first === 'tenants' && third !== undefined && third !== '' && third !== TENANT_PAGE_SEGMENT
+  );
 }
 
 export function isApiPath(url: string): boolean {
@@ -37,16 +40,21 @@ export function isApiPath(url: string): boolean {
   return isApi(path) || isApi(decoded(path));
 }
 
+// RFC 9110 §12.4.2: 0 to 1 with at most three decimals. An entry whose q is
+// anything else (0x1, 1e3, 1.5, empty) is read as not sent.
+const QVALUE = /^(?:0(?:\.\d{0,3})?|1(?:\.0{0,3})?)$/u;
+
 // The quality an Accept header gives one media type written exactly, or null
-// when it does not name it. A malformed q is no preference at all.
+// when it does not name it.
 function quality(accept: string, type: string): number | null {
   let best: number | null = null;
   for (const entry of accept.split(',')) {
     const [name = '', ...parameters] = entry.split(';').map((part) => part.trim());
     if (name.toLowerCase() !== type) continue;
     const q = parameters.find((parameter) => /^q\s*=/iu.test(parameter));
-    const value = q === undefined ? 1 : Number(q.slice(q.indexOf('=') + 1));
-    if (Number.isNaN(value)) continue;
+    const written = q === undefined ? '1' : q.slice(q.indexOf('=') + 1).trim();
+    if (!QVALUE.test(written)) continue;
+    const value = Number(written);
     best = Math.max(best ?? 0, value);
   }
   return best;

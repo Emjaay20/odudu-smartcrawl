@@ -36,7 +36,7 @@ describe('renderNotFoundPage', () => {
     expect(page.script).toBeNull();
   });
 
-  it('carries the drawing that plays once, decoratively', () => {
+  it('carries the drawing that plays twice by itself, decoratively', () => {
     const page = renderNotFoundPage(LINKS, DEFAULT_PAGE_LOCALE);
     expect(page.body).toContain('<svg class="lost"');
     expect(page.body).not.toContain('lost-calm');

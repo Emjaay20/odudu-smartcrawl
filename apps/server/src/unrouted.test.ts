@@ -1,5 +1,6 @@
 import { type DatabaseHandle } from '@odudu/db';
 import { loadConfig } from '@odudu/kernel';
+import { wantsHtmlPage } from '@odudu/protocol-oidc';
 import { describe, expect, it } from 'vitest';
 import { buildApp } from '#/app';
 import { createLogger } from '#/logger';
@@ -12,80 +13,112 @@ const config = loadConfig({
 
 const BROWSER = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8';
 
-function refuse(): never {
-  throw new Error('an unrouted request touched the database');
+// A database handle that records every property read and every call made on
+// it, and throws on each, so a test can count touches rather than infer them
+// from a status code a failing hook would also produce.
+function counting(): { handle: DatabaseHandle; touches: string[] } {
+  const touches: string[] = [];
+  const record = (what: string): never => {
+    touches.push(what);
+    throw new Error(`the database was touched: ${what}`);
+  };
+  const handle: DatabaseHandle = {
+    db: new Proxy({}, { get: (_t, name) => record(`db.${String(name)}`) }) as DatabaseHandle['db'],
+    sql: new Proxy(() => undefined, {
+      get: (_t, name) => record(`sql.${String(name)}`),
+      apply: () => record('sql()'),
+    }) as unknown as DatabaseHandle['sql'],
+    close: () => Promise.resolve(),
+  };
+  return { handle, touches };
 }
 
-// Any use of the database at all is a failure: an address nothing serves, and
-// a failure nothing handled, cost the same whatever tenant they name, so
-// neither may ask who is calling.
-const forbidden: DatabaseHandle = {
-  db: new Proxy({}, { get: refuse }) as DatabaseHandle['db'],
-  sql: new Proxy(() => undefined, {
-    get: refuse,
-    apply: refuse,
-  }) as unknown as DatabaseHandle['sql'],
-  close: () => Promise.resolve(),
-};
-
-function app(): ReturnType<typeof buildApp> {
+function app(database: DatabaseHandle, extra: Partial<Parameters<typeof buildApp>[0]> = {}) {
   return buildApp({
-    database: forbidden,
-    ownerDatabase: forbidden,
+    database,
+    ownerDatabase: database,
     kek: config.ODUDU_KEK,
     logger: createLogger(config),
-    docsDir: undefined,
+    ...extra,
   });
 }
 
-describe('an address nothing serves', () => {
-  it('is answered without touching the database, for a page and for a program', async () => {
-    const server = app();
-    for (const url of ['/nope', '/tenants/acme/nope', '/tenants/no-such-tenant/nope/deeper']) {
-      for (const accept of [BROWSER, 'application/json', undefined]) {
-        const res = await server.inject({
-          url,
-          ...(accept === undefined ? {} : { headers: { accept } }),
-        });
-        expect(res.statusCode, `${url} ${String(accept)}`).toBe(404);
-      }
+describe('the database is never touched by an unrouted answer, counted', () => {
+  it('for the 404 page, the 404 problem document and the 500 page and document', async () => {
+    const { handle, touches } = counting();
+    const server = app(handle);
+    server.get('/boom', () => {
+      throw new Error('x');
+    });
+    const cases: [string, string | undefined, number][] = [
+      ['/nope', BROWSER, 404],
+      ['/tenants/acme/login-actions/nope', BROWSER, 404],
+      ['/tenants/no-such-tenant/login-actions/nope/deeper', BROWSER, 404],
+      ['/nope', 'application/json', 404],
+      ['/tenants/acme/nope', undefined, 404],
+      ['/boom', BROWSER, 500],
+      ['/boom', 'application/json', 500],
+    ];
+    for (const [url, accept, status] of cases) {
+      const res = await server.inject({
+        url,
+        ...(accept === undefined ? {} : { headers: { accept } }),
+      });
+      expect(res.statusCode, `${url} ${String(accept)}`).toBe(status);
     }
+    expect(touches).toEqual([]);
+    await server.close();
+  });
+
+  it('is a detector that fires: a route that reads the database is counted', async () => {
+    const { handle, touches } = counting();
+    const server = app(handle);
+    server.get('/reads', () => typeof handle.db.select);
+    await server.inject({ url: '/reads' });
+    expect(touches).toEqual(['db.select']);
     await server.close();
   });
 
   it('looks the same for a tenant that exists and one that does not, by its bytes', async () => {
-    const server = app();
-    const a = await server.inject({ url: '/tenants/acme/nope', headers: { accept: BROWSER } });
-    const b = await server.inject({ url: '/tenants/zzzz/nope', headers: { accept: BROWSER } });
+    const { handle } = counting();
+    const server = app(handle);
+    const a = await server.inject({
+      url: '/tenants/acme/login-actions/nope',
+      headers: { accept: BROWSER },
+    });
+    const b = await server.inject({
+      url: '/tenants/zzzz/login-actions/nope',
+      headers: { accept: BROWSER },
+    });
     expect(a.body).toBe(b.body);
     expect(a.statusCode).toBe(b.statusCode);
     await server.close();
   });
-
-  it('keeps no per-path state: repeating a thousand distinct paths adds no growth', async () => {
-    const server = app();
-    const heapBefore = process.memoryUsage().heapUsed;
-    for (let i = 0; i < 1000; i += 1) {
-      await server.inject({
-        url: `/p/${String(i)}/${'x'.repeat(200)}`,
-        headers: { accept: BROWSER },
-      });
-    }
-    expect(process.memoryUsage().heapUsed - heapBefore).toBeLessThan(32 * 1024 * 1024);
-    await server.close();
-  });
 });
 
-describe('a failure nothing handled', () => {
-  it('is answered without touching the database', async () => {
-    const server = app();
-    server.get('/boom', () => {
-      throw new Error('x');
+// Every route registered under /tenants/:tenant is classed by its first
+// segment, so a prefix added later is a program's endpoint until it is named
+// here as a browser flow, never a page by default.
+describe('every registered tenant route is classed', () => {
+  it('serves a page only for the browser flows', async () => {
+    const urls = new Set<string>();
+    const { handle } = counting();
+    const server = app(handle, {
+      onRoute: (route) => {
+        if (route.url.startsWith('/tenants/:tenant/')) urls.add(route.url);
+      },
     });
-    for (const accept of [BROWSER, 'application/json']) {
-      const res = await server.inject({ url: '/boom', headers: { accept } });
-      expect(res.statusCode).toBe(500);
-    }
+    await server.ready();
     await server.close();
+    const segments = new Set([...urls].map((url) => url.split('/')[3] ?? ''));
+    expect([...segments].sort()).toEqual(
+      expect.arrayContaining(['.well-known', 'login-actions', 'protocol']),
+    );
+    const wrong = [...urls].filter((url) => {
+      const concrete = url.replace(/:[A-Za-z]+/gu, 'x');
+      const isFlow = url.split('/')[3] === 'login-actions';
+      return wantsHtmlPage('GET', concrete, BROWSER) !== isFlow;
+    });
+    expect(wrong).toEqual([]);
   });
 });

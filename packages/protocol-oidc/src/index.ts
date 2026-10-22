@@ -971,6 +971,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
 export { tenantIssuer } from '#/service/issuer';
 export { sendThrottledPage } from '#/view/routes/throttled';
 export { answerNotFound, answerServerError, type UnroutedDeps } from '#/view/routes/unrouted';
+export { isApiPath, wantsHtmlPage } from '#/service/page-negotiation';
 export { issuerBaseFor, tenantIssuerFor } from '#/view/issuer';
 export { assertionJtiRepository } from '#/repository/assertion-jti';
 export { isWellFormedWebOrigin } from '#/service/web-origin';

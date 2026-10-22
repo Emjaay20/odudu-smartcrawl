@@ -345,7 +345,7 @@ iframe {
   pointer-events: none;
 }
 
-/* The not-found drawing plays once and rests on its last frame; the 500 page
+/* The not-found drawing plays twice (4.8 s) and rests on its last frame; the 500 page
    shows it still. Only transform, opacity and stroke-dashoffset move. */
 .lost {
   display: block;

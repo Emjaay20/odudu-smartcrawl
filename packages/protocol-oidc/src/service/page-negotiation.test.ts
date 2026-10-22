@@ -57,19 +57,31 @@ describe('wantsHtmlPage', () => {
       '/tenants/demo/protocol/openid-connect/token',
       '/tenants/demo/protocol/openid-connect/nope?x=1',
       '/tenants/demo/.well-known/openid-configuration',
+      '/tenants/demo/clients-registrations/openid-connect',
+      '/tenants/demo/clients-registrations/openid-connect/abc',
+      '/tenants/demo/protocol/openid-connect/token',
+      '/tenants/demo/protocol/openid-connect/userinfo',
+      '/tenants/demo/protocol/openid-connect/certs',
+      '/tenants/demo/protocol/openid-connect/token/introspect',
+      '/tenants/demo/protocol/openid-connect/revoke',
+      '/tenants/demo/protocol/openid-connect/logout',
+      '/tenants/demo/protocol/openid-connect/ext/par/request',
+      '/tenants/demo/protocol/openid-connect/auth/device',
+      '/tenants/demo/anything-else',
+      '/TENANTS/demo/Clients-Registrations/x',
       '/instrument/nope.css',
     ]) {
       expect(wantsHtmlPage('GET', path, BROWSER), path).toBe(false);
     }
   });
 
-  it('serves a page for any other unknown path, a tenant that exists or not', () => {
+  it('serves a page for any other unknown path, and for the browser flows under a tenant', () => {
     for (const path of [
       '/',
       '/nope',
       '/tenants',
       '/tenants/demo',
-      '/tenants/demo/nope',
+      '/tenants/demo/login-actions/nope',
       '/a/b?c=d',
     ]) {
       expect(wantsHtmlPage('GET', path, BROWSER), path).toBe(true);
@@ -112,5 +124,33 @@ describe('a header the negotiation reads is bounded before it is parsed', () => 
     const started = performance.now();
     for (let i = 0; i < 100; i += 1) wantsHtmlPage('GET', path, 'text/html');
     expect((performance.now() - started) / 100).toBeLessThan(1);
+  });
+});
+
+describe('under a tenant only the browser flows are page territory', () => {
+  it('serves a page under login-actions and nowhere else beneath the tenant', () => {
+    expect(wantsHtmlPage('GET', '/tenants/demo/login-actions/nope', BROWSER)).toBe(true);
+    expect(wantsHtmlPage('GET', '/tenants/demo/login-actions', BROWSER)).toBe(true);
+    expect(wantsHtmlPage('GET', '/tenants/demo/nope', BROWSER)).toBe(false);
+  });
+});
+
+describe('a quality is read by the RFC 9110 grammar only', () => {
+  const html = (q: string): string => `application/json;q=0.5, text/html;q=${q}`;
+
+  it('accepts 0, up to three decimals below 1, and 1 with up to three zeros', () => {
+    for (const q of ['1', '1.0', '1.00', '1.000', '0.9', '0.75', '0.501']) {
+      expect(wantsHtmlPage('GET', '/nope', html(q)), q).toBe(true);
+    }
+    expect(wantsHtmlPage('GET', '/nope', html('0.4'))).toBe(false);
+    expect(wantsHtmlPage('GET', '/nope', html('0'))).toBe(false);
+  });
+
+  it('ignores an entry whose quality is malformed, as if it were not sent', () => {
+    for (const q of ['0x1', '1e3', 'Infinity', '2', '1.5', '1.0001', '0.1234', '', '-1', ' 1 1']) {
+      expect(wantsHtmlPage('GET', '/nope', html(q)), JSON.stringify(q)).toBe(false);
+    }
+    // The malformed JSON entry does not outrank html either.
+    expect(wantsHtmlPage('GET', '/nope', 'application/json;q=1e3, text/html;q=0.1')).toBe(true);
   });
 });

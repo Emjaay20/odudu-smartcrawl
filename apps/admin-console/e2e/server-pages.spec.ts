@@ -440,7 +440,7 @@ test('an address nothing serves', async ({ page, problems }) => {
   await inspect(page, 'not-found');
 
   // The page a tenant that does not exist gets is this one, byte for byte.
-  const unknownTenant = await page.request.get('/tenants/no-such-tenant/nope', {
+  const unknownTenant = await page.request.get('/tenants/no-such-tenant/login-actions/nope', {
     headers: { accept: 'text/html' },
   });
   expect(unknownTenant.status()).toBe(404);

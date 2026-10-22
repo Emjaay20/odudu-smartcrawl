@@ -14,13 +14,15 @@ export interface UnroutedDeps {
 // that is safe to print is shown; the response header carries it either way.
 const SHOWABLE_ID = /^[A-Za-z0-9_-]{1,64}$/u;
 
-// Both answers depend on Accept, the language and the theme cookie, so a
-// cache that stored either is told which request headers chose it.
-const VARY = 'Accept, Accept-Language, Cookie';
+// The page depends on Accept, the language and the theme cookie; the problem
+// document on a negotiable path depends on Accept alone. A cache that stored
+// either is told which request headers chose it.
+const VARY_PAGE = 'Accept, Accept-Language, Cookie';
+const VARY_PROBLEM = 'Accept';
 
 function negotiated(reply: FastifyReply, request: FastifyRequest): FastifyReply {
   if (isApiPath(request.url)) return reply;
-  return reply.header('vary', VARY).header('cache-control', 'no-store');
+  return reply.header('vary', VARY_PROBLEM).header('cache-control', 'no-store');
 }
 
 function sendProblem(
@@ -42,11 +44,15 @@ export function answerNotFound(
   deps: UnroutedDeps,
 ): FastifyReply {
   if (wantsHtmlPage(request.method, request.url, request.headers.accept)) {
-    return sendHtml(
-      reply.header('vary', VARY),
-      404,
-      renderNotFoundPage(deps.links, requestLocale(reply, deps)),
-    );
+    try {
+      return sendHtml(
+        reply.header('vary', VARY_PAGE),
+        404,
+        renderNotFoundPage(deps.links, requestLocale(reply, deps)),
+      );
+    } catch {
+      // A page that cannot be drawn is still a 404: the problem document below.
+    }
   }
   return sendProblem(reply, request, {
     type: 'about:blank#not-found',
@@ -56,7 +62,8 @@ export function answerNotFound(
   });
 }
 
-// The root error handler. A server error is a fixed document: the driver's
+// The root error handler. Every failure of status 500 or above answers 500,
+// whatever status it carried. A server error is a fixed document: the driver's
 // message carries the query and its parameters, so it is logged by kind only
 // and never sent. A client error keeps the framework's own answer.
 export function answerServerError(
@@ -70,11 +77,15 @@ export function answerServerError(
   request.log.error({ err: { type: error.name, code: error.code } }, 'request failed');
   if (wantsHtmlPage(request.method, request.url, request.headers.accept)) {
     const id = SHOWABLE_ID.test(request.id) ? request.id : null;
-    return sendHtml(
-      reply.header('vary', VARY),
-      500,
-      renderServerErrorPage(id, requestLocale(reply, deps)),
-    );
+    try {
+      return sendHtml(
+        reply.header('vary', VARY_PAGE),
+        500,
+        renderServerErrorPage(id, requestLocale(reply, deps)),
+      );
+    } catch {
+      // The renderer failed: answer with the fixed document, never the message.
+    }
   }
   return sendProblem(reply, request, {
     type: 'about:blank',

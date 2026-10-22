@@ -2588,13 +2588,18 @@ through `answerNotFound` and `answerServerError` (`packages/protocol-oidc/src/vi
 HEAD, `Accept` naming `text/html` outright and ranking it at least as high as any JSON type) gets `not-found-html.ts` or
 `server-error-html.ts`: platform look, the shell's mark, one line, and links to the console and `/docs/` only where this deployment has
 them. Everything else, and every path under `/admin`, `/console/api`, `/health*`, `/instrument`, `/.well-known` and
-`/tenants/:t/(protocol|.well-known)`, keeps `application/problem+json` with the detail "No resource at this path". Both answers on a
-negotiable path carry `Vary: Accept, Accept-Language, Cookie` and `no-store`. The not-found page names nothing of the request, and an
+every segment under `/tenants/:t` except `login-actions` (the browser flows; a test enumerates the registered tenant routes and asserts the class of each, so a new prefix is an API until named), keeps `application/problem+json` with the detail "No resource at this path". The page carries `Vary: Accept, Accept-Language, Cookie` and `no-store`; the problem document on a
+negotiable path carries `Vary: Accept` and `no-store`. The not-found page names nothing of the request, and an
 unknown tenant and an unknown path are the same bytes (`apps/server/tests/unrouted.int.test.ts`). The 500 page prints the request id
 only when it is a plain token (the id is client-supplied through `x-request-id`) and never the error.
 **Moved:** the admin plugin's own `setNotFoundHandler` (it was global in effect, and worded "No admin route for <path>", which echoed the
 path) is gone, and `about:blank#not-found` left the admin problem vocabulary because that package no longer emits it; the console gateway
 still emits it under `/console/api`, and the errors page now says so in prose.
+**Details.** `q` follows RFC 9110 (0 to 1, three decimals); an entry with any other q is read as not sent. Every failure of status
+500 or above answers 500, as before. A renderer that throws falls back to the fixed problem document. The `not-found` type is listed in
+the errors table again (its detail now reads "No resource at this path", where it named the route and the path). Pointer replay also
+replays once as the pointer leaves, because the animation name swaps back: it is user-initiated and bounded to 4.8 s, and CSS cannot
+run it on enter only; kept and documented.
 **Console gateway, decided:** unknown `/console/*` stays the shell with status 200. The route table is the client router's, under a
 tenant segment the server cannot enumerate, so a server-side list would be a second copy that drifts; the client's not-found screen is
 the answer, and `console-shell.int.test.ts` pins the behaviour.
@@ -2624,9 +2629,12 @@ had recorded.
 
 **Performance of the unauthenticated path** (`tools/bench/unrouted.mjs`, a real-socket burst with keep-alive over a database that throws on
 any use, so Postgres connections stay at zero by construction; 20,000 requests, 32 connections, this machine, Node 24):
-404 problem document 24,506 req/s, p50 1.26 ms, p99 1.77 ms; 404 page 19,814 req/s, p50 1.53 ms, p99 2.18 ms (a tenant path is the same:
-19,937); 500 problem document 20,764 req/s; 500 page 15,121 req/s, p50 2.06 ms, p99 2.79 ms. The page costs 1.2 to 1.4 times the
+404 problem document 26,505 req/s, p50 1.14 ms, p99 1.80 ms; 404 page 22,690 req/s, p50 1.37 ms, p99 1.80 ms (a tenant path is the same:
+22,016); 500 problem document 23,615 req/s; 500 page 16,911 req/s, p50 1.82 ms, p99 2.51 ms. The page costs 1.2 to 1.4 times the
 document, inside the 2x line, so nothing was precomputed. Bounds: no query on either answer (`apps/server/src/unrouted.test.ts` uses a
 database that throws); `Accept` over 2 KB is no preference and is refused before it is read, `Accept-Language` is capped by the
 negotiator (bytes and entries), a path is lower-cased and decoded once, so every step is linear in a request line Node already caps at
-16 KB; nothing keys on a path or keeps per-request state.
+16 KB; nothing keys on a path or keeps per-request state, which `tests/lint/unrouted-no-state.test.ts` reads as syntax (no `let`, no empty
+Map or Set, no write through a module-scope name) in place of the heap-growth test it replaces. The database test counts every property
+read and call on a recording handle and asserts zero for the 404 page, the 404 and 500 documents and the 500 page; a test that reads
+it shows the detector fires.

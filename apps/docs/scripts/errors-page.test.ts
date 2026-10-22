@@ -18,6 +18,12 @@ function rows(): string[] {
 }
 
 describe('the error code reference', () => {
+  it('lists the not-found type the server root answers, with its neutral detail', () => {
+    const text = renderErrorsPage();
+    expect(text).toContain('| `about:blank#not-found` | 404 |');
+    expect(text).toContain('No resource at this');
+  });
+
   it('lists every admin problem type with its status and meaning', () => {
     for (const [name, entry] of Object.entries(ADMIN_PROBLEM_TYPES)) {
       const row = rows().find((line) => line.startsWith(`| \`${problemTypeUri(name)}\` |`));

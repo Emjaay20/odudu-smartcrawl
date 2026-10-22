@@ -19,7 +19,7 @@ describe('the built 404 page', () => {
         expect($('footer')).toHaveLength(1);
       });
 
-      it('carries the drawing that plays once, and no script to run it', () => {
+      it('carries the drawing that plays twice by itself, and no script to run it', () => {
         expect($('main svg[aria-hidden="true"]')).toHaveLength(1);
         expect($('main svg path[class*="route"]')).toHaveLength(2);
         expect($('main script')).toHaveLength(0);
