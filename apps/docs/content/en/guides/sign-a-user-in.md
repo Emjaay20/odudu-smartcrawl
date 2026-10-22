@@ -52,14 +52,15 @@ curl -sS -D - --get \
   --data-urlencode 'nonce=n-0S6_WzA2Mj' \
   --data-urlencode "code_challenge=$CHALLENGE" \
   --data-urlencode 'code_challenge_method=S256' \
-  'http://localhost:3171/tenants/demo/protocol/openid-connect/auth'
+  'http://localhost:3197/tenants/demo/protocol/openid-connect/auth'
 ```
 
-(This run used another port, 3171.) Odudu answers with its own sign-in page, named for your client and the tenant.
+(This run used another port, 3197.) Odudu answers with its own sign-in page, named for your client and the tenant. The `set-cookie` header is how Odudu remembers, for thirty minutes, which sign-in this browser started; you do nothing with it.
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a13fbd-81c1-7294-9818-8d28aade3532
+x-request-id: 01a1647b-2c1e-7ca8-a195-91f4799076e0
+set-cookie: odudu-sign-in=01a1647b-2c2b-793d-b112-fbeacaf248f2.JXiLxsWqKLuPc5x42YKrEpXHxOrvmO_Rt4EC7SJtKSw; HttpOnly; SameSite=Lax; Path=/tenants/demo/; Max-Age=1800
 content-type: text/html
 ```
 

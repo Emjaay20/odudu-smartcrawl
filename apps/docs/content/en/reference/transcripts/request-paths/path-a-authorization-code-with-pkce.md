@@ -196,21 +196,22 @@ curl -sS -D - --get \
   --data-urlencode 'nonce=n-0S6_WzA2Mj' \
   --data-urlencode "code_challenge=$CHALLENGE" \
   --data-urlencode 'code_challenge_method=S256' \
-  'http://localhost:3171/tenants/demo/protocol/openid-connect/auth'
+  'http://localhost:3197/tenants/demo/protocol/openid-connect/auth'
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a13fbd-81c1-7294-9818-8d28aade3532
+x-request-id: 01a1647b-2c1e-7ca8-a195-91f4799076e0
+set-cookie: odudu-sign-in=01a1647b-2c2b-793d-b112-fbeacaf248f2.JXiLxsWqKLuPc5x42YKrEpXHxOrvmO_Rt4EC7SJtKSw; HttpOnly; SameSite=Lax; Path=/tenants/demo/; Max-Age=1800
 content-type: text/html
-content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-Wl0HqPsMni5vrqbjy4QgLg=='; connect-src 'self'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-qrhsxazSsYmSwGYFtNAftg=='; connect-src 'self'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 3461
-Date: Thu, 15 Oct 2026 13:25:46 GMT
+content-length: 3467
+Date: Thu, 22 Oct 2026 16:39:16 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -233,19 +234,19 @@ Keep-Alive: timeout=72
 <p class="tenant"><bdi>demo</bdi></p>
 </header>
 <form method="post" action="/tenants/demo/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a13fbd-81d7-7035-a05f-3ed8c91cac49">
+  <input type="hidden" name="auth_session_id" value="01a1647b-2c2b-793d-b112-fbeacaf248f2">
   <label>Username <input type="text" name="username" autocomplete="username"></label>
   <label>Password <input type="password" name="password" autocomplete="current-password"></label>
   <button type="submit">Sign in</button>
 </form>
 <form method="post" action="/tenants/demo/login-actions/authenticate" id="passkey-form" data-failed="Your device did not finish signing in — {reason}. You can try again." data-cancelled="the request was cancelled" data-not-offered="this server is not offering passkeys">
-  <input type="hidden" name="auth_session_id" value="01a13fbd-81d7-7035-a05f-3ed8c91cac49">
+  <input type="hidden" name="auth_session_id" value="01a1647b-2c2b-793d-b112-fbeacaf248f2">
   <input type="hidden" name="assertion" id="passkey-assertion">
   <p><button type="submit" id="passkey-submit" class="secondary">Sign in with a passkey</button></p>
 </form>
 <p id="passkey-error" class="alert" role="alert" hidden></p>
 <noscript><p>Signing in with a passkey needs JavaScript, because only the browser can talk to your authenticator. Use your username and password above.</p></noscript>
-<script nonce="Wl0HqPsMni5vrqbjy4QgLg==">
+<script nonce="qrhsxazSsYmSwGYFtNAftg==">
 const form = document.getElementById('passkey-form');
 const field = document.getElementById('passkey-assertion');
 const failure = document.getElementById('passkey-error');
@@ -270,19 +271,30 @@ form.addEventListener('submit', async (event) => {
     form.submit();
   } catch (caught) {
     const reason = caught && caught.message ? caught.message : form.dataset.cancelled;
-    failure.textContent = form.dataset.failed.replace('{reason}', reason);
+    failure.textContent = form.dataset.failed.replace('{reason}', () => reason);
     failure.hidden = false;
   }
 });
 </script>
 </main>
-<script nonce="Wl0HqPsMni5vrqbjy4QgLg==">window.addEventListener('pageshow', function (event) { if (event.persisted) location.reload(); });</script>
+<script nonce="qrhsxazSsYmSwGYFtNAftg==">window.addEventListener('pageshow', function (event) { if (event.persisted) location.reload(); });</script>
 </body>
 </html>
 ```
 
-(`auth_session_id`, the script's `nonce`, and the `x-request-id` and `Date`
-headers differ per run.)
+(`auth_session_id`, the script's `nonce`, the `x-request-id` and `Date`
+headers and the cookie's secret differ per run.)
+
+The `set-cookie` header is new with the sign-in page: `odudu-sign-in` names
+the authentication session this response parked (the `auth_session_id` in
+the form) and proves the browser is the one that parked it, with a secret
+that appears nowhere else; the session's row keeps only a hash of it. It is
+`HttpOnly`, `SameSite=Lax`, scoped to this tenant's path and lasts as long
+as the parked request (`Max-Age=1800`). It is not a session and signs nobody
+in; the login form's own anti-forgery value is still the posted
+`auth_session_id`. What reads it is the page a mailed link opens, which
+offers a way back to this request only to the browser holding it: see
+[the way there and back](./self-registration.md#the-way-there-and-back).
 
 The second form is the passkey one, and it has no username field of its
 own: see [Signing in with a passkey](./signing-in-with-a-passkey-and-no-username.md).

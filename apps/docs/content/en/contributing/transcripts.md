@@ -187,6 +187,15 @@ keys, subject ids and audit rows are that run's. The rest of each page and the k
 the sections around those blocks stand as the earlier runs left them. The required-actions link page, the change-password page and the reset
 success page are byte-for-byte what they were, and were not run again.
 
+A mailed link then stopped carrying the request, and the sign-in page began to set a cookie
+naming the request it parks. The blocks that show those were run on a stack of the branch, the
+project `odudu-p4g-31m` on port `3197` (throttles at `10000`), on tenants `demo`, `register-demo`
+and `back-demo` created for them: in Path A the whole response to the authorization request of
+section 2 (so the page body there is also what the server serves now, where its passkey script had
+changed since the earlier run), in Self-registration the part of the way there and back that reads
+the mailed link, and in Password reset the new section on coming back to the application. Their
+keys, sessions and times are that run's, and the rest of each page stands as the earlier runs left it.
+
 ## Admin path transcripts
 
 The admin API: the endpoints under `/admin/tenants/{tenant}/` that let an

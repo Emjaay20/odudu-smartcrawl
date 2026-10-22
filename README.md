@@ -239,6 +239,12 @@ one reset also retires every other outstanding link that can set the
 subject's password — reset links, and required-actions links naming
 `update-password` — as does any other way the password is set, and turning `reset_password_allowed` off closes redemption as
 well as the request form.
+A reset or verification link requested from a sign-in carries only its key. The
+browser that started the sign-in holds a cookie naming it, and the link's page offers
+_Continue to sign in_, the original request with its own `state` and `nonce`, only to
+that browser while the sign-in is live; elsewhere it says to return to the
+application and sign in again. See
+[the way there and back](apps/docs/content/en/reference/transcripts/request-paths/self-registration.md#the-way-there-and-back).
 See [the password reset section of the request paths](apps/docs/content/en/reference/transcripts/request-paths/password-reset.md)
 for the walkthrough.
 

@@ -615,40 +615,134 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
 The pattern keeps only the lines that matter. A visit with no `return_to` shows
 no `Back to sign in`, because there is then no request to go back to.
 
-The mail a registration (or a reset request) queues carries the way back as well, so
-the page its link opens can lead back to sign-in from the verified, failed and
-spent-link pages. The link holds a reduced form of the request: the client, where the
-answer goes, the scope and the PKCE challenge, but not `state`, `nonce`, `claims`,
-`prompt` or `max_age`, which a mailbox and a relay's logs should not keep. Registering
-from a sign-in page that carried all of them, then reading the link out of the queued
-mail:
+The mail a registration (or a reset request) queues carries nothing of the request. Its
+link holds its key and no more: a mailbox, a relay's log and a mail client's history should
+not keep the application's `state`, `nonce` or `claims`, and a link that restarted the request
+without them would be refused by any application that checks its own, the console among them.
+What brings the person back is the browser. The sign-in page sets a cookie naming the
+request it parked, and the token the mail was made for records which sign-in it came out of.
+This run is on `http://localhost:3197`, on a stack where `register-demo` was seeded as at the
+top of this page with `reset_password_allowed` on, driven only as far as this section. The
+sign-in page, with a cookie jar:
 
 ```bash
-curl -sS -o /dev/null -w '%{http_code}\n' -X POST http://localhost:3195/tenants/register-demo/login-actions/registration \
-  --data-urlencode 'username=mailed' \
-  --data-urlencode 'email=mailed@example.com' \
-  --data-urlencode 'password=correct-horse-battery' \
-  --data-urlencode 'return_to=/tenants/register-demo/protocol/openid-connect/auth?response_type=code&client_id=register-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&state=xyz123&nonce=abc123'
+curl -sS -c jar.txt -D headers.txt -o page.html --get \
+  --data-urlencode 'response_type=code' \
+  --data-urlencode 'client_id=register-spa' \
+  --data-urlencode 'redirect_uri=http://localhost:8080/callback' \
+  --data-urlencode 'scope=openid' \
+  --data-urlencode 'code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM' \
+  --data-urlencode 'code_challenge_method=S256' \
+  --data-urlencode 'state=xyz123' \
+  --data-urlencode 'nonce=abc123' \
+  'http://localhost:3197/tenants/register-demo/protocol/openid-connect/auth'
+grep -iE '^(HTTP|set-cookie)' headers.txt
+grep -o 'name="auth_session_id" value="[^"]*"' page.html | head -1
 ```
 
 ```
-201
+HTTP/1.1 200 OK
+set-cookie: odudu-sign-in=01a1647b-94a0-7853-b8c4-b17c97e8113b.XNvWhPn4PlPope6BXg1oaQfMflJHK2_xtqe_gL9qYfE; HttpOnly; SameSite=Lax; Path=/tenants/register-demo/; Max-Age=1800
+name="auth_session_id" value="01a1647b-94a0-7853-b8c4-b17c97e8113b"
+```
+
+The cookie is `<the parked session>.<a secret>`, `HttpOnly`, `SameSite=Lax`, scoped to the
+tenant and as short-lived as the request (`login_ttl_seconds`). It signs nobody in and is
+not read by the login form. Registering three accounts from that page, as the browser that
+holds it, with the `return_to` the page's **Create an account** link carries, then reading
+the links out of the queued mail:
+
+```bash
+RT='/tenants/register-demo/protocol/openid-connect/auth?response_type=code&client_id=register-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&state=xyz123&nonce=abc123'
+for u in mailed elsewhere lapsed; do
+  curl -sS -o /dev/null -w "$u: %{http_code}\n" -b jar.txt -X POST \
+    http://localhost:3197/tenants/register-demo/login-actions/registration \
+    --data-urlencode "username=$u" --data-urlencode "email=$u@example.com" \
+    --data-urlencode 'password=correct-horse-battery' --data-urlencode "return_to=$RT"
+done
+```
+
+```
+mailed: 201
+elsewhere: 201
+lapsed: 201
 ```
 
 ```bash
 docker compose exec -T postgres psql -U odudu -d odudu -At -c \
-  "select substring(o.body_text from 'https?://[^ \n]*action-token[^ \n]*')
+  "select o.to_address, substring(o.body_text from 'https?://[^ \n]*action-token[^ \n]*')
      from email_outbox o join tenants t on t.id = o.tenant_id
-    where t.name = 'register-demo' and o.to_address = 'mailed@example.com';"
+    where t.name = 'register-demo' and o.to_address like any (array['mailed@%','elsewhere@%'])
+    order by o.to_address;"
 ```
 
 ```
-http://localhost:3195/tenants/register-demo/login-actions/action-token?key=QZJj1zCftmZHB2cZqA_NdfY9ASZmlF5M4kzgeKX8Tvw&return_to=%2Ftenants%2Fregister-demo%2Fprotocol%2Fopenid-connect%2Fauth%3Fresponse_type%3Dcode%26client_id%3Dregister-spa%26redirect_uri%3Dhttp%253A%252F%252Flocalhost%253A8080%252Fcallback%26scope%3Dopenid%26code_challenge%3DE9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM%26code_challenge_method%3DS256
+elsewhere@example.com|http://localhost:3197/tenants/register-demo/login-actions/action-token?key=7VXk6VU1ArJZV6RF7N1tnSWtDl8S0dJwFz_z36b4YwY
+mailed@example.com|http://localhost:3197/tenants/register-demo/login-actions/action-token?key=OCZ3rMiy64m5-erGlDC95PcHH9fl_N-5qtw15lit48s
 ```
 
-A mailed link given a `return_to` of another shape is shown no way back, as the
-registration page is. An administrator's link (`/subjects/:id/actions-email`) is
-issued with no request behind it and carries none.
+The links hold a key and nothing else. What the tokens hold, beside the cookie's session
+above:
+
+```bash
+docker compose exec -T postgres psql -U odudu -d odudu -At -c \
+  "select u.username, a.authentication_session_id
+     from action_tokens a join users u on u.subject_id = a.subject_id
+     join tenants t on t.id = a.tenant_id
+    where t.name = 'register-demo' and u.username in ('mailed','elsewhere')
+    order by u.username;"
+```
+
+```
+elsewhere|01a1647b-94a0-7853-b8c4-b17c97e8113b
+mailed|01a1647b-94a0-7853-b8c4-b17c97e8113b
+```
+
+Opened in a browser that holds no such cookie (here, `curl` with no jar), the page verifies
+the address, since a verification link works anywhere, and offers no way to sign in:
+
+```bash
+curl -sS 'http://localhost:3197/tenants/register-demo/login-actions/action-token?key=7VXk6VU1ArJZV6RF7N1tnSWtDl8S0dJwFz_z36b4YwY' \
+  | grep -E '<h1>|<p>|<a '
+```
+
+```
+<h1>Your email address is verified</h1>
+<p>Return to the application you were signing in to and sign in again.</p>
+```
+
+Opened in the browser that holds the sign-in, the same page links to the original request,
+with its own `state` and `nonce`:
+
+```bash
+curl -sS -b jar.txt 'http://localhost:3197/tenants/register-demo/login-actions/action-token?key=OCZ3rMiy64m5-erGlDC95PcHH9fl_N-5qtw15lit48s' \
+  | grep -E '<h1>|<p>|<a '
+```
+
+```
+<h1>Your email address is verified</h1>
+<a href="/tenants/register-demo/protocol/openid-connect/auth?response_type=code&amp;client_id=register-spa&amp;redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&amp;scope=openid&amp;code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&amp;code_challenge_method=S256&amp;state=xyz123&amp;nonce=abc123">Continue to sign in</a>
+```
+
+The `&amp;` is the markup's escaping of `&`; the address is the request that was parked,
+which `/authorize` validates again from scratch. Once the parked request has lapsed the
+cookie names nothing, so the third link gets the text and no link, in the very browser that
+started it. The session is ended with `update authentication_sessions set expires_at = now() -
+interval '1 second'` for the id above, which is what `login_ttl_seconds` does without help:
+
+```bash
+curl -sS -b jar.txt 'http://localhost:3197/tenants/register-demo/login-actions/action-token?key=LZ1MA8_c7wDmPGsEvF-Sdvq-of5lMsf32W6mcjkz7ms' \
+  | grep -E '<h1>|<p>|<a '
+```
+
+```
+<h1>Your email address is verified</h1>
+<p>Return to the application you were signing in to and sign in again.</p>
+```
+
+A mailed link given a `return_to` is not shown one: the page ignores whatever the address
+asks for. An administrator's link (`/subjects/:id/actions-email`) is issued with no request
+behind it and names no sign-in, so it offers none.
 
 ## What registration and verification leave in the audit log
 

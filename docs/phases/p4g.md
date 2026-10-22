@@ -2851,53 +2851,30 @@ link_ while the tenant still allows resets.
   from scratch. It holds what the browser's address bar already held at `/authorize`
   (client, redirect, state, challenge), no personal data and no session handle. It is
   absent when the request cannot be rebuilt (bound to a subject by a hint).
-- **Mailed links.** A verification or reset link mailed after a request that carried a
-  way back carries it too: `actionLink` (one builder, tenant as one encoded path segment)
-  appends `return_to`, reduced by `mailedSignInPath` to `response_type`, `client_id`,
-  `redirect_uri`, `scope`, the PKCE `code_challenge` and its method, `ui_locales` and
-  `resource`. `state`, `nonce`, `claims`, `prompt` and `max_age` are not mailed: a mailbox, a
-  relay's logs and a mail client's history should not hold a flow's own binders or requested
-  claim values. The challenge stays because `/authorize` requires one and it is a hash the
-  protocol already sends in the open. The token page re-checks the value with `signInPath`
-  (same shape, same `MAX_SIGN_IN_PATH_LENGTH` from the kernel), carries it in its forms, and
-  links _Back to sign-in_ from the verified, reset-done, actions-done, failed and spent-link
-  pages. The restarted request is a fresh one without the original `state`, so an
-  application that insists on its own state will refuse the answer; it still brings a person
-  back to the application's sign-in, which is the page's job. A key that no usable row holds
-  now answers a posted form with the link-failed page, not the form.
+- **Mailed links.** Replaced in Increment 31m (below): the mailed link carries the key and
+  nothing of the request, and the page it opens offers the way back only to the browser that
+  parked the request. The reduced `return_to` this increment first mailed, and `mailedSignInPath`
+  with it, are gone.
 - **The verified, reset-done and actions-done pages have two honest states.** With a
   carried sign-in start they show the heading and a _Continue to sign in_ link built from
-  it. Without one (a direct visit, a link issued with no request, a dropped or invalid
-  `return_to`) the heading stays and the text says what to do without implying a sign-in is
+  it. Without one (a direct visit, a link issued with no request, a browser that does not hold
+  the sign-in the link came out of) the heading stays and the text says what to do without implying a sign-in is
   waiting: _Return to the application you were signing in to and sign in again._ Verifying
   itself needs no session: the token is single-use and redeems in any browser.
 - **How long the request lives, and what the link replays.** The parked authorization
   request lives thirty minutes by default, the tenant's `login_ttl_seconds` (1800;
-  `expires_at - created_at` is recorded in Path A). A _Back to
-  sign in_ link does not use it: the carried `return_to` is a path to `/authorize`, so
-  following it starts a NEW request from the carried parameters, and it works when the
-  original is expired, consumed or reaped (tested: the parked rows deleted, the same
-  `return_to` still opens a fresh sign-in form). `state` is optional at `/authorize` (OIDC
-  Core §3.1.2.1 recommends it), so the request mailed without one is accepted; the callback
-  then carries a code and no `state`. An application that insists on its own `state` will
-  refuse that answer. The page-borne links keep the original `state` and the e2e scenario
-  `return-to-app.spec.ts` asserts it (registration and reset, each after a refused first
-  attempt, so the hidden `return_to` is shown to survive a re-render, and the code
-  exchanging with the PKCE verifier); the mailed-link scenario asserts a code and no state.
+  `expires_at - created_at` is recorded in Path A). A page-borne _Back to sign in_ link does
+  not use it: the carried `return_to` is a path to `/authorize`, so following it starts a NEW
+  request from the carried parameters, and it works when the original is expired, consumed or
+  reaped (tested: the parked rows deleted, the same `return_to` still opens a fresh sign-in
+  form). The scenario `return-to-app.spec.ts` asserts that the page-borne links keep the
+  original `state` (registration and reset, each after a refused first attempt, so the hidden
+  `return_to` is shown to survive a re-render, and the code exchanging with the PKCE verifier).
+  What a MAILED link does is Increment 31m's.
 - **A return-to-the-application link.** `client_oidc_config.client_uri` exists (registration
   metadata, RFC 7591, set through the admin API and shown on the consent page as _About
   <client>_), but a mailed link holds no client id for a page to read it by unless the
   reduced `client_id` is parsed from `return_to`. Not built.
-- **The mailed `return_to` is unsigned, by design.** It is not bound to the token: whoever
-  holds a token URL already holds the token, and the value is only a same-tenant sign-in
-  start, re-checked from scratch by `signInPath` on every use and never redirected to by the
-  server. What an attacker who files a registration or reset request for a victim's address
-  can choose in the victim's mail is a `client_id`, `redirect_uri`, `scope` and PKCE
-  challenge on THIS tenant's `/authorize`, which still refuses a client or redirect that is
-  not registered; the attacker could link to the same address directly, and a code from it
-  goes only to a registered redirect in the victim's browser, bound to a challenge whose
-  verifier the attacker lacks. A mailed restart also carries no `nonce`, as well as no
-  `state`: an application that checks its own nonce will reject the ID token from it.
 - **No request, no link.** A visit with no `return_to`, and a link an administrator issued
   (no application started it), has nothing to go back to, and no tenant-level sign-in
   address exists (sign-in needs a client). Those pages show their own next step only. The
@@ -2909,7 +2886,7 @@ link_ while the tenant still allows resets.
   for a request line and headers together. The margin, about 4 KiB, is shared with every
   header, cookies included: a request whose headers overflow it is answered with 431
   whatever the link, and a path at the bound is a rare worst case, since ordinary rebuilt
-  paths are a few hundred bytes and the mailed form is a reduced subset.
+  paths are a few hundred bytes.
 - **Left as they are, and why.** A closed registration or reset page stays an empty 404
   (`reply.code(404)`: it must not say whether the tenant exists or what it allows; the
   unknown-address page of increment 31e is where a browser sees a branded one). The
@@ -2970,6 +2947,126 @@ file per package (`form-error.ts`) for the same reason.
 `totp-enrolment`, `update-password-violations` and `second-factor-totp-error` were
 captured again. Each ran through axe in both themes, at the phone width and at one card
 width in `server-pages.spec.ts`, and was looked at.
+
+### Increment 31m, a mailed link resumes the sign-in it came out of
+
+**The defect (reproduced by the owner).** Forgot password, the mailed link, a new password,
+_Continue to sign in_, sign in: the console showed _Sign-in failed_; _sign in again_ then loaded the
+console signed in. Increment 31g mailed a reduced `return_to` with no `state` and no `nonce`, so
+the link restarted `/authorize` without them. Increment 31g's ruling was that a state-less restart
+is OIDC-compliant (`state` is RECOMMENDED, OIDC Core 3.1.2.1), which is true and beside the
+point: the server sign-in succeeded and the SSO session existed, but the console gateway's callback
+requires the `state` it bound to its own login cookie (`takeLogin` in
+`packages/console-gateway/src/usecase/complete-login.ts`) and refused a callback that had none.
+Any application that checks its own `state` or `nonce` fails the same way, and that is most of
+them. **That ruling is withdrawn**: a mailed link never restarts a request that lacks the
+application's own `state` and `nonce`.
+
+**What tied a browser to its parked sign-in before this increment: nothing.** The parked request is
+a row in `authentication_sessions` (the ORIGINAL authorize parameters, `state`, `nonce` and PKCE
+challenge among them: `PendingRequest`), and its id reached the browser only as the sign-in
+form's hidden `auth_session_id` field, which is also the form's anti-forgery value. There was
+no cookie: the first cookie a browser got from `/authorize` was the SSO session's, after a
+login. So a mailed link could not tell the browser that parked a request from any other.
+
+**The decision.**
+
+- **A handle in a cookie.** When `/authorize` parks a request that shows the login form or the
+  account chooser, the response sets `odudu-sign-in` (`__Secure-odudu-sign-in` under TLS):
+  `<authentication session id>.<256-bit secret>`, `HttpOnly`, `SameSite=Lax`,
+  `Path=/tenants/<tenant>/`, `Secure` under TLS, `Max-Age` the tenant's `login_ttl_seconds`.
+  The row keeps `browser_secret_hash` (sha256 of the secret, compared in constant time), so a
+  database read yields nothing a cookie can be forged from. `packages/authn-flows/src/service/sign-in-handle.ts`
+  holds the name, attributes, generation and parsing in one place, beside the session cookie's.
+  The tenant's path scope rules out the `__Host-` prefix (it requires `Path=/`); `__Secure-` is
+  the strongest prefix that allows a path.
+- **A reference beside the token.** A reset or verification link requested from a page that
+  carried `return_to` stores `authentication_session_id` in its `action_tokens` row, only when
+  this browser holds that sign-in AND the request the page carried is the one the cookie's session
+  parked (two tabs share one cookie, which names the later; the earlier tab's form carries its own
+  request, they differ, and no link is tied to a request the person did not ask from). The mailed
+  link is `…/action-token?key=…` and nothing else: no `state`, no `nonce`, no `return_to`, no
+  reference.
+- **Resuming.** The token page (form, done page, spent-link page) offers _Continue to sign in_
+  only when this browser's cookie names that very session, the secret matches its hash, and the
+  session is live (`expires_at` in the future, `consumed_at` null). The link is the authorize path
+  rebuilt from the PARKED request (`restartAuthorizeLocation`), so it carries the original
+  `state`, `nonce` and challenge, and `/authorize` validates it from scratch: the page never
+  redirects, it renders a link built from a row. Followed, it is a fresh request equal to the
+  original, which a state-checking application accepts. In every other case (another browser,
+  another tab's sign-in, expired, consumed, no cookie, an administrator-issued link, a request
+  that cannot be rebuilt because a hint bound it to a subject) the page shows the no-link text
+  (_Return to the application you were signing in to and sign in again_, or its reset variant) and
+  never a link.
+- **`mailedSignInPath` and its allowlist, and the token pages' hidden `return_to`, are removed.** Nothing
+  else used them (`git grep -n mailedSignInPath` and `return_to` in the token renderers). The
+  page-borne `return_to` of the registration and reset forms (same browser, opened from the
+  sign-in page, the full authorize path with its state) stays as it was: it is also how a
+  request is matched to the cookie's session above.
+
+**CSRF and fixation analysis.** The cookie authorises no write and is not a login credential. The
+login form's CSRF defence is unchanged: the posted `auth_session_id` must name a live session, and
+the cookie is neither required nor consulted there. The cookie is read in exactly two places, to
+record a reference when a link is mailed and to decide whether a token page shows a link.
+
+- _Planting._ An attacker who can set a victim's cookie (a sibling subdomain, or a network position
+  on plain HTTP; under TLS the `__Secure-` prefix refuses a non-`Secure` set) names a session the
+  attacker parked. At the mailing step the victim's own form carries the victim's request, which
+  differs from the planted session's request, so no reference is stored. At the token page the
+  victim's token names the victim's session, which differs from the planted one, so no link is
+  shown. The attacker gains nothing and the victim sees the no-link text.
+- _An attacker's request for a victim's address._ The attacker files a reset request for the
+  victim's address, holding their own parked session, so the token names the attacker's
+  session. The mail goes to the victim. The victim's browser holds no cookie for that session, so
+  the page shows no link. Before this increment the same mail carried a state-less `/authorize`
+  path chosen by the attacker; it carries nothing now.
+- _Stealing._ The cookie is `HttpOnly`; the secret never appears in a page, a URL, a log
+  (`logger.ts` allowlists headers, and neither `cookie` nor `set-cookie` is on it) or an audit
+  row.
+
+**Security properties.** The reference (the session id in the token row) is only ever read
+server-side; the secret is 256 bits; the token page's answer for an unknown, foreign, expired or
+absent reference is the same bytes (tested: two references that name nothing and a token that names
+none give one body). Tenant isolation: `authentication_sessions` and `action_tokens` are RLS tables,
+the lookups run under the tenant of the request path, and a cookie or a token row naming another
+tenant's session reads as none (probes: `packages/authn-flows/tests/sign-in-binding.int.test.ts`,
+`apps/server/tests/mailed-link-resume.int.test.ts`, `packages/account/tests/action-tokens.int.test.ts`).
+The sign-in consumed by a successful login, and one past `login_ttl_seconds`, stop being held.
+Resetting a password still logs nobody in and sets no cookie. The reset request answers a known and
+an unknown address with the same bytes; the held-sign-in read happens before the address is looked
+up and whatever it names.
+
+**Queries per path.** Counted from the code. `/authorize` login form: none added (the secret's hash
+is written by the insert that parks the request). Reset request and registration: one
+primary-key point read of `authentication_sessions` (in its own transaction) when the page
+carried a request and a cookie (none otherwise), then the usecase's own statements, one column
+wider on the token insert. Token page: the token read it already made, plus one point read of the
+session only when the token names one AND the request carries a readable cookie. A request with no
+cookie costs no connection for it (`findHeldSignInIn`). Nothing is unbounded; the cookie value is
+bounded at 36 + 1 + 128 characters.
+
+**Left as it was, and why.** An administrator-issued link names no sign-in and still offers none:
+there is no application behind it, placed on P4f. A link opened in a different browser cannot
+resume: the browser that holds the sign-in is the only one that can complete it.
+
+**Found on the way, outside this increment's topic.** `apps/server/src/app.ts` did not pass `tls`
+to `oidcRoutes`, and nothing sets it from `ODUDU_TLS`, so the SSO session cookie is served without
+`__Host-` and without `Secure` even with `ODUDU_TLS=true`. `buildApp` now takes `tls` (default
+`false`) and hands the one value to both the login page that sets the sign-in cookie and the pages
+that read it, so those two cannot disagree; `serve.ts` does not set it, which keeps today's
+behaviour. Wiring `ODUDU_TLS` through changes every deployed cookie's name and is a decision for
+its own increment.
+
+**verified:**
+
+- `node_modules/.bin/vitest run --project integration apps/server/tests/mailed-link-resume.int.test.ts packages/authn-flows/tests/sign-in-binding.int.test.ts packages/protocol-oidc/tests/sign-in-handle.int.test.ts packages/account/tests/sign-in-resume.int.test.ts`
+  (real PostgreSQL). Mutation check: with the secret comparison and the liveness test removed,
+  six of these fail (forged secret, expired, consumed, at both levels).
+- `apps/admin-console/e2e/mailed-link-resume.spec.ts`: the console as the client (its gateway
+  requires `state`): reset, and verification, in the browser that started the sign-in, then
+  _Continue to sign in_, sign in, the console loads with no refusal; a different browser context and
+  a lapsed sign-in show no link. `return-to-app.spec.ts` adds the ID token's `nonce` check for an
+  application that verifies it, and the different-browser case.
 
 ## Increment 31j: deleting and restoring built-in scopes
 

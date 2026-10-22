@@ -396,6 +396,127 @@ minted while it was on answers `400` from `/login-actions/action-token`
 once it is off, the kill switch an operator reaches for during an incident
 covering both halves of the flow.
 
+## Coming back to the application
+
+A person who asked for the reset from an application's sign-in page wants to finish
+that sign-in. The mail cannot carry the request (it would put the application's `state`
+and `nonce` in a mailbox, and a link that restarted it without them is refused by any
+application that checks its own), so the link holds its key alone. The browser that started
+the sign-in holds a cookie naming it
+([the cookie](./path-a-authorization-code-with-pkce.md#2-authorize)), and the page the
+link opens offers _Continue to sign in_, the original request, only to that browser. This
+ran on `http://localhost:3197`, on a stack where tenant `back-demo` was created by the two
+commands below and driven only as far as this section:
+
+```bash
+odudu seed --tenant back-demo --client back-spa \
+  --redirect-uri http://localhost:8080/callback \
+  --user ada --password correct-horse-battery --email ada@example.com
+odudu seed tenant --name back-demo --set reset_password_allowed=true
+```
+
+```
+{"created":true,"tenant":"back-demo","tenantId":"01a1647c-7cff-715e-aad3-d2a3ccc0fe7b","clientId":"back-spa","userSubjectId":"01a1647c-7d77-7059-b0e3-44f7554c44f2"}
+{"command":"tenant","created":false,"tenant":"back-demo","tenantId":"01a1647c-7cff-715e-aad3-d2a3ccc0fe7b","settings":["reset_password_allowed"]}
+```
+
+The application's sign-in page, fetched with a cookie jar as a browser would, and the
+**Forgot password?** link it carries:
+
+```bash
+curl -sS -c jar.txt -o page.html --get \
+  --data-urlencode 'response_type=code' \
+  --data-urlencode 'client_id=back-spa' \
+  --data-urlencode 'redirect_uri=http://localhost:8080/callback' \
+  --data-urlencode 'scope=openid' \
+  --data-urlencode 'code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM' \
+  --data-urlencode 'code_challenge_method=S256' \
+  --data-urlencode 'state=xyz123' \
+  --data-urlencode 'nonce=abc123' \
+  'http://localhost:3197/tenants/back-demo/protocol/openid-connect/auth'
+grep -o '<a href="[^"]*">Forgot password?' page.html | sed 's/&amp;/\&/g'
+```
+
+```
+<a href="/tenants/back-demo/login-actions/reset-password?return_to=%2Ftenants%2Fback-demo%2Fprotocol%2Fopenid-connect%2Fauth%3Fresponse_type%3Dcode%26client_id%3Dback-spa%26redirect_uri%3Dhttp%253A%252F%252Flocalhost%253A8080%252Fcallback%26scope%3Dopenid%26code_challenge%3DE9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM%26code_challenge_method%3DS256%26state%3Dxyz123%26nonce%3Dabc123">Forgot password?</a>
+```
+
+Asking for the reset twice from that page, as the browser holding the cookie, with the
+`return_to` the link carries. The two mails are read out of the outbox, oldest first:
+
+```bash
+RT='/tenants/back-demo/protocol/openid-connect/auth?response_type=code&client_id=back-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&state=xyz123&nonce=abc123'
+for n in 1 2; do
+  curl -sS -b jar.txt -X POST http://localhost:3197/tenants/back-demo/login-actions/reset-password \
+    --data-urlencode 'email=ada@example.com' --data-urlencode "return_to=$RT" | grep '<h1>'
+done
+docker compose exec -T postgres psql -U odudu -d odudu -At -c \
+  "select substring(o.body_text from 'key=([A-Za-z0-9_-]+)')
+     from email_outbox o join tenants t on t.id = o.tenant_id
+    where t.name = 'back-demo' and o.to_address = 'ada@example.com'
+    order by o.created_at;"
+```
+
+```
+<h1>Check your email</h1>
+<h1>Check your email</h1>
+xMPZVd2_axdhNF-8aKePS8BP9S0fMQDWxXbrjRt9vyY
+kwdfQzuMq4BHKlkVK0FyOqanSoMDi0GUuCJWfMNrDmk
+```
+
+The first link, opened in a browser with no cookie (`curl` with no jar): the form is the
+same, holds only its key, and after the new password the page says what to do and links
+nowhere:
+
+```bash
+curl -sS 'http://localhost:3197/tenants/back-demo/login-actions/action-token?key=xMPZVd2_axdhNF-8aKePS8BP9S0fMQDWxXbrjRt9vyY' \
+  | grep -E '<h1>|name="key"|return_to'
+curl -sS -X POST http://localhost:3197/tenants/back-demo/login-actions/action-token \
+  --data-urlencode 'key=xMPZVd2_axdhNF-8aKePS8BP9S0fMQDWxXbrjRt9vyY' \
+  --data-urlencode 'password=a new passphrase, elsewhere' | grep -E '<h1>|<p>|<a '
+```
+
+```
+<h1>Choose a new password</h1>
+  <input type="hidden" name="key" value="xMPZVd2_axdhNF-8aKePS8BP9S0fMQDWxXbrjRt9vyY">
+<h1>Your password has been reset</h1>
+<p>Return to the application you were signing in to and sign in with your new password.</p>
+```
+
+Setting the password retired the second link, as it retires every link that could set it,
+so the person asks again, from the same page and the same browser, and opens that link
+with the cookie. The reply sets no cookie of its own (the count of `set-cookie` headers is
+the last line): a reset logs nobody in.
+
+```bash
+curl -sS -b jar.txt -X POST http://localhost:3197/tenants/back-demo/login-actions/reset-password \
+  --data-urlencode 'email=ada@example.com' --data-urlencode "return_to=$RT" | grep '<h1>'
+KEY=$(docker compose exec -T postgres psql -U odudu -d odudu -At -c \
+  "select substring(o.body_text from 'key=([A-Za-z0-9_-]+)')
+     from email_outbox o join tenants t on t.id = o.tenant_id
+    where t.name = 'back-demo' and o.to_address = 'ada@example.com'
+    order by o.created_at desc limit 1;")
+curl -sS -D headers.txt -b jar.txt -X POST http://localhost:3197/tenants/back-demo/login-actions/action-token \
+  --data-urlencode "key=$KEY" --data-urlencode 'password=a new passphrase, here' \
+  | grep -E '<h1>|<p>|<a ' | sed 's/&amp;/\&/g'
+grep -ci '^set-cookie' headers.txt
+```
+
+```
+<h1>Check your email</h1>
+<h1>Your password has been reset</h1>
+<p>Sign in with your new password.</p>
+<a href="/tenants/back-demo/protocol/openid-connect/auth?response_type=code&client_id=back-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&state=xyz123&nonce=abc123">Continue to sign in</a>
+0
+```
+
+The link is the request that was parked, `state` and `nonce` included, so the application's
+callback finds the values it asked for. It is also not a redirect: the address is rendered
+into the page as a link, and `/authorize` validates it from scratch when it is followed. A
+sign-in that has expired, been finished, or is held by another tab shows the text and no link,
+as [self-registration](./self-registration.md#the-way-there-and-back) shows for the
+verification link.
+
 ## What a reset leaves in the audit log
 
 A redeemed link writes one `credential` row, `password.reset`, in the
