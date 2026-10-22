@@ -228,3 +228,32 @@ describe('renderUpdatePasswordPage with an unusual tenant name', () => {
     );
   });
 });
+
+// What a screen reader is given: one alert, entry ids that are unique, and
+// every field's description pointing at an entry that is there.
+function expectCoherent(body: string): void {
+  expect(body.match(/role="alert"/gu)?.length).toBe(1);
+  const ids = [...body.matchAll(/ id="([^"]+)"/gu)].map((match) => match[1]);
+  expect(new Set(ids).size).toBe(ids.length);
+  const described = [...body.matchAll(/aria-describedby="([^"]+)"/gu)].flatMap((match) =>
+    (match[1] ?? '').split(' '),
+  );
+  expect(described.length).toBeGreaterThan(0);
+  for (const id of described) expect(ids, id).toContain(id);
+}
+
+describe('a refused change-password page reads coherently to a screen reader', () => {
+  it('has one alert, unique ids and every description present', () => {
+    expectCoherent(
+      renderUpdatePasswordPage(
+        'acme',
+        's',
+        [
+          { rule: 'min-length', message: 'x', minLength: 12 },
+          { rule: 'require-digit', message: 'x' },
+        ],
+        DEFAULT_PAGE_LOCALE,
+      ).body,
+    );
+  });
+});

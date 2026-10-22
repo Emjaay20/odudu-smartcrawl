@@ -923,3 +923,41 @@ describe('renderLoginForm with an unusual tenant name', () => {
     expect(page.html).toContain('<bdi>a b?&quot;&lt;%</bdi>');
   });
 });
+
+// What a screen reader is given: one alert, entry ids that are unique, and
+// every field's description pointing at an entry that is there.
+function expectCoherent(body: string): void {
+  expect(body.match(/role="alert"/gu)?.length).toBe(1);
+  const ids = [...body.matchAll(/ id="([^"]+)"/gu)].map((match) => match[1]);
+  expect(new Set(ids).size).toBe(ids.length);
+  const described = [...body.matchAll(/aria-describedby="([^"]+)"/gu)].flatMap((match) =>
+    (match[1] ?? '').split(' '),
+  );
+  expect(described.length).toBeGreaterThan(0);
+  for (const id of described) expect(ids, id).toContain(id);
+}
+
+describe('a refused sign-in form reads coherently to a screen reader', () => {
+  it('has one alert, unique ids and every description present', () => {
+    for (const [form, messageId] of [
+      ['password', 'login.refusal.signInFailed'],
+      ['otp', 'login.refusal.codeFailed'],
+      ['recovery-code', 'login.refusal.recoveryCodeFailed'],
+    ] as const) {
+      expectCoherent(
+        renderLoginForm(
+          'acme',
+          'sid',
+          form,
+          false,
+          false,
+          { messageId },
+          false,
+          undefined,
+          {},
+          DEFAULT_PAGE_LOCALE,
+        ).body,
+      );
+    }
+  });
+});
