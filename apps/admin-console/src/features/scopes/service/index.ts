@@ -21,15 +21,25 @@ export {
   scopeDeleteFailureText,
 } from '#/features/scopes/service/guard';
 export {
-  type Carrying,
-  carryingOf,
+  type Impact,
+  impactOf,
   claimMappersOf,
   scopeDeleteDialogText,
   scopeDeleteWarning,
 } from '#/features/scopes/service/deleteWarning';
 export {
+  type RestoreOffer,
+  restoredText,
+  restoreFailureText,
+  restoreOffer,
+  restoreText,
+} from '#/features/scopes/service/restore';
+export {
+  DEFAULT_MAPPER_NOTE,
   NONE_TEXT,
-  mapperOptions,
+  boundAfter,
+  mapperChecklist,
+  type MapperOption,
   mappersFailure,
   mappersFailureText,
   mappersSummary,

@@ -18,16 +18,72 @@ async function open() {
   return screen.findByRole('region', { name: 'Claim mappers' });
 }
 
-it('offers every registered mapper, and names the declared ones an empty binding falls back to', async () => {
+it('offers every registered mapper, and shows the declared ones ticked and greyed while none is bound', async () => {
   renderConsoleAt(AT, scopeRoutes());
   const section = await open();
-  expect(within(section).getByRole('checkbox', { name: 'email' })).not.toBeChecked();
-  expect(within(section).getByRole('checkbox', { name: 'groups' })).not.toBeChecked();
+  const email = within(section).getByRole('checkbox', { name: 'email' });
+  expect(email).toBeChecked();
+  expect(email).toBeDisabled();
+  expect(within(section).getByText('Used because nothing is bound')).toBeVisible();
+  const groups = within(section).getByRole('checkbox', { name: 'groups' });
+  expect(groups).not.toBeChecked();
+  expect(groups).toBeEnabled();
   expect(
     within(section).getByText(
       'No mapper is bound, so this scope uses the mappers that declare it: email.',
     ),
   ).toBeVisible();
+});
+
+it('binds only the mapper ticked beside the defaults, which then stop applying', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(AT, scopeRoutes());
+  const section = await open();
+  await user.click(within(section).getByRole('checkbox', { name: 'groups' }));
+  expect(within(section).getByRole('checkbox', { name: 'groups' })).toBeChecked();
+  expect(within(section).getByRole('checkbox', { name: 'email' })).not.toBeChecked();
+  expect(within(section).queryByText('Used because nothing is bound')).toBeNull();
+  await user.click(within(section).getByRole('button', { name: 'Save Claim mappers' }));
+  await waitFor(() => {
+    expect(sent.find((s) => s.method === 'PUT')?.body).toEqual({ mapper_names: ['groups'] });
+  });
+});
+
+it('goes back to the defaults when the last bound mapper is unticked', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, scopeRoutes());
+  const section = await open();
+  await user.click(within(section).getByRole('checkbox', { name: 'groups' }));
+  await user.click(within(section).getByRole('checkbox', { name: 'groups' }));
+  expect(within(section).getByRole('checkbox', { name: 'email' })).toBeChecked();
+  expect(within(section).getByText('Used because nothing is bound')).toBeVisible();
+});
+
+it('shows no default when nothing declares the scope', async () => {
+  renderConsoleAt(
+    AT,
+    scopeRoutes(undefined, {
+      [`GET ${SC}/s-bill/mappers`]: json(
+        { available: ['email', 'groups'], bound: [], declared: [] },
+        200,
+        { etag: '"s-bill-m1"' },
+      ),
+    }),
+  );
+  const section = await open();
+  expect(within(section).getByRole('checkbox', { name: 'email' })).not.toBeChecked();
+  expect(within(section).queryByText('Used because nothing is bound')).toBeNull();
+});
+
+it('passes axe in both themes with the defaults shown', async () => {
+  expect(
+    await axeInBothThemes(
+      () => consoleAt(AT, scopeRoutes()).element,
+      async () => {
+        await open();
+      },
+    ),
+  ).toEqual({ light: [], dark: [] });
 });
 
 it('says it is loading the mappers until the read answers', async () => {
@@ -100,12 +156,12 @@ it('saves a second time on the ETag the first save answered', async () => {
         json({ available: ['email', 'groups'], bound: [], declared: ['email'] }, 200, {
           etag: '"s-bill-m1"',
         }),
-        json({ available: ['email', 'groups'], bound: ['email'], declared: ['email'] }, 200, {
+        json({ available: ['email', 'groups'], bound: ['groups'], declared: ['email'] }, 200, {
           etag: '"s-bill-m2"',
         }),
       ),
       [`PUT ${SC}/s-bill/mappers`]: inTurn(
-        json({ available: ['email', 'groups'], bound: ['email'], declared: ['email'] }, 200, {
+        json({ available: ['email', 'groups'], bound: ['groups'], declared: ['email'] }, 200, {
           etag: '"s-bill-m2"',
         }),
         json(
@@ -119,10 +175,10 @@ it('saves a second time on the ETag the first save answered', async () => {
     }),
   );
   const section = await open();
-  await user.click(within(section).getByRole('checkbox', { name: 'email' }));
-  await user.click(within(section).getByRole('button', { name: 'Save Claim mappers' }));
-  await within(section).findByText('Bound: email.');
   await user.click(within(section).getByRole('checkbox', { name: 'groups' }));
+  await user.click(within(section).getByRole('button', { name: 'Save Claim mappers' }));
+  await within(section).findByText('Bound: groups.');
+  await user.click(within(section).getByRole('checkbox', { name: 'email' }));
   await user.click(within(section).getByRole('button', { name: 'Save Claim mappers' }));
   await waitFor(() => {
     expect(sent.filter((s) => s.method === 'PUT').map((s) => s.ifMatch)).toEqual([

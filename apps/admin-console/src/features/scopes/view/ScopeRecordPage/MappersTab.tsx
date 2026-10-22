@@ -21,7 +21,7 @@ function Mappers({ name, set }: { name: string; set: ScopeMapperSet }) {
       <ChecklistField
         label="Bound mappers"
         options={set.options}
-        value={s.values.mapper_names}
+        value={set.value}
         error={s.fieldErrors.mapper_names}
         changed={s.changed.includes('mapper_names')}
         onChange={set.choose}

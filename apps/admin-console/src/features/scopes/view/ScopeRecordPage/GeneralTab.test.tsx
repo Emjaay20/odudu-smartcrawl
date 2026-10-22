@@ -5,7 +5,7 @@ import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { inTurn, json, problem, whoamiReads } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
-import { BILLING_CARRIES, BILLING_SCOPE, SC, scopeRoutes } from '#/testing/scopesFixtures';
+import { BILLING_SCOPE, impact, profileRoutes, SC, scopeRoutes } from '#/testing/scopesFixtures';
 
 afterEach(() => {
   resetConsole();
@@ -211,51 +211,50 @@ async function openDeletion() {
   return { user, dialog };
 }
 
-it('warns, before the name is typed, how many clients carry the scope', async () => {
+it('warns, before the name is typed, how many clients and roles go with the scope', async () => {
   renderConsoleAt(AT, scopeRoutes());
   const { dialog } = await openDeletion();
   expect(
-    await within(dialog).findByText(/1 client carries billing and will stop receiving its claims/u),
+    await within(dialog).findByText(
+      /1 client carries billing and will stop receiving its claims\. 1 role is mapped to it and will be unmapped\./u,
+    ),
   ).toBeVisible();
   expect(within(dialog).getByRole('button', { name: 'Delete billing' })).toBeDisabled();
 });
 
-it('says no client carries a scope none is assigned', async () => {
-  renderConsoleAt(
-    AT,
-    scopeRoutes(undefined, { [`GET ${SC}/s-bill/clients`]: json({ items: [] }) }),
-  );
+it('says nothing goes with a scope no client carries and no role maps', async () => {
+  renderConsoleAt(AT, scopeRoutes(undefined, { [`GET ${SC}/s-bill/impact`]: json(impact(0, 0)) }));
   const { dialog } = await openDeletion();
   expect(await within(dialog).findByText(/No client carries billing/u)).toBeVisible();
+  expect(dialog).toHaveTextContent('No role is mapped to it.');
 });
 
-it('reads one page only, and says "or more" when another is there', async () => {
+it('reads the counts in one request, and says "or more" when they stopped at their ceiling', async () => {
   const { sent } = renderConsoleAt(
     AT,
     scopeRoutes(undefined, {
-      [`GET ${SC}/s-bill/clients`]: json({ items: [BILLING_CARRIES], next: 'cursor-2' }),
+      [`GET ${SC}/s-bill/impact`]: json(impact(10_000, 2, { clientsCapped: true })),
     }),
   );
   const { dialog } = await openDeletion();
-  expect(await within(dialog).findByText(/1 or more clients carry billing/u)).toBeVisible();
-  expect(sent.filter((s) => s.method === 'GET' && s.path.endsWith('/s-bill/clients'))).toHaveLength(
+  expect(await within(dialog).findByText(/10,000 or more clients carry billing/u)).toBeVisible();
+  expect(sent.filter((s) => s.method === 'GET' && s.path.endsWith('/s-bill/impact'))).toHaveLength(
     1,
   );
+  expect(sent.some((s) => s.method === 'GET' && s.path.endsWith('/s-bill/clients'))).toBe(false);
 });
 
-it('never says none when the clients cannot be read', async () => {
+it('never says none when the counts cannot be read', async () => {
   renderConsoleAt(
     AT,
     scopeRoutes(undefined, {
-      [`GET ${SC}/s-bill/clients`]: problem(403, 'about:blank', 'Forbidden', {
-        detail: 'requires manage-clients',
+      [`GET ${SC}/s-bill/impact`]: problem(403, 'about:blank', 'Forbidden', {
+        detail: 'requires manage-tenant',
       }),
     }),
   );
   const { dialog } = await openDeletion();
-  expect(
-    await within(dialog).findByText(/How many clients carry billing could not be read/u),
-  ).toBeVisible();
+  expect(await within(dialog).findByText(/could not be read/u)).toBeVisible();
   expect(dialog).not.toHaveTextContent('No client carries');
   expect(within(dialog).getByRole('button', { name: 'Delete billing' })).toBeDisabled();
 });
@@ -345,4 +344,99 @@ it('shows the flag "In the ID token" kept in a draft beside the record\'s own, a
       .getAllByRole('cell')
       .map((cell) => cell.textContent),
   ).toEqual(['off', 'on']);
+});
+
+const PROFILE_AT = '/console/acme/scopes/s-prof';
+
+async function openProfileDeletion() {
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole('button', { name: 'Delete profile' }));
+  const dialog = await screen.findByRole('alertdialog', { name: 'Delete profile?' });
+  return { user, dialog };
+}
+
+it('says a built-in scope is one, what goes with it and how to get it back', async () => {
+  renderConsoleAt(PROFILE_AT, scopeRoutes(undefined, profileRoutes()));
+  const { dialog } = await openProfileDeletion();
+  expect(
+    await within(dialog).findByText(
+      /3 clients carry profile and will stop receiving its claims\. 2 roles are mapped to it and will be unmapped\./u,
+    ),
+  ).toBeVisible();
+  expect(dialog).toHaveTextContent(
+    'profile is a built-in scope, which every tenant has. Restore built-in scopes on the scopes list creates it again, without the clients and roles it had.',
+  );
+});
+
+it('deletes a built-in scope only once its name is typed, and sends the name as the confirmation', async () => {
+  const { sent, router } = renderConsoleAt(
+    PROFILE_AT,
+    scopeRoutes(undefined, {
+      ...profileRoutes(),
+      [`DELETE ${SC}/s-prof`]: () => new Response(null, { status: 204 }),
+    }),
+  );
+  const { user, dialog } = await openProfileDeletion();
+  await within(dialog).findByText(/built-in scope/u);
+  const confirm = within(dialog).getByRole('button', { name: 'Delete profile' });
+  expect(confirm).toBeDisabled();
+  await user.type(within(dialog).getByRole('textbox'), 'profil');
+  expect(confirm).toBeDisabled();
+  await user.type(within(dialog).getByRole('textbox'), 'e');
+  await user.click(confirm);
+  await waitFor(() => {
+    expect(router.state.location.pathname).toBe('/acme/scopes');
+  });
+  expect(sent.find((s) => s.method === 'DELETE')?.search.get('confirm')).toBe('profile');
+});
+
+it("says the server's reason in the dialog when it still wants a confirmation, and stays", async () => {
+  renderConsoleAt(
+    PROFILE_AT,
+    scopeRoutes(undefined, {
+      ...profileRoutes(),
+      [`DELETE ${SC}/s-prof`]: problem(
+        422,
+        'about:blank#builtin-scope-confirmation',
+        'Precondition Required',
+        {
+          detail: 'profile is a built-in scope. Repeat the request with confirm=profile.',
+        },
+      ),
+    }),
+  );
+  const { user, dialog } = await openProfileDeletion();
+  await user.type(within(dialog).getByRole('textbox'), 'profile');
+  await user.click(within(dialog).getByRole('button', { name: 'Delete profile' }));
+  expect(
+    await within(dialog).findByText(/profile was not deleted: profile is a built-in scope/u),
+  ).toBeVisible();
+});
+
+it('passes axe in both themes, with the built-in delete dialog open', async () => {
+  const user = userEvent.setup();
+  expect(
+    await axeInBothThemes(
+      () => consoleAt(PROFILE_AT, scopeRoutes(undefined, profileRoutes())).element,
+      async () => {
+        await user.click(await screen.findByRole('button', { name: 'Delete profile' }));
+        const dialog = await screen.findByRole('alertdialog', { name: 'Delete profile?' });
+        await within(dialog).findByText(/built-in scope/u);
+      },
+    ),
+  ).toEqual({ light: [], dark: [] });
+});
+
+it('reads the impact of a scope again each time the dialog is opened', async () => {
+  const { sent } = renderConsoleAt(AT, scopeRoutes());
+  const user = userEvent.setup();
+  const reads = () => sent.filter((s) => s.method === 'GET' && s.path.endsWith('/s-bill/impact'));
+  await user.click(await screen.findByRole('button', { name: 'Delete billing' }));
+  await screen.findByText(/1 client carries billing/u);
+  await user.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(reads()).toHaveLength(1);
+  await user.click(screen.getByRole('button', { name: 'Delete billing' }));
+  await waitFor(() => {
+    expect(reads()).toHaveLength(2);
+  });
 });

@@ -1,8 +1,8 @@
 import type { ClientScope } from '@odudu/contracts/admin';
 import { useRefusal } from '#/features/session';
-import { useScopeClients } from '#/features/scopes/repository/useScopeClients';
 import {
   useScopeDeletion,
+  useScopeImpact,
   useScopeMappersRecord,
   useScopeSaves,
   type AssignmentValues,
@@ -12,12 +12,12 @@ import {
 import {
   ACCESS_TOKEN_LABEL,
   assignmentName,
-  carryingOf,
   claimMappersOf,
   CONSENT_RULE,
   guardedConsent,
   guardedText,
   ID_TOKEN_LABEL,
+  impactOf,
   NEW_CLIENT_CHOICES,
   NEW_CLIENT_LABEL,
   scopeDeleteConsequence,
@@ -44,7 +44,7 @@ export interface Deletion extends Removal {
   // Why it is never offered, said in place of the button.
   fixed: string | null;
   consequence: string;
-  // What the dialog says: how many clients lose the scope, then the consequence.
+  // What the dialog says: how many clients and roles lose the scope, then the consequence.
   warning: string;
 }
 
@@ -72,7 +72,7 @@ export function useScopeGeneral({
 }): ScopeGeneral {
   const refusal = useRefusal(tenant);
   const saves = useScopeSaves(tenant, scope.id);
-  const deletion = useScopeDeletion(tenant, scope.id);
+  const deletion = useScopeDeletion(tenant, scope.id, scope.name);
   const toast = useToast();
   const go = useGo();
   const removal = useConfirmedRemoval({
@@ -85,7 +85,7 @@ export function useScopeGeneral({
       go(scopesHref(tenant), { replace: true });
     },
   });
-  const carriers = useScopeClients(tenant, scope.id, removal.confirming);
+  const impact = useScopeImpact(tenant, scope.id, removal.confirming);
   const mappers = useScopeMappersRecord(tenant, scope.id, removal.confirming);
   const common = {
     tenant,
@@ -163,11 +163,7 @@ export function useScopeGeneral({
       ...removal,
       fixed: guardedText(scope.name),
       consequence: scopeDeleteConsequence(scope.name),
-      warning: scopeDeleteDialogText(
-        scope.name,
-        carryingOf(carriers.status, carriers.rows.length, carriers.more),
-        claimMappersOf(mappers.data),
-      ),
+      warning: scopeDeleteDialogText(scope.name, impactOf(impact), claimMappersOf(mappers.data)),
     },
   };
 }

@@ -1,6 +1,7 @@
 import type { ClientScope } from '@odudu/contracts/admin';
 import { AreaGate, areaAt } from '#/features/shell';
 import { useScopesList } from '#/features/scopes/usecase/useScopesList';
+import { RestoreScopes } from '#/features/scopes/view/ScopesPage/RestoreScopes';
 import { ButtonLink } from '#/shared/view/ButtonLink';
 import type { Column } from '#/shared/view/DataTable';
 import { ResourceListPage } from '#/shared/view/ResourceListPage';
@@ -33,9 +34,12 @@ function List({ tenant }: { tenant: string }) {
       title="Scopes"
       description="A scope is what a client asks to be let do, and what a token says it was granted. A search matches the start of a name."
       actions={
-        <ButtonLink href={page.createHref} variant="primary">
-          Create a scope
-        </ButtonLink>
+        <>
+          <RestoreScopes tenant={tenant} />
+          <ButtonLink href={page.createHref} variant="primary">
+            Create a scope
+          </ButtonLink>
+        </>
       }
       noun={{ one: 'scope', other: 'scopes' }}
       searchFields={NAME_SEARCH}

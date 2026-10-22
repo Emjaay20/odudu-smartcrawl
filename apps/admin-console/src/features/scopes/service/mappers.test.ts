@@ -1,7 +1,9 @@
 import { expect, it } from 'vitest';
 import {
+  DEFAULT_MAPPER_NOTE,
   NONE_TEXT,
-  mapperOptions,
+  boundAfter,
+  mapperChecklist,
   mappersFailure,
   mappersFailureText,
   mappersSummary,
@@ -9,10 +11,41 @@ import {
 } from '#/features/scopes/service';
 
 it('offers every available mapper, in the order the registry names them', () => {
-  expect(mapperOptions(['email', 'groups'])).toEqual([
+  expect(mapperChecklist(['email', 'groups'], [], ['groups'])).toEqual({
+    options: [
+      { id: 'email', label: 'email' },
+      { id: 'groups', label: 'groups' },
+    ],
+    value: ['groups'],
+  });
+});
+
+it('shows the declared mappers ticked and greyed while nothing is bound', () => {
+  expect(mapperChecklist(['email', 'groups'], ['email'], [])).toEqual({
+    options: [
+      { id: 'email', label: 'email', unavailable: DEFAULT_MAPPER_NOTE },
+      { id: 'groups', label: 'groups' },
+    ],
+    value: ['email'],
+  });
+  expect(DEFAULT_MAPPER_NOTE).toBe('Used because nothing is bound');
+});
+
+it('leaves the defaults out once a mapper is bound, and ignores a declared one the registry lacks', () => {
+  expect(mapperChecklist(['email', 'groups'], ['email'], ['groups']).value).toEqual(['groups']);
+  expect(mapperChecklist(['email'], ['gone'], []).value).toEqual([]);
+  expect(mapperChecklist(['email'], ['gone'], []).options).toEqual([
     { id: 'email', label: 'email' },
-    { id: 'groups', label: 'groups' },
   ]);
+});
+
+it('binds only what was ticked on top of the defaults shown, which then stop applying', () => {
+  expect(boundAfter(['email', 'groups'], ['email'], [], ['email', 'groups'])).toEqual(['groups']);
+  expect(boundAfter(['email', 'groups'], ['email'], ['groups'], ['email', 'groups'])).toEqual([
+    'email',
+    'groups',
+  ]);
+  expect(boundAfter(['email', 'groups'], ['email'], ['groups'], [])).toEqual([]);
 });
 
 it('names the declared mappers a scope with no binding falls back to', () => {

@@ -5,8 +5,55 @@ import type { Choice } from '#/shared/service/choice';
 export const NONE_TEXT =
   'No mapper is bound and none declares it, so a token granted this scope gets no claim from it.';
 
-export function mapperOptions(available: readonly string[]): readonly Choice[] {
-  return available.map((name) => ({ id: name, label: name }));
+export const DEFAULT_MAPPER_NOTE = 'Used because nothing is bound';
+
+// A mapper the scope runs only because nothing is bound: shown ticked, and
+// greyed, since a tick on it would bind nothing that is not already used.
+export interface MapperOption extends Choice {
+  unavailable?: string;
+}
+
+export interface MapperChecklist {
+  options: readonly MapperOption[];
+  value: readonly string[];
+}
+
+// While nothing is bound, the registry's mappers that declare the scope are
+// what issuance runs, so they are what the list shows ticked.
+function implicitMappers(
+  available: readonly string[],
+  declared: readonly string[],
+  bound: readonly string[],
+): readonly string[] {
+  return bound.length > 0 ? [] : available.filter((name) => declared.includes(name));
+}
+
+export function mapperChecklist(
+  available: readonly string[],
+  declared: readonly string[],
+  bound: readonly string[],
+): MapperChecklist {
+  const implicit = implicitMappers(available, declared, bound);
+  return {
+    options: available.map((name) =>
+      implicit.includes(name)
+        ? { id: name, label: name, unavailable: DEFAULT_MAPPER_NOTE }
+        : { id: name, label: name },
+    ),
+    value: bound.length > 0 ? bound : implicit,
+  };
+}
+
+// What a tick leaves bound: the defaults shown ticked were never bound, so
+// they drop out once another mapper is, and the registry's order is kept.
+export function boundAfter(
+  available: readonly string[],
+  declared: readonly string[],
+  bound: readonly string[],
+  ticked: readonly string[],
+): string[] {
+  const implicit = implicitMappers(available, declared, bound);
+  return available.filter((name) => ticked.includes(name) && !implicit.includes(name));
 }
 
 // While nothing is bound, issuance runs the mappers that declare the scope.

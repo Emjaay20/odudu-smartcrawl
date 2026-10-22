@@ -1,11 +1,17 @@
 import {
   clientScopeSchema,
+  listBuiltinScopesResponseSchema,
   listScopeClientsResponseSchema,
   MAX_LIMIT,
+  restoreBuiltinScopesResponseSchema,
+  scopeImpactSchema,
   scopeMappersSchema,
   setScopeRolesResponseSchema,
   type ClientScope,
+  type ListBuiltinScopesResponse,
   type ListScopeClientsResponse,
+  type RestoreBuiltinScopesResponse,
+  type ScopeImpact,
   type ScopeMappers,
   type SetScopeRolesResponse,
 } from '@odudu/contracts/admin';
@@ -80,13 +86,44 @@ export function amendScope(
   });
 }
 
+// `confirm` is the scope's own name, which the server asks of a built-in scope.
 export function deleteScope(
   gateway: Gateway,
   tenant: string,
   scopeId: string,
+  confirm?: string,
 ): Promise<GatewayResult<undefined>> {
   return adminCall(gateway, 'DELETE', tenant, ['scopes', scopeId], {
+    ...(confirm === undefined ? {} : { query: new URLSearchParams({ confirm }) }),
     schema: nothing,
+  });
+}
+
+export function readScopeImpact(
+  gateway: Gateway,
+  tenant: string,
+  scopeId: string,
+): Promise<GatewayResult<ScopeImpact>> {
+  return adminCall(gateway, 'GET', tenant, ['scopes', scopeId, 'impact'], {
+    schema: scopeImpactSchema,
+  });
+}
+
+export function readBuiltinScopes(
+  gateway: Gateway,
+  tenant: string,
+): Promise<GatewayResult<ListBuiltinScopesResponse>> {
+  return adminCall(gateway, 'GET', tenant, ['scopes', 'builtins'], {
+    schema: listBuiltinScopesResponseSchema,
+  });
+}
+
+export function restoreBuiltinScopes(
+  gateway: Gateway,
+  tenant: string,
+): Promise<GatewayResult<RestoreBuiltinScopesResponse>> {
+  return adminCall(gateway, 'POST', tenant, ['scopes', 'restore-builtins'], {
+    schema: restoreBuiltinScopesResponseSchema,
   });
 }
 
