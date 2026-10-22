@@ -29,11 +29,18 @@ it('lists the roles the scope maps, and offers the tenant roles to choose from',
   ).toBeVisible();
 });
 
-it('says a scope that maps no role gives clients without full scope none', async () => {
+it('says where the switch for including all roles lives', async () => {
+  renderConsoleAt('/console/acme/scopes/s-rep?tab=roles', scopeRoutes());
+  expect(
+    await screen.findByText("'Include all roles in tokens' is set on each client, under Tokens."),
+  ).toBeVisible();
+});
+
+it('says a scope that maps no role gives clients none unless they include all roles', async () => {
   renderConsoleAt('/console/acme/scopes/s-rep?tab=roles', scopeRoutes());
   expect(
     await screen.findByText(
-      'No roles mapped. Clients without full scope get no roles from this scope.',
+      'No roles mapped. Unless a client includes all roles, it gets none from this scope.',
     ),
   ).toBeVisible();
 });

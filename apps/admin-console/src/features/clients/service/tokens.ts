@@ -120,7 +120,7 @@ export const CREDENTIALS_NOUN = 'scope names';
 
 export const FULL_SCOPE_LABEL = 'Include all roles in tokens';
 export const FULL_SCOPE_RULE =
-  "On: tokens carry all of a person's roles. Off: only roles mapped to the granted scopes.";
+  "On: the roles scope carries all of a person's roles. Off: only roles mapped to the granted scopes.";
 
 export function idTokenAlgOptions(): Choice[] {
   return [

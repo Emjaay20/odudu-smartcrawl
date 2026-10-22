@@ -91,7 +91,7 @@ describe('assignedRoles', () => {
 describe('accountIdleNote', () => {
   it('says an account is idle while the client credentials grant is off, and keeps its roles', () => {
     expect(accountIdleNote({ service_subject_id: 's1', grant_types: ['authorization_code'] })).toBe(
-      'Not in use. The client credentials grant is off. The account keeps its roles.',
+      'Not in use: the client credentials grant is off. The account keeps its roles.',
     );
   });
 
@@ -122,9 +122,7 @@ describe('serviceAccess', () => {
       return access.status === 'none' ? access.note : null;
     };
     expect(note({ ...NONE, type: 'public' })).toBe('A public client has no service account.');
-    expect(note(NONE)).toBe(
-      "No service account. This client signs people in; it doesn't sign in as itself.",
-    );
+    expect(note(NONE)).toBe('This client has no service account.');
     expect(note({ ...NONE, builtin_admin: true })).toBe(
       "No service account. This client signs people in; it doesn't sign in as itself.",
     );

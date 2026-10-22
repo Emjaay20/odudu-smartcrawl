@@ -13,12 +13,15 @@ export function CopyValue({
   value,
   short = false,
   block = false,
+  labelledBy,
 }: {
   label: string;
   value: string;
   short?: boolean;
   // A document of several lines, shown as it is laid out.
   block?: boolean;
+  // The id of a visible heading that names a block, in place of the label.
+  labelledBy?: string;
 }) {
   const [outcome, setOutcome] = useState<Outcome>('idle');
 
@@ -65,7 +68,13 @@ export function CopyValue({
   // than its frame and a screen reader says what it landed on.
   if (block) {
     shown = (
-      <pre className={styles.block} tabIndex={0} role="region" aria-label={label}>
+      <pre
+        className={styles.block}
+        tabIndex={0}
+        role="region"
+        aria-label={labelledBy === undefined ? label : undefined}
+        aria-labelledby={labelledBy}
+      >
         {value}
       </pre>
     );

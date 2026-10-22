@@ -29,7 +29,7 @@ it('heads each artefact by what the app gets from it', () => {
   expect(artefactsOf(RESULT).map((each) => each.heading)).toEqual([
     'What the app gets in the ID token',
     'What the app gets in the access token',
-    'What the UserInfo endpoint returns',
+    'What UserInfo returns',
   ]);
 });
 

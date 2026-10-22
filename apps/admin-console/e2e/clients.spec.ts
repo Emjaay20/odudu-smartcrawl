@@ -607,8 +607,12 @@ test("a client's installation is shown, and its claims are worked out for a subj
   await evaluate.getByRole('option', { name: new RegExp(admin.username, 'u') }).click();
   await evaluate.getByRole('button', { name: 'Evaluate claims' }).click();
   await expect(evaluate.getByText(/^Claims for openid/u)).toBeVisible();
-  await expect(evaluate.getByRole('region', { name: 'ID token claims' })).toContainText('"sub"');
-  await expect(evaluate.getByRole('region', { name: 'UserInfo claims' })).toContainText('"sub"');
+  await expect(
+    evaluate.getByRole('region', { name: 'What the app gets in the ID token' }),
+  ).toContainText('"sub"');
+  await expect(evaluate.getByRole('region', { name: 'What UserInfo returns' })).toContainText(
+    '"sub"',
+  );
   await expect(
     evaluate.getByRole('heading', { name: 'What the app gets in the access token' }),
   ).toBeVisible();

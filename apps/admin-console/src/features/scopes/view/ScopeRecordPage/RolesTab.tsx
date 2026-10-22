@@ -4,7 +4,7 @@ import {
   useScopeRolesRead,
   type ScopeRoles,
 } from '#/features/scopes/usecase/useScopeRoles';
-import { NO_ROLES_MAPPED } from '#/features/scopes/service';
+import { INCLUDE_ALL_POINTER, NO_ROLES_MAPPED } from '#/features/scopes/service';
 import { MappedRoles } from '#/shared/view/MappedRoles';
 import { ReadGate } from '#/shared/view/ReadGate';
 import { RolePicker } from '#/shared/view/RolePicker';
@@ -31,6 +31,7 @@ function Roles({ name, roles }: { name: string; roles: ScopeRoles }) {
       ) : (
         <p className={recordTab.rule}>Checking what you may give or take here…</p>
       )}
+      <p className={recordTab.rule}>{INCLUDE_ALL_POINTER}</p>
       {roles.kept.length === 0 ? null : (
         <p className={recordTab.rule}>
           A role you could not give is one you cannot take away either, so it stays whatever else is

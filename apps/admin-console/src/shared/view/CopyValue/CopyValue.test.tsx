@@ -19,6 +19,17 @@ it('copies its value and says so', async () => {
   expect(screen.getByRole('status')).toHaveTextContent('Copied issuer');
 });
 
+it('names a block by a heading when given one, and keeps the copy button named by the label', () => {
+  render(
+    <>
+      <h3 id="what">What it holds</h3>
+      <CopyValue label="document" value="{}" block labelledBy="what" />
+    </>,
+  );
+  expect(screen.getByRole('region', { name: 'What it holds' })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Copy document' })).toBeVisible();
+});
+
 it('says so when the browser refuses the copy', async () => {
   const user = userEvent.setup();
   render(<CopyValue label="issuer" value={ISSUER} />);

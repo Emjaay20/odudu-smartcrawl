@@ -1,5 +1,7 @@
+import { useId } from 'react';
 import type { Client, Subject } from '@odudu/contracts/admin';
 import {
+  type Artefact,
   EVALUATE_CAPABILITY,
   EVALUATE_HEADING,
   EVALUATE_LABEL,
@@ -23,6 +25,22 @@ import { Panel } from '#/shared/view/Panel';
 import { Picker } from '#/shared/view/Picker';
 import { recordTab } from '#/shared/view/RecordTab';
 import styles from '#/features/clients/view/Evaluate/Evaluate.module.css';
+
+function Box({ artefact }: { artefact: Artefact }) {
+  const heading = useId();
+  return (
+    <div className={styles.artefact}>
+      <h3 id={heading} className={styles.heading}>
+        {artefact.heading}
+      </h3>
+      {artefact.text === null ? (
+        <p className={recordTab.rule}>{NO_ID_TOKEN}</p>
+      ) : (
+        <CopyValue label={artefact.label} value={artefact.text} block labelledBy={heading} />
+      )}
+    </div>
+  );
+}
 
 function Form({ page }: { page: ClientEvaluate }) {
   return (
@@ -61,14 +79,7 @@ function Form({ page }: { page: ClientEvaluate }) {
         <div className={styles.claims}>
           <p role="status" className={recordTab.text}>{`Claims for ${page.worked}.`}</p>
           {page.artefacts.map((artefact) => (
-            <div key={artefact.label} className={styles.artefact}>
-              <h3 className={styles.heading}>{artefact.heading}</h3>
-              {artefact.text === null ? (
-                <p className={recordTab.rule}>{NO_ID_TOKEN}</p>
-              ) : (
-                <CopyValue label={artefact.label} value={artefact.text} block />
-              )}
-            </div>
+            <Box key={artefact.label} artefact={artefact} />
           ))}
         </div>
       )}

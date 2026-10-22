@@ -44,7 +44,7 @@ export function artefactsOf(result: EvaluateClaimsResponse): Artefact[] {
       text: show(result.access_token),
     },
     {
-      heading: 'What the UserInfo endpoint returns',
+      heading: 'What UserInfo returns',
       label: 'UserInfo claims',
       text: show(result.userinfo),
     },

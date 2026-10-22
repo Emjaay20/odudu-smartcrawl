@@ -51,20 +51,20 @@ it('asks for the claims of the subject chosen, with the scope typed, and shows e
   expect(await within(section).findByText(/^Claims for /u)).toHaveTextContent(
     'Claims for openid profile.',
   );
-  expect(within(section).getByRole('region', { name: 'ID token claims' })).toHaveTextContent(
-    '"name": "Ada"',
-  );
+  expect(
+    within(section).getByRole('region', { name: 'What the app gets in the ID token' }),
+  ).toHaveTextContent('"name": "Ada"');
   expect(
     within(section).getByRole('heading', { name: 'What the app gets in the ID token' }),
   ).toBeVisible();
   expect(
     within(section).getByRole('heading', { name: 'What the app gets in the access token' }),
   ).toBeVisible();
+  expect(within(section).getByRole('heading', { name: 'What UserInfo returns' })).toBeVisible();
   expect(
-    within(section).getByRole('heading', { name: 'What the UserInfo endpoint returns' }),
+    within(section).getByRole('region', { name: 'What the app gets in the access token' }),
   ).toBeVisible();
-  expect(within(section).getByRole('region', { name: 'Access token claims' })).toBeVisible();
-  expect(within(section).getByRole('region', { name: 'UserInfo claims' })).toBeVisible();
+  expect(within(section).getByRole('region', { name: 'What UserInfo returns' })).toBeVisible();
   expect(sent.find((s) => s.path === `${C}/c-bill/evaluate`)?.search.get('subject')).toBe('u-ada');
   expect(sent.find((s) => s.path === `${C}/c-bill/evaluate`)?.search.get('scope')).toBe(
     'openid profile',
