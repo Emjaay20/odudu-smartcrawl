@@ -1020,6 +1020,7 @@ desktop layout.
 - ![registration-taken](p4g-pages/registration-taken.webp) `registration-taken`: A username already taken, on its own field.
 - ![registration-succeeded](p4g-pages/registration-succeeded.webp) `registration-succeeded`: Account created.
 - ![verification-ok](p4g-pages/verification-ok.webp) `verification-ok`: Email verified.
+- ![verification-ok-direct](p4g-pages/verification-ok-direct.webp) `verification-ok-direct`: Email verified from a link that carried no request: what to do, no link.
 - ![verification-failed](p4g-pages/verification-failed.webp) `verification-failed`: A verification link that cannot be used.
 - ![reset-request](p4g-pages/reset-request.webp) `reset-request`: Forgot-password request.
 - ![reset-request-failed](p4g-pages/reset-request-failed.webp) `reset-request-failed`: Reset request with no address.
@@ -1027,6 +1028,7 @@ desktop layout.
 - ![reset-new-password](p4g-pages/reset-new-password.webp) `reset-new-password`: Choosing a new password from a reset link.
 - ![reset-weak](p4g-pages/reset-weak.webp) `reset-weak`: Reset refused, with the broken rules.
 - ![reset-done](p4g-pages/reset-done.webp) `reset-done`: Password reset.
+- ![reset-done-direct](p4g-pages/reset-done-direct.webp) `reset-done-direct`: Password reset with no request to go back to.
 - ![reset-link-failed](p4g-pages/reset-link-failed.webp) `reset-link-failed`: A reset link that cannot be used.
 - ![console-refusal](p4g-pages/console-refusal.webp) `console-refusal`: The admin console's sign-in refusal.
 - ![not-found](p4g-pages/not-found.webp) `not-found`: An address nothing serves, shown to a browser (final frame of the drawing).
@@ -2861,6 +2863,28 @@ link_ while the tenant still allows resets.
   application that insists on its own state will refuse the answer; it still brings a person
   back to the application's sign-in, which is the page's job. A key that no usable row holds
   now answers a posted form with the link-failed page, not the form.
+- **The verified, reset-done and actions-done pages have two honest states.** With a
+  carried sign-in start they show the heading and a _Continue to sign in_ link built from
+  it. Without one (a direct visit, a link issued with no request, a dropped or invalid
+  `return_to`) the heading stays and the text says what to do without implying a sign-in is
+  waiting: _Return to the application you were signing in to and sign in again._ Verifying
+  itself needs no session: the token is single-use and redeems in any browser.
+- **How long the request lives, and what the link replays.** The parked authorization
+  request lives thirty minutes (`expires_at - created_at`, recorded in Path A). A _Back to
+  sign in_ link does not use it: the carried `return_to` is a path to `/authorize`, so
+  following it starts a NEW request from the carried parameters, and it works when the
+  original is expired, consumed or reaped (tested: the parked rows deleted, the same
+  `return_to` still opens a fresh sign-in form). `state` is optional at `/authorize` (OIDC
+  Core §3.1.2.1 recommends it), so the request mailed without one is accepted; the callback
+  then carries a code and no `state`. An application that insists on its own `state` will
+  refuse that answer. The page-borne links keep the original `state` and the e2e scenario
+  `return-to-app.spec.ts` asserts it (registration and reset, each after a refused first
+  attempt, so the hidden `return_to` is shown to survive a re-render, and the code
+  exchanging with the PKCE verifier); the mailed-link scenario asserts a code and no state.
+- **A return-to-the-application link.** `client_oidc_config.client_uri` exists (registration
+  metadata, RFC 7591, set through the admin API and shown on the consent page as _About
+  <client>_), but a mailed link holds no client id for a page to read it by unless the
+  reduced `client_id` is parsed from `return_to`. Not built.
 - **No request, no link.** A visit with no `return_to`, and a link an administrator issued
   (no application started it), has nothing to go back to, and no tenant-level sign-in
   address exists (sign-in needs a client). Those pages show their own next step only. The

@@ -181,9 +181,10 @@ there and back; in Password reset the refused password and the unchanged-passwor
 refusal; in A refused login says so the refused page and the diff between the two
 refusals; in Two-factor authentication the replayed enrolment code, run against a
 second tenant `otp2-demo` seeded like `otp-demo`; and in Recovery codes the two
-refusals of a code already spent and of one nobody holds. The rest of each page, its
-audit rows and the keys of the sections around those blocks, stand as the earlier runs
-left them. The required-actions link page, the change-password page and the reset
+refusals of a code already spent and of one nobody holds. The audit section of
+Self-registration was run again whole, on the same stack, tenant `signup-audit`, so its
+keys, subject ids and audit rows are that run's. The rest of each page and the keys of
+the sections around those blocks stand as the earlier runs left them. The required-actions link page, the change-password page and the reset
 success page are byte-for-byte what they were, and were not run again.
 
 ## Admin path transcripts

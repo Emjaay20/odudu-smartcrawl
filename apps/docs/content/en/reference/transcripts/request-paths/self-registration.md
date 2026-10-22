@@ -615,6 +615,41 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
 The pattern keeps only the lines that matter. A visit with no `return_to` shows
 no `Back to sign in`, because there is then no request to go back to.
 
+The mail a registration (or a reset request) queues carries the way back as well, so
+the page its link opens can lead back to sign-in from the verified, failed and
+spent-link pages. The link holds a reduced form of the request: the client, where the
+answer goes, the scope and the PKCE challenge, but not `state`, `nonce`, `claims`,
+`prompt` or `max_age`, which a mailbox and a relay's logs should not keep. Registering
+from a sign-in page that carried all of them, then reading the link out of the queued
+mail:
+
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' -X POST http://localhost:3195/tenants/register-demo/login-actions/registration \
+  --data-urlencode 'username=mailed' \
+  --data-urlencode 'email=mailed@example.com' \
+  --data-urlencode 'password=correct-horse-battery' \
+  --data-urlencode 'return_to=/tenants/register-demo/protocol/openid-connect/auth?response_type=code&client_id=register-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&state=xyz123&nonce=abc123'
+```
+
+```
+201
+```
+
+```bash
+docker compose exec -T postgres psql -U odudu -d odudu -At -c \
+  "select substring(o.body_text from 'https?://[^ \n]*action-token[^ \n]*')
+     from email_outbox o join tenants t on t.id = o.tenant_id
+    where t.name = 'register-demo' and o.to_address = 'mailed@example.com';"
+```
+
+```
+http://localhost:3195/tenants/register-demo/login-actions/action-token?key=QZJj1zCftmZHB2cZqA_NdfY9ASZmlF5M4kzgeKX8Tvw&return_to=%2Ftenants%2Fregister-demo%2Fprotocol%2Fopenid-connect%2Fauth%3Fresponse_type%3Dcode%26client_id%3Dregister-spa%26redirect_uri%3Dhttp%253A%252F%252Flocalhost%253A8080%252Fcallback%26scope%3Dopenid%26code_challenge%3DE9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM%26code_challenge_method%3DS256
+```
+
+A mailed link given a `return_to` of another shape is shown no way back, as the
+registration page is. An administrator's link (`/subjects/:id/actions-email`) is
+issued with no request behind it and carries none.
+
 ## What registration and verification leave in the audit log
 
 A created account writes one `credential` row, `account.registered`, in the
@@ -637,7 +672,7 @@ odudu seed tenant --name signup-audit \
   --set registration_allowed=true --set verify_email=true
 
 curl -sS -o /dev/null -w '%{http_code}\n' \
-  -X POST http://localhost:3000/tenants/signup-audit/login-actions/registration \
+  -X POST http://localhost:3195/tenants/signup-audit/login-actions/registration \
   -H 'x-request-id: signup-audit-ada' \
   --data-urlencode 'username=ada' \
   --data-urlencode 'email=ada@example.com' \
@@ -651,8 +686,8 @@ curl -sS -w '\n%{http_code}\n' \
 ```
 
 ```
-{"created":true,"tenant":"signup-audit","tenantId":"01a0dc5e-9596-7fe2-903f-e72fe1e10817","clientId":"signup-audit-spa"}
-{"command":"tenant","created":false,"tenant":"signup-audit","tenantId":"01a0dc5e-9596-7fe2-903f-e72fe1e10817","settings":["registration_allowed","verify_email"]}
+{"created":true,"tenant":"signup-audit","tenantId":"01a16395-c028-7dba-8fc2-30ae20f7be82","clientId":"signup-audit-spa"}
+{"command":"tenant","created":false,"tenant":"signup-audit","tenantId":"01a16395-c028-7dba-8fc2-30ae20f7be82","settings":["registration_allowed","verify_email"]}
 201
 <!doctype html>
 <html lang="en" dir="ltr">
@@ -700,15 +735,15 @@ docker compose exec -T postgres psql -U odudu -d odudu -At -c \
 ```
 
 ```
-TDknXMNC-qv54W-FspVCC7cVDcnmyUJP_AJQL_us3sU
+aSL2GNXqMCkGyUVKJybttM07BuWMSttal0af8tjsV6g
 ```
 
 ```bash
-KEY=TDknXMNC-qv54W-FspVCC7cVDcnmyUJP_AJQL_us3sU
+KEY=aSL2GNXqMCkGyUVKJybttM07BuWMSttal0af8tjsV6g
 curl -sS -o /dev/null -w '%{http_code}\n' -H 'x-request-id: signup-audit-verify' \
-  "http://localhost:3000/tenants/signup-audit/login-actions/action-token?key=$KEY"
+  "http://localhost:3195/tenants/signup-audit/login-actions/action-token?key=$KEY"
 curl -sS -o /dev/null -w '%{http_code}\n' -H 'x-request-id: signup-audit-replay' \
-  "http://localhost:3000/tenants/signup-audit/login-actions/action-token?key=$KEY"
+  "http://localhost:3195/tenants/signup-audit/login-actions/action-token?key=$KEY"
 
 docker compose exec -T postgres psql -U odudu -d odudu -x -P 'null=(null)' -c \
   "select e.request_id, e.event_type, e.action, e.outcome, e.actor_subject_id,
@@ -726,23 +761,23 @@ request_id       | signup-audit-ada
 event_type       | credential
 action           | account.registered
 outcome          | allowed
-actor_subject_id | 01a0dc5e-97dc-7029-a57e-bf0089130db1
+actor_subject_id | 01a16395-c28e-7442-8d62-edfbac05e5ff
 resource_type    | subject
-resource_id      | 01a0dc5e-97dc-7029-a57e-bf0089130db1
+resource_id      | 01a16395-c28e-7442-8d62-edfbac05e5ff
 detail           | {}
 -[ RECORD 2 ]----+-------------------------------------
 request_id       | signup-audit-verify
 event_type       | credential
 action           | email.verified
 outcome          | allowed
-actor_subject_id | 01a0dc5e-97dc-7029-a57e-bf0089130db1
+actor_subject_id | 01a16395-c28e-7442-8d62-edfbac05e5ff
 resource_type    | subject
-resource_id      | 01a0dc5e-97dc-7029-a57e-bf0089130db1
+resource_id      | 01a16395-c28e-7442-8d62-edfbac05e5ff
 detail           | {}
 ```
 
 Four requests, two rows: none for the duplicate address and none for the
-replayed link. `01a0dc5e-97dc-…` is the `users.subject_id` this stack holds
+replayed link. `01a16395-c28e-…` is the `users.subject_id` this stack holds
 for `ada` in `signup-audit`. `detail` is empty on every `credential` row —
 no password, address or key is written to one, and the action names what
 happened.
