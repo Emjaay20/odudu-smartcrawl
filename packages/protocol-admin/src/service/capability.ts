@@ -62,7 +62,11 @@ import {
   listRolesResponseSchema,
   listScopesResponseSchema,
   listScopeClientsQuerySchema,
+  listBuiltinScopesResponseSchema,
   listScopeClientsResponseSchema,
+  deleteScopeQuerySchema,
+  restoreBuiltinScopesResponseSchema,
+  scopeImpactSchema,
   listSessionsResponseSchema,
   endSessionsResponseSchema,
   listGrantsResponseSchema,
@@ -1119,12 +1123,50 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     capability: 'manage-tenant',
     responseSchema: z.void(),
     successStatus: 204,
+    querystringSchema: deleteScopeQuerySchema,
     description:
-      'Cascades to every client’s assignment and role mapping naming the scope. ' +
-      'Refused with 409 for the scope named `openid`, which every client’s ' +
-      'assignment of it — the tenant’s built-in admin client included — would ' +
-      'otherwise be stripped of in the same stroke. ' +
+      'Cascades to every client’s assignment and role mapping naming the scope; ' +
+      '`GET …/impact` counts them first. A built-in scope — one every tenant is ' +
+      'given — is deleted only when `confirm` names it again, refused with `428` ' +
+      '`builtin-scope-confirmation` otherwise, the detail naming the scope and what ' +
+      'would go with it; `POST …/scopes/restore-builtins` creates it again, without ' +
+      'what the cascade took. Refused with 409 for the scope named `openid`, which ' +
+      'every client’s assignment of it — the tenant’s built-in admin client included — ' +
+      'would otherwise be stripped of in the same stroke, whatever `confirm` says. ' +
+      'The audit row carries `builtin` and both counts. ' +
       REMOVAL_CEILING,
+  },
+  {
+    method: 'GET',
+    pattern: '/admin/tenants/:tenant/scopes/:id/impact',
+    capability: 'manage-tenant',
+    responseSchema: scopeImpactSchema,
+    description:
+      'What deleting the scope would take with it: how many clients carry it and how many ' +
+      'roles are mapped to it, each counted up to the same ceiling the list counts stop at, ' +
+      'and whether it is a built-in scope. Two bounded index reads, whatever the tenant holds.',
+  },
+  {
+    method: 'GET',
+    pattern: '/admin/tenants/:tenant/scopes/builtins',
+    capability: 'manage-tenant',
+    responseSchema: listBuiltinScopesResponseSchema,
+    description:
+      'Every built-in scope, in the order a new tenant is given them, and whether this tenant ' +
+      'has it. One read over the name index.',
+  },
+  {
+    method: 'POST',
+    pattern: '/admin/tenants/:tenant/scopes/restore-builtins',
+    capability: 'manage-tenant',
+    responseSchema: restoreBuiltinScopesResponseSchema,
+    description:
+      'Creates each built-in scope the tenant is missing with the settings a new tenant is ' +
+      'given, and answers the names it created, none when none was missing: repeating it is ' +
+      'harmless. A scope that exists is not read or changed, edited or not, and the client ' +
+      'assignments and role mappings a deletion took are not recreated. Refused with `409`, ' +
+      'creating nothing, when the missing ones would pass the tenant’s scope limit or the ' +
+      'limit on scopes marked for every new client.',
   },
   {
     method: 'GET',

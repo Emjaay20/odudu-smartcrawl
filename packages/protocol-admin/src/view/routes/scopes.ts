@@ -2,9 +2,11 @@ import {
   amendScopeRequestSchema,
   assignScopeToClientRequestSchema,
   createScopeRequestSchema,
+  deleteScopeQuerySchema,
   listScopeClientsQuerySchema,
   listScopesQuerySchema,
   setScopeRolesRequestSchema,
+  SCOPE_LIMIT,
   type ClientScope,
 } from '@odudu/contracts/admin';
 import { isUniqueViolation, type Database } from '@odudu/db';
@@ -17,9 +19,12 @@ import {
   assignScopeToClient,
   createScope,
   deleteScope,
+  listBuiltinScopes,
   listScopeClients,
   listScopes,
   readScope,
+  restoreBuiltins,
+  scopeImpact,
   readScopeRoles,
   ScopeLimitError,
   setScopeRoles,
@@ -236,6 +241,7 @@ export function deleteScopeHandler(deps: ScopesRouteDeps): AdminRouteHandler {
     if (id === undefined) {
       throw new Error('protocol-admin: DELETE scope route received no :id');
     }
+    const query = deleteScopeQuerySchema.parse(request.query);
     const callerCapabilities = await deps.callerCapabilities(
       principal.issuerTenantId,
       principal.subjectId,
@@ -248,6 +254,7 @@ export function deleteScopeHandler(deps: ScopesRouteDeps): AdminRouteHandler {
         {
           scopeId: id,
           callerCapabilities,
+          confirm: query.confirm,
           actorSubjectId: principal.subjectId,
           actorTenantId: principal.issuerTenantId,
           actorClientId: principal.clientDbId,
@@ -262,8 +269,80 @@ export function deleteScopeHandler(deps: ScopesRouteDeps): AdminRouteHandler {
         return sendProblem(reply, request, problem(409, 'about:blank', 'Conflict', outcome.reason));
       case 'capability_ceiling':
         return sendProblem(reply, request, ceilingProblem(outcome.requested, outcome.removed));
+      case 'builtin_confirmation_required':
+        return sendProblem(
+          reply,
+          request,
+          problem(
+            428,
+            'about:blank#builtin-scope-confirmation',
+            'Precondition Required',
+            outcome.reason,
+          ),
+        );
       case 'deleted':
         return reply.code(204).send();
+    }
+  };
+}
+
+export function readScopeImpactHandler(deps: ScopesRouteDeps): AdminRouteHandler {
+  return async (request, reply, _principal, targetTenantId) => {
+    const id = request.params.id;
+    if (id === undefined) {
+      throw new Error('protocol-admin: GET scope impact route received no :id');
+    }
+    const outcome = await adminTx(deps.database, request, targetTenantId, (tx) =>
+      scopeImpact(tx, id),
+    );
+    if (outcome.kind === 'not_found') {
+      return sendProblem(reply, request, problem(404, 'about:blank', 'Not Found'));
+    }
+    return reply.code(200).send(outcome.impact);
+  };
+}
+
+export function listBuiltinScopesHandler(deps: ScopesRouteDeps): AdminRouteHandler {
+  return async (request, reply, _principal, targetTenantId) =>
+    reply
+      .code(200)
+      .send(await adminTx(deps.database, request, targetTenantId, (tx) => listBuiltinScopes(tx)));
+}
+
+export function restoreBuiltinScopesHandler(deps: ScopesRouteDeps): AdminRouteHandler {
+  return async (request, reply, principal, targetTenantId) => {
+    const outcome = await adminTx(deps.database, request, targetTenantId, (tx) =>
+      restoreBuiltins(
+        tx,
+        { audit: deps.audit },
+        {
+          tenantId: targetTenantId,
+          actorSubjectId: principal.subjectId,
+          actorTenantId: principal.issuerTenantId,
+          actorClientId: principal.clientDbId,
+        },
+      ),
+    );
+    switch (outcome.kind) {
+      case 'restored':
+        return reply.code(200).send({ created: outcome.created });
+      case 'scope_limit':
+        return sendProblem(
+          reply,
+          request,
+          problem(
+            409,
+            'about:blank',
+            'Conflict',
+            `a tenant defines at most ${String(SCOPE_LIMIT)} scopes`,
+          ),
+        );
+      case 'default_scope_limit':
+        return sendProblem(
+          reply,
+          request,
+          problem(409, 'about:blank', 'Conflict', outcome.message),
+        );
     }
   };
 }

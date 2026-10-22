@@ -17,6 +17,13 @@ export const ADMIN_PROBLEM_TYPES: Readonly<Record<string, AdminProblemType>> = {
       'The audit read ran past its five second bound because its filters match too many rows ' +
       'to serve cheaply. Narrow the time range with `from` and `to`.',
   },
+  'builtin-scope-confirmation': {
+    status: 428,
+    summary:
+      'A built-in scope is deleted only when the request\u2019s `confirm` names it again. ' +
+      '`detail` names the scope and how many clients and roles would lose it. Repeat the ' +
+      'request with `confirm` set to the scope name.',
+  },
   'export-too-large': {
     status: 413,
     summary:
