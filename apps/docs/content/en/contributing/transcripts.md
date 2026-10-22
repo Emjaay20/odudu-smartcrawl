@@ -169,6 +169,23 @@ a person needs ([the per-origin throttle](../reference/transcripts/request-paths
 signing in again and again), and every transcript past the tenth would
 otherwise be a `429`.
 
+Registration, the reset request, the reset form and the actions form then began to
+come back as the same form when they refuse, and the sign-in form began to offer the
+pages beside it. The blocks that show those responses were run again against a stack
+of the branch, the project `odudu-p4g-31g` on port `3195` (throttles at `10000`), and
+the blocks' text now names that port and the sessions and keys of those runs: in
+Self-registration the refused username, the taken address, the short password with one
+rule and with three, the two password-containing-the-name refusals, the duplicate
+address under the audit tenant, the unverified sign-in and the new section on the way
+there and back; in Password reset the refused password and the unchanged-password
+refusal; in A refused login says so the refused page and the diff between the two
+refusals; in Two-factor authentication the replayed enrolment code, run against a
+second tenant `otp2-demo` seeded like `otp-demo`; and in Recovery codes the two
+refusals of a code already spent and of one nobody holds. The rest of each page, its
+audit rows and the keys of the sections around those blocks, stand as the earlier runs
+left them. The required-actions link page, the change-password page and the reset
+success page are byte-for-byte what they were, and were not run again.
+
 ## Admin path transcripts
 
 The admin API: the endpoints under `/admin/tenants/{tenant}/` that let an

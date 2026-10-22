@@ -138,7 +138,7 @@ the same `/login-actions/action-token` endpoint answers with a form instead
 of completing an action:
 
 ```bash
-curl -sS 'http://localhost:3000/tenants/reset-demo/login-actions/action-token?key=iad4k852Rw6VvCK8djwZSvU0dzcPMvNXXM3-UjOeRkk'
+curl -sS 'http://localhost:3000/tenants/reset-demo/login-actions/action-token?key=xWdVisXYbaspDeevTvnp8n4gK3dTElsxjg6yv9UHil0'
 ```
 
 ```
@@ -160,7 +160,7 @@ curl -sS 'http://localhost:3000/tenants/reset-demo/login-actions/action-token?ke
 <p class="tenant"><bdi>reset-demo</bdi></p>
 </header>
 <form method="post" action="/tenants/reset-demo/login-actions/action-token">
-  <input type="hidden" name="key" value="iad4k852Rw6VvCK8djwZSvU0dzcPMvNXXM3-UjOeRkk">
+  <input type="hidden" name="key" value="xWdVisXYbaspDeevTvnp8n4gK3dTElsxjg6yv9UHil0">
   <label>New password <input type="password" name="password" autocomplete="new-password"></label>
   <button type="submit">Reset password</button>
 </form>
@@ -175,8 +175,8 @@ alone rather than spent — it is still the same unconsumed token, so trying
 again with a compliant password on the very same link works:
 
 ```bash
-curl -sS -X POST http://localhost:3000/tenants/reset-demo/login-actions/action-token \
-  --data-urlencode 'key=iad4k852Rw6VvCK8djwZSvU0dzcPMvNXXM3-UjOeRkk' \
+curl -sS -X POST http://localhost:3195/tenants/reset-demo/login-actions/action-token \
+  --data-urlencode 'key=xWdVisXYbaspDeevTvnp8n4gK3dTElsxjg6yv9UHil0' \
   --data-urlencode 'password=weak'
 ```
 
@@ -187,17 +187,27 @@ curl -sS -X POST http://localhost:3000/tenants/reset-demo/login-actions/action-t
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Can&#39;t reset your password</title>
+<title>Choose a new password</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
 </head>
 <body>
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
-<h1>Can&#39;t reset your password</h1>
+<header class="intro">
+<h1>Choose a new password</h1>
+<p class="tenant"><bdi>reset-demo</bdi></p>
+</header>
+<div class="alert" role="alert" id="form-error">
 <ul>
-<li>Password must be at least 8 characters long.</li>
+<li id="form-error-0">Password must be at least 8 characters long.</li>
 </ul>
+</div>
+<form method="post" action="/tenants/reset-demo/login-actions/action-token">
+  <input type="hidden" name="key" value="xWdVisXYbaspDeevTvnp8n4gK3dTElsxjg6yv9UHil0">
+  <label>New password <input type="password" name="password" autocomplete="new-password" aria-invalid="true" aria-describedby="form-error-0" autofocus></label>
+  <button type="submit">Reset password</button>
+</form>
 </main>
 </body>
 </html>
@@ -215,15 +225,25 @@ above had already been spent by the time it was added; everything else about
 the flow is identical.
 
 ```bash
-curl -sS -i -X POST http://localhost:3000/tenants/reset2-demo/login-actions/action-token \
-  --data-urlencode 'key=5xpkn5Nyp3pJfEbtL6eheyv4Rz5gnDZZbmw_YYPrzNk' \
+curl -sS -i -X POST http://localhost:3195/tenants/reset2-demo/login-actions/action-token \
+  --data-urlencode 'key=QWKz96N_0Cc7rb2J9S1BPGL8AQlPf1vu-NTLfkga41E' \
   --data-urlencode 'password=correct-horse-battery'
 ```
 
 ```
 HTTP/1.1 400 Bad Request
+x-request-id: 01a16366-5ccb-7c02-b039-bdd53561506d
 content-type: text/html
-content-length: 831
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+x-content-type-options: nosniff
+content-language: en
+content-length: 1348
+Date: Thu, 22 Oct 2026 11:36:55 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 <!doctype html>
 <html lang="en" dir="ltr">
@@ -231,17 +251,27 @@ content-length: 831
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Can&#39;t reset your password</title>
+<title>Choose a new password</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
 </head>
 <body>
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
-<h1>Can&#39;t reset your password</h1>
+<header class="intro">
+<h1>Choose a new password</h1>
+<p class="tenant"><bdi>reset2-demo</bdi></p>
+</header>
+<div class="alert" role="alert" id="form-error">
 <ul>
-<li>Password must not be one you have used before.</li>
+<li id="form-error-0">Password must not be one you have used before.</li>
 </ul>
+</div>
+<form method="post" action="/tenants/reset2-demo/login-actions/action-token">
+  <input type="hidden" name="key" value="QWKz96N_0Cc7rb2J9S1BPGL8AQlPf1vu-NTLfkga41E">
+  <label>New password <input type="password" name="password" autocomplete="new-password" aria-invalid="true" aria-describedby="form-error-0" autofocus></label>
+  <button type="submit">Reset password</button>
+</form>
 </main>
 </body>
 </html>
@@ -258,7 +288,7 @@ Submitting a compliant password on the `reset-demo` link above sets it:
 
 ```bash
 curl -sS -X POST http://localhost:3000/tenants/reset-demo/login-actions/action-token \
-  --data-urlencode 'key=iad4k852Rw6VvCK8djwZSvU0dzcPMvNXXM3-UjOeRkk' \
+  --data-urlencode 'key=xWdVisXYbaspDeevTvnp8n4gK3dTElsxjg6yv9UHil0' \
   --data-urlencode 'password=a brand new password'
 ```
 
@@ -347,7 +377,7 @@ same as a verify-email token, and `action_tokens.consumed_at` is now set:
 
 ```bash
 curl -sS -o /dev/null -w '%{http_code}\n' -X POST http://localhost:3000/tenants/reset-demo/login-actions/action-token \
-  --data-urlencode 'key=iad4k852Rw6VvCK8djwZSvU0dzcPMvNXXM3-UjOeRkk' \
+  --data-urlencode 'key=xWdVisXYbaspDeevTvnp8n4gK3dTElsxjg6yv9UHil0' \
   --data-urlencode 'password=another password'
 ```
 

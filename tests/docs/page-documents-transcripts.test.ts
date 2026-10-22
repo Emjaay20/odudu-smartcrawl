@@ -18,18 +18,18 @@ import {
   renderRegistrationFailedPage,
   renderRegistrationForm,
   renderRegistrationSucceededPage,
+  type RegistrationFailure,
   type RegistrationRefusal,
 } from '../../packages/account/src/view/registration-html.js';
 import {
   renderResetLinkFailedPage,
   renderResetPasswordForm,
-  renderResetPasswordRequiredPage,
   renderResetPasswordSucceededPage,
-  renderResetPasswordWeakPage,
   renderResetRequestedPage,
   renderResetRequestFailedPage,
   renderResetRequestForm,
 } from '../../packages/account/src/view/reset-html.js';
+import { type PasswordFailure } from '../../packages/account/src/view/password-rules.js';
 import {
   renderRequiredActionsForm,
   renderRequiredActionsSucceededPage,
@@ -195,19 +195,17 @@ function violationFor(sentence: string): { rule: string; message: string; minLen
   for (const rule of RULES) {
     const candidate = { rule, message: 'x', minLength };
     const rendered = renderUpdatePasswordPage('t', 's', [candidate], LOCALE).body;
-    if (first(rendered, /<li>(.*)<\/li>/u) === sentence) return candidate;
+    if (first(rendered, ENTRY) === sentence) return candidate;
   }
   return { rule: 'unknown', message: sentence };
 }
 
 const ACCOUNT_RULES = RULES.filter((rule) => rule !== 'superseded');
 const REFUSALS: readonly RegistrationRefusal[] = [
-  'fields_required',
   'email_taken',
   'username_taken',
   'invalid_email',
   'invalid_username',
-  'unavailable',
 ];
 const LINKED_ACTIONS = [
   'update-password',
@@ -226,15 +224,54 @@ function accountViolationFor(sentence: string): {
   const minLength = Number(/at least (\d+) characters/u.exec(sentence)?.[1] ?? 0);
   for (const rule of ACCOUNT_RULES) {
     const candidate = { rule, message: 'x', minLength };
-    const rendered = renderResetPasswordWeakPage([candidate], LOCALE).body;
-    if (first(rendered, /<li>(.*)<\/li>/u) === sentence) return candidate;
+    const rendered = renderResetPasswordForm('t', 'k', [candidate], LOCALE).body;
+    if (first(rendered, ENTRY) === sentence) return candidate;
   }
   return { rule: 'unknown', message: sentence };
 }
 
-const tenantOf = (body: string): string => first(body, /action="\/tenants\/([^/"]*)\//u);
+const tenantOf = (body: string): string => first(body, /(?:action|href)="\/tenants\/([^/"]*)\//u);
 const keyOf = (body: string): string => first(body, /name="key" value="([^"]*)"/u);
+// An entry of a form's alert carries an id; a plain list item does not.
+const ENTRY = /<li id="form-error-\d+">(.*)<\/li>/u;
+const entriesOf = (body: string): string[] => all(body, /^<li id="form-error-\d+">(.*)<\/li>$/gmu);
 const itemsOf = (body: string): string[] => all(body, /^<li>(.*)<\/li>$/gmu);
+const refused = (body: string): boolean => body.includes('<div class="alert" role="alert"');
+const valueOf = (body: string, name: string): string | undefined =>
+  new RegExp(`name="${name}"[^>]*? value="([^"]*)"`, 'u').exec(body)?.[1] === undefined
+    ? undefined
+    : first(body, new RegExp(`name="${name}"[^>]*? value="([^"]*)"`, 'u'));
+const returnToOf = (body: string): string | null =>
+  body.includes('name="return_to"') ? first(body, /name="return_to" value="([^"]*)"/u) : null;
+
+// What a recorded form's alert says its refusal was, found by asking the real
+// page which input renders as each recorded sentence.
+function passwordFailureOf(body: string): PasswordFailure | undefined {
+  if (!refused(body)) return undefined;
+  const entries = entriesOf(body);
+  return entries.length === 1 &&
+    entries[0] === first(renderResetPasswordForm('t', 'k', 'required', LOCALE).body, ENTRY)
+    ? 'required'
+    : entries.map(accountViolationFor);
+}
+
+function registrationFailureOf(body: string): RegistrationFailure | undefined {
+  if (!refused(body)) return undefined;
+  const entries = entriesOf(body);
+  const refusal = REFUSALS.find(
+    (candidate) =>
+      entriesOf(
+        renderRegistrationForm('t', { failure: { refusal: candidate } }, LOCALE).body,
+      )[0] === entries[0],
+  );
+  if (refusal !== undefined && entries.length === 1) return { refusal };
+  const missing = (['username', 'email', 'password'] as const).filter((field) =>
+    new RegExp(`name="${field}"[^>]*aria-invalid`, 'u').test(body),
+  );
+  const asked = renderRegistrationForm('t', { failure: { missing } }, LOCALE);
+  if (missing.length > 0 && entriesOf(asked.body).join() === entries.join()) return { missing };
+  return { violations: entries.map(accountViolationFor) };
+}
 const actionsOf = (body: string): (typeof LINKED_ACTIONS)[number][] =>
   itemsOf(body).flatMap((text) => {
     const found = LINKED_ACTIONS.find(
@@ -269,7 +306,7 @@ const RENDER_BACK: Record<string, (body: string) => string> = {
         secret: first(body, /name="secret" value="([^"]*)"/u),
         uri: first(body, /<p><bdi dir="ltr"><code>(otpauth:[^<]*)<\/code><\/bdi><\/p>/u),
       },
-      /^<p><strong>/mu.test(body) ? 'code_mismatch' : undefined,
+      refused(body) ? 'code_mismatch' : undefined,
       LOCALE,
     ).body.replace(/<svg version=[\s\S]*?<\/svg>/u, QR_ELIDED),
   'Save your recovery codes': (body: string) =>
@@ -280,55 +317,70 @@ const RENDER_BACK: Record<string, (body: string) => string> = {
         codes: all(body, /^ {2}<li><bdi dir="ltr"><code>(.*)<\/code><\/bdi><\/li>$/gmu),
         replaced: body.includes('<p>These replace the codes'),
       },
-      /^<p><strong>/mu.test(body) ? 'codes_not_saved' : undefined,
+      refused(body) ? 'codes_not_saved' : undefined,
       LOCALE,
     ).body,
   'Change your password': (body: string) =>
     renderUpdatePasswordPage(
       first(body, /action="\/tenants\/([^/"]*)\//u),
       first(body, /name="auth_session_id" value="([^"]*)"/u),
-      all(body, /^<li>(.*)<\/li>$/gmu).map(violationFor),
+      entriesOf(body).map(violationFor),
       LOCALE,
     ).body,
-  'Create account': (body) => renderRegistrationForm(tenantOf(body), LOCALE).body,
-  "Can't create this account": (body) => {
-    const items = itemsOf(body);
-    const refusal = REFUSALS.find(
-      (candidate) =>
-        itemsOf(renderRegistrationFailedPage({ refusal: candidate }, LOCALE).body)[0] === items[0],
-    );
-    return renderRegistrationFailedPage(
-      refusal !== undefined && items.length === 1
-        ? { refusal }
-        : { violations: items.map(accountViolationFor) },
+  'Create account': (body) => {
+    const username = valueOf(body, 'username');
+    const email = valueOf(body, 'email');
+    const failure = registrationFailureOf(body);
+    return renderRegistrationForm(
+      tenantOf(body),
+      {
+        signInPath: returnToOf(body),
+        ...(failure === undefined ? {} : { failure }),
+        ...(username === undefined ? {} : { username }),
+        ...(email === undefined ? {} : { email }),
+      },
       LOCALE,
     ).body;
   },
+  "Can't create this account": (body) =>
+    renderRegistrationFailedPage(tenantOf(body), null, LOCALE).body,
   'Account created': (body) =>
-    renderRegistrationSucceededPage(body.includes('Check your email for a link'), LOCALE).body,
+    renderRegistrationSucceededPage(body.includes('Check your email for a link'), null, LOCALE)
+      .body,
   'Email verified': () => renderVerificationSucceededPage(LOCALE).body,
   "Can't verify this link": () => renderVerificationFailedPage(LOCALE).body,
-  'Forgot your password?': (body) => renderResetRequestForm(tenantOf(body), LOCALE).body,
-  'Check your email': () => renderResetRequestedPage(LOCALE).body,
+  'Forgot your password?': (body) => {
+    const email = valueOf(body, 'email');
+    return renderResetRequestForm(
+      tenantOf(body),
+      {
+        signInPath: returnToOf(body),
+        emailRequired: refused(body),
+        ...(email === undefined ? {} : { email }),
+      },
+      LOCALE,
+    ).body;
+  },
+  'Check your email': () => renderResetRequestedPage(null, LOCALE).body,
   "Can't send a reset link": (body) =>
-    renderResetRequestFailedPage(
-      body.includes('Email is required.') ? 'email_required' : 'unavailable',
+    renderResetRequestFailedPage(tenantOf(body), null, LOCALE).body,
+  'Choose a new password': (body) =>
+    renderResetPasswordForm(tenantOf(body), keyOf(body), passwordFailureOf(body), LOCALE).body,
+  'Password reset': () => renderResetPasswordSucceededPage(LOCALE).body,
+  "Can't use this link": (body) =>
+    renderResetLinkFailedPage(
+      body.includes('>Request a new link</a>')
+        ? first(body, /<a href="([^"]*)">Request a new link<\/a>/u)
+        : null,
       LOCALE,
     ).body,
-  'Choose a new password': (body) =>
-    renderResetPasswordForm(tenantOf(body), keyOf(body), LOCALE).body,
-  'Password reset': () => renderResetPasswordSucceededPage(LOCALE).body,
-  "Can't use this link": () => renderResetLinkFailedPage(LOCALE).body,
-  "Can't reset your password": (body) =>
-    body.includes('<ul>')
-      ? renderResetPasswordWeakPage(itemsOf(body).map(accountViolationFor), LOCALE).body
-      : renderResetPasswordRequiredPage(LOCALE).body,
   'Update your account': (body) =>
     renderRequiredActionsForm(
       tenantOf(body),
       keyOf(body),
       actionsOf(body),
       body.includes('name="password"'),
+      passwordFailureOf(body),
       LOCALE,
     ).body,
   'Account updated': (body) => renderRequiredActionsSucceededPage(actionsOf(body), LOCALE).body,

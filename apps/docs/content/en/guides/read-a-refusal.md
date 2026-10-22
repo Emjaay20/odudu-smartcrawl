@@ -13,7 +13,11 @@ When Odudu says no, the answer has a shape that tells you who can act on it. A p
 The sign-in form comes back with one message, whatever was wrong. A wrong password, a name nobody holds, a locked account and a disabled account all read the same, so the page cannot be used to find out which accounts exist.
 
 ```
-<p class="alert" role="alert">Sign-in failed. Check your details and try again.</p>
+<div class="alert" role="alert" id="form-error">
+<ul>
+<li id="form-error-0">Sign-in failed. Check your details and try again.</li>
+</ul>
+</div>
 ```
 
 What to do: nothing in your app. The person tries again.

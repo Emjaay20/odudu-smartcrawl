@@ -199,7 +199,7 @@ parks the request, then the password, which answers 200 with the code form:
 ```bash
 curl -sS -o /dev/null -w '%{http_code}\n' -X POST \
   http://localhost:3000/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a13f65-709f-77fd-916a-4dde358b7bbc' \
+  --data-urlencode 'auth_session_id=01a16368-3f9d-7fc3-9628-30596ef3a88e' \
   --data-urlencode 'username=ada' \
   --data-urlencode 'password=correct-horse-battery'
 ```
@@ -212,9 +212,9 @@ Then the code that already signed somebody in — typed in lower case with a
 space where the hyphen was:
 
 ```bash
-curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a13f65-709f-77fd-916a-4dde358b7bbc' \
-  --data-urlencode 'recovery_code=75nft 0nhhg'
+curl -sS -X POST http://localhost:3195/tenants/otp-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a16368-3f9d-7fc3-9628-30596ef3a88e' \
+  --data-urlencode 'recovery_code=zqm0z 2nqqk'
 ```
 
 ```
@@ -236,11 +236,15 @@ curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authentica
 <p class="context">to continue to <bdi>otp-spa</bdi></p>
 <p class="tenant"><bdi>otp-demo</bdi></p>
 </header>
-<p class="alert" role="alert">You have already used that recovery code. Try another one from your list.</p>
+<div class="alert" role="alert" id="form-error">
+<ul>
+<li id="form-error-0">You have already used that recovery code. Try another one from your list.</li>
+</ul>
+</div>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a13f65-709f-77fd-916a-4dde358b7bbc">
-  <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" autofocus></label>
-  <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>
+  <input type="hidden" name="auth_session_id" value="01a16368-3f9d-7fc3-9628-30596ef3a88e">
+  <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
+  <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off" aria-invalid="true" aria-describedby="form-error-0" autofocus></label>
   <button type="submit">Verify</button>
 </form>
 </main>
@@ -255,8 +259,8 @@ confusable letters onto digits. And the refusal _says_ the code is spent,
 which a wrong code does not:
 
 ```bash
-curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a13f65-709f-77fd-916a-4dde358b7bbc' \
+curl -sS -X POST http://localhost:3195/tenants/otp-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a16368-3f9d-7fc3-9628-30596ef3a88e' \
   --data-urlencode 'recovery_code=ZZZZZ-ZZZZZ'
 ```
 
@@ -279,10 +283,14 @@ curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authentica
 <p class="context">to continue to <bdi>otp-spa</bdi></p>
 <p class="tenant"><bdi>otp-demo</bdi></p>
 </header>
-<p class="alert" role="alert">That code did not work. Check it and try again.</p>
+<div class="alert" role="alert" id="form-error">
+<ul>
+<li id="form-error-0">That code did not work. Check it and try again.</li>
+</ul>
+</div>
 <form method="post" action="/tenants/otp-demo/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a13f65-709f-77fd-916a-4dde358b7bbc">
-  <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" autofocus></label>
+  <input type="hidden" name="auth_session_id" value="01a16368-3f9d-7fc3-9628-30596ef3a88e">
+  <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" aria-invalid="true" aria-describedby="form-error-0" autofocus></label>
   <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>
   <button type="submit">Verify</button>
 </form>

@@ -310,14 +310,14 @@ form that named the account would let a second factor answer for somebody
 who never passed the first one.
 
 Submitting the code that confirmed the enrolment does **not** work — it answers
-with the same form again, saying so. (This one and the two recovery code
-refusals below are from a later run on `http://localhost:3000`, where the
-enrolment's code was `380681`, once a refusal began to carry a message.)
+with the same form again, saying so. (This one is from a run on `http://localhost:3195`, against `otp2-demo`, a
+tenant seeded the way `otp-demo` is, where the enrolment's code was `483676`.
+The two recovery code refusals below are from the same stack.)
 
 ```bash
-curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authenticate \
-  --data-urlencode 'auth_session_id=01a13f65-6fc2-798d-b022-fab2a73714f1' \
-  --data-urlencode 'code=380681'
+curl -sS -X POST http://localhost:3195/tenants/otp2-demo/login-actions/authenticate \
+  --data-urlencode 'auth_session_id=01a16368-8465-73e2-abe3-fda7b84b4ef9' \
+  --data-urlencode 'code=483676'
 ```
 
 ```
@@ -337,12 +337,16 @@ curl -sS -X POST http://localhost:3000/tenants/otp-demo/login-actions/authentica
 <header class="intro">
 <h1>Enter your authentication code</h1>
 <p class="context">to continue to <bdi>otp-spa</bdi></p>
-<p class="tenant"><bdi>otp-demo</bdi></p>
+<p class="tenant"><bdi>otp2-demo</bdi></p>
 </header>
-<p class="alert" role="alert">That code did not work. Check it and try again.</p>
-<form method="post" action="/tenants/otp-demo/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a13f65-6fc2-798d-b022-fab2a73714f1">
-  <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" autofocus></label>
+<div class="alert" role="alert" id="form-error">
+<ul>
+<li id="form-error-0">That code did not work. Check it and try again.</li>
+</ul>
+</div>
+<form method="post" action="/tenants/otp2-demo/login-actions/authenticate">
+  <input type="hidden" name="auth_session_id" value="01a16368-8465-73e2-abe3-fda7b84b4ef9">
+  <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" aria-invalid="true" aria-describedby="form-error-0" autofocus></label>
   <label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"></label>
   <button type="submit">Verify</button>
 </form>

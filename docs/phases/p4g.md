@@ -986,6 +986,7 @@ passkey relying-party id. The 768px width was captured and looked at too; it is 
 desktop layout.
 
 - ![signin-empty](p4g-pages/signin-empty.webp) `signin-empty`: The sign-in form with a client, remember-me and the passkey option.
+- ![signin-links](p4g-pages/signin-links.webp) `signin-links`: Sign-in on a tenant that serves registration and reset: the two links under the form.
 - ![signin-error-echo](p4g-pages/signin-error-echo.webp) `signin-error-echo`: A refused sign-in: the alert, the username given back, focus on the password.
 - ![signin-long-names](p4g-pages/signin-long-names.webp) `signin-long-names`: Sign-in with a very long client name, tenant name and username (renderer only).
 - ![signin-rtl](p4g-pages/signin-rtl.webp) `signin-rtl`: Sign-in under a right-to-left locale (renderer only).
@@ -1014,7 +1015,9 @@ desktop layout.
 - ![error-long](p4g-pages/error-long.webp) `error-long`: The error page with a long description and a long way-on link (renderer only).
 - ![email-unverified](p4g-pages/email-unverified.webp) `email-unverified`: Sign-in refused until the address is verified.
 - ![registration](p4g-pages/registration.webp) `registration`: The registration form.
-- ![registration-failed](p4g-pages/registration-failed.webp) `registration-failed`: Registration refused, with the broken password rules.
+- ![registration-required](p4g-pages/registration-required.webp) `registration-required`: Registration with nothing filled in: each empty field named, the first focused.
+- ![registration-weak](p4g-pages/registration-weak.webp) `registration-weak`: Registration refused for the password's rules, in place, the other values kept.
+- ![registration-taken](p4g-pages/registration-taken.webp) `registration-taken`: A username already taken, on its own field.
 - ![registration-succeeded](p4g-pages/registration-succeeded.webp) `registration-succeeded`: Account created.
 - ![verification-ok](p4g-pages/verification-ok.webp) `verification-ok`: Email verified.
 - ![verification-failed](p4g-pages/verification-failed.webp) `verification-failed`: A verification link that cannot be used.
@@ -2819,3 +2822,92 @@ Only transform, opacity and stroke-dashoffset animate; nothing changes layout, a
 - **Stepper frames** at 900, 1000, 1100 and 1280 px are in `docs/phases/p4g-docs/landing-motion-stepper-*`.
 - **Not done:** the glow behind the hub and the resting look of dimmed parts are unchanged, because static frames had to
   stay identical; only their transitions moved.
+
+### Increment 31g, links between the pages and refusals in place
+
+The sign-in, registration and reset pages could only be reached by typing their
+addresses, and a refused account form left the form for a separate page with no way
+on. Both are defects of the pages' own topic and are fixed here.
+
+**Links.** The sign-in form offers _Forgot password?_ and _Create an account_ on the
+first-factor step, each on its tenant setting (`reset_password_allowed`,
+`registration_allowed`: the same two that make the pages answer 404, so a link is never
+offered that leads nowhere). Registration, the reset request, their success pages and
+the unverified-email page link _Back to sign in_; a pending action this deployment
+cannot offer does too. A reset link that was used or expired offers _Request a new
+link_ while the tenant still allows resets.
+
+- **How the pending request travels.** As a `return_to` parameter holding the authorize
+  path `restartAuthorizeLocation` rebuilds from the parked request, not as the
+  authentication session id: that id is the sign-in form's CSRF defence and the page that
+  mints it says it is never carried in a URL, and a POST button is not a link. The value
+  is accepted in exactly one shape (this tenant's authorize path, a query, printable
+  ASCII, no fragment, 4096 characters at most: `packages/account/src/service/sign-in-path.ts`)
+  and carried through each page's form as a hidden field; `/authorize` validates it again
+  from scratch. It holds what the browser's address bar already held at `/authorize`
+  (client, redirect, state, challenge), no personal data and no session handle. It is
+  absent when the request cannot be rebuilt (bound to a subject by a hint).
+- **Direct visits.** With no pending request there is nothing to go back to and no
+  tenant-level sign-in address exists, so no _Back to sign in_ is shown. The pages that a
+  mailed link opens (verification, reset form, actions form) have no pending request
+  either and show none; their only link is the new-reset-link one.
+- **Left as they are, and why.** A closed registration or reset page stays an empty 404
+  (`reply.code(404)`: it must not say whether the tenant exists or what it allows; the
+  unknown-address page of increment 31e is where a browser sees a branded one). The
+  throttle page offers no link because it is decided before any read (its own comment).
+  A used or expired _verification_ link offers none: there is no way to ask for another
+  one (the page's own sentence says to), which is a missing resend flow, placed on P4f in the
+  roadmap and in the P4f row of section 11.
+
+**Refusals in place.** Registration, the reset request, the reset form and the actions
+form now come back as the same form with status 400 (500 for the two that cannot send
+mail, which stay pages with _Try again_). The sign-in, authenticator, recovery-code and
+change-password pages already re-rendered; all of them now share one shape: one
+`role="alert"` block above the form whose entries carry ids, each field at fault is
+`aria-invalid="true"` and `aria-describedby` its entries, and the first field at fault
+has `autofocus`.
+
+- **Focus and announcement.** `autofocus` on the first invalid field, no script: it works
+  without JavaScript, it puts the cursor where the next keystroke belongs, and the one
+  `role="alert"` block is the single live region (the field's description reads the same
+  entry again only where the person is working). Focus on the alert itself was rejected:
+  it announces twice (alert and focus) and leaves the cursor away from the field.
+- **Messages sit in the alert, not under each field.** One block above the form keeps the
+  card width constant and nothing moves after load (every re-render is a new document, so
+  there is no layout shift to reserve space for); the entry ids give each field its own
+  description. The stylesheet adds only the invalid border and the `.links` row.
+- **Kept and not kept.** Username and email come back (bounded to 254 code points, and
+  not at all when they hold a bidirectional control, which is what the account refuses);
+  passwords, codes and recovery codes never do. The login form's own echo is unchanged.
+- **Account enumeration.** Registration told a person that a username or an address is
+  taken before this increment (400, one sentence each) and still does, in the same words,
+  now beside the field. That is the existing behaviour and no ADR decided otherwise;
+  making the address case neutral needs a mailed answer, which a tenant with
+  `verify_email` off cannot give. Flagged for the controller as a P2a-topic question; the
+  reset request stays byte-identical for a known and an unknown address, `return_to`
+  included (tested).
+
+**Status and headers.** Unchanged: 400 for refusals, 200 for the sign-in and enrolment
+re-renders as before, every page through `sendHtml`/`sendVerificationHtml`, `no-store`.
+
+**Queries per path.** Registration, reset request, reset form and actions form
+re-renders: the same as the refusal page they replace (the tenant read, then the
+usecase's own transaction), none added. The sign-in page: the tenant read now selects
+two more columns, and the parked request `continuation` already loads supplies the
+return path, none added. Used or expired links: one indexed read of the token's type in
+the transaction that already peeked (three statements, was two). The unverified-email
+page: the tenant and parked request reads (two point reads, was none), once per refusal,
+behind the throttle; every other page that gained a link already had the request loaded.
+
+**Searched and reused.** Reused `restartAuthorizeLocation`, `continuation`, `pageHeaders`
+wrappers, the `escapeHtml`/`bdi` helpers, `echo` bounds from the login form, the
+catalogues and their `en`-only shipping. The four package shells stay one text
+(`instrument-reach.test.ts`), so `links` lives in each; the field-state helpers are one
+file per package (`form-error.ts`) for the same reason.
+
+**Gallery.** Added `signin-links`, `registration-required`, `registration-weak`,
+`registration-taken`; `registration-failed` is gone (the page no longer exists);
+`reset-request-failed`, `reset-weak`, `email-unverified`, `reset-link-failed`,
+`totp-enrolment`, `update-password-violations` and `second-factor-totp-error` were
+captured again. Each ran through axe in both themes, at the phone width and at one card
+width in `server-pages.spec.ts`, and was looked at.

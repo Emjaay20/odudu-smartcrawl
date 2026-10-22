@@ -99,7 +99,7 @@ stripping would let two different usernames collide. On port `3197`, posting
 `ada` followed by U+202E:
 
 ```bash
-curl -sS -D - -X POST http://localhost:3197/tenants/register-demo/login-actions/registration \
+curl -sS -D - -X POST http://localhost:3195/tenants/register-demo/login-actions/registration \
   --data-urlencode "username=$(printf 'ada\xe2\x80\xae')" \
   --data-urlencode 'email=grace@example.com' \
   --data-urlencode 'password=correct-horse-battery'
@@ -107,7 +107,7 @@ curl -sS -D - -X POST http://localhost:3197/tenants/register-demo/login-actions/
 
 ```
 HTTP/1.1 400 Bad Request
-x-request-id: 01a152e1-d4aa-7c81-84d1-edb5e5da5b71
+x-request-id: 01a16364-8cc3-77f7-9593-7679780ce923
 content-type: text/html
 content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
@@ -115,8 +115,8 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 877
-Date: Mon, 19 Oct 2026 06:38:14 GMT
+content-length: 1483
+Date: Thu, 22 Oct 2026 11:34:56 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -126,17 +126,28 @@ Keep-Alive: timeout=72
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Can&#39;t create this account</title>
+<title>Create account</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
 </head>
 <body>
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
-<h1>Can&#39;t create this account</h1>
+<header class="intro">
+<h1>Create account</h1>
+<p class="tenant"><bdi>register-demo</bdi></p>
+</header>
+<div class="alert" role="alert" id="form-error">
 <ul>
-<li>That username contains a character that changes the direction of text, which is not allowed.</li>
+<li id="form-error-0">That username contains a character that changes the direction of text, which is not allowed.</li>
 </ul>
+</div>
+<form method="post" action="/tenants/register-demo/login-actions/registration">
+  <label>Username <input type="text" name="username" autocomplete="username" aria-invalid="true" aria-describedby="form-error-0" autofocus></label>
+  <label>Email <input type="email" name="email" autocomplete="email" value="grace@example.com"></label>
+  <label>Password <input type="password" name="password" autocomplete="new-password"></label>
+  <button type="submit">Create account</button>
+</form>
 </main>
 </body>
 </html>
@@ -200,10 +211,10 @@ AUTH_SESSION_ID=$(curl -sS --get \
   --data-urlencode 'nonce=abc123' \
   --data-urlencode 'code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM' \
   --data-urlencode 'code_challenge_method=S256' \
-  'http://localhost:3000/tenants/register-demo/protocol/openid-connect/auth' \
+  'http://localhost:3195/tenants/register-demo/protocol/openid-connect/auth' \
   | sed -n '/name="auth_session_id"/{s/.*value="\([^"]*\)".*/\1/p;q;}')
 
-curl -sS -i -X POST http://localhost:3000/tenants/register-demo/login-actions/authenticate \
+curl -sS -i -X POST http://localhost:3195/tenants/register-demo/login-actions/authenticate \
   --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
   --data-urlencode 'username=ada' \
   --data-urlencode 'password=correct-horse-battery'
@@ -211,7 +222,18 @@ curl -sS -i -X POST http://localhost:3000/tenants/register-demo/login-actions/au
 
 ```
 HTTP/1.1 200 OK
+x-request-id: 01a16364-9eda-74f5-be20-9d5bca494e7b
 content-type: text/html
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+x-content-type-options: nosniff
+content-language: en
+content-length: 1254
+Date: Thu, 22 Oct 2026 11:35:01 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 <!doctype html>
 <html lang="en" dir="ltr">
@@ -228,6 +250,9 @@ content-type: text/html
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t sign in yet</h1>
 <p>You need to verify your email address before you can sign in. We sent a link to the address on this account — follow it, then sign in again.</p>
+<p class="links">
+<a href="/tenants/register-demo/protocol/openid-connect/auth?response_type=code&amp;client_id=register-spa&amp;redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&amp;scope=openid+email&amp;code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&amp;code_challenge_method=S256&amp;state=xyz123&amp;nonce=abc123">Back to sign in</a>
+</p>
 </main>
 </body>
 </html>
@@ -281,7 +306,7 @@ tenancy bug — so a second registration for an address already held **in
 this tenant** is refused:
 
 ```bash
-curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/registration \
+curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/registration \
   --data-urlencode 'username=carol' \
   --data-urlencode 'email=ada@example.com' \
   --data-urlencode 'password=another-password'
@@ -294,17 +319,28 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Can&#39;t create this account</title>
+<title>Create account</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
 </head>
 <body>
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
-<h1>Can&#39;t create this account</h1>
+<header class="intro">
+<h1>Create account</h1>
+<p class="tenant"><bdi>register-demo</bdi></p>
+</header>
+<div class="alert" role="alert" id="form-error">
 <ul>
-<li>That email address is already registered.</li>
+<li id="form-error-0">That email address is already registered.</li>
 </ul>
+</div>
+<form method="post" action="/tenants/register-demo/login-actions/registration">
+  <label>Username <input type="text" name="username" autocomplete="username" value="carol"></label>
+  <label>Email <input type="email" name="email" autocomplete="email" value="ada@example.com" aria-invalid="true" aria-describedby="form-error-0" autofocus></label>
+  <label>Password <input type="password" name="password" autocomplete="new-password"></label>
+  <button type="submit">Create account</button>
+</form>
 </main>
 </body>
 </html>
@@ -321,7 +357,7 @@ password is refused with every violation the candidate has, not just the
 first:
 
 ```bash
-curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/registration \
+curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/registration \
   --data-urlencode 'username=ada' \
   --data-urlencode 'email=ada@example.com' \
   --data-urlencode 'password=short'
@@ -334,17 +370,28 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Can&#39;t create this account</title>
+<title>Create account</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
 </head>
 <body>
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
-<h1>Can&#39;t create this account</h1>
+<header class="intro">
+<h1>Create account</h1>
+<p class="tenant"><bdi>register-demo</bdi></p>
+</header>
+<div class="alert" role="alert" id="form-error">
 <ul>
-<li>Password must be at least 8 characters long.</li>
+<li id="form-error-0">Password must be at least 8 characters long.</li>
 </ul>
+</div>
+<form method="post" action="/tenants/register-demo/login-actions/registration">
+  <label>Username <input type="text" name="username" autocomplete="username" value="ada"></label>
+  <label>Email <input type="email" name="email" autocomplete="email" value="ada@example.com"></label>
+  <label>Password <input type="password" name="password" autocomplete="new-password" aria-invalid="true" aria-describedby="form-error-0" autofocus></label>
+  <button type="submit">Create account</button>
+</form>
 </main>
 </body>
 </html>
@@ -362,19 +409,30 @@ same short password now lists all three:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Can&#39;t create this account</title>
+<title>Create account</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
 </head>
 <body>
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
-<h1>Can&#39;t create this account</h1>
+<header class="intro">
+<h1>Create account</h1>
+<p class="tenant"><bdi>register-demo</bdi></p>
+</header>
+<div class="alert" role="alert" id="form-error">
 <ul>
-<li>Password must be at least 8 characters long.</li>
-<li>Password must contain a digit.</li>
-<li>Password must contain an uppercase letter.</li>
+<li id="form-error-0">Password must be at least 8 characters long.</li>
+<li id="form-error-1">Password must contain a digit.</li>
+<li id="form-error-2">Password must contain an uppercase letter.</li>
 </ul>
+</div>
+<form method="post" action="/tenants/register-demo/login-actions/registration">
+  <label>Username <input type="text" name="username" autocomplete="username" value="ada"></label>
+  <label>Email <input type="email" name="email" autocomplete="email" value="ada@example.com"></label>
+  <label>Password <input type="password" name="password" autocomplete="new-password" aria-invalid="true" aria-describedby="form-error-0 form-error-1 form-error-2" autofocus></label>
+  <button type="submit">Create account</button>
+</form>
 </main>
 </body>
 </html>
@@ -391,7 +449,7 @@ of its email address, case-insensitively — matched independently, so a
 password tripping both lists both:
 
 ```bash
-curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/registration \
+curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/registration \
   --data-urlencode 'username=ada' \
   --data-urlencode 'email=ada@example.com' \
   --data-urlencode 'password=myADApassword'
@@ -404,18 +462,29 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Can&#39;t create this account</title>
+<title>Create account</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
 </head>
 <body>
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
-<h1>Can&#39;t create this account</h1>
+<header class="intro">
+<h1>Create account</h1>
+<p class="tenant"><bdi>register-demo</bdi></p>
+</header>
+<div class="alert" role="alert" id="form-error">
 <ul>
-<li>Password must not contain the username.</li>
-<li>Password must not contain the email address.</li>
+<li id="form-error-0">Password must not contain the username.</li>
+<li id="form-error-1">Password must not contain the email address.</li>
 </ul>
+</div>
+<form method="post" action="/tenants/register-demo/login-actions/registration">
+  <label>Username <input type="text" name="username" autocomplete="username" value="ada"></label>
+  <label>Email <input type="email" name="email" autocomplete="email" value="ada@example.com"></label>
+  <label>Password <input type="password" name="password" autocomplete="new-password" aria-invalid="true" aria-describedby="form-error-0 form-error-1" autofocus></label>
+  <button type="submit">Create account</button>
+</form>
 </main>
 </body>
 </html>
@@ -426,7 +495,7 @@ here `carol`'s password contains no part of her own username, but does
 contain the local part of the email address given for the account:
 
 ```bash
-curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/registration \
+curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/registration \
   --data-urlencode 'username=carol' \
   --data-urlencode 'email=ada@example.com' \
   --data-urlencode 'password=myADApassword'
@@ -439,17 +508,28 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Can&#39;t create this account</title>
+<title>Create account</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
 </head>
 <body>
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
-<h1>Can&#39;t create this account</h1>
+<header class="intro">
+<h1>Create account</h1>
+<p class="tenant"><bdi>register-demo</bdi></p>
+</header>
+<div class="alert" role="alert" id="form-error">
 <ul>
-<li>Password must not contain the email address.</li>
+<li id="form-error-0">Password must not contain the email address.</li>
 </ul>
+</div>
+<form method="post" action="/tenants/register-demo/login-actions/registration">
+  <label>Username <input type="text" name="username" autocomplete="username" value="carol"></label>
+  <label>Email <input type="email" name="email" autocomplete="email" value="ada@example.com"></label>
+  <label>Password <input type="password" name="password" autocomplete="new-password" aria-invalid="true" aria-describedby="form-error-0" autofocus></label>
+  <button type="submit">Create account</button>
+</form>
 </main>
 </body>
 </html>
@@ -460,6 +540,80 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 A tenant with `verify_email` off skips the mail and the gate above entirely:
 the account created is usable at the next login, the same way a
 seeded user always has been.
+
+## The way there and back
+
+The sign-in page offers the two pages a tenant serves, each only while its
+setting is on: **Create an account** when `registration_allowed` is on and
+**Forgot password?** when `reset_password_allowed` is. A tenant with neither
+shows no link. Each link carries the request being signed in to, as a
+`return_to` parameter holding that request's own `/authorize` path, so the page
+it leads to can bring the person back to the same request. Never the
+authentication session's id: that is the sign-in form's anti-forgery value and is
+not put in an address. This run is on `http://localhost:3195`, with
+`reset_password_allowed` turned on for `register-demo` as well:
+
+```bash
+curl -sS --get \
+  --data-urlencode 'response_type=code' \
+  --data-urlencode 'client_id=register-spa' \
+  --data-urlencode 'redirect_uri=http://localhost:8080/callback' \
+  --data-urlencode 'scope=openid email' \
+  --data-urlencode 'state=xyz123' \
+  --data-urlencode 'code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM' \
+  --data-urlencode 'code_challenge_method=S256' \
+  'http://localhost:3195/tenants/register-demo/protocol/openid-connect/auth' \
+  | grep -A3 'class="links"'
+```
+
+```
+<p class="links">
+<a href="/tenants/register-demo/login-actions/reset-password?return_to=%2Ftenants%2Fregister-demo%2Fprotocol%2Fopenid-connect%2Fauth%3Fresponse_type%3Dcode%26client_id%3Dregister-spa%26redirect_uri%3Dhttp%253A%252F%252Flocalhost%253A8080%252Fcallback%26scope%3Dopenid%2Bemail%26code_challenge%3DE9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM%26code_challenge_method%3DS256%26state%3Dxyz123">Forgot password?</a>
+<a href="/tenants/register-demo/login-actions/registration?return_to=%2Ftenants%2Fregister-demo%2Fprotocol%2Fopenid-connect%2Fauth%3Fresponse_type%3Dcode%26client_id%3Dregister-spa%26redirect_uri%3Dhttp%253A%252F%252Flocalhost%253A8080%252Fcallback%26scope%3Dopenid%2Bemail%26code_challenge%3DE9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM%26code_challenge_method%3DS256%26state%3Dxyz123">Create an account</a>
+</p>
+```
+
+The registration page takes `return_to` only in that exact shape: this tenant's
+own authorize path with a query. Anything else (another tenant, an absolute
+address, a fragment, a control character) is dropped, and the page then shows no
+way back. It links back with it, and keeps it in the form:
+
+```bash
+curl -sS 'http://localhost:3195/tenants/register-demo/login-actions/registration?return_to=%2Ftenants%2Fregister-demo%2Fprotocol%2Fopenid-connect%2Fauth%3Fresponse_type%3Dcode%26client_id%3Dregister-spa%26state%3Dxyz123' \
+  | grep -E 'return_to|Back to sign in'
+```
+
+```
+  <input type="hidden" name="return_to" value="/tenants/register-demo/protocol/openid-connect/auth?response_type=code&amp;client_id=register-spa&amp;state=xyz123">
+<a href="/tenants/register-demo/protocol/openid-connect/auth?response_type=code&amp;client_id=register-spa&amp;state=xyz123">Back to sign in</a>
+```
+
+A refused submission comes back as the registration form itself, status `400`,
+with the problem in one alert above it, the field it is about marked
+(`aria-invalid`, `aria-describedby`) and focused (`autofocus`), the username and
+email kept, the password never given back, and the way back still there:
+
+```bash
+curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/registration \
+  --data-urlencode 'username=newcomer' \
+  --data-urlencode 'email=newcomer@example.com' \
+  --data-urlencode 'password=short' \
+  --data-urlencode 'return_to=/tenants/register-demo/protocol/openid-connect/auth?response_type=code&client_id=register-spa&state=xyz123' \
+  | grep -E 'role="alert"|<li |<input|Back to sign in'
+```
+
+```
+<div class="alert" role="alert" id="form-error">
+<li id="form-error-0">Password must be at least 8 characters long.</li>
+  <input type="hidden" name="return_to" value="/tenants/register-demo/protocol/openid-connect/auth?response_type=code&amp;client_id=register-spa&amp;state=xyz123">
+  <label>Username <input type="text" name="username" autocomplete="username" value="newcomer"></label>
+  <label>Email <input type="email" name="email" autocomplete="email" value="newcomer@example.com"></label>
+  <label>Password <input type="password" name="password" autocomplete="new-password" aria-invalid="true" aria-describedby="form-error-0" autofocus></label>
+<a href="/tenants/register-demo/protocol/openid-connect/auth?response_type=code&amp;client_id=register-spa&amp;state=xyz123">Back to sign in</a>
+```
+
+The pattern keeps only the lines that matter. A visit with no `return_to` shows
+no `Back to sign in`, because there is then no request to go back to.
 
 ## What registration and verification leave in the audit log
 
@@ -489,7 +643,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' \
   --data-urlencode 'email=ada@example.com' \
   --data-urlencode 'password=correct-horse-battery'
 curl -sS -w '\n%{http_code}\n' \
-  -X POST http://localhost:3000/tenants/signup-audit/login-actions/registration \
+  -X POST http://localhost:3195/tenants/signup-audit/login-actions/registration \
   -H 'x-request-id: signup-audit-duplicate' \
   --data-urlencode 'username=carol' \
   --data-urlencode 'email=ada@example.com' \
@@ -506,17 +660,28 @@ curl -sS -w '\n%{http_code}\n' \
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Can&#39;t create this account</title>
+<title>Create account</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
 </head>
 <body>
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
-<h1>Can&#39;t create this account</h1>
+<header class="intro">
+<h1>Create account</h1>
+<p class="tenant"><bdi>signup-audit</bdi></p>
+</header>
+<div class="alert" role="alert" id="form-error">
 <ul>
-<li>That email address is already registered.</li>
+<li id="form-error-0">That email address is already registered.</li>
 </ul>
+</div>
+<form method="post" action="/tenants/signup-audit/login-actions/registration">
+  <label>Username <input type="text" name="username" autocomplete="username" value="carol"></label>
+  <label>Email <input type="email" name="email" autocomplete="email" value="ada@example.com" aria-invalid="true" aria-describedby="form-error-0" autofocus></label>
+  <label>Password <input type="password" name="password" autocomplete="new-password"></label>
+  <button type="submit">Create account</button>
+</form>
 </main>
 </body>
 </html>

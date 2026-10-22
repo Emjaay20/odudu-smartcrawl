@@ -5,26 +5,26 @@ import {
 } from '../../packages/domain-identity/src/service/password-policy.js';
 import { DEFAULT_PAGE_LOCALE, PASSWORD_TOO_LONG } from '../../packages/kernel/src/index.js';
 import {
-  renderRegistrationFailedPage,
+  renderRegistrationForm,
   type RegistrationRefusal,
 } from '../../packages/account/src/view/registration-html.js';
-import { renderResetPasswordWeakPage } from '../../packages/account/src/view/reset-html.js';
+import { renderResetPasswordForm } from '../../packages/account/src/view/reset-html.js';
 import { at, loadSource, PROTOCOL_PAGES } from './markdown.js';
 
 const GUIDE = PROTOCOL_PAGES;
 
 const REFUSALS: readonly RegistrationRefusal[] = [
-  'fields_required',
   'email_taken',
   'username_taken',
   'invalid_email',
   'invalid_username',
-  'unavailable',
 ];
 
-// The text of each <li> a page renders, as served.
+// The text of each entry in a form's alert, as served.
 function itemsOf(body: string): string[] {
-  return [...body.matchAll(/^<li>(.*)<\/li>$/gmu)].map((match) => match[1] ?? '');
+  return [...body.matchAll(/^<li id="form-error-\d+">(.*)<\/li>$/gmu)].map(
+    (match) => match[1] ?? '',
+  );
 }
 
 // Every <li> sentence the pages that list a refusal can show, read from the
@@ -61,15 +61,18 @@ function possibleMessages(): Set<string> {
   const messages = new Set<string>();
   for (const violation of reported) {
     for (const item of itemsOf(
-      renderResetPasswordWeakPage([violation], DEFAULT_PAGE_LOCALE).body,
+      renderResetPasswordForm('acme', 'key', [violation], DEFAULT_PAGE_LOCALE).body,
     )) {
       expect(item, `no catalogue sentence for the rule ${violation.rule}`).not.toContain('<bdi>');
       messages.add(item);
     }
   }
-  for (const refusal of REFUSALS) {
+  for (const failure of [
+    ...REFUSALS.map((refusal) => ({ refusal })),
+    { missing: ['username', 'email', 'password'] as const },
+  ]) {
     for (const item of itemsOf(
-      renderRegistrationFailedPage({ refusal }, DEFAULT_PAGE_LOCALE).body,
+      renderRegistrationForm('acme', { failure }, DEFAULT_PAGE_LOCALE).body,
     )) {
       messages.add(item);
     }
@@ -77,12 +80,12 @@ function possibleMessages(): Set<string> {
   return messages;
 }
 
-// The headings of the pages that render a violation list, as served.
+// The headings of the forms that render a violation list, as served.
 function violationPageHeadings(): Set<string> {
   const headings = new Set<string>();
   for (const body of [
-    renderRegistrationFailedPage({ refusal: 'email_taken' }, DEFAULT_PAGE_LOCALE).body,
-    renderResetPasswordWeakPage([], DEFAULT_PAGE_LOCALE).body,
+    renderRegistrationForm('acme', {}, DEFAULT_PAGE_LOCALE).body,
+    renderResetPasswordForm('acme', 'key', undefined, DEFAULT_PAGE_LOCALE).body,
   ]) {
     const title = /<h1>(?<title>[^<]+)<\/h1>/u.exec(body)?.groups?.title;
     if (title !== undefined) headings.add(title);
@@ -105,7 +108,9 @@ describe('the password-policy violation messages in the protocol pages are ones 
       const heading = /^<h1>(?<title>.*)<\/h1>$/u.exec(text)?.groups?.title;
       if (heading !== undefined) underViolationHeading = headings.has(heading);
       if (!underViolationHeading) return [];
-      return /^<li>(?!<code>).*<\/li>$/u.test(text) ? [{ text, lineNumber: index + 1 }] : [];
+      return /^<li id="form-error-\d+">.*<\/li>$/u.test(text)
+        ? [{ text, lineNumber: index + 1 }]
+        : [];
     });
 
     if (shown.length === 0) {
@@ -116,7 +121,7 @@ describe('the password-policy violation messages in the protocol pages are ones 
     }
 
     for (const { text, lineNumber } of shown) {
-      const message = text.replace(/^<li>/u, '').replace(/<\/li>$/u, '');
+      const message = text.replace(/^<li id="form-error-\d+">/u, '').replace(/<\/li>$/u, '');
       expect(
         possible.has(message),
         `${at(document, lineNumber)} shows a violation message the password policy ` +

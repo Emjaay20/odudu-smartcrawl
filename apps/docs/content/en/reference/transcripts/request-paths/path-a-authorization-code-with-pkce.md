@@ -412,9 +412,9 @@ code. Immediately: it expires in a minute.
 A password the server turns down answers `200` with the form again, and the
 form says so. The run below is against `demo` and `ada` as
 [Bootstrap](./bootstrap.md#a-public-client-with-a-user) seeded them, on a stack started
-with `ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000`;
+with `ODUDU_THROTTLE_LIMIT=10000 ODUDU_LOGIN_THROTTLE_LIMIT=10000`;
 `$AUTH_SESSION_ID` is the `auth_session_id` of a fresh `/authorize` form and
-`$LOGIN` the login endpoint, `http://localhost:3171/tenants/demo/login-actions/authenticate`.
+`$LOGIN` the login endpoint, `http://localhost:3195/tenants/demo/login-actions/authenticate`.
 The response is shortened at the passkey script, which is the one
 [the login page](#2-authorize) prints in full:
 
@@ -428,16 +428,16 @@ curl -sS -i \
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a13fbd-b4de-707d-9c69-765926abc2e3
+x-request-id: 01a16366-e054-71c4-a744-5385c88243c3
 content-type: text/html
-content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-kwGGd/DNU6OyCipi1Taykw=='; connect-src 'self'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-DwvFoSyXwPdlEuK/NfFg1A=='; connect-src 'self'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 3418
-Date: Thu, 15 Oct 2026 13:25:59 GMT
+content-length: 3588
+Date: Thu, 22 Oct 2026 11:37:28 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -459,21 +459,25 @@ Keep-Alive: timeout=72
 <p class="context">to continue to <bdi>demo-spa</bdi></p>
 <p class="tenant"><bdi>demo</bdi></p>
 </header>
-<p class="alert" role="alert">Sign-in failed. Check your details and try again.</p>
+<div class="alert" role="alert" id="form-error">
+<ul>
+<li id="form-error-0">Sign-in failed. Check your details and try again.</li>
+</ul>
+</div>
 <form method="post" action="/tenants/demo/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a13fbd-b4cc-7f45-a470-fe600d127131">
-  <label>Username <input type="text" name="username" autocomplete="username" value="ada"></label>
-  <label>Password <input type="password" name="password" autocomplete="current-password" autofocus></label>
+  <input type="hidden" name="auth_session_id" value="01a16366-e041-72e7-92f3-4de384beebc4">
+  <label>Username <input type="text" name="username" autocomplete="username" value="ada" aria-invalid="true" aria-describedby="form-error-0"></label>
+  <label>Password <input type="password" name="password" autocomplete="current-password" aria-invalid="true" aria-describedby="form-error-0" autofocus></label>
   <button type="submit">Sign in</button>
 </form>
 <form method="post" action="/tenants/demo/login-actions/authenticate" id="passkey-form" data-failed="Your device did not finish signing in — {reason}. You can try again." data-cancelled="the request was cancelled" data-not-offered="this server is not offering passkeys">
-  <input type="hidden" name="auth_session_id" value="01a13fbd-b4cc-7f45-a470-fe600d127131">
+  <input type="hidden" name="auth_session_id" value="01a16366-e041-72e7-92f3-4de384beebc4">
   <input type="hidden" name="assertion" id="passkey-assertion">
   <p><button type="submit" id="passkey-submit" class="secondary">Sign in with a passkey</button></p>
 </form>
 <p id="passkey-error" class="alert" role="alert" hidden></p>
 <noscript><p>Signing in with a passkey needs JavaScript, because only the browser can talk to your authenticator. Use your username and password above.</p></noscript>
-<script nonce="kwGGd/DNU6OyCipi1Taykw==">…</script>
+<script nonce="DwvFoSyXwPdlEuK/NfFg1A==">…</script>
 </main>
 </body>
 </html>
@@ -493,30 +497,32 @@ diff /tmp/refused-wrong-password.txt /tmp/refused-unknown-user.txt
 
 ```
 2c2
-< x-request-id: 01a15237-3f11-7eb4-90b4-e34a61d0c8f7
+< x-request-id: 01a16366-e054-71c4-a744-5385c88243c3
 ---
-> x-request-id: 01a15237-3f42-779b-a647-322e513ff699
+> x-request-id: 01a16366-e08f-7c35-bf2d-1e375367e50c
 4c4
-< content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-GU8J53RCpb/r4m244ssgoQ=='; connect-src 'self'
+< content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-DwvFoSyXwPdlEuK/NfFg1A=='; connect-src 'self'
 ---
-> content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-JGwkpbJ2wmIIHgDikRI32w=='; connect-src 'self'
-10c10
-< content-length: 3130
+> content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-1+h8XNSIw5Rk+c2DYyo3ZQ=='; connect-src 'self'
+10,11c10,11
+< content-length: 3588
+< Date: Thu, 22 Oct 2026 11:37:28 GMT
 ---
-> content-length: 3133
-31c31
-<   <label>Username <input type="text" name="username" autocomplete="username" value="ada"></label>
+> content-length: 3591
+> Date: Thu, 22 Oct 2026 11:37:29 GMT
+40c40
+<   <label>Username <input type="text" name="username" autocomplete="username" value="ada" aria-invalid="true" aria-describedby="form-error-0"></label>
 ---
->   <label>Username <input type="text" name="username" autocomplete="username" value="nobody"></label>
-42c42
-< <script nonce="GU8J53RCpb/r4m244ssgoQ==">
+>   <label>Username <input type="text" name="username" autocomplete="username" value="nobody" aria-invalid="true" aria-describedby="form-error-0"></label>
+51c51
+< <script nonce="DwvFoSyXwPdlEuK/NfFg1A==">
 ---
-> <script nonce="JGwkpbJ2wmIIHgDikRI32w==">
+> <script nonce="1+h8XNSIw5Rk+c2DYyo3ZQ==">
 ```
 
-Five lines differ: the request id, the script nonce (in the header and on
-the element), the length that follows the typed name, and the typed name
-itself. Nothing says whether the account exists.
+Six lines differ: the request id, the script nonce (in the header and on
+the element), the length that follows the typed name and the time of the
+response, and the typed name itself. Nothing says whether the account exists.
 
 - **One message per step, whatever the cause.** The password step says
   `Sign-in failed. Check your details and try again.` for a wrong password,
@@ -531,7 +537,8 @@ recovery code did not work. Check it and try again.` The one message that
   A form that only asks for the next factor, or that was submitted with a
   field missing, claims no failure and carries no message.
 - **The message is an alert and moves focus without a script.** It is
-  `<p role="alert">` above the form, and the first field still to fill
+  one `<div role="alert">` above the form, and the fields it is about are
+  `aria-invalid` and `aria-describedby` its entry; the first field still to fill
   carries `autofocus`: the password when the username is given back, the
   username otherwise, the code on the code form.
 - **The username comes back, nothing else does.** It is escaped like any
