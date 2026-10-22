@@ -81,7 +81,45 @@ the change-password page, `change.html`, whose form carries the same
 <p>This account needs a new password before you can continue.</p>
 <form method="post" action="/tenants/system/login-actions/required-action?action=update-password">
   <input type="hidden" name="auth_session_id" value="01a1203b-3d92-7736-aa5e-d291255eace5">
-  <label>New password <input type="password" name="password" autocomplete="new-password"></label>
+  <label>New password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" aria-describedby="password-rules-list"></label>
+  <div class="rules hint" id="password-rules" data-min="15">
+    <p class="rules-head"><span>Your password needs:</span><button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false" data-show="Show password" data-hide="Hide password">Show password</button></p>
+    <ul id="password-rules-list">
+      <li data-rule="length">At least 15 characters</li>
+      <li>Not a common password</li>
+    </ul>
+  </div>
+  <script nonce="isQO0ygXE+MBWVmdMDcz3A==">(function () {
+  var box = document.getElementById('password-rules');
+  var field = document.getElementById('password');
+  if (!box || !field) return;
+  var rows = box.querySelectorAll('li[data-rule]');
+  var min = Number(box.getAttribute('data-min'));
+  var tests = {
+    length: function (v) { return Array.from(v.normalize('NFC')).length >= min; },
+    digit: function (v) { return /\d/u.test(v); },
+    uppercase: function (v) { return /[A-Z]/u.test(v); },
+    lowercase: function (v) { return /[a-z]/u.test(v); },
+    special: function (v) { return /[^A-Za-z0-9]/u.test(v); }
+  };
+  function check() {
+    Array.from(rows).forEach(function (row) {
+      row.setAttribute('data-met', String(tests[row.getAttribute('data-rule')](field.value)));
+    });
+  }
+  box.setAttribute('data-live', '');
+  field.addEventListener('input', check);
+  check();
+  var toggle = box.querySelector('button');
+  if (!toggle) return;
+  toggle.hidden = false;
+  toggle.addEventListener('click', function () {
+    var show = field.type === 'password';
+    field.type = show ? 'text' : 'password';
+    toggle.textContent = toggle.getAttribute(show ? 'data-hide' : 'data-show');
+    toggle.setAttribute('aria-pressed', String(show));
+  });
+})();</script>
   <button type="submit">Update password</button>
 </form>
 </main>

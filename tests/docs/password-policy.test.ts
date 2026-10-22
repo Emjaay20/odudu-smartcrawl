@@ -44,7 +44,7 @@ function itemsOf(body: string): string[] {
 function possibleMessages(): Set<string> {
   const base = {
     tenantName: 'acme',
-    minLength: 8,
+    minLength: 15,
     requireDigit: false,
     requireUppercase: false,
     requireLowercase: false,

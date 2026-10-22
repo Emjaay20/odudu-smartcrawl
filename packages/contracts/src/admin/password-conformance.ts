@@ -5,9 +5,7 @@ export const PASSWORD_ALONE_MIN_LENGTH = 15;
 export const PASSWORD_WITH_SECOND_FACTOR_MIN_LENGTH = 8;
 
 export type PasswordConformance =
-  | 'conforms'
-  | 'conforms_with_second_factor'
-  | 'needs_second_factor';
+  'conforms' | 'conforms_with_second_factor' | 'needs_second_factor';
 
 // A hint, never a refusal: the settings API accepts any length in its range
 // whatever this answers.

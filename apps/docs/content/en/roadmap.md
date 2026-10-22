@@ -36,7 +36,7 @@ Everything here works in the version you can run today.
 
 ### Credentials and second factors
 
-- Passwords with a policy and lockouts, passkeys, and a one-time password from an authenticator app.
+- Passwords with a policy and lockouts, a list of common passwords that may not be chosen, passkeys, and a one-time password from an authenticator app.
 - Recovery codes: ten per person, shown once, offered again when the last is spent, revoked as a set when the last authenticator goes.
 - Self-registration, email verification and password reset, each switched on per tenant, and required actions you set on a person.
 
@@ -86,7 +86,7 @@ Placed on a phase, in order, and not started. Each line names the phase that wil
 - **more required actions (verify email, update profile, accept terms)**: P4f.
 - **several sign-in flows with a per-client override**: P4f.
 - **per-step authenticator configuration**: P4f.
-- **a password blocklist and breach check**: P4f.
+- **a breached-password check**: P4f.
 - **translated pages and mail**: P4b, which ships the locales on the catalogue mechanism the server already has; the console's catalogue is P4h's (ADR 0043).
 - **custom subject attributes and a declarative user profile**: P7.
 - **fine-grained admin permissions**: P9.

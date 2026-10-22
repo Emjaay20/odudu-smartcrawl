@@ -489,6 +489,7 @@ export const DEFINED: Readonly<Record<string, Defined>> = {
   'Self-registration': feature(ACCESS, "label: 'Self-registration'"),
   'Verify email addresses': feature(ACCESS, "label: 'Verify email addresses'"),
   'Minimum length': feature(ACCESS, "label: 'Minimum length'"),
+  'Password lifetime': feature(ACCESS, "label: 'Password lifetime'"),
   'Failures before a lockout': feature(ACCESS, "label: 'Failures before a lockout'"),
   'Keep events for': feature(PLATFORM, "label: 'Keep events for'"),
   Enabled: feature(ACCESS, "label: 'Enabled'"),

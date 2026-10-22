@@ -39,6 +39,10 @@ export async function inspect(page: Page, name: string): Promise<void> {
   await shots(page, name);
 }
 
+// On the bundled list of common passwords and long enough for a tenant's
+// default minimum, so only that rule refuses it.
+export const COMMON_PASSWORD = '1qaz2wsx3edc4rfv';
+
 // Where the stack under test answers.
 export const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3080';
 

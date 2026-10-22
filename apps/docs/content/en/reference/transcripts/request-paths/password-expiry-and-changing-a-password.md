@@ -73,7 +73,45 @@ curl -sS -X POST http://localhost:3086/tenants/expiry-demo/login-actions/authent
 <p>This account needs a new password before you can continue.</p>
 <form method="post" action="/tenants/expiry-demo/login-actions/required-action?action=update-password">
   <input type="hidden" name="auth_session_id" value="01a10b6c-9d41-75c4-85f5-e18615bcb162">
-  <label>New password <input type="password" name="password" autocomplete="new-password"></label>
+  <label>New password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" aria-describedby="password-rules-list"></label>
+  <div class="rules hint" id="password-rules" data-min="15">
+    <p class="rules-head"><span>Your password needs:</span><button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false" data-show="Show password" data-hide="Hide password">Show password</button></p>
+    <ul id="password-rules-list">
+      <li data-rule="length">At least 15 characters</li>
+      <li>Not a common password</li>
+    </ul>
+  </div>
+  <script nonce="qeexqXRLZzGm+ChSxaenbw==">(function () {
+  var box = document.getElementById('password-rules');
+  var field = document.getElementById('password');
+  if (!box || !field) return;
+  var rows = box.querySelectorAll('li[data-rule]');
+  var min = Number(box.getAttribute('data-min'));
+  var tests = {
+    length: function (v) { return Array.from(v.normalize('NFC')).length >= min; },
+    digit: function (v) { return /\d/u.test(v); },
+    uppercase: function (v) { return /[A-Z]/u.test(v); },
+    lowercase: function (v) { return /[a-z]/u.test(v); },
+    special: function (v) { return /[^A-Za-z0-9]/u.test(v); }
+  };
+  function check() {
+    Array.from(rows).forEach(function (row) {
+      row.setAttribute('data-met', String(tests[row.getAttribute('data-rule')](field.value)));
+    });
+  }
+  box.setAttribute('data-live', '');
+  field.addEventListener('input', check);
+  check();
+  var toggle = box.querySelector('button');
+  if (!toggle) return;
+  toggle.hidden = false;
+  toggle.addEventListener('click', function () {
+    var show = field.type === 'password';
+    field.type = show ? 'text' : 'password';
+    toggle.textContent = toggle.getAttribute(show ? 'data-hide' : 'data-show');
+    toggle.setAttribute('aria-pressed', String(show));
+  });
+})();</script>
   <button type="submit">Update password</button>
 </form>
 </main>
@@ -89,15 +127,13 @@ bound by — `400`, with every rule it broke:
 curl -sS -X POST \
   'http://localhost:3086/tenants/expiry-demo/login-actions/required-action?action=update-password' \
   --data-urlencode 'auth_session_id=01a10b6c-9d41-75c4-85f5-e18615bcb162' \
-  --data-urlencode 'password=short'
+  --data-urlencode 'password=short' \
+  | grep -E 'role="alert"|<li id="form-error'
 ```
 
 ```
-<h1>Change your password</h1>
-<p>This account needs a new password before you can continue.</p>
-<ul>
-<li>Password must be at least 8 characters long.</li>
-</ul>
+<div class="alert" role="alert" id="form-error">
+<li id="form-error-0">Password must be at least 15 characters long.</li>
 ```
 
 Above a `password_history_depth` of zero, a tenant also remembers that many

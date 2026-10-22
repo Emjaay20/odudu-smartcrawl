@@ -350,7 +350,10 @@ WebAuthn §6.1.1 permits. A passkey counts as **two** factors (`amr:
 a tenant with `otp_required` on does not ask for a code on top of one.
 
 Every tenant also carries a password policy — `password_min_length` (default
-`8`, floored there by a `CHECK`; a tenant cannot configure its way below it),
+`15` for a new tenant, NIST SP 800-63B-4's length for a password used alone;
+a tenant that asks a second factor of every sign-in may choose as little as
+`8`, the floor a `CHECK` holds it to, and the console notes a lower minimum
+when `otp_required` is off),
 `password_require_digit`, `password_require_uppercase`,
 `password_require_lowercase` and `password_require_special` (all off by
 default), and `password_not_username`/`password_not_email` (both on by
@@ -370,6 +373,16 @@ every writer of a password: registration, reset redemption, the seed CLI's
 `--password` and `user` subcommand, and the change-password required
 action. A rejected password answers `400` with every violated rule listed
 at once, not just the first.
+
+Two rules bind every tenant and have no setting. A password is stored and
+verified in Unicode NFC form (a hash made before that is still tried against
+the password as typed). And a whole password is refused when it is one of
+38,446 on a bundled list of common ones (`THIRD-PARTY-NOTICES.md`), or is
+the tenant's name, the username or the name part of the email, compared
+without case after normalising; the list is held in memory, so the check
+costs no query. The pages that set a password list what it needs beside the
+field, with a small script that ticks the list as it is typed and a show
+toggle; without the script the list is plain text.
 
 **Five consecutive wrong credentials lock an account**, and this is the one
 credential setting that ships on: RFC 6749 §2.3.1's brute-force protection is

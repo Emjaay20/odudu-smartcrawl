@@ -63,7 +63,7 @@ describe('renderRegistrationForm', () => {
   <label>Username <input type="text" name="username" autocomplete="username"></label>
   <label>Email <input type="email" name="email" autocomplete="email"></label>
   <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" aria-describedby="password-rules-list"></label>
-  <div class="rules" id="password-rules" data-min="15">
+  <div class="rules hint" id="password-rules" data-min="15">
     <p class="rules-head"><span>Your password needs:</span><button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false" data-show="Show password" data-hide="Hide password">Show password</button></p>
     <ul id="password-rules-list">
       <li data-rule="length">At least 15 characters</li>

@@ -319,8 +319,8 @@ a phase note.
 
 - **Twelve administrative capabilities a gap audit against mature identity
   providers found the server lacking** (2026-09-29): more required actions,
-  several sign-in flows, per-step authenticator settings and a password
-  blocklist (**P4f**); translated pages and mail (the catalogue mechanism exists; **P4b** owns the tenant default locale and per-tenant mail theming, **P4h** the console's extraction); custom subject
+  several sign-in flows, per-step authenticator settings and a
+  breached-password check (**P4f**); translated pages and mail (the catalogue mechanism exists; **P4b** owns the tenant default locale and per-tenant mail theming, **P4h** the console's extraction); custom subject
   attributes (**P7**); fine-grained admin permissions (**P9**); per-client
   mappers (**P10**); a metrics endpoint (**P11**); key import and scheduled
   rotation (**P12**); client policies and admin impersonation (**P13**).

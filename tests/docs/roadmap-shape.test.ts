@@ -149,7 +149,7 @@ describe('the roadmap page', () => {
     ['more required actions', 'P4f'],
     ['several sign-in flows', 'P4f'],
     ['per-step authenticator configuration', 'P4f'],
-    ['a password blocklist', 'P4f'],
+    ['a breached-password check', 'P4f'],
     ['translated pages and mail', 'P4b'],
     ['custom subject attributes', 'P7'],
     ['fine-grained admin permissions', 'P9'],

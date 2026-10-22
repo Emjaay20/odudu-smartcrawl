@@ -92,7 +92,7 @@ export function passwordHints(rules: PasswordRules, text: PasswordHintText): Pas
   ];
   const min = String(rules.minLength);
   return {
-    markup: `  <div class="rules" id="password-rules" data-min="${min}">
+    markup: `  <div class="rules hint" id="password-rules" data-min="${min}">
     <p class="rules-head"><span>${text.heading}</span><button type="button" class="quiet" hidden aria-controls="${PASSWORD_FIELD_ID}" aria-pressed="false" data-show="${text.show}" data-hide="${text.hide}">${text.show}</button></p>
     <ul id="${PASSWORD_RULES_LIST_ID}">
 ${lines.map((line) => `      ${line}`).join('\n')}

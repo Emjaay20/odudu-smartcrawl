@@ -3150,3 +3150,98 @@ Restore: O(8) inserts under the tenant lock; a second call is one read.
 **Searched and reused.** `countAtMost`, `COUNT_CAP`, `CountResponse`, `useRead`,
 `useConfirmedRemoval`, `ConfirmDialog` (`settled` holds the restore when nothing is missing),
 the tenant delete's `confirm` convention, `deleteWarning.ts`'s mapper sentence.
+
+### Increment 31o, passwords follow NIST SP 800-63B-4
+
+**What the standard says.** `verified: https://pages.nist.gov/800-63-4/sp800-63b.html` (3.1.1.2, read in
+full by the controller): at least 15 characters for a password used alone, 8 where it is one of two
+factors; accept 64 or more; Unicode accepted and NFC-normalised before hashing; no composition rules and
+no periodic change; a blocklist of common, expected and compromised passwords on every set or change,
+with the reason given; never truncated. The owner ruled the minimum soft (bounds stay 8 to 256) and tied
+"one of two factors" to the tenant's existing `otp_required`.
+
+**Writers.** Every writer of a user's password is bound by one `evaluatePassword`:
+registration, reset redemption, an actions link that sets a password, the change-password action,
+`odudu seed user`, `odudu seed admin --password` and `odudu init`, whose prompt and `ODUDU_ADMIN_PASSWORD`
+reach `seedAdmin`. Exempt on purpose, and said so: the one-time password the admin API issues and the one
+`seed admin` and `init` generate (random, 32 characters, and owing a change on first use); a client secret
+and a recovery code (generated, hashed with `hashPassword`, never typed as a password). Nothing else takes
+a plaintext password: the tenant import and export carry none (`tenant-document.ts` has no credential
+field), and neither the admin API nor the console chooses one (roadmap decision).
+
+**Common-password list.** `packages/domain-identity/src/service/common-passwords-data.ts`: the entries of
+eight characters or more among the first 100,000 lines of `Passwords/Common-Credentials/xato-net-10-million-passwords-100000.txt`
+in SecLists at commit `4c0fd59432ab8508edc23b3c880127edb12e34d5`, MIT, Copyright (c) 2018 Daniel Miessler
+(`LICENSES/MIT-SecLists.txt`, `THIRD-PARTY-NOTICES.md`). Shorter entries are dropped because the database
+CHECK holds the minimum at 8 or more, so they could never be reached; entries holding a backtick, a
+backslash or `$` (two) and three that a repository-wide word check refuses are dropped too. Lowercased,
+de-duplicated: 38,446 entries, 355 KB of source. `verified: node --expose-gc`: loading the module costs
+11.1 MB of heap, once per process, and `isCommonPassword` takes 0.66 microseconds. The comparison is
+whole-password, after NFKC and lowercase, against the list and against the tenant name, the username, the
+email name and `odudu`. A password that merely contains an entry is not refused.
+`verified: curl` on the source file's raw URL for the licence, the file and the commit.
+
+**NFC transition.** `hashUserPassword` hashes `plain.normalize('NFC')`; `verifyUserPassword` verifies the
+normalised form first and, only when it differs from what was typed, the form as typed. A hash made before
+this change from composed or ASCII text matches at the first attempt. A hash made from decomposed bytes
+matches at the second, so that person signs in unchanged. The one asymmetry is stated in the tests: a
+legacy decomposed hash does not accept the composed form until the password is next set. The cost is one
+extra Argon2id verification, only for a password that is not already NFC and did not match, and the same
+for an unknown username (the dummy hash goes through the same function), so timing does not tell them
+apart. `evaluatePassword` counts length and the 256 maximum in code points of the normalised form
+(`readPasswordField` still bounds the raw form first, so the work stays bounded); the history check uses
+`verifyUserPassword`.
+
+**New-tenant default.** Migration `0102_password_min_length_default.sql` sets the column default to 15;
+bounds, existing rows and `otp_required` are untouched (`password-min-length-default.int.test.ts` migrates
+to 0101, inserts, migrates on and reads back 8, 12 and 15).
+
+**Console note.** `passwordConformance(minLength, otpRequired)` in `@odudu/contracts/admin` is the one
+function; the console words it (`passwordNote`) as a note beside the minimum, a warning below 15 without a
+second factor and a plain note when a second factor covers it. Nothing blocks a save. A
+`password_policy_notes` field on the settings read was not added: it would change the OpenAPI document and
+its transcript for no reader the console does not already serve.
+
+**Pages.** Registration, the reset form, the actions form and the change-password page list the tenant
+minimum, each enabled character rule and "Not a common password" as plain markup; one script of 1,224
+bytes (`PASSWORD_HINTS_SCRIPT` in `@odudu/kernel`, no request, no dependency) ticks them as the password
+is typed (code points of the NFC form, the same character classes as the server) and reveals a show toggle.
+The page returns the script's nonce in `RenderedPage.script`, so `pageHeaders` derives `script-src`; a unit
+test per package reads it back. Without the script the toggle stays `hidden`, and the head row is as tall
+as the toggle, so nothing moves (`server-pages.spec.ts` compares the two heights).
+
+**Verified in a browser.** `server-pages.spec.ts` runs axe in both themes at a phone and a card width on
+`registration-hints-unmet` and `registration-hints-met-shown`, and the existing registration, reset and
+change-password states carry the list. The settings spec checks the note and axe on a minimum of 12. The
+browser refuses a password shorter than `minlength` before the server sees it, so the specs that used to
+post `a` for the policy's wording post a listed password of 16 characters instead.
+
+**Refusals are not audited.** Registration, reset, actions and change-password refusals write no audit
+row today (only the successful change does), so the common-password refusal does not either, in step with
+the other policy refusals. A problem type in the admin API's errors reference is not added: no admin route
+accepts a password a person chose, so none can refuse one.
+
+**Queries per path.** None added. The check is a lookup in memory. The change-password page reads the
+tenant's rules from the row `findTenant` already reads (five more columns, no second query), and the
+account pages take them from the tenant lookup they already make. `pnpm test:plans` is unaffected: no
+route, index or statement was added.
+
+**Sign-in withheld until the second factor exists.** `verified: reading login-submission.ts`: with
+`otp_required` on, a subject with no authenticator app is owed `configure-totp`; the login branch for a
+pending action sets no session and issues no code, and the parked sign-in finishes only once the action
+is completed. A passkey sign-in is never asked (`otpApplicable`). The docs say both.
+
+**Transcripts re-derived against a live stack** (project `odudu-p4g-31o`, port 3187), listed in
+`apps/docs/content/en/contributing/transcripts.md`: Getting the token, Self-registration, Following a
+required-actions link, Password expiry and changing a password and Password reset (their page documents
+and refusal sentences), and the settings, range and export transcripts (a new tenant's 15). The OpenAPI
+response size is unchanged: no description in the contract changed.
+
+**Searched and reused.** `readPasswordField`, `evaluatePassword` and its `PolicyViolation` shape,
+`invalidAttributes`, the catalogue and its pinned-wording lint, `RenderedPage.script` and `pageHeaders`,
+`scriptNonce`, `Note`, `numberOf`, `PLACED_ELSEWHERE`'s Sign-in flow name. One thing moved: the e2e
+`COMMON_PASSWORD` lives once in `page-inspection.ts`.
+
+**Placed.** A breached-password check (a lookup against a leak list) stays with P4f; the roadmap, section
+11 and `docs/NEXT.md` say "a breached-password check" now. Required username or email stays with the
+declarative user profile.

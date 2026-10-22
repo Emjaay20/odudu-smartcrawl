@@ -4,7 +4,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { expect, forgive, test } from './fixtures';
-import { BASE, forgiveRefusals, inspect } from './page-inspection';
+import { BASE, COMMON_PASSWORD, forgiveRefusals, inspect } from './page-inspection';
 import { inTenant, psql, seed, sqlText } from './stack';
 import type { Page } from '@playwright/test';
 
@@ -239,9 +239,9 @@ test('the required-action pages: password change, passkey enrolment', async ({
   await signIn(page, 'forced');
   await expect(page.getByRole('heading', { level: 1, name: 'Change your password' })).toBeVisible();
   await inspect(page, 'update-password');
-  await page.getByLabel('New password').fill('a');
+  await page.getByLabel('New password').fill(COMMON_PASSWORD);
   await page.getByRole('button', { name: 'Update password' }).click();
-  await expect(page.getByRole('alert')).toContainText('Password must');
+  await expect(page.getByRole('alert')).toContainText('That password is too common.');
   await inspect(page, 'update-password-violations');
 
   await page.goto(authorize(main, 'plain', { prompt: 'login' }));
@@ -316,6 +316,56 @@ test('the error pages', async ({ page, problems }) => {
   forgiveRefusals(problems);
 });
 
+test('the password hints are a plain list, and a script ticks them and shows the password', async ({
+  page,
+  browser,
+  problems,
+}) => {
+  await page.goto(`/tenants/${open}/login-actions/registration`);
+  const rules = page.locator('#password-rules');
+  await expect(rules.getByRole('listitem')).toHaveText([
+    'At least 15 characters',
+    'Not a common password',
+  ]);
+  const field = page.getByLabel('Password');
+  await expect(field).toHaveAttribute('autocomplete', 'new-password');
+  await expect(field).toHaveAttribute('minlength', '15');
+  const length = rules.locator('li[data-rule="length"]');
+  const toggle = rules.getByRole('button', { name: 'Show password' });
+  await expect(toggle).toBeVisible();
+  await expect(length).toHaveAttribute('data-met', 'false');
+  await field.fill('short');
+  await expect(length).toHaveAttribute('data-met', 'false');
+  await inspect(page, 'registration-hints-unmet');
+
+  await field.fill('a long enough passphrase');
+  await expect(length).toHaveAttribute('data-met', 'true');
+  await toggle.click();
+  await expect(field).toHaveAttribute('type', 'text');
+  await expect(rules.getByRole('button', { name: 'Hide password' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await inspect(page, 'registration-hints-met-shown');
+  await rules.getByRole('button', { name: 'Hide password' }).click();
+  await expect(field).toHaveAttribute('type', 'password');
+  const withScript = await rules.boundingBox();
+  expect(problems).toEqual([]);
+
+  // Without a script the same list is there, the toggle is not, and nothing moves.
+  const plain = await browser.newContext({ javaScriptEnabled: false });
+  const bare = await plain.newPage();
+  await bare.goto(`${BASE}/tenants/${open}/login-actions/registration`);
+  await expect(bare.locator('#password-rules').getByRole('listitem')).toHaveText([
+    'At least 15 characters',
+    'Not a common password',
+  ]);
+  await expect(bare.locator('#password-rules button')).toBeHidden();
+  const withoutScript = await bare.locator('#password-rules').boundingBox();
+  expect(withoutScript?.height).toBe(withScript?.height);
+  await plain.close();
+});
+
 test('registration, the unverified account, password reset and their links', async ({
   page,
   problems,
@@ -341,9 +391,9 @@ test('registration, the unverified account, password reset and their links', asy
 
   await page.getByLabel('Username').fill('newcomer');
   await page.getByLabel('Email').fill(`newcomer-${run}@example.test`);
-  await page.getByLabel('Password').fill('a');
+  await page.getByLabel('Password').fill(COMMON_PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
-  await expect(page.getByRole('alert')).toContainText('Password must');
+  await expect(page.getByRole('alert')).toContainText('That password is too common.');
   await expect(page.getByLabel('Username')).toHaveValue('newcomer');
   await expect(page.getByLabel('Password')).toHaveValue('');
   await expect(page.getByLabel('Password')).toBeFocused();
@@ -405,12 +455,12 @@ test('registration, the unverified account, password reset and their links', asy
     page.getByRole('heading', { level: 1, name: 'Choose a new password' }),
   ).toBeVisible();
   await inspect(page, 'reset-new-password');
-  await page.getByLabel('New password').fill('a');
+  await page.getByLabel('New password').fill(COMMON_PASSWORD);
   await page.getByRole('button', { name: 'Reset password' }).click();
   await expect(
     page.getByRole('heading', { level: 1, name: 'Choose a new password' }),
   ).toBeVisible();
-  await expect(page.getByRole('alert')).toContainText('Password must');
+  await expect(page.getByRole('alert')).toContainText('That password is too common.');
   await expect(page.getByLabel('New password')).toBeFocused();
   await inspect(page, 'reset-weak');
   await page.getByLabel('New password').fill(`${PASSWORD}-reset`);
