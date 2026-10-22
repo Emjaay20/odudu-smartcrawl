@@ -42,6 +42,7 @@ async function consoleRoutes(): Promise<Route[]> {
     ODUDU_LOG_LEVEL: 'silent',
   });
   const app = buildApp({
+    tls: false,
     database,
     ownerDatabase: database,
     kek: config.ODUDU_KEK,

@@ -214,6 +214,7 @@ beforeAll(async () => {
   await http.register(formbody);
   await http.register(
     oidcRoutes({
+      tls: false,
       database: app,
       ownerDatabase: owner,
       kek: KEK,
@@ -601,6 +602,7 @@ describe('a deployment that cannot name a relying party', () => {
       await unconfigured.register(formbody);
       await unconfigured.register(
         oidcRoutes({
+          tls: false,
           database: app,
           ownerDatabase: owner,
           kek: KEK,

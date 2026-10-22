@@ -114,6 +114,7 @@ async function signIn(email: string, password: string): Promise<SignIn> {
   const runtime = createDatabase(env.get('ODUDU_APP_DATABASE_URL') ?? '');
   const config = loadConfig({ ...process.env, ODUDU_LOG_LEVEL: 'silent' });
   const app = buildApp({
+    tls: false,
     database: runtime,
     ownerDatabase: owner,
     kek: Buffer.from(env.get('ODUDU_KEK') ?? '', 'base64'),

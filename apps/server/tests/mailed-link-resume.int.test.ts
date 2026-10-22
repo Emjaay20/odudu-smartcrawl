@@ -47,6 +47,7 @@ beforeAll(async () => {
   process.env.ODUDU_PUBLIC_BASE_URL = 'https://idp.example.test';
   const config = loadConfig({ ...process.env, ODUDU_LOG_LEVEL: 'silent' });
   http = buildApp({
+    tls: false,
     database: appDb,
     ownerDatabase: owner,
     kek: KEK,

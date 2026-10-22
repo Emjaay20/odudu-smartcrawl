@@ -302,6 +302,7 @@ beforeAll(async () => {
   await http.register(formbody);
   await http.register(
     oidcRoutes({
+      tls: false,
       database: app,
       ownerDatabase: owner,
       kek: KEK,
@@ -684,6 +685,7 @@ describe('[ODUDU-PRIVATE-KEY-JWT-03] a pool no larger than the requests in fligh
       await server.register(formbody);
       await server.register(
         oidcRoutes({
+          tls: false,
           database: small,
           ownerDatabase: owner,
           kek: KEK,
@@ -736,6 +738,7 @@ async function bareServer(
   await server.register(formbody);
   await server.register(
     oidcRoutes({
+      tls: false,
       database: small,
       ownerDatabase: owner,
       kek: KEK,

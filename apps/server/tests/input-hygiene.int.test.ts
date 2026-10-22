@@ -65,6 +65,7 @@ afterAll(async () => {
 function buildTestApp(): FastifyInstance {
   const config = loadConfig({ ...process.env, ODUDU_LOG_LEVEL: 'silent' });
   return buildApp({
+    tls: false,
     database: appDb,
     ownerDatabase: owner,
     kek: KEK,

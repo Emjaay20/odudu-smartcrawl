@@ -124,9 +124,10 @@ export interface AppDeps {
   /**
    * Whether the session and sign-in cookies take the `__Host-` / `__Secure-`
    * prefix and `Secure`. One value for the cookie the login page sets and the
-   * pages that read it back, so the two cannot disagree. Defaults to `false`.
+   * pages that read it back, so the two cannot disagree.
+   * `ODUDU_TLS`; required, so a caller cannot lose it silently.
    */
-  readonly tls?: boolean;
+  readonly tls: boolean;
   /** The console gateway's clock, so a test can age a pending sign-in. */
   readonly consoleNow?: () => Date;
   /** Called with every route as it is registered, for a tool that lists what the app serves. */
@@ -301,7 +302,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     trustProxy: deps.trustProxy ?? false,
   });
 
-  const tls = deps.tls ?? false;
+  const tls = deps.tls;
 
   if (deps.onRoute !== undefined) app.addHook('onRoute', deps.onRoute);
 

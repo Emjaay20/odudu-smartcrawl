@@ -94,10 +94,10 @@ export interface OidcRoutesDeps {
   // can sign access and ID tokens. Required, not defaulted: there is no
   // safe placeholder for a key-encryption key.
   kek: Uint8Array;
-  // Whether this process serves over TLS — picks the session cookie's
-  // __Host- prefix and Secure attribute. Defaults off, matching the compose
-  // stack's plain-HTTP local loop.
-  tls?: boolean;
+  // Whether this process serves over TLS (ODUDU_TLS): the __Host- prefix and
+  // Secure attribute of every cookie these routes write. No default, so a
+  // caller cannot lose it silently.
+  tls: boolean;
   // Injected so a test can advance time and have the authentication
   // session started by /authorize and the one read back by the login
   // handler agree on "now". Defaults to the real clock.
@@ -162,7 +162,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
   return (app) => {
     const findTenant = (name: string) => tenantLookupRepository(deps.ownerDatabase.db).byName(name);
     const clock = deps.clock ?? systemClock;
-    const tls = deps.tls ?? false;
+    const tls = deps.tls;
     const clientSecretLimiter = deps.clientSecretLimiter;
     const clientKeySet = deps.clientKeySet;
     // One registry per process, shared by discovery (claimNames, for

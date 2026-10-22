@@ -35,6 +35,7 @@ function counting(): { handle: DatabaseHandle; touches: string[] } {
 
 function app(database: DatabaseHandle, extra: Partial<Parameters<typeof buildApp>[0]> = {}) {
   return buildApp({
+    tls: false,
     database,
     ownerDatabase: database,
     kek: config.ODUDU_KEK,

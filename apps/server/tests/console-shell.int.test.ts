@@ -111,6 +111,7 @@ describe('ODUDU_CONSOLE=false', () => {
     async (url) => {
       const config = loadConfig({ ...process.env, ODUDU_CONSOLE: 'false' });
       const app = buildApp({
+        tls: false,
         database: appDb,
         ownerDatabase: owner,
         kek: KEK,

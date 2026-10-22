@@ -106,7 +106,7 @@ export const CONFIG_DOCS: Record<ConfigKey, ConfigDoc> = {
     group: 'Server',
     summary:
       'States that the connection to the user is HTTPS, terminated here or by a proxy in ' +
-      'front of the server. It selects the `__Host-` session cookie prefix, and ' +
+      'front of the server. It gives every cookie `Secure` and a `__Host-` or `__Secure-` name, and ' +
       '`NODE_ENV=production` refuses to boot while it is off.',
     secret: false,
     requiredWhen: '`NODE_ENV` is `production`, where it must be `true`',

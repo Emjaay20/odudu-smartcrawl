@@ -405,6 +405,7 @@ async function buildHttp(options: {
   await instance.register(formbody);
   await instance.register(
     oidcRoutes({
+      tls: false,
       database: app,
       ownerDatabase: owner,
       kek: KEK,

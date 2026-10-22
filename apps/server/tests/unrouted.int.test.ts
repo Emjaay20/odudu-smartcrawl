@@ -62,6 +62,7 @@ function server(
 ): FastifyInstance {
   const config = loadConfig({ ...process.env, ODUDU_LOG_LEVEL: 'silent' });
   const app = buildApp({
+    tls: false,
     database: appDb,
     ownerDatabase: owner,
     kek: KEK,

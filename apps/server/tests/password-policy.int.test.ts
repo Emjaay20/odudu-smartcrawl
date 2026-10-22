@@ -96,6 +96,7 @@ async function drainOutbox(into: EmailSender): Promise<void> {
 function buildTestApp(): FastifyInstance {
   const config = loadConfig({ ...process.env, ODUDU_LOG_LEVEL: 'silent' });
   return buildApp({
+    tls: false,
     database: appDb,
     ownerDatabase: owner,
     kek: KEK,
@@ -217,6 +218,7 @@ describe('the tenant password policy binds every writer', () => {
 
     const sender = capturingSender();
     const app = buildApp({
+      tls: false,
       database: appDb,
       ownerDatabase: owner,
       kek: KEK,
@@ -370,6 +372,7 @@ describe('a password over the maximum is refused wherever one is read', () => {
 
     const sender = capturingSender();
     const app = buildApp({
+      tls: false,
       database: appDb,
       ownerDatabase: owner,
       kek: KEK,

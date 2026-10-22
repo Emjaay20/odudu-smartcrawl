@@ -83,6 +83,7 @@ beforeAll(async () => {
   httpApp = http;
   await http.register(
     oidcRoutes({
+      tls: false,
       database: app,
       ownerDatabase: owner,
       kek: KEK,

@@ -312,6 +312,7 @@ beforeAll(async () => {
   await http.register(formbody);
   await http.register(
     oidcRoutes({
+      tls: false,
       database: app,
       ownerDatabase: owner,
       kek: Buffer.alloc(32, 9),
@@ -328,6 +329,7 @@ beforeAll(async () => {
   await httpClocked.register(formbody);
   await httpClocked.register(
     oidcRoutes({
+      tls: false,
       database: app,
       ownerDatabase: owner,
       kek: Buffer.alloc(32, 9),

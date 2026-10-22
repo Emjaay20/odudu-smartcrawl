@@ -158,11 +158,10 @@ export function assertConsoleConfigured(config: Config): void {
 
 /** ADR 0020's boot warning for the console cookies, which follow ODUDU_TLS like every other. */
 export function warnIfConsoleCookieFallback(config: Config, log: (message: string) => void): void {
-  const baseUrl = consoleBaseUrl(config);
-  if (baseUrl === undefined || new URL(baseUrl).protocol !== 'http:') return;
+  if (consoleBaseUrl(config) === undefined || config.ODUDU_TLS) return;
   log(
-    `console: serving the odudu-console cookie without the __Host- prefix or Secure, because ` +
-      `ODUDU_PUBLIC_BASE_URL (${baseUrl}) is http. This is expected for local development only.`,
+    'console: serving the odudu-console cookie without the __Host- prefix or Secure, because ' +
+      'ODUDU_TLS is off. This is expected for local development only.',
   );
 }
 

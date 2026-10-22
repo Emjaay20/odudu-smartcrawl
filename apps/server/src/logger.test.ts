@@ -278,6 +278,7 @@ describe('createLogger', () => {
       close: () => Promise.resolve(),
     };
     const app = buildApp({
+      tls: false,
       database,
       ownerDatabase: database,
       kek: config.ODUDU_KEK,
@@ -303,6 +304,7 @@ describe('createLogger', () => {
       close: () => Promise.resolve(),
     };
     const app = buildApp({
+      tls: false,
       database,
       ownerDatabase: database,
       kek: config.ODUDU_KEK,
@@ -329,6 +331,7 @@ describe('createLogger', () => {
       close: () => Promise.resolve(),
     };
     const app = buildApp({
+      tls: false,
       database,
       ownerDatabase: database,
       kek: config.ODUDU_KEK,
@@ -360,6 +363,7 @@ describe('createLogger', () => {
       close: () => Promise.resolve(),
     };
     const app = buildApp({
+      tls: false,
       database,
       ownerDatabase: database,
       kek: config.ODUDU_KEK,

@@ -46,6 +46,7 @@ export async function servingApp(): Promise<{
     ODUDU_CONSOLE_CLIENT_KEY: await generateClientKey(),
   });
   const app = buildApp({
+    tls: false,
     database,
     ownerDatabase: database,
     kek: config.ODUDU_KEK,

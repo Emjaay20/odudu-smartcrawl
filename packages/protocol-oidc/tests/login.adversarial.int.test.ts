@@ -79,7 +79,7 @@ async function buildHttp(deps: {
       clientSecretLimiter: UNLIMITED_CLIENT_SECRET_LIMITER,
       auditRefusalBudget: UNLIMITED_AUDIT_REFUSAL_BUDGET,
       clientKeySet: NO_CLIENT_KEY_FETCHER,
-      ...(deps.tls !== undefined ? { tls: deps.tls } : {}),
+      tls: deps.tls ?? false,
       ...(deps.clock !== undefined ? { clock: deps.clock } : {}),
     }),
   );
