@@ -9,7 +9,7 @@ import {
 } from '@odudu/contracts/admin';
 import { type TenantScopedDatabase } from '@odudu/db';
 import { roles } from '@odudu/domain-authz';
-import { subjectRepository } from '@odudu/domain-identity';
+import { subjectRepository, subjects } from '@odudu/domain-identity';
 import {
   ADMIN_CLIENT_ID,
   clientRepository,
@@ -1487,6 +1487,10 @@ async function deleteClientUnguarded(
   }
 
   await clientRepository(tx).delete(input.clientDbId);
+  // The account exists for the client alone, so it goes with it.
+  if (clientRow.serviceSubjectId !== null) {
+    await tx.delete(subjects).where(eq(subjects.id, clientRow.serviceSubjectId));
+  }
 
   await deps.audit(tx, {
     action: 'client.delete',
