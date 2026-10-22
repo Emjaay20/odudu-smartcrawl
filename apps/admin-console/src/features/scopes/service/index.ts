@@ -71,7 +71,7 @@ export {
   NEW_CLIENT_CHOICES,
   scopeFailureFields,
 } from '#/features/scopes/service/general';
-export { keptRoles } from '#/features/scopes/service/roles';
+export { keptRoles, NO_ROLES_MAPPED } from '#/features/scopes/service/roles';
 export {
   type Copying,
   type CopyPlan,

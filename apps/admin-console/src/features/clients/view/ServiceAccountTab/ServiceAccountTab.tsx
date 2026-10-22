@@ -1,6 +1,6 @@
 import type { Client, SetRolesResponse } from '@odudu/contracts/admin';
 import {
-  NO_ACCOUNT,
+  accountIdleNote,
   NO_ROLES,
   assignedCount,
   roleOwnerLine,
@@ -140,9 +140,11 @@ export function ServiceAccountTab({
   reach: Reach;
 }) {
   const access = useServiceAccess(tenant, client);
+  const idle = accountIdleNote(client);
   return (
     <div className={recordTab.tab}>
-      {access.status === 'none' ? <p className={recordTab.rule}>{NO_ACCOUNT}</p> : null}
+      {idle === null ? null : <p className={recordTab.rule}>{idle}</p>}
+      {access.status === 'none' ? <p className={recordTab.rule}>{access.note}</p> : null}
       {access.status === 'denied' ? (
         <CapabilityNote capability={SERVICE_CAPABILITY}>The service account's roles</CapabilityNote>
       ) : null}

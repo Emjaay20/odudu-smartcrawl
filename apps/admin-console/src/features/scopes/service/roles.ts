@@ -14,3 +14,6 @@ export function keptRoles(
     return found !== undefined && roleReachUnavailable(found, caller, tenant) !== null;
   });
 }
+
+export const NO_ROLES_MAPPED =
+  'No roles mapped. Clients without full scope get no roles from this scope.';

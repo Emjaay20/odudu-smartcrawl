@@ -60,15 +60,16 @@ function Form({ page }: { page: ClientEvaluate }) {
       {page.worked === null ? null : (
         <div className={styles.claims}>
           <p role="status" className={recordTab.text}>{`Claims for ${page.worked}.`}</p>
-          {page.artefacts.map((artefact) =>
-            artefact.text === null ? (
-              <p key={artefact.label} className={recordTab.rule}>
-                {NO_ID_TOKEN}
-              </p>
-            ) : (
-              <CopyValue key={artefact.label} label={artefact.label} value={artefact.text} block />
-            ),
-          )}
+          {page.artefacts.map((artefact) => (
+            <div key={artefact.label} className={styles.artefact}>
+              <h3 className={styles.heading}>{artefact.heading}</h3>
+              {artefact.text === null ? (
+                <p className={recordTab.rule}>{NO_ID_TOKEN}</p>
+              ) : (
+                <CopyValue label={artefact.label} value={artefact.text} block />
+              )}
+            </div>
+          ))}
         </div>
       )}
     </>

@@ -120,6 +120,7 @@ export const PORTAL = client('c-portal', 'portal', {
 });
 export const ADMIN = client('c-admin', 'odudu-admin', {
   builtin_admin: true,
+  service_subject_id: null,
   name: 'Odudu admin',
 });
 export const CLIENTS = [ADMIN, BILLING, PORTAL];

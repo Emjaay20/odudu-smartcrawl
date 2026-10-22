@@ -28,11 +28,7 @@ it('offers every registered mapper, and shows the declared ones ticked and greye
   const groups = within(section).getByRole('checkbox', { name: 'groups' });
   expect(groups).not.toBeChecked();
   expect(groups).toBeEnabled();
-  expect(
-    within(section).getByText(
-      'No mapper is bound, so this scope uses the mappers that declare it: email.',
-    ),
-  ).toBeVisible();
+  expect(within(section).getByText('Nothing bound. These mappers run by default.')).toBeVisible();
 });
 
 it('binds only the mapper ticked beside the defaults, which then stop applying', async () => {

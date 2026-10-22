@@ -3,3 +3,14 @@
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-3);
 }
+
+.artefact {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.heading {
+  margin: 0;
+  font-size: var(--type-13);
+  font-weight: 600;
+}

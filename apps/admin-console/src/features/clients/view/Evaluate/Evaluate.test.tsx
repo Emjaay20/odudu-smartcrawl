@@ -54,6 +54,15 @@ it('asks for the claims of the subject chosen, with the scope typed, and shows e
   expect(within(section).getByRole('region', { name: 'ID token claims' })).toHaveTextContent(
     '"name": "Ada"',
   );
+  expect(
+    within(section).getByRole('heading', { name: 'What the app gets in the ID token' }),
+  ).toBeVisible();
+  expect(
+    within(section).getByRole('heading', { name: 'What the app gets in the access token' }),
+  ).toBeVisible();
+  expect(
+    within(section).getByRole('heading', { name: 'What the UserInfo endpoint returns' }),
+  ).toBeVisible();
   expect(within(section).getByRole('region', { name: 'Access token claims' })).toBeVisible();
   expect(within(section).getByRole('region', { name: 'UserInfo claims' })).toBeVisible();
   expect(sent.find((s) => s.path === `${C}/c-bill/evaluate`)?.search.get('subject')).toBe('u-ada');
@@ -86,7 +95,11 @@ it('says there is no ID token when the scope names no openid', async () => {
   );
   const section = await chooseAda(user);
   await user.click(within(section).getByRole('button', { name: 'Evaluate claims' }));
-  expect(await within(section).findByText('No ID token: the scope names no openid.')).toBeVisible();
+  const note = await within(section).findByText("No ID token. The scope doesn't include openid.");
+  expect(note).toBeVisible();
+  expect(
+    within(section).getByRole('heading', { name: 'What the app gets in the ID token' }),
+  ).toBeVisible();
 });
 
 it('asks for the claims once, since each ask is audited, however often the window is focused again', async () => {

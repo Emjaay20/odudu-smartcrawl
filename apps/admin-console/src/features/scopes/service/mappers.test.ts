@@ -48,16 +48,16 @@ it('binds only what was ticked on top of the defaults shown, which then stop app
   expect(boundAfter(['email', 'groups'], ['email'], ['groups'], [])).toEqual([]);
 });
 
-it('names the declared mappers a scope with no binding falls back to', () => {
+it('says the declared mappers run when nothing is bound', () => {
   expect(mappersSummary([], ['email', 'groups'])).toBe(
-    'No mapper is bound, so this scope uses the mappers that declare it: email and groups.',
+    'Nothing bound. These mappers run by default.',
   );
   expect(mappersSummary(['email'], ['groups'])).toBe('Bound: email.');
 });
 
 it('says so when nothing is bound and nothing declares the scope', () => {
   expect(mappersSummary([], [])).toBe(NONE_TEXT);
-  expect(NONE_TEXT).toMatch(/none declares it/u);
+  expect(NONE_TEXT).toBe('Nothing bound. No mapper runs by default, so this scope adds no claims.');
 });
 
 it('names the registry in a 400 for an unknown mapper', () => {

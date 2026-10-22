@@ -2,8 +2,7 @@ import type { GatewayFailure } from '#/shared/service/result';
 import { andList } from '#/shared/service/format';
 import type { Choice } from '#/shared/service/choice';
 
-export const NONE_TEXT =
-  'No mapper is bound and none declares it, so a token granted this scope gets no claim from it.';
+export const NONE_TEXT = 'Nothing bound. No mapper runs by default, so this scope adds no claims.';
 
 export const DEFAULT_MAPPER_NOTE = 'Used because nothing is bound';
 
@@ -60,7 +59,7 @@ export function boundAfter(
 export function mappersSummary(bound: readonly string[], declared: readonly string[]): string {
   if (bound.length > 0) return `Bound: ${andList(bound)}.`;
   if (declared.length === 0) return NONE_TEXT;
-  return `No mapper is bound, so this scope uses the mappers that declare it: ${andList(declared)}.`;
+  return 'Nothing bound. These mappers run by default.';
 }
 
 const UNKNOWN = /^unknown mapper name\(s\): (.+); known: (.+)$/u;

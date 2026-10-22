@@ -23,6 +23,8 @@ export const SCOPE_RULE =
 export const EVALUATE_LABEL = 'Evaluate claims';
 
 export interface Artefact {
+  // Names the box to a person who sees it; the label names it to a screen reader and the Copy button.
+  heading: string;
   label: string;
   // Null when there is none, such as an ID token without openid.
   text: string | null;
@@ -31,13 +33,25 @@ export interface Artefact {
 export function artefactsOf(result: EvaluateClaimsResponse): Artefact[] {
   const show = (claims: unknown): string => JSON.stringify(claims, null, 2);
   return [
-    { label: 'ID token claims', text: result.id_token === null ? null : show(result.id_token) },
-    { label: 'Access token claims', text: show(result.access_token) },
-    { label: 'UserInfo claims', text: show(result.userinfo) },
+    {
+      heading: 'What the app gets in the ID token',
+      label: 'ID token claims',
+      text: result.id_token === null ? null : show(result.id_token),
+    },
+    {
+      heading: 'What the app gets in the access token',
+      label: 'Access token claims',
+      text: show(result.access_token),
+    },
+    {
+      heading: 'What the UserInfo endpoint returns',
+      label: 'UserInfo claims',
+      text: show(result.userinfo),
+    },
   ];
 }
 
-export const NO_ID_TOKEN = 'No ID token: the scope names no openid.';
+export const NO_ID_TOKEN = "No ID token. The scope doesn't include openid.";
 
 export function evaluatedScope(result: EvaluateClaimsResponse): string {
   return result.scope === '' ? 'no scope' : result.scope;

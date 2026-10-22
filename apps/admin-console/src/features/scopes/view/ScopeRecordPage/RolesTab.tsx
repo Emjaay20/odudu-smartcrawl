@@ -4,6 +4,7 @@ import {
   useScopeRolesRead,
   type ScopeRoles,
 } from '#/features/scopes/usecase/useScopeRoles';
+import { NO_ROLES_MAPPED } from '#/features/scopes/service';
 import { MappedRoles } from '#/shared/view/MappedRoles';
 import { ReadGate } from '#/shared/view/ReadGate';
 import { RolePicker } from '#/shared/view/RolePicker';
@@ -18,7 +19,7 @@ function Roles({ name, roles }: { name: string; roles: ScopeRoles }) {
       description={`A token granted ${name} carries these roles' claims.`}
       save={s}
     >
-      <MappedRoles name={name} mapped={roles.mapped} />
+      <MappedRoles name={name} mapped={roles.mapped} empty={NO_ROLES_MAPPED} />
       {roles.offered ? (
         <RolePicker
           label={`Roles ${name} carries`}

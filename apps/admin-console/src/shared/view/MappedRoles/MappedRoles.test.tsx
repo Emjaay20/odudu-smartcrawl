@@ -29,6 +29,12 @@ it('says so when it carries none', () => {
   expect(screen.queryByRole('list')).toBeNull();
 });
 
+it('says what it was told to when it carries none', () => {
+  render(<MappedRoles name="invoices" mapped={[]} empty="Nothing mapped here." />);
+  expect(screen.getByText('Nothing mapped here.')).toBeVisible();
+  expect(screen.queryByText('invoices carries no role.')).toBeNull();
+});
+
 it('has no accessibility violations in either theme', async () => {
   expect(await axeInBothThemes(() => <MappedRoles name="invoices" mapped={MAPPED} />)).toEqual({
     light: [],
