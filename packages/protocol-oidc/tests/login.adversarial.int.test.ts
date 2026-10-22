@@ -815,7 +815,10 @@ describe('[OIDC-CORE-3.1.2.3-04] an unauthenticated request is answered by authe
     expect(res.statusCode).toBe(200);
     expect(res.body).toContain('name="auth_session_id"');
     expect(res.headers.location).toBeUndefined();
-    expect(res.headers['set-cookie']).toBeUndefined();
+    // Parking the request hands the browser its sign-in handle, and no session.
+    const cookies = [res.headers['set-cookie']].flat().filter((value) => value !== undefined);
+    expect(cookies).toHaveLength(1);
+    expect(cookies[0]).toMatch(/^odudu-sign-in=/u);
     expect(await countAuthorizationCodes(tenantName)).toBe(0);
   });
 

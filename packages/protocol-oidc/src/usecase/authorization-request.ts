@@ -4,6 +4,7 @@ import {
   type PendingRequest,
   type RequiredAction,
   type SessionRecord,
+  type SignInBrowser,
 } from '@odudu/authn-flows';
 import {
   verifyJwt,
@@ -51,6 +52,9 @@ export type AuthorizationRequestOutcome =
   | {
       kind: 'started';
       authSessionId: string;
+      // What the browser is handed to hold this sign-in; absent when the
+      // session was parked earlier, by the chooser the person came from.
+      browser?: SignInBrowser;
       form: string;
       rememberMeAllowed: boolean;
       loginWithEmail: boolean;
@@ -97,7 +101,12 @@ export type AuthorizationRequestOutcome =
   // session is parked — unauthenticated, unlike the reuse promotions above,
   // because nobody has been identified yet — for the chooser's POST to
   // resume once one is.
-  | { kind: 'select'; authSessionId: string; accounts: readonly SelectAccountCandidate[] };
+  | {
+      kind: 'select';
+      authSessionId: string;
+      browser: SignInBrowser;
+      accounts: readonly SelectAccountCandidate[];
+    };
 
 export interface SelectAccountCandidate {
   sessionId: string;
@@ -157,7 +166,7 @@ export interface AuthorizeUsecaseDeps extends ConsentGateDeps {
   startAuthentication(
     tenantId: string,
     request: Extract<AuthorizeOutcome, { kind: 'ok' }>['request'],
-  ): Promise<{ authSessionId: string }>;
+  ): Promise<{ authSessionId: string; browser: SignInBrowser }>;
   // Reads back the request a 'select' outcome parked — the chooser's POST
   // has no query parameters of its own, so this is its only source of
   // scope, redirect_uri, nonce, state, code_challenge and max_age. Unlike
@@ -583,7 +592,7 @@ export async function handleAuthorizationRequest(
     // handleSelectAccountSubmission binds the session once a choice is
     // posted back and membership against the browser's own cookies is
     // proven.
-    const { authSessionId } = await deps.startAuthentication(tenant.id, {
+    const { authSessionId, browser } = await deps.startAuthentication(tenant.id, {
       ...request,
       prompt: [...outcome.prompts],
       ...(uiLocales.length > 0 ? { uiLocales } : {}),
@@ -603,6 +612,7 @@ export async function handleAuthorizationRequest(
     return {
       kind: 'select',
       authSessionId,
+      browser,
       accounts: rendered.map((candidate) => ({
         sessionId: candidate.id,
         displayName: names.get(candidate.subjectId) ?? candidate.subjectId,
@@ -623,7 +633,7 @@ export async function handleAuthorizationRequest(
     return reject('login_required');
   }
 
-  const { authSessionId } = await deps.startAuthentication(tenant.id, {
+  const { authSessionId, browser } = await deps.startAuthentication(tenant.id, {
     ...request,
     // `prompt=login` needs nothing parked: authentication is unconditional
     // (§3.1.2.3's reauthentication is what this server does for every
@@ -646,6 +656,7 @@ export async function handleAuthorizationRequest(
   return {
     kind: 'started',
     authSessionId,
+    browser,
     form: initial.form,
     rememberMeAllowed: tenant.rememberMeAllowed,
     loginWithEmail: tenant.loginWithEmail,

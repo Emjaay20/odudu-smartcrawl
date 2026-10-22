@@ -6,6 +6,7 @@ import {
   userRepository,
   type LockoutPolicy,
 } from '@odudu/domain-identity';
+import { timingSafeEqual } from 'node:crypto';
 import { newId, systemClock, type Clock } from '@odudu/kernel';
 import { authenticationSessionRepository } from '#/repository/authentication-sessions';
 import { executionRepository } from '#/repository/executions';
@@ -13,6 +14,7 @@ import { tenantSettingsRepository } from '#/repository/tenant-settings';
 import { requiredActionRepository } from '#/repository/required-actions';
 import { sessionRepository } from '#/repository/sessions';
 import { SessionEntry } from '#/service/session-entry';
+import { hashSignInSecret, newSignInSecret, readSignInHandle } from '#/service/sign-in-handle';
 import {
   oweRecoveryCodesIfFactorWithoutCodes,
   oweRecoveryCodesIfNoneUnspent,
@@ -608,21 +610,52 @@ export async function dispatchNext(
   return { kind: 'ran', authenticator: decision.authenticator, result: await run(input) };
 }
 
+// What the browser that parked a request is handed so that a link mailed out
+// of the sign-in can find its way back to it (service/sign-in-handle.ts).
+export interface SignInBrowser {
+  secret: string;
+  maxAgeSeconds: number;
+}
+
 export async function startAuthentication(
   tx: TenantScopedDatabase,
   tenantId: string,
   request: PendingRequest,
   clock: Clock = systemClock,
-): Promise<{ authSessionId: string }> {
+): Promise<{ authSessionId: string; browser: SignInBrowser }> {
   const id = newId();
   const ttlSeconds = await tenantSettingsRepository(tx).loginTtlSeconds(tenantId);
+  const secret = newSignInSecret();
   await authenticationSessionRepository(tx).create({
     id,
     tenantId,
     pendingRequest: request,
     expiresAt: new Date(clock.now().getTime() + ttlSeconds * 1000),
+    browserSecretHash: hashSignInSecret(secret),
   });
-  return { authSessionId: id };
+  return { authSessionId: id, browser: { secret, maxAgeSeconds: ttlSeconds } };
+}
+
+// The sign-in this browser parked and can still finish: its cookie names the
+// session and proves it with the secret it was handed, and the session is
+// live. One point read, in the tenant the caller scoped `tx` to, so a handle
+// from another tenant finds no row. A missing, malformed, foreign, wrong,
+// expired or consumed handle all answer null, so the caller cannot tell them
+// apart.
+export async function heldSignIn(
+  tx: TenantScopedDatabase,
+  header: string | undefined,
+  tls: boolean,
+  clock: Clock = systemClock,
+): Promise<{ sessionId: string; pendingRequest: PendingRequest } | null> {
+  const handle = readSignInHandle(header, tls);
+  if (handle === null) return null;
+  const record = await authenticationSessionRepository(tx).byId(handle.sessionId);
+  if (record?.browserSecretHash == null || !sessionIsLive(record, clock.now())) return null;
+  const presented = Buffer.from(hashSignInSecret(handle.secret), 'hex');
+  const stored = Buffer.from(record.browserSecretHash, 'hex');
+  if (presented.length !== stored.length || !timingSafeEqual(presented, stored)) return null;
+  return { sessionId: record.id, pendingRequest: record.pendingRequest };
 }
 
 export async function loadPendingRequest(

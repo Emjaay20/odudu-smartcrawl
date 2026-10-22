@@ -1,3 +1,4 @@
+import { signInHandleCookie, type SignInBrowser } from '@odudu/authn-flows';
 import { reloadOnRestore, type RenderedPage } from '@odudu/kernel';
 import { type FastifyInstance, type FastifyReply } from 'fastify';
 import { FORM_MEDIA_TYPE } from '#/service/media-type';
@@ -34,6 +35,23 @@ export interface AuthorizeRouteDeps
   // Whether this deployment can offer a passkey login at all — see
   // renderLoginForm in #/view/authorize-html.
   passkeyLogin?: boolean;
+}
+
+// Tells the browser which sign-in it parked, so a link mailed out of that
+// sign-in (verification, password reset) can bring it back to this request
+// and to no other (authn-flows' sign-in-handle).
+function holdSignIn(
+  reply: FastifyReply,
+  deps: AuthorizeRouteDeps,
+  tenant: string,
+  authSessionId: string,
+  browser: SignInBrowser | undefined,
+): void {
+  if (browser === undefined) return;
+  reply.header(
+    'set-cookie',
+    signInHandleCookie(tenant, deps.tls, authSessionId, browser.secret, browser.maxAgeSeconds),
+  );
 }
 
 // Shared by the authorization request itself and the account chooser's own
@@ -107,6 +125,7 @@ async function renderAuthorizationOutcome(
   if (outcome.kind === 'select') {
     // Nobody is identified yet, so no subject locale applies.
     const { locale, continuing } = await continuation(deps, tenant, outcome.authSessionId, reply);
+    holdSignIn(reply, deps, tenant, outcome.authSessionId, outcome.browser);
     const page = renderSelectAccountPage(
       {
         tenant,
@@ -152,6 +171,7 @@ async function renderAuthorizationOutcome(
     outcome.authSessionId,
     reply,
   );
+  holdSignIn(reply, deps, tenant, outcome.authSessionId, outcome.browser);
   const page = renderLoginForm(
     tenant,
     outcome.authSessionId,

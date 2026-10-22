@@ -10,7 +10,14 @@ export {
 } from '#/service/session-cookie';
 export { SessionEntry } from '#/service/session-entry';
 export {
+  readSignInHandle,
+  signInHandleCookie,
+  signInHandleName,
+  type SignInHandle,
+} from '#/service/sign-in-handle';
+export {
   startAuthentication,
+  heldSignIn,
   loadPendingRequest,
   pendingSession,
   advance,
@@ -26,6 +33,7 @@ export {
   isRegisteredAuthenticator,
   registeredAuthenticatorNames,
   type AdvanceInput,
+  type SignInBrowser,
   type AdvanceOptions,
   type AdvanceOutcome,
 } from '#/usecase/executor';
