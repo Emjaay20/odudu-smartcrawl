@@ -8,6 +8,7 @@ import {
 } from '@odudu/db';
 import { newId } from '@odudu/kernel';
 import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/testkit';
+import { CLIENT_SCOPE_LIMIT, SCOPE_LIMIT } from '@odudu/contracts/admin';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { clientScopeRepository } from '#/repository/client-scopes';
@@ -18,8 +19,10 @@ import {
 } from '#/schema/client-scopes';
 import { clients } from '#/schema/clients';
 import {
+  missingBuiltinScopeNames,
   provisionClientDefaults,
   provisionTenantDefaults,
+  restoreBuiltinScopes,
   TENANT_DEFAULT_SCOPE_NAMES,
 } from '#/usecase/provision-defaults';
 
@@ -103,5 +106,155 @@ describe('a newly provisioned client', () => {
       clientScopeRepository(tx).forClient(clientDbId),
     );
     expect(assigned.map((scope) => scope.name)).toContain('offline_access');
+  });
+});
+
+describe('restoring the built-in scopes', () => {
+  async function provisionedTenant(): Promise<string> {
+    const tenantId = newId();
+    await withTenant(app.db, tenantId, async (tx) => {
+      await tx.insert(tenants).values({ id: tenantId, name: `tenant-${tenantId}` });
+      await provisionTenantDefaults(tx, tenantId);
+    });
+    return tenantId;
+  }
+
+  async function settingsOf(tenantId: string) {
+    return withTenant(app.db, tenantId, async (tx) => {
+      const rows = await clientScopeRepository(tx).allForTenant();
+      return rows
+        .map(({ id: _id, tenantId: _tenant, createdAt: _created, ...settings }) => settings)
+        .sort((a, b) => a.name.localeCompare(b.name));
+    });
+  }
+
+  it('recreates every missing built-in with the settings provisioning gave it, and only then', async () => {
+    const pristine = await settingsOf(await provisionedTenant());
+    const tenantId = await provisionedTenant();
+    await withTenant(app.db, tenantId, async (tx) => {
+      const repository = clientScopeRepository(tx);
+      for (const name of TENANT_DEFAULT_SCOPE_NAMES) {
+        const scope = await repository.byName(name);
+        if (scope !== null) await repository.delete(scope.id);
+      }
+    });
+
+    const first = await withTenant(app.db, tenantId, (tx) => restoreBuiltinScopes(tx, tenantId));
+    expect(first).toEqual({ kind: 'restored', created: [...TENANT_DEFAULT_SCOPE_NAMES] });
+    expect(await settingsOf(tenantId)).toEqual(pristine);
+
+    const second = await withTenant(app.db, tenantId, (tx) => restoreBuiltinScopes(tx, tenantId));
+    expect(second).toEqual({ kind: 'restored', created: [] });
+  });
+
+  it('leaves a built-in that exists exactly as an administrator edited it', async () => {
+    const tenantId = await provisionedTenant();
+    await withTenant(app.db, tenantId, async (tx) => {
+      const repository = clientScopeRepository(tx);
+      const profile = await repository.byName('profile');
+      if (profile === null) throw new Error('profile was not provisioned');
+      await repository.amend(profile.id, {
+        description: 'edited',
+        includeInAccessToken: true,
+        defaultClientAssignment: null,
+      });
+      const roles = await repository.byName('roles');
+      if (roles === null) throw new Error('roles was not provisioned');
+      await repository.delete(roles.id);
+    });
+
+    const outcome = await withTenant(app.db, tenantId, (tx) => restoreBuiltinScopes(tx, tenantId));
+    expect(outcome).toEqual({ kind: 'restored', created: ['roles'] });
+    const profile = await withTenant(app.db, tenantId, (tx) =>
+      clientScopeRepository(tx).byName('profile'),
+    );
+    expect(profile).toMatchObject({
+      description: 'edited',
+      includeInAccessToken: true,
+      defaultClientAssignment: null,
+    });
+  });
+
+  it('names the missing built-ins without creating them', async () => {
+    const tenantId = await provisionedTenant();
+    await withTenant(app.db, tenantId, async (tx) => {
+      const repository = clientScopeRepository(tx);
+      const groups = await repository.byName('groups');
+      if (groups === null) throw new Error('groups was not provisioned');
+      await repository.delete(groups.id);
+    });
+    const missing = await withTenant(app.db, tenantId, (tx) => missingBuiltinScopeNames(tx));
+    expect(missing).toEqual(['groups']);
+    const again = await withTenant(app.db, tenantId, (tx) => missingBuiltinScopeNames(tx));
+    expect(again).toEqual(['groups']);
+  });
+
+  it('does not touch another tenant, and reads only its own scopes', async () => {
+    const mine = await provisionedTenant();
+    const other = await provisionedTenant();
+    await withTenant(app.db, other, async (tx) => {
+      const repository = clientScopeRepository(tx);
+      const email = await repository.byName('email');
+      if (email === null) throw new Error('email was not provisioned');
+      await repository.delete(email.id);
+    });
+    const outcome = await withTenant(app.db, mine, (tx) => restoreBuiltinScopes(tx, mine));
+    expect(outcome).toEqual({ kind: 'restored', created: [] });
+    expect(await withTenant(app.db, other, (tx) => missingBuiltinScopeNames(tx))).toEqual([
+      'email',
+    ]);
+  });
+
+  it('refuses, creating nothing, when the missing ones would pass the tenant scope limit', async () => {
+    const tenantId = await provisionedTenant();
+    await withTenant(app.db, tenantId, async (tx) => {
+      const repository = clientScopeRepository(tx);
+      const roles = await repository.byName('roles');
+      if (roles === null) throw new Error('roles was not provisioned');
+      await repository.delete(roles.id);
+      const held = await repository.countUpTo(SCOPE_LIMIT);
+      await tx.insert(clientScopes).values(
+        Array.from({ length: SCOPE_LIMIT - held }, (_, index) => ({
+          id: newId(),
+          tenantId,
+          name: `filler-${String(index)}`,
+        })),
+      );
+    });
+    const outcome = await withTenant(app.db, tenantId, (tx) => restoreBuiltinScopes(tx, tenantId));
+    expect(outcome).toEqual({ kind: 'scope_limit' });
+    expect(await withTenant(app.db, tenantId, (tx) => missingBuiltinScopeNames(tx))).toEqual([
+      'roles',
+    ]);
+  });
+});
+
+describe('restoring when too many scopes are marked for new clients', () => {
+  it('refuses with the default-scope message and creates none of the missing ones', async () => {
+    const tenantId = newId();
+    await withTenant(app.db, tenantId, async (tx) => {
+      await tx.insert(tenants).values({ id: tenantId, name: `tenant-${tenantId}` });
+      await provisionTenantDefaults(tx, tenantId);
+      const repository = clientScopeRepository(tx);
+      for (const name of ['roles', 'groups']) {
+        const scope = await repository.byName(name);
+        if (scope !== null) await repository.delete(scope.id);
+      }
+      const held = await repository.countDefaultsUpTo(tenantId, CLIENT_SCOPE_LIMIT);
+      await tx.insert(clientScopes).values(
+        Array.from({ length: CLIENT_SCOPE_LIMIT - held - 1 }, (_, index) => ({
+          id: newId(),
+          tenantId,
+          name: `marked-${String(index)}`,
+          defaultClientAssignment: 'optional' as const,
+        })),
+      );
+    });
+    const outcome = await withTenant(app.db, tenantId, (tx) => restoreBuiltinScopes(tx, tenantId));
+    expect(outcome.kind).toBe('default_scope_limit');
+    expect(await withTenant(app.db, tenantId, (tx) => missingBuiltinScopeNames(tx))).toEqual([
+      'roles',
+      'groups',
+    ]);
   });
 });

@@ -1,3 +1,4 @@
+import { CLIENT_SCOPE_LIMIT, defaultScopeLimitMessage, SCOPE_LIMIT } from '@odudu/contracts/admin';
 import { type TenantScopedDatabase } from '@odudu/db';
 import {
   clientScopeRepository,
@@ -43,6 +44,18 @@ export const TENANT_DEFAULT_SCOPE_NAMES: readonly string[] = DEFAULT_SCOPES.map(
   (defaultScope) => defaultScope.scope.name,
 );
 
+async function createDefaultScope(
+  tx: TenantScopedDatabase,
+  tenantId: string,
+  { scope, assignment }: DefaultScope,
+): Promise<void> {
+  await clientScopeRepository(tx).create({
+    tenantId,
+    ...scope,
+    defaultClientAssignment: assignment,
+  });
+}
+
 // Called once per tenant, at the point the tenant itself is created — the
 // bootstrap seed command and every test fixture that stands up a tenant call
 // this so that a tenant is never left without a scope vocabulary.
@@ -50,10 +63,53 @@ export async function provisionTenantDefaults(
   tx: TenantScopedDatabase,
   tenantId: string,
 ): Promise<void> {
-  const repository = clientScopeRepository(tx);
-  for (const { scope, assignment } of DEFAULT_SCOPES) {
-    await repository.create({ tenantId, ...scope, defaultClientAssignment: assignment });
+  for (const defaultScope of DEFAULT_SCOPES) {
+    await createDefaultScope(tx, tenantId, defaultScope);
   }
+}
+
+// The built-in scopes this tenant no longer has, in provisioning order. One
+// query over the name index, whatever the tenant holds.
+export async function missingBuiltinScopeNames(tx: TenantScopedDatabase): Promise<string[]> {
+  const present = new Set(
+    (await clientScopeRepository(tx).byNames(TENANT_DEFAULT_SCOPE_NAMES)).map(({ name }) => name),
+  );
+  return TENANT_DEFAULT_SCOPE_NAMES.filter((name) => !present.has(name));
+}
+
+export type RestoreBuiltinScopesOutcome =
+  | { kind: 'restored'; created: readonly string[] }
+  | { kind: 'scope_limit' }
+  | { kind: 'default_scope_limit'; message: string };
+
+// Creates each missing built-in as provisioning created it, and touches
+// nothing that exists, edited or not. A scope the cascade took leaves no
+// client assignment or role mapping behind, and none is recreated: only the
+// row, with the mark that assigns it to clients created afterwards. Run in
+// the caller's transaction, so a refusal leaves no partial restore.
+export async function restoreBuiltinScopes(
+  tx: TenantScopedDatabase,
+  tenantId: string,
+): Promise<RestoreBuiltinScopesOutcome> {
+  const repository = clientScopeRepository(tx);
+  await repository.lockCreation(tenantId);
+  const missing = await missingBuiltinScopeNames(tx);
+  if (missing.length === 0) return { kind: 'restored', created: [] };
+  if ((await repository.countUpTo(SCOPE_LIMIT)) + missing.length > SCOPE_LIMIT) {
+    return { kind: 'scope_limit' };
+  }
+  // Every built-in is marked for new clients, so the whole set must fit under
+  // that ceiling before the first row is written: nothing is committed on a refusal.
+  const marked = await repository.countDefaultsUpTo(tenantId, CLIENT_SCOPE_LIMIT);
+  if (marked + missing.length > CLIENT_SCOPE_LIMIT) {
+    return { kind: 'default_scope_limit', message: defaultScopeLimitMessage() };
+  }
+  for (const defaultScope of DEFAULT_SCOPES) {
+    if (missing.includes(defaultScope.scope.name)) {
+      await createDefaultScope(tx, tenantId, defaultScope);
+    }
+  }
+  return { kind: 'restored', created: missing };
 }
 
 // A scope reaches a token only when the tenant defines it *and* the client is
