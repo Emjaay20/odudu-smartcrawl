@@ -2791,25 +2791,31 @@ Only transform, opacity and stroke-dashoffset animate; nothing changes layout, a
   duration still waits.
 - **The pass glides.** `@keyframes` for a pass are sampled at eased times and run on a linear clock; an
   `ease-in-out` on each keyframe segment would have started and stopped at every sample.
-- **One marker.** The stepper is a grid of seven equal columns, and a single pill slides between them with `transform`;
-  its position is CSS alone (`data-step` on the group), so no layout is measured. A thin line in the pill fills over the
-  step's hold, and exists only while the step runs, so resuming restarts it with the step's timer. Labels wrap to two
-  lines at the widths that show them, which is what keeps the columns equal.
-- **Captions hand over.** The reducer remembers the step it came from (`previous`), `viewOf` turns that into the old
-  announcement (`leaving`), and the box holds both: the old drifts up and fades in 200 ms, the new rises in over 300 ms
-  from 450 ms. The box has a fixed height; a test measures it at every step at 375, 768 and 1280 px and checks that the
-  longest caption fits.
+- **One marker.** The stepper is a grid of seven equal columns, and a single soft-tinted pill slides between them with
+  `transform`; its position is CSS alone (`data-marker`, the last step shown, so the marker stays on 7 when the scene
+  returns to rest instead of sweeping back). Label colour never changes under it: the marker is a tint beneath dark
+  text, not a solid fill. Each step shows a short label from the model on one line (the full label is the button's
+  accessible name and contains the short one); below 1100 px the stepper shows numbers only. A thin line in the pill
+  fills over the step's hold and exists only while the step runs, so resuming restarts it with the step's timer.
+- **Captions hand over.** The reducer remembers the step it came from and how the move came about. A click shows its
+  caption after 80 ms (the old one is fading out for 200 ms), so the box is never empty for more than about 120 ms; a
+  timed advance keeps the staged 450 ms. Only a caption that was fully shown leaves: a move made while the last
+  hand-over is still going lets nothing leave. A `settled` event after the hand-over drops the old layer from the page,
+  so find-in-page and text queries meet each caption once. The box is one grid cell holding the layers and a hidden
+  copy of the longest announcement, so it follows its text (WCAG 1.4.12 spacing, longer translated copy) and is the
+  same height at every step; tests run it at seven widths from 375 to 1280 and under a text-spacing override,
+  asserting it never overlaps what follows.
 - **Reduced motion:** no transition and no animation in the scene, the stepper or the caption box; the old caption
-  layer is `display: none`.
+  layer is `display: none`. Turning it on while the scene plays stops the autoplay.
 - **Static frames.** `compare-landing.mjs` (now also capturing the scene alone) against the build before: at every step
   end the scene differs from before in at most 145 pixels, by one level of one channel (the lit arrowhead sits over a
-  dim one that fades out, and the route passes through a mask); step 3 is identical. The controls differ by design: the
-  stepper is one row at desktop width (the page is 43 px shorter) and a grid at phone width.
+  dim one that fades out, and the route passes through a mask); step 3 is identical. The controls differ by design.
 - **Mid-transition frames** are in `docs/phases/p4g-docs/landing-motion-*`: pauses at 200, 450 and 800 ms of the step 3 to 4
   (desktop, light), 5 to 6 (desktop, dark), 6 to 7 (phone, light) and 3 to 4 (phone, dark) transitions, taken by setting
   every running animation's time. A tall element screenshot resizes the viewport and restarts the page's animations,
   so the capture viewport has to be taller than the section.
-- **Cost:** landing chunk 14,381 to 14,803 gzip. Lighthouse (12.6.1): simulated mobile 0.92 to 0.94 (LCP 3.1 to 3.4 s over
-  three runs), devtools mobile 0.97 (1.9 s), desktop 1.00 (0.7 s); CLS 0 throughout.
+- **Cost:** landing chunk 14,381 to 15,161 gzip across the increment and its fix round. Lighthouse (12.6.1): simulated
+  mobile 0.92 (LCP 3.4 s) twice, devtools mobile 0.97 (2.0 s), desktop 0.99 (0.9 s); CLS 0 throughout.
+- **Stepper frames** at 900, 1000, 1100 and 1280 px are in `docs/phases/p4g-docs/landing-motion-stepper-*`.
 - **Not done:** the glow behind the hub and the resting look of dimmed parts are unchanged, because static frames had to
   stay identical; only their transitions moved.
