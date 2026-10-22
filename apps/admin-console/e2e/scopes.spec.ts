@@ -111,7 +111,9 @@ test('a scope is made, described, given a role and a mapper, and read back from 
 
   await page.getByRole('tab', { name: 'Claim mappers' }).click();
   const mappers = page.getByRole('region', { name: 'Claim mappers' });
-  await expect(mappers.getByText(/none declares it/u)).toBeVisible();
+  await expect(
+    mappers.getByText('Nothing bound. No mapper runs by default, so this scope adds no claims.'),
+  ).toBeVisible();
   await mappers.getByText('email', { exact: true }).click();
   await mappers.getByText('groups', { exact: true }).click();
   await mappers.getByRole('button', { name: 'Save Claim mappers' }).click();

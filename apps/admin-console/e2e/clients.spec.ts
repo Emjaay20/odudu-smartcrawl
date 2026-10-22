@@ -609,6 +609,9 @@ test("a client's installation is shown, and its claims are worked out for a subj
   await expect(evaluate.getByText(/^Claims for openid/u)).toBeVisible();
   await expect(evaluate.getByRole('region', { name: 'ID token claims' })).toContainText('"sub"');
   await expect(evaluate.getByRole('region', { name: 'UserInfo claims' })).toContainText('"sub"');
+  await expect(
+    evaluate.getByRole('heading', { name: 'What the app gets in the access token' }),
+  ).toBeVisible();
   await expectAccessible(page);
 });
 

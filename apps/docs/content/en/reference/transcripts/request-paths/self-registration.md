@@ -211,10 +211,10 @@ AUTH_SESSION_ID=$(curl -sS --get \
   --data-urlencode 'nonce=abc123' \
   --data-urlencode 'code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM' \
   --data-urlencode 'code_challenge_method=S256' \
-  'http://localhost:3195/tenants/register-demo/protocol/openid-connect/auth' \
+  'http://localhost:3197/tenants/register-demo/protocol/openid-connect/auth' \
   | sed -n '/name="auth_session_id"/{s/.*value="\([^"]*\)".*/\1/p;q;}')
 
-curl -sS -i -X POST http://localhost:3195/tenants/register-demo/login-actions/authenticate \
+curl -sS -i -X POST http://localhost:3197/tenants/register-demo/login-actions/authenticate \
   --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
   --data-urlencode 'username=ada' \
   --data-urlencode 'password=correct-horse-battery'
@@ -222,7 +222,7 @@ curl -sS -i -X POST http://localhost:3195/tenants/register-demo/login-actions/au
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a16364-9eda-74f5-be20-9d5bca494e7b
+x-request-id: 01a1651a-e0cf-7146-af56-f7d78cfe966d
 content-type: text/html
 content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
 x-frame-options: DENY
@@ -230,8 +230,8 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 1254
-Date: Thu, 22 Oct 2026 11:35:01 GMT
+content-length: 1189
+Date: Thu, 22 Oct 2026 19:33:42 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -249,7 +249,7 @@ Keep-Alive: timeout=72
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t sign in yet</h1>
-<p>You need to verify your email address before you can sign in. We sent a link to the address on this account — follow it, then sign in again.</p>
+<p>We sent you a link to verify your email address. Open it, then sign in again.</p>
 <p class="links">
 <a href="/tenants/register-demo/protocol/openid-connect/auth?response_type=code&amp;client_id=register-spa&amp;redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&amp;scope=openid+email&amp;code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&amp;code_challenge_method=S256&amp;state=xyz123&amp;nonce=abc123">Back to sign in</a>
 </p>
