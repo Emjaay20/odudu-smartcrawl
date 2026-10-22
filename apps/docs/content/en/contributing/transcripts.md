@@ -205,6 +205,13 @@ changed since the earlier run), in Self-registration the part of the way there a
 the mailed link, and in Password reset the new section on coming back to the application. Their
 keys, sessions and times are that run's, and the rest of each page stands as the earlier runs left it.
 
+The pages then linked the brand favicon, `favicon.svg` and `favicon.ico`, in place of the bare mark: two
+`<link rel="icon">` lines in every recorded page document, 66 bytes more in each `content-length`. That was
+applied to the 16 pages that show a document by a script, not by replaying them. A live stack of the branch
+(project `odudu-p4g-31n`, port `3181`, commit `bd71a2cb`) was asked for two of the page kinds, and each came
+back byte for byte as recorded: the unknown-client error page (the same 20 lines as the one in The branches)
+and the `Can&#39;t sign out` page (`content-length: 880`, the recorded 814 plus 66).
+
 ## Admin path transcripts
 
 The admin API: the endpoints under `/admin/tenants/{tenant}/` that let an
