@@ -215,3 +215,29 @@ describe('the login page parks the request on the browser', () => {
     expect(setCookies(res)).toEqual([]);
   });
 });
+
+describe('the sign-in handle is cleared when the sign-in completes', () => {
+  it('expires the cookie beside the session on the success redirect, and not on a refusal', async () => {
+    const tenant = `handle-${newId()}`;
+    await setupTenant(tenant);
+    const form = await authorize(http, tenant);
+    const submit = (password: string) =>
+      http.inject({
+        method: 'POST',
+        url: `/tenants/${tenant}/login-actions/authenticate`,
+        payload: new URLSearchParams({
+          auth_session_id: formSession(form),
+          username: 'ada',
+          password,
+        }).toString(),
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      });
+
+    expect(setCookies(await submit('wrong'))).toEqual([]);
+    const done = await submit(PASSWORD);
+    expect(done.statusCode).toBe(302);
+    expect(setCookies(done)).toContain(
+      `odudu-sign-in=; HttpOnly; SameSite=Lax; Path=/tenants/${tenant}/; Max-Age=0`,
+    );
+  });
+});

@@ -12,6 +12,7 @@ export { SessionEntry } from '#/service/session-entry';
 export {
   readSignInHandle,
   signInHandleCookie,
+  clearedSignInHandleCookie,
   signInHandleName,
   type SignInHandle,
 } from '#/service/sign-in-handle';

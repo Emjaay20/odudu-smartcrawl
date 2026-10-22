@@ -1,4 +1,8 @@
-import { sessionCookies, type AuthenticatorResult } from '@odudu/authn-flows';
+import {
+  clearedSignInHandleCookie,
+  sessionCookies,
+  type AuthenticatorResult,
+} from '@odudu/authn-flows';
 import { type FastifyReply } from 'fastify';
 import { type LoginSubmissionOutcome } from '#/usecase/login-submission';
 import { loginWays } from '#/service/login-ways';
@@ -156,5 +160,7 @@ export async function sendLoginOutcome(
 
   const reply302 = reply.code(302);
   for (const cookie of written) reply302.header('set-cookie', cookie);
+  // The sign-in is finished: its handle has nothing left to name.
+  reply302.header('set-cookie', clearedSignInHandleCookie(tenantName, deps.tls));
   return reply302.header('location', outcome.location).send();
 }

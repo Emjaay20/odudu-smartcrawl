@@ -109,21 +109,42 @@ describe('a header the negotiation reads is bounded before it is parsed', () => 
     expect(wantsHtmlPage('GET', '/nope', long)).toBe(false);
   });
 
-  it('reads a 64 KB hostile Accept in well under a millisecond budget', () => {
-    const hostile = `${';'.repeat(65_536)}text/html`;
-    const wide = `${'a/b;q=,'.repeat(9363)}text/html`;
-    const started = performance.now();
-    for (const accept of [hostile, wide]) {
-      for (let i = 0; i < 100; i += 1) wantsHtmlPage('GET', '/nope', accept);
-    }
-    expect((performance.now() - started) / 200).toBeLessThan(1);
+  // Linear work grows eightfold when the input does; backtracking grows far
+  // faster (quadratic is 64x). The best of several runs of each size, and a
+  // bound at three times the linear ratio, make this a statement about growth
+  // that a loaded runner cannot turn into a failure.
+  function growth(read: (size: number) => void, small: number, large: number): number {
+    const best = (size: number): number => {
+      let fastest = Infinity;
+      for (let run = 0; run < 7; run += 1) {
+        const started = performance.now();
+        for (let i = 0; i < 20; i += 1) read(size);
+        fastest = Math.min(fastest, performance.now() - started);
+      }
+      return fastest;
+    };
+    read(small);
+    read(large);
+    return best(large) / Math.max(best(small), 0.01);
+  }
+  const LINEAR_BOUND = 24;
+
+  it('reads a hostile Accept in time that grows with its length, not faster', () => {
+    const semicolons = (size: number): void => {
+      wantsHtmlPage('GET', '/nope', `${';'.repeat(size)}text/html`);
+    };
+    const pairs = (size: number): void => {
+      wantsHtmlPage('GET', '/nope', `${'a/b;q=,'.repeat(size / 7)}text/html`);
+    };
+    expect(growth(semicolons, 8192, 65_536)).toBeLessThan(LINEAR_BOUND);
+    expect(growth(pairs, 8190, 65_534)).toBeLessThan(LINEAR_BOUND);
   });
 
   it('keeps a long path linear too', () => {
-    const path = `/${'%2e'.repeat(5000)}x`;
-    const started = performance.now();
-    for (let i = 0; i < 100; i += 1) wantsHtmlPage('GET', path, 'text/html');
-    expect((performance.now() - started) / 100).toBeLessThan(1);
+    const path = (size: number): void => {
+      wantsHtmlPage('GET', `/${'%2e'.repeat(size)}x`, 'text/html');
+    };
+    expect(growth(path, 1000, 8000)).toBeLessThan(LINEAR_BOUND);
   });
 });
 

@@ -20,6 +20,17 @@ export function hashSignInSecret(secret: string): string {
   return createHash('sha256').update(secret).digest('hex');
 }
 
+function handleCookie(tenant: string, tls: boolean, value: string, maxAge: number): string {
+  return [
+    `${signInHandleName(tls)}=${value}`,
+    'HttpOnly',
+    'SameSite=Lax',
+    `Path=/tenants/${encodeURIComponent(tenant)}/`,
+    ...(tls ? ['Secure'] : []),
+    `Max-Age=${String(maxAge)}`,
+  ].join('; ');
+}
+
 export function signInHandleCookie(
   tenant: string,
   tls: boolean,
@@ -27,14 +38,13 @@ export function signInHandleCookie(
   secret: string,
   maxAgeSeconds: number,
 ): string {
-  return [
-    `${signInHandleName(tls)}=${sessionId}.${secret}`,
-    'HttpOnly',
-    'SameSite=Lax',
-    `Path=/tenants/${encodeURIComponent(tenant)}/`,
-    ...(tls ? ['Secure'] : []),
-    `Max-Age=${String(maxAgeSeconds)}`,
-  ].join('; ');
+  return handleCookie(tenant, tls, `${sessionId}.${secret}`, maxAgeSeconds);
+}
+
+// The same name, path and attributes with an expiry: a browser drops a cookie
+// only when the clearing one matches how it was set.
+export function clearedSignInHandleCookie(tenant: string, tls: boolean): string {
+  return handleCookie(tenant, tls, '', 0);
 }
 
 export interface SignInHandle {
@@ -44,9 +54,9 @@ export interface SignInHandle {
 
 const SECRET = /^[A-Za-z0-9_-]{1,128}$/u;
 
-// A value that is not exactly `<uuid>.<secret>` reads as no handle: the
-// browser may hold a cookie from before a reset or one somebody edited, and
-// either must behave as having none.
+// A value that is not exactly `<uuid>.<secret>` is skipped, and every pair of
+// the name is tried: a planted duplicate (another Domain or Path) must not
+// hide the valid one, and each candidate is still checked against the row.
 export function readSignInHandle(header: string | undefined, tls: boolean): SignInHandle | null {
   if (header === undefined) return null;
   const name = signInHandleName(tls);
@@ -57,8 +67,8 @@ export function readSignInHandle(header: string | undefined, tls: boolean): Sign
       .slice(index + 1)
       .trim()
       .split('.');
-    if (rest.length > 0 || sessionId === undefined || secret === undefined) return null;
-    return isUuid(sessionId) && SECRET.test(secret) ? { sessionId, secret } : null;
+    if (rest.length > 0 || sessionId === undefined || secret === undefined) continue;
+    if (isUuid(sessionId) && SECRET.test(secret)) return { sessionId, secret };
   }
   return null;
 }

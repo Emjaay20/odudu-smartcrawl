@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  clearedSignInHandleCookie,
   hashSignInSecret,
   newSignInSecret,
   readSignInHandle,
@@ -80,5 +81,44 @@ describe('readSignInHandle', () => {
 
   it('is not fooled by a cookie that merely ends in the name', () => {
     expect(readSignInHandle(`x-odudu-sign-in=${SESSION}.abc`, false)).toBeNull();
+  });
+});
+
+describe('readSignInHandle with the name present more than once', () => {
+  const good = `odudu-sign-in=${SESSION}.good`;
+
+  it('accepts the valid pair whichever position it is in', () => {
+    expect(readSignInHandle(`odudu-sign-in=garbage; ${good}`, false)?.secret).toBe('good');
+    expect(readSignInHandle(`odudu-sign-in=not-a-uuid.abc; ${good}`, false)?.secret).toBe('good');
+    expect(readSignInHandle(`${good}; odudu-sign-in=garbage`, false)?.secret).toBe('good');
+    expect(readSignInHandle(`odudu-sign-in=; theme=x; ${good}`, false)?.secret).toBe('good');
+  });
+
+  it('takes the first that validates when several do', () => {
+    expect(readSignInHandle(`${good}; odudu-sign-in=${SESSION}.second`, false)?.secret).toBe(
+      'good',
+    );
+  });
+
+  it('reads nothing when none validates', () => {
+    expect(readSignInHandle('odudu-sign-in=a; odudu-sign-in=b.c', false)).toBeNull();
+  });
+
+  it('does the same under the prefixed name', () => {
+    expect(
+      readSignInHandle(`__Secure-odudu-sign-in=bad; __Secure-odudu-sign-in=${SESSION}.ok`, true)
+        ?.secret,
+    ).toBe('ok');
+  });
+});
+
+describe('clearedSignInHandleCookie', () => {
+  it('expires the cookie with the attributes and path it was set with', () => {
+    expect(clearedSignInHandleCookie('acme', true)).toBe(
+      '__Secure-odudu-sign-in=; HttpOnly; SameSite=Lax; Path=/tenants/acme/; Secure; Max-Age=0',
+    );
+    expect(clearedSignInHandleCookie('a b', false)).toBe(
+      'odudu-sign-in=; HttpOnly; SameSite=Lax; Path=/tenants/a%20b/; Max-Age=0',
+    );
   });
 });
