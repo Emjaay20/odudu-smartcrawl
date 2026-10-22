@@ -1,4 +1,4 @@
-import { type FastifyPluginAsync } from 'fastify';
+import { type FastifyPluginAsync, type FastifyReply, type FastifyRequest } from 'fastify';
 import {
   etagMatches,
   OduduError,
@@ -12,9 +12,10 @@ const TYPES: Readonly<Record<string, string>> = {
   '.woff2': 'font/woff2',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.ico': 'image/x-icon',
 };
 
-// A stylesheet, a mark, a touch icon and twelve fonts under one directory; the bounds
+// A stylesheet, a mark, the icons and twelve fonts under one directory; the bounds
 // refuse a directory that is not the build.
 const LIMITS = {
   maxFileBytes: 1024 * 1024,
@@ -36,6 +37,8 @@ function unavailable(dir: string, err: unknown): string {
 
 // The stylesheet's name is fixed (the pages link it), so it revalidates
 // by etag; a font's name carries its content, so it never does.
+// `/favicon.ico` is the one request a browser makes without being told,
+// so it answers with the same icon the pages link.
 export function instrumentRoutes(dir: string): FastifyPluginAsync {
   return async (fastify) => {
     let tree: ReadonlyMap<string, StaticFile>;
@@ -49,8 +52,7 @@ export function instrumentRoutes(dir: string): FastifyPluginAsync {
     }
     const etags = new Map([...tree].map(([path, file]) => [path, staticEtag(file.content)]));
 
-    fastify.get<{ Params: { '*': string } }>('/instrument/*', (request, reply) => {
-      const path = request.params['*'];
+    const serve = (path: string, request: FastifyRequest, reply: FastifyReply): FastifyReply => {
       const file = tree.get(path);
       const etag = etags.get(path);
       if (file === undefined || etag === undefined) {
@@ -63,6 +65,11 @@ export function instrumentRoutes(dir: string): FastifyPluginAsync {
         .header('cache-control', immutable ? 'public, max-age=31536000, immutable' : 'no-cache');
       if (etagMatches(request.headers['if-none-match'], etag)) return reply.code(304).send();
       return reply.code(200).header('content-type', file.contentType).send(file.content);
-    });
+    };
+
+    fastify.get<{ Params: { '*': string } }>('/instrument/*', (request, reply) =>
+      serve(request.params['*'], request, reply),
+    );
+    fastify.get('/favicon.ico', (request, reply) => serve('favicon.ico', request, reply));
   };
 }

@@ -156,7 +156,11 @@ export const ENDPOINT_DOCS: Readonly<Record<string, EndpointDoc>> = {
   },
   'GET /instrument/*': {
     auth: 'None',
-    purpose: 'The stylesheet, mark and fonts every server-rendered page links.',
+    purpose: 'The stylesheet, mark, icons and fonts every server-rendered page links.',
+  },
+  'GET /favicon.ico': {
+    auth: 'None',
+    purpose: 'The favicon, for browsers that ask for it without a page linking one.',
   },
   'GET /docs': {
     auth: 'None',

@@ -241,6 +241,13 @@ printf '%s' "$MARK_HEADERS" | grep -i '^content-type: *image/svg+xml' > /dev/nul
   echo "smoke: /instrument/mark.svg was not served as image/svg+xml" >&2
   exit 1
 }
+for ICON in "/instrument/favicon.svg:image/svg+xml" "/instrument/favicon.ico:image/x-icon" "/favicon.ico:image/x-icon"; do
+  ICON_HEADERS=$(curl -sS -D - -o /dev/null "$BASE${ICON%%:*}")
+  printf '%s' "$ICON_HEADERS" | grep -i "^content-type: *${ICON#*:}" > /dev/null || {
+    echo "smoke: ${ICON%%:*} was not served as ${ICON#*:}" >&2
+    exit 1
+  }
+done
 SHELL_HEADERS=$(curl -sS -D - -o /dev/null "$BASE/console/")
 printf '%s' "$SHELL_HEADERS" | grep -i '^x-content-type-options: *nosniff' > /dev/null || {
   echo "smoke: the console shell did not carry nosniff" >&2

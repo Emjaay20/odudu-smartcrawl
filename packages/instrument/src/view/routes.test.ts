@@ -23,6 +23,8 @@ async function builtDir(): Promise<string> {
   await writeFile(join(dir, 'instrument.css'), 'body{margin:0}');
   await writeFile(join(dir, 'mark.svg'), '<svg xmlns="http://www.w3.org/2000/svg"/>');
   await writeFile(join(dir, 'apple-touch-icon.png'), 'png-bytes');
+  await writeFile(join(dir, 'favicon.svg'), '<svg xmlns="http://www.w3.org/2000/svg"/>');
+  await writeFile(join(dir, 'favicon.ico'), 'ico-bytes');
   await writeFile(join(dir, 'fonts', FONT), 'woff2-bytes');
   await writeFile(join(dir, 'fonts', '.hidden.woff2'), 'x');
   await writeFile(join(dir, 'notes.txt'), 'not a served type');
@@ -105,6 +107,41 @@ describe('instrumentRoutes', () => {
       headers: { 'if-none-match': String(etag) },
     });
     expect(again.statusCode).toBe(304);
+  });
+
+  it('serves the favicon as svg and as ico, revalidating like the mark', async () => {
+    const server = await served(await builtDir());
+    for (const [url, type] of [
+      ['/instrument/favicon.svg', 'image/svg+xml'],
+      ['/instrument/favicon.ico', 'image/x-icon'],
+    ] as const) {
+      const response = await server.inject(url);
+      expect(response.statusCode, url).toBe(200);
+      expect(response.headers['content-type'], url).toBe(type);
+      expect(response.headers['x-content-type-options'], url).toBe('nosniff');
+      expect(response.headers['cache-control'], url).toBe('no-cache');
+    }
+  });
+
+  it('answers the default browser request for /favicon.ico with the same icon', async () => {
+    const server = await served(await builtDir());
+    const response = await server.inject('/favicon.ico');
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-type']).toBe('image/x-icon');
+    expect(response.headers['cache-control']).toBe('no-cache');
+    expect(response.body).toBe('ico-bytes');
+    const again = await server.inject({
+      url: '/favicon.ico',
+      headers: { 'if-none-match': String(response.headers.etag) },
+    });
+    expect(again.statusCode).toBe(304);
+  });
+
+  it('answers 404 for /favicon.ico when the build has no icon', async () => {
+    const dir = await builtDir();
+    await rm(join(dir, 'favicon.ico'));
+    const server = await served(dir);
+    expect((await server.inject('/favicon.ico')).statusCode).toBe(404);
   });
 
   it('refuses a path outside the manifest', async () => {
