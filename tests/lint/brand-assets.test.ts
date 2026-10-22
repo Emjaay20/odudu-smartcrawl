@@ -636,6 +636,11 @@ describe('brand assets: the README', () => {
   });
 });
 
+const FAVICON_LINKS = [
+  '<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml"',
+  '<link rel="icon" href="/instrument/favicon.ico" sizes="48x48"',
+];
+
 describe('the copies every page and the console link', () => {
   it('serve the touch icon the brand directory builds', () => {
     const served = readFileSync(
@@ -644,10 +649,39 @@ describe('the copies every page and the console link', () => {
     expect(served.equals(readFileSync(path.join(BRAND, 'apple-touch-icon.png')))).toBe(true);
   });
 
-  it('is linked from the console shell beside its mark', () => {
+  it('serve the favicon the brand directory builds, as svg and as ico', () => {
+    for (const file of ['favicon.svg', 'favicon.ico']) {
+      const served = readFileSync(path.join(REPO_ROOT, 'packages/instrument/src', file));
+      expect(served.equals(readFileSync(path.join(BRAND, file))), file).toBe(true);
+    }
+  });
+
+  it('is linked from the console shell as the favicon, with the touch icon', () => {
     const html = readFileSync(path.join(REPO_ROOT, 'apps/admin-console/index.html'), 'utf8');
-    expect(html).toContain('rel="icon" href="/instrument/mark.svg"');
+    for (const link of FAVICON_LINKS) expect(html).toContain(`${link} />`);
     expect(html).toContain('rel="apple-touch-icon" href="/instrument/apple-touch-icon.png"');
+    expect(html).not.toContain('rel="icon" href="/instrument/mark.svg"');
+  });
+
+  it('is linked from every server page shell as the same favicon', () => {
+    for (const pkg of ['account', 'authn-flows', 'console-gateway', 'protocol-oidc']) {
+      const renderer = readFileSync(
+        path.join(REPO_ROOT, `packages/${pkg}/src/view/document.ts`),
+        'utf8',
+      );
+      for (const link of FAVICON_LINKS) expect(renderer, pkg).toContain(`${link}>`);
+      expect(renderer, pkg).not.toContain('rel="icon" href="/instrument/mark.svg"');
+    }
+  });
+
+  it('is built into the instrument directory beside the touch icon', () => {
+    const build = readFileSync(
+      path.join(REPO_ROOT, 'packages/instrument/scripts/build.ts'),
+      'utf8',
+    );
+    for (const file of ['favicon.svg', 'favicon.ico', 'apple-touch-icon.png']) {
+      expect(build, file).toContain(`'${file}'`);
+    }
   });
 
   it('is drawn by the console from the same three shapes as mark.svg', () => {

@@ -17,7 +17,8 @@ test('the sign-in page links the Instrument stylesheet, favicon and mark, and it
   await page.goto(`/console/${admin.tenant}`);
   await expect(page.getByLabel('Username')).toBeVisible();
   await expect(page.locator(`link[rel="stylesheet"][href="${STYLESHEET}"]`)).toHaveCount(1);
-  await expect(page.locator('link[rel="icon"][href="/instrument/mark.svg"]')).toHaveCount(1);
+  await expect(page.locator('link[rel="icon"][href="/instrument/favicon.svg"]')).toHaveCount(1);
+  await expect(page.locator('link[rel="icon"][href="/instrument/favicon.ico"]')).toHaveCount(1);
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
   await expect(page.locator('main.page svg.mark')).toHaveCount(1);
@@ -28,6 +29,14 @@ test('the sign-in page links the Instrument stylesheet, favicon and mark, and it
   const mark = await page.request.get('/instrument/mark.svg');
   expect(mark.status()).toBe(200);
   expect(mark.headers()['content-type']).toBe('image/svg+xml');
+
+  const favicon = await page.request.get('/instrument/favicon.svg');
+  expect(favicon.status()).toBe(200);
+  expect(favicon.headers()['content-type']).toBe('image/svg+xml');
+  const ico = await page.request.get('/instrument/favicon.ico');
+  expect(ico.status()).toBe(200);
+  expect(ico.headers()['content-type']).toBe('image/x-icon');
+  expect((await page.request.get('/favicon.ico')).headers()['content-type']).toBe('image/x-icon');
 
   const family = await page.evaluate(() => getComputedStyle(document.body).fontFamily);
   expect(family.startsWith('"IBM Plex Sans"')).toBe(true);

@@ -64,7 +64,8 @@ the one box the subject can grant:
 <meta name="color-scheme" content="light dark">
 <title>Allow access?</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">

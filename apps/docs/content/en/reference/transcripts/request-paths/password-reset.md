@@ -70,7 +70,8 @@ curl -sS -X POST http://localhost:3000/tenants/reset-demo/login-actions/reset-pa
 <meta name="color-scheme" content="light dark">
 <title>Check your email</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
@@ -88,7 +89,8 @@ curl -sS -X POST http://localhost:3000/tenants/reset-demo/login-actions/reset-pa
 <meta name="color-scheme" content="light dark">
 <title>Check your email</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
@@ -150,7 +152,8 @@ curl -sS 'http://localhost:3000/tenants/reset-demo/login-actions/action-token?ke
 <meta name="color-scheme" content="light dark">
 <title>Choose a new password</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
@@ -189,7 +192,8 @@ curl -sS -X POST http://localhost:3195/tenants/reset-demo/login-actions/action-t
 <meta name="color-scheme" content="light dark">
 <title>Choose a new password</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
@@ -240,7 +244,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 1348
+content-length: 1414
 Date: Thu, 22 Oct 2026 11:36:55 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -253,7 +257,8 @@ Keep-Alive: timeout=72
 <meta name="color-scheme" content="light dark">
 <title>Choose a new password</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
@@ -301,7 +306,8 @@ curl -sS -X POST http://localhost:3195/tenants/reset-demo/login-actions/action-t
 <meta name="color-scheme" content="light dark">
 <title>Password reset</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">

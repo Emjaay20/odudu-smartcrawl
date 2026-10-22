@@ -121,7 +121,8 @@ curl -sS -X POST http://localhost:3094/tenants/otp-demo/login-actions/authentica
 <meta name="color-scheme" content="light dark">
 <title>Enter your authentication code</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
@@ -226,7 +227,8 @@ curl -sS -X POST http://localhost:3195/tenants/otp-demo/login-actions/authentica
 <meta name="color-scheme" content="light dark">
 <title>Enter your authentication code</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
@@ -273,7 +275,8 @@ curl -sS -X POST http://localhost:3195/tenants/otp-demo/login-actions/authentica
 <meta name="color-scheme" content="light dark">
 <title>Enter your authentication code</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
@@ -395,7 +398,8 @@ Keep-Alive: timeout=72
 <meta name="color-scheme" content="light dark">
 <title>Save your recovery codes</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">

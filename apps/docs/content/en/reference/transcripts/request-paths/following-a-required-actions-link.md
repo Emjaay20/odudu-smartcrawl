@@ -54,7 +54,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 1273
+content-length: 1339
 Date: Wed, 14 Oct 2026 00:35:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -67,7 +67,8 @@ Keep-Alive: timeout=72
 <meta name="color-scheme" content="light dark">
 <title>Update your account</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
@@ -107,7 +108,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 837
+content-length: 903
 Date: Wed, 14 Oct 2026 00:35:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -120,7 +121,8 @@ Keep-Alive: timeout=72
 <meta name="color-scheme" content="light dark">
 <title>Account updated</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
@@ -154,7 +156,8 @@ curl -sS -w '\n' -X POST \
 <meta name="color-scheme" content="light dark">
 <title>Can&#39;t use this link</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">

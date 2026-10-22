@@ -55,7 +55,8 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 <meta name="color-scheme" content="light dark">
 <title>Account created</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
@@ -115,7 +116,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 1483
+content-length: 1549
 Date: Thu, 22 Oct 2026 11:34:56 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -128,7 +129,8 @@ Keep-Alive: timeout=72
 <meta name="color-scheme" content="light dark">
 <title>Create account</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
@@ -230,7 +232,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 1189
+content-length: 1255
 Date: Thu, 22 Oct 2026 19:33:42 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -243,7 +245,8 @@ Keep-Alive: timeout=72
 <meta name="color-scheme" content="light dark">
 <title>Verify your email</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
@@ -321,7 +324,8 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
 <meta name="color-scheme" content="light dark">
 <title>Create account</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
@@ -372,7 +376,8 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
 <meta name="color-scheme" content="light dark">
 <title>Create account</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
@@ -411,7 +416,8 @@ same short password now lists all three:
 <meta name="color-scheme" content="light dark">
 <title>Create account</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
@@ -464,7 +470,8 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
 <meta name="color-scheme" content="light dark">
 <title>Create account</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
@@ -510,7 +517,8 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
 <meta name="color-scheme" content="light dark">
 <title>Create account</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
@@ -791,7 +799,8 @@ curl -sS -w '\n%{http_code}\n' \
 <meta name="color-scheme" content="light dark">
 <title>Create account</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">

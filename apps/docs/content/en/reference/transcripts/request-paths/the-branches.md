@@ -40,7 +40,8 @@ content-type: text/html
 <meta name="color-scheme" content="light dark">
 <title>Sign-in error</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
@@ -151,7 +152,7 @@ curl -sS -D - -X POST -H 'content-type: application/json' \
 ```
 HTTP/1.1 415 Unsupported Media Type
 content-type: text/html
-content-length: 877
+content-length: 943
 
 <!doctype html>
 <html lang="en" dir="ltr">
@@ -161,7 +162,8 @@ content-length: 877
 <meta name="color-scheme" content="light dark">
 <title>Sign-in error</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
@@ -662,7 +664,8 @@ cat chooser.html
 <meta name="color-scheme" content="light dark">
 <title>Choose an account</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">

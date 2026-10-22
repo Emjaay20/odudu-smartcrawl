@@ -73,7 +73,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 1530
+content-length: 1596
 Date: Wed, 14 Oct 2026 00:41:01 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -86,7 +86,8 @@ Keep-Alive: timeout=72
 <meta name="color-scheme" content="light dark">
 <title>Allow access?</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">

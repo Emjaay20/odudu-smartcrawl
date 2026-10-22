@@ -102,10 +102,17 @@ check. The same test reads the mark out of `lockup.svg`, `favicon.svg` and
 
 ## Where the mark is used
 
-`packages/instrument/src/mark.svg` (the icon every server page links and the
-mark inlined by their four renderers), the console's `BrandLine` component, the
+`packages/instrument/src/mark.svg` (the mark inlined by the four server page
+renderers and drawn in headers), the console's `BrandLine` component, the
 mail rasteriser and the documentation site each carry the same three shapes, and
 `tests/lint/brand-assets.test.ts` fails when any differs from `mark.svg`. The
-touch icon in `packages/instrument/src` and the files under
+favicon and touch icon in `packages/instrument/src` and the files under
 `apps/docs/static/brand` are copies of the files here, held byte for byte by
 the same test.
+
+The browser tab shows one icon everywhere. The console shell, every server
+page and the documentation site link `favicon.svg`, with `favicon.ico` as the
+fallback, never the bare `mark.svg`. The server serves the
+two favicon files under `/instrument/` and answers `/favicon.ico` with the same
+icon. Like the stylesheet they revalidate by etag, because their names carry no
+hash.

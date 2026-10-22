@@ -8,7 +8,9 @@ describe('page', () => {
     expect(html).toContain('<meta name="viewport" content="width=device-width, initial-scale=1">');
     expect(html).toContain('<meta name="color-scheme" content="light dark">');
     expect(html).toContain('<link rel="stylesheet" href="/instrument/instrument.css">');
-    expect(html).toContain('<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">');
+    expect(html).toContain(
+      '<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">\n<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">',
+    );
   });
 
   it('takes the language and direction from the locale it is given', () => {

@@ -88,7 +88,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 822
+content-length: 888
 Date: Mon, 19 Oct 2026 02:02:53 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -101,7 +101,8 @@ Keep-Alive: timeout=72
 <meta name="color-scheme" content="light dark">
 <title>Sign-in failed</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
@@ -183,7 +184,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 822
+content-length: 888
 Date: Mon, 19 Oct 2026 02:02:53 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -196,7 +197,8 @@ Keep-Alive: timeout=72
 <meta name="color-scheme" content="light dark">
 <title>Sign-in failed</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">

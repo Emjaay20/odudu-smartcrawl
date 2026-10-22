@@ -77,7 +77,8 @@ export function page(
 <meta name="color-scheme" content="light dark">
 <title>${escapeHtml(title)}</title>
 <link rel="stylesheet" href="${INSTRUMENT_STYLESHEET}">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">

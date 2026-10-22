@@ -60,7 +60,8 @@ curl -sS -X POST http://localhost:3086/tenants/expiry-demo/login-actions/authent
 <meta name="color-scheme" content="light dark">
 <title>Change your password</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 </head>
 <body>
 <main class="page">
