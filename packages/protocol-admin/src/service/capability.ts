@@ -295,7 +295,10 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     capability: 'manage-users',
     responseSchema: z.void(),
     successStatus: 204,
-    description: TARGET_CEILING.trimStart() + LAST_ADMINISTRATOR,
+    description:
+      TARGET_CEILING.trimStart() +
+      LAST_ADMINISTRATOR +
+      ' Refused with `409` (`about:blank#service-account`) for the service account of a client; delete the client instead.',
   },
   {
     method: 'GET',

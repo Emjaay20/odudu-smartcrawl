@@ -17,6 +17,13 @@ export const ADMIN_PROBLEM_TYPES: Readonly<Record<string, AdminProblemType>> = {
       'The audit read ran past its five second bound because its filters match too many rows ' +
       'to serve cheaply. Narrow the time range with `from` and `to`.',
   },
+  'service-account': {
+    status: 409,
+    summary:
+      'A subject that is a client\u2019s service account is not deleted on its own, since the ' +
+      'client would be left with none. `detail` names the client. Delete the client instead, ' +
+      'which deletes its account.',
+  },
   'builtin-scope-confirmation': {
     status: 422,
     summary:

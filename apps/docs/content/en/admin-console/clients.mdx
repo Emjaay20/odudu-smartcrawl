@@ -70,7 +70,7 @@ If tokens may already be in the wrong hands, choose **Revoke every token** on th
 
 - **Rotate secret** replaces the secret. An application that has not been given the new one can no longer authenticate once the grace period ends.
 - **Revoke every token** cannot be undone. Doing it to the console's own client, `odudu-admin`, signs you out of the console.
-- **Delete** on the General tab removes the client and the roles scoped to it, and no application can sign in through it again. You type the client's ID to confirm it, because two clients can share a name. It is named for the client, as in **Delete my-app**.
+- **Delete** on the General tab removes the client and the roles scoped to it, and no application can sign in through it again. You type the client's ID to confirm it, because two clients can share a name. It is named for the client, as in **Delete my-app**. The client's service account goes with it, and cannot be deleted on its own.
 - A disabled client signs nobody in and issues no token, but keeps its configuration. Disable it first if you are unsure.
 
 ## Do the same through the API

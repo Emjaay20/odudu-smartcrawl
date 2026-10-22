@@ -1169,7 +1169,7 @@ describe('PATCH /admin/tenants/{t}/subjects/{id} — renaming a username', () =>
 });
 
 describe('DELETE /admin/tenants/{t}/subjects/{id}', () => {
-  it('removes the subject and detaches a client that named it as its service account', async () => {
+  it('refuses a subject a client names as its service account, and leaves both', async () => {
     const t = await fixture.createTenant(`acme-${newId()}`);
     const client = await fixture.createConfidentialClient(t.name, {});
     const serviceSubjectId = await withTenant(fixture.app.db, t.id, async (tx) => {
@@ -1186,12 +1186,12 @@ describe('DELETE /admin/tenants/{t}/subjects/{id}', () => {
       url: `/admin/tenants/${t.name}/subjects/${serviceSubjectId}`,
       headers: { authorization: `Bearer ${token}` },
     });
-    expect(res.statusCode).toBe(204);
+    expect(res.statusCode).toBe(409);
 
     const survived = await withTenant(fixture.app.db, t.id, (tx) =>
       clientRepository(tx).byId(client.id),
     );
-    expect(survived?.serviceSubjectId).toBeNull();
+    expect(survived?.serviceSubjectId).toBe(serviceSubjectId);
     expect(survived?.tenantId).toBe(t.id);
   });
 

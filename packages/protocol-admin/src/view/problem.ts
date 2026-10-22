@@ -96,6 +96,16 @@ export function lastAdministratorProblem(reason: string): Problem {
   return problem(409, 'about:blank#last-administrator', 'Conflict', reason);
 }
 
+/** A delete of a subject that a client names as its service account. */
+export function serviceAccountProblem(clientId: string): Problem {
+  return problem(
+    409,
+    'about:blank#service-account',
+    'Conflict',
+    `This subject is the service account of client ${clientId}. Delete the client instead.`,
+  );
+}
+
 export function ifMatchStale(): Problem {
   return problem(412, 'about:blank', 'Precondition Failed', 'If-Match no longer matches');
 }

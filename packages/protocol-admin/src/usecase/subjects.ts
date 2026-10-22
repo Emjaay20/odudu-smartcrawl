@@ -756,12 +756,18 @@ export interface DeleteSubjectDeps {
 }
 
 export type DeleteSubjectOutcome =
-  { kind: 'not_found' } | TargetCeilingRefusal | { kind: 'deleted' } | LastAdministratorRefusal;
+  | { kind: 'not_found' }
+  | TargetCeilingRefusal
+  | { kind: 'service_account'; clientId: string }
+  | { kind: 'deleted' }
+  | LastAdministratorRefusal;
 
 // The delete itself is one statement: every table that names a subject
 // (users, user_credentials, sessions, token_grants, subject_roles, …)
 // cascades on it, and clients_service_subject_fk (0063_service_subject_fk.sql)
-// is the one exception, which now detaches rather than blocks it.
+// is the one exception, which now detaches rather than blocks it. A subject a
+// client names as its service account is refused instead: the client would be
+// left with none, and nothing gives it a new one.
 export async function deleteSubject(
   tx: TenantScopedDatabase,
   deps: DeleteSubjectDeps,
@@ -786,6 +792,24 @@ async function deleteSubjectUnguarded(
   input: DeleteSubjectInput,
 ): Promise<DeleteSubjectOutcome> {
   if (!(await lockSubjectRow(tx, input.subjectId))) return { kind: 'not_found' };
+  const [owner] = await tx
+    .select({ clientId: clients.clientId })
+    .from(clients)
+    .where(eq(clients.serviceSubjectId, input.subjectId))
+    .limit(1);
+  if (owner !== undefined) {
+    await deps.audit(tx, {
+      action: 'subject.delete',
+      resourceType: 'subject',
+      resourceId: input.subjectId,
+      actorSubjectId: input.actorSubjectId,
+      actorTenantId: input.actorTenantId,
+      actorClientId: input.actorClientId,
+      outcome: 'refused',
+      detail: { reason: `the service account of client ${owner.clientId}` },
+    });
+    return { kind: 'service_account', clientId: owner.clientId };
+  }
   const refused = await refuseOverTargetCeiling(tx, deps.audit, 'subject.delete', input);
   if (refused !== null) return refused;
 

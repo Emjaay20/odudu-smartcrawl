@@ -64,6 +64,7 @@ import {
   queryProblem,
   sendProblem,
   lastAdministratorProblem,
+  serviceAccountProblem,
 } from '#/view/problem';
 import { adminTx } from '#/view/routes/admin-tx';
 import { type AdminRequest, type AdminRouteHandler } from '#/view/routes/router';
@@ -503,6 +504,8 @@ export function deleteSubjectHandler(deps: SubjectsRouteDeps): AdminRouteHandler
         return sendProblem(reply, request, lastAdministratorProblem(outcome.reason));
       case 'not_found':
         return sendProblem(reply, request, problem(404, 'about:blank', 'Not Found'));
+      case 'service_account':
+        return sendProblem(reply, request, serviceAccountProblem(outcome.clientId));
       case 'target_ceiling':
         return targetCeilingProblem(reply, request, outcome.requested);
       case 'deleted':

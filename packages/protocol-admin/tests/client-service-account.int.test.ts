@@ -180,4 +180,80 @@ describe('a client and its service account', () => {
     expect(res.statusCode).toBe(204);
     expect(await subjectExists(t.id, subject)).toBe(false);
   });
+
+  it("refuses to delete a subject that is a client's service account, audits it, and keeps both", async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const other = await fixture.createTenant(`other-${newId()}`);
+    const token = await fixture.adminToken(t.name, [
+      'manage-clients',
+      'manage-users',
+      'view-audit',
+    ]);
+    const otherToken = await fixture.adminToken(other.name, ['manage-users']);
+    const clientId = `svc-${newId()}`;
+    const client = await create(t.name, token, {
+      client_id: clientId,
+      grant_types: ['client_credentials'],
+      token_endpoint_auth_method: 'client_secret_basic',
+    });
+    const subject = client.service_subject_id ?? '';
+
+    const foreign = await fixture.http.inject({
+      method: 'DELETE',
+      url: `/admin/tenants/${other.name}/subjects/${subject}`,
+      headers: { authorization: `Bearer ${otherToken}` },
+    });
+    expect(foreign.statusCode).toBe(404);
+    expect(await subjectExists(t.id, subject)).toBe(true);
+
+    const res = await fixture.http.inject({
+      method: 'DELETE',
+      url: `/admin/tenants/${t.name}/subjects/${subject}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(res.statusCode).toBe(409);
+    const body = res.json<{ type: string; detail: string }>();
+    expect(body.type).toBe('about:blank#service-account');
+    expect(body.detail).toBe(
+      `This subject is the service account of client ${clientId}. Delete the client instead.`,
+    );
+    expect(await subjectExists(t.id, subject)).toBe(true);
+
+    const audit = await fixture.http.inject({
+      method: 'GET',
+      url: `/admin/tenants/${t.name}/audit?resource_type=subject&resource_id=${subject}&outcome=refused`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(audit.json<{ items: { action: string }[] }>().items.map((i) => i.action)).toContain(
+      'subject.delete',
+    );
+
+    const removed = await fixture.http.inject({
+      method: 'DELETE',
+      url: `/admin/tenants/${t.name}/clients/${client.id}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(removed.statusCode).toBe(204);
+    expect(await subjectExists(t.id, subject)).toBe(false);
+  });
+
+  it('refuses the same delete inside a bulk request, naming the type per item', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-clients', 'manage-users']);
+    const client = await create(t.name, token, {
+      grant_types: ['client_credentials'],
+      token_endpoint_auth_method: 'client_secret_basic',
+    });
+    const subject = client.service_subject_id ?? '';
+    const res = await fixture.http.inject({
+      method: 'POST',
+      url: `/admin/tenants/${t.name}/subjects/bulk`,
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      payload: JSON.stringify({ action: 'delete', ids: [subject] }),
+    });
+    expect(res.json<{ items: { status: number; type?: string }[] }>().items).toEqual([
+      expect.objectContaining({ status: 409, type: 'about:blank#service-account' }),
+    ]);
+    expect(await subjectExists(t.id, subject)).toBe(true);
+  });
 });
