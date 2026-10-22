@@ -1220,7 +1220,9 @@ assigned to the client and actually requested (`scope=` at `/authorize`, or
 `clients.full_scope_allowed`). `seed client` already assigns every
 tenant-default scope — `roles` and `groups` included — so the third
 condition is usually already met; `seed assign-scope` is for a scope added
-to the tenant afterwards. [the request paths](apps/docs/content/en/reference/transcripts/request-paths/path-a-authorization-code-with-pkce.md#roles-once-a-scope-reaches-it)
+to the tenant afterwards, and `seed restore-scopes --tenant demo` creates a
+built-in scope somebody deleted again, without the assignments and role
+mappings it had. [the request paths](apps/docs/content/en/reference/transcripts/request-paths/path-a-authorization-code-with-pkce.md#roles-once-a-scope-reaches-it)
 walks through all of it, including a client-scoped role qualified as
 `clientId:roleName`.
 
