@@ -115,6 +115,7 @@ export function registerResetPasswordRoute(
         tenantDisplayName: tenant.displayName ?? tenant.name,
         issuerBase: deps.publicBaseUrl,
         now: deps.now,
+        signInPath: returnTo,
         findByEmail: deps.findByEmail,
       },
       email,

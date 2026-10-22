@@ -1,3 +1,4 @@
+import { actionLink } from '#/service/action-link';
 import { withTenant, type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { auditRepository, type RequestContext } from '@odudu/domain-audit';
 import { outboxRepository, renderVerifyEmail } from '@odudu/email';
@@ -49,7 +50,7 @@ export async function enqueueVerificationLink(
     email: input.email,
     ttlSeconds: await tokens.lifetimeOf(tenant.tenantId, 'verify_email'),
   });
-  const link = `${tenant.issuerBase}/tenants/${tenant.tenantName}/login-actions/action-token?key=${encodeURIComponent(token)}`;
+  const link = actionLink(tenant.issuerBase, tenant.tenantName, token, null);
   await outboxRepository(tx).enqueue({
     tenantId: tenant.tenantId,
     ...renderVerifyEmail({

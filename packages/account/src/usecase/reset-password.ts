@@ -1,3 +1,4 @@
+import { actionLink } from '#/service/action-link';
 import { withTenant, type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { auditRepository, type RequestContext } from '@odudu/domain-audit';
 import { outboxRepository, renderResetPassword } from '@odudu/email';
@@ -22,6 +23,8 @@ export interface RequestPasswordResetDeps {
   readonly issuerBase: string | undefined;
   // The send time of the mail, from the caller's clock.
   readonly now: () => Date;
+  // The authorize path the person asked from, already checked by signInPath.
+  readonly signInPath?: string | null;
   // Injected for the reason completePasswordReset's setPassword is:
   // @odudu/account depends on neither @odudu/domain-identity nor
   // @odudu/domain-authz, so the composition root wires the actual lookup.
@@ -71,6 +74,8 @@ export interface ActionLinkTenant {
   readonly issuerBase: string;
   // The send time of the mail, from the caller's clock.
   readonly now: () => Date;
+  // Where the link's page can lead back to sign-in; an administrator's link has none.
+  readonly signInPath?: string | null;
 }
 
 /**
@@ -95,7 +100,7 @@ export async function enqueueResetLink(
     email: user.email,
     ttlSeconds: await tokens.lifetimeOf(tenant.tenantId, 'reset_password'),
   });
-  const link = `${tenant.issuerBase}/tenants/${tenant.tenantName}/login-actions/action-token?key=${encodeURIComponent(token)}`;
+  const link = actionLink(tenant.issuerBase, tenant.tenantName, token, tenant.signInPath);
   await outboxRepository(tx).enqueue({
     tenantId: tenant.tenantId,
     ...renderResetPassword({

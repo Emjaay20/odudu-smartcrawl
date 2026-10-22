@@ -2,6 +2,7 @@ import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { requestContextFrom } from '@odudu/domain-audit';
 import { PASSWORD_TOO_LONG, readPasswordField } from '@odudu/kernel';
 import { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
+import { signInPath } from '#/service/sign-in-path';
 import { peekActionToken, type LinkedRequiredAction } from '#/usecase/action-token';
 import { type PasswordFailure } from '#/view/password-rules';
 import {
@@ -114,6 +115,7 @@ async function completeActionsLink(
 ): Promise<FastifyReply> {
   const locale = requestLocale(request, deps);
   const { setsPassword } = peeked;
+  const returnTo = signInPath(request.params.tenant, request.body.return_to);
   // The form the link opened, back in place with why the password was refused.
   const again = (failure: PasswordFailure): FastifyReply =>
     sendVerificationHtml(
@@ -124,12 +126,13 @@ async function completeActionsLink(
         key,
         peeked.actions,
         setsPassword,
+        returnTo,
         failure,
         locale,
       ),
     );
   if (setsPassword && !tenant.resetPasswordAllowed) {
-    return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(null, locale));
+    return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(null, returnTo, locale));
   }
   const candidate = readPasswordField(request.body.password);
   if (candidate.kind === 'too_long') {
@@ -156,7 +159,7 @@ async function completeActionsLink(
   );
   switch (result.kind) {
     case 'invalid':
-      return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(null, locale));
+      return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(null, returnTo, locale));
     case 'password_required':
       return again('required');
     case 'invalid_password':
@@ -165,7 +168,7 @@ async function completeActionsLink(
       return sendVerificationHtml(
         reply,
         200,
-        renderRequiredActionsSucceededPage(result.remaining, locale),
+        renderRequiredActionsSucceededPage(result.remaining, returnTo, locale),
       );
   }
 }
@@ -179,6 +182,7 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
   }>('/tenants/:tenant/login-actions/action-token', async (request, reply) => {
     const locale = requestLocale(request, deps);
     const key = firstString(request.query.key);
+    const returnTo = signInPath(request.params.tenant, request.query.return_to);
     const tenant = key === undefined ? null : await deps.findTenant(request.params.tenant);
 
     // A disabled tenant refuses here the same way it refuses at /token,
@@ -186,7 +190,7 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
     // that tenant's users table, and disabling a tenant is meant to stop all
     // of those, not just the ones a client can see.
     if (key === undefined || !tenant?.enabled) {
-      return sendVerificationHtml(reply, 400, renderVerificationFailedPage(locale));
+      return sendVerificationHtml(reply, 400, renderVerificationFailedPage(returnTo, locale));
     }
 
     // A read, not a redemption: a reset-password link needs a page shown
@@ -204,21 +208,22 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
           400,
           renderResetLinkFailedPage(
             peeked.type === 'reset_password' ? newResetLink(request.params.tenant, tenant) : null,
+            returnTo,
             locale,
           ),
         );
       }
-      return sendVerificationHtml(reply, 400, renderVerificationFailedPage(locale));
+      return sendVerificationHtml(reply, 400, renderVerificationFailedPage(returnTo, locale));
     }
 
     if (peeked.type === 'reset_password') {
       if (!tenant.resetPasswordAllowed) {
-        return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(null, locale));
+        return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(null, returnTo, locale));
       }
       return sendVerificationHtml(
         reply,
         200,
-        renderResetPasswordForm(request.params.tenant, key, undefined, locale),
+        renderResetPasswordForm(request.params.tenant, key, returnTo, undefined, locale),
       );
     }
 
@@ -226,7 +231,7 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
     // stops it the same way.
     if (peeked.type === 'execute_actions') {
       if (peeked.setsPassword && !tenant.resetPasswordAllowed) {
-        return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(null, locale));
+        return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(null, returnTo, locale));
       }
       return sendVerificationHtml(
         reply,
@@ -236,6 +241,7 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
           key,
           peeked.actions,
           peeked.setsPassword,
+          returnTo,
           undefined,
           locale,
         ),
@@ -254,9 +260,9 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
     );
 
     if (result.kind === 'invalid') {
-      return sendVerificationHtml(reply, 400, renderVerificationFailedPage(locale));
+      return sendVerificationHtml(reply, 400, renderVerificationFailedPage(returnTo, locale));
     }
-    return sendVerificationHtml(reply, 200, renderVerificationSucceededPage(locale));
+    return sendVerificationHtml(reply, 200, renderVerificationSucceededPage(returnTo, locale));
   });
 
   app.post<{
@@ -267,10 +273,11 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
     const body = request.body;
     const key = firstNonEmptyString(body.key);
     const candidate = readPasswordField(body.password);
+    const returnTo = signInPath(request.params.tenant, body.return_to);
     const tenant = key === undefined ? null : await deps.findTenant(request.params.tenant);
 
     if (key === undefined || !tenant?.enabled) {
-      return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(null, locale));
+      return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(null, returnTo, locale));
     }
 
     const peeked = await peekActionToken({ database: deps.database, tenantId: tenant.id }, key);
@@ -278,14 +285,23 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
       return completeActionsLink(request, reply, deps, tenant, key, peeked);
     }
     if (!tenant.resetPasswordAllowed) {
-      return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(null, locale));
+      return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(null, returnTo, locale));
+    }
+    // A key nothing usable holds gets the link-failed page whatever else was
+    // posted, rather than a form for a link that can no longer be redeemed.
+    if (peeked.kind === 'invalid') {
+      return sendVerificationHtml(
+        reply,
+        400,
+        renderResetLinkFailedPage(newResetLink(request.params.tenant, tenant), returnTo, locale),
+      );
     }
     // The form this submission came from, back in place with why it was refused.
     const again = (failure: PasswordFailure): FastifyReply =>
       sendVerificationHtml(
         reply,
         400,
-        renderResetPasswordForm(request.params.tenant, key, failure, locale),
+        renderResetPasswordForm(request.params.tenant, key, returnTo, failure, locale),
       );
 
     // Listed as a rule of the policy, because to the person typing it that
@@ -330,9 +346,9 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
       return sendVerificationHtml(
         reply,
         400,
-        renderResetLinkFailedPage(newResetLink(request.params.tenant, tenant), locale),
+        renderResetLinkFailedPage(newResetLink(request.params.tenant, tenant), returnTo, locale),
       );
     }
-    return sendVerificationHtml(reply, 200, renderResetPasswordSucceededPage(locale));
+    return sendVerificationHtml(reply, 200, renderResetPasswordSucceededPage(returnTo, locale));
   });
 }

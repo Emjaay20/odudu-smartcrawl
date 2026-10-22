@@ -1,3 +1,4 @@
+import { actionLink } from '#/service/action-link';
 import { withTenant, type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { auditRepository, type RequestContext } from '@odudu/domain-audit';
 import { outboxRepository, renderRequiredActions } from '@odudu/email';
@@ -37,7 +38,7 @@ export async function enqueueActionsLink(
     actions,
     ttlSeconds: await tokens.lifetimeOf(tenant.tenantId, 'execute_actions'),
   });
-  const url = `${tenant.issuerBase}/tenants/${tenant.tenantName}/login-actions/action-token?key=${encodeURIComponent(token)}`;
+  const url = actionLink(tenant.issuerBase, tenant.tenantName, token, null);
   await outboxRepository(tx).enqueue({
     tenantId: tenant.tenantId,
     ...renderRequiredActions({

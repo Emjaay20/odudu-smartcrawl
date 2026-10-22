@@ -158,6 +158,7 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
         request: requestContextFrom(request),
         issuerBase: deps.publicBaseUrl,
         verifyEmailEnabled: tenant.verifyEmail,
+        signInPath: returnTo,
         now: deps.now,
         createAccount: deps.createAccount,
         passwordPolicy: tenant.passwordPolicy,

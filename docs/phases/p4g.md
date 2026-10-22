@@ -2847,10 +2847,30 @@ link_ while the tenant still allows resets.
   from scratch. It holds what the browser's address bar already held at `/authorize`
   (client, redirect, state, challenge), no personal data and no session handle. It is
   absent when the request cannot be rebuilt (bound to a subject by a hint).
-- **Direct visits.** With no pending request there is nothing to go back to and no
-  tenant-level sign-in address exists, so no _Back to sign in_ is shown. The pages that a
-  mailed link opens (verification, reset form, actions form) have no pending request
-  either and show none; their only link is the new-reset-link one.
+- **Mailed links.** A verification or reset link mailed after a request that carried a
+  way back carries it too: `actionLink` (one builder, tenant as one encoded path segment)
+  appends `return_to`, reduced by `mailedSignInPath` to `response_type`, `client_id`,
+  `redirect_uri`, `scope`, the PKCE `code_challenge` and its method, `ui_locales` and
+  `resource`. `state`, `nonce`, `claims`, `prompt` and `max_age` are not mailed: a mailbox, a
+  relay's logs and a mail client's history should not hold a flow's own binders or requested
+  claim values. The challenge stays because `/authorize` requires one and it is a hash the
+  protocol already sends in the open. The token page re-checks the value with `signInPath`
+  (same shape, same `MAX_SIGN_IN_PATH_LENGTH` from the kernel), carries it in its forms, and
+  links _Back to sign-in_ from the verified, reset-done, actions-done, failed and spent-link
+  pages. The restarted request is a fresh one without the original `state`, so an
+  application that insists on its own state will refuse the answer; it still brings a person
+  back to the application's sign-in, which is the page's job. A key that no usable row holds
+  now answers a posted form with the link-failed page, not the form.
+- **No request, no link.** A visit with no `return_to`, and a link an administrator issued
+  (no application started it), has nothing to go back to, and no tenant-level sign-in
+  address exists (sign-in needs a client). Those pages show their own next step only. The
+  place to return to for an administrator-issued link is placed on P4f in the roadmap and in
+  the P4f row of section 11: its application-initiated actions give such a link a client.
+- **Bound.** The sign-in page sends `return_to` only while the rebuilt path fits
+  `MAX_SIGN_IN_PATH_LENGTH` (4096); past it the links are offered without one. Percent-encoded
+  into a query a path is at most three times as long, about 12 KiB, under the 16 KiB Node
+  allows for a request line and headers, so a link built inside the bound is never answered
+  with 431.
 - **Left as they are, and why.** A closed registration or reset page stays an empty 404
   (`reply.code(404)`: it must not say whether the tenant exists or what it allows; the
   unknown-address page of increment 31e is where a browser sees a branded one). The

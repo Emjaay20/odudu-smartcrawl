@@ -158,14 +158,14 @@ describe('renderResetRequestFailedPage', () => {
 
 describe('renderResetPasswordForm', () => {
   it('returns a body fragment and a title beside the document', () => {
-    const page = renderResetPasswordForm('acme', 'token-key', undefined, EN);
+    const page = renderResetPasswordForm('acme', 'token-key', null, undefined, EN);
     expect(page.title).toBe('Choose a new password');
     expect(page.body).toContain('value="token-key"');
     expectFragment(page);
   });
 
   it('keeps the English markup exactly', () => {
-    expect(renderResetPasswordForm('acme', 'token-key', undefined, EN).body)
+    expect(renderResetPasswordForm('acme', 'token-key', null, undefined, EN).body)
       .toBe(`<header class="intro">
 <h1>Choose a new password</h1>
 <p class="tenant"><bdi>acme</bdi></p>
@@ -181,6 +181,7 @@ describe('renderResetPasswordForm', () => {
     const { body } = renderResetPasswordForm(
       'acme',
       'token-key',
+      null,
       [
         { rule: 'min-length', message: 'dev', minLength: 8 },
         { rule: 'not-reused', message: 'dev' },
@@ -202,10 +203,10 @@ describe('renderResetPasswordForm', () => {
   });
 
   it('says a password is required, in French where the fixture has it', () => {
-    expect(renderResetPasswordForm('acme', 'k', 'required', EN).body).toContain(
+    expect(renderResetPasswordForm('acme', 'k', null, 'required', EN).body).toContain(
       '<li id="form-error-0">A new password is required.</li>',
     );
-    expect(renderResetPasswordForm('acme', 'k', 'required', FRENCH).body).toContain(
+    expect(renderResetPasswordForm('acme', 'k', null, 'required', FRENCH).body).toContain(
       '<li id="form-error-0">Un nouveau mot de passe est obligatoire.</li>',
     );
   });
@@ -214,6 +215,7 @@ describe('renderResetPasswordForm', () => {
     const { body } = renderResetPasswordForm(
       'acme',
       'k',
+      null,
       [
         { rule: 'min-length', message: 'dev', minLength: 1000 },
         { rule: 'require-digit', message: 'dev' },
@@ -227,13 +229,13 @@ describe('renderResetPasswordForm', () => {
   });
 
   it('writes lang and dir for a right-to-left locale', () => {
-    expect(renderResetPasswordForm('acme', 'k', [], ARABIC).html).toContain(
+    expect(renderResetPasswordForm('acme', 'k', null, [], ARABIC).html).toContain(
       '<html lang="ar" dir="rtl">',
     );
   });
 
   it('reads French, keeps the key and tenant escaped, and has no script', () => {
-    const page = renderResetPasswordForm('<t>', '"><img src=x>', undefined, FRENCH);
+    const page = renderResetPasswordForm('<t>', '"><img src=x>', null, undefined, FRENCH);
     expect(page.body).toContain('<label>Nouveau mot de passe <input');
     expect(page.html).not.toContain('<img src=x>');
     expect(page.html).not.toContain('<t>');
@@ -244,33 +246,37 @@ describe('renderResetPasswordForm', () => {
 
 describe('renderResetPasswordSucceededPage', () => {
   it('returns a body fragment and a title beside the document', () => {
-    const page = renderResetPasswordSucceededPage(EN);
+    const page = renderResetPasswordSucceededPage(null, EN);
     expect(page.title).toBe('Password reset');
     expect(page.body).toContain('Your password has been reset');
     expectFragment(page);
   });
 
   it('keeps the English markup exactly', () => {
-    expect(renderResetPasswordSucceededPage(EN).body).toBe(`<h1>Your password has been reset</h1>
+    expect(renderResetPasswordSucceededPage(null, EN).body)
+      .toBe(`<h1>Your password has been reset</h1>
 <p>You can close this page and sign in with your new password.</p>`);
   });
 });
 
 describe('renderResetLinkFailedPage', () => {
   it('returns a body fragment and a title beside the document', () => {
-    const page = renderResetLinkFailedPage(null, EN);
+    const page = renderResetLinkFailedPage(null, null, EN);
     expect(page.title).toBe("Can't use this link");
     expect(page.body).toContain('This link can&#39;t be used');
     expectFragment(page);
   });
 
   it('keeps the English markup exactly', () => {
-    expect(renderResetLinkFailedPage(null, EN).body).toBe(`<h1>This link can&#39;t be used</h1>
+    expect(renderResetLinkFailedPage(null, null, EN).body)
+      .toBe(`<h1>This link can&#39;t be used</h1>
 <p>It may have already been used or expired. Request a new one and try again.</p>`);
   });
 
   it('offers a new link only when told where to ask for one', () => {
-    expect(renderResetLinkFailedPage('/tenants/acme/login-actions/reset-password', EN).body).toBe(
+    expect(
+      renderResetLinkFailedPage('/tenants/acme/login-actions/reset-password', null, EN).body,
+    ).toBe(
       `<h1>This link can&#39;t be used</h1>
 <p>It may have already been used or expired. Request a new one and try again.</p>
 <p class="links">
@@ -280,8 +286,35 @@ describe('renderResetLinkFailedPage', () => {
   });
 
   it('reads French, and English for what the fixture lacks', () => {
-    const page = renderResetLinkFailedPage(null, FRENCH);
+    const page = renderResetLinkFailedPage(null, null, FRENCH);
     expect(page.body).toContain('<h1>Ce lien n&#39;est pas utilisable</h1>');
     expect(page.body).toContain(en['reset.linkFailed.reason']);
+  });
+});
+
+describe('the reset pages a mailed link opens, with the way back it carried', () => {
+  const way = '/tenants/acme/protocol/openid-connect/auth?client_id=c&state=x';
+  const back =
+    '<a href="/tenants/acme/protocol/openid-connect/auth?client_id=c&amp;state=x">Back to sign in</a>';
+
+  it('carries it in the form, so a refusal keeps it', () => {
+    const { body } = renderResetPasswordForm('acme', 'k', way, 'required', EN);
+    expect(body).toContain(
+      '<input type="hidden" name="return_to" value="/tenants/acme/protocol/openid-connect/auth?client_id=c&amp;state=x">',
+    );
+    expect(renderResetPasswordForm('acme', 'k', null, undefined, EN).body).not.toContain(
+      'return_to',
+    );
+  });
+
+  it('links back from the done page and beside the new-link one on the failed page', () => {
+    expect(renderResetPasswordSucceededPage(way, EN).body).toContain(back);
+    const failed = renderResetLinkFailedPage(
+      '/tenants/acme/login-actions/reset-password',
+      way,
+      EN,
+    ).body;
+    expect(failed).toContain('Request a new link</a>\n' + back);
+    expect(renderResetLinkFailedPage(null, null, EN).body).not.toContain('links');
   });
 });

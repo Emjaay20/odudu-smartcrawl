@@ -1,3 +1,4 @@
+import { actionLink } from '#/service/action-link';
 import { withTenant, type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { auditRepository, type RequestContext } from '@odudu/domain-audit';
 import { outboxRepository, renderVerifyEmail } from '@odudu/email';
@@ -36,6 +37,10 @@ export interface RegisterDeps {
   // building a link some other way.
   readonly issuerBase: string | undefined;
   readonly verifyEmailEnabled: boolean;
+  // The authorize path the person registered from, already checked by
+  // signInPath: the mailed link carries a reduced form of it so the page it
+  // opens can lead back to sign-in.
+  readonly signInPath?: string | null;
   // The send time of the mail, from the caller's clock.
   readonly now: () => Date;
 
@@ -158,7 +163,7 @@ export async function register(
           email: input.email,
           ttlSeconds: await tokens.lifetimeOf(deps.tenantId, 'verify_email'),
         });
-        const link = `${deps.issuerBase}/tenants/${deps.tenantName}/login-actions/action-token?key=${encodeURIComponent(token)}`;
+        const link = actionLink(deps.issuerBase, deps.tenantName, token, deps.signInPath);
         await outboxRepository(tx).enqueue({
           tenantId: deps.tenantId,
           ...renderVerifyEmail({

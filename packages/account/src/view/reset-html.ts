@@ -105,6 +105,7 @@ export function renderResetRequestFailedPage(
 export function renderResetPasswordForm(
   tenant: string,
   key: string,
+  signInPath: string | null,
   failure: PasswordFailure | undefined,
   locale: PageLocale,
 ): RenderedPage {
@@ -115,7 +116,7 @@ export function renderResetPasswordForm(
     t(locale, 'reset.form.title'),
     `${intro(tHtml(locale, 'reset.form.title'), tenant)}
 ${problemSummary(problems)}<form method="post" action="${action}">
-  <input type="hidden" name="key" value="${escapeHtml(key)}">
+  <input type="hidden" name="key" value="${escapeHtml(key)}">${returnToField(signInPath)}
   <label>${tHtml(locale, 'reset.form.newPassword')} <input type="password" name="password" autocomplete="new-password"${attributes}></label>
   <button type="submit">${tHtml(locale, 'reset.form.submit')}</button>
 </form>`,
@@ -125,11 +126,14 @@ ${problemSummary(problems)}<form method="post" action="${action}">
   );
 }
 
-export function renderResetPasswordSucceededPage(locale: PageLocale): RenderedPage {
+export function renderResetPasswordSucceededPage(
+  signInPath: string | null,
+  locale: PageLocale,
+): RenderedPage {
   return page(
     t(locale, 'reset.succeeded.title'),
     `<h1>${tHtml(locale, 'reset.succeeded.heading')}</h1>
-<p>${tHtml(locale, 'reset.succeeded.next')}</p>`,
+<p>${tHtml(locale, 'reset.succeeded.next')}</p>${links([backToSignIn(signInPath, locale)])}`,
     null,
     [],
     locale,
@@ -140,6 +144,7 @@ export function renderResetPasswordSucceededPage(locale: PageLocale): RenderedPa
 // tenant still allows resets, the way on is a new one.
 export function renderResetLinkFailedPage(
   requestNewPath: string | null,
+  signInPath: string | null,
   locale: PageLocale,
 ): RenderedPage {
   const next: WayOn | null =
@@ -149,7 +154,7 @@ export function renderResetLinkFailedPage(
   return page(
     t(locale, 'reset.linkFailed.title'),
     `<h1>${tHtml(locale, 'reset.linkFailed.heading')}</h1>
-<p>${tHtml(locale, 'reset.linkFailed.reason')}</p>${links([next])}`,
+<p>${tHtml(locale, 'reset.linkFailed.reason')}</p>${links([next, backToSignIn(signInPath, locale)])}`,
     null,
     [],
     locale,
