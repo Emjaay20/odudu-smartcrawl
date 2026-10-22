@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import type { Page } from '@playwright/test';
-import { expect, expectAccessible, expectFitsViewport, PHONE } from './fixtures';
+import { expect, expectAccessible, expectFitsViewport, PHONE, type Problem } from './fixtures';
 
 // 28rem at the 15px root size the stylesheet sets.
 const CARD_WIDTH = 420;
@@ -37,4 +37,18 @@ export async function inspect(page: Page, name: string): Promise<void> {
   const card = await page.locator('main').boundingBox();
   expect(card?.width, `${name}: the card keeps its width`).toBeCloseTo(CARD_WIDTH, 0);
   await shots(page, name);
+}
+
+// Where the stack under test answers.
+export const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3080';
+
+// A page that refuses on purpose answers 4xx, which the browser logs; the
+// refusal is the page under test, so that line is taken back and any other
+// problem still fails.
+export function forgiveRefusals(problems: Problem[]): void {
+  const kept = problems.filter(
+    (problem) =>
+      !problem.text.startsWith('Failed to load resource: the server responded with a status of 4'),
+  );
+  problems.splice(0, problems.length, ...kept);
 }

@@ -3,8 +3,8 @@ import { createHmac, randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
-import { expect, forgive, test, type Problem } from './fixtures';
-import { inspect } from './page-inspection';
+import { expect, forgive, test } from './fixtures';
+import { BASE, forgiveRefusals, inspect } from './page-inspection';
 import { inTenant, psql, seed, sqlText } from './stack';
 import type { Page } from '@playwright/test';
 
@@ -16,7 +16,6 @@ const run = randomBytes(3).toString('hex');
 const PASSWORD = `Visual-${randomBytes(9).toString('base64url')}`;
 const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
 // A path the stack answers, so a finished sign-in lands somewhere that loads.
-const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3080';
 const LANDING = `${BASE}/health/ready`;
 const LONG_NAME =
   'The International Consortium of Extraordinarily Long Named Organisations and Their Subsidiary Applications Incorporated';
@@ -84,16 +83,6 @@ function mailKey(tenant: string, to: string): string {
   return psql(
     `select substring(o.body_text from 'key=([A-Za-z0-9_%.&=-]+)') from email_outbox o where o.tenant_id = ${inTenant(tenant)} and o.to_address = ${sqlText(to)} order by o.created_at desc limit 1`,
   );
-}
-
-// These pages refuse on purpose, with a 4xx the browser logs; a refusal is the
-// page under test, so that line is taken back and any other problem still fails.
-function forgiveRefusals(problems: Problem[]): void {
-  const kept = problems.filter(
-    (problem) =>
-      !problem.text.startsWith('Failed to load resource: the server responded with a status of 4'),
-  );
-  problems.splice(0, problems.length, ...kept);
 }
 
 test.describe.configure({ mode: 'serial' });
@@ -380,7 +369,7 @@ test('registration, the unverified account, password reset and their links', asy
   const key = mailKey(open, `newcomer-${run}@example.test`);
   await page.goto(`/tenants/${open}/login-actions/action-token?key=${key}`);
   await expect(page.getByRole('heading', { level: 1 })).toContainText('verified');
-  await expect(page.getByRole('link', { name: 'Back to sign in' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Continue to sign in' })).toBeVisible();
   await inspect(page, 'verification-ok');
   await page.goto(`/tenants/${open}/login-actions/action-token?key=${key}`);
   await expect(page.getByRole('heading', { level: 1 })).toContainText("can't be used");
@@ -429,13 +418,38 @@ test('registration, the unverified account, password reset and their links', asy
   await expect(
     page.getByRole('heading', { level: 1, name: 'Your password has been reset' }),
   ).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Back to sign in' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Continue to sign in' })).toBeVisible();
   await inspect(page, 'reset-done');
   await page.goto(`/tenants/${open}/login-actions/action-token?key=${reset}`);
   await expect(page.getByRole('heading', { level: 1 })).toContainText("can't be used");
   await expect(page.getByRole('link', { name: 'Request a new link' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Back to sign in' })).toBeVisible();
   await inspect(page, 'reset-link-failed');
+
+  // A visit that carries no request has nothing to go back to: the same pages
+  // say what to do instead, and show no link.
+  await page.goto(`/tenants/${open}/login-actions/registration`);
+  await page.getByLabel('Username').fill('direct');
+  await page.getByLabel('Email').fill(`direct-${run}@example.test`);
+  await page.getByLabel('Password').fill(PASSWORD);
+  await page.getByRole('button', { name: 'Create account' }).click();
+  const direct = mailKey(open, `direct-${run}@example.test`);
+  await page.goto(`/tenants/${open}/login-actions/action-token?key=${direct}`);
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('verified');
+  await expect(page.getByText('Return to the application you were signing in to')).toBeVisible();
+  await expect(page.getByRole('link')).toHaveCount(0);
+  await inspect(page, 'verification-ok-direct');
+
+  await page.goto(`/tenants/${open}/login-actions/reset-password`);
+  await page.getByLabel('Email').fill(`resetter-${run}@example.test`);
+  await page.getByRole('button', { name: 'Send reset link' }).click();
+  const again = mailKey(open, `resetter-${run}@example.test`);
+  await page.goto(`/tenants/${open}/login-actions/action-token?key=${again}`);
+  await page.getByLabel('New password').fill(`${PASSWORD}-direct`);
+  await page.getByRole('button', { name: 'Reset password' }).click();
+  await expect(page.getByText('Return to the application you were signing in to')).toBeVisible();
+  await expect(page.getByRole('link')).toHaveCount(0);
+  await inspect(page, 'reset-done-direct');
   forgiveRefusals(problems);
 });
 
