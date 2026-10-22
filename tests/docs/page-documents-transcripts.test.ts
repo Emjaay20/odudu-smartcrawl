@@ -241,6 +241,11 @@ const valueOf = (body: string, name: string): string | undefined =>
   new RegExp(`name="${name}"[^>]*? value="([^"]*)"`, 'u').exec(body)?.[1] === undefined
     ? undefined
     : first(body, new RegExp(`name="${name}"[^>]*? value="([^"]*)"`, 'u'));
+// The way back a recorded page links to, if it does.
+const backOf = (body: string): string | null =>
+  body.includes('>Back to sign in</a>')
+    ? first(body, /<a href="([^"]*)">Back to sign in<\/a>/u)
+    : null;
 const returnToOf = (body: string): string | null =>
   body.includes('name="return_to"') ? first(body, /name="return_to" value="([^"]*)"/u) : null;
 
@@ -349,8 +354,8 @@ const RENDER_BACK: Record<string, (body: string) => string> = {
   'Account created': (body) =>
     renderRegistrationSucceededPage(body.includes('Check your email for a link'), null, LOCALE)
       .body,
-  'Email verified': () => renderVerificationSucceededPage(null, LOCALE).body,
-  "Can't verify this link": () => renderVerificationFailedPage(null, LOCALE).body,
+  'Email verified': (body) => renderVerificationSucceededPage(backOf(body), LOCALE).body,
+  "Can't verify this link": (body) => renderVerificationFailedPage(backOf(body), LOCALE).body,
   'Forgot your password?': (body) => {
     const email = valueOf(body, 'email');
     return renderResetRequestForm(
@@ -367,14 +372,20 @@ const RENDER_BACK: Record<string, (body: string) => string> = {
   "Can't send a reset link": (body) =>
     renderResetRequestFailedPage(tenantOf(body), null, LOCALE).body,
   'Choose a new password': (body) =>
-    renderResetPasswordForm(tenantOf(body), keyOf(body), null, passwordFailureOf(body), LOCALE)
-      .body,
-  'Password reset': () => renderResetPasswordSucceededPage(null, LOCALE).body,
+    renderResetPasswordForm(
+      tenantOf(body),
+      keyOf(body),
+      returnToOf(body),
+      passwordFailureOf(body),
+      LOCALE,
+    ).body,
+  'Password reset': (body) => renderResetPasswordSucceededPage(backOf(body), LOCALE).body,
   "Can't use this link": (body) =>
     renderResetLinkFailedPage(
       body.includes('>Request a new link</a>')
         ? first(body, /<a href="([^"]*)">Request a new link<\/a>/u)
         : null,
+      backOf(body),
       LOCALE,
     ).body,
   'Update your account': (body) =>
@@ -383,12 +394,12 @@ const RENDER_BACK: Record<string, (body: string) => string> = {
       keyOf(body),
       actionsOf(body),
       body.includes('name="password"'),
-      null,
+      returnToOf(body),
       passwordFailureOf(body),
       LOCALE,
     ).body,
   'Account updated': (body) =>
-    renderRequiredActionsSucceededPage(actionsOf(body), null, LOCALE).body,
+    renderRequiredActionsSucceededPage(actionsOf(body), backOf(body), LOCALE).body,
   'Sign-in failed': () => renderSignInRefused(LOCALE).body,
   'Allow access?': (body) => {
     const link = (label: RegExp): string | null => {

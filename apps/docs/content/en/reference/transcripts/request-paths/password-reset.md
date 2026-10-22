@@ -138,7 +138,7 @@ the same `/login-actions/action-token` endpoint answers with a form instead
 of completing an action:
 
 ```bash
-curl -sS 'http://localhost:3000/tenants/reset-demo/login-actions/action-token?key=xWdVisXYbaspDeevTvnp8n4gK3dTElsxjg6yv9UHil0'
+curl -sS 'http://localhost:3000/tenants/reset-demo/login-actions/action-token?key=Wya0_NEF0zZNQpLN9wa9rTZLY95J5V_RGJnEmf8hPl0'
 ```
 
 ```
@@ -160,7 +160,7 @@ curl -sS 'http://localhost:3000/tenants/reset-demo/login-actions/action-token?ke
 <p class="tenant"><bdi>reset-demo</bdi></p>
 </header>
 <form method="post" action="/tenants/reset-demo/login-actions/action-token">
-  <input type="hidden" name="key" value="xWdVisXYbaspDeevTvnp8n4gK3dTElsxjg6yv9UHil0">
+  <input type="hidden" name="key" value="Wya0_NEF0zZNQpLN9wa9rTZLY95J5V_RGJnEmf8hPl0">
   <label>New password <input type="password" name="password" autocomplete="new-password"></label>
   <button type="submit">Reset password</button>
 </form>
@@ -176,7 +176,7 @@ again with a compliant password on the very same link works:
 
 ```bash
 curl -sS -X POST http://localhost:3195/tenants/reset-demo/login-actions/action-token \
-  --data-urlencode 'key=xWdVisXYbaspDeevTvnp8n4gK3dTElsxjg6yv9UHil0' \
+  --data-urlencode 'key=Wya0_NEF0zZNQpLN9wa9rTZLY95J5V_RGJnEmf8hPl0' \
   --data-urlencode 'password=weak'
 ```
 
@@ -204,7 +204,7 @@ curl -sS -X POST http://localhost:3195/tenants/reset-demo/login-actions/action-t
 </ul>
 </div>
 <form method="post" action="/tenants/reset-demo/login-actions/action-token">
-  <input type="hidden" name="key" value="xWdVisXYbaspDeevTvnp8n4gK3dTElsxjg6yv9UHil0">
+  <input type="hidden" name="key" value="Wya0_NEF0zZNQpLN9wa9rTZLY95J5V_RGJnEmf8hPl0">
   <label>New password <input type="password" name="password" autocomplete="new-password" aria-invalid="true" aria-describedby="form-error-0" autofocus></label>
   <button type="submit">Reset password</button>
 </form>
@@ -287,8 +287,8 @@ read and written.
 Submitting a compliant password on the `reset-demo` link above sets it:
 
 ```bash
-curl -sS -X POST http://localhost:3000/tenants/reset-demo/login-actions/action-token \
-  --data-urlencode 'key=xWdVisXYbaspDeevTvnp8n4gK3dTElsxjg6yv9UHil0' \
+curl -sS -X POST http://localhost:3195/tenants/reset-demo/login-actions/action-token \
+  --data-urlencode 'key=Wya0_NEF0zZNQpLN9wa9rTZLY95J5V_RGJnEmf8hPl0' \
   --data-urlencode 'password=a brand new password'
 ```
 
@@ -307,7 +307,7 @@ curl -sS -X POST http://localhost:3000/tenants/reset-demo/login-actions/action-t
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
 <h1>Your password has been reset</h1>
-<p>You can close this page and sign in with your new password.</p>
+<p>Return to the application you were signing in to and sign in with your new password.</p>
 </main>
 </body>
 </html>
@@ -377,7 +377,7 @@ same as a verify-email token, and `action_tokens.consumed_at` is now set:
 
 ```bash
 curl -sS -o /dev/null -w '%{http_code}\n' -X POST http://localhost:3000/tenants/reset-demo/login-actions/action-token \
-  --data-urlencode 'key=xWdVisXYbaspDeevTvnp8n4gK3dTElsxjg6yv9UHil0' \
+  --data-urlencode 'key=Wya0_NEF0zZNQpLN9wa9rTZLY95J5V_RGJnEmf8hPl0' \
   --data-urlencode 'password=another password'
 ```
 

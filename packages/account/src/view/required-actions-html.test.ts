@@ -172,7 +172,7 @@ describe('renderRequiredActionsSucceededPage', () => {
     const done = renderRequiredActionsSucceededPage([], null, EN);
     expect(done.title).toBe('Account updated');
     expect(done.body).toBe(`<h1>Your account is updated</h1>
-<p>You can close this page and sign in to the application.</p>`);
+<p>Return to the application you were signing in to and sign in again.</p>`);
     expect(renderRequiredActionsSucceededPage(['configure-passkey'], null, EN).body)
       .toBe(`<h1>Your account is updated</h1>
 <p>Sign in to the application to finish:</p>
@@ -206,7 +206,14 @@ describe('the actions pages with the way back a mailed link carried', () => {
     ).toContain(
       'name="return_to" value="/tenants/acme/protocol/openid-connect/auth?client_id=c&amp;state=x"',
     );
-    expect(renderRequiredActionsSucceededPage([], way, EN).body).toContain('>Back to sign in</a>');
+    expect(renderRequiredActionsSucceededPage([], way, EN).body)
+      .toBe(`<h1>Your account is updated</h1>
+<p class="links">
+<a href="/tenants/acme/protocol/openid-connect/auth?client_id=c&amp;state=x">Continue to sign in</a>
+</p>`);
+    expect(renderRequiredActionsSucceededPage(['configure-passkey'], way, EN).body).toContain(
+      '<li>Register a passkey</li>\n</ul>\n<p class="links">',
+    );
     expect(renderRequiredActionsSucceededPage([], null, EN).body).not.toContain('links');
   });
 });

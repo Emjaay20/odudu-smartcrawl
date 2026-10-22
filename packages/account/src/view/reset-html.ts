@@ -133,7 +133,11 @@ export function renderResetPasswordSucceededPage(
   return page(
     t(locale, 'reset.succeeded.title'),
     `<h1>${tHtml(locale, 'reset.succeeded.heading')}</h1>
-<p>${tHtml(locale, 'reset.succeeded.next')}</p>${links([backToSignIn(signInPath, locale)])}`,
+<p>${tHtml(locale, signInPath === null ? 'reset.succeeded.next' : 'reset.succeeded.nextWithLink')}</p>${
+      signInPath === null
+        ? ''
+        : links([{ href: signInPath, text: tHtml(locale, 'link.continueToSignIn') }])
+    }`,
     null,
     [],
     locale,

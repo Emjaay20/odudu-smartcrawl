@@ -255,7 +255,7 @@ describe('renderResetPasswordSucceededPage', () => {
   it('keeps the English markup exactly', () => {
     expect(renderResetPasswordSucceededPage(null, EN).body)
       .toBe(`<h1>Your password has been reset</h1>
-<p>You can close this page and sign in with your new password.</p>`);
+<p>Return to the application you were signing in to and sign in with your new password.</p>`);
   });
 });
 
@@ -308,7 +308,12 @@ describe('the reset pages a mailed link opens, with the way back it carried', ()
   });
 
   it('links back from the done page and beside the new-link one on the failed page', () => {
-    expect(renderResetPasswordSucceededPage(way, EN).body).toContain(back);
+    expect(renderResetPasswordSucceededPage(way, EN).body)
+      .toBe(`<h1>Your password has been reset</h1>
+<p>Sign in with your new password.</p>
+<p class="links">
+<a href="/tenants/acme/protocol/openid-connect/auth?client_id=c&amp;state=x">Continue to sign in</a>
+</p>`);
     const failed = renderResetLinkFailedPage(
       '/tenants/acme/login-actions/reset-password',
       way,

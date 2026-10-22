@@ -6,11 +6,13 @@ import { escapeHtml } from '#/view/document';
 // it. A message is plain text: markup stays in the renderer.
 export const en = {
   'link.backToSignIn': 'Back to sign in',
+  'link.continueToSignIn': 'Continue to sign in',
   'link.tryAgain': 'Try again',
   'link.requestNewResetLink': 'Request a new link',
   'verification.succeeded.title': 'Email verified',
   'verification.succeeded.heading': 'Your email address is verified',
-  'verification.succeeded.next': 'You can close this page and sign in.',
+  'verification.succeeded.next':
+    'Return to the application you were signing in to and sign in again.',
   'verification.failed.title': "Can't verify this link",
   'verification.failed.heading': "This link can't be used",
   'verification.failed.reason':
@@ -58,7 +60,9 @@ export const en = {
   'reset.form.submit': 'Reset password',
   'reset.succeeded.title': 'Password reset',
   'reset.succeeded.heading': 'Your password has been reset',
-  'reset.succeeded.next': 'You can close this page and sign in with your new password.',
+  'reset.succeeded.next':
+    'Return to the application you were signing in to and sign in with your new password.',
+  'reset.succeeded.nextWithLink': 'Sign in with your new password.',
   'reset.linkFailed.title': "Can't use this link",
   'reset.linkFailed.heading': "This link can't be used",
   'reset.linkFailed.reason':
@@ -74,7 +78,8 @@ export const en = {
   'requiredActions.action.generateRecoveryCodes': 'Save a set of recovery codes',
   'requiredActions.succeeded.title': 'Account updated',
   'requiredActions.succeeded.heading': 'Your account is updated',
-  'requiredActions.succeeded.close': 'You can close this page and sign in to the application.',
+  'requiredActions.succeeded.close':
+    'Return to the application you were signing in to and sign in again.',
   'requiredActions.succeeded.finish': 'Sign in to the application to finish:',
 };
 

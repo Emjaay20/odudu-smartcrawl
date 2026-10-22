@@ -5,6 +5,7 @@ import {
   tenants,
   type DatabaseHandle,
 } from '@odudu/db';
+import { authenticationSessions } from '@odudu/authn-flows';
 import { emailOutbox } from '@odudu/email';
 import { loadConfig, newId } from '@odudu/kernel';
 import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/testkit';
@@ -211,6 +212,24 @@ describe('the way through registration and back', () => {
     expect(again.body).toContain('to continue to');
   });
 
+  it('starts a new request from the carried path when the original parked one is gone', async () => {
+    const name = await tenant({ registrationAllowed: true });
+    const login = await http.inject({ url: authorizeUrl(name) });
+    const create = hrefLabelled(login, 'Create an account') ?? '';
+    const form = await http.inject({ url: create });
+    const back = hrefLabelled(form, 'Back to sign in') ?? '';
+
+    // The parked request lives thirty minutes; here it is gone altogether.
+    await owner.db.delete(authenticationSessions);
+
+    const again = await http.inject({ url: back });
+    expect(again.statusCode).toBe(200);
+    const fresh = /name="auth_session_id" value="([^"]*)"/u.exec(again.body)?.[1];
+    expect(fresh).toBeDefined();
+    expect(fresh).not.toBe(authSessionIdOf(login));
+    expect(again.body).toContain('to continue to');
+  });
+
   it('offers no way back on a direct visit', async () => {
     const name = await tenant({ registrationAllowed: true, resetPasswordAllowed: true });
     for (const path of ['registration', 'reset-password']) {
@@ -294,7 +313,7 @@ async function mailedLink(name: string, to: string): Promise<string> {
 const RICH = 'state=SECRET-STATE&nonce=SECRET-NONCE&claims=%7B%7D&prompt=login&max_age=0';
 
 describe('the pages a mailed link opens lead back to the same sign-in', () => {
-  async function requestFrom(name: string): Promise<string> {
+  function requestFrom(name: string): string {
     const query = new URLSearchParams({
       response_type: 'code',
       client_id: 'portal',
@@ -308,7 +327,7 @@ describe('the pages a mailed link opens lead back to the same sign-in', () => {
 
   it('verifies, then links back; a spent link links back too; the mail holds no state or nonce', async () => {
     const name = await tenant({ registrationAllowed: true, verifyEmail: true });
-    const path = await requestFrom(name);
+    const path = requestFrom(name);
     const email = `v-${newId()}@example.test`;
     const registered = await post(`/tenants/${name}/login-actions/registration`, {
       username: `v${newId().slice(-8)}`,
@@ -326,7 +345,8 @@ describe('the pages a mailed link opens lead back to the same sign-in', () => {
 
     const verified = await http.inject({ url: link });
     expect(verified.statusCode).toBe(200);
-    const back = hrefLabelled(verified, 'Back to sign in') ?? '';
+    const back = hrefLabelled(verified, 'Continue to sign in') ?? '';
+    expect(verified.body).not.toContain('close this page');
     expect(back.startsWith(`/tenants/${name}/protocol/openid-connect/auth?`)).toBe(true);
     expect(back).toContain('client_id=portal');
     expect(back).not.toContain('SECRET');
@@ -349,6 +369,12 @@ describe('the pages a mailed link opens lead back to the same sign-in', () => {
     });
     const link = await mailedLink(name, email);
     expect(link).not.toContain('return_to');
+    const verified = await http.inject({ url: link });
+    expect(verified.statusCode).toBe(200);
+    expect(verified.body).toContain(
+      'Return to the application you were signing in to and sign in again.',
+    );
+    expect(verified.body).not.toContain('Continue to sign in');
     const tampered = await http.inject({
       url: `${link}&return_to=${encodeURIComponent('https://evil.example/x')}`,
     });
@@ -358,10 +384,10 @@ describe('the pages a mailed link opens lead back to the same sign-in', () => {
 
   it('carries it through a reset: the form, a refusal, the done page and the spent link', async () => {
     const name = await tenant({ resetPasswordAllowed: true });
-    const path = await requestFrom(name);
+    const path = requestFrom(name);
     const email = `r-${newId()}@example.test`;
     await seed({
-      tenant: `${name}`,
+      tenant: name,
       clientId: 'reset-user-seed',
       redirectUris: [REDIRECT_URI],
       username: `u${newId().slice(-8)}`,
@@ -394,7 +420,7 @@ describe('the pages a mailed link opens lead back to the same sign-in', () => {
       return_to: unescapeHtml(returnTo),
     });
     expect(done.statusCode).toBe(200);
-    expect(hrefLabelled(done, 'Back to sign in')).toBe(unescapeHtml(returnTo));
+    expect(hrefLabelled(done, 'Continue to sign in')).toBe(unescapeHtml(returnTo));
 
     const spent = await http.inject({ url: link });
     expect(spent.statusCode).toBe(400);

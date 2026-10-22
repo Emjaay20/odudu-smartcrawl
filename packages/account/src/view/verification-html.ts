@@ -23,14 +23,20 @@ function backToSignIn(signInPath: string | null, locale: PageLocale): string {
     : links([{ href: signInPath, text: tHtml(locale, 'link.backToSignIn') }]);
 }
 
+// Verifying needs no session: the token is single-use and works in any browser.
+// With the sign-in the link was mailed for, the page leads straight back to it;
+// without one it says what to do, and implies no sign-in is waiting.
 export function renderVerificationSucceededPage(
   signInPath: string | null,
   locale: PageLocale,
 ): RenderedPage {
+  const next =
+    signInPath === null
+      ? `\n<p>${tHtml(locale, 'verification.succeeded.next')}</p>`
+      : links([{ href: signInPath, text: tHtml(locale, 'link.continueToSignIn') }]);
   return page(
     t(locale, 'verification.succeeded.title'),
-    `<h1>${tHtml(locale, 'verification.succeeded.heading')}</h1>
-<p>${tHtml(locale, 'verification.succeeded.next')}</p>${backToSignIn(signInPath, locale)}`,
+    `<h1>${tHtml(locale, 'verification.succeeded.heading')}</h1>${next}`,
     null,
     [],
     locale,

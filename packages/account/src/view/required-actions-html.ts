@@ -65,16 +65,17 @@ export function renderRequiredActionsSucceededPage(
 ): RenderedPage {
   const rest =
     remaining.length === 0
-      ? `<p>${tHtml(locale, 'requiredActions.succeeded.close')}</p>`
-      : `<p>${tHtml(locale, 'requiredActions.succeeded.finish')}</p>
+      ? signInPath === null
+        ? `\n<p>${tHtml(locale, 'requiredActions.succeeded.close')}</p>`
+        : ''
+      : `\n<p>${tHtml(locale, 'requiredActions.succeeded.finish')}</p>
 ${listHtml(remaining, locale)}`;
   return page(
     t(locale, 'requiredActions.succeeded.title'),
-    `<h1>${tHtml(locale, 'requiredActions.succeeded.heading')}</h1>
-${rest}${
+    `<h1>${tHtml(locale, 'requiredActions.succeeded.heading')}</h1>${rest}${
       signInPath === null
         ? ''
-        : links([{ href: signInPath, text: tHtml(locale, 'link.backToSignIn') }])
+        : links([{ href: signInPath, text: tHtml(locale, 'link.continueToSignIn') }])
     }`,
     null,
     [],

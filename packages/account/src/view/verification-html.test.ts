@@ -36,7 +36,19 @@ describe('renderVerificationSucceededPage', () => {
   it('keeps the English markup exactly', () => {
     expect(renderVerificationSucceededPage(null, DEFAULT_PAGE_LOCALE).body)
       .toBe(`<h1>Your email address is verified</h1>
-<p>You can close this page and sign in.</p>`);
+<p>Return to the application you were signing in to and sign in again.</p>`);
+  });
+
+  it('with a way back it is the same heading and a link to continue, and no sentence about closing', () => {
+    expect(
+      renderVerificationSucceededPage(
+        '/tenants/acme/protocol/openid-connect/auth?client_id=c',
+        DEFAULT_PAGE_LOCALE,
+      ).body,
+    ).toBe(`<h1>Your email address is verified</h1>
+<p class="links">
+<a href="/tenants/acme/protocol/openid-connect/auth?client_id=c">Continue to sign in</a>
+</p>`);
   });
 
   it('reads French where the fixture has it and English for the rest', () => {
@@ -110,7 +122,9 @@ describe('the pages a mailed link opens, with the way back it carried', () => {
     '<p class="links">\n<a href="/tenants/acme/protocol/openid-connect/auth?client_id=c&amp;state=x">Back to sign in</a>\n</p>';
 
   it('links back from the verified and the failed page, and from neither without it', () => {
-    expect(renderVerificationSucceededPage(way, DEFAULT_PAGE_LOCALE).body).toContain(anchor);
+    expect(renderVerificationSucceededPage(way, DEFAULT_PAGE_LOCALE).body).toContain(
+      anchor.replace('Back to sign in', 'Continue to sign in'),
+    );
     expect(renderVerificationFailedPage(way, DEFAULT_PAGE_LOCALE).body).toContain(anchor);
     expect(renderVerificationSucceededPage(null, DEFAULT_PAGE_LOCALE).body).not.toContain('links');
     expect(renderVerificationFailedPage(null, DEFAULT_PAGE_LOCALE).body).not.toContain('links');
