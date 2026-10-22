@@ -140,15 +140,23 @@ export function assertConsoleConfigured(config: Config): void {
     throw new OduduError(
       'config_invalid',
       `ODUDU_TLS is true, but ODUDU_PUBLIC_BASE_URL is ${baseUrl}. The console's cookie ` +
-        'follows the base, so it would lose Secure and the __Host- prefix while every other ' +
-        'session cookie keeps them. Give the base the https scheme it is served on, or set ' +
+        'would then reach a browser over http with Secure and the __Host- prefix, which it ' +
+        'refuses to keep. Give the base the https scheme it is served on, or set ' +
         'ODUDU_CONSOLE=false.',
+    );
+  }
+  if (!config.ODUDU_TLS && new URL(baseUrl).protocol === 'https:') {
+    throw new OduduError(
+      'config_invalid',
+      `ODUDU_PUBLIC_BASE_URL is ${baseUrl}, but ODUDU_TLS is off. Every cookie follows ` +
+        'ODUDU_TLS, so the console would be served without Secure and the __Host- prefix to a ' +
+        'browser that reached it over https. Set ODUDU_TLS=true, or set ODUDU_CONSOLE=false.',
     );
   }
   if (config.ODUDU_CONSOLE_CLIENT_KEY === undefined) throw missingConsoleKey();
 }
 
-/** ADR 0020's boot warning, for the console cookie, whose mode follows the base's scheme. */
+/** ADR 0020's boot warning for the console cookies, which follow ODUDU_TLS like every other. */
 export function warnIfConsoleCookieFallback(config: Config, log: (message: string) => void): void {
   const baseUrl = consoleBaseUrl(config);
   if (baseUrl === undefined || new URL(baseUrl).protocol !== 'http:') return;

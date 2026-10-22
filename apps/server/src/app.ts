@@ -415,6 +415,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
         kek: deps.kek,
         publicBaseUrl: deps.consoleBaseUrl,
         clientKey: deps.consoleKeys.key,
+        tls,
         consoleDir: deps.consoleDir ?? DEFAULT_CONSOLE_DIR,
         ...(deps.consoleNow === undefined ? {} : { now: deps.consoleNow }),
       }),

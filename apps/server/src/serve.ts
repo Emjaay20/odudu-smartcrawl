@@ -1,7 +1,8 @@
 import { createDatabase } from '@odudu/db';
-import { consoleBaseUrl, loadConfig, ModuleRegistry, systemClock } from '@odudu/kernel';
+import { loadConfig, ModuleRegistry, systemClock } from '@odudu/kernel';
 import closeWithGrace from 'close-with-grace';
 import { buildApp } from '#/app';
+import { appDepsFromConfig } from '#/app-deps';
 import {
   assertConsoleConfigured,
   assertProductionAppDatabaseUrl,
@@ -16,7 +17,6 @@ import { buildEmailSender, resolveSender, smtpDestinationPolicyFor } from '#/ema
 import { loadConsoleKeys } from '#/console-key';
 import { createLogger } from '#/logger';
 import { createLogoutDeliveryTransport } from '#/logout-delivery-transport';
-import { throttleSettingsFrom } from '#/throttle-settings';
 import { databaseModule } from '#/modules/database';
 import { httpModule } from '#/modules/http';
 import { logoutSenderModule } from '#/modules/logout-sender';
@@ -55,27 +55,15 @@ if (runtime === owner) {
 
 const emailFallback = buildEmailSender(config, logger);
 
-const app = buildApp({
-  database: runtime,
-  ownerDatabase: owner,
-  kek: config.ODUDU_KEK,
-  logger,
-  ...(config.ODUDU_PUBLIC_BASE_URL !== undefined
-    ? { publicBaseUrl: config.ODUDU_PUBLIC_BASE_URL }
-    : {}),
-  consoleBaseUrl: consoleBaseUrl(config),
-  consoleKeys,
-  consoleDir: config.ODUDU_CONSOLE_DIR,
-  instrumentDir: config.ODUDU_INSTRUMENT_DIR,
-  docsDir: config.ODUDU_DOCS ? config.ODUDU_DOCS_DIR : undefined,
-  trustProxy: config.ODUDU_TRUST_PROXY,
-  tlsClientCertHeader: config.ODUDU_TLS_CLIENT_CERT_HEADER,
-  ...throttleSettingsFrom(config),
-  allowPrivateClientUrls: config.ODUDU_ALLOW_PRIVATE_CLIENT_URLS,
-  allowPrivateSmtpHosts: config.ODUDU_ALLOW_PRIVATE_SMTP_HOSTS,
-  deploymentSmtp: emailFallback.kind === 'smtp',
-  outboxMaxAttempts: config.ODUDU_OUTBOX_MAX_ATTEMPTS,
-});
+const app = buildApp(
+  appDepsFromConfig(config, {
+    runtime,
+    owner,
+    logger,
+    consoleKeys,
+    deploymentSmtp: emailFallback.kind === 'smtp',
+  }),
+);
 
 const smtpDestination = smtpDestinationPolicyFor(config);
 

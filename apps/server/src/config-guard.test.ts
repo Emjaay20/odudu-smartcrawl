@@ -214,11 +214,27 @@ describe('assertConsoleConfigured', () => {
       ...base,
       ODUDU_PUBLIC_BASE_URL: 'https://idp.example.test',
       ODUDU_TRUST_PROXY: 'true',
+      ODUDU_TLS: 'true',
       ODUDU_CONSOLE_CLIENT_KEY: KEY,
     });
     expect(() => {
       assertConsoleConfigured(config);
     }).not.toThrow();
+  });
+
+  // The console's cookies follow ODUDU_TLS like every other cookie, so a base
+  // the browser reaches over https with ODUDU_TLS off would serve them
+  // without Secure.
+  it('refuses an https base URL while ODUDU_TLS is off, naming both', () => {
+    const config = loadConfig({
+      ...base,
+      ODUDU_PUBLIC_BASE_URL: 'https://idp.example.test',
+      ODUDU_TRUST_PROXY: 'true',
+      ODUDU_CONSOLE_CLIENT_KEY: KEY,
+    });
+    expect(() => {
+      assertConsoleConfigured(config);
+    }).toThrow(/ODUDU_TLS.*ODUDU_PUBLIC_BASE_URL|ODUDU_PUBLIC_BASE_URL.*ODUDU_TLS/su);
   });
 
   // The console cookie follows the base's scheme, so this pairing would
