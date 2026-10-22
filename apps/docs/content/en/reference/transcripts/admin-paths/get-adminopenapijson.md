@@ -12,17 +12,17 @@ into one — and is served without authentication, since a client that cannot re
 it cannot generate against it.
 
 ```bash
-curl -sS -D - -o openapi.json http://localhost:3192/admin/openapi.json
+curl -sS -D - -o openapi.json http://localhost:3197/admin/openapi.json
 jq '.paths | length' openapi.json
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a16434-66e8-79ec-a652-c2f4d7d19c0d
+x-request-id: 01a16544-dcb5-736e-be4a-79fdff009ee5
 access-control-allow-origin: *
 content-type: application/json; charset=utf-8
-content-length: 432197
-Date: Thu, 22 Oct 2026 15:21:58 GMT
+content-length: 432312
+Date: Thu, 22 Oct 2026 20:19:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
