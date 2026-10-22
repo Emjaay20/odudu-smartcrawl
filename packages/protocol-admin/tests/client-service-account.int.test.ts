@@ -96,13 +96,23 @@ describe('a client and its service account', () => {
       grant_types: ['client_credentials'],
       token_endpoint_auth_method: 'client_secret_basic',
     });
+    const read = await fixture.http.inject({
+      method: 'GET',
+      url: `/admin/tenants/${t.name}/clients/${confidential.id}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
     const res = await fixture.http.inject({
       method: 'PATCH',
       url: `/admin/tenants/${t.name}/clients/${confidential.id}`,
-      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+        'if-match': String(read.headers.etag),
+      },
       payload: { token_endpoint_auth_method: 'none' },
     });
     expect(res.statusCode).toBe(409);
+    expect(res.json<{ detail: string }>().detail).toContain('security model');
     const after = await fixture.http.inject({
       method: 'GET',
       url: `/admin/tenants/${t.name}/clients/${confidential.id}`,
@@ -141,10 +151,11 @@ describe('a client and its service account', () => {
     expect(await subjectExists(t.id, client.service_subject_id ?? '')).toBe(true);
   });
 
-  it('is deleted with the client, and no other tenant sees it either way', async () => {
+  it('is deleted with the client, and a caller of another tenant can neither reach nor remove it', async () => {
     const t = await fixture.createTenant(`acme-${newId()}`);
     const other = await fixture.createTenant(`other-${newId()}`);
     const token = await fixture.adminToken(t.name, ['manage-clients']);
+    const otherToken = await fixture.adminToken(other.name, ['manage-clients']);
     const client = await create(t.name, token, {
       grant_types: ['client_credentials'],
       token_endpoint_auth_method: 'client_secret_basic',
@@ -152,6 +163,14 @@ describe('a client and its service account', () => {
     const subject = client.service_subject_id ?? '';
     expect(await subjectExists(t.id, subject)).toBe(true);
     expect(await subjectExists(other.id, subject)).toBe(false);
+
+    const foreign = await fixture.http.inject({
+      method: 'DELETE',
+      url: `/admin/tenants/${other.name}/clients/${client.id}`,
+      headers: { authorization: `Bearer ${otherToken}` },
+    });
+    expect(foreign.statusCode).toBe(404);
+    expect(await subjectExists(t.id, subject)).toBe(true);
 
     const res = await fixture.http.inject({
       method: 'DELETE',
