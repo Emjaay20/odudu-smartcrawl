@@ -147,7 +147,7 @@ export function registerRequiredActionRoute(
       return sendLoginOutcome(reply, deps, tenantName, resumed, authSessionId);
     }
 
-    const { locale, continuing } = await continuation(
+    const { locale, continuing, signInPath } = await continuation(
       deps,
       tenantName,
       outcome.authSessionId,
@@ -191,7 +191,7 @@ export function registerRequiredActionRoute(
     if (outcome.action === 'configure-passkey') {
       const begin = deps.beginPasskeyEnrolment?.bind(deps);
       if (begin === undefined) {
-        return sendHtml(reply, 200, renderRequiredActionPage(outcome.action, locale));
+        return sendHtml(reply, 200, renderRequiredActionPage(outcome.action, signInPath, locale));
       }
       // A retry needs its own challenge: the refused one is already gone.
       const passkey = await begin(tenantName, tenant.id, outcome.subjectId, outcome.authSessionId);

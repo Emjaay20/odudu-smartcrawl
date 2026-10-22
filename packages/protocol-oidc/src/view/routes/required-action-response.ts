@@ -55,9 +55,13 @@ export async function sendRequiredActionPage(
 ): Promise<FastifyReply> {
   // The first factor is verified by the time an action is owed, so the
   // subject's own locale may choose the page's language.
-  const { locale, continuing } = await continuation(deps, tenantName, authSessionId, reply, {
-    subject: subjectId,
-  });
+  const { locale, continuing, signInPath } = await continuation(
+    deps,
+    tenantName,
+    authSessionId,
+    reply,
+    { subject: subjectId },
+  );
   const send = (page: RenderedPage) => sendHtml(reply, 200, continuing(page));
   const beginPasskey = deps.beginPasskeyEnrolment?.bind(deps);
   if (action === 'configure-passkey' && beginPasskey !== undefined) {
@@ -94,11 +98,11 @@ export async function sendRequiredActionPage(
     return send(renderUpdatePasswordPage(tenantName, authSessionId, [], locale));
   }
   if (action !== 'configure-totp') {
-    return sendHtml(reply, 200, renderRequiredActionPage(action, locale));
+    return sendHtml(reply, 200, renderRequiredActionPage(action, signInPath, locale));
   }
   const tenant = await deps.findTenant(tenantName);
   if (tenant === null) {
-    return sendHtml(reply, 200, renderRequiredActionPage(action, locale));
+    return sendHtml(reply, 200, renderRequiredActionPage(action, signInPath, locale));
   }
   const offer = await deps.beginTotpEnrolment(tenantName, tenant.id, subjectId);
   return send(renderTotpEnrolmentPage(tenantName, authSessionId, offer, undefined, locale));

@@ -7,6 +7,7 @@ import {
   type AuthorizationRequestOutcome,
   type AuthorizeUsecaseDeps,
 } from '#/usecase/authorization-request';
+import { loginWays } from '#/service/login-ways';
 import { renderAuthorizeErrorPage, renderLoginForm } from '#/view/authorize-html';
 import { renderConsentPage } from '#/view/consent-html';
 import { sendHtml } from '#/view/html-response';
@@ -145,7 +146,7 @@ async function renderAuthorizationOutcome(
   }
 
   // The login form precedes the first factor: ui_locales, then the browser.
-  const { locale, continuing, clientName } = await continuation(
+  const { locale, continuing, clientName, signInPath } = await continuation(
     deps,
     tenant,
     outcome.authSessionId,
@@ -160,6 +161,7 @@ async function renderAuthorizationOutcome(
     undefined,
     outcome.loginWithEmail,
     await clientName(),
+    loginWays(tenant, outcome, signInPath),
     locale,
   );
   return sendHtml(reply, 200, continuing(form(page)));

@@ -53,6 +53,8 @@ async function setupTenant(name: string): Promise<string> {
       name,
       rememberMeAllowed: true,
       loginWithEmail: false,
+      registrationAllowed: false,
+      resetPasswordAllowed: false,
       rememberMeMaxSeconds: REMEMBER_ME_MAX_SECONDS,
     });
     await provisionTenant(tx, tenantId);

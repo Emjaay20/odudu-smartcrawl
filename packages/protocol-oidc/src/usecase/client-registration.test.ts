@@ -12,6 +12,8 @@ const TENANT: TenantLookup = {
   rememberMeMaxSeconds: 2_592_000,
   rememberMeAllowed: false,
   loginWithEmail: false,
+  registrationAllowed: false,
+  resetPasswordAllowed: false,
   maxSessionsPerBrowser: 25,
   clientRegistrationPolicy: 'open',
 };

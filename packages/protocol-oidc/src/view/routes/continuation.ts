@@ -2,6 +2,7 @@ import { type PendingRequest } from '@odudu/authn-flows';
 import { negotiatePageLocale } from '@odudu/i18n';
 import { type PageLocale, type RenderedPage, withPageTheme } from '@odudu/kernel';
 import { type FastifyReply } from 'fastify';
+import { restartAuthorizeLocation } from '#/service/restart-request';
 
 export interface ContinuationDeps {
   findTenant(name: string): Promise<{ id: string } | null>;
@@ -64,6 +65,10 @@ export interface PageContinuation {
   // The name of the client the parked request is for. One read, made when it
   // is called and not before, so a page that never names a client costs none.
   readonly clientName: () => Promise<string | undefined>;
+  // The authorize path that starts this sign-in again, built from the request
+  // already loaded; null when there is none or it cannot be rebuilt faithfully
+  // (one tied to a subject by a hint). No read of its own.
+  readonly signInPath: string | null;
 }
 
 // Loads the parked request once and answers both questions that need it: the
@@ -102,6 +107,7 @@ export async function continuation(
   return {
     locale,
     continuing: (page) => (pending === null ? page : { ...page, redirectsTo: pending.redirectUri }),
+    signInPath: pending === null ? null : restartAuthorizeLocation(tenantName, pending),
     clientName: async () =>
       tenant === null || pending === null
         ? undefined

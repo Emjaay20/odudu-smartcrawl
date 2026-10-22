@@ -1,11 +1,12 @@
 import { sessionCookies, type AuthenticatorResult } from '@odudu/authn-flows';
 import { type FastifyReply } from 'fastify';
 import { type LoginSubmissionOutcome } from '#/usecase/login-submission';
+import { loginWays } from '#/service/login-ways';
 import { renderEmailUnverifiedPage, renderLoginForm } from '#/view/authorize-html';
 import { renderConsentPage } from '#/view/consent-html';
 import { refusalMessage } from '#/view/login-messages';
 import { sendHtml } from '#/view/html-response';
-import { continuation, requestLocale } from '#/view/routes/continuation';
+import { continuation } from '#/view/routes/continuation';
 import { sendSignInExpired } from '#/view/routes/expired-sign-in';
 import {
   sendRequiredActionPage,
@@ -17,9 +18,13 @@ export interface LoginResponseDeps extends RequiredActionResponseDeps {
   // Whether this deployment can offer a passkey login at all — see
   // renderLoginForm.
   passkeyLogin?: boolean;
-  findTenant(
-    name: string,
-  ): Promise<{ id: string; rememberMeAllowed: boolean; loginWithEmail: boolean } | null>;
+  findTenant(name: string): Promise<{
+    id: string;
+    rememberMeAllowed: boolean;
+    loginWithEmail: boolean;
+    registrationAllowed: boolean;
+    resetPasswordAllowed: boolean;
+  } | null>;
   // What to render on a rejected attempt — asked directly rather than
   // threaded through LoginSubmissionOutcome, so handleLoginSubmission stays
   // as unaware of the flow's requirements as its own tests assume.
@@ -64,7 +69,7 @@ export async function sendLoginOutcome(
     const form = pending?.kind === 'challenge' ? pending.form : FALLBACK_FORM;
     // Before the first factor is verified: the subject's own locale must not
     // choose the language, or it would say whether the account exists.
-    const { locale, continuing, clientName } = await continuation(
+    const { locale, continuing, clientName, signInPath } = await continuation(
       deps,
       tenantName,
       outcome.authSessionId,
@@ -84,6 +89,7 @@ export async function sendLoginOutcome(
           },
       tenant?.loginWithEmail ?? false,
       await clientName(),
+      tenant === null ? {} : loginWays(tenantName, tenant, signInPath),
       locale,
     );
     return sendHtml(reply, 200, continuing(page));
@@ -92,11 +98,13 @@ export async function sendLoginOutcome(
   // No location header and no code: the assertion this state exists to
   // make true is that nothing was issued, not that the page says something.
   if (outcome.kind === 'unverified') {
-    return sendHtml(
+    const { locale, signInPath } = await continuation(
+      deps,
+      tenantName,
+      outcome.authSessionId,
       reply,
-      200,
-      renderEmailUnverifiedPage(outcome.hasEmail, requestLocale(reply, deps)),
     );
+    return sendHtml(reply, 200, renderEmailUnverifiedPage(outcome.hasEmail, signInPath, locale));
   }
 
   // Same reasoning as 'unverified': no location header and no code, since

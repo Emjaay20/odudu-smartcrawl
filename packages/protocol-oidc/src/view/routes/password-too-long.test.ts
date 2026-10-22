@@ -85,10 +85,10 @@ describe('a password past the length bound', () => {
     const url = '/tenants/acme/login-actions/required-action?action=update-password';
     const en = await post(requiredAction, url);
     expect(en.statusCode).toBe(400);
-    expect(en.body).toContain('<li>Password must be at most 256 characters long.</li>');
+    expect(en.body).toContain('>Password must be at most 256 characters long.</li>');
     const fr = await post(requiredAction, url, 'fr');
     expect(fr.statusCode).toBe(400);
     expect(fr.headers['content-language']).toBe('fr');
-    expect(fr.body).toContain('<li>Le mot de passe ne doit pas dépasser 256 caractères.</li>');
+    expect(fr.body).toContain('>Le mot de passe ne doit pas dépasser 256 caractères.</li>');
   });
 });

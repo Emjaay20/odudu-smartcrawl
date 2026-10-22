@@ -439,8 +439,8 @@ describe('the server renderers and mail templates', () => {
     const files = await renderers();
     expect(files).toEqual(
       expect.arrayContaining([
-        'packages/account/src/view/password-rules.ts',
-        'packages/authn-flows/src/view/refusal.ts',
+        'packages/account/src/view/form-error.ts',
+        'packages/authn-flows/src/view/form-error.ts',
         'packages/protocol-oidc/src/view/document.ts',
         'packages/email/src/service/templates.ts',
         'packages/email/src/service/shell.ts',

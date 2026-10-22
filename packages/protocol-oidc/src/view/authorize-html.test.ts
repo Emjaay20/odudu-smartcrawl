@@ -114,7 +114,7 @@ describe('renderAuthorizeErrorPage with a way on', () => {
 
 describe('renderEmailUnverifiedPage', () => {
   it('returns a body fragment and a title beside the document', () => {
-    const page = renderEmailUnverifiedPage(true, DEFAULT_PAGE_LOCALE);
+    const page = renderEmailUnverifiedPage(true, null, DEFAULT_PAGE_LOCALE);
     expect(page.title).toBe('Verify your email');
     expect(page.body).toContain('verify your email');
     expect(page.body).not.toContain('<!doctype');
@@ -135,6 +135,7 @@ describe('renderLoginForm', () => {
       undefined,
       undefined,
       undefined,
+      {},
       DEFAULT_PAGE_LOCALE,
     );
     expect(page.title).toBe('Sign in');
@@ -155,6 +156,7 @@ describe('renderLoginForm', () => {
       undefined,
       undefined,
       undefined,
+      {},
       DEFAULT_PAGE_LOCALE,
     );
     expect(otp.title).toBe('Enter your authentication code');
@@ -170,6 +172,7 @@ describe('renderLoginForm', () => {
       undefined,
       undefined,
       undefined,
+      {},
       DEFAULT_PAGE_LOCALE,
     );
     expect(recovery.title).toBe('Enter a recovery code');
@@ -186,6 +189,7 @@ describe('renderLoginForm', () => {
       undefined,
       undefined,
       undefined,
+      {},
       DEFAULT_PAGE_LOCALE,
     );
     expect(page.body).toContain(
@@ -204,6 +208,7 @@ describe('renderLoginForm', () => {
       undefined,
       undefined,
       undefined,
+      {},
       DEFAULT_PAGE_LOCALE,
     );
     expect(page.body).not.toContain('remember_me');
@@ -225,6 +230,7 @@ describe('renderLoginForm', () => {
       undefined,
       undefined,
       undefined,
+      {},
       DEFAULT_PAGE_LOCALE,
     );
     expect(page.body).not.toContain('<script>');
@@ -242,6 +248,7 @@ describe('renderLoginForm', () => {
       undefined,
       undefined,
       undefined,
+      {},
       DEFAULT_PAGE_LOCALE,
     );
     expect(page.body).toContain(
@@ -259,6 +266,7 @@ describe('renderLoginForm', () => {
       undefined,
       undefined,
       undefined,
+      {},
       DEFAULT_PAGE_LOCALE,
     ).body;
     expect(body.startsWith('<header class="intro">\n<h1>Enter your authentication code</h1>')).toBe(
@@ -270,7 +278,7 @@ describe('renderLoginForm', () => {
 
   describe('naming the client the request is for', () => {
     const render = (client: string | undefined, locale: typeof FRENCH = DEFAULT_PAGE_LOCALE) =>
-      renderLoginForm('acme', 'sid', 'password', false, false, undefined, false, client, locale)
+      renderLoginForm('acme', 'sid', 'password', false, false, undefined, false, client, {}, locale)
         .body;
 
     it('says where the person is going, isolated, between the heading and the tenant', () => {
@@ -310,11 +318,15 @@ describe('renderLoginForm', () => {
         refusal,
         undefined,
         undefined,
+        {},
         DEFAULT_PAGE_LOCALE,
       );
-      expect(page.body).toContain(
-        '<p class="alert" role="alert">Sign-in failed. Check your details and try again.</p>',
-      );
+      expect(page.body).toContain(`<div class="alert" role="alert" id="form-error">
+<ul>
+<li id="form-error-0">Sign-in failed. Check your details and try again.</li>
+</ul>
+</div>
+<form`);
       expect(page.body.indexOf('role="alert"')).toBeLessThan(page.body.indexOf('<form'));
     });
 
@@ -329,6 +341,7 @@ describe('renderLoginForm', () => {
           undefined,
           undefined,
           undefined,
+          {},
           DEFAULT_PAGE_LOCALE,
         ).body,
       ).not.toContain('role="alert"');
@@ -345,13 +358,14 @@ describe('renderLoginForm', () => {
           refusal,
           undefined,
           undefined,
+          {},
           locale,
         );
       expect(render(DEFAULT_PAGE_LOCALE).body).toContain(
-        `<p class="alert" role="alert">${en['login.refusal.signInFailed']}</p>`,
+        `<li id="form-error-0">${en['login.refusal.signInFailed']}</li>`,
       );
       expect(render(FRENCH).body).toContain(
-        '<p class="alert" role="alert">Échec de la connexion. Vérifiez vos informations.</p>',
+        '<li id="form-error-0">Échec de la connexion. Vérifiez vos informations.</li>',
       );
     });
 
@@ -368,6 +382,7 @@ describe('renderLoginForm', () => {
         },
         undefined,
         undefined,
+        {},
         DEFAULT_PAGE_LOCALE,
       );
       expect(page.body).toContain('name="username" autocomplete="username" value="ada"');
@@ -385,6 +400,7 @@ describe('renderLoginForm', () => {
         refusal,
         undefined,
         undefined,
+        {},
         DEFAULT_PAGE_LOCALE,
       );
       expect(page.body).toMatch(/name="username"[^>]*autofocus/u);
@@ -404,6 +420,7 @@ describe('renderLoginForm', () => {
         },
         undefined,
         undefined,
+        {},
         DEFAULT_PAGE_LOCALE,
       );
       expect(page.body.match(/ value="[^"]*"/gu)).toEqual([
@@ -434,6 +451,7 @@ describe('renderLoginForm', () => {
         },
         undefined,
         undefined,
+        {},
         DEFAULT_PAGE_LOCALE,
       );
       const echoed = /name="username"[^>]* value="([^"]*)"/u.exec(page.body)?.[1] ?? '';
@@ -468,6 +486,7 @@ describe('renderLoginForm', () => {
         },
         undefined,
         undefined,
+        {},
         DEFAULT_PAGE_LOCALE,
       );
       expect(page.body.includes(`value="${username}"`)).toBe(echoed);
@@ -486,6 +505,7 @@ describe('renderLoginForm', () => {
         },
         undefined,
         undefined,
+        {},
         DEFAULT_PAGE_LOCALE,
       );
       expect(page.body).not.toContain('value=""');
@@ -505,6 +525,7 @@ describe('renderLoginForm', () => {
         },
         undefined,
         undefined,
+        {},
         DEFAULT_PAGE_LOCALE,
       );
       expect(page.html.length).toBeLessThan(5_000);
@@ -525,6 +546,7 @@ describe('renderLoginForm', () => {
         },
         undefined,
         undefined,
+        {},
         DEFAULT_PAGE_LOCALE,
       );
       expect(otp.body).toMatch(/name="code"[^>]*autofocus/u);
@@ -536,9 +558,10 @@ describe('renderLoginForm', () => {
         'recovery-code',
         false,
         false,
-        refusal,
+        { messageId: 'login.refusal.recoveryCodeFailed' },
         undefined,
         undefined,
+        {},
         DEFAULT_PAGE_LOCALE,
       );
       expect(recovery.body).toMatch(/name="recovery_code"[^>]*autofocus/u);
@@ -555,6 +578,7 @@ describe('renderLoginForm', () => {
           undefined,
           undefined,
           undefined,
+          {},
           DEFAULT_PAGE_LOCALE,
         ).body,
       ).not.toContain('autofocus');
@@ -568,6 +592,7 @@ describe('renderLoginForm', () => {
           undefined,
           undefined,
           undefined,
+          {},
           DEFAULT_PAGE_LOCALE,
         ).body,
       ).not.toContain('autofocus');
@@ -577,7 +602,7 @@ describe('renderLoginForm', () => {
 
 describe('the text of the sign-in pages', () => {
   const login = (form: string, locale: typeof FRENCH, passkey = false) =>
-    renderLoginForm('acme', 'sid', form, passkey, true, undefined, true, undefined, locale);
+    renderLoginForm('acme', 'sid', form, passkey, true, undefined, true, undefined, {}, locale);
 
   it('keeps the English markup of the password form', () => {
     expect(login('password', DEFAULT_PAGE_LOCALE).body).toBe(
@@ -617,8 +642,18 @@ describe('the text of the sign-in pages', () => {
     expect(page.html).toContain('<html lang="fr" dir="ltr">');
     expect(page.title).toBe('Se connecter');
     expect(
-      renderLoginForm('acme', 'sid', 'password', false, false, undefined, false, undefined, FRENCH)
-        .body,
+      renderLoginForm(
+        'acme',
+        'sid',
+        'password',
+        false,
+        false,
+        undefined,
+        false,
+        undefined,
+        {},
+        FRENCH,
+      ).body,
     ).toContain('<label>Nom d’utilisateur <input');
     expect(page.body).toContain('Se souvenir de moi</label>');
     expect(page.body).toContain('<button type="submit">Se connecter</button>');
@@ -656,7 +691,7 @@ describe('the text of the sign-in pages', () => {
 <p><bdi>expired</bdi></p>
 <p><a href="/a">Start sign-in again</a></p>
 <p><small>invalid_request</small></p>`);
-    expect(renderEmailUnverifiedPage(false, DEFAULT_PAGE_LOCALE).body).toBe(
+    expect(renderEmailUnverifiedPage(false, null, DEFAULT_PAGE_LOCALE).body).toBe(
       `<h1>Can&#39;t sign in yet</h1>
 <p>You need to verify your email address before you can sign in. This account has no email address on file, so there is nothing to verify yet. Contact an administrator.</p>`,
     );
@@ -667,10 +702,10 @@ describe('the text of the sign-in pages', () => {
     expect(error.title).toBe('Erreur de connexion');
     expect(error.body).toContain('<h1>Impossible de continuer</h1>');
     expect(error.body).toContain('>Return to the application</a>');
-    expect(renderEmailUnverifiedPage(true, FRENCH).body).toContain(
+    expect(renderEmailUnverifiedPage(true, null, FRENCH).body).toContain(
       'Vérifiez votre adresse e-mail. Un lien a été envoyé.',
     );
-    expect(renderEmailUnverifiedPage(true, DEFAULT_PAGE_LOCALE).title).toBe(
+    expect(renderEmailUnverifiedPage(true, null, DEFAULT_PAGE_LOCALE).title).toBe(
       en['emailUnverified.title'],
     );
   });
@@ -700,6 +735,7 @@ describe('the text of the sign-in pages', () => {
         { messageId: 'login.refusal.signInFailed', username: hostile },
         undefined,
         undefined,
+        {},
         locale,
       );
       expect(page.html).not.toContain('<img');
@@ -767,5 +803,101 @@ describe('the text of the sign-in pages', () => {
         "Your device did not finish signing in — $& $1 $' $`. You can try again.",
       );
     });
+  });
+});
+
+describe('renderLoginForm marks what it refused', () => {
+  const render = (form: string, messageId: Parameters<typeof renderLoginForm>[5]) =>
+    renderLoginForm(
+      'acme',
+      'sid',
+      form,
+      false,
+      false,
+      messageId,
+      undefined,
+      undefined,
+      {},
+      DEFAULT_PAGE_LOCALE,
+    ).body;
+  const INVALID = 'aria-invalid="true" aria-describedby="form-error-0"';
+
+  it('marks both fields of a refused first factor, which cannot say which was wrong', () => {
+    const body = render('password', { messageId: 'login.refusal.signInFailed' });
+    expect(body).toMatch(new RegExp(`name="username"[^>]*${INVALID}`, 'u'));
+    expect(body).toMatch(new RegExp(`name="password"[^>]*${INVALID}`, 'u'));
+    expect(body.match(/role="alert"/gu)).toHaveLength(1);
+  });
+
+  it('marks the code, and the recovery code on its own message', () => {
+    const code = render('otp', { messageId: 'login.refusal.codeFailed' });
+    expect(code).toMatch(new RegExp(`name="code"[^>]*${INVALID} autofocus`, 'u'));
+    expect(code).not.toMatch(/name="recovery_code"[^>]*aria-invalid/u);
+    const used = render('otp', { messageId: 'login.refusal.alreadyUsedRecoveryCode' });
+    expect(used).toMatch(new RegExp(`name="recovery_code"[^>]*${INVALID} autofocus`, 'u'));
+    expect(used).not.toMatch(/name="code"[^>]*aria-invalid/u);
+  });
+
+  it('marks nothing on a form shown for the first time', () => {
+    expect(render('password', undefined as never)).not.toContain('aria-invalid');
+  });
+});
+
+describe('renderLoginForm ways on', () => {
+  const render = (form: string, ways: Parameters<typeof renderLoginForm>[8]) =>
+    renderLoginForm(
+      'acme',
+      'sid',
+      form,
+      false,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      ways,
+      DEFAULT_PAGE_LOCALE,
+    ).body;
+
+  it('shows no links when the tenant offers neither page', () => {
+    expect(render('password', {})).not.toContain('class="links"');
+  });
+
+  it('shows each link on its own, escaped, after the form', () => {
+    const body = render('password', {
+      resetPassword: '/tenants/acme/login-actions/reset-password?return_to=a%26b&x=<',
+    });
+    expect(body).toContain(
+      '</form>\n<p class="links">\n<a href="/tenants/acme/login-actions/reset-password?return_to=a%26b&amp;x=&lt;">Forgot password?</a>\n</p>',
+    );
+    expect(body).not.toContain('Create an account');
+    expect(
+      render('password', { createAccount: '/tenants/acme/login-actions/registration' }),
+    ).toContain('<a href="/tenants/acme/login-actions/registration">Create an account</a>');
+  });
+
+  it('puts the reset link before the registration link when both are offered', () => {
+    const body = render('password', {
+      createAccount: '/r',
+      resetPassword: '/p',
+    });
+    expect(body.indexOf('Forgot password?')).toBeLessThan(body.indexOf('Create an account'));
+  });
+
+  it('offers them on the first-factor step only', () => {
+    const ways = { createAccount: '/r', resetPassword: '/p' };
+    expect(render('otp', ways)).not.toContain('class="links"');
+    expect(render('recovery-code', ways)).not.toContain('class="links"');
+  });
+});
+
+describe('renderEmailUnverifiedPage way on', () => {
+  it('links back to sign-in only when the request can be rebuilt', () => {
+    const way = '/tenants/acme/protocol/openid-connect/auth?client_id=c&state=x';
+    expect(renderEmailUnverifiedPage(true, way, DEFAULT_PAGE_LOCALE).body).toContain(
+      '<p class="links">\n<a href="/tenants/acme/protocol/openid-connect/auth?client_id=c&amp;state=x">Back to sign in</a>\n</p>',
+    );
+    expect(renderEmailUnverifiedPage(true, null, DEFAULT_PAGE_LOCALE).body).not.toContain(
+      'Back to sign in',
+    );
   });
 });

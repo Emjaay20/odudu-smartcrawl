@@ -173,7 +173,7 @@ describe('a refused password step', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.body).toContain(
-      '<p class="alert" role="alert">Sign-in failed. Check your details and try again.</p>',
+      '<li id="form-error-0">Sign-in failed. Check your details and try again.</li>',
     );
     expect(res.body).toContain(`name="username" autocomplete="username" value="${RIGHT_USERNAME}"`);
     expect(res.body).not.toContain('a placeholder password');

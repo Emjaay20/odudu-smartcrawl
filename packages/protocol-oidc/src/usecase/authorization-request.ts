@@ -54,6 +54,8 @@ export type AuthorizationRequestOutcome =
       form: string;
       rememberMeAllowed: boolean;
       loginWithEmail: boolean;
+      registrationAllowed: boolean;
+      resetPasswordAllowed: boolean;
     }
   // Session reuse: a code issued with no page ever rendered and no fresh
   // authentication session started. Carries exactly what the form-POST
@@ -647,6 +649,8 @@ export async function handleAuthorizationRequest(
     form: initial.form,
     rememberMeAllowed: tenant.rememberMeAllowed,
     loginWithEmail: tenant.loginWithEmail,
+    registrationAllowed: tenant.registrationAllowed,
+    resetPasswordAllowed: tenant.resetPasswordAllowed,
   };
 }
 
@@ -713,6 +717,8 @@ export async function handleSelectAccountSubmission(
       form: initial.form,
       rememberMeAllowed: tenant.rememberMeAllowed,
       loginWithEmail: tenant.loginWithEmail,
+      registrationAllowed: tenant.registrationAllowed,
+      resetPasswordAllowed: tenant.resetPasswordAllowed,
     };
   };
 

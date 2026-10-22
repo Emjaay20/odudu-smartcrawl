@@ -179,3 +179,43 @@ describe('the theme the request carries', () => {
     expect(await themes('odudu-theme=LIGHT')).toEqual([undefined, undefined, undefined]);
   });
 });
+
+describe('continuation signInPath', () => {
+  async function pathFor(d: ContinuationDeps): Promise<string | null> {
+    const app = Fastify();
+    let path: string | null = 'unset';
+    app.get('/', async (_request, reply) => {
+      path = (await continuation(d, 'acme', 'a1', reply)).signInPath;
+      return reply.send('ok');
+    });
+    await app.inject({ url: '/' });
+    await app.close();
+    return path;
+  }
+
+  it('is the authorize path of the parked request, rebuilt without another read', async () => {
+    let reads = 0;
+    const path = await pathFor(
+      deps({
+        loadPendingRequest: () => {
+          reads += 1;
+          return Promise.resolve(PENDING);
+        },
+      }),
+    );
+    expect(path).toMatch(/^\/tenants\/acme\/protocol\/openid-connect\/auth\?/u);
+    expect(new URL(path ?? '', 'https://x').searchParams.get('client_id')).toBe('c');
+    expect(reads).toBe(1);
+  });
+
+  it('is null with no parked request and for one a hint binds to a subject', async () => {
+    expect(await pathFor(deps({ loadPendingRequest: () => Promise.resolve(null) }))).toBeNull();
+    expect(
+      await pathFor(
+        deps({
+          loadPendingRequest: () => Promise.resolve({ ...PENDING, idTokenHintSubject: 's' }),
+        }),
+      ),
+    ).toBeNull();
+  });
+});

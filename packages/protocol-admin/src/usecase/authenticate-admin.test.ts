@@ -16,6 +16,8 @@ const FOREIGN: TenantLookup = {
   rememberMeMaxSeconds: 7200,
   rememberMeAllowed: false,
   loginWithEmail: false,
+  registrationAllowed: false,
+  resetPasswordAllowed: false,
   maxSessionsPerBrowser: 5,
   clientRegistrationPolicy: 'disabled',
 };

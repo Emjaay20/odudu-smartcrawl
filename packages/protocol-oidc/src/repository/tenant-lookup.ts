@@ -29,6 +29,11 @@ export interface TenantLookup {
   // Whether the login form names an email address beside the username
   // (packages/db/drizzle/0083_login_with_email.sql).
   loginWithEmail: boolean;
+  // Whether the sign-in page offers the self-registration and the password
+  // reset pages. Those pages answer 404 on these same settings, so a link is
+  // never shown that would lead nowhere.
+  registrationAllowed: boolean;
+  resetPasswordAllowed: boolean;
   // The cap admitSession (ADR 0033) evicts down to before inserting a new
   // session.
   maxSessionsPerBrowser: number;
@@ -64,6 +69,8 @@ export function tenantLookupRepository(db: Database) {
           rememberMeMaxSeconds: tenants.rememberMeMaxSeconds,
           rememberMeAllowed: tenants.rememberMeAllowed,
           loginWithEmail: tenants.loginWithEmail,
+          registrationAllowed: tenants.registrationAllowed,
+          resetPasswordAllowed: tenants.resetPasswordAllowed,
           maxSessionsPerBrowser: tenants.maxSessionsPerBrowser,
           clientRegistrationPolicy: tenants.clientRegistrationPolicy,
         })
@@ -97,6 +104,8 @@ export function tenantLookupRepository(db: Database) {
           rememberMeMaxSeconds: tenants.rememberMeMaxSeconds,
           rememberMeAllowed: tenants.rememberMeAllowed,
           loginWithEmail: tenants.loginWithEmail,
+          registrationAllowed: tenants.registrationAllowed,
+          resetPasswordAllowed: tenants.resetPasswordAllowed,
           maxSessionsPerBrowser: tenants.maxSessionsPerBrowser,
           clientRegistrationPolicy: tenants.clientRegistrationPolicy,
         });

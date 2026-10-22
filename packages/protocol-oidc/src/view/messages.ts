@@ -30,6 +30,7 @@ export const en = {
   'error.unknownTenant': 'Unknown tenant.',
   'error.accountNotSignedIn': 'That account is not one this browser is currently signed in to.',
 
+  'link.backToSignIn': 'Back to sign in',
   'emailUnverified.title': 'Verify your email',
   'emailUnverified.heading': "Can't sign in yet",
   'emailUnverified.body':
@@ -54,6 +55,8 @@ export const en = {
   'login.passkey.failed': 'Your device did not finish signing in — {reason}. You can try again.',
   'login.passkey.cancelled': 'the request was cancelled',
   'login.passkey.notOffered': 'this server is not offering passkeys',
+  'login.link.forgotPassword': 'Forgot password?',
+  'login.link.createAccount': 'Create an account',
   'login.refusal.signInFailed': 'Sign-in failed. Check your details and try again.',
   'login.refusal.codeFailed': 'That code did not work. Check it and try again.',
   'login.refusal.recoveryCodeFailed': 'That recovery code did not work. Check it and try again.',
