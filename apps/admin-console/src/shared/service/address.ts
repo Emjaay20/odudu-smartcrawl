@@ -1,6 +1,9 @@
 import type { Crumb } from '#/shared/service/breadcrumb';
 import { stringifySearch } from '#/shared/service/search';
 
+// Where the console starts, before any tenant is named.
+export const CONSOLE_ROOT = '/console/';
+
 export function tenantPage(tenant: string): string {
   return `/console/${encodeURIComponent(tenant)}`;
 }

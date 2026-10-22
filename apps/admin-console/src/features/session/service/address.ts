@@ -1,5 +1,6 @@
 import { UNSAFE_RETURN_TO } from '@odudu/contracts';
 import { type SignOutAnswer } from '#/features/session/service/boot';
+import { CONSOLE_ROOT } from '#/shared/service/address';
 
 export {
   isTenantName,
@@ -9,7 +10,7 @@ export {
   type Principal,
 } from '#/shared/service/principal';
 
-export const CONSOLE_ROOT = '/console/';
+export { CONSOLE_ROOT };
 
 const ROOT = CONSOLE_ROOT;
 
