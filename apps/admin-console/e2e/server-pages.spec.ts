@@ -330,26 +330,51 @@ test('registration, the unverified account, password reset and their links', asy
   page,
   problems,
 }) => {
-  await page.goto(`/tenants/${open}/login-actions/registration`);
+  // The sign-in page offers the two pages this tenant serves, and the way
+  // on from each leads back to the same request.
+  await page.goto(authorize(open, 'openapp'));
+  await expect(page.getByRole('link', { name: 'Forgot password?' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Create an account' })).toBeVisible();
+  await inspect(page, 'signin-links');
+  await page.getByRole('link', { name: 'Create an account' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Create account' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Back to sign in' })).toBeVisible();
   await inspect(page, 'registration');
+
+  // Nothing filled in: each empty field says so, in place, and the first has focus.
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Create account' })).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('Enter a username.');
+  await expect(page.getByLabel('Username')).toBeFocused();
+  await expect(page.getByLabel('Username')).toHaveAttribute('aria-invalid', 'true');
+  await inspect(page, 'registration-required');
 
   await page.getByLabel('Username').fill('newcomer');
   await page.getByLabel('Email').fill(`newcomer-${run}@example.test`);
   await page.getByLabel('Password').fill('a');
   await page.getByRole('button', { name: 'Create account' }).click();
-  await expect(
-    page.getByRole('heading', { level: 1, name: "Can't create this account" }),
-  ).toBeVisible();
-  await inspect(page, 'registration-failed');
+  await expect(page.getByRole('alert')).toContainText('Password must');
+  await expect(page.getByLabel('Username')).toHaveValue('newcomer');
+  await expect(page.getByLabel('Password')).toHaveValue('');
+  await expect(page.getByLabel('Password')).toBeFocused();
+  await expect(page.getByRole('link', { name: 'Back to sign in' })).toBeVisible();
+  await inspect(page, 'registration-weak');
 
-  await page.goto(`/tenants/${open}/login-actions/registration`);
-  await page.getByLabel('Username').fill('newcomer');
-  await page.getByLabel('Email').fill(`newcomer-${run}@example.test`);
   await page.getByLabel('Password').fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Account created' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Back to sign in' })).toBeVisible();
   await inspect(page, 'registration-succeeded');
+
+  // The same name again is refused on its own field, with the other values kept.
+  await page.goto(`/tenants/${open}/login-actions/registration`);
+  await page.getByLabel('Username').fill('newcomer');
+  await page.getByLabel('Email').fill(`other-${run}@example.test`);
+  await page.getByLabel('Password').fill(PASSWORD);
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await expect(page.getByRole('alert')).toContainText('That username is already taken.');
+  await expect(page.getByLabel('Email')).toHaveValue(`other-${run}@example.test`);
+  await inspect(page, 'registration-taken');
 
   const key = mailKey(open, `newcomer-${run}@example.test`);
   await page.goto(`/tenants/${open}/login-actions/action-token?key=${key}`);
@@ -362,24 +387,25 @@ test('registration, the unverified account, password reset and their links', asy
   await page.goto(authorize(open, 'openapp'));
   await signIn(page, 'unverified');
   await expect(page.getByRole('heading', { level: 1, name: "Can't sign in yet" })).toBeVisible();
+  await page.getByRole('link', { name: 'Back to sign in' }).waitFor();
   await inspect(page, 'email-unverified');
+  await page.getByRole('link', { name: 'Back to sign in' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible();
 
-  await page.goto(`/tenants/${open}/login-actions/reset-password`);
+  await page.getByRole('link', { name: 'Forgot password?' }).click();
   await expect(
     page.getByRole('heading', { level: 1, name: 'Forgot your password?' }),
   ).toBeVisible();
   await inspect(page, 'reset-request');
+  await page.getByRole('button', { name: 'Send reset link' }).click();
+  await expect(page.getByRole('alert')).toContainText('Email is required.');
+  await expect(page.getByLabel('Email')).toBeFocused();
+  await inspect(page, 'reset-request-failed');
   await page.getByLabel('Email').fill(`resetter-${run}@example.test`);
   await page.getByRole('button', { name: 'Send reset link' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Check your email' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Back to sign in' })).toBeVisible();
   await inspect(page, 'reset-sent');
-
-  await page.goto(`/tenants/${open}/login-actions/reset-password`);
-  await page.getByRole('button', { name: 'Send reset link' }).click();
-  await expect(
-    page.getByRole('heading', { level: 1, name: "Can't send a reset link" }),
-  ).toBeVisible();
-  await inspect(page, 'reset-request-failed');
 
   const reset = mailKey(open, `resetter-${run}@example.test`);
   await page.goto(`/tenants/${open}/login-actions/action-token?key=${reset}`);
@@ -390,10 +416,11 @@ test('registration, the unverified account, password reset and their links', asy
   await page.getByLabel('New password').fill('a');
   await page.getByRole('button', { name: 'Reset password' }).click();
   await expect(
-    page.getByRole('heading', { level: 1, name: "Can't reset your password" }),
+    page.getByRole('heading', { level: 1, name: 'Choose a new password' }),
   ).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('Password must');
+  await expect(page.getByLabel('New password')).toBeFocused();
   await inspect(page, 'reset-weak');
-  await page.goto(`/tenants/${open}/login-actions/action-token?key=${reset}`);
   await page.getByLabel('New password').fill(`${PASSWORD}-reset`);
   await page.getByRole('button', { name: 'Reset password' }).click();
   await expect(
@@ -402,6 +429,7 @@ test('registration, the unverified account, password reset and their links', asy
   await inspect(page, 'reset-done');
   await page.goto(`/tenants/${open}/login-actions/action-token?key=${reset}`);
   await expect(page.getByRole('heading', { level: 1 })).toContainText("can't be used");
+  await expect(page.getByRole('link', { name: 'Request a new link' })).toBeVisible();
   await inspect(page, 'reset-link-failed');
   forgiveRefusals(problems);
 });
