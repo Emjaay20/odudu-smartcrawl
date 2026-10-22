@@ -54,3 +54,36 @@ describe('actionLink', () => {
     expect(link).not.toContain('SECRET');
   });
 });
+
+describe('mailedSignInPath against smuggled parameters', () => {
+  const AUTH = '/tenants/acme/protocol/openid-connect/auth?client_id=portal&code_challenge=c';
+  const keys = (path: string | null): string[] => [
+    ...new URL(path ?? '', 'https://x').searchParams.keys(),
+  ];
+
+  it('drops a name that only differs in case or is percent-encoded', () => {
+    expect(keys(mailedSignInPath(`${AUTH}&State=a&NONCE=b&%73tate=c&n%6Fnce=d`))).toEqual([
+      'client_id',
+      'code_challenge',
+    ]);
+  });
+
+  it('keeps the first of a repeated parameter and drops the rest', () => {
+    const path = mailedSignInPath(`${AUTH}&client_id=other&scope=a&scope=b`) ?? '';
+    const url = new URL(path, 'https://x');
+    expect(url.searchParams.getAll('client_id')).toEqual(['portal']);
+    expect(url.searchParams.getAll('scope')).toEqual(['a']);
+  });
+
+  it('keeps state, nonce and claims written inside a value as part of that one value', () => {
+    const nested = encodeURIComponent('https://app.example/cb?state=SECRET&nonce=N&claims=%7B%7D');
+    const path = mailedSignInPath(`${AUTH}&redirect_uri=${nested}&resource=${nested}`) ?? '';
+    expect(keys(path).sort()).toEqual(['client_id', 'code_challenge', 'redirect_uri', 'resource']);
+    const url = new URL(path, 'https://x');
+    expect(url.searchParams.get('redirect_uri')).toBe(
+      'https://app.example/cb?state=SECRET&nonce=N&claims=%7B%7D',
+    );
+    expect(url.searchParams.has('state')).toBe(false);
+    expect(url.searchParams.has('claims')).toBe(false);
+  });
+});

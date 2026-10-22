@@ -1001,6 +1001,8 @@ desktop layout.
 - ![update-password-violations](p4g-pages/update-password-violations.webp) `update-password-violations`: Forced password change refused, with the broken rules.
 - ![required-action-unavailable](p4g-pages/required-action-unavailable.webp) `required-action-unavailable`: A pending action this deployment cannot offer (renderer only).
 - ![required-actions](p4g-pages/required-actions.webp) `required-actions`: An administrator's required-actions link page (renderer only).
+- ![actions-done](p4g-pages/actions-done.webp) `actions-done`: Account updated, with the way back a mailed link carried (renderer only).
+- ![actions-done-direct](p4g-pages/actions-done-direct.webp) `actions-done-direct`: Account updated for a link no request started: what to do, no link (renderer only).
 - ![required-actions-done](p4g-pages/required-actions-done.webp) `required-actions-done`: The page after such a link, with actions left (renderer only).
 - ![consent](p4g-pages/consent.webp) `consent`: Consent with default and optional scopes.
 - ![consent-long-names](p4g-pages/consent-long-names.webp) `consent-long-names`: Consent with a long client name and long unbroken scope names.
@@ -2870,7 +2872,8 @@ link_ while the tenant still allows resets.
   waiting: _Return to the application you were signing in to and sign in again._ Verifying
   itself needs no session: the token is single-use and redeems in any browser.
 - **How long the request lives, and what the link replays.** The parked authorization
-  request lives thirty minutes (`expires_at - created_at`, recorded in Path A). A _Back to
+  request lives thirty minutes by default, the tenant's `login_ttl_seconds` (1800;
+  `expires_at - created_at` is recorded in Path A). A _Back to
   sign in_ link does not use it: the carried `return_to` is a path to `/authorize`, so
   following it starts a NEW request from the carried parameters, and it works when the
   original is expired, consumed or reaped (tested: the parked rows deleted, the same
@@ -2885,6 +2888,16 @@ link_ while the tenant still allows resets.
   metadata, RFC 7591, set through the admin API and shown on the consent page as _About
   <client>_), but a mailed link holds no client id for a page to read it by unless the
   reduced `client_id` is parsed from `return_to`. Not built.
+- **The mailed `return_to` is unsigned, by design.** It is not bound to the token: whoever
+  holds a token URL already holds the token, and the value is only a same-tenant sign-in
+  start, re-checked from scratch by `signInPath` on every use and never redirected to by the
+  server. What an attacker who files a registration or reset request for a victim's address
+  can choose in the victim's mail is a `client_id`, `redirect_uri`, `scope` and PKCE
+  challenge on THIS tenant's `/authorize`, which still refuses a client or redirect that is
+  not registered; the attacker could link to the same address directly, and a code from it
+  goes only to a registered redirect in the victim's browser, bound to a challenge whose
+  verifier the attacker lacks. A mailed restart also carries no `nonce`, as well as no
+  `state`: an application that checks its own nonce will reject the ID token from it.
 - **No request, no link.** A visit with no `return_to`, and a link an administrator issued
   (no application started it), has nothing to go back to, and no tenant-level sign-in
   address exists (sign-in needs a client). Those pages show their own next step only. The
@@ -2892,9 +2905,11 @@ link_ while the tenant still allows resets.
   the P4f row of section 11: its application-initiated actions give such a link a client.
 - **Bound.** The sign-in page sends `return_to` only while the rebuilt path fits
   `MAX_SIGN_IN_PATH_LENGTH` (4096); past it the links are offered without one. Percent-encoded
-  into a query a path is at most three times as long, about 12 KiB, under the 16 KiB Node
-  allows for a request line and headers, so a link built inside the bound is never answered
-  with 431.
+  into a query a path is at most three times as long, about 12 KiB of the 16 KiB Node allows
+  for a request line and headers together. The margin, about 4 KiB, is shared with every
+  header, cookies included: a request whose headers overflow it is answered with 431
+  whatever the link, and a path at the bound is a rare worst case, since ordinary rebuilt
+  paths are a few hundred bytes and the mailed form is a reduced subset.
 - **Left as they are, and why.** A closed registration or reset page stays an empty 404
   (`reply.code(404)`: it must not say whether the tenant exists or what it allows; the
   unknown-address page of increment 31e is where a browser sees a branded one). The

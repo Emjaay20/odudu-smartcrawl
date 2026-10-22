@@ -549,3 +549,62 @@ test('the server-error page, renderer only', async ({ page, problems }) => {
   await inspect(page, 'server-error');
   forgive(problems, '/server-error-view');
 });
+
+// An administrator's actions link opens with no request behind it, and the
+// stack cannot mint one here, so the page is the renderer's own output under
+// the headers a real response carries: once with no way back, once with one.
+const RENDER_ACTIONS_DONE = `
+const { renderRequiredActionsSucceededPage } = await import(process.env.RENDERER);
+const { pageHeaders } = await import(process.env.HEADERS);
+const page = renderRequiredActionsSucceededPage([], process.env.WAY || null, { tag: 'en', dir: 'ltr' });
+process.stdout.write(JSON.stringify({ html: page.html, headers: Object.fromEntries(pageHeaders(page)) }));
+`;
+
+test('the actions-done page, with and without a way back, renderer only', async ({ page }) => {
+  for (const [way, name, expected] of [
+    ['', 'actions-done-direct', 'Return to the application you were signing in to'],
+    [
+      '/tenants/demo/protocol/openid-connect/auth?client_id=app',
+      'actions-done',
+      'Continue to sign in',
+    ],
+  ] as const) {
+    const rendered = z
+      .object({ html: z.string(), headers: z.record(z.string(), z.string()) })
+      .parse(
+        JSON.parse(
+          execFileSync(
+            'node',
+            ['--no-warnings', '--input-type=module', '-e', RENDER_ACTIONS_DONE],
+            {
+              encoding: 'utf8',
+              env: {
+                ...process.env,
+                WAY: way,
+                RENDERER: pathToFileURL(
+                  path.join(ROOT, 'packages/account/src/view/required-actions-html.ts'),
+                ).href,
+                HEADERS: pathToFileURL(path.join(ROOT, 'packages/kernel/src/page.ts')).href,
+              },
+            },
+          ),
+        ),
+      );
+    const view = `${BASE}/actions-done-view-${name}`;
+    await page.route(view, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/html',
+        headers: rendered.headers,
+        body: rendered.html,
+      }),
+    );
+    await page.goto(view);
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Your account is updated' }),
+    ).toBeVisible();
+    await expect(page.getByText(expected)).toBeVisible();
+    await expect(page.getByRole('link')).toHaveCount(way === '' ? 0 : 1);
+    await inspect(page, name);
+  }
+});

@@ -214,13 +214,19 @@ describe('the way through registration and back', () => {
 
   it('starts a new request from the carried path when the original parked one is gone', async () => {
     const name = await tenant({ registrationAllowed: true });
+    const [{ id: tenantId } = { id: '' }] = await owner.db
+      .select({ id: tenants.id })
+      .from(tenants)
+      .where(eq(tenants.name, name));
     const login = await http.inject({ url: authorizeUrl(name) });
     const create = hrefLabelled(login, 'Create an account') ?? '';
     const form = await http.inject({ url: create });
     const back = hrefLabelled(form, 'Back to sign in') ?? '';
 
     // The parked request lives thirty minutes; here it is gone altogether.
-    await owner.db.delete(authenticationSessions);
+    await owner.db
+      .delete(authenticationSessions)
+      .where(eq(authenticationSessions.tenantId, tenantId));
 
     const again = await http.inject({ url: back });
     expect(again.statusCode).toBe(200);

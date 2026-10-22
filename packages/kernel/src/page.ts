@@ -31,8 +31,10 @@ export interface PageLocale {
 // The longest authorize path an account page is handed as `return_to`. The page
 // that sends it and the page that accepts it read this one value. Encoded into
 // a query a path of this length is at most three times as long (every byte
-// `%XX`), about 12 KiB: under the 16 KiB Node allows a request line and its
-// headers together, so a link built within the bound is never refused with 431.
+// `%XX`), about 12 KiB of the 16 KiB Node allows a request line and its headers
+// together, leaving about 4 KiB for every header, cookies included. A request
+// whose headers overflow that is refused with 431 whatever the link, and
+// ordinary paths are far shorter than the bound.
 export const MAX_SIGN_IN_PATH_LENGTH = 4096;
 
 export const DEFAULT_PAGE_LOCALE: PageLocale = { tag: 'en', dir: 'ltr' };
