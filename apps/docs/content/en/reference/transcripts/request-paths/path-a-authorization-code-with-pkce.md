@@ -285,15 +285,14 @@ form.addEventListener('submit', async (event) => {
 (`auth_session_id`, the script's `nonce`, the `x-request-id` and `Date`
 headers and the cookie's secret differ per run.)
 
-The `set-cookie` header is new with the sign-in page: `odudu-sign-in` (`__Secure-odudu-sign-in` when `ODUDU_TLS=true`) names
-the authentication session this response parked (the `auth_session_id` in
-the form) and proves the browser is the one that parked it, with a secret
-that appears nowhere else; the session's row keeps only a hash of it. It is
-`HttpOnly`, `SameSite=Lax`, scoped to this tenant's path and lasts as long
-as the parked request (`Max-Age=1800`). It is not a session and signs nobody
-in; the login form's own anti-forgery value is still the posted
-`auth_session_id`. What reads it is the page a mailed link opens, which
-offers a way back to this request only to the browser holding it: see
+The `set-cookie` header is new with the sign-in page. The cookie is `odudu-sign-in`, or
+`__Secure-odudu-sign-in` when `ODUDU_TLS=true`. It names the authentication session this response
+parked (the `auth_session_id` in the form). It proves the browser is the one that parked it, with
+a secret that appears nowhere else, and the session's row keeps only a hash of it. It is
+`HttpOnly` and `SameSite=Lax`, scoped to this tenant's path, and lasts as long as the parked
+request (`Max-Age=1800`). It is not a session and signs nobody in; the login form's own
+anti-forgery value is still the posted `auth_session_id`. What reads it is the page a mailed link
+opens, which offers a way back to this request only to the browser holding it: see
 [the way there and back](./self-registration.md#the-way-there-and-back).
 
 The second form is the passkey one, and it has no username field of its

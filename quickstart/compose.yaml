@@ -55,7 +55,7 @@ services:
       # The image sets NODE_ENV=production. That value only switches on the
       # boot guards in apps/server/src/config-guard.ts, and the one this
       # stack cannot meet is the TLS guard: it serves plain http on loopback,
-      # so the console cookie loses Secure and __Host-. The other guards are
+      # so no cookie carries Secure or __Host-. The other guards are
       # met or irrelevant here. This is not a production deployment; see the
       # README's Deploying section for one.
       - NODE_ENV=development

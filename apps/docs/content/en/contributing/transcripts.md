@@ -612,8 +612,8 @@ it is read ([Admin paths](../reference/transcripts/admin-paths/get-audit.md)).
 restarted on the existing database volume. For the first two runs its `odudu`
 service was built at commit `5fd4b11`; for the third it was rebuilt at
 `6401476`. `ODUDU_PUBLIC_BASE_URL` is `http://localhost:3000` and
-`ODUDU_CONSOLE` is left at its default, `true`. The base is plain HTTP, so the
-cookies are `odudu-console` and `odudu-console-login`; over `https` they are
+`ODUDU_CONSOLE` is left at its default, `true`. `ODUDU_TLS` is off, so the
+cookies are `odudu-console` and `odudu-console-login`; with `ODUDU_TLS=true` they are
 `__Host-odudu-console` and `__Host-odudu-console-login` and carry `Secure`.
 The image built at those commits shipped no console build, so
 `ODUDU_CONSOLE_DIR` (`/app/console`) was absent, and the third run logged
@@ -621,11 +621,12 @@ that below. The image has carried a build since `78826ac`;
 [`GET /console/`](../reference/transcripts/console-paths/get-console.md) is captured separately, against its own
 throwaway stack, because this stack's image carried no console build. The server logged these warnings when it booted for the third
 run. The second line is the console cookie's plain-HTTP fallback, and the
-third is the missing build:
+third is the missing build. The first two lines were captured again on a later stack, with `ODUDU_TLS` off, after the
+console cookie began to follow `ODUDU_TLS`:
 
 ```
-{"level":40,"time":1790590008355,"pid":1,"hostname":"062313e900ce","msg":"authn-flows: serving session cookies without the __Host- prefix because TLS is off. This is expected for local development only — never in production."}
-{"level":40,"time":1790590008355,"pid":1,"hostname":"062313e900ce","msg":"console: serving the odudu-console cookie without the __Host- prefix or Secure, because ODUDU_PUBLIC_BASE_URL (http://localhost:3000) is http. This is expected for local development only."}
+{"level":40,"time":1792694569189,"pid":1,"hostname":"bfa69d731ce2","msg":"authn-flows: serving session cookies without the __Host- prefix because TLS is off. This is expected for local development only — never in production."}
+{"level":40,"time":1792694569189,"pid":1,"hostname":"bfa69d731ce2","msg":"console: serving the odudu-console cookie without the __Host- prefix or Secure, because ODUDU_TLS is off. This is expected for local development only."}
 {"level":40,"time":1790590008445,"pid":1,"hostname":"062313e900ce","msg":"ODUDU_CONSOLE_DIR (/app/console) has no console build (ENOENT); /console/* answers 503"}
 ```
 
