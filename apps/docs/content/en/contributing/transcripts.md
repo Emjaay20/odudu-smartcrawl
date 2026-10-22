@@ -206,11 +206,27 @@ the mailed link, and in Password reset the new section on coming back to the app
 keys, sessions and times are that run's, and the rest of each page stands as the earlier runs left it.
 
 The pages then linked the brand favicon, `favicon.svg` and `favicon.ico`, in place of the bare mark: two
-`<link rel="icon">` lines in every recorded page document, 66 bytes more in each `content-length`. That was
-applied to the 16 pages that show a document by a script, not by replaying them. A live stack of the branch
-(project `odudu-p4g-31n`, port `3181`, commit `bd71a2cb`) was asked for two of the page kinds, and each came
-back byte for byte as recorded: the unknown-client error page (the same 20 lines as the one in The branches)
-and the `Can&#39;t sign out` page (`content-length: 880`, the recorded 814 plus 66).
+`<link rel="icon">` lines in every recorded page document and 66 more bytes in each `content-length`.
+That was applied to the 16 pages that show a document by a script. The rest of those transcripts' bytes
+did not change and they were not replayed end to end.
+
+The change was checked against a live stack of the branch (project `odudu-p4g-31n`, port `3181`,
+commit `15c09936`), by running the console's browser specs for the server pages, the refused sign-in,
+the relying-party flow, the return to the application, the restarted sign-in and the console shell
+with every HTML response saved. For each page kind a transcript quotes, the real `<head>`, from
+`<!doctype html>` to `</head>`, is byte for byte the recorded one: Account created, Account updated,
+Allow access?, Can&#39;t sign out, Can&#39;t use this link, Change your password, Check your email,
+Choose a new password, Choose an account, Create account, Enter your authentication code, Password
+reset, Save your recovery codes, Sign in, Sign-in error, Sign-in failed, Signed out and Verify your
+email. Five whole documents (`Can&#39;t sign out`, `Password reset`, `Signed out` and the four
+`Sign-in failed` ones) are identical to a live response, so their `content-length` is the served one too.
+The `Too many attempts` and `Update your account` pages were not reachable in that run and are checked
+only by the test below. The recorded console shell in `GET /console/` is an older capture that never had
+the icon links; this change did not touch it.
+
+`tests/docs/page-documents-transcripts.test.ts` proves a recorded document is the shell `page()` builds
+around its title and body, and that its `content-length` is the length of the bytes shown. It does not
+prove the bytes were served; the live comparison above is what does.
 
 ## Admin path transcripts
 
