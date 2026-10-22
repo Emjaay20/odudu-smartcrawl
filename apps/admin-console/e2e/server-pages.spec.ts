@@ -79,9 +79,10 @@ function client(tenant: string, id: string, name: string): void {
   );
 }
 
+// The query of the link a mail carries: the key and, when the request had one, the way back.
 function mailKey(tenant: string, to: string): string {
   return psql(
-    `select substring(o.body_text from 'key=([A-Za-z0-9_-]+)') from email_outbox o where o.tenant_id = ${inTenant(tenant)} and o.to_address = ${sqlText(to)} order by o.created_at desc limit 1`,
+    `select substring(o.body_text from 'key=([A-Za-z0-9_%.&=-]+)') from email_outbox o where o.tenant_id = ${inTenant(tenant)} and o.to_address = ${sqlText(to)} order by o.created_at desc limit 1`,
   );
 }
 
@@ -379,9 +380,11 @@ test('registration, the unverified account, password reset and their links', asy
   const key = mailKey(open, `newcomer-${run}@example.test`);
   await page.goto(`/tenants/${open}/login-actions/action-token?key=${key}`);
   await expect(page.getByRole('heading', { level: 1 })).toContainText('verified');
+  await expect(page.getByRole('link', { name: 'Back to sign in' })).toBeVisible();
   await inspect(page, 'verification-ok');
   await page.goto(`/tenants/${open}/login-actions/action-token?key=${key}`);
   await expect(page.getByRole('heading', { level: 1 })).toContainText("can't be used");
+  await expect(page.getByRole('link', { name: 'Back to sign in' })).toBeVisible();
   await inspect(page, 'verification-failed');
 
   await page.goto(authorize(open, 'openapp'));
@@ -426,10 +429,12 @@ test('registration, the unverified account, password reset and their links', asy
   await expect(
     page.getByRole('heading', { level: 1, name: 'Your password has been reset' }),
   ).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Back to sign in' })).toBeVisible();
   await inspect(page, 'reset-done');
   await page.goto(`/tenants/${open}/login-actions/action-token?key=${reset}`);
   await expect(page.getByRole('heading', { level: 1 })).toContainText("can't be used");
   await expect(page.getByRole('link', { name: 'Request a new link' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Back to sign in' })).toBeVisible();
   await inspect(page, 'reset-link-failed');
   forgiveRefusals(problems);
 });
