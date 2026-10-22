@@ -215,6 +215,10 @@ export const DEFINED: Readonly<Record<string, Defined>> = {
     '>Restore built-in scopes<',
   ),
   Restore: feature('scopes/view/ScopesPage/RestoreScopes.tsx', 'confirmLabel="Restore"'),
+  'Include all roles in tokens': feature(
+    'clients/service/tokens.ts',
+    "FULL_SCOPE_LABEL = 'Include all roles in tokens'",
+  ),
   'Used because nothing is bound': feature(
     'scopes/service/mappers.ts',
     "DEFAULT_MAPPER_NOTE = 'Used because nothing is bound'",

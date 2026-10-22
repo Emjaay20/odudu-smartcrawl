@@ -53,18 +53,13 @@ A scope's claims are built by claim mappers. If you bind none to a scope, every 
 
 ## Roles reach a token through a scope
 
-A role is not a claim on its own. You map it to a scope, and it reaches a token only when that scope was granted. A person with the `reviewer` role who signs in without the `roles` scope gets a token that does not mention it. [Roles and groups](./roles-and-groups.mdx) explains how a person comes to hold a role.
+A role is not a claim on its own. You map it to a scope, and it reaches a token only when that scope was granted. A person with the `reviewer` role who signs in without the scope that carries it gets a token that does not mention it. [Roles and groups](./roles-and-groups.mdx) explains how a person comes to hold a role.
 
-The client's **Include all roles in tokens** setting (`full_scope_allowed` in the admin API) changes the rule:
+A client's **Include all roles in tokens** setting (`full_scope_allowed` in the admin API) changes that. Off, the default, a token carries only the roles mapped to the granted scopes, so an app learns only what you chose to share. On, it carries every role the person holds.
 
-- **Off, the default:** a token carries only the roles mapped to the scopes that were granted. A role mapped to no granted scope stays out, so an app learns only what you chose to share with it.
-- **On:** a token carries every role the person holds.
+The `roles` claim itself comes from the `roles` scope, so a client that is not granted `roles` gets no roles claim. On a scope's **Roles** tab, "No roles mapped" means the scope adds no roles for a client with the setting off.
 
-The `roles` claim is built by the `roles` mapper, which runs for the `roles` scope. So with the setting off, a client that was not granted `roles` gets no `roles` claim. A role mapped to another scope reaches the claim when that scope is granted next to `roles`.
-
-On a scope's **Roles** tab, "No roles mapped" means that scope adds no roles for a client with the setting off.
-
-This is also why the ID token and the access token can differ. The `roles` and `groups` scopes ship with `include_in_id_token` off: an ID token travels through the browser, and a full list of roles has no business there.
+The `roles` and `groups` scopes ship with `include_in_id_token` off: an ID token travels through the browser, and a full list of roles has no business there. So the ID token and the access token can differ.
 
 ## What UserInfo does with a request
 
