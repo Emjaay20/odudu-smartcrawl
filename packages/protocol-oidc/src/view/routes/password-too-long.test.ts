@@ -25,7 +25,16 @@ vi.mock('../../../../authn-flows/src/view/messages', async (importOriginal) => {
 
 const TOO_LONG = 'a'.repeat(MAX_PASSWORD_LENGTH + 1);
 const SESSION = '01a0a998-8326-7900-8fa6-dd06b842b269';
-const tenant = { id: 't1' };
+const tenant = {
+  id: 't1',
+  passwordRules: {
+    minLength: 15,
+    requireDigit: false,
+    requireUppercase: false,
+    requireLowercase: false,
+    requireSpecial: false,
+  },
+};
 
 const continuationDeps = {
   findTenant: vi.fn().mockResolvedValue(tenant),

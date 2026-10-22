@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { resolveDiscoveryDocument } from '#/usecase/discovery';
 
+const PASSWORD_RULES = {
+  minLength: 15,
+  requireDigit: false,
+  requireUppercase: false,
+  requireLowercase: false,
+  requireSpecial: false,
+};
+
 const claimNames = () => Promise.resolve(['sub', 'name', 'email', 'email_verified']);
 // Rows come back from client_scopes in no particular order, so this returns
 // them out of order deliberately.
@@ -29,6 +37,7 @@ describe('resolveDiscoveryDocument', () => {
             resetPasswordAllowed: false,
             maxSessionsPerBrowser: 25,
             clientRegistrationPolicy: 'disabled',
+            passwordRules: PASSWORD_RULES,
           }),
         claimNames,
         scopesForTenant,
@@ -81,6 +90,7 @@ describe('resolveDiscoveryDocument', () => {
             resetPasswordAllowed: false,
             maxSessionsPerBrowser: 25,
             clientRegistrationPolicy: 'disabled',
+            passwordRules: PASSWORD_RULES,
           }),
         claimNames,
         scopesForTenant,
@@ -113,6 +123,7 @@ describe('resolveDiscoveryDocument', () => {
             resetPasswordAllowed: false,
             maxSessionsPerBrowser: 25,
             clientRegistrationPolicy: 'open',
+            passwordRules: PASSWORD_RULES,
           }),
         claimNames,
         scopesForTenant,
@@ -147,6 +158,7 @@ describe('resolveDiscoveryDocument', () => {
             resetPasswordAllowed: false,
             maxSessionsPerBrowser: 25,
             clientRegistrationPolicy: 'disabled',
+            passwordRules: PASSWORD_RULES,
           }),
         claimNames,
         scopesForTenant,
@@ -180,6 +192,7 @@ describe('resolveDiscoveryDocument', () => {
             resetPasswordAllowed: false,
             maxSessionsPerBrowser: 25,
             clientRegistrationPolicy: 'disabled',
+            passwordRules: PASSWORD_RULES,
           }),
         claimNames,
         scopesForTenant,
@@ -213,6 +226,7 @@ describe('resolveDiscoveryDocument', () => {
             resetPasswordAllowed: false,
             maxSessionsPerBrowser: 25,
             clientRegistrationPolicy: 'disabled',
+            passwordRules: PASSWORD_RULES,
           }),
         claimNames,
         scopesForTenant,
@@ -256,6 +270,7 @@ describe('resolveDiscoveryDocument', () => {
               resetPasswordAllowed: false,
               maxSessionsPerBrowser: 25,
               clientRegistrationPolicy,
+              passwordRules: PASSWORD_RULES,
             }),
           claimNames,
           scopesForTenant,
@@ -298,6 +313,7 @@ describe('resolveDiscoveryDocument', () => {
               resetPasswordAllowed: false,
               maxSessionsPerBrowser: 25,
               clientRegistrationPolicy: 'disabled',
+              passwordRules: PASSWORD_RULES,
             }),
           claimNames,
           scopesForTenant,
@@ -334,6 +350,7 @@ describe('resolveDiscoveryDocument', () => {
             resetPasswordAllowed: false,
             maxSessionsPerBrowser: 25,
             clientRegistrationPolicy: 'disabled',
+            passwordRules: PASSWORD_RULES,
           }),
         claimNames,
         scopesForTenant,
@@ -367,6 +384,7 @@ describe('resolveDiscoveryDocument', () => {
             resetPasswordAllowed: false,
             maxSessionsPerBrowser: 25,
             clientRegistrationPolicy: 'disabled',
+            passwordRules: PASSWORD_RULES,
           }),
         claimNames,
         scopesForTenant,
@@ -401,6 +419,7 @@ describe('resolveDiscoveryDocument', () => {
             resetPasswordAllowed: false,
             maxSessionsPerBrowser: 25,
             clientRegistrationPolicy: 'disabled',
+            passwordRules: PASSWORD_RULES,
           }),
         claimNames,
         scopesForTenant,
@@ -434,6 +453,7 @@ describe('resolveDiscoveryDocument', () => {
             resetPasswordAllowed: false,
             maxSessionsPerBrowser: 25,
             clientRegistrationPolicy: 'disabled',
+            passwordRules: PASSWORD_RULES,
           }),
         claimNames,
         scopesForTenant,

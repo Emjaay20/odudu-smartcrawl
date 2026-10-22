@@ -35,6 +35,18 @@ function expectFragment(page: { html: string; body: string }): void {
 
 const EN = DEFAULT_PAGE_LOCALE;
 
+// The page's script carries a nonce fresh for each response.
+const withoutScript = (body: string): string =>
+  body.replace(/<script nonce="[^"]*">[\s\S]*?<\/script>/u, '<script nonce="N">…</script>');
+
+const RULES = {
+  minLength: 15,
+  requireDigit: false,
+  requireUppercase: false,
+  requireLowercase: false,
+  requireSpecial: false,
+};
+
 describe('renderResetRequestForm', () => {
   it('returns a body fragment and a title beside the document', () => {
     const page = renderResetRequestForm('acme', {}, EN);
@@ -158,21 +170,29 @@ describe('renderResetRequestFailedPage', () => {
 
 describe('renderResetPasswordForm', () => {
   it('returns a body fragment and a title beside the document', () => {
-    const page = renderResetPasswordForm('acme', 'token-key', undefined, EN);
+    const page = renderResetPasswordForm('acme', 'token-key', undefined, RULES, EN);
     expect(page.title).toBe('Choose a new password');
     expect(page.body).toContain('value="token-key"');
     expectFragment(page);
   });
 
   it('keeps the English markup exactly', () => {
-    expect(renderResetPasswordForm('acme', 'token-key', undefined, EN).body)
+    expect(withoutScript(renderResetPasswordForm('acme', 'token-key', undefined, RULES, EN).body))
       .toBe(`<header class="intro">
 <h1>Choose a new password</h1>
 <p class="tenant"><bdi>acme</bdi></p>
 </header>
 <form method="post" action="/tenants/acme/login-actions/action-token">
   <input type="hidden" name="key" value="token-key">
-  <label>New password <input type="password" name="password" autocomplete="new-password"></label>
+  <label>New password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" aria-describedby="password-rules-list"></label>
+  <div class="rules" id="password-rules" data-min="15">
+    <p class="rules-head"><span>Your password needs:</span><button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false" data-show="Show password" data-hide="Hide password">Show password</button></p>
+    <ul id="password-rules-list">
+      <li data-rule="length">At least 15 characters</li>
+      <li>Not a common password</li>
+    </ul>
+  </div>
+  <script nonce="N">…</script>
   <button type="submit">Reset password</button>
 </form>`);
   });
@@ -185,6 +205,7 @@ describe('renderResetPasswordForm', () => {
         { rule: 'min-length', message: 'dev', minLength: 8 },
         { rule: 'not-reused', message: 'dev' },
       ],
+      RULES,
       EN,
     );
     expect(body).toContain(`<div class="alert" role="alert" id="form-error">
@@ -196,16 +217,16 @@ describe('renderResetPasswordForm', () => {
 <form`);
     expect(body).toContain('<input type="hidden" name="key" value="token-key">');
     expect(body).toContain(
-      'autocomplete="new-password" aria-invalid="true" aria-describedby="form-error-0 form-error-1" autofocus>',
+      'autocomplete="new-password" id="password" minlength="15" aria-invalid="true" aria-describedby="form-error-0 form-error-1 password-rules-list" autofocus>',
     );
     expect(body).not.toMatch(/name="password"[^>]*value=/u);
   });
 
   it('says a password is required, in French where the fixture has it', () => {
-    expect(renderResetPasswordForm('acme', 'k', 'required', EN).body).toContain(
+    expect(renderResetPasswordForm('acme', 'k', 'required', RULES, EN).body).toContain(
       '<li id="form-error-0">A new password is required.</li>',
     );
-    expect(renderResetPasswordForm('acme', 'k', 'required', FRENCH).body).toContain(
+    expect(renderResetPasswordForm('acme', 'k', 'required', RULES, FRENCH).body).toContain(
       '<li id="form-error-0">Un nouveau mot de passe est obligatoire.</li>',
     );
   });
@@ -219,6 +240,7 @@ describe('renderResetPasswordForm', () => {
         { rule: 'require-digit', message: 'dev' },
         { rule: 'x', message: '<b>y</b>' },
       ],
+      RULES,
       FRENCH,
     );
     expect(body).toContain('>Le mot de passe doit comporter au moins 1000 caractères.</li>');
@@ -227,18 +249,18 @@ describe('renderResetPasswordForm', () => {
   });
 
   it('writes lang and dir for a right-to-left locale', () => {
-    expect(renderResetPasswordForm('acme', 'k', [], ARABIC).html).toContain(
+    expect(renderResetPasswordForm('acme', 'k', [], RULES, ARABIC).html).toContain(
       '<html lang="ar" dir="rtl">',
     );
   });
 
-  it('reads French, keeps the key and tenant escaped, and has no script', () => {
-    const page = renderResetPasswordForm('<t>', '"><img src=x>', undefined, FRENCH);
+  it('reads French, keeps the key and tenant escaped, and carries one script', () => {
+    const page = renderResetPasswordForm('<t>', '"><img src=x>', undefined, RULES, FRENCH);
     expect(page.body).toContain('<label>Nouveau mot de passe <input');
     expect(page.html).not.toContain('<img src=x>');
     expect(page.html).not.toContain('<t>');
     expect(page.body).toContain('value="&quot;&gt;&lt;img src=x&gt;"');
-    expect(page.script).toBeNull();
+    expect(page.script?.fetchesSameOrigin).toBe(false);
   });
 });
 
@@ -296,8 +318,12 @@ describe('the reset pages a mailed link opens, with the way back it carried', ()
     '<a href="/tenants/acme/protocol/openid-connect/auth?client_id=c&amp;state=x">Back to sign in</a>';
 
   it('keeps the way back out of the form: it is held on the server, beside the token', () => {
-    expect(renderResetPasswordForm('acme', 'k', 'required', EN).body).not.toContain('return_to');
-    expect(renderResetPasswordForm('acme', 'k', undefined, EN).body).not.toContain('return_to');
+    expect(renderResetPasswordForm('acme', 'k', 'required', RULES, EN).body).not.toContain(
+      'return_to',
+    );
+    expect(renderResetPasswordForm('acme', 'k', undefined, RULES, EN).body).not.toContain(
+      'return_to',
+    );
   });
 
   it('links back from the done page and beside the new-link one on the failed page', () => {

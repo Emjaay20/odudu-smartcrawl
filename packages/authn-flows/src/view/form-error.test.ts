@@ -36,6 +36,13 @@ describe('invalidAttributes', () => {
     );
   });
 
+  it('keeps what else describes the field, after the messages', () => {
+    expect(invalidAttributes(PROBLEMS, 'password', ['rules'])).toBe(
+      ' aria-invalid="true" aria-describedby="form-error-2 form-error-3 rules"',
+    );
+    expect(invalidAttributes([], 'password', ['rules'])).toBe(' aria-describedby="rules"');
+  });
+
   it('says nothing about a field with no problem', () => {
     expect(invalidAttributes(PROBLEMS, 'email')).toBe('');
     expect(invalidAttributes([], 'email')).toBe('');

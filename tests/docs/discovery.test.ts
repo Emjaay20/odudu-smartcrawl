@@ -28,6 +28,13 @@ async function serverDiscoveryDocument(): Promise<Record<string, unknown>> {
           rememberMeMaxSeconds: 2_592_000,
           rememberMeAllowed: false,
           loginWithEmail: false,
+          passwordRules: {
+            minLength: 15,
+            requireDigit: false,
+            requireUppercase: false,
+            requireLowercase: false,
+            requireSpecial: false,
+          },
           registrationAllowed: false,
           resetPasswordAllowed: false,
           maxSessionsPerBrowser: 25,

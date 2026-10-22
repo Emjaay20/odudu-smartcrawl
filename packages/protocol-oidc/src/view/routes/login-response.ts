@@ -3,6 +3,7 @@ import {
   sessionCookies,
   type AuthenticatorResult,
 } from '@odudu/authn-flows';
+import { type PasswordRules } from '@odudu/kernel';
 import { type FastifyReply } from 'fastify';
 import { type LoginSubmissionOutcome } from '#/usecase/login-submission';
 import { loginWays } from '#/service/login-ways';
@@ -28,6 +29,7 @@ export interface LoginResponseDeps extends RequiredActionResponseDeps {
     loginWithEmail: boolean;
     registrationAllowed: boolean;
     resetPasswordAllowed: boolean;
+    passwordRules: PasswordRules;
   } | null>;
   // What to render on a rejected attempt — asked directly rather than
   // threaded through LoginSubmissionOutcome, so handleLoginSubmission stays

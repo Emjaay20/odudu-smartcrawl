@@ -29,33 +29,58 @@ function expectFragment(page: { html: string; body: string }): void {
   expect(page.html).toContain(page.body);
 }
 
+// The page's script carries a nonce fresh for each response.
+const withoutScript = (body: string): string =>
+  body.replace(/<script nonce="[^"]*">[\s\S]*?<\/script>/u, '<script nonce="N">…</script>');
+
+const RULES = {
+  minLength: 15,
+  requireDigit: false,
+  requireUppercase: false,
+  requireLowercase: false,
+  requireSpecial: false,
+};
+
 const SIGN_IN =
   '/tenants/acme/protocol/openid-connect/auth?response_type=code&client_id=portal&state=a%20b';
 
 describe('renderRegistrationForm', () => {
   it('returns a body fragment and a title beside the document', () => {
-    const page = renderRegistrationForm('acme', {}, DEFAULT_PAGE_LOCALE);
+    const page = renderRegistrationForm('acme', { rules: RULES }, DEFAULT_PAGE_LOCALE);
     expect(page.title).toBe('Create account');
     expect(page.body).toContain('name="username"');
     expectFragment(page);
   });
 
   it('keeps the English markup exactly, with no way back when none was carried', () => {
-    expect(renderRegistrationForm('acme', {}, DEFAULT_PAGE_LOCALE).body)
-      .toBe(`<header class="intro">
+    expect(
+      withoutScript(renderRegistrationForm('acme', { rules: RULES }, DEFAULT_PAGE_LOCALE).body),
+    ).toBe(`<header class="intro">
 <h1>Create account</h1>
 <p class="tenant"><bdi>acme</bdi></p>
 </header>
 <form method="post" action="/tenants/acme/login-actions/registration">
   <label>Username <input type="text" name="username" autocomplete="username"></label>
   <label>Email <input type="email" name="email" autocomplete="email"></label>
-  <label>Password <input type="password" name="password" autocomplete="new-password"></label>
+  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" aria-describedby="password-rules-list"></label>
+  <div class="rules" id="password-rules" data-min="15">
+    <p class="rules-head"><span>Your password needs:</span><button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false" data-show="Show password" data-hide="Hide password">Show password</button></p>
+    <ul id="password-rules-list">
+      <li data-rule="length">At least 15 characters</li>
+      <li>Not a common password</li>
+    </ul>
+  </div>
+  <script nonce="N">…</script>
   <button type="submit">Create account</button>
 </form>`);
   });
 
   it('links back to sign-in and carries the way in the form', () => {
-    const { body } = renderRegistrationForm('acme', { signInPath: SIGN_IN }, DEFAULT_PAGE_LOCALE);
+    const { body } = renderRegistrationForm(
+      'acme',
+      { rules: RULES, signInPath: SIGN_IN },
+      DEFAULT_PAGE_LOCALE,
+    );
     const escaped = SIGN_IN.replaceAll('&', '&amp;');
     expect(body).toContain(`<input type="hidden" name="return_to" value="${escaped}">`);
     expect(body).toContain(`<p class="links">\n<a href="${escaped}">Back to sign in</a>\n</p>`);
@@ -70,11 +95,7 @@ describe('renderRegistrationForm', () => {
     };
     const { body } = renderRegistrationForm(
       'acme',
-      {
-        failure,
-        username: 'newcomer',
-        email: 'new@example.test',
-      },
+      { rules: RULES, failure, username: 'newcomer', email: 'new@example.test' },
       DEFAULT_PAGE_LOCALE,
     );
     expect(body).toContain(`<div class="alert" role="alert" id="form-error">
@@ -87,7 +108,7 @@ describe('renderRegistrationForm', () => {
     expect(body).toContain('name="username" autocomplete="username" value="newcomer">');
     expect(body).toContain('name="email" autocomplete="email" value="new@example.test">');
     expect(body).toContain(
-      'name="password" autocomplete="new-password" aria-invalid="true" aria-describedby="form-error-0 form-error-1" autofocus>',
+      'name="password" autocomplete="new-password" id="password" minlength="15" aria-invalid="true" aria-describedby="form-error-0 form-error-1 password-rules-list" autofocus>',
     );
     expect(body).not.toMatch(/name="password"[^>]*value=/u);
   });
@@ -95,10 +116,7 @@ describe('renderRegistrationForm', () => {
   it('names each empty field, marks it and focuses the first', () => {
     const { body } = renderRegistrationForm(
       'acme',
-      {
-        failure: { missing: ['email', 'password'] },
-        username: 'newcomer',
-      },
+      { rules: RULES, failure: { missing: ['email', 'password'] }, username: 'newcomer' },
       DEFAULT_PAGE_LOCALE,
     );
     expect(body).toContain('<li id="form-error-0">Enter an email address.</li>');
@@ -107,7 +125,7 @@ describe('renderRegistrationForm', () => {
       'name="email" autocomplete="email" aria-invalid="true" aria-describedby="form-error-0" autofocus>',
     );
     expect(body).toContain(
-      'name="password" autocomplete="new-password" aria-invalid="true" aria-describedby="form-error-1">',
+      'name="password" autocomplete="new-password" id="password" minlength="15" aria-invalid="true" aria-describedby="form-error-1 password-rules-list">',
     );
     expect(body).not.toMatch(/name="username"[^>]*aria-invalid/u);
   });
@@ -120,9 +138,7 @@ describe('renderRegistrationForm', () => {
   ] as const)('puts %s on the %s field', (refusal, field, text) => {
     const { body } = renderRegistrationForm(
       'acme',
-      {
-        failure: { refusal },
-      },
+      { rules: RULES, failure: { refusal } },
       DEFAULT_PAGE_LOCALE,
     );
     expect(body).toContain(`<li id="form-error-0">${text}</li>`);
@@ -138,6 +154,7 @@ describe('renderRegistrationForm', () => {
     const { body } = renderRegistrationForm(
       'acme',
       {
+        rules: RULES,
         failure: { refusal: 'email_taken' },
         username: '"><script>1</script>',
         email: 'x'.repeat(600),
@@ -150,14 +167,18 @@ describe('renderRegistrationForm', () => {
   });
 
   it('reads French where the fixture has it and English for the rest', () => {
-    const page = renderRegistrationForm('acme', {}, FRENCH);
+    const page = renderRegistrationForm('acme', { rules: RULES }, FRENCH);
     expect(page.html).toContain('<html lang="fr" dir="ltr">');
     expect(page.title).toBe('Créer un compte');
     expect(page.body).toContain(`<label>Nom d&#39;utilisateur <input`);
     expect(page.body).toContain(`<label>${en['registration.email']} <input`);
     expect(page.body).toContain(`>${en['registration.submit']}</button>`);
     expect(
-      renderRegistrationForm('acme', { failure: { refusal: 'username_taken' } }, FRENCH).body,
+      renderRegistrationForm(
+        'acme',
+        { rules: RULES, failure: { refusal: 'username_taken' } },
+        FRENCH,
+      ).body,
     ).toContain('<li id="form-error-0">Ce nom d&#39;utilisateur est déjà pris.</li>');
   });
 
@@ -165,6 +186,7 @@ describe('renderRegistrationForm', () => {
     const { body } = renderRegistrationForm(
       'acme',
       {
+        rules: RULES,
         failure: { violations: [{ rule: 'future', message: '<img src=x onerror=1>' }] },
       },
       DEFAULT_PAGE_LOCALE,
@@ -174,11 +196,13 @@ describe('renderRegistrationForm', () => {
   });
 
   it('writes lang and dir for a right-to-left locale', () => {
-    expect(renderRegistrationForm('acme', {}, ARABIC).html).toContain('<html lang="ar" dir="rtl">');
+    expect(renderRegistrationForm('acme', { rules: RULES }, ARABIC).html).toContain(
+      '<html lang="ar" dir="rtl">',
+    );
   });
 
   it('writes a tenant name into the action as a path segment, and into the page as text', () => {
-    const { html } = renderRegistrationForm('a b?"<%', {}, DEFAULT_PAGE_LOCALE);
+    const { html } = renderRegistrationForm('a b?"<%', { rules: RULES }, DEFAULT_PAGE_LOCALE);
     expect(html).toContain('action="/tenants/a%20b%3F%22%3C%25/login-actions/registration"');
     expect(html).toContain('<bdi>a b?&quot;&lt;%</bdi>');
     expect(html).not.toContain('<%');
@@ -266,6 +290,7 @@ describe('a refused registration form reads coherently to a screen reader', () =
       renderRegistrationForm(
         'acme',
         {
+          rules: RULES,
           failure: {
             violations: [
               { rule: 'min-length', message: 'x', minLength: 12 },
@@ -279,7 +304,7 @@ describe('a refused registration form reads coherently to a screen reader', () =
     expectCoherent(
       renderRegistrationForm(
         'acme',
-        { failure: { missing: ['username', 'email'] } },
+        { rules: RULES, failure: { missing: ['username', 'email'] } },
         DEFAULT_PAGE_LOCALE,
       ).body,
     );

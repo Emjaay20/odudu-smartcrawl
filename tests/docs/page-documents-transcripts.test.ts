@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_PAGE_LOCALE as LOCALE } from '../../packages/kernel/src/index.js';
+import {
+  DEFAULT_PAGE_LOCALE as LOCALE,
+  type PasswordRules,
+} from '../../packages/kernel/src/index.js';
 import {
   renderAuthorizeErrorPage,
   type WayOn,
@@ -175,6 +178,14 @@ const first = (text: string, pattern: RegExp): string => unescaped(pattern.exec(
 const all = (text: string, pattern: RegExp): string[] =>
   [...text.matchAll(pattern)].map((m) => unescaped(m[1] ?? ''));
 
+const RULES_DEFAULT: PasswordRules = {
+  minLength: 15,
+  requireDigit: false,
+  requireUppercase: false,
+  requireLowercase: false,
+  requireSpecial: false,
+};
+
 // The rule codes the domain reports, so a recorded violation is read back by
 // asking the real page which rule renders as that sentence.
 const RULES = [
@@ -186,6 +197,7 @@ const RULES = [
   'require-special',
   'not-username',
   'not-email',
+  'common-password',
   'not-reused',
   'superseded',
 ];
@@ -194,7 +206,7 @@ function violationFor(sentence: string): { rule: string; message: string; minLen
   const minLength = Number(/at least (\d+) characters/u.exec(sentence)?.[1] ?? 0);
   for (const rule of RULES) {
     const candidate = { rule, message: 'x', minLength };
-    const rendered = renderUpdatePasswordPage('t', 's', [candidate], LOCALE).body;
+    const rendered = renderUpdatePasswordPage('t', 's', [candidate], RULES_DEFAULT, LOCALE).body;
     if (first(rendered, ENTRY) === sentence) return candidate;
   }
   return { rule: 'unknown', message: sentence };
@@ -224,11 +236,23 @@ function accountViolationFor(sentence: string): {
   const minLength = Number(/at least (\d+) characters/u.exec(sentence)?.[1] ?? 0);
   for (const rule of ACCOUNT_RULES) {
     const candidate = { rule, message: 'x', minLength };
-    const rendered = renderResetPasswordForm('t', 'k', [candidate], LOCALE).body;
+    const rendered = renderResetPasswordForm('t', 'k', [candidate], RULES_DEFAULT, LOCALE).body;
     if (first(rendered, ENTRY) === sentence) return candidate;
   }
   return { rule: 'unknown', message: sentence };
 }
+
+// The rules a recorded password page tells the person, read from the list it
+// shows: the minimum from the field and a line for each character rule.
+const rulesOf = (body: string): PasswordRules => ({
+  minLength: Number(/name="password"[^>]*minlength="(\d+)"/u.exec(body)?.[1] ?? 15),
+  requireDigit: body.includes('data-rule="digit"'),
+  requireUppercase: body.includes('data-rule="uppercase"'),
+  requireLowercase: body.includes('data-rule="lowercase"'),
+  requireSpecial: body.includes('data-rule="special"'),
+});
+// A page's script carries a nonce fresh for each response.
+const unnonced = (text: string): string => text.replace(/nonce="[^"]*"/gu, 'nonce="N"');
 
 const tenantOf = (body: string): string => first(body, /(?:action|href)="\/tenants\/([^/"]*)\//u);
 const keyOf = (body: string): string => first(body, /name="key" value="([^"]*)"/u);
@@ -255,7 +279,8 @@ function passwordFailureOf(body: string): PasswordFailure | undefined {
   if (!refused(body)) return undefined;
   const entries = entriesOf(body);
   return entries.length === 1 &&
-    entries[0] === first(renderResetPasswordForm('t', 'k', 'required', LOCALE).body, ENTRY)
+    entries[0] ===
+      first(renderResetPasswordForm('t', 'k', 'required', RULES_DEFAULT, LOCALE).body, ENTRY)
     ? 'required'
     : entries.map(accountViolationFor);
 }
@@ -266,14 +291,18 @@ function registrationFailureOf(body: string): RegistrationFailure | undefined {
   const refusal = REFUSALS.find(
     (candidate) =>
       entriesOf(
-        renderRegistrationForm('t', { failure: { refusal: candidate } }, LOCALE).body,
+        renderRegistrationForm(
+          't',
+          { rules: RULES_DEFAULT, failure: { refusal: candidate } },
+          LOCALE,
+        ).body,
       )[0] === entries[0],
   );
   if (refusal !== undefined && entries.length === 1) return { refusal };
   const missing = (['username', 'email', 'password'] as const).filter((field) =>
     new RegExp(`name="${field}"[^>]*aria-invalid`, 'u').test(body),
   );
-  const asked = renderRegistrationForm('t', { failure: { missing } }, LOCALE);
+  const asked = renderRegistrationForm('t', { rules: RULES_DEFAULT, failure: { missing } }, LOCALE);
   if (missing.length > 0 && entriesOf(asked.body).join() === entries.join()) return { missing };
   return { violations: entries.map(accountViolationFor) };
 }
@@ -332,6 +361,7 @@ const RENDER_BACK: Record<string, (body: string) => string> = {
       first(body, /action="\/tenants\/([^/"]*)\//u),
       first(body, /name="auth_session_id" value="([^"]*)"/u),
       entriesOf(body).map(violationFor),
+      rulesOf(body),
       LOCALE,
     ).body,
   'Create account': (body) => {
@@ -341,6 +371,7 @@ const RENDER_BACK: Record<string, (body: string) => string> = {
     return renderRegistrationForm(
       tenantOf(body),
       {
+        rules: rulesOf(body),
         signInPath: returnToOf(body),
         ...(failure === undefined ? {} : { failure }),
         ...(username === undefined ? {} : { username }),
@@ -372,7 +403,13 @@ const RENDER_BACK: Record<string, (body: string) => string> = {
   "Can't send a reset link": (body) =>
     renderResetRequestFailedPage(tenantOf(body), null, LOCALE).body,
   'Choose a new password': (body) =>
-    renderResetPasswordForm(tenantOf(body), keyOf(body), passwordFailureOf(body), LOCALE).body,
+    renderResetPasswordForm(
+      tenantOf(body),
+      keyOf(body),
+      passwordFailureOf(body),
+      rulesOf(body),
+      LOCALE,
+    ).body,
   'Password reset': (body) => renderResetPasswordSucceededPage(backOf(body), LOCALE).body,
   "Can't use this link": (body) =>
     renderResetLinkFailedPage(
@@ -389,6 +426,7 @@ const RENDER_BACK: Record<string, (body: string) => string> = {
       actionsOf(body),
       body.includes('name="password"'),
       passwordFailureOf(body),
+      rulesOf(body),
       LOCALE,
     ).body,
   'Account updated': (body) =>
@@ -502,7 +540,7 @@ describe('the pages the guides record are what the renderers produce for the sam
       const render = RENDER_BACK[titleOf(block)];
       if (render === undefined) return [];
       const body = bodyOf(block);
-      return render(body) === body ? [] : [block.where];
+      return unnonced(render(body)) === unnonced(body) ? [] : [block.where];
     });
     expect(drift).toEqual([]);
   });

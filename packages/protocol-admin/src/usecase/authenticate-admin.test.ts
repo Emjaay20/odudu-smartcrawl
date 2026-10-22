@@ -20,6 +20,13 @@ const FOREIGN: TenantLookup = {
   resetPasswordAllowed: false,
   maxSessionsPerBrowser: 5,
   clientRegistrationPolicy: 'disabled',
+  passwordRules: {
+    minLength: 15,
+    requireDigit: false,
+    requireUppercase: false,
+    requireLowercase: false,
+    requireSpecial: false,
+  },
 };
 
 async function foreignKey(): Promise<SigningKeyRecord> {

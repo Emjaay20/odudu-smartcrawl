@@ -1,9 +1,10 @@
-import { type PageLocale, type RenderedPage } from '@odudu/kernel';
+import { type PageLocale, type PasswordRules, type RenderedPage } from '@odudu/kernel';
 import { type LinkedRequiredAction } from '#/usecase/action-token';
 import { escapeHtml, intro, page } from '#/view/document';
-import { invalidAttributes, problemSummary } from '#/view/form-error';
+import { problemSummary } from '#/view/form-error';
 import { links } from '#/view/links';
 import { bdi, t, tHtml, type MessageId } from '#/view/messages';
+import { passwordField } from '#/view/password-field';
 import { passwordProblems, type PasswordFailure } from '#/view/password-rules';
 
 const ACTION_MESSAGE: Readonly<Record<LinkedRequiredAction, MessageId>> = {
@@ -33,24 +34,24 @@ export function renderRequiredActionsForm(
   actions: readonly LinkedRequiredAction[],
   setsPassword: boolean,
   failure: PasswordFailure | undefined,
+  rules: PasswordRules,
   locale: PageLocale,
 ): RenderedPage {
   const action = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/login-actions/action-token`;
   const problems = passwordProblems(failure, locale);
-  const attributes = `${invalidAttributes(problems, 'password')}${problems.length === 0 ? '' : ' autofocus'}`;
-  const password = setsPassword
-    ? `\n  <label>${tHtml(locale, 'requiredActions.newPassword')} <input type="password" name="password" autocomplete="new-password"${attributes}></label>`
-    : '';
+  const field = setsPassword
+    ? passwordField('requiredActions.newPassword', rules, problems, problems.length > 0, locale)
+    : null;
   return page(
     t(locale, 'requiredActions.title'),
     `${intro(tHtml(locale, 'requiredActions.title'), tenant)}
 <p>${tHtml(locale, 'requiredActions.intro')}</p>
 ${listHtml(actions, locale)}
 ${problemSummary(problems)}<form method="post" action="${action}">
-  <input type="hidden" name="key" value="${escapeHtml(key)}">${password}
+  <input type="hidden" name="key" value="${escapeHtml(key)}">${field === null ? '' : `\n  ${field.html}`}
   <button type="submit">${tHtml(locale, 'requiredActions.continue')}</button>
 </form>`,
-    null,
+    field === null ? null : field.script,
     [],
     locale,
   );

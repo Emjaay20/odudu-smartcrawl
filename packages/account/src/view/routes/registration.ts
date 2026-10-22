@@ -99,7 +99,10 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
       200,
       renderRegistrationForm(
         request.params.tenant,
-        { signInPath: signInPath(request.params.tenant, request.query.return_to) },
+        {
+          rules: tenant.passwordPolicy,
+          signInPath: signInPath(request.params.tenant, request.query.return_to),
+        },
         locale,
       ),
     );
@@ -129,6 +132,7 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
         renderRegistrationForm(
           request.params.tenant,
           {
+            rules: tenant.passwordPolicy,
             signInPath: returnTo,
             failure,
             ...(username === undefined ? {} : { username }),

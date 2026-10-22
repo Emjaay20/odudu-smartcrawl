@@ -19,17 +19,32 @@ vi.mock('#/view/messages', async (importOriginal) => {
 
 const EN = DEFAULT_PAGE_LOCALE;
 
+// The page's script carries a nonce fresh for each response.
+const withoutScript = (body: string): string =>
+  body.replace(/<script nonce="[^"]*">[\s\S]*?<\/script>/u, '<script nonce="N">…</script>');
+
+const RULES = {
+  minLength: 15,
+  requireDigit: false,
+  requireUppercase: false,
+  requireLowercase: false,
+  requireSpecial: false,
+};
+
 describe('renderRequiredActionsForm', () => {
   it('keeps the English markup exactly, with and without a password field', () => {
     expect(
-      renderRequiredActionsForm(
-        'acme',
-        'k"ey',
-        ['update-password', 'configure-totp'],
-        true,
-        undefined,
-        EN,
-      ).body,
+      withoutScript(
+        renderRequiredActionsForm(
+          'acme',
+          'k"ey',
+          ['update-password', 'configure-totp'],
+          true,
+          undefined,
+          RULES,
+          EN,
+        ).body,
+      ),
     ).toBe(`<header class="intro">
 <h1>Update your account</h1>
 <p class="tenant"><bdi>acme</bdi></p>
@@ -41,7 +56,15 @@ describe('renderRequiredActionsForm', () => {
 </ul>
 <form method="post" action="/tenants/acme/login-actions/action-token">
   <input type="hidden" name="key" value="k&quot;ey">
-  <label>New password <input type="password" name="password" autocomplete="new-password"></label>
+  <label>New password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" aria-describedby="password-rules-list"></label>
+  <div class="rules" id="password-rules" data-min="15">
+    <p class="rules-head"><span>Your password needs:</span><button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false" data-show="Show password" data-hide="Hide password">Show password</button></p>
+    <ul id="password-rules-list">
+      <li data-rule="length">At least 15 characters</li>
+      <li>Not a common password</li>
+    </ul>
+  </div>
+  <script nonce="N">…</script>
   <button type="submit">Continue</button>
 </form>`);
     const without = renderRequiredActionsForm(
@@ -50,6 +73,7 @@ describe('renderRequiredActionsForm', () => {
       ['configure-passkey'],
       false,
       undefined,
+      RULES,
       EN,
     );
     expect(without.body).not.toContain('password');
@@ -65,6 +89,7 @@ describe('renderRequiredActionsForm', () => {
       ['update-password'],
       true,
       [{ rule: 'require-digit', message: 'dev' }],
+      RULES,
       EN,
     );
     expect(body).toContain(`<li>Choose a new password</li>
@@ -76,7 +101,7 @@ describe('renderRequiredActionsForm', () => {
 </div>
 <form`);
     expect(body).toContain(
-      'autocomplete="new-password" aria-invalid="true" aria-describedby="form-error-0" autofocus>',
+      'autocomplete="new-password" id="password" minlength="15" aria-invalid="true" aria-describedby="form-error-0 password-rules-list" autofocus>',
     );
   });
 
@@ -87,6 +112,7 @@ describe('renderRequiredActionsForm', () => {
       ['configure-totp'],
       false,
       'required',
+      RULES,
       EN,
     );
     expect(body).not.toContain('aria-invalid');
@@ -99,6 +125,7 @@ describe('renderRequiredActionsForm', () => {
       ['update-password', 'configure-totp', 'configure-passkey', 'generate-recovery-codes'],
       false,
       undefined,
+      RULES,
       EN,
     );
     for (const text of [
@@ -118,6 +145,7 @@ describe('renderRequiredActionsForm', () => {
       ['configure-totp', 'update-password'],
       true,
       undefined,
+      RULES,
       FRENCH,
     );
     expect(page.html).toContain('<html lang="fr" dir="ltr">');
@@ -129,9 +157,9 @@ describe('renderRequiredActionsForm', () => {
   });
 
   it('writes lang and dir for a right-to-left locale', () => {
-    expect(renderRequiredActionsForm('acme', 'k', [], false, undefined, ARABIC).html).toContain(
-      '<html lang="ar" dir="rtl">',
-    );
+    expect(
+      renderRequiredActionsForm('acme', 'k', [], false, undefined, RULES, ARABIC).html,
+    ).toContain('<html lang="ar" dir="rtl">');
   });
 
   it('escapes the tenant and key, and isolates an action code it has no wording for', () => {
@@ -143,6 +171,7 @@ describe('renderRequiredActionsForm', () => {
         [hostile],
         true,
         undefined,
+        RULES,
         locale,
       );
       expect(html).not.toContain('<img');
@@ -154,7 +183,8 @@ describe('renderRequiredActionsForm', () => {
 
   it('does not take an action named like an object member for a catalogue entry', () => {
     expect(
-      renderRequiredActionsForm('acme', 'k', ['constructor' as never], false, undefined, EN).body,
+      renderRequiredActionsForm('acme', 'k', ['constructor' as never], false, undefined, RULES, EN)
+        .body,
     ).toContain('<li><bdi>constructor</bdi></li>');
   });
 });
@@ -194,7 +224,7 @@ describe('the actions pages with the way back a mailed link carried', () => {
 
   it('keeps it out of the form and links back from the done page', () => {
     expect(
-      renderRequiredActionsForm('acme', 'k', ['update-password'], true, undefined, EN).body,
+      renderRequiredActionsForm('acme', 'k', ['update-password'], true, undefined, RULES, EN).body,
     ).not.toContain('return_to');
     expect(renderRequiredActionsSucceededPage([], way, EN).body)
       .toBe(`<h1>Your account is updated</h1>

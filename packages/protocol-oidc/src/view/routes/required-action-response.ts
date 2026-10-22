@@ -10,7 +10,7 @@ import {
   type TotpEnrolmentOffer,
 } from '@odudu/authn-flows';
 import { requestContextFrom, type RequestContext } from '@odudu/domain-audit';
-import { type RenderedPage } from '@odudu/kernel';
+import { type PasswordRules, type RenderedPage } from '@odudu/kernel';
 import { type FastifyReply } from 'fastify';
 import { sendHtml } from '#/view/html-response';
 import { sendSignInExpired } from '#/view/routes/expired-sign-in';
@@ -23,6 +23,8 @@ import { continuation, type ContinuationDeps } from '#/view/routes/continuation'
 // repository's `TenantLookup` — the view layer never imports repository
 // (CLAUDE.md's layering table), and only `id` is read here.
 export interface RequiredActionResponseDeps extends ContinuationDeps {
+  // Also what the change-password page tells a person about the password.
+  findTenant(name: string): Promise<{ id: string; passwordRules: PasswordRules } | null>;
   authenticatedSubject(tenantId: string, authSessionId: string): Promise<string | null>;
   beginTotpEnrolment(
     tenantName: string,
@@ -95,7 +97,13 @@ export async function sendRequiredActionPage(
     }
   }
   if (action === 'update-password') {
-    return send(renderUpdatePasswordPage(tenantName, authSessionId, [], locale));
+    const tenant = await deps.findTenant(tenantName);
+    if (tenant !== null) {
+      return send(
+        renderUpdatePasswordPage(tenantName, authSessionId, [], tenant.passwordRules, locale),
+      );
+    }
+    return sendHtml(reply, 200, renderRequiredActionPage(action, signInPath, locale));
   }
   if (action !== 'configure-totp') {
     return sendHtml(reply, 200, renderRequiredActionPage(action, signInPath, locale));

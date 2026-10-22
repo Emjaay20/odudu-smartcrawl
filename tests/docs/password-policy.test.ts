@@ -13,6 +13,14 @@ import { at, loadSource, PROTOCOL_PAGES } from './markdown.js';
 
 const GUIDE = PROTOCOL_PAGES;
 
+const RULES = {
+  minLength: 15,
+  requireDigit: false,
+  requireUppercase: false,
+  requireLowercase: false,
+  requireSpecial: false,
+};
+
 const REFUSALS: readonly RegistrationRefusal[] = [
   'email_taken',
   'username_taken',
@@ -35,6 +43,7 @@ function itemsOf(body: string): string[] {
 // below instead of downgrading the transcript to a claim nobody re-ran.
 function possibleMessages(): Set<string> {
   const base = {
+    tenantName: 'acme',
     minLength: 8,
     requireDigit: false,
     requireUppercase: false,
@@ -51,6 +60,7 @@ function possibleMessages(): Set<string> {
   const reported = [
     ...evaluatePassword('short', strict, subject),
     ...evaluatePassword('myadapassword', base, subject),
+    ...evaluatePassword('password', base, subject),
     REUSED_PASSWORD,
     PASSWORD_TOO_LONG,
   ].map(({ rule, message }) => ({
@@ -61,7 +71,7 @@ function possibleMessages(): Set<string> {
   const messages = new Set<string>();
   for (const violation of reported) {
     for (const item of itemsOf(
-      renderResetPasswordForm('acme', 'key', [violation], DEFAULT_PAGE_LOCALE).body,
+      renderResetPasswordForm('acme', 'key', [violation], RULES, DEFAULT_PAGE_LOCALE).body,
     )) {
       expect(item, `no catalogue sentence for the rule ${violation.rule}`).not.toContain('<bdi>');
       messages.add(item);
@@ -72,7 +82,7 @@ function possibleMessages(): Set<string> {
     { missing: ['username', 'email', 'password'] as const },
   ]) {
     for (const item of itemsOf(
-      renderRegistrationForm('acme', { failure }, DEFAULT_PAGE_LOCALE).body,
+      renderRegistrationForm('acme', { rules: RULES, failure }, DEFAULT_PAGE_LOCALE).body,
     )) {
       messages.add(item);
     }
@@ -84,8 +94,8 @@ function possibleMessages(): Set<string> {
 function violationPageHeadings(): Set<string> {
   const headings = new Set<string>();
   for (const body of [
-    renderRegistrationForm('acme', {}, DEFAULT_PAGE_LOCALE).body,
-    renderResetPasswordForm('acme', 'key', undefined, DEFAULT_PAGE_LOCALE).body,
+    renderRegistrationForm('acme', { rules: RULES }, DEFAULT_PAGE_LOCALE).body,
+    renderResetPasswordForm('acme', 'key', undefined, RULES, DEFAULT_PAGE_LOCALE).body,
   ]) {
     const title = /<h1>(?<title>[^<]+)<\/h1>/u.exec(body)?.groups?.title;
     if (title !== undefined) headings.add(title);

@@ -59,6 +59,8 @@ export function registerRequiredActionRoute(
       request.query.action === 'update-password' &&
       authSessionId !== undefined
     ) {
+      const found = await deps.findTenant(tenantName);
+      if (found === null) return sendRequestError(reply, deps, 400, 'error.unknownTenant');
       const { locale, continuing } = await continuation(
         deps,
         tenantName,
@@ -70,7 +72,13 @@ export function registerRequiredActionRoute(
         reply,
         400,
         continuing(
-          renderUpdatePasswordPage(tenantName, authSessionId, [PASSWORD_TOO_LONG], locale),
+          renderUpdatePasswordPage(
+            tenantName,
+            authSessionId,
+            [PASSWORD_TOO_LONG],
+            found.passwordRules,
+            locale,
+          ),
         ),
       );
     }
@@ -103,6 +111,11 @@ export function registerRequiredActionRoute(
       return sendRequestError(reply, deps, 400, 'error.pendingActionNotReady');
     }
 
+    const tenant = await deps.findTenant(tenantName);
+    if (tenant === null) {
+      return sendRequestError(reply, deps, 400, 'error.unknownTenant');
+    }
+
     // Back to the same form with every rule it broke, and 400 for the same
     // reason registration and reset redemption answer one: the submission
     // was refused, so a 200 would tell a client the password had changed.
@@ -118,14 +131,15 @@ export function registerRequiredActionRoute(
         reply,
         400,
         continuing(
-          renderUpdatePasswordPage(tenantName, outcome.authSessionId, outcome.violations, locale),
+          renderUpdatePasswordPage(
+            tenantName,
+            outcome.authSessionId,
+            outcome.violations,
+            tenant.passwordRules,
+            locale,
+          ),
         ),
       );
-    }
-
-    const tenant = await deps.findTenant(tenantName);
-    if (tenant === null) {
-      return sendRequestError(reply, deps, 400, 'error.unknownTenant');
     }
 
     // The action is done, so the parked login resumes where it stopped:

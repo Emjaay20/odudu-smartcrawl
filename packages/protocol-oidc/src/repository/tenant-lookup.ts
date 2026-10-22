@@ -1,5 +1,5 @@
 import { tenants, type Database } from '@odudu/db';
-import { refuseBidiControls } from '@odudu/kernel';
+import { refuseBidiControls, type PasswordRules } from '@odudu/kernel';
 import { eq } from 'drizzle-orm';
 
 export interface TenantLookup {
@@ -42,12 +42,63 @@ export interface TenantLookup {
   // and 'token' both advertise the endpoint and differ only in whether an
   // initial access token is required (ADR 0026).
   clientRegistrationPolicy: 'disabled' | 'open' | 'token';
+  // What the new-password pages tell a person about the password they
+  // choose; the same row the lookup already reads.
+  passwordRules: PasswordRules;
 }
 
 export interface NewTenant {
   id: string;
   name: string;
   displayName?: string | null;
+}
+
+const LOOKUP_COLUMNS = {
+  id: tenants.id,
+  enabled: tenants.enabled,
+  verifyEmail: tenants.verifyEmail,
+  ssoSessionMaxSeconds: tenants.ssoSessionMaxSeconds,
+  ssoSessionIdleSeconds: tenants.ssoSessionIdleSeconds,
+  rememberMeIdleSeconds: tenants.rememberMeIdleSeconds,
+  rememberMeMaxSeconds: tenants.rememberMeMaxSeconds,
+  rememberMeAllowed: tenants.rememberMeAllowed,
+  loginWithEmail: tenants.loginWithEmail,
+  registrationAllowed: tenants.registrationAllowed,
+  resetPasswordAllowed: tenants.resetPasswordAllowed,
+  maxSessionsPerBrowser: tenants.maxSessionsPerBrowser,
+  clientRegistrationPolicy: tenants.clientRegistrationPolicy,
+  passwordMinLength: tenants.passwordMinLength,
+  passwordRequireDigit: tenants.passwordRequireDigit,
+  passwordRequireUppercase: tenants.passwordRequireUppercase,
+  passwordRequireLowercase: tenants.passwordRequireLowercase,
+  passwordRequireSpecial: tenants.passwordRequireSpecial,
+};
+
+type LookupRow = {
+  [K in keyof typeof LOOKUP_COLUMNS]: (typeof LOOKUP_COLUMNS)[K]['_']['data'];
+};
+
+function lookupOf(row: LookupRow): TenantLookup {
+  const {
+    passwordMinLength,
+    passwordRequireDigit,
+    passwordRequireUppercase,
+    passwordRequireLowercase,
+    passwordRequireSpecial,
+    ...rest
+  } = row;
+  return {
+    ...rest,
+    clientRegistrationPolicy:
+      row.clientRegistrationPolicy as TenantLookup['clientRegistrationPolicy'],
+    passwordRules: {
+      minLength: passwordMinLength,
+      requireDigit: passwordRequireDigit,
+      requireUppercase: passwordRequireUppercase,
+      requireLowercase: passwordRequireLowercase,
+      requireSpecial: passwordRequireSpecial,
+    },
+  };
 }
 
 // Resolving {tenant} from the request path happens before any tenant context
@@ -58,31 +109,10 @@ export interface NewTenant {
 export function tenantLookupRepository(db: Database) {
   return {
     async byName(name: string): Promise<TenantLookup | null> {
-      const rows = await db
-        .select({
-          id: tenants.id,
-          enabled: tenants.enabled,
-          verifyEmail: tenants.verifyEmail,
-          ssoSessionMaxSeconds: tenants.ssoSessionMaxSeconds,
-          ssoSessionIdleSeconds: tenants.ssoSessionIdleSeconds,
-          rememberMeIdleSeconds: tenants.rememberMeIdleSeconds,
-          rememberMeMaxSeconds: tenants.rememberMeMaxSeconds,
-          rememberMeAllowed: tenants.rememberMeAllowed,
-          loginWithEmail: tenants.loginWithEmail,
-          registrationAllowed: tenants.registrationAllowed,
-          resetPasswordAllowed: tenants.resetPasswordAllowed,
-          maxSessionsPerBrowser: tenants.maxSessionsPerBrowser,
-          clientRegistrationPolicy: tenants.clientRegistrationPolicy,
-        })
-        .from(tenants)
-        .where(eq(tenants.name, name));
+      const rows = await db.select(LOOKUP_COLUMNS).from(tenants).where(eq(tenants.name, name));
       const row = rows[0];
       if (row === undefined) return null;
-      return {
-        ...row,
-        clientRegistrationPolicy:
-          row.clientRegistrationPolicy as TenantLookup['clientRegistrationPolicy'],
-      };
+      return lookupOf(row);
     },
 
     // The bootstrap seed command creates the first tenant through this same
@@ -94,30 +124,12 @@ export function tenantLookupRepository(db: Database) {
       const rows = await db
         .insert(tenants)
         .values({ id: input.id, name: input.name, displayName: input.displayName ?? null })
-        .returning({
-          id: tenants.id,
-          enabled: tenants.enabled,
-          verifyEmail: tenants.verifyEmail,
-          ssoSessionMaxSeconds: tenants.ssoSessionMaxSeconds,
-          ssoSessionIdleSeconds: tenants.ssoSessionIdleSeconds,
-          rememberMeIdleSeconds: tenants.rememberMeIdleSeconds,
-          rememberMeMaxSeconds: tenants.rememberMeMaxSeconds,
-          rememberMeAllowed: tenants.rememberMeAllowed,
-          loginWithEmail: tenants.loginWithEmail,
-          registrationAllowed: tenants.registrationAllowed,
-          resetPasswordAllowed: tenants.resetPasswordAllowed,
-          maxSessionsPerBrowser: tenants.maxSessionsPerBrowser,
-          clientRegistrationPolicy: tenants.clientRegistrationPolicy,
-        });
+        .returning(LOOKUP_COLUMNS);
       const row = rows[0];
       if (row === undefined) {
         throw new Error('insert into tenants returned no row');
       }
-      return {
-        ...row,
-        clientRegistrationPolicy:
-          row.clientRegistrationPolicy as TenantLookup['clientRegistrationPolicy'],
-      };
+      return lookupOf(row);
     },
   };
 }

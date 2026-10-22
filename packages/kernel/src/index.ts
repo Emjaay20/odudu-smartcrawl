@@ -1,6 +1,15 @@
 export { KERNEL_VERSION } from '#/version';
 export { OduduError, ERROR_CODES, type ErrorCode } from '#/errors';
 export { BIDI_REFUSED, BidiControlError, containsBidiControl, refuseBidiControls } from '#/bidi';
+export {
+  PASSWORD_FIELD_ID,
+  PASSWORD_HINTS_SCRIPT,
+  PASSWORD_RULES_LIST_ID,
+  passwordHints,
+  type PasswordHints,
+  type PasswordHintText,
+  type PasswordRules,
+} from '#/password-hints';
 export { type Clock, systemClock, FakeClock } from '#/clock';
 export { isUuid, newId, scriptNonce } from '#/ids';
 export {

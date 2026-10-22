@@ -1,4 +1,4 @@
-import { type PageLocale, type RenderedPage } from '@odudu/kernel';
+import { type PageLocale, type PasswordRules, type RenderedPage } from '@odudu/kernel';
 import { sendVerificationHtml } from '#/view/verification-html';
 import { escapeHtml, intro, page } from '#/view/document';
 import { links, type WayOn } from '#/view/links';
@@ -11,6 +11,7 @@ import {
 } from '#/view/form-error';
 import { returnToField } from '#/view/return-to';
 import { t, tHtml } from '#/view/messages';
+import { passwordField } from '#/view/password-field';
 import { passwordProblems, type PasswordFailure } from '#/view/password-rules';
 
 export { sendVerificationHtml as sendResetHtml };
@@ -106,20 +107,27 @@ export function renderResetPasswordForm(
   tenant: string,
   key: string,
   failure: PasswordFailure | undefined,
+  rules: PasswordRules,
   locale: PageLocale,
 ): RenderedPage {
   const action = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/login-actions/action-token`;
   const problems = passwordProblems(failure, locale);
-  const attributes = `${invalidAttributes(problems, 'password')}${problems.length === 0 ? '' : ' autofocus'}`;
+  const password = passwordField(
+    'reset.form.newPassword',
+    rules,
+    problems,
+    problems.length > 0,
+    locale,
+  );
   return page(
     t(locale, 'reset.form.title'),
     `${intro(tHtml(locale, 'reset.form.title'), tenant)}
 ${problemSummary(problems)}<form method="post" action="${action}">
   <input type="hidden" name="key" value="${escapeHtml(key)}">
-  <label>${tHtml(locale, 'reset.form.newPassword')} <input type="password" name="password" autocomplete="new-password"${attributes}></label>
+  ${password.html}
   <button type="submit">${tHtml(locale, 'reset.form.submit')}</button>
 </form>`,
-    null,
+    password.script,
     [],
     locale,
   );

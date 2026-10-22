@@ -1,4 +1,4 @@
-import { type PageLocale, type RenderedPage } from '@odudu/kernel';
+import { type PageLocale, type PasswordRules, type RenderedPage } from '@odudu/kernel';
 import { escapeHtml, intro, page } from '#/view/document';
 import { links, type WayOn } from '#/view/links';
 import {
@@ -10,6 +10,7 @@ import {
 } from '#/view/form-error';
 import { returnToField } from '#/view/return-to';
 import { t, tHtml, type MessageId } from '#/view/messages';
+import { passwordField } from '#/view/password-field';
 import { ruleHtml, type PasswordViolation } from '#/view/password-rules';
 
 export type RegistrationField = 'username' | 'email' | 'password';
@@ -73,6 +74,8 @@ function problemsOf(failure: RegistrationFailure | undefined, locale: PageLocale
 // What the form is rendered with beyond its tenant. Only the username and the
 // email are ever given back: the password is never put in a field again.
 export interface RegistrationForm {
+  // What the tenant holds a password to, told to the person beside the field.
+  readonly rules: PasswordRules;
   readonly signInPath?: string | null;
   readonly failure?: RegistrationFailure;
   readonly username?: string;
@@ -95,6 +98,13 @@ export function renderRegistrationForm(
   const focus = firstInvalidField(problems, FIELD_ORDER);
   const attributes = (field: RegistrationField): string =>
     `${invalidAttributes(problems, field)}${focus === field ? ' autofocus' : ''}`;
+  const password = passwordField(
+    'registration.password',
+    form.rules,
+    problems,
+    focus === 'password',
+    locale,
+  );
   const value = (text: string | undefined): string => {
     const echoed = text === undefined ? undefined : echoedValue(text);
     return echoed === undefined ? '' : ` value="${escapeHtml(echoed)}"`;
@@ -105,10 +115,10 @@ export function renderRegistrationForm(
 ${problemSummary(problems)}<form method="post" action="${action}">${returnToField(form.signInPath)}
   <label>${tHtml(locale, 'registration.username')} <input type="text" name="username" autocomplete="username"${value(form.username)}${attributes('username')}></label>
   <label>${tHtml(locale, 'registration.email')} <input type="email" name="email" autocomplete="email"${value(form.email)}${attributes('email')}></label>
-  <label>${tHtml(locale, 'registration.password')} <input type="password" name="password" autocomplete="new-password"${attributes('password')}></label>
+  ${password.html}
   <button type="submit">${tHtml(locale, 'registration.submit')}</button>
 </form>${links([backToSignIn(form.signInPath, locale)])}`,
-    null,
+    password.script,
     [],
     locale,
   );

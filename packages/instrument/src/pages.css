@@ -354,6 +354,55 @@ main > svg:not(.mark, .lost) {
   font-size: var(--type-13);
 }
 
+/* What a password must be, beside its field. Its row is as tall as the toggle
+   that a script reveals, so nothing moves when it does. */
+.rules {
+  color: var(--ink-muted);
+  font-size: var(--type-13);
+}
+
+.rules-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-block-size: var(--control-height);
+  margin: 0;
+}
+
+.rules ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rules li {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.rules li::before {
+  content: '\2022';
+  content: '\2022' / '';
+  flex: none;
+  inline-size: 1em;
+  text-align: center;
+}
+
+.rules[data-live] li[data-met='true']::before {
+  content: '\2713';
+  content: '\2713' / '';
+}
+
+.rules[data-live] li[data-met='false']::before {
+  content: '\25CB';
+  content: '\25CB' / '';
+}
+
+.rules[data-live] li[data-met='true'] {
+  color: var(--ink-primary);
+}
+
 iframe {
   position: absolute;
   inset-inline-start: 0;

@@ -16,11 +16,20 @@ export function problemSummary(problems: readonly Problem[]): string {
   return `<div class="alert" role="alert" id="form-error">\n<ul>\n${items.join('\n')}\n</ul>\n</div>\n`;
 }
 
-export function invalidAttributes(problems: readonly Problem[], field: string): string {
+// `alsoDescribedBy` names what else explains the field, such as its rules, so
+// a refusal does not displace it.
+export function invalidAttributes(
+  problems: readonly Problem[],
+  field: string,
+  alsoDescribedBy: readonly string[] = [],
+): string {
   const ids = problems.flatMap((problem, index) =>
     problem.fields.includes(field) ? [entryId(index)] : [],
   );
-  return ids.length === 0 ? '' : ` aria-invalid="true" aria-describedby="${ids.join(' ')}"`;
+  const described = [...ids, ...alsoDescribedBy];
+  return `${ids.length === 0 ? '' : ' aria-invalid="true"'}${
+    described.length === 0 ? '' : ` aria-describedby="${described.join(' ')}"`
+  }`;
 }
 
 // The field a re-rendered form puts the cursor in: the first, in the order

@@ -1,7 +1,13 @@
-import { MAX_PASSWORD_LENGTH, type PageLocale, type RenderedPage } from '@odudu/kernel';
+import {
+  MAX_PASSWORD_LENGTH,
+  type PageLocale,
+  type PasswordRules,
+  type RenderedPage,
+} from '@odudu/kernel';
 import { type PasswordViolation } from '#/schema/password-violation';
 import { escapeHtml, intro, page } from '#/view/document';
-import { invalidAttributes, problemSummary } from '#/view/form-error';
+import { problemSummary } from '#/view/form-error';
+import { passwordField } from '#/view/password-field';
 import { bdi, t, tHtml, type MessageId } from '#/view/messages';
 
 // Every rule a violation can name, by the code the domain reports it under.
@@ -14,6 +20,7 @@ const RULE_MESSAGE: Readonly<Record<string, MessageId>> = {
   'require-special': 'updatePassword.rule.requireSpecial',
   'not-username': 'updatePassword.rule.notUsername',
   'not-email': 'updatePassword.rule.notEmail',
+  'common-password': 'updatePassword.rule.common',
   'not-reused': 'updatePassword.rule.notReused',
   superseded: 'updatePassword.rule.superseded',
 };
@@ -39,6 +46,7 @@ export function renderUpdatePasswordPage(
   tenant: string,
   authSessionId: string,
   violations: readonly PasswordViolation[] = [],
+  rules: PasswordRules,
   locale: PageLocale,
 ): RenderedPage {
   const target = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/login-actions/required-action?action=update-password`;
@@ -46,16 +54,20 @@ export function renderUpdatePasswordPage(
     fields: ['password'],
     html: ruleHtml(violation, locale),
   }));
-  const focus = problems.length === 0 ? '' : ' autofocus';
+  const password = passwordField(
+    'updatePassword.newPassword',
+    rules,
+    problems,
+    problems.length > 0,
+    locale,
+  );
   const title = t(locale, 'updatePassword.title');
   const body = `${intro(tHtml(locale, 'updatePassword.title'), tenant)}
 <p>${tHtml(locale, 'updatePassword.intro')}</p>
 ${problemSummary(problems)}<form method="post" action="${target}">
   <input type="hidden" name="auth_session_id" value="${escapeHtml(authSessionId)}">
-  <label>${tHtml(locale, 'updatePassword.newPassword')} <input type="password" name="password" autocomplete="new-password"${invalidAttributes(problems, 'password')}${focus}></label>
+  ${password.html}
   <button type="submit">${tHtml(locale, 'updatePassword.submit')}</button>
 </form>`;
-  // No script: nothing on this page fetches anything, so the base
-  // content-security policy describes it exactly.
-  return page(title, body, null, [], locale);
+  return page(title, body, password.script, [], locale);
 }

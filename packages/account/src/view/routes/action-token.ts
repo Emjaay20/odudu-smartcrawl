@@ -152,6 +152,7 @@ async function completeActionsLink(
         peeked.actions,
         setsPassword,
         failure,
+        tenant.passwordPolicy,
         locale,
       ),
     );
@@ -260,7 +261,13 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
       return sendVerificationHtml(
         reply,
         200,
-        renderResetPasswordForm(request.params.tenant, key, undefined, locale),
+        renderResetPasswordForm(
+          request.params.tenant,
+          key,
+          undefined,
+          tenant.passwordPolicy,
+          locale,
+        ),
       );
     }
 
@@ -283,6 +290,7 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
           peeked.actions,
           peeked.setsPassword,
           undefined,
+          tenant.passwordPolicy,
           locale,
         ),
       );
@@ -354,7 +362,7 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
       sendVerificationHtml(
         reply,
         400,
-        renderResetPasswordForm(request.params.tenant, key, failure, locale),
+        renderResetPasswordForm(request.params.tenant, key, failure, tenant.passwordPolicy, locale),
       );
 
     // Listed as a rule of the policy, because to the person typing it that
