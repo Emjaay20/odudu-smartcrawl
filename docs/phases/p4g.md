@@ -2851,7 +2851,7 @@ link_ while the tenant still allows resets.
   from scratch. It holds what the browser's address bar already held at `/authorize`
   (client, redirect, state, challenge), no personal data and no session handle. It is
   absent when the request cannot be rebuilt (bound to a subject by a hint).
-- **Mailed links.** Replaced in Increment 31m (below): the mailed link carries the key and
+- **Mailed links.** Superseded by Increment 31m (below), as is the ruling that a state-less restart is accepted: the mailed link carries the key and
   nothing of the request, and the page it opens offers the way back only to the browser that
   parked the request. The reduced `return_to` this increment first mailed, and `mailedSignInPath`
   with it, are gone.
@@ -2959,7 +2959,7 @@ point: the server sign-in succeeded and the SSO session existed, but the console
 requires the `state` it bound to its own login cookie (`takeLogin` in
 `packages/console-gateway/src/usecase/complete-login.ts`) and refused a callback that had none.
 Any application that checks its own `state` or `nonce` fails the same way, and that is most of
-them. **That ruling is withdrawn**: a mailed link never restarts a request that lacks the
+them. **That ruling is superseded**: a mailed link never restarts a request that lacks the
 application's own `state` and `nonce`.
 
 **What tied a browser to its parked sign-in before this increment: nothing.** The parked request is
@@ -3044,6 +3044,14 @@ wider on the token insert. Token page: the token read it already made, plus one 
 session only when the token names one AND the request carries a readable cookie. A request with no
 cookie costs no connection for it (`findHeldSignInIn`). Nothing is unbounded; the cookie value is
 bounded at 36 + 1 + 128 characters.
+
+**Shared computers.** Someone using the same browser profile can continue a parked sign-in until it
+expires. The cookie is HttpOnly and lives only as long as the login lifetime, and the handle is
+expired when the sign-in completes (a finished login or consent), when it names nothing.
+Continuing only restarts that application's own sign-in: it grants nothing.
+
+**Duplicates.** A planted duplicate of the cookie (another `Domain` or `Path`) cannot hide the real
+one: every pair of the name is tried and each candidate is still checked against its row.
 
 **Left as it was, and why.** An administrator-issued link names no sign-in and still offers none:
 there is no application behind it, placed on P4f. A link opened in a different browser cannot

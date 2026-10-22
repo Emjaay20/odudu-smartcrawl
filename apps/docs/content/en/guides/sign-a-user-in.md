@@ -55,7 +55,7 @@ curl -sS -D - --get \
   'http://localhost:3197/tenants/demo/protocol/openid-connect/auth'
 ```
 
-(This run used another port, 3197.) Odudu answers with its own sign-in page, named for your client and the tenant. The `set-cookie` header is how Odudu remembers, for thirty minutes, which sign-in this browser started; you do nothing with it.
+(This run used another port, 3197.) Odudu answers with its own sign-in page, named for your client and the tenant. The `set-cookie` header is how Odudu remembers which sign-in this browser started, for the sign-in's lifetime (thirty minutes by default); you do nothing with it.
 
 ```
 HTTP/1.1 200 OK
