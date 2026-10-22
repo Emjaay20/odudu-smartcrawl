@@ -2638,3 +2638,101 @@ negotiator (bytes and entries), a path is lower-cased and decoded once, so every
 Map or Set, no write through a module-scope name) in place of the heap-growth test it replaces. The database test counts every property
 read and call on a recording handle and asserts zero for the 404 page, the 404 and 500 documents and the 500 page; a test that reads
 it shows the detector fires.
+
+### Increment 31h, the console's failure screens
+
+**Found.** The console had `ChunkBoundary` (chunk-load errors only; it rethrows the rest "to the boundary above") and a not-found
+component, and nothing else: no router `errorComponent`, no root boundary, no `createRoot` callbacks. A render error inside a route
+showed TanStack's unbranded default with the raw message; one above the routes left a blank page. Reading the installed router
+(1.170.39, `Match.js`, `Matches.js`, `CatchBoundary.js`) also showed a third surface: `MatchesInner` wraps the root match in its own
+`CatchBoundary` with the unbranded `ErrorComponent`, switched off by `disableGlobalCatchBoundary`. A route that sets no
+`errorComponent` and a router with no `defaultErrorComponent` gets **no** boundary at all (`ResolvedCatchBoundary` is a fragment).
+
+**What a person sees.**
+
+- A page that throws while rendering: the rail and top bar stay; in place of the page, a panel under the heading "Something went
+  wrong" with "Try again" (resets the boundary and draws the page again), "Back to overview" (a link, so the unsaved-changes guard
+  asks first) and "Reload the console" (also through the guard). Focus is on the heading. Below it, "Quote this when you report the
+  problem": a block of three lines, the error id (8 characters from `crypto.getRandomValues`, no I, L, O or U), the route as a
+  template (`/$tenant/clients/$id`, never the address, tenant or query) and the time, with a Copy button that copies exactly those
+  lines. A new failure on Try again draws a new id. Navigating away resets the boundary (the router's reset key is the match).
+- The shell itself failing (the root and tenant routes draw it): the same panel alone on the page under the product name, with the
+  same three actions.
+- A failure above every route (providers, toast region, router machinery): a standalone page, the product name, the same panel and
+  a single "Reload the console". It reads no context the failed tree provided; it needs only the design tokens. Its route line is read
+  from the router's state when it draws, so it says `(none)` if the router never matched anything.
+- Production never shows the error message or stack on the page. A development build (`import.meta.env.DEV`) also shows the message.
+  The full error goes to `console.error` beside a line that carries the same id: `odudu console failure 9CMGSK6X (rendering) at /$tenant/keys`.
+- A chunk that did not arrive keeps its own page ("This part of the console could not be loaded"); any other error it caught is
+  thrown on to the panel above, as before.
+
+**Decisions.**
+
+- `features/failure` (service: report, id, details text, wording; adapter: CSPRNG, build mode, console, reload; repository: the
+  adapter behind a few functions; usecase: `useFailureReport`, `useRouteFailure`, `useRootFailure`, `recordFailure`; view:
+  `RouteFailure`, `ShellFailure`, `RootFailure`, and the one class, `RootBoundary`, which holds the error and draws). The panel
+  itself is `shared/view/FailurePanel`, wording passed in as props, because the gallery may show only shared views. `CONSOLE_ROOT`
+  moved to `shared/service/address` (the session feature re-exports it), because a service may import only services. Searched
+  before writing: `shared/view` (`ChunkBoundary`, `LostFrame`, `EmptyState`, `CopyValue`, `Button`, `ButtonLink`, `BrandLine`),
+  `shared/service` (`failure.ts` is about gateway results, not render errors), `features/session` (`useReloadConsole`, which is the
+  guarded reload; `CONSOLE_ROOT`, now exported from its index), `shared/adapter/clock`. Reused: `LostFrame` for both standalone
+  variants, `CopyValue` (block form, so the copied text is the shown text), `Button`, `ButtonLink`, `useReloadConsole`,
+  `currentTime`, `tenantPage`, `isTenantName`. A new feature rather than `shell` or `session`, because it is neither of theirs and
+  both would otherwise import it back.
+- `role="alert"` on the panel, as `EmptyState`'s failed variant and `ChunkFailed` have: the page a person was about to read is
+  replaced without their asking, which is the case for an alert, and focus alone would not tell a screen reader what happened.
+  Heading focus is there so a keyboard does not stay on a control that is gone. A panel drawn as a gallery specimen takes neither
+  (`announced={false}`), and is a `div`, since two copies on one page would be two landmarks of one name.
+- A route reports its own id (state made once on mount, logged in an effect). `onCaughtError` is therefore told to log only what no
+  panel shows an id for: the chunk boundary's `ChunkLoadError`, and any boundary that is not ours or the router's; an error a panel
+  caught is not logged a second time under another id. `onUncaughtError` and `onRecoverableError` always log, with an id and the
+  component stack. `rootErrorOptions` is in `app/` because it names the three boundary classes.
+- The page that threw is not named by message anywhere a person can copy it; the three copied lines carry nothing about them.
+- `disableGlobalCatchBoundary: true`, so an error above the root match reaches `RootBoundary` rather than the router's unbranded panel.
+
+**Gaps, placed.**
+
+- **No client-error endpoint.** Nothing receives these reports: the id exists to be quoted by a person and found in a browser
+  console. An endpoint that stores them is a separate decision (what is stored, retention, who can read it, abuse of an
+  unauthenticated sink) and is not built here. Owner decision, not scheduled.
+- **No revision in the details.** The console bundle does not know the image's revision (`ODUDU_REVISION` reaches the image label,
+  not the build), so the details carry none. Carrying it would put the revision in the bundle's hash and change every chunk on
+  every commit; left unbuilt.
+- **`window` `error` and `unhandledrejection` listeners are not added.** Nothing proved a need. Today an error in an event handler,
+  a timer or a promise that is not awaited by React is not a render error, so no boundary sees it: the browser reports it in the
+  console as an uncaught error with no id, and the page stays as it was (not blank, and not swallowed). The console's own calls
+  return failures as values (`GatewayResult`), so this is not a path its pages use to fail. If one were added it would log with the
+  same `recordFailure`; it would draw nothing, because there is no page to replace.
+- **The root fallback's Reload skips the unsaved-changes guard**: the guard's dialog lives in the tree that failed, and by then
+  there is no form left to hold unsaved.
+
+**Tests.** Services (`report`, `address`) were written first and watched fail on the missing module. The views and the router wiring
+were written after the services and checked by mutation: with `defaultErrorComponent` removed, the "inside the shell" test fails
+(a page error then reaches the tenant route's panel, which has no shell around it).
+Component tests in jsdom: `app/App/failure.test.tsx` (a throwing page shows the panel inside the shell with focus on the
+heading; production shows no message and an id; the details are the shown text and match the template; Copy copies it; the id is
+logged with the whole error; development shows the message; Try again recovers and a second failure takes a new id; Back to
+overview resets; keyboard order; Reload asks the guard; a throwing shell draws the panel alone; a throwing toast region draws the
+root fallback with no provider), `RouteFailure`/`ShellFailure`/`RootFailure`/`RootBoundary`/`FailurePanel` tests with axe in both
+themes, `rootErrorOptions` against a real `createRoot` (the chunk boundary logs, a panel's error is logged once under the id it
+shows), the router's options, and the repository (CSPRNG, eight bytes, build mode read when asked). The build mode is stubbed with
+`vi.stubEnv('DEV', false)`, which Vitest supports for `import.meta.env`.
+`apps/admin-console/e2e/failure.spec.ts` runs against the production image and ships no crash switch: the page failure is a
+`page.route` answering the Signing keys chunk with a module whose page throws; the root failure is a `page.route` serving the entry
+chunk with the toast region's label expression replaced by a throw, asserting the replacement happened so a changed bundle fails
+the test. Both check the panel, axe in all four theme states, a phone's fit, focus, no message in the page, the logged id matching
+the shown one, Copy against the clipboard, Try again drawing a new id, Back to overview, and Reload. The production bundle holds no
+test hook: nothing was added to ship; `grep` for the test's own error text over a production build finds nothing.
+`tests/lint/cross-package-reads.test.ts` lists `adapter/browser.ts` with no targets, because the check takes `import.meta.env` for a
+path root.
+
+**Cost.** A class component whose render returns `this.props.children` while nothing has failed: no extra render and no state
+change on the happy path; the route panel and its hooks mount only on a failure. The entry chunk is 366.6 kB (117.6 kB gzip, Vite's
+figure) before and 375.6 kB (120.9 kB) after; the entry plus the chunks the HTML preloads is 765.6 kB raw and 240.0 kB gzip before,
+774.7 kB and 243.6 kB after (gzip -9; +9.1 kB and +3.6 kB). The panel, `CopyValue` and `ButtonLink` are static in the entry now,
+since the root fallback must draw with nothing else loaded. That took the first load past `console-phone-chunk`'s 242,000 B
+(244,138 B at the test's own measure); the budget is raised to 246,000 B with the reason beside it, as the file asks. The
+owner may prefer to find 2.2 kB elsewhere instead.
+
+**Screenshots** (`p4g-docs/console-failure-route-*` and `console-failure-root-*`, desktop and phone, light and dark; the root one
+shows the Copy outcome after a click).

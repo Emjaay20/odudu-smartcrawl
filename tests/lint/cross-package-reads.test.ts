@@ -8,6 +8,9 @@ import { describe, expect, it } from 'vitest';
 // whose paths this check cannot bound is listed with what it reads, and each
 // target must be one of those inputs: its package's own, or `$TURBO_ROOT$/…`.
 const READS: readonly { file: string; targets: readonly string[] }[] = [
+  // Reads the build mode from import.meta.env, which the check takes for a
+  // path root; it opens no file, so there is no input to cover.
+  { file: 'apps/admin-console/src/features/failure/adapter/browser.ts', targets: [] },
   { file: 'apps/server/src/cli/registry.test.ts', targets: ['apps/server/src/**'] },
   { file: 'apps/server/src/cli/unknown-command.test.ts', targets: ['apps/server/src/main.ts'] },
   { file: 'apps/server/tests/seed-bidi.int.test.ts', targets: ['apps/server/src/**'] },

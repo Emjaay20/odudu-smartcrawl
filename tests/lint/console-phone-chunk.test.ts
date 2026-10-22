@@ -23,9 +23,11 @@ const FEATURE_ONLY = [
 const ENTRY_GZIP_BUDGET = 153_000;
 
 // The same bound over everything loaded first: the entry and each chunk it
-// imports statically. Set at 229,800 B, plus 5%, rounded up to a whole kB.
-// Lazy chunks are not budgeted.
-const FIRST_LOAD_GZIP_BUDGET = 242_000;
+// imports statically. Set at 229,800 B, plus 5%, rounded up to a whole kB;
+// raised from 242,000 B to 246,000 B for the failure screens, which cost
+// 3.6 kB gzipped because the root fallback must draw with nothing else
+// loaded. Lazy chunks are not budgeted.
+const FIRST_LOAD_GZIP_BUDGET = 246_000;
 
 interface Chunk {
   readonly name: string;

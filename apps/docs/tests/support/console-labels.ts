@@ -106,6 +106,22 @@ export const DEFINED: Readonly<Record<string, Defined>> = {
   ),
   Password: at(MESSAGES, "'login.password': 'Password'"),
   'Sign out': feature('shell/view/RailFooter/RailFooter.tsx', 'Sign out'),
+  // The panel a failed page is replaced by.
+  'Something went wrong': feature(
+    'failure/service/wording.ts',
+    "FAILURE_TITLE = 'Something went wrong'",
+  ),
+  'Try again': feature('failure/service/wording.ts', "TRY_AGAIN_LABEL = 'Try again'"),
+  'Back to overview': feature(
+    'failure/service/wording.ts',
+    "BACK_TO_OVERVIEW_LABEL = 'Back to overview'",
+  ),
+  'Reload the console': feature(
+    'failure/service/wording.ts',
+    "RELOAD_LABEL = 'Reload the console'",
+  ),
+  'Error ID': feature('failure/service/report.ts', '`Error ID: ${report.id}`'),
+  Copy: shared('view/CopyValue/CopyValue.tsx', 'Copy'),
   'Back to system': shared('view/ContextBar/ContextBar.tsx', 'Back to system'),
 
   // The menu: its headings and its entries.

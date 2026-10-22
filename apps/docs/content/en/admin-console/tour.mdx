@@ -98,6 +98,14 @@ The [Audit trail](./audit-trail.mdx) page shows how to filter it and export it.
 
 Choose **Sign out** at the bottom of the menu, beside the name you are signed in as. The console revokes the refresh token it held for you, clears its cookie and sends you to the tenant's own sign-out page.
 
+## If a page stops working
+
+Now and then a page fails to draw. The console replaces that page with a panel that says **Something went wrong**, and leaves the menu where it is, so you can go on elsewhere. **Try again** draws the page once more, **Back to overview** takes you to the tenant's overview and **Reload the console** starts the console over. Each of them asks first if you have changes you have not saved.
+
+Under the buttons is a short block with an **Error ID**, the page's address with its names left out, and the time. Choose **Copy** and send it to whoever runs your Odudu: the same ID is in the browser's developer console beside the full error, which is how they find it. The panel never shows what the error said, and the block holds nothing about you.
+
+If the failure is in the menu itself, or in the console as a whole, you get the same panel alone on the page, with a single **Reload the console** button.
+
 ## What the console leaves to the command line
 
 The console covers what an administrator does day to day. Four operator commands have no button. `odudu reap`, `odudu send-mail` and `odudu send-logouts` are passes the server already runs on its own schedule, which a deployment may turn off and run itself, so the console shows what some of them produce and does not start them. `odudu client-origins rebuild` is run once, after an upgrade that adds client origins. The [roadmap](../roadmap.md) says why.
