@@ -37,6 +37,8 @@ export function liveText(step: Step): string {
 
 export interface Flow {
   step: Step;
+  // The step the scene came from, whose caption is handed over to the new one.
+  previous: Step;
   wantsPlay: boolean;
   inView: boolean;
   pageShown: boolean;
@@ -58,6 +60,7 @@ export type FlowEvent =
 
 export const FLOW_START: Flow = {
   step: 0,
+  previous: 0,
   wantsPlay: false,
   inView: false,
   pageShown: true,
@@ -71,6 +74,11 @@ export function playing(flow: Flow): boolean {
   return flow.wantsPlay && flow.inView && flow.pageShown;
 }
 
+// Moves to a step; going to the step already shown changes nothing, so it hands nothing over.
+function moveTo(flow: Flow, step: Step): Flow {
+  return step === flow.step ? flow : { ...flow, previous: flow.step, step };
+}
+
 export function flowReducer(flow: Flow, event: FlowEvent): Flow {
   switch (event.type) {
     case 'motion':
@@ -80,25 +88,35 @@ export function flowReducer(flow: Flow, event: FlowEvent): Flow {
     case 'view': {
       const seen = { ...flow, inView: event.visible };
       const begins = event.visible && !flow.chosen && !flow.started && flow.motion;
-      return begins ? { ...seen, started: true, step: 1, wantsPlay: true } : seen;
+      return begins ? { ...moveTo(seen, 1), started: true, wantsPlay: true } : seen;
     }
     case 'tick': {
       const next = advance(flow.step, flow.motion);
-      return { ...flow, step: next.step, wantsPlay: next.keepPlaying };
+      return { ...moveTo(flow, next.step), wantsPlay: next.keepPlaying };
     }
     case 'choose':
-      return { ...flow, chosen: true, step: event.step, wantsPlay: false };
+      return { ...moveTo(flow, event.step), chosen: true, wantsPlay: false };
     case 'toggle':
       if (flow.wantsPlay) return { ...flow, chosen: true, wantsPlay: false };
-      return { ...flow, chosen: true, step: flow.step === 0 ? 1 : flow.step, wantsPlay: true };
+      return {
+        ...moveTo(flow, flow.step === 0 ? 1 : flow.step),
+        chosen: true,
+        wantsPlay: true,
+      };
     case 'replay':
-      return { ...flow, chosen: true, step: 1, wantsPlay: true };
+      return { ...moveTo(flow, 1), chosen: true, wantsPlay: true };
   }
 }
 
 export interface FlowView {
   caption: string;
   live: string;
+  // The announcement being replaced, empty until the step has changed once.
+  leaving: string;
+  moved: boolean;
+  // How long the step is held, and whether its clock is running now.
+  holdMs: number;
+  running: boolean;
   // What the Play/Pause button does when pressed.
   label: 'Pause' | 'Play';
   // Announcements wait while the scene plays on its own, so they do not talk over it.
@@ -109,6 +127,10 @@ export function viewOf(flow: Flow): FlowView {
   return {
     caption: captionOf(flow.step),
     live: liveText(flow.step),
+    leaving: flow.previous === flow.step ? '' : liveText(flow.previous),
+    moved: flow.previous !== flow.step,
+    holdMs: waitFor(flow.step),
+    running: playing(flow),
     label: flow.wantsPlay ? 'Pause' : 'Play',
     politeness: flow.wantsPlay ? 'off' : 'polite',
   };

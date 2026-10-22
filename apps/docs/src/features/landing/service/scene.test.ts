@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { LAYOUTS, type Step } from '@site/src/features/landing/service/geometry';
 import {
   CHIPS,
+  STAGE,
   buildScene,
   checkPath,
   chipStarts,
@@ -72,6 +73,31 @@ describe('the sign-in scene model', () => {
       buildScene('wide', step).heads.some((head) => head.id === 'bh'),
     );
     expect(shown).toEqual([6]);
-    expect(buildScene('wide', 6).heads.find((head) => head.id === 'bh')?.look).toBe('lit');
+    expect(buildScene('wide', 6).heads.find((head) => head.id === 'bh')?.lit).toBe('true');
+  });
+
+  it('stages each step: the route draws first, the pass follows, and an idle route waits for nothing', () => {
+    const lines = buildScene('wide', 4).lines;
+    const lit = lines.find((line) => line.on === 'true');
+    expect(lit?.id).toBe('ha');
+    expect(lit?.delay).toBe(STAGE.route);
+    expect(lines.filter((line) => line.on === 'false').every((line) => line.delay === 0)).toBe(
+      true,
+    );
+    expect(buildScene('wide', 4).tickets[0]?.delay).toBe(STAGE.pass);
+    expect(buildScene('wide', 4).tickets[0]?.delay).toBeGreaterThan(STAGE.route);
+  });
+
+  it('draws the second route of the return step after the first', () => {
+    const scene = buildScene('wide', 6);
+    const second = scene.lines.find((line) => line.id === 'hb')?.delay ?? 0;
+    expect(second).toBeGreaterThan(STAGE.route);
+    expect(scene.tickets[0]?.delay).toBeGreaterThan(second);
+  });
+
+  it('lights an arrowhead as its route arrives, not before', () => {
+    const heads = buildScene('wide', 4).heads;
+    expect(heads.find((head) => head.id === 'ha')?.lit).toBe('true');
+    expect(heads.find((head) => head.id === 'db')?.lit).toBe('false');
   });
 });

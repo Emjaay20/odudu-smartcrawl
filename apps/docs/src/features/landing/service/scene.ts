@@ -149,13 +149,17 @@ export interface LineModel {
   id: RouteId;
   d: string;
   on: string;
+  // When its drawing starts: staged after the nodes have lit; none while it is off.
+  delay: number;
 }
 
 // An arrowhead, drawn for each base route and for the return route while it is active.
 export interface HeadModel {
   id: RouteId;
   at: string;
-  look: 'lit' | 'dim';
+  lit: string;
+  // When it lights: as its route arrives; none while it is dim.
+  delay: number;
 }
 
 export interface DotModel {
@@ -195,6 +199,14 @@ export interface SceneModel {
   dots: DotModel[];
   // The pass travelling a route: none, or one.
   tickets: TicketModel[];
+}
+
+// Milliseconds into a step at which each part of it begins: the nodes first,
+// then the route draws itself, then the pass rides it. The return step runs two routes.
+export const STAGE = { route: 150, pass: 600, head: 550, returnRoute: 1150, returnPass: 1300 };
+
+function routeDelay(id: RouteId, step: Step): number {
+  return id === 'hb' && step === 6 ? STAGE.returnRoute : STAGE.route;
 }
 
 const BASE_ROUTES: RouteId[] = ['dh', 'da', 'db', 'ha', 'hb'];
@@ -261,12 +273,14 @@ export function buildScene(layout: LayoutName, step: Step): SceneModel {
       id,
       d: pathData(geometry.routes[id].points),
       on: flag(withBase(id)),
+      delay: withBase(id) ? routeDelay(id, step) : 0,
     })),
     heads: HEAD_ROUTES.filter((id) => BASE_ROUTES.includes(id) || activity.routes.includes(id)).map(
       (id) => ({
         id,
         at: headTransform(geometry.routes[id].head.at, geometry.routes[id].head.angle),
-        look: activity.routes.includes(id) ? 'lit' : 'dim',
+        lit: flag(activity.routes.includes(id)),
+        delay: activity.routes.includes(id) ? routeDelay(id, step) + STAGE.head : 0,
       }),
     ),
     device: windowOf(geometry.device, 'Their browser', 'form', activity.device, undefined, false),
@@ -315,7 +329,7 @@ export function buildScene(layout: LayoutName, step: Step): SceneModel {
             {
               start: geometry.routes[passRoute].points[0] ?? [0, 0],
               name: keyframeName(layout, passRoute, 'pass'),
-              delay: step === 6 ? 1300 : 300,
+              delay: step === 6 ? STAGE.returnPass : STAGE.pass,
             },
           ],
   };

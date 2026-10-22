@@ -20,6 +20,10 @@ export interface SignInFlow {
   wantsPlay: boolean;
   label: 'Pause' | 'Play';
   live: string;
+  leaving: string;
+  moved: boolean;
+  holdMs: number;
+  running: boolean;
   politeness: 'off' | 'polite';
   buttons: StepperButton[];
   choose: (step: Step) => void;
@@ -76,6 +80,10 @@ export function useSignInFlow(): SignInFlow {
     wantsPlay: flow.wantsPlay,
     label: view.label,
     live: view.live,
+    leaving: view.leaving,
+    moved: view.moved,
+    holdMs: view.holdMs,
+    running: view.running,
     politeness: view.politeness,
     buttons: stepper(flow.step),
     choose: (step) => {

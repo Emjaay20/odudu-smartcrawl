@@ -162,4 +162,33 @@ describe('the sign-in scene state machine', () => {
   it('follows the page being hidden', () => {
     expect(run(READY, { type: 'page', shown: false }).pageShown).toBe(false);
   });
+
+  it('remembers the step it came from, and only when the step changes', () => {
+    const ticked = run(READY, { type: 'view', visible: true }, { type: 'tick' });
+    expect(ticked).toMatchObject({ step: 2, previous: 1 });
+    expect(run(ticked, { type: 'choose', step: 2 }).previous).toBe(1);
+    expect(run(ticked, { type: 'choose', step: 6 })).toMatchObject({ step: 6, previous: 2 });
+    expect(run(ticked, { type: 'replay' })).toMatchObject({ step: 1, previous: 2 });
+    expect(run(FLOW_START, { type: 'toggle' })).toMatchObject({ step: 1, previous: 0 });
+  });
+});
+
+describe('the caption hand-over', () => {
+  it('has nothing leaving until the step has changed once', () => {
+    expect(viewOf(FLOW_START)).toMatchObject({ leaving: '', moved: false });
+  });
+
+  it('hands the old announcement over to the new one', () => {
+    const flow: Flow = { ...READY, step: stepOf(3), previous: stepOf(2) };
+    const view = viewOf(flow);
+    expect(view.leaving).toBe(liveText(2));
+    expect(view.live).toBe(liveText(3));
+    expect(view.moved).toBe(true);
+  });
+
+  it('carries the step clock and whether it is running', () => {
+    const flow: Flow = { ...READY, step: stepOf(3), wantsPlay: true, inView: true };
+    expect(viewOf(flow)).toMatchObject({ holdMs: waitFor(3), running: true });
+    expect(viewOf({ ...flow, inView: false }).running).toBe(false);
+  });
 });
