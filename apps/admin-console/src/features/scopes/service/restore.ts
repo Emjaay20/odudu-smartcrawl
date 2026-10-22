@@ -39,6 +39,11 @@ export function restoreText(offer: RestoreOffer): string {
   }
 }
 
+// A press could only do nothing until the read has named what is missing.
+export function restoreHeld(offer: RestoreOffer): boolean {
+  return offer.kind !== 'missing';
+}
+
 export function restoredText(created: readonly string[]): string {
   if (created.length === 0) return 'Every built-in scope was already present.';
   const them = created.length === 1 ? 'it' : 'them';

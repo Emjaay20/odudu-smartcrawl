@@ -54,6 +54,10 @@ export function listLimitProblem(field: string, count: number): string {
  */
 export const SCOPE_LIMIT = 1_000;
 
+export function scopeLimitMessage(): string {
+  return `a tenant defines at most ${String(SCOPE_LIMIT)} scopes`;
+}
+
 // A shape check, not a policy check: an over-large `limit` is a page size
 // to coerce down, never a request to refuse (design spec §9, citing
 // AIP-158) — `MAX_LIMIT` is enforced exactly once, by

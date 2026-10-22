@@ -6,7 +6,7 @@ import {
   listScopeClientsQuerySchema,
   listScopesQuerySchema,
   setScopeRolesRequestSchema,
-  SCOPE_LIMIT,
+  scopeLimitMessage,
   type ClientScope,
 } from '@odudu/contracts/admin';
 import { isUniqueViolation, type Database } from '@odudu/db';
@@ -330,12 +330,7 @@ export function restoreBuiltinScopesHandler(deps: ScopesRouteDeps): AdminRouteHa
         return sendProblem(
           reply,
           request,
-          problem(
-            409,
-            'about:blank',
-            'Conflict',
-            `a tenant defines at most ${String(SCOPE_LIMIT)} scopes`,
-          ),
+          problem(409, 'about:blank', 'Conflict', scopeLimitMessage()),
         );
       case 'default_scope_limit':
         return sendProblem(

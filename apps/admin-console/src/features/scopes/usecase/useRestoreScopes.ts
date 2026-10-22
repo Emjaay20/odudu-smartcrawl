@@ -2,6 +2,7 @@ import { useBuiltinScopes, useRestoreBuiltins } from '#/features/scopes/reposito
 import {
   restoredText,
   restoreFailureText,
+  restoreHeld,
   restoreOffer,
   restoreText,
 } from '#/features/scopes/service';
@@ -41,7 +42,7 @@ export function useRestoreScopes(tenant: string): RestoreScopes {
     busy: asking.busy,
     problem: asking.problem,
     text: restoreText(offer),
-    settled: offer.kind !== 'missing',
+    settled: restoreHeld(offer),
     ask: asking.ask,
     cancel: asking.cancel,
     confirm: asking.confirm,

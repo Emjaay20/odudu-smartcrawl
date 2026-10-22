@@ -7,6 +7,7 @@ import {
   type ScopeClient,
   type ScopeImpact,
   SCOPE_LIMIT,
+  scopeLimitMessage,
 } from '@odudu/contracts/admin';
 import { type TenantScopedDatabase } from '@odudu/db';
 import { clientScopeRoles, roleRepository, roles } from '@odudu/domain-authz';
@@ -21,6 +22,7 @@ import {
   missingBuiltinScopeNames,
   restoreBuiltinScopes,
   TENANT_DEFAULT_SCOPE_NAMES,
+  isBuiltinScopeName,
   type ClientScopeAssignment,
 } from '@odudu/domain-tenant';
 import { isUuid } from '@odudu/kernel';
@@ -266,7 +268,7 @@ export interface CreateScopeDeps {
 /** Thrown by `createScope` when the tenant already defines `SCOPE_LIMIT` scopes. */
 export class ScopeLimitError extends Error {
   constructor() {
-    super(`a tenant defines at most ${String(SCOPE_LIMIT)} scopes`);
+    super(scopeLimitMessage());
     this.name = 'ScopeLimitError';
   }
 }
@@ -519,13 +521,6 @@ export type DeleteScopeOutcome =
   | { kind: 'builtin_confirmation_required'; reason: string }
   | { kind: 'deleted' };
 
-const BUILTIN_SCOPE_NAMES: ReadonlySet<string> = new Set(TENANT_DEFAULT_SCOPE_NAMES);
-
-/** Whether the tenant's provisioning creates a scope of this name. */
-export function isBuiltinScopeName(name: string): boolean {
-  return BUILTIN_SCOPE_NAMES.has(name);
-}
-
 type ScopeImpactOutcome = { kind: 'not_found' } | { kind: 'ok'; impact: ScopeImpact };
 
 // Each count reads one index range, `client_scope_assignments_by_scope` and
@@ -706,10 +701,7 @@ export async function restoreBuiltins(
     }
     return outcome;
   }
-  const reason =
-    outcome.kind === 'scope_limit'
-      ? `a tenant defines at most ${String(SCOPE_LIMIT)} scopes`
-      : outcome.message;
+  const reason = outcome.kind === 'scope_limit' ? scopeLimitMessage() : outcome.message;
   await deps.audit(tx, { ...actor, outcome: 'refused', detail: { reason } });
   return outcome;
 }

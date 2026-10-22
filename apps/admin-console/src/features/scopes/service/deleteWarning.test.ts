@@ -1,7 +1,9 @@
 import { expect, it } from 'vitest';
 import {
   claimMappersOf,
+  impactHeld,
   impactOf,
+  impactRetry,
   scopeDeleteDialogText,
   scopeDeleteWarning,
   type Impact,
@@ -81,7 +83,7 @@ it('never turns an unreadable count into none', () => {
 
 it('says the counts are being read while they are', () => {
   expect(scopeDeleteWarning('billing', { kind: 'reading' }, [])).toBe(
-    'Counting the clients that carry billing and the roles mapped to it. Every client will stop receiving its claims and every role will be unmapped.',
+    'Checking what this affects…',
   );
 });
 
@@ -108,4 +110,20 @@ it('puts the warning before what a delete takes with it', () => {
   expect(scopeDeleteDialogText('billing', counted(2, 0), [])).toMatch(
     /^2 clients carry billing and will stop receiving its claims\. No role is mapped to it\. Deleting billing takes it off/u,
   );
+});
+
+it('holds the delete until the counts have been read', () => {
+  expect(impactHeld({ kind: 'reading' })).toBe(true);
+  expect(impactHeld({ kind: 'unknown' })).toBe(true);
+  expect(impactHeld(counted(0, 0))).toBe(false);
+});
+
+it('offers to read again only when the read failed', () => {
+  const retry = () => undefined;
+  expect(impactRetry({ status: 'failed', refused: false, retry })).toEqual({
+    text: 'What this affects could not be read, so the delete is held.',
+    label: 'Read again',
+    run: retry,
+  });
+  expect(impactRetry({ status: 'loading' })).toBeNull();
 });

@@ -7,6 +7,7 @@ export {
   listLimitMessage,
   listLimitProblem,
   SCOPE_LIMIT,
+  scopeLimitMessage,
   DEFAULT_LIMIT,
   MAX_LIMIT,
   cursorQuerySchema,

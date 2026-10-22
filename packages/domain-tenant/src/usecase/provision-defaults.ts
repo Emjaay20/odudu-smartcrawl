@@ -68,6 +68,14 @@ export async function provisionTenantDefaults(
   }
 }
 
+const BUILTIN_NAMES: ReadonlySet<string> = new Set(TENANT_DEFAULT_SCOPE_NAMES);
+
+// Decided by the name alone: a scope an administrator created under a built-in
+// name is built in too.
+export function isBuiltinScopeName(name: string): boolean {
+  return BUILTIN_NAMES.has(name);
+}
+
 // The built-in scopes this tenant no longer has, in provisioning order. One
 // query over the name index, whatever the tenant holds.
 export async function missingBuiltinScopeNames(tx: TenantScopedDatabase): Promise<string[]> {

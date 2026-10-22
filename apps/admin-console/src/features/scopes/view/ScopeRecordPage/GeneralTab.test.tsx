@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { inTurn, json, problem, whoamiReads } from '#/testing/fakeTransport';
+import { inTurn, json, pending, problem, whoamiReads } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { BILLING_SCOPE, impact, profileRoutes, SC, scopeRoutes } from '#/testing/scopesFixtures';
@@ -195,6 +195,7 @@ it('deletes a scope behind its typed name, and goes back to the list', async () 
   await user.click(await screen.findByRole('button', { name: 'Delete billing' }));
   const dialog = await screen.findByRole('alertdialog', { name: 'Delete billing?' });
   expect(dialog).toHaveTextContent('takes it off every client assigned billing');
+  await within(dialog).findByText(/1 client carries billing/u);
   const confirm = within(dialog).getByRole('button', { name: 'Delete billing' });
   expect(confirm).toBeDisabled();
   await user.type(within(dialog).getByRole('textbox'), 'billing');
@@ -254,7 +255,7 @@ it('never says none when the counts cannot be read', async () => {
     }),
   );
   const { dialog } = await openDeletion();
-  expect(await within(dialog).findByText(/could not be read/u)).toBeVisible();
+  expect(await within(dialog).findByText(/How many clients carry billing/u)).toBeVisible();
   expect(dialog).not.toHaveTextContent('No client carries');
   expect(within(dialog).getByRole('button', { name: 'Delete billing' })).toBeDisabled();
 });
@@ -300,6 +301,7 @@ it('says in the dialog why a delete the ceiling refuses was refused, reads whoam
   );
   await user.click(await screen.findByRole('button', { name: 'Delete billing' }));
   const dialog = await screen.findByRole('alertdialog', { name: 'Delete billing?' });
+  await within(dialog).findByText(/1 client carries billing/u);
   await user.type(within(dialog).getByRole('textbox'), 'billing');
   await user.click(within(dialog).getByRole('button', { name: 'Delete billing' }));
   expect(await within(dialog).findByText(/Refused: it would take manage-keys/u)).toBeVisible();
@@ -439,4 +441,36 @@ it('reads the impact of a scope again each time the dialog is opened', async () 
   await waitFor(() => {
     expect(reads()).toHaveLength(2);
   });
+});
+
+it('holds the delete, name typed or not, while the counts are being read', async () => {
+  const { sent } = renderConsoleAt(
+    AT,
+    scopeRoutes(undefined, { [`GET ${SC}/s-bill/impact`]: pending() }),
+  );
+  const { user, dialog } = await openDeletion();
+  expect(await within(dialog).findByText(/Checking what this affects…/u)).toBeVisible();
+  await user.type(within(dialog).getByRole('textbox'), 'billing');
+  expect(within(dialog).getByRole('button', { name: 'Delete billing' })).toBeDisabled();
+  await user.keyboard('{Enter}');
+  expect(sent.some((s) => s.method === 'DELETE')).toBe(false);
+});
+
+it('holds the delete when the counts cannot be read, and frees it once they are read again', async () => {
+  renderConsoleAt(
+    AT,
+    scopeRoutes(undefined, {
+      [`GET ${SC}/s-bill/impact`]: inTurn(
+        problem(500, 'about:blank', 'Internal Server Error'),
+        json(impact(1, 1)),
+      ),
+    }),
+  );
+  const { user, dialog } = await openDeletion();
+  await within(dialog).findByText(/What this affects could not be read/u);
+  await user.type(within(dialog).getByRole('textbox'), 'billing');
+  expect(within(dialog).getByRole('button', { name: 'Delete billing' })).toBeDisabled();
+  await user.click(within(dialog).getByRole('button', { name: 'Read again' }));
+  await within(dialog).findByText(/1 client carries billing/u);
+  expect(within(dialog).getByRole('button', { name: 'Delete billing' })).toBeEnabled();
 });

@@ -17,7 +17,10 @@ import {
   guardedConsent,
   guardedText,
   ID_TOKEN_LABEL,
+  impactHeld,
   impactOf,
+  impactRetry,
+  type ImpactRetry,
   NEW_CLIENT_CHOICES,
   NEW_CLIENT_LABEL,
   scopeDeleteConsequence,
@@ -46,6 +49,9 @@ export interface Deletion extends Removal {
   consequence: string;
   // What the dialog says: how many clients and roles lose the scope, then the consequence.
   warning: string;
+  // True until the counts have been read, when the delete cannot be confirmed.
+  held: boolean;
+  retry: ImpactRetry | null;
 }
 
 export interface ScopeGeneral {
@@ -164,6 +170,8 @@ export function useScopeGeneral({
       fixed: guardedText(scope.name),
       consequence: scopeDeleteConsequence(scope.name),
       warning: scopeDeleteDialogText(scope.name, impactOf(impact), claimMappersOf(mappers.data)),
+      held: impactHeld(impactOf(impact)),
+      retry: impactRetry(impact),
     },
   };
 }

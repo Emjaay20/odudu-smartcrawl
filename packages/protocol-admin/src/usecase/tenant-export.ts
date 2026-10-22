@@ -33,7 +33,7 @@ import {
   clientScopeAssignments,
   clientScopeMappers,
   clientScopes,
-  TENANT_DEFAULT_SCOPE_NAMES,
+  isBuiltinScopeName,
   tenantSettingsRepository,
   type ClientRecord,
   type ClientScopeAssignment,
@@ -513,7 +513,6 @@ async function exportScopes(
     push(clientsByScope, row.scopeId, { client_id: row.clientId, assignment: row.assignment });
   }
 
-  const builtinNames = new Set(TENANT_DEFAULT_SCOPE_NAMES);
   return rows.sort(byKey((row) => row.name)).map((row) => ({
     name: row.name,
     description: row.description,
@@ -522,7 +521,7 @@ async function exportScopes(
     default_client_assignment: row.defaultClientAssignment,
     consent_text: row.consentText,
     display_order: row.displayOrder,
-    builtin: builtinNames.has(row.name),
+    builtin: isBuiltinScopeName(row.name),
     roles: rolesByScope.get(row.id) ?? [],
     mappers: [...(mappersByScope.get(row.id) ?? [])].sort(),
     clients: [...(clientsByScope.get(row.id) ?? [])].sort(byKey((c) => c.client_id)),

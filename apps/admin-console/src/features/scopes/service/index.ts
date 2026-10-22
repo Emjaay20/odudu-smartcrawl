@@ -22,6 +22,9 @@ export {
 } from '#/features/scopes/service/guard';
 export {
   type Impact,
+  impactHeld,
+  type ImpactRetry,
+  impactRetry,
   impactOf,
   claimMappersOf,
   scopeDeleteDialogText,
@@ -31,6 +34,7 @@ export {
   type RestoreOffer,
   restoredText,
   restoreFailureText,
+  restoreHeld,
   restoreOffer,
   restoreText,
 } from '#/features/scopes/service/restore';

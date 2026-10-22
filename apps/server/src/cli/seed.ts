@@ -18,7 +18,7 @@ import {
   USER_OPTIONS,
   type SeedCommand,
 } from '#/cli/seed-options';
-import { CLIENT_LIST_LIMIT, listLimitProblem, SCOPE_LIMIT } from '@odudu/contracts/admin';
+import { CLIENT_LIST_LIMIT, listLimitProblem, scopeLimitMessage } from '@odudu/contracts/admin';
 import { tenantSettingsRepository, sendVerificationEmail } from '@odudu/account';
 import { provisionTenant, requiredActionRepository } from '@odudu/authn-flows';
 import { grantNewSubjectDefaults, groupRepository, roleRepository } from '@odudu/domain-authz';
@@ -1529,10 +1529,7 @@ async function runRestoreScopesCommand(
   return withTenant(runtimeDb, tenantId, async (tx) => {
     const outcome = await restoreBuiltinScopes(tx, tenantId);
     if (outcome.kind === 'scope_limit') {
-      throw new OduduError(
-        'seed_invalid_options',
-        `a tenant defines at most ${String(SCOPE_LIMIT)} scopes: delete one first`,
-      );
+      throw new OduduError('seed_invalid_options', `${scopeLimitMessage()}: delete one first`);
     }
     if (outcome.kind === 'default_scope_limit') {
       throw new OduduError('seed_invalid_options', outcome.message);

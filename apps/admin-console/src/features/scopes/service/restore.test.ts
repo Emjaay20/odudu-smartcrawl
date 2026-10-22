@@ -2,9 +2,9 @@ import { expect, it } from 'vitest';
 import {
   restoredText,
   restoreFailureText,
+  restoreHeld,
   restoreOffer,
   restoreText,
-  type RestoreOffer,
 } from '#/features/scopes/service';
 
 const items = (missing: readonly string[]) =>
@@ -45,10 +45,11 @@ it('says there is nothing to restore, and never offers a restore it could not na
   );
 });
 
-it('holds the confirmation unless something is missing', () => {
-  const ready = (offer: RestoreOffer) => offer.kind === 'missing';
-  expect(ready({ kind: 'missing', names: ['roles'] })).toBe(true);
-  expect(ready({ kind: 'nothing' })).toBe(false);
+it('holds the confirmation unless something is known to be missing', () => {
+  expect(restoreHeld({ kind: 'missing', names: ['roles'] })).toBe(false);
+  expect(restoreHeld({ kind: 'nothing' })).toBe(true);
+  expect(restoreHeld({ kind: 'reading' })).toBe(true);
+  expect(restoreHeld({ kind: 'unknown' })).toBe(true);
 });
 
 it('reports what was created, or that nothing was missing', () => {

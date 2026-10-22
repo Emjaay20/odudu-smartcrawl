@@ -25,6 +25,28 @@ export function impactOf(read: Read<ScopeImpact>): Impact {
   };
 }
 
+// The delete is held until the counts are in: a person who cannot see what goes
+// with the scope is not asked to confirm it.
+export function impactHeld(impact: Impact): boolean {
+  return impact.kind !== 'counted';
+}
+
+export interface ImpactRetry {
+  text: string;
+  label: string;
+  run: () => void;
+}
+
+// What the dialog offers when the counts could not be read.
+export function impactRetry(read: Read<ScopeImpact>): ImpactRetry | null {
+  if (read.status !== 'failed') return null;
+  return {
+    text: 'What this affects could not be read, so the delete is held.',
+    label: 'Read again',
+    run: read.retry,
+  };
+}
+
 // While nothing is bound, issuance runs the mappers that declare the scope.
 export function claimMappersOf(
   read: { bound: readonly string[]; declared: readonly string[] } | undefined,
@@ -42,14 +64,14 @@ function clientsText(name: string, clients: Count): string {
   if (clients.count === 0 && !clients.capped) {
     return `No client carries ${name}, so no client stops receiving its claims.`;
   }
-  const many = clients.capped || clients.count !== 1;
-  return `${shown(clients)} ${many ? 'clients carry' : 'client carries'} ${name} and will stop receiving its claims.`;
+  const verb = plural(clients.capped ? 2 : clients.count, 'client carries', 'clients carry');
+  return `${shown(clients)} ${verb} ${name} and will stop receiving its claims.`;
 }
 
 function rolesText(roles: Count): string {
   if (roles.count === 0 && !roles.capped) return 'No role is mapped to it.';
-  const many = roles.capped || roles.count !== 1;
-  return `${shown(roles)} ${many ? 'roles are' : 'role is'} mapped to it and will be unmapped.`;
+  const verb = plural(roles.capped ? 2 : roles.count, 'role is', 'roles are');
+  return `${shown(roles)} ${verb} mapped to it and will be unmapped.`;
 }
 
 function builtinText(name: string): string {
@@ -59,7 +81,7 @@ function builtinText(name: string): string {
 function impactText(name: string, impact: Impact): string {
   switch (impact.kind) {
     case 'reading':
-      return `Counting the clients that carry ${name} and the roles mapped to it. Every client will stop receiving its claims and every role will be unmapped.`;
+      return 'Checking what this affects…';
     case 'unknown':
       return `How many clients carry ${name}, and how many roles are mapped to it, could not be read. Every one of them goes with it.`;
     case 'counted': {
