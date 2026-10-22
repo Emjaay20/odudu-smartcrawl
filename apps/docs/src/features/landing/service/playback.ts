@@ -35,10 +35,21 @@ export function liveText(step: Step): string {
   return step === 0 ? caption : `Step ${String(step)} of ${String(LAST)}: ${caption}`;
 }
 
+// The longest announcement, which sizes the caption box so it never has to change height.
+export function widestLive(): string {
+  return [0, 1, 2, 3, 4, 5, 6, 7]
+    .map((step) => liveText(stepOf(step)))
+    .reduce((longest, text) => (text.length > longest.length ? text : longest), '');
+}
+
 export interface Flow {
   step: Step;
   // The step the scene came from, whose caption is handed over to the new one.
   previous: Step;
+  // How the last move came about, until its hand-over has settled.
+  cause: 'none' | 'timed' | 'click';
+  // The step the marker sits under: the last one shown, kept while the scene rests.
+  marker: Step;
   wantsPlay: boolean;
   inView: boolean;
   pageShown: boolean;
@@ -54,6 +65,7 @@ export type FlowEvent =
   | { type: 'view'; visible: boolean }
   | { type: 'page'; shown: boolean }
   | { type: 'tick' }
+  | { type: 'settled' }
   | { type: 'choose'; step: Step }
   | { type: 'toggle' }
   | { type: 'replay' };
@@ -61,6 +73,8 @@ export type FlowEvent =
 export const FLOW_START: Flow = {
   step: 0,
   previous: 0,
+  cause: 'none',
+  marker: 1,
   wantsPlay: false,
   inView: false,
   pageShown: true,
@@ -74,37 +88,53 @@ export function playing(flow: Flow): boolean {
   return flow.wantsPlay && flow.inView && flow.pageShown;
 }
 
-// Moves to a step; going to the step already shown changes nothing, so it hands nothing over.
-function moveTo(flow: Flow, step: Step): Flow {
-  return step === flow.step ? flow : { ...flow, previous: flow.step, step };
+// Moves to a step. Only a caption that was fully shown leaves: a move made while the last
+// hand-over is still going lets nothing leave, so a caption never seen is never shown going.
+function moveTo(flow: Flow, step: Step, cause: 'timed' | 'click'): Flow {
+  if (step === flow.step) return flow;
+  const shown = flow.cause === 'none';
+  return {
+    ...flow,
+    step,
+    previous: shown ? flow.step : step,
+    cause,
+    marker: step === 0 ? flow.marker : step,
+  };
 }
 
 export function flowReducer(flow: Flow, event: FlowEvent): Flow {
   switch (event.type) {
     case 'motion':
-      return { ...flow, motion: event.allowed, started: false };
+      return {
+        ...flow,
+        motion: event.allowed,
+        started: false,
+        wantsPlay: event.allowed && flow.wantsPlay,
+      };
+    case 'settled':
+      return { ...flow, previous: flow.step, cause: 'none' };
     case 'page':
       return { ...flow, pageShown: event.shown };
     case 'view': {
       const seen = { ...flow, inView: event.visible };
       const begins = event.visible && !flow.chosen && !flow.started && flow.motion;
-      return begins ? { ...moveTo(seen, 1), started: true, wantsPlay: true } : seen;
+      return begins ? { ...moveTo(seen, 1, 'timed'), started: true, wantsPlay: true } : seen;
     }
     case 'tick': {
       const next = advance(flow.step, flow.motion);
-      return { ...moveTo(flow, next.step), wantsPlay: next.keepPlaying };
+      return { ...moveTo(flow, next.step, 'timed'), wantsPlay: next.keepPlaying };
     }
     case 'choose':
-      return { ...moveTo(flow, event.step), chosen: true, wantsPlay: false };
+      return { ...moveTo(flow, event.step, 'click'), chosen: true, wantsPlay: false };
     case 'toggle':
       if (flow.wantsPlay) return { ...flow, chosen: true, wantsPlay: false };
       return {
-        ...moveTo(flow, flow.step === 0 ? 1 : flow.step),
+        ...moveTo(flow, flow.step === 0 ? 1 : flow.step, 'click'),
         chosen: true,
         wantsPlay: true,
       };
     case 'replay':
-      return { ...moveTo(flow, 1), chosen: true, wantsPlay: true };
+      return { ...moveTo(flow, 1, 'click'), chosen: true, wantsPlay: true };
   }
 }
 
@@ -114,6 +144,14 @@ export interface FlowView {
   // The announcement being replaced, empty until the step has changed once.
   leaving: string;
   moved: boolean;
+  // What the new caption does: nothing, wait for the scene (timed), or rise at once (click).
+  handOver: 'none' | 'timed' | 'click';
+  // The step the marker sits under.
+  marker: Step;
+  // The text that sizes the caption box.
+  widest: string;
+  // Whether a caption hand-over is still going on, and the page waits to drop the old layer.
+  handing: boolean;
   // How long the step is held, and whether its clock is running now.
   holdMs: number;
   running: boolean;
@@ -129,6 +167,10 @@ export function viewOf(flow: Flow): FlowView {
     live: liveText(flow.step),
     leaving: flow.previous === flow.step ? '' : liveText(flow.previous),
     moved: flow.previous !== flow.step,
+    handOver: flow.cause,
+    marker: flow.marker,
+    widest: widestLive(),
+    handing: flow.cause !== 'none',
     holdMs: waitFor(flow.step),
     running: playing(flow),
     label: flow.wantsPlay ? 'Pause' : 'Play',
@@ -140,6 +182,7 @@ export interface StepperButton {
   step: Step;
   number: string;
   label: string;
+  short: string;
   current: 'step' | undefined;
 }
 
@@ -150,6 +193,7 @@ export function stepper(step: Step): StepperButton[] {
       step: own,
       number: String(own),
       label: beat.label,
+      short: beat.short,
       current: step === own ? 'step' : undefined,
     };
   });

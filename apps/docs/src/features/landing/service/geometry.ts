@@ -268,21 +268,31 @@ export const ACTIVITY: Record<Step, Activity> = {
 
 export interface Beat {
   label: string;
+  // The label as shown on one line in the stepper; the full label stays the accessible name.
+  short: string;
   caption: string;
   ms: number;
   claims: string[];
 }
 
 export const BEATS: Beat[] = [
-  { label: 'Open the app', caption: 'A person opens your app.', ms: 2500, claims: [] },
+  {
+    label: 'Open the app',
+    short: 'Open the app',
+    caption: 'A person opens your app.',
+    ms: 2500,
+    claims: [],
+  },
   {
     label: 'Go to Odudu',
+    short: 'Go to Odudu',
     caption: 'Your app sends them to Odudu to sign in.',
     ms: 2500,
     claims: [],
   },
   {
     label: 'Sign in once',
+    short: 'Sign in once',
     caption:
       "They sign in on Odudu's own page. Odudu supports passwords, passkeys and codes from an authenticator app.",
     ms: 3000,
@@ -290,18 +300,21 @@ export const BEATS: Beat[] = [
   },
   {
     label: 'Back with a signed pass',
+    short: 'Signed pass',
     caption: 'Odudu sends them back with a signed pass, and your app lets them in.',
     ms: 2500,
     claims: [],
   },
   {
     label: 'Open a second app',
+    short: 'Second app',
     caption: 'Later, they open a second app, and it sends them to Odudu too.',
     ms: 2500,
     claims: [],
   },
   {
     label: 'Already signed in',
+    short: 'Signed in',
     caption:
       'Odudu sees they are already signed in, so it shows no sign-in page. Straight back, with no password asked. Sign in once, and use every app of that tenant that trusts Odudu.',
     ms: 3400,
@@ -309,6 +322,7 @@ export const BEATS: Beat[] = [
   },
   {
     label: 'Signed out where registered',
+    short: 'Signed out',
     caption: 'Sign out of one, and the apps that registered for it are told.',
     ms: 2500,
     claims: ['back-channel-logout'],

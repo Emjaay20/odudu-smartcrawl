@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { LAYOUTS, type Step } from '@site/src/features/landing/service/geometry';
+import { BEATS, LAYOUTS, type Step } from '@site/src/features/landing/service/geometry';
 import {
   CHIPS,
   STAGE,
+  boundsOf,
   buildScene,
   checkPath,
   chipStarts,
@@ -12,6 +13,7 @@ import {
   passRouteOf,
   skeleton,
 } from '@site/src/features/landing/service/scene';
+import { TIMING } from '@site/src/features/landing/service/timing';
 
 describe('the sign-in scene drawing', () => {
   it('draws a form for the browser and a page for an app, inside the window', () => {
@@ -99,5 +101,54 @@ describe('the sign-in scene model', () => {
     const heads = buildScene('wide', 4).heads;
     expect(heads.find((head) => head.id === 'ha')?.lit).toBe('true');
     expect(heads.find((head) => head.id === 'db')?.lit).toBe('false');
+  });
+});
+
+describe('the route mask region', () => {
+  it('encloses a route and its stroke, and no more than that', () => {
+    const points: [number, number][] = [
+      [10, 20],
+      [60, 5],
+      [30, 90],
+    ];
+    expect(boundsOf(points, 6)).toEqual({ x: 4, y: -1, w: 62, h: 97 });
+  });
+
+  it('is given to every drawn line, around all of its points', () => {
+    for (const layout of ['wide', 'tall'] as const) {
+      for (const line of buildScene(layout, 4).lines) {
+        const numbers = [...line.d.matchAll(/(-?\d+\.?\d*) (-?\d+\.?\d*)/gu)].map((m) => [
+          Number(m[1]),
+          Number(m[2]),
+        ]);
+        for (const [x = 0, y = 0] of numbers) {
+          expect(x).toBeGreaterThanOrEqual(line.mask.x + 5);
+          expect(x).toBeLessThanOrEqual(line.mask.x + line.mask.w - 5);
+          expect(y).toBeGreaterThanOrEqual(line.mask.y + 5);
+          expect(y).toBeLessThanOrEqual(line.mask.y + line.mask.h - 5);
+        }
+      }
+    }
+  });
+});
+
+describe('the stage against the durations', () => {
+  it('lights an arrowhead while its route is still drawing, and sends the pass inside the draw', () => {
+    expect(STAGE.head).toBeGreaterThan(TIMING.drawMs / 2);
+    expect(STAGE.head).toBeLessThan(TIMING.drawMs);
+    expect(STAGE.pass).toBeGreaterThan(STAGE.route);
+    expect(STAGE.pass).toBeLessThan(STAGE.route + TIMING.drawMs);
+  });
+
+  it('draws the return route after the first has finished, and its pass behind that line', () => {
+    expect(STAGE.returnRoute).toBeGreaterThanOrEqual(STAGE.route + TIMING.drawMs);
+    expect(STAGE.returnPass).toBeGreaterThan(STAGE.returnRoute);
+    expect(STAGE.returnPass).toBeLessThan(STAGE.returnRoute + TIMING.drawMs);
+  });
+
+  it('fits the busiest step inside its hold, with the pass settled before the next step', () => {
+    const passMs = 1500;
+    expect(STAGE.returnPass + passMs).toBeLessThan(BEATS[5]?.ms ?? 0);
+    expect(STAGE.pass + passMs).toBeLessThan(BEATS[3]?.ms ?? 0);
   });
 });

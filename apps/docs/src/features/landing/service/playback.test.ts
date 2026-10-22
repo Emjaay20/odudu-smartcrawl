@@ -7,6 +7,7 @@ import {
   FLOW_START,
   advance,
   captions,
+  widestLive,
   flowReducer,
   playing,
   stepper,
@@ -164,18 +165,24 @@ describe('the sign-in scene state machine', () => {
   });
 
   it('remembers the step it came from, and only when the step changes', () => {
-    const ticked = run(READY, { type: 'view', visible: true }, { type: 'tick' });
+    const ticked = run(
+      READY,
+      { type: 'view', visible: true },
+      { type: 'settled' },
+      { type: 'tick' },
+    );
     expect(ticked).toMatchObject({ step: 2, previous: 1 });
-    expect(run(ticked, { type: 'choose', step: 2 }).previous).toBe(1);
-    expect(run(ticked, { type: 'choose', step: 6 })).toMatchObject({ step: 6, previous: 2 });
-    expect(run(ticked, { type: 'replay' })).toMatchObject({ step: 1, previous: 2 });
+    const settled = run(ticked, { type: 'settled' });
+    expect(run(settled, { type: 'choose', step: 2 }).previous).toBe(2);
+    expect(run(settled, { type: 'choose', step: 6 })).toMatchObject({ step: 6, previous: 2 });
+    expect(run(settled, { type: 'replay' })).toMatchObject({ step: 1, previous: 2 });
     expect(run(FLOW_START, { type: 'toggle' })).toMatchObject({ step: 1, previous: 0 });
   });
 });
 
 describe('the caption hand-over', () => {
   it('has nothing leaving until the step has changed once', () => {
-    expect(viewOf(FLOW_START)).toMatchObject({ leaving: '', moved: false });
+    expect(viewOf(FLOW_START)).toMatchObject({ leaving: '', moved: false, handOver: 'none' });
   });
 
   it('hands the old announcement over to the new one', () => {
@@ -190,5 +197,81 @@ describe('the caption hand-over', () => {
     const flow: Flow = { ...READY, step: stepOf(3), wantsPlay: true, inView: true };
     expect(viewOf(flow)).toMatchObject({ holdMs: waitFor(3), running: true });
     expect(viewOf({ ...flow, inView: false }).running).toBe(false);
+  });
+});
+
+describe('the hand-over of a step', () => {
+  const playingFlow = run(READY, { type: 'view', visible: true });
+
+  it('says whether a step came from the clock or a click', () => {
+    expect(run(playingFlow, { type: 'tick' }).cause).toBe('timed');
+    expect(run(playingFlow, { type: 'choose', step: 5 }).cause).toBe('click');
+    expect(run(FLOW_START, { type: 'toggle' }).cause).toBe('click');
+    expect(run(playingFlow, { type: 'choose', step: 3 }, { type: 'replay' }).cause).toBe('click');
+    expect(playingFlow.cause).toBe('timed');
+  });
+
+  it('lets only a caption that was fully shown leave', () => {
+    const moved = run(READY, { type: 'choose', step: 3 }, { type: 'settled' });
+    const first = run(moved, { type: 'choose', step: 4 });
+    expect(first).toMatchObject({ step: 4, previous: 3 });
+    const second = run(first, { type: 'choose', step: 5 });
+    expect(second).toMatchObject({ step: 5, previous: 5, cause: 'click' });
+    expect(viewOf(second).moved).toBe(false);
+  });
+
+  it('drops the leaving caption once settled', () => {
+    const moved = run(READY, { type: 'choose', step: 3 }, { type: 'choose', step: 4 });
+    expect(viewOf(moved).moved).toBe(false);
+    const settled = run(
+      { ...READY, step: stepOf(2), previous: stepOf(1), cause: 'timed' },
+      { type: 'settled' },
+    );
+    expect(settled).toMatchObject({ previous: 2, cause: 'none' });
+    expect(viewOf(settled)).toMatchObject({ leaving: '', moved: false, handOver: 'none' });
+  });
+
+  it('keeps the marker on the last step when the scene returns to rest', () => {
+    const last = run(READY, { type: 'choose', step: 7 });
+    expect(last.marker).toBe(7);
+    const rest = run({ ...last, wantsPlay: true }, { type: 'tick' });
+    expect(rest).toMatchObject({ step: 0, marker: 7 });
+    expect(FLOW_START.marker).toBe(1);
+  });
+
+  it('stops playing when motion stops being welcome', () => {
+    const going = run(READY, { type: 'view', visible: true });
+    expect(going.wantsPlay).toBe(true);
+    expect(run(going, { type: 'motion', allowed: false })).toMatchObject({
+      wantsPlay: false,
+      motion: false,
+    });
+    expect(run(going, { type: 'motion', allowed: true }).wantsPlay).toBe(true);
+  });
+});
+
+describe('the stepper labels', () => {
+  it('shows a short label that the full label contains, so the name holds what is seen', () => {
+    for (const button of stepper(0)) {
+      expect(button.label.toLowerCase()).toContain(button.short.toLowerCase());
+      expect(button.short.length).toBeLessThanOrEqual(12);
+    }
+  });
+});
+
+describe('the caption box size', () => {
+  it('is set by the longest announcement of all, rest included', () => {
+    const widest = widestLive();
+    for (const step of [0, 1, 2, 3, 4, 5, 6, 7]) {
+      expect(widest.length).toBeGreaterThanOrEqual(liveText(stepOf(step)).length);
+    }
+    expect(viewOf(FLOW_START).widest).toBe(widest);
+  });
+
+  it('says a hand-over is going on from a move until it has settled', () => {
+    const moved = run(READY, { type: 'choose', step: 2 });
+    expect(viewOf(moved).handing).toBe(true);
+    expect(viewOf(run(moved, { type: 'settled' })).handing).toBe(false);
+    expect(viewOf(FLOW_START).handing).toBe(false);
   });
 });

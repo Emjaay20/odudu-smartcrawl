@@ -151,6 +151,8 @@ export interface LineModel {
   on: string;
   // When its drawing starts: staged after the nodes have lit; none while it is off.
   delay: number;
+  // The region its draw-in mask needs: the route and its stroke.
+  mask: Box;
 }
 
 // An arrowhead, drawn for each base route and for the return route while it is active.
@@ -207,6 +209,18 @@ export const STAGE = { route: 150, pass: 600, head: 550, returnRoute: 1150, retu
 
 function routeDelay(id: RouteId, step: Step): number {
   return id === 'hb' && step === 6 ? STAGE.returnRoute : STAGE.route;
+}
+
+// Half the mask's stroke, and a little over.
+const MASK_PAD = 6;
+
+// The smallest box around some points, grown by `pad` on every side.
+export function boundsOf(points: Point[], pad: number): Box {
+  const xs = points.map(([x]) => x);
+  const ys = points.map(([, y]) => y);
+  const left = Math.min(...xs) - pad;
+  const top = Math.min(...ys) - pad;
+  return { x: left, y: top, w: Math.max(...xs) + pad - left, h: Math.max(...ys) + pad - top };
 }
 
 const BASE_ROUTES: RouteId[] = ['dh', 'da', 'db', 'ha', 'hb'];
@@ -274,6 +288,7 @@ export function buildScene(layout: LayoutName, step: Step): SceneModel {
       d: pathData(geometry.routes[id].points),
       on: flag(withBase(id)),
       delay: withBase(id) ? routeDelay(id, step) : 0,
+      mask: boundsOf(geometry.routes[id].points, MASK_PAD),
     })),
     heads: HEAD_ROUTES.filter((id) => BASE_ROUTES.includes(id) || activity.routes.includes(id)).map(
       (id) => ({
