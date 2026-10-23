@@ -15,7 +15,8 @@
     "typecheck": "tsc -p tsconfig.json && tsc -p scripts/tsconfig.json",
     "test": "vitest run --config ../../vitest.config.ts --project unit --reporter=default --reporter=json --outputFile=trace-report.json",
     "test:browser": "vitest run --config ../../vitest.config.ts --project browser",
-    "screenshots": "node --no-warnings scripts/console-shots/run.ts"
+    "screenshots": "node --no-warnings scripts/console-shots/run.ts",
+    "gif": "node --no-warnings scripts/console-shots/gif.ts"
   },
   "browserslist": {
     "production": [
@@ -56,6 +57,7 @@
     "cheerio": "1.2.0",
     "docusaurus-plugin-llms": "0.6.1",
     "fastify": "5.12.5",
+    "gifenc": "1.0.3",
     "mdast-util-from-markdown": "2.1.0",
     "prism-react-renderer": "2.4.1",
     "react": "19.3.0",
