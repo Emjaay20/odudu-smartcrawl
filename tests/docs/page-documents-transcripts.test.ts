@@ -404,7 +404,7 @@ const RENDER_BACK: Record<string, (body: string) => string> = {
   },
   "Can't create this account": (body) =>
     renderRegistrationFailedPage(tenantOf(body), null, LOCALE).body,
-  'Account created': (body) => renderRegistrationSucceededPage(false, null, LOCALE).body,
+  'Account created': () => renderRegistrationSucceededPage(false, null, LOCALE).body,
   'Email confirmed': (body) => renderVerificationSucceededPage(continueOf(body), LOCALE).body,
   "Can't verify this link": (body) => renderVerificationFailedPage(backOf(body), LOCALE).body,
   'Forgot your password?': (body) => {
