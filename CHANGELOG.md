@@ -8,6 +8,8 @@ All notable changes to Odudu are written here, newest first. The format follows
 
 ## [0.1.0-rc.1] - 2026-10-23
 
+<!-- Set this date to the day the tag is pushed (set at tagging). -->
+
 The first release candidate. Odudu is not production ready: it has had no security review.
 
 ### Added
@@ -17,6 +19,8 @@ The first release candidate. Odudu is not production ready: it has had no securi
 - The `odudu` command in the image: `odudu init`, `odudu help` and `odudu --version`.
 - The documentation, served by the server at `/docs/` and published as a site: a quick start, guides, concepts, a tour of the console, operating and reference pages.
 - Four small example apps that sign in with Odudu: a web app, a single-page app, an API and a machine-to-machine client.
+- A sign-up button: an app sends `prompt=create` to open the registration page, and discovery lists `prompt_values_supported`.
+- A hand-tested guide to signing in to WordPress.
 - Sign-in pages, error pages and mail in one shared look, with their text in message catalogues.
 - A language chosen for each page from `ui_locales` and the browser's `Accept-Language`.
 - Sign-in with the authorization code flow and PKCE, refresh tokens, client credentials, token exchange and single sign-on.
@@ -28,12 +32,15 @@ The first release candidate. Odudu is not production ready: it has had no securi
 
 - Password rules follow NIST SP 800-63B-4.
 - One setting now decides the lifetime and shape of every cookie the server sets.
-- Built-in scopes can be deleted and restored.
+- Built-in scopes can be deleted, by typing their name, and restored.
+- The issuer in tokens, discovery and logout is the configured `ODUDU_PUBLIC_BASE_URL`, never a request's `Host` header.
+- A password reset ends every session and token the person had.
 
 ### Security
 
 - Base images are pinned by digest, and a test keeps them so.
-- Registering with an address that is already taken no longer says that it is taken.
+- Registering with an address that is already taken no longer says that it is taken, when email verification is on.
+- Cookies are `Secure` and `__Host-` prefixed under `ODUDU_TLS`, from one setting; before, the session cookie ignored it.
 - Characters that change the direction of text are refused in names and usernames.
 
 [Unreleased]: https://github.com/wizzywit/odudu/compare/v0.1.0-rc.1...HEAD

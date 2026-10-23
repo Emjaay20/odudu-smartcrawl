@@ -3572,3 +3572,54 @@ is OPTIONAL metadata the suite does not validate. No module's path changes.
 **Transcripts re-run on the project `odudu-p4g-31l` (port 3331):** Path A §1 (the discovery
 document gains `prompt_values_supported`), and a new section of Self-registration, _Starting at
 the registration page_, with the open and the closed tenant.
+
+## What P4g shipped and what it left
+
+**Shipped, by what a person can do.** A stranger with Docker runs one command and gets
+Postgres, Odudu, a system tenant and a first administrator with a one-time password; the image
+is built, signed and listed by `release.yml` from a tag, with base images pinned by digest, and
+a `quickstart` job proves the ten minutes. They read a documentation site (guides, concepts, a
+console tour, operating and reference pages, `llms.txt`) and a landing page, and run four
+example apps in CI and a hand-tested WordPress guide. Every server page and mail shares one
+look, with text in catalogues. An app can send a person to the registration page with
+`prompt=create`; registering with a taken address no longer says so when verification is on;
+password rules follow NIST SP 800-63B-4; every cookie follows one TLS setting; the issuer is the
+configured public base; built-in scopes can be deleted and restored; a reset ends all access.
+The README, SECURITY, CONTRIBUTING, code of conduct, trademark policy and CLA are in place.
+
+**Left in P4g, not built (the release candidate ships without them).**
+
+- 31c, front-channel logout when a matched post-logout redirect is named. The roadmap still
+  places the gap on P4b, which stays true until 31c ships and moves that clause.
+- 31b, Core Web Vitals and Lighthouse budgets enforced in CI (the method is in the 31 notes).
+- The landing additions: a "pages your users see" strip, "Planned" sections for agents and for
+  theming, and the WordPress line under "Four small apps that work".
+- The `max_clients` console description (it limits every way of creating a client), with the
+  next `pnpm docs:screenshots`.
+
+**Owner steps still open** (`RELEASING.md`, "Owner steps"): make the GHCR package public after
+the first rc; require `gate` and `quickstart` (and the CLA check) once each has passed, after an
+owner-assisted pull request test; approve the CLA text; run the quick start by hand on a Mac, on
+Windows and on arm64; a domain is optional. Done: private vulnerability reporting and Pages.
+
+**Rulings I made** (in the session ledger, which is not committed):
+
+- No fourth security re-review of the 31k round that moved registration to a confirm step,
+  because usage was short; the whole-branch review had to cover reset-ends-access, the
+  `pg_advisory_xact_lock` creation paths and the limiter.
+- Hold 31c, 31b and the landing additions until after the weekly reset, and ship the rc first,
+  because every one of them is separate from the release machinery.
+- Place the required-action password gap on P4f, and the append-only audit trail on P12, rather
+  than fix them here: each is outside what P4g builds and each now names its phase.
+- A reset-link one-use claim needed no new test: `reset-password.int.test.ts` ("refuses a reset
+  link a second time") and `action-tokens.int.test.ts` ("refuses a second redemption") hold it.
+
+**Owner rulings worth keeping beside them:** the landing names no phase and its chips read
+"Planned"; built-in scopes are deletable with a typed name; password length stays 8 to 256 with
+soft enforcement, mapped to `otp_required`; wording is plain and short; the README lists
+shipped capabilities and links the roadmap, with no planned-feature list of its own.
+
+**Transcripts to re-run later.** The `console-paths/get-console.md` shell block; the "Too many
+attempts" and "Update your account" page kinds, never reached on a live stack; and the harness
+estimate of 25 to 40 hours for a full re-run. None of them is a wrong claim today: each is a
+capture older than the code it describes.
