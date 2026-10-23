@@ -1,0 +1,56 @@
+name: links
+
+# Checks the external links in the Markdown sources once a week, and when run
+# by hand. A moved or dead page fails the run so it shows in the Actions tab.
+# It is not a pull request check: a third party's outage must not stop a merge.
+on:
+  schedule:
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: links
+  cancel-in-progress: true
+
+jobs:
+  external:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: .lycheecache
+          key: lychee-${{ github.run_id }}
+          restore-keys: lychee-
+
+      # Web addresses only: relative links and anchors are checked by the
+      # documentation build. A 429 or 403 from a host that rate-limits a
+      # runner counts as reachable. Addresses to skip are in .lycheeignore.
+      - uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          fail: true
+          args: >-
+            --no-progress
+            --scheme https
+            --cache --max-cache-age 7d
+            --max-retries 3
+            --retry-wait-time 5
+            --accept '100..=399,403,429'
+            --exclude '^https?://localhost'
+            --exclude '^https?://127\.0\.0\.1'
+            --exclude-all-private
+            --exclude '\.example(\.com|\.org|\.test)?([:/]|$)'
+            --exclude '\.test([:/]|$)'
+            --exclude '^https://github\.com/wizzywit/odudu/(settings|security/advisories/new|issues/new|releases/latest/download)'
+            README.md CONTRIBUTING.md SECURITY.md RELEASING.md TRADEMARK.md
+            'apps/docs/content/**/*.md'
+            'apps/docs/content/**/*.mdx'
