@@ -126,7 +126,7 @@ Password policy
 What a password must satisfy when somebody sets or changes one.
 Minimum length
 characters
-8 characters
+15 characters
 Between 8 and 256 characters.
 Require a digit
 Off
