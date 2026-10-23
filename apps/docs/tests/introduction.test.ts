@@ -34,7 +34,8 @@ describe('the introduction', () => {
 
   it('says what Odudu is not', () => {
     const text = page('compare.md');
-    expect(text).toMatch(/not (yet )?ready for production/iu);
+    expect(text).toMatch(/release candidate/iu);
+    expect(text).toMatch(/security review/iu);
     expect(text).toMatch(/one instance/iu);
   });
 

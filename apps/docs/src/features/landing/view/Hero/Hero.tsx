@@ -27,7 +27,7 @@ export function Hero(): ReactElement {
             </DocsLink>
           </p>
           <p className={styles.early}>
-            Early software, not ready for production.{' '}
+            A release candidate: try it and tell us what breaks.{' '}
             <DocsLink to="/roadmap/">What is built and what is next</DocsLink>
           </p>
         </div>
