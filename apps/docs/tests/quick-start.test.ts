@@ -7,6 +7,14 @@ import { DOCS_ROOT } from '#docs/tests/support/dist.ts';
 
 const FRONT_MATTER = /^---\n[\s\S]*?\n---\n/u;
 const source = readFileSync(path.join(DOCS_ROOT, 'content/en/quick-start/index.mdx'), 'utf8');
+// `releases/latest/download` skips pre-releases, so the candidate's own tag is
+// the address until a stable version has a dated changelog section.
+const stable = /^## \[\d+\.\d+\.\d+\] - \d{4}-\d{2}-\d{2}$/mu.test(
+  readFileSync(path.join(DOCS_ROOT, '../../CHANGELOG.md'), 'utf8'),
+);
+const DOWNLOAD = stable
+  ? 'https://github.com/wizzywit/odudu/releases/latest/download/compose.yaml'
+  : 'https://github.com/wizzywit/odudu/releases/download/v0.1.0-rc.1/compose.yaml';
 const nodes = fromMarkdown(source.replace(FRONT_MATTER, '')).children;
 
 type Node = (typeof nodes)[number];
@@ -33,9 +41,7 @@ const headingIndex = (pattern: RegExp): number =>
 describe('the quick start', () => {
   it('has the one command in the first code block on the page', () => {
     const first = code(nodes[firstCode]);
-    expect(first).toContain(
-      'curl -fsSLO https://github.com/wizzywit/odudu/releases/latest/download/compose.yaml',
-    );
+    expect(first).toContain(`curl -fsSLO ${DOWNLOAD}`);
     expect(first).toContain('docker compose up');
     expect(first.split('\n').filter((line) => line.trim() !== '')).toHaveLength(1);
   });

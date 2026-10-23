@@ -54,9 +54,9 @@ describe('the hero terminal rhythm', () => {
     expect(other).not.toEqual(first);
   });
 
-  it('types at about 22 characters a second, pauses, then shows each line on its own beat, in under six seconds', () => {
+  it('types at about 22 characters a second, pauses, then shows each line on its own beat, in under 6.5 seconds', () => {
     const { events, total } = run(seeded(7));
-    expect(total).toBeLessThan(6000);
+    expect(total).toBeLessThan(6500);
     const at = (name: string): number => events.find(([, event]) => event === name)?.[0] ?? -1;
     const typingMs = at('command') - at('key 1');
     const perKey = typingMs / (length - 1);

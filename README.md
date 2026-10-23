@@ -69,13 +69,14 @@ data on their own servers.
 You need Docker with Compose v2 and `curl`.
 
 ```sh
-curl -fsSLO https://github.com/wizzywit/odudu/releases/latest/download/compose.yaml && docker compose up -d
+curl -fsSLO https://github.com/wizzywit/odudu/releases/download/v0.1.0-rc.1/compose.yaml && docker compose up -d
 docker compose logs setup
 ```
 
 The second command prints the console address, the administrator's email and a
 one-time password. [The quick start](https://wizzywit.github.io/odudu/docs/quick-start/)
-takes you from there to a signed-in app. The release is coming; until then,
+takes you from there to a signed-in app. This is a release candidate. Try it and
+tell us what breaks. You can also
 [run it from a checkout](https://wizzywit.github.io/odudu/docs/contributing/run-from-a-checkout/).
 
 ## Documentation

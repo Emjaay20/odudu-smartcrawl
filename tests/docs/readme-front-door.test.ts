@@ -281,10 +281,12 @@ describe('the quick start in the README is the quick start page', () => {
     expect(README.match(/ODUDU_[A-Z_]+/gu) ?? []).toEqual([]);
   });
 
-  it('says the release is coming, and names the checkout route, until a stable one is published', () => {
+  it('names the candidate tag, and the checkout route, until a stable release is published', () => {
     const quick = section('Quick start');
-    expect(quick.includes('The release is coming; until then,')).toBe(!stable);
+    expect(quick.includes('This is a release candidate.')).toBe(!stable);
     expect(quick.includes('contributing/run-from-a-checkout/')).toBe(!stable);
+    expect(quick.includes('releases/download/v0.1.0-rc.1/compose.yaml')).toBe(!stable);
+    expect(quick.includes('releases/latest/download/compose.yaml')).toBe(stable);
   });
 });
 

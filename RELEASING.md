@@ -6,6 +6,12 @@ publishes a GitHub Release. This page is for the people who cut one.
 The workflow has not run on a real tag yet. The first release candidate is its
 first run, so expect to fix something and tag `-rc.2`.
 
+Until the first stable release, the README and the quick start use the
+candidate tag `v0.1.0-rc.1` in the download address. When `0.1.0` is out, switch
+them to `releases/latest/download`: edit `README.md`,
+`apps/docs/content/en/quick-start/index.mdx`,
+`apps/docs/src/features/landing/service/content.ts` and the caveats beside them.
+
 ## Versions
 
 Odudu is before 1.0, so a minor version (`0.2.0`) may break something and a

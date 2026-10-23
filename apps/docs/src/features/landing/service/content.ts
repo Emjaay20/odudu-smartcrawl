@@ -2,11 +2,11 @@
 // route the build checks, and a test ties the command to the quick start's.
 
 export const RELEASE_URL =
-  'https://github.com/wizzywit/odudu/releases/latest/download/compose.yaml';
+  'https://github.com/wizzywit/odudu/releases/download/v0.1.0-rc.1/compose.yaml';
 
-// The caveat both the landing page and the Quick start carry while no release
-// is published; a test removes it with the first release workflow.
-export const RELEASE_CAVEAT = 'Arrives with the first release.';
+// The caveat both the landing page and the Quick start carry until a stable
+// release is in the changelog; the address then becomes the `latest` one.
+export const RELEASE_CAVEAT = 'This is a release candidate';
 
 export type Shell = 'unix' | 'windows';
 
