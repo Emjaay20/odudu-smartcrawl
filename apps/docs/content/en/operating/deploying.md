@@ -106,13 +106,15 @@ docker exec <container> odudu seed admin --username ada
 
 It prints a one-time password, once. Open `https://id.example.com/console/`, type `system` as the tenant, and sign in as `ada`. Odudu asks you to choose a new password before it lets you in.
 
-Then check the issuer your server reports is the https address people use:
+The issuer is `ODUDU_PUBLIC_BASE_URL` plus `/tenants/<name>`, whatever `Host` header a request carries, so the proxy needs no special `Host` handling. That is why the value must be the public address people use, with no path.
+
+Then check the issuer your server reports is that address:
 
 ```text
 curl -fsS https://id.example.com/tenants/system/.well-known/openid-configuration
 ```
 
-The `issuer` in the answer must begin `https://id.example.com/`. If it says `http://`, the proxy is not sending `X-Forwarded-Proto` or `ODUDU_TRUST_PROXY` is off.
+The `issuer` in the answer must begin `https://id.example.com/`. If it does not, `ODUDU_PUBLIC_BASE_URL` is wrong.
 
 ## 7. Leave the schedules on
 

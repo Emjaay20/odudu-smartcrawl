@@ -63,6 +63,7 @@ import {
   USERINFO_ENCRYPTION_ENCS_PERMITTED,
 } from '#/service/client-metadata';
 import { DEFAULT_TLS_CLIENT_SUBJECT_HEADER } from '#/service/tls-client-auth';
+import { configureIssuerBase } from '#/view/issuer';
 import { expandWebOrigins } from '#/service/web-origin';
 import {
   issueAuthorizationCode,
@@ -160,6 +161,11 @@ export interface OidcRoutesDeps {
 // tenant id.
 export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
   return (app) => {
+    // A host that decorated the whole app already did; this covers a plugin
+    // registered on its own.
+    if (!app.hasRequestDecorator('configuredIssuerBase')) {
+      configureIssuerBase(app, deps.publicBaseUrl);
+    }
     const findTenant = (name: string) => tenantLookupRepository(deps.ownerDatabase.db).byName(name);
     const clock = deps.clock ?? systemClock;
     const tls = deps.tls;
@@ -973,7 +979,7 @@ export { restartAuthorizeLocation } from '#/service/restart-request';
 export { sendThrottledPage } from '#/view/routes/throttled';
 export { answerNotFound, answerServerError, type UnroutedDeps } from '#/view/routes/unrouted';
 export { isApiPath, wantsHtmlPage } from '#/service/page-negotiation';
-export { issuerBaseFor, tenantIssuerFor } from '#/view/issuer';
+export { configureIssuerBase, issuerBaseFor, tenantIssuerFor } from '#/view/issuer';
 export { assertionJtiRepository } from '#/repository/assertion-jti';
 export { isWellFormedWebOrigin } from '#/service/web-origin';
 export {

@@ -19,7 +19,7 @@ With `NODE_ENV=production`, which the image sets, the server checks its settings
 | `ODUDU_KEK`                       | Starting with the throwaway key the repository's example file ships. It is public, and the key wraps every signing key and console token.                                                                                                                           |
 | `ODUDU_TLS`                       | Starting unless it is `true`, which states that TLS ends in front of the server. Every credential Odudu issues travels as plaintext without it.                                                                                                                     |
 | `ODUDU_ALLOW_PRIVATE_CLIENT_URLS` | Starting with it on. It lets a client's `jwks_uri` or back-channel logout address resolve to a private address, which is server-side request forgery.                                                                                                               |
-| `ODUDU_PUBLIC_BASE_URL`           | Starting without a value a passkey relying party id can be derived from. Passkeys are bound to that id, which is never taken from a request header, and one bound to the wrong domain is unusable.                                                                  |
+| `ODUDU_PUBLIC_BASE_URL`           | Starting without it. It is the issuer every token names, and the source of the passkey relying party id; neither is ever taken from a request header. A passkey bound to the wrong domain is unusable.                                                              |
 
 While the console is on, which it is by default, the server also checks its own setup, in any environment:
 

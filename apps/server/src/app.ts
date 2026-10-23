@@ -35,6 +35,7 @@ import {
 import { adminRoutes, composeUserSubject } from '@odudu/protocol-admin';
 import {
   clientKeySet,
+  configureIssuerBase,
   oidcRoutes,
   answerNotFound,
   answerServerError,
@@ -303,6 +304,9 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   });
 
   const tls = deps.tls;
+  // The issuer is the configured public address wherever one is stated, for the
+  // OIDC routes and the admin API alike; never what a Host header says.
+  configureIssuerBase(app, deps.publicBaseUrl);
 
   if (deps.onRoute !== undefined) app.addHook('onRoute', deps.onRoute);
 

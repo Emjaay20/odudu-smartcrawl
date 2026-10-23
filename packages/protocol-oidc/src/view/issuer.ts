@@ -1,4 +1,4 @@
-import { type FastifyRequest } from 'fastify';
+import { type FastifyInstance, type FastifyRequest } from 'fastify';
 import { tenantIssuer } from '#/service/issuer';
 
 const DEFAULT_PORT: Record<string, string> = { http: '80', https: '443' };
@@ -40,19 +40,47 @@ function canonicalAuthority(protocol: string, rawHost: string): string {
   return withoutRootLabel(host.slice(0, match.index)) + canonicalPort(protocol, match[1] ?? '');
 }
 
+declare module 'fastify' {
+  interface FastifyRequest {
+    // The deployment's own public address (ODUDU_PUBLIC_BASE_URL), when it
+    // states one; undefined where the issuer is read off the request.
+    readonly configuredIssuerBase: string | undefined;
+  }
+}
+
+// Makes every request of this instance, and of what is registered under it,
+// answer `configuredIssuerBase` with the configured address, spelled as a
+// request's authority would be: the one source `issuerBaseFor` prefers.
+export function configureIssuerBase(app: FastifyInstance, publicBaseUrl: string | undefined): void {
+  if (publicBaseUrl === undefined) return;
+  const { protocol, host } = new URL(publicBaseUrl);
+  const base = `${protocol}//${canonicalAuthority(protocol.slice(0, -1), host)}`;
+  app.decorateRequest('configuredIssuerBase', { getter: () => base });
+}
+
 // The one definition of Odudu's issuer identifier: OIDC Discovery §3 and
 // §4.3 require the discovery document's `issuer`, the `iss` claim, the
 // `iss` authorization-response parameter (RFC 9207 §2.3) and the well-known
-// URL's prefix to be the same string. `protocol` and `host` respect
-// trustProxy as `request.ip` does (apps/server/src/app.ts), so behind a TLS
-// terminating proxy ODUDU_TRUST_PROXY must be on to read https. `host`, not
-// `hostname`, because dropping the port advertises unreachable URLs.
-export function issuerBaseFor(request: Pick<FastifyRequest, 'protocol' | 'host'>): string {
-  return `${request.protocol}://${canonicalAuthority(request.protocol, request.host)}`;
+// URL's prefix to be the same string. It is the configured public base when
+// there is one, and never a header then. Without one (local development) it
+// is read off the request: `protocol` and `host` respect trustProxy as
+// `request.ip` does, so behind a TLS terminating proxy ODUDU_TRUST_PROXY must
+// be on to read https; `host`, not `hostname`, so the port is kept.
+export function issuerBaseFor(
+  request: Pick<FastifyRequest, 'protocol' | 'host'> & {
+    readonly configuredIssuerBase?: string | undefined;
+  },
+): string {
+  return (
+    request.configuredIssuerBase ??
+    `${request.protocol}://${canonicalAuthority(request.protocol, request.host)}`
+  );
 }
 
 export function tenantIssuerFor(
-  request: Pick<FastifyRequest, 'protocol' | 'host'>,
+  request: Pick<FastifyRequest, 'protocol' | 'host'> & {
+    readonly configuredIssuerBase?: string | undefined;
+  },
   tenant: string,
 ): string {
   return tenantIssuer(issuerBaseFor(request), tenant);

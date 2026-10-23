@@ -96,10 +96,10 @@ export function assertProductionPasskeyRelyingParty(config: Config): void {
   if (config.ODUDU_PUBLIC_BASE_URL === undefined) {
     throw new OduduError(
       'config_invalid',
-      'ODUDU_PUBLIC_BASE_URL is required when NODE_ENV=production. It is the only source of the ' +
-        'WebAuthn relying party id a passkey is registered against — a request header is ' +
-        'client-controlled, and a passkey bound to the wrong domain is one the browser will ' +
-        'never offer again.',
+      'ODUDU_PUBLIC_BASE_URL is required when NODE_ENV=production. It is the issuer every token ' +
+        'names and the only source of the WebAuthn relying party id a passkey is registered ' +
+        'against — a request header is client-controlled, and a passkey bound to the wrong ' +
+        'domain is one the browser will never offer again.',
     );
   }
   // Derived here so a value the config schema accepts but no relying party

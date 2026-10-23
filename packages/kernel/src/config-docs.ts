@@ -289,9 +289,10 @@ export const CONFIG_DOCS: Record<ConfigKey, ConfigDoc> = {
   ODUDU_PUBLIC_BASE_URL: {
     group: 'Server',
     summary:
-      'The origin the server is reached at, with no path: the base every mailed link and the ' +
-      'console’s redirect URI are built from, and the source of the passkey relying party id. ' +
-      'Never taken from a request header. Required when `NODE_ENV=production`.',
+      'The origin the server is reached at, with no path: the issuer of every tenant, the base ' +
+      'every mailed link and the console’s redirect URI are built from, and the source of the ' +
+      'passkey relying party id. Never taken from a request header. Required when ' +
+      '`NODE_ENV=production`. Without it (local development) the issuer is read from the request.',
     secret: false,
     requiredWhen:
       'the console is on (`ODUDU_CONSOLE`, which defaults to `true`) or `NODE_ENV` is `production`',

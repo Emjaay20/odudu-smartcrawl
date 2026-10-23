@@ -1,6 +1,6 @@
 import Fastify from 'fastify';
 import { describe, expect, it } from 'vitest';
-import { issuerBaseFor, tenantIssuerFor } from '#/view/issuer';
+import { configureIssuerBase, issuerBaseFor, tenantIssuerFor } from '#/view/issuer';
 
 async function probe(
   options: { trustProxy: boolean },
@@ -191,5 +191,63 @@ describe('[ODUDU-ISSUER-02] the scheme default port never appears in the issuer'
     const { base, tenantIssuer } = await probe({ trustProxy: false }, {});
     expect(base).toBe('http://localhost');
     expect(tenantIssuer).toBe('http://localhost/tenants/acme');
+  });
+});
+
+// The issuer is a statement the server makes, so when the deployment states its
+// public address it is that address and nothing a request says (RFC 8414 §2:
+// the issuer in the metadata is the one used; Host-header injection otherwise
+// poisons discovery and `iss`).
+describe('[ODUDU-ISSUER-03] a configured public base is the issuer, whatever the request says', () => {
+  async function configured(
+    base: string | undefined,
+    options: { trustProxy: boolean },
+    headers: Record<string, string>,
+  ): Promise<{ base: string; tenantIssuer: string }> {
+    const app = Fastify(options);
+    configureIssuerBase(app, base);
+    app.get('/probe', (request) => ({
+      base: issuerBaseFor(request),
+      tenantIssuer: tenantIssuerFor(request, 'acme'),
+    }));
+    try {
+      const res = await app.inject({ url: '/probe', headers });
+      return res.json<{ base: string; tenantIssuer: string }>();
+    } finally {
+      await app.close();
+    }
+  }
+
+  it('ignores a forged Host header', async () => {
+    const { base, tenantIssuer } = await configured(
+      'https://id.example.com',
+      { trustProxy: false },
+      { host: 'evil.example' },
+    );
+    expect(base).toBe('https://id.example.com');
+    expect(tenantIssuer).toBe('https://id.example.com/tenants/acme');
+  });
+
+  it('ignores forwarded headers from a trusted proxy, and a Host that dropped the port', async () => {
+    const { base } = await configured(
+      'https://id.example.com:8443',
+      { trustProxy: true },
+      { host: 'id.example.com', 'x-forwarded-host': 'other.example', 'x-forwarded-proto': 'http' },
+    );
+    expect(base).toBe('https://id.example.com:8443');
+  });
+
+  it('spells the base the way a request would: lower case, no default port', async () => {
+    const { base } = await configured('HTTPS://ID.Example.com:443', { trustProxy: false }, {});
+    expect(base).toBe('https://id.example.com');
+  });
+
+  it('reads the request as before when no base is configured', async () => {
+    const { base } = await configured(
+      undefined,
+      { trustProxy: false },
+      { host: 'idp.example:8443' },
+    );
+    expect(base).toBe('http://idp.example:8443');
   });
 });
