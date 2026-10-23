@@ -6,9 +6,27 @@ All notable changes to Odudu are written here, newest first. The format follows
 
 ## [Unreleased]
 
-## [0.1.0-rc.1] - 2026-10-23
+## [0.1.0-rc.2] - 2026-10-23
 
-<!-- Set this date to the day the tag is pushed (set at tagging). -->
+The second release candidate. Odudu is not production ready: it has had no security review.
+
+### Added
+
+- The documentation site is published on GitHub Pages, at https://wizzywit.github.io/odudu/.
+- The contributor license agreement is approved and checked on pull requests. Contributors outside the allowlist sign by comment.
+
+### Changed
+
+- The README and the pages say release candidate where they said not ready.
+- The quick start downloads the compose file of this candidate.
+- Dependencies are updated: fastify, drizzle-orm, jose, prettier, libphonenumber-js and react-query, and vite in the example.
+- CI retries the browser install, and updates the GitHub Actions cache.
+
+### Security
+
+- Dependency updates bring in the upstream fixes of the packages above.
+
+## [0.1.0-rc.1] - 2026-10-23
 
 The first release candidate. Odudu is not production ready: it has had no security review.
 
@@ -43,5 +61,6 @@ The first release candidate. Odudu is not production ready: it has had no securi
 - Cookies are `Secure` and `__Host-` prefixed under `ODUDU_TLS`, from one setting; before, the session cookie ignored it.
 - Characters that change the direction of text are refused in names and usernames.
 
-[Unreleased]: https://github.com/wizzywit/odudu/compare/v0.1.0-rc.1...HEAD
+[Unreleased]: https://github.com/wizzywit/odudu/compare/v0.1.0-rc.2...HEAD
+[0.1.0-rc.2]: https://github.com/wizzywit/odudu/compare/v0.1.0-rc.1...v0.1.0-rc.2
 [0.1.0-rc.1]: https://github.com/wizzywit/odudu/releases/tag/v0.1.0-rc.1

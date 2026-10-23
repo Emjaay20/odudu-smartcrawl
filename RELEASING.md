@@ -3,11 +3,8 @@
 A release is a tag. Push `v0.1.0` and a workflow builds the image, signs it and
 publishes a GitHub Release. This page is for the people who cut one.
 
-The workflow has not run on a real tag yet. The first release candidate is its
-first run, so expect to fix something and tag `-rc.2`.
-
 Until the first stable release, the README and the quick start use the
-candidate tag `v0.1.0-rc.1` in the download address. When `0.1.0` is out, switch
+newest candidate tag, now `v0.1.0-rc.2`, in the download address. When `0.1.0` is out, switch
 them to `releases/latest/download`: edit `README.md`,
 `apps/docs/content/en/quick-start/index.mdx`,
 `apps/docs/src/features/landing/service/content.ts` and the caveats beside them.
@@ -26,8 +23,8 @@ Release marked as a pre-release, and nothing that follows `latest` moves.
 
 1. Write the changelog first. In `CHANGELOG.md`, give the changes under
    `Unreleased` a heading `## [X.Y.Z] - YYYY-MM-DD` and update the links at the
-   foot. The workflow takes the release notes from that section and stops
-   without it.
+   foot. The date must be a real `YYYY-MM-DD`; a test checks it. The workflow
+   takes the release notes from that section and stops without it.
 2. Merge to `main` and wait for the `gate` check to pass on that commit. The
    workflow refuses a commit it has not passed on. A release candidate can be
    tagged on a pull request's head instead.
@@ -121,10 +118,9 @@ something public.
    `commit-messages`. Do it once each has passed once.
 3. **Turn on private vulnerability reporting.** Settings, Code security,
    Private vulnerability reporting. `SECURITY.md` links to it.
-4. **Turn on GitHub Pages and publish the site once.** Settings, Pages,
-   Source: GitHub Actions. Then open Actions, pages, Run workflow, from `main`.
-   The README and the landing page link to the site, so do this before the
-   first tag. After that, each stable tag redeploys it.
+4. **Publish the site.** Done: GitHub Pages uses GitHub Actions as its source, and the
+   site is at `https://wizzywit.github.io/odudu/`. To republish it, open
+   Actions, pages, Run workflow, from `main`. Each stable tag redeploys it.
 5. **Tag the first release candidate.** From the commit CI has passed on:
 
    ```text
@@ -176,5 +172,4 @@ use, so read its current terms first if Odudu may be offered commercially.
 
 `links.yml` checks the external links in the Markdown sources every Monday and
 when run by hand. It is not a pull request check. A failed run means a page
-moved or went away: fix the link. `.lycheeignore` lists addresses to skip, and
-the site's own address is on it until the first deploy. Remove that line then.
+moved or went away: fix the link. `.lycheeignore` lists addresses to skip.

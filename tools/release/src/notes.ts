@@ -1,4 +1,5 @@
 const VERSION = /^\d+\.\d+\.\d+(-rc\.\d+)?$/u;
+const COMMENT = /<!--[\s\S]*?-->/gu;
 const LINK_DEFINITION = /^\[[^\]]+\]:\s/u;
 
 // The body of one version's section of a Keep a Changelog file.
@@ -12,6 +13,8 @@ export function releaseNotes(changelog: string, version: string): string {
   const body = (next === -1 ? rest : rest.slice(0, next))
     .filter((line) => !LINK_DEFINITION.test(line))
     .join('\n')
+    .replace(COMMENT, '')
+    .replace(/\n{3,}/gu, '\n\n')
     .trim();
   if (body === '') throw new Error(`the section for ${version} in CHANGELOG.md is empty`);
   return body;

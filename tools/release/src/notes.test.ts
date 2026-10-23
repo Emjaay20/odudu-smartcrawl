@@ -41,6 +41,11 @@ describe('releaseNotes', () => {
     expect(releaseNotes(CHANGELOG, '0.1.0-rc.1')).toBe('### Added\n\n- One.');
   });
 
+  it('drops HTML comments, which GitHub would show as release notes text', () => {
+    const text = '## [1.0.0] - 2026-01-01\n\n<!-- note\nto editors -->\n\n### Added\n\n- One.\n';
+    expect(releaseNotes(text, '1.0.0')).toBe('### Added\n\n- One.');
+  });
+
   it('does not take 0.2.0 for a version that merely starts with it', () => {
     expect(() => releaseNotes(CHANGELOG, '0.2')).toThrow(/not a version/u);
     expect(() => releaseNotes(CHANGELOG, '0.2.0-rc.1')).toThrow(/no section/u);
