@@ -41,7 +41,10 @@ import {
   type LoginSubmissionDeps,
 } from '#/usecase/login-submission';
 import { decideReuse, withinMaxAge, type ResolvedSession } from '#/usecase/session-reuse';
-import { type AuthorizationErrorCode } from '#/service/oauth-errors';
+import {
+  AUTHORIZE_REQUEST_DESCRIPTIONS,
+  type AuthorizationErrorCode,
+} from '#/service/oauth-errors';
 
 export type AuthorizationRequestOutcome =
   | { kind: 'render'; error: AuthorizationErrorCode; description: string }
@@ -387,7 +390,8 @@ export async function handleAuthorizationRequest(
   // above: a malformed parameter is reported at the client's own
   // redirect_uri, not rendered.
   const claimsOutcome = parseClaimsRequest(params.claims);
-  if (claimsOutcome.kind === 'invalid') return reject('invalid_request', 'claims is not valid');
+  if (claimsOutcome.kind === 'invalid')
+    return reject('invalid_request', AUTHORIZE_REQUEST_DESCRIPTIONS.claimsInvalid);
   // §2 and §15.1 both require `auth_time` when `max_age` was used, not only
   // when requested as an Essential Claim — folded in here so token issuance
   // asks one question (`token-issuance.ts` excludes `auth_time` from what
@@ -421,7 +425,8 @@ export async function handleAuthorizationRequest(
       outcome.idTokenHint,
       request.clientId,
     );
-    if (hint === null) return reject('invalid_request', 'id_token_hint is not valid');
+    if (hint === null)
+      return reject('invalid_request', AUTHORIZE_REQUEST_DESCRIPTIONS.idTokenHintInvalid);
     hintSubject = hint.subject;
   }
 

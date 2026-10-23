@@ -4,7 +4,10 @@ import { type ClientOidcConfig } from '#/schema/client-oidc-config';
 import { isWellFormedPkceString } from '#/service/pkce';
 import { parsePrompt, type PromptValue } from '#/service/prompt';
 import { isRegisteredRedirectUri } from '#/service/redirect-uri';
-import { type AuthorizationErrorCode } from '#/service/oauth-errors';
+import {
+  AUTHORIZE_REQUEST_DESCRIPTIONS,
+  type AuthorizationErrorCode,
+} from '#/service/oauth-errors';
 
 export type AuthorizeOutcome =
   | {
@@ -146,7 +149,8 @@ export function validateAuthorizationRequest(
     ...(description === undefined ? {} : { description }),
   });
 
-  if (repeatedKey !== null) return reject('invalid_request', 'A parameter was sent more than once');
+  if (repeatedKey !== null)
+    return reject('invalid_request', AUTHORIZE_REQUEST_DESCRIPTIONS.repeatedParameter);
 
   // OIDC Core §3.1.2.6: request objects (§6) are not implemented, and the
   // specification requires saying so. Silently dropping the parameter would
@@ -158,12 +162,13 @@ export function validateAuthorizationRequest(
   if (params.response_type !== 'code') return reject('unsupported_response_type');
 
   const codeChallenge = params.code_challenge;
-  if (codeChallenge === undefined) return reject('invalid_request', 'code_challenge is required');
+  if (codeChallenge === undefined)
+    return reject('invalid_request', AUTHORIZE_REQUEST_DESCRIPTIONS.codeChallengeRequired);
   if (!isWellFormedPkceString(codeChallenge)) {
-    return reject('invalid_request', 'code_challenge is not valid');
+    return reject('invalid_request', AUTHORIZE_REQUEST_DESCRIPTIONS.codeChallengeInvalid);
   }
   if (params.code_challenge_method !== 'S256') {
-    return reject('invalid_request', 'code_challenge_method must be S256');
+    return reject('invalid_request', AUTHORIZE_REQUEST_DESCRIPTIONS.codeChallengeMethod);
   }
   if (!scopesAreGrantable(params.scope, knownScopes, clientScopes)) return reject('invalid_scope');
 
@@ -174,10 +179,12 @@ export function validateAuthorizationRequest(
   // for something this server has never heard of is better told so than
   // answered as if it had asked for nothing.
   const prompt = parsePrompt(params.prompt);
-  if (prompt.kind === 'invalid') return reject('invalid_request', 'prompt is not valid');
+  if (prompt.kind === 'invalid')
+    return reject('invalid_request', AUTHORIZE_REQUEST_DESCRIPTIONS.promptInvalid);
 
   const maxAge = parseMaxAge(params.max_age);
-  if (maxAge.kind === 'invalid') return reject('invalid_request', 'max_age is not valid');
+  if (maxAge.kind === 'invalid')
+    return reject('invalid_request', AUTHORIZE_REQUEST_DESCRIPTIONS.maxAgeInvalid);
 
   return {
     kind: 'ok',

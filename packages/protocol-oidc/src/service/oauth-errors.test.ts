@@ -3,6 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   AUTHORIZATION_ERRORS,
+  AUTHORIZE_REQUEST_DESCRIPTIONS,
   OAUTH_ERROR_DESCRIPTIONS,
   OAUTH_ERROR_DOCS,
   REGISTRATION_ERRORS,
@@ -93,6 +94,10 @@ describe('the OAuth error codes', () => {
 // echo a request or tell a caller which check failed.
 describe('the error_description of every code the authorization and token endpoints answer', () => {
   const codes = [...new Set([...AUTHORIZATION_ERRORS, ...TOKEN_ERRORS])];
+  const sentences = [
+    ...codes.map((code) => OAUTH_ERROR_DESCRIPTIONS[code]),
+    ...Object.values(AUTHORIZE_REQUEST_DESCRIPTIONS),
+  ];
 
   it.each(codes)('%s has a short sentence in the permitted characters', (code) => {
     const text = OAUTH_ERROR_DESCRIPTIONS[code];
@@ -103,5 +108,11 @@ describe('the error_description of every code the authorization and token endpoi
 
   it('does not say which check an invalid_grant failed', () => {
     expect(OAUTH_ERROR_DESCRIPTIONS.invalid_grant).not.toMatch(/expired|used|verifier|redirect/iu);
+  });
+
+  it.each(sentences)('%s is a short sentence in the permitted characters', (text) => {
+    expect(text.length).toBeGreaterThan(10);
+    expect(text.length).toBeLessThanOrEqual(80);
+    expect(text).toMatch(/^[\x20\x21\x23-\x5b\x5d-\x7e]+$/u);
   });
 });

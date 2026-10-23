@@ -1,6 +1,7 @@
 import { ERROR_CODES } from '@odudu/kernel';
 import { ADMIN_PROBLEM_TYPES, problemTypeUri } from '@odudu/protocol-admin/docs';
 import {
+  AUTHORIZE_REQUEST_DESCRIPTIONS,
   OAUTH_ERROR_DESCRIPTIONS,
   OAUTH_ERROR_DOCS,
   surfacesOf,
@@ -64,6 +65,8 @@ describe('the error code reference', () => {
     for (const sentence of Object.values(OAUTH_ERROR_DESCRIPTIONS)) {
       expect(page).toContain(sentence);
     }
-    expect(page).toContain('code_challenge is required');
+    for (const sentence of Object.values(AUTHORIZE_REQUEST_DESCRIPTIONS)) {
+      expect(page).toContain(sentence);
+    }
   });
 });

@@ -1,6 +1,7 @@
 import { ERROR_DOCS, ERROR_GROUPS } from '@odudu/kernel/docs';
 import type { ErrorCode } from '@odudu/kernel';
 import {
+  AUTHORIZE_REQUEST_DESCRIPTIONS,
   OAUTH_ERROR_DESCRIPTIONS,
   OAUTH_ERROR_DOCS,
   surfacesOf,
@@ -78,9 +79,14 @@ function oauthSection(): string {
       'and OpenID Connect Core define. At the authorization endpoint a refusal that can be reported ' +
       'to the client is a redirect carrying `error`; one that cannot is a page. The token endpoint ' +
       'answers a JSON body. The authorization and token endpoints add an `error_description`, one ' +
-      'plain sentence that is never built from the request. Most are fixed per code, and ' +
-      '`invalid_grant` names no cause. A missing PKCE challenge says `code_challenge is required`.',
+      'plain sentence that is never built from the request. Each code has one fixed sentence, ' +
+      'and `invalid_grant` names no cause. The authorization endpoint adds a few that name the ' +
+      'parameter at fault, listed after the table.',
     table(['Code', 'Answered by', 'Meaning', '`error_description`'], rows),
+    'At the authorization endpoint, an `invalid_request` can say which parameter was wrong:',
+    Object.values(AUTHORIZE_REQUEST_DESCRIPTIONS)
+      .map((sentence) => `- ${codeCell(sentence)}`)
+      .join('\n'),
   ].join('\n\n');
 }
 

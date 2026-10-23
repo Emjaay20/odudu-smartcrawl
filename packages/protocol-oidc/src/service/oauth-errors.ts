@@ -155,3 +155,16 @@ export const OAUTH_ERROR_DESCRIPTIONS: Readonly<
   unsupported_grant_type: 'This grant type is not supported.',
   unsupported_response_type: 'Only response_type=code is supported.',
 };
+
+// What /authorize says, beside its code's sentence, when it can name the
+// parameter at fault: still static, still never built from the request.
+export const AUTHORIZE_REQUEST_DESCRIPTIONS = {
+  repeatedParameter: 'A parameter was sent more than once',
+  codeChallengeRequired: 'code_challenge is required',
+  codeChallengeInvalid: 'code_challenge is not valid',
+  codeChallengeMethod: 'code_challenge_method must be S256',
+  promptInvalid: 'prompt is not valid',
+  maxAgeInvalid: 'max_age is not valid',
+  claimsInvalid: 'claims is not valid',
+  idTokenHintInvalid: 'id_token_hint is not valid',
+} as const;
