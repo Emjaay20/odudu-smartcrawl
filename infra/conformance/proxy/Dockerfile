@@ -13,5 +13,5 @@ RUN apk add --no-cache openssl \
        -keyout /etc/nginx/conformance.key \
        -out /etc/nginx/conformance.crt \
        -subj "/CN=odudu-conformance" \
-       -addext "subjectAltName=DNS:odudu,DNS:localhost"
+       -addext "subjectAltName=DNS:proxy,DNS:localhost"
 COPY nginx.conf /etc/nginx/conf.d/default.conf

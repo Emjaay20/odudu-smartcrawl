@@ -82,6 +82,10 @@ one definition built on `request.host`, which keeps the port
 `issuer.test.ts`). A run on 443 still never exercises it, which is why
 that test drives Fastify directly rather than relying on this stack.
 
+The issuer is now the configured `ODUDU_PUBLIC_BASE_URL`, `https://proxy` in this stack's
+`compose.yaml`: the name the suite reaches the proxy by, and the host its plan files fetch discovery
+from. They must name one host, or the suite's check that the issuer matches the discovery URL fails.
+
 ## Spike 3: can Config OP be driven without a browser?
 
 **Yes — fully, through the suite's own HTTP API, and in dev mode it does
@@ -702,7 +706,7 @@ is the only one behind real TLS with `ODUDU_TLS` and `ODUDU_TRUST_PROXY`
 on, and so the only place the console's `__Host-` cookies can be seen
 leaving the server. It brings up `compose.yaml` under its own project,
 `odudu-console-check`, without the suite. It seeds a tenant and an
-administrator, then plays the browser with curl against `https://odudu`,
+administrator, then plays the browser with curl against `https://proxy`,
 the stack's `ODUDU_PUBLIC_BASE_URL`, reached through the proxy's published
 port and trusting the proxy's own certificate. It covers the login, the
 tenant's sign-in form, the callback and `GET /console/api/session`, and
@@ -716,7 +720,7 @@ Config OP, and it gates the build. A local run printed, after its compose and se
 output:
 
 ```
-ok: set-cookie: __Host-odudu-console-login=…; HttpOnly; SameSite=Lax; Path=/; Max-Age=600; Secure
+ok: set-cookie: __Host-odudu-console-login=…; HttpOnly; SameSite=Lax; Path=/; Max-Age=1800; Secure
 ok: set-cookie: __Host-odudu-console=…; HttpOnly; SameSite=Strict; Path=/; Secure
 console check passed
 ```

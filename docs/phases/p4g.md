@@ -3141,6 +3141,15 @@ decides client addresses and rate limits alone. A base with a trailing root dot 
 the gateway's assertion audience equals the server's issuer. Per-tenant custom domains are not supported:
 placed on P4b (roadmap and section 11).
 
+**The conformance stack's public base is `https://proxy`, because the suite reaches the server through the
+proxy by that name.** Increment 31r first set it to `https://odudu`, from a comment that said the suite reaches
+nginx's `server_name odudu`; the plan files fetch discovery from `https://proxy/...`, and `odudu` resolves on the
+suite's network to the app container (443 refused). Once the issuer stopped following `Host`, the Config OP plan
+failed ("issuer ... not consistent with the location the discovery document was retrieved from"). The compose
+file, nginx's `server_name`, the proxy certificate's names, the console check and the README now name `proxy`,
+and any plan file, certificate or check script must name the same host as `ODUDU_PUBLIC_BASE_URL`. The docs
+route's file-count test passes a small limit instead of writing 5,001 files: the route takes optional limits.
+
 **`seed client` and `seed scope` help said "create or update".** Both fail when the thing exists
 (`seed_conflict`). The help now says so and where to change an existing client; no update mode was built.
 

@@ -43,10 +43,10 @@ fi
 compose up -d --build --wait odudu proxy
 compose cp proxy:/etc/nginx/conformance.crt "$WORK/ca.crt"
 
-# The browser's view: https://odudu, the ODUDU_PUBLIC_BASE_URL compose.yaml
+# The browser's view: https://proxy, the ODUDU_PUBLIC_BASE_URL compose.yaml
 # sets, reached through the proxy's published port and trusted by its CA.
 browse() {
-  curl -sS --cacert "$WORK/ca.crt" --connect-to odudu:443:127.0.0.1:8543 \
+  curl -sS --cacert "$WORK/ca.crt" --connect-to proxy:443:127.0.0.1:8543 \
     -c "$WORK/jar" -b "$WORK/jar" -D "$WORK/headers" -o "$WORK/body" "$@"
 }
 
@@ -80,7 +80,7 @@ expect_cookie() {
 
 ready=0
 for _ in $(seq 1 60); do
-  if browse https://odudu/health/ready && [ "$(status)" = "200" ]; then
+  if browse https://proxy/health/ready && [ "$(status)" = "200" ]; then
     ready=1
     break
   fi
@@ -94,7 +94,7 @@ compose exec -T odudu node dist/main.js seed user --tenant "$TENANT" \
 compose exec -T odudu node dist/main.js seed grant-role --tenant "$TENANT" \
   --username "$USERNAME" --role odudu-admin:tenant-admin
 
-browse "https://odudu/console/auth/login?tenant=$TENANT&return_to=/console/"
+browse "https://proxy/console/auth/login?tenant=$TENANT&return_to=/console/"
 expect_status 302 "GET /console/auth/login"
 expect_cookie __Host-odudu-console-login Secure HttpOnly SameSite=Lax Path=/
 authorize="$(location)"
@@ -108,11 +108,11 @@ browse -X POST \
   --data-urlencode "auth_session_id=$auth_session_id" \
   --data-urlencode "username=$USERNAME" \
   --data-urlencode "password=$PASSWORD" \
-  "https://odudu/tenants/$TENANT/login-actions/authenticate"
+  "https://proxy/tenants/$TENANT/login-actions/authenticate"
 expect_status 302 "the tenant's sign-in"
 callback="$(location)"
 case "$callback" in
-  https://odudu/console/auth/callback\?*) ;;
+  https://proxy/console/auth/callback\?*) ;;
   *) fail "the sign-in redirected to $callback, not the console's callback" ;;
 esac
 
@@ -120,7 +120,7 @@ browse "$callback"
 expect_status 302 "GET /console/auth/callback"
 expect_cookie __Host-odudu-console Secure HttpOnly SameSite=Strict Path=/
 
-browse https://odudu/console/api/session
+browse https://proxy/console/api/session
 expect_status 200 "GET /console/api/session"
 grep -q "\"tenant\":\"$TENANT\"" "$WORK/body" || fail "the session names another tenant: $(cat "$WORK/body")"
 
