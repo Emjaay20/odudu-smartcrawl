@@ -350,24 +350,61 @@ location: http://localhost:8080/callback?code=8DR6gZGbEKhkDcC7a0dilL9k2gDcZjHo8Z
 bare id; it is now `<session id>:<secret>`.)
 
 `users.email` is unique per tenant, not globally — `email` alone would be a
-tenancy bug — so a second registration for an address already held **in
-this tenant** is refused:
+tenancy bug — so an address already held **in this tenant** cannot be
+registered a second time. What the form says depends on `verify_email`. With it
+on, the answer must not tell a stranger who has registered, so a taken address
+is answered exactly as a free one is, and its holder is told by mail instead.
+This ran on a freshly built stack on port `3199` (throttles at `10000`), on a
+tenant made for it with password reset on as well,
+so the mail can offer it. `ada` registers first, and `carol` then tries `ada`'s
+address:
 
 ```bash
-curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/registration \
+odudu seed \
+  --tenant register-demo --client register-spa \
+  --redirect-uri http://localhost:8080/callback
+odudu seed tenant --name register-demo \
+  --set registration_allowed=true --set verify_email=true \
+  --set reset_password_allowed=true
+
+curl -sS -o /dev/null -w '%{http_code}\n' \
+  -X POST http://localhost:3199/tenants/register-demo/login-actions/registration \
+  --data-urlencode 'username=ada' \
+  --data-urlencode 'email=ada@example.com' \
+  --data-urlencode 'password=correct-horse-battery'
+curl -sS -D - \
+  -X POST http://localhost:3199/tenants/register-demo/login-actions/registration \
+  -H 'x-request-id: register-demo-taken' \
   --data-urlencode 'username=carol' \
   --data-urlencode 'email=ada@example.com' \
-  --data-urlencode 'password=another-password'
+  --data-urlencode 'password=another-password-1'
 ```
 
 ```
+{"created":true,"tenant":"register-demo","tenantId":"01a167e1-df77-712c-9256-aa3ed7d72e9f","clientId":"register-spa"}
+{"command":"tenant","created":false,"tenant":"register-demo","tenantId":"01a167e1-df77-712c-9256-aa3ed7d72e9f","settings":["registration_allowed","verify_email","reset_password_allowed"]}
+201
+HTTP/1.1 201 Created
+x-request-id: register-demo-taken
+content-type: text/html
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+x-content-type-options: nosniff
+content-language: en
+content-length: 884
+Date: Fri, 23 Oct 2026 08:30:19 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
 <!doctype html>
 <html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Create account</title>
+<title>Account created</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
@@ -375,69 +412,110 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
 <body>
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
-<header class="intro">
-<h1>Create account</h1>
-<p class="tenant"><bdi>register-demo</bdi></p>
-</header>
+<h1>Account created</h1>
+<p>Check your email for a link to verify your address before you can sign in.</p>
+</main>
+</body>
+</html>
+```
+
+The page is the one a new address gets: `201`, "Account created" and the line
+about checking email. Nothing was created for `carol`. To show the two answers
+are the same bytes, a free address and `ada`'s are each registered and the two
+bodies compared:
+
+```bash
+curl -sS -X POST http://localhost:3199/tenants/register-demo/login-actions/registration \
+  --data-urlencode 'username=grace' \
+  --data-urlencode 'email=grace@example.com' \
+  --data-urlencode 'password=another-password-1' > free.html
+curl -sS -X POST http://localhost:3199/tenants/register-demo/login-actions/registration \
+  --data-urlencode 'username=hedy' \
+  --data-urlencode 'email=ada@example.com' \
+  --data-urlencode 'password=another-password-1' > taken.html
+cmp free.html taken.html && echo identical
+```
+
+```
+identical
+```
+
+The difference is in the inbox. `ada` has three mails: the verification link the
+first registration queued, and one for each of the two attempts on her address.
+An attempt's mail names no username and carries no key to verify; its link only
+opens the password reset page. Each attempt queued exactly one mail, as a
+registration of a free address queues one:
+
+```bash
+docker compose logs --no-log-prefix odudu | grep 'captured email' \
+  | jq -s 'map(select(.subject | startswith("You already have")))[0]
+           | {level, to, subject, text, htmlBytes, msg}'
+docker compose exec -T postgres psql -U odudu -d odudu -At -c \
+  "select o.to_address, o.subject
+     from email_outbox o join tenants t on t.id = o.tenant_id
+    where t.name = 'register-demo' order by o.created_at;"
+docker compose exec -T postgres psql -U odudu -d odudu -At -c \
+  "select u.username, u.email
+     from users u join tenants t on t.id = u.tenant_id
+    where t.name = 'register-demo' order by u.username;"
+```
+
+```json
+{
+  "level": 30,
+  "to": "ada@example.com",
+  "subject": "You already have a register-demo account",
+  "text": "Someone tried to create a ⁨register-demo⁩ account with this email address. You already have one.\n\nIf it was you, sign in, or reset your password if you forgot it.\n\nhttp://localhost:3199/tenants/register-demo/login-actions/reset-password\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to register at ⁨register-demo⁩.\n© 2026 Odudu · Powered by odudu",
+  "htmlBytes": 6041,
+  "msg": "captured email — no SMTP host configured"
+}
+```
+
+```
+ada@example.com|Verify your register-demo account
+ada@example.com|You already have a register-demo account
+grace@example.com|Verify your register-demo account
+ada@example.com|You already have a register-demo account
+```
+
+```
+ada|ada@example.com
+grace|grace@example.com
+```
+
+The tenant holds `ada` and `grace`, and neither `carol` nor `hedy`. A taken
+**username** is still named, on its own field, in both modes, because a
+username is not a secret and the person has to choose another.
+
+With `verify_email` off nothing can be mailed, so the form cannot stay silent
+and says the address is registered. On a tenant with only `registration_allowed`
+on, where `ada` registered first, `carol` is refused in place:
+
+```bash
+odudu seed \
+  --tenant reg-open --client reg-spa \
+  --redirect-uri http://localhost:8080/callback
+odudu seed tenant --name reg-open --set registration_allowed=true
+curl -sS -o /dev/null -w '%{http_code}\n' \
+  -X POST http://localhost:3199/tenants/reg-open/login-actions/registration \
+  --data-urlencode 'username=ada' \
+  --data-urlencode 'email=ada@example.com' \
+  --data-urlencode 'password=correct-horse-battery'
+curl -sS -X POST http://localhost:3199/tenants/reg-open/login-actions/registration \
+  --data-urlencode 'username=carol' \
+  --data-urlencode 'email=ada@example.com' \
+  --data-urlencode 'password=another-password-1' \
+  | grep -A3 'role="alert"'
+```
+
+```
+{"created":true,"tenant":"reg-open","tenantId":"01a167e1-86f4-79f6-ad5b-f9a355f1c541","clientId":"reg-spa"}
+{"command":"tenant","created":false,"tenant":"reg-open","tenantId":"01a167e1-86f4-79f6-ad5b-f9a355f1c541","settings":["registration_allowed"]}
+201
 <div class="alert" role="alert" id="form-error">
 <ul>
 <li id="form-error-0">That email address is already registered.</li>
 </ul>
-</div>
-<form method="post" action="/tenants/register-demo/login-actions/registration">
-  <label>Username <input type="text" name="username" autocomplete="username" value="carol"></label>
-  <label>Email <input type="email" name="email" autocomplete="email" value="ada@example.com" aria-invalid="true" aria-describedby="form-error-0" autofocus></label>
-  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" spellcheck="false" autocapitalize="off" autocorrect="off" aria-describedby="password-rules-list"></label>
-  <div class="rules hint" id="password-rules" data-min="15" data-summary="{met} of {total} rules met">
-    <p class="rules-head"><span>Your password needs:</span> <button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false">Show password</button> <span role="status"></span></p>
-    <ul id="password-rules-list">
-      <li data-rule="length">At least 15 characters</li>
-      <li>Not a common password</li>
-    </ul>
-  </div>
-  <script nonce="tPNp2xhZuhimI8TE3Tjltw==">(function () {
-  var box = document.getElementById('password-rules');
-  var field = document.getElementById('password');
-  if (!box || !field) return;
-  var rows = Array.from(box.querySelectorAll('li[data-rule]'));
-  var min = Number(box.getAttribute('data-min'));
-  var tests = {
-    length: function (v) { return Array.from(v.normalize('NFC')).length >= min; },
-    digit: function (v) { return /\d/u.test(v); },
-    uppercase: function (v) { return /[A-Z]/u.test(v); },
-    lowercase: function (v) { return /[a-z]/u.test(v); },
-    special: function (v) { return /[^A-Za-z0-9]/u.test(v); }
-  };
-  var status = box.querySelector('[role=status]');
-  var timer;
-  function check() {
-    return rows.filter(function (row) {
-      var ok = tests[row.getAttribute('data-rule')](field.value);
-      row.setAttribute('data-met', String(ok));
-      return ok;
-    }).length;
-  }
-  field.addEventListener('input', function () {
-    var met = check();
-    clearTimeout(timer);
-    timer = setTimeout(function () {
-      status.textContent = box.getAttribute('data-summary').replace('{met}', met).replace('{total}', rows.length);
-    }, 800);
-  });
-  check();
-  var toggle = box.querySelector('button');
-  toggle.hidden = false;
-  toggle.addEventListener('click', function () {
-    var show = field.type === 'password';
-    field.type = show ? 'text' : 'password';
-    toggle.setAttribute('aria-pressed', String(show));
-  });
-})();</script>
-  <button type="submit">Create account</button>
-</form>
-</main>
-</body>
-</html>
 ```
 
 (400; the same address remains free to register again in a different tenant,
@@ -1029,31 +1107,35 @@ behind it and names no sign-in, so it offers none.
 
 A created account writes one `credential` row, `account.registered`, in the
 transaction that creates it, and a redeemed verification link writes
-`email.verified` in the transaction that consumes it. A refusal writes
-neither: a taken address is a form error, and a spent link names nobody the
-caller has proved anything about. This ran against its own tenant,
-`signup-audit`, created by the two seed commands below, so the account and
-the mailed link are the only ones in play. Every request carries an
+`email.verified` in the transaction that consumes it. A taken address, with
+`verify_email` on, writes one row of its own, `account.registration_duplicate`,
+`refused`: it names the account the attempt ran into and nothing the caller
+typed. A spent link names nobody the caller has proved anything about, and writes
+none. This ran on the same stack, against its own
+tenant, `signup-audit`, created by the two seed commands below, so the accounts
+and the mailed link are the only ones in play. Every request carries an
 `x-request-id` starting `signup-audit-`, and the query below reads back
 exactly those.
 
 The second registration differs from the first only in its username, so the
-address is the only thing that can refuse it:
+address is the only thing that can set it apart. It is answered `201`, as a
+free address is:
 
 ```bash
 odudu seed --tenant signup-audit --client signup-audit-spa \
   --redirect-uri http://localhost:8080/callback
 odudu seed tenant --name signup-audit \
-  --set registration_allowed=true --set verify_email=true
+  --set registration_allowed=true --set verify_email=true \
+  --set reset_password_allowed=true
 
 curl -sS -o /dev/null -w '%{http_code}\n' \
-  -X POST http://localhost:3195/tenants/signup-audit/login-actions/registration \
+  -X POST http://localhost:3199/tenants/signup-audit/login-actions/registration \
   -H 'x-request-id: signup-audit-ada' \
   --data-urlencode 'username=ada' \
   --data-urlencode 'email=ada@example.com' \
   --data-urlencode 'password=correct-horse-battery'
-curl -sS -w '\n%{http_code}\n' \
-  -X POST http://localhost:3195/tenants/signup-audit/login-actions/registration \
+curl -sS -o /dev/null -w '%{http_code}\n' \
+  -X POST http://localhost:3199/tenants/signup-audit/login-actions/registration \
   -H 'x-request-id: signup-audit-duplicate' \
   --data-urlencode 'username=carol' \
   --data-urlencode 'email=ada@example.com' \
@@ -1061,110 +1143,34 @@ curl -sS -w '\n%{http_code}\n' \
 ```
 
 ```
-{"created":true,"tenant":"signup-audit","tenantId":"01a16395-c028-7dba-8fc2-30ae20f7be82","clientId":"signup-audit-spa"}
-{"command":"tenant","created":false,"tenant":"signup-audit","tenantId":"01a16395-c028-7dba-8fc2-30ae20f7be82","settings":["registration_allowed","verify_email"]}
+{"created":true,"tenant":"signup-audit","tenantId":"01a167e2-92cd-7ce3-b222-3432d2eaabac","clientId":"signup-audit-spa"}
+{"command":"tenant","created":false,"tenant":"signup-audit","tenantId":"01a167e2-92cd-7ce3-b222-3432d2eaabac","settings":["registration_allowed","verify_email","reset_password_allowed"]}
 201
-<!doctype html>
-<html lang="en" dir="ltr">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark">
-<title>Create account</title>
-<link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
-<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
-</head>
-<body>
-<main class="page">
-<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
-<header class="intro">
-<h1>Create account</h1>
-<p class="tenant"><bdi>signup-audit</bdi></p>
-</header>
-<div class="alert" role="alert" id="form-error">
-<ul>
-<li id="form-error-0">That email address is already registered.</li>
-</ul>
-</div>
-<form method="post" action="/tenants/signup-audit/login-actions/registration">
-  <label>Username <input type="text" name="username" autocomplete="username" value="carol"></label>
-  <label>Email <input type="email" name="email" autocomplete="email" value="ada@example.com" aria-invalid="true" aria-describedby="form-error-0" autofocus></label>
-  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" spellcheck="false" autocapitalize="off" autocorrect="off" aria-describedby="password-rules-list"></label>
-  <div class="rules hint" id="password-rules" data-min="15" data-summary="{met} of {total} rules met">
-    <p class="rules-head"><span>Your password needs:</span> <button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false">Show password</button> <span role="status"></span></p>
-    <ul id="password-rules-list">
-      <li data-rule="length">At least 15 characters</li>
-      <li>Not a common password</li>
-    </ul>
-  </div>
-  <script nonce="1eBA5pCZgEINFEZ0w3Ufig==">(function () {
-  var box = document.getElementById('password-rules');
-  var field = document.getElementById('password');
-  if (!box || !field) return;
-  var rows = Array.from(box.querySelectorAll('li[data-rule]'));
-  var min = Number(box.getAttribute('data-min'));
-  var tests = {
-    length: function (v) { return Array.from(v.normalize('NFC')).length >= min; },
-    digit: function (v) { return /\d/u.test(v); },
-    uppercase: function (v) { return /[A-Z]/u.test(v); },
-    lowercase: function (v) { return /[a-z]/u.test(v); },
-    special: function (v) { return /[^A-Za-z0-9]/u.test(v); }
-  };
-  var status = box.querySelector('[role=status]');
-  var timer;
-  function check() {
-    return rows.filter(function (row) {
-      var ok = tests[row.getAttribute('data-rule')](field.value);
-      row.setAttribute('data-met', String(ok));
-      return ok;
-    }).length;
-  }
-  field.addEventListener('input', function () {
-    var met = check();
-    clearTimeout(timer);
-    timer = setTimeout(function () {
-      status.textContent = box.getAttribute('data-summary').replace('{met}', met).replace('{total}', rows.length);
-    }, 800);
-  });
-  check();
-  var toggle = box.querySelector('button');
-  toggle.hidden = false;
-  toggle.addEventListener('click', function () {
-    var show = field.type === 'password';
-    field.type = show ? 'text' : 'password';
-    toggle.setAttribute('aria-pressed', String(show));
-  });
-})();</script>
-  <button type="submit">Create account</button>
-</form>
-</main>
-</body>
-</html>
-400
+201
 ```
 
-The key is read out of the verification mail the first registration queued,
-which is the only message `signup-audit` has. The link is then followed
-twice; the second time it is already spent:
+The key is read out of the verification mail the first registration queued.
+The tenant holds two mails, the other being the one to the address's holder, so
+the query asks for the verification one. The link is then followed twice; the
+second time it is already spent:
 
 ```bash
 docker compose exec -T postgres psql -U odudu -d odudu -At -c \
   "select substring(o.body_text from 'key=([A-Za-z0-9_-]+)')
      from email_outbox o join tenants t on t.id = o.tenant_id
-    where t.name = 'signup-audit';"
+    where t.name = 'signup-audit' and o.subject like 'Verify%';"
 ```
 
 ```
-aSL2GNXqMCkGyUVKJybttM07BuWMSttal0af8tjsV6g
+emzE207jzePuqjSw2F7NjTSzlLwWQP28kk3JPigSm64
 ```
 
 ```bash
-KEY=aSL2GNXqMCkGyUVKJybttM07BuWMSttal0af8tjsV6g
+KEY=emzE207jzePuqjSw2F7NjTSzlLwWQP28kk3JPigSm64
 curl -sS -o /dev/null -w '%{http_code}\n' -H 'x-request-id: signup-audit-verify' \
-  "http://localhost:3195/tenants/signup-audit/login-actions/action-token?key=$KEY"
+  "http://localhost:3199/tenants/signup-audit/login-actions/action-token?key=$KEY"
 curl -sS -o /dev/null -w '%{http_code}\n' -H 'x-request-id: signup-audit-replay' \
-  "http://localhost:3195/tenants/signup-audit/login-actions/action-token?key=$KEY"
+  "http://localhost:3199/tenants/signup-audit/login-actions/action-token?key=$KEY"
 
 docker compose exec -T postgres psql -U odudu -d odudu -x -P 'null=(null)' -c \
   "select e.request_id, e.event_type, e.action, e.outcome, e.actor_subject_id,
@@ -1182,23 +1188,33 @@ request_id       | signup-audit-ada
 event_type       | credential
 action           | account.registered
 outcome          | allowed
-actor_subject_id | 01a16395-c28e-7442-8d62-edfbac05e5ff
+actor_subject_id | 01a167e2-9521-71ec-bfb6-f4edd3c326af
 resource_type    | subject
-resource_id      | 01a16395-c28e-7442-8d62-edfbac05e5ff
+resource_id      | 01a167e2-9521-71ec-bfb6-f4edd3c326af
 detail           | {}
 -[ RECORD 2 ]----+-------------------------------------
+request_id       | signup-audit-duplicate
+event_type       | credential
+action           | account.registration_duplicate
+outcome          | refused
+actor_subject_id | (null)
+resource_type    | subject
+resource_id      | 01a167e2-9521-71ec-bfb6-f4edd3c326af
+detail           | {"reason": "already_registered"}
+-[ RECORD 3 ]----+-------------------------------------
 request_id       | signup-audit-verify
 event_type       | credential
 action           | email.verified
 outcome          | allowed
-actor_subject_id | 01a16395-c28e-7442-8d62-edfbac05e5ff
+actor_subject_id | 01a167e2-9521-71ec-bfb6-f4edd3c326af
 resource_type    | subject
-resource_id      | 01a16395-c28e-7442-8d62-edfbac05e5ff
+resource_id      | 01a167e2-9521-71ec-bfb6-f4edd3c326af
 detail           | {}
 ```
 
-Four requests, two rows: none for the duplicate address and none for the
-replayed link. `01a16395-c28e-…` is the `users.subject_id` this stack holds
-for `ada` in `signup-audit`. `detail` is empty on every `credential` row —
-no password, address or key is written to one, and the action names what
-happened.
+Four requests, three rows: one for each of the account, the attempt on its address
+and the verification, and none for the replayed link. `01a167e2-9521-…` is the
+`users.subject_id` this stack holds for `ada` in `signup-audit`, and the refused
+row's `resource_id`; its `actor_subject_id` is empty, because the caller proved
+nothing. `detail` holds no password, address, username or key: the action names
+what happened, and the only value is the reason.

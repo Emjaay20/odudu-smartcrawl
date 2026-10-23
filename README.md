@@ -557,14 +557,18 @@ without the body or, to a caller without `view-users`, the full address
 caller or change a status: it happens after the response, and no code
 reachable from a request holds a mail transport at all.
 
-**Known limitation, tenant-wide:** the reset endpoint's enumeration safety
-does not make the tenant itself un-enumerable. With `registration_allowed`
-also on, the registration form (below) answers "that email address is
-already registered" with a 400 — a universal trade-off for a self-service
-registration form, and the one Keycloak makes too — so an address's
-presence in the tenant is discoverable through that door even though the
-reset flow closes this one. Accepted, not fixed: honestly naming a
-trade-off beats implying a property the tenant does not actually have.
+**Registration and enumeration.** With `registration_allowed` also on, the
+registration form closes the same door for email addresses when `verify_email`
+is on: registering an address that already has an account answers exactly as
+registering a free one does ("Account created", status 201), creates nothing,
+and mails the address's holder that someone tried and that they already have
+an account, with a link to reset the password where the tenant has reset on.
+A taken username is still named on its field, because a username is not a
+secret and the person needs to choose another. With `verify_email` off nothing
+can be mailed, so the form says "that email address is already registered": a
+tenant that wants the address private turns verification on. The admin API
+keeps its explicit `409` for a taken username or address, since its caller is
+authenticated.
 
 A mailed verification link is built from `ODUDU_PUBLIC_BASE_URL`, never
 from the request that triggered it — a request's `Host` header is

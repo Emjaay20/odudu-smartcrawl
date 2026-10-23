@@ -5,6 +5,7 @@ import { MARK_PNG_BASE64 } from '../../packages/email/src/service/mark.generated
 import { en } from '../../packages/email/src/service/messages.js';
 import {
   renderRecoveryCodesRevoked,
+  renderRegistrationDuplicate,
   renderRequiredActions,
   renderResetPassword,
   renderSecondFactorRemoved,
@@ -73,6 +74,14 @@ function captures(markdown: string): Capture[] {
 }
 
 function rendered(capture: Capture) {
+  if (capture.subject.startsWith('You already have')) {
+    return renderRegistrationDuplicate({
+      to: TO,
+      resetLink: linkOf(capture.text),
+      tenantDisplayName: tenantOf(capture.text),
+      now: sentAt(capture.text),
+    });
+  }
   const input = {
     to: TO,
     link: linkOf(capture.text),
@@ -90,6 +99,7 @@ describe('the mail the guides record is what the templates produce', () => {
   it('matches every captured verification and reset mail in the protocol pages', () => {
     const found = captures(pagesText(PROTOCOL_PAGES));
     expect(found.length).toBeGreaterThanOrEqual(4);
+    expect(found.some((capture) => capture.subject.startsWith('You already have'))).toBe(true);
     for (const capture of found) {
       const real = rendered(capture);
       expect(capture.subject, `line ${String(capture.line)}`).toBe(real.subject);

@@ -248,11 +248,22 @@ one.
 
 The authorization and token endpoints now send an `error_description`. A block that quotes one shows the
 real body or query from a live capture on a stack of this branch (project `odudu-p4g-31r`, port `3197`),
-with its `content-length`. The two exceptions are the `consent_required` redirect and the `access_denied`
-that follows a refused consent: no client there asked for consent, so their lines carry the sentence the
-shared redirect adds, which a unit test pins. The blocks were not replayed from the top, so the keys,
+with its `content-length`. The blocks were not replayed from the top, so the keys,
 times, ids and ports around an updated line are the earlier runs'. The state-less redirect in the branches
 and the two responses on the CORS page were run on that stack, and their commands say so.
+
+The two lines that had been typed from the shared redirect, the `consent_required` redirect and the
+`access_denied` that follows a refused consent, are captured now. `odudu seed client --consent-required`
+made a client that asks, and both ran against it on the project `odudu-p4g-31k`, port `3199`, commit
+`7cf7b4db` plus this increment's documentation, on a tenant `demo` with `ada` seeded. The consent screen
+that precedes them was captured in the same run, and is the page the transcripts quote, apart from the
+client's name and the `content-length` that follows from it.
+
+A taken email address under `verify_email` began to be answered as a free one is. The three blocks that
+show it, and the audit section of Self-registration, ran on the same project and commit, on tenants
+`register-demo`, `reg-open` and `signup-audit` made for them with throttles at `10000`. The mail to the
+holder is the capture the stack's log wrote (no SMTP host is set), and the outbox listing and the user list
+are scoped to the tenant.
 
 ## Admin path transcripts
 

@@ -3311,3 +3311,29 @@ response size is unchanged: no description in the contract changed.
 **Placed.** A breached-password check (a lookup against a leak list) stays with P4f; the roadmap, section
 11 and `docs/NEXT.md` say "a breached-password check" now. Required username or email stays with the
 declarative user profile.
+
+### Increment 31k, a taken address is not named
+
+**A taken address is answered like a free one when `verify_email` is on.** The form says "Account created"
+with status 201 whether or not the address has an account, creates nothing for a taken one, and mails the
+address's holder that someone tried (a link to the password reset where the tenant has it on). A taken
+username is still named on its field, in both modes. With `verify_email` off the form still says the address
+is registered, since nothing can be mailed; the settings page and the README say so. The admin API keeps its
+`409`, its caller being authenticated.
+
+**Order of the checks.** The usernames and addresses are looked up together, in the transaction, before
+anything is written, and the username is answered first, so a taken address never changes what a taken
+username is told. A registration that loses a race on the address is answered as a taken one too.
+
+**Queries and timing.** Free path: two lookups, subject, user, default roles and groups, credential, audit
+row, token (and its lifetime read), one mail. Taken path: two lookups, audit row, one mail. Both hash the
+password once and write one mail row. Ten runs on a local stack: free 40.7 ms median, taken 36.5 ms; the
+four milliseconds left are the writes only the free path makes, and a statistical attacker with many samples
+could still tell them apart. Closing it would mean padding the taken path with writes that mean nothing.
+
+**Audit.** `account.registration_duplicate`, `refused`, reason `already_registered`, naming the account it ran
+into. Bounded as a login failure is, by the per-origin throttle; ADR 0037's amendment records it.
+
+**`odudu seed client --consent-required`** creates a client that asks for consent, so the consent screen and
+its two refusals are reproducible from the command line. The `consent_required` and `access_denied` lines in
+the refusal transcripts are captured against such a client now.
