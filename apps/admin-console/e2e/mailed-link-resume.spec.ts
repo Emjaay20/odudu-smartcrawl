@@ -119,6 +119,11 @@ test('a verification mailed from the console registration, opened in the same br
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: 'Create account' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Account created' })).toBeVisible();
+  await page.goto(linkFor(tenant, mailedKey(tenant, email)));
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Your email address is verified' }),
+  ).toBeVisible();
+  // The account exists only now, so it is granted the console's role now.
   seed([
     'grant-role',
     '--tenant',
@@ -128,11 +133,6 @@ test('a verification mailed from the console registration, opened in the same br
     '--role',
     'odudu-admin:tenant-admin',
   ]);
-
-  await page.goto(linkFor(tenant, mailedKey(tenant, email)));
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'Your email address is verified' }),
-  ).toBeVisible();
   await page.getByRole('link', { name: 'Continue to sign in' }).click();
 
   await signInAtTenant(page, { tenant, username, password });

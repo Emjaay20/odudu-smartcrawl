@@ -405,7 +405,18 @@ test('registration, the unverified account, password reset and their links', asy
   await expect(page.getByRole('link', { name: 'Back to sign in' })).toBeVisible();
   await inspect(page, 'registration-succeeded');
 
-  // The same name again is refused on its own field, with the other values kept.
+  const key = mailKey(open, `newcomer-${run}@example.test`);
+  await page.goto(`/tenants/${open}/login-actions/action-token?key=${key}`);
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('verified');
+  await expect(page.getByRole('link', { name: 'Continue to sign in' })).toBeVisible();
+  await inspect(page, 'verification-ok');
+  await page.goto(`/tenants/${open}/login-actions/action-token?key=${key}`);
+  await expect(page.getByRole('heading', { level: 1 })).toContainText("can't be used");
+  // A registration link is gone once opened, so it names no sign-in to go back to.
+  await expect(page.getByRole('link', { name: 'Back to sign in' })).toHaveCount(0);
+  await inspect(page, 'verification-failed');
+
+  // Once the link has made the account, its name is taken.
   await page.goto(`/tenants/${open}/login-actions/registration`);
   await page.getByLabel('Username').fill('newcomer');
   await page.getByLabel('Email').fill(`other-${run}@example.test`);
@@ -414,16 +425,6 @@ test('registration, the unverified account, password reset and their links', asy
   await expect(page.getByRole('alert')).toContainText('That username is already taken.');
   await expect(page.getByLabel('Email')).toHaveValue(`other-${run}@example.test`);
   await inspect(page, 'registration-taken');
-
-  const key = mailKey(open, `newcomer-${run}@example.test`);
-  await page.goto(`/tenants/${open}/login-actions/action-token?key=${key}`);
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('verified');
-  await expect(page.getByRole('link', { name: 'Continue to sign in' })).toBeVisible();
-  await inspect(page, 'verification-ok');
-  await page.goto(`/tenants/${open}/login-actions/action-token?key=${key}`);
-  await expect(page.getByRole('heading', { level: 1 })).toContainText("can't be used");
-  await expect(page.getByRole('link', { name: 'Back to sign in' })).toBeVisible();
-  await inspect(page, 'verification-failed');
 
   await page.goto(authorize(open, 'openapp'));
   await signIn(page, 'unverified');
