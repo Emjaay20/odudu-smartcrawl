@@ -71,6 +71,14 @@ describe('restartAuthorizeLocation', () => {
     ).toBe(false);
   });
 
+  // A request parked under prompt=create is rebuilt once the person has an
+  // account: the way back is a sign-in, and one that asks for credentials
+  // rather than reusing whichever session the browser already holds.
+  it('rebuilds prompt=create as prompt=login', () => {
+    const url = parse(restartAuthorizeLocation('acme', { ...PENDING, prompt: ['create'] }));
+    expect(url.searchParams.get('prompt')).toBe('login');
+  });
+
   it('carries prompt, max_age and a single resource', () => {
     const url = parse(
       restartAuthorizeLocation('acme', {

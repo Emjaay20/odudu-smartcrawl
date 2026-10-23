@@ -369,6 +369,17 @@ test('the password hints are a plain list, and a script ticks them and shows the
   await plain.close();
 });
 
+test('prompt=create lands on the registration page, with the way back to the sign-in', async ({
+  page,
+}) => {
+  await page.goto(authorize(open, 'openapp', { prompt: 'create' }));
+  await expect(page.getByRole('heading', { level: 1, name: 'Create account' })).toBeVisible();
+  expect(page.url()).toContain(`/tenants/${open}/login-actions/registration?return_to=`);
+  await page.getByRole('link', { name: 'Back to sign in' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible();
+  await expect(page.getByText('to continue to')).toContainText('Open application');
+});
+
 test('registration, the unverified account, password reset and their links', async ({
   page,
   problems,

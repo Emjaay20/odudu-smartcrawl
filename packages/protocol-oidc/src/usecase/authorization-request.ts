@@ -115,7 +115,12 @@ export type AuthorizationRequestOutcome =
       authSessionId: string;
       browser: SignInBrowser;
       accounts: readonly SelectAccountCandidate[];
-    };
+    }
+  // The client asked for the registration page (prompt=create, Initiating
+  // User Registration via OpenID Connect 1.0 §4): the request is parked as
+  // a login would park it, unauthenticated, and the browser is sent to the
+  // page the sign-in form's own Create an account link leads to.
+  | { kind: 'register'; authSessionId: string; browser: SignInBrowser };
 
 export interface SelectAccountCandidate {
   sessionId: string;
@@ -430,6 +435,33 @@ export async function handleAuthorizationRequest(
     hintSubject = hint.subject;
   }
 
+  // What every branch below parks: the request as validated, with what the
+  // pages shown after a detour need from it.
+  const parked = {
+    ...request,
+    prompt: [...outcome.prompts],
+    ...(uiLocales.length > 0 ? { uiLocales } : {}),
+    ...(hintSubject !== null ? { idTokenHintSubject: hintSubject } : {}),
+    ...(claimsSubject !== null ? { claimsSubject } : {}),
+    resource: [...audience],
+    claims,
+  };
+
+  // Initiating User Registration §4.1: the person wants an account, not a
+  // sign-in, so no session is consulted or reused. A tenant whose discovery
+  // document does not list `create` refuses it as a value it does not
+  // support, with the description §4.1 recommends.
+  if (outcome.prompts.has('create')) {
+    if (!tenant.registrationAllowed) {
+      return reject('invalid_request', AUTHORIZE_REQUEST_DESCRIPTIONS.promptCreateUnsupported);
+    }
+    const { authSessionId, browser } = await deps.startAuthentication(tenant.id, {
+      ...parked,
+      ...(maxAge !== null ? { maxAge } : {}),
+    });
+    return { kind: 'register', authSessionId, browser };
+  }
+
   // OIDC Core §3.1.2.1/§3.1.2.3/§15.1: whether this request can be answered
   // from the End-User's existing SSO session, has to start a fresh
   // authentication, or — under `prompt=none` — must be refused because it
@@ -521,15 +553,9 @@ export async function handleAuthorizationRequest(
     // running again.
     const promoteToParkedRequest = async (): Promise<string> => {
       const { authSessionId } = await deps.startAuthentication(tenant.id, {
-        ...request,
-        prompt: [...outcome.prompts],
-        ...(uiLocales.length > 0 ? { uiLocales } : {}),
-        ...(hintSubject !== null ? { idTokenHintSubject: hintSubject } : {}),
-        ...(claimsSubject !== null ? { claimsSubject } : {}),
+        ...parked,
         reuseSessionId: resolvedSession.id,
         reuseAuthTime: resolvedSession.authTime.toISOString(),
-        resource: [...audience],
-        claims,
       });
       await deps.markAuthenticated(
         tenant.id,
@@ -608,16 +634,10 @@ export async function handleAuthorizationRequest(
     // posted back and membership against the browser's own cookies is
     // proven.
     const { authSessionId, browser } = await deps.startAuthentication(tenant.id, {
-      ...request,
-      prompt: [...outcome.prompts],
-      ...(uiLocales.length > 0 ? { uiLocales } : {}),
-      ...(hintSubject !== null ? { idTokenHintSubject: hintSubject } : {}),
-      ...(claimsSubject !== null ? { claimsSubject } : {}),
+      ...parked,
       // Re-checked against whichever session is posted back — see
       // handleSelectAccountSubmission's own withinMaxAge call.
       ...(maxAge !== null ? { maxAge } : {}),
-      resource: [...audience],
-      claims,
     });
     const rendered = newestPerSubject(decision.candidates);
     const names = await deps.accountDisplayNames(
@@ -648,25 +668,17 @@ export async function handleAuthorizationRequest(
     return reject('login_required');
   }
 
+  // `prompt=login` needs nothing parked: authentication is unconditional
+  // (§3.1.2.3's reauthentication is what this server does for every
+  // request). The hint is a different matter — whether the End-User who
+  // signs in is the one it identifies can only be judged once they have,
+  // which is the login submission, so it travels with the parked request,
+  // as `prompt=consent` does for handleLoginSubmission's own consent gate.
   const { authSessionId, browser } = await deps.startAuthentication(tenant.id, {
-    ...request,
-    // `prompt=login` needs nothing parked: authentication is unconditional
-    // (§3.1.2.3's reauthentication is what this server does for every
-    // request). The hint is a different matter — whether the End-User who
-    // signs in is the one it identifies can only be judged once they have,
-    // which is the login submission, so it travels with the parked request.
-    ...(hintSubject !== null ? { idTokenHintSubject: hintSubject } : {}),
-    ...(claimsSubject !== null ? { claimsSubject } : {}),
+    ...parked,
     // Parked on this branch too, so a restart link rebuilt from it asks for
     // the same freshness instead of being answered from an older session.
     ...(maxAge !== null ? { maxAge } : {}),
-    // Carried forward so handleLoginSubmission's own consent gate, once
-    // this login completes, still sees `prompt=consent` the way it would
-    // have at the moment this request first arrived.
-    prompt: [...outcome.prompts],
-    ...(uiLocales.length > 0 ? { uiLocales } : {}),
-    resource: [...audience],
-    claims,
   });
   return {
     kind: 'started',

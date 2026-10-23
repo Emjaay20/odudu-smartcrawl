@@ -300,6 +300,70 @@ describe('forgot password from a sign-in, in the browser that started it', () =>
   });
 });
 
+// Initiating User Registration via OpenID Connect 1.0: the application asks
+// for the registration page outright, and the person comes back to it with
+// the application's own state and nonce once their account exists.
+describe('prompt=create, in the browser that asked for it', () => {
+  it('lands on the registration page, and the way back signs the new account in to the original request', async () => {
+    const t = await tenant();
+    const asked = await request('GET', `${authorizeUrl(t.name)}&prompt=create`);
+    expect(asked.statusCode).toBe(303);
+    const cookie = cookieOf(asked);
+    const location = String(asked.headers.location);
+    expect(location.startsWith(`/tenants/${t.name}/login-actions/registration?return_to=`)).toBe(
+      true,
+    );
+
+    // The same page the sign-in form's link leads to, carrying the same
+    // kind of way back: this request, now asking for a sign-in.
+    const form = await request('GET', location, undefined, cookie);
+    expect(form.statusCode).toBe(200);
+    const carried = hrefLabelled(form, 'Back to sign in') ?? '';
+    const query = new URL(carried, 'https://x').searchParams;
+    expect(query.get('state')).toBe(STATE);
+    expect(query.get('nonce')).toBe(NONCE);
+    expect(query.get('code_challenge')).toBe(CHALLENGE);
+    expect(query.get('prompt')).toBe('login');
+
+    const username = `c${newId().slice(-8)}`;
+    const email = `${username}@example.test`;
+    const password = `made up ${newId()} passphrase`;
+    const registered = await request(
+      'POST',
+      `/tenants/${t.name}/login-actions/registration`,
+      { username, email, password, password_confirm: password, return_to: carried },
+      cookie,
+    );
+    expect(registered.statusCode).toBe(201);
+    const verified = await pressButton(await mailedLink(email), cookie);
+    expect(verified.statusCode).toBe(200);
+    expect(hrefLabelled(verified, 'Continue to sign in')).toBe(carried);
+
+    // The original request again, answered to the application with the
+    // state it sent, by the account the person just made.
+    const resumed = await request('GET', carried, undefined, cookie);
+    expect(resumed.statusCode).toBe(200);
+    expect(await parkedRequestOf(authSessionIdOf(resumed))).toMatchObject({
+      clientId: 'portal',
+      redirectUri: REDIRECT_URI,
+      state: STATE,
+      nonce: NONCE,
+      codeChallenge: CHALLENGE,
+    });
+    const signedIn = await request(
+      'POST',
+      `/tenants/${t.name}/login-actions/authenticate`,
+      { auth_session_id: authSessionIdOf(resumed), username, password },
+      cookie,
+    );
+    expect(signedIn.statusCode).toBe(302);
+    const answered = new URL(String(signedIn.headers.location));
+    expect(`${answered.origin}${answered.pathname}`).toBe(REDIRECT_URI);
+    expect(answered.searchParams.get('state')).toBe(STATE);
+    expect(answered.searchParams.has('code')).toBe(true);
+  });
+});
+
 describe('the same link, anywhere the sign-in is not held', () => {
   it('shows a different browser no Continue link, and says what to do', async () => {
     const t = await tenant();

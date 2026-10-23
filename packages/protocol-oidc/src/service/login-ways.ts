@@ -14,12 +14,16 @@ export interface LoginWaySettings {
   resetPasswordAllowed: boolean;
 }
 
-export function loginWays(
+export type AccountPage = 'registration' | 'reset-password';
+
+// One of the account pages, carrying the way back to the sign-in. The same
+// path whether the person follows the sign-in form's link or the client
+// asked for the page outright with prompt=create.
+export function accountPagePath(
   tenant: string,
-  settings: LoginWaySettings,
+  page: AccountPage,
   signInPath: string | null,
-): LoginWays {
-  const base = `/tenants/${encodeURIComponent(tenant)}/login-actions`;
+): string {
   // A path past the bound the receiving page accepts would be dropped there
   // and lose the request anyway, so it is not sent: the links still work, and
   // the person signs in again from the application.
@@ -27,8 +31,20 @@ export function loginWays(
     signInPath !== null && signInPath.length <= MAX_SIGN_IN_PATH_LENGTH ? signInPath : null;
   const query =
     carried === null ? '' : `?${new URLSearchParams({ return_to: carried }).toString()}`;
+  return `/tenants/${encodeURIComponent(tenant)}/login-actions/${page}${query}`;
+}
+
+export function loginWays(
+  tenant: string,
+  settings: LoginWaySettings,
+  signInPath: string | null,
+): LoginWays {
   return {
-    ...(settings.registrationAllowed ? { createAccount: `${base}/registration${query}` } : {}),
-    ...(settings.resetPasswordAllowed ? { resetPassword: `${base}/reset-password${query}` } : {}),
+    ...(settings.registrationAllowed
+      ? { createAccount: accountPagePath(tenant, 'registration', signInPath) }
+      : {}),
+    ...(settings.resetPasswordAllowed
+      ? { resetPassword: accountPagePath(tenant, 'reset-password', signInPath) }
+      : {}),
   };
 }

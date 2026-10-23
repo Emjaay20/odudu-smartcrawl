@@ -51,9 +51,14 @@ export function restartAuthorizeLocation(
   });
   if (pending.state !== null) query.set('state', pending.state);
   if (pending.nonce !== null) query.set('nonce', pending.nonce);
-  if (pending.prompt !== undefined && pending.prompt.length > 0) {
-    query.set('prompt', pending.prompt.join(' '));
-  }
+  // A request that asked for the registration page (prompt=create) comes
+  // back as a sign-in once the person has registered, and one that asks for
+  // credentials: the account they just made, not a session the browser
+  // already had.
+  const prompt = [
+    ...new Set((pending.prompt ?? []).map((value) => (value === 'create' ? 'login' : value))),
+  ];
+  if (prompt.length > 0) query.set('prompt', prompt.join(' '));
   if (pending.maxAge !== undefined) query.set('max_age', String(pending.maxAge));
   if (pending.uiLocales !== undefined && pending.uiLocales.length > 0) {
     query.set('ui_locales', pending.uiLocales.join(' '));

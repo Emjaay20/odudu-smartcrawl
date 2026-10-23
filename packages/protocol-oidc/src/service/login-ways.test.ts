@@ -1,11 +1,22 @@
 import { MAX_SIGN_IN_PATH_LENGTH } from '@odudu/kernel';
 import { describe, expect, it } from 'vitest';
 import { restartAuthorizeLocation } from '#/service/restart-request';
-import { loginWays } from '#/service/login-ways';
+import { accountPagePath, loginWays } from '#/service/login-ways';
 
 const SIGN_IN = '/tenants/acme/protocol/openid-connect/auth?response_type=code&client_id=portal';
 const BOTH = { registrationAllowed: true, resetPasswordAllowed: true };
 const NEITHER = { registrationAllowed: false, resetPasswordAllowed: false };
+
+describe('accountPagePath', () => {
+  it('is the path the Create an account link carries, so prompt=create lands on the same page', () => {
+    expect(accountPagePath('acme', 'registration', SIGN_IN)).toBe(
+      loginWays('acme', BOTH, SIGN_IN).createAccount,
+    );
+    expect(accountPagePath('acme', 'registration', null)).toBe(
+      '/tenants/acme/login-actions/registration',
+    );
+  });
+});
 
 describe('loginWays', () => {
   it('offers nothing a tenant has not turned on', () => {

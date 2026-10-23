@@ -9,7 +9,7 @@ import {
   type AuthorizationRequestOutcome,
   type AuthorizeUsecaseDeps,
 } from '#/usecase/authorization-request';
-import { loginWays } from '#/service/login-ways';
+import { accountPagePath, loginWays } from '#/service/login-ways';
 import { renderAuthorizeErrorPage, renderLoginForm } from '#/view/authorize-html';
 import { renderConsentPage } from '#/view/consent-html';
 import { sendHtml } from '#/view/html-response';
@@ -167,6 +167,20 @@ async function renderAuthorizationOutcome(
       locale,
     );
     return sendHtml(reply, 200, continuing(form(page)));
+  }
+
+  // The client asked for the registration page: the same page, reached by
+  // the same path, as the login form's own Create an account link, so the
+  // way back it carries is the one that page already accepts. The sign-in
+  // cookie travels on the redirect, for the verification mail to name this
+  // request. 303, since the POST form of /authorize lands here too.
+  if (outcome.kind === 'register') {
+    const { signInPath } = await continuation(deps, tenant, outcome.authSessionId, reply);
+    holdSignIn(reply, deps, tenant, outcome.authSessionId, outcome.browser);
+    return reply
+      .code(303)
+      .header('location', accountPagePath(tenant, 'registration', signInPath))
+      .send();
   }
 
   // The login form precedes the first factor: ui_locales, then the browser.
