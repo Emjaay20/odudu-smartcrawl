@@ -55,6 +55,7 @@ export {
   type NewAccountInput,
   type RegisterDeps,
   type RegisterOutcome,
+  type TakenIdentifiers,
 } from '#/usecase/register';
 export {
   registerRegistrationRoute,

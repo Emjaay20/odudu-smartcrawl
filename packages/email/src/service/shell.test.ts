@@ -3,6 +3,7 @@ import { MAIL_PALETTE } from '#/service/palette.generated';
 import { renderShell } from '#/service/shell';
 import {
   renderRecoveryCodesRevoked,
+  renderRegistrationDuplicate,
   renderRequiredActions,
   renderSecondFactorRemoved,
   renderResetPassword,
@@ -31,6 +32,11 @@ const kinds: Record<string, Kind> = {
   'password reset': {
     render: (tenantDisplayName, now = NOW) =>
       renderResetPassword({ ...base, tenantDisplayName, now }),
+    button: 'Reset password',
+  },
+  'registration duplicate': {
+    render: (tenantDisplayName, now = NOW) =>
+      renderRegistrationDuplicate({ to: base.to, resetLink: LINK, tenantDisplayName, now }),
     button: 'Reset password',
   },
   'required actions': {

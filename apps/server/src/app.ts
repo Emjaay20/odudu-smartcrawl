@@ -11,6 +11,7 @@ import {
   registerResetPasswordRoute,
   type CreateAccountResult,
   type NewAccountInput,
+  type TakenIdentifiers,
 } from '@odudu/account';
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { requiredActionRepository } from '@odudu/authn-flows';
@@ -290,6 +291,21 @@ async function createAccount(
   return { subjectId };
 }
 
+async function findTaken(
+  tx: TenantScopedDatabase,
+  _tenantId: string,
+  who: { username: string; email: string },
+): Promise<TakenIdentifiers> {
+  const users = userRepository(tx);
+  const byName = await users.byUsername(who.username);
+  const byEmail = await users.byEmail(who.email);
+  return { username: byName !== null, emailOwner: byEmail?.subjectId ?? null };
+}
+
+async function spendPasswordWork(password: string): Promise<void> {
+  await hashUserPassword(password);
+}
+
 function refuse(reply: FastifyReply, route: string, retryAfterSeconds: number): FastifyReply {
   if (PAGE_POSTS.has(route)) return sendThrottledPage(reply, retryAfterSeconds);
   return reply.header('retry-after', String(retryAfterSeconds)).code(429).send();
@@ -538,6 +554,8 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     publicBaseUrl: deps.publicBaseUrl,
     now: () => systemClock.now(),
     createAccount,
+    findTaken,
+    spendPasswordWork,
     evaluatePassword,
   });
 

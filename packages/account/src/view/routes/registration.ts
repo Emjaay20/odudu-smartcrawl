@@ -8,6 +8,7 @@ import {
   type NewAccountInput,
   type PasswordPolicy,
   type PolicyViolation,
+  type TakenIdentifiers,
 } from '#/usecase/register';
 import { signInPath } from '#/service/sign-in-path';
 import { referenceToResume, type FindHeldSignIn } from '#/service/sign-in-resume';
@@ -28,6 +29,7 @@ export interface RegistrationTenantLookup {
   readonly enabled: boolean;
   readonly registrationAllowed: boolean;
   readonly verifyEmail: boolean;
+  readonly resetPasswordAllowed: boolean;
   readonly passwordPolicy: PasswordPolicy;
 }
 
@@ -54,6 +56,12 @@ export interface RegistrationRouteDeps {
     tenantId: string,
     input: NewAccountInput,
   ) => Promise<CreateAccountResult>;
+  readonly findTaken: (
+    tx: TenantScopedDatabase,
+    tenantId: string,
+    who: { username: string; email: string },
+  ) => Promise<TakenIdentifiers>;
+  readonly spendPasswordWork: (password: string) => Promise<void>;
   readonly evaluatePassword: (
     candidate: string,
     policy: PasswordPolicy,
@@ -171,9 +179,12 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
         request: requestContextFrom(request),
         issuerBase: deps.publicBaseUrl,
         verifyEmailEnabled: tenant.verifyEmail,
+        resetPasswordAllowed: tenant.resetPasswordAllowed,
         authenticationSessionId: referenceToResume(held, returnTo),
         now: deps.now,
         createAccount: deps.createAccount,
+        findTaken: deps.findTaken,
+        spendPasswordWork: deps.spendPasswordWork,
         passwordPolicy: tenant.passwordPolicy,
         evaluatePassword: deps.evaluatePassword,
       },
@@ -203,6 +214,8 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
       );
     }
 
+    // 'created' and 'address_in_use' leave here through the same call, so what
+    // the person is shown cannot tell them apart.
     return sendVerificationHtml(
       reply,
       201,

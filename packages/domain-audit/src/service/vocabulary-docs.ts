@@ -51,6 +51,8 @@ export const AUDIT_ACTION_DOCS: Record<VocabularyAction, string> = {
   'grant.revoked_on_code_replay':
     'An authorization code was redeemed a second time, so the grant it produced was revoked.',
   'account.registered': 'A user registered their own account.',
+  'account.registration_duplicate':
+    'Someone tried to register an email address that already has an account. `resource_id` names that account.',
   'email.verified': 'A user verified their email address through the mailed link.',
   'password.reset': 'A password was set through a reset link.',
   'password.changed': 'A user changed their password.',
@@ -74,6 +76,7 @@ export const AUDIT_REASON_DOCS: Record<AuditReason, string> = {
   rate_limited: 'The request was over its budget.',
   foreign_issuer: 'The token was issued by another tenant.',
   missing_capability: 'The caller lacks the admin capability the route requires.',
+  already_registered: 'The email address already belongs to an account.',
 };
 
 export const AUDIT_OUTCOME_DOCS: Record<AuditOutcome, string> = {

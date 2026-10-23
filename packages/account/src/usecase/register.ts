@@ -1,7 +1,7 @@
-import { actionLink } from '#/service/action-link';
+import { actionLink, resetPasswordLink } from '#/service/action-link';
 import { withTenant, type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { auditRepository, type RequestContext } from '@odudu/domain-audit';
-import { outboxRepository, renderVerifyEmail } from '@odudu/email';
+import { outboxRepository, renderRegistrationDuplicate, renderVerifyEmail } from '@odudu/email';
 import { BidiControlError, containsBidiControl, OduduError } from '@odudu/kernel';
 import { actionTokenRepository } from '#/repository/action-tokens';
 import { type PasswordPolicy, type PolicyViolation } from '#/repository/tenant-settings';
@@ -23,6 +23,13 @@ export interface CreateAccountResult {
   readonly subjectId: string;
 }
 
+// Who already holds what a registration asks for: whether the username is
+// taken, and the subject holding the email address, if any.
+export interface TakenIdentifiers {
+  readonly username: boolean;
+  readonly emailOwner: string | null;
+}
+
 export interface RegisterDeps {
   readonly database: DatabaseHandle;
   readonly tenantId: string;
@@ -37,6 +44,9 @@ export interface RegisterDeps {
   // building a link some other way.
   readonly issuerBase: string | undefined;
   readonly verifyEmailEnabled: boolean;
+  // Whether the tenant serves a password reset the mail to an existing
+  // address holder can point at.
+  readonly resetPasswordAllowed: boolean;
   // The sign-in the person registered from, when this browser holds it
   // (referenceToResume): kept beside the token so the page the link opens can
   // lead the same browser back to it, never put in the link.
@@ -55,6 +65,16 @@ export interface RegisterDeps {
     tenantId: string,
     input: NewAccountInput,
   ) => Promise<CreateAccountResult>;
+  // Asked in the transaction, before anything is written, for the same
+  // reason: the identity tables belong to @odudu/domain-identity.
+  readonly findTaken: (
+    tx: TenantScopedDatabase,
+    tenantId: string,
+    who: { username: string; email: string },
+  ) => Promise<TakenIdentifiers>;
+  // Does what createAccount does with a password, for a registration that
+  // creates no account, so both answer in the same time. The result is discarded.
+  readonly spendPasswordWork: (password: string) => Promise<void>;
   // The tenant's own configured policy, and the leaf function that checks a
   // candidate against it (packages/domain-identity/src/service/password-policy.ts).
   // Injected for the same reason createAccount is: @odudu/account never
@@ -69,6 +89,10 @@ export interface RegisterDeps {
 
 export type RegisterOutcome =
   | { kind: 'created'; subjectId: string }
+  // The address already has an account and the tenant verifies addresses, so
+  // the person is answered as if the account had been made and the holder is
+  // told by mail what happened. Nothing is created.
+  | { kind: 'address_in_use' }
   | { kind: 'email_taken' }
   | { kind: 'username_taken' }
   | { kind: 'invalid_email' }
@@ -133,12 +157,20 @@ export async function register(
     };
   }
 
-  let created: { subjectId: string };
   try {
-    created = await withTenant(
+    return await withTenant(
       deps.database.db,
       deps.tenantId,
-      async (tx) => {
+      async (tx): Promise<RegisterOutcome> => {
+        const taken = await deps.findTaken(tx, deps.tenantId, input);
+        // The username is answered first and in the open, so a taken address
+        // never changes what a taken username is told.
+        if (taken.username) return { kind: 'username_taken' };
+        if (taken.emailOwner !== null) {
+          if (!deps.verifyEmailEnabled) return { kind: 'email_taken' };
+          await recordAddressInUse(tx, deps, input, taken.emailOwner);
+          return { kind: 'address_in_use' };
+        }
         const account = await deps.createAccount(tx, deps.tenantId, input);
         await auditRepository(tx).record({
           eventType: 'credential',
@@ -153,7 +185,7 @@ export async function register(
         // than asserting past the type) is what lets that stay true by
         // construction instead of by convention.
         if (!deps.verifyEmailEnabled || deps.issuerBase === undefined) {
-          return { subjectId: account.subjectId };
+          return { kind: 'created', subjectId: account.subjectId };
         }
         const tokens = actionTokenRepository(tx);
         const { token } = await tokens.issue({
@@ -176,15 +208,66 @@ export async function register(
             now: deps.now(),
           }),
         });
-        return { subjectId: account.subjectId };
+        return { kind: 'created', subjectId: account.subjectId };
       },
       deps.request,
     );
   } catch (err) {
     const failure = classifyAccountCreationError(err);
-    if (failure !== null) return { kind: failure };
-    throw err;
+    if (failure === null) throw err;
+    // Another registration took the address between the check and the write.
+    if (failure === 'email_taken' && deps.verifyEmailEnabled) return answerLostRace(deps, input);
+    return { kind: failure };
   }
+}
 
-  return { kind: 'created', subjectId: created.subjectId };
+// The mail to the holder and the row that records the attempt: one of each,
+// as the free path writes one mail and one audit row. The attempt names the
+// account it ran into, never the username it asked for. Rows are bounded by
+// the per-origin throttle on the registration route (ADR 0037's amendment).
+async function recordAddressInUse(
+  tx: TenantScopedDatabase,
+  deps: RegisterDeps,
+  input: NewAccountInput,
+  ownerSubjectId: string | null,
+): Promise<void> {
+  await deps.spendPasswordWork(input.password);
+  await auditRepository(tx).record({
+    eventType: 'credential',
+    action: 'account.registration_duplicate',
+    outcome: 'refused',
+    resourceType: 'subject',
+    resourceId: ownerSubjectId,
+    detail: { reason: 'already_registered' },
+  });
+  await outboxRepository(tx).enqueue({
+    tenantId: deps.tenantId,
+    ...renderRegistrationDuplicate({
+      to: input.email,
+      resetLink:
+        deps.resetPasswordAllowed && deps.issuerBase !== undefined
+          ? resetPasswordLink(deps.issuerBase, deps.tenantName)
+          : null,
+      tenantDisplayName: deps.tenantDisplayName,
+      now: deps.now(),
+    }),
+  });
+}
+
+// The failed write rolled its transaction back, so the answer is recorded in
+// a new one that reads who holds the address now.
+async function answerLostRace(
+  deps: RegisterDeps,
+  input: NewAccountInput,
+): Promise<RegisterOutcome> {
+  await withTenant(
+    deps.database.db,
+    deps.tenantId,
+    async (tx) => {
+      const taken = await deps.findTaken(tx, deps.tenantId, input);
+      await recordAddressInUse(tx, deps, input, taken.emailOwner);
+    },
+    deps.request,
+  );
+  return { kind: 'address_in_use' };
 }

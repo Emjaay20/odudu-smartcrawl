@@ -7,3 +7,8 @@ export function actionLink(issuerBase: string, tenantName: string, token: string
   const base = `${issuerBase}/tenants/${encodeURIComponent(tenantName)}/login-actions/action-token`;
   return `${base}?${new URLSearchParams({ key: token }).toString()}`;
 }
+
+// Where a person who forgot their password asks for a link.
+export function resetPasswordLink(issuerBase: string, tenantName: string): string {
+  return `${issuerBase}/tenants/${encodeURIComponent(tenantName)}/login-actions/reset-password`;
+}

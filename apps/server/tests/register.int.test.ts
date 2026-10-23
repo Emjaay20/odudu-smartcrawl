@@ -111,7 +111,11 @@ function buildTestApp(): FastifyInstance {
 
 async function setTenantSettings(
   tenantId: string,
-  settings: { registrationAllowed?: boolean; verifyEmail?: boolean },
+  settings: {
+    registrationAllowed?: boolean;
+    verifyEmail?: boolean;
+    resetPasswordAllowed?: boolean;
+  },
 ): Promise<void> {
   await owner.db.update(tenants).set(settings).where(eq(tenants.id, tenantId));
 }
@@ -326,6 +330,54 @@ describe('self-registration, through the real composition root', () => {
       if (message === undefined) throw new Error('no verification mail sent');
       expect(message.text).toContain(`${PUBLIC_BASE_URL}/tenants/${tenantName}/`);
       expect(message.text).not.toContain('evil.example');
+    } finally {
+      await app.close();
+    }
+  });
+  it('answers a taken address as it answers a free one, and mails its holder a link on the configured base', async () => {
+    const tenantName = `register-${newId()}`;
+    const seeded = await seed({
+      tenant: tenantName,
+      clientId: 'register-spa',
+      redirectUris: [REDIRECT_URI],
+    });
+    await setTenantSettings(seeded.tenantId, {
+      registrationAllowed: true,
+      verifyEmail: true,
+      resetPasswordAllowed: true,
+    });
+    const sender = capturingSender();
+    const app = buildTestApp();
+    await app.ready();
+
+    try {
+      const password = 'correct horse battery staple';
+      const first = await registerAccount(
+        app,
+        tenantName,
+        { username: 'ada', email: 'ada@example.test', password },
+        { host: 'evil.example' },
+      );
+      const again = await registerAccount(
+        app,
+        tenantName,
+        { username: 'grace', email: 'ada@example.test', password },
+        { host: 'evil.example' },
+      );
+      expect([first, again]).toEqual([201, 201]);
+
+      await drainOutbox(sender);
+      expect(sender.sent).toHaveLength(2);
+      const duplicate = sender.sent[1];
+      expect(duplicate?.to).toBe('ada@example.test');
+      expect(duplicate?.text).toContain(
+        `${PUBLIC_BASE_URL}/tenants/${tenantName}/login-actions/reset-password`,
+      );
+      expect(duplicate?.text).not.toContain('evil.example');
+      const grace = await withTenant(appDb.db, seeded.tenantId, (tx) =>
+        userRepository(tx).byUsername('grace'),
+      );
+      expect(grace).toBeNull();
     } finally {
       await app.close();
     }

@@ -18,6 +18,16 @@ export const en = {
   'verify.button': 'Verify email',
   'verify.reason':
     'You received this because this email address was used to create or update an account at {tenant}.',
+  'duplicate.subject': 'You already have a {tenant} account',
+  'duplicate.preheader': 'Someone tried to register this email address. You can sign in.',
+  'duplicate.heading': 'You already have an account',
+  'duplicate.text':
+    'Someone tried to create a {tenant} account with this email address. You already have one.',
+  'duplicate.next': 'If it was you, sign in, or reset your password if you forgot it.',
+  'duplicate.nextSignIn': 'If it was you, sign in.',
+  'duplicate.button': 'Reset password',
+  'duplicate.reason':
+    'You received this because this email address was used to register at {tenant}.',
   'reset.subject': 'Reset your {tenant} password',
   'reset.preheader': 'Use the link inside to choose a new password.',
   'reset.heading': 'Reset your password',

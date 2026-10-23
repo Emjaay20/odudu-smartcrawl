@@ -157,6 +157,51 @@ export function renderResetPassword(input: ResetPasswordInput): EmailMessage {
   return renderLinked({ kind: 'reset', input });
 }
 
+export interface RegistrationDuplicateInput {
+  readonly to: string;
+  /** Where a forgotten password is reset; null where the tenant has no reset. */
+  readonly resetLink: string | null;
+  readonly tenantDisplayName: string;
+  readonly now: Date;
+  readonly locale?: string | null | undefined;
+}
+
+// Said to an address somebody tried to register again. It tells the holder
+// what happened and names nothing about the attempt: no username, no token.
+export function renderRegistrationDuplicate(input: RegistrationDuplicateInput): EmailMessage {
+  const locale = mailLocale(input.locale);
+  const tenant = clipName(input.tenantDisplayName);
+  const link = input.resetLink === null ? null : safeHref(input.resetLink);
+  const next: MessageId = link === null ? 'duplicate.nextSignIn' : 'duplicate.next';
+  return {
+    to: input.to,
+    subject: t(locale, 'duplicate.subject', { tenant: inSubject(tenant) }),
+    text: [
+      t(locale, 'duplicate.text', { tenant: inText(tenant) }),
+      t(locale, next),
+      ...(link === null ? [] : [link]),
+      t(locale, 'mail.notRequested'),
+      textFooter(locale, 'duplicate.reason', tenant, input.now),
+    ].join('\n\n'),
+    html: renderShell({
+      ...page({
+        locale,
+        tenant,
+        now: input.now,
+        heading: 'duplicate.heading',
+        preheader: 'duplicate.preheader',
+        reason: 'duplicate.reason',
+      }),
+      blocks: [
+        paragraph(tHtml(locale, 'duplicate.text', {}, { tenant: stripBidiControls(tenant) })),
+        paragraph(tHtml(locale, next)),
+      ],
+      action: link === null ? undefined : { label: t(locale, 'duplicate.button'), href: link },
+      closing: [tHtml(locale, 'mail.notRequested')],
+    }),
+  };
+}
+
 export function renderRequiredActions(input: RequiredActionsInput): EmailMessage {
   const locale = mailLocale(input.locale);
   const tenant = clipName(input.tenantDisplayName);

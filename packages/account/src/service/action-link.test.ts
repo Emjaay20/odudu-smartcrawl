@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { actionLink } from '#/service/action-link';
+import { actionLink, resetPasswordLink } from '#/service/action-link';
 
 describe('actionLink', () => {
   const BASE = 'https://idp.example.test';
@@ -16,5 +16,16 @@ describe('actionLink', () => {
   it('carries nothing of the request the person was signing in to', () => {
     const url = new URL(actionLink(BASE, 'acme', 'k'));
     expect([...url.searchParams.keys()]).toEqual(['key']);
+  });
+});
+
+describe('resetPasswordLink', () => {
+  it('is the reset page of the tenant, with the tenant as one path segment', () => {
+    expect(resetPasswordLink('https://idp.example.test', 'acme')).toBe(
+      'https://idp.example.test/tenants/acme/login-actions/reset-password',
+    );
+    expect(resetPasswordLink('https://idp.example.test', 'a b/c')).toBe(
+      'https://idp.example.test/tenants/a%20b%2Fc/login-actions/reset-password',
+    );
   });
 });

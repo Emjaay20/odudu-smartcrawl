@@ -27,6 +27,7 @@ import { actionTokenRepository, enqueueResetLink } from '#/index';
 import { actionTokens } from '#/schema/action-tokens';
 import { tenantSettingsRepository } from '#/repository/tenant-settings';
 import { type FindHeldSignIn } from '#/service/sign-in-resume';
+import { type TakenIdentifiers } from '#/usecase/register';
 import { registerActionTokenRoute } from '#/view/routes/action-token';
 import { registerRegistrationRoute } from '#/view/routes/registration';
 import { registerResetPasswordRoute } from '#/view/routes/reset-password';
@@ -97,6 +98,20 @@ async function createAccount(
   return { subjectId: subject.id };
 }
 
+async function findTaken(
+  tx: TenantScopedDatabase,
+  _tenantId: string,
+  who: { username: string; email: string },
+): Promise<TakenIdentifiers> {
+  const byName = await userRepository(tx).byUsername(who.username);
+  const byMail = await userRepository(tx).byEmail(who.email);
+  return { username: byName !== null, emailOwner: byMail?.subjectId ?? null };
+}
+
+async function spendPasswordWork(password: string): Promise<void> {
+  await hashPassword(password);
+}
+
 async function seedTenant(): Promise<{ id: string; name: string }> {
   const id = newId();
   const name = `resume-${id}`;
@@ -144,6 +159,8 @@ beforeEach(async () => {
     publicBaseUrl: 'https://idp.example.test',
     now: () => new Date(),
     createAccount,
+    findTaken,
+    spendPasswordWork,
     evaluatePassword,
   });
   registerActionTokenRoute(http, {

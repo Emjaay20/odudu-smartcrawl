@@ -25,7 +25,7 @@ import Fastify, { type FastifyInstance, type LightMyRequestResponse } from 'fast
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { actionTokenRepository } from '#/repository/action-tokens';
 import { tenantSettingsRepository } from '#/repository/tenant-settings';
-import { type NewAccountInput } from '#/usecase/register';
+import { type NewAccountInput, type TakenIdentifiers } from '#/usecase/register';
 import { registerActionTokenRoute } from '#/view/routes/action-token';
 import { registerRegistrationRoute } from '#/view/routes/registration';
 
@@ -59,6 +59,20 @@ async function createAccount(
     secret: { kind: 'password', hash: await hashPassword(input.password) },
   });
   return { subjectId: subject.id };
+}
+
+async function findTaken(
+  tx: TenantScopedDatabase,
+  _tenantId: string,
+  who: { username: string; email: string },
+): Promise<TakenIdentifiers> {
+  const byName = await userRepository(tx).byUsername(who.username);
+  const byMail = await userRepository(tx).byEmail(who.email);
+  return { username: byName !== null, emailOwner: byMail?.subjectId ?? null };
+}
+
+async function spendPasswordWork(password: string): Promise<void> {
+  await hashPassword(password);
 }
 
 async function seedTenant(settings: { verifyEmail?: boolean } = {}): Promise<{
@@ -193,6 +207,8 @@ beforeAll(async () => {
     publicBaseUrl: 'https://idp.example.test',
     now: () => new Date(),
     createAccount,
+    findTaken,
+    spendPasswordWork,
     evaluatePassword,
   });
   registerActionTokenRoute(http, {
@@ -277,6 +293,33 @@ describe('registration writes one account.registered row', () => {
     expect(await rowsFor(tenant.id, duplicate)).toEqual([]);
     expect(await rowsFor(tenant.id, weak)).toEqual([]);
     expect(await credentialRows(tenant.id)).toHaveLength(1);
+  });
+
+  it('writes one refused row, bound to the request, for a taken address under verification', async () => {
+    const tenant = await seedTenant({ verifyEmail: true });
+    expect((await register(tenant.name, `first-${newId()}`)).statusCode).toBe(201);
+    const owner = await subjectIdFor(tenant.id, 'ada');
+
+    const requestId = `again-${newId()}`;
+    const again = await postForm(
+      `/tenants/${tenant.name}/login-actions/registration`,
+      { username: 'bea', email: 'ada@example.test', password: PASSWORD },
+      requestId,
+    );
+
+    expect(again.statusCode).toBe(201);
+    const rows = await rowsFor(tenant.id, requestId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      action: 'account.registration_duplicate',
+      outcome: 'refused',
+      actorSubjectId: null,
+      resourceType: 'subject',
+      resourceId: owner,
+      requestId,
+      ip: '127.0.0.1',
+      detail: { reason: 'already_registered' },
+    });
   });
 });
 

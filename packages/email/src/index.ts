@@ -3,6 +3,8 @@ export {
   renderVerifyEmail,
   renderResetPassword,
   renderRequiredActions,
+  renderRegistrationDuplicate,
+  type RegistrationDuplicateInput,
   renderSecondFactorRemoved,
   renderRecoveryCodesRevoked,
   type SecondFactorRemovedInput,

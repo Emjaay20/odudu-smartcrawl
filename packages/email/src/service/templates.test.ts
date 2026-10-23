@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { en } from '#/service/messages';
 import {
   renderRecoveryCodesRevoked,
+  renderRegistrationDuplicate,
   renderRequiredActions,
   renderSecondFactorRemoved,
   renderResetPassword,
@@ -345,5 +346,58 @@ describe('renderSmtpTest', () => {
 
   it('falls back to English for a locale it holds no catalogue for', () => {
     expect(renderSmtpTest({ ...input, locale: 'ja' }).subject).toBe('Odudu SMTP test');
+  });
+});
+
+describe('renderRegistrationDuplicate', () => {
+  const RESET = 'https://idp.example/tenants/demo/login-actions/reset-password';
+  const input = {
+    to: 'ada@example.test',
+    resetLink: RESET,
+    tenantDisplayName: 'Demo',
+    now: NOW,
+  };
+
+  it('tells the address holder they already have an account, and offers a reset', () => {
+    const msg = renderRegistrationDuplicate(input);
+    expect(msg.to).toBe('ada@example.test');
+    expect(msg.subject).toBe('You already have a Demo account');
+    expect(msg.text).toBe(
+      `${fill(en['duplicate.text'], { tenant: `${FSI}Demo${PDI}` })}\n\n${en['duplicate.next']}\n\n${RESET}\n\n${en['mail.notRequested']}\n\n${footerText(en['duplicate.reason'], 'Demo')}`,
+    );
+    expect(msg.html).toContain(en['duplicate.heading']);
+    expect(msg.html).toContain(en['duplicate.button']);
+    expect(msg.html).toContain(`href="${RESET}"`);
+    expect(msg.html).toContain(en['mail.notRequested']);
+  });
+
+  it('has no link and no button where the tenant has no password reset', () => {
+    const msg = renderRegistrationDuplicate({ ...input, resetLink: null });
+    expect(msg.text).toBe(
+      `${fill(en['duplicate.text'], { tenant: `${FSI}Demo${PDI}` })}\n\n${en['duplicate.nextSignIn']}\n\n${en['mail.notRequested']}\n\n${footerText(en['duplicate.reason'], 'Demo')}`,
+    );
+    expect(msg.html).not.toContain('href=');
+    expect(msg.html).not.toContain(en['duplicate.button']);
+  });
+
+  it('carries no username, token or account detail, only what the person asked for', () => {
+    const msg = renderRegistrationDuplicate(input);
+    expect(msg.text).not.toContain('key=');
+    expect(msg.html).not.toContain('key=');
+  });
+
+  it('refuses a link that is not an absolute http or https URL', () => {
+    expect(() =>
+      renderRegistrationDuplicate({ ...input, resetLink: 'javascript:alert(1)' }),
+    ).toThrow(RangeError);
+  });
+
+  it('strips line breaks and bidi controls from the subject, and escapes markup in the body', () => {
+    const msg = renderRegistrationDuplicate({
+      ...input,
+      tenantDisplayName: 'Evil\r\nBcc: x<script>',
+    });
+    expect(msg.subject).not.toMatch(/[\r\n]/u);
+    expect(msg.html).not.toContain('<script>');
   });
 });

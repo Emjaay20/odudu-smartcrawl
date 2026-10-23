@@ -26,6 +26,7 @@ export const AUDIT_ACTIONS = {
   ],
   credential: [
     'account.registered',
+    'account.registration_duplicate',
     'email.verified',
     'password.reset',
     'password.changed',
@@ -64,6 +65,7 @@ export const AUDIT_REASONS = [
   'rate_limited',
   'foreign_issuer',
   'missing_capability',
+  'already_registered',
 ] as const;
 
 export type AuditReason = (typeof AUDIT_REASONS)[number];
@@ -176,6 +178,7 @@ type CredentialInput = EventCommon & {
   readonly eventType: 'credential';
   readonly action:
     | 'account.registered'
+    | 'account.registration_duplicate'
     | 'email.verified'
     | 'password.reset'
     | 'password.changed'
