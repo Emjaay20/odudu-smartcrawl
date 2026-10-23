@@ -1138,13 +1138,13 @@ assigned `'optional'` rather than `'default'`, which is what lets the consent
 screen ([below](#the-consent-screen)) tell it apart from a scope pre-approved
 the moment a client is assigned it (it maps no claims either way — see
 [Discovery](./path-a-authorization-code-with-pkce.md#1-discovery) above).
-`demo-spa`'s own `consent_required` is `false` — `seed client` names no way to
-set it (see [the roadmap](../../../roadmap.md#decided-against-and-why)'s entry on `odudu seed`;
-`PATCH /admin/tenants/{tenant}/clients/{id}` does, without `If-Match`, being no
-list field) — so every seeded client keeps the column's own default — so the
-transcript below reuses without ever seeing that screen; the consent section
-demonstrates asking, against an anonymously self-registered client, whose
-`consent_required` defaults `true` (ADR 0027, and the registration section
+`demo-spa`'s own `consent_required` is `false`, because `seed client` leaves it off
+unless it is given `--consent-required`
+(`PATCH /admin/tenants/{tenant}/clients/{id}` changes it later, without `If-Match`,
+being no list field) — so the transcript below reuses without ever seeing that
+screen; the consent section demonstrates asking, against an anonymously
+self-registered client, whose `consent_required` defaults `true` (ADR 0027, and
+the registration section
 above). Requesting it produces a grant with no session, which is what nothing
 here can expire and no logout can end (OpenID Connect Back-Channel Logout 1.0
 §2.7's second sentence, [the back-channel logout reading
@@ -1400,7 +1400,12 @@ The screen and the reuse and `prompt=none` answers below come from a stack of
 its own on `http://localhost:3094`, started on an empty volume, with `demo`
 seeded the way [Bootstrap](./bootstrap.md) seeds it. The subsections from "The
 client's own pages" on come from an earlier stack, whose transcripts show no
-response header. `client_registration_policy` is `disabled` on `demo` by
+response header. The refused consent and the `prompt=none` refusal were run again
+on a later stack, on `http://localhost:3199`, against a client made from the
+command line, `odudu seed client --tenant demo --client-id consent-spa --public
+--redirect-uri https://rp.example/cb --consent-required`, with `ada` in `demo`;
+`$CLIENT_ID` is `consent-spa` there. The `prompt=none` answer follows an Allow
+that left `offline_access` unticked, so that scope is the one missing. `client_registration_policy` is `disabled` on `demo` by
 default, the same as every tenant, so the anonymously self-registered client
 this section needs it open:
 
@@ -1582,15 +1587,15 @@ answer twice.)
 curl -sS -D - \
   --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
   --data-urlencode 'decision=deny' \
-  'http://localhost:3094/tenants/demo/login-actions/consent'
+  'http://localhost:3199/tenants/demo/login-actions/consent'
 ```
 
 ```
 HTTP/1.1 302 Found
-x-request-id: 01a137d6-c44e-771e-81f8-36db32b150f1
-location: https://rp.example/cb?error=access_denied&error_description=The+user+did+not+allow+the+request.&state=xyz-deny&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo
+x-request-id: 01a167e4-dcea-7c79-b582-1b02ba377c8f
+location: https://rp.example/cb?error=access_denied&error_description=The+user+did+not+allow+the+request.&state=xyz-deny&iss=http%3A%2F%2Flocalhost%3A3199%2Ftenants%2Fdemo
 content-length: 0
-Date: Wed, 14 Oct 2026 00:36:24 GMT
+Date: Fri, 23 Oct 2026 08:33:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
@@ -1688,15 +1693,15 @@ curl -sS -D - -b cookies-consent.txt --get \
   --data-urlencode 'prompt=none' \
   --data-urlencode "code_challenge=$CHALLENGE" \
   --data-urlencode 'code_challenge_method=S256' \
-  'http://localhost:3094/tenants/demo/protocol/openid-connect/auth'
+  'http://localhost:3199/tenants/demo/protocol/openid-connect/auth'
 ```
 
 ```
 HTTP/1.1 302 Found
-x-request-id: 01a137d6-c4cb-7d96-a306-9101560c4c46
-location: https://rp.example/cb?error=consent_required&error_description=The+user+has+not+agreed+to+this+request+yet.&state=xyz-reuse&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo
+x-request-id: 01a167e4-f9ca-701f-a03b-dcf5e4dad8b7
+location: https://rp.example/cb?error=consent_required&error_description=The+user+has+not+agreed+to+this+request+yet.&state=xyz-reuse&iss=http%3A%2F%2Flocalhost%3A3199%2Ftenants%2Fdemo
 content-length: 0
-Date: Wed, 14 Oct 2026 00:36:24 GMT
+Date: Fri, 23 Oct 2026 08:33:41 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```

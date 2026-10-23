@@ -34,7 +34,7 @@ Odudu decides in this order:
 4. If something is missing and the request says `prompt=none`, refuse with `consent_required`, because `none` means the person must not be shown anything.
 5. Otherwise, ask.
 
-`consent_required` is a setting on each client. An administrator's clients leave it off by default. A client that registered itself with no token has it on.
+`consent_required` is a setting on each client. An administrator's clients leave it off by default. A client that registered itself with no token has it on. From the command line, `odudu seed client --consent-required` creates one that asks.
 
 ### Looking at and removing grants
 
@@ -56,7 +56,7 @@ Read it with `GET /admin/tenants/{tenant}/audit`. Filter by what you are chasing
 
 ### Refusals are bounded
 
-Recording every refusal sounds right and has a catch: anybody can cause a refusal, as often as they like, and each one is a row. So a refusal is recorded only where something limits how many a caller can cause. A refused request from a client that is registered gets a row, up to 20 refusals per client per minute. The last row of the minute says the budget ran out, and later refusals in that minute are written to the server's log instead. A failed client login that names a client nobody registered writes no row at all.
+Recording every refusal sounds right and has a catch: anybody can cause a refusal, as often as they like, and each one is a row. So a refusal is recorded only where something limits how many a caller can cause. A refused request from a client that is registered gets a row, up to 20 refusals per client per minute. The last row of the minute says the budget ran out, and later refusals in that minute are written to the server's log instead. A failed client login that names a client nobody registered writes no row at all. A sign-up with an email address that already has an account writes one row naming that account. The request budget the sign-up form has for each address it comes from limits those.
 
 ### How long it is kept
 
