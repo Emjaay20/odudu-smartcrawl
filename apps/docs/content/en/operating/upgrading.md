@@ -15,7 +15,7 @@ The migrations only go forward. Odudu has no down migrations, so the way back fr
 
 ## 2. Read what changed
 
-Odudu has published no release yet, so there are no release notes to read. Until the first one, the changes between your version and the new one are the commits and tags of [the repository](https://github.com/wizzywit/odudu) between them, and the phase notes in its `docs/phases` directory. Look there for any command to run after the upgrade. Two you may meet:
+Read the notes of every release between your version and the new one on [the releases page](https://github.com/wizzywit/odudu/releases), or in `CHANGELOG.md` in the repository. The phase notes in its `docs/phases` directory go into more detail. Look there for any command to run after the upgrade. Two you may meet:
 
 - `odudu console provision`, after a version that changes the console's key or the base address, so each tenant registers the console's current key and redirect addresses.
 - `odudu client-origins rebuild`, once, after upgrading past the migration that added client origins, so a client whose addresses use an internationalised host or an IPv6 literal is not refused its preflight.

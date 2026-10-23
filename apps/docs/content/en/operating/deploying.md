@@ -11,13 +11,19 @@ You need what [Before you start](./index.md#before-you-start) lists. The image i
 
 ## 1. Get the image
 
-The image is named `ghcr.io/wizzywit/odudu`, with a tag for each version. Use a version tag in production, never `latest`, so a restart cannot change what you run.
+The image is named `ghcr.io/wizzywit/odudu`, and runs on `linux/amd64` and `linux/arm64`. Each release has a tag with its full version, such as `0.1.0`, and a stable release also moves `0.1` and `latest`. Pin the full version in production, so a restart cannot change what you run. A release candidate has only its own tag, such as `0.1.0-rc.1`.
 
 ```text
 docker pull ghcr.io/wizzywit/odudu:<version>
 ```
 
-No version is published yet. Until the first one is, build the image from a copy of the source and use your own tag in its place ([Releasing](./releasing.md) says where that stands). The image runs as a non-root user and checks its own health against `/health/ready`. The commands that verify a published image's signature arrive with the first release, and will be on this page.
+Versions and their changes are on [the releases page](https://github.com/wizzywit/odudu/releases). Every image is signed by the workflow that built it. Check the signature before you run an image you have not run before.
+
+```text
+cosign verify ghcr.io/wizzywit/odudu:<version> --certificate-identity-regexp '^https://github.com/wizzywit/odudu/.github/workflows/release.yml@refs/tags/v' --certificate-oidc-issuer https://token.actions.githubusercontent.com
+```
+
+The image also carries a list of its contents and a record of how it was built. The maintainers' [release procedure](https://github.com/wizzywit/odudu/blob/main/RELEASING.md) has the commands to read them. The image runs as a non-root user and checks its own health against `/health/ready`.
 
 ## 2. Make the two database roles
 

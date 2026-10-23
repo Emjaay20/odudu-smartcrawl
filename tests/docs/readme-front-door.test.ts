@@ -15,6 +15,11 @@ const LINES = README.split('\n');
 const CONTENT = path.join(REPO_ROOT, 'apps/docs/content/en');
 const SITE_DOCS = `${SITE_ORIGIN}${PAGES_DOCS_BASE}`;
 const released = existsSync(path.join(REPO_ROOT, '.github/workflows/release.yml'));
+// `releases/latest/download` skips pre-releases, so the download address
+// answers only once a stable version has a dated section in the changelog.
+const stable = /^## \[\d+\.\d+\.\d+\] - \d{4}-\d{2}-\d{2}$/mu.test(
+  readFileSync(path.join(REPO_ROOT, 'CHANGELOG.md'), 'utf8'),
+);
 
 function section(heading: string): string {
   const start = LINES.findIndex((line) => line === `## ${heading}`);
@@ -238,8 +243,8 @@ describe('the quick start in the README is the quick start page', () => {
     expect(README.match(/ODUDU_[A-Z_]+/gu) ?? []).toEqual([]);
   });
 
-  it('says the download arrives with the first release while none is published', () => {
-    expect(section('Quick start').includes('Arrives with the first release.')).toBe(!released);
+  it('says the download arrives with the first release until a stable one is published', () => {
+    expect(section('Quick start').includes('Arrives with the first release.')).toBe(!stable);
   });
 });
 

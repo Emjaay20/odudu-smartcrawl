@@ -294,15 +294,19 @@ describe('the landing page keeps its promises small', () => {
     expect(text('docs/quick-start/index.html')).not.toMatch(TIME_CLAIM);
   });
 
-  it('carries the release caveat on the landing page and the Quick start while no release workflow exists', () => {
-    const released = existsSync(path.join(REPO_ROOT, '.github/workflows/release.yml'));
+  it('carries the release caveat on the landing page and the Quick start until a stable release is in the changelog', () => {
+    // `releases/latest/download` skips pre-releases, so the address answers
+    // only once a stable version has a dated section.
+    const stable = /^## \[\d+\.\d+\.\d+\] - \d{4}-\d{2}-\d{2}$/mu.test(
+      readFileSync(path.join(REPO_ROOT, 'CHANGELOG.md'), 'utf8'),
+    );
     const quick = readFileSync(path.join(DOCS_ROOT, 'content/en/quick-start/index.mdx'), 'utf8');
     const note = landing.find('[data-install-note]').text();
-    const advice = released
-      ? `.github/workflows/release.yml exists: remove "${RELEASE_CAVEAT}" from Install.tsx and the Quick start once the first release is TAGGED and the download address answers, and not before`
-      : `no release workflow yet: "${RELEASE_CAVEAT}" must stay in Install.tsx and in the Quick start until the first release is published`;
-    expect(note.includes(RELEASE_CAVEAT), advice).toBe(!released);
-    expect(quick.includes(RELEASE_CAVEAT), advice).toBe(!released);
+    const advice = stable
+      ? `CHANGELOG.md has a stable release: remove "${RELEASE_CAVEAT}" from Install.tsx and the Quick start once the download address answers`
+      : `no stable release yet: "${RELEASE_CAVEAT}" must stay in Install.tsx and in the Quick start until the first stable release is published`;
+    expect(note.includes(RELEASE_CAVEAT), advice).toBe(!stable);
+    expect(quick.includes(RELEASE_CAVEAT), advice).toBe(!stable);
   });
 
   it('has at most eight bands, with one console picture and no second one', () => {
