@@ -221,9 +221,23 @@ describe('address verification, through the real composition root', () => {
       if (message === undefined) throw new Error('no mail sent');
       const key = extractKey(message);
 
-      const redeemRes = await app.inject({
+      const visited = await app.inject({
         method: 'GET',
         url: `/tenants/${tenantName}/login-actions/action-token?key=${key}`,
+      });
+      expect(visited.statusCode).toBe(200);
+      expect(
+        (
+          await withTenant(appDb.db, seeded.tenantId, (tx) =>
+            userRepository(tx).bySubjectId(userSubjectId),
+          )
+        )?.emailVerified,
+      ).toBe(false);
+      const redeemRes = await app.inject({
+        method: 'POST',
+        url: `/tenants/${tenantName}/login-actions/action-token`,
+        payload: new URLSearchParams({ key }).toString(),
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
       });
       expect(redeemRes.statusCode).toBe(200);
 
