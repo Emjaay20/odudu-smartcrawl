@@ -219,7 +219,7 @@ for that walkthrough, captured message included.
 account — subject, user row, password credential and the tenant's default
 roles, all in one transaction — instead of an administrator seeding one in.
 When the tenant's `verify_email` is also on, that transaction runs when the
-mailed link is opened, so nobody signs in with an address nobody has proved:
+mailed link is confirmed, so nobody signs in with an address nobody has proved:
 until then there is no account, only a pending registration. See
 [the self-registration section of the request paths](apps/docs/content/en/reference/transcripts/request-paths/self-registration.md)
 for the walkthrough.
@@ -556,11 +556,10 @@ without the body or, to a caller without `view-users`, the full address
 caller or change a status: it happens after the response, and no code
 reachable from a request holds a mail transport at all.
 
-**Registration and enumeration.** With `verify_email` on, a registration creates nothing
-until its mailed link is opened, and registering an address that already has an account
-looks the same: status 201, "Account created". The holder gets a mail saying someone
-tried. A taken username is still named. With `verify_email` off the form says the
-address is registered.
+**Registration and enumeration.** With `verify_email` on, a registration creates nothing until its
+mailed link is opened and confirmed, and registering an address that already has an account looks the
+same: status 201, "Check your email". The holder gets a mail saying someone tried. A taken username is
+still named. With `verify_email` off the form says the address is registered.
 
 A mailed verification link is built from `ODUDU_PUBLIC_BASE_URL`, never
 from the request that triggered it — a request's `Host` header is

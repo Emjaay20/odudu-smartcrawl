@@ -20,6 +20,7 @@ import { renderThrottledPage } from '../../packages/protocol-oidc/src/view/throt
 import {
   renderRegistrationFailedPage,
   renderRegistrationForm,
+  renderRegistrationReadyPage,
   renderRegistrationSucceededPage,
   type RegistrationFailure,
   type RegistrationRefusal,
@@ -39,6 +40,7 @@ import {
 } from '../../packages/account/src/view/required-actions-html.js';
 import {
   renderVerificationFailedPage,
+  renderEmailConfirmPage,
   renderVerificationSucceededPage,
 } from '../../packages/account/src/view/verification-html.js';
 import { renderSignInRefused } from '../../packages/console-gateway/src/view/refusal-html.js';
@@ -270,6 +272,11 @@ const backOf = (body: string): string | null =>
   body.includes('>Back to sign in</a>')
     ? first(body, /<a href="([^"]*)">Back to sign in<\/a>/u)
     : null;
+// The way on a finished link's page leads to, if it does.
+const continueOf = (body: string): string | null =>
+  body.includes('>Continue to sign in</a>')
+    ? first(body, /<a href="([^"]*)">Continue to sign in<\/a>/u)
+    : null;
 const returnToOf = (body: string): string | null =>
   body.includes('name="return_to"') ? first(body, /name="return_to" value="([^"]*)"/u) : null;
 
@@ -299,9 +306,24 @@ function registrationFailureOf(body: string): RegistrationFailure | undefined {
       )[0] === entries[0],
   );
   if (refusal !== undefined && entries.length === 1) return { refusal };
-  const missing = (['username', 'email', 'password'] as const).filter((field) =>
-    new RegExp(`name="${field}"[^>]*aria-invalid`, 'u').test(body),
-  );
+  if (/name="password_confirm"[^>]*aria-invalid/u.test(body) && entries.length === 1) {
+    const mismatch = renderRegistrationForm(
+      't',
+      { rules: RULES_DEFAULT, failure: { mismatch: true } },
+      LOCALE,
+    );
+    if (entriesOf(mismatch.body)[0] === entries[0]) return { mismatch: true };
+  }
+  const missing = (
+    [
+      ['username', 'username'],
+      ['email', 'email'],
+      ['password', 'password'],
+      ['password_confirm', 'passwordConfirm'],
+    ] as const
+  )
+    .filter(([name]) => new RegExp(`name="${name}"[^>]*aria-invalid`, 'u').test(body))
+    .map(([, field]) => field);
   const asked = renderRegistrationForm('t', { rules: RULES_DEFAULT, failure: { missing } }, LOCALE);
   if (missing.length > 0 && entriesOf(asked.body).join() === entries.join()) return { missing };
   return { violations: entries.map(accountViolationFor) };
@@ -382,10 +404,8 @@ const RENDER_BACK: Record<string, (body: string) => string> = {
   },
   "Can't create this account": (body) =>
     renderRegistrationFailedPage(tenantOf(body), null, LOCALE).body,
-  'Account created': (body) =>
-    renderRegistrationSucceededPage(body.includes('Check your email for a link'), null, LOCALE)
-      .body,
-  'Email verified': (body) => renderVerificationSucceededPage(backOf(body), LOCALE).body,
+  'Account created': (body) => renderRegistrationSucceededPage(false, null, LOCALE).body,
+  'Email confirmed': (body) => renderVerificationSucceededPage(continueOf(body), LOCALE).body,
   "Can't verify this link": (body) => renderVerificationFailedPage(backOf(body), LOCALE).body,
   'Forgot your password?': (body) => {
     const email = valueOf(body, 'email');
@@ -399,7 +419,18 @@ const RENDER_BACK: Record<string, (body: string) => string> = {
       LOCALE,
     ).body;
   },
-  'Check your email': () => renderResetRequestedPage(null, LOCALE).body,
+  'Check your email': (body) =>
+    body.includes('we sent a link to finish')
+      ? renderRegistrationSucceededPage(true, null, LOCALE).body
+      : renderResetRequestedPage(null, LOCALE).body,
+  'Confirm your email address': (body) =>
+    renderEmailConfirmPage(
+      tenantOf(body),
+      keyOf(body),
+      body.includes('Account name:') ? first(body, /Account name: <bdi>(.*)<\/bdi>/u) : null,
+      LOCALE,
+    ).body,
+  'Your account is ready': (body) => renderRegistrationReadyPage(continueOf(body), LOCALE).body,
   "Can't send a reset link": (body) =>
     renderResetRequestFailedPage(tenantOf(body), null, LOCALE).body,
   'Choose a new password': (body) =>

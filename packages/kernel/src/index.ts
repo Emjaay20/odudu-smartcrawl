@@ -4,7 +4,9 @@ export { BIDI_REFUSED, BidiControlError, containsBidiControl, refuseBidiControls
 export {
   PASSWORD_FIELD_ID,
   PASSWORD_HINTS_SCRIPT,
+  PASSWORD_CONFIRM_FIELD_ID,
   PASSWORD_RULES_LIST_ID,
+  passwordConfirmToggle,
   passwordHints,
   type PasswordHints,
   type PasswordHintText,

@@ -112,3 +112,18 @@ ${lines.map((line) => `      ${line}`).join('\n')}
     field: ` id="${PASSWORD_FIELD_ID}" minlength="${min}" spellcheck="false" autocapitalize="off" autocorrect="off"`,
   };
 }
+
+export const PASSWORD_CONFIRM_FIELD_ID = 'password-confirm';
+
+// Showing the password shows its confirmation too: a second script element
+// under the nonce the hints script already holds, so the page's policy names
+// one. It runs after the hints script, whose toggle it listens beside.
+export function passwordConfirmToggle(script: PageScript): string {
+  return `<script nonce="${script.nonce}">(function () {
+  var first = document.getElementById('${PASSWORD_FIELD_ID}');
+  var again = document.getElementById('${PASSWORD_CONFIRM_FIELD_ID}');
+  var toggle = document.querySelector('#password-rules button');
+  if (!first || !again || !toggle) return;
+  toggle.addEventListener('click', function () { again.type = first.type; });
+})();</script>`;
+}

@@ -3315,44 +3315,48 @@ declarative user profile.
 
 ### Increment 31k, a taken address is not named
 
-**With `verify_email` on, a registration creates nothing until its link is opened.** The request
-is a `pending_registrations` row (username, address, the Argon2id hash made on the spot, expiry; one
-row per tenant and lower-cased address, a repeat replaces it) and one verification mail. A held address
-writes no row, and mails its holder instead. Both answer 201 with the same page, and neither holds a
-username, so asking for one username twice (first with a held address, then a free one) answers as it
-does for two free ones. The first version of this increment created the account straight away and a
-review found that exact two-request oracle; deferring the account is what closed it. The link route
-reads `reg_` keys from the new table; opening one re-checks the username and address against the accounts
-that exist then, and in one transaction creates the subject, user (address verified), credential and
-defaults, and writes `account.registered`. A username taken meanwhile says so (409, with a link to the
-form); an address taken meanwhile, or any spent, expired, unknown or foreign key, reads as the one
-"can't use this link" page. The unverified-email sign-in page remains, for an account an administrator
-made. With `verify_email` off nothing changes, and the form still says the address is registered.
+**With `verify_email` on, a registration creates nothing until its link is confirmed.** The form asks for
+username, email, password and its confirmation. The request is a `pending_registrations` row (username,
+address, the Argon2id hash made before the transaction, expiry; one row per tenant and lower-cased
+address, a repeat replaces it) and one mail whose link opens a page naming the account with one button.
+A held address writes no row and mails its holder. Both answer 201 "Check your email", and neither holds
+a username, so asking for one username twice (first with a held address, then a free one) answers as for
+two free ones. A review found that two-request oracle in the first design, which created the account
+straight away; deferral closed it. The link's GET reads the key and writes nothing, so mail scanners
+cannot spend it; the POST takes the row, locks the address, re-checks username and address and creates
+the verified account in one transaction. A username taken meanwhile says so (409); anything else wrong
+with a key reads as "can't use this link". With `verify_email` off nothing changes.
 
-**A link asks before it acts.** A GET of a registration or verification link shows one button and writes
-nothing (one read of the key); the POST it carries does the work, in the one transaction, so a mail scanner,
-a link preview or antivirus that opens links first cannot spend the link. Reset and required-action links
-already showed a form on GET. A spent registration link names no sign-in.
+**Mitigations for a registrant who is not the owner,** in place of asking for the password at the link
+(rejected: the standard form asks at the form): a later registration replaces the pending row, the key
+is single use and expires, the mail and the page say what the link does and show the account name, and a
+password reset now ends every session and revokes every grant of the account. ADR 0037 states the
+residual risk.
 
-**Case.** Matching an address is case-insensitive (`users.email_search`, served by
-`users_email_search`), so `ADA@x` is held when `ada@x` has an account. No unique index was added on the
-lower-cased column: existing data may hold case variants, and a migration that fails on them is worse.
-The pending table is unique on `(tenant_id, email_search)`; a race between two links for case variants of
-one address is closed only by the byte-exact unique index.
+**Hash at rest.** The pending row holds the Argon2id hash until the link is used or the row is reaped
+(`verify_email_ttl_seconds` plus the action-token retention window), as protected as the credentials
+table: same database, same row-level security.
 
-**Mail bound.** One in-process sliding window per tenant and address (3 an hour, at most 100,000
-addresses, about 3 timestamps each, evicting the coldest, one lookup per call, no timer) suppresses the
-queueing of verification, reset and held-address mail, never the answer. A restart clears it and N
-replicas allow N times as much, so P11 owns sharing it (roadmap and section 11 say so).
+**Case and lock.** Matching an address is ASCII case-insensitive (`users.email_search`, served by
+`users_email_search`). No unique index on the lower-cased `users` column: existing data may hold variants
+and a migration that fails on them is worse. Every creator takes `pg_advisory_xact_lock` on
+(tenant, lower(address)) through `lockEmailForCreation` (composeUserSubject, so admin and seed too, and
+the link's transaction), and a test holds that a creation waits for one already in flight.
 
-**Queries per path** (reads / writes). Free address: 2 / 2 (pending upsert, mail). Held address: 2 / 2
-(audit row, mail). Before the change: free 2 reads + about 9 writes in one transaction, held 2 + 2 plus a
-failed attempt. The tenant's link lifetime comes from the tenant lookup the route already makes, not a
-third read. Link opened: delete-returning, two lookups, subject, user, defaults (2 reads), verified flag,
-credential, audit row. Every statement is an index scan in the plan inventory at 200,000 subjects, the
-two new ones included. Both request paths hash once and a request the policy refuses is answered before
-hashing. Measured over 200 alternating requests per path on a local stack: free median 38.2 ms, held 38.3
-ms; the paired difference has a median of 0.1 ms against a spread of 11 ms, which is noise.
+**Mail bound.** One in-process sliding window per kind (registration link, held-address notice, reset),
+tenant and address: 3 an hour, at most 100,000 addresses a kind, 3 timestamps each, coldest evicted, one
+lookup per call, no timer. It decides only whether a mail is queued, never the answer; a refused
+registration mail leaves an earlier pending request alone. A restart clears it and N replicas allow N
+times as much (P11 owns sharing it).
+
+**Queries per path** (reads / writes after the tenant lookup). Free address: 2 / 2 (pending upsert, mail).
+Held address: 2 / 2 (audit row, mail). Argon2: one hash for every request that passes the policy, before
+the transaction, on both paths; a request the policy or the confirmation refuses is answered before
+hashing. Link visit: the tenant lookup and one indexed read of the key. Link press: delete-returning,
+advisory lock, two lookups, subject, user, defaults (2 reads), verified flag, credential, audit row, one
+transaction. Every statement is an index scan in the plan inventory at 200,000 subjects. Measured over
+200 alternating requests per path on a local stack: free median 38.2 ms, held 38.3 ms; the paired
+difference has a median of 0.1 ms against a spread of 11 ms, which is noise.
 
 **Audit.** `account.registration_duplicate`, `refused`, reason `already_registered`, naming the account;
 bounded by the per-origin throttle (ADR 0037's amendment).

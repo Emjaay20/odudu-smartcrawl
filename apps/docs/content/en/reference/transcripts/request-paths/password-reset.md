@@ -661,7 +661,10 @@ verification link.
 ## What a reset leaves in the audit log
 
 A redeemed link writes one `credential` row, `password.reset`, in the
-transaction that sets the password. Nothing else in the flow writes one:
+transaction that sets the password. The same transaction ends every session
+and revokes every grant the account held, offline ones included, so anybody
+else signed in to it is signed out; each session it ends writes the
+`session.ended` row a logout does. Nothing else in the flow writes one:
 not the request, which must look the same whether or not the address has an
 account; not a refused link, which names nobody the caller has proved
 anything about; and not a password the policy refuses, which is a form

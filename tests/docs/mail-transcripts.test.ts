@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { MARK_PNG_BASE64 } from '../../packages/email/src/service/mark.generated.js';
 import { en } from '../../packages/email/src/service/messages.js';
 import {
+  renderFinishRegistration,
   renderRecoveryCodesRevoked,
   renderRegistrationDuplicate,
   renderRequiredActions,
@@ -78,6 +79,14 @@ function rendered(capture: Capture) {
     return renderRegistrationDuplicate({
       to: TO,
       resetLink: linkOf(capture.text),
+      tenantDisplayName: tenantOf(capture.text),
+      now: sentAt(capture.text),
+    });
+  }
+  if (capture.subject.startsWith('Finish creating')) {
+    return renderFinishRegistration({
+      to: TO,
+      link: linkOf(capture.text),
       tenantDisplayName: tenantOf(capture.text),
       now: sentAt(capture.text),
     });

@@ -91,7 +91,7 @@ export const ACCESS_SECTIONS: readonly SettingsSection[] = [
         name: 'verify_email',
         label: 'Verify email addresses',
         control: 'toggle',
-        description: 'The account is created when the person opens the link in a mail.',
+        description: 'The account is created when the person confirms their address from a mail.',
       },
       {
         name: 'verify_email_ttl_seconds',

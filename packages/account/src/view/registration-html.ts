@@ -1,6 +1,7 @@
 import {
+  PASSWORD_CONFIRM_FIELD_ID,
+  passwordConfirmToggle,
   type PageLocale,
-  type PageScript,
   type PasswordRules,
   type RenderedPage,
 } from '@odudu/kernel';
@@ -108,20 +109,6 @@ function backToSignIn(signInPath: string | null | undefined, locale: PageLocale)
     : { href: signInPath, text: tHtml(locale, 'link.backToSignIn') };
 }
 
-const PASSWORD_CONFIRM_ID = 'password-confirm';
-
-// Showing the password shows its confirmation too: a second script element
-// under the nonce the hints script already holds, so the policy names one.
-function confirmToggle(script: PageScript): string {
-  return `\n  <script nonce="${script.nonce}">(function () {
-  var first = document.getElementById('password');
-  var again = document.getElementById('${PASSWORD_CONFIRM_ID}');
-  var toggle = document.querySelector('#password-rules button');
-  if (!first || !again || !toggle) return;
-  toggle.addEventListener('click', function () { again.type = first.type; });
-})();</script>`;
-}
-
 export function renderRegistrationForm(
   tenant: string,
   form: RegistrationForm,
@@ -150,7 +137,7 @@ ${problemSummary(problems)}<form method="post" action="${action}">${returnToFiel
   <label>${tHtml(locale, 'registration.username')} <input type="text" name="username" autocomplete="username"${value(form.username)}${attributes('username')}></label>
   <label>${tHtml(locale, 'registration.email')} <input type="email" name="email" autocomplete="email"${value(form.email)}${attributes('email')}></label>
   ${password.html}
-  <label>${tHtml(locale, 'registration.passwordConfirm')} <input type="password" name="password_confirm" id="${PASSWORD_CONFIRM_ID}" autocomplete="new-password" spellcheck="false" autocapitalize="off" autocorrect="off"${attributes('passwordConfirm')}></label>${confirmToggle(password.script)}
+  <label>${tHtml(locale, 'registration.passwordConfirm')} <input type="password" name="password_confirm" id="${PASSWORD_CONFIRM_FIELD_ID}" autocomplete="new-password" spellcheck="false" autocapitalize="off" autocorrect="off"${attributes('passwordConfirm')}></label>\n  ${passwordConfirmToggle(password.script)}
   <button type="submit">${tHtml(locale, 'registration.submit')}</button>
 </form>${links([backToSignIn(form.signInPath, locale)])}`,
     password.script,

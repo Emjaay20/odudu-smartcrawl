@@ -16,10 +16,11 @@ odudu seed \
   --tenant register-demo --client register-spa \
   --redirect-uri http://localhost:8080/callback
 curl -sS -o /dev/null -w '%{http_code}\n' \
-  http://localhost:3000/tenants/register-demo/login-actions/registration
+  http://localhost:3199/tenants/register-demo/login-actions/registration
 ```
 
 ```
+{"created":true,"tenant":"register-demo","tenantId":"01a1689b-f86e-7c85-94f5-3c20a4061c70","clientId":"register-spa"}
 404
 ```
 
@@ -28,11 +29,12 @@ turns them on — repeatable, and applied in one statement:
 
 ```bash
 odudu seed tenant --name register-demo \
-  --set registration_allowed=true --set verify_email=true
+  --set registration_allowed=true --set verify_email=true \
+  --set reset_password_allowed=true
 ```
 
 ```
-{"command":"tenant","created":false,"tenant":"register-demo","tenantId":"01a0cb12-2131-78a5-9def-e9bcc032180b","settings":["registration_allowed","verify_email"]}
+{"command":"tenant","created":false,"tenant":"register-demo","tenantId":"01a1689b-f86e-7c85-94f5-3c20a4061c70","settings":["registration_allowed","verify_email","reset_password_allowed"]}
 ```
 
 With both on, posting the form creates nothing. It keeps the request and sends
@@ -40,10 +42,10 @@ a mail whose link creates the account, so neither the address nor the username
 is settled until somebody has proved the address:
 
 ```bash
-curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/registration \
+curl -sS -X POST http://localhost:3199/tenants/register-demo/login-actions/registration \
   --data-urlencode 'username=ada' \
   --data-urlencode 'email=ada@example.com' \
-  --data-urlencode 'password=correct-horse-battery'
+  --data-urlencode 'password=correct-horse-battery' --data-urlencode 'password_confirm=correct-horse-battery'
 ```
 
 ```
@@ -53,7 +55,7 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Account created</title>
+<title>Check your email</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
@@ -61,8 +63,8 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 <body>
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
-<h1>Account created</h1>
-<p>Check your email for a link to verify your address before you can sign in.</p>
+<h1>Check your email</h1>
+<p>If this address can be registered, we sent a link to finish.</p>
 </main>
 </body>
 </html>
@@ -82,14 +84,16 @@ look in that table:
 {
   "level": 30,
   "to": "ada@example.com",
-  "subject": "Verify your register-demo account",
-  "text": "Confirm your email address for ⁨register-demo⁩ by visiting this link:\n\nhttp://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_2JiEsSNSNnGerM_gg2th274L3BYGovW27jVJc5TAR4Y\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to create or update an account at ⁨register-demo⁩.\n© 2026 Odudu · Powered by odudu",
-  "htmlBytes": 5905,
+  "subject": "Finish creating your register-demo account",
+  "text": "Someone asked to create a ⁨register-demo⁩ account with this address. If it was you, open this link to finish:\n\nhttp://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_7tTl9TBz9EYIAfzls6RkB6E8FwJq_L9KXqGovQD6v9I\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to start an account at ⁨register-demo⁩.\n© 2026 Odudu · Powered by odudu",
+  "htmlBytes": 5922,
   "msg": "captured email — no SMTP host configured"
 }
 ```
 
-When the link is opened, one transaction takes the row, looks for the username and
+The mail says someone asked, names no username, and its link opens a page that shows the
+account name and one button. When that button is pressed, one transaction takes the row, locks the
+address, looks for the username and
 the address among the accounts that exist then, and creates the subject, the
 `users` row (with the address already verified), the password credential and the
 tenant's default roles and groups, those `PUT /admin/tenants/{tenant}/roles/{id}/default`
@@ -104,24 +108,24 @@ stripping would let two different usernames collide. On port `3197`, posting
 `ada` followed by U+202E:
 
 ```bash
-curl -sS -D - -X POST http://localhost:3195/tenants/register-demo/login-actions/registration \
+curl -sS -D - -X POST http://localhost:3199/tenants/register-demo/login-actions/registration \
   --data-urlencode "username=$(printf 'ada\xe2\x80\xae')" \
   --data-urlencode 'email=grace@example.com' \
-  --data-urlencode 'password=correct-horse-battery'
+  --data-urlencode 'password=correct-horse-battery' --data-urlencode 'password_confirm=correct-horse-battery'
 ```
 
 ```
 HTTP/1.1 400 Bad Request
-x-request-id: 01a16364-8cc3-77f7-9593-7679780ce923
+x-request-id: 01a1689c-36bd-735f-9bb5-141b7de323b6
 content-type: text/html
-content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'; script-src 'nonce-2UoH5MnG69zIyefgdgkQcg=='
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'; script-src 'nonce-3mMB5AkENsBkpnEpO7sOAg=='
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 3604
-Date: Thu, 22 Oct 2026 11:34:56 GMT
+content-length: 4163
+Date: Fri, 23 Oct 2026 11:53:50 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -159,7 +163,7 @@ Keep-Alive: timeout=72
       <li>Not a common password</li>
     </ul>
   </div>
-  <script nonce="2UoH5MnG69zIyefgdgkQcg==">(function () {
+  <script nonce="3mMB5AkENsBkpnEpO7sOAg==">(function () {
   var box = document.getElementById('password-rules');
   var field = document.getElementById('password');
   if (!box || !field) return;
@@ -197,6 +201,14 @@ Keep-Alive: timeout=72
     toggle.setAttribute('aria-pressed', String(show));
   });
 })();</script>
+  <label>Confirm password <input type="password" name="password_confirm" id="password-confirm" autocomplete="new-password" spellcheck="false" autocapitalize="off" autocorrect="off"></label>
+  <script nonce="3mMB5AkENsBkpnEpO7sOAg==">(function () {
+  var first = document.getElementById('password');
+  var again = document.getElementById('password-confirm');
+  var toggle = document.querySelector('#password-rules button');
+  if (!first || !again || !toggle) return;
+  toggle.addEventListener('click', function () { again.type = first.type; });
+})();</script>
   <button type="submit">Create account</button>
 </form>
 </main>
@@ -226,16 +238,16 @@ curl -sS -X POST http://localhost:3199/tenants/register-demo/login-actions/regis
   -H 'Host: evil.example' \
   --data-urlencode 'username=grace' \
   --data-urlencode 'email=grace@example.com' \
-  --data-urlencode 'password=correct-horse-battery'
+  --data-urlencode 'password=correct-horse-battery' --data-urlencode 'password_confirm=correct-horse-battery'
 ```
 
 ```json
 {
   "level": 30,
   "to": "grace@example.com",
-  "subject": "Verify your register-demo account",
-  "text": "Confirm your email address for ⁨register-demo⁩ by visiting this link:\n\nhttp://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_bHUzirabAksbwQhhhB_PlK2fVO2E_Vuq4VbRwr2yqb4\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to create or update an account at ⁨register-demo⁩.\n© 2026 Odudu · Powered by odudu",
-  "htmlBytes": 5905,
+  "subject": "Finish creating your register-demo account",
+  "text": "Someone asked to create a ⁨register-demo⁩ account with this address. If it was you, open this link to finish:\n\nhttp://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_isuotp3jAbBnTNrccBXIEVLTPTez_ta6wxY9vjIKvDA\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to start an account at ⁨register-demo⁩.\n© 2026 Odudu · Powered by odudu",
+  "htmlBytes": 5922,
   "msg": "captured email — no SMTP host configured"
 }
 ```
@@ -306,7 +318,7 @@ curl -sS -i -X POST http://localhost:3199/tenants/register-demo/login-actions/au
 ```
 
 ```
-{"command":"user","tenant":"register-demo","tenantId":"01a1681e-93f0-7ea9-b17a-aaf65e152787","username":"bob","userSubjectId":"01a1681f-0850-7216-9662-631959ac9f49"}
+{"command":"user","tenant":"register-demo","tenantId":"01a1689b-f86e-7c85-94f5-3c20a4061c70","username":"bob","userSubjectId":"01a1689c-74b3-75af-81c6-db3c37a920e3"}
 HTTP/1.1 200 OK
 <h1>Can&#39;t sign in yet</h1>
 <p>We sent you a link to verify your email address. Open it, then sign in again.</p>
@@ -318,28 +330,28 @@ only when the button posts the key back. Opened twice, as a scanner might, the p
 same and no account exists; the headers on it are `no-store` and `no-referrer`:
 
 ```bash
-KEY=reg_Vb7d0-S19F7P4h4Gv0veJYwJxMtjZMMbVYfYIUrBuCg
+KEY=reg_7tTl9TBz9EYIAfzls6RkB6E8FwJq_L9KXqGovQD6v9I
 for i in 1 2; do
   curl -sS "http://localhost:3199/tenants/register-demo/login-actions/action-token?key=$KEY" \
     | grep -E '<h1>|<p>Press|<button|name="key"' | sed 's/value="[^"]*"/value="…"/'
   echo ---
 done
 docker compose exec -T postgres psql -U odudu -d odudu -At -c \
-  "select count(*) from users u join tenants t on t.id = u.tenant_id where t.name = 'register-demo';"
+  "select count(*) from users u join tenants t on t.id = u.tenant_id where t.name = 'register-demo' and u.username = 'ada';"
 curl -sS -i "http://localhost:3199/tenants/register-demo/login-actions/action-token?key=$KEY" \
   | grep -iE '^(HTTP|cache-control|referrer-policy)'
 ```
 
 ```
-<h1>Create your account</h1>
-<p>Press the button to create your account.</p>
+<h1>Confirm your email address</h1>
+<p>Press the button to confirm this address.</p>
   <input type="hidden" name="key" value="…">
-  <button type="submit">Create my account</button>
+  <button type="submit">Confirm my email</button>
 ---
-<h1>Create your account</h1>
-<p>Press the button to create your account.</p>
+<h1>Confirm your email address</h1>
+<p>Press the button to confirm this address.</p>
   <input type="hidden" name="key" value="…">
-  <button type="submit">Create my account</button>
+  <button type="submit">Confirm my email</button>
 ---
 0
 HTTP/1.1 200 OK
@@ -357,7 +369,7 @@ for i in 1 2; do
     --data-urlencode "key=$KEY"
 done
 docker compose exec -T postgres psql -U odudu -d odudu -At -c \
-  "select count(*) from users u join tenants t on t.id = u.tenant_id where t.name = 'register-demo';"
+  "select count(*) from users u join tenants t on t.id = u.tenant_id where t.name = 'register-demo' and u.username = 'ada';"
 ```
 
 ```
@@ -390,8 +402,8 @@ curl -sS -i -X POST http://localhost:3199/tenants/register-demo/login-actions/au
 
 ```
 HTTP/1.1 302 Found
-set-cookie: register-demo-session=01a1685b-77d3…; HttpOnly; SameSite=Lax; Path=/
-location: http://localhost:8080/callback?code=qmtSAHY-VzTxsF5oLFnAXKQl_VZ_U3I0H3w6tXfwcEA&state=xyz123&iss=http%3A%2F%2Flocalhost%3A3199%2Ftenants%2Fregister-demo
+set-cookie: register-demo-session=01a1689c-7714-7a5f-9476-b7d2a710bdce:gGoPOZftpOLwWQfgwiR2fpiuIYyqMlqhOr0wdog72bo; HttpOnly; SameSite=Lax; Path=/
+location: http://localhost:8080/callback?code=Rms1uLhiL9BBljedtwid8wz5Fy0FWeFu7gKUJY_I8bE&state=xyz123&iss=http%3A%2F%2Flocalhost%3A3199%2Ftenants%2Fregister-demo
 ```
 
 (The session cookie is shortened to the start of its id; it is `<session id>:<secret>`.)
@@ -409,7 +421,7 @@ curl -sS -D - \
   -H 'x-request-id: register-demo-taken' \
   --data-urlencode 'username=carol' \
   --data-urlencode 'email=ada@example.com' \
-  --data-urlencode 'password=another-password-1'
+  --data-urlencode 'password=another-password-1' --data-urlencode 'password_confirm=another-password-1'
 ```
 
 ```
@@ -422,8 +434,8 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 884
-Date: Fri, 23 Oct 2026 09:45:45 GMT
+content-length: 872
+Date: Fri, 23 Oct 2026 11:54:07 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -433,7 +445,7 @@ Keep-Alive: timeout=72
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Account created</title>
+<title>Check your email</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
@@ -441,15 +453,15 @@ Keep-Alive: timeout=72
 <body>
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
-<h1>Account created</h1>
-<p>Check your email for a link to verify your address before you can sign in.</p>
+<h1>Check your email</h1>
+<p>If this address can be registered, we sent a link to finish.</p>
 </main>
 </body>
 </html>
 ```
 
-The page is the one a free address gets: `201`, "Account created" and the line
-about checking email. Nothing was kept for `carol` and no account was made. To
+The page is the one a free address gets: `201`, "Check your email" and a line
+that does not say whether the address was free. Nothing was kept for `carol` and no account was made. To
 show the two answers are the same bytes, a free address and `ada`'s are each
 registered, under two usernames, and the two bodies compared:
 
@@ -457,11 +469,11 @@ registered, under two usernames, and the two bodies compared:
 curl -sS -X POST http://localhost:3199/tenants/register-demo/login-actions/registration \
   --data-urlencode 'username=hedy' \
   --data-urlencode 'email=hedy@example.com' \
-  --data-urlencode 'password=another-password-1' > free.html
+  --data-urlencode 'password=another-password-1' --data-urlencode 'password_confirm=another-password-1' > free.html
 curl -sS -X POST http://localhost:3199/tenants/register-demo/login-actions/registration \
   --data-urlencode 'username=dora' \
   --data-urlencode 'email=ada@example.com' \
-  --data-urlencode 'password=another-password-1' > taken.html
+  --data-urlencode 'password=another-password-1' --data-urlencode 'password_confirm=another-password-1' > taken.html
 cmp free.html taken.html && echo identical
 ```
 
@@ -483,7 +495,7 @@ for pair in 'probe1 bob@example.com' 'probe1 other1@example.com' \
   curl -sS -o /dev/null -w "$1 $2: %{http_code}\n" \
     -X POST http://localhost:3199/tenants/register-demo/login-actions/registration \
     --data-urlencode "username=$1" --data-urlencode "email=$2" \
-    --data-urlencode 'password=another-password-1'
+    --data-urlencode 'password=another-password-1' --data-urlencode 'password_confirm=another-password-1'
 done
 ```
 
@@ -525,15 +537,15 @@ docker compose exec -T postgres psql -U odudu -d odudu -At -c \
 ```
 
 ```
-ada@example.com|Verify your register-demo account
-grace@example.com|Verify your register-demo account
+ada@example.com|Finish creating your register-demo account
+grace@example.com|Finish creating your register-demo account
 ada@example.com|You already have a register-demo account
-hedy@example.com|Verify your register-demo account
+hedy@example.com|Finish creating your register-demo account
 ada@example.com|You already have a register-demo account
 bob@example.com|You already have a register-demo account
-other1@example.com|Verify your register-demo account
-free2@example.com|Verify your register-demo account
-other2@example.com|Verify your register-demo account
+other1@example.com|Finish creating your register-demo account
+free2@example.com|Finish creating your register-demo account
+other2@example.com|Finish creating your register-demo account
 ```
 
 ```
@@ -565,17 +577,17 @@ curl -sS -o /dev/null -w '%{http_code}\n' \
   -X POST http://localhost:3199/tenants/reg-open/login-actions/registration \
   --data-urlencode 'username=ada' \
   --data-urlencode 'email=ada@example.com' \
-  --data-urlencode 'password=correct-horse-battery'
+  --data-urlencode 'password=correct-horse-battery' --data-urlencode 'password_confirm=correct-horse-battery'
 curl -sS -X POST http://localhost:3199/tenants/reg-open/login-actions/registration \
   --data-urlencode 'username=carol' \
   --data-urlencode 'email=ADA@example.com' \
-  --data-urlencode 'password=another-password-1' \
+  --data-urlencode 'password=another-password-1' --data-urlencode 'password_confirm=another-password-1' \
   | grep -A3 'role="alert"'
 ```
 
 ```
-{"created":true,"tenant":"reg-open","tenantId":"01a16820-281f-75ec-863a-ae3ab943b5c1","clientId":"reg-spa"}
-{"command":"tenant","created":false,"tenant":"reg-open","tenantId":"01a16820-281f-75ec-863a-ae3ab943b5c1","settings":["registration_allowed"]}
+{"created":true,"tenant":"reg-open","tenantId":"01a1689c-b5d2-7d92-9f30-a7a2e50f20a2","clientId":"reg-spa"}
+{"command":"tenant","created":false,"tenant":"reg-open","tenantId":"01a1689c-b5d2-7d92-9f30-a7a2e50f20a2","settings":["registration_allowed"]}
 201
 <div class="alert" role="alert" id="form-error">
 <ul>
@@ -594,10 +606,10 @@ password is refused with every violation the candidate has, not just the
 first:
 
 ```bash
-curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/registration \
+curl -sS -X POST http://localhost:3199/tenants/register-demo/login-actions/registration \
   --data-urlencode 'username=ada' \
   --data-urlencode 'email=ada@example.com' \
-  --data-urlencode 'password=short'
+  --data-urlencode 'password=short' --data-urlencode 'password_confirm=short'
 ```
 
 ```
@@ -635,7 +647,7 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
       <li>Not a common password</li>
     </ul>
   </div>
-  <script nonce="tNSqqcDx1X4QojmoYQBQfA==">(function () {
+  <script nonce="yVMBBA17RK7Yct82vDbBog==">(function () {
   var box = document.getElementById('password-rules');
   var field = document.getElementById('password');
   if (!box || !field) return;
@@ -672,6 +684,14 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
     field.type = show ? 'text' : 'password';
     toggle.setAttribute('aria-pressed', String(show));
   });
+})();</script>
+  <label>Confirm password <input type="password" name="password_confirm" id="password-confirm" autocomplete="new-password" spellcheck="false" autocapitalize="off" autocorrect="off"></label>
+  <script nonce="yVMBBA17RK7Yct82vDbBog==">(function () {
+  var first = document.getElementById('password');
+  var again = document.getElementById('password-confirm');
+  var toggle = document.querySelector('#password-rules button');
+  if (!first || !again || !toggle) return;
+  toggle.addEventListener('click', function () { again.type = first.type; });
 })();</script>
   <button type="submit">Create account</button>
 </form>
@@ -724,7 +744,7 @@ same short password now lists all three:
       <li>Not a common password</li>
     </ul>
   </div>
-  <script nonce="1V5+mdsiiBtFWGs74cIFdQ==">(function () {
+  <script nonce="A0uANVDhJVdTXsvEgfmw3Q==">(function () {
   var box = document.getElementById('password-rules');
   var field = document.getElementById('password');
   if (!box || !field) return;
@@ -762,6 +782,14 @@ same short password now lists all three:
     toggle.setAttribute('aria-pressed', String(show));
   });
 })();</script>
+  <label>Confirm password <input type="password" name="password_confirm" id="password-confirm" autocomplete="new-password" spellcheck="false" autocapitalize="off" autocorrect="off"></label>
+  <script nonce="A0uANVDhJVdTXsvEgfmw3Q==">(function () {
+  var first = document.getElementById('password');
+  var again = document.getElementById('password-confirm');
+  var toggle = document.querySelector('#password-rules button');
+  if (!first || !again || !toggle) return;
+  toggle.addEventListener('click', function () { again.type = first.type; });
+})();</script>
   <button type="submit">Create account</button>
 </form>
 </main>
@@ -780,10 +808,10 @@ of its email address, case-insensitively — matched independently, so a
 password tripping both lists both:
 
 ```bash
-curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/registration \
+curl -sS -X POST http://localhost:3199/tenants/register-demo/login-actions/registration \
   --data-urlencode 'username=ada' \
   --data-urlencode 'email=ada@example.com' \
-  --data-urlencode 'password=myADApassword2026'
+  --data-urlencode 'password=myADApassword2026' --data-urlencode 'password_confirm=myADApassword2026'
 ```
 
 ```
@@ -822,7 +850,7 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
       <li>Not a common password</li>
     </ul>
   </div>
-  <script nonce="vjUQ0x404lUj4lrHypAeRA==">(function () {
+  <script nonce="QBjE8FZBZLIGB687yD1i5w==">(function () {
   var box = document.getElementById('password-rules');
   var field = document.getElementById('password');
   if (!box || !field) return;
@@ -860,6 +888,14 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
     toggle.setAttribute('aria-pressed', String(show));
   });
 })();</script>
+  <label>Confirm password <input type="password" name="password_confirm" id="password-confirm" autocomplete="new-password" spellcheck="false" autocapitalize="off" autocorrect="off"></label>
+  <script nonce="QBjE8FZBZLIGB687yD1i5w==">(function () {
+  var first = document.getElementById('password');
+  var again = document.getElementById('password-confirm');
+  var toggle = document.querySelector('#password-rules button');
+  if (!first || !again || !toggle) return;
+  toggle.addEventListener('click', function () { again.type = first.type; });
+})();</script>
   <button type="submit">Create account</button>
 </form>
 </main>
@@ -872,10 +908,10 @@ here `carol`'s password contains no part of her own username, but does
 contain the local part of the email address given for the account:
 
 ```bash
-curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/registration \
+curl -sS -X POST http://localhost:3199/tenants/register-demo/login-actions/registration \
   --data-urlencode 'username=carol' \
   --data-urlencode 'email=ada@example.com' \
-  --data-urlencode 'password=myADApassword2026'
+  --data-urlencode 'password=myADApassword2026' --data-urlencode 'password_confirm=myADApassword2026'
 ```
 
 ```
@@ -913,7 +949,7 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
       <li>Not a common password</li>
     </ul>
   </div>
-  <script nonce="Abv9/kaxw3LseE3nDfIp1g==">(function () {
+  <script nonce="ggMQVdelEZquKdScQc3ZFQ==">(function () {
   var box = document.getElementById('password-rules');
   var field = document.getElementById('password');
   if (!box || !field) return;
@@ -950,6 +986,14 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
     field.type = show ? 'text' : 'password';
     toggle.setAttribute('aria-pressed', String(show));
   });
+})();</script>
+  <label>Confirm password <input type="password" name="password_confirm" id="password-confirm" autocomplete="new-password" spellcheck="false" autocapitalize="off" autocorrect="off"></label>
+  <script nonce="ggMQVdelEZquKdScQc3ZFQ==">(function () {
+  var first = document.getElementById('password');
+  var again = document.getElementById('password-confirm');
+  var toggle = document.querySelector('#password-rules button');
+  if (!first || !again || !toggle) return;
+  toggle.addEventListener('click', function () { again.type = first.type; });
 })();</script>
   <button type="submit">Create account</button>
 </form>
@@ -1017,10 +1061,10 @@ with the problem in one alert above it, the field it is about marked
 email kept, the password never given back, and the way back still there:
 
 ```bash
-curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/registration \
+curl -sS -X POST http://localhost:3199/tenants/register-demo/login-actions/registration \
   --data-urlencode 'username=newcomer' \
   --data-urlencode 'email=newcomer@example.com' \
-  --data-urlencode 'password=short' \
+  --data-urlencode 'password=short' --data-urlencode 'password_confirm=short' \
   --data-urlencode 'return_to=/tenants/register-demo/protocol/openid-connect/auth?response_type=code&client_id=register-spa&state=xyz123' \
   | grep -E 'role="alert"|<li |<input|Back to sign in'
 ```
@@ -1033,6 +1077,7 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
   <label>Email <input type="email" name="email" autocomplete="email" value="newcomer@example.com"></label>
   <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" spellcheck="false" autocapitalize="off" autocorrect="off" aria-invalid="true" aria-describedby="form-error-0 password-rules-list" autofocus></label>
       <li data-rule="length">At least 15 characters</li>
+  <label>Confirm password <input type="password" name="password_confirm" id="password-confirm" autocomplete="new-password" spellcheck="false" autocapitalize="off" autocorrect="off"></label>
 <a href="/tenants/register-demo/protocol/openid-connect/auth?response_type=code&amp;client_id=register-spa&amp;state=xyz123">Back to sign in</a>
 ```
 
@@ -1065,8 +1110,8 @@ grep -o 'name="auth_session_id" value="[^"]*"' page.html | head -1
 
 ```
 HTTP/1.1 200 OK
-set-cookie: odudu-sign-in=01a1685a-da8d-72c5-ad66-eb72fbd5c160.OSWpLcEsQl86DKNwF2rrXzHue_JbRP6lIY3TJHpyw1c; HttpOnly; SameSite=Lax; Path=/tenants/register-demo/; Max-Age=1800
-name="auth_session_id" value="01a1685a-da8d-72c5-ad66-eb72fbd5c160"
+set-cookie: odudu-sign-in=01a1689c-bc19-7a4e-a51a-af74d0516675.jZFDopOF34YULiszz0phagmTcK5Ld0pgtqvsCczlOQU; HttpOnly; SameSite=Lax; Path=/tenants/register-demo/; Max-Age=1800
+name="auth_session_id" value="01a1689c-bc19-7a4e-a51a-af74d0516675"
 ```
 
 The cookie is `<the parked session>.<a secret>`, `HttpOnly`, `SameSite=Lax`, scoped to the
@@ -1081,7 +1126,7 @@ for u in mailed elsewhere lapsed; do
   curl -sS -o /dev/null -w "$u: %{http_code}\n" -b jar.txt -X POST \
     http://localhost:3199/tenants/register-demo/login-actions/registration \
     --data-urlencode "username=$u" --data-urlencode "email=$u@example.com" \
-    --data-urlencode 'password=correct-horse-battery' --data-urlencode "return_to=$RT"
+    --data-urlencode 'password=correct-horse-battery' --data-urlencode 'password_confirm=correct-horse-battery' --data-urlencode "return_to=$RT"
 done
 ```
 
@@ -1100,8 +1145,8 @@ docker compose exec -T postgres psql -U odudu -d odudu -At -c \
 ```
 
 ```
-elsewhere@example.com|http://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_1_cPZQVhHjxTTplxut4-0ByRvzGd9dwJahHewm498tY
-mailed@example.com|http://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_fUkkXmKHjsIg-cHjJwh6V6VnkjXRAyvBMjP_TPnd174
+elsewhere@example.com|http://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_3Ybxc1CjMSEa_Ckq7rzNlZr8GaEcRzCy85t1vIm8qZo
+mailed@example.com|http://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_2LVZdqpmn8dCMsP1ZXoQ_tm8geRrNCz0_5xKSkLyMqg
 ```
 
 The links hold a key and nothing else. What the pending registrations hold, beside the
@@ -1116,22 +1161,22 @@ docker compose exec -T postgres psql -U odudu -d odudu -At -c \
 ```
 
 ```
-elsewhere|01a1685a-da8d-72c5-ad66-eb72fbd5c160
-mailed|01a1685a-da8d-72c5-ad66-eb72fbd5c160
+elsewhere|01a1689c-bc19-7a4e-a51a-af74d0516675
+mailed|01a1689c-bc19-7a4e-a51a-af74d0516675
 ```
 
 Pressing the button in a browser that holds no such cookie (here, `curl` with no jar), the page makes the
-account and says its address is verified, since a registration link works anywhere, and offers no way to sign in:
+account and says it is ready, since a registration link works anywhere, and offers no way to sign in:
 
 ```bash
 curl -sS -X POST http://localhost:3199/tenants/register-demo/login-actions/action-token \
-  --data-urlencode 'key=reg_1_cPZQVhHjxTTplxut4-0ByRvzGd9dwJahHewm498tY' \
+  --data-urlencode 'key=reg_3Ybxc1CjMSEa_Ckq7rzNlZr8GaEcRzCy85t1vIm8qZo' \
   | grep -E '<h1>|<p>|<a '
 ```
 
 ```
-<h1>Your email address is verified</h1>
-<p>Return to the application you were signing in to and sign in again.</p>
+<h1>Your account is ready</h1>
+<p>Return to the application you were signing in to and sign in.</p>
 ```
 
 Pressed in the browser that holds the sign-in, the same page links to the original request,
@@ -1139,12 +1184,12 @@ with its own `state` and `nonce`:
 
 ```bash
 curl -sS -X POST -b jar.txt http://localhost:3199/tenants/register-demo/login-actions/action-token \
-  --data-urlencode 'key=reg_fUkkXmKHjsIg-cHjJwh6V6VnkjXRAyvBMjP_TPnd174' \
+  --data-urlencode 'key=reg_2LVZdqpmn8dCMsP1ZXoQ_tm8geRrNCz0_5xKSkLyMqg' \
   | grep -E '<h1>|<p>|<a '
 ```
 
 ```
-<h1>Your email address is verified</h1>
+<h1>Your account is ready</h1>
 <a href="/tenants/register-demo/protocol/openid-connect/auth?response_type=code&amp;client_id=register-spa&amp;redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&amp;scope=openid&amp;code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&amp;code_challenge_method=S256&amp;state=xyz123&amp;nonce=abc123">Continue to sign in</a>
 ```
 
@@ -1156,13 +1201,13 @@ interval '1 second'` for the id above, which is what `login_ttl_seconds` does wi
 
 ```bash
 curl -sS -X POST -b jar.txt http://localhost:3199/tenants/register-demo/login-actions/action-token \
-  --data-urlencode 'key=reg_UkPo7FjgVcvXQdXHo6hsSrluCE7Y1kN8WdXanuLHP5I' \
+  --data-urlencode 'key=reg_MsUAxfo7p-UvYV9INp3HfnhHw32hCkW_JS56lclmJx0' \
   | grep -E '<h1>|<p>|<a '
 ```
 
 ```
-<h1>Your email address is verified</h1>
-<p>Return to the application you were signing in to and sign in again.</p>
+<h1>Your account is ready</h1>
+<p>Return to the application you were signing in to and sign in.</p>
 ```
 
 A link is gone once its button has been pressed, so opening one again reads like any link nothing holds
@@ -1200,22 +1245,22 @@ curl -sS -o /dev/null -w '%{http_code}\n' \
   -H 'x-request-id: signup-audit-ada' \
   --data-urlencode 'username=ada' \
   --data-urlencode 'email=ada@example.com' \
-  --data-urlencode 'password=correct-horse-battery'
+  --data-urlencode 'password=correct-horse-battery' --data-urlencode 'password_confirm=correct-horse-battery'
 docker compose exec -T postgres psql -U odudu -d odudu -At -c \
   "select substring(o.body_text from 'key=([A-Za-z0-9_-]+)')
      from email_outbox o join tenants t on t.id = o.tenant_id
-    where t.name = 'signup-audit' and o.subject like 'Verify%';"
+    where t.name = 'signup-audit' and o.subject like 'Finish%';"
 ```
 
 ```
-{"created":true,"tenant":"signup-audit","tenantId":"01a1685b-3ce8-722b-bef4-b9934565c726","clientId":"signup-audit-spa"}
-{"command":"tenant","created":false,"tenant":"signup-audit","tenantId":"01a1685b-3ce8-722b-bef4-b9934565c726","settings":["registration_allowed","verify_email","reset_password_allowed"]}
+{"created":true,"tenant":"signup-audit","tenantId":"01a1689c-fbcc-7ac0-9a72-26369f12fc28","clientId":"signup-audit-spa"}
+{"command":"tenant","created":false,"tenant":"signup-audit","tenantId":"01a1689c-fbcc-7ac0-9a72-26369f12fc28","settings":["registration_allowed","verify_email","reset_password_allowed"]}
 201
-reg_F8KUCn2fmYDjCWK13RNebg3byESFZEFXN2UMP69g42Q
+reg__xSiPqrN7ZtAbYUiTdvTzGx-tDmcjrLa2H3I4MgyAA8
 ```
 
 ```bash
-KEY=reg_F8KUCn2fmYDjCWK13RNebg3byESFZEFXN2UMP69g42Q
+KEY=reg__xSiPqrN7ZtAbYUiTdvTzGx-tDmcjrLa2H3I4MgyAA8
 curl -sS -o /dev/null -w '%{http_code}\n' -H 'x-request-id: signup-audit-visit' \
   "http://localhost:3199/tenants/signup-audit/login-actions/action-token?key=$KEY"
 curl -sS -o /dev/null -w '%{http_code}\n' \
@@ -1226,7 +1271,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' \
   -H 'x-request-id: signup-audit-duplicate' \
   --data-urlencode 'username=carol' \
   --data-urlencode 'email=ada@example.com' \
-  --data-urlencode 'password=correct-horse-battery'
+  --data-urlencode 'password=correct-horse-battery' --data-urlencode 'password_confirm=correct-horse-battery'
 curl -sS -o /dev/null -w '%{http_code}\n' \
   -X POST http://localhost:3199/tenants/signup-audit/login-actions/action-token \
   -H 'x-request-id: signup-audit-replay' --data-urlencode "key=$KEY"
@@ -1249,9 +1294,9 @@ request_id       | signup-audit-verify
 event_type       | credential
 action           | account.registered
 outcome          | allowed
-actor_subject_id | 01a1685b-76ca-7b3d-ae59-4681b61e5dcd
+actor_subject_id | 01a1689d-0341-7c52-9945-8ef8d6be4ff0
 resource_type    | subject
-resource_id      | 01a1685b-76ca-7b3d-ae59-4681b61e5dcd
+resource_id      | 01a1689d-0341-7c52-9945-8ef8d6be4ff0
 detail           | {}
 -[ RECORD 2 ]----+-------------------------------------
 request_id       | signup-audit-duplicate
@@ -1260,7 +1305,7 @@ action           | account.registration_duplicate
 outcome          | refused
 actor_subject_id | (null)
 resource_type    | subject
-resource_id      | 01a1685b-76ca-7b3d-ae59-4681b61e5dcd
+resource_id      | 01a1689d-0341-7c52-9945-8ef8d6be4ff0
 detail           | {"reason": "already_registered"}
 ```
 

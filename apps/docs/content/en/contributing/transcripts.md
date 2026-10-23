@@ -259,24 +259,20 @@ made a client that asks, and both ran against it on the project `odudu-p4g-31k`,
 that precedes them was captured in the same run, and is the page the transcripts quote, apart from the
 client's name and the `content-length` that follows from it.
 
-A registration under `verify_email` then stopped creating the account until its link is opened, and a
-held address began to be answered as a free one is. Self-registration was run again where it changed, on
-the project `odudu-p4g-31k` on port `3199`, commit `6ca24ca1` plus this increment's documentation, on a
-freshly built stack with throttles at `10000`: the mail and its page, the forged `Host`, the refused and
-the completed sign-in, the held and free address, the two-request username check, the mail listing, the
-`reg-open` tenant, the sign-in cookie and links section and the audit section. The mail is the
-capture the stack's log wrote (no SMTP host is set), and each listing is scoped to its tenant. The
-password-policy blocks and the bidi block did not change and were not run again. The retention
-transcript and the README's reap report were run again for the new `pending_registrations` key, on a
-fresh stack driven as that page describes, with one more block that adds two pending rows.
-
-A registration or verification link then began to ask before it acts: a visit shows one button and the
-button's press does the work. The blocks that follow such a link were run again on the project
-`odudu-p4g-31k`, port `3199`, commit `1a8e90fc` plus this increment's documentation: in Self-registration
-the sign-in refused and then completed around the link, the two visits and the press, the cookie-jar
-section's three links and the audit section (now five requests), and in Path A the address verification
-(a sign-in's ID token before, two visits, two presses, and the ID token after). The password-policy,
-bidi, held-address and retention blocks did not change.
+A registration under `verify_email` then stopped creating the account until its link is confirmed, a
+held address began to be answered as a free one is, the form gained a confirmation field, and a link
+began to ask before it acts. Self-registration was run again whole, block by block in the page's own
+order, on the project `odudu-p4g-31k` on port `3199`, commit `3d591290` plus this increment's
+documentation, on a freshly built stack with throttles at `10000`. Each command is the block's own with
+the port named and the confirmation added, so every response, page, mail capture and listing is that
+run's. The mail is the capture the stack's log wrote (no SMTP host is set), and each listing is scoped to
+its tenant. The sign-in page and registration-link blocks of the "way there and back" section that only
+read the sign-in page were not changed and not run again. The earlier run of Path A's address verification
+(a sign-in's ID token before, two visits, two presses, the ID token after) stands: that flow did not
+change. The retention transcript and the README's reap report were run again for the new
+`pending_registrations` key, on a fresh stack driven as that page describes, with one more block that adds
+two pending rows. The password pages' shared script is unchanged; the registration form carries a second,
+short one that shows the confirmation with the password.
 
 ## Admin path transcripts
 
