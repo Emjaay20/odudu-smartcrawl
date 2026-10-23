@@ -381,7 +381,13 @@ describe('prompt and id_token_hint reach the usecase through the validated outco
     expect(outcome.idTokenHint).toBe('not.a.jwt');
   });
 
-  it.each(['none login', 'unheard_of', 'NONE'])(
+  it('carries prompt=create out, for the usecase to answer against the tenant', () => {
+    const outcome = validate({ ...params, prompt: 'create' }, client, config);
+    if (outcome.kind !== 'ok') throw new Error('expected the request to validate');
+    expect([...outcome.prompts]).toEqual(['create']);
+  });
+
+  it.each(['none login', 'unheard_of', 'NONE', 'create login', 'create consent'])(
     'redirects with invalid_request for prompt=%o rather than parking the request',
     (prompt) => {
       expect(validate({ ...params, prompt }, client, config)).toMatchObject({

@@ -54,6 +54,48 @@ describe('resolveDiscoveryDocument', () => {
     expect(doc).not.toHaveProperty('claims_locales_supported');
   });
 
+  it.each([
+    [true, true, ['none', 'login', 'consent', 'select_account', 'create']],
+    [true, false, ['none', 'login', 'consent', 'select_account']],
+    // A disabled tenant serves no registration page, so it advertises none.
+    [false, true, ['none', 'login', 'consent', 'select_account']],
+  ])(
+    'with enabled=%s and registration_allowed=%s lists prompt_values_supported %j',
+    async (enabled, registrationAllowed, expected) => {
+      const doc = await resolveDiscoveryDocument(
+        {
+          findTenant: () =>
+            Promise.resolve({
+              id: 'r1',
+              enabled,
+              verifyEmail: false,
+              ssoSessionMaxSeconds: 36_000,
+              ssoSessionIdleSeconds: 1_800,
+              rememberMeIdleSeconds: 604_800,
+              rememberMeMaxSeconds: 2_592_000,
+              rememberMeAllowed: false,
+              loginWithEmail: false,
+              registrationAllowed,
+              resetPasswordAllowed: false,
+              maxSessionsPerBrowser: 25,
+              clientRegistrationPolicy: 'disabled',
+              passwordRules: PASSWORD_RULES,
+            }),
+          claimNames,
+          scopesForTenant,
+          algorithmsAvailable,
+          userinfoEncryptionAlgSupported,
+          userinfoEncryptionEncSupported,
+          trustProxy: false,
+          uiLocalesSupported,
+        },
+        'acme',
+        'https://idp.example',
+      );
+      expect(doc?.prompt_values_supported).toEqual(expected);
+    },
+  );
+
   it('returns null for an unknown tenant', async () => {
     const doc = await resolveDiscoveryDocument(
       {

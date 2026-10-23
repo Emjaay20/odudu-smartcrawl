@@ -16,6 +16,25 @@ const INTROSPECTION_AND_REVOCATION_AUTH_METHODS_SUPPORTED = [
   'none',
 ] as const;
 
+// OIDC Core §3.1.2.1's `prompt` values, which every tenant answers, and
+// Initiating User Registration via OpenID Connect 1.0 §4's `create`, which
+// leads to a page only a tenant with registration on serves.
+export const CORE_PROMPT_VALUES = ['none', 'login', 'consent', 'select_account'] as const;
+export const REGISTRATION_PROMPT_VALUE = 'create';
+export type PromptValue = (typeof CORE_PROMPT_VALUES)[number] | typeof REGISTRATION_PROMPT_VALUE;
+
+// Initiating User Registration §4.2: an OP that supports `create` lists it
+// in `prompt_values_supported`, and then every other value it supports. The
+// authorization endpoint refuses `create` on a tenant whose document leaves
+// it out, so the two read the same setting.
+export function promptValuesSupported(settings: {
+  registrationAllowed: boolean;
+}): readonly PromptValue[] {
+  return settings.registrationAllowed
+    ? [...CORE_PROMPT_VALUES, REGISTRATION_PROMPT_VALUE]
+    : CORE_PROMPT_VALUES;
+}
+
 // Every `_endpoint` member is served unconditionally once a tenant is
 // provisioned, including the three their own specifications make OPTIONAL:
 // `introspection_endpoint`, `revocation_endpoint` and
@@ -49,6 +68,7 @@ export interface DiscoveryDocument {
   // `claims_locales_supported` is deliberately absent: the parameter is
   // accepted and ignored, and advertising it would promise otherwise.
   readonly ui_locales_supported: readonly string[];
+  readonly prompt_values_supported: readonly PromptValue[];
   // Fixed true: a client opts into logout per client, not per tenant, and
   // `sid` always travels in the logout token and in the front-channel
   // redirect of a client that registered `..._session_required`.
@@ -82,6 +102,9 @@ export interface DiscoveryDocumentOptions {
   readonly userinfoEncryptionEncSupported: readonly string[];
   // The path is fixed here, so the caller states existence, never a URL.
   readonly clientRegistrationEnabled?: boolean;
+  // Whether the tenant serves its registration page, which is what
+  // `prompt=create` leads to; unset means it is not advertised.
+  readonly userRegistrationEnabled?: boolean;
   // Whether `ODUDU_TRUST_PROXY` is on. Unset means `tls_client_auth` is
   // unavailable, so it must not be advertised either
   // (docs/archive/specs/2026-09-18-p3a-clients-registration-consent-design.md:596-598).
@@ -137,6 +160,9 @@ export function discoveryDocument(opts: DiscoveryDocumentOptions): DiscoveryDocu
     authorization_response_iss_parameter_supported: true,
     claims_parameter_supported: true,
     ui_locales_supported: opts.uiLocalesSupported,
+    prompt_values_supported: promptValuesSupported({
+      registrationAllowed: opts.userRegistrationEnabled === true,
+    }),
     backchannel_logout_supported: true,
     backchannel_logout_session_supported: true,
     frontchannel_logout_supported: true,

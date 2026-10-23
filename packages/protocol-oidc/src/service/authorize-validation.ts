@@ -173,11 +173,12 @@ export function validateAuthorizationRequest(
   if (!scopesAreGrantable(params.scope, knownScopes, clientScopes)) return reject('invalid_scope');
 
   // `prompt` is a request parameter like any other, so a malformed one is
-  // refused here rather than acted on later: `none` alongside another value
-  // (OIDC Core §3.1.2.1), or a value outside the four the specification
-  // defines — the MAY that §3.1.2.1 grants, taken because a client asking
-  // for something this server has never heard of is better told so than
-  // answered as if it had asked for nothing.
+  // refused here rather than acted on later: `none` or `create` alongside
+  // another value, or a value outside the five this server defines — the
+  // MAY that §3.1.2.1 grants, taken because a client asking for something
+  // this server has never heard of is better told so than answered as if it
+  // had asked for nothing. Whether this tenant serves `create` is the
+  // usecase's question, since it takes the tenant's settings.
   const prompt = parsePrompt(params.prompt);
   if (prompt.kind === 'invalid')
     return reject('invalid_request', AUTHORIZE_REQUEST_DESCRIPTIONS.promptInvalid);

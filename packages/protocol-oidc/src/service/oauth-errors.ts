@@ -164,6 +164,7 @@ export const AUTHORIZE_REQUEST_DESCRIPTIONS = {
   codeChallengeInvalid: 'code_challenge is not valid',
   codeChallengeMethod: 'code_challenge_method must be S256',
   promptInvalid: 'prompt is not valid',
+  promptCreateUnsupported: 'prompt=create is not supported: registration is off',
   maxAgeInvalid: 'max_age is not valid',
   claimsInvalid: 'claims is not valid',
   idTokenHintInvalid: 'id_token_hint is not valid',

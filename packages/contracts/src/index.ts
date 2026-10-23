@@ -1,7 +1,11 @@
 export {
+  CORE_PROMPT_VALUES,
   discoveryDocument,
+  promptValuesSupported,
+  REGISTRATION_PROMPT_VALUE,
   type DiscoveryDocument,
   type DiscoveryDocumentOptions,
+  type PromptValue,
 } from '#/discovery';
 export { TOKEN_ENDPOINT_AUTH_METHODS_SUPPORTED, type TokenEndpointAuthMethod } from '#/token';
 export { isTenantName, TENANT_NAME_PATTERN, TENANT_NAME_RULE } from '#/tenant-name';

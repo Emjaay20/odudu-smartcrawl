@@ -50,6 +50,7 @@ export async function resolveDiscoveryDocument(
     userinfoEncryptionAlgSupported: deps.userinfoEncryptionAlgSupported,
     userinfoEncryptionEncSupported: deps.userinfoEncryptionEncSupported,
     clientRegistrationEnabled: tenant.enabled && tenant.clientRegistrationPolicy !== 'disabled',
+    userRegistrationEnabled: tenant.enabled && tenant.registrationAllowed,
     tlsClientAuthEnabled: deps.trustProxy,
   });
 }
