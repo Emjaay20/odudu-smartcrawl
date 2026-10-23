@@ -6,6 +6,7 @@
 #   with-stack.sh                  write the images and records
 #   ODUDU_HOST_PORT / POSTGRES_HOST_PORT   host ports (default 3086 / 5466)
 #   SHOTS_COMPOSE_PROJECT          the stack's project name (default odudu-shots)
+#   SHOTS_SCRIPT=gif.ts            run that script alone: this writes the README animation
 #   SHOTS_PREBUILT=1               start the image tagged <project>-odudu instead
 #                                  of building one; it must carry the revision
 #                                  label of ODUDU_REVISION, or of HEAD if unset
@@ -110,7 +111,17 @@ compose exec -T postgres sh -c \
 
 step 'run the capture'
 cd "$REPO/apps/docs"
-ODUDU_BASE="http://localhost:$ODUDU_HOST_PORT" \
-  ODUDU_ADMIN_EMAIL="$ADMIN_EMAIL" \
-  ODUDU_ADMIN_PASSWORD="$password" \
-  node --no-warnings scripts/console-shots/run.ts "$@"
+capture() {
+  ODUDU_BASE="http://localhost:$ODUDU_HOST_PORT" \
+    ODUDU_ADMIN_EMAIL="$ADMIN_EMAIL" \
+    ODUDU_ADMIN_PASSWORD="$password" \
+    node --no-warnings "scripts/console-shots/$1" "${@:2}"
+}
+if [ -n "${SHOTS_SCRIPT:-}" ]; then
+  capture "$SHOTS_SCRIPT" "$@"
+else
+  # The README animation's flow runs first on a check, because it creates the
+  # client the screenshots then find; the screenshots create it only if missing.
+  if [[ " $* " == *" --check "* ]]; then capture gif.ts "$@"; fi
+  capture run.ts "$@"
+fi

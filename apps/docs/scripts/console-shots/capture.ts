@@ -121,7 +121,7 @@ async function check(page: Page, expectation: Expectation): Promise<void> {
 // The page as a reader of the quick start sees it: the stack's own address is
 // the published one, the administrator is the default one, and every time
 // reads "recently", so the same console gives the same bytes.
-async function present(page: Page, options: Options): Promise<void> {
+export async function present(page: Page, options: Options): Promise<void> {
   await page.evaluate(
     ({ origin, published, admin, publishedAdmin }) => {
       // A blinking caret is the one thing that moves in a still page.
@@ -160,7 +160,10 @@ async function present(page: Page, options: Options): Promise<void> {
       for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
         node.nodeValue = replace(node.nodeValue ?? '');
       }
-      for (const field of document.querySelectorAll('input:not([type=password]), textarea')) {
+      // A hidden field is never shown, and the form that holds it is submitted by
+      // a recording that goes on after the shot, so it keeps its real address.
+      const shown = 'input:not([type=password]):not([type=hidden]), textarea';
+      for (const field of document.querySelectorAll(shown)) {
         (field as HTMLInputElement).value = replace((field as HTMLInputElement).value);
       }
     },
@@ -215,7 +218,7 @@ async function toWebp(context: BrowserContext, png: Buffer): Promise<Buffer> {
   return Buffer.from(encoded, 'base64');
 }
 
-async function signIn(page: Page, options: Options): Promise<void> {
+export async function signIn(page: Page, options: Options): Promise<void> {
   await page.goto(`${options.base}/console/`);
   await page.getByLabel(/tenant/iu).fill('system');
   await page.getByRole('button', { name: 'Continue to sign-in' }).click();
@@ -232,7 +235,7 @@ async function signIn(page: Page, options: Options): Promise<void> {
   }
 }
 
-function refused(options: Options): readonly string[] {
+export function refused(options: Options): readonly string[] {
   return [
     options.adminPassword,
     ...(options.adminUsername === PUBLISHED_ADMIN ? [] : [options.adminUsername]),
@@ -251,14 +254,14 @@ export interface Captured {
 // that announces a list loading goes when the list has loaded, so the page is
 // read until none is left; every read is scanned for secrets, so one shown and
 // gone while it waits is still refused. What is left after the wait is named.
-async function refuseSecrets(
+export async function refuseSecrets(
   page: Page,
-  screen: Screen,
+  label: string,
   known: readonly string[],
 ): Promise<Visible> {
   let seen: Visible | undefined;
   const refuse = (found: readonly string[]): never => {
-    throw new Error(`screen ${screen.name} was not kept: ${found.join('; ')}`);
+    throw new Error(`screen ${label} was not kept: ${found.join('; ')}`);
   };
   try {
     await untilSettled(
@@ -281,7 +284,7 @@ async function refuseSecrets(
     const left = cause instanceof Error ? cause.message : '';
     return refuse([`an alert or a status message is on the page (${left})`]);
   }
-  if (seen === undefined) throw new Error(`screen ${screen.name} was not read`);
+  if (seen === undefined) throw new Error(`screen ${label} was not read`);
   return seen;
 }
 
@@ -295,13 +298,13 @@ async function shoot(
   await expectShown(page, screen);
   // On the page as the console renders it, before anything is rewritten: the
   // administrator's name is allowed there, so only the password is refused.
-  await refuseSecrets(page, screen, [options.adminPassword]);
+  await refuseSecrets(page, screen.name, [options.adminPassword]);
   await present(page, options);
   await page.evaluate(() => document.fonts.ready.then(() => true));
   await page.waitForTimeout(400);
   const png = await page.screenshot({ type: 'png', animations: 'disabled', caret: 'hide' });
   // And again after the shot, as published, so a late render is caught too.
-  const seen = await refuseSecrets(page, screen, refused(options));
+  const seen = await refuseSecrets(page, screen.name, refused(options));
   return {
     png,
     record: `${seen.text
