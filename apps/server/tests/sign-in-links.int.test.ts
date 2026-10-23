@@ -190,6 +190,7 @@ describe('the way through registration and back', () => {
       username: 'ada',
       email: 'ada@example.test',
       password: 'zq9xv',
+      password_confirm: 'zq9xv',
       return_to: back,
     });
     expect(refused.statusCode).toBe(400);
@@ -202,6 +203,7 @@ describe('the way through registration and back', () => {
       username: 'ada',
       email: 'ada@example.test',
       password: 'correct horse battery staple',
+      password_confirm: 'correct horse battery staple',
       return_to: back,
     });
     expect(done.statusCode).toBe(201);

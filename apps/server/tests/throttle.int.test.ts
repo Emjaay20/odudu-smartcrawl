@@ -160,6 +160,7 @@ describe('the per-origin throttle on the routes that cost CPU', () => {
             username: `ada-${String(attempt)}`,
             email: `ada-${String(attempt)}@example.test`,
             password: PASSWORD,
+            password_confirm: PASSWORD,
           },
           ORIGIN,
         );
@@ -169,7 +170,12 @@ describe('the per-origin throttle on the routes that cost CPU', () => {
       const refused = await formPost(
         app,
         url,
-        { username: 'ada-over', email: 'ada-over@example.test', password: PASSWORD },
+        {
+          username: 'ada-over',
+          email: 'ada-over@example.test',
+          password: PASSWORD,
+          password_confirm: PASSWORD,
+        },
         ORIGIN,
       );
 
@@ -178,7 +184,12 @@ describe('the per-origin throttle on the routes that cost CPU', () => {
       const elsewhere = await formPost(
         app,
         url,
-        { username: 'bob', email: 'bob@example.test', password: PASSWORD },
+        {
+          username: 'bob',
+          email: 'bob@example.test',
+          password: PASSWORD,
+          password_confirm: PASSWORD,
+        },
         OTHER_ORIGIN,
       );
 

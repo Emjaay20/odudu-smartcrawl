@@ -189,6 +189,7 @@ describe('the tenant password policy binds every writer', () => {
         username: 'ada',
         email: 'ada@example.test',
         password: WEAK_PASSWORD,
+        password_confirm: WEAK_PASSWORD,
       });
       const res = await app.inject({
         method: 'POST',
@@ -346,6 +347,7 @@ describe('a common password is refused by every writer, with its reason', () => 
           username: 'ada',
           email: 'ada@example.test',
           password,
+          password_confirm: password,
         });
         expect(res.statusCode, password).toBe(400);
         expect(res.body, password).toContain(TOO_COMMON);
@@ -466,6 +468,7 @@ describe('a password over the maximum is refused wherever one is read', () => {
         username: 'ada',
         email: 'ada@example.test',
         password: overlong,
+        password_confirm: overlong,
       });
 
       expect(res.statusCode).toBe(400);
