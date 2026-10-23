@@ -1024,7 +1024,7 @@ desktop layout.
 - ![registration-mismatch](p4g-pages/registration-mismatch.webp) `registration-mismatch`: The two passwords differ: the alert, the confirmation focused, neither value given back.
 - ![confirm-register](p4g-pages/confirm-register.webp) `confirm-register`: The page a registration link opens: the account name and one button, and nothing is created until it is pressed. A verification link's page is the same, without the account name.
 - ![registration-ready](p4g-pages/registration-ready.webp) `registration-ready`: Your account is ready, with the way back to the sign-in it came from.
-- ![verification-ok-direct](p4g-pages/verification-ok-direct.webp) `verification-ok-direct`: Email verified from a link that carried no request: what to do, no link.
+- ![verification-ok-direct](p4g-pages/verification-ok-direct.webp) `verification-ok-direct`: Your account is ready, from a link that carried no request: what to do, no link.
 - ![verification-failed](p4g-pages/verification-failed.webp) `verification-failed`: A verification link that cannot be used.
 - ![reset-request](p4g-pages/reset-request.webp) `reset-request`: Forgot-password request.
 - ![reset-request-failed](p4g-pages/reset-request-failed.webp) `reset-request-failed`: Reset request with no address.
