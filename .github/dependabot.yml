@@ -71,11 +71,12 @@ updates:
     groups:
       base-images:
         patterns: ['*']
-    # Odudu runs on an even-numbered Node LTS (ADR 0001). Node 25 is not an LTS
-    # and dropped corepack; Node 26 is the planned upgrade.
+    # Odudu runs on an even-numbered Node LTS (ADR 0001). A release becomes LTS
+    # months after it ships, and Dependabot cannot tell, so the Node major moves
+    # by hand each October. Patch and minor updates still come.
     ignore:
       - dependency-name: node
-        versions: ['25.x']
+        update-types: ['version-update:semver-major']
   - package-ecosystem: docker-compose
     directories:
       - /infra/docker
