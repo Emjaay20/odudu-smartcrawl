@@ -1297,7 +1297,7 @@ reach that sink unchecked otherwise.
 
 **Quickstart with Docker Compose.** `quickstart/compose.yaml` starts Postgres, a
 one-time `setup` step that runs `odudu init`, and the server, on
-`http://localhost:3000` (`ODUDU_PORT` moves it, to a number from 1 to 65535).
+`http://localhost:3000` (`ODUDU_PORT` moves it, to a number from 1 to 65535, chosen before the first start: `setup` writes the address once, so change the port later with `docker compose down -v` and a new start, which erases the data).
 With no input at all:
 
 ```
@@ -1952,11 +1952,9 @@ A real deployment today looks like:
 9. **The administration console is on by default** (`ODUDU_CONSOLE=true`),
    and while it is on the server refuses to boot in any environment
    without `ODUDU_PUBLIC_BASE_URL`, naming both variables — its redirect
-   URI is built from that base alone. It also refuses an `https` base
-   while `ODUDU_TRUST_PROXY` is off: the console reaches this server's
-   OIDC endpoints in-process, the issuer is built from a request's scheme,
-   and only a trusted `x-forwarded-proto` lets such a request see the
-   `https` issuer the browser sees. It refuses `ODUDU_TLS=true` with an
+   URI is built from that base alone. `ODUDU_TRUST_PROXY` plays no part: the
+   issuer is that base whatever a request carries, so an `https` base needs no
+   proxy trust. It refuses `ODUDU_TLS=true` with an
    `http` base, and `ODUDU_TLS` off with an `https` base, since every cookie
    follows `ODUDU_TLS` and must agree with the address the browser uses; an
    `http` base with TLS off boots with a warning that the cookie is

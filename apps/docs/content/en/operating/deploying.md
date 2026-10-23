@@ -106,7 +106,7 @@ docker exec <container> odudu seed admin --username ada
 
 It prints a one-time password, once. Open `https://id.example.com/console/`, type `system` as the tenant, and sign in as `ada`. Odudu asks you to choose a new password before it lets you in.
 
-The issuer is `ODUDU_PUBLIC_BASE_URL` plus `/tenants/<name>`, whatever `Host` header a request carries, so the proxy needs no special `Host` handling. That is why the value must be the public address people use, with no path.
+The issuer is `ODUDU_PUBLIC_BASE_URL` plus `/tenants/<name>`, whatever `Host` a request carries. Set it to the public address, with no path. A client that reaches the server by another name still sees that issuer, so it must use the public one. One base serves every tenant; a domain per tenant is not supported yet.
 
 Then check the issuer your server reports is that address:
 

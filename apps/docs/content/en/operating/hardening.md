@@ -18,7 +18,7 @@ These are the checks the server makes when it starts. Each one stops it with a m
 - [ ] **TLS ends in front.** `ODUDU_TLS=true`, and a proxy really does end TLS. The server cannot tell. Check that `https://id.example.com/health/live` answers, and that plain http to the same host is refused or redirected.
 - [ ] **Clients cannot point the server inward.** `ODUDU_ALLOW_PRIVATE_CLIENT_URLS` is unset. On, a client could make the server fetch a private address, which is server-side request forgery.
 - [ ] **Passkeys have a home.** `ODUDU_PUBLIC_BASE_URL` is the https address people use, with no path. A passkey is bound to its host and is never offered again if that changes.
-- [ ] **The console is set up consistently.** `ODUDU_CONSOLE_CLIENT_KEY` is set, `ODUDU_TRUST_PROXY=true` behind the proxy, and the base URL is https. Or `ODUDU_CONSOLE=false` and you run no console.
+- [ ] **The console is set up consistently.** `ODUDU_CONSOLE_CLIENT_KEY` is set, and the base URL is https with `ODUDU_TLS=true`. Or `ODUDU_CONSOLE=false` and you run no console.
 
 ## Around the guards
 

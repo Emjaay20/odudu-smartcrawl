@@ -104,10 +104,11 @@ simply absent from a response that is otherwise unchanged:
 
 ```bash
 curl -sS -D - -o /dev/null -X POST \
-  http://localhost:3092/tenants/cors-demo/protocol/openid-connect/token \
+  http://localhost:3197/tenants/cors-demo/protocol/openid-connect/token \
   -H "Origin: https://other-app.example" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  --data "grant_type=refresh_token&refresh_token=bogus&client_id=demo-spa"
+  --data "grant_type=refresh_token&refresh_token=bogus&client_id=demo-spa" \
+  | tr -d '\r' | grep -vE '^(x-request-id|Date|Connection|Keep-Alive):|^$'
 ```
 
 ```
@@ -116,7 +117,7 @@ vary: Origin
 cache-control: no-store
 pragma: no-cache
 content-type: application/json; charset=utf-8
-content-length: 25
+content-length: 79
 ```
 
 (`access-control-allow-origin` does not appear in that response at all —
@@ -125,6 +126,15 @@ so a shared cache never serves one origin's answer to another.) The same
 request with `Origin: https://demo-spa.example` — `demo-spa`'s own origin —
 gets the header back, still a 400 for the same bogus refresh token:
 
+```bash
+curl -sS -D - -o /dev/null -X POST \
+  http://localhost:3197/tenants/cors-demo/protocol/openid-connect/token \
+  -H "Origin: https://demo-spa.example" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data "grant_type=refresh_token&refresh_token=bogus&client_id=demo-spa" \
+  | tr -d '\r' | grep -vE '^(x-request-id|Date|Connection|Keep-Alive):|^$'
+```
+
 ```
 HTTP/1.1 400 Bad Request
 vary: Origin
@@ -132,7 +142,7 @@ access-control-allow-origin: https://demo-spa.example
 cache-control: no-store
 pragma: no-cache
 content-type: application/json; charset=utf-8
-content-length: 25
+content-length: 79
 ```
 
 `/userinfo` takes the same split from the other side: the client comes from

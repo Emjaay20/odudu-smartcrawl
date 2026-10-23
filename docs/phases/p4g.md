@@ -3130,12 +3130,22 @@ The OIDF conformance plans run only in CI; they reach the server at `https://odu
 `ODUDU_PUBLIC_BASE_URL: https://odudu`, so the configured issuer equals the one the suite derived from `Host`
 and discovery is unchanged there.
 
+**The https-base guard is gone.** The console refused an `https` base while `ODUDU_TRUST_PROXY` was off, because
+the gateway's in-process calls needed a trusted `x-forwarded-proto` to see the https issuer. With a configured
+base the issuer never reads the request, and nothing else reads a request's scheme (`git grep` for `protocol`
+and `x-forwarded` in `packages` and `apps/server/src`: only `issuerBaseFor`'s fallback, used when no base is
+set, and the proxy-trust uses of the client address and certificate header). Cookies take `Secure` from
+`ODUDU_TLS`. So the guard had no reason left, and neither had the gateway's forwarded headers; both are removed,
+an integration test signs the console in over an https base with proxy trust off, and the docs say the setting
+decides client addresses and rate limits alone. A base with a trailing root dot is normalised in the config, so
+the gateway's assertion audience equals the server's issuer. Per-tenant custom domains are not supported:
+placed on P4b (roadmap and section 11).
+
 **`seed client` and `seed scope` help said "create or update".** Both fail when the thing exists
 (`seed_conflict`). The help now says so and where to change an existing client; no update mode was built.
 
 **`seed user` and `seed profile` take `--email-verified`**, as `seed profile` took `--phone-number-verified`.
-`seed user` refuses it without `--email`; `seed profile` refuses a user with no address. Both set the flag with
-`markEmailVerified`, which says an operator's `seed` may.
+`seed user` refuses it without `--email`; `seed profile` refuses a user with no address. Both set it through `setVerification`, as the phone flag does, so `updated_at` moves.
 
 **OAuth errors say what went wrong.** A missing PKCE challenge now redirects with
 `error_description=code_challenge is required`; each refusal of `/authorize` (the response type, the challenge

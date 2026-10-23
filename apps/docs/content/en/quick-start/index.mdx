@@ -50,7 +50,7 @@ In PowerShell:
 $env:ODUDU_PORT = '3100'; docker compose up -d
 ```
 
-Use that port wherever the rest of this page says 3000.
+Use that port wherever the rest of this page says 3000. Pick it before the first start: the address is saved then, so to change the port later run `docker compose down -v` and start again, which erases what you made. Use `localhost`, not `127.0.0.1`, in your app's settings: the issuer always names `localhost`.
 
 ## 2. Copy the first password
 

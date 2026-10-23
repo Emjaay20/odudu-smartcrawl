@@ -609,10 +609,11 @@ console provision has nothing to register while ODUDU_CONSOLE=false
 ```
 
 The server itself refuses to boot with the console on and no base, and
-with an `https` base while `ODUDU_TRUST_PROXY` is off — the console
-reaches the OIDC endpoints in-process, and only a trusted
-`x-forwarded-proto` lets such a request see the `https` issuer the browser
-sees. Each was run as a second process inside the running container, so
+with an `https` base while `ODUDU_TLS` is off: every cookie follows
+`ODUDU_TLS`, so the console's would be served without `Secure` to a browser
+that came over https. `ODUDU_TRUST_PROXY` plays no part: the issuer is the
+base whatever a request carries. Each refusal was run as a second process
+inside a running container (on a stack on port `3197`, started with `ODUDU_TLS` unset), so
 the guard fires before anything binds a port:
 
 ```bash
@@ -623,5 +624,5 @@ docker compose exec -T -e ODUDU_PUBLIC_BASE_URL=https://idp.example.test odudu \
 
 ```
 OduduError: ODUDU_PUBLIC_BASE_URL is required while the administration console is on: its redirect URI is built from that base and never from a request header. Set it, or set ODUDU_CONSOLE=false to serve no console.
-OduduError: ODUDU_PUBLIC_BASE_URL is https://idp.example.test, but ODUDU_TRUST_PROXY is off. The console reaches this server in-process, where only a trusted x-forwarded-proto can present the https issuer the browser sees. Set ODUDU_TRUST_PROXY=true behind the TLS-terminating proxy, or set ODUDU_CONSOLE=false.
+OduduError: ODUDU_PUBLIC_BASE_URL is https://idp.example.test, but ODUDU_TLS is off. Every cookie follows ODUDU_TLS, so the console would be served without Secure and the __Host- prefix to a browser that reached it over https. Set ODUDU_TLS=true, or set ODUDU_CONSOLE=false.
 ```

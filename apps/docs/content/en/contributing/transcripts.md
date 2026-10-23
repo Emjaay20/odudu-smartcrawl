@@ -246,15 +246,13 @@ served. The recorded nonces, ids and times are those of the earlier runs, except
 whose script was added, which come from live responses. The `ETag` of the first `GET /settings` is the live
 one.
 
-The authorization and token endpoints then began to send an `error_description` with every error. Each
-distinct error was captured live on a stack of the branch (project `odudu-p4g-31r`, port `3197`): the
-token endpoint's `invalid_grant`, `invalid_client` and `invalid_request`, and the authorization redirects
-for a missing challenge, a refused `prompt`, `claims` and `id_token_hint`, and `login_required`. The
-blocks that quote those errors then carry that real body or query in place of the old one, and a
-`content-length` that quotes one follows the new body: the Guides' refusal excerpts, the Path A, B, C and D
-pages, the branches, logout, the console's gateway page and five admin pages. They were not replayed from
-the top, so the keys, times and ids in the blocks around them are the earlier runs'. The state-less error
-redirect in the branches has a command of its own, run on that stack.
+The authorization and token endpoints now send an `error_description`. A block that quotes one shows the
+real body or query from a live capture on a stack of this branch (project `odudu-p4g-31r`, port `3197`),
+with its `content-length`. The two exceptions are the `consent_required` redirect and the `access_denied`
+that follows a refused consent: no client there asked for consent, so their lines carry the sentence the
+shared redirect adds, which a unit test pins. The blocks were not replayed from the top, so the keys,
+times, ids and ports around an updated line are the earlier runs'. The state-less redirect in the branches
+and the two responses on the CORS page were run on that stack, and their commands say so.
 
 ## Admin path transcripts
 

@@ -23,12 +23,11 @@ With `NODE_ENV=production`, which the image sets, the server checks its settings
 
 While the console is on, which it is by default, the server also checks its own setup, in any environment:
 
-| Setting                    | What the server refuses                                                                                                                                              |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ODUDU_PUBLIC_BASE_URL`    | Starting without it. The console's redirect address is built from it, never from a request.                                                                          |
-| `ODUDU_TRUST_PROXY`        | An `https` base while it is off. The console reaches the server in-process, and only a trusted `x-forwarded-proto` lets it see the `https` address the browser sees. |
-| `ODUDU_TLS`                | `true` with an `http` base, or off with an `https` base. Every cookie follows `ODUDU_TLS`, so the two must agree with the address the browser uses.                  |
-| `ODUDU_CONSOLE_CLIENT_KEY` | Starting without it. It is the private key the console signs in with. Set `ODUDU_CONSOLE=false` to run without a console at all.                                     |
+| Setting                    | What the server refuses                                                                                                                             |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ODUDU_PUBLIC_BASE_URL`    | Starting without it. The console's redirect address is built from it, never from a request.                                                         |
+| `ODUDU_TLS`                | `true` with an `http` base, or off with an `https` base. Every cookie follows `ODUDU_TLS`, so the two must agree with the address the browser uses. |
+| `ODUDU_CONSOLE_CLIENT_KEY` | Starting without it. It is the private key the console signs in with. Set `ODUDU_CONSOLE=false` to run without a console at all.                    |
 
 `ODUDU_DATABASE_URL` and `ODUDU_KEK` are required in every environment. Changing `ODUDU_KEK` later makes the stored keys unreadable, so treat it as data you must not lose: [Backups](./backups.md) says how.
 
