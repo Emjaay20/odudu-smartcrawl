@@ -25,7 +25,7 @@ This password is shown once and cannot be retrieved again.
 
 `odudu-admin` is a **confidential client** while the console is on: it holds no
 secret and authenticates at `/token` with an assertion signed by the key in
-`ODUDU_CONSOLE_CLIENT_KEY` (the README's "The console's key"). The row the
+`ODUDU_CONSOLE_CLIENT_KEY` ([Run it from a checkout](../../../contributing/run-from-a-checkout.md) has the console's key). The row the
 seed just wrote shows it, as the database owner, scoped to the `system`
 tenant:
 
@@ -337,7 +337,7 @@ Keep-Alive: timeout=72
 ```
 
 The key rotates from outside the API, with `odudu console provision`: the
-README's "Rotating the console's key".
+the section [Rotating the console's key](#rotating-the-consoles-key) below.
 
 ## Converting a public admin client
 
@@ -419,7 +419,7 @@ provisioned 2 tenants
 
 ## Rotating the console's key
 
-The README's four steps, on the same two tenants, with `$A` the key the server
+The four steps, on the same two tenants, with `$A` the key the server
 runs on and `$B` the one `console keygen` printed (cut to its first 60
 characters here, which is the variable's name and the first 35 of the key's; the
 line is the whole configuration entry). The query reads each tenant's registered

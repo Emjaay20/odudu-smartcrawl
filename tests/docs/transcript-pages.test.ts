@@ -27,7 +27,7 @@ const GROUPS = [
   { pages: CONSOLE_PAGES, fencedBlocks: 161 },
 ] as const;
 
-const TOTAL_REPOSITORY_LINKS = 29;
+const TOTAL_REPOSITORY_LINKS = 26;
 const REPOSITORY_FILE = /^https:\/\/github\.com\/wizzywit\/odudu\/blob\/main\/(?<file>[^#]+)/u;
 
 function pagesOf(directory: string): string[] {

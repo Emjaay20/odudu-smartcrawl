@@ -301,6 +301,19 @@ address) — `ODUDU_THROTTLE_LIMIT` (default `10`) requests per
 page is throttled. ADR 0023 is why it is a window in this process's memory
 rather than a row.
 
+There is no value that switches the throttle off. A deployment putting many
+users behind one address raises the limit, to at most `10000` (the server
+refuses to boot past that, naming the variable) over a window of at most `3600`
+seconds. (Upgrading: these ceilings were once a million and a day, so a
+deployment configured above the new ones fails to start until it is lowered;
+ADR 0023 records the change.) A budget of up to 100 keeps an exact log of each
+key's requests, about 3 MB at the default of `10` and 9 MB at `100` once 10,000
+origins have spent it; above 100 it keeps two counters per key, about 2 MB
+however high the limit, at the price of an estimate that can be off by a couple
+of requests on steady traffic and by up to the limit on traffic timed against a
+window boundary
+([ADR 0023](https://github.com/wizzywit/odudu/blob/main/docs/adr/0023-brute-force-authority-is-split.md)).
+
 Two things about the run below, since it is the one section that needs the
 default budget rather than the raised one every other transcript here ran with.
 It ran against a stack started plainly (`docker compose up -d`), and `demo`'s
@@ -448,9 +461,8 @@ budget, and there is no load balancer and no second replica in this repository
 to demonstrate that against — so this is a statement, not a transcript. And the
 key is `request.ip`, which with `ODUDU_TRUST_PROXY=true` comes from
 `X-Forwarded-For`: a proxy that appends rather than overwrites that header
-leaves the key client-controlled. Both are in [the
-README](https://github.com/wizzywit/odudu/blob/main/README.md) as deployment
-requirements.
+leaves the key client-controlled. Both are deployment
+requirements in [Deploying](../../../operating/deploying.md).
 
 ## The per-username budget on sign-in
 
@@ -642,5 +654,4 @@ Argon2id comparison first, so the two paths differ in latency even though their
 response bytes and budget consumption match. ADR 0023's amendment records why
 that gap is accepted rather than closed with a dummy hash. Like the throttle
 above, this one **is per instance** for the same reason — a window in one
-process's memory — and that limitation is [the
-README](https://github.com/wizzywit/odudu/blob/main/README.md)'s to state.
+process's memory — and that limitation is [Scaling](../../../operating/scaling.md)'s to state.

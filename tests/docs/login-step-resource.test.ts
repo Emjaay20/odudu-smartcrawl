@@ -4,7 +4,7 @@ import { ADMIN_PAGES, loadSource, PROTOCOL_PAGES } from './markdown.js';
 // A login step's row names its authentication session by the sha256 hex of
 // the `auth_session_id`, never the id, which would continue the login
 // (spec §16 of docs/archive/specs/2026-09-26-p4e-audit-events-design.md).
-const DOCUMENTS = ['README.md', PROTOCOL_PAGES, ADMIN_PAGES] as const;
+const DOCUMENTS = [PROTOCOL_PAGES, ADMIN_PAGES] as const;
 
 const TYPE_LINE = /^resource_type\s+\|\s+authentication_session\s*$/u;
 const ID_LINE = /^resource_id\s+\|\s+(?<value>\S+)\s*$/u;

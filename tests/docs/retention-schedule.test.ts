@@ -12,7 +12,7 @@ import { loadSource, PROTOCOL_PAGES, REPO_ROOT } from './markdown.js';
 // reaps on and the warning it logs when it will not reap at all. The
 // interval is a schema default and the warning is a string in one module;
 // neither is where anybody would look after rewording a paragraph.
-const DOCUMENTS = ['README.md', PROTOCOL_PAGES] as const;
+const DOCUMENTS = [PROTOCOL_PAGES] as const;
 
 const defaults = loadConfig({
   ODUDU_DATABASE_URL: 'postgres://u:p@localhost:5432/odudu',
@@ -153,7 +153,7 @@ describe('the outbox schedule the documents describe is the one the server runs'
     expect(sourceText(command)).toContain(quoted.replaceAll(/\s+/gu, ' '));
   });
 
-  it('declines to schedule in the words README.md and the request paths quote', () => {
+  it('declines to schedule in the words the request paths quote', () => {
     const module = readFileSync(path.join(REPO_ROOT, 'apps/server/src/modules/outbox.ts'), 'utf8');
     const quoted = /`(?<message>not sending queued mail: [^`]+)`/su.exec(textOf(PROTOCOL_PAGES));
     if (quoted?.groups?.message === undefined) {
@@ -164,21 +164,20 @@ describe('the outbox schedule the documents describe is the one the server runs'
   });
 });
 
-// The interval and jitter claims are README-only: the protocol pages'
-// real `odudu send-logouts` transcript (under "Front-channel and
-// back-channel logout") states no interval or timeout default in words
-// there for this check to read. The retention windows are the opposite —
-// stated only in the request paths, beside email_outbox's own.
-describe('the logout-sender schedule README describes is the one the server runs', () => {
+// The logout sender's interval, jitter and timeout are stated beside its
+// `odudu send-logouts` transcript, under "Front-channel and back-channel
+// logout". The retention windows are stated in the request paths, beside
+// email_outbox's own.
+describe('the logout-sender schedule the request paths describe is the one the server runs', () => {
   it('states the interval the config schema defaults to', () => {
-    expect(statedDefault('README.md', 'ODUDU_LOGOUT_SENDER_INTERVAL_SECONDS')).toBe(
+    expect(statedDefault(PROTOCOL_PAGES, 'ODUDU_LOGOUT_SENDER_INTERVAL_SECONDS')).toBe(
       String(defaults.ODUDU_LOGOUT_SENDER_INTERVAL_SECONDS),
     );
   });
 
-  it('adds jitter of the fraction README calls a tenth', () => {
+  it('adds jitter of the fraction the request paths call a tenth', () => {
     expect(LOGOUT_SENDER_JITTER_FRACTION).toBe(0.1);
-    expect(textOf('README.md')).toMatch(/a tenth as jitter/u);
+    expect(textOf(PROTOCOL_PAGES)).toMatch(/a tenth as jitter/u);
   });
 
   it.each([
@@ -195,7 +194,7 @@ describe('the logout-sender schedule README describes is the one the server runs
   });
 
   it('states the response timeout the config schema defaults to', () => {
-    expect(statedDefault('README.md', 'ODUDU_LOGOUT_SENDER_RESPONSE_TIMEOUT_MS')).toBe(
+    expect(statedDefault(PROTOCOL_PAGES, 'ODUDU_LOGOUT_SENDER_RESPONSE_TIMEOUT_MS')).toBe(
       String(defaults.ODUDU_LOGOUT_SENDER_RESPONSE_TIMEOUT_MS),
     );
   });

@@ -6,7 +6,7 @@ import { ADMIN_PAGES, loadSource, PROTOCOL_PAGES } from './markdown.js';
 // transcript showing a bare id as the cookie shows the defect that shape
 // closed, so it passes only as a capture older than the secret, and only
 // with the re-run naming the migration placed right after it.
-const DOCUMENTS = ['README.md', PROTOCOL_PAGES, ADMIN_PAGES] as const;
+const DOCUMENTS = [PROTOCOL_PAGES, ADMIN_PAGES] as const;
 
 const SET_COOKIE = /^set-cookie: [a-z0-9-]+-session(?:-persistent)?=(?<value>[^;]*);/u;
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';

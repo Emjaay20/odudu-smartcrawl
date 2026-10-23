@@ -4,7 +4,8 @@
 # one, and a private key is not something .env.example may carry. Every tenant
 # registers the key's public half when it is created, so a stack's key must
 # outlive the stack's volume: change it and `odudu console provision` has to
-# run (README, "Rotating the console's key").
+# run (apps/docs/content/en/reference/transcripts/admin-paths/getting-the-token.md,
+# "Rotating the console's key").
 set -euo pipefail
 
 ENV_FILE="${1:-$(cd "$(dirname "$0")" && pwd)/.env}"

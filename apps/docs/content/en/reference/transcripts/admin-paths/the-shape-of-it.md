@@ -38,8 +38,8 @@ since been disabled, or its subject has. A `client_credentials` token has no
 session behind it, and is refused only on the other three counts. [The admin
 API's
 design](https://github.com/wizzywit/odudu/blob/main/docs/archive/specs/2026-09-24-p4c-admin-api-design.md)
-section 7 has the full authentication and authorization sequence; [the
-README](https://github.com/wizzywit/odudu/blob/main/README.md) explains why the
+section 7 has the full authentication and authorization sequence; [Run it from a
+checkout](../../../contributing/run-from-a-checkout.md) explains why the
 built-in admin client is shaped the way it is, and "Getting the token" below is
 the run every transcript here used.
 

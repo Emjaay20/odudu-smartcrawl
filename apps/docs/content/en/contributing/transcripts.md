@@ -269,7 +269,7 @@ run's. The mail is the capture the stack's log wrote (no SMTP host is set), and 
 its tenant. The sign-in page and registration-link blocks of the "way there and back" section that only
 read the sign-in page were not changed and not run again. The earlier run of Path A's address verification
 (a sign-in's ID token before, two visits, two presses, the ID token after) stands: that flow did not
-change. The retention transcript and the README's reap report were run again for the new
+change. The retention transcript and the reap report were run again for the new
 `pending_registrations` key, on a fresh stack driven as that page describes, with one more block that adds
 two pending rows. The password pages' shared script is unchanged; the registration form carries a second,
 short one that shows the confirmation with the password.
@@ -285,7 +285,7 @@ OpenAPI document, served unauthenticated at `/admin/openapi.json`, is the
 listed exhaustively. This document is the **narrative** — an operator's
 journey through a task, in the order they would actually hit it, with the
 shape of each request and, once a live stack has been brought up to capture
-it against, the real response. [README.md](https://github.com/wizzywit/odudu/blob/main/README.md) is the **entry
+it against, the real response. [Getting the token](../reference/transcripts/admin-paths/getting-the-token.md) is the **entry
 point** — how to get a token that can call any of this at all.
 
 There is one list of what is missing or refused for the whole server, and it
@@ -669,8 +669,8 @@ in to a tenant, hold that administrator's tokens server-side, and forward the
 console's calls to the admin API. The browser holds nothing but a session
 cookie.
 
-[README.md](https://github.com/wizzywit/odudu/blob/main/README.md) is the **entry point** — what each route does and
-which settings turn the console on. [the admin paths](../reference/transcripts/admin-paths/index.md)
+[Configuration](../operating/configuration.md) is the **entry point** — which
+settings turn the console on. [the admin paths](../reference/transcripts/admin-paths/index.md)
 is the admin API the proxy forwards to, and this document shows only enough
 of it to show the forwarding. There is one list of what is missing or refused
 for the whole server, in

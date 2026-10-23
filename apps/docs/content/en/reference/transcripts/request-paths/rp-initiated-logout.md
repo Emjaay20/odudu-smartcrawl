@@ -14,8 +14,8 @@ resource server that only checks a signature locally keeps accepting one until
 its own `exp` regardless — but
 [`/introspect`](#token-introspection-and-revocation) reports it inactive
 immediately, and `/userinfo` refuses it outright with `invalid_token`, which is
-what closes that gap before `exp` for both doors. The README's own logout
-section has the same account.
+what closes that gap before `exp` for both doors. The paragraph on the back-channel
+sender under "Front-channel and back-channel logout" has the same account.
 
 A client registers its `post_logout_redirect_uri` values ahead of time.
 `seed client --post-logout-redirect-uri` registers them **as it creates** a
@@ -1017,9 +1017,7 @@ docker compose -f infra/docker/compose.yaml exec -T postgres \
 
 One row, written in the same transaction that ended the session — before
 any pass has looked at it. `odudu send-logouts` is what drains it, on its
-own schedule or as the one-shot command below
-([README's "Ending a session tells the relying parties that were part of
-it"](https://github.com/wizzywit/odudu/blob/main/README.md)):
+own schedule or as the one-shot command below:
 
 ```bash
 odudu send-logouts
@@ -1028,6 +1026,29 @@ odudu send-logouts
 ```
 {"ran":true,"delivered":0,"failed":1}
 ```
+
+**Ending a session tells the relying parties that were part of it.** A
+session that ends enqueues one back-channel Logout Token per client that
+registered a `backchannel_logout_uri` and used the session, and a third
+pass, `send-logouts`, delivers them — every `ODUDU_LOGOUT_SENDER_INTERVAL_SECONDS`
+(default `15`) plus a tenth as jitter, or as the one-shot command above. It
+reports the same shape `send-mail` does: `{"ran":true,"delivered":N,"failed":N}`,
+or `{"ran":false,"reason":"no tenant was enumerated"}` on a database nobody
+has seeded yet.
+
+Like the outbox it takes no lock and needs `ODUDU_APP_DATABASE_URL` for the
+same reason, declining to start without it the same way — and **with
+`ODUDU_LOGOUT_SENDER_ENABLED=false` and nothing scheduling the command, an
+ended session's relying parties are never told**, the way `frontchannel_logout_uri`
+already isn't when a redirect fires instead of the logout page rendering
+(ADR 0034). A relying party that accepts the connection and never answers
+costs one delivery, not the queue: `ODUDU_LOGOUT_SENDER_RESPONSE_TIMEOUT_MS`
+(default `5000`) bounds each one independently, and every 4xx response
+except 429 — the relying party rejecting the token outright, or refusing
+it for a reason retrying will not fix — is abandoned rather than retried;
+429 and anything else recoverable is retried, up to the source's own
+`BACKCHANNEL_LOGOUT_MAX_ATTEMPTS` ceiling, which has no environment
+variable of its own.
 
 Querying the same row again shows why, in the queue's own words:
 

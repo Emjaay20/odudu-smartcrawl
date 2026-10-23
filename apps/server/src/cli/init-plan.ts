@@ -49,8 +49,8 @@ export function loopbackRefusal(publicBaseUrl: string): string {
   return (
     `ODUDU_PUBLIC_BASE_URL is ${JSON.stringify(publicBaseUrl)}, which is not a loopback ` +
     'address: odudu init is for a machine you are sitting at and serves over plain http ' +
-    "on localhost. To run on a public address, configure the server yourself: see the README's " +
-    'Deploying section'
+    'on localhost. To run on a public address, configure the server yourself: see Deploying ' +
+    'in the Operating section of the documentation'
   );
 }
 

@@ -5,7 +5,7 @@ import { ADMIN_PAGES, loadSource, PROTOCOL_PAGES } from './markdown.js';
 // The reference page for configuration is generated from the loader. The
 // documents below state a default in prose, as "`ODUDU_X` (default `n`)", and
 // are held to the same value.
-const DOCUMENTS = ['README.md', PROTOCOL_PAGES, ADMIN_PAGES] as const;
+const DOCUMENTS = [PROTOCOL_PAGES, ADMIN_PAGES] as const;
 
 const STATED_DEFAULT = /`(ODUDU_[A-Z_]+|NODE_ENV)`[^`\n]{0,3}\(default `([^`\n]+)`\)/gu;
 
@@ -18,7 +18,7 @@ describe('defaults stated in prose are the loader’s', () => {
     const found = DOCUMENTS.flatMap((path) =>
       [...loadSource(path).lines.join('\n').matchAll(STATED_DEFAULT)].map((match) => match[1]),
     );
-    expect(found.length).toBeGreaterThanOrEqual(6);
+    expect(found.length).toBeGreaterThanOrEqual(5);
   });
 
   it.each(DOCUMENTS)('%s names each default the loader produces', (path) => {

@@ -16,7 +16,7 @@ subject with no `users` row — a service or `agent_instance` subject, which
 has no sign-in to be locked out of — answers `404`.
 
 A locked account refuses its right password with the same sign-in page a wrong
-one gets (the brute-force section of the README), so the run below shows the
+one gets ([the brute-force lockout](../request-paths/brute-force-lockout.md)), so the run below shows the
 lock by submitting the right password last. `signin` is a helper defined for
 these runs: a fresh `/authorize` against `recovery-demo-app`, a confidential
 client created for them with `https://app.example/callback` registered, then one

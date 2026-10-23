@@ -4,8 +4,8 @@
 # The server's port is bound to loopback and Postgres publishes no port. On
 # Linux any process on this machine can still reach a container's network
 # address, and the database password below is fixed and public, so do not
-# run this file on a shared host. For a public address, follow the Deploying
-# section of the README instead.
+# run this file on a shared host. For a public address, follow Deploying in
+# the Operating section of the documentation instead.
 services:
   postgres:
     # digest of the multi-arch index; Dependabot moves it
@@ -56,8 +56,8 @@ services:
       # boot guards in apps/server/src/config-guard.ts, and the one this
       # stack cannot meet is the TLS guard: it serves plain http on loopback,
       # so no cookie carries Secure or __Host-. The other guards are
-      # met or irrelevant here. This is not a production deployment; see the
-      # README's Deploying section for one.
+      # met or irrelevant here. This is not a production deployment; see Deploying
+      # in the Operating section of the documentation for one.
       - NODE_ENV=development
       - ODUDU_LOG_LEVEL=info
       # Not set here, so mail goes to the log until these are exported:

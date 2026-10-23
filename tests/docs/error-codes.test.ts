@@ -8,10 +8,7 @@ const GUIDE = PROTOCOL_PAGES;
 
 // How many codes each document named when this check was written — a floor,
 // not a count to keep current.
-const DOCUMENTS: readonly (readonly [name: string, atLeast: number])[] = [
-  [GUIDE, 9],
-  ['README.md', 0],
-];
+const DOCUMENTS: readonly (readonly [name: string, atLeast: number])[] = [[GUIDE, 9]];
 
 // The error codes RFC 6749 §4.1.2.1 and §5.2, RFC 6750 §3.1, RFC 8707 §2 and
 // OIDC Core §3.1.2.6 define. A backticked word is only read as an error code if it is
@@ -53,8 +50,6 @@ const TOKEN_ERROR_CODES: Record<TokenErrorCode, true> = {
   unsupported_grant_type: true,
 };
 
-// README.md is an overview and names no error codes today, so `atLeast` is
-// what says which document a silent extractor would be a bug in.
 function namedIn(document: Document, atLeast: number): Set<string> {
   const codes = new Set<string>();
   for (const line of document.lines) {

@@ -18,13 +18,16 @@ import {
 } from '../../apps/server/src/cli/init-plan.js';
 import { CLI_COMMANDS } from '../../apps/server/src/cli/registry.js';
 
-const readme = readFileSync(new URL('../../README.md', import.meta.url), 'utf8');
-const start = readme.indexOf('Quickstart: `odudu init`');
-const section = readme.slice(start, readme.indexOf('**Bootstrap the first administrator.**'));
+const readme = readFileSync(
+  new URL('../../apps/docs/content/en/reference/transcripts/first-start.md', import.meta.url),
+  'utf8',
+);
+const start = readme.indexOf('## `odudu init`');
+const section = readme.slice(start);
 const transcript = /```\n(\$ odudu init[\s\S]*?)```/u.exec(section)?.[1] ?? '';
 const octal = (mode: number): string => mode.toString(8).padStart(4, '0');
 
-describe('the README paragraph on odudu init', () => {
+describe('the first-start page on odudu init', () => {
   it('finds the paragraph and its transcript', () => {
     expect(start).toBeGreaterThan(0);
     expect(transcript.length).toBeGreaterThan(0);
@@ -73,11 +76,11 @@ describe('the README paragraph on odudu init', () => {
   });
 });
 
-const composeStart = readme.indexOf('**Quickstart with Docker Compose.**');
+const composeStart = readme.indexOf('## The Compose stack');
 const composeSection = readme.slice(composeStart, start);
 const composeBlocks = [...composeSection.matchAll(/```\n([\s\S]*?)```/gu)].map((m) => m[1] ?? '');
 
-describe('the README paragraph on the Compose quickstart', () => {
+describe('the first-start page on the Compose stack', () => {
   const url = 'http://localhost:3250/console/';
 
   it('shows the bare command and the banner the server prints for it', () => {

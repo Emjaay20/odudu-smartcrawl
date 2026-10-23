@@ -985,7 +985,7 @@ byte for byte after trimming surrounding whitespace, for the comparison to pass
 `invalid_client_metadata`. At `/token`, the subject arrives as a header a
 trusted reverse proxy sets — its name is `ODUDU_TLS_CLIENT_CERT_HEADER` (default
 `x-ssl-client-s-dn`), and the method is refused outright, not downgraded,
-whenever `ODUDU_TRUST_PROXY` is off (the README's deployment section has the
+whenever `ODUDU_TRUST_PROXY` is off ([Deploying](../../../operating/deploying.md) has the
 proxy's own obligations). Off means the method is unavailable end to end, not
 only at `/token`: discovery's `token_endpoint_auth_methods_supported` does not
 name `tls_client_auth` either — off on this stack, which is why the transcript

@@ -9,13 +9,14 @@ The [guides](../../guides/index.md) show the short version of each journey. Thes
 are the long version: every command that was run against a real stack and every byte
 that came back, with nothing reconstructed from what the code looks like it should do.
 
-There are three groups.
+There are three groups, and one page on the first start.
 
 - [Request paths](./request-paths/index.md): what a client or a browser sends to the
   protocol endpoints. Start here for sign-in, tokens, sessions, logout and the refusals.
 - [Admin paths](./admin-paths/index.md): the admin API, one route at a time.
 - [Console paths](./console-paths/index.md): the routes the admin console uses to sign an
   administrator in and to forward calls to the admin API.
+- [First start](./first-start.md): the Compose stack and `odudu init`, with every refusal.
 
 A page is long on purpose, because it is a record rather than an explanation. If you want
 the explanation, read the guide that links to it. If you are changing Odudu and want to

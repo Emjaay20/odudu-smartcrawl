@@ -159,6 +159,7 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
   ['P11', 'One instance only today', 'advisory lock', 'per-origin throttle'],
   ['P11', 'Also a deadline', 'deadline to the outbound dns lookups', 'a metrics endpoint'],
   ['P11', 'Audit events are partitioned', 'partitioned by month', 'chunked and resumable'],
+  ['P11', 'A Helm chart', 'helm chart', 'kubernetes manifests'],
   [
     'P12',
     'Secrets read from somewhere',

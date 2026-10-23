@@ -230,7 +230,7 @@ where to read the page again rather than trust a green build.
   - Update: the command's entry in the help registry (the generated `cli.md`
     follows), the guides and `README.md` that name it.
   - Checked by: `apps/docs/scripts/cli-page.test.ts` (the page against the
-    registry), `tests/docs/init-readme.test.ts` (for `init`),
+    registry), `tests/docs/first-start.test.ts` (for `init`),
     `apps/docs/tests/guides-runnable.test.ts` and the `docs-commands`
     workflow, which runs a guide's runnable blocks. A command named in prose
     outside a runnable block: no check.

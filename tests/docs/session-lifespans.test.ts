@@ -9,7 +9,7 @@ import { loadSource, PROTOCOL_PAGES, REPO_ROOT } from './markdown.js';
 // and nothing failed, because a stale sentence and a checked one read
 // identically. The defaults live in one migration, which is not where
 // anybody looks after rewording a paragraph.
-const DOCUMENTS = ['README.md', PROTOCOL_PAGES] as const;
+const DOCUMENTS = [PROTOCOL_PAGES] as const;
 
 const COLUMNS = ['sso_session_idle_seconds', 'sso_session_max_seconds'] as const;
 

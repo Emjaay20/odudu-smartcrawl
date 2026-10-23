@@ -8,7 +8,7 @@ import { loadSource, PROTOCOL_PAGES } from './markdown.js';
 // order carries a security property — the password change comes first so an
 // expired password can never be used to enrol a second factor — so a
 // document that has fallen behind it is worse than one that never said.
-const DOCUMENTS = ['README.md', PROTOCOL_PAGES] as const;
+const DOCUMENTS = [PROTOCOL_PAGES] as const;
 
 const ACTIONS = [
   'update-password',

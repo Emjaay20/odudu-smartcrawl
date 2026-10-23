@@ -31,6 +31,7 @@ const TRANSCRIPTS = directory('Transcripts', 'reference/transcripts', [
   directory('Request paths', 'reference/transcripts/request-paths'),
   directory('Admin paths', 'reference/transcripts/admin-paths'),
   directory('Console paths', 'reference/transcripts/console-paths'),
+  { type: 'doc' as const, id: 'reference/transcripts/first-start', label: 'First start' },
 ]);
 
 // The sidebar follows what a reader is trying to do: start, follow a

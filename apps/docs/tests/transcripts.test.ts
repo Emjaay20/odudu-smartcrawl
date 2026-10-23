@@ -14,6 +14,9 @@ const DIRECTORIES = [
   'reference/transcripts/console-paths',
 ];
 
+// One page that is not part of a directory's order: the first start's runs.
+const SINGLE_PAGES = ['reference/transcripts/first-start.md'];
+
 function pagesIn(directory: string): string[] {
   const order: unknown = JSON.parse(
     readFileSync(path.join(CONTENT, directory, 'order.json'), 'utf8'),
@@ -70,6 +73,16 @@ describe('the transcript pages', () => {
             if (block !== actual[index]) different.push(`${route}: block ${String(index + 1)}`);
           });
         }
+      }
+
+      for (const page of SINGLE_PAGES) {
+        const expected = fencedBlocksOf(readFileSync(path.join(CONTENT, page), 'utf8'));
+        const route = `${base}${page.replace(/\.md$/u, '')}/`;
+        const actual = renderedBlocks(path.join(dir, route.slice(base.length), 'index.html'));
+        blocks += expected.length;
+        expected.forEach((block, index) => {
+          if (block !== actual[index]) different.push(`${route}: block ${String(index + 1)}`);
+        });
       }
 
       expect(blocks, 'the extractor has stopped finding blocks').toBeGreaterThan(1300);

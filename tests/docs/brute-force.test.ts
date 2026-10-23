@@ -7,7 +7,7 @@ import { loadPages, loadSource, PROTOCOL_PAGES, REPO_ROOT } from './markdown.js'
 // configure against, and a default is the easiest thing in either file to
 // change underneath the prose: it lives in one migration and one column
 // declaration, neither of which is where anybody would think to look.
-const DOCUMENTS = ['README.md', PROTOCOL_PAGES] as const;
+const DOCUMENTS = [PROTOCOL_PAGES] as const;
 
 const COLUMNS = [
   'brute_force_max_failures',
@@ -62,15 +62,6 @@ describe('the brute-force defaults the documents state are the defaults the sche
   it.each(DOCUMENTS)('%s states no default the tenants table does not', (name) => {
     const declared = declaredDefaults();
     const stated = documentedDefaults(name);
-
-    // README.md names all four; the protocol pages shows them as a
-    // transcript instead, so a floor of one is what keeps this check from
-    // passing on nothing found.
-    if (name === 'README.md' && stated.length !== COLUMNS.length) {
-      throw new Error(
-        `README.md no longer states all four brute-force defaults (found ${String(stated.length)})`,
-      );
-    }
 
     for (const { column, value, line } of stated) {
       expect(

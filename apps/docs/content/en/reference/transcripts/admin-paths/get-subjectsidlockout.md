@@ -10,9 +10,9 @@ it: `failure_count`, `last_failure_at`, `locked_until`, and `locked` — whether
 an attempt made now would be refused, judged by the server's clock so a caller
 never compares `locked_until` against its own. A lock that has run out answers
 `locked: false` with its count kept, since the run is only forgotten after
-`brute_force_failure_reset_seconds` of quiet ([the
-README](https://github.com/wizzywit/odudu/blob/main/README.md)'s brute-force
-section has the arithmetic). A subject that has never failed answers a zero
+`brute_force_failure_reset_seconds` of quiet ([the brute-force
+section of the request paths](../request-paths/brute-force-lockout.md) has the
+arithmetic). A subject that has never failed answers a zero
 count and nulls. An unknown subject, one in another tenant, or one with no
 `users` row answers `404`.
 

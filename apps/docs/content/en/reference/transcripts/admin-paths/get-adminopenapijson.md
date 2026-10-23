@@ -31,8 +31,8 @@ Keep-Alive: timeout=72
 
 422 KB and 78 paths, which is the whole route table. It is the one admin
 response readable from any origin, so a viewer served from another port can load
-it — the local stack's optional Swagger UI does exactly that (see "Browsing the
-admin API" in the README). No admin route carries that header, so a page on
+it — the local stack's optional Swagger UI does exactly that (see [Browsing the
+admin API](../../../contributing/run-from-a-checkout.md)). No admin route carries that header, so a page on
 another origin can read the description but cannot call the API with it. Its
 first bytes, and the `bearerAuth` scheme it declares — `head -c 180
 openapi.json` and the substring at `securitySchemes`:

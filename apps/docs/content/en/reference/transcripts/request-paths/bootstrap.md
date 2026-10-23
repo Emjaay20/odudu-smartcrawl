@@ -17,7 +17,7 @@ API.
 
 ## Pick how you are running it
 
-[The README](https://github.com/wizzywit/odudu/blob/main/README.md) describes
+[Run it from a checkout](../../../contributing/run-from-a-checkout.md) describes
 three ways to run this: everything in Docker, Postgres in Docker with the server
 on your host, and everything on your host against a PostgreSQL you operate. They
 differ in exactly one thing this document depends on — **how the seed command is
@@ -81,8 +81,8 @@ schema the server put there on boot, and a seed run in that gap fails with
 
 Running everything on your host needs the database and the restricted serving
 role to exist before any of this — one `CREATE DATABASE` and one `CREATE USER`,
-in [the
-README](https://github.com/wizzywit/odudu/blob/main/README.md#running-it),
+in [Run it from a
+checkout](../../../contributing/run-from-a-checkout.md),
 against a PostgreSQL whose owner role can `CREATE ROLE`. Nothing after that
 bootstrap differs from the second column above. The no-Docker run below used a
 throwaway cluster made for it — `initdb -D /tmp/odudu-pg -U postgres`, started

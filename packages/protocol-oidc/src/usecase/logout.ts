@@ -137,8 +137,8 @@ export interface LogoutUsecaseDeps {
   // and registered a back-channel URI (§2.5). A failure anywhere — minting
   // or queuing a delivery included — rolls the whole transaction back, so a
   // session cannot end with a delivery lost: nothing would ever retry a row
-  // that was never written. Access tokens are not touched — see README.md's
-  // logout section for why not.
+  // that was never written. Access tokens are not touched: the RP-initiated
+  // logout request path explains why not.
   endSession(
     tenantId: string,
     sessionId: string,
