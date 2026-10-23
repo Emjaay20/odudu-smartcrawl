@@ -48,13 +48,13 @@ curl -sS -D - \
 HTTP/1.1 200 OK
 x-request-id: 01a137d6-0294-7385-8d89-25ff1b96ce96
 content-type: text/html
-content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'; script-src 'nonce-sEOPbY645odBWfnpdmUHZg=='
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'; script-src 'nonce-6Bx5ZwMggBZBu/rZ7Uz01A=='
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 3119
+content-length: 3394
 Date: Wed, 14 Oct 2026 00:35:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -84,19 +84,19 @@ Keep-Alive: timeout=72
 </ul>
 <form method="post" action="/tenants/required-actions-demo/login-actions/action-token">
   <input type="hidden" name="key" value="ZPLLKU68CFpPmla3ybn_vHhlGZIfv0LxQOgMkCaLO1M">
-  <label>New password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" aria-describedby="password-rules-list"></label>
-  <div class="rules hint" id="password-rules" data-min="15">
-    <p class="rules-head"><span>Your password needs:</span><button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false" data-show="Show password" data-hide="Hide password">Show password</button></p>
+  <label>New password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" spellcheck="false" autocapitalize="off" autocorrect="off" aria-describedby="password-rules-list"></label>
+  <div class="rules hint" id="password-rules" data-min="15" data-summary="{met} of {total} rules met">
+    <p class="rules-head"><span>Your password needs:</span> <button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false">Show password</button> <span role="status"></span></p>
     <ul id="password-rules-list">
       <li data-rule="length">At least 15 characters</li>
       <li>Not a common password</li>
     </ul>
   </div>
-  <script nonce="sEOPbY645odBWfnpdmUHZg==">(function () {
+  <script nonce="6Bx5ZwMggBZBu/rZ7Uz01A==">(function () {
   var box = document.getElementById('password-rules');
   var field = document.getElementById('password');
   if (!box || !field) return;
-  var rows = box.querySelectorAll('li[data-rule]');
+  var rows = Array.from(box.querySelectorAll('li[data-rule]'));
   var min = Number(box.getAttribute('data-min'));
   var tests = {
     length: function (v) { return Array.from(v.normalize('NFC')).length >= min; },
@@ -105,21 +105,28 @@ Keep-Alive: timeout=72
     lowercase: function (v) { return /[a-z]/u.test(v); },
     special: function (v) { return /[^A-Za-z0-9]/u.test(v); }
   };
+  var status = box.querySelector('[role=status]');
+  var timer;
   function check() {
-    Array.from(rows).forEach(function (row) {
-      row.setAttribute('data-met', String(tests[row.getAttribute('data-rule')](field.value)));
-    });
+    return rows.filter(function (row) {
+      var ok = tests[row.getAttribute('data-rule')](field.value);
+      row.setAttribute('data-met', String(ok));
+      return ok;
+    }).length;
   }
-  box.setAttribute('data-live', '');
-  field.addEventListener('input', check);
+  field.addEventListener('input', function () {
+    var met = check();
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      status.textContent = box.getAttribute('data-summary').replace('{met}', met).replace('{total}', rows.length);
+    }, 800);
+  });
   check();
   var toggle = box.querySelector('button');
-  if (!toggle) return;
   toggle.hidden = false;
   toggle.addEventListener('click', function () {
     var show = field.type === 'password';
     field.type = show ? 'text' : 'password';
-    toggle.textContent = toggle.getAttribute(show ? 'data-hide' : 'data-show');
     toggle.setAttribute('aria-pressed', String(show));
   });
 })();</script>

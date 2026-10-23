@@ -228,8 +228,9 @@ the icon links; this change did not touch it.
 around its title and body, and that its `content-length` is the length of the bytes shown. It does not
 prove the bytes were served; the live comparison above is what does.
 
-The password pages then gained a list of what a password needs, a small script that ticks it and the
-`id`, `minlength` and `aria-describedby` of the field, and a new tenant's minimum became 15 characters.
+The password pages then gained a list of what a password needs, a small script that ticks it and says a
+summary in a status line, and the `id`, `minlength`, `spellcheck`, `autocapitalize`, `autocorrect` and
+`aria-describedby` of the field, and a new tenant's minimum became 15 characters.
 That changed 15 recorded blocks in five transcripts: Getting the token (the change-password page),
 Self-registration (eight, one of them a `grep` of a page), Following a required-actions link, Password
 expiry and changing a password (the page and a trimmed excerpt, now a `grep`), and Password reset. The refusal sentences read "at least 15", the
@@ -238,7 +239,7 @@ and the `GET /settings`, range and export transcripts show `password_min_length`
 with the `ETag` and `content-length` of a live response.
 
 Every changed block was run again on the branch's stack (project `odudu-p4g-31o`, port `3187`, commit
-`00b9cbe5` plus this increment's tests and documentation) on tenants made for it: the same tenant settings, the same password, the same submission. Each
+`64d30b79` plus this increment's documentation) on tenants made for it: the same tenant settings, the same password, the same submission. Each
 recorded block equals the live response line for line once its ids, nonces, dates and tenant names are
 masked, and each header (the `content-security-policy` with its `script-src` nonce included) is the one
 served. The recorded nonces, ids and times are those of the earlier runs, except the nonces of the pages

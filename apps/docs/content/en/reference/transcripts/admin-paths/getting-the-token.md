@@ -81,19 +81,19 @@ the change-password page, `change.html`, whose form carries the same
 <p>This account needs a new password before you can continue.</p>
 <form method="post" action="/tenants/system/login-actions/required-action?action=update-password">
   <input type="hidden" name="auth_session_id" value="01a1203b-3d92-7736-aa5e-d291255eace5">
-  <label>New password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" aria-describedby="password-rules-list"></label>
-  <div class="rules hint" id="password-rules" data-min="15">
-    <p class="rules-head"><span>Your password needs:</span><button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false" data-show="Show password" data-hide="Hide password">Show password</button></p>
+  <label>New password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" spellcheck="false" autocapitalize="off" autocorrect="off" aria-describedby="password-rules-list"></label>
+  <div class="rules hint" id="password-rules" data-min="15" data-summary="{met} of {total} rules met">
+    <p class="rules-head"><span>Your password needs:</span> <button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false">Show password</button> <span role="status"></span></p>
     <ul id="password-rules-list">
       <li data-rule="length">At least 15 characters</li>
       <li>Not a common password</li>
     </ul>
   </div>
-  <script nonce="isQO0ygXE+MBWVmdMDcz3A==">(function () {
+  <script nonce="7md+1DAiwQPvGU9En6HBTA==">(function () {
   var box = document.getElementById('password-rules');
   var field = document.getElementById('password');
   if (!box || !field) return;
-  var rows = box.querySelectorAll('li[data-rule]');
+  var rows = Array.from(box.querySelectorAll('li[data-rule]'));
   var min = Number(box.getAttribute('data-min'));
   var tests = {
     length: function (v) { return Array.from(v.normalize('NFC')).length >= min; },
@@ -102,21 +102,28 @@ the change-password page, `change.html`, whose form carries the same
     lowercase: function (v) { return /[a-z]/u.test(v); },
     special: function (v) { return /[^A-Za-z0-9]/u.test(v); }
   };
+  var status = box.querySelector('[role=status]');
+  var timer;
   function check() {
-    Array.from(rows).forEach(function (row) {
-      row.setAttribute('data-met', String(tests[row.getAttribute('data-rule')](field.value)));
-    });
+    return rows.filter(function (row) {
+      var ok = tests[row.getAttribute('data-rule')](field.value);
+      row.setAttribute('data-met', String(ok));
+      return ok;
+    }).length;
   }
-  box.setAttribute('data-live', '');
-  field.addEventListener('input', check);
+  field.addEventListener('input', function () {
+    var met = check();
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      status.textContent = box.getAttribute('data-summary').replace('{met}', met).replace('{total}', rows.length);
+    }, 800);
+  });
   check();
   var toggle = box.querySelector('button');
-  if (!toggle) return;
   toggle.hidden = false;
   toggle.addEventListener('click', function () {
     var show = field.type === 'password';
     field.type = show ? 'text' : 'password';
-    toggle.textContent = toggle.getAttribute(show ? 'data-hide' : 'data-show');
     toggle.setAttribute('aria-pressed', String(show));
   });
 })();</script>

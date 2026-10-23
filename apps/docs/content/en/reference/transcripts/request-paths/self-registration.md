@@ -110,13 +110,13 @@ curl -sS -D - -X POST http://localhost:3195/tenants/register-demo/login-actions/
 HTTP/1.1 400 Bad Request
 x-request-id: 01a16364-8cc3-77f7-9593-7679780ce923
 content-type: text/html
-content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'; script-src 'nonce-Zo0NaU301phbzYxpSCW0MQ=='
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'; script-src 'nonce-2UoH5MnG69zIyefgdgkQcg=='
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 3329
+content-length: 3604
 Date: Thu, 22 Oct 2026 11:34:56 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -147,19 +147,19 @@ Keep-Alive: timeout=72
 <form method="post" action="/tenants/register-demo/login-actions/registration">
   <label>Username <input type="text" name="username" autocomplete="username" aria-invalid="true" aria-describedby="form-error-0" autofocus></label>
   <label>Email <input type="email" name="email" autocomplete="email" value="grace@example.com"></label>
-  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" aria-describedby="password-rules-list"></label>
-  <div class="rules hint" id="password-rules" data-min="15">
-    <p class="rules-head"><span>Your password needs:</span><button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false" data-show="Show password" data-hide="Hide password">Show password</button></p>
+  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" spellcheck="false" autocapitalize="off" autocorrect="off" aria-describedby="password-rules-list"></label>
+  <div class="rules hint" id="password-rules" data-min="15" data-summary="{met} of {total} rules met">
+    <p class="rules-head"><span>Your password needs:</span> <button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false">Show password</button> <span role="status"></span></p>
     <ul id="password-rules-list">
       <li data-rule="length">At least 15 characters</li>
       <li>Not a common password</li>
     </ul>
   </div>
-  <script nonce="Zo0NaU301phbzYxpSCW0MQ==">(function () {
+  <script nonce="2UoH5MnG69zIyefgdgkQcg==">(function () {
   var box = document.getElementById('password-rules');
   var field = document.getElementById('password');
   if (!box || !field) return;
-  var rows = box.querySelectorAll('li[data-rule]');
+  var rows = Array.from(box.querySelectorAll('li[data-rule]'));
   var min = Number(box.getAttribute('data-min'));
   var tests = {
     length: function (v) { return Array.from(v.normalize('NFC')).length >= min; },
@@ -168,21 +168,28 @@ Keep-Alive: timeout=72
     lowercase: function (v) { return /[a-z]/u.test(v); },
     special: function (v) { return /[^A-Za-z0-9]/u.test(v); }
   };
+  var status = box.querySelector('[role=status]');
+  var timer;
   function check() {
-    Array.from(rows).forEach(function (row) {
-      row.setAttribute('data-met', String(tests[row.getAttribute('data-rule')](field.value)));
-    });
+    return rows.filter(function (row) {
+      var ok = tests[row.getAttribute('data-rule')](field.value);
+      row.setAttribute('data-met', String(ok));
+      return ok;
+    }).length;
   }
-  box.setAttribute('data-live', '');
-  field.addEventListener('input', check);
+  field.addEventListener('input', function () {
+    var met = check();
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      status.textContent = box.getAttribute('data-summary').replace('{met}', met).replace('{total}', rows.length);
+    }, 800);
+  });
   check();
   var toggle = box.querySelector('button');
-  if (!toggle) return;
   toggle.hidden = false;
   toggle.addEventListener('click', function () {
     var show = field.type === 'password';
     field.type = show ? 'text' : 'password';
-    toggle.textContent = toggle.getAttribute(show ? 'data-hide' : 'data-show');
     toggle.setAttribute('aria-pressed', String(show));
   });
 })();</script>
@@ -380,19 +387,19 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
 <form method="post" action="/tenants/register-demo/login-actions/registration">
   <label>Username <input type="text" name="username" autocomplete="username" value="carol"></label>
   <label>Email <input type="email" name="email" autocomplete="email" value="ada@example.com" aria-invalid="true" aria-describedby="form-error-0" autofocus></label>
-  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" aria-describedby="password-rules-list"></label>
-  <div class="rules hint" id="password-rules" data-min="15">
-    <p class="rules-head"><span>Your password needs:</span><button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false" data-show="Show password" data-hide="Hide password">Show password</button></p>
+  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" spellcheck="false" autocapitalize="off" autocorrect="off" aria-describedby="password-rules-list"></label>
+  <div class="rules hint" id="password-rules" data-min="15" data-summary="{met} of {total} rules met">
+    <p class="rules-head"><span>Your password needs:</span> <button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false">Show password</button> <span role="status"></span></p>
     <ul id="password-rules-list">
       <li data-rule="length">At least 15 characters</li>
       <li>Not a common password</li>
     </ul>
   </div>
-  <script nonce="bL64p/28vMv7tV//2rRMPQ==">(function () {
+  <script nonce="tPNp2xhZuhimI8TE3Tjltw==">(function () {
   var box = document.getElementById('password-rules');
   var field = document.getElementById('password');
   if (!box || !field) return;
-  var rows = box.querySelectorAll('li[data-rule]');
+  var rows = Array.from(box.querySelectorAll('li[data-rule]'));
   var min = Number(box.getAttribute('data-min'));
   var tests = {
     length: function (v) { return Array.from(v.normalize('NFC')).length >= min; },
@@ -401,21 +408,28 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
     lowercase: function (v) { return /[a-z]/u.test(v); },
     special: function (v) { return /[^A-Za-z0-9]/u.test(v); }
   };
+  var status = box.querySelector('[role=status]');
+  var timer;
   function check() {
-    Array.from(rows).forEach(function (row) {
-      row.setAttribute('data-met', String(tests[row.getAttribute('data-rule')](field.value)));
-    });
+    return rows.filter(function (row) {
+      var ok = tests[row.getAttribute('data-rule')](field.value);
+      row.setAttribute('data-met', String(ok));
+      return ok;
+    }).length;
   }
-  box.setAttribute('data-live', '');
-  field.addEventListener('input', check);
+  field.addEventListener('input', function () {
+    var met = check();
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      status.textContent = box.getAttribute('data-summary').replace('{met}', met).replace('{total}', rows.length);
+    }, 800);
+  });
   check();
   var toggle = box.querySelector('button');
-  if (!toggle) return;
   toggle.hidden = false;
   toggle.addEventListener('click', function () {
     var show = field.type === 'password';
     field.type = show ? 'text' : 'password';
-    toggle.textContent = toggle.getAttribute(show ? 'data-hide' : 'data-show');
     toggle.setAttribute('aria-pressed', String(show));
   });
 })();</script>
@@ -470,19 +484,19 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
 <form method="post" action="/tenants/register-demo/login-actions/registration">
   <label>Username <input type="text" name="username" autocomplete="username" value="ada"></label>
   <label>Email <input type="email" name="email" autocomplete="email" value="ada@example.com"></label>
-  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" aria-invalid="true" aria-describedby="form-error-0 password-rules-list" autofocus></label>
-  <div class="rules hint" id="password-rules" data-min="15">
-    <p class="rules-head"><span>Your password needs:</span><button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false" data-show="Show password" data-hide="Hide password">Show password</button></p>
+  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" spellcheck="false" autocapitalize="off" autocorrect="off" aria-invalid="true" aria-describedby="form-error-0 password-rules-list" autofocus></label>
+  <div class="rules hint" id="password-rules" data-min="15" data-summary="{met} of {total} rules met">
+    <p class="rules-head"><span>Your password needs:</span> <button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false">Show password</button> <span role="status"></span></p>
     <ul id="password-rules-list">
       <li data-rule="length">At least 15 characters</li>
       <li>Not a common password</li>
     </ul>
   </div>
-  <script nonce="3k/p7G8ZAOtQTEX3LY6hdg==">(function () {
+  <script nonce="tNSqqcDx1X4QojmoYQBQfA==">(function () {
   var box = document.getElementById('password-rules');
   var field = document.getElementById('password');
   if (!box || !field) return;
-  var rows = box.querySelectorAll('li[data-rule]');
+  var rows = Array.from(box.querySelectorAll('li[data-rule]'));
   var min = Number(box.getAttribute('data-min'));
   var tests = {
     length: function (v) { return Array.from(v.normalize('NFC')).length >= min; },
@@ -491,21 +505,28 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
     lowercase: function (v) { return /[a-z]/u.test(v); },
     special: function (v) { return /[^A-Za-z0-9]/u.test(v); }
   };
+  var status = box.querySelector('[role=status]');
+  var timer;
   function check() {
-    Array.from(rows).forEach(function (row) {
-      row.setAttribute('data-met', String(tests[row.getAttribute('data-rule')](field.value)));
-    });
+    return rows.filter(function (row) {
+      var ok = tests[row.getAttribute('data-rule')](field.value);
+      row.setAttribute('data-met', String(ok));
+      return ok;
+    }).length;
   }
-  box.setAttribute('data-live', '');
-  field.addEventListener('input', check);
+  field.addEventListener('input', function () {
+    var met = check();
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      status.textContent = box.getAttribute('data-summary').replace('{met}', met).replace('{total}', rows.length);
+    }, 800);
+  });
   check();
   var toggle = box.querySelector('button');
-  if (!toggle) return;
   toggle.hidden = false;
   toggle.addEventListener('click', function () {
     var show = field.type === 'password';
     field.type = show ? 'text' : 'password';
-    toggle.textContent = toggle.getAttribute(show ? 'data-hide' : 'data-show');
     toggle.setAttribute('aria-pressed', String(show));
   });
 })();</script>
@@ -550,9 +571,9 @@ same short password now lists all three:
 <form method="post" action="/tenants/register-demo/login-actions/registration">
   <label>Username <input type="text" name="username" autocomplete="username" value="ada"></label>
   <label>Email <input type="email" name="email" autocomplete="email" value="ada@example.com"></label>
-  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" aria-invalid="true" aria-describedby="form-error-0 form-error-1 form-error-2 password-rules-list" autofocus></label>
-  <div class="rules hint" id="password-rules" data-min="15">
-    <p class="rules-head"><span>Your password needs:</span><button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false" data-show="Show password" data-hide="Hide password">Show password</button></p>
+  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" spellcheck="false" autocapitalize="off" autocorrect="off" aria-invalid="true" aria-describedby="form-error-0 form-error-1 form-error-2 password-rules-list" autofocus></label>
+  <div class="rules hint" id="password-rules" data-min="15" data-summary="{met} of {total} rules met">
+    <p class="rules-head"><span>Your password needs:</span> <button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false">Show password</button> <span role="status"></span></p>
     <ul id="password-rules-list">
       <li data-rule="length">At least 15 characters</li>
       <li data-rule="digit">A digit</li>
@@ -560,11 +581,11 @@ same short password now lists all three:
       <li>Not a common password</li>
     </ul>
   </div>
-  <script nonce="8ygYMKdtfKg64zCS/Pom/g==">(function () {
+  <script nonce="1V5+mdsiiBtFWGs74cIFdQ==">(function () {
   var box = document.getElementById('password-rules');
   var field = document.getElementById('password');
   if (!box || !field) return;
-  var rows = box.querySelectorAll('li[data-rule]');
+  var rows = Array.from(box.querySelectorAll('li[data-rule]'));
   var min = Number(box.getAttribute('data-min'));
   var tests = {
     length: function (v) { return Array.from(v.normalize('NFC')).length >= min; },
@@ -573,21 +594,28 @@ same short password now lists all three:
     lowercase: function (v) { return /[a-z]/u.test(v); },
     special: function (v) { return /[^A-Za-z0-9]/u.test(v); }
   };
+  var status = box.querySelector('[role=status]');
+  var timer;
   function check() {
-    Array.from(rows).forEach(function (row) {
-      row.setAttribute('data-met', String(tests[row.getAttribute('data-rule')](field.value)));
-    });
+    return rows.filter(function (row) {
+      var ok = tests[row.getAttribute('data-rule')](field.value);
+      row.setAttribute('data-met', String(ok));
+      return ok;
+    }).length;
   }
-  box.setAttribute('data-live', '');
-  field.addEventListener('input', check);
+  field.addEventListener('input', function () {
+    var met = check();
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      status.textContent = box.getAttribute('data-summary').replace('{met}', met).replace('{total}', rows.length);
+    }, 800);
+  });
   check();
   var toggle = box.querySelector('button');
-  if (!toggle) return;
   toggle.hidden = false;
   toggle.addEventListener('click', function () {
     var show = field.type === 'password';
     field.type = show ? 'text' : 'password';
-    toggle.textContent = toggle.getAttribute(show ? 'data-hide' : 'data-show');
     toggle.setAttribute('aria-pressed', String(show));
   });
 })();</script>
@@ -643,19 +671,19 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
 <form method="post" action="/tenants/register-demo/login-actions/registration">
   <label>Username <input type="text" name="username" autocomplete="username" value="ada"></label>
   <label>Email <input type="email" name="email" autocomplete="email" value="ada@example.com"></label>
-  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" aria-invalid="true" aria-describedby="form-error-0 form-error-1 password-rules-list" autofocus></label>
-  <div class="rules hint" id="password-rules" data-min="15">
-    <p class="rules-head"><span>Your password needs:</span><button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false" data-show="Show password" data-hide="Hide password">Show password</button></p>
+  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" spellcheck="false" autocapitalize="off" autocorrect="off" aria-invalid="true" aria-describedby="form-error-0 form-error-1 password-rules-list" autofocus></label>
+  <div class="rules hint" id="password-rules" data-min="15" data-summary="{met} of {total} rules met">
+    <p class="rules-head"><span>Your password needs:</span> <button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false">Show password</button> <span role="status"></span></p>
     <ul id="password-rules-list">
       <li data-rule="length">At least 15 characters</li>
       <li>Not a common password</li>
     </ul>
   </div>
-  <script nonce="OqCREU8u2OIxRVGGAewjaQ==">(function () {
+  <script nonce="vjUQ0x404lUj4lrHypAeRA==">(function () {
   var box = document.getElementById('password-rules');
   var field = document.getElementById('password');
   if (!box || !field) return;
-  var rows = box.querySelectorAll('li[data-rule]');
+  var rows = Array.from(box.querySelectorAll('li[data-rule]'));
   var min = Number(box.getAttribute('data-min'));
   var tests = {
     length: function (v) { return Array.from(v.normalize('NFC')).length >= min; },
@@ -664,21 +692,28 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
     lowercase: function (v) { return /[a-z]/u.test(v); },
     special: function (v) { return /[^A-Za-z0-9]/u.test(v); }
   };
+  var status = box.querySelector('[role=status]');
+  var timer;
   function check() {
-    Array.from(rows).forEach(function (row) {
-      row.setAttribute('data-met', String(tests[row.getAttribute('data-rule')](field.value)));
-    });
+    return rows.filter(function (row) {
+      var ok = tests[row.getAttribute('data-rule')](field.value);
+      row.setAttribute('data-met', String(ok));
+      return ok;
+    }).length;
   }
-  box.setAttribute('data-live', '');
-  field.addEventListener('input', check);
+  field.addEventListener('input', function () {
+    var met = check();
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      status.textContent = box.getAttribute('data-summary').replace('{met}', met).replace('{total}', rows.length);
+    }, 800);
+  });
   check();
   var toggle = box.querySelector('button');
-  if (!toggle) return;
   toggle.hidden = false;
   toggle.addEventListener('click', function () {
     var show = field.type === 'password';
     field.type = show ? 'text' : 'password';
-    toggle.textContent = toggle.getAttribute(show ? 'data-hide' : 'data-show');
     toggle.setAttribute('aria-pressed', String(show));
   });
 })();</script>
@@ -727,19 +762,19 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
 <form method="post" action="/tenants/register-demo/login-actions/registration">
   <label>Username <input type="text" name="username" autocomplete="username" value="carol"></label>
   <label>Email <input type="email" name="email" autocomplete="email" value="ada@example.com"></label>
-  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" aria-invalid="true" aria-describedby="form-error-0 password-rules-list" autofocus></label>
-  <div class="rules hint" id="password-rules" data-min="15">
-    <p class="rules-head"><span>Your password needs:</span><button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false" data-show="Show password" data-hide="Hide password">Show password</button></p>
+  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" spellcheck="false" autocapitalize="off" autocorrect="off" aria-invalid="true" aria-describedby="form-error-0 password-rules-list" autofocus></label>
+  <div class="rules hint" id="password-rules" data-min="15" data-summary="{met} of {total} rules met">
+    <p class="rules-head"><span>Your password needs:</span> <button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false">Show password</button> <span role="status"></span></p>
     <ul id="password-rules-list">
       <li data-rule="length">At least 15 characters</li>
       <li>Not a common password</li>
     </ul>
   </div>
-  <script nonce="YKD+1gsGCRVZFJjVQcB5qw==">(function () {
+  <script nonce="Abv9/kaxw3LseE3nDfIp1g==">(function () {
   var box = document.getElementById('password-rules');
   var field = document.getElementById('password');
   if (!box || !field) return;
-  var rows = box.querySelectorAll('li[data-rule]');
+  var rows = Array.from(box.querySelectorAll('li[data-rule]'));
   var min = Number(box.getAttribute('data-min'));
   var tests = {
     length: function (v) { return Array.from(v.normalize('NFC')).length >= min; },
@@ -748,21 +783,28 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
     lowercase: function (v) { return /[a-z]/u.test(v); },
     special: function (v) { return /[^A-Za-z0-9]/u.test(v); }
   };
+  var status = box.querySelector('[role=status]');
+  var timer;
   function check() {
-    Array.from(rows).forEach(function (row) {
-      row.setAttribute('data-met', String(tests[row.getAttribute('data-rule')](field.value)));
-    });
+    return rows.filter(function (row) {
+      var ok = tests[row.getAttribute('data-rule')](field.value);
+      row.setAttribute('data-met', String(ok));
+      return ok;
+    }).length;
   }
-  box.setAttribute('data-live', '');
-  field.addEventListener('input', check);
+  field.addEventListener('input', function () {
+    var met = check();
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      status.textContent = box.getAttribute('data-summary').replace('{met}', met).replace('{total}', rows.length);
+    }, 800);
+  });
   check();
   var toggle = box.querySelector('button');
-  if (!toggle) return;
   toggle.hidden = false;
   toggle.addEventListener('click', function () {
     var show = field.type === 'password';
     field.type = show ? 'text' : 'password';
-    toggle.textContent = toggle.getAttribute(show ? 'data-hide' : 'data-show');
     toggle.setAttribute('aria-pressed', String(show));
   });
 })();</script>
@@ -846,7 +888,7 @@ curl -sS -X POST http://localhost:3195/tenants/register-demo/login-actions/regis
   <input type="hidden" name="return_to" value="/tenants/register-demo/protocol/openid-connect/auth?response_type=code&amp;client_id=register-spa&amp;state=xyz123">
   <label>Username <input type="text" name="username" autocomplete="username" value="newcomer"></label>
   <label>Email <input type="email" name="email" autocomplete="email" value="newcomer@example.com"></label>
-  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" aria-invalid="true" aria-describedby="form-error-0 password-rules-list" autofocus></label>
+  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" spellcheck="false" autocapitalize="off" autocorrect="off" aria-invalid="true" aria-describedby="form-error-0 password-rules-list" autofocus></label>
       <li data-rule="length">At least 15 characters</li>
 <a href="/tenants/register-demo/protocol/openid-connect/auth?response_type=code&amp;client_id=register-spa&amp;state=xyz123">Back to sign in</a>
 ```
@@ -1048,19 +1090,19 @@ curl -sS -w '\n%{http_code}\n' \
 <form method="post" action="/tenants/signup-audit/login-actions/registration">
   <label>Username <input type="text" name="username" autocomplete="username" value="carol"></label>
   <label>Email <input type="email" name="email" autocomplete="email" value="ada@example.com" aria-invalid="true" aria-describedby="form-error-0" autofocus></label>
-  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" aria-describedby="password-rules-list"></label>
-  <div class="rules hint" id="password-rules" data-min="15">
-    <p class="rules-head"><span>Your password needs:</span><button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false" data-show="Show password" data-hide="Hide password">Show password</button></p>
+  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="15" spellcheck="false" autocapitalize="off" autocorrect="off" aria-describedby="password-rules-list"></label>
+  <div class="rules hint" id="password-rules" data-min="15" data-summary="{met} of {total} rules met">
+    <p class="rules-head"><span>Your password needs:</span> <button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false">Show password</button> <span role="status"></span></p>
     <ul id="password-rules-list">
       <li data-rule="length">At least 15 characters</li>
       <li>Not a common password</li>
     </ul>
   </div>
-  <script nonce="qDyIxKEsmyaR8+xpKLsDNQ==">(function () {
+  <script nonce="1eBA5pCZgEINFEZ0w3Ufig==">(function () {
   var box = document.getElementById('password-rules');
   var field = document.getElementById('password');
   if (!box || !field) return;
-  var rows = box.querySelectorAll('li[data-rule]');
+  var rows = Array.from(box.querySelectorAll('li[data-rule]'));
   var min = Number(box.getAttribute('data-min'));
   var tests = {
     length: function (v) { return Array.from(v.normalize('NFC')).length >= min; },
@@ -1069,21 +1111,28 @@ curl -sS -w '\n%{http_code}\n' \
     lowercase: function (v) { return /[a-z]/u.test(v); },
     special: function (v) { return /[^A-Za-z0-9]/u.test(v); }
   };
+  var status = box.querySelector('[role=status]');
+  var timer;
   function check() {
-    Array.from(rows).forEach(function (row) {
-      row.setAttribute('data-met', String(tests[row.getAttribute('data-rule')](field.value)));
-    });
+    return rows.filter(function (row) {
+      var ok = tests[row.getAttribute('data-rule')](field.value);
+      row.setAttribute('data-met', String(ok));
+      return ok;
+    }).length;
   }
-  box.setAttribute('data-live', '');
-  field.addEventListener('input', check);
+  field.addEventListener('input', function () {
+    var met = check();
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      status.textContent = box.getAttribute('data-summary').replace('{met}', met).replace('{total}', rows.length);
+    }, 800);
+  });
   check();
   var toggle = box.querySelector('button');
-  if (!toggle) return;
   toggle.hidden = false;
   toggle.addEventListener('click', function () {
     var show = field.type === 'password';
     field.type = show ? 'text' : 'password';
-    toggle.textContent = toggle.getAttribute(show ? 'data-hide' : 'data-show');
     toggle.setAttribute('aria-pressed', String(show));
   });
 })();</script>

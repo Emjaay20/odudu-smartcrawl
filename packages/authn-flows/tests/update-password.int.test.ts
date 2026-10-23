@@ -430,10 +430,12 @@ describe('the change-password action refuses common and expected passwords', () 
     const account = await seedAccount();
     const tenantName = `tenant-${account.tenantId}`;
 
-    expect(await change(account, tenantName.toUpperCase())).toEqual({
-      kind: 'rejected',
-      violations: [COMMON],
-    });
+    // The name is random hex, which may by chance hold the username `ada`,
+    // so the username rule may fire beside the one under test.
+    const outcome = await change(account, tenantName.toUpperCase());
+    expect(outcome.kind).toBe('rejected');
+    if (outcome.kind !== 'rejected') throw new Error('not rejected');
+    expect(outcome.violations).toContainEqual(COMMON);
   });
 
   it("does not take another tenant's name as a word to refuse", async () => {
