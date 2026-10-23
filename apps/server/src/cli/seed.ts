@@ -1387,7 +1387,7 @@ async function runUserCommand(
       ...(email !== undefined ? { email } : {}),
     });
     if (values['email-verified'] === true) {
-      await userRepository(tx).markEmailVerified(subject.id);
+      await userRepository(tx).setVerification(subject.id, { emailVerified: true });
     }
     await grantNewSubjectDefaults(tx, subject.id);
     await credentialRepository(tx).insert({
@@ -1808,7 +1808,7 @@ async function runProfileCommand(
     }
     await userRepository(tx).updateProfile(subjectId, patch);
     if (values['email-verified'] === true) {
-      await userRepository(tx).markEmailVerified(subjectId);
+      await userRepository(tx).setVerification(subjectId, { emailVerified: true });
     }
   });
 

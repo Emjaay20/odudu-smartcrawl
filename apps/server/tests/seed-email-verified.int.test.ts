@@ -41,6 +41,16 @@ async function verified(tenantId: string, username: string): Promise<boolean | u
   return row?.emailVerified;
 }
 
+// The OIDC `updated_at` claim: set when a claim changes, null on a row nobody
+// has changed since it was made.
+async function updatedAt(tenantId: string, username: string): Promise<Date | null | undefined> {
+  const [row] = await owner.db
+    .select({ at: users.profileUpdatedAt })
+    .from(users)
+    .where(and(eq(users.tenantId, tenantId), eq(users.username, username)));
+  return row?.at;
+}
+
 async function tenant(): Promise<{ name: string; id: string }> {
   const name = `ev-${newId()}`;
   const made = await seed(['tenant', '--name', name]);
@@ -175,5 +185,54 @@ describe('seed profile --email-verified', () => {
       seed(['profile', '--tenant', t.name, '--username', 'gus', '--email-verified']),
     ).rejects.toMatchObject({ code: 'seed_invalid_options' });
     expect(await verified(t.id, 'gus')).toBe(false);
+  });
+
+  it('moves updated_at, as a verified phone number does', async () => {
+    const t = await tenant();
+    await seed([
+      'user',
+      '--tenant',
+      t.name,
+      '--username',
+      'hal',
+      '--password',
+      PASSWORD,
+      '--email',
+      'hal@example.test',
+    ]);
+    expect(await updatedAt(t.id, 'hal')).toBeNull();
+    await seed(['profile', '--tenant', t.name, '--username', 'hal', '--email-verified']);
+    expect(await updatedAt(t.id, 'hal')).toBeInstanceOf(Date);
+  });
+});
+
+describe('the updated_at claim of seed user --email-verified', () => {
+  it('is set when the address is created verified, and not when it is not', async () => {
+    const t = await tenant();
+    await seed([
+      'user',
+      '--tenant',
+      t.name,
+      '--username',
+      'ivy',
+      '--password',
+      PASSWORD,
+      '--email',
+      'ivy@example.test',
+      '--email-verified',
+    ]);
+    await seed([
+      'user',
+      '--tenant',
+      t.name,
+      '--username',
+      'jon',
+      '--password',
+      PASSWORD,
+      '--email',
+      'jon@example.test',
+    ]);
+    expect(await updatedAt(t.id, 'ivy')).toBeInstanceOf(Date);
+    expect(await updatedAt(t.id, 'jon')).toBeNull();
   });
 });
