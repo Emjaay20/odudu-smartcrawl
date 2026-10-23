@@ -1020,9 +1020,10 @@ desktop layout.
 - ![registration-required](p4g-pages/registration-required.webp) `registration-required`: Registration with nothing filled in: each empty field named, the first focused.
 - ![registration-weak](p4g-pages/registration-weak.webp) `registration-weak`: Registration refused for the password's rules, in place, the other values kept.
 - ![registration-taken](p4g-pages/registration-taken.webp) `registration-taken`: A username already taken, on its own field.
-- ![registration-succeeded](p4g-pages/registration-succeeded.webp) `registration-succeeded`: Account created.
-- ![confirm-register](p4g-pages/confirm-register.webp) `confirm-register`: The page a registration link opens: one button, and nothing is created until it is pressed. A verification link's page is the same, titled for the address.
-- ![verification-ok](p4g-pages/verification-ok.webp) `verification-ok`: Email verified.
+- ![registration-succeeded](p4g-pages/registration-succeeded.webp) `registration-succeeded`: Check your email, the page for a free and a held address alike.
+- ![registration-mismatch](p4g-pages/registration-mismatch.webp) `registration-mismatch`: The two passwords differ: the alert, the confirmation focused, neither value given back.
+- ![confirm-register](p4g-pages/confirm-register.webp) `confirm-register`: The page a registration link opens: the account name and one button, and nothing is created until it is pressed. A verification link's page is the same, without the account name.
+- ![registration-ready](p4g-pages/registration-ready.webp) `registration-ready`: Your account is ready, with the way back to the sign-in it came from.
 - ![verification-ok-direct](p4g-pages/verification-ok-direct.webp) `verification-ok-direct`: Email verified from a link that carried no request: what to do, no link.
 - ![verification-failed](p4g-pages/verification-failed.webp) `verification-failed`: A verification link that cannot be used.
 - ![reset-request](p4g-pages/reset-request.webp) `reset-request`: Forgot-password request.

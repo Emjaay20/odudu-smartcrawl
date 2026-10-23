@@ -262,7 +262,7 @@ client's name and the `content-length` that follows from it.
 A registration under `verify_email` then stopped creating the account until its link is confirmed, a
 held address began to be answered as a free one is, the form gained a confirmation field, and a link
 began to ask before it acts. Self-registration was run again whole, block by block in the page's own
-order, on the project `odudu-p4g-31k` on port `3199`, commit `3d591290` plus this increment's
+order, on the project `odudu-p4g-31k` on port `3199`, commit `869edbf7` plus this increment's
 documentation, on a freshly built stack with throttles at `10000`. Each command is the block's own with
 the port named and the confirmation added, so every response, page, mail capture and listing is that
 run's. The mail is the capture the stack's log wrote (no SMTP host is set), and each listing is scoped to

@@ -122,7 +122,7 @@ test('registering, after a refused first attempt, and coming back to the applica
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await page.getByLabel('Confirm password').fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Check your email' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Account created' })).toBeVisible();
   await page.getByRole('link', { name: 'Back to sign in' }).click();
 
   await signIn(page, `new-${tag}`, PASSWORD);
