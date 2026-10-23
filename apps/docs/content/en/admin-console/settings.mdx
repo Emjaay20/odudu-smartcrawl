@@ -111,7 +111,7 @@ A client can carry lifetimes of its own, which win over these.
 ### Dynamic client registration
 
 - **Policy** (`client_registration_policy`): **Closed: only an administrator creates clients**, **With a registration token** or **Open: any application may register**.
-- **Most clients** (`max_clients`): a tenant at this many refuses further registration. 0 allows none.
+- **Most clients** (`max_clients`): a tenant with this many clients refuses to make more, whoever asks. 0 allows none, and a new tenant starts at 200.
 
 ### Audit retention
 
