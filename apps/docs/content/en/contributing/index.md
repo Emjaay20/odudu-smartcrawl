@@ -53,4 +53,4 @@ Work on a branch, and open a pull request. `main` is protected, and its checks m
 - [Run it from a checkout](./run-from-a-checkout.md) starts a server from the source tree, for development.
 - [How the transcripts are captured and checked](./transcripts.md) covers the recorded runs.
 
-The repository has the files every project has: [CONTRIBUTING.md](https://github.com/wizzywit/odudu/blob/main/CONTRIBUTING.md), the [code of conduct](https://github.com/wizzywit/odudu/blob/main/CODE_OF_CONDUCT.md), the [security policy](https://github.com/wizzywit/odudu/blob/main/SECURITY.md) and the [trademark policy](https://github.com/wizzywit/odudu/blob/main/TRADEMARK.md).
+The repository has the files every project has: [CONTRIBUTING.md](https://github.com/wizzywit/odudu/blob/main/CONTRIBUTING.md), the [code of conduct](https://github.com/wizzywit/odudu/blob/main/CODE_OF_CONDUCT.md), the [security policy](https://github.com/wizzywit/odudu/blob/main/SECURITY.md), the [contributor licence agreement](https://github.com/wizzywit/odudu/blob/main/CLA.md) and the [trademark policy](https://github.com/wizzywit/odudu/blob/main/TRADEMARK.md).

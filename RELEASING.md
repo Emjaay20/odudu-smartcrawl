@@ -123,6 +123,13 @@ something public.
 6. **Run the quick start by hand** once on a Mac and once on Windows, with
    Docker Desktop, and once on an arm64 machine. CI proves the full run on
    linux/amd64 only: its macOS and Windows runners cannot run Linux containers.
+7. **Approve the CLA, then test it once.** `CLA.md` is a draft: approve it
+   yourself or have a lawyer read it, and remove the draft header. Then open a
+   throwaway pull request from a second GitHub account (a fork works) and check
+   that the `cla` job comments, that signing by comment turns it green, that
+   the signature lands on the `cla-signatures` branch, and that your own pull
+   request and Dependabot's pass without signing. Write down the status name
+   the pull request shows. Only then add `cla` to the required checks.
 
 ## Moving the site to a domain
 

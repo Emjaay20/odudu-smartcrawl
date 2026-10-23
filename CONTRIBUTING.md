@@ -11,10 +11,12 @@ security problem, follow [SECURITY.md](SECURITY.md) and not an issue.
 ## Before you send a change
 
 Open an issue first for anything bigger than a fix, so we can agree on the
-shape of it. Outside contributions are accepted under a contributor licence
-agreement, as [ADR 0042](docs/adr/0042-distribution-licensing-and-the-paid-boundary.md)
-decides. The agreement text is not published yet, so until it is, ask in the
-issue before you write code.
+shape of it. Outside contributions are accepted under the
+[contributor licence agreement](CLA.md), as
+[ADR 0042](docs/adr/0042-distribution-licensing-and-the-paid-boundary.md)
+decides. To sign it, open your pull request and reply to the CLA bot with
+the comment `I have read the CLA Document and I hereby sign the CLA`.
+You sign once, and it covers every pull request you send after.
 
 [LICENSING.md](LICENSING.md) says which licence covers which directory: the
 server and tools are AGPL-3.0-only, and the examples and the guides are
