@@ -312,16 +312,61 @@ HTTP/1.1 200 OK
 <p>We sent you a link to verify your email address. Open it, then sign in again.</p>
 ```
 
-Following `ada`'s mailed link creates the account, and the same login completes:
+Opening `ada`'s mailed link asks and does nothing else: a mail scanner or a link preview
+opens a link before the person does, so the page shows one button, and the account is made
+only when the button posts the key back. Opened twice, as a scanner might, the page is the
+same and no account exists; the headers on it are `no-store` and `no-referrer`:
 
 ```bash
-curl -sS -o /dev/null -w '%{http_code}\n' \
-  'http://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_2JiEsSNSNnGerM_gg2th274L3BYGovW27jVJc5TAR4Y'
+KEY=reg_Vb7d0-S19F7P4h4Gv0veJYwJxMtjZMMbVYfYIUrBuCg
+for i in 1 2; do
+  curl -sS "http://localhost:3199/tenants/register-demo/login-actions/action-token?key=$KEY" \
+    | grep -E '<h1>|<p>Press|<button|name="key"' | sed 's/value="[^"]*"/value="…"/'
+  echo ---
+done
+docker compose exec -T postgres psql -U odudu -d odudu -At -c \
+  "select count(*) from users u join tenants t on t.id = u.tenant_id where t.name = 'register-demo';"
+curl -sS -i "http://localhost:3199/tenants/register-demo/login-actions/action-token?key=$KEY" \
+  | grep -iE '^(HTTP|cache-control|referrer-policy)'
+```
+
+```
+<h1>Create your account</h1>
+<p>Press the button to create your account.</p>
+  <input type="hidden" name="key" value="…">
+  <button type="submit">Create my account</button>
+---
+<h1>Create your account</h1>
+<p>Press the button to create your account.</p>
+  <input type="hidden" name="key" value="…">
+  <button type="submit">Create my account</button>
+---
+0
+HTTP/1.1 200 OK
+referrer-policy: no-referrer
+cache-control: no-store
+```
+
+Pressing the button posts the key, and that creates the account. A second press, like any
+link nothing holds, is refused, and the tenant holds the one account:
+
+```bash
+for i in 1 2; do
+  curl -sS -o /dev/null -w '%{http_code}\n' \
+    -X POST http://localhost:3199/tenants/register-demo/login-actions/action-token \
+    --data-urlencode "key=$KEY"
+done
+docker compose exec -T postgres psql -U odudu -d odudu -At -c \
+  "select count(*) from users u join tenants t on t.id = u.tenant_id where t.name = 'register-demo';"
 ```
 
 ```
 200
+400
+1
 ```
+
+The same login now completes:
 
 ```bash
 AUTH_SESSION_ID=$(curl -sS --get \
@@ -345,8 +390,8 @@ curl -sS -i -X POST http://localhost:3199/tenants/register-demo/login-actions/au
 
 ```
 HTTP/1.1 302 Found
-set-cookie: register-demo-session=01a1681f-44e8…; HttpOnly; SameSite=Lax; Path=/
-location: http://localhost:8080/callback?code=mMkcGRxbXvMvhd--X40I8fp-sIWtD_CQzMBoKRZSHX8&state=xyz123&iss=http%3A%2F%2Flocalhost%3A3199%2Ftenants%2Fregister-demo
+set-cookie: register-demo-session=01a1685b-77d3…; HttpOnly; SameSite=Lax; Path=/
+location: http://localhost:8080/callback?code=qmtSAHY-VzTxsF5oLFnAXKQl_VZ_U3I0H3w6tXfwcEA&state=xyz123&iss=http%3A%2F%2Flocalhost%3A3199%2Ftenants%2Fregister-demo
 ```
 
 (The session cookie is shortened to the start of its id; it is `<session id>:<secret>`.)
@@ -1020,8 +1065,8 @@ grep -o 'name="auth_session_id" value="[^"]*"' page.html | head -1
 
 ```
 HTTP/1.1 200 OK
-set-cookie: odudu-sign-in=01a16820-2b80-79d5-91c8-cbf8a42d882f.ITto-olzGzyKxRf7SBCLIVNrRvNc0Bor09gZHnH7fjs; HttpOnly; SameSite=Lax; Path=/tenants/register-demo/; Max-Age=1800
-name="auth_session_id" value="01a16820-2b80-79d5-91c8-cbf8a42d882f"
+set-cookie: odudu-sign-in=01a1685a-da8d-72c5-ad66-eb72fbd5c160.OSWpLcEsQl86DKNwF2rrXzHue_JbRP6lIY3TJHpyw1c; HttpOnly; SameSite=Lax; Path=/tenants/register-demo/; Max-Age=1800
+name="auth_session_id" value="01a1685a-da8d-72c5-ad66-eb72fbd5c160"
 ```
 
 The cookie is `<the parked session>.<a secret>`, `HttpOnly`, `SameSite=Lax`, scoped to the
@@ -1055,8 +1100,8 @@ docker compose exec -T postgres psql -U odudu -d odudu -At -c \
 ```
 
 ```
-elsewhere@example.com|http://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_n5aBdJmRybF5lQNSBUNpjwEUjwID8dc8VwbjRIv8PIM
-mailed@example.com|http://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_VmIyfvmzMr2kPtArRCCCmVGHximpg40yEs_hB0KRrG0
+elsewhere@example.com|http://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_1_cPZQVhHjxTTplxut4-0ByRvzGd9dwJahHewm498tY
+mailed@example.com|http://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_fUkkXmKHjsIg-cHjJwh6V6VnkjXRAyvBMjP_TPnd174
 ```
 
 The links hold a key and nothing else. What the pending registrations hold, beside the
@@ -1071,15 +1116,16 @@ docker compose exec -T postgres psql -U odudu -d odudu -At -c \
 ```
 
 ```
-elsewhere|01a16820-2b80-79d5-91c8-cbf8a42d882f
-mailed|01a16820-2b80-79d5-91c8-cbf8a42d882f
+elsewhere|01a1685a-da8d-72c5-ad66-eb72fbd5c160
+mailed|01a1685a-da8d-72c5-ad66-eb72fbd5c160
 ```
 
-Opened in a browser that holds no such cookie (here, `curl` with no jar), the page makes the
+Pressing the button in a browser that holds no such cookie (here, `curl` with no jar), the page makes the
 account and says its address is verified, since a registration link works anywhere, and offers no way to sign in:
 
 ```bash
-curl -sS 'http://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_n5aBdJmRybF5lQNSBUNpjwEUjwID8dc8VwbjRIv8PIM' \
+curl -sS -X POST http://localhost:3199/tenants/register-demo/login-actions/action-token \
+  --data-urlencode 'key=reg_1_cPZQVhHjxTTplxut4-0ByRvzGd9dwJahHewm498tY' \
   | grep -E '<h1>|<p>|<a '
 ```
 
@@ -1088,11 +1134,12 @@ curl -sS 'http://localhost:3199/tenants/register-demo/login-actions/action-token
 <p>Return to the application you were signing in to and sign in again.</p>
 ```
 
-Opened in the browser that holds the sign-in, the same page links to the original request,
+Pressed in the browser that holds the sign-in, the same page links to the original request,
 with its own `state` and `nonce`:
 
 ```bash
-curl -sS -b jar.txt 'http://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_VmIyfvmzMr2kPtArRCCCmVGHximpg40yEs_hB0KRrG0' \
+curl -sS -X POST -b jar.txt http://localhost:3199/tenants/register-demo/login-actions/action-token \
+  --data-urlencode 'key=reg_fUkkXmKHjsIg-cHjJwh6V6VnkjXRAyvBMjP_TPnd174' \
   | grep -E '<h1>|<p>|<a '
 ```
 
@@ -1108,7 +1155,8 @@ started it. The session is ended with `update authentication_sessions set expire
 interval '1 second'` for the id above, which is what `login_ttl_seconds` does without help:
 
 ```bash
-curl -sS -b jar.txt 'http://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_0lN6pUXL1FBkPW08PfCb-SwvNmK-B3Jlt9kbmjaPqH4' \
+curl -sS -X POST -b jar.txt http://localhost:3199/tenants/register-demo/login-actions/action-token \
+  --data-urlencode 'key=reg_UkPo7FjgVcvXQdXHo6hsSrluCE7Y1kN8WdXanuLHP5I' \
   | grep -E '<h1>|<p>|<a '
 ```
 
@@ -1117,7 +1165,7 @@ curl -sS -b jar.txt 'http://localhost:3199/tenants/register-demo/login-actions/a
 <p>Return to the application you were signing in to and sign in again.</p>
 ```
 
-A link is gone once it is opened, so opening one again reads like any link nothing holds
+A link is gone once its button has been pressed, so opening one again reads like any link nothing holds
 and names no sign-in. A mailed link given a `return_to` is not shown one: the page ignores whatever the address
 asks for. An administrator's link (`/subjects/:id/actions-email`) is issued with no request
 behind it and names no sign-in, so it offers none.
@@ -1136,9 +1184,9 @@ and the mailed link are the only ones in play. Every request carries an
 `x-request-id` starting `signup-audit-`, and the query below reads back
 exactly those.
 
-`ada` asks to register, the mailed link is opened, and then `carol` asks for `ada`'s
-address. It is answered `201`, as a free address is. The key is read out of the
-verification mail, the only one this tenant has queued:
+`ada` asks to register, the mailed link is opened and its button pressed, and then `carol`
+asks for `ada`'s address. It is answered `201`, as a free address is. The key is read out of
+the verification mail, the only one this tenant has queued:
 
 ```bash
 odudu seed --tenant signup-audit --client signup-audit-spa \
@@ -1160,24 +1208,28 @@ docker compose exec -T postgres psql -U odudu -d odudu -At -c \
 ```
 
 ```
-{"created":true,"tenant":"signup-audit","tenantId":"01a16820-7d0c-7324-96fb-0fe159d5bfd9","clientId":"signup-audit-spa"}
-{"command":"tenant","created":false,"tenant":"signup-audit","tenantId":"01a16820-7d0c-7324-96fb-0fe159d5bfd9","settings":["registration_allowed","verify_email","reset_password_allowed"]}
+{"created":true,"tenant":"signup-audit","tenantId":"01a1685b-3ce8-722b-bef4-b9934565c726","clientId":"signup-audit-spa"}
+{"command":"tenant","created":false,"tenant":"signup-audit","tenantId":"01a1685b-3ce8-722b-bef4-b9934565c726","settings":["registration_allowed","verify_email","reset_password_allowed"]}
 201
-reg_HWh5NyCN0Tr3G1IaXrPxpaqFKgsVF6Bv-FNedxNP6Co
+reg_F8KUCn2fmYDjCWK13RNebg3byESFZEFXN2UMP69g42Q
 ```
 
 ```bash
-KEY=reg_HWh5NyCN0Tr3G1IaXrPxpaqFKgsVF6Bv-FNedxNP6Co
-curl -sS -o /dev/null -w '%{http_code}\n' -H 'x-request-id: signup-audit-verify' \
+KEY=reg_F8KUCn2fmYDjCWK13RNebg3byESFZEFXN2UMP69g42Q
+curl -sS -o /dev/null -w '%{http_code}\n' -H 'x-request-id: signup-audit-visit' \
   "http://localhost:3199/tenants/signup-audit/login-actions/action-token?key=$KEY"
+curl -sS -o /dev/null -w '%{http_code}\n' \
+  -X POST http://localhost:3199/tenants/signup-audit/login-actions/action-token \
+  -H 'x-request-id: signup-audit-verify' --data-urlencode "key=$KEY"
 curl -sS -o /dev/null -w '%{http_code}\n' \
   -X POST http://localhost:3199/tenants/signup-audit/login-actions/registration \
   -H 'x-request-id: signup-audit-duplicate' \
   --data-urlencode 'username=carol' \
   --data-urlencode 'email=ada@example.com' \
   --data-urlencode 'password=correct-horse-battery'
-curl -sS -o /dev/null -w '%{http_code}\n' -H 'x-request-id: signup-audit-replay' \
-  "http://localhost:3199/tenants/signup-audit/login-actions/action-token?key=$KEY"
+curl -sS -o /dev/null -w '%{http_code}\n' \
+  -X POST http://localhost:3199/tenants/signup-audit/login-actions/action-token \
+  -H 'x-request-id: signup-audit-replay' --data-urlencode "key=$KEY"
 
 docker compose exec -T postgres psql -U odudu -d odudu -x -P 'null=(null)' -c \
   "select e.request_id, e.event_type, e.action, e.outcome, e.actor_subject_id,
@@ -1189,6 +1241,7 @@ docker compose exec -T postgres psql -U odudu -d odudu -x -P 'null=(null)' -c \
 
 ```
 200
+200
 201
 400
 -[ RECORD 1 ]----+-------------------------------------
@@ -1196,9 +1249,9 @@ request_id       | signup-audit-verify
 event_type       | credential
 action           | account.registered
 outcome          | allowed
-actor_subject_id | 01a16820-e693-7a4b-947a-f3eef1fbd767
+actor_subject_id | 01a1685b-76ca-7b3d-ae59-4681b61e5dcd
 resource_type    | subject
-resource_id      | 01a16820-e693-7a4b-947a-f3eef1fbd767
+resource_id      | 01a1685b-76ca-7b3d-ae59-4681b61e5dcd
 detail           | {}
 -[ RECORD 2 ]----+-------------------------------------
 request_id       | signup-audit-duplicate
@@ -1207,13 +1260,13 @@ action           | account.registration_duplicate
 outcome          | refused
 actor_subject_id | (null)
 resource_type    | subject
-resource_id      | 01a16820-e693-7a4b-947a-f3eef1fbd767
+resource_id      | 01a1685b-76ca-7b3d-ae59-4681b61e5dcd
 detail           | {"reason": "already_registered"}
 ```
 
-Four requests, two rows: one for the account the link made and one for the attempt on its
-address, and none for the registration itself or the replayed link. `01a16820-e693-…` is the
-`users.subject_id` this stack holds for `ada` in `signup-audit`, and the refused
-row's `resource_id`; its `actor_subject_id` is empty, because the caller proved
-nothing. `detail` holds no password, address, username or key: the action names
-what happened, and the only value is the reason.
+Five requests, two rows: one for the account the button made and one for the attempt on its
+address, and none for the registration itself, the visit, or the replayed press.
+`01a1685b-76ca-…` is the `users.subject_id` this stack holds for `ada` in `signup-audit`, and
+the refused row's `resource_id`; its `actor_subject_id` is empty, because the caller proved
+nothing. `detail` holds no password, address, username or key: the action names what happened,
+and the only value is the reason.

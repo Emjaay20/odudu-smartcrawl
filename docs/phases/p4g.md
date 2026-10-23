@@ -1021,6 +1021,7 @@ desktop layout.
 - ![registration-weak](p4g-pages/registration-weak.webp) `registration-weak`: Registration refused for the password's rules, in place, the other values kept.
 - ![registration-taken](p4g-pages/registration-taken.webp) `registration-taken`: A username already taken, on its own field.
 - ![registration-succeeded](p4g-pages/registration-succeeded.webp) `registration-succeeded`: Account created.
+- ![confirm-register](p4g-pages/confirm-register.webp) `confirm-register`: The page a registration link opens: one button, and nothing is created until it is pressed. A verification link's page is the same, titled for the address.
 - ![verification-ok](p4g-pages/verification-ok.webp) `verification-ok`: Email verified.
 - ![verification-ok-direct](p4g-pages/verification-ok-direct.webp) `verification-ok-direct`: Email verified from a link that carried no request: what to do, no link.
 - ![verification-failed](p4g-pages/verification-failed.webp) `verification-failed`: A verification link that cannot be used.
@@ -3327,6 +3328,11 @@ defaults, and writes `account.registered`. A username taken meanwhile says so (4
 form); an address taken meanwhile, or any spent, expired, unknown or foreign key, reads as the one
 "can't use this link" page. The unverified-email sign-in page remains, for an account an administrator
 made. With `verify_email` off nothing changes, and the form still says the address is registered.
+
+**A link asks before it acts.** A GET of a registration or verification link shows one button and writes
+nothing (one read of the key); the POST it carries does the work, in the one transaction, so a mail scanner,
+a link preview or antivirus that opens links first cannot spend the link. Reset and required-action links
+already showed a form on GET. A spent registration link names no sign-in.
 
 **Case.** Matching an address is case-insensitive (`users.email_search`, served by
 `users_email_search`), so `ADA@x` is held when `ada@x` has an account. No unique index was added on the

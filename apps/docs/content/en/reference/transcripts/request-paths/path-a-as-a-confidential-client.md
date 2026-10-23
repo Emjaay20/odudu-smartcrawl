@@ -226,8 +226,8 @@ is the reason to be a confidential client.
 `email_verified` is a stored claim, but until now nothing could set it
 truthfully — every ID token and UserInfo response above for `ada` carries
 `"email_verified": false`, and that is still real: nothing verifies an
-address until this section. `GET /tenants/{tenant}/login-actions/action-token?key=…`
-is the other half: consuming the link a verification email carries.
+address until this section. `/tenants/{tenant}/login-actions/action-token?key=…`
+is the other half: a link a verification email carries, which a visit shows and a button press redeems.
 [Self-registration](./self-registration.md) below is one way to trigger that
 mail, for an address that does not exist yet; `odudu seed
 --send-verification-email` is the other, standing in for the admin
@@ -322,21 +322,50 @@ the links read as the rest of these pages do. Their keys are that run's, so the
 commands below that follow a link follow the keys of the earlier run, not these.
 
 Before following it, `ada`'s ID token still reads the way every one earlier
-in this document does:
+in this document does (here from a sign-in on this run's stack, before `verify_email` was turned on):
 
 ```json
 { "email": "ada@example.com", "email_verified": false }
 ```
 
-Following the link once verifies it:
+Opening the link asks and changes nothing. A mail scanner or a link preview opens a mailed
+link before the person does, so a visit is only a page with one button, however often it
+happens, and `ada`'s address is still unverified afterwards:
 
 ```bash
-curl -sS -o /dev/null -w '%{http_code}\n' \
-  'http://localhost:3000/tenants/demo/login-actions/action-token?key=9qsTxZgVlA_N8dHLuijG5l7UUex8F4HwGJEanfGXYCk'
+KEY=mYmuqAkbwkCAy6zWt9zgSno2Vb_RP4ODRdqKNUC4hm4
+for i in 1 2; do
+  curl -sS -o /dev/null -w '%{http_code}\n' \
+    "http://localhost:3199/tenants/demo/login-actions/action-token?key=$KEY"
+done
+docker compose exec -T postgres psql -U odudu -d odudu -At -c \
+  "select u.email_verified from users u join tenants t on t.id = u.tenant_id
+    where t.name = 'demo' and u.username = 'ada';"
 ```
 
 ```
 200
+200
+f
+```
+
+The button posts the key back, and that verifies it. Pressed a second time, it is refused:
+
+```bash
+for i in 1 2; do
+  curl -sS -o /dev/null -w '%{http_code}\n' \
+    -X POST http://localhost:3199/tenants/demo/login-actions/action-token \
+    --data-urlencode "key=$KEY"
+done
+docker compose exec -T postgres psql -U odudu -d odudu -At -c \
+  "select u.email_verified from users u join tenants t on t.id = u.tenant_id
+    where t.name = 'demo' and u.username = 'ada';"
+```
+
+```
+200
+400
+t
 ```
 
 and a fresh ID token for `ada` now carries `"email_verified": true` —
@@ -347,17 +376,8 @@ status are the only claims this touches:
 { "email": "ada@example.com", "email_verified": true }
 ```
 
-Following the same link again is refused — it was minted for one
-redemption, and `action_tokens.consumed_at` is now set:
-
-```bash
-curl -sS -o /dev/null -w '%{http_code}\n' \
-  'http://localhost:3000/tenants/demo/login-actions/action-token?key=9qsTxZgVlA_N8dHLuijG5l7UUex8F4HwGJEanfGXYCk'
-```
-
-```
-400
-```
+The second press was refused because the link was minted for one
+redemption, and `action_tokens.consumed_at` is now set.
 
 The same 400 answers a key that never existed, one presented to the wrong
 tenant, one past its 12-hour lifespan, or one whose address the user has

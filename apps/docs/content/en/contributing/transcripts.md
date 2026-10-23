@@ -270,6 +270,14 @@ password-policy blocks and the bidi block did not change and were not run again.
 transcript and the README's reap report were run again for the new `pending_registrations` key, on a
 fresh stack driven as that page describes, with one more block that adds two pending rows.
 
+A registration or verification link then began to ask before it acts: a visit shows one button and the
+button's press does the work. The blocks that follow such a link were run again on the project
+`odudu-p4g-31k`, port `3199`, commit `1a8e90fc` plus this increment's documentation: in Self-registration
+the sign-in refused and then completed around the link, the two visits and the press, the cookie-jar
+section's three links and the audit section (now five requests), and in Path A the address verification
+(a sign-in's ID token before, two visits, two presses, and the ID token after). The password-policy,
+bidi, held-address and retention blocks did not change.
+
 ## Admin path transcripts
 
 The admin API: the endpoints under `/admin/tenants/{tenant}/` that let an

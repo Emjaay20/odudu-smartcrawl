@@ -109,8 +109,8 @@ a confidential client still gets `authorization_code`, `refresh_token` and
 flag's addition changes nothing for an invocation that does not use it.
 
 `email_verified` is now a claim about something that happened: a mailed
-`GET /tenants/{tenant}/login-actions/action-token?key=…` link, redeemed once,
-flips it. A tenant carries three settings for the account lifecycle this
+`/tenants/{tenant}/login-actions/action-token?key=…` link, opened and then redeemed once with
+its button (a visit changes nothing, so a mail scanner cannot spend it), flips it. A tenant carries three settings for the account lifecycle this
 begins — `registration_allowed`, `verify_email` and `reset_password_allowed`
 — each defaulting off, so upgrading a tenant never silently grants it public
 registration or mailed verification. `odudu seed tenant --set` changes them,
