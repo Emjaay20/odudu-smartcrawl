@@ -60,6 +60,8 @@ Recording every refusal sounds right and has a catch: anybody can cause a refusa
 
 ### How long it is kept
 
+Nothing in the server or the admin API edits or deletes an event, apart from the retention pass below. Events are not signed or chained, though, so somebody who holds the database owner's login could change them. Export the events you must keep to a place that person cannot reach.
+
 Events are kept 90 days by default, set per tenant with `audit_retention_days`. The `odudu reap` command removes older ones, and the server runs it on a schedule. The [configuration reference](../reference/generated/configuration.md) lists the schedule's settings and the [command reference](../reference/generated/cli.md) describes `odudu reap`.
 
 ## Working with consent and audit

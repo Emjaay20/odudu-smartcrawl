@@ -11,6 +11,12 @@ You will get the most from it if you build or run apps that need people to sign 
 
 Odudu is not ready for production yet. It runs as one instance, and the [roadmap](../roadmap.md) lists what is missing and which phase brings it. Try it, build against it and tell us what you find.
 
+## Licence and language
+
+Odudu is free software under the GNU Affero General Public License, version 3 (`AGPL-3.0-only`). You may run it, study it and change it. If you let other people use a changed version over a network, the licence asks you to offer them that version's source. Read the [licence](https://github.com/wizzywit/odudu/blob/main/LICENSE) itself for the terms; this is not legal advice. The name and the mark have their own [trademark policy](https://github.com/wizzywit/odudu/blob/main/TRADEMARK.md).
+
+The pages and mail Odudu sends are in English today. Odudu has no SDK of its own: use any OpenID Connect library, as the [guides](../guides/index.md) do.
+
 ## Where to start
 
 1. **Run it.** The [quick start](../quick-start/index.mdx) gets a server running and you signed in to its console, then signs a person in to an app. It takes about ten minutes.
