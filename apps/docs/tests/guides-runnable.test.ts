@@ -13,6 +13,7 @@ const PAGES = [
   'guides/api.md',
   'guides/machine-to-machine.md',
   'guides/keycloak.md',
+  'guides/wordpress.md',
   'operating/upgrading.md',
   'operating/backups.md',
   'operating/hardening.md',

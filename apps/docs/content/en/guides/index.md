@@ -16,6 +16,7 @@ The guides assume you have done the [quick start](../quick-start/index.mdx), so 
 3. [An API](./api.md) receives access tokens and decides whether to trust them.
 4. [A service calling a service](./machine-to-machine.md) has no person to sign in, so it signs in as itself.
 5. [Coming from Keycloak](./keycloak.md) maps its ideas to Odudu's and says what does not move.
+6. [WordPress](./wordpress.md) lets people sign in to a WordPress site with the OpenID Connect Generic Client plugin. It was tested by hand, not by an example app.
 
 ## Then learn what happens underneath
 
