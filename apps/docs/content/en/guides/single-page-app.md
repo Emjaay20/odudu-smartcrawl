@@ -96,6 +96,20 @@ The access token is what the app sends to your API. The ID token says who signed
 
 The steps above are what a single-page app does, by hand. A working version is one short file, written with the `oauth4webapi` library, which makes the `state`, the `nonce` and the PKCE pair, checks them when the person comes back, and verifies the ID token for you. [The single-page app example](https://github.com/wizzywit/odudu/tree/main/examples/single-page-app) signs `ada` in from the browser, shows who she is and when her access token expires, and keeps the tokens in memory. Its README says how to run it against your stack.
 
+## A sign-up button
+
+A "Sign up" button sends the person to the same address with `prompt=create` added. Odudu shows its registration page instead of the sign-in page, and the person comes back to your app the same way once they have an account. The tenant has to allow self-registration first.
+
+```sh {run expect="registration_allowed"}
+docker compose exec odudu odudu seed tenant --name demo --set registration_allowed=true
+```
+
+```sh {run expect="/tenants/demo/login-actions/registration?return_to="}
+curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' "$AUTHORIZE_URL&prompt=create"
+```
+
+The answer is a `303` to the registration page, which carries your request as `return_to`. [Sign a user in](./sign-a-user-in.md#a-sign-up-button) has the detail.
+
 ## Where to go next
 
 - Keep people signed in with [Refresh and end a session](./refresh-and-end-a-session.md), which also covers signing out.

@@ -3512,3 +3512,58 @@ Not observable without a real run: that GitHub accepts the workflow and the `git
 enabled (owner step 4), that the artifact deploys and `page_url` is the address in the config, that lychee resolves
 the Markdown sources with these arguments and its cache, that the old address redirects after a domain swap, and that
 `releases/latest/download/compose.yaml` skips a release candidate. `.lycheeignore` skips the site until it answers.
+
+## Increment 31l: `prompt=create`, the sign-up button
+
+Initiating User Registration via OpenID Connect 1.0 (Final, December 2022) read in full from
+`https://openid.net/specs/openid-connect-prompt-create-1_0.html`; the clause table and the
+reading notes are `docs/protocols/oidc-prompt-create.md`. Three readings decided the shape.
+
+- **Combination.** §4's exact words: "Care must be taken if combining this value with other
+  prompt values. Mutually exclusive conditions can arise so it is RECOMMENDED that `create` not
+  be combined with any other values." A RECOMMENDED, not a MUST, so the server may refuse or
+  resolve; it refuses (`invalid_request`, `prompt is not valid`), the answer `none` beside
+  another value already gets, because resolving would mean the server choosing what
+  `create select_account` meant.
+- **A tenant without registration.** §4.1: a value "not declared in the
+  `prompt_values_supported` metadata field" SHOULD be answered with "an HTTP 400 (Bad Request)
+  status code and an error value of `invalid_request`", with an `error_description`
+  "identifying the invalid parameter value" RECOMMENDED. The description is the static
+  `prompt=create is not supported: registration is off`; the delivery is the one every refusal
+  below the RFC 6749 §4.1.2.1 boundary gets, a 302 to the validated `redirect_uri`, since the
+  client is known and the spec's 400 is the OAuth answer where it is not.
+- **Discovery.** §4.2: an OP that supports `create` "MUST define this metadata element", and
+  then "must also specify all other prompt values which it supports". So the member is always
+  present with the four Core values, and `create` is added per tenant on `registration_allowed`
+  (and `enabled`), the same way `registration_endpoint` follows `client_registration_policy`.
+  The constants live in `packages/contracts/src/discovery.ts` and `parsePrompt` reads them, so
+  the document and the parser cannot drift.
+
+**The page is the existing one.** `/authorize` parks the request as a login would and answers
+303 to `accountPagePath(tenant, 'registration', signInPath)`, the builder `loginWays` now
+shares, so the `return_to` is byte for byte what the sign-in form's _Create an account_ link
+carries. The sign-in cookie travels on the redirect, so the mailed verification link resumes
+the request exactly as the link flow does. `restartAuthorizeLocation` rebuilds `create` as
+`login`: the way back after registering is a sign-in that asks for credentials, so the new
+account signs in rather than whichever session the browser already held. A browser holding a
+live session is shown the registration page all the same, and no code is issued from it.
+
+**Performance.** The `create` branch runs before the session resolution and the initial
+challenge: one `startAuthentication` insert and the `continuation` read of the parked request,
+which is fewer queries than the login page makes (no `resolveSessions`, `enabledSubjects`,
+`initialChallenge`, client name). Discovery gains no query: `registration_allowed` is on the
+tenant row it already reads. No new table, index or admin route; `pnpm test:plans` not needed.
+
+**Security.** The redirect target is a path on this server built from the tenant name and the
+rebuilt request, never from request input; the registration page validates `return_to` again
+(`signInPath`) and `/authorize` validates the rebuilt request from scratch. Nothing of the
+request is reflected in a page `/authorize` renders. The parked request is the request as sent.
+The registration route's own limiter and 404 on a closed tenant are unchanged.
+
+**OIDF.** The Basic, Config and Dynamic OP plans send `prompt=none` and `prompt=login` and read
+the discovery document; none sends `create` or an undefined value, and `prompt_values_supported`
+is OPTIONAL metadata the suite does not validate. No module's path changes.
+
+**Transcripts re-run on the project `odudu-p4g-31l` (port 3331):** Path A §1 (the discovery
+document gains `prompt_values_supported`), and a new section of Self-registration, _Starting at
+the registration page_, with the open and the closed tenant.

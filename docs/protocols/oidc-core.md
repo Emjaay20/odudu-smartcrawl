@@ -295,15 +295,17 @@ comparison already covers the case where one is present. Both callers pass
 their choice to `verifyJwt` explicitly (`ExpectedAudience`), so a reader
 sees the asymmetry in the type rather than having to know it.
 
-**Discovery advertises none of this, deliberately.** OIDC Discovery 1.0 §3
-defines no metadata for `prompt`: `prompt_values_supported` comes from
-Initiating User Registration via OpenID Connect, the extension that adds
-`prompt=create`, and is not part of the document this server publishes.
-§15.1 makes `none` and `login` mandatory for every OP, so there is nothing
-optional for a client to discover — and a list naming the four values this
-server _parses_ would claim the `consent` and `select_account` behaviour it
-does not yet have. `packages/contracts/src/discovery.ts` is therefore
-unchanged, and no clause row is added for a claim that is not served.
+**Discovery advertises the four values, and `create` where it is served.**
+OIDC Discovery 1.0 §3 defines no metadata for `prompt`:
+`prompt_values_supported` comes from Initiating User Registration via
+OpenID Connect 1.0, the extension that adds `prompt=create`, and an OP
+that supports that value has to publish the member and name every other
+value it supports (`docs/protocols/oidc-prompt-create.md`). The list is
+built once, in `packages/contracts/src/discovery.ts`, and `parsePrompt`
+reads the same constants, so the document cannot name a value the
+endpoint refuses or omit one it answers. `create` appears only for a
+tenant with `registration_allowed` on; the other four are the ones every
+tenant answers under this note.
 
 ### Response Mode: `query` and nothing else
 

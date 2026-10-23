@@ -72,6 +72,7 @@ curl -sS http://localhost:3000/tenants/demo/.well-known/openid-configuration
   "authorization_response_iss_parameter_supported": true,
   "claims_parameter_supported": true,
   "ui_locales_supported": ["en"],
+  "prompt_values_supported": ["none", "login", "consent", "select_account"],
   "backchannel_logout_supported": true,
   "backchannel_logout_session_supported": true,
   "frontchannel_logout_supported": true,

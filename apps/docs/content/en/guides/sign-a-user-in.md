@@ -150,6 +150,35 @@ curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
 
 Full transcript: [Path A, /userinfo](../reference/transcripts/request-paths/path-a-authorization-code-with-pkce.md#5-userinfo).
 
+## A sign-up button
+
+A "Sign up" button in your app is the same request as "Sign in", with `prompt=create` added. Odudu shows the person its registration page instead of the sign-in page. Your app keeps its own `state`, `nonce` and PKCE pair, and gets the code back the same way once the person has an account and signs in. The tenant must allow self-registration; see [Settings](../admin-console/settings.mdx).
+
+```bash
+curl -sS -D - -o /dev/null --get \
+  --data-urlencode 'response_type=code' \
+  --data-urlencode 'client_id=register-spa' \
+  --data-urlencode 'redirect_uri=http://localhost:8080/callback' \
+  --data-urlencode 'scope=openid email' \
+  --data-urlencode 'state=xyz123' \
+  --data-urlencode 'nonce=abc123' \
+  --data-urlencode 'code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM' \
+  --data-urlencode 'code_challenge_method=S256' \
+  --data-urlencode 'prompt=create' \
+  'http://localhost:3331/tenants/register-demo/protocol/openid-connect/auth' \
+  | grep -iE '^(HTTP|location|set-cookie)'
+```
+
+```
+HTTP/1.1 303 See Other
+set-cookie: odudu-sign-in=01a16990-78a9-7085-a2a8-bbaf1ec6130e.jonCj76UnfEjGF1KyFgF68szQhRj4emANpMttPGP6wI; HttpOnly; SameSite=Lax; Path=/tenants/register-demo/; Max-Age=1800
+location: /tenants/register-demo/login-actions/registration?return_to=%2Ftenants%2Fregister-demo%2Fprotocol%2Fopenid-connect%2Fauth%3Fresponse_type%3Dcode%26client_id%3Dregister-spa%26redirect_uri%3Dhttp%253A%252F%252Flocalhost%253A8080%252Fcallback%26scope%3Dopenid%2Bemail%26code_challenge%3DE9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM%26code_challenge_method%3DS256%26state%3Dxyz123%26nonce%3Dabc123%26prompt%3Dlogin
+```
+
+(This run used another port, 3331.) The cookie is how Odudu remembers the request, as on the sign-in page. The registration page carries your request as `return_to`. When the person has made their account, the page sends them to sign in with it, and the code reaches your `redirect_uri` with your `state`. Send `prompt=create` on its own; combined with another `prompt` value it is refused. A tenant that does not allow self-registration answers `invalid_request` at your `redirect_uri`, and its discovery document lists `prompt_values_supported` without `create`.
+
+Full transcript: [Self-registration, starting at the registration page](../reference/transcripts/request-paths/self-registration.md#starting-at-the-registration-page).
+
 ## Run a finished app
 
 Everything above is what an app does for you. To see it done in code, run [the single-page app example](https://github.com/wizzywit/odudu/tree/main/examples/single-page-app), which signs a person in from the browser, or [the web app example](https://github.com/wizzywit/odudu/tree/main/examples/web-app), whose server keeps a secret. Each README says how to run it against your stack.

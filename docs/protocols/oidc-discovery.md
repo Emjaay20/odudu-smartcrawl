@@ -61,6 +61,11 @@ values that make later conformance testing predictable:
   negotiation matches `ui_locales` against. `claims_locales_supported` is
   never published: `claims_locales` is accepted and ignored, and advertising
   it would promise a claim language the server does not choose (ADR 0043).
+- `prompt_values_supported` is not a Discovery 1.0 member either; it comes
+  from Initiating User Registration via OpenID Connect 1.0 §4.2, which
+  requires it of an OP that supports `prompt=create`. It always lists the
+  four OIDC Core values and adds `create` for a tenant with
+  `registration_allowed` on (`docs/protocols/oidc-prompt-create.md`).
 
 ## Clause table
 

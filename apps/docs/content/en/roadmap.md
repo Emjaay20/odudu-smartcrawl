@@ -38,7 +38,7 @@ Everything here works in the version you can run today.
 
 - Passwords with a policy and lockouts, a list of common passwords that may not be chosen, passkeys, and a one-time password from an authenticator app.
 - Recovery codes: ten per person, shown once, offered again when the last is spent, revoked as a set when the last authenticator goes.
-- Self-registration, email verification and password reset, each switched on per tenant, and required actions you set on a person.
+- Self-registration, email verification and password reset, each switched on per tenant, and required actions you set on a person. An app can send a person straight to the registration page with `prompt=create`.
 
 ### Admin API and console
 

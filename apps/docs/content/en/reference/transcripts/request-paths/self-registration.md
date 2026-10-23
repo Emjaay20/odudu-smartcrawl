@@ -1215,6 +1215,90 @@ and names no sign-in. A mailed link given a `return_to` is not shown one: the pa
 asks for. An administrator's link (`/subjects/:id/actions-email`) is issued with no request
 behind it and names no sign-in, so it offers none.
 
+## Starting at the registration page
+
+An application with a **Sign up** button sends the same request as for a sign-in with
+`prompt=create` added (Initiating User Registration via OpenID Connect 1.0). `/authorize`
+parks the request as it would for a sign-in and answers `303` to the registration page,
+with the same `return_to` the **Create an account** link carries, and the same sign-in
+cookie, so a mailed link can bring the person back. This run is on `http://localhost:3331`,
+a fresh stack with `register-demo` seeded as above and `registration_allowed` on:
+
+```bash
+curl -sS -D - -o /dev/null --get \
+  --data-urlencode 'response_type=code' \
+  --data-urlencode 'client_id=register-spa' \
+  --data-urlencode 'redirect_uri=http://localhost:8080/callback' \
+  --data-urlencode 'scope=openid email' \
+  --data-urlencode 'state=xyz123' \
+  --data-urlencode 'nonce=abc123' \
+  --data-urlencode 'code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM' \
+  --data-urlencode 'code_challenge_method=S256' \
+  --data-urlencode 'prompt=create' \
+  'http://localhost:3331/tenants/register-demo/protocol/openid-connect/auth' \
+  | grep -iE '^(HTTP|location|set-cookie)'
+```
+
+```
+HTTP/1.1 303 See Other
+set-cookie: odudu-sign-in=01a16990-78a9-7085-a2a8-bbaf1ec6130e.jonCj76UnfEjGF1KyFgF68szQhRj4emANpMttPGP6wI; HttpOnly; SameSite=Lax; Path=/tenants/register-demo/; Max-Age=1800
+location: /tenants/register-demo/login-actions/registration?return_to=%2Ftenants%2Fregister-demo%2Fprotocol%2Fopenid-connect%2Fauth%3Fresponse_type%3Dcode%26client_id%3Dregister-spa%26redirect_uri%3Dhttp%253A%252F%252Flocalhost%253A8080%252Fcallback%26scope%3Dopenid%2Bemail%26code_challenge%3DE9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM%26code_challenge_method%3DS256%26state%3Dxyz123%26nonce%3Dabc123%26prompt%3Dlogin
+```
+
+The `return_to` is this request with `prompt=login` in place of `create`: once the person
+has an account, the way back is a sign-in that asks for their new credentials, not a session
+the browser already held. The page it leads to is the one shown above, with the same
+**Back to sign in** link. `create` goes alone; beside another value it is refused, as `none`
+is, and a tenant with `registration_allowed` off refuses the value as one it does not
+support. Both are reported at the application's own `redirect_uri`, with its `state`. The
+second request goes to `closed-demo`, a tenant seeded with the same client and registration
+left off:
+
+```bash
+odudu seed --tenant closed-demo --client register-spa \
+  --redirect-uri http://localhost:8080/callback
+curl -sS -o /dev/null -w '%{redirect_url}\n' --get \
+  --data-urlencode 'response_type=code' \
+  --data-urlencode 'client_id=register-spa' \
+  --data-urlencode 'redirect_uri=http://localhost:8080/callback' \
+  --data-urlencode 'scope=openid email' \
+  --data-urlencode 'state=xyz123' \
+  --data-urlencode 'code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM' \
+  --data-urlencode 'code_challenge_method=S256' \
+  --data-urlencode 'prompt=create login' \
+  'http://localhost:3331/tenants/register-demo/protocol/openid-connect/auth'
+curl -sS -o /dev/null -w '%{redirect_url}\n' --get \
+  --data-urlencode 'response_type=code' \
+  --data-urlencode 'client_id=register-spa' \
+  --data-urlencode 'redirect_uri=http://localhost:8080/callback' \
+  --data-urlencode 'scope=openid email' \
+  --data-urlencode 'state=xyz123' \
+  --data-urlencode 'code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM' \
+  --data-urlencode 'code_challenge_method=S256' \
+  --data-urlencode 'prompt=create' \
+  'http://localhost:3331/tenants/closed-demo/protocol/openid-connect/auth'
+```
+
+```
+{"created":true,"tenant":"closed-demo","tenantId":"01a16990-1f35-7695-8587-b0d1b494f402","clientId":"register-spa"}
+http://localhost:8080/callback?error=invalid_request&error_description=prompt+is+not+valid&state=xyz123&iss=http%3A%2F%2Flocalhost%3A3331%2Ftenants%2Fregister-demo
+http://localhost:8080/callback?error=invalid_request&error_description=prompt%3Dcreate+is+not+supported%3A+registration+is+off&state=xyz123&iss=http%3A%2F%2Flocalhost%3A3331%2Ftenants%2Fclosed-demo
+```
+
+The discovery document says which it will be, before any request is sent:
+
+```bash
+for t in register-demo closed-demo; do
+  curl -sS "http://localhost:3331/tenants/$t/.well-known/openid-configuration" \
+    | grep -o '"prompt_values_supported":\[[^]]*\]'
+done
+```
+
+```
+"prompt_values_supported":["none","login","consent","select_account","create"]
+"prompt_values_supported":["none","login","consent","select_account"]
+```
+
 ## What registration and verification leave in the audit log
 
 Asking to register writes no audit row for a free address: nothing exists yet. An

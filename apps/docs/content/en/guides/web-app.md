@@ -50,7 +50,7 @@ Now build the address your app redirects the browser to. `state` is a value you 
 AUTHORIZE_URL="$TENANT/protocol/openid-connect/auth?response_type=code&client_id=my-web-app&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid%20profile%20email&state=abc123&nonce=n-0S6_WzA2Mj&code_challenge=$CHALLENGE&code_challenge_method=S256" && echo "$AUTHORIZE_URL"
 ```
 
-In a real app the person's browser opens that address. They see Odudu's sign-in page, named for your app, and sign in there. Your app never sees their password.
+In a real app the person's browser opens that address. They see Odudu's sign-in page, named for your app, and sign in there. Your app never sees their password. A "Sign up" button is the same address with `prompt=create` added, which shows the registration page instead; see [a sign-up button](./sign-a-user-in.md#a-sign-up-button).
 
 ## 4. The person signs in
 

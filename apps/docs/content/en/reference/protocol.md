@@ -28,7 +28,7 @@ Send these on the query string, or as a form.
 - `scope` names what you ask for. It defaults to `openid`. A scope the tenant does not have, or one the client is not assigned, is refused.
 - `code_challenge` and `code_challenge_method` are required for every client, and the method must be `S256`. This is PKCE. See [Sign a user in](../guides/sign-a-user-in.md).
 - `state` comes back to you unchanged. `nonce` comes back in the ID token. Use both.
-- `prompt` takes `none`, `login`, `consent` or `select_account`. With `none`, no page is shown, and a person who is not signed in gets `login_required`.
+- `prompt` takes `none`, `login`, `consent`, `select_account` or `create`. With `none`, no page is shown, and a person who is not signed in gets `login_required`. With `create`, the person is shown the registration page instead of the sign-in; a tenant without self-registration refuses it. `create` goes alone. See [a sign-up button](../guides/sign-a-user-in.md#a-sign-up-button).
 - `max_age` is the longest age, in whole seconds, a sign-in may have. An older one asks the person to sign in again. The client's default maximum age applies when the request has none.
 - `id_token_hint` is an ID token this server issued. It says which person the request is for.
 - `ui_locales` picks the language of the pages.
