@@ -13,7 +13,7 @@ networks:
 services:
   mongodb:
     # digest of the multi-arch index; Dependabot moves it
-    image: mongo:6.0.13@sha256:b415b12f638e2685d06c58ab7fb5943577c50fadec6d9340ef67d21aeac72070
+    image: mongo:6.0.28@sha256:8b6d8f5bbedb25cb73517b65cf99f13aeb75ad5b157a56c479287a840bbad3ac
     extra_hosts:
       - 'localhost:host-gateway'
 
