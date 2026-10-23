@@ -14,7 +14,7 @@ export const COPIED_FOR_MS = 2000;
 export const TYPING_SEED = 7;
 
 const NOTES: Record<CopyStatus, string> = {
-  idle: `${RELEASE_CAVEAT} Needs Docker with Compose v2.`,
+  idle: `${RELEASE_CAVEAT}. Needs Docker with Compose v2.`,
   copied: 'Copied to your clipboard.',
   failed: 'Your browser would not copy it. Select the command and copy it by hand.',
 };

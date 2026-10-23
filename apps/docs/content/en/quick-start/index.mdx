@@ -29,10 +29,10 @@ You also need `curl`, which macOS, Linux and current Windows ship. Postgres and 
 One command downloads the file that describes the stack and starts it. The first start pulls the images, so it is slower than the starts after it.
 
 ```text
-curl -fsSLO https://github.com/wizzywit/odudu/releases/latest/download/compose.yaml && docker compose up -d
+curl -fsSLO https://github.com/wizzywit/odudu/releases/download/v0.1.0-rc.1/compose.yaml && docker compose up -d
 ```
 
-Arrives with the first release. Until that release is published, this address does not serve the file yet.
+This is a release candidate; once 0.1.0 is out, the command uses `latest`.
 
 The file starts three things: Postgres, a one-time setup step that creates the database roles and the first administrator, and the server.
 

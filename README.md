@@ -18,8 +18,8 @@ OpenID Connect and OAuth 2.0, many tenants, one container and PostgreSQL.
 
 </div>
 
-> **Not production ready.** Odudu has not had a security review. Try it, test
-> against it and tell us what you find. Do not put it in front of real users yet.
+> **A release candidate.** Odudu has not had an independent security review yet.
+> Use it with your own apps and real sign-ins, start small, and tell us what you find.
 
 Odudu signs people in to your apps. It is for teams that want to run their own
 sign-in, with single sign-on, passkeys and an admin API, and keep their users'
@@ -69,13 +69,14 @@ data on their own servers.
 You need Docker with Compose v2 and `curl`.
 
 ```sh
-curl -fsSLO https://github.com/wizzywit/odudu/releases/latest/download/compose.yaml && docker compose up -d
+curl -fsSLO https://github.com/wizzywit/odudu/releases/download/v0.1.0-rc.1/compose.yaml && docker compose up -d
 docker compose logs setup
 ```
 
 The second command prints the console address, the administrator's email and a
 one-time password. [The quick start](https://wizzywit.github.io/odudu/docs/quick-start/)
-takes you from there to a signed-in app. The release is coming; until then,
+takes you from there to a signed-in app. This is a release candidate. Try it and
+tell us what breaks. You can also
 [run it from a checkout](https://wizzywit.github.io/odudu/docs/contributing/run-from-a-checkout/).
 
 ## Documentation
@@ -87,7 +88,7 @@ takes you from there to a signed-in app. The release is coming; until then,
 
 ## Status
 
-Odudu is before 1.0 and not production ready. Some of what is described here is
+Odudu is before 1.0, a release candidate. Some of what is described here is
 still being built. [The roadmap](https://wizzywit.github.io/odudu/docs/roadmap/)
 shows what is ready. A hosted service is in the works. Nothing about it is for
 sale or scheduled yet.

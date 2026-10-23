@@ -194,7 +194,7 @@ describe('what it says about the product matches the roadmap', () => {
   it('says plainly where it stands, links the roadmap, and promises no hosted date or price', () => {
     const status = section('Status');
     expect(status).toMatch(/before 1\.0|pre-1\.0/iu);
-    expect(status).toMatch(/not production ready/u);
+    expect(status).toMatch(/release candidate/u);
     expect(status).toContain(`${SITE_DOCS}roadmap/`);
     expect(status.replaceAll(/\[([^\]]*)\]\([^)\s]+\)/gu, '$1').replaceAll(/\s+/gu, ' ')).toContain(
       STATUS_SENTENCE,
@@ -204,9 +204,9 @@ describe('what it says about the product matches the roadmap', () => {
     expect(status).not.toMatch(/[$€£]\s?\d|\bpric(e|es|ing)\b|\b20\d\d\b/iu);
   });
 
-  it('keeps the not-production-ready notice at the top', () => {
+  it('keeps the release-candidate notice, with its security-review disclosure, at the top', () => {
     const top = LINES.slice(0, 40).join('\n');
-    expect(top).toMatch(/Not production ready/u);
+    expect(top).toMatch(/A release candidate/u);
     expect(top).toMatch(/security review/iu);
   });
 });
@@ -281,10 +281,12 @@ describe('the quick start in the README is the quick start page', () => {
     expect(README.match(/ODUDU_[A-Z_]+/gu) ?? []).toEqual([]);
   });
 
-  it('says the release is coming, and names the checkout route, until a stable one is published', () => {
+  it('names the candidate tag, and the checkout route, until a stable release is published', () => {
     const quick = section('Quick start');
-    expect(quick.includes('The release is coming; until then,')).toBe(!stable);
+    expect(quick.includes('This is a release candidate.')).toBe(!stable);
     expect(quick.includes('contributing/run-from-a-checkout/')).toBe(!stable);
+    expect(quick.includes('releases/download/v0.1.0-rc.1/compose.yaml')).toBe(!stable);
+    expect(quick.includes('releases/latest/download/compose.yaml')).toBe(stable);
   });
 });
 
