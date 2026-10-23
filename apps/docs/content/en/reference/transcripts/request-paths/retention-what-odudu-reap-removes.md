@@ -26,7 +26,7 @@ odudu reap
 ```
 
 ```
-{"ran":true,"deleted":{"refresh_tokens":0,"authorization_codes":0,"token_grants":0,"authentication_sessions":0,"action_tokens":0,"client_registration_tokens":0,"login_failures":0,"email_outbox":0,"backchannel_logout_deliveries":0,"client_assertion_jti":0,"console_sessions":0,"console_logins":0,"sessions":0,"audit_events":0},"cleared":{"client_previous_secrets":0}}
+{"ran":true,"deleted":{"refresh_tokens":0,"authorization_codes":0,"token_grants":0,"authentication_sessions":0,"action_tokens":0,"pending_registrations":0,"client_registration_tokens":0,"login_failures":0,"email_outbox":0,"backchannel_logout_deliveries":0,"client_assertion_jti":0,"console_sessions":0,"console_logins":0,"sessions":0,"audit_events":0},"cleared":{"client_previous_secrets":0}}
 ```
 
 Those zeros are the point. By this stage the database holds a consumed
@@ -86,7 +86,7 @@ odudu reap
 ```
 
 ```
-{"ran":true,"deleted":{"refresh_tokens":2,"authorization_codes":1,"token_grants":1,"authentication_sessions":1,"action_tokens":0,"client_registration_tokens":0,"login_failures":0,"email_outbox":0,"backchannel_logout_deliveries":0,"client_assertion_jti":0,"console_sessions":0,"console_logins":0,"sessions":1,"audit_events":0},"cleared":{"client_previous_secrets":0}}
+{"ran":true,"deleted":{"refresh_tokens":2,"authorization_codes":1,"token_grants":1,"authentication_sessions":1,"action_tokens":0,"pending_registrations":0,"client_registration_tokens":0,"login_failures":0,"email_outbox":0,"backchannel_logout_deliveries":0,"client_assertion_jti":0,"console_sessions":0,"console_logins":0,"sessions":1,"audit_events":0},"cleared":{"client_previous_secrets":0}}
 ```
 
 Both refresh tokens of the family, the code that produced it, the grant
@@ -105,7 +105,7 @@ odudu reap
 ```
 
 ```
-{"ran":true,"deleted":{"refresh_tokens":0,"authorization_codes":0,"token_grants":0,"authentication_sessions":0,"action_tokens":0,"client_registration_tokens":0,"login_failures":0,"email_outbox":0,"backchannel_logout_deliveries":0,"client_assertion_jti":0,"console_sessions":0,"console_logins":0,"sessions":0,"audit_events":0},"cleared":{"client_previous_secrets":0}}
+{"ran":true,"deleted":{"refresh_tokens":0,"authorization_codes":0,"token_grants":0,"authentication_sessions":0,"action_tokens":0,"pending_registrations":0,"client_registration_tokens":0,"login_failures":0,"email_outbox":0,"backchannel_logout_deliveries":0,"client_assertion_jti":0,"console_sessions":0,"console_logins":0,"sessions":0,"audit_events":0},"cleared":{"client_previous_secrets":0}}
 ```
 
 `console_sessions` and `console_logins` report `0` in every capture in this
@@ -133,7 +133,7 @@ odudu reap
 ```
 
 ```
-{"ran":true,"deleted":{"refresh_tokens":0,"authorization_codes":0,"token_grants":0,"authentication_sessions":0,"action_tokens":0,"client_registration_tokens":0,"login_failures":0,"email_outbox":0,"backchannel_logout_deliveries":0,"client_assertion_jti":0,"console_sessions":2,"console_logins":1,"sessions":0,"audit_events":0},"cleared":{"client_previous_secrets":0}}
+{"ran":true,"deleted":{"refresh_tokens":0,"authorization_codes":0,"token_grants":0,"authentication_sessions":0,"action_tokens":0,"pending_registrations":0,"client_registration_tokens":0,"login_failures":0,"email_outbox":0,"backchannel_logout_deliveries":0,"client_assertion_jti":0,"console_sessions":2,"console_logins":1,"sessions":0,"audit_events":0},"cleared":{"client_previous_secrets":0}}
 ```
 
 The idle session and the expired one are removed, and so is the expired login.
@@ -145,6 +145,28 @@ detection. The pass revokes no grant with the row: a console session's grant is
 bound to the tenant's SSO session, and its refresh token answers `invalid_grant`
 once that session idles out. The gateway itself revokes the grant when a request
 finds the session over.
+
+`pending_registrations` holds a registration waiting for its mailed link, one row per
+address. A row is deleted when its link is opened, so only the ones nobody opened are
+left, and they are kept for `ODUDU_RETENTION_ACTION_TOKEN_SECONDS` past their
+`expires_at` (a week, a courtesy window and not a detection bound). To see the rule
+work, add two to the same stack, one expired eight days ago and one still live:
+
+```bash
+docker compose exec -T postgres psql -U odudu -d odudu -q -c "
+INSERT INTO pending_registrations (id, tenant_id, token_hash, username, email, password_hash, expires_at)
+SELECT gen_random_uuid(), t.id, md5(p.name), p.name, p.name || '@example.com', 'h', now() + p.remaining
+  FROM tenants t, (VALUES ('expired', interval '-8 days'), ('live', interval '1 hour')) AS p(name, remaining)
+ WHERE t.name = 'demo';
+"
+odudu reap
+```
+
+```
+{"ran":true,"deleted":{"refresh_tokens":0,"authorization_codes":0,"token_grants":0,"authentication_sessions":0,"action_tokens":0,"pending_registrations":1,"client_registration_tokens":0,"login_failures":0,"email_outbox":0,"backchannel_logout_deliveries":0,"client_assertion_jti":0,"console_sessions":0,"console_logins":0,"sessions":0,"audit_events":0},"cleared":{"client_previous_secrets":0}}
+```
+
+The expired request is gone and the live one remains.
 
 ## When the pass refuses, or finds nothing to look at
 

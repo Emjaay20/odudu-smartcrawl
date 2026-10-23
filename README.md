@@ -218,10 +218,9 @@ for that walkthrough, captured message included.
 /tenants/{tenant}/login-actions/registration` lets a user create their own
 account — subject, user row, password credential and the tenant's default
 roles, all in one transaction — instead of an administrator seeding one in.
-When the tenant's `verify_email` is also on, a self-registered address
-cannot complete a login until it is verified: no authorization code is
-issued, which is the property that made verification ship before
-registration rather than alongside it. See
+When the tenant's `verify_email` is also on, that transaction runs when the
+mailed link is opened, so nobody signs in with an address nobody has proved:
+until then there is no account, only a pending registration. See
 [the self-registration section of the request paths](apps/docs/content/en/reference/transcripts/request-paths/self-registration.md)
 for the walkthrough.
 
@@ -557,18 +556,11 @@ without the body or, to a caller without `view-users`, the full address
 caller or change a status: it happens after the response, and no code
 reachable from a request holds a mail transport at all.
 
-**Registration and enumeration.** With `registration_allowed` also on, the
-registration form closes the same door for email addresses when `verify_email`
-is on: registering an address that already has an account answers exactly as
-registering a free one does ("Account created", status 201), creates nothing,
-and mails the address's holder that someone tried and that they already have
-an account, with a link to reset the password where the tenant has reset on.
-A taken username is still named on its field, because a username is not a
-secret and the person needs to choose another. With `verify_email` off nothing
-can be mailed, so the form says "that email address is already registered": a
-tenant that wants the address private turns verification on. The admin API
-keeps its explicit `409` for a taken username or address, since its caller is
-authenticated.
+**Registration and enumeration.** With `verify_email` on, a registration creates nothing
+until its mailed link is opened, and registering an address that already has an account
+looks the same: status 201, "Account created". The holder gets a mail saying someone
+tried. A taken username is still named. With `verify_email` off the form says the
+address is registered.
 
 A mailed verification link is built from `ODUDU_PUBLIC_BASE_URL`, never
 from the request that triggered it — a request's `Host` header is
@@ -1720,7 +1712,7 @@ Captured with the second, against a compose stack built from this branch and
 driven through one sign-in, one code redemption and one refresh rotation:
 
 ```
-{"ran":true,"deleted":{"refresh_tokens":0,"authorization_codes":0,"token_grants":0,"authentication_sessions":0,"action_tokens":0,"client_registration_tokens":0,"login_failures":0,"email_outbox":0,"backchannel_logout_deliveries":0,"client_assertion_jti":0,"console_sessions":0,"console_logins":0,"sessions":0,"audit_events":0},"cleared":{"client_previous_secrets":0}}
+{"ran":true,"deleted":{"refresh_tokens":0,"authorization_codes":0,"token_grants":0,"authentication_sessions":0,"action_tokens":0,"pending_registrations":0,"client_registration_tokens":0,"login_failures":0,"email_outbox":0,"backchannel_logout_deliveries":0,"client_assertion_jti":0,"console_sessions":0,"console_logins":0,"sessions":0,"audit_events":0},"cleared":{"client_previous_secrets":0}}
 ```
 
 Those zeros on a freshly used stack are the design, not a bug. A row is

@@ -102,7 +102,7 @@ Off
 Anybody may create an account on the sign-in page.
 Verify email addresses
 Off
-A new account is asked to confirm its address by a link in a mail.
+The account is created when the person opens the link in a mail.
 Verification link lifetime
 s
 43200 s · 12 hours

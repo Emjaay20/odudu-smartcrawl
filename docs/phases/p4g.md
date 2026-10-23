@@ -3314,26 +3314,43 @@ declarative user profile.
 
 ### Increment 31k, a taken address is not named
 
-**A taken address is answered like a free one when `verify_email` is on.** The form says "Account created"
-with status 201 whether or not the address has an account, creates nothing for a taken one, and mails the
-address's holder that someone tried (a link to the password reset where the tenant has it on). A taken
-username is still named on its field, in both modes. With `verify_email` off the form still says the address
-is registered, since nothing can be mailed; the settings page and the README say so. The admin API keeps its
-`409`, its caller being authenticated.
+**With `verify_email` on, a registration creates nothing until its link is opened.** The request
+is a `pending_registrations` row (username, address, the Argon2id hash made on the spot, expiry; one
+row per tenant and lower-cased address, a repeat replaces it) and one verification mail. A held address
+writes no row, and mails its holder instead. Both answer 201 with the same page, and neither holds a
+username, so asking for one username twice (first with a held address, then a free one) answers as it
+does for two free ones. The first version of this increment created the account straight away and a
+review found that exact two-request oracle; deferring the account is what closed it. The link route
+reads `reg_` keys from the new table; opening one re-checks the username and address against the accounts
+that exist then, and in one transaction creates the subject, user (address verified), credential and
+defaults, and writes `account.registered`. A username taken meanwhile says so (409, with a link to the
+form); an address taken meanwhile, or any spent, expired, unknown or foreign key, reads as the one
+"can't use this link" page. The unverified-email sign-in page remains, for an account an administrator
+made. With `verify_email` off nothing changes, and the form still says the address is registered.
 
-**Order of the checks.** The usernames and addresses are looked up together, in the transaction, before
-anything is written, and the username is answered first, so a taken address never changes what a taken
-username is told. A registration that loses a race on the address is answered as a taken one too.
+**Case.** Matching an address is case-insensitive (`users.email_search`, served by
+`users_email_search`), so `ADA@x` is held when `ada@x` has an account. No unique index was added on the
+lower-cased column: existing data may hold case variants, and a migration that fails on them is worse.
+The pending table is unique on `(tenant_id, email_search)`; a race between two links for case variants of
+one address is closed only by the byte-exact unique index.
 
-**Queries and timing.** Free path: two lookups, subject, user, default roles and groups, credential, audit
-row, token (and its lifetime read), one mail. Taken path: two lookups, audit row, one mail. Both hash the
-password once and write one mail row. Ten runs on a local stack: free 40.7 ms median, taken 36.5 ms; the
-four milliseconds left are the writes only the free path makes, and a statistical attacker with many samples
-could still tell them apart. Closing it would mean padding the taken path with writes that mean nothing.
+**Mail bound.** One in-process sliding window per tenant and address (3 an hour, at most 100,000
+addresses, about 3 timestamps each, evicting the coldest, one lookup per call, no timer) suppresses the
+queueing of verification, reset and held-address mail, never the answer. A restart clears it and N
+replicas allow N times as much, so P11 owns sharing it (roadmap and section 11 say so).
 
-**Audit.** `account.registration_duplicate`, `refused`, reason `already_registered`, naming the account it ran
-into. Bounded as a login failure is, by the per-origin throttle; ADR 0037's amendment records it.
+**Queries per path** (reads / writes). Free address: 2 / 2 (pending upsert, mail). Held address: 2 / 2
+(audit row, mail). Before the change: free 2 reads + about 9 writes in one transaction, held 2 + 2 plus a
+failed attempt. The tenant's link lifetime comes from the tenant lookup the route already makes, not a
+third read. Link opened: delete-returning, two lookups, subject, user, defaults (2 reads), verified flag,
+credential, audit row. Every statement is an index scan in the plan inventory at 200,000 subjects, the
+two new ones included. Both request paths hash once and a request the policy refuses is answered before
+hashing. Measured over 200 alternating requests per path on a local stack: free median 38.2 ms, held 38.3
+ms; the paired difference has a median of 0.1 ms against a spread of 11 ms, which is noise.
+
+**Audit.** `account.registration_duplicate`, `refused`, reason `already_registered`, naming the account;
+bounded by the per-origin throttle (ADR 0037's amendment).
 
 **`odudu seed client --consent-required`** creates a client that asks for consent, so the consent screen and
 its two refusals are reproducible from the command line. The `consent_required` and `access_denied` lines in
-the refusal transcripts are captured against such a client now.
+the refusal transcripts are captured against such a client.

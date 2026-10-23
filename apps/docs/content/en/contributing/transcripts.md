@@ -259,11 +259,16 @@ made a client that asks, and both ran against it on the project `odudu-p4g-31k`,
 that precedes them was captured in the same run, and is the page the transcripts quote, apart from the
 client's name and the `content-length` that follows from it.
 
-A taken email address under `verify_email` began to be answered as a free one is. The three blocks that
-show it, and the audit section of Self-registration, ran on the same project and commit, on tenants
-`register-demo`, `reg-open` and `signup-audit` made for them with throttles at `10000`. The mail to the
-holder is the capture the stack's log wrote (no SMTP host is set), and the outbox listing and the user list
-are scoped to the tenant.
+A registration under `verify_email` then stopped creating the account until its link is opened, and a
+held address began to be answered as a free one is. Self-registration was run again where it changed, on
+the project `odudu-p4g-31k` on port `3199`, commit `6ca24ca1` plus this increment's documentation, on a
+freshly built stack with throttles at `10000`: the mail and its page, the forged `Host`, the refused and
+the completed sign-in, the held and free address, the two-request username check, the mail listing, the
+`reg-open` tenant, the sign-in cookie and links section and the audit section. The mail is the
+capture the stack's log wrote (no SMTP host is set), and each listing is scoped to its tenant. The
+password-policy blocks and the bidi block did not change and were not run again. The retention
+transcript and the README's reap report were run again for the new `pending_registrations` key, on a
+fresh stack driven as that page describes, with one more block that adds two pending rows.
 
 ## Admin path transcripts
 

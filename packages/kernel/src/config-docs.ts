@@ -146,7 +146,7 @@ export const CONFIG_DOCS: Record<ConfigKey, ConfigDoc> = {
       'rows are.',
   ),
   ODUDU_RETENTION_ACTION_TOKEN_SECONDS: retention(
-    'How long a spent or expired mailed action token (verify email, reset password) is kept.',
+    'How long a spent or expired mailed action token, or a registration nobody opened, is kept.',
   ),
   ODUDU_RETENTION_REGISTRATION_TOKEN_SECONDS: retention(
     'How long a spent or expired registration token is kept.',

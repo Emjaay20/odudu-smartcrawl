@@ -35,9 +35,9 @@ odudu seed tenant --name register-demo \
 {"command":"tenant","created":false,"tenant":"register-demo","tenantId":"01a0cb12-2131-78a5-9def-e9bcc032180b","settings":["registration_allowed","verify_email"]}
 ```
 
-With both on, posting the form creates the account and, because
-`verify_email` is on, sends a mail instead of leaving the address usable
-right away:
+With both on, posting the form creates nothing. It keeps the request and sends
+a mail whose link creates the account, so neither the address nor the username
+is settled until somebody has proved the address:
 
 ```bash
 curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/registration \
@@ -68,29 +68,33 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
 </html>
 ```
 
-The subject, the `users` row, the password credential and the tenant's
-default roles and groups — those `PUT /admin/tenants/{tenant}/roles/{id}/default`
-and `PUT /admin/tenants/{tenant}/groups/{id}/default` mark, none of which may
-reach an admin capability ([the admin paths](../admin-paths/index.md)) — are all
-created in one transaction, and the `verify_email`
-token is issued inside that same transaction — the mail goes out only after
-it commits, the same ordering [Address verification](./path-a-as-a-confidential-client.md#address-verification)
+No subject, `users` row or credential exists yet. The request is one row of
+`pending_registrations`: the username, the address, the Argon2id hash of the
+password made on the spot, and when it expires. A second request for the same
+address, in any case, replaces the row. The mail goes out only after that row
+commits, the same ordering [Address verification](./path-a-as-a-confidential-client.md#address-verification)
 establishes. With `ODUDU_SMTP_HOST` unset, the link lands in the container's
-log instead of an inbox:
+log instead of an inbox, here on port `3199`, where the stack of this section
+and the next ran. Its key starts `reg_`, which is how the link route knows to
+look in that table:
 
 ```json
 {
   "level": 30,
   "to": "ada@example.com",
   "subject": "Verify your register-demo account",
-  "text": "Confirm your email address for ⁨register-demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/register-demo/login-actions/action-token?key=Lab7hHM2wxtYPPCJKwlr-DLWD_Agyfk3A998qLQtaHo\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to create or update an account at ⁨register-demo⁩.\n© 2026 Odudu · Powered by odudu",
-  "htmlBytes": 5893,
+  "text": "Confirm your email address for ⁨register-demo⁩ by visiting this link:\n\nhttp://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_2JiEsSNSNnGerM_gg2th274L3BYGovW27jVJc5TAR4Y\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to create or update an account at ⁨register-demo⁩.\n© 2026 Odudu · Powered by odudu",
+  "htmlBytes": 5905,
   "msg": "captured email — no SMTP host configured"
 }
 ```
 
-(From a second run, so its key is that run's, not the one the commands below
-follow.)
+When the link is opened, one transaction takes the row, looks for the username and
+the address among the accounts that exist then, and creates the subject, the
+`users` row (with the address already verified), the password credential and the
+tenant's default roles and groups, those `PUT /admin/tenants/{tenant}/roles/{id}/default`
+and `PUT /admin/tenants/{tenant}/groups/{id}/default` mark, none of which may
+reach an admin capability ([the admin paths](../admin-paths/index.md)).
 
 A username holding a bidirectional control character, one that would reorder the
 text around it wherever it is shown (U+202A to U+202E or U+2066 to U+2069), is
@@ -208,18 +212,17 @@ with status 1, naming the field it refused. Arabic and Hebrew usernames, with or
 RLM, are accepted: `odudu seed user --username مستخدم` created the account on
 the same stack.
 
-That link's host, `localhost:3000`, comes from `ODUDU_PUBLIC_BASE_URL`
+That link's host, `localhost:3199`, comes from `ODUDU_PUBLIC_BASE_URL`
 (`compose.yaml` sets it to match the port published above) — never from the
 request that reached the registration endpoint. A request's `Host` header
 is client-controlled, and building a mailed link from it would let an
 attacker who registers someone else's address choose where that link
 points, capture the key when the victim (or a spam filter, or a link
-preview) follows it, and verify an address they do not control against an
-account they hold the password to. Posting the same form again with a
-forged `Host` proves the header is ignored:
+preview) follows it, and create an account they hold the password to under an
+address they do not control. Posting the same form with a forged `Host` proves the header is ignored:
 
 ```bash
-curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/registration \
+curl -sS -X POST http://localhost:3199/tenants/register-demo/login-actions/registration \
   -H 'Host: evil.example' \
   --data-urlencode 'username=grace' \
   --data-urlencode 'email=grace@example.com' \
@@ -231,22 +234,23 @@ curl -sS -X POST http://localhost:3000/tenants/register-demo/login-actions/regis
   "level": 30,
   "to": "grace@example.com",
   "subject": "Verify your register-demo account",
-  "text": "Confirm your email address for ⁨register-demo⁩ by visiting this link:\n\nhttp://localhost:3000/tenants/register-demo/login-actions/action-token?key=6f5ULPUsXns2PQdyunW7qE0ArIa-yhBGsjVQg4DPNOA\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to create or update an account at ⁨register-demo⁩.\n© 2026 Odudu · Powered by odudu",
-  "htmlBytes": 5893,
+  "text": "Confirm your email address for ⁨register-demo⁩ by visiting this link:\n\nhttp://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_bHUzirabAksbwQhhhB_PlK2fVO2E_Vuq4VbRwr2yqb4\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to create or update an account at ⁨register-demo⁩.\n© 2026 Odudu · Powered by odudu",
+  "htmlBytes": 5905,
   "msg": "captured email — no SMTP host configured"
 }
 ```
 
-Still `localhost:3000`, never `evil.example`. When `ODUDU_PUBLIC_BASE_URL`
+Still `localhost:3199`, never `evil.example`. When `ODUDU_PUBLIC_BASE_URL`
 is unset and a tenant's `verify_email` is on, registration refuses outright
 (500, logged as a misconfiguration) rather than falling back to the
 request in any way.
 
-**This is the property the whole account-lifecycle build exists for**: an
-unverified self-registered address must not be able to complete a login, and
-the assertion is that no code is issued, not that a page says something.
-Requesting `/authorize` and submitting the login form with the password just
-set answers 200, not the usual 302:
+**This is the property the whole account-lifecycle build exists for**: nobody
+signs in with an address nobody has proved, and the assertion is that no code is
+issued, not that a page says something. Before the link is opened there is no
+account to sign in to. Requesting `/authorize` and submitting the login form with
+the password just set answers the refusal any unknown account gets, 200 and not
+the usual 302 (only the status line and the alert's words are kept here, with `grep` and `sed`):
 
 ```bash
 AUTH_SESSION_ID=$(curl -sS --get \
@@ -258,62 +262,61 @@ AUTH_SESSION_ID=$(curl -sS --get \
   --data-urlencode 'nonce=abc123' \
   --data-urlencode 'code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM' \
   --data-urlencode 'code_challenge_method=S256' \
-  'http://localhost:3197/tenants/register-demo/protocol/openid-connect/auth' \
+  'http://localhost:3199/tenants/register-demo/protocol/openid-connect/auth' \
   | sed -n '/name="auth_session_id"/{s/.*value="\([^"]*\)".*/\1/p;q;}')
 
-curl -sS -i -X POST http://localhost:3197/tenants/register-demo/login-actions/authenticate \
+curl -sS -i -X POST http://localhost:3199/tenants/register-demo/login-actions/authenticate \
   --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
   --data-urlencode 'username=ada' \
-  --data-urlencode 'password=correct-horse-battery'
+  --data-urlencode 'password=correct-horse-battery' \
+  | grep -E '^(HTTP|location|set-cookie)|Sign-in failed' | sed 's/<[^>]*>//g'
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a1651a-e0cf-7146-af56-f7d78cfe966d
-content-type: text/html
-content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
-x-frame-options: DENY
-referrer-policy: no-referrer
-cache-control: no-store
-x-content-type-options: nosniff
-content-language: en
-content-length: 1255
-Date: Thu, 22 Oct 2026 19:33:42 GMT
-Connection: keep-alive
-Keep-Alive: timeout=72
-
-<!doctype html>
-<html lang="en" dir="ltr">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark">
-<title>Verify your email</title>
-<link rel="stylesheet" href="/instrument/instrument.css">
-<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
-<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
-</head>
-<body>
-<main class="page">
-<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
-<h1>Can&#39;t sign in yet</h1>
-<p>We sent you a link to verify your email address. Open it, then sign in again.</p>
-<p class="links">
-<a href="/tenants/register-demo/protocol/openid-connect/auth?response_type=code&amp;client_id=register-spa&amp;redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&amp;scope=openid+email&amp;code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&amp;code_challenge_method=S256&amp;state=xyz123&amp;nonce=abc123">Back to sign in</a>
-</p>
-</main>
-</body>
-</html>
+Sign-in failed. Check your details and try again.
 ```
 
 No `location` and no `set-cookie` header are on that response — nothing was
 established and nothing was issued, which is the part a passing status code
-alone could not prove. Following the mailed link, the same login now
-completes:
+alone could not prove. The page that says "Can't sign in yet" is for an account
+that exists with an address nobody has proved, which only an administrator's
+`odudu seed user --email` (or the admin API) makes now. Here `bob`:
+
+```bash
+odudu seed user --tenant register-demo --username bob \
+  --password correct-horse-battery --email bob@example.com
+AUTH_SESSION_ID=$(curl -sS --get \
+  --data-urlencode 'response_type=code' \
+  --data-urlencode 'client_id=register-spa' \
+  --data-urlencode 'redirect_uri=http://localhost:8080/callback' \
+  --data-urlencode 'scope=openid email' \
+  --data-urlencode 'state=xyz123' \
+  --data-urlencode 'nonce=abc123' \
+  --data-urlencode 'code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM' \
+  --data-urlencode 'code_challenge_method=S256' \
+  'http://localhost:3199/tenants/register-demo/protocol/openid-connect/auth' \
+  | sed -n '/name="auth_session_id"/{s/.*value="\([^"]*\)".*/\1/p;q;}')
+
+curl -sS -i -X POST http://localhost:3199/tenants/register-demo/login-actions/authenticate \
+  --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
+  --data-urlencode 'username=bob' \
+  --data-urlencode 'password=correct-horse-battery' \
+  | grep -E '^HTTP|<h1>|<p>We sent'
+```
+
+```
+{"command":"user","tenant":"register-demo","tenantId":"01a1681e-93f0-7ea9-b17a-aaf65e152787","username":"bob","userSubjectId":"01a1681f-0850-7216-9662-631959ac9f49"}
+HTTP/1.1 200 OK
+<h1>Can&#39;t sign in yet</h1>
+<p>We sent you a link to verify your email address. Open it, then sign in again.</p>
+```
+
+Following `ada`'s mailed link creates the account, and the same login completes:
 
 ```bash
 curl -sS -o /dev/null -w '%{http_code}\n' \
-  'http://localhost:3000/tenants/register-demo/login-actions/action-token?key=6AkQjYEkoqMGiYpFx63UGAuvitBIEjmNyDMd6w2uN2Y'
+  'http://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_2JiEsSNSNnGerM_gg2th274L3BYGovW27jVJc5TAR4Y'
 ```
 
 ```
@@ -330,48 +333,32 @@ AUTH_SESSION_ID=$(curl -sS --get \
   --data-urlencode 'nonce=abc123' \
   --data-urlencode 'code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM' \
   --data-urlencode 'code_challenge_method=S256' \
-  'http://localhost:3000/tenants/register-demo/protocol/openid-connect/auth' \
+  'http://localhost:3199/tenants/register-demo/protocol/openid-connect/auth' \
   | sed -n '/name="auth_session_id"/{s/.*value="\([^"]*\)".*/\1/p;q;}')
 
-curl -sS -i -X POST http://localhost:3000/tenants/register-demo/login-actions/authenticate \
+curl -sS -i -X POST http://localhost:3199/tenants/register-demo/login-actions/authenticate \
   --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
   --data-urlencode 'username=ada' \
-  --data-urlencode 'password=correct-horse-battery'
+  --data-urlencode 'password=correct-horse-battery' \
+  | grep -E '^(HTTP|location|set-cookie: register-demo-session=)'
 ```
 
 ```
 HTTP/1.1 302 Found
-set-cookie: register-demo-session=01a0cb12-b62e-…; HttpOnly; SameSite=Lax; Path=/
-set-cookie: register-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-location: http://localhost:8080/callback?code=8DR6gZGbEKhkDcC7a0dilL9k2gDcZjHo8ZMOuZ6mnqM&state=xyz123&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fregister-demo
+set-cookie: register-demo-session=01a1681f-44e8…; HttpOnly; SameSite=Lax; Path=/
+location: http://localhost:8080/callback?code=mMkcGRxbXvMvhd--X40I8fp-sIWtD_CQzMBoKRZSHX8&state=xyz123&iss=http%3A%2F%2Flocalhost%3A3199%2Ftenants%2Fregister-demo
 ```
 
-(This predates the session cookie's secret, so the cookie shown is a truncated
-bare id; it is now `<session id>:<secret>`.)
+(The session cookie is shortened to the start of its id; it is `<session id>:<secret>`.)
 
 `users.email` is unique per tenant, not globally — `email` alone would be a
-tenancy bug — so an address already held **in this tenant** cannot be
-registered a second time. What the form says depends on `verify_email`. With it
-on, the answer must not tell a stranger who has registered, so a taken address
-is answered exactly as a free one is, and its holder is told by mail instead.
-This ran on a freshly built stack on port `3199` (throttles at `10000`), on a
-tenant made for it with password reset on as well,
-so the mail can offer it. `ada` registers first, and `carol` then tries `ada`'s
-address:
+tenancy bug — and matched without regard to case, so `ADA@example.com` is `ada`'s
+address too. What the form says about a taken address depends on `verify_email`.
+With it on, the form must not tell a stranger who has registered, so a held
+address is answered exactly as a free one is, and its holder is told by mail
+instead. `ada` now has an account; `carol` tries her address:
 
 ```bash
-odudu seed \
-  --tenant register-demo --client register-spa \
-  --redirect-uri http://localhost:8080/callback
-odudu seed tenant --name register-demo \
-  --set registration_allowed=true --set verify_email=true \
-  --set reset_password_allowed=true
-
-curl -sS -o /dev/null -w '%{http_code}\n' \
-  -X POST http://localhost:3199/tenants/register-demo/login-actions/registration \
-  --data-urlencode 'username=ada' \
-  --data-urlencode 'email=ada@example.com' \
-  --data-urlencode 'password=correct-horse-battery'
 curl -sS -D - \
   -X POST http://localhost:3199/tenants/register-demo/login-actions/registration \
   -H 'x-request-id: register-demo-taken' \
@@ -381,9 +368,6 @@ curl -sS -D - \
 ```
 
 ```
-{"created":true,"tenant":"register-demo","tenantId":"01a167e1-df77-712c-9256-aa3ed7d72e9f","clientId":"register-spa"}
-{"command":"tenant","created":false,"tenant":"register-demo","tenantId":"01a167e1-df77-712c-9256-aa3ed7d72e9f","settings":["registration_allowed","verify_email","reset_password_allowed"]}
-201
 HTTP/1.1 201 Created
 x-request-id: register-demo-taken
 content-type: text/html
@@ -394,7 +378,7 @@ cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
 content-length: 884
-Date: Fri, 23 Oct 2026 08:30:19 GMT
+Date: Fri, 23 Oct 2026 09:45:45 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -419,18 +403,18 @@ Keep-Alive: timeout=72
 </html>
 ```
 
-The page is the one a new address gets: `201`, "Account created" and the line
-about checking email. Nothing was created for `carol`. To show the two answers
-are the same bytes, a free address and `ada`'s are each registered and the two
-bodies compared:
+The page is the one a free address gets: `201`, "Account created" and the line
+about checking email. Nothing was kept for `carol` and no account was made. To
+show the two answers are the same bytes, a free address and `ada`'s are each
+registered, under two usernames, and the two bodies compared:
 
 ```bash
 curl -sS -X POST http://localhost:3199/tenants/register-demo/login-actions/registration \
-  --data-urlencode 'username=grace' \
-  --data-urlencode 'email=grace@example.com' \
+  --data-urlencode 'username=hedy' \
+  --data-urlencode 'email=hedy@example.com' \
   --data-urlencode 'password=another-password-1' > free.html
 curl -sS -X POST http://localhost:3199/tenants/register-demo/login-actions/registration \
-  --data-urlencode 'username=hedy' \
+  --data-urlencode 'username=dora' \
   --data-urlencode 'email=ada@example.com' \
   --data-urlencode 'password=another-password-1' > taken.html
 cmp free.html taken.html && echo identical
@@ -440,11 +424,35 @@ cmp free.html taken.html && echo identical
 identical
 ```
 
-The difference is in the inbox. `ada` has three mails: the verification link the
-first registration queued, and one for each of the two attempts on her address.
-An attempt's mail names no username and carries no key to verify; its link only
-opens the password reset page. Each attempt queued exactly one mail, as a
-registration of a free address queues one:
+A username is the one thing the form still names, because it is not a secret
+and the person has to choose another. It does not give the address away, since a
+registration holds no username until its link is opened: asking for the same
+username twice, first with a held address and then with a free one, is answered
+as it is for two free ones. `bob`, made by an administrator above, holds
+`bob@example.com`:
+
+```bash
+for pair in 'probe1 bob@example.com' 'probe1 other1@example.com' \
+            'probe2 free2@example.com' 'probe2 other2@example.com'; do
+  set -- $pair
+  curl -sS -o /dev/null -w "$1 $2: %{http_code}\n" \
+    -X POST http://localhost:3199/tenants/register-demo/login-actions/registration \
+    --data-urlencode "username=$1" --data-urlencode "email=$2" \
+    --data-urlencode 'password=another-password-1'
+done
+```
+
+```
+probe1 bob@example.com: 201
+probe1 other1@example.com: 201
+probe2 free2@example.com: 201
+probe2 other2@example.com: 201
+```
+
+The difference is in the inbox. `ada` has a mail for each of the two attempts on her
+address, `bob` one, and each free address a verification link. An attempt's mail
+names no username and carries no key; its link only opens the password reset page.
+Each request queued exactly one mail, whichever kind of address it named:
 
 ```bash
 docker compose logs --no-log-prefix odudu | grep 'captured email' \
@@ -455,9 +463,9 @@ docker compose exec -T postgres psql -U odudu -d odudu -At -c \
      from email_outbox o join tenants t on t.id = o.tenant_id
     where t.name = 'register-demo' order by o.created_at;"
 docker compose exec -T postgres psql -U odudu -d odudu -At -c \
-  "select u.username, u.email
-     from users u join tenants t on t.id = u.tenant_id
-    where t.name = 'register-demo' order by u.username;"
+  "select p.username, p.email
+     from pending_registrations p join tenants t on t.id = p.tenant_id
+    where t.name = 'register-demo' order by p.username;"
 ```
 
 ```json
@@ -465,31 +473,43 @@ docker compose exec -T postgres psql -U odudu -d odudu -At -c \
   "level": 30,
   "to": "ada@example.com",
   "subject": "You already have a register-demo account",
-  "text": "Someone tried to create a ⁨register-demo⁩ account with this email address. You already have one.\n\nIf it was you, sign in, or reset your password if you forgot it.\n\nhttp://localhost:3199/tenants/register-demo/login-actions/reset-password\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to register at ⁨register-demo⁩.\n© 2026 Odudu · Powered by odudu",
-  "htmlBytes": 6041,
+  "text": "Someone tried to create a ⁨register-demo⁩ account with this email address. You already have one.\n\nIf it was you, sign in. If you forgot your password, reset it.\n\nhttp://localhost:3199/tenants/register-demo/login-actions/reset-password\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to register at ⁨register-demo⁩.\n© 2026 Odudu · Powered by odudu",
+  "htmlBytes": 6039,
   "msg": "captured email — no SMTP host configured"
 }
 ```
 
 ```
 ada@example.com|Verify your register-demo account
-ada@example.com|You already have a register-demo account
 grace@example.com|Verify your register-demo account
 ada@example.com|You already have a register-demo account
+hedy@example.com|Verify your register-demo account
+ada@example.com|You already have a register-demo account
+bob@example.com|You already have a register-demo account
+other1@example.com|Verify your register-demo account
+free2@example.com|Verify your register-demo account
+other2@example.com|Verify your register-demo account
 ```
 
 ```
-ada|ada@example.com
 grace|grace@example.com
+hedy|hedy@example.com
+probe1|other1@example.com
+probe2|free2@example.com
+probe2|other2@example.com
 ```
 
-The tenant holds `ada` and `grace`, and neither `carol` nor `hedy`. A taken
-**username** is still named, on its own field, in both modes, because a
-username is not a secret and the person has to choose another.
+`probe2` appears twice because nothing holds a username until a link is opened;
+whichever link is opened first gets it, and the other is told the name is gone.
+A request for an address that already has a request waiting replaces it, which is why
+`grace` and `hedy` have one row each. Mail to one address is limited to three an
+hour per tenant, whoever asks: past that the request is answered the same and the
+mail is not queued.
 
 With `verify_email` off nothing can be mailed, so the form cannot stay silent
-and says the address is registered. On a tenant with only `registration_allowed`
-on, where `ada` registered first, `carol` is refused in place:
+and says the address is registered, however it is spelled. On a tenant with only
+`registration_allowed` on, where `ada` registered first and the account exists at
+once, `carol` is refused in place:
 
 ```bash
 odudu seed \
@@ -503,14 +523,14 @@ curl -sS -o /dev/null -w '%{http_code}\n' \
   --data-urlencode 'password=correct-horse-battery'
 curl -sS -X POST http://localhost:3199/tenants/reg-open/login-actions/registration \
   --data-urlencode 'username=carol' \
-  --data-urlencode 'email=ada@example.com' \
+  --data-urlencode 'email=ADA@example.com' \
   --data-urlencode 'password=another-password-1' \
   | grep -A3 'role="alert"'
 ```
 
 ```
-{"created":true,"tenant":"reg-open","tenantId":"01a167e1-86f4-79f6-ad5b-f9a355f1c541","clientId":"reg-spa"}
-{"command":"tenant","created":false,"tenant":"reg-open","tenantId":"01a167e1-86f4-79f6-ad5b-f9a355f1c541","settings":["registration_allowed"]}
+{"created":true,"tenant":"reg-open","tenantId":"01a16820-281f-75ec-863a-ae3ab943b5c1","clientId":"reg-spa"}
+{"command":"tenant","created":false,"tenant":"reg-open","tenantId":"01a16820-281f-75ec-863a-ae3ab943b5c1","settings":["registration_allowed"]}
 201
 <div class="alert" role="alert" id="form-error">
 <ul>
@@ -979,10 +999,9 @@ link holds its key and no more: a mailbox, a relay's log and a mail client's his
 not keep the application's `state`, `nonce` or `claims`, and a link that restarted the request
 without them would be refused by any application that checks its own, the console among them.
 What brings the person back is the browser. The sign-in page sets a cookie naming the
-request it parked, and the token the mail was made for records which sign-in it came out of.
-This run is on `http://localhost:3197`, on a stack where `register-demo` was seeded as at the
-top of this page with `reset_password_allowed` on, driven only as far as this section. The
-sign-in page, with a cookie jar:
+request it parks, and the pending registration (or the token a reset made) records which
+sign-in it came out of. This run is on `http://localhost:3199`, on the stack of the earlier
+sections, where `register-demo` has `reset_password_allowed` on. The sign-in page, with a cookie jar:
 
 ```bash
 curl -sS -c jar.txt -D headers.txt -o page.html --get \
@@ -994,15 +1013,15 @@ curl -sS -c jar.txt -D headers.txt -o page.html --get \
   --data-urlencode 'code_challenge_method=S256' \
   --data-urlencode 'state=xyz123' \
   --data-urlencode 'nonce=abc123' \
-  'http://localhost:3197/tenants/register-demo/protocol/openid-connect/auth'
+  'http://localhost:3199/tenants/register-demo/protocol/openid-connect/auth'
 grep -iE '^(HTTP|set-cookie)' headers.txt
 grep -o 'name="auth_session_id" value="[^"]*"' page.html | head -1
 ```
 
 ```
 HTTP/1.1 200 OK
-set-cookie: odudu-sign-in=01a1647b-94a0-7853-b8c4-b17c97e8113b.XNvWhPn4PlPope6BXg1oaQfMflJHK2_xtqe_gL9qYfE; HttpOnly; SameSite=Lax; Path=/tenants/register-demo/; Max-Age=1800
-name="auth_session_id" value="01a1647b-94a0-7853-b8c4-b17c97e8113b"
+set-cookie: odudu-sign-in=01a16820-2b80-79d5-91c8-cbf8a42d882f.ITto-olzGzyKxRf7SBCLIVNrRvNc0Bor09gZHnH7fjs; HttpOnly; SameSite=Lax; Path=/tenants/register-demo/; Max-Age=1800
+name="auth_session_id" value="01a16820-2b80-79d5-91c8-cbf8a42d882f"
 ```
 
 The cookie is `<the parked session>.<a secret>`, `HttpOnly`, `SameSite=Lax`, scoped to the
@@ -1015,7 +1034,7 @@ the links out of the queued mail:
 RT='/tenants/register-demo/protocol/openid-connect/auth?response_type=code&client_id=register-spa&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&scope=openid&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&state=xyz123&nonce=abc123'
 for u in mailed elsewhere lapsed; do
   curl -sS -o /dev/null -w "$u: %{http_code}\n" -b jar.txt -X POST \
-    http://localhost:3197/tenants/register-demo/login-actions/registration \
+    http://localhost:3199/tenants/register-demo/login-actions/registration \
     --data-urlencode "username=$u" --data-urlencode "email=$u@example.com" \
     --data-urlencode 'password=correct-horse-battery' --data-urlencode "return_to=$RT"
 done
@@ -1036,32 +1055,31 @@ docker compose exec -T postgres psql -U odudu -d odudu -At -c \
 ```
 
 ```
-elsewhere@example.com|http://localhost:3197/tenants/register-demo/login-actions/action-token?key=7VXk6VU1ArJZV6RF7N1tnSWtDl8S0dJwFz_z36b4YwY
-mailed@example.com|http://localhost:3197/tenants/register-demo/login-actions/action-token?key=OCZ3rMiy64m5-erGlDC95PcHH9fl_N-5qtw15lit48s
+elsewhere@example.com|http://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_n5aBdJmRybF5lQNSBUNpjwEUjwID8dc8VwbjRIv8PIM
+mailed@example.com|http://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_VmIyfvmzMr2kPtArRCCCmVGHximpg40yEs_hB0KRrG0
 ```
 
-The links hold a key and nothing else. What the tokens hold, beside the cookie's session
-above:
+The links hold a key and nothing else. What the pending registrations hold, beside the
+cookie's session above:
 
 ```bash
 docker compose exec -T postgres psql -U odudu -d odudu -At -c \
-  "select u.username, a.authentication_session_id
-     from action_tokens a join users u on u.subject_id = a.subject_id
-     join tenants t on t.id = a.tenant_id
-    where t.name = 'register-demo' and u.username in ('mailed','elsewhere')
-    order by u.username;"
+  "select p.username, p.authentication_session_id
+     from pending_registrations p join tenants t on t.id = p.tenant_id
+    where t.name = 'register-demo' and p.username in ('mailed','elsewhere')
+    order by p.username;"
 ```
 
 ```
-elsewhere|01a1647b-94a0-7853-b8c4-b17c97e8113b
-mailed|01a1647b-94a0-7853-b8c4-b17c97e8113b
+elsewhere|01a16820-2b80-79d5-91c8-cbf8a42d882f
+mailed|01a16820-2b80-79d5-91c8-cbf8a42d882f
 ```
 
-Opened in a browser that holds no such cookie (here, `curl` with no jar), the page verifies
-the address, since a verification link works anywhere, and offers no way to sign in:
+Opened in a browser that holds no such cookie (here, `curl` with no jar), the page makes the
+account and says its address is verified, since a registration link works anywhere, and offers no way to sign in:
 
 ```bash
-curl -sS 'http://localhost:3197/tenants/register-demo/login-actions/action-token?key=7VXk6VU1ArJZV6RF7N1tnSWtDl8S0dJwFz_z36b4YwY' \
+curl -sS 'http://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_n5aBdJmRybF5lQNSBUNpjwEUjwID8dc8VwbjRIv8PIM' \
   | grep -E '<h1>|<p>|<a '
 ```
 
@@ -1074,7 +1092,7 @@ Opened in the browser that holds the sign-in, the same page links to the origina
 with its own `state` and `nonce`:
 
 ```bash
-curl -sS -b jar.txt 'http://localhost:3197/tenants/register-demo/login-actions/action-token?key=OCZ3rMiy64m5-erGlDC95PcHH9fl_N-5qtw15lit48s' \
+curl -sS -b jar.txt 'http://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_VmIyfvmzMr2kPtArRCCCmVGHximpg40yEs_hB0KRrG0' \
   | grep -E '<h1>|<p>|<a '
 ```
 
@@ -1090,7 +1108,7 @@ started it. The session is ended with `update authentication_sessions set expire
 interval '1 second'` for the id above, which is what `login_ttl_seconds` does without help:
 
 ```bash
-curl -sS -b jar.txt 'http://localhost:3197/tenants/register-demo/login-actions/action-token?key=LZ1MA8_c7wDmPGsEvF-Sdvq-of5lMsf32W6mcjkz7ms' \
+curl -sS -b jar.txt 'http://localhost:3199/tenants/register-demo/login-actions/action-token?key=reg_0lN6pUXL1FBkPW08PfCb-SwvNmK-B3Jlt9kbmjaPqH4' \
   | grep -E '<h1>|<p>|<a '
 ```
 
@@ -1099,27 +1117,28 @@ curl -sS -b jar.txt 'http://localhost:3197/tenants/register-demo/login-actions/a
 <p>Return to the application you were signing in to and sign in again.</p>
 ```
 
-A mailed link given a `return_to` is not shown one: the page ignores whatever the address
+A link is gone once it is opened, so opening one again reads like any link nothing holds
+and names no sign-in. A mailed link given a `return_to` is not shown one: the page ignores whatever the address
 asks for. An administrator's link (`/subjects/:id/actions-email`) is issued with no request
 behind it and names no sign-in, so it offers none.
 
 ## What registration and verification leave in the audit log
 
-A created account writes one `credential` row, `account.registered`, in the
-transaction that creates it, and a redeemed verification link writes
-`email.verified` in the transaction that consumes it. A taken address, with
-`verify_email` on, writes one row of its own, `account.registration_duplicate`,
-`refused`: it names the account the attempt ran into and nothing the caller
-typed. A spent link names nobody the caller has proved anything about, and writes
-none. This ran on the same stack, against its own
+Asking to register writes no audit row for a free address: nothing exists yet. An
+account made by its link writes one `credential` row, `account.registered`, in the
+transaction that creates it. A held address, with `verify_email` on, writes one row of
+its own, `account.registration_duplicate`, `refused`: it names the account the attempt
+ran into and nothing the caller typed. A spent link names nobody the caller has proved
+anything about, and writes none. (`email.verified` is what an administrator's
+verification link writes.) This ran on the same stack, against its own
 tenant, `signup-audit`, created by the two seed commands below, so the accounts
 and the mailed link are the only ones in play. Every request carries an
 `x-request-id` starting `signup-audit-`, and the query below reads back
 exactly those.
 
-The second registration differs from the first only in its username, so the
-address is the only thing that can set it apart. It is answered `201`, as a
-free address is:
+`ada` asks to register, the mailed link is opened, and then `carol` asks for `ada`'s
+address. It is answered `201`, as a free address is. The key is read out of the
+verification mail, the only one this tenant has queued:
 
 ```bash
 odudu seed --tenant signup-audit --client signup-audit-spa \
@@ -1134,27 +1153,6 @@ curl -sS -o /dev/null -w '%{http_code}\n' \
   --data-urlencode 'username=ada' \
   --data-urlencode 'email=ada@example.com' \
   --data-urlencode 'password=correct-horse-battery'
-curl -sS -o /dev/null -w '%{http_code}\n' \
-  -X POST http://localhost:3199/tenants/signup-audit/login-actions/registration \
-  -H 'x-request-id: signup-audit-duplicate' \
-  --data-urlencode 'username=carol' \
-  --data-urlencode 'email=ada@example.com' \
-  --data-urlencode 'password=correct-horse-battery'
-```
-
-```
-{"created":true,"tenant":"signup-audit","tenantId":"01a167e2-92cd-7ce3-b222-3432d2eaabac","clientId":"signup-audit-spa"}
-{"command":"tenant","created":false,"tenant":"signup-audit","tenantId":"01a167e2-92cd-7ce3-b222-3432d2eaabac","settings":["registration_allowed","verify_email","reset_password_allowed"]}
-201
-201
-```
-
-The key is read out of the verification mail the first registration queued.
-The tenant holds two mails, the other being the one to the address's holder, so
-the query asks for the verification one. The link is then followed twice; the
-second time it is already spent:
-
-```bash
 docker compose exec -T postgres psql -U odudu -d odudu -At -c \
   "select substring(o.body_text from 'key=([A-Za-z0-9_-]+)')
      from email_outbox o join tenants t on t.id = o.tenant_id
@@ -1162,13 +1160,22 @@ docker compose exec -T postgres psql -U odudu -d odudu -At -c \
 ```
 
 ```
-emzE207jzePuqjSw2F7NjTSzlLwWQP28kk3JPigSm64
+{"created":true,"tenant":"signup-audit","tenantId":"01a16820-7d0c-7324-96fb-0fe159d5bfd9","clientId":"signup-audit-spa"}
+{"command":"tenant","created":false,"tenant":"signup-audit","tenantId":"01a16820-7d0c-7324-96fb-0fe159d5bfd9","settings":["registration_allowed","verify_email","reset_password_allowed"]}
+201
+reg_HWh5NyCN0Tr3G1IaXrPxpaqFKgsVF6Bv-FNedxNP6Co
 ```
 
 ```bash
-KEY=emzE207jzePuqjSw2F7NjTSzlLwWQP28kk3JPigSm64
+KEY=reg_HWh5NyCN0Tr3G1IaXrPxpaqFKgsVF6Bv-FNedxNP6Co
 curl -sS -o /dev/null -w '%{http_code}\n' -H 'x-request-id: signup-audit-verify' \
   "http://localhost:3199/tenants/signup-audit/login-actions/action-token?key=$KEY"
+curl -sS -o /dev/null -w '%{http_code}\n' \
+  -X POST http://localhost:3199/tenants/signup-audit/login-actions/registration \
+  -H 'x-request-id: signup-audit-duplicate' \
+  --data-urlencode 'username=carol' \
+  --data-urlencode 'email=ada@example.com' \
+  --data-urlencode 'password=correct-horse-battery'
 curl -sS -o /dev/null -w '%{http_code}\n' -H 'x-request-id: signup-audit-replay' \
   "http://localhost:3199/tenants/signup-audit/login-actions/action-token?key=$KEY"
 
@@ -1182,15 +1189,16 @@ docker compose exec -T postgres psql -U odudu -d odudu -x -P 'null=(null)' -c \
 
 ```
 200
+201
 400
 -[ RECORD 1 ]----+-------------------------------------
-request_id       | signup-audit-ada
+request_id       | signup-audit-verify
 event_type       | credential
 action           | account.registered
 outcome          | allowed
-actor_subject_id | 01a167e2-9521-71ec-bfb6-f4edd3c326af
+actor_subject_id | 01a16820-e693-7a4b-947a-f3eef1fbd767
 resource_type    | subject
-resource_id      | 01a167e2-9521-71ec-bfb6-f4edd3c326af
+resource_id      | 01a16820-e693-7a4b-947a-f3eef1fbd767
 detail           | {}
 -[ RECORD 2 ]----+-------------------------------------
 request_id       | signup-audit-duplicate
@@ -1199,21 +1207,12 @@ action           | account.registration_duplicate
 outcome          | refused
 actor_subject_id | (null)
 resource_type    | subject
-resource_id      | 01a167e2-9521-71ec-bfb6-f4edd3c326af
+resource_id      | 01a16820-e693-7a4b-947a-f3eef1fbd767
 detail           | {"reason": "already_registered"}
--[ RECORD 3 ]----+-------------------------------------
-request_id       | signup-audit-verify
-event_type       | credential
-action           | email.verified
-outcome          | allowed
-actor_subject_id | 01a167e2-9521-71ec-bfb6-f4edd3c326af
-resource_type    | subject
-resource_id      | 01a167e2-9521-71ec-bfb6-f4edd3c326af
-detail           | {}
 ```
 
-Four requests, three rows: one for each of the account, the attempt on its address
-and the verification, and none for the replayed link. `01a167e2-9521-…` is the
+Four requests, two rows: one for the account the link made and one for the attempt on its
+address, and none for the registration itself or the replayed link. `01a16820-e693-…` is the
 `users.subject_id` this stack holds for `ada` in `signup-audit`, and the refused
 row's `resource_id`; its `actor_subject_id` is empty, because the caller proved
 nothing. `detail` holds no password, address, username or key: the action names

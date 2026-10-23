@@ -216,14 +216,17 @@ is read under.
 
 ## Amendment, 2026-10-23 — a registration for an address that has an account
 
-When `verify_email` is on, registering an email address that already has an
-account is answered as a success (the page of a free address, status 201),
-so the form does not tell a stranger who has registered. It writes one
-`credential` row, `account.registration_duplicate`, `refused`, reason
-`already_registered`, and one mail to the address's holder saying someone
-tried. The row names the account it ran into (`resource_id`), never the
-username or address asked for, so it holds nothing the caller chose. The
-first amendment above says a refused registration names no principal; this
-one does, so it is bounded as a login failure is: by the per-origin throttle
-on the registration form. With `verify_email` off nothing can be mailed, the
-form says the address is registered as before, and no row is written.
+When `verify_email` is on, registering an address that already has an account is answered
+as a registration of a free one is: the same page, status 201. A free address is kept as a
+pending registration and mailed a link; the account is created only when the link is
+opened, so neither request reserves a username and no later request can tell them apart.
+A held address writes one `credential` row, `account.registration_duplicate`, `refused`,
+reason `already_registered`, and one mail to its holder.
+
+The row names the account the attempt ran into (`resource_id`), never the username or
+address asked for. The first amendment above says a refused registration names no
+principal. This one does. So it is bounded as a login failure is, by the per-origin
+throttle on the registration form. Mail to one address is bounded too, at three an hour
+per tenant, by an in-process limiter that suppresses the queueing and never changes the
+answer. With `verify_email` off nothing can be mailed, the form says the address is
+registered as before, and no row is written.
