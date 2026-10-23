@@ -54,7 +54,7 @@ Full transcript: [The branches](../reference/transcripts/request-paths/the-branc
 An authorization code works once, and a refresh token works once. A second use answers `invalid_grant`, and Odudu revokes what the first use produced, because a second use means a copy exists somewhere.
 
 ```
-{ "error": "invalid_grant" }
+{"error":"invalid_grant","error_description":"The code or token is not valid."}
 ```
 
 What to do: discard the tokens and send the person through sign-in again.
@@ -74,7 +74,10 @@ curl -sS --data-urlencode 'grant_type=refresh_token' \
 ```
 
 ```
-{ "error": "invalid_scope" }
+{
+  "error": "invalid_scope",
+  "error_description": "A requested scope is not available to this client."
+}
 ```
 
 What to do: ask for a scope the client is assigned.
@@ -92,7 +95,7 @@ curl -sS -w '\n%{http_code}\n' -H 'x-request-id: token-refused-wrong-secret' \
 ```
 
 ```
-{"error":"invalid_client"}
+{"error":"invalid_client","error_description":"Client authentication failed."}
 401
 ```
 

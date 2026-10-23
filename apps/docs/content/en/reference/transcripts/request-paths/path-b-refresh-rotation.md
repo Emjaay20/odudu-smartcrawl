@@ -46,7 +46,7 @@ curl -sS --data-urlencode 'grant_type=refresh_token' \
 ```
 
 ```json
-{ "error": "invalid_grant" }
+{ "error": "invalid_grant", "error_description": "The code or token is not valid." }
 ```
 
 and now `R2` — the legitimate, current, never-used token — is dead as well:
@@ -59,7 +59,7 @@ curl -sS --data-urlencode 'grant_type=refresh_token' \
 ```
 
 ```json
-{ "error": "invalid_grant" }
+{ "error": "invalid_grant", "error_description": "The code or token is not valid." }
 ```
 
 That is the point. One of the two holders of `R1` is a thief and the server
@@ -81,7 +81,7 @@ curl -sS -u demo-backend:demo-backend-secret \
 ```
 
 ```json
-{ "error": "invalid_grant" }
+{ "error": "invalid_grant", "error_description": "The code or token is not valid." }
 ```
 
 So is a request from the rightful client asking for more scope than it was
@@ -96,7 +96,10 @@ curl -sS --data-urlencode 'grant_type=refresh_token' \
 ```
 
 ```json
-{ "error": "invalid_scope" }
+{
+  "error": "invalid_scope",
+  "error_description": "A requested scope is not available to this client."
+}
 ```
 
 and the owner's token still works afterwards — neither attempt burned it:
@@ -142,14 +145,14 @@ curl -sS --data-urlencode 'grant_type=authorization_code' \
 ```
 
 ```json
-{ "error": "invalid_grant" }
+{ "error": "invalid_grant", "error_description": "The code or token is not valid." }
 ```
 
 and the refresh token issued from the first, successful redemption is now
 refused too:
 
 ```json
-{ "error": "invalid_grant" }
+{ "error": "invalid_grant", "error_description": "The code or token is not valid." }
 ```
 
 A redemption that fails for any other reason — wrong verifier, wrong
@@ -189,9 +192,9 @@ docker compose logs odudu | grep 'unregistered client_id' | sed 's/^[^|]*| //'
 ```
 
 ```
-{"error":"invalid_client"}
+{"error":"invalid_client","error_description":"Client authentication failed."}
 401
-{"error":"invalid_client"}
+{"error":"invalid_client","error_description":"Client authentication failed."}
 401
 -[ RECORD 1 ]+--------------------------------------------------------------
 event_type   | authentication
@@ -235,8 +238,8 @@ docker compose exec -T postgres psql -U odudu -d odudu -x -P 'null=(null)' -c \
 ```
 
 ```
-{"error":"invalid_grant"}
-{"error":"invalid_grant"}
+{"error":"invalid_grant","error_description":"The code or token is not valid."}
+{"error":"invalid_grant","error_description":"The code or token is not valid."}
 -[ RECORD 1 ]----+-------------------------------------
 action           | grant.revoked_on_reuse
 outcome          | allowed
@@ -332,8 +335,8 @@ The seed's JSON line is omitted; the rest is the run's output:
 
 ```
 UPDATE 1
-{"error":"invalid_request"}
-{"error":"invalid_request"}
+{"error":"invalid_request","error_description":"The request is missing a parameter or has a wrong one."}
+{"error":"invalid_request","error_description":"The request is missing a parameter or has a wrong one."}
 -[ RECORD 1 ]+-------------------------------
 action       | token.exchange
 outcome      | refused
@@ -369,7 +372,7 @@ docker compose exec -T postgres psql -U odudu -d odudu -x -P 'null=(null)' -c \
 ```
 
 ```
-{"error":"invalid_grant"}
+{"error":"invalid_grant","error_description":"The code or token is not valid."}
 400
 200
 -[ RECORD 1 ]----+-------------------------------------
@@ -427,9 +430,9 @@ docker compose exec -T postgres psql -U odudu -d odudu -x -P 'null=(null)' -c \
 ```
 
 ```
-{"error":"invalid_client"}
+{"error":"invalid_client","error_description":"Client authentication failed."}
 401
-{"error":"invalid_client"}
+{"error":"invalid_client","error_description":"Client authentication failed."}
 401
 -[ RECORD 1 ]+--------------------------------------------------------------
 event_type   | authentication

@@ -40,7 +40,7 @@ Full transcript: [Path B: refresh rotation](../reference/transcripts/request-pat
 If the token you already used arrives again, one of the two holders is not you. Odudu cannot tell which, so it refuses the replay and revokes the whole family, including the token you were about to use.
 
 ```
-{ "error": "invalid_grant" }
+{ "error": "invalid_grant", "error_description": "The code or token is not valid." }
 ```
 
 When a refresh answers `invalid_grant`, drop your tokens and start again with [Sign a user in](./sign-a-user-in.md).
@@ -87,7 +87,7 @@ curl -sS \
 ```
 
 ```
-{ "error": "invalid_grant" }
+{ "error": "invalid_grant", "error_description": "The code or token is not valid." }
 ```
 
 An access token is a signed token, so an API that only checks the signature accepts it until it expires. An API that asks the introspection endpoint is told it is inactive straight away, and UserInfo refuses it. See [token introspection and revocation](../reference/transcripts/request-paths/rp-initiated-logout.md#token-introspection-and-revocation).

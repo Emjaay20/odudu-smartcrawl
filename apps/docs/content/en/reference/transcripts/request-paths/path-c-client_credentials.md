@@ -61,7 +61,10 @@ curl -sS -u demo-backend:demo-backend-secret \
 ```
 
 ```json
-{ "error": "invalid_scope" }
+{
+  "error": "invalid_scope",
+  "error_description": "A requested scope is not available to this client."
+}
 ```
 
 Which also means this token cannot be used at `/userinfo` — it has no

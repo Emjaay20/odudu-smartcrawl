@@ -109,7 +109,7 @@ curl -sS \
 ```
 
 ```json
-{ "error": "invalid_grant" }
+{ "error": "invalid_grant", "error_description": "The code or token is not valid." }
 ```
 
 ## An ID token past its `exp`, sent as the hint
@@ -290,10 +290,10 @@ HTTP/1.1 302 Found
 location: http://localhost:8080/callback?code=…&state=xyz-auth&iss=http%3A%2F%2Flocalhost%3A3172%2Ftenants%2Fdemo
 # lapsed hint, prompt=none, no session cookie
 HTTP/1.1 302 Found
-location: http://localhost:8080/callback?error=login_required&state=xyz-auth&iss=http%3A%2F%2Flocalhost%3A3172%2Ftenants%2Fdemo
+location: http://localhost:8080/callback?error=login_required&error_description=The+user+is+not+signed+in.&state=xyz-auth&iss=http%3A%2F%2Flocalhost%3A3172%2Ftenants%2Fdemo
 # forged lapsed hint, live session
 HTTP/1.1 302 Found
-location: http://localhost:8080/callback?error=invalid_request&state=xyz-auth&iss=http%3A%2F%2Flocalhost%3A3172%2Ftenants%2Fdemo
+location: http://localhost:8080/callback?error=invalid_request&error_description=id_token_hint+is+not+valid&state=xyz-auth&iss=http%3A%2F%2Flocalhost%3A3172%2Ftenants%2Fdemo
 ```
 
 Now browser A presents the hint of its own session at the logout
@@ -464,7 +464,7 @@ curl -sS -u revoke-doc-client:revoke-doc-secret \
 ```
 
 ```json
-{ "error": "invalid_grant" }
+{ "error": "invalid_grant", "error_description": "The code or token is not valid." }
 ```
 
 and so does its sibling access token — the two name the same `token_grants` row,
@@ -734,7 +734,7 @@ curl -sS \
 ```
 
 ```json
-{ "error": "invalid_grant" }
+{ "error": "invalid_grant", "error_description": "The code or token is not valid." }
 ```
 
 Two messages therefore arrive at the same `POST`: this one, and the
@@ -1336,7 +1336,7 @@ curl -sS \
 ```
 
 ```json
-{ "error": "invalid_grant" }
+{ "error": "invalid_grant", "error_description": "The code or token is not valid." }
 ```
 
 The offline one is not — nothing about ending the session touched a grant
@@ -1588,7 +1588,7 @@ curl -sS -D - \
 ```
 HTTP/1.1 302 Found
 x-request-id: 01a137d6-c44e-771e-81f8-36db32b150f1
-location: https://rp.example/cb?error=access_denied&state=xyz-deny&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo
+location: https://rp.example/cb?error=access_denied&error_description=The+user+did+not+allow+the+request.&state=xyz-deny&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo
 content-length: 0
 Date: Wed, 14 Oct 2026 00:36:24 GMT
 Connection: keep-alive
@@ -1694,7 +1694,7 @@ curl -sS -D - -b cookies-consent.txt --get \
 ```
 HTTP/1.1 302 Found
 x-request-id: 01a137d6-c4cb-7d96-a306-9101560c4c46
-location: https://rp.example/cb?error=consent_required&state=xyz-reuse&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo
+location: https://rp.example/cb?error=consent_required&error_description=The+user+has+not+agreed+to+this+request+yet.&state=xyz-reuse&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo
 content-length: 0
 Date: Wed, 14 Oct 2026 00:36:24 GMT
 Connection: keep-alive

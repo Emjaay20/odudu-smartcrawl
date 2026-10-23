@@ -49,7 +49,7 @@ curl -sS -D - -o /dev/null --get \
 
 ```
 HTTP/1.1 302 Found
-location: http://localhost:8080/callback?error=invalid_request&state=xyz-123&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fdemo
+location: http://localhost:8080/callback?error=invalid_request&error_description=code_challenge+is+required&state=xyz-123&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fdemo
 content-length: 0
 ```
 
@@ -213,7 +213,7 @@ cache-control: no-store
 pragma: no-cache
 content-type: application/json; charset=utf-8
 
-{"error":"invalid_client"}
+{"error":"invalid_client","error_description":"Client authentication failed."}
 ```
 
 **What the client does next:** what Path A's client does, with one

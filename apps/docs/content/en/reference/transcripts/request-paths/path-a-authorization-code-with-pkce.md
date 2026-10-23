@@ -1038,7 +1038,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 1099
+content-length: 1157
 Date: Wed, 14 Oct 2026 00:42:05 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -1059,7 +1059,7 @@ Keep-Alive: timeout=72
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
 <h1>Can&#39;t continue</h1>
 <p><bdi>This sign-in attempt is no longer valid. Go back and start again.</bdi></p>
-<p><a href="http://localhost:8080/callback?error=access_denied&amp;state=demo-state&amp;iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo">Return to the application</a></p>
+<p><a href="http://localhost:8080/callback?error=access_denied&amp;error_description=The+user+did+not+allow+the+request.&amp;state=demo-state&amp;iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo">Return to the application</a></p>
 <p><small>invalid_request</small></p>
 </main>
 </body>
@@ -1249,7 +1249,7 @@ curl -sS -w '\nHTTP %{http_code}\n' \
 ```
 
 ```
-{"error":"invalid_target"}
+{"error":"invalid_target","error_description":"A requested resource is not available to this client."}
 HTTP 400
 ```
 
@@ -1770,7 +1770,7 @@ curl -sS -D - -o /dev/null --get \
 
 ```
 HTTP/1.1 302 Found
-location: http://localhost:8080/callback?error=login_required&state=abc&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fdemo
+location: http://localhost:8080/callback?error=login_required&error_description=The+user+is+not+signed+in.&state=abc&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fdemo
 ```
 
 and without `prompt=none` shows a login form instead of refusing outright —
@@ -1814,7 +1814,7 @@ curl -sS -D - -o /dev/null \
 
 ```
 HTTP/1.1 302 Found
-location: http://localhost:8080/callback?error=login_required&state=abc&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fdemo
+location: http://localhost:8080/callback?error=login_required&error_description=The+user+is+not+signed+in.&state=abc&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fdemo
 ```
 
 The account chooser carries the identical constraint at its own POST
@@ -1844,7 +1844,7 @@ curl -sS -D - -o /dev/null --get \
 
 ```
 HTTP/1.1 302 Found
-location: http://localhost:8080/callback?error=invalid_request&state=xyz-123&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fdemo
+location: http://localhost:8080/callback?error=invalid_request&error_description=claims+is+not+valid&state=xyz-123&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fdemo
 ```
 
 Discovery states support for the parameter fixed `true`, the same way it

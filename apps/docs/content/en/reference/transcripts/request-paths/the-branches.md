@@ -96,11 +96,22 @@ wrong in more ways than one.
 | Another tenant's `id_token_hint`          | `invalid_request`           | Same rule: the tenant in the URL is the only issuer whose keys are consulted                 |
 | `id_token_hint` minted for another client | `invalid_request`           | Its `aud` names a client, and this tenant checks it against the one making this request      |
 
-The error redirect for a request that sent no `state` carries only `error`
-and `iss`:
+The error redirect for a request that sent no `state` carries `error`, its
+`error_description` and `iss`, and no `state`. This one sends no code challenge
+either, on a stack on port `3197`:
+
+```bash
+curl -sS -o /dev/null -D - --get \
+  --data-urlencode 'response_type=code' \
+  --data-urlencode 'client_id=demo-spa' \
+  --data-urlencode 'redirect_uri=http://localhost:8080/callback' \
+  --data-urlencode 'scope=openid' \
+  'http://localhost:3197/tenants/demo/protocol/openid-connect/auth' \
+  | tr -d '\r' | grep -i '^location'
+```
 
 ```
-location: http://localhost:8080/callback?error=invalid_request&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fdemo
+location: http://localhost:8080/callback?error=invalid_request&error_description=code_challenge+is+required&iss=http%3A%2F%2Flocalhost%3A3197%2Ftenants%2Fdemo
 ```
 
 `iss` is on every authorization response including the errors (RFC 9207 §2):
@@ -225,13 +236,13 @@ done
 ```
 
 ```
-prompt=none              302 …/callback?error=login_required&state=xyz-123&iss=…
-prompt=none%20login      302 …/callback?error=invalid_request&state=xyz-123&iss=…
-prompt=login%20none      302 …/callback?error=invalid_request&state=xyz-123&iss=…
-prompt=none%20consent    302 …/callback?error=invalid_request&state=xyz-123&iss=…
-prompt=unheard_of        302 …/callback?error=invalid_request&state=xyz-123&iss=…
-prompt=login%20unheard_of 302 …/callback?error=invalid_request&state=xyz-123&iss=…
-prompt=Login             302 …/callback?error=invalid_request&state=xyz-123&iss=…
+prompt=none              302 …/callback?error=login_required&error_description=The+user+is+not+signed+in.&state=xyz-123&iss=…
+prompt=none%20login      302 …/callback?error=invalid_request&error_description=prompt+is+not+valid&state=xyz-123&iss=…
+prompt=login%20none      302 …/callback?error=invalid_request&error_description=prompt+is+not+valid&state=xyz-123&iss=…
+prompt=none%20consent    302 …/callback?error=invalid_request&error_description=prompt+is+not+valid&state=xyz-123&iss=…
+prompt=unheard_of        302 …/callback?error=invalid_request&error_description=prompt+is+not+valid&state=xyz-123&iss=…
+prompt=login%20unheard_of 302 …/callback?error=invalid_request&error_description=prompt+is+not+valid&state=xyz-123&iss=…
+prompt=Login             302 …/callback?error=invalid_request&error_description=prompt+is+not+valid&state=xyz-123&iss=…
 prompt=login             200
 prompt=consent           200
 prompt=select_account    200
@@ -392,7 +403,7 @@ curl -sS -D - -o /dev/null \
 ```
 
 ```
-location: http://localhost:8080/callback?error=login_required&state=xyz-000&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fdemo
+location: http://localhost:8080/callback?error=login_required&error_description=The+user+is+not+signed+in.&state=xyz-000&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fdemo
 ```
 
 Redeeming a code the reuse redirect issued shows what carrying the session
@@ -457,7 +468,7 @@ docker compose -f infra/docker/compose.yaml exec -T postgres \
 
 ```
 idle-expired, no prompt      200
-idle-expired, prompt=none    302 …/callback?error=login_required&state=idle2&iss=…
+idle-expired, prompt=none    302 …/callback?error=login_required&error_description=The+user+is+not+signed+in.&state=idle2&iss=…
 ```
 
 ```bash
@@ -471,7 +482,7 @@ docker compose -f infra/docker/compose.yaml exec -T postgres \
 
 ```
 max-expired, no prompt       200
-max-expired, prompt=none     302 …/callback?error=login_required&state=max2&iss=…
+max-expired, prompt=none     302 …/callback?error=login_required&error_description=The+user+is+not+signed+in.&state=max2&iss=…
 ```
 
 (The same four requests this section already ran, against the same cookie
@@ -901,7 +912,7 @@ The last one, both halves, run against one parked request:
 
 ```
 # bob signs in against a request hinted for ada
-location: …/callback?error=login_required&state=xyz-123&iss=…
+location: …/callback?error=login_required&error_description=The+user+is+not+signed+in.&state=xyz-123&iss=…
 # ada then signs in against the same parked request
 location: …/callback?code=hafB3JLce2ju…&state=xyz-123&iss=…
 ```
@@ -1052,12 +1063,12 @@ x-request-id: 01a1209d-05e9-79ae-962b-6f2f25031314
 www-authenticate: Basic realm="token"
 cache-control: no-store
 content-type: application/json; charset=utf-8
-content-length: 26
+content-length: 78
 Date: Fri, 09 Oct 2026 12:22:04 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"error":"invalid_client"}
+{"error":"invalid_client","error_description":"Client authentication failed."}
 ```
 
 ```
@@ -1088,12 +1099,12 @@ x-request-id: 01a1209d-0649-7872-8a47-0908b65b9b53
 www-authenticate: Basic realm="token"
 cache-control: no-store
 content-type: application/json; charset=utf-8
-content-length: 26
+content-length: 78
 Date: Fri, 09 Oct 2026 12:22:04 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"error":"invalid_client"}
+{"error":"invalid_client","error_description":"Client authentication failed."}
 ```
 
 And a revocation is shown to revoke or not, by the grant's own row, scoped to the
@@ -1167,7 +1178,7 @@ cache-control: no-store
 pragma: no-cache
 content-type: application/json; charset=utf-8
 
-{"error":"invalid_client"}
+{"error":"invalid_client","error_description":"Client authentication failed."}
 ```
 
 Those bytes are not a form-urlencoding and hold no secret to recover, so
@@ -1185,7 +1196,7 @@ so an attacker holding a stolen code cannot learn whether it was the PKCE
 check or the client check that turned them away.
 
 The expired-code row was verified by waiting out the 60-second lifetime and
-redeeming: `{"error":"invalid_grant"}`. Refresh-token expiry was not waited
+redeeming: `{"error":"invalid_grant","error_description":"The code or token is not valid."}`. Refresh-token expiry was not waited
 out — the lifetime is 14 days — but expiry, reuse and an unknown token all
 leave the same atomic consume returning nothing, and so answer identically.
 
@@ -1209,18 +1220,18 @@ curl -sS -u demo-backend:demo-backend-secret \
   'http://localhost:3000/tenants/demo/protocol/openid-connect/token'
 ```
 
-| How the client presents itself                    | Status | Body                         |
-| ------------------------------------------------- | ------ | ---------------------------- |
-| `demo-backend`, secret in the header (registered) | 200    | an access token              |
-| `demo-backend`, secret in the body                | 401    | `{"error":"invalid_client"}` |
-| `demo-post`, secret in the body (registered)      | 200    | an access token              |
-| `demo-post`, secret in the header                 | 401    | `{"error":"invalid_client"}` |
-| `demo-backend`, both at once                      | 401    | `{"error":"invalid_client"}` |
-| `demo-backend`, header plus `client_secret=`      | 200    | an access token              |
-| `demo-backend`, wrong secret                      | 401    | `{"error":"invalid_client"}` |
-| `demo-spa` (public) asking for this grant         | 401    | `{"error":"invalid_client"}` |
-| `demo-spa` presenting any secret                  | 401    | `{"error":"invalid_client"}` |
-| A `client_id` naming nobody                       | 401    | `{"error":"invalid_client"}` |
+| How the client presents itself                    | Status | Body                                                                             |
+| ------------------------------------------------- | ------ | -------------------------------------------------------------------------------- |
+| `demo-backend`, secret in the header (registered) | 200    | an access token                                                                  |
+| `demo-backend`, secret in the body                | 401    | `{"error":"invalid_client","error_description":"Client authentication failed."}` |
+| `demo-post`, secret in the body (registered)      | 200    | an access token                                                                  |
+| `demo-post`, secret in the header                 | 401    | `{"error":"invalid_client","error_description":"Client authentication failed."}` |
+| `demo-backend`, both at once                      | 401    | `{"error":"invalid_client","error_description":"Client authentication failed."}` |
+| `demo-backend`, header plus `client_secret=`      | 200    | an access token                                                                  |
+| `demo-backend`, wrong secret                      | 401    | `{"error":"invalid_client","error_description":"Client authentication failed."}` |
+| `demo-spa` (public) asking for this grant         | 401    | `{"error":"invalid_client","error_description":"Client authentication failed."}` |
+| `demo-spa` presenting any secret                  | 401    | `{"error":"invalid_client","error_description":"Client authentication failed."}` |
+| A `client_id` naming nobody                       | 401    | `{"error":"invalid_client","error_description":"Client authentication failed."}` |
 
 The sixth row is the one worth pausing on. An empty `client_secret` beside
 an `Authorization: Basic` header is **not** a second authentication method:
@@ -1252,7 +1263,10 @@ curl -sS --data "grant_type=authorization_code&grant_type=authorization_code&cod
 ```
 
 ```json
-{ "error": "invalid_request" }
+{
+  "error": "invalid_request",
+  "error_description": "The request is missing a parameter or has a wrong one."
+}
 ```
 
 ```bash
@@ -1285,10 +1299,10 @@ to destroy a stranger's session on demand.
 Run against one authorization code, in order, before redeeming it:
 
 ```
-wrong code_verifier      {"error":"invalid_grant"}
-wrong redirect_uri       {"error":"invalid_grant"}
-a different client       {"error":"invalid_grant"}
-no code_verifier at all  {"error":"invalid_grant"}
+wrong code_verifier      {"error":"invalid_grant","error_description":"The code or token is not valid."}
+wrong redirect_uri       {"error":"invalid_grant","error_description":"The code or token is not valid."}
+a different client       {"error":"invalid_grant","error_description":"The code or token is not valid."}
+no code_verifier at all  {"error":"invalid_grant","error_description":"The code or token is not valid."}
 the correct redemption   {"access_token":"eyJhbGciOiJSUzI1NiIsImt…
 ```
 
@@ -1301,10 +1315,10 @@ transcript is in [Path B](./path-b-refresh-rotation.md#what-a-replay-does-not-do
 And across tenants, where the credential is real but presented at the wrong
 tenant:
 
-| Presented at tenant `demo`                 | Answer                      | Afterwards, at tenant `other` |
-| ------------------------------------------ | --------------------------- | ----------------------------- |
-| A `code` issued by tenant `other`          | `{"error":"invalid_grant"}` | still redeems                 |
-| A `refresh_token` issued by tenant `other` | `{"error":"invalid_grant"}` | still refreshes               |
+| Presented at tenant `demo`                 | Answer                                                                            | Afterwards, at tenant `other` |
+| ------------------------------------------ | --------------------------------------------------------------------------------- | ----------------------------- |
+| A `code` issued by tenant `other`          | `{"error":"invalid_grant","error_description":"The code or token is not valid."}` | still redeems                 |
+| A `refresh_token` issued by tenant `other` | `{"error":"invalid_grant","error_description":"The code or token is not valid."}` | still refreshes               |
 
 The tenant in the URL is the only tenant whose rows the query can see (ADR
 0009), so the credential is not found rather than found and rejected — and

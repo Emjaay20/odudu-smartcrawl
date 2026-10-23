@@ -86,6 +86,6 @@ Keep-Alive: timeout=72
 
 {"ended":2}
 {"items":[]}
-{"error":"invalid_grant"}
-{"error":"invalid_grant"}
+{"error":"invalid_grant","error_description":"The code or token is not valid."}
+{"error":"invalid_grant","error_description":"The code or token is not valid."}
 ```

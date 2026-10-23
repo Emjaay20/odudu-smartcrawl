@@ -162,7 +162,7 @@ cache-control: no-store
 pragma: no-cache
 content-type: application/json; charset=utf-8
 
-{"error":"unauthorized_client"}
+{"error":"unauthorized_client","error_description":"This client may not use this grant type."}
 ```
 
 The identical request against `exdoc-exchange` — the client the column
@@ -249,7 +249,7 @@ cache-control: no-store
 pragma: no-cache
 content-type: application/json; charset=utf-8
 
-{"error":"unauthorized_client"}
+{"error":"unauthorized_client","error_description":"This client may not use this grant type."}
 ```
 
 Byte-identical to the impersonation refusal above — both are
@@ -462,7 +462,7 @@ cache-control: no-store
 pragma: no-cache
 content-type: application/json; charset=utf-8
 
-{"error":"invalid_request"}
+{"error":"invalid_request","error_description":"The request is missing a parameter or has a wrong one."}
 ```
 
 the refresh token exchange, identically:
@@ -483,7 +483,7 @@ cache-control: no-store
 pragma: no-cache
 content-type: application/json; charset=utf-8
 
-{"error":"invalid_request"}
+{"error":"invalid_request","error_description":"The request is missing a parameter or has a wrong one."}
 ```
 
 and the `id_token` self-exchange:
@@ -505,7 +505,7 @@ cache-control: no-store
 pragma: no-cache
 content-type: application/json; charset=utf-8
 
-{"error":"invalid_client"}
+{"error":"invalid_client","error_description":"Client authentication failed."}
 ```
 
 An `id_token` names no grant to revoke — `resolveIdToken` returns `grantId:
@@ -678,9 +678,9 @@ vary: Origin
 cache-control: no-store
 pragma: no-cache
 content-type: application/json; charset=utf-8
-content-length: 27
+content-length: 104
 
-{"error":"invalid_request"}
+{"error":"invalid_request","error_description":"The request is missing a parameter or has a wrong one."}
 ```
 
 the refresh token,
@@ -692,9 +692,9 @@ vary: Origin
 cache-control: no-store
 pragma: no-cache
 content-type: application/json; charset=utf-8
-content-length: 27
+content-length: 104
 
-{"error":"invalid_request"}
+{"error":"invalid_request","error_description":"The request is missing a parameter or has a wrong one."}
 ```
 
 and the `id_token`, which, unlike the disabled-client case above, reaches
@@ -708,7 +708,7 @@ vary: Origin
 cache-control: no-store
 pragma: no-cache
 content-type: application/json; charset=utf-8
-content-length: 27
+content-length: 104
 
-{"error":"invalid_request"}
+{"error":"invalid_request","error_description":"The request is missing a parameter or has a wrong one."}
 ```

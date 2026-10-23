@@ -246,6 +246,16 @@ served. The recorded nonces, ids and times are those of the earlier runs, except
 whose script was added, which come from live responses. The `ETag` of the first `GET /settings` is the live
 one.
 
+The authorization and token endpoints then began to send an `error_description` with every error. Each
+distinct error was captured live on a stack of the branch (project `odudu-p4g-31r`, port `3197`): the
+token endpoint's `invalid_grant`, `invalid_client` and `invalid_request`, and the authorization redirects
+for a missing challenge, a refused `prompt`, `claims` and `id_token_hint`, and `login_required`. The
+blocks that quote those errors then carry that real body or query in place of the old one, and a
+`content-length` that quotes one follows the new body: the Guides' refusal excerpts, the Path A, B, C and D
+pages, the branches, logout, the console's gateway page and five admin pages. They were not replayed from
+the top, so the keys, times and ids in the blocks around them are the earlier runs'. The state-less error
+redirect in the branches has a command of its own, run on that stack.
+
 ## Admin path transcripts
 
 The admin API: the endpoints under `/admin/tenants/{tenant}/` that let an

@@ -3112,6 +3112,38 @@ the helpers. The local stacks stay plain http: the development and quickstart co
 **Cookie names change under TLS** (`__Host-<tenant>-session`, `__Secure-odudu-sign-in`, `__Host-odudu-console`).
 Nothing is public yet, so every signed-in browser signs in once more.
 
+### Increment 31r, four defects the WordPress run found
+
+**The issuer was read from the request.** `issuerBaseFor(request)` built the issuer from the request's
+protocol and `Host` (and `X-Forwarded-*` when the proxy is trusted), so a proxy that dropped the port gave
+`iss` without it, and a forged `Host` was reflected into discovery, `iss`, every token's `iss` and the
+audience the server checks. It is the single function every place that states or checks the issuer calls
+(discovery, the `iss` of the authorization response and ID token, introspection, revocation, userinfo, logout,
+the private_key_jwt audience, token exchange, and the admin API's routes through `tenantIssuerFor`); no other
+code builds an absolute URL from a request (mail links, the console and passkeys already used
+`ODUDU_PUBLIC_BASE_URL`). Now `configureIssuerBase` (protocol-oidc) decorates every request with the configured
+base, spelled as a request's authority would be, and `issuerBaseFor` prefers it; `buildApp` decorates the
+whole app, so the OIDC routes and the admin API agree. With no `ODUDU_PUBLIC_BASE_URL` (local development)
+the issuer is read off the request as before. Production already refuses to boot without the variable (the
+passkey relying party guard); its message now names the issuer. `ODUDU_TRUST_PROXY` means what it did.
+The OIDF conformance plans run only in CI; they reach the server at `https://odudu` with
+`ODUDU_PUBLIC_BASE_URL: https://odudu`, so the configured issuer equals the one the suite derived from `Host`
+and discovery is unchanged there.
+
+**`seed client` and `seed scope` help said "create or update".** Both fail when the thing exists
+(`seed_conflict`). The help now says so and where to change an existing client; no update mode was built.
+
+**`seed user` and `seed profile` take `--email-verified`**, as `seed profile` took `--phone-number-verified`.
+`seed user` refuses it without `--email`; `seed profile` refuses a user with no address. Both set the flag with
+`markEmailVerified`, which says an operator's `seed` may.
+
+**OAuth errors say what went wrong.** A missing PKCE challenge now redirects with
+`error_description=code_challenge is required`; each refusal of `/authorize` (the response type, the challenge
+and its method, `prompt`, `max_age`, `claims`, `id_token_hint`, a repeated parameter) says so in a few static
+words, and every other authorization and token error carries one fixed sentence per code
+(`OAUTH_ERROR_DESCRIPTIONS`, printable ASCII, never built from the request; `invalid_grant` names no cause).
+`/introspect` and `/revoke` share the token endpoint's sentences. The errors reference lists them.
+
 ## Increment 31j: deleting and restoring built-in scopes
 
 **Decision.** A built-in scope (a name in `TENANT_DEFAULT_SCOPE_NAMES`, the set provisioning

@@ -114,7 +114,7 @@ curl -sS -D - -o /dev/null \
 ```
 HTTP/1.1 302 Found
 x-request-id: 01a109b7-d579-793d-91fe-ea746b588ac8
-location: https://app.example/callback?error=invalid_scope&state=xyz&iss=http%3A%2F%2Flocalhost%3A3082%2Ftenants%2Fscope-unassign-demo
+location: https://app.example/callback?error=invalid_scope&error_description=A+requested+scope+is+not+available+to+this+client.&state=xyz&iss=http%3A%2F%2Flocalhost%3A3082%2Ftenants%2Fscope-unassign-demo
 content-length: 0
 Date: Mon, 05 Oct 2026 01:40:05 GMT
 Connection: keep-alive

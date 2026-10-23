@@ -184,12 +184,12 @@ www-authenticate: Basic realm="token"
 cache-control: no-store
 pragma: no-cache
 content-type: application/json; charset=utf-8
-content-length: 26
+content-length: 78
 Date: Fri, 09 Oct 2026 10:35:29 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"error":"invalid_client"}
+{"error":"invalid_client","error_description":"Client authentication failed."}
 ```
 
 What does authenticate it is an RFC 7523 assertion, signed with the console's

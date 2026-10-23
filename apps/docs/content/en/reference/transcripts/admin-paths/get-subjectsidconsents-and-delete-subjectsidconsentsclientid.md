@@ -168,12 +168,12 @@ vary: Origin
 cache-control: no-store
 pragma: no-cache
 content-type: application/json; charset=utf-8
-content-length: 25
+content-length: 79
 Date: Mon, 28 Sep 2026 00:10:10 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"error":"invalid_grant"}
+{"error":"invalid_grant","error_description":"The code or token is not valid."}
 ```
 
 The access token minted alongside it introspects inactive, ahead of its own

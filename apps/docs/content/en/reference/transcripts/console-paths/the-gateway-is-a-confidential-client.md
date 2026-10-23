@@ -71,12 +71,12 @@ www-authenticate: Basic realm="token"
 cache-control: no-store
 pragma: no-cache
 content-type: application/json; charset=utf-8
-content-length: 26
+content-length: 78
 Date: Fri, 09 Oct 2026 10:39:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"error":"invalid_client"}
+{"error":"invalid_client","error_description":"Client authentication failed."}
 ```
 
 ```
@@ -85,12 +85,12 @@ x-request-id: 01a1203f-2edf-7f31-a75b-6c9933dc1f23
 www-authenticate: Basic realm="token"
 cache-control: no-store
 content-type: application/json; charset=utf-8
-content-length: 26
+content-length: 78
 Date: Fri, 09 Oct 2026 10:39:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"error":"invalid_client"}
+{"error":"invalid_client","error_description":"Client authentication failed."}
 ```
 
 With an assertion, signed for the endpoint's own tenant and presented once,
@@ -155,12 +155,12 @@ vary: Origin
 cache-control: no-store
 pragma: no-cache
 content-type: application/json; charset=utf-8
-content-length: 25
+content-length: 79
 Date: Fri, 09 Oct 2026 10:39:42 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"error":"invalid_grant"}
+{"error":"invalid_grant","error_description":"The code or token is not valid."}
 ```
 
 An assertion is good once. The same one presented twice at `/revoke`, the
