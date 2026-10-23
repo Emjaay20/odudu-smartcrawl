@@ -11,9 +11,11 @@ const RELEASE = readFileSync(path.join(REPO_ROOT, '.github/workflows/release.yml
 const LINKS = readFileSync(path.join(REPO_ROOT, '.github/workflows/links.yml'), 'utf8');
 const PINNED = /^[\w.-]+\/[\w.-]+(?:\/[\w.-]+)?@[0-9a-f]{40}$/u;
 
-function pages(): string {
-  const from = RELEASE.indexOf('\n  pages:\n');
-  expect(from, 'job pages').toBeGreaterThan(-1);
+const PAGES = readFileSync(path.join(REPO_ROOT, '.github/workflows/pages.yml'), 'utf8');
+
+function site(): string {
+  const from = RELEASE.indexOf('\n  site:\n');
+  expect(from, 'job site').toBeGreaterThan(-1);
   return RELEASE.slice(from + 1);
 }
 
@@ -26,34 +28,25 @@ function granted(block: string): Record<string, string> {
   return found;
 }
 
-describe('the pages job of the release workflow', () => {
-  const block = pages();
+describe('the pages workflow', () => {
+  const block = PAGES.slice(PAGES.indexOf('\n  pages:\n') + 1);
 
-  it('is the last job, so nothing after it is read as part of it', () => {
-    expect(RELEASE.trimEnd().endsWith(block.trimEnd())).toBe(true);
+  it('runs by hand and when called, takes no input, and holds nothing by default', () => {
+    const on = /^on:\n([\s\S]*?)\n\npermissions:/mu.exec(PAGES)?.[1] ?? '';
+    expect(on).toContain('workflow_dispatch:');
+    expect(on).toContain('workflow_call:');
+    expect(on).not.toMatch(/inputs:|push:|pull_request|schedule:/u);
+    expect(PAGES).toMatch(/^permissions: \{\}$/mu);
   });
 
-  it('waits for the image and holds only the permissions it uses', () => {
-    expect(block).toMatch(/^ {4}needs: \[prepare, image\]$/mu);
+  it('needs nothing and holds only the permissions it uses', () => {
+    expect(block).not.toMatch(/^ {4}needs:/mu);
     expect(granted(block)).toEqual({ contents: 'read', pages: 'write', 'id-token': 'write' });
   });
 
   it('deploys through the github-pages environment', () => {
     expect(block).toMatch(/^ {4}environment:\n {6}name: github-pages\n/mu);
     expect(block).toContain('url: ${{ steps.deployment.outputs.page_url }}');
-  });
-
-  it('runs for a stable tag, and for a run by hand that asks for the site', () => {
-    const condition = /^ {4}if: >-\n((?: {6}.+\n)+)/mu.exec(block)?.[1] ?? '';
-    expect(condition).toContain("github.event_name == 'push'");
-    expect(condition).toContain("needs.prepare.outputs.prerelease == 'false'");
-    expect(condition).toContain("github.event_name == 'workflow_dispatch' && inputs.deploy_site");
-  });
-
-  it('offers deploy_site as a boolean that is off unless asked for', () => {
-    expect(RELEASE).toMatch(
-      /^ {6}deploy_site:\n {8}description: .+\n {8}type: boolean\n {8}default: false$/mu,
-    );
   });
 
   it('uses the three Pages actions, each pinned to a commit', () => {
@@ -67,7 +60,7 @@ describe('the pages job of the release workflow', () => {
   it('builds with the package script and gives it neither an address nor a base', () => {
     expect(block).toContain('pnpm --filter @odudu/docs build:pages');
     expect(block).toContain('path: apps/docs/dist/pages');
-    expect(block).not.toMatch(/DOCS_BASE|DOCS_SITE_ORIGIN|github\.io/u);
+    expect(PAGES).not.toMatch(/DOCS_BASE|DOCS_SITE_ORIGIN|github\.io/u);
   });
 
   it('keeps no credential in its checkout, and runs no local action', () => {
@@ -77,11 +70,31 @@ describe('the pages job of the release workflow', () => {
     expect(block).not.toMatch(/uses: \.\//u);
   });
 
-  it('has a timeout', () => {
+  it('has a timeout, and serialises deploys without cancelling one', () => {
     expect(block).toMatch(/^ {4}timeout-minutes: \d+$/mu);
+    expect(PAGES).toMatch(/^concurrency:\n {2}group: pages\n {2}cancel-in-progress: false$/mu);
+  });
+});
+
+describe('the site job of the release workflow', () => {
+  const block = site();
+
+  it('is the last job, so nothing after it is read as part of it', () => {
+    expect(RELEASE.trimEnd().endsWith(block.trimEnd())).toBe(true);
   });
 
-  it('never names the site in the workflow', () => {
+  it('calls the pages workflow only after the release exists, and never for a candidate', () => {
+    expect(block).toMatch(/^ {4}needs: \[prepare, release\]$/mu);
+    expect(block).toMatch(/^ {4}if: needs\.prepare\.outputs\.prerelease == 'false'$/mu);
+    expect(block).toMatch(/^ {4}uses: \.\/\.github\/workflows\/pages\.yml$/mu);
+  });
+
+  it('grants the called workflow exactly what it asks for', () => {
+    expect(granted(block)).toEqual({ contents: 'read', pages: 'write', 'id-token': 'write' });
+  });
+
+  it('adds no input to the release workflow, and never names the site', () => {
+    expect(RELEASE).not.toContain('deploy_site');
     expect(RELEASE).not.toContain('wizzywit.github.io');
   });
 });

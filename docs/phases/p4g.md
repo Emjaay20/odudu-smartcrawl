@@ -3496,9 +3496,9 @@ and the retries died at once. The script rewrites the mirror list, sets `DPkg::L
 kills apt, dpkg and clears the locks. verified: a fake apt-get hung in an `ubuntu:24.04` container reproduces the lock
 failure without that step (three attempts, exit 1) and installs on the second attempt with it.
 
-**The site from the release workflow, and the weekly link check.** The `pages` job needs `prepare` and `image` (the
-image job also signs), runs for a stable tag or for a run by hand with `deploy_site`, and builds with the package
-script alone; the address stays in `apps/docs/site.config.ts`. Action commits resolved with
+**The site from its own workflow, and the weekly link check.** `pages.yml` builds and deploys the site (manual
+dispatch, or called by the `site` job of `release.yml`, which needs `release` and skips a candidate), with the
+package script alone; the address stays in `apps/docs/site.config.ts`. Action commits resolved with
 `gh api repos/<owner>/<repo>/git/ref/tags/<tag>`: configure-pages v6.0.0 `45bfe019`, upload-pages-artifact v5.0.0
 `fc324d35`, deploy-pages v5.0.1 `368f8252`, lychee-action v2.9.0 `e7477775`, cache v5.0.5 `27d5ce7f` (all lightweight
 tags, full SHAs in the workflows). The SBOM is not on the site: the release job has only `odudu-sbom.json`, a map of

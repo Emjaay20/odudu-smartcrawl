@@ -12,6 +12,7 @@ async function read(file: string): Promise<string> {
 }
 
 const WORKFLOW = await read('.github/workflows/release.yml');
+const LOCAL_PAGES = './.github/workflows/pages.yml';
 const JOBS = ['prepare', 'image', 'release'] as const;
 
 function job(name: string): string {
@@ -65,7 +66,9 @@ describe('the release workflow', () => {
   });
 
   it('pins every action to a commit, names the version beside it, and runs no local action', () => {
-    const uses = [...WORKFLOW.matchAll(/^\s+(?:- )?uses: (\S+)(.*)$/gmu)];
+    const uses = [...WORKFLOW.matchAll(/^\s+(?:- )?uses: (\S+)(.*)$/gmu)].filter(
+      ([, action]) => action !== LOCAL_PAGES,
+    );
     expect(uses.length).toBeGreaterThan(8);
     for (const [, action = '', rest = ''] of uses) {
       expect(action, action).toMatch(/^[\w.-]+\/[\w.-]+@[0-9a-f]{40}$/u);
@@ -85,8 +88,8 @@ describe('the release workflow', () => {
       WORKFLOW.match(
         /uses: actions\/checkout@\S+[^\n]*\n {8}with:\n {10}persist-credentials: false\n/gu,
       ) ?? [];
-    expect(checkouts).toHaveLength(4);
-    expect(careful).toHaveLength(4);
+    expect(checkouts).toHaveLength(3);
+    expect(careful).toHaveLength(3);
   });
 
   it('never puts an expression inside a script, where a tag name could become a command', () => {

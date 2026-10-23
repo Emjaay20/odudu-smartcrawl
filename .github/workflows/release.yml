@@ -3,8 +3,8 @@ name: release
 # Publishes a version of Odudu when a tag like v0.1.0 or v0.1.0-rc.1 is
 # pushed: a multi-architecture image on ghcr.io with its SBOM and build
 # provenance, a keyless signature, and a GitHub Release carrying the version's
-# compose.yaml. A stable tag also publishes the documentation site to GitHub
-# Pages. RELEASING.md says how to cut one.
+# compose.yaml. A stable tag then publishes the documentation site through
+# pages.yml. RELEASING.md says how to cut one.
 #
 # Run by hand from a branch, it does everything except publish: the image is
 # built for both architectures and the release notes and compose file are
@@ -21,10 +21,6 @@ on:
         description: Version to build without publishing, such as 0.1.0-rc.1. CHANGELOG.md must have a section for it.
         required: true
         default: 0.1.0-rc.1
-      deploy_site:
-        description: Also publish the documentation site from this commit. A stable tag does it by itself.
-        type: boolean
-        default: false
 
 permissions: {}
 
@@ -229,45 +225,13 @@ jobs:
           gh release create "$TAG" assets/compose.yaml assets/odudu-sbom.json assets/SHA256SUMS \
             --verify-tag --title "$TAG" --notes-file notes.md "${kind[@]}"
 
-  # A release candidate never replaces the live site. The owner can publish it
-  # from main before the first stable tag by running this workflow with
-  # deploy_site on. The site's address is in apps/docs/site.config.ts alone.
-  pages:
-    needs: [prepare, image]
-    if: >-
-      (github.event_name == 'push' && needs.prepare.outputs.prerelease == 'false')
-      || (github.event_name == 'workflow_dispatch' && inputs.deploy_site)
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+  # Only after the release exists, and never for a release candidate, so a
+  # failed release leaves the live site as it was. pages.yml does the work.
+  site:
+    needs: [prepare, release]
+    if: needs.prepare.outputs.prerelease == 'false'
     permissions:
       contents: read
       pages: write
       id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - run: corepack enable
-
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '24'
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-
-      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-
-      - name: Build the site
-        run: pnpm --filter @odudu/docs build:pages
-
-      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
-        with:
-          path: apps/docs/dist/pages
-
-      - id: deployment
-        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+    uses: ./.github/workflows/pages.yml

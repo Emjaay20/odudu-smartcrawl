@@ -38,9 +38,8 @@ Release marked as a pre-release, and nothing that follows `latest` moves.
 
 To run everything except the publishing, start the `release` workflow by hand
 from the Actions tab and give it a version. It builds both architectures and
-checks the notes and the compose file, and pushes nothing. Tick `deploy_site` and
-it also publishes the site (owner step 4). The workflow file has to be on `main`
-for the tab to offer it.
+checks the notes and the compose file, and pushes nothing. The workflow file has to be
+on `main` for the tab to offer it.
 
 ## What the workflow does
 
@@ -51,8 +50,9 @@ for the tab to offer it.
   it by digest without a key, and verifies the signature it just made.
 - **release** attaches `compose.yaml` with this version's image in it, the SBOM
   and `SHA256SUMS` to a GitHub Release.
-- **pages** publishes the documentation site after the image, for a stable tag
-  only. A release candidate never replaces the live site.
+- **site** calls `pages.yml` after the release exists, for a stable tag only.
+  A release candidate never replaces the live site, and a failed release leaves
+  it as it was. `pages.yml` can also be run by hand, on its own.
 
 A stable tag gets the tags `X.Y.Z`, `X.Y` and `latest`. A release candidate gets
 only `X.Y.Z-rc.N`. Each job holds only the permissions it uses, and the one
@@ -116,11 +116,9 @@ something public.
 3. **Turn on private vulnerability reporting.** Settings, Code security,
    Private vulnerability reporting. `SECURITY.md` links to it.
 4. **Turn on GitHub Pages and publish the site once.** Settings, Pages,
-   Source: GitHub Actions. Then open Actions, release, Run workflow, from
-   `main`, give any version that has a `CHANGELOG.md` section, and tick
-   `deploy_site`. The README and the landing page link to the site, so do this
-   before the first tag. It also builds the image without pushing it, so it
-   takes as long as a dry run. After that, each stable tag redeploys the site.
+   Source: GitHub Actions. Then open Actions, pages, Run workflow, from `main`.
+   The README and the landing page link to the site, so do this before the
+   first tag. After that, each stable tag redeploys it.
 5. **Tag the first release candidate.** From the commit CI has passed on:
 
    ```text
@@ -165,7 +163,7 @@ on custom domains for Pages, read on 2026-10-16.
    GitHub's statement, so check it with `curl -sI` on the old address.
 
 Cloudflare Pages or Vercel could serve the same built site. Neither is set up,
-and only the `pages` job would change. Vercel's free tier limits commercial
+and only `pages.yml` would change. Vercel's free tier limits commercial
 use, so read its current terms first if Odudu may be offered commercially.
 
 ## Link check
