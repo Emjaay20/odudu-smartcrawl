@@ -22,7 +22,6 @@ const MAY_LINK_TO_THE_SITE = new Set([
   'RELEASING.md',
   '.github/ISSUE_TEMPLATE/config.yml',
   '.github/ISSUE_TEMPLATE/feature_request.yml',
-  '.lycheeignore',
   CONFIG,
 ]);
 
@@ -52,7 +51,7 @@ describe('the site address', () => {
   it('is linked to in the listed files only under the config base, so one edit moves them together', async () => {
     const { PAGES_BASE } = await siteConstants();
     const off = [...MAY_LINK_TO_THE_SITE]
-      .filter((file) => !['.lycheeignore', 'RELEASING.md', CONFIG].includes(file))
+      .filter((file) => !['RELEASING.md', CONFIG].includes(file))
       .flatMap((file) =>
         lines(file)
           .filter(({ text }) => !text.includes(`${HOST}${PAGES_BASE}`))

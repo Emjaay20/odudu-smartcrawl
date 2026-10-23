@@ -7,14 +7,13 @@ import { DOCS_ROOT } from '#docs/tests/support/dist.ts';
 
 const FRONT_MATTER = /^---\n[\s\S]*?\n---\n/u;
 const source = readFileSync(path.join(DOCS_ROOT, 'content/en/quick-start/index.mdx'), 'utf8');
-// `releases/latest/download` skips pre-releases, so the candidate's own tag is
-// the address until a stable version has a dated changelog section.
-const stable = /^## \[\d+\.\d+\.\d+\] - \d{4}-\d{2}-\d{2}$/mu.test(
+const newest = /^## \[(\d+\.\d+\.\d+(?:-rc\.\d+)?)\] - \d{4}-\d{2}-\d{2}/mu.exec(
   readFileSync(path.join(DOCS_ROOT, '../../CHANGELOG.md'), 'utf8'),
-);
-const DOWNLOAD = stable
-  ? 'https://github.com/wizzywit/odudu/releases/latest/download/compose.yaml'
-  : 'https://github.com/wizzywit/odudu/releases/download/v0.1.0-rc.1/compose.yaml';
+)?.[1];
+// `releases/latest/download` skips pre-releases, so a candidate is named by tag.
+const DOWNLOAD = `https://github.com/wizzywit/odudu/releases/${
+  newest?.includes('-rc.') ? `download/v${newest}` : 'latest/download'
+}/compose.yaml`;
 const nodes = fromMarkdown(source.replace(FRONT_MATTER, '')).children;
 
 type Node = (typeof nodes)[number];

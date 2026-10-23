@@ -69,7 +69,7 @@ data on their own servers.
 You need Docker with Compose v2 and `curl`.
 
 ```sh
-curl -fsSLO https://github.com/wizzywit/odudu/releases/download/v0.1.0-rc.1/compose.yaml && docker compose up -d
+curl -fsSLO https://github.com/wizzywit/odudu/releases/download/v0.1.0-rc.2/compose.yaml && docker compose up -d
 docker compose logs setup
 ```
 

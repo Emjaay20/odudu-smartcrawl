@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { stable, candidateTag } from './support/release.js';
 import { REPO_ROOT } from './markdown.js';
 import { siteConstants } from './site-constants.js';
 
@@ -19,11 +20,6 @@ const STATUS_SENTENCE =
 const CONTENT = path.join(REPO_ROOT, 'apps/docs/content/en');
 const SITE_DOCS = `${SITE_ORIGIN}${PAGES_DOCS_BASE}`;
 const released = existsSync(path.join(REPO_ROOT, '.github/workflows/release.yml'));
-// `releases/latest/download` skips pre-releases, so the download address
-// answers only once a stable version has a dated section in the changelog.
-const stable = /^## \[\d+\.\d+\.\d+\] - \d{4}-\d{2}-\d{2}$/mu.test(
-  readFileSync(path.join(REPO_ROOT, 'CHANGELOG.md'), 'utf8'),
-);
 
 function section(heading: string): string {
   const start = LINES.findIndex((line) => line === `## ${heading}`);
@@ -285,7 +281,7 @@ describe('the quick start in the README is the quick start page', () => {
     const quick = section('Quick start');
     expect(quick.includes('This is a release candidate.')).toBe(!stable);
     expect(quick.includes('contributing/run-from-a-checkout/')).toBe(!stable);
-    expect(quick.includes('releases/download/v0.1.0-rc.1/compose.yaml')).toBe(!stable);
+    expect(quick.includes(`releases/download/${candidateTag}/compose.yaml`)).toBe(!stable);
     expect(quick.includes('releases/latest/download/compose.yaml')).toBe(stable);
   });
 });
