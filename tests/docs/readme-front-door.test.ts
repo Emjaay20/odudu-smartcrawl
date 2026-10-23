@@ -204,7 +204,7 @@ describe('what it says about the product matches the roadmap', () => {
     expect(status).not.toMatch(/[$€£]\s?\d|\bpric(e|es|ing)\b|\b20\d\d\b/iu);
   });
 
-  it('keeps the not-production-ready notice at the top', () => {
+  it('keeps the release-candidate notice, with its security-review disclosure, at the top', () => {
     const top = LINES.slice(0, 40).join('\n');
     expect(top).toMatch(/A release candidate/u);
     expect(top).toMatch(/security review/iu);
