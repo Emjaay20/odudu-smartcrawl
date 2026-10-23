@@ -11,11 +11,12 @@ Most of this reference is generated from the code that does the work, so it list
 run does and cannot fall behind it. The pages say which source they were generated from. If you would
 rather follow a journey than look something up, the [guides](../guides/index.md) come first.
 
-## Configuration, commands, errors and events
+## Protocol, configuration, commands, errors and events
 
+- [Protocol in plain words](./protocol.md): the discovery document, the endpoints and the parameters each takes.
 - [Configuration](./generated/configuration.md): every environment variable, with its type,
   bounds and default.
-- [Command line](./generated/cli.md): `odudu init`, `seed`, `reap` and the other commands.
+- [Command line](./generated/cli.md): `odudu init`, `seed`, `reap` and the other commands. `odudu help` lists them, and `odudu help seed client` shows the options of one.
 - [Endpoints](./generated/endpoints.md): everything the server serves, and how each endpoint
   authenticates.
 - [Error codes](./generated/errors.md): admin API problem types, OAuth errors and the errors
