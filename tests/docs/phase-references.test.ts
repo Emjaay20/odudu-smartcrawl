@@ -18,7 +18,8 @@ import {
 const ROADMAP = 'docs/superpowers/specs/2026-09-10-odudu-design.md';
 
 const CITING_DOCUMENTS: readonly (readonly [name: string, atLeast: number])[] = [
-  ['README.md', 6],
+  // The front door cites no phase; the roadmap page is where phases are named.
+  ['README.md', 0],
   [PROTOCOL_PAGES, 4],
   // The roadmap carries most of the citations: the transcripts hold the
   // request paths without the list of what is not implemented.

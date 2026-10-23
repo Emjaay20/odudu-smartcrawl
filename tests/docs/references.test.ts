@@ -16,7 +16,9 @@ interface Floors {
 }
 
 const DOCUMENTS: readonly (readonly [name: string, floors: Floors])[] = [
-  ['README.md', { pnpm: 4, paths: 6 }],
+  // The front door names no command and no path outside its links; the checks still run
+  // over it so that the first one added is covered.
+  ['README.md', { pnpm: 0, paths: 0 }],
   [PROTOCOL_PAGES, { pnpm: 0, paths: 4 }],
 ];
 

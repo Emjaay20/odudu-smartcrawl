@@ -15,6 +15,7 @@ drifts from what the server serves.
 | [`.../reference/transcripts/`](../apps/docs/content/en/reference/transcripts/index.md) | Every protocol, admin API and console request, run against a real stack |
 | [`.../roadmap.md`](../apps/docs/content/en/roadmap.md)                                 | What ships, what is next, what is later and what was decided against    |
 | [`NEXT.md`](NEXT.md)                                                                   | Where the project stands, what is open, what was deferred               |
+| [`media/`](media/)                                                                     | The console animation the README opens with, made by `pnpm docs:gif`    |
 | [`adr/`](adr/)                                                                         | Decisions and their rejected alternatives                               |
 | [`protocols/`](protocols/)                                                             | One reading note per RFC or specification, clause by clause             |
 

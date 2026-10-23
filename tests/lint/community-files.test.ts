@@ -179,7 +179,7 @@ describe('the pull request template', () => {
 });
 
 describe('the name and the mark', () => {
-  const holders = ['TRADEMARK.md', 'brand/NOTICE.md'];
+  const holders = ['README.md', 'TRADEMARK.md', 'brand/NOTICE.md'];
 
   it('are claimed in one sentence, from one constant, in every place that claims them', () => {
     expect(OWNER_NOTICE).toContain(OWNER_NOTICE_NAME);
@@ -187,6 +187,7 @@ describe('the name and the mark', () => {
   });
 
   it('links the policy from the README, the brand notice and the decision record', () => {
+    expect(read('README.md')).toContain('(TRADEMARK.md)');
     expect(read('brand/NOTICE.md')).toContain('(../TRADEMARK.md)');
     expect(read('docs/adr/0042-distribution-licensing-and-the-paid-boundary.md')).toContain(
       'TRADEMARK.md',

@@ -21,7 +21,7 @@ const DOCUMENTS: readonly (readonly [name: string, atLeast: number])[] = [
   [PROTOCOL_PAGES, 400],
   [ADMIN_PAGES, 80],
   [CONSOLE_PAGES, 30],
-  ['README.md', 20],
+  ['README.md', 1],
 ];
 
 describe('the documents whose fenced blocks are captured output are structurally sound', () => {

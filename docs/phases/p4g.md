@@ -3365,3 +3365,68 @@ bounded by the per-origin throttle (ADR 0037's amendment).
 **`odudu seed client --consent-required`** creates a client that asks for consent, so the consent screen and
 its two refusals are reproducible from the command line. The `consent_required` and `access_denied` lines in
 the refusal transcripts are captured against such a client.
+
+## Increments 32 and 33: the README front door and the community files
+
+**The README is 101 lines, from 2,023.** Each `##` of the old README has a home
+on the site, and the facts the tests read moved with the prose.
+
+| Old section                    | Lines     | Home now                                                                                                                                                |
+| ------------------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status                         | 22-764    | `concepts/`, `guides/`, the request paths and the roadmap's Shipped section; a script found every backticked name of it on the site bar a few internals |
+| Running it, credentials to try | 765-1051  | `contributing/run-from-a-checkout.md` (moved, wording kept)                                                                                             |
+| Running it, sign somebody in   | 1052-1292 | `reference/transcripts/request-paths/bootstrap.md`, already there                                                                                       |
+| Running it, Compose and init   | 1293-1460 | `reference/transcripts/first-start.md` (moved), checked by `tests/docs/first-start.test.ts`                                                             |
+| Running it, seed to reap       | 1461-1800 | the request paths and `operating/upgrading.md`, already there; the back-channel sender paragraph and the throttle ceilings moved into two request paths |
+| Why not Keycloak               | 1827-1838 | `introduction/compare.md`; the agent paragraph is dropped: agents are P5 and the README claimed what is not built                                       |
+| Conformance                    | 1839-1858 | `security/index.md` (Config OP passes, Basic OP is not claimed, ADR 0016)                                                                               |
+| Deploying                      | 1859-1977 | `operating/deploying.md`                                                                                                                                |
+| What is not built yet          | 1978-2019 | the roadmap's Next and Later; "Helm chart or manifests" gained its roadmap line under P11; the history paragraphs stay in git                           |
+| License                        | 2020-2023 | `LICENSING.md`, linked                                                                                                                                  |
+
+The tests that read the README now read the pages that hold the facts:
+`brute-force`, `config-defaults`, `login-step-resource`, `required-action-order`,
+`session-cookie-shape`, `session-lifespans` and `error-codes` dropped it from their
+lists; `throttle` and `retention-schedule` read the request paths;
+`docs-route` reads the transcript and the deploying page; `not-built-yet` reads
+the roadmap; `discovery` lost its README excerpt, since the request paths hold the whole
+document; the structure, references and phase floors for the README are 1, 0 and 0.
+The init refusal named "the README's Deploying section"; it now names Deploying in
+the Operating section, and `quickstart/compose.yaml` says the same.
+
+**The hero GIF.** `pnpm docs:gif` drives the console in dark mode through the
+capture's pinned browser, guard and routes (a request that issues a secret is aborted,
+and a filled password field is never photographed): sign in, open Clients, create
+`my-app`, see it listed. 29 frames at 800 x 560, 9.2 s, one 128-colour palette,
+992 KB, `docs/media/console.gif`. `verified: ODUDU_REVISION=unknown SHOTS_PREBUILT=1 SHOTS_SCRIPT=gif.ts
+SHOTS_COMPOSE_PROJECT=odudu-p4g-gif ODUDU_HOST_PORT=3187 POSTGRES_HOST_PORT=5487
+apps/docs/scripts/console-shots/with-stack.sh`. The assumption that a pure-JavaScript
+encoder reaches the size held: `gifenc` 1.0.3 (MIT, no dependencies), a devDependency of
+`apps/docs`, with no ffmpeg. A GIF cannot follow the reader's theme, so it is dark and a
+still that does follow it sits under it. `with-stack.sh --check` runs the flow first
+(`gif.ts --check` records nothing), so CI's `console-shots` job keeps the flow true.
+The present step of the capture no longer rewrites hidden form fields: a recording that
+signs in after the shot would otherwise post an address the server did not issue.
+
+**Decisions.**
+
+- **Badges** are the verify workflow, the licence and the docs. The release and the image
+  badges arrive with `.github/workflows/release.yml`, and a test fails until they do. The
+  docs badge points at the address `apps/docs/site.config.ts` gives, which answers once
+  Pages is deployed.
+- **The dark lockup.** `brand/lockup.svg` is `currentColor`, so on a dark theme it is
+  black on near black as an `<img>`. `brand/lockup-paper.svg` is the same drawing in the
+  paper colour, a test derives it from the lockup, and the README picks it by
+  `prefers-color-scheme`.
+- **Ibibio.** The README says nothing about what the name means: the owner's ruling of
+  2026-10-21 removes it from public pages and `apps/docs/tests` pins that, which the older
+  README row of the plan did not know. `TRADEMARK.md` says nothing either.
+- **Owner notice.** `OWNER_NOTICE_NAME` (`Wisdom Praise`, owner ruling 2026-10-21) is a
+  constant in `apps/docs/nav.ts`; the README, `TRADEMARK.md`, `brand/NOTICE.md` and the docs
+  footer carry its sentence, and `tests/lint/community-files.test.ts` holds them to it. The
+  mark was approved by the owner on 2026-10-21, who directs its use. The symbol is TM; a
+  test fails on the registered one anywhere in these files.
+- **The contact** in `CODE_OF_CONDUCT.md` and `TRADEMARK.md` is the address `SECURITY.md`
+  already gives, which is the owner's commit address.
+- **The CLA** is named in `CONTRIBUTING.md` as accepted under ADR 0042 with its text not
+  yet published; the link arrives with the agreement.
