@@ -138,7 +138,7 @@ describe('the CI workflow', () => {
     it('is one action every job that runs the image uses, with one writer of the cache', async () => {
       const workflow = await read('.github/workflows/verify.yml');
       const uses = workflow.match(/uses: \.\/\.github\/actions\/image/gu) ?? [];
-      expect(uses).toHaveLength(4);
+      expect(uses).toHaveLength(5);
       expect(workflow).toContain(
         "save-cache: ${{ strategy.job-index == 0 && github.event_name == 'push' }}",
       );
@@ -334,6 +334,54 @@ describe('the CI workflow', () => {
       for (const name of directories) {
         await read(`examples/${name}/test.ts`);
       }
+    });
+  });
+
+  describe('the quick start job', () => {
+    async function job(): Promise<string> {
+      const workflow = await read('.github/workflows/verify.yml');
+      const from = workflow.slice(workflow.indexOf('\n  quickstart:\n') + 1);
+      const next = /\n {2}[a-z][\w-]*:\n/u.exec(from.slice(1));
+      return next === null ? from : from.slice(0, next.index + 1);
+    }
+
+    it('runs when the image can have changed, is bounded, and the gate waits for it', async () => {
+      const block = await job();
+      expect(block).toContain('needs: changes');
+      expect(block).toMatch(/^ {4}if: needs\.changes\.outputs\.buildImage == 'true'$/mu);
+      expect(block).toMatch(/^ {4}timeout-minutes: \d+$/mu);
+      const workflow = await read('.github/workflows/verify.yml');
+      expect(gateNeeds(workflow)).toContain('quickstart');
+    });
+
+    it("runs the repository's own compose file with the image named as the file names it", async () => {
+      const block = await job();
+      expect(block).toContain('uses: ./.github/actions/image');
+      expect(block).toContain('docker tag odudu-smoke-odudu ghcr.io/wizzywit/odudu:0.0.0');
+      expect(block).toContain('quickstart/prove.sh');
+      expect(block).toContain('uses: ./.github/actions/playwright');
+      expect(block).not.toMatch(/:3000\b|sed |ODUDU_IMAGE/u);
+      const compose = await read('quickstart/compose.yaml');
+      expect(compose).toContain('${ODUDU_IMAGE:-ghcr.io/wizzywit/odudu:0.0.0}');
+    });
+
+    it('starts the stack bare, as a stranger does, and proves a sign-in inside a budget', async () => {
+      const proof = await read('quickstart/prove.sh');
+      const commands = proof
+        .split('\n')
+        .filter((line) => line.trim().startsWith('docker compose up'));
+      expect(commands).toEqual(['  docker compose up -d']);
+      expect(proof).toContain('BUDGET_SECONDS=600');
+      expect(proof).toContain('"$REPO/quickstart/prove.ts"');
+      expect(proof).toContain('docs_served');
+      expect(proof).toContain('Odudu is ready.');
+      expect(proof).toContain('docker compose down -v --remove-orphans');
+    });
+
+    it('treats a change to the proof or the compose file as a change to the image', async () => {
+      const { classifyChanges } = await import('../../tools/ci/src/changes.ts');
+      expect(classifyChanges(['quickstart/prove.sh']).buildImage).toBe(true);
+      expect(classifyChanges(['quickstart/compose.yaml']).buildImage).toBe(true);
     });
   });
 

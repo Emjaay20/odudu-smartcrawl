@@ -532,6 +532,41 @@ jobs:
         if: always()
         run: quickstart/stack.sh down
 
+  # The quick start as a stranger runs it, on a clean runner: the repository's
+  # compose file with the image built from this commit under the name the file
+  # gives it, one bare `docker compose up -d`, the first administrator's banner,
+  # a sign-in to the console in a browser, and the documentation at /docs/.
+  # linux/amd64 only: arm64 and Docker Desktop are confirmed by hand
+  # (RELEASING.md, Owner steps). The proof's own ten-minute budget is inside
+  # quickstart/prove.sh; the job's limit leaves room for building the image.
+  quickstart:
+    needs: changes
+    if: needs.changes.outputs.buildImage == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # Only for the browser: the proof borrows the docs app's Playwright.
+      - uses: ./.github/actions/setup
+
+      - uses: ./.github/actions/playwright
+        with:
+          package: '@odudu/docs'
+
+      - uses: ./.github/actions/image
+        with:
+          revision: ${{ github.sha }}
+
+      - name: Name the image as the compose file does
+        run: docker tag odudu-smoke-odudu ghcr.io/wizzywit/odudu:0.0.0
+
+      - name: Run the quick start and sign in
+        timeout-minutes: 10
+        run: quickstart/prove.sh
+
   # Photographs the console's areas against the built image, for the pages of
   # the documentation that show them, and fails when a heading or a control a
   # page relies on has gone from the console, or when a screen's text no longer
@@ -660,6 +695,7 @@ jobs:
       - e2e
       - console-shots
       - examples
+      - quickstart
       - conformance
       - commit-messages
     if: always()
