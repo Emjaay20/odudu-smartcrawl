@@ -1,10 +1,20 @@
-import type { ClientScope, ScopeMappers, SetScopeRolesResponse } from '@odudu/contracts/admin';
+import type {
+  ClientScope,
+  ListBuiltinScopesResponse,
+  RestoreBuiltinScopesResponse,
+  ScopeImpact,
+  ScopeMappers,
+  SetScopeRolesResponse,
+} from '@odudu/contracts/admin';
 import {
   amendScope,
   deleteScope,
+  readBuiltinScopes,
   readScope,
+  readScopeImpact,
   readScopeMappers,
   readScopeRoles,
+  restoreBuiltinScopes,
   setScopeMappers,
   setScopeRoles,
 } from '#/features/scopes/adapter/scopes';
@@ -16,9 +26,18 @@ import {
   type GeneralValues,
 } from '#/features/scopes/service';
 import { uniqueIds } from '#/shared/service/ids';
-import { countKey, listKey, pickerKey } from '#/shared/repository/queryKeys';
+import {
+  builtinScopesKey,
+  countKey,
+  listKey,
+  pickerKey,
+  scopeImpactKey,
+} from '#/shared/repository/queryKeys';
 import { useAfterChange } from '#/shared/repository/useAfterChange';
+import { useRead } from '#/shared/repository/useRead';
 import { useRecord, type RecordState } from '#/shared/repository/useRecord';
+import type { Read } from '#/shared/service/read';
+import { useTransport } from '#/shared/transport/useTransport';
 import type { SaveInput } from '#/shared/repository/useSectionSave';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 import { useWrite, type Write } from '#/shared/repository/useWrite';
@@ -67,7 +86,12 @@ function useAfterScopeChange(tenant: string, deleted: string | null = null) {
     records: ['scopes/'],
     recordOf: scopeRecord,
     dropped: ['clients/'],
-    keys: [listKey(tenant, 'scopes'), countKey(tenant, 'scopes'), pickerKey(tenant, 'scopes')],
+    keys: [
+      listKey(tenant, 'scopes'),
+      countKey(tenant, 'scopes'),
+      pickerKey(tenant, 'scopes'),
+      builtinScopesKey(tenant),
+    ],
   });
 }
 
@@ -103,12 +127,35 @@ export function useScopeSaves(tenant: string, id: string) {
   };
 }
 
+// `confirm` is the scope's name, which the server asks of a built-in scope
+// and ignores for any other.
 export function useScopeDeletion(
   tenant: string,
   id: string,
+  confirm?: string,
 ): Write<void, GatewayResult<undefined>> {
   const after = useAfterScopeChange(tenant, id);
   return useWrite({
-    send: async (gateway) => after(await deleteScope(gateway, tenant, id)),
+    send: async (gateway) => after(await deleteScope(gateway, tenant, id, confirm)),
+  });
+}
+
+// Read again each time it is asked for: the counts move with every assignment.
+export function useScopeImpact(tenant: string, id: string, asked: boolean): Read<ScopeImpact> {
+  const { gateway } = useTransport();
+  return useRead(scopeImpactKey(tenant, id), asked, () => readScopeImpact(gateway, tenant, id));
+}
+
+export function useBuiltinScopes(tenant: string, asked: boolean): Read<ListBuiltinScopesResponse> {
+  const { gateway } = useTransport();
+  return useRead(builtinScopesKey(tenant), asked, () => readBuiltinScopes(gateway, tenant));
+}
+
+export function useRestoreBuiltins(
+  tenant: string,
+): Write<void, GatewayResult<RestoreBuiltinScopesResponse>> {
+  const after = useAfterScopeChange(tenant);
+  return useWrite({
+    send: async (gateway) => after(await restoreBuiltinScopes(gateway, tenant)),
   });
 }

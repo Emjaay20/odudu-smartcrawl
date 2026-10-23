@@ -2,6 +2,7 @@ import type { SettingsSection } from '#/features/settings/service/sectionTypes';
 
 export const GENERAL_SECTION = 'general';
 export const LOCKOUT_SECTION = 'brute-force';
+export const PASSWORD_SECTION = 'password';
 
 export const ACCESS_SECTIONS: readonly SettingsSection[] = [
   {
@@ -90,7 +91,7 @@ export const ACCESS_SECTIONS: readonly SettingsSection[] = [
         name: 'verify_email',
         label: 'Verify email addresses',
         control: 'toggle',
-        description: 'A new account is asked to confirm its address by a link in a mail.',
+        description: 'The account is created when the person confirms their address from a mail.',
       },
       {
         name: 'verify_email_ttl_seconds',
@@ -132,7 +133,7 @@ export const ACCESS_SECTIONS: readonly SettingsSection[] = [
     ],
   },
   {
-    id: 'password',
+    id: PASSWORD_SECTION,
     title: 'Password policy',
     description: 'What a password must satisfy when somebody sets or changes one.',
     fields: [

@@ -1,8 +1,13 @@
-import { requiredActionRepository, type RequiredAction } from '@odudu/authn-flows';
+import { BIDI_REFUSED_MESSAGE, refusesBidi } from '@odudu/contracts';
+import {
+  onSecondFactorRemoved,
+  requiredActionRepository,
+  type RequiredAction,
+} from '@odudu/authn-flows';
 import {
   heldAdminCapabilitySchema,
   SUBJECT_SEARCH_FIELDS,
-  usernameSchema,
+  usernameShapeSchema,
   type Credential,
   type GroupFields,
   type ListSubjectsQuery,
@@ -21,6 +26,7 @@ import {
 import {
   credentialRepository,
   isEmailAddress,
+  lockEmailForCreation,
   loginFailures,
   passwordExpired,
   subjectRepository,
@@ -33,6 +39,7 @@ import {
 } from '@odudu/domain-identity';
 import { clients, tenantSettingsRepository } from '@odudu/domain-tenant';
 import { isUuid } from '@odudu/kernel';
+import { enqueueCredentialNotice } from '#/usecase/credential-notice';
 import {
   and,
   asc,
@@ -121,6 +128,7 @@ export interface SubjectAuditEvent {
     | 'subject.amend'
     | 'subject.delete'
     | 'subject.credential_delete'
+    | 'subject.recovery_codes_revoke'
     | 'subject.required_actions_set'
     | 'subject.roles_set'
     | 'subject.groups_set'
@@ -190,22 +198,10 @@ export async function refuseOverTargetCeiling<A extends string, R extends string
   return { kind: 'target_ceiling', requested: denied };
 }
 
-// The lock every mutation of one subject serialises on; false when there is
-// none. `no key update` conflicts with itself, so two admin mutations still
-// queue, but not with the key-share lock every insert referencing the
-// subject takes: `FOR UPDATE` here deadlocks against a login that touched
-// a session, or cleared its failures, and then inserts a row naming the
-// subject. `deleteSubject`'s own delete still takes the full lock.
-export async function lockSubjectRow(
-  tx: TenantScopedDatabase,
-  subjectId: string,
-): Promise<boolean> {
-  const rows = await tx
-    .select({ id: subjects.id })
-    .from(subjects)
-    .where(eq(subjects.id, subjectId))
-    .for('no key update');
-  return rows.length > 0;
+// The lock every mutation of one subject serialises on, shared with the
+// sign-in's recovery-code issue so the two cannot interleave.
+export function lockSubjectRow(tx: TenantScopedDatabase, subjectId: string): Promise<boolean> {
+  return subjectRepository(tx).lock(subjectId);
 }
 
 /** Every `listSubjectsQuerySchema` parameter except the page controls. */
@@ -417,6 +413,7 @@ export async function composeUserSubject(
   tx: TenantScopedDatabase,
   input: ComposeUserSubjectInput,
 ): Promise<{ subjectId: string }> {
+  if (input.email !== null) await lockEmailForCreation(tx, input.tenantId, input.email);
   const subject = await subjectRepository(tx).create({ tenantId: input.tenantId, type: 'user' });
   await userRepository(tx).create({
     subjectId: subject.id,
@@ -662,7 +659,7 @@ async function amendSubjectUnguarded(
   // without going through this validation first.
   const patch: SubjectPatch = {};
   if ('username' in input.values) {
-    const parsed = usernameSchema.safeParse(input.values.username);
+    const parsed = usernameShapeSchema.safeParse(input.values.username);
     if (!parsed.success) {
       return {
         kind: 'invalid_value',
@@ -676,6 +673,9 @@ async function amendSubjectUnguarded(
         field: 'username',
         description: `subject ${input.subjectId} has no user profile to carry a username`,
       };
+    }
+    if (refusesBidi(parsed.data, locked.user.username)) {
+      return { kind: 'invalid_value', field: 'username', description: BIDI_REFUSED_MESSAGE };
     }
     if (parsed.data !== locked.user.username) patch.username = { value: parsed.data };
   }
@@ -758,12 +758,18 @@ export interface DeleteSubjectDeps {
 }
 
 export type DeleteSubjectOutcome =
-  { kind: 'not_found' } | TargetCeilingRefusal | { kind: 'deleted' } | LastAdministratorRefusal;
+  | { kind: 'not_found' }
+  | TargetCeilingRefusal
+  | { kind: 'service_account'; clientId: string }
+  | { kind: 'deleted' }
+  | LastAdministratorRefusal;
 
 // The delete itself is one statement: every table that names a subject
 // (users, user_credentials, sessions, token_grants, subject_roles, …)
 // cascades on it, and clients_service_subject_fk (0063_service_subject_fk.sql)
-// is the one exception, which now detaches rather than blocks it.
+// is the one exception, which now detaches rather than blocks it. A subject a
+// client names as its service account is refused instead: the client would be
+// left with none, and nothing gives it a new one.
 export async function deleteSubject(
   tx: TenantScopedDatabase,
   deps: DeleteSubjectDeps,
@@ -788,6 +794,24 @@ async function deleteSubjectUnguarded(
   input: DeleteSubjectInput,
 ): Promise<DeleteSubjectOutcome> {
   if (!(await lockSubjectRow(tx, input.subjectId))) return { kind: 'not_found' };
+  const [owner] = await tx
+    .select({ clientId: clients.clientId })
+    .from(clients)
+    .where(eq(clients.serviceSubjectId, input.subjectId))
+    .limit(1);
+  if (owner !== undefined) {
+    await deps.audit(tx, {
+      action: 'subject.delete',
+      resourceType: 'subject',
+      resourceId: input.subjectId,
+      actorSubjectId: input.actorSubjectId,
+      actorTenantId: input.actorTenantId,
+      actorClientId: input.actorClientId,
+      outcome: 'refused',
+      detail: { reason: `the service account of client ${owner.clientId}` },
+    });
+    return { kind: 'service_account', clientId: owner.clientId };
+  }
   const refused = await refuseOverTargetCeiling(tx, deps.audit, 'subject.delete', input);
   if (refused !== null) return refused;
 
@@ -904,8 +928,11 @@ export function credentialWireShape(view: CredentialView): Credential {
 }
 
 export interface DeleteCredentialInput {
+  readonly tenantId: string;
   readonly subjectId: string;
   readonly credentialId: string;
+  /** The time the notice mail is sent at. */
+  readonly now: Date;
   readonly callerCapabilities: ReadonlySet<string>;
   readonly actorSubjectId: string;
   readonly actorTenantId: string;
@@ -914,6 +941,12 @@ export interface DeleteCredentialInput {
 
 export interface DeleteCredentialDeps {
   readonly audit: Audit;
+  /**
+   * Ends the subject's sessions in this transaction and says how many ended;
+   * given only when the request asked for it. Injected because the sessions
+   * usecase imports this module.
+   */
+  readonly endSessions?: (tx: TenantScopedDatabase) => Promise<number>;
 }
 
 export type DeleteCredentialOutcome =
@@ -955,15 +988,38 @@ export async function deleteCredential(
 
   await credentialRepository(tx).deleteOne(row.id);
 
-  await deps.audit(tx, {
-    action: 'subject.credential_delete',
+  const actor = {
     resourceType: 'subject',
     resourceId: input.subjectId,
     actorSubjectId: input.actorSubjectId,
     actorTenantId: input.actorTenantId,
     actorClientId: input.actorClientId,
     outcome: 'allowed',
+  } as const;
+  const ended = deps.endSessions === undefined ? undefined : await deps.endSessions(tx);
+  await deps.audit(tx, {
+    action: 'subject.credential_delete',
+    ...actor,
+    ...(ended === undefined ? {} : { detail: { ended_sessions: ended } }),
   });
+
+  if (row.type === 'totp' || row.type === 'webauthn') {
+    const { recoveryCodesRevoked } = await onSecondFactorRemoved(
+      tx,
+      { subjectId: input.subjectId },
+      (detail) =>
+        deps.audit(tx, {
+          action: 'subject.recovery_codes_revoke',
+          ...actor,
+          detail: { ...detail },
+        }),
+    );
+    await enqueueCredentialNotice(tx, input, {
+      kind: 'second_factor_removed',
+      factor: row.type,
+      codes: recoveryCodesRevoked > 0,
+    });
+  }
   return { kind: 'deleted' };
 }
 

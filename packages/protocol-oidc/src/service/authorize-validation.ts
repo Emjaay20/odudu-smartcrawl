@@ -4,6 +4,10 @@ import { type ClientOidcConfig } from '#/schema/client-oidc-config';
 import { isWellFormedPkceString } from '#/service/pkce';
 import { parsePrompt, type PromptValue } from '#/service/prompt';
 import { isRegisteredRedirectUri } from '#/service/redirect-uri';
+import {
+  AUTHORIZE_REQUEST_DESCRIPTIONS,
+  type AuthorizationErrorCode,
+} from '#/service/oauth-errors';
 
 export type AuthorizeOutcome =
   | {
@@ -22,8 +26,16 @@ export type AuthorizeOutcome =
       // reason — neither is answerable from the request parameters alone.
       maxAge: number | null;
     }
-  | { kind: 'render'; error: string; description: string }
-  | { kind: 'redirect'; redirectUri: string; error: string; state: string | null };
+  | { kind: 'render'; error: AuthorizationErrorCode; description: string }
+  | {
+      kind: 'redirect';
+      redirectUri: string;
+      error: AuthorizationErrorCode;
+      state: string | null;
+      // A plain sentence for `error_description` where the code alone is vague;
+      // absent, the code's own fixed sentence is used.
+      description?: string;
+    };
 
 // The only Response Mode Odudu answers in, and the default one for
 // `response_type=code` (OIDC Core §3.1.2.1). `fragment` and `form_post`
@@ -129,14 +141,16 @@ export function validateAuthorizationRequest(
 
   // Below the boundary: redirect_uri is trusted, so errors go back to it.
   const state = params.state ?? null;
-  const reject = (error: string): AuthorizeOutcome => ({
+  const reject = (error: AuthorizationErrorCode, description?: string): AuthorizeOutcome => ({
     kind: 'redirect',
     redirectUri,
     error,
     state,
+    ...(description === undefined ? {} : { description }),
   });
 
-  if (repeatedKey !== null) return reject('invalid_request');
+  if (repeatedKey !== null)
+    return reject('invalid_request', AUTHORIZE_REQUEST_DESCRIPTIONS.repeatedParameter);
 
   // OIDC Core §3.1.2.6: request objects (§6) are not implemented, and the
   // specification requires saying so. Silently dropping the parameter would
@@ -148,23 +162,30 @@ export function validateAuthorizationRequest(
   if (params.response_type !== 'code') return reject('unsupported_response_type');
 
   const codeChallenge = params.code_challenge;
-  if (codeChallenge === undefined || !isWellFormedPkceString(codeChallenge)) {
-    return reject('invalid_request');
+  if (codeChallenge === undefined)
+    return reject('invalid_request', AUTHORIZE_REQUEST_DESCRIPTIONS.codeChallengeRequired);
+  if (!isWellFormedPkceString(codeChallenge)) {
+    return reject('invalid_request', AUTHORIZE_REQUEST_DESCRIPTIONS.codeChallengeInvalid);
   }
-  if (params.code_challenge_method !== 'S256') return reject('invalid_request');
+  if (params.code_challenge_method !== 'S256') {
+    return reject('invalid_request', AUTHORIZE_REQUEST_DESCRIPTIONS.codeChallengeMethod);
+  }
   if (!scopesAreGrantable(params.scope, knownScopes, clientScopes)) return reject('invalid_scope');
 
   // `prompt` is a request parameter like any other, so a malformed one is
-  // refused here rather than acted on later: `none` alongside another value
-  // (OIDC Core §3.1.2.1), or a value outside the four the specification
-  // defines — the MAY that §3.1.2.1 grants, taken because a client asking
-  // for something this server has never heard of is better told so than
-  // answered as if it had asked for nothing.
+  // refused here rather than acted on later: `none` or `create` alongside
+  // another value, or a value outside the five this server defines — the
+  // MAY that §3.1.2.1 grants, taken because a client asking for something
+  // this server has never heard of is better told so than answered as if it
+  // had asked for nothing. Whether this tenant serves `create` is the
+  // usecase's question, since it takes the tenant's settings.
   const prompt = parsePrompt(params.prompt);
-  if (prompt.kind === 'invalid') return reject('invalid_request');
+  if (prompt.kind === 'invalid')
+    return reject('invalid_request', AUTHORIZE_REQUEST_DESCRIPTIONS.promptInvalid);
 
   const maxAge = parseMaxAge(params.max_age);
-  if (maxAge.kind === 'invalid') return reject('invalid_request');
+  if (maxAge.kind === 'invalid')
+    return reject('invalid_request', AUTHORIZE_REQUEST_DESCRIPTIONS.maxAgeInvalid);
 
   return {
     kind: 'ok',

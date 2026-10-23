@@ -21,6 +21,12 @@ export interface NewCredential {
   lookupKey?: string;
 }
 
+export interface RecoveryStanding {
+  readonly unspent: number;
+  readonly held: number;
+  readonly hasTotp: boolean;
+}
+
 function toRecord(row: typeof userCredentials.$inferSelect): CredentialRecord {
   return {
     id: row.id,
@@ -82,6 +88,48 @@ export function credentialRepository(tx: TenantScopedDatabase) {
       return secret.hash;
     },
 
+    // The hash and whether it was made from the NFC form, which is what
+    // decides if a sign-in may try the password as typed as well.
+    async passwordCredentialFor(
+      subjectId: string,
+    ): Promise<{ hash: string; normalised: boolean } | null> {
+      const rows = await tx
+        .select({ secretData: userCredentials.secretData, hashNfc: userCredentials.hashNfc })
+        .from(userCredentials)
+        .where(and(eq(userCredentials.subjectId, subjectId), eq(userCredentials.type, 'password')));
+      const row = rows[0];
+      if (row === undefined) return null;
+      return {
+        hash: parseCredentialSecret('password', row.secretData).hash,
+        normalised: row.hashNfc === true,
+      };
+    },
+
+    // The lazy upgrade of a hash that predates normalising: marks it, and
+    // replaces it with `to` when the password was only accepted as typed. A
+    // compare-and-swap on the hash read at sign-in, so a password changed in
+    // between is left alone. Not a new password: created_at stays, so the
+    // tenant's maximum age is unaffected.
+    async upgradePassword(subjectId: string, from: string, to: string | null): Promise<boolean> {
+      const rows = await tx
+        .update(userCredentials)
+        .set({
+          hashNfc: true,
+          ...(to === null
+            ? {}
+            : { secretData: serializeCredentialSecret({ kind: 'password', hash: to }) }),
+        })
+        .where(
+          and(
+            eq(userCredentials.subjectId, subjectId),
+            eq(userCredentials.type, 'password'),
+            sql`${userCredentials.secretData}->>'hash' = ${from}`,
+          ),
+        )
+        .returning({ id: userCredentials.id });
+      return rows.length > 0;
+    },
+
     async listFor(subjectId: string, type: CredentialType): Promise<CredentialRecord[]> {
       const rows = await tx
         .select()
@@ -108,6 +156,8 @@ export function credentialRepository(tx: TenantScopedDatabase) {
         subjectId: input.subjectId,
         type: input.type,
         secretData: serializeCredentialSecret(input.secret),
+        // Every writer of a password hashes it with hashUserPassword.
+        hashNfc: input.type === 'password' ? true : null,
         label: input.label ?? null,
         lookupKey: input.lookupKey ?? null,
       });
@@ -222,6 +272,28 @@ export function credentialRepository(tx: TenantScopedDatabase) {
       return rows.length;
     },
 
+    // What the recovery lifecycle decides on, in one aggregate over the
+    // subject's rows: whether a way back is held and unspent, and whether a
+    // TOTP stands for it to stand in for. A recovery code is redeemed only at
+    // the TOTP code step, so a passkey, an alternative first factor that
+    // skips that step, is not something a code can recover.
+    async recoveryStanding(subjectId: string): Promise<RecoveryStanding> {
+      const rows = await tx.execute<{ unspent: number; held: number; factors: number }>(sql`
+        SELECT
+          count(*) FILTER (WHERE type = 'recovery-code' AND secret_data->>'usedAt' IS NULL)::int AS unspent,
+          count(*) FILTER (WHERE type = 'recovery-code')::int AS held,
+          count(*) FILTER (WHERE type = 'totp')::int AS factors
+        FROM user_credentials
+        WHERE subject_id = ${subjectId}
+      `);
+      const row = rows[0];
+      return {
+        unspent: row?.unspent ?? 0,
+        held: row?.held ?? 0,
+        hasTotp: (row?.factors ?? 0) > 0,
+      };
+    },
+
     // Regenerating a set of recovery codes replaces it: the old ten stop
     // working the moment the new ten are shown, spent or not. Named for the
     // one type it deletes rather than taking a CredentialType: nothing needs
@@ -261,6 +333,7 @@ export function credentialRepository(tx: TenantScopedDatabase) {
         // counts from here and not from the one it replaced.
         .set({
           secretData: serializeCredentialSecret({ kind: 'password', hash }),
+          hashNfc: true,
           createdAt: sql`now()`,
         })
         .where(and(eq(userCredentials.subjectId, subjectId), eq(userCredentials.type, 'password')))
@@ -311,6 +384,7 @@ export function credentialRepository(tx: TenantScopedDatabase) {
         // new password already expired and the action owed forever.
         .set({
           secretData: serializeCredentialSecret({ kind: 'password', hash: change.to }),
+          hashNfc: true,
           createdAt: sql`now()`,
         })
         .where(

@@ -2,6 +2,7 @@
   "name": "@odudu/server",
   "version": "0.0.0",
   "private": true,
+  "license": "AGPL-3.0-only",
   "type": "module",
   "imports": {
     "#/*": "./src/*.ts"
@@ -27,9 +28,11 @@
     "@odudu/domain-identity": "workspace:*",
     "@odudu/domain-tenant": "workspace:*",
     "@odudu/email": "workspace:*",
+    "@odudu/instrument": "workspace:*",
     "@odudu/kernel": "workspace:*",
     "@odudu/protocol-admin": "workspace:*",
     "@odudu/protocol-oidc": "workspace:*",
+    "@odudu/web-assets": "workspace:*",
     "close-with-grace": "2.5.0",
     "fastify": "5.12.5",
     "pino": "10.3.1"

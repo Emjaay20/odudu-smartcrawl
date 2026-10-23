@@ -111,7 +111,9 @@ test('a scope is made, described, given a role and a mapper, and read back from 
 
   await page.getByRole('tab', { name: 'Claim mappers' }).click();
   const mappers = page.getByRole('region', { name: 'Claim mappers' });
-  await expect(mappers.getByText(/none declares it/u)).toBeVisible();
+  await expect(
+    mappers.getByText('Nothing bound. No mapper runs by default, so this scope adds no claims.'),
+  ).toBeVisible();
   await mappers.getByText('email', { exact: true }).click();
   await mappers.getByText('groups', { exact: true }).click();
   await mappers.getByRole('button', { name: 'Save Claim mappers' }).click();
@@ -279,6 +281,74 @@ test('a scope is deleted once its name is typed, and goes from the list', async 
       `select count(*) from client_scopes where tenant_id = ${inTenant(TENANT)} and name = 'doomed'`,
     ),
   ).toBe('0');
+});
+
+test('a built-in scope is deleted by its typed name with its impact shown, and restored from the list', async ({
+  page,
+}) => {
+  test.slow();
+  await signIn(page, admin);
+  const id = scopeId('address');
+  const clients = carriers('address').split(',').length;
+  await openScope(page, 'address');
+  await page.getByRole('button', { name: 'Delete address' }).click();
+  const dialog = page.getByRole('alertdialog', { name: 'Delete address?' });
+  await expect(dialog).toContainText(
+    `${String(clients)} clients carry address and will stop receiving its claims. No role is mapped to it.`,
+  );
+  await expect(dialog).toContainText('address is a built-in scope, which every tenant has.');
+  await expectAccessible(page);
+  const confirm = dialog.getByRole('button', { name: 'Delete address' });
+  await expect(confirm).toBeDisabled();
+  await dialog.getByRole('textbox').fill('address');
+  await confirm.click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Scopes' })).toBeVisible();
+  expect(
+    psql(
+      `select count(*) from client_scopes where tenant_id = ${inTenant(TENANT)} and name = 'address'`,
+    ),
+  ).toBe('0');
+  expect(
+    psql(
+      `select detail ->> 'builtin' || ':' || (detail ->> 'client_assignments') from audit_events where tenant_id = ${inTenant(TENANT)} and action = 'scope.delete' and outcome = 'allowed' and resource_id = ${sqlText(id)}`,
+    ),
+  ).toBe(`true:${String(clients)}`);
+
+  await page.getByRole('button', { name: 'Restore built-in scopes' }).click();
+  const restore = page.getByRole('alertdialog', { name: 'Restore built-in scopes?' });
+  await expect(restore).toContainText('address is missing.');
+  await expect(restore).toContainText(
+    'does not bring back the client assignments and role mappings',
+  );
+  await expectAccessible(page);
+  await restore.getByRole('button', { name: 'Restore' }).click();
+  await expect(page.getByText(/Restored address\./u)).toBeVisible();
+  const grid = page.getByRole('grid', { name: 'Scopes' });
+  await expect(grid.getByRole('row', { name: /address/u })).toBeVisible();
+  expect(scopeField('address', 'include_in_access_token')).toBe('false');
+  expect(scopeField('address', 'default_client_assignment')).toBe('default');
+  expect(carriers('address')).toBe('');
+
+  await page.getByRole('button', { name: 'Restore built-in scopes' }).click();
+  await expect(
+    page
+      .getByRole('alertdialog', { name: 'Restore built-in scopes?' })
+      .getByText(/nothing to restore/u),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('alertdialog').getByRole('button', { name: 'Restore' }),
+  ).toBeDisabled();
+});
+
+test('the mappers a built-in scope falls back to are shown ticked and greyed', async ({ page }) => {
+  await signIn(page, admin);
+  await openScope(page, 'email', 'mappers');
+  const section = page.getByRole('region', { name: 'Claim mappers' });
+  const email = section.getByRole('checkbox', { name: 'email' });
+  await expect(email).toBeChecked();
+  await expect(email).toBeDisabled();
+  await expect(section.getByText('Used because nothing is bound')).toBeVisible();
+  await expectAccessible(page);
 });
 
 test("a scope's description and mappers are changed by keyboard alone, from the list", async ({

@@ -6,17 +6,18 @@ import {
   type MapperValues,
 } from '#/features/scopes/repository/useScopeRecord';
 import {
+  boundAfter,
   describeMappers,
-  mapperOptions,
+  mapperChecklist,
   mappersFailure,
   mappersSummary,
   scopeMappersRecord,
+  type MapperOption,
 } from '#/features/scopes/service';
 import type { RecordState } from '#/shared/repository/useRecord';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { writeRefusal } from '#/shared/service/capabilities';
 import { inOrderOf } from '#/shared/service/ids';
-import type { Choice } from '#/shared/service/choice';
 
 export function useScopeMappersRead(tenant: string, id: string): RecordState<ScopeMappers> {
   return useScopeMappersRecord(tenant, id);
@@ -24,7 +25,9 @@ export function useScopeMappersRead(tenant: string, id: string): RecordState<Sco
 
 export interface ScopeMapperSet {
   save: SectionSave<MapperValues>;
-  options: readonly Choice[];
+  options: readonly MapperOption[];
+  // What the list shows ticked: the bound mappers, or the defaults used while none is.
+  value: readonly string[];
   summary: string;
   choose: (names: readonly string[]) => void;
 }
@@ -67,12 +70,17 @@ export function useScopeMapperSet({
       return result.ok ? result : mappersFailure(result);
     },
   });
+  const checklist = mapperChecklist(data.available, data.declared, save.values.mapper_names);
   return {
     save,
-    options: mapperOptions(data.available),
+    options: checklist.options,
+    value: checklist.value,
     summary: mappersSummary(data.bound, data.declared),
     choose: (names) => {
-      save.edit('mapper_names', inOrderOf(data.available, names));
+      save.edit(
+        'mapper_names',
+        boundAfter(data.available, data.declared, save.values.mapper_names, names),
+      );
     },
   };
 }

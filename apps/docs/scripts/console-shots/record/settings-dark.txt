@@ -1,0 +1,216 @@
+@layer {
+  [data-react-aria-pressable] {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+}
+Odudu console
+Skip to content
+odudu · demo
+Overview
+Identity
+Subjects
+Groups
+Roles
+Applications
+Clients
+Scopes
+Registration tokens
+Security
+Sign-in flow
+Signing keys
+Sessions
+Tenant
+Settings
+Email
+Export
+Observe
+Audit trail
+Signed in as 
+admin@odudu.local
+ from 
+system
+Theme
+System
+Light
+Dark
+Switch tenant
+Sign out
+Collapse menu
+or press 
+[
+odudu · demo
+Menu
+System
+Acting in 
+demo
+ with system authority
+Back to system
+demo
+Settings
+How this tenant signs people in, what it asks of their passwords, and how long it keeps what it records. Every section saves on its own.
+General
+Sessions
+Remember me
+Registration and recovery
+Usernames
+Password policy
+Brute force
+Token lifetimes
+Dynamic client registration
+Audit retention
+General
+What this tenant's own pages call it, and whether it is in service.
+Display name
+Leave it empty to use the tenant name.
+Enabled
+On
+Sessions
+How long a sign-in lasts, and how long a person has to finish one.
+Idle timeout
+s
+1800 s · 30 minutes
+A session ends after this long without activity. At most the maximum. Between 60 s · 1 minute and 2592000 s · 30 days.
+Maximum lifetime
+s
+36000 s · 10 hours
+A session ends this long after sign-in, however active it has been. Between 60 s · 1 minute and 2592000 s · 30 days.
+Sessions per browser
+sessions
+25 sessions
+How many sessions one browser may hold at once. Between 1 and 32 sessions.
+Time to finish a sign-in
+s
+1800 s · 30 minutes
+A sign-in left unfinished this long has to be started again. Between 60 s · 1 minute and 86400 s · 1 day.
+Remember me
+A longer session for a person who asks to stay signed in.
+Offer remember me
+Off
+The sign-in page shows the choice only while this is on.
+Idle timeout
+s
+604800 s · 7 days
+Without activity this long, a remembered session ends. At most the maximum. Between 60 s · 1 minute and 31536000 s · 365 days.
+Maximum lifetime
+s
+2592000 s · 30 days
+A remembered session ends this long after sign-in. Between 60 s · 1 minute and 31536000 s · 365 days.
+Registration and recovery
+Whether people can create an account and get back into one themselves.
+Self-registration
+Off
+Anybody may create an account on the sign-in page.
+Verify email addresses
+Off
+The account is created when the person confirms their address from a mail.
+Verification link lifetime
+s
+43200 s · 12 hours
+A verification link stops working after this long. Between 60 s · 1 minute and 604800 s · 7 days.
+Password reset by mail
+Off
+A person who forgot their password may ask for a reset link.
+Reset link lifetime
+s
+300 s · 5 minutes
+A reset link stops working after this long. Between 60 s · 1 minute and 86400 s · 1 day.
+Usernames
+How a person is named, and what they type to sign in.
+Usernames can be renamed
+Off
+An administrator may change a subject’s username.
+Sign in with a verified email address
+Off
+The sign-in form takes a verified email address in place of a username.
+Password policy
+What a password must satisfy when somebody sets or changes one.
+Minimum length
+characters
+15 characters
+Between 8 and 256 characters.
+Require a digit
+Off
+Require an uppercase letter
+Off
+Require a lowercase letter
+Off
+Require a special character
+Off
+Refuse the username
+On
+Refuse the email address
+On
+Passwords remembered
+passwords
+0 passwords
+A new password may not repeat one of this many before it. 0 remembers none. Between 0 and 24 passwords.
+Password lifetime
+days
+0 days
+A password older than this has to be changed. 0 never expires one. Between 0 and 3650 days.
+Brute force
+When repeated wrong passwords or wrong second-factor codes lock an account, and for how long.
+Failures before a lockout
+failures
+5 failures
+Between 1 and 100 failures.
+First lockout
+s
+60 s · 1 minute
+How long the first lockout lasts. At most the longest lockout. Between 1 s and 86400 s · 1 day.
+Longest lockout
+s
+900 s · 15 minutes
+Lockouts grow with each repeat, up to this.
+Failures forgotten after
+s
+43200 s · 12 hours
+Failures this old stop counting toward a lockout. Between 60 s · 1 minute and 2592000 s · 30 days.
+Clear all lockouts
+Forgets every failed sign-in on record in this tenant at once, for accounts that are locked and for accounts still counting toward a lockout. One account’s lockout is cleared on that subject’s own page.
+Clear all lockouts
+Token lifetimes
+What a client gets unless it carries lifetimes of its own.
+Access token
+s
+300 s · 5 minutes
+Between 1 s and 3600 s · 1 hour.
+ID token
+s
+300 s · 5 minutes
+Between 1 s and 3600 s · 1 hour.
+Refresh token
+s
+1209600 s · 14 days
+At least 1 s.
+Authorization code
+s
+60 s · 1 minute
+A client has this long to trade a code for tokens. Between 1 s and 600 s · 10 minutes.
+Dynamic client registration
+Whether applications may register themselves as clients of this tenant.
+Policy
+Closed: only an administrator creates clients
+▾
+Closed: only an administrator creates clients
+With a registration token
+Open: any application may register
+Most clients
+clients
+200 clients
+A tenant at this many refuses further registration. At least 0 clients.
+Audit retention
+How long the audit trail is kept, and which events it records.
+Keep events for
+days
+90 days
+Between 1 and 3650 days.
+Events recorded
+Changes by administrators
+Always recorded.
+Reads by administrators
+Always recorded.
+Sign-ins and refused sign-ins
+Sessions starting and ending
+Tokens issued and revoked
+Passwords, keys and codes set or changed

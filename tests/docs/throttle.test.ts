@@ -6,13 +6,13 @@ import {
 } from '../../packages/kernel/src/config.js';
 import { MAX_PASSWORD_LENGTH } from '../../packages/kernel/src/password-field.js';
 import { MAX_SUBJECT_LENGTH } from '../../tools/commit-message/src/check.js';
-import { loadDocument } from './markdown.js';
+import { loadPages, loadSource, PROTOCOL_PAGES } from './markdown.js';
 
 // Both documents quote the throttle's budget and the password maximum as
 // numbers a reader will configure and test against. All three live in one
 // schema default or one constant, neither of which is where anybody would
 // think to look after rewording a paragraph.
-const DOCUMENTS = ['README.md', 'docs/request-paths.md'] as const;
+const DOCUMENTS = [PROTOCOL_PAGES] as const;
 
 const defaults = loadConfig({
   ODUDU_DATABASE_URL: 'postgres://u:p@localhost:5432/odudu',
@@ -20,7 +20,7 @@ const defaults = loadConfig({
 });
 
 function statedDefault(name: string, variable: string): string {
-  const text = loadDocument(name).lines.join('\n');
+  const text = loadSource(name).lines.join('\n');
   const stated = new RegExp(`\`${variable}\`[^\`]*\\(default \`(?<value>[0-9]+)\`\\)`, 'su').exec(
     text,
   );
@@ -38,11 +38,11 @@ describe('the throttle numbers the documents state are the numbers the code uses
     );
   });
 
-  it('README.md states the client secret budget the config schema defaults to', () => {
-    expect(statedDefault('README.md', 'ODUDU_CLIENT_SECRET_THROTTLE_LIMIT')).toBe(
+  it('the request paths state the client secret budget the config schema defaults to', () => {
+    expect(statedDefault(PROTOCOL_PAGES, 'ODUDU_CLIENT_SECRET_THROTTLE_LIMIT')).toBe(
       String(defaults.ODUDU_CLIENT_SECRET_THROTTLE_LIMIT),
     );
-    expect(statedDefault('README.md', 'ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS')).toBe(
+    expect(statedDefault(PROTOCOL_PAGES, 'ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS')).toBe(
       String(defaults.ODUDU_CLIENT_SECRET_THROTTLE_WINDOW_SECONDS),
     );
   });
@@ -56,8 +56,9 @@ describe('the throttle numbers the documents state are the numbers the code uses
     );
   });
 
-  it('README.md states the ceilings the server refuses to boot past', () => {
-    const text = loadDocument('README.md').lines.join('\n');
+  it('the request paths state the ceilings the server refuses to boot past', () => {
+    // Prettier wraps prose, so a phrase is looked for as a reader sees it.
+    const text = loadSource(PROTOCOL_PAGES).lines.join(' ').replaceAll(/\s+/gu, ' ');
     expect(text).toContain(`at most \`${String(MAX_THROTTLE_LIMIT)}\``);
     expect(text).toContain(`at most \`${String(MAX_THROTTLE_WINDOW_SECONDS)}\` seconds`);
   });
@@ -72,7 +73,7 @@ describe('the throttle numbers the documents state are the numbers the code uses
     /(?:capped at|at most|over|longer than)\s+\*{0,2}(?<bound>[0-9]+)\s+characters?|(?<attributive>[0-9]+)-character maximum/gu;
 
   function statedBounds(name: string): { subject: string[]; password: string[] } {
-    const text = loadDocument(name).lines.join('\n');
+    const text = loadSource(name).lines.join('\n');
     const subject: string[] = [];
     const password: string[] = [];
     for (const match of text.matchAll(CHARACTER_BOUND)) {
@@ -94,19 +95,22 @@ describe('the throttle numbers the documents state are the numbers the code uses
     expect([...new Set(password)]).toEqual([String(MAX_PASSWORD_LENGTH)]);
   });
 
-  it('README.md states the commit-subject maximum the checker enforces', () => {
-    expect([...new Set(statedBounds('README.md').subject)]).toEqual([String(MAX_SUBJECT_LENGTH)]);
-  });
+  it.each(['CONTRIBUTING.md', 'apps/docs/content/en/contributing/index.md'])(
+    '%s states the commit-subject maximum the checker enforces',
+    (name) => {
+      expect([...new Set(statedBounds(name).subject)]).toEqual([String(MAX_SUBJECT_LENGTH)]);
+    },
+  );
 
   // The transcript is the claim most easily falsified by a changed default:
   // it shows the budget being spent request by request.
-  it('shows exactly one budget spent before the 429 in docs/request-paths.md', () => {
-    const lines = loadDocument('docs/request-paths.md').lines;
+  it('shows exactly one budget spent before the 429 in the protocol pages', () => {
+    const lines = loadPages(PROTOCOL_PAGES).lines;
     const refusal = lines.findIndex(
       (line) => line.trim() === '--- the eleventh, from the same address ---',
     );
     if (refusal === -1) {
-      throw new Error('docs/request-paths.md no longer shows the throttle transcript');
+      throw new Error('the protocol pages no longer show the throttle transcript');
     }
     const allowed = lines
       .slice(0, refusal)

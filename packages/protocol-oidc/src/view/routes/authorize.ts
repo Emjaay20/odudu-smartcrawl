@@ -1,19 +1,23 @@
+import { signInHandleCookie, type SignInBrowser } from '@odudu/authn-flows';
 import { reloadOnRestore, type RenderedPage } from '@odudu/kernel';
 import { type FastifyInstance, type FastifyReply } from 'fastify';
 import { FORM_MEDIA_TYPE } from '#/service/media-type';
+import { OAUTH_ERROR_DESCRIPTIONS } from '#/service/oauth-errors';
 import {
   handleAuthorizationRequest,
   handleSelectAccountSubmission,
   type AuthorizationRequestOutcome,
   type AuthorizeUsecaseDeps,
 } from '#/usecase/authorization-request';
+import { accountPagePath, loginWays } from '#/service/login-ways';
 import { renderAuthorizeErrorPage, renderLoginForm } from '#/view/authorize-html';
 import { renderConsentPage } from '#/view/consent-html';
 import { sendHtml } from '#/view/html-response';
 import { tenantIssuerFor } from '#/view/issuer';
 import { namesUnsupportedRepresentation } from '#/view/media-type';
-import { continuing } from '#/view/routes/continuation';
+import { continuation, requestLocale } from '#/view/routes/continuation';
 import { sendSignInExpired } from '#/view/routes/expired-sign-in';
+import { sendRequestError } from '#/view/routes/request-error';
 import {
   sendRequiredActionPage,
   type RequiredActionResponseDeps,
@@ -34,6 +38,23 @@ export interface AuthorizeRouteDeps
   passkeyLogin?: boolean;
 }
 
+// Tells the browser which sign-in it parked, so a link mailed out of that
+// sign-in (verification, password reset) can bring it back to this request
+// and to no other (authn-flows' sign-in-handle).
+function holdSignIn(
+  reply: FastifyReply,
+  deps: AuthorizeRouteDeps,
+  tenant: string,
+  authSessionId: string,
+  browser: SignInBrowser | undefined,
+): void {
+  if (browser === undefined) return;
+  reply.header(
+    'set-cookie',
+    signInHandleCookie(tenant, deps.tls, authSessionId, browser.secret, browser.maxAgeSeconds),
+  );
+}
+
 // Shared by the authorization request itself and the account chooser's own
 // POST below: both eventually reach an AuthorizationRequestOutcome — one
 // directly, one via the reuse tail a chosen session completes the same
@@ -50,12 +71,25 @@ async function renderAuthorizationOutcome(
 ): Promise<FastifyReply> {
   const form = (page: RenderedPage): RenderedPage => (reloadable ? reloadOnRestore(page) : page);
   if (outcome.kind === 'render') {
-    return sendHtml(reply, 400, renderAuthorizeErrorPage(outcome.error, outcome.description));
+    return sendHtml(
+      reply,
+      400,
+      renderAuthorizeErrorPage(
+        outcome.error,
+        outcome.description,
+        undefined,
+        requestLocale(reply, deps),
+      ),
+    );
   }
 
   if (outcome.kind === 'redirect') {
     const target = new URL(outcome.redirectUri);
     target.searchParams.set('error', outcome.error);
+    target.searchParams.set(
+      'error_description',
+      outcome.description ?? OAUTH_ERROR_DESCRIPTIONS[outcome.error],
+    );
     if (outcome.state !== null) target.searchParams.set('state', outcome.state);
     // RFC 9207 §2: every authorization response names the issuer, error
     // responses included — a client that cannot tell which server failed
@@ -94,31 +128,69 @@ async function renderAuthorizationOutcome(
   // asked with prompt=select_account. The chooser's own POST resumes the
   // authentication session parked here.
   if (outcome.kind === 'select') {
-    const page = renderSelectAccountPage({
-      tenant,
-      authSessionId: outcome.authSessionId,
-      accounts: outcome.accounts,
-    });
-    return sendHtml(reply, 200, await continuing(deps, tenant, outcome.authSessionId, form(page)));
+    // Nobody is identified yet, so no subject locale applies.
+    const { locale, continuing } = await continuation(deps, tenant, outcome.authSessionId, reply);
+    holdSignIn(reply, deps, tenant, outcome.authSessionId, outcome.browser);
+    const page = renderSelectAccountPage(
+      {
+        tenant,
+        authSessionId: outcome.authSessionId,
+        accounts: outcome.accounts,
+      },
+      locale,
+    );
+    return sendHtml(reply, 200, continuing(form(page)));
   }
 
   // A reused session that still needs consent: the same page the form path
   // renders once its own gate asks, on a freshly started authentication
   // session the reuse path bound and authenticated for the reused subject.
   if (outcome.kind === 'consent') {
-    const page = renderConsentPage({
+    const { locale, continuing } = await continuation(
+      deps,
       tenant,
-      authSessionId: outcome.authSessionId,
-      clientName: outcome.clientName,
-      clientPages: outcome.clientPages,
-      scopeLabels: outcome.scopeLabels,
-      defaultScopes: outcome.defaultScopes,
-      optionalScopes: outcome.optionalScopes,
-      alreadyGranted: outcome.alreadyGranted,
-    });
-    return sendHtml(reply, 200, await continuing(deps, tenant, outcome.authSessionId, form(page)));
+      outcome.authSessionId,
+      reply,
+      'authenticated',
+    );
+    const page = renderConsentPage(
+      {
+        tenant,
+        authSessionId: outcome.authSessionId,
+        clientName: outcome.clientName,
+        clientPages: outcome.clientPages,
+        scopeLabels: outcome.scopeLabels,
+        defaultScopes: outcome.defaultScopes,
+        optionalScopes: outcome.optionalScopes,
+        alreadyGranted: outcome.alreadyGranted,
+      },
+      locale,
+    );
+    return sendHtml(reply, 200, continuing(form(page)));
   }
 
+  // The client asked for the registration page: the same page, reached by
+  // the same path, as the login form's own Create an account link, so the
+  // way back it carries is the one that page already accepts. The sign-in
+  // cookie travels on the redirect, for the verification mail to name this
+  // request. 303, since the POST form of /authorize lands here too.
+  if (outcome.kind === 'register') {
+    const { signInPath } = await continuation(deps, tenant, outcome.authSessionId, reply);
+    holdSignIn(reply, deps, tenant, outcome.authSessionId, outcome.browser);
+    return reply
+      .code(303)
+      .header('location', accountPagePath(tenant, 'registration', signInPath))
+      .send();
+  }
+
+  // The login form precedes the first factor: ui_locales, then the browser.
+  const { locale, continuing, clientName, signInPath } = await continuation(
+    deps,
+    tenant,
+    outcome.authSessionId,
+    reply,
+  );
+  holdSignIn(reply, deps, tenant, outcome.authSessionId, outcome.browser);
   const page = renderLoginForm(
     tenant,
     outcome.authSessionId,
@@ -127,8 +199,11 @@ async function renderAuthorizationOutcome(
     outcome.rememberMeAllowed,
     undefined,
     outcome.loginWithEmail,
+    await clientName(),
+    loginWays(tenant, outcome, signInPath),
+    locale,
   );
-  return sendHtml(reply, 200, await continuing(deps, tenant, outcome.authSessionId, form(page)));
+  return sendHtml(reply, 200, continuing(form(page)));
 }
 
 // OIDC Core §3.1.2 requires both methods; they differ only in where the
@@ -193,14 +268,7 @@ async function respondToSelectAccountSubmission(
   // because it names some live session in the tenant — see
   // handleSelectAccountSubmission's own comment on why.
   if (outcome.kind === 'invalid_selection') {
-    return sendHtml(
-      reply,
-      400,
-      renderAuthorizeErrorPage(
-        'invalid_request',
-        'That account is not one this browser is currently signed in to.',
-      ),
-    );
+    return sendRequestError(reply, deps, 400, 'error.accountNotSignedIn');
   }
 
   return renderAuthorizationOutcome(deps, tenant, issuer, outcome, reply, false);
@@ -237,6 +305,8 @@ export function registerAuthorizeRoute(app: FastifyInstance, deps: AuthorizeRout
             renderAuthorizeErrorPage(
               'invalid_request',
               `Authorization request parameters must be sent as ${FORM_MEDIA_TYPE}.`,
+              undefined,
+              requestLocale(reply, deps),
             ),
           );
         }

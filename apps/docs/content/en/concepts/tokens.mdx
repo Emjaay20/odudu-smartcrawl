@@ -1,0 +1,67 @@
+---
+title: Tokens
+description: A sign-in produces three tokens. The access token goes to your API, the ID token tells your app who signed in, and the refresh token gets new ones.
+sidebar_position: 6
+---
+
+import { Diagram } from '@site/src/shared/view/Diagram';
+
+# Tokens
+
+A person has signed in. What does your app hold now? Not a password and not a session, which belong to Odudu. It holds tokens: small pieces of proof, each made for a different reader and a different job.
+
+<Diagram
+  name="tokens"
+  title="The three tokens"
+  desc="The access token is a signed JWT sent to an API and lives 300 seconds by default. The ID token tells the app who signed in. The refresh token is opaque, kept by the app and works once. A chain R1, R2, R3 shows that presenting R1 again revokes the whole family."
+/>
+
+_In words: The access token is a signed JWT sent to an API and lives 300 seconds by default. The ID token tells the app who signed in. The refresh token is opaque, kept by the app and works once. A chain R1, R2, R3 shows that presenting R1 again revokes the whole family._
+
+## The access token
+
+The access token is for your API. The app sends it in the `Authorization` header and the API decides whether to trust it.
+
+It is a signed JWT whose header says `typ: at+jwt`. It names who issued it (`iss`), who it is for (`aud`), the person (`sub`), the client, the scopes granted and when it expires. It lives 300 seconds by default. Short is the point: if one leaks, it stops working soon.
+
+Your API can check it **without calling Odudu**. It fetches the tenant's public keys once, from `GET /tenants/{tenant}/protocol/openid-connect/certs`, checks the signature, then the issuer, audience and expiry. [Protect an API](../guides/api.md) does exactly that.
+
+If the access token carries roles or groups, they came from the scopes the client was granted. See [Roles and groups](./roles-and-groups.mdx).
+
+## The ID token
+
+The ID token is for your app, not your API. It says who signed in, how and when. Your app reads it, checks it, and uses `sub` as that person's identifier. It does not send the ID token to an API, and an API should refuse it if it arrives. The `typ` on the access token is what lets it tell them apart.
+
+You only get an ID token when the sign-in asked for `openid`.
+
+## The refresh token
+
+An access token that lives five minutes would mean signing in every five minutes, so the app also receives a refresh token. It is a long, random string with nothing inside, kept by the app. When the access token is about to expire, the app sends it to `POST /tenants/{tenant}/protocol/openid-connect/token` and gets new tokens.
+
+It lives 14 days by default, and **it works once**. Each refresh gives back a new refresh token and uses up the old one. Store the new one.
+
+## A refresh token used twice
+
+Suppose a thief copies a refresh token. Both of you now hold the same string, and only one of you can use it first. Whoever comes second sends a token that has already been used. Odudu cannot tell which of you is the thief, so it refuses the call and revokes the whole family: every token descended from that sign-in, including the one the honest app was about to use. The honest app finds out on its next refresh, signs the person in again, and the thief is left with nothing.
+
+## Client lifetimes
+
+Each client can set its own access and refresh lifetimes, with `access_token_ttl_seconds` and `refresh_token_ttl_seconds`. A client that leaves them empty uses the tenant's. Set them shorter for something sensitive and longer for something that must stay signed in on a phone.
+
+## Machines have tokens too
+
+A service with no person involved asks for an access token with its own secret and receives one whose subject is the client's own service account. There is no ID token and no refresh token, because nobody signed in. See [Call an API as a service](../guides/machine-to-machine.md).
+
+## Working with tokens
+
+1. In your app, keep the access token in memory and the refresh token somewhere only your code can reach.
+2. Send the access token to your API, never the ID token.
+3. Refresh a little before the expiry, store the new refresh token, and discard the old one.
+4. When a refresh answers `invalid_grant`, drop everything and sign the person in again.
+5. In your API, check signature, issuer, audience and expiry on every call.
+
+## Where to go next
+
+- [Sign a user in](../guides/sign-a-user-in.md) gets all three.
+- [Refresh and end a session](../guides/refresh-and-end-a-session.md) shows the rotation and the replay.
+- [Sessions](./sessions.mdx) explains what ending a session does to them.

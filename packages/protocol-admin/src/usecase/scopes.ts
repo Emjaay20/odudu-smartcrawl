@@ -1,9 +1,13 @@
+import { BIDI_REFUSED_MESSAGE, refusesBidi } from '@odudu/contracts';
 import {
   type AssignScopeToClientResponse,
   type ClientScope,
   type ListScopesQuery,
+  type ListBuiltinScopesResponse,
   type ScopeClient,
+  type ScopeImpact,
   SCOPE_LIMIT,
+  scopeLimitMessage,
 } from '@odudu/contracts/admin';
 import { type TenantScopedDatabase } from '@odudu/db';
 import { clientScopeRoles, roleRepository, roles } from '@odudu/domain-authz';
@@ -15,10 +19,15 @@ import {
   clientScopeRepository,
   clientScopes,
   clients,
+  missingBuiltinScopeNames,
+  restoreBuiltinScopes,
+  TENANT_DEFAULT_SCOPE_NAMES,
+  isBuiltinScopeName,
   type ClientScopeAssignment,
 } from '@odudu/domain-tenant';
 import { isUuid } from '@odudu/kernel';
 import { and, asc, eq, gt, inArray, type SQL } from 'drizzle-orm';
+import { COUNT_CAP, countAtMost } from '#/usecase/capped-count';
 import {
   capabilitiesReachableFrom,
   overreach,
@@ -27,6 +36,7 @@ import {
 import { decodeCursor, encodeCursor, filterDigest } from '#/service/cursor';
 import { readKeyedPage } from '#/service/in-order';
 import { etagOf, matches, requiredPrecondition } from '#/service/etag';
+import { builtinScopeConfirmationDetail } from '#/service/scope-delete';
 import { AMENDABLE_SCOPE_FIELDS, refusalFor } from '#/service/scope-patch';
 import { checkConsentText, checkDisplayOrder } from '#/service/scope-consent';
 import {
@@ -53,11 +63,12 @@ export interface ScopeAuditEvent {
     | 'scope.create'
     | 'scope.amend'
     | 'scope.delete'
+    | 'scope.restore_builtins'
     | 'scope.roles_set'
     | 'scope.assign_to_client'
     | 'scope.unassign_from_client';
   readonly resourceType: 'scope';
-  readonly resourceId: string;
+  readonly resourceId: string | null;
   readonly actorSubjectId: string;
   readonly actorTenantId: string;
   readonly actorClientId: string;
@@ -257,7 +268,7 @@ export interface CreateScopeDeps {
 /** Thrown by `createScope` when the tenant already defines `SCOPE_LIMIT` scopes. */
 export class ScopeLimitError extends Error {
   constructor() {
-    super(`a tenant defines at most ${String(SCOPE_LIMIT)} scopes`);
+    super(scopeLimitMessage());
     this.name = 'ScopeLimitError';
   }
 }
@@ -391,6 +402,9 @@ export async function amendScope(
         description: 'description must be a string or null',
       };
     }
+    if (refusesBidi(value, locked.description)) {
+      return { kind: 'invalid_value', field: 'description', description: BIDI_REFUSED_MESSAGE };
+    }
     patch.description = { value };
   }
   if ('include_in_id_token' in input.values) {
@@ -429,7 +443,7 @@ export async function amendScope(
   }
 
   if ('consent_text' in input.values) {
-    const checked = checkConsentText(input.values.consent_text);
+    const checked = checkConsentText(input.values.consent_text, locked.consentText);
     if (checked.kind === 'invalid') {
       return { kind: 'invalid_value', field: 'consent_text', description: checked.message };
     }
@@ -489,6 +503,8 @@ export interface DeleteScopeInput {
   readonly scopeId: string;
   /** The caller's own admin capabilities: what the scope's role mappings reach is held to them. */
   readonly callerCapabilities: ReadonlySet<string>;
+  /** The scope's own name, typed again: what deleting a built-in scope requires. */
+  readonly confirm?: string | undefined;
   readonly actorSubjectId: string;
   readonly actorTenantId: string;
   readonly actorClientId: string;
@@ -502,7 +518,49 @@ export type DeleteScopeOutcome =
   | { kind: 'not_found' }
   | { kind: 'openid_guarded'; reason: string }
   | { kind: 'capability_ceiling'; requested: readonly string[]; removed?: readonly string[] }
+  | { kind: 'builtin_confirmation_required'; reason: string }
   | { kind: 'deleted' };
+
+type ScopeImpactOutcome = { kind: 'not_found' } | { kind: 'ok'; impact: ScopeImpact };
+
+// Each count reads one index range, `client_scope_assignments_by_scope` and
+// the primary key of `client_scope_roles`, and stops one row past the cap.
+async function impactOf(
+  tx: TenantScopedDatabase,
+  scope: { id: string; name: string },
+  cap: number,
+): Promise<ScopeImpact> {
+  const capped = async (table: typeof clientScopeAssignments | typeof clientScopeRoles) => {
+    const n = await countAtMost(tx, { table, where: eq(table.clientScopeId, scope.id) }, cap + 1);
+    return { count: Math.min(n, cap), capped: n > cap };
+  };
+  return {
+    builtin: isBuiltinScopeName(scope.name),
+    client_assignments: await capped(clientScopeAssignments),
+    role_mappings: await capped(clientScopeRoles),
+  };
+}
+
+/** What deleting the scope would take with it: two bounded counts and the scope row. */
+export async function scopeImpact(
+  tx: TenantScopedDatabase,
+  scopeId: string,
+  options: { readonly cap?: number } = {},
+): Promise<ScopeImpactOutcome> {
+  const scope = await clientScopeRepository(tx).byId(scopeId);
+  if (scope === null) return { kind: 'not_found' };
+  return { kind: 'ok', impact: await impactOf(tx, scope, options.cap ?? COUNT_CAP) };
+}
+
+function cascadeDetail(impact: ScopeImpact): Record<string, unknown> {
+  const anyCapped = impact.client_assignments.capped || impact.role_mappings.capped;
+  return {
+    builtin: impact.builtin,
+    client_assignments: impact.client_assignments.count,
+    role_mappings: impact.role_mappings.count,
+    ...(anyCapped ? { counts_capped: true } : {}),
+  };
+}
 
 // `client_scope_assignments_scope_fk` and `client_scope_roles_scope_fk`
 // (0016_client_scopes.sql, 0017_roles.sql) both cascade: deleting a scope
@@ -564,6 +622,22 @@ export async function deleteScope(
     return { kind: 'capability_ceiling', requested: [], removed: denied };
   }
 
+  const impact = await impactOf(tx, scope, COUNT_CAP);
+  if (impact.builtin && input.confirm !== scope.name) {
+    const reason = builtinScopeConfirmationDetail(scope.name, impact);
+    await deps.audit(tx, {
+      action: 'scope.delete',
+      resourceType: 'scope',
+      resourceId: input.scopeId,
+      actorSubjectId: input.actorSubjectId,
+      actorTenantId: input.actorTenantId,
+      actorClientId: input.actorClientId,
+      outcome: 'refused',
+      detail: { reason, ...cascadeDetail(impact) },
+    });
+    return { kind: 'builtin_confirmation_required', reason };
+  }
+
   const deleted = await clientScopeRepository(tx).delete(input.scopeId);
   if (!deleted) return { kind: 'not_found' };
 
@@ -575,8 +649,61 @@ export async function deleteScope(
     actorTenantId: input.actorTenantId,
     actorClientId: input.actorClientId,
     outcome: 'allowed',
+    detail: cascadeDetail(impact),
   });
   return { kind: 'deleted' };
+}
+
+export async function listBuiltinScopes(
+  tx: TenantScopedDatabase,
+): Promise<ListBuiltinScopesResponse> {
+  const missing = new Set(await missingBuiltinScopeNames(tx));
+  return {
+    items: TENANT_DEFAULT_SCOPE_NAMES.map((name) => ({ name, present: !missing.has(name) })),
+  };
+}
+
+export interface RestoreBuiltinScopesInput {
+  readonly tenantId: string;
+  readonly actorSubjectId: string;
+  readonly actorTenantId: string;
+  readonly actorClientId: string;
+}
+
+export interface RestoreBuiltinScopesDeps {
+  readonly audit: Audit;
+}
+
+export type RestoreBuiltinScopesOutcome =
+  | { kind: 'restored'; created: readonly string[] }
+  | { kind: 'scope_limit' }
+  | { kind: 'default_scope_limit'; message: string };
+
+// What is already there is never read for its settings, let alone changed:
+// a restore creates what is missing and does nothing when nothing is.
+export async function restoreBuiltins(
+  tx: TenantScopedDatabase,
+  deps: RestoreBuiltinScopesDeps,
+  input: RestoreBuiltinScopesInput,
+): Promise<RestoreBuiltinScopesOutcome> {
+  const outcome = await restoreBuiltinScopes(tx, input.tenantId);
+  const actor = {
+    action: 'scope.restore_builtins',
+    resourceType: 'scope',
+    resourceId: null,
+    actorSubjectId: input.actorSubjectId,
+    actorTenantId: input.actorTenantId,
+    actorClientId: input.actorClientId,
+  } as const;
+  if (outcome.kind === 'restored') {
+    if (outcome.created.length > 0) {
+      await deps.audit(tx, { ...actor, outcome: 'allowed', detail: { created: outcome.created } });
+    }
+    return outcome;
+  }
+  const reason = outcome.kind === 'scope_limit' ? scopeLimitMessage() : outcome.message;
+  await deps.audit(tx, { ...actor, outcome: 'refused', detail: { reason } });
+  return outcome;
 }
 
 export interface SetScopeRolesInput {

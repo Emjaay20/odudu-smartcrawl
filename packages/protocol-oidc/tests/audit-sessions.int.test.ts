@@ -244,6 +244,7 @@ beforeAll(async () => {
   await http.register(formbody);
   await http.register(
     oidcRoutes({
+      tls: false,
       database: app,
       ownerDatabase: ownerHandle,
       kek: KEK,

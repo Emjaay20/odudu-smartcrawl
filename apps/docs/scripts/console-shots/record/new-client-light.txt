@@ -1,0 +1,76 @@
+@layer {
+  [data-react-aria-pressable] {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+}
+Odudu console
+Skip to content
+odudu · demo
+Overview
+Identity
+Subjects
+Groups
+Roles
+Applications
+Clients
+Scopes
+Registration tokens
+Security
+Sign-in flow
+Signing keys
+Sessions
+Tenant
+Settings
+Email
+Export
+Observe
+Audit trail
+Signed in as 
+admin@odudu.local
+ from 
+system
+Theme
+System
+Light
+Dark
+Switch tenant
+Sign out
+Collapse menu
+or press 
+[
+odudu · demo
+Menu
+System
+Acting in 
+demo
+ with system authority
+Back to system
+Applications
+›
+Clients
+›
+Create a client
+‹
+Clients
+Create a client
+A client starts with the default scopes and no roles. Everything else about it is set from its own page.
+Client ID
+What the application is configured with. Fixed once the client is made.
+Name
+Shown to people on the consent screen. Leave it empty to use the client ID.
+Description
+Leave it empty for none.
+0 of 1,000 characters.
+Kind
+Public application
+▾
+An application that cannot keep a secret, such as one that runs in a browser or on a phone. It has no secret.
+Web application
+Service
+Public application
+Redirect URIs
+Remove
+Add redirect URI
+Where sign-in may send the browser back: an https address, an http address on this machine, or an application scheme such as com.example.app:/cb. A request must name one exactly; no other is followed. 1 of 200 redirect URIs.
+Create client
+Cancel

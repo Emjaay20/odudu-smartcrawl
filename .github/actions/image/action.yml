@@ -1,0 +1,33 @@
+name: Build the image
+description: Builds infra/docker's image against a layer cache shared by every job that runs it, and tags it with the names compose gives it, so that run.sh, smoke.sh and the console capture start it instead of building.
+
+inputs:
+  save-cache:
+    description: Whether this job writes the layer cache. One writer is enough; the others only read.
+    default: 'false'
+  revision:
+    description: The commit the image is labelled with.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: docker/setup-buildx-action@v4
+
+    # Pull requests read the cache main's pushes wrote. ignore-error: a cache
+    # that cannot be written is not a failed build.
+    - uses: docker/build-push-action@v7
+      env:
+        DOCKER_BUILD_RECORD_UPLOAD: 'false'
+      with:
+        context: .
+        file: infra/docker/Dockerfile
+        build-args: ODUDU_REVISION=${{ inputs.revision }}
+        load: true
+        provenance: false
+        tags: |
+          odudu-e2e-odudu
+          odudu-smoke-odudu
+          odudu-shots-odudu
+        cache-from: type=gha,scope=odudu-image
+        cache-to: ${{ inputs.save-cache == 'true' && 'type=gha,scope=odudu-image,mode=max,ignore-error=true' || '' }}

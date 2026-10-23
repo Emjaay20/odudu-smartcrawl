@@ -5,7 +5,7 @@ file is the running record the spec, the plan and the umbrella spec's close
 note do not keep — what was discovered while building, and especially what
 turned out to be wrong. The phase's own argument is in
 [its spec](../archive/specs/2026-09-24-p4c-admin-api-design.md); what it
-built is in [docs/admin-paths.md](../admin-paths.md).
+built is in [the admin paths](../../apps/docs/content/en/reference/transcripts/admin-paths/index.md).
 
 Three shapes recur below, each often enough to be worth naming before the
 individual findings. **A mechanism built with no caller** — twice, and both

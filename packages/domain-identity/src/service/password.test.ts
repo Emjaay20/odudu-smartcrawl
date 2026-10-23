@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { hashPassword, verifyPassword } from '#/service/password';
+import {
+  hashPassword,
+  hashUserPassword,
+  matchUserPassword,
+  normalisePassword,
+  verifyPassword,
+  verifyUserPassword,
+} from '#/service/password';
 
 describe('[ODUDU-PASSWORD-HASHING-01] password verification', () => {
   it('round-trips a password', async () => {
@@ -76,5 +83,86 @@ describe('[RFC6749-10.10-01] end-user passwords are protected by the stored hash
     const [, , , , salt, digest] = stored.split('$');
     expect(Buffer.from(salt ?? '', 'base64').byteLength).toBe(16);
     expect(Buffer.from(digest ?? '', 'base64').byteLength).toBe(32);
+  });
+});
+
+// A password is hashed in its NFC form, so a name typed composed or
+// decomposed is one password. Hashes stored before that were made from the
+// raw bytes, which is why verifying falls back to the form as typed.
+describe('user passwords are NFC-normalised', () => {
+  const composed = 'café au lait 123';
+  const decomposed = 'café au lait 123';
+
+  it('hashes the composed and decomposed forms to one password', async () => {
+    const hash = await hashUserPassword(decomposed);
+    expect(await verifyUserPassword(hash, composed)).toBe(true);
+    expect(await verifyUserPassword(hash, decomposed)).toBe(true);
+    expect(await verifyPassword(hash, composed)).toBe(true);
+  });
+
+  it('still accepts a hash made from the decomposed bytes before normalising', async () => {
+    const legacy = await hashPassword(decomposed);
+    expect(await verifyUserPassword(legacy, decomposed)).toBe(true);
+  });
+
+  it('does not accept the composed form for a legacy decomposed hash', async () => {
+    const legacy = await hashPassword(decomposed);
+    expect(await verifyUserPassword(legacy, composed)).toBe(false);
+  });
+
+  it('rejects a different password', async () => {
+    expect(await verifyUserPassword(await hashUserPassword(composed), 'other')).toBe(false);
+  });
+
+  it('leaves a client secret or recovery code as typed', async () => {
+    const hash = await hashPassword(decomposed);
+    expect(await verifyPassword(hash, composed)).toBe(false);
+  });
+
+  it('normalises to NFC', () => {
+    expect(normalisePassword(decomposed)).toBe(composed);
+  });
+});
+
+describe('matchUserPassword, which of the two forms a stored hash was made from', () => {
+  const composed = 'café au lait, deux sucres';
+  const decomposed = 'café au lait, deux sucres';
+
+  function counting() {
+    let calls = 0;
+    return {
+      verify: (stored: string, plain: string) => {
+        calls += 1;
+        return verifyPassword(stored, plain);
+      },
+      calls: () => calls,
+    };
+  }
+
+  it('does one verification for a hash made from the normalised form, whatever was typed', async () => {
+    const stored = await hashUserPassword(composed);
+    const count = counting();
+    expect(await matchUserPassword(stored, decomposed, false, count.verify)).toBe('normalised');
+    expect(count.calls()).toBe(1);
+    const wrong = counting();
+    expect(await matchUserPassword(stored, 'not it́', false, wrong.verify)).toBeNull();
+    expect(wrong.calls()).toBe(1);
+  });
+
+  it('tries the form as typed for an older hash only after the normalised form fails', async () => {
+    const older = await hashPassword(decomposed);
+    const count = counting();
+    expect(await matchUserPassword(older, decomposed, true, count.verify)).toBe('as-typed');
+    expect(count.calls()).toBe(2);
+  });
+
+  it('does one verification for an older hash when the typed form is already normalised', async () => {
+    const older = await hashPassword('plain ascii passphrase');
+    const count = counting();
+    expect(await matchUserPassword(older, 'plain ascii passphrase', true, count.verify)).toBe(
+      'normalised',
+    );
+    expect(await matchUserPassword(older, 'other ascii passphrase', true, count.verify)).toBeNull();
+    expect(count.calls()).toBe(2);
   });
 });

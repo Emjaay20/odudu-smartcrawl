@@ -10,7 +10,15 @@ export {
 } from '#/service/session-cookie';
 export { SessionEntry } from '#/service/session-entry';
 export {
+  readSignInHandle,
+  signInHandleCookie,
+  clearedSignInHandleCookie,
+  signInHandleName,
+  type SignInHandle,
+} from '#/service/sign-in-handle';
+export {
   startAuthentication,
+  heldSignIn,
   loadPendingRequest,
   pendingSession,
   advance,
@@ -26,6 +34,7 @@ export {
   isRegisteredAuthenticator,
   registeredAuthenticatorNames,
   type AdvanceInput,
+  type SignInBrowser,
   type AdvanceOptions,
   type AdvanceOutcome,
 } from '#/usecase/executor';
@@ -65,16 +74,26 @@ export {
 } from '#/service/authenticators/recovery';
 export {
   beginRecoveryCodes,
+  type BeginRecoveryCodesOutcome,
   completeRecoveryCodes,
   type RecoveryCodesOutcome,
 } from '#/usecase/recovery-codes';
+export {
+  onSecondFactorRemoved,
+  type RecoveryRevocation,
+  type SecondFactorRemovedOutcome,
+} from '#/usecase/second-factor-removed';
+export { oweRecoveryCodesIfFactorWithoutCodes, pendingActionsFor } from '#/usecase/recovery-codes';
 export { renderRecoveryCodesPage, type RecoveryCodesOffer } from '#/view/recovery-codes-html';
 export { renderUpdatePasswordPage } from '#/view/update-password-html';
 export {
   completeUpdatePassword,
   recordPasswordExpiryIfOwed,
+  SUPERSEDED_PASSWORD,
   type UpdatePasswordOutcome,
 } from '#/usecase/update-password';
+export { type PasswordViolation } from '#/schema/password-violation';
+export { type EnrolmentRefusal } from '#/schema/enrolment-refusal';
 export { renderTotpEnrolmentPage, type TotpEnrolmentOffer } from '#/view/totp-enrolment-html';
 export {
   beginPasskeyEnrolment,

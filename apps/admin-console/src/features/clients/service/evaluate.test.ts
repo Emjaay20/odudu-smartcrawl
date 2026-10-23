@@ -25,6 +25,14 @@ it('shows each artefact as the JSON it would carry', () => {
   expect(userinfo?.label).toBe('UserInfo claims');
 });
 
+it('heads each artefact by what the app gets from it', () => {
+  expect(artefactsOf(RESULT).map((each) => each.heading)).toEqual([
+    'What the app gets in the ID token',
+    'What the app gets in the access token',
+    'What UserInfo returns',
+  ]);
+});
+
 it('has no ID token to show without openid', () => {
   expect(artefactsOf({ ...RESULT, id_token: null })[0]?.text).toBeNull();
 });

@@ -6,6 +6,11 @@ name: verify
 # this repo's Actions), and triggering on both would run every check twice
 # under different concurrency groups, leaving phantom skipped checks on the
 # pull request.
+#
+# `gate` is the one check that says whether the whole run is acceptable: it
+# fails on any failed or cancelled job and passes a skipped one, so a job that
+# `changes` decided a pull request cannot affect never blocks it. ADR 0044
+# has the design.
 on:
   push:
     branches: [main]
@@ -18,16 +23,216 @@ concurrency:
   group: verify-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  ODUDU_COMMIT: ${{ github.sha }}
+  TURBO_CACHE_DIR: .turbo/cache
+  TURBO_RUN_SUMMARY: 'true'
+  TURBO_TELEMETRY_DISABLED: '1'
+
 jobs:
-  verify:
+  # Which areas the pull request touches. Anything it cannot classify, and a
+  # push to main, runs everything (tools/ci/src/changes.ts).
+  changes:
     runs-on: ubuntu-latest
-    # Bounded by a cold cache: every package's tests run when nothing is
-    # restored, as after any lockfile change, which took 30 minutes on
-    # 2026-10-09; a cancelled run saves no cache, so a rerun would fail the same way.
-    timeout-minutes: 45
+    timeout-minutes: 5
+    outputs:
+      server: ${{ steps.classify.outputs.server }}
+      buildImage: ${{ steps.classify.outputs.buildImage }}
+      docsOnly: ${{ steps.classify.outputs.docsOnly }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The diff needs the merge base, so real history.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - id: classify
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+        run: node tools/ci/src/index.ts changes $BASE
+
+  # Everything that needs no database and no browser, in the order a failure
+  # is cheapest to find. The tests are their own jobs.
+  static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup
+        with:
+          turbo-cache-key: static
+
+      - run: pnpm format:check
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test:node-esm
+      - run: pnpm boundaries
+
+      # The docs site builds in its own job.
+      - name: Build
+        run: pnpm turbo run build --filter=!@odudu/docs
+
+      - name: Prune the Turborepo cache
+        if: success()
+        continue-on-error: true
+        run: node tools/turbo-cache/src/index.ts .turbo/cache .turbo/runs
+
+      # A red run saves too: it is the run most likely to be followed by a
+      # fix, and a cache that only a green run may write starts that rerun cold.
+      - name: Save the Turborepo cache
+        if: always() && !cancelled()
+        uses: actions/cache/save@v6
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-static-${{ github.sha }}
+
+  # The packages whose tests dominate the run, each cut into slices by vitest's
+  # --shard (ODUDU_TEST_SHARD, which turbo.json hashes), so a slice replays
+  # from cache when nothing under it changed. Measured on 2026-10-19 with four
+  # packages sharing a runner: protocol-admin 21 min, admin-console 18,
+  # protocol-oidc 16, server 8.
+  test:
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: oidc-1, package: '@odudu/protocol-oidc', shard: '1/3' }
+          - { name: oidc-2, package: '@odudu/protocol-oidc', shard: '2/3' }
+          - { name: oidc-3, package: '@odudu/protocol-oidc', shard: '3/3' }
+          - { name: admin-1, package: '@odudu/protocol-admin', shard: '1/4' }
+          - { name: admin-2, package: '@odudu/protocol-admin', shard: '2/4' }
+          - { name: admin-3, package: '@odudu/protocol-admin', shard: '3/4' }
+          - { name: admin-4, package: '@odudu/protocol-admin', shard: '4/4' }
+          - { name: console-1, package: '@odudu/admin-console', shard: '1/2' }
+          - { name: console-2, package: '@odudu/admin-console', shard: '2/2' }
+          - { name: server-1, package: '@odudu/server', shard: '1/2' }
+          - { name: server-2, package: '@odudu/server', shard: '2/2' }
+    name: test ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup
+        with:
+          turbo-cache-key: test-${{ matrix.name }}
+
+      - name: Run the slice
+        timeout-minutes: 22
+        env:
+          ODUDU_TEST_SHARD: ${{ matrix.shard }}
+        run: pnpm turbo run test --filter=${{ matrix.package }}
+
+      # trace-shard names the slice beside its report, so the trace job knows
+      # how many slices to expect without a second copy of the matrix.
+      - name: Collect the test report
+        if: success()
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          mkdir -p "reports/${{ matrix.name }}"
+          for f in packages/*/trace-report.json apps/*/trace-report.json; do
+            [ -f "$f" ] || continue
+            mkdir -p "reports/${{ matrix.name }}/$(dirname "$f")"
+            cp "$f" "reports/${{ matrix.name }}/$f"
+            printf '%s\n' "$SHARD" > "reports/${{ matrix.name }}/$(dirname "$f")/trace-shard"
+          done
+
+      - uses: actions/upload-artifact@v7
+        if: success()
+        with:
+          name: trace-${{ matrix.name }}
+          path: reports/${{ matrix.name }}
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Prune the Turborepo cache
+        if: success()
+        continue-on-error: true
+        run: node tools/turbo-cache/src/index.ts .turbo/cache .turbo/runs
+
+      # A red run saves too: it is the run most likely to be followed by a
+      # fix, and a cache that only a green run may write starts that rerun cold.
+      - name: Save the Turborepo cache
+        if: always() && !cancelled()
+        uses: actions/cache/save@v6
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-test-${{ matrix.name }}-${{ github.sha }}
+
+  # Every other package, in one job, with the repository's own checks. On a
+  # pull request that touches only prose, only the repository checks run: they
+  # read the documents against the server and must see every change to them.
+  test-rest:
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
     env:
-      TURBO_CACHE_DIR: .turbo/cache
-      TURBO_RUN_SUMMARY: 'true'
+      FILTER: ${{ needs.changes.outputs.server == 'true' && '--filter=!@odudu/protocol-oidc --filter=!@odudu/protocol-admin --filter=!@odudu/admin-console --filter=!@odudu/server --filter=!@odudu/docs' || '--filter=@odudu/repo-checks' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup
+        with:
+          turbo-cache-key: test-rest
+
+      - name: Run the tests
+        timeout-minutes: 18
+        run: pnpm turbo run test $FILTER --concurrency=4
+
+      - name: Collect the test report
+        if: success()
+        run: |
+          mkdir -p reports/rest
+          for f in packages/*/trace-report.json apps/*/trace-report.json tools/*/trace-report.json tests/trace-report.json; do
+            [ -f "$f" ] || continue
+            mkdir -p "reports/rest/$(dirname "$f")"
+            cp "$f" "reports/rest/$f"
+            echo 1/1 > "reports/rest/$(dirname "$f")/trace-shard"
+          done
+
+      - uses: actions/upload-artifact@v7
+        if: success()
+        with:
+          name: trace-rest
+          path: reports/rest
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Prune the Turborepo cache
+        if: success()
+        continue-on-error: true
+        run: node tools/turbo-cache/src/index.ts .turbo/cache .turbo/runs
+
+      # A red run saves too: it is the run most likely to be followed by a
+      # fix, and a cache that only a green run may write starts that rerun cold.
+      - name: Save the Turborepo cache
+        if: always() && !cancelled()
+        uses: actions/cache/save@v6
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-test-rest-${{ github.sha }}
+
+  # Reconciles the specification tables against every package's test report,
+  # which only exists once all the slices have run.
+  trace:
+    needs: [changes, test, test-rest, docs]
+    if: needs.changes.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
         with:
@@ -39,30 +244,108 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
-          cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: trace-*
+          path: reports
 
-      # Keyed per commit so each run saves its own; the prefix restores the
-      # newest earlier one, so an unchanged package replays its test results.
-      - name: Restore the Turborepo cache
-        uses: actions/cache@v6
+      # A package cut into slices wrote one report per slice; the trace check
+      # reads one per package, so the slices are joined where it looks.
+      - name: Put each package's report where the trace check reads it
+        run: |
+          for relative in $(find reports -name trace-report.json | sed -E 's#^reports/[^/]+/##' | sort -u); do
+            node tools/ci/src/index.ts merge-reports "$relative" $(find reports -path "reports/*/$relative")
+          done
+
+      - run: pnpm trace
+
+  # The documentation site, built for both targets from one commit. The builds
+  # check every internal link and anchor themselves (onBrokenLinks and
+  # onBrokenAnchors are 'throw'); the tests then walk the built HTML. The
+  # browser test needs Chromium, so it is its own step after it is installed.
+  docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup
+        with:
+          turbo-cache-key: docs
+
+      # The step limit is the watchdog: a hung test fails here, naming the step.
+      - name: Build both targets and check the built site
+        timeout-minutes: 8
+        run: pnpm turbo run test --filter=@odudu/docs
+
+      - uses: ./.github/actions/playwright
+        with:
+          package: '@odudu/docs'
+
+      - name: Check the colour mode in a browser
+        timeout-minutes: 4
+        run: pnpm --filter @odudu/docs test:browser
+
+      # The one place the brand's PNG and ICO are rebuilt from their SVGs: the
+      # test skips in a job with no Chromium, and here it may not.
+      - name: Rebuild the brand derivatives and compare them with the committed files
+        timeout-minutes: 3
+        run: node_modules/.bin/vitest run --project unit tests/lint/brand-assets.test.ts
+        env:
+          ODUDU_REQUIRE_CHROMIUM: '1'
+
+      - name: Collect the test report
+        if: success()
+        run: |
+          mkdir -p reports/docs/apps/docs
+          cp apps/docs/trace-report.json reports/docs/apps/docs/
+          echo 1/1 > reports/docs/apps/docs/trace-shard
+
+      - uses: actions/upload-artifact@v7
+        if: success()
+        with:
+          name: trace-docs
+          path: reports/docs
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Prune the Turborepo cache
+        if: success()
+        continue-on-error: true
+        run: node tools/turbo-cache/src/index.ts .turbo/cache .turbo/runs
+
+      # A red run saves too: it is the run most likely to be followed by a
+      # fix, and a cache that only a green run may write starts that rerun cold.
+      - name: Save the Turborepo cache
+        if: always() && !cancelled()
+        uses: actions/cache/save@v6
         with:
           path: .turbo/cache
-          key: turbo-${{ runner.os }}-${{ github.sha }}
-          restore-keys: turbo-${{ runner.os }}-
+          key: turbo-${{ runner.os }}-docs-${{ github.sha }}
 
-      - run: pnpm verify
-
-      # The cache step saves after this, so what it saves is only what this
-      # run's summaries in .turbo/runs name, not every earlier run's entries.
-      - name: Prune the Turborepo cache
-        run: node tools/turbo-cache/src/index.ts .turbo/cache .turbo/runs
+  # The four steps `pnpm verify` runs in one job, as one required check.
+  verify:
+    needs: [static, test, test-rest, trace]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Fail if any part of verify failed or was cancelled
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "results: $RESULTS"
+          case " $RESULTS " in *" failure "*|*" cancelled "*) exit 1 ;; esac
 
   # Seeds a fifth of the design volume in a throwaway Postgres and holds the
   # server's real query plans to ADR 0041. Minutes of seeding, so it is a job
   # of its own and not part of `verify`.
   query-plans:
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -72,15 +355,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Enable corepack
-        run: corepack enable
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
 
       - name: Check the query plans at volume
         run: pnpm test:plans
@@ -94,6 +369,8 @@ jobs:
           retention-days: 14
 
   container:
+    needs: changes
+    if: needs.changes.outputs.buildImage == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -101,57 +378,235 @@ jobs:
         with:
           persist-credentials: false
 
+      # Reads the layer cache that a push to main wrote; never writes it.
+      - uses: ./.github/actions/image
+        with:
+          revision: ${{ github.sha }}
+
       # smoke.sh fails closed if infra/docker/.env is missing (ADR 0015) —
       # this is the deliberate act CI performs in its place. The console's
       # private key is made by the script, never committed in .env.example.
       - name: Bootstrap infra/docker/.env
         run: cp infra/docker/.env.example infra/docker/.env
 
-      - name: Build and smoke-test the stack
+      - name: Smoke-test the stack
         run: ./infra/docker/smoke.sh
+        env:
+          ODUDU_PREBUILT: '1'
+          ODUDU_REVISION: ${{ github.sha }}
 
   # The console's flows in Chromium against the built image, signed in
-  # through the gateway. e2e/run.sh is the whole of it, locally as here.
-  e2e:
+  # through the gateway, cut into slices by Playwright's --shard. Each slice is
+  # a runner of its own with a stack of its own, so the slices share no port or
+  # database; e2e/run.sh is the whole of it, locally as here.
+  e2e-shards:
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ['1/3', '2/3', '3/3']
+    name: e2e ${{ matrix.shard }}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
-      - name: Enable corepack
-        run: corepack enable
+      - uses: ./.github/actions/setup
 
-      - uses: actions/setup-node@v7
+      - uses: ./.github/actions/playwright
         with:
-          node-version: '24'
-          cache: pnpm
+          package: '@odudu/admin-console'
 
-      - run: pnpm install --frozen-lockfile
-
-      - name: Install Chromium and its system libraries
-        run: pnpm --filter @odudu/admin-console exec playwright install --with-deps chromium
+      - uses: ./.github/actions/image
+        with:
+          revision: ${{ github.sha }}
+          # One writer, and only on main, so no pull request's leg waits on an export.
+          save-cache: ${{ strategy.job-index == 0 && github.event_name == 'push' }}
 
       - name: Bootstrap infra/docker/.env
         run: cp infra/docker/.env.example infra/docker/.env
 
       - name: Run the console in a browser against the image
         run: ./apps/admin-console/e2e/run.sh
+        env:
+          E2E_PREBUILT: '1'
+          ODUDU_REVISION: ${{ github.sha }}
+          E2E_SHARD: ${{ matrix.shard }}
 
       - name: Upload the Playwright report
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
+          name: playwright-report-${{ strategy.job-index }}
           path: |
             apps/admin-console/e2e/playwright-report
             apps/admin-console/e2e/test-results
           retention-days: 14
 
-  conformance:
+  # One name for the slices, so a reference to `e2e` stays true. Skipped, like
+  # the slices, when `changes` found nothing the console can reach.
+  e2e:
+    needs: [changes, e2e-shards]
+    if: always() && needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 2
+    steps:
+      - name: Fail if any slice failed or was cancelled
+        env:
+          RESULTS: ${{ needs.e2e-shards.result }}
+        run: |
+          echo "results: $RESULTS"
+          case "$RESULTS" in success) ;; *) exit 1 ;; esac
+
+  # Runs each example app against the quickstart stack built from this commit:
+  # provisions the tenant, client and person the examples share, installs the
+  # example from its own lockfile and runs its test, which signs a person in or
+  # calls a protected API and asserts the result.
+  examples:
+    needs: changes
+    if: needs.changes.outputs.buildImage == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        example: [web-app, single-page-app, api, machine-to-machine]
+    env:
+      ODUDU_BASE: http://localhost:3205
+      COMPOSE_FILE: ${{ github.workspace }}/quickstart/compose.yaml
+      COMPOSE_PROJECT_NAME: odudu-quickstart-stack
+      ODUDU_IMAGE: odudu-smoke-odudu
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup
+
+      # The two apps that sign a person in drive a browser, and borrow the docs
+      # app's Playwright.
+      - uses: ./.github/actions/playwright
+        if: matrix.example == 'web-app' || matrix.example == 'single-page-app'
+        with:
+          package: '@odudu/docs'
+
+      # Each leg builds against the layer cache the first one reads, so the
+      # image is a cache hit after the first; one shared build would need an
+      # artifact to carry the image between runners, which costs more than it saves.
+      - uses: ./.github/actions/image
+        with:
+          revision: ${{ github.sha }}
+
+      - name: Start the quickstart stack
+        run: quickstart/stack.sh up odudu-smoke-odudu 3205
+
+      - name: Say which image ran
+        run: |
+          echo "image: ${ODUDU_IMAGE}@$(docker inspect --format '{{.Id}}' "${ODUDU_IMAGE}")"
+
+      - name: Make the tenant, the clients and the person
+        run: examples/_shared/provision.sh
+
+      - name: Install the example
+        working-directory: examples/${{ matrix.example }}
+        run: npm ci --ignore-scripts
+
+      - name: Type-check the example
+        working-directory: examples/${{ matrix.example }}
+        run: npm run typecheck
+
+      # The client's test starts the API example, which has its own lockfile.
+      - name: Install the API the client calls
+        if: matrix.example == 'machine-to-machine'
+        working-directory: examples/api
+        run: npm ci --ignore-scripts
+
+      - name: Run the example's test
+        working-directory: examples/${{ matrix.example }}
+        run: npm test
+
+      - name: Stop the stack
+        if: always()
+        run: quickstart/stack.sh down
+
+  # The quick start as a stranger runs it, on a clean runner: the repository's
+  # compose file with the image built from this commit under the name the file
+  # gives it, one bare `docker compose up -d`, the first administrator's banner,
+  # a sign-in to the console in a browser, and the documentation at /docs/.
+  # linux/amd64 only: arm64 and Docker Desktop are confirmed by hand
+  # (RELEASING.md, Owner steps). The proof's own ten-minute budget is inside
+  # quickstart/prove.sh; the job's limit leaves room for building the image.
+  quickstart:
+    needs: changes
+    if: needs.changes.outputs.buildImage == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # Only for the browser: the proof borrows the docs app's Playwright.
+      - uses: ./.github/actions/setup
+
+      - uses: ./.github/actions/playwright
+        with:
+          package: '@odudu/docs'
+
+      - uses: ./.github/actions/image
+        with:
+          revision: ${{ github.sha }}
+
+      - name: Name the image as the compose file does
+        run: docker tag odudu-smoke-odudu ghcr.io/wizzywit/odudu:0.0.0
+
+      - name: Run the quick start and sign in
+        timeout-minutes: 10
+        run: quickstart/prove.sh
+
+  # Photographs the console's areas against the built image, for the pages of
+  # the documentation that show them, and fails when a heading or a control a
+  # page relies on has gone from the console, or when a screen's text no longer
+  # matches its record. Pictures are not compared pixel by pixel. `buildImage`
+  # is true for a change to the console or to the documentation and for
+  # nothing else (tools/ci/src/changes.ts), so a prose-only change skips it.
+  console-shots:
+    needs: changes
+    if: needs.changes.outputs.buildImage == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup
+
+      - uses: ./.github/actions/playwright
+        with:
+          package: '@odudu/docs'
+
+      - uses: ./.github/actions/image
+        with:
+          revision: ${{ github.sha }}
+
+      - name: Bootstrap infra/docker/.env
+        run: cp infra/docker/.env.example infra/docker/.env
+
+      - name: Photograph the console and compare it with what the pages say
+        run: apps/docs/scripts/console-shots/with-stack.sh --check
+        env:
+          SHOTS_PREBUILT: '1'
+          ODUDU_REVISION: ${{ github.sha }}
+
+  conformance:
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
         with:
@@ -222,3 +677,37 @@ jobs:
             fi
           done
           exit $status
+
+  # The check to require. A job that was skipped, because `changes` found
+  # nothing it could affect, passes; one that failed or was cancelled does not.
+  gate:
+    needs:
+      - changes
+      - static
+      - test
+      - test-rest
+      - trace
+      - docs
+      - verify
+      - query-plans
+      - container
+      - e2e-shards
+      - e2e
+      - console-shots
+      - examples
+      - quickstart
+      - conformance
+      - commit-messages
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Fail if any job failed or was cancelled
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+          SERVER: ${{ needs.changes.outputs.server }}
+        run: |
+          echo "results: $RESULTS, server: $SERVER"
+          case " $RESULTS " in *" failure "*|*" cancelled "*) exit 1 ;; esac
+          # Skipping is a decision only when `changes` made it.
+          case "$SERVER" in true|false) ;; *) echo "changes wrote no outputs"; exit 1 ;; esac

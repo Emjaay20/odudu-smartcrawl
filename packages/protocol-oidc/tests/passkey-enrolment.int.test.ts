@@ -146,27 +146,6 @@ function enrolmentPost(tenantName: string, fields: Record<string, string>) {
   );
 }
 
-// Enrolling a passkey owes a recovery path for it, and the login carries
-// straight on to it: the enrolment's own response is the codes page, and
-// acknowledging it finishes the login.
-async function acknowledgeRecoveryCodes(
-  tenantName: string,
-  authSessionId: string,
-  shown: LightMyRequestResponse,
-): Promise<{ codes: string[]; acknowledged: LightMyRequestResponse }> {
-  expect(shown.statusCode).toBe(200);
-  expect(shown.body).toContain('Save your recovery codes');
-  const codes = [
-    ...shown.body.matchAll(/<code>([0-9A-HJKMNP-TV-Z]{5}-[0-9A-HJKMNP-TV-Z]{5})<\/code>/gu),
-  ].map((match) => match[1] ?? '');
-  const acknowledged = await post(
-    `/tenants/${tenantName}/login-actions/required-action?action=generate-recovery-codes`,
-    { auth_session_id: authSessionId },
-  );
-  expect(acknowledged.statusCode).toBe(302);
-  return { codes, acknowledged };
-}
-
 // The challenge is never in the form; what the page carries is the creation
 // options the browser is meant to pass to navigator.credentials.create, so
 // this is what a browser would read out of the page it was served.
@@ -235,6 +214,7 @@ beforeAll(async () => {
   await http.register(formbody);
   await http.register(
     oidcRoutes({
+      tls: false,
       database: app,
       ownerDatabase: owner,
       kek: KEK,
@@ -295,36 +275,21 @@ describe('enrolling a passkey over HTTP', () => {
       credential: credentialFor(retryChallenge),
       label: 'Work laptop',
     });
-    expect(enrolled.statusCode).toBe(200);
-    expect(enrolled.body).not.toContain('name="password"');
+    // Nothing else is owed: a recovery code stands in only for a TOTP code, so
+    // the enrolment finishes the login it interrupted.
+    expect(enrolled.statusCode).toBe(302);
 
     const stored = await storedPasskeys(tenantId, subjectId);
     expect(stored).toHaveLength(1);
     expect(stored[0]?.label).toBe('Work laptop');
     expect(stored[0]?.lookupKey).toBeTruthy();
-    // The passkey is enrolled, and the recovery path for it is owed in its
-    // place: losing the authenticator is the lockout this prevents.
-    expect(
-      await withTenant(app.db, tenantId, (tx) =>
-        requiredActionRepository(tx).pendingFor(subjectId),
-      ),
-    ).toEqual(['generate-recovery-codes']);
-
-    const { codes, acknowledged } = await acknowledgeRecoveryCodes(
-      tenantName,
-      authSessionId,
-      enrolled,
-    );
-    expect(codes).toHaveLength(10);
     expect(
       await withTenant(app.db, tenantId, (tx) =>
         requiredActionRepository(tx).pendingFor(subjectId),
       ),
     ).toEqual([]);
 
-    // Nothing is owed now, so the login finishes without asking for the
-    // password a second time.
-    const location = acknowledged.headers.location;
+    const location = enrolled.headers.location;
     if (typeof location !== 'string') throw new Error('expected a location header');
     expect(new URL(location).searchParams.get('code')).toBeTruthy();
   });
@@ -437,7 +402,7 @@ describe('enrolling a passkey over HTTP', () => {
       auth_session_id: authSessionId,
       credential,
     });
-    expect(first.body).toContain('Save your recovery codes');
+    expect(first.statusCode).toBe(302);
 
     // The action is done, so this submission is refused by the gate before
     // the challenge is even consulted — and the credential count proves
@@ -479,7 +444,7 @@ async function enrolAPasskey(
     ),
   });
   expect(await storedPasskeys(tenantId, subjectId)).toHaveLength(1);
-  await acknowledgeRecoveryCodes(tenantName, authSessionId, enrolled);
+  expect(enrolled.statusCode).toBe(302);
   return authenticator;
 }
 
@@ -637,6 +602,7 @@ describe('a deployment that cannot name a relying party', () => {
       await unconfigured.register(formbody);
       await unconfigured.register(
         oidcRoutes({
+          tls: false,
           database: app,
           ownerDatabase: owner,
           kek: KEK,

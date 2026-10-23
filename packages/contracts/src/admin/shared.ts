@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { noBidiControls } from '#/bidi';
 
 export const DEFAULT_LIMIT = 50;
 export const MAX_LIMIT = 200;
@@ -53,6 +54,10 @@ export function listLimitProblem(field: string, count: number): string {
  */
 export const SCOPE_LIMIT = 1_000;
 
+export function scopeLimitMessage(): string {
+  return `a tenant defines at most ${String(SCOPE_LIMIT)} scopes`;
+}
+
 // A shape check, not a policy check: an over-large `limit` is a page size
 // to coerce down, never a request to refuse (design spec §9, citing
 // AIP-158) — `MAX_LIMIT` is enforced exactly once, by
@@ -71,13 +76,18 @@ export const searchPrefixSchema = z
   .min(1)
   .regex(/^[^\u0000]*$/);
 
-export const enabledFilterSchema = z.enum(['true', 'false']);
+export const booleanFlagSchema = z.enum(['true', 'false']);
+// The same two spellings, read as a filter on an `enabled` column.
+export const enabledFilterSchema = booleanFlagSchema;
 
 // One field a refusal names, by its JSON path from the request: `name`, or
 // `document.clients[0].redirect_uris`.
 export const fieldErrorSchema = z.strictObject({
   path: z.string(),
   message: z.string(),
+  // Present where the refusal has a stable name a client can act on without
+  // reading the message: `bidi_control_refused` today.
+  code: z.string().optional(),
 });
 export type FieldError = z.infer<typeof fieldErrorSchema>;
 
@@ -106,4 +116,4 @@ export const etagSchema = z.string();
 /** The longest description a group, role or client holds, by its CHECK. */
 export const DESCRIPTION_MAX = 1000;
 
-export const descriptionSchema = z.string().min(1).max(DESCRIPTION_MAX);
+export const descriptionSchema = noBidiControls(z.string().min(1).max(DESCRIPTION_MAX));

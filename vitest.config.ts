@@ -12,6 +12,22 @@ const CONSOLE = 'apps/admin-console';
 // package alone, so each package's results can be cached on their own.
 const scope = relative(REPO_ROOT, process.cwd());
 
+// The docs site's own `@site/…` imports, which Docusaurus resolves, and the
+// framework's components and hooks as small stand-ins, for the tests that
+// render a view or a usecase.
+const DOCUSAURUS_STUBS = join(REPO_ROOT, 'apps/docs/tests/support/docusaurus');
+const DOCS_ALIAS = {
+  alias: {
+    '@site': join(REPO_ROOT, 'apps/docs'),
+    '@docusaurus/Link': join(DOCUSAURUS_STUBS, 'Link.tsx'),
+    '@docusaurus/Head': join(DOCUSAURUS_STUBS, 'Head.tsx'),
+    '@docusaurus/useBaseUrl': join(DOCUSAURUS_STUBS, 'useBaseUrl.ts'),
+    '@docusaurus/useIsBrowser': join(DOCUSAURUS_STUBS, 'useIsBrowser.ts'),
+    '@docusaurus/useDocusaurusContext': join(DOCUSAURUS_STUBS, 'useDocusaurusContext.ts'),
+    '@theme/Layout': join(DOCUSAURUS_STUBS, 'Layout.tsx'),
+  },
+};
+
 function globs(): { unit: string[]; integration: string[]; dom: string[]; plans: string[] } {
   if (scope === '') {
     return {
@@ -29,6 +45,14 @@ function globs(): { unit: string[]; integration: string[]; dom: string[]; plans:
     };
   }
   if (scope === 'tests') return { unit: ['**/*.test.ts'], integration: [], dom: [], plans: [] };
+  if (scope === 'apps/docs') {
+    return {
+      unit: ['tests/**/*.test.ts', 'scripts/**/*.test.ts', 'src/**/*.test.{ts,tsx}'],
+      integration: [],
+      dom: [],
+      plans: [],
+    };
+  }
   if (scope === CONSOLE) {
     return { unit: [], integration: [], dom: ['src/**/*.test.{ts,tsx}'], plans: [] };
   }
@@ -41,14 +65,25 @@ function globs(): { unit: string[]; integration: string[]; dom: string[]; plans:
 }
 
 const { unit, integration, dom, plans } = globs();
+// Drives Chromium against the built site, so only the docs app's own
+// `test:browser` runs it.
+const browser =
+  scope === 'apps/docs' ? ['tests/**/*.browser.test.ts', 'scripts/**/*.browser.test.ts'] : [];
 // The query-plan check seeds millions of rows and takes minutes, so it runs
 // only where it is asked for (`pnpm test:plans`), in a job of its own.
 const planFiles = process.env.ODUDU_QUERY_PLANS === '1' ? plans : [];
 
+// `i/n` runs the i-th of n slices of the files this run resolves. It is read
+// from the environment, not the command line, so Turborepo can hash it
+// (turbo.json lists it in every test task's `env`).
+const shard = process.env.ODUDU_TEST_SHARD;
+
 export default defineConfig({
   test: {
+    shard: shard === undefined || shard === '' ? undefined : shard,
     projects: [
       {
+        resolve: DOCS_ALIAS,
         test: {
           name: 'unit',
           include: unit,
@@ -57,10 +92,14 @@ export default defineConfig({
             '**/dist/**',
             '**/fixtures/**',
             '**/*.int.test.ts',
+            '**/*.browser.test.ts',
             `${CONSOLE}/**`,
           ],
           environment: 'node',
           setupFiles: SETUP,
+          // The docs tests each read the whole built site, which takes longer than the
+          // default when every package's tests run at once.
+          ...(scope === 'apps/docs' ? { testTimeout: 30_000 } : {}),
         },
       },
       {
@@ -72,6 +111,16 @@ export default defineConfig({
           testTimeout: 120_000,
           hookTimeout: 120_000,
           fileParallelism: false,
+        },
+      },
+      {
+        resolve: DOCS_ALIAS,
+        test: {
+          name: 'browser',
+          include: browser,
+          environment: 'node',
+          testTimeout: 60_000,
+          hookTimeout: 60_000,
         },
       },
       {

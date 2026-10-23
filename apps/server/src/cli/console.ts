@@ -9,6 +9,7 @@ import {
   tenantLookupRepository,
 } from '@odudu/protocol-oidc';
 import { parseArgs } from 'node:util';
+import { ASSERTION_OPTIONS } from '#/cli/seed-options';
 import { assertConsoleConfigured } from '#/config-guard';
 import { consoleProvisioning, loadConsoleKeys } from '#/console-key';
 
@@ -56,7 +57,7 @@ export async function provisionConsole(
 // key is equivalent to running this, so the command asks nothing more of the
 // operator; it records that it ran, against the tenant, and names no secret.
 async function assertionFor(argv: readonly string[]): Promise<string> {
-  const { values } = parseArgs({ args: [...argv], options: { tenant: { type: 'string' } } });
+  const { values } = parseArgs({ args: [...argv], options: ASSERTION_OPTIONS });
   if (values.tenant === undefined) {
     throw new OduduError('console_invalid_options', 'console assertion requires --tenant');
   }

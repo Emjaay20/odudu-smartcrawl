@@ -1,88 +1,173 @@
-import { type RenderedPage } from '@odudu/kernel';
+import { type PageLocale, type PasswordRules, type RenderedPage } from '@odudu/kernel';
 import { sendVerificationHtml } from '#/view/verification-html';
-import { escapeHtml, page } from '#/view/document';
+import { escapeHtml, intro, page } from '#/view/document';
+import { links, type WayOn } from '#/view/links';
+import {
+  echoedValue,
+  firstInvalidField,
+  invalidAttributes,
+  problemSummary,
+  type Problem,
+} from '#/view/form-error';
+import { returnToField } from '#/view/return-to';
+import { t, tHtml } from '#/view/messages';
+import { passwordField } from '#/view/password-field';
+import { passwordProblems, type PasswordFailure } from '#/view/password-rules';
 
 export { sendVerificationHtml as sendResetHtml };
 
-export function renderResetRequestForm(tenant: string): RenderedPage {
-  const action = `/tenants/${escapeHtml(tenant)}/login-actions/reset-password`;
+function backToSignIn(signInPath: string | null | undefined, locale: PageLocale): WayOn | null {
+  return signInPath === null || signInPath === undefined
+    ? null
+    : { href: signInPath, text: tHtml(locale, 'link.backToSignIn') };
+}
+
+// The form that asks for an address. `emailRequired` is its one refusal: the
+// form comes back with the message in place and whatever was typed.
+export interface ResetRequestForm {
+  readonly signInPath?: string | null;
+  readonly emailRequired?: boolean;
+  readonly email?: string;
+}
+
+export function renderResetRequestForm(
+  tenant: string,
+  form: ResetRequestForm,
+  locale: PageLocale,
+): RenderedPage {
+  const action = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/login-actions/reset-password`;
+  const problems: Problem[] =
+    form.emailRequired === true
+      ? [{ fields: ['email'], html: tHtml(locale, 'reset.requestFailed.emailRequired') }]
+      : [];
+  const attributes = `${invalidAttributes(problems, 'email')}${
+    firstInvalidField(problems, ['email']) === null ? '' : ' autofocus'
+  }`;
+  const echoed = form.email === undefined ? undefined : echoedValue(form.email);
+  const value = echoed === undefined ? '' : ` value="${escapeHtml(echoed)}"`;
   return page(
-    'Forgot your password?',
-    `<form method="post" action="${action}">
-  <label>Email <input type="email" name="email" autocomplete="email"></label>
-  <button type="submit">Send reset link</button>
-</form>`,
+    t(locale, 'reset.request.title'),
+    `${intro(tHtml(locale, 'reset.request.title'), tenant)}
+${problemSummary(problems)}<form method="post" action="${action}">${returnToField(form.signInPath)}
+  <label>${tHtml(locale, 'reset.request.email')} <input type="email" name="email" autocomplete="email"${value}${attributes}></label>
+  <button type="submit">${tHtml(locale, 'reset.request.submit')}</button>
+</form>${links([backToSignIn(form.signInPath, locale)])}`,
+    null,
+    [],
+    locale,
   );
 }
 
 // The whole point: this text is identical whether or not the address
 // exists, and the route must reach it either way — see
 // #/usecase/reset-password.ts's requestPasswordReset.
-export function renderResetRequestedPage(): RenderedPage {
+export function renderResetRequestedPage(
+  signInPath: string | null,
+  locale: PageLocale,
+): RenderedPage {
   return page(
-    'Check your email',
-    `<h1>Check your email</h1>
-<p>If that address has an account, we've sent a link to reset its password.</p>`,
+    t(locale, 'reset.requested.title'),
+    `<h1>${tHtml(locale, 'reset.requested.title')}</h1>
+<p>${tHtml(locale, 'reset.requested.next')}</p>${links([backToSignIn(signInPath, locale)])}`,
+    null,
+    [],
+    locale,
   );
 }
 
-export function renderResetRequestFailedPage(message: string): RenderedPage {
+// The one refusal of a reset request that is not about the field: the server
+// cannot send mail. It stays a page, with the way to try again.
+export function renderResetRequestFailedPage(
+  tenant: string,
+  signInPath: string | null,
+  locale: PageLocale,
+): RenderedPage {
+  const retry = `/tenants/${encodeURIComponent(tenant)}/login-actions/reset-password`;
+  const href =
+    signInPath === null
+      ? retry
+      : `${retry}?${new URLSearchParams({ return_to: signInPath }).toString()}`;
   return page(
-    "Can't send a reset link",
-    `<h1>Can't send a reset link</h1>
-<p>${escapeHtml(message)}</p>`,
+    t(locale, 'reset.requestFailed.title'),
+    `<h1>${tHtml(locale, 'reset.requestFailed.title')}</h1>
+<p>${tHtml(locale, 'reset.requestFailed.unavailable')}</p>${links([
+      { href, text: tHtml(locale, 'link.tryAgain') },
+      backToSignIn(signInPath, locale),
+    ])}`,
+    null,
+    [],
+    locale,
   );
 }
 
-export function renderResetPasswordForm(tenant: string, key: string): RenderedPage {
-  const action = `/tenants/${escapeHtml(tenant)}/login-actions/action-token`;
+// The form a reset link opens, and the form a refused candidate comes back to:
+// the key travels in a hidden field as it does on the first showing, and the
+// password is never given back.
+export function renderResetPasswordForm(
+  tenant: string,
+  key: string,
+  failure: PasswordFailure | undefined,
+  rules: PasswordRules,
+  locale: PageLocale,
+): RenderedPage {
+  const action = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/login-actions/action-token`;
+  const problems = passwordProblems(failure, locale);
+  const password = passwordField(
+    'reset.form.newPassword',
+    rules,
+    problems,
+    problems.length > 0,
+    locale,
+  );
   return page(
-    'Choose a new password',
-    `<form method="post" action="${action}">
+    t(locale, 'reset.form.title'),
+    `${intro(tHtml(locale, 'reset.form.title'), tenant)}
+${problemSummary(problems)}<form method="post" action="${action}">
   <input type="hidden" name="key" value="${escapeHtml(key)}">
-  <label>New password <input type="password" name="password" autocomplete="new-password"></label>
-  <button type="submit">Reset password</button>
+  ${password.html}
+  <button type="submit">${tHtml(locale, 'reset.form.submit')}</button>
 </form>`,
+    password.script,
+    [],
+    locale,
   );
 }
 
-export function renderResetPasswordSucceededPage(): RenderedPage {
+export function renderResetPasswordSucceededPage(
+  signInPath: string | null,
+  locale: PageLocale,
+): RenderedPage {
   return page(
-    'Password reset',
-    `<h1>Your password has been reset</h1>
-<p>You can close this page and sign in with your new password.</p>`,
+    t(locale, 'reset.succeeded.title'),
+    `<h1>${tHtml(locale, 'reset.succeeded.heading')}</h1>
+<p>${tHtml(locale, signInPath === null ? 'reset.succeeded.next' : 'reset.succeeded.nextWithLink')}</p>${
+      signInPath === null
+        ? ''
+        : links([{ href: signInPath, text: tHtml(locale, 'link.continueToSignIn') }])
+    }`,
+    null,
+    [],
+    locale,
   );
 }
 
-export function renderResetLinkFailedPage(): RenderedPage {
+// A reset link that cannot be used. When the link was a reset link and the
+// tenant still allows resets, the way on is a new one.
+export function renderResetLinkFailedPage(
+  requestNewPath: string | null,
+  signInPath: string | null,
+  locale: PageLocale,
+): RenderedPage {
+  const next: WayOn | null =
+    requestNewPath === null
+      ? null
+      : { href: requestNewPath, text: tHtml(locale, 'link.requestNewResetLink') };
   return page(
-    "Can't use this link",
-    `<h1>This link can't be used</h1>
-<p>It may have already been used or expired. Request a new one and try again.</p>`,
-  );
-}
-
-// Distinct from renderResetLinkFailedPage: the link itself is still good,
-// so a redeemer must be sent back to the same form rather than told to
-// request a new one. Every reason is listed, not just the first.
-export function renderResetPasswordWeakPage(messages: readonly string[]): RenderedPage {
-  const items = messages.map((message) => `<li>${escapeHtml(message)}</li>`).join('\n');
-  return page(
-    "Can't reset your password",
-    `<h1>Can't reset your password</h1>
-<ul>
-${items}
-</ul>`,
-  );
-}
-
-// Distinct from renderResetLinkFailedPage: reached only when the key is
-// present and unexamined, so the link itself may be perfectly good — the
-// submission was just missing the one field that matters.
-export function renderResetPasswordRequiredPage(): RenderedPage {
-  return page(
-    "Can't reset your password",
-    `<h1>Can't reset your password</h1>
-<p>A new password is required.</p>`,
+    t(locale, 'reset.linkFailed.title'),
+    `<h1>${tHtml(locale, 'reset.linkFailed.heading')}</h1>
+<p>${tHtml(locale, 'reset.linkFailed.reason')}</p>${links([next, backToSignIn(signInPath, locale)])}`,
+    null,
+    [],
+    locale,
   );
 }

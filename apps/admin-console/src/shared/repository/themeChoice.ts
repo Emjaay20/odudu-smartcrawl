@@ -1,4 +1,5 @@
 import { loadThemeChoice, storeThemeChoice } from '#/shared/adapter/themeChoice';
+import { restoreThemeCookie, writeThemeCookie } from '#/shared/adapter/themeCookie';
 import type { ThemeChoice } from '#/shared/service/theme';
 
 // The choice is named on <html> first, so it holds for this page even when
@@ -9,11 +10,15 @@ function apply(choice: ThemeChoice): void {
   else root.dataset.theme = choice;
 }
 
+// Written on start as well, so a choice made before the cookie existed
+// reaches the server-rendered pages without being picked again.
 export function applyRememberedTheme(): void {
   apply(loadThemeChoice());
+  restoreThemeCookie();
 }
 
 export function rememberThemeChoice(choice: ThemeChoice): void {
   apply(choice);
   storeThemeChoice(choice);
+  writeThemeCookie(choice);
 }

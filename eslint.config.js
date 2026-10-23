@@ -5,12 +5,16 @@ export default tseslint.config(
   {
     ignores: [
       '**/dist/**',
+      '**/.docusaurus/**',
       '**/.turbo/**',
       '**/coverage/**',
       '**/playwright-report/**',
       '**/test-results/**',
       'tests/boundaries/fixtures/**',
       'tests/lint/fixtures/**',
+      // Standalone projects with their own lockfiles, copied out of the
+      // repository by readers; the examples job runs them.
+      'examples/**',
     ],
   },
   // A disable comment that no longer suppresses anything is a claim about the
@@ -27,8 +31,11 @@ export default tseslint.config(
             '*.config.js',
             '*.config.ts',
             'packages/*/*.config.ts',
-            'apps/*/*.config.ts',
+            // site.config.ts is imported by the docs app's tests, so the project
+            // service already owns it; matching it here too is a parse error.
+            'apps/*/!(site).config.ts',
             '.dependency-cruiser.cjs',
+            '.dependency-cruiser-resolve.cjs',
           ],
           defaultProject: 'tsconfig.base.json',
         },
@@ -60,11 +67,11 @@ export default tseslint.config(
     },
   },
   {
-    files: ['**/*.js'],
+    files: ['**/*.js', '**/*.mjs'],
     extends: [tseslint.configs.disableTypeChecked],
   },
   {
-    files: ['apps/admin-console/**/*.{ts,tsx}'],
+    files: ['apps/admin-console/**/*.{ts,tsx}', 'apps/docs/src/**/*.{ts,tsx}'],
     extends: [reactHooks.configs.flat.recommended],
     // `eslint .` passes on a warning, so a finding at warning severity would ship.
     rules: {
@@ -76,7 +83,10 @@ export default tseslint.config(
   {
     // A usecase or repository decides nothing (ADR 0010's amendment), and a
     // function this branchy is deciding: the decision is a service function.
-    files: ['apps/admin-console/src/**/{usecase,repository}/**/*.ts'],
+    files: [
+      'apps/admin-console/src/**/{usecase,repository}/**/*.ts',
+      'apps/docs/src/**/usecase/**/*.ts',
+    ],
     ignores: ['**/*.test.ts'],
     rules: { complexity: ['error', 8] },
   },

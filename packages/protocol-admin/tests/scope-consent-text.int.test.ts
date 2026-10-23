@@ -138,10 +138,10 @@ describe('a scope’s consent text and display order', () => {
       'openid apple zebra kiwi mango',
     );
 
-    expect(body).toContain('See your &lt;zebras&gt; &amp; &quot;stripes&quot;');
+    expect(body).toContain('<bdi>See your &lt;zebras&gt; &amp; &quot;stripes&quot;</bdi>');
     expect(body).not.toContain('<zebras>');
     expect(body).toContain('value="mango"');
-    expect(body).toContain('> Pick your mangoes</label>');
+    expect(body).toContain('> <bdi>Pick your mangoes</bdi></label>');
     const order = ['openid', 'See your', 'apple', 'Pick your mangoes', 'Peel your kiwis'].map(
       (marker) => body.indexOf(marker),
     );

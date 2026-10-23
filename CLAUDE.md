@@ -13,21 +13,43 @@ gets its own spec and its own plan** before any code.
 
 The sequence, in order:
 
-1. **Brainstorm the phase** (`superpowers:brainstorming`) — scope, the
+1. **Start the phase.** Before brainstorming, a new session reads, in this
+   order, what already says what the phase owns, because a session that
+   starts from the brief alone has only the brief:
+   - the roadmap page, `apps/docs/content/en/roadmap.md`: every item placed
+     on the phase under "Next", "Later" and "Decided against";
+   - the phase's row in section 11 of the umbrella spec;
+   - `docs/NEXT.md`, "What the next phase inherits" (the heading names the
+     phases) and "Decisions still open";
+   - the notes in `docs/phases/` of the phases that touched the same area.
+
+   Then grep every document for the phase's number and for the phases it
+   replaces or was split from (`git grep -n '\bP4b\b' -- ':!docs/archive'`),
+   because a placement written under an old number is still a placement.
+   **Anything the roadmap placed on the phase is in scope** unless the
+   brainstorm rules it out in writing, with its reason and the phase that
+   takes it instead. `tests/docs/roadmap-section-11.test.ts` maps
+   each sentence of the roadmap's "Next" and "Later" bullets for a phase to
+   words in its row, and fails on a bullet with no phase tag. "Decided against"
+   and a clause added to a mapped sentence are read by a person, not checked.
+
+2. **Brainstorm the phase** (`superpowers:brainstorming`) — scope, the
    design decisions specific to it, 2–3 approaches per contested call.
    Ends in a phase spec under `docs/superpowers/specs/`.
-2. **Write the plan** (`superpowers:writing-plans`) — increments of 2–6
+3. **Write the plan** (`superpowers:writing-plans`) — increments of 2–6
    hours, each independently mergeable, each ending green. Saved under
    `docs/superpowers/plans/`.
-3. **Execute** (`superpowers:subagent-driven-development`) — a fresh
+4. **Execute** (`superpowers:subagent-driven-development`) — a fresh
    implementer per task, then a review of spec compliance _and_ quality,
    with a fix loop until clean. A whole-branch review closes the phase.
-4. **Finish** (`superpowers:finishing-a-development-branch`). The phase's
+5. **Finish** (`superpowers:finishing-a-development-branch`). The phase's
    spec and plan then move with `git mv` to `docs/archive/specs/` and
    `docs/archive/plans/`, where they record how it was planned.
 
 Work happens on a branch; `main` is protected and requires `verify`,
-`container` and `commit-messages` to pass.
+`container` and `commit-messages` to pass. The `gate` job waits for every job
+in `verify.yml` and passes one skipped for a prose-only change (ADR 0044); it
+is the check to require once the owner adds it.
 
 ### What a phase owes before it closes
 
@@ -67,25 +89,29 @@ only point where anything reads them **as a whole**, and four things go wrong
 only at that scale. Run these after the whole-branch review and before
 `finishing-a-development-branch`, because each one has already happened:
 
-1. **Every gap in `docs/request-paths.md`'s "What is not implemented" names
-   a phase, a decision or an ADR.**
+1. **Every gap in `apps/docs/content/en/roadmap.md`'s "What is not
+   implemented" names a phase, a decision or an ADR.**
    `tests/docs/not-implemented-placement.test.ts` fails the build otherwise,
    so this one is checked rather than remembered — but the test only knows
    whether a marker is _present_. Read the section and ask whether each
    marker is still _true_.
 2. **Grep the phase numbers you moved.** Splitting P10 into P4b left
-   `request-paths.md` saying theming was P10 for three commits, in the one
-   section a reader consults to find out where something went. A phase that
+   the not-implemented list saying theming was P10 for three commits, in the
+   one section a reader consults to find out where something went. A phase that
    renumbers or splits anything greps every document for the old number
    before it closes.
 3. **Read `docs/NEXT.md`'s headings against the phases that have closed**,
    per the rule below. A section addressed to a closed phase is overdue for a
    decision or a move.
-4. **Reconcile the roadmap against the "not implemented" list in both
-   directions.** Every item placed in a phase, and every phase's criterion
-   naming the work placed against it. A criterion that omits work the list
+4. **Reconcile the roadmap against section 11 and `docs/NEXT.md`, in both
+   directions.** Every item the roadmap places on a phase is in that phase's
+   criterion, and every capability a criterion or `docs/NEXT.md` places
+   on a phase has its roadmap line. A criterion that omits work the roadmap
    sends to it is work that can be skipped with nothing going red — section
    11 of the design spec records five of those, found exactly this way.
+   `tests/docs/roadmap-section-11.test.ts` checks both directions, and a new
+   roadmap sentence or `docs/NEXT.md` placement fails it until it is mapped;
+   the reading that remains is whether each mapping is still _true_.
 
 Two habits that keep this pass short. When a document admits a gap, say where
 it gets fixed in the same sentence: six passages once said "there is no seed
@@ -162,18 +188,98 @@ one by asserting a fix that is not pushed.
 
 ### The documentation an increment owns
 
-`README.md` and `docs/request-paths.md` describe what the server does
-**now**, not what it did when they were written. An increment that changes
-a request, a response, a branch, an error code, an endpoint, a command or a
-default updates them in the same commit as the code — they are part of
-finishing the work, in the way a test is, not a tidy-up afterwards.
+`README.md` and the documentation site under `apps/docs/content/en/` describe
+what the server does **now**, not what it did when they were written. A
+change updates what the list below names for it in the same commit as the
+code — the documents are part of finishing the work, in the way a test is,
+not a tidy-up afterwards.
 
-`docs/request-paths.md` carries a stronger promise than most prose: every
-command in it has been executed against a running stack and every response
-in it is real output. Changing behaviour without re-running the affected
-transcript silently downgrades it to a claim, which is the state it was
-written to escape. If a command cannot be run, the document says so rather
-than showing output nobody produced.
+**A change owns its documentation.** The "Checked by" line is the honest one: an
+entry says "no check" where nothing fails when the prose is wrong, and that is
+where to read the page again rather than trust a green build.
+
+- **An HTTP route or response** (protocol, admin API, console gateway)
+  - Update: the transcript under `reference/transcripts/` for it, **re-run**
+    on a live stack. The generated endpoints and OpenAPI reference follow
+    from the code.
+  - Checked by: `tests/docs/endpoints.test.ts` (documented routes against
+    Fastify's, both ways), `admin-paths.test.ts`, `console-paths.test.ts`,
+    `discovery.test.ts`, `error-codes.test.ts`; `apps/docs/tests/transcripts.test.ts`
+    (each fenced block against the built page). That the transcript was
+    re-run: no check.
+- **A console screen or control**
+  - Update: the area's page under `admin-console/` and `tour.mdx`, then
+    `pnpm docs:screenshots`.
+  - Checked by: `apps/docs/tests/console-areas.test.ts` (a page per feature,
+    its menu entries, tabs and capability), `console-labels.test.ts` (a
+    quoted label exists in the source), `console-shots.test.ts` and the
+    `console-shots` CI job; `tests/lint/console-covers-admin-routes.test.ts`
+    for a route no screen calls. That the prose describes the behaviour: no
+    check.
+- **Token, session, scope or consent behaviour**
+  - Update: the page under `concepts/` (`tokens`, `sessions`, `scopes`,
+    `consent-and-audit`), the guide that uses it and the transcript that
+    shows it.
+  - Checked by: `tests/docs/concept-claims.test.ts`,
+    `access-token-claims.test.ts`, `id-token-claims.test.ts`,
+    `session-lifespans.test.ts`, `session-cookie-shape.test.ts`, and
+    `apps/docs/tests/concepts.test.ts` (structure, and the settings, claims
+    and actions the pages name, against the code). Every other sentence: no
+    check.
+- **A CLI command or flag**
+  - Update: the command's entry in the help registry (the generated `cli.md`
+    follows), the guides and `README.md` that name it.
+  - Checked by: `apps/docs/scripts/cli-page.test.ts` (the page against the
+    registry), `tests/docs/first-start.test.ts` (for `init`),
+    `apps/docs/tests/guides-runnable.test.ts` and the `docs-commands`
+    workflow, which runs a guide's runnable blocks. A command named in prose
+    outside a runnable block: no check.
+- **A configuration variable**
+  - Update: the loader's declaration (the generated configuration reference
+    follows) and, if a production guard reads it, "Production settings" in
+    `operating/configuration.md` and `deploying.md`.
+  - Checked by: `tests/docs/env-reads.test.ts` (every `ODUDU_*` read is
+    documented), `config-defaults.test.ts`,
+    `apps/docs/scripts/config-page.test.ts`, `apps/docs/tests/operating.test.ts`
+    (the guards against the pages).
+- **A recovery, second-factor, password or lockout rule**
+  - Update: the transcript, the concept or guide page that states it, and
+    the console's `sign-in-flow` page when a setting changes.
+  - Checked by: `tests/docs/recovery-codes.test.ts`, `password-policy.test.ts`,
+    `required-action-order.test.ts`, `brute-force.test.ts`, `throttle.test.ts`:
+    the values they read from code. Wording around them: no check.
+- **The mark or any brand asset**
+  - Update: `brand/` (the PNGs and the ICO are rebuilt from the SVGs by
+    `brand/build.ts`), `brand/README.md`, the copies in the console, the docs
+    and the server pages, then `pnpm docs:screenshots`.
+  - Checked by: `tests/lint/brand-assets.test.ts` (the geometry, the
+    derivatives, every copy against `mark.svg`); the `console-shots` CI job
+    for the header a screenshot shows.
+- **A roadmap placement** (a deferral, a gap, a phase's scope)
+  - Update: `apps/docs/content/en/roadmap.md`, the phase's row in section 11,
+    a `docs/NEXT.md` entry under its argument's address, an ADR when it is a
+    decision.
+  - Checked by: `tests/docs/roadmap-section-11.test.ts`, `roadmap-shape.test.ts`,
+    `roadmap-claims.test.ts`, `not-implemented-placement.test.ts`,
+    `gap-audit-placement.test.ts`, `phase-references.test.ts`,
+    `next-budget.test.ts`. That a marker is still true: no check, the closing
+    pass reads it.
+- **Any page: a link, a heading, a path a reader follows**
+  - Update: the page that holds it.
+  - Checked by: `tests/docs/references.test.ts`, `link-fragments.test.ts`,
+    `apps/docs/tests/links.test.ts`. Prose truth: no check.
+
+`tests/docs/documentation-owner-table.test.ts` holds every test this list
+names to a file that exists.
+
+The transcripts under `apps/docs/content/en/reference/transcripts/` carry a
+stronger promise than most prose: every command in them has been executed
+against a running stack and every response in them is real output. Changing
+behaviour without re-running the affected transcript silently downgrades it
+to a claim, which is the state it was written to escape. If a command cannot
+be run, the page says so rather than showing output nobody produced. The same
+holds for a guide's commands, which are runnable blocks `tools/docs-run`
+executes in CI, or are tagged `text` and say they are illustrative.
 
 **Three rules a transcript has to follow, each learned from a way one was
 false while looking fine.**
@@ -187,9 +293,12 @@ A transcript whose output depends on what ran before it **says what that
 was, or scopes its query so that it does not.** An unscoped
 `select … from login_failures` prints whatever earlier sections happened to
 leave behind; a psql listing of every client prints two rows on the stack
-its author had and eleven on the one the document builds. Where the state
-is the point — a retention pass's counts, a lockout's arithmetic — name the
-stack it was captured against.
+its author had and eleven on the one the page builds. Where the state is
+the point — a retention pass's counts, a lockout's arithmetic — name the
+stack it was captured against, in words a reader can reproduce ("a freshly
+built stack driven only as far as Path A"). The compose project and commit
+are not that: they are recorded in
+`apps/docs/content/en/contributing/transcripts.md`.
 
 A precondition a refusal depends on is **shown, not asserted.** Two
 different checks that refuse with byte-identical output cannot be told apart
@@ -201,9 +310,10 @@ transcript would prove nothing.
 Saying this is not enough on its own — an instruction to keep prose current
 is unfalsifiable, because a stale document and a checked one look identical.
 So the parts that can be checked are checked: `tests/docs/` compares what
-these documents assert against what the server actually serves, and fails
-the build on drift. When you add a claim that could be checked that way,
-add the check with it.
+the site and `README.md` assert against what the server actually serves, and
+fails the build on drift, and on any link whose file or heading is gone
+(`tests/docs/references.test.ts`, `tests/docs/link-fragments.test.ts`). When
+you add a claim that could be checked that way, add the check with it.
 
 ### The rule P0 was written to produce
 
@@ -362,9 +472,10 @@ each a two-line wrapper because `FastifyReply` cannot live in the
 transport-free `kernel` package. A route never sets `content-type`,
 `content-security-policy`, `x-frame-options` or `referrer-policy` itself;
 `html-response.test.ts` holds every package's view layer to naming none of
-those itself outside those two files and the console shell's `spa.ts`,
-which sets its own fixed policy (ADR 0029's amendment); any other wrapper
-gets them only by spreading `pageHeaders`.
+those itself outside those two files, the console shell's `spa.ts` and the
+documentation's `docs-routes.ts` (`packages/web-assets`), which each set a
+fixed policy of their own (ADR 0029's amendments); any other wrapper gets
+them only by spreading `pageHeaders`.
 
 **A page that needs a script says so in its return value**, as a
 `RenderedPage` carrying the nonce its own markup used, and `pageHeaders`
@@ -380,14 +491,17 @@ ID, never a literal in the markup or a hook.** On the server that is a
 `messages.ts` beside the renderer; in the console, the wording constants a
 `service` already holds, with a count still written through `counted()` and
 `plural()`, which the extraction replaces. Pages and mail will read those
-records from per-locale catalogues (ADR 0043). **Nothing enforces this yet**:
-the fifteen `*-html.ts` renderers still hold their text inline. P4g adds the
-lint for the server and P4h for the console, each with the extraction it
-follows, so until then this is a rule somebody has to follow.
+records from per-locale catalogues (ADR 0043). On the server
+`tests/lint/server-page-literals.test.ts` fails the build on text typed in a
+`*-html.ts` renderer or in the mail templates, and on a domain value's
+`.message` handed to a renderer or a request-error helper; its header lists
+what it cannot see, and there is no allowlist. **Nothing enforces this in the
+console yet**: P4h adds that lint with the extraction it follows, so until
+then it is a rule somebody has to follow.
 
 ## Layering
 
-Five functional layers, in the consoles and on the server alike:
+Five functional layers, in the consoles, on the server and, with three of them, in the docs app:
 
 | Layer      | Contains                                | Business logic    |
 | ---------- | --------------------------------------- | ----------------- |
@@ -404,6 +518,28 @@ Permitted imports:
 - `repository` → adapter, service.
 - `adapter` → transport, service.
 - `service` → nothing.
+
+**The docs app** (`apps/docs/src`) has no remote data, so only `view`, `usecase`
+and `service` apply, laid out as the console lays them out:
+`features/<name>/{view,usecase,service}` with one `index.ts` each, and
+`shared/{view,usecase,service}` for what more than one feature, or MDX
+content, uses. A component is a
+folder with `Component.tsx`, `Component.module.css` and `Component.test.tsx`;
+no type in the docs app carries `readonly` (no `readonly` modifier, tuple or
+array, no `ReadonlyArray`, `ReadonlyMap`, `ReadonlySet` or `Readonly<…>`;
+immutable constants use `as const`), and if a compiler or library forces one,
+raise it rather than suppressing the rule; the console keeps its readonly
+props; hooks live in `usecase` and views render. Browser
+access a service needs (a clock, an observer, a random source) is handed to it
+by the usecase, so the service stays a pure function a test can drive.
+Docusaurus pins `src/pages`, `src/image-pages` and `src/css`; the
+route files there are thin views over a feature's `index.ts`. Imports use
+`@site/src/…`, never a relative path and never a `.ts` or `.tsx` extension.
+The dependency rules (`docs-*` in `.dependency-cruiser.cjs`), the
+`complexity: 8` cap on usecases, the react-hooks rules and
+`tests/lint/docs-no-readonly.test.ts` hold it; the console's lints for
+duplicate exports, module state, manual memoisation, custom properties, CSS
+module classes, file extensions and usecase logic read the docs app too.
 
 Features expose one `index.ts`. No feature reaches into another's
 internals.

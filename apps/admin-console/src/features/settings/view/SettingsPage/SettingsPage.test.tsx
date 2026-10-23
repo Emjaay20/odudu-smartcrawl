@@ -331,3 +331,50 @@ it('passes axe in both themes, loaded, refused and with a field wrong', async ()
     ),
   ).toEqual({ light: [], dark: [] });
 });
+
+it('says a short minimum is only safe with a second factor, as a note and not an error', async () => {
+  renderConsoleAt(
+    AT,
+    settingsRoutes(undefined, { [`GET ${ST}`]: settingsAnswer({ password_min_length: 8 }) }),
+  );
+  const password = await section('Password policy');
+  const note = within(password).getByRole('note');
+  expect(note).toHaveTextContent(
+    'A minimum under 15 is only safe when every sign-in needs a second factor.',
+  );
+  expect(within(password).queryByRole('alert')).toBeNull();
+});
+
+it('says nothing about a minimum of fifteen', async () => {
+  renderConsoleAt(AT, settingsRoutes());
+  const password = await section('Password policy');
+  expect(within(password).queryByRole('note')).toBeNull();
+});
+
+it('says a short minimum is enough when every sign-in needs a second factor', async () => {
+  renderConsoleAt(
+    AT,
+    settingsRoutes(undefined, {
+      [`GET ${ST}`]: settingsAnswer({ password_min_length: 8, otp_required: true }),
+    }),
+  );
+  const password = await section('Password policy');
+  expect(within(password).getByRole('note')).toHaveTextContent(
+    'Every sign-in needs a second factor, so this minimum is enough.',
+  );
+});
+
+it('follows the minimum as it is edited, without blocking the save', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, settingsRoutes());
+  const password = await section('Password policy');
+  const field = within(password).getByRole('textbox', { name: 'Minimum length' });
+  await user.clear(field);
+  await user.type(field, '10');
+  await user.tab();
+  expect(within(password).getByRole('note')).toHaveTextContent('A minimum under 15');
+  await user.clear(field);
+  await user.type(field, '16');
+  await user.tab();
+  expect(within(password).queryByRole('note')).toBeNull();
+});

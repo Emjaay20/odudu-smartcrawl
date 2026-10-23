@@ -9,9 +9,12 @@ import { areasLabel, brandText } from '#/features/shell/service';
 import { useShell } from '#/features/shell/usecase/useShell';
 import { RailFooter } from '#/features/shell/view/RailFooter';
 import { TenantNotFound } from '#/features/shell/view/TenantNotFound';
+import { PRODUCT_NAME } from '#/shared/service/product';
 import { isTenantName, type Principal } from '#/shared/service/principal';
 import { AppShell } from '#/shared/view/AppShell';
+import { BrandLine } from '#/shared/view/BrandLine';
 import { ContextBar } from '#/shared/view/ContextBar';
+import { LostFrame } from '#/shared/view/LostFrame';
 import { PageNotFound } from '#/shared/view/PageNotFound';
 import { Rail } from '#/shared/view/Rail';
 import styles from '#/features/shell/view/TenantShell/TenantShell.module.css';
@@ -29,9 +32,9 @@ function SignedInShell({
   const missing = useTenantMissing(tenant);
   if (missing === true) {
     return (
-      <main id="main" tabIndex={-1} className={styles.lost}>
+      <LostFrame brand={PRODUCT_NAME}>
         <TenantNotFound tenant={tenant} chooseHref={shell.switchHref} />
-      </main>
+      </LostFrame>
     );
   }
   return (
@@ -51,7 +54,11 @@ function SignedInShell({
           groups={shell.groups}
           checking={shell.checking}
           {...(shell.currentHref === undefined ? {} : { currentHref: shell.currentHref })}
-          header={<strong className={styles.brand}>{brandText(tenant)}</strong>}
+          header={
+            <strong className={styles.brand}>
+              <BrandLine>{brandText(tenant)}</BrandLine>
+            </strong>
+          }
           footer={
             <RailFooter
               username={shell.username}
@@ -91,9 +98,9 @@ function Access({ tenant, children }: { tenant: string; children: ReactNode }) {
 export function TenantShell({ tenant, children }: { tenant: string; children: ReactNode }) {
   if (!isTenantName(tenant)) {
     return (
-      <main id="main" tabIndex={-1} className={styles.lost}>
+      <LostFrame brand={PRODUCT_NAME}>
         <PageNotFound />
-      </main>
+      </LostFrame>
     );
   }
   return <Access tenant={tenant}>{children}</Access>;

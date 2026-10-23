@@ -8,15 +8,57 @@ import { describe, expect, it } from 'vitest';
 // whose paths this check cannot bound is listed with what it reads, and each
 // target must be one of those inputs: its package's own, or `$TURBO_ROOT$/…`.
 const READS: readonly { file: string; targets: readonly string[] }[] = [
+  { file: 'apps/server/src/cli/registry.test.ts', targets: ['apps/server/src/**'] },
+  { file: 'apps/server/src/cli/unknown-command.test.ts', targets: ['apps/server/src/main.ts'] },
+  { file: 'apps/server/tests/seed-bidi.int.test.ts', targets: ['apps/server/src/**'] },
   { file: 'packages/db/tests/schema-drift.int.test.ts', targets: ['packages/*/src/schema/**'] },
   {
     file: 'packages/protocol-oidc/src/view/html-response.test.ts',
     targets: ['packages/*/src/view/**', 'apps/*/src/**'],
   },
   {
+    file: 'packages/protocol-oidc/src/view/instrument-reach.test.ts',
+    targets: [
+      'packages/*/src/view/**',
+      'apps/*/src/**',
+      'tests/lint/fixtures/renderer-without-shell/**',
+    ],
+  },
+  {
     file: 'packages/protocol-oidc/src/view/routes/session-cookie-authority.test.ts',
     targets: ['packages/protocol-oidc/src/view/routes/*'],
   },
+  {
+    file: 'apps/docs/tests/support/dist.ts',
+    targets: ['apps/docs/content/**', 'apps/docs/src/**'],
+  },
+  {
+    file: 'apps/docs/tests/example-links.test.ts',
+    targets: [
+      'examples/README.md',
+      'examples/*/README.md',
+      'examples/*/package.json',
+      'examples/*/test.ts',
+      'examples/_shared/**',
+    ],
+  },
+  {
+    file: 'packages/protocol-admin/src/service/problem-types.test.ts',
+    targets: ['packages/protocol-admin/src/view/**'],
+  },
+  {
+    file: 'packages/protocol-oidc/src/service/oauth-errors.test.ts',
+    targets: ['packages/protocol-oidc/src/**'],
+  },
+  {
+    file: 'apps/docs/scripts/workspace-sources.test.ts',
+    targets: ['packages/*/package.json', 'apps/server/package.json'],
+  },
+  {
+    file: 'apps/docs/scripts/coverage-ratchet.test.ts',
+    targets: ['docs/phases/p4g.md'],
+  },
+  { file: 'tools/ci/src/cli.test.ts', targets: ['tools/ci/src/**'] },
   { file: 'packages/db/src/migrate.ts', targets: ['packages/db/drizzle/**'] },
   {
     file: 'apps/admin-console/src/shared/view/shadows.test.ts',
@@ -47,6 +89,18 @@ const READS: readonly { file: string; targets: readonly string[] }[] = [
     targets: ['packages/console-gateway/tests/fixtures/**'],
   },
   {
+    file: 'packages/instrument/src/service/build.test.ts',
+    targets: ['apps/admin-console/src/shared/view/*.css'],
+  },
+  {
+    file: 'packages/email/src/service/palette.test.ts',
+    targets: ['apps/admin-console/src/shared/view/tokens.css'],
+  },
+  {
+    file: 'packages/email/src/service/mark-png.test.ts',
+    targets: ['packages/instrument/src/mark.svg'],
+  },
+  {
     file: 'packages/console-gateway/src/view/react-aria-style.test.ts',
     targets: ['apps/admin-console/package.json'],
   },
@@ -68,12 +122,17 @@ function calleeName(node: ts.CallExpression | ts.NewExpression): string {
   return ts.isPropertyAccessExpression(callee) ? callee.name.text : callee.getText();
 }
 
+// `import.meta.env` is the build's mode and variables, not a place on disk.
+function isBuildEnv(meta: ts.MetaProperty): boolean {
+  return ts.isPropertyAccessExpression(meta.parent) && meta.parent.name.text === 'env';
+}
+
 function hasImportMetaOrCwd(node: ts.Node): boolean {
   let found = false;
   const visit = (n: ts.Node): void => {
     if (found) return;
     if (
-      ts.isMetaProperty(n) ||
+      (ts.isMetaProperty(n) && !isBuildEnv(n)) ||
       (ts.isCallExpression(n) && n.expression.getText() === 'process.cwd')
     ) {
       found = true;
@@ -169,7 +228,7 @@ export function reachesOf(source: string): string[] {
   const metaReaches = nodes.flatMap((node) => {
     if (ts.isCallExpression(node) && node.expression.getText() === 'process.cwd')
       return ['unknown'];
-    if (!ts.isMetaProperty(node)) return [];
+    if (!ts.isMetaProperty(node) || isBuildEnv(node)) return [];
     const parent = node.parent;
     if (!ts.isPropertyAccessExpression(parent) || !['dirname', 'url'].includes(parent.name.text)) {
       return ['unknown'];
@@ -279,6 +338,9 @@ function testInputs(packageDir: string): readonly string[] {
 describe('escapesPackage', () => {
   it.each([
     ["join(import.meta.dirname, '..', '..', '..')", 'src/view/x.test.ts', true],
+    ['const dev = import.meta.env.DEV;', 'src/x.ts', false],
+    ['export const mode = import.meta.env.MODE;', 'src/x.ts', false],
+    ["import.meta.env.DEV ? join(import.meta.dirname, '../../..') : '';", 'src/x.ts', true],
     ["new URL('../drizzle', import.meta.url)", 'src/migrate.ts', false],
     ["join(import.meta.dirname, 'fixtures/../../../shared/../../../../a')", 'src/view/x.ts', true],
     ["join(import.meta.dirname, '../../fixtures/..')", 'src/view/x.test.ts', false],

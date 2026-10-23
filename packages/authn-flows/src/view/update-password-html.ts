@@ -1,15 +1,39 @@
-import { type RenderedPage } from '@odudu/kernel';
+import {
+  MAX_PASSWORD_LENGTH,
+  type PageLocale,
+  type PasswordRules,
+  type RenderedPage,
+} from '@odudu/kernel';
+import { type PasswordViolation } from '#/schema/password-violation';
+import { escapeHtml, intro, page } from '#/view/document';
+import { problemSummary } from '#/view/form-error';
+import { passwordField } from '#/view/password-field';
+import { bdi, t, tHtml, type MessageId } from '#/view/messages';
 
-// Minimal, dependency-free HTML, the same choice #/view/recovery-codes-html.ts
-// makes: every interpolated value passes through escapeHtml so neither the
-// tenant name nor a policy message opens a reflected-XSS hole.
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+// Every rule a violation can name, by the code the domain reports it under.
+const RULE_MESSAGE: Readonly<Record<string, MessageId>> = {
+  'min-length': 'updatePassword.rule.minLength',
+  'max-length': 'updatePassword.rule.maxLength',
+  'require-digit': 'updatePassword.rule.requireDigit',
+  'require-uppercase': 'updatePassword.rule.requireUppercase',
+  'require-lowercase': 'updatePassword.rule.requireLowercase',
+  'require-special': 'updatePassword.rule.requireSpecial',
+  'not-username': 'updatePassword.rule.notUsername',
+  'not-email': 'updatePassword.rule.notEmail',
+  'common-password': 'updatePassword.rule.common',
+  'not-reused': 'updatePassword.rule.notReused',
+  superseded: 'updatePassword.rule.superseded',
+};
+
+// The domain's sentences are developer-facing English, so a rule this build
+// has no entry for shows that sentence, isolated, rather than nothing.
+function ruleHtml(violation: PasswordViolation, locale: PageLocale): string {
+  const id = Object.hasOwn(RULE_MESSAGE, violation.rule) ? RULE_MESSAGE[violation.rule] : undefined;
+  // A minimum the page was not told is not one to state.
+  if (id === undefined || (violation.rule === 'min-length' && violation.minLength === undefined)) {
+    return bdi(violation.message);
+  }
+  return tHtml(locale, id, { min: violation.minLength ?? 0, max: MAX_PASSWORD_LENGTH });
 }
 
 // The page a login parks on while `update-password` is owed, and the page a
@@ -21,34 +45,29 @@ function escapeHtml(value: string): string {
 export function renderUpdatePasswordPage(
   tenant: string,
   authSessionId: string,
-  violations: readonly string[] = [],
+  violations: readonly PasswordViolation[] = [],
+  rules: PasswordRules,
+  locale: PageLocale,
 ): RenderedPage {
-  const target = `/tenants/${escapeHtml(tenant)}/login-actions/required-action?action=update-password`;
-  const listed =
-    violations.length === 0
-      ? ''
-      : `<ul>\n${violations.map((message) => `<li>${escapeHtml(message)}</li>`).join('\n')}\n</ul>\n`;
-  const title = 'Change your password';
-  const body = `<h1>Change your password</h1>
-<p>This account needs a new password before you can continue.</p>
-${listed}<form method="post" action="${target}">
+  const target = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/login-actions/required-action?action=update-password`;
+  const problems = violations.map((violation) => ({
+    fields: ['password'],
+    html: ruleHtml(violation, locale),
+  }));
+  const password = passwordField(
+    'updatePassword.newPassword',
+    rules,
+    problems,
+    problems.length > 0,
+    locale,
+  );
+  const title = t(locale, 'updatePassword.title');
+  const body = `${intro(tHtml(locale, 'updatePassword.title'), tenant)}
+<p>${tHtml(locale, 'updatePassword.intro')}</p>
+${problemSummary(problems)}<form method="post" action="${target}">
   <input type="hidden" name="auth_session_id" value="${escapeHtml(authSessionId)}">
-  <label>New password <input type="password" name="password" autocomplete="new-password"></label>
-  <button type="submit">Update password</button>
+  ${password.html}
+  <button type="submit">${tHtml(locale, 'updatePassword.submit')}</button>
 </form>`;
-  // No script: nothing on this page fetches anything, so the base
-  // content-security policy describes it exactly.
-  return {
-    script: null,
-    frames: [],
-    title,
-    body,
-    html: `<!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>${escapeHtml(title)}</title></head>
-<body>
-${body}
-</body>
-</html>`,
-  };
+  return page(title, body, password.script, [], locale);
 }

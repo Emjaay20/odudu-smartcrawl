@@ -7,6 +7,7 @@ import {
   useServiceRolesRecord,
 } from '#/features/clients/repository/useServiceAccount';
 import {
+  accountIdleNote,
   assignedRoles,
   canChange,
   ceilingRefused,
@@ -32,8 +33,12 @@ import type { PickerState } from '#/shared/service/picker';
 import type { AdminCapability } from '#/shared/service/principal';
 import type { RoleValues } from '#/shared/service/sectionValues';
 
-export function useServiceAccess(tenant: string, client: Client): ServiceAccess {
-  return serviceAccess(client, useAuthority(tenant));
+// The tab's access, and the note for an account the client no longer uses.
+export function useServiceAccess(
+  tenant: string,
+  client: Client,
+): ServiceAccess & { idle: string | null } {
+  return { ...serviceAccess(client, useAuthority(tenant)), idle: accountIdleNote(client) };
 }
 
 export function useServiceRolesRead(

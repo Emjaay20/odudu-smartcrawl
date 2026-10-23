@@ -1,0 +1,66 @@
+{
+  "name": "@odudu/docs",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "imports": {
+    "#docs/*": "./*"
+  },
+  "scripts": {
+    "build": "pnpm build:pages && pnpm build:image",
+    "generate": "node --no-warnings scripts/generate.ts",
+    "build:pages": "pnpm generate && docusaurus clear && docusaurus build --out-dir dist/pages",
+    "build:image": "pnpm generate && docusaurus clear && DOCS_TARGET=image docusaurus build --out-dir dist/image && node --no-warnings scripts/csp.ts dist/image",
+    "serve": "node scripts/serve.mjs",
+    "typecheck": "tsc -p tsconfig.json && tsc -p scripts/tsconfig.json",
+    "test": "vitest run --config ../../vitest.config.ts --project unit --reporter=default --reporter=json --outputFile=trace-report.json",
+    "test:browser": "vitest run --config ../../vitest.config.ts --project browser",
+    "screenshots": "node --no-warnings scripts/console-shots/run.ts",
+    "gif": "node --no-warnings scripts/console-shots/gif.ts"
+  },
+  "browserslist": {
+    "production": [
+      "chrome >= 123",
+      "firefox >= 121",
+      "safari >= 17.5",
+      "edge >= 123"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@docusaurus/core": "3.10.2",
+    "@docusaurus/faster": "3.10.2",
+    "@docusaurus/module-type-aliases": "3.10.2",
+    "@docusaurus/preset-classic": "3.10.2",
+    "@docusaurus/theme-classic": "3.10.2",
+    "@docusaurus/tsconfig": "3.10.2",
+    "@docusaurus/types": "3.10.2",
+    "@easyops-cn/docusaurus-search-local": "0.55.3",
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "@fontsource/ibm-plex-sans": "5.3.0",
+    "@mdx-js/react": "3.1.1",
+    "@odudu/domain-audit": "workspace:*",
+    "@odudu/kernel": "workspace:*",
+    "@odudu/protocol-admin": "workspace:*",
+    "@odudu/protocol-oidc": "workspace:*",
+    "@odudu/server": "workspace:*",
+    "@odudu/web-assets": "workspace:*",
+    "@playwright/test": "1.63.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "axe-core": "4.13.0",
+    "cheerio": "1.2.0",
+    "docusaurus-plugin-llms": "0.6.1",
+    "fastify": "5.12.5",
+    "gifenc": "1.0.3",
+    "mdast-util-from-markdown": "2.1.0",
+    "prism-react-renderer": "2.4.1",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  }
+}

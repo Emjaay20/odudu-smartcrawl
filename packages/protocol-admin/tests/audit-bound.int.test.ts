@@ -2,10 +2,12 @@ import { newId } from '@odudu/kernel';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startAdminFixture, type AdminFixture } from '#/testing/admin-fixture';
 
-// An audit read that outlives its bound is refused with a typed problem, and
-// every audit read that is not, whatever its filters, is refused for an
-// instant Postgres cannot hold. The bound is shortened here so that a
-// two-filter intersection over a few hundred thousand rows is enough to cross it.
+// An audit read that outlives its bound is refused with a typed problem. The
+// bound is shortened to a few milliseconds, and the read that must outlive it
+// is held on a lock instead of racing a query plan: whether a two-filter
+// intersection over 600,000 rows finishes inside 25 ms depends on the planner
+// and the machine, whereas a read waiting on a lock cannot finish before the
+// statement timeout cancels it.
 const TIMEOUT_MS = 25;
 const ROWS = 600_000;
 
@@ -45,17 +47,42 @@ function get(tail: string) {
 
 const BROAD = `action=bulk.one&actor_subject_id=${OTHER_ACTOR}`;
 
+async function whileAuditEventsAreLocked(run: () => Promise<void>): Promise<void> {
+  let release: () => void = () => undefined;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let locked: () => void = () => undefined;
+  const acquired = new Promise<void>((resolve) => {
+    locked = resolve;
+  });
+  const holder = fixture.owner.sql.begin(async (tx) => {
+    await tx`lock table audit_events in access exclusive mode`;
+    locked();
+    await held;
+  });
+  await acquired;
+  try {
+    await run();
+  } finally {
+    release();
+    await holder;
+  }
+}
+
 describe('an audit read whose filters cannot be served within the bound', () => {
   it.each(['audit', 'audit/count', 'audit/export'])(
     'is refused on %s with the typed problem, saying to narrow the time range',
     async (route) => {
-      const res = await get(`${route}?${BROAD}`);
-      expect(res.statusCode).toBe(400);
-      expect(res.headers['content-type']).toContain('application/problem+json');
-      expect(res.json()).toMatchObject({
-        type: 'about:blank#audit-query-too-broad',
-        status: 400,
-        detail: expect.stringContaining('narrow the time range with from and to') as unknown,
+      await whileAuditEventsAreLocked(async () => {
+        const res = await get(`${route}?${BROAD}`);
+        expect(res.statusCode).toBe(400);
+        expect(res.headers['content-type']).toContain('application/problem+json');
+        expect(res.json()).toMatchObject({
+          type: 'about:blank#audit-query-too-broad',
+          status: 400,
+          detail: expect.stringContaining('narrow the time range with from and to') as unknown,
+        });
       });
     },
   );
@@ -79,9 +106,11 @@ describe('an audit read whose filters cannot be served within the bound', () => 
   });
 
   it('ends its transaction: the connection returns to the pool with no bound left on it', async () => {
-    for (let i = 0; i < 12; i += 1) {
-      expect((await get(`audit?${BROAD}`)).statusCode).toBe(400);
-    }
+    await whileAuditEventsAreLocked(async () => {
+      for (let i = 0; i < 12; i += 1) {
+        expect((await get(`audit?${BROAD}`)).statusCode).toBe(400);
+      }
+    });
     const [row] = await fixture.app.sql<
       { timeout: string }[]
     >`select current_setting('statement_timeout') as timeout`;

@@ -1,4 +1,4 @@
-import { jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { subjects } from '#/schema/subjects';
 import { type CredentialSecret, type CredentialType } from '#/service/credential-secret';
 
@@ -18,6 +18,9 @@ export const userCredentials = pgTable('user_credentials', {
   // read or written as `any` — jsonb is exactly the untyped boundary that
   // exists for.
   secretData: jsonb('secret_data').notNull(),
+  // Password rows only: true when the hash was made from the NFC form, null
+  // for one made before passwords were normalised (migration 0103).
+  hashNfc: boolean('hash_nfc'),
   label: text('label'),
   lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
   // A WebAuthn credential id. Unique per tenant (migration 0034) so a

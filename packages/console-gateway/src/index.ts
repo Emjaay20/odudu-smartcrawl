@@ -33,6 +33,11 @@ export interface ConsoleGatewayDeps {
   readonly consoleDir: string;
   /** `ODUDU_CONSOLE_CLIENT_KEY`: what the gateway authenticates with as `odudu-admin`. */
   readonly clientKey: ClientKey;
+  /**
+   * Whether the console's cookies take the `__Host-` prefix and `Secure`:
+   * `ODUDU_TLS`, the one value every cookie the server writes follows.
+   */
+  readonly tls: boolean;
   readonly now?: () => Date;
 }
 
@@ -41,7 +46,7 @@ export interface ConsoleGatewayDeps {
 // as an ordinary client would, through their own checks.
 export function consoleGateway(deps: ConsoleGatewayDeps): FastifyPluginAsync {
   const base = new URL(deps.publicBaseUrl);
-  const tls = base.protocol === 'https:';
+  const tls = deps.tls;
   const login = {
     database: deps.database,
     ownerDatabase: deps.ownerDatabase,

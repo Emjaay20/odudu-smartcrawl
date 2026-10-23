@@ -21,3 +21,8 @@ test-results/
 
 # Throwaway certificate for the try stack (infra/docker/try-certs.sh)
 infra/docker/try-certs/
+.docusaurus
+
+# Reference pages and the OpenAPI document the docs build writes from the code
+apps/docs/content/en/reference/generated/
+apps/docs/static/openapi/

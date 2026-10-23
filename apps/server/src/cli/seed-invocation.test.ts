@@ -24,6 +24,7 @@ describe('resolveSeedInvocation', () => {
       'group',
       'scope',
       'assign-scope',
+      'restore-scopes',
       'map-role',
       'grant-role',
       'join-group',

@@ -1,5 +1,11 @@
 import { expect, it } from 'vitest';
-import { findScope } from '#/features/scopes/adapter/scopes';
+import {
+  deleteScope,
+  findScope,
+  readBuiltinScopes,
+  readScopeImpact,
+  restoreBuiltinScopes,
+} from '#/features/scopes/adapter/scopes';
 import { fakeTransport, json, problem } from '#/testing/fakeTransport';
 
 const S = '/console/api/admin/tenants/acme/scopes';
@@ -37,5 +43,38 @@ it('passes a refusal through', async () => {
   expect(await findScope(fake.transport.gateway, 'acme', 'orders')).toMatchObject({
     ok: false,
     kind: 'problem',
+  });
+});
+
+it('deletes a scope naming it again, as the server asks of a built-in one', async () => {
+  const fake = fakeTransport({ [`DELETE ${S}/s1`]: () => new Response(null, { status: 204 }) });
+  expect(await deleteScope(fake.transport.gateway, 'acme', 's1', 'profile')).toMatchObject({
+    ok: true,
+  });
+  expect(fake.sent[0]?.search.toString()).toBe('confirm=profile');
+});
+
+it('reads what a deletion would take, the built-ins a tenant has and restores the missing ones', async () => {
+  const fake = fakeTransport({
+    [`GET ${S}/s1/impact`]: json({
+      builtin: true,
+      client_assignments: { count: 2, capped: false },
+      role_mappings: { count: 0, capped: false },
+    }),
+    [`GET ${S}/builtins`]: json({ items: [{ name: 'openid', present: true }] }),
+    [`POST ${S}/restore-builtins`]: json({ created: ['roles'] }),
+  });
+  const gateway = fake.transport.gateway;
+  expect(await readScopeImpact(gateway, 'acme', 's1')).toMatchObject({
+    ok: true,
+    data: { builtin: true, client_assignments: { count: 2 } },
+  });
+  expect(await readBuiltinScopes(gateway, 'acme')).toMatchObject({
+    ok: true,
+    data: { items: [{ name: 'openid', present: true }] },
+  });
+  expect(await restoreBuiltinScopes(gateway, 'acme')).toMatchObject({
+    ok: true,
+    data: { created: ['roles'] },
   });
 });

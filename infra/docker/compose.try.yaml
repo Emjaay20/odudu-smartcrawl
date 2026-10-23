@@ -21,7 +21,8 @@ services:
 
   # Catches every message sent to it; read them at http://localhost:8090.
   mailpit:
-    image: axllent/mailpit:v1.31.5
+    # digest of the multi-arch index; Dependabot moves it
+    image: axllent/mailpit:v1.31.5@sha256:94f6b70c1436defae6799d9ac7ff0eeff9540465b842026d5cdb018f1c0234ea
     ports:
       - '127.0.0.1:8090:8025'
 
@@ -29,7 +30,7 @@ services:
   # client's back-channel logout URI (https://logout-sink:8443/).
   # Run ./try-certs.sh once before `up`.
   logout-sink:
-    image: mendhak/http-https-echo@sha256:a265f55c86cb3baead76fdf379dc8e9e6440ed121874e101e60b833e05bce8d4
+    image: mendhak/http-https-echo:42@sha256:a265f55c86cb3baead76fdf379dc8e9e6440ed121874e101e60b833e05bce8d4
     environment:
       HTTP_PORT: '8080'
       HTTPS_PORT: '8443'

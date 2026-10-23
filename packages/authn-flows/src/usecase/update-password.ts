@@ -3,13 +3,14 @@ import { auditRepository } from '@odudu/domain-audit';
 import {
   credentialRepository,
   evaluatePassword,
-  hashPassword,
+  hashUserPassword,
   passwordExpired,
   REUSED_PASSWORD,
   userRepository,
-  verifyPassword,
+  verifyUserPassword,
 } from '@odudu/domain-identity';
 import { OduduError, systemClock, type Clock } from '@odudu/kernel';
+import { type PasswordViolation } from '#/schema/password-violation';
 import { tenantSettingsRepository } from '#/repository/tenant-settings';
 import { requiredActionRepository } from '#/repository/required-actions';
 
@@ -18,12 +19,19 @@ export type UpdatePasswordOutcome =
   // Every message the tenant's policy produced for this candidate, for the
   // page to list at once: a form that reports one rule at a time takes as
   // many attempts as there are rules.
-  | { kind: 'rejected'; violations: readonly string[] }
+  | { kind: 'rejected'; violations: readonly PasswordViolation[] }
   // Some other transaction set a password for this subject first, so the
   // candidate this submission carried was never stored. Distinct from
   // 'updated' because the person at the form would otherwise be told their
   // password is one it is not.
   | { kind: 'superseded' };
+
+// A password set elsewhere between the page being rendered and submitted,
+// listed as a rule so one page shows every reason; the page words it by code.
+export const SUPERSEDED_PASSWORD: PasswordViolation = {
+  rule: 'superseded',
+  message: 'password superseded',
+};
 
 export interface UpdatePassword {
   tenantId: string;
@@ -56,7 +64,7 @@ async function passwordState(
 // changing their own password, never by an anonymous caller.
 async function reusesAKnownPassword(candidate: string, state: PasswordState): Promise<boolean> {
   for (const hash of [state.current, ...state.history]) {
-    if (await verifyPassword(hash, candidate)) return true;
+    if (await verifyUserPassword(hash, candidate)) return true;
   }
   return false;
 }
@@ -84,7 +92,12 @@ export async function completeUpdatePassword(
     email: user.email,
   });
   if (violations.length > 0) {
-    return { kind: 'rejected', violations: violations.map((violation) => violation.message) };
+    return {
+      kind: 'rejected',
+      violations: violations.map(({ rule, message }) =>
+        rule === 'min-length' ? { rule, message, minLength: policy.minLength } : { rule, message },
+      ),
+    };
   }
 
   // Nothing in the tenant holds a password for this subject, so there is
@@ -103,12 +116,12 @@ export async function completeUpdatePassword(
   // re-settable. Above zero the tenant remembers that many retired
   // passwords, and refuses the one in force as well — which needs no row.
   if (policy.historyDepth > 0 && (await reusesAKnownPassword(input.password, state))) {
-    return { kind: 'rejected', violations: [REUSED_PASSWORD.message] };
+    return { kind: 'rejected', violations: [{ ...REUSED_PASSWORD }] };
   }
 
   const rotated = await credentialRepository(tx).rotatePassword(
     input.subjectId,
-    { from: state.current, to: await hashPassword(input.password) },
+    { from: state.current, to: await hashUserPassword(input.password) },
     policy.historyDepth,
   );
   // A password change landed either way, so the action is satisfied and is

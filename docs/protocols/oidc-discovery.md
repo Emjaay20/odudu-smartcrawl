@@ -56,6 +56,16 @@ values that make later conformance testing predictable:
   answer 404 (`packages/protocol-oidc/src/usecase/discovery.ts`, ADR 0026).
 - `scopes_supported` always lists `openid`, per §3's unconditional
   requirement that the server support the `openid` scope value.
+- `ui_locales_supported` lists the tags the server's own pages ship text
+  for, `["en"]` until a catalogue is added, and is the same list page
+  negotiation matches `ui_locales` against. `claims_locales_supported` is
+  never published: `claims_locales` is accepted and ignored, and advertising
+  it would promise a claim language the server does not choose (ADR 0043).
+- `prompt_values_supported` is not a Discovery 1.0 member either; it comes
+  from Initiating User Registration via OpenID Connect 1.0 §4.2, which
+  requires it of an OP that supports `prompt=create`. It always lists the
+  four OIDC Core values and adds `create` for a tenant with
+  `registration_allowed` on (`docs/protocols/oidc-prompt-create.md`).
 
 ## Clause table
 

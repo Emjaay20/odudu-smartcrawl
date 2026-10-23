@@ -871,6 +871,57 @@ describe('seed client and the tenant’s default scopes', () => {
   });
 });
 
+describe('seed restore-scopes', () => {
+  async function scopeNames(tenantId: string): Promise<string[]> {
+    return withTenant(owner.db, tenantId, async (tx) =>
+      (await clientScopeRepository(tx).allForTenant())
+        .filter((scope) => scope.tenantId === tenantId)
+        .map((scope) => scope.name)
+        .sort(),
+    );
+  }
+
+  async function deleteScopes(tenantId: string, names: readonly string[]): Promise<void> {
+    await withTenant(owner.db, tenantId, async (tx) => {
+      const scopes = clientScopeRepository(tx);
+      for (const name of names) {
+        const scope = (await scopes.allForTenant()).find(
+          (row) => row.tenantId === tenantId && row.name === name,
+        );
+        if (scope !== undefined) await scopes.delete(scope.id);
+      }
+    });
+  }
+
+  it('creates the built-in scopes a tenant has lost, and a second run creates none', async () => {
+    const options = uniqueOptions();
+    const first = await seed(options);
+    await deleteScopes(first.tenantId, ['roles', 'groups']);
+
+    const restored = await seed(['restore-scopes', '--tenant', options.tenant]);
+    const again = await seed(['restore-scopes', '--tenant', options.tenant]);
+
+    expect(restored).toEqual({
+      command: 'restore-scopes',
+      tenant: options.tenant,
+      tenantId: first.tenantId,
+      created: ['roles', 'groups'],
+    });
+    expect(again).toMatchObject({ command: 'restore-scopes', created: [] });
+    expect(await scopeNames(first.tenantId)).toEqual([...TENANT_DEFAULT_SCOPE_NAMES].sort());
+  });
+
+  it('refuses a tenant that does not exist', async () => {
+    await expect(seed(['restore-scopes', '--tenant', `no-such-${newId()}`])).rejects.toThrow(
+      /no tenant named/u,
+    );
+  });
+
+  it('refuses without --tenant', async () => {
+    await expect(seed(['restore-scopes'])).rejects.toThrow(/restore-scopes requires --tenant/u);
+  });
+});
+
 describe('seed client and the limit on a client’s lists', () => {
   it.each([
     ['--redirect-uri', 'redirect_uris', (i: number) => `https://app.example/cb/${String(i)}`],
@@ -952,6 +1003,205 @@ describe('seed client --post-logout-redirect-uri', () => {
   });
 });
 
+describe('seed client --consent-required', () => {
+  async function storedConsentRequired(
+    tenantName: string,
+    oauthClientId: string,
+  ): Promise<boolean> {
+    const tenantId = (await owner.db.select().from(tenants).where(eq(tenants.name, tenantName)))[0]
+      ?.id;
+    if (tenantId === undefined) throw new Error('expected the seeded tenant');
+    return withTenant(owner.db, tenantId, async (tx) => {
+      const rows = await tx
+        .select()
+        .from(clients)
+        .where(and(eq(clients.tenantId, tenantId), eq(clients.clientId, oauthClientId)));
+      const client = rows[0];
+      if (client === undefined) throw new Error('expected the seeded client');
+      const config = await clientOidcConfigRepository(tx).byClientId(client.id);
+      if (config === null) throw new Error('expected the client to have a config');
+      return config.consentRequired;
+    });
+  }
+
+  const base = (tenant: string, clientId: string): string[] => [
+    'client',
+    '--tenant',
+    tenant,
+    '--client-id',
+    clientId,
+    '--public',
+    '--redirect-uri',
+    'https://app.example/callback',
+  ];
+
+  it('creates a client that asks for consent, and one without the flag does not', async () => {
+    const options = uniqueOptions();
+    await seed(options);
+
+    await seed([...base(options.tenant, 'asks'), '--consent-required']);
+    await seed(base(options.tenant, 'does-not-ask'));
+
+    expect(await storedConsentRequired(options.tenant, 'asks')).toBe(true);
+    expect(await storedConsentRequired(options.tenant, 'does-not-ask')).toBe(false);
+  });
+
+  it('leaves another tenant\u2019s client of the same id without consent', async () => {
+    const mine = uniqueOptions();
+    const other = uniqueOptions();
+    await seed(mine);
+    await seed(other);
+
+    await seed([...base(mine.tenant, 'shared-id'), '--consent-required']);
+    await seed(base(other.tenant, 'shared-id'));
+
+    expect(await storedConsentRequired(mine.tenant, 'shared-id')).toBe(true);
+    expect(await storedConsentRequired(other.tenant, 'shared-id')).toBe(false);
+  });
+});
+
+async function clientCredentialsScopesOf(
+  tenantName: string,
+  oauthClientId: string,
+): Promise<string[]> {
+  const tenantId = (await owner.db.select().from(tenants).where(eq(tenants.name, tenantName)))[0]
+    ?.id;
+  if (tenantId === undefined) throw new Error(`expected tenant ${tenantName}`);
+  return withTenant(owner.db, tenantId, async (tx) => {
+    const rows = await tx
+      .select()
+      .from(clients)
+      .where(and(eq(clients.tenantId, tenantId), eq(clients.clientId, oauthClientId)));
+    const client = rows[0];
+    if (client === undefined) throw new Error(`expected client ${oauthClientId}`);
+    const config = await clientOidcConfigRepository(tx).byClientId(client.id);
+    if (config === null) throw new Error(`no oidc config for client ${oauthClientId}`);
+    return config.clientCredentialsScopes;
+  });
+}
+
+describe('seed client --client-credentials-scope', () => {
+  const service = (tenant: string, clientId: string, ...extra: string[]) => [
+    'client',
+    '--tenant',
+    tenant,
+    '--client-id',
+    clientId,
+    '--client-secret',
+    'a-service-secret',
+    '--grant-type',
+    'client_credentials',
+    ...extra,
+  ];
+
+  it('stores the scopes a service may ask for', async () => {
+    const options = uniqueOptions();
+    await seed(options);
+    await seed(
+      service(
+        options.tenant,
+        'reporter',
+        '--client-credentials-scope',
+        'reports:read',
+        '--client-credentials-scope',
+        'reports:write',
+      ),
+    );
+    expect(await clientCredentialsScopesOf(options.tenant, 'reporter')).toEqual([
+      'reports:read',
+      'reports:write',
+    ]);
+  });
+
+  it('leaves a service with no scope when the flag is absent', async () => {
+    const options = uniqueOptions();
+    await seed(options);
+    await seed(service(options.tenant, 'plain'));
+    expect(await clientCredentialsScopesOf(options.tenant, 'plain')).toEqual([]);
+  });
+
+  it('refuses a scope on a client that cannot use the grant', async () => {
+    const options = uniqueOptions();
+    await seed(options);
+    await expect(
+      seed([
+        'client',
+        '--tenant',
+        options.tenant,
+        '--client-id',
+        'spa',
+        '--public',
+        '--redirect-uri',
+        'https://app.example/callback',
+        '--client-credentials-scope',
+        'reports:read',
+      ]),
+    ).rejects.toThrow(/--client-credentials-scope.*client_credentials/u);
+  });
+
+  it('stores a scope once, in the order first named', async () => {
+    const options = uniqueOptions();
+    await seed(options);
+    await seed(
+      service(
+        options.tenant,
+        'twice',
+        '--client-credentials-scope',
+        'b:read',
+        '--client-credentials-scope',
+        'a:read',
+        '--client-credentials-scope',
+        'b:read',
+      ),
+    );
+    expect(await clientCredentialsScopesOf(options.tenant, 'twice')).toEqual(['b:read', 'a:read']);
+  });
+
+  it('refuses a scope on a public client, naming the flag, though it names the grant', async () => {
+    const options = uniqueOptions();
+    await seed(options);
+    await expect(
+      seed([
+        'client',
+        '--tenant',
+        options.tenant,
+        '--client-id',
+        'public-service',
+        '--public',
+        '--redirect-uri',
+        'https://app.example/callback',
+        '--grant-type',
+        'client_credentials',
+        '--client-credentials-scope',
+        'reports:read',
+      ]),
+    ).rejects.toThrow(/--client-credentials-scope.*confidential/u);
+  });
+
+  it.each(['', 'two words', 'a"b', 'a\\b', 'é'])(
+    'refuses the scope %j, which is not one scope name',
+    async (name) => {
+      const options = uniqueOptions();
+      await seed(options);
+      await expect(
+        seed(service(options.tenant, 'odd', '--client-credentials-scope', name)),
+      ).rejects.toThrow(/--client-credentials-scope/u);
+    },
+  );
+
+  it('refuses more scopes than a client list may hold, in the words the API uses', async () => {
+    const options = uniqueOptions();
+    await seed(options);
+    const flags = Array.from({ length: CLIENT_LIST_LIMIT + 1 }, (_, i) => [
+      '--client-credentials-scope',
+      `s${String(i)}`,
+    ]).flat();
+    await expect(seed(service(options.tenant, 'many', ...flags))).rejects.toThrow(
+      listLimitProblem('client_credentials_scopes', CLIENT_LIST_LIMIT + 1),
+    );
+  });
+});
+
 async function grantTypesOf(tenantName: string, oauthClientId: string): Promise<string[]> {
   const tenantId = (await owner.db.select().from(tenants).where(eq(tenants.name, tenantName)))[0]
     ?.id;
@@ -1010,6 +1260,45 @@ describe('seed client --grant-type', () => {
         'password',
       ]),
     ).rejects.toThrow(/grant-type/u);
+  });
+
+  it('registers a service client that names client_credentials alone, with no redirect URI', async () => {
+    const options = uniqueOptions();
+    await seed(options);
+
+    await seed([
+      'client',
+      '--tenant',
+      options.tenant,
+      '--client-id',
+      'service',
+      '--client-secret',
+      'secret',
+      '--grant-type',
+      'client_credentials',
+    ]);
+
+    expect(await grantTypesOf(options.tenant, 'service')).toEqual(['client_credentials']);
+  });
+
+  it('says a redirect URI is missing instead of failing in the database', async () => {
+    const options = uniqueOptions();
+    await seed(options);
+
+    await expect(
+      seed([
+        'client',
+        '--tenant',
+        options.tenant,
+        '--client-id',
+        'web',
+        '--client-secret',
+        'secret',
+      ]),
+    ).rejects.toThrow(/--redirect-uri/u);
+    await expect(
+      seed(['client', '--tenant', options.tenant, '--client-id', 'web2', '--client-secret', 's']),
+    ).rejects.toMatchObject({ code: 'seed_invalid_options' });
   });
 
   it('still gives a public client two grants and no client_credentials', async () => {

@@ -38,6 +38,11 @@ export const authenticationSessions = pgTable('authentication_sessions', {
   // cleared by one statement (claimWebauthnChallenge), which is what makes a
   // replayed response find nothing rather than the same challenge twice.
   webauthnChallenge: text('webauthn_challenge'),
+  // sha256 of the secret the browser that parked this request was handed in
+  // its sign-in cookie (packages/db/drizzle/0101_sign_in_resume.sql). Only
+  // the hash is kept; null on a row parked before the cookie existed, which
+  // no browser can then claim.
+  browserSecretHash: text('browser_secret_hash'),
 }).enableRLS();
 
 // The bytes validated at /authorize are the bytes bound to the code later
@@ -71,6 +76,11 @@ export interface PendingRequest {
   // excluded when its id is posted back, not merely be re-admitted because
   // it is still live. Absent is the same as no `max_age` sent.
   maxAge?: number;
+  // The request's own `ui_locales` (OIDC Core §3.1.2.1): the tags that could
+  // be language tags, most preferred first, at most sixteen. Parked so every
+  // page of the sign-in negotiates its language from them, and so a restart
+  // link rebuilds the request with them. Absent is the same as empty.
+  uiLocales?: string[];
   // Present only when this session was started to promote a session reuse
   // into a consent decision (protocol-oidc's authorization-request.ts):
   // the SSO session to complete into, and the instant it actually
@@ -124,4 +134,5 @@ export interface AuthenticationSessionRecord {
   subjectId: string | null;
   authenticatedAt: Date | null;
   webauthnChallenge: string | null;
+  browserSecretHash: string | null;
 }

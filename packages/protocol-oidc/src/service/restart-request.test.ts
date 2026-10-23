@@ -53,6 +53,32 @@ describe('restartAuthorizeLocation', () => {
     expect(url.searchParams.has('resource')).toBe(false);
   });
 
+  it('rebuilds ui_locales from the parked request', () => {
+    const url = parse(
+      restartAuthorizeLocation('acme', { ...PENDING, uiLocales: ['fr-CA', 'fr', 'en'] }),
+    );
+    expect(url.searchParams.get('ui_locales')).toBe('fr-CA fr en');
+  });
+
+  it('rebuilds without ui_locales when the request carried none', () => {
+    expect(parse(restartAuthorizeLocation('acme', PENDING)).searchParams.has('ui_locales')).toBe(
+      false,
+    );
+    expect(
+      parse(restartAuthorizeLocation('acme', { ...PENDING, uiLocales: [] })).searchParams.has(
+        'ui_locales',
+      ),
+    ).toBe(false);
+  });
+
+  // A request parked under prompt=create is rebuilt once the person has an
+  // account: the way back is a sign-in, and one that asks for credentials
+  // rather than reusing whichever session the browser already holds.
+  it('rebuilds prompt=create as prompt=login', () => {
+    const url = parse(restartAuthorizeLocation('acme', { ...PENDING, prompt: ['create'] }));
+    expect(url.searchParams.get('prompt')).toBe('login');
+  });
+
   it('carries prompt, max_age and a single resource', () => {
     const url = parse(
       restartAuthorizeLocation('acme', {

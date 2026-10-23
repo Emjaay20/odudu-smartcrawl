@@ -2,13 +2,27 @@
 
 ## Start here
 
-**P0, P1, P2a, P2b, P3a, P3b, P4a, P4c and P4e are complete, the tenant
-rename is done, and P4d, whose four parts are all built, is under its
-whole-branch review and awaits the merge into `main`. P4 has been split five ways.** Phases are section 11 of
+**P0, P1, P2a, P2b, P3a, P3b, P4a, P4c, P4d and P4e are complete, the tenant
+rename is done, and P4g is the phase in progress. P4 has been split five
+ways.** Phases are section 11 of
 [the umbrella spec](superpowers/specs/2026-09-10-odudu-design.md), whose
 "P4 became four phases, then five" subsection has the reasoning.
 
-The order is **P4a → P4c → P4e → P4d → P4g → P4f → P4b → P4h**, and the letters deliberately
+**P4g, the public release, is shipping as release candidate 0.1.0-rc.1 from
+`p4g-public-release`** (draft pull request #64). Built and reviewed: the
+release workflow and process, `odudu init` and the one-file quickstart, every
+server page under Instrument with a catalogue, the documentation site and
+landing page, the guides, concepts, console tour and operating pages, the four
+examples and a WordPress guide, the README and community files, the CLA, the
+Pages deployment, and `prompt=create`, neutral registration, password rules,
+cookies under TLS and an issuer taken from configuration. **Three increments
+stay in P4g and are not built:** see "What P4g, P4b and P4f inherit". Its notes
+are in [`docs/phases/p4g.md`](phases/p4g.md), the licences in `LICENSING.md`,
+and the work it placed on later phases is on
+[the roadmap page](../apps/docs/content/en/roadmap.md).
+
+The order is **P4a → P4c → P4e → P4d → P4g → P4b → P5a → P4f → P4h**, so P4b
+(theming and client branding) is the next phase after P4g, and the letters deliberately
 do not read in execution order, because `P4b` was spent on theming before P4
 split and an accepted ADR cites it. P4a was token exchange
 ([spec](archive/specs/2026-09-23-p4a-token-exchange-design.md)); P4c was
@@ -24,7 +38,7 @@ the account console; P4b stays theming; **P4h**, console localization, follows i
 **P4c shipped the admin API** at `/admin/tenants/{tenant}/`, authorized per
 request by a capability role on the tenant's `odudu-admin` client, with
 `odudu seed admin` bootstrapping `system` and its first administrator. The
-narrative is [docs/admin-paths.md](admin-paths.md), every transcript
+narrative is [the admin paths](../apps/docs/content/en/reference/transcripts/admin-paths/index.md), every transcript
 executed; the reference is `/admin/openapi.json`.
 
 **P4d built the admin console and the admin API it needs.** Part 1 added
@@ -32,7 +46,7 @@ executed; the reference is `/admin/openapi.json`.
 bounded counts, a target ceiling on every mutation of a subject or client
 that holds admin capabilities, tenant export and import, and per-package
 Turbo test caching in CI (ADRs 0038 and 0039). Part 2 is the console gateway
-under `/console` ([docs/console-paths.md](console-paths.md)); Part 3 the
+under `/console` ([the console paths](../apps/docs/content/en/reference/transcripts/console-paths/index.md)); Part 3 the
 transport, the Instrument design system, the shell and the e2e harness; Part
 4 every area of the rail, the hardening the features found, and the
 localization placement (ADR 0043). `odudu-admin` is confidential, and the
@@ -58,7 +72,7 @@ extra statement, an aborted transaction, a lock (P4e).
 amendment (the admin API is its first JSON surface), ADR 0036 (UserInfo's
 claims narrowing) and [p4c.md](phases/p4c.md) (`client.enabled`).
 
-**A bare `P4` below means P4d, which is complete and awaits the merge into `main`,** unless it concerns token exchange, the grant
+**A bare `P4` below means P4d, which is complete and merged into `main`,** unless it concerns token exchange, the grant
 allowlist, the admin API, audit events, the grant's UserInfo claims,
 theming or client branding — the
 same disambiguation the P2 split used, and for the same reason: a citation
@@ -74,6 +88,7 @@ issuer included, as a hard cutover nothing deployed had to survive
 The running records, split out of this file on 2026-09-17: P2b reached
 1,873 lines here, of which the part describing where the project stood was 58.
 
+- [P4g — the public release](phases/p4g.md), still being written
 - [P4d — the admin console and the admin API it needs](phases/p4d.md)
 - [P4e — authentication and token audit events](phases/p4e.md)
 - [P4c — the admin API](phases/p4c.md)
@@ -97,7 +112,7 @@ another paragraph. `tests/docs/next-budget.test.ts` holds the file to 400
 lines and any one section to 130, so an entry that has somewhere better to
 live is pushed there rather than accumulating here.
 
-## What P4g, P4f and P4b inherit
+## What P4g, P4b and P4f inherit
 
 **A console to build on, and the ways in.** The SPA talks to nothing but
 `/console/api/session`, `/console/api/admin/*`, `/console/auth/login` and
@@ -118,9 +133,12 @@ amendment), and a refresh whose rotation committed before a refusal leaves
 both an `allowed` and a `refused` row under one request id
 ([p4e.md](phases/p4e.md)).
 
-**For the repository owner:** add `e2e` as a required check on `main`,
-beside `verify`, `container` and `commit-messages`, and re-add `query-plans`
-once P4d has merged.
+**For the repository owner:** require `gate` on `main`, beside `verify`,
+`container`, `commit-messages` and `query-plans`. `gate` covers every job,
+`e2e` and `conformance` included, and passes a job skipped for a prose-only
+change. A job-level skip reports success to a required check by GitHub's
+documentation; confirm that on the validation run in [p4g.md](phases/p4g.md)
+before dropping any required name ([ADR 0044](adr/0044-ci-runs-what-a-change-can-affect.md)).
 
 **Two recovery-code gaps that need self-service.** A subject cannot
 ask for a fresh set before running out, and nothing warns as the list gets
@@ -135,13 +153,31 @@ the CSP nonce, the framing defence and the `auth_session_id` — ADR 0030 has
 the reasoning, and the `frames` member ADR 0034 added is part of the same
 contract.
 
-**Deployment is still unpublished.** There is no published image or release
-process (**P4g**, which waits on nothing and is the prerequisite for anybody
-deploying this at all), secrets are environment variables and nothing more,
-and there is no backup or restore guidance (**P12**). Multi-replica
-deployment is blocked on migration locking and on the in-process bounds
-(throttles, the client-secret limiter), both **P11**, which also owes the
-Helm chart or manifests.
+**The image is published by a tag, and the rest of deployment is later.**
+`release.yml` publishes a signed image with its contents listed from a `v*`
+tag, and the base images are pinned by digest. Secrets are still environment
+variables, and there is no backup or restore guidance (**P12**).
+Multi-replica deployment is blocked on migration locking and on the
+in-process bounds (throttles, the client-secret limiter, the registration and
+reset limiters), all **P11**, which also owes the Helm chart or manifests.
+
+**Three increments and one wording fix are P4g's and are not built.** The
+release candidate ships without them, and P4g is the phase that owes them.
+
+- **31c, front-channel logout.** A logout that names a matched
+  `post_logout_redirect_uri` should show the front-channel frames, then
+  redirect. The roadmap places that gap on P4b (below), which stands until
+  31c ships; 31c then moves that one clause to P4g, and the confirmation
+  form's anti-forgery binding and the leaked-ID-token logout stay on P4b.
+- **31b, Core Web Vitals and Lighthouse budgets** enforced in CI on a
+  throttled mobile profile, for the landing page and a sample of docs pages.
+- **The landing additions:** a "pages your users see" strip, "Planned"
+  sections for agents and for theming (labelled "Planned" only, linking the
+  roadmap), and a line under "Four small apps that work" for the WordPress
+  guide.
+- **A console wording fix:** the `max_clients` description says it limits
+  registration, but the cap holds however a client is created. Change it
+  with the next `pnpm docs:screenshots` run; the screenshot record carries it.
 
 ## What P5 inherits
 
@@ -198,34 +234,22 @@ that should hold it, which is usually false.
 
 ### Argued elsewhere, and pointed at from here
 
-| What is open                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Where it is argued                                                                    | Trigger                                                 |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| No scope means anything in particular at an audience; RFC 9068 §2.2.3 wants `scope` coherent with `aud`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [rfc9068.md](protocols/rfc9068.md), "Why §2.2.3 is accepted, not held"                | **P9**, with the row below                              |
-| `/introspect` answers every registered client alike: no per-resource scope narrowing, no "may introspect"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [rfc7662.md](protocols/rfc7662.md), "Two MAYs left `gap`"                             | **P9**, with the row above                              |
-| RFC 7523 has no clause table, so the clauses of an implemented RFC are untracked by the system built for it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | [rfc7523.md](protocols/rfc7523.md)'s own header                                       | **P13**                                                 |
-| The session cap is per browser and admits `cap + (k - 1)` under `k` concurrent logins, orphaning one                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | [ADR 0033](adr/0033-admitting-a-session-locks-the-tenant-row.md)                      | **P4f**, wanting a session's device                     |
-| `CLAUDE.md` states an untagged-fence rule that `tests/docs/markdown.ts` cannot see, so no JSON response is byte-checked                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [p3b.md](phases/p3b.md), "`CLAUDE.md` states a rule its own tests forbid"             | its own change; it untags every JSON transcript at once |
-| Migrations are hard cutovers: Drizzle runs every pending migration in one transaction, so no index is built `CONCURRENTLY`, `0073`–`0075` add stored generated columns that rewrite their tables under lock, `0076` rebuilds an `audit_events` index without `CONCURRENTLY`, `0079` adds three more such columns to `users`, `0080`, `0081` and `0097` build indexes plain, and `0095` builds twenty-odd, four of them on `audit_events`, as `0099` builds a fifth, and `0100` three on `email_outbox`, whose `failed` mail read still sorts a tenant's unsent rows (about 100 ms at 1,000,000 unsent, an incident-sized backlog) | the umbrella spec's §5, "Migrations", and §11's P11 row                               | **P11**, with rolling upgrades across replicas          |
-| `audit_events` at 100,000,000 rows is one table with seven secondary indexes and per-tenant unbatched retention deletes; the query-plan check ran at a fifth of the subjects and a hundredth of the events, on one node                                                                                                                                                                                                                                                                                                                                                                                                           | `docs/phases/p4d.md`, "Server query plans", and §11's P11 row                         | **P11**, partitioning by month and batched deletes      |
-| Tenant delete is one transaction cascading through every tenant table, `audit_events` included, so it holds locks as long as the tenant's audit trail is deep; no bound or timeout (`docs/admin-paths.md`, "Delete a tenant")                                                                                                                                                                                                                                                                                                                                                                                                     | the umbrella spec's §11, P11 row                                                      | **P11**, a chunked, resumable delete                    |
-| Base images are mutable tags (`node:24-alpine`, `postgres:17-alpine`, `mailpit`, `swagger-ui`); only the logout sink is pinned by digest                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | the umbrella spec's §11, P4g row                                                      | **P4g**, with the published image                       |
-| Localization has a mechanism and owners and no code: every server page, mail and console string is English, and the new-code rule is unenforced until the extraction lints land                                                                                                                                                                                                                                                                                                                                                                                                                                                   | [ADR 0043](adr/0043-localization-is-a-catalogue-a-negotiation-and-a-set-of-owners.md) | **P4g**, **P4b** and **P4h**                            |
-| No composite index serves the two-filter audit reads (actor and type, type and action); a 5 s timeout bounds them                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [p4d.md](phases/p4d.md), "Server query plans"                                         | **P11**, whose plan check at scale is the evidence      |
-| Committed development credentials                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [ADR 0014](adr/0014-committed-development-credentials.md)                             | the conditions that ADR names                           |
+| What is open                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Where it is argued                                                                    | Trigger                                                                   |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| No scope means anything in particular at an audience; RFC 9068 §2.2.3 wants `scope` coherent with `aud`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [rfc9068.md](protocols/rfc9068.md), "Why §2.2.3 is accepted, not held"                | **P9**, with the row below                                                |
+| `/introspect` answers every registered client alike: no per-resource scope narrowing, no "may introspect"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [rfc7662.md](protocols/rfc7662.md), "Two MAYs left `gap`"                             | **P9**, with the row above                                                |
+| RFC 7523 has no clause table, so the clauses of an implemented RFC are untracked by the system built for it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | [rfc7523.md](protocols/rfc7523.md)'s own header                                       | **P13**                                                                   |
+| The session cap is per browser and admits `cap + (k - 1)` under `k` concurrent logins, orphaning one                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | [ADR 0033](adr/0033-admitting-a-session-locks-the-tenant-row.md)                      | **P4f**, wanting a session's device                                       |
+| `CLAUDE.md` states an untagged-fence rule that `tests/docs/markdown.ts` cannot see, so no JSON response is byte-checked                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [p3b.md](phases/p3b.md), "`CLAUDE.md` states a rule its own tests forbid"             | its own change; it untags every JSON transcript at once                   |
+| Migrations are hard cutovers: Drizzle runs every pending migration in one transaction, so no index is built `CONCURRENTLY`, `0073`–`0075` add stored generated columns that rewrite their tables under lock, `0076` rebuilds an `audit_events` index without `CONCURRENTLY`, `0079` adds three more such columns to `users`, `0080`, `0081` and `0097` build indexes plain, and `0095` builds twenty-odd, four of them on `audit_events`, as `0099` builds a fifth, and `0100` three on `email_outbox`, whose `failed` mail read still sorts a tenant's unsent rows (about 100 ms at 1,000,000 unsent, an incident-sized backlog) | the umbrella spec's §5, "Migrations", and §11's P11 row                               | **P11**, with rolling upgrades across replicas                            |
+| `audit_events` at 100,000,000 rows is one table with seven secondary indexes and per-tenant unbatched retention deletes; the query-plan check ran at a fifth of the subjects and a hundredth of the events, on one node                                                                                                                                                                                                                                                                                                                                                                                                           | `docs/phases/p4d.md`, "Server query plans", and §11's P11 row                         | **P11**, partitioning by month and batched deletes                        |
+| Tenant delete is one transaction cascading through every tenant table, `audit_events` included, so it holds locks as long as the tenant's audit trail is deep; no bound or timeout (`apps/docs/content/en/reference/transcripts/admin-paths/`, "Delete a tenant")                                                                                                                                                                                                                                                                                                                                                                 | the umbrella spec's §11, P11 row                                                      | **P11**, a chunked, resumable delete                                      |
+| Localization has its catalogue mechanism and the server pages' and mail's English catalogues; the tenant default locale and per-tenant mail theming (**P4b**) and the console's extraction (**P4h**) remain, and the new-code rule is unenforced in the console until its lint lands                                                                                                                                                                                                                                                                                                                                              | [ADR 0043](adr/0043-localization-is-a-catalogue-a-negotiation-and-a-set-of-owners.md) | **P4b** and **P4h**                                                       |
+| No composite index serves the two-filter audit reads (actor and type, type and action); a 5 s timeout bounds them                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [p4d.md](phases/p4d.md), "Server query plans"                                         | **P11**, whose plan check at scale is the evidence                        |
+| Two console dom tests (`gateway.test.ts`, `useWrite.test.tsx`) once failed alone under the root project; not reproduced on 2026-10-19 under `--project dom`, with and without the other file, or with every project                                                                                                                                                                                                                                                                                                                                                                                                               | [p4g.md](phases/p4g.md), "The console's theme choice reaches the server pages"        | if it recurs: [p4g.md](phases/p4g.md), "CI runs what a change can affect" |
+| Committed development credentials                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [ADR 0014](adr/0014-committed-development-credentials.md)                             | the conditions that ADR names                                             |
 
 ### Argued here, because there is nowhere else
-
-**One configured issuer base for the whole deployment.** The admin API
-derives a token's expected `iss` from the request, the same way `/token`
-mints it, because there is nothing configured to compare against — which
-also forced the admin audience to a fixed URN rather than `${iss}/admin`
-([p4c.md](phases/p4c.md) has that decision). `ODUDU_PUBLIC_BASE_URL` exists
-already for mail links and the WebAuthn relying-party id, so the value is
-half present. Replacing request-derived issuers everywhere changes how
-`iss` is minted on every token, ID token and Logout Token, on the RFC 9207
-parameter and in discovery, which is why P4c did not do it in passing.
-
-- Trigger: **P12**, whose criterion now names it.
 
 **Neither of the server's two outbound DNS lookups carries a deadline.**
 `createLogoutDeliveryTransport`'s `defaultLookup`
@@ -299,13 +323,13 @@ a phase note.
 
 - **Twelve administrative capabilities a gap audit against mature identity
   providers found the server lacking** (2026-09-29): more required actions,
-  several sign-in flows, per-step authenticator settings and a password
-  blocklist (**P4f**); translated pages and mail (**P4b**, with the catalogues in **P4g** and the console's in **P4h**); custom subject
+  several sign-in flows, per-step authenticator settings and a
+  breached-password check (**P4f**); translated pages and mail (the catalogue mechanism exists; **P4b** owns the tenant default locale and per-tenant mail theming, **P4h** the console's extraction); custom subject
   attributes (**P7**); fine-grained admin permissions (**P9**); per-client
   mappers (**P10**); a metrics endpoint (**P11**); key import and scheduled
   rotation (**P12**); client policies and admin impersonation (**P13**).
   Each phase's §11 criterion names its items, and
-  [docs/request-paths.md](request-paths.md#what-is-not-implemented) lists
+  [the roadmap page](../apps/docs/content/en/roadmap.md) lists
   them under a test that holds the two together.
 - `/logout` delivers no front-channel frames on either branch that redirects:
   `packages/protocol-oidc/src/usecase/logout.ts` computes the list only where
@@ -319,7 +343,15 @@ a phase note.
   **P4b**, whose criterion names it: the remedy is to render the frames and
   navigate afterwards, which gives the redirecting branch the page it lacks,
   and P4b is the phase that owes every page the server renders a theme.
-- The `codes`/`spent` count of `user_credentials` in `docs/request-paths.md`'s
+- `/logout` has two hardening gaps that predate P4g's change to it. The
+  confirmation form's `client_id` and `post_logout_redirect_uri` fields are
+  not covered by the anti-forgery HMAC (reaching nothing new today, since only a
+  registered address is ever honoured). And a verified hint whose `sid` is the
+  cookie's own session ends it by `GET` with no confirmation and no bound on
+  the hint's age, so a leaked ID token forces that sign-out, limited by the
+  session's lifetime and the victim's cookie. **P4b**, whose criterion names
+  both: it rewrites that page and the branch that serves it.
+- The `codes`/`spent` count of `user_credentials` in `apps/docs/content/en/reference/transcripts/request-paths/`'s
   recovery-code section is unscoped, and correct only in document order — the
   unspent count after it names its tenant. Re-scoping it needs a re-run
   against a live stack. **P4f**, which re-captures those transcripts anyway:
@@ -331,6 +363,16 @@ a phase note.
   whoever reads it next. **P12**, whose criterion sources secrets from
   somewhere other than the process environment and so reworks the boot
   sequence in `apps/server/src/main.ts` that the test pins by offset.
+
+- **The audit trail can be rewritten by the serving role and nothing signs
+  or chains it.** `audit_events` has no `REVOKE` or trigger making it
+  append-only, so a compromised server could change a row. **P12**, whose
+  hardening criterion owns a role that cannot, and a signed or chained trail.
+- **Self-service credential gaps found in P4g.** A required-action link that
+  sets a password does not end the person's other sessions (only a reset
+  does), and a tenant cannot ask everyone to enrol a passkey. **P4f**, whose
+  criterion owns ending other sessions after a password change and the
+  per-tenant sign-in settings.
 
 ### Recorded judgements, where the code stands and nothing is owed
 

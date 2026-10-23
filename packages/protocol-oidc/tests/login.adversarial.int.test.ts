@@ -79,7 +79,7 @@ async function buildHttp(deps: {
       clientSecretLimiter: UNLIMITED_CLIENT_SECRET_LIMITER,
       auditRefusalBudget: UNLIMITED_AUDIT_REFUSAL_BUDGET,
       clientKeySet: NO_CLIENT_KEY_FETCHER,
-      ...(deps.tls !== undefined ? { tls: deps.tls } : {}),
+      tls: deps.tls ?? false,
       ...(deps.clock !== undefined ? { clock: deps.clock } : {}),
     }),
   );
@@ -789,7 +789,7 @@ describe('[OIDC-CORE-3.1.2.1-09] an id_token_hint names who the response is abou
 
     // The end-user the hint actually names now signs in against the exact
     // same auth_session_id, and it still works — the transcript
-    // docs/request-paths.md's "The login POST" section documents.
+    // apps/docs/content/en/reference/transcripts/request-paths/the-branches.md's "The login POST" section documents.
     const retry = await submitLogin({ ...GOOD, tenantName, csrf: authSessionId });
     expect(retry.statusCode).toBe(302);
     const location = new URL(locationHeader(retry));
@@ -815,7 +815,10 @@ describe('[OIDC-CORE-3.1.2.3-04] an unauthenticated request is answered by authe
     expect(res.statusCode).toBe(200);
     expect(res.body).toContain('name="auth_session_id"');
     expect(res.headers.location).toBeUndefined();
-    expect(res.headers['set-cookie']).toBeUndefined();
+    // Parking the request hands the browser its sign-in handle, and no session.
+    const cookies = [res.headers['set-cookie']].flat().filter((value) => value !== undefined);
+    expect(cookies).toHaveLength(1);
+    expect(cookies[0]).toMatch(/^odudu-sign-in=/u);
     expect(await countAuthorizationCodes(tenantName)).toBe(0);
   });
 

@@ -33,6 +33,7 @@ function app(behaviour: 'ok' | 'down') {
   const database = fakeDatabase(behaviour);
   return {
     app: buildApp({
+      tls: false,
       database,
       ownerDatabase: database,
       kek: config.ODUDU_KEK,

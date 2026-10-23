@@ -64,6 +64,52 @@ export function carrier(
 
 export const BILLING_CARRIES = carrier('c-bill', 'billing', 'Billing');
 
+export function impact(
+  clients: number,
+  roles: number,
+  extra: { builtin?: boolean; clientsCapped?: boolean } = {},
+) {
+  return {
+    builtin: extra.builtin ?? false,
+    client_assignments: { count: clients, capped: extra.clientsCapped ?? false },
+    role_mappings: { count: roles, capped: false },
+  };
+}
+
+// A built-in scope outside the list, so the tests that count rows are not disturbed.
+export const PROFILE_SCOPE = scope('s-prof', 'profile', { include_in_access_token: false });
+
+// The built-ins a tenant is given, in the order the server lists them.
+export const BUILTIN_NAMES = [
+  'openid',
+  'profile',
+  'email',
+  'address',
+  'phone',
+  'roles',
+  'groups',
+  'offline_access',
+] as const;
+
+export function builtinsPresent(missing: readonly string[] = []) {
+  return { items: BUILTIN_NAMES.map((name) => ({ name, present: !missing.includes(name) })) };
+}
+
+// The record routes of PROFILE_SCOPE, which carries three clients and maps two roles.
+export function profileRoutes(): Record<string, Answer> {
+  return {
+    [`GET ${SC}/s-prof`]: json(PROFILE_SCOPE, 200, { etag: '"s-prof-1"' }),
+    [`GET ${SC}/s-prof/roles`]: json({ items: [] }, 200, { etag: '"s-prof-r1"' }),
+    [`GET ${SC}/s-prof/mappers`]: json(
+      { available: ['email', 'groups'], bound: [], declared: ['email'] },
+      200,
+      { etag: '"s-prof-m1"' },
+    ),
+    [`GET ${SC}/s-prof/clients`]: json({ items: [] }),
+    [`GET ${SC}/s-prof/impact`]: json(impact(3, 2, { builtin: true })),
+  };
+}
+
 // grace of acme, holding the capabilities given, among three scopes: billing
 // maps the auditor role, binds no mapper, and is carried by the billing client.
 export function scopeRoutes(
@@ -87,8 +133,11 @@ export function scopeRoutes(
             }),
           ],
           [`GET ${SC}/${each.id}/clients`, json({ items: [] })],
+          [`GET ${SC}/${each.id}/impact`, json(impact(0, 0, { builtin: each.id === 's-openid' }))],
         ]),
       ),
+      [`GET ${SC}/s-bill/impact`]: json(impact(1, 1)),
+      [`GET ${SC}/builtins`]: json(builtinsPresent()),
       [`GET ${SC}/s-bill/roles`]: json({ items: [MAPPED] }, 200, { etag: '"s-bill-r1"' }),
       [`GET ${SC}/s-bill/clients`]: json({ items: [BILLING_CARRIES] }),
       [`GET ${ACME_ADMIN}/roles`]: (request) =>

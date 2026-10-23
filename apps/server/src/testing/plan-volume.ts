@@ -251,6 +251,10 @@ select ${t}, id, 'update-password' from vol_subjects where n % 10 = 1;
 insert into action_tokens (id, tenant_id, subject_id, type, token_hash, expires_at)
 select gen_random_uuid(), ${t}, id, 'verify_email', md5(n::text) || md5('a' || n), now() + interval '1 day'
   from vol_subjects where n % 4 = 0;
+insert into pending_registrations (id, tenant_id, token_hash, username, email, password_hash, expires_at)
+select gen_random_uuid(), ${t}, 'reg_' || md5(n::text), 'pending' || n, 'pending' || n || '@volume.test', 'h',
+       now() + interval '1 day'
+  from vol_subjects where n % 4 = 1;
 
 insert into user_credentials (id, tenant_id, subject_id, type, secret_data, label, lookup_key)
 select gen_random_uuid(), ${t}, s.id, 'webauthn',

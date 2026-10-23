@@ -1,6 +1,10 @@
 import qrcode from 'qrcode-generator';
-import { type RenderedPage } from '@odudu/kernel';
-import { escapeHtml, page } from '#/view/document';
+import { type PageLocale, type RenderedPage } from '@odudu/kernel';
+import { type EnrolmentRefusal } from '#/schema/enrolment-refusal';
+import { escapeHtml, intro, page } from '#/view/document';
+import { t, tHtml, token } from '#/view/messages';
+import { firstInvalidField, invalidAttributes, problemSummary } from '#/view/form-error';
+import { refusalProblems } from '#/view/refusal';
 
 // What an enrolment page has to show: the secret in the form the user's
 // authenticator app scans, and the same secret as text for an app that
@@ -30,22 +34,27 @@ export function renderTotpEnrolmentPage(
   tenant: string,
   authSessionId: string,
   offer: TotpEnrolmentOffer,
-  error?: string,
+  error: EnrolmentRefusal | undefined,
+  locale: PageLocale,
 ): RenderedPage {
-  const target = `/tenants/${escapeHtml(tenant)}/login-actions/required-action?action=configure-totp`;
-  const message = error === undefined ? '' : `<p><strong>${escapeHtml(error)}</strong></p>\n`;
+  const target = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/login-actions/required-action?action=configure-totp`;
+  const problems = refusalProblems(locale, error, 'code');
+  const code = `${invalidAttributes(problems, 'code')}${firstInvalidField(problems, ['code']) === null ? '' : ' autofocus'}`;
   return page(
-    'Set up your authenticator',
-    `<h1>Set up your authenticator</h1>
-${message}<p>Scan this with your authenticator app, or enter the key by hand.</p>
+    t(locale, 'totp.title'),
+    `${intro(tHtml(locale, 'totp.title'), tenant)}
+${problemSummary(problems)}<p>${tHtml(locale, 'totp.scan')}</p>
 ${qrSvg(offer.uri)}
-<p><code>${escapeHtml(offer.uri)}</code></p>
-<p>Key: <code>${escapeHtml(offer.secret)}</code></p>
+<p>${token(offer.uri)}</p>
+<p>${tHtml(locale, 'totp.key')} ${token(offer.secret)}</p>
 <form method="post" action="${target}">
   <input type="hidden" name="auth_session_id" value="${escapeHtml(authSessionId)}">
   <input type="hidden" name="secret" value="${escapeHtml(offer.secret)}">
-  <label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label>
-  <button type="submit">Confirm</button>
+  <label>${tHtml(locale, 'totp.codeLabel')} <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"${code}></label>
+  <button type="submit">${tHtml(locale, 'totp.confirm')}</button>
 </form>`,
+    null,
+    [],
+    locale,
   );
 }

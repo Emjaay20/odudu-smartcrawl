@@ -21,6 +21,8 @@ const TENANT = {
   ssoSessionIdleSeconds: 1_800,
   rememberMeAllowed: true,
   loginWithEmail: false,
+  registrationAllowed: false,
+  resetPasswordAllowed: false,
   rememberMeIdleSeconds: 604_800,
   rememberMeMaxSeconds: 2_592_000,
   maxSessionsPerBrowser: 25,

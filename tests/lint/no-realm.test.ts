@@ -61,6 +61,11 @@ const RECORDS: readonly string[] = [
   'packages/authn-flows/tests/migrate-backfill.int.test.ts',
 ];
 
+// Pages whose subject is Keycloak's vocabulary: the guide for people moving
+// from it maps that product's name for a tenant to ours, so the old name is
+// the content there.
+const KEYCLOAK_VOCABULARY: readonly string[] = ['apps/docs/content/en/guides/keycloak.md'];
+
 // A directory entry ends in a slash; anything else is the file itself, so a
 // neighbour whose name merely starts the same way is not one of these.
 function isOrIsUnder(file: string, record: string): boolean {
@@ -168,12 +173,27 @@ function comparesWithKeycloak(hit: Hit): boolean {
   return /keycloak/iu.test(unitsOf(hit.file)[hit.line - 1] ?? '');
 }
 
+function isExcused(hit: Hit): boolean {
+  return (
+    RECORDS.some((record) => isOrIsUnder(hit.file, record)) ||
+    KEYCLOAK_VOCABULARY.includes(hit.file) ||
+    comparesWithKeycloak(hit)
+  );
+}
+
 describe('the rename left nothing of the old name behind', () => {
+  it('excuses the Keycloak guide and no other page of the site', () => {
+    const text = `a ${WORD}'s roles`;
+    const at = (file: string): Hit => ({ file, line: 1, text });
+    expect(isExcused(at('apps/docs/content/en/guides/keycloak.md'))).toBe(true);
+    expect(isExcused(at('apps/docs/content/en/guides/web-app.md'))).toBe(false);
+    expect(isExcused(at('apps/docs/content/en/introduction/compare.md'))).toBe(false);
+  });
+
   it('finds the word only where it is deliberate', () => {
     const found = grepForTheOldName()
       .map(parse)
-      .filter((hit) => !RECORDS.some((record) => isOrIsUnder(hit.file, record)))
-      .filter((hit) => !comparesWithKeycloak(hit))
+      .filter((hit) => !isExcused(hit))
       .filter((hit) => survivesTheAllowedOccurrences(hit.text))
       .map((hit) => `${hit.file}:${String(hit.line)}:${hit.text}`);
 

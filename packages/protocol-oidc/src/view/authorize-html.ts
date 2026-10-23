@@ -1,5 +1,15 @@
-import { scriptNonce, type RenderedPage } from '@odudu/kernel';
-import { escapeHtml, page } from '#/view/document';
+import { type PageLocale, scriptNonce, type RenderedPage } from '@odudu/kernel';
+import { escapeHtml, intro, page } from '#/view/document';
+import { links } from '#/view/links';
+import {
+  firstInvalidField,
+  invalidAttributes,
+  problemSummary,
+  type Problem,
+} from '#/view/form-error';
+import { type LoginWays } from '#/service/login-ways';
+import { type RefusalMessageId } from '#/view/login-messages';
+import { bdi, t, tHtml, type MessageId } from '#/view/messages';
 
 // Where an expired sign-in can go on from. Both hrefs are built from a
 // request /authorize already validated: the restart one is this server's own
@@ -9,25 +19,29 @@ export interface WayOn {
   href: string;
 }
 
-const WAY_ON_LABEL: Record<WayOn['kind'], string> = {
-  restart: 'Start sign-in again',
-  return: 'Return to the application',
+const WAY_ON_LABEL: Record<WayOn['kind'], MessageId> = {
+  restart: 'error.wayOn.restart',
+  return: 'error.wayOn.return',
 };
 
 export function renderAuthorizeErrorPage(
   error: string,
   description: string,
-  wayOn?: WayOn,
+  wayOn: WayOn | undefined,
+  locale: PageLocale,
 ): RenderedPage {
   const link =
     wayOn === undefined
       ? ''
-      : `\n<p><a href="${escapeHtml(wayOn.href)}">${WAY_ON_LABEL[wayOn.kind]}</a></p>`;
+      : `\n<p><a href="${escapeHtml(wayOn.href)}">${tHtml(locale, WAY_ON_LABEL[wayOn.kind])}</a></p>`;
   return page(
-    'Sign-in error',
-    `<h1>Can't continue</h1>
-<p>${escapeHtml(description)}</p>${link}
+    t(locale, 'error.title'),
+    `<h1>${tHtml(locale, 'error.heading')}</h1>
+<p>${bdi(description)}</p>${link}
 <p><small>${escapeHtml(error)}</small></p>`,
+    null,
+    [],
+    locale,
   );
 }
 
@@ -37,30 +51,40 @@ export function renderAuthorizeErrorPage(
 // tenant turning verify_email on locks these accounts out with nothing they
 // can do about it, so the page says that rather than claiming a mail it
 // never sent.
-export function renderEmailUnverifiedPage(hasEmail: boolean): RenderedPage {
-  const detail = hasEmail
-    ? 'We sent a link to the address on this account — follow it, then sign in again.'
-    : 'This account has no email address on file, so there is nothing to verify yet. Contact an administrator.';
+export function renderEmailUnverifiedPage(
+  hasEmail: boolean,
+  // The authorize path that starts this sign-in again, when the parked
+  // request can be rebuilt.
+  signInPath: string | null,
+  locale: PageLocale,
+): RenderedPage {
   return page(
-    'Verify your email',
-    `<h1>Can't sign in yet</h1>
-<p>You need to verify your email address before you can sign in. ${detail}</p>`,
+    t(locale, 'emailUnverified.title'),
+    `<h1>${tHtml(locale, 'emailUnverified.heading')}</h1>
+<p>${tHtml(locale, 'emailUnverified.body', { mail: hasEmail ? 'sent' : 'none' })}</p>${
+      signInPath === null
+        ? ''
+        : links([{ href: signInPath, text: tHtml(locale, 'link.backToSignIn') }])
+    }`,
+    null,
+    [],
+    locale,
   );
 }
 
 // One of the ten single-use codes a generate-recovery-codes page issued.
 // `autocomplete="off"`: a password manager holding the whole list would
 // offer to fill the same code every time, and each works once.
-const recoveryCodeField = (attributes: string): string =>
-  `<label>Or a recovery code <input type="text" name="recovery_code" autocomplete="off"${attributes}></label>`;
+const recoveryCodeField = (attributes: string, locale: PageLocale): string =>
+  `<label>${tHtml(locale, 'login.recoveryCode.label')} <input type="text" name="recovery_code" autocomplete="off"${attributes}></label>`;
 
 // `form` names the authenticator to render fields for (an authn-flows
 // registry key, e.g. 'password') — not a fixed enum, so a new authenticator
 // adds a case here rather than a schema change.
-const DEFAULT_LABELS = ['Sign in', 'Sign in'] as const;
-const FORM_LABELS: Record<string, readonly [string, string]> = {
-  otp: ['Enter your authentication code', 'Verify'],
-  'recovery-code': ['Enter a recovery code', 'Verify'],
+const DEFAULT_LABELS = ['login.title', 'login.submit'] as const;
+const FORM_LABELS: Record<string, readonly [MessageId, MessageId]> = {
+  otp: ['login.otp.title', 'login.verify'],
+  'recovery-code': ['login.recoveryCode.title', 'login.verify'],
 };
 
 // Reflection is bounded, not validated: a name past this many code points is
@@ -91,31 +115,46 @@ function isEchoable(username: string): boolean {
 // What a refused step gives back to the person. Only the username ever
 // travels: a password, a code or a recovery code is never put back in a field.
 export interface LoginFormRefusal {
-  message: string;
+  messageId: RefusalMessageId;
   username?: string;
 }
 
-// `autofocus` on the first field still to fill, so a re-rendered form puts
-// the cursor where the next keystroke belongs without a script.
+// The fields a refusal is about: the step's own inputs, so a screen reader
+// lands on the one to correct. A wrong password or an unknown name read alike
+// (see login-messages.ts), so both fields of that step are marked.
+const REFUSED_FIELDS: Record<RefusalMessageId, readonly string[]> = {
+  'login.refusal.signInFailed': ['username', 'password'],
+  'login.refusal.codeFailed': ['code'],
+  'login.refusal.recoveryCodeFailed': ['recovery_code'],
+  'login.refusal.alreadyUsedRecoveryCode': ['recovery_code'],
+};
+
+// Where the cursor goes after a refusal, without a script: the first of these
+// the refusal is about. On the password step that is the username unless it
+// was given back, then the password.
+function focusOrder(form: string, echoed: boolean): string[] {
+  if (form === 'otp') return ['code', 'recovery_code'];
+  if (form === 'recovery-code') return ['recovery_code'];
+  return echoed ? ['password', 'username'] : ['username', 'password'];
+}
+
 function renderFormFields(
   form: string,
   loginWithEmail: boolean,
   refusal: LoginFormRefusal | undefined,
+  problems: readonly Problem[],
+  locale: PageLocale,
 ): string {
-  const focus = refusal === undefined ? '' : ' autofocus';
+  const echoed =
+    refusal?.username !== undefined && isEchoable(refusal.username) ? refusal.username : undefined;
+  const focus = firstInvalidField(problems, focusOrder(form, echoed !== undefined));
+  const state = (field: string): string =>
+    `${invalidAttributes(problems, field)}${focus === field ? ' autofocus' : ''}`;
   if (form === 'password') {
-    const label = loginWithEmail ? 'Username or email' : 'Username';
-    const echoed =
-      refusal?.username !== undefined && isEchoable(refusal.username)
-        ? refusal.username
-        : undefined;
-    const username =
-      echoed === undefined
-        ? `name="username" autocomplete="username"${focus}`
-        : `name="username" autocomplete="username" value="${escapeHtml(echoed)}"`;
-    const password = echoed === undefined ? '' : focus;
-    return `<label>${label} <input type="text" ${username}></label>
-  <label>Password <input type="password" name="password" autocomplete="current-password"${password}></label>`;
+    const label = tHtml(locale, loginWithEmail ? 'login.usernameOrEmail' : 'login.username');
+    const value = echoed === undefined ? '' : ` value="${escapeHtml(echoed)}"`;
+    return `<label>${label} <input type="text" name="username" autocomplete="username"${value}${state('username')}></label>
+  <label>${tHtml(locale, 'login.password')} <input type="password" name="password" autocomplete="current-password"${state('password')}></label>`;
   }
   // No username: which account the code is checked against comes from the
   // authentication session the hidden field names, never from this form.
@@ -124,17 +163,22 @@ function renderFormFields(
   // thing the first field asks for. Filling either one is a submission;
   // filling both spends the recovery code, which runs first.
   if (form === 'otp') {
-    return `<label>Code from your app <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"${focus}></label>
-  ${recoveryCodeField('')}`;
+    return `<label>${tHtml(locale, 'login.otp.code')} <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"${state('code')}></label>
+  ${recoveryCodeField(state('recovery_code'), locale)}`;
   }
   if (form === 'recovery-code') {
-    return recoveryCodeField(focus);
+    return recoveryCodeField(state('recovery_code'), locale);
   }
   // Unreachable today: the two authenticators with fields to render are
   // the two above, and a passkey has none — it is offered by
   // renderPasskeyOption below rather than as a set of inputs.
-  return `<p>Unsupported sign-in step: ${escapeHtml(form)}</p>`;
+  return `<p>${tHtml(locale, 'login.unsupportedStep', { form })}</p>`;
 }
+
+// Where the browser's own reason goes in the failure sentence: the server
+// formats the sentence in the page's language around this marker, and the
+// script swaps the marker for the reason, which only the browser knows.
+const REASON = '{reason}';
 
 // navigator.credentials.get() is the only way to produce an assertion, so
 // the passkey half of this page cannot be a plain form: the script asks the
@@ -143,17 +187,22 @@ function renderFormFields(
 // browser offers every discoverable one it holds and the account is
 // whichever one answers. The challenge is issued per click rather than with
 // the page, so a form left open overnight still gets a live one.
-function renderPasskeyOption(tenant: string, authSessionId: string, nonce: string): string {
+function renderPasskeyOption(
+  tenant: string,
+  authSessionId: string,
+  nonce: string,
+  locale: PageLocale,
+): string {
   // The <p> keeps the button clear of the sign-in one (WCAG 2.2 target size).
-  const escaped = escapeHtml(tenant);
+  const escaped = escapeHtml(encodeURIComponent(tenant));
   return `
-<form method="post" action="/tenants/${escaped}/login-actions/authenticate" id="passkey-form">
+<form method="post" action="/tenants/${escaped}/login-actions/authenticate" id="passkey-form" data-failed="${tHtml(locale, 'login.passkey.failed', { reason: REASON })}" data-cancelled="${tHtml(locale, 'login.passkey.cancelled')}" data-not-offered="${tHtml(locale, 'login.passkey.notOffered')}">
   <input type="hidden" name="auth_session_id" value="${escapeHtml(authSessionId)}">
   <input type="hidden" name="assertion" id="passkey-assertion">
-  <p><button type="submit" id="passkey-submit">Sign in with a passkey</button></p>
+  <p><button type="submit" id="passkey-submit" class="secondary">${tHtml(locale, 'login.passkey.submit')}</button></p>
 </form>
-<p id="passkey-error" hidden></p>
-<noscript><p>Signing in with a passkey needs JavaScript, because only the browser can talk to your authenticator. Use your username and password above.</p></noscript>
+<p id="passkey-error" class="alert" role="alert" hidden></p>
+<noscript><p>${tHtml(locale, 'login.passkey.needsScript')}</p></noscript>
 <script nonce="${escapeHtml(nonce)}">
 const form = document.getElementById('passkey-form');
 const field = document.getElementById('passkey-assertion');
@@ -170,7 +219,7 @@ form.addEventListener('submit', async (event) => {
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ auth_session_id: form.auth_session_id.value }),
     });
-    if (!offered.ok) throw new Error('this server is not offering passkeys');
+    if (!offered.ok) throw new Error(form.dataset.notOffered);
     const options = await offered.json();
     const assertion = await navigator.credentials.get({
       publicKey: { ...options, challenge: fromBase64Url(options.challenge) },
@@ -178,12 +227,25 @@ form.addEventListener('submit', async (event) => {
     field.value = JSON.stringify(assertion.toJSON());
     form.submit();
   } catch (caught) {
-    failure.textContent =
-      'Your device did not finish signing in — ' + (caught && caught.message ? caught.message : 'the request was cancelled') + '. You can try again.';
+    const reason = caught && caught.message ? caught.message : form.dataset.cancelled;
+    failure.textContent = form.dataset.failed.replace('${REASON}', () => reason);
     failure.hidden = false;
   }
 });
 </script>`;
+}
+
+// Forgot password first, since it is the one a person who is already here
+// needs; both are paths on this server, built by loginWays.
+function waysHtml(ways: LoginWays, locale: PageLocale): string {
+  return links([
+    ...(ways.resetPassword === undefined
+      ? []
+      : [{ href: ways.resetPassword, text: tHtml(locale, 'login.link.forgotPassword') }]),
+    ...(ways.createAccount === undefined
+      ? []
+      : [{ href: ways.createAccount, text: tHtml(locale, 'login.link.createAccount') }]),
+  ]);
 }
 
 // The hidden field is the whole of this page's CSRF defence: authSessionId
@@ -209,38 +271,50 @@ export function renderLoginForm(
   rememberMeAllowed = false,
   // Shown above the fields after a refused step — see
   // LoginSubmissionOutcome's `reject`.
-  refusal?: LoginFormRefusal,
+  refusal: LoginFormRefusal | undefined,
   // The tenant's `login_with_email`: only the label changes, since the
   // field takes either and the server decides which it names.
   loginWithEmail = false,
+  // The name of the client the parked request is for, when there is one.
+  clientName: string | undefined,
+  // The pages beside this form the tenant serves, offered under it on the
+  // first-factor step only.
+  ways: LoginWays,
+  locale: PageLocale,
 ): RenderedPage {
-  const action = `/tenants/${escapeHtml(tenant)}/login-actions/authenticate`;
+  const action = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/login-actions/authenticate`;
   // Beside the password and nowhere else: a passkey is an alternative to
   // the first factor, not to a code asked for after one. The nonce is minted
   // here, where it is known whether a script is going to be rendered at
   // all, so the policy sent with this page never licenses one it does not
   // carry.
   const nonce = passkeyLogin && form === 'password' ? scriptNonce() : null;
-  const passkey = nonce === null ? '' : renderPasskeyOption(tenant, authSessionId, nonce);
-  const message =
+  const passkey = nonce === null ? '' : renderPasskeyOption(tenant, authSessionId, nonce, locale);
+  const problems: Problem[] =
     refusal === undefined
-      ? ''
-      : `<p role="alert"><strong>${escapeHtml(refusal.message)}</strong></p>\n`;
+      ? []
+      : [{ fields: REFUSED_FIELDS[refusal.messageId], html: tHtml(locale, refusal.messageId) }];
   // Never rendered at all when the tenant has not turned the setting on —
   // login-submission.ts's own gate is the one that matters, but a checkbox
   // this tenant could never honour is not offered in the first place.
   const rememberMe = rememberMeAllowed
-    ? '<label><input type="checkbox" name="remember_me" id="remember-me" value="true"> Remember me</label>\n  '
+    ? `<label><input type="checkbox" name="remember_me" id="remember-me" value="true"> ${tHtml(locale, 'login.rememberMe')}</label>\n  `
     : '';
-  const [title, submit] = FORM_LABELS[form] ?? DEFAULT_LABELS;
+  const [title, submit] = Object.hasOwn(FORM_LABELS, form)
+    ? (FORM_LABELS[form] ?? DEFAULT_LABELS)
+    : DEFAULT_LABELS;
   return {
     ...page(
-      title,
-      `${message}<form method="post" action="${action}">
+      t(locale, title),
+      `${intro(tHtml(locale, title), tenant, clientName === undefined ? [] : [tHtml(locale, 'login.context', {}, { client: clientName })])}
+${problemSummary(problems)}<form method="post" action="${action}">
   <input type="hidden" name="auth_session_id" value="${escapeHtml(authSessionId)}">
-  ${renderFormFields(form, loginWithEmail, refusal)}
-  ${rememberMe}<button type="submit">${submit}</button>
-</form>${passkey}`,
+  ${renderFormFields(form, loginWithEmail, refusal, problems, locale)}
+  ${rememberMe}<button type="submit">${tHtml(locale, submit)}</button>
+</form>${passkey}${form === 'password' ? waysHtml(ways, locale) : ''}`,
+      null,
+      [],
+      locale,
     ),
     script: nonce === null ? null : { nonce, fetchesSameOrigin: true },
   };

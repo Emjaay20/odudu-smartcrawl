@@ -32,6 +32,22 @@ describe('loggingSender', () => {
     expect(lines[0]?.[1]).toBe('captured email — no SMTP host configured');
   });
 
+  it('logs the size of the markup, never the markup', async () => {
+    const { logger, lines } = recording();
+
+    await loggingSender(logger).send({
+      to: 'ada@example.test',
+      subject: 'Verify',
+      text: 'plain text with the link',
+      html: `<p>${'x'.repeat(5000)}</p>`,
+    });
+
+    const logged = lines[0]?.[0];
+    expect(logged).toMatchObject({ text: 'plain text with the link', htmlBytes: 5007 });
+    expect(JSON.stringify(logged)).not.toContain('xxxx');
+    expect(logged).not.toHaveProperty('html');
+  });
+
   it('keeps nothing: `send` is the whole of it', async () => {
     const { logger } = recording();
     const sender = loggingSender(logger);

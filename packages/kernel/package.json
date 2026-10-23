@@ -2,9 +2,11 @@
   "name": "@odudu/kernel",
   "version": "0.0.0",
   "private": true,
+  "license": "AGPL-3.0-only",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./docs": "./src/docs.ts"
   },
   "imports": {
     "#/*": "./src/*.ts"
@@ -14,6 +16,7 @@
     "test": "vitest run --config ../../vitest.config.ts --reporter=default --reporter=json --outputFile=trace-report.json"
   },
   "dependencies": {
+    "@odudu/contracts": "workspace:*",
     "uuidv7": "1.2.1",
     "zod": "4.6.7"
   }

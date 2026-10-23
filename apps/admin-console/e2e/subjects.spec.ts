@@ -10,7 +10,7 @@ import {
   PHONE,
   expectNowhere,
 } from './fixtures';
-import { psql, seeded, inTenant, sqlText, subjectIdOf } from './stack';
+import { psql, seeded, inSubject, inTenant, sqlText, subjectIdOf } from './stack';
 
 const { subjects } = seeded();
 const { admin, viewer } = subjects;
@@ -376,4 +376,66 @@ test('an administrator who deletes their own subject is signed out, not shown an
   expect(new URL(page.url()).pathname).toMatch(/^\/tenants\/|^\/console\//u);
   expect(subjectIdOf(TENANT, departing.username)).toBe('');
   expect((await page.request.get('/console/api/session')).status()).toBe(401);
+});
+
+function credentialCount(username: string, type: string): number {
+  return Number(
+    psql(
+      `select count(*) from user_credentials where subject_id = ${inSubject(TENANT, username)} and type = '${type}'`,
+    ),
+  );
+}
+
+function owedRecoveryCodes(username: string): number {
+  return Number(
+    psql(
+      `select count(*) from user_required_actions where subject_id = ${inSubject(TENANT, username)} and action = 'generate-recovery-codes'`,
+    ),
+  );
+}
+
+test('revoking recovery codes asks for a new set at the next sign-in, ticked by default', async ({
+  page,
+}) => {
+  const username = subjects.revoker;
+  await signIn(page, admin);
+  await openSubject(page, username, 'credentials');
+  await page.getByRole('button', { name: 'Revoke every recovery code' }).click();
+  const dialog = page.getByRole('alertdialog', { name: `Revoke ${username}’s recovery codes?` });
+  await expect(
+    dialog.getByRole('checkbox', { name: 'Ask for a new set at next sign-in' }),
+  ).toBeChecked();
+  await expectAccessible(page);
+  await dialog.getByRole('button', { name: 'Revoke recovery codes' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText(/No recovery codes/u)).toBeVisible();
+  expect(credentialCount(username, 'recovery-code')).toBe(0);
+  expect(credentialCount(username, 'totp')).toBe(1);
+  expect(owedRecoveryCodes(username)).toBe(1);
+});
+
+test('removing the last second factor revokes the recovery codes with it, and offers to end the sessions', async ({
+  page,
+}) => {
+  const username = subjects.remover;
+  await signIn(page, admin);
+  await openSubject(page, username, 'credentials');
+  await page.getByRole('button', { name: /^Remove Authenticator app/u }).click();
+  const dialog = page.getByRole('alertdialog', {
+    name: `Remove ${username}’s authenticator app (TOTP)?`,
+  });
+  await expect(dialog).toContainText('last second factor');
+  await expect(
+    dialog.getByRole('checkbox', { name: `Also end ${username}’s sessions` }),
+  ).not.toBeChecked();
+  await expectAccessible(page);
+  await dialog.getByText(`Also end ${username}’s sessions`).click();
+  await expect(
+    dialog.getByRole('checkbox', { name: `Also end ${username}’s sessions` }),
+  ).toBeChecked();
+  await dialog.getByRole('button', { name: 'Remove' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText(/has no authenticator app or passkey enrolled/u)).toBeVisible();
+  expect(credentialCount(username, 'totp')).toBe(0);
+  expect(credentialCount(username, 'recovery-code')).toBe(0);
 });

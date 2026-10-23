@@ -1,11 +1,17 @@
-import { sessionCookies, type AuthenticatorResult } from '@odudu/authn-flows';
+import {
+  clearedSignInHandleCookie,
+  sessionCookies,
+  type AuthenticatorResult,
+} from '@odudu/authn-flows';
+import { type PasswordRules } from '@odudu/kernel';
 import { type FastifyReply } from 'fastify';
 import { type LoginSubmissionOutcome } from '#/usecase/login-submission';
+import { loginWays } from '#/service/login-ways';
 import { renderEmailUnverifiedPage, renderLoginForm } from '#/view/authorize-html';
 import { renderConsentPage } from '#/view/consent-html';
 import { refusalMessage } from '#/view/login-messages';
 import { sendHtml } from '#/view/html-response';
-import { continuing } from '#/view/routes/continuation';
+import { continuation } from '#/view/routes/continuation';
 import { sendSignInExpired } from '#/view/routes/expired-sign-in';
 import {
   sendRequiredActionPage,
@@ -17,9 +23,14 @@ export interface LoginResponseDeps extends RequiredActionResponseDeps {
   // Whether this deployment can offer a passkey login at all — see
   // renderLoginForm.
   passkeyLogin?: boolean;
-  findTenant(
-    name: string,
-  ): Promise<{ id: string; rememberMeAllowed: boolean; loginWithEmail: boolean } | null>;
+  findTenant(name: string): Promise<{
+    id: string;
+    rememberMeAllowed: boolean;
+    loginWithEmail: boolean;
+    registrationAllowed: boolean;
+    resetPasswordAllowed: boolean;
+    passwordRules: PasswordRules;
+  } | null>;
   // What to render on a rejected attempt — asked directly rather than
   // threaded through LoginSubmissionOutcome, so handleLoginSubmission stays
   // as unaware of the flow's requirements as its own tests assume.
@@ -62,6 +73,14 @@ export async function sendLoginOutcome(
     const pending =
       tenant === null ? null : await deps.pendingChallenge(tenant.id, outcome.authSessionId);
     const form = pending?.kind === 'challenge' ? pending.form : FALLBACK_FORM;
+    // Before the first factor is verified: the subject's own locale must not
+    // choose the language, or it would say whether the account exists.
+    const { locale, continuing, clientName, signInPath } = await continuation(
+      deps,
+      tenantName,
+      outcome.authSessionId,
+      reply,
+    );
     const page = renderLoginForm(
       tenantName,
       outcome.authSessionId,
@@ -71,18 +90,27 @@ export async function sendLoginOutcome(
       outcome.refusal === undefined
         ? undefined
         : {
-            message: refusalMessage(form, outcome.refusal),
+            messageId: refusalMessage(form, outcome.refusal),
             ...(outcome.username === undefined ? {} : { username: outcome.username }),
           },
       tenant?.loginWithEmail ?? false,
+      await clientName(),
+      tenant === null ? {} : loginWays(tenantName, tenant, signInPath),
+      locale,
     );
-    return sendHtml(reply, 200, await continuing(deps, tenantName, outcome.authSessionId, page));
+    return sendHtml(reply, 200, continuing(page));
   }
 
   // No location header and no code: the assertion this state exists to
   // make true is that nothing was issued, not that the page says something.
   if (outcome.kind === 'unverified') {
-    return sendHtml(reply, 200, renderEmailUnverifiedPage(outcome.hasEmail));
+    const { locale, signInPath } = await continuation(
+      deps,
+      tenantName,
+      outcome.authSessionId,
+      reply,
+    );
+    return sendHtml(reply, 200, renderEmailUnverifiedPage(outcome.hasEmail, signInPath, locale));
   }
 
   // Same reasoning as 'unverified': no location header and no code, since
@@ -101,17 +129,27 @@ export async function sendLoginOutcome(
   // Same reasoning as 'unverified' and 'required_action': no location
   // header and no code, since nothing was established or issued.
   if (outcome.kind === 'consent') {
-    const page = renderConsentPage({
-      tenant: tenantName,
-      authSessionId: outcome.authSessionId,
-      clientName: outcome.clientName,
-      clientPages: outcome.clientPages,
-      scopeLabels: outcome.scopeLabels,
-      defaultScopes: outcome.defaultScopes,
-      optionalScopes: outcome.optionalScopes,
-      alreadyGranted: outcome.alreadyGranted,
-    });
-    return sendHtml(reply, 200, await continuing(deps, tenantName, outcome.authSessionId, page));
+    const { locale, continuing } = await continuation(
+      deps,
+      tenantName,
+      outcome.authSessionId,
+      reply,
+      'authenticated',
+    );
+    const page = renderConsentPage(
+      {
+        tenant: tenantName,
+        authSessionId: outcome.authSessionId,
+        clientName: outcome.clientName,
+        clientPages: outcome.clientPages,
+        scopeLabels: outcome.scopeLabels,
+        defaultScopes: outcome.defaultScopes,
+        optionalScopes: outcome.optionalScopes,
+        alreadyGranted: outcome.alreadyGranted,
+      },
+      locale,
+    );
+    return sendHtml(reply, 200, continuing(page));
   }
 
   const written = sessionCookies({
@@ -124,5 +162,7 @@ export async function sendLoginOutcome(
 
   const reply302 = reply.code(302);
   for (const cookie of written) reply302.header('set-cookie', cookie);
+  // The sign-in is finished: its handle has nothing left to name.
+  reply302.header('set-cookie', clearedSignInHandleCookie(tenantName, deps.tls));
   return reply302.header('location', outcome.location).send();
 }

@@ -7,6 +7,7 @@ export {
   listLimitMessage,
   listLimitProblem,
   SCOPE_LIMIT,
+  scopeLimitMessage,
   DEFAULT_LIMIT,
   MAX_LIMIT,
   cursorQuerySchema,
@@ -55,6 +56,12 @@ export {
   deleteTenantQuerySchema,
   type DeleteTenantQuery,
 } from '#/admin/tenants';
+export {
+  PASSWORD_ALONE_MIN_LENGTH,
+  PASSWORD_WITH_SECOND_FACTOR_MIN_LENGTH,
+  passwordConformance,
+  type PasswordConformance,
+} from '#/admin/password-conformance';
 export {
   amendSettingsRequestSchema,
   type AmendSettingsRequest,
@@ -160,6 +167,7 @@ export {
   listSubjectsResponseSchema,
   type ListSubjectsResponse,
   usernameSchema,
+  usernameShapeSchema,
   USERNAME_RULE,
   usernamePolicySchema,
   type UsernamePolicy,
@@ -239,6 +247,11 @@ export {
 export {
   issuePasswordResponseSchema,
   lockoutSchema,
+  revokeRecoveryCodesQuerySchema,
+  END_SESSIONS_NEEDS_MANAGE_SESSIONS,
+  removeCredentialQuerySchema,
+  type RemoveCredentialQuery,
+  type RevokeRecoveryCodesQuery,
   type IssuePasswordResponse,
   type Lockout,
 } from '#/admin/account-recovery';
@@ -335,6 +348,16 @@ export {
   type ScopeClient,
   listScopeClientsResponseSchema,
   type ListScopeClientsResponse,
+  deleteScopeQuerySchema,
+  type DeleteScopeQuery,
+  scopeImpactSchema,
+  type ScopeImpact,
+  builtinScopeSchema,
+  type BuiltinScope,
+  listBuiltinScopesResponseSchema,
+  type ListBuiltinScopesResponse,
+  restoreBuiltinScopesResponseSchema,
+  type RestoreBuiltinScopesResponse,
 } from '#/admin/scopes';
 export {
   scopeMappersSchema,

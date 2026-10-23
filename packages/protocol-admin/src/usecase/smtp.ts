@@ -1,7 +1,13 @@
 import { unwrapSecret, wrapSecret } from '@odudu/crypto';
-import { type TenantScopedDatabase } from '@odudu/db';
-import { smtpSender, type EmailSender, type SmtpConfig as SmtpTransportConfig } from '@odudu/email';
+import { tenants, type TenantScopedDatabase } from '@odudu/db';
+import {
+  renderSmtpTest,
+  smtpSender,
+  type EmailSender,
+  type SmtpConfig as SmtpTransportConfig,
+} from '@odudu/email';
 import { type SmtpConfig } from '@odudu/contracts/admin';
+import { eq } from 'drizzle-orm';
 import { etagOf, matches } from '#/service/etag';
 import { checkSmtpDestination, type SmtpDestinationPolicy } from '#/service/smtp-destination';
 import { tenantSmtpRepository, type TenantSmtpRecord } from '#/repository/tenant-smtp';
@@ -229,14 +235,19 @@ export function smtpConfigFromRecord(
 }
 
 export type ReadSmtpForTestOutcome =
-  { kind: 'not_configured' } | { kind: 'ok'; record: TenantSmtpRecord };
+  { kind: 'not_configured' } | { kind: 'ok'; record: TenantSmtpRecord; tenantDisplayName: string };
 
 export async function readSmtpForTest(
   tx: TenantScopedDatabase,
   tenantId: string,
 ): Promise<ReadSmtpForTestOutcome> {
   const record = await tenantSmtpRepository(tx).byTenantId(tenantId);
-  return record === null ? { kind: 'not_configured' } : { kind: 'ok', record };
+  if (record === null) return { kind: 'not_configured' };
+  const [tenant] = await tx
+    .select({ name: tenants.name, displayName: tenants.displayName })
+    .from(tenants)
+    .where(eq(tenants.id, tenantId));
+  return { kind: 'ok', record, tenantDisplayName: tenant?.displayName ?? tenant?.name ?? '' };
 }
 
 export type SendTestMessageOutcome =
@@ -256,18 +267,14 @@ export async function sendTestMessage(
   record: TenantSmtpRecord,
   kek: Uint8Array,
   policy: SmtpDestinationPolicy,
-  to: string,
+  message: { readonly to: string; readonly tenantDisplayName: string; readonly now: Date },
+  buildSender: typeof smtpSenderFromRecord = smtpSenderFromRecord,
 ): Promise<SendTestMessageOutcome> {
-  const built = await smtpSenderFromRecord(record, kek, policy);
+  const built = await buildSender(record, kek, policy);
   if (built.kind === 'refused_destination') return built;
 
   try {
-    await built.sender.send({
-      to,
-      subject: 'Odudu SMTP test',
-      text: 'This is a test message from Odudu.',
-      html: '<p>This is a test message from Odudu.</p>',
-    });
+    await built.sender.send(renderSmtpTest(message));
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     return { kind: 'send_failed', detail };

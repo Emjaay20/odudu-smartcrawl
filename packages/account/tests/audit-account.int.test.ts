@@ -23,6 +23,7 @@ import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/test
 import formbody from '@fastify/formbody';
 import Fastify, { type FastifyInstance, type LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { accountTestDeps, openAndPress } from '#/testing/support';
 import { actionTokenRepository } from '#/repository/action-tokens';
 import { tenantSettingsRepository } from '#/repository/tenant-settings';
 import { type NewAccountInput } from '#/usecase/register';
@@ -123,7 +124,7 @@ function postForm(
 function register(tenantName: string, requestId: string, username = 'ada') {
   return postForm(
     `/tenants/${tenantName}/login-actions/registration`,
-    { username, email: `${username}@example.test`, password: PASSWORD },
+    { username, email: `${username}@example.test`, password: PASSWORD, password_confirm: PASSWORD },
     requestId,
   );
 }
@@ -168,7 +169,7 @@ function expectSubjectRow(
 
 async function mailedVerificationKey(tenantId: string): Promise<string> {
   const [message] = await withTenant(app.db, tenantId, (tx) => tx.select().from(emailOutbox));
-  const link = /visiting this link:\n\n(\S+)/.exec(message?.bodyText ?? '')?.[1];
+  const link = /finish:\n\n(\S+)/.exec(message?.bodyText ?? '')?.[1];
   const key = link === undefined ? null : new URL(link).searchParams.get('key');
   if (key === null) throw new Error('no verification link was queued');
   return key;
@@ -187,13 +188,18 @@ beforeAll(async () => {
   await http.register(formbody);
   const findTenant = (name: string) => tenantSettingsRepository(owner.db).byName(name);
   registerRegistrationRoute(http, {
+    ...accountTestDeps,
+    findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant,
     publicBaseUrl: 'https://idp.example.test',
+    now: () => new Date(),
     createAccount,
     evaluatePassword,
   });
   registerActionTokenRoute(http, {
+    ...accountTestDeps,
+    findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant,
     getCurrentEmail: async (tx, subjectId) =>
@@ -246,15 +252,21 @@ describe('registration writes one account.registered row', () => {
     expect(await credentialRows(tenant.id)).toHaveLength(1);
   });
 
-  it('writes the row where verification is required too, and never the password', async () => {
+  it('writes the row where verification is required when the link is opened, not before', async () => {
     const tenant = await seedTenant({ verifyEmail: true });
     const requestId = `register-verify-${newId()}`;
 
     expect((await register(tenant.name, requestId)).statusCode).toBe(201);
+    expect(await rowsFor(tenant.id, requestId)).toEqual([]);
+    const opened = `open-${newId()}`;
+    const res = await openAndPress(http, tenant.name, await mailedVerificationKey(tenant.id), {
+      'x-request-id': opened,
+    });
 
-    const rows = await rowsFor(tenant.id, requestId);
-    expectSubjectRow(rows, 'account.registered', await subjectIdFor(tenant.id, 'ada'), requestId);
-    expect(JSON.stringify(rows)).not.toContain(PASSWORD);
+    expect(res.statusCode).toBe(200);
+    const rows = await rowsFor(tenant.id, opened);
+    expectSubjectRow(rows, 'account.registered', await subjectIdFor(tenant.id, 'ada'), opened);
+    expect(JSON.stringify(await credentialRows(tenant.id))).not.toContain(PASSWORD);
   });
 
   it('writes nothing for a refused registration', async () => {
@@ -266,7 +278,7 @@ describe('registration writes one account.registered row', () => {
     const weak = `weak-${newId()}`;
     const refused = await postForm(
       `/tenants/${tenant.name}/login-actions/registration`,
-      { username: 'bea', email: 'bea@example.test', password: 'short' },
+      { username: 'bea', email: 'bea@example.test', password: 'short', password_confirm: 'short' },
       weak,
     );
     expect(refused.statusCode).toBe(400);
@@ -275,19 +287,55 @@ describe('registration writes one account.registered row', () => {
     expect(await rowsFor(tenant.id, weak)).toEqual([]);
     expect(await credentialRows(tenant.id)).toHaveLength(1);
   });
+
+  it('writes one refused row, bound to the request, for a taken address under verification', async () => {
+    const tenant = await seedTenant({ verifyEmail: true });
+    const subjectOfAda = await seedAda(tenant.id);
+
+    const requestId = `again-${newId()}`;
+    const again = await postForm(
+      `/tenants/${tenant.name}/login-actions/registration`,
+      {
+        username: 'bea',
+        email: 'ada@example.test',
+        password: PASSWORD,
+        password_confirm: PASSWORD,
+      },
+      requestId,
+    );
+
+    expect(again.statusCode).toBe(201);
+    const rows = await rowsFor(tenant.id, requestId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      action: 'account.registration_duplicate',
+      outcome: 'refused',
+      actorSubjectId: null,
+      resourceType: 'subject',
+      resourceId: subjectOfAda,
+      requestId,
+      ip: '127.0.0.1',
+      detail: { reason: 'already_registered' },
+    });
+  });
 });
 
 describe('verifying an address writes one email.verified row', () => {
   it('names the subject the link was minted for', async () => {
     const tenant = await seedTenant({ verifyEmail: true });
-    expect((await register(tenant.name, `register-${newId()}`)).statusCode).toBe(201);
-    const key = await mailedVerificationKey(tenant.id);
+    const subjectId = await seedAda(tenant.id);
+    const { token: key } = await withTenant(app.db, tenant.id, (tx) =>
+      actionTokenRepository(tx).issue({
+        tenantId: tenant.id,
+        subjectId,
+        type: 'verify_email',
+        email: 'ada@example.test',
+        ttlSeconds: 300,
+      }),
+    );
     const requestId = `verify-${newId()}`;
 
-    const res = await http.inject({
-      url: `/tenants/${tenant.name}/login-actions/action-token?key=${encodeURIComponent(key)}`,
-      headers: { 'x-request-id': requestId },
-    });
+    const res = await openAndPress(http, tenant.name, key, { 'x-request-id': requestId });
 
     expect(res.statusCode).toBe(200);
     const rows = await rowsFor(tenant.id, requestId);
@@ -298,13 +346,11 @@ describe('verifying an address writes one email.verified row', () => {
   it('writes nothing for a link that has already been spent', async () => {
     const tenant = await seedTenant({ verifyEmail: true });
     expect((await register(tenant.name, `register-${newId()}`)).statusCode).toBe(201);
-    const url = `/tenants/${tenant.name}/login-actions/action-token?key=${encodeURIComponent(
-      await mailedVerificationKey(tenant.id),
-    )}`;
-    expect((await http.inject({ url })).statusCode).toBe(200);
+    const key = await mailedVerificationKey(tenant.id);
+    expect((await openAndPress(http, tenant.name, key)).statusCode).toBe(200);
     const replay = `verify-replay-${newId()}`;
 
-    const res = await http.inject({ url, headers: { 'x-request-id': replay } });
+    const res = await openAndPress(http, tenant.name, key, { 'x-request-id': replay });
 
     expect(res.statusCode).toBe(400);
     expect(await rowsFor(tenant.id, replay)).toEqual([]);

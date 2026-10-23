@@ -5,16 +5,16 @@ import {
   renderTotpEnrolmentPage,
   renderUpdatePasswordPage,
   type PasskeyEnrolmentOffer,
-  type RecoveryCodesOffer,
+  type BeginRecoveryCodesOutcome,
   type RequiredAction,
   type TotpEnrolmentOffer,
 } from '@odudu/authn-flows';
 import { requestContextFrom, type RequestContext } from '@odudu/domain-audit';
-import { type RenderedPage } from '@odudu/kernel';
+import { type PasswordRules, type RenderedPage } from '@odudu/kernel';
 import { type FastifyReply } from 'fastify';
 import { sendHtml } from '#/view/html-response';
 import { sendSignInExpired } from '#/view/routes/expired-sign-in';
-import { continuing, type ContinuationDeps } from '#/view/routes/continuation';
+import { continuation, type ContinuationDeps } from '#/view/routes/continuation';
 
 // What every route that can produce a 'required_action' outcome needs to
 // render the page for it — login.ts's own form submission and
@@ -23,6 +23,8 @@ import { continuing, type ContinuationDeps } from '#/view/routes/continuation';
 // repository's `TenantLookup` — the view layer never imports repository
 // (CLAUDE.md's layering table), and only `id` is read here.
 export interface RequiredActionResponseDeps extends ContinuationDeps {
+  // Also what the change-password page tells a person about the password.
+  findTenant(name: string): Promise<{ id: string; passwordRules: PasswordRules } | null>;
   authenticatedSubject(tenantId: string, authSessionId: string): Promise<string | null>;
   beginTotpEnrolment(
     tenantName: string,
@@ -39,7 +41,7 @@ export interface RequiredActionResponseDeps extends ContinuationDeps {
     tenantId: string,
     subjectId: string,
     request: RequestContext,
-  ): Promise<RecoveryCodesOffer>;
+  ): Promise<BeginRecoveryCodesOutcome>;
 }
 
 // The one place a 'required_action' outcome becomes a response, so login.ts,
@@ -53,14 +55,22 @@ export async function sendRequiredActionPage(
   subjectId: string,
   action: RequiredAction,
 ): Promise<FastifyReply> {
-  const send = async (page: RenderedPage) =>
-    sendHtml(reply, 200, await continuing(deps, tenantName, authSessionId, page));
+  // The first factor is verified by the time an action is owed, so the
+  // subject's own locale may choose the page's language.
+  const { locale, continuing, signInPath } = await continuation(
+    deps,
+    tenantName,
+    authSessionId,
+    reply,
+    { subject: subjectId },
+  );
+  const send = (page: RenderedPage) => sendHtml(reply, 200, continuing(page));
   const beginPasskey = deps.beginPasskeyEnrolment?.bind(deps);
   if (action === 'configure-passkey' && beginPasskey !== undefined) {
     const tenant = await deps.findTenant(tenantName);
     if (tenant !== null) {
       const offer = await beginPasskey(tenantName, tenant.id, subjectId, authSessionId);
-      return send(renderPasskeyEnrolmentPage(tenantName, authSessionId, offer));
+      return send(renderPasskeyEnrolmentPage(tenantName, authSessionId, offer, undefined, locale));
     }
   }
   if (action === 'generate-recovery-codes') {
@@ -71,24 +81,37 @@ export async function sendRequiredActionPage(
       if ((await deps.authenticatedSubject(tenant.id, authSessionId)) !== subjectId) {
         return sendSignInExpired(reply, deps, tenantName, authSessionId);
       }
-      const offer = await deps.beginRecoveryCodes(
+      const issued = await deps.beginRecoveryCodes(
         tenant.id,
         subjectId,
         requestContextFrom(reply.request),
       );
-      return send(renderRecoveryCodesPage(tenantName, authSessionId, offer));
+      // The set was refused because no second factor is held any more, and the
+      // action is cleared: signing in again goes on without it.
+      if (issued.kind === 'no_second_factor') {
+        return sendSignInExpired(reply, deps, tenantName, authSessionId);
+      }
+      return send(
+        renderRecoveryCodesPage(tenantName, authSessionId, issued.offer, undefined, locale),
+      );
     }
   }
   if (action === 'update-password') {
-    return send(renderUpdatePasswordPage(tenantName, authSessionId));
+    const tenant = await deps.findTenant(tenantName);
+    if (tenant !== null) {
+      return send(
+        renderUpdatePasswordPage(tenantName, authSessionId, [], tenant.passwordRules, locale),
+      );
+    }
+    return sendHtml(reply, 200, renderRequiredActionPage(action, signInPath, locale));
   }
   if (action !== 'configure-totp') {
-    return sendHtml(reply, 200, renderRequiredActionPage(action));
+    return sendHtml(reply, 200, renderRequiredActionPage(action, signInPath, locale));
   }
   const tenant = await deps.findTenant(tenantName);
   if (tenant === null) {
-    return sendHtml(reply, 200, renderRequiredActionPage(action));
+    return sendHtml(reply, 200, renderRequiredActionPage(action, signInPath, locale));
   }
   const offer = await deps.beginTotpEnrolment(tenantName, tenant.id, subjectId);
-  return send(renderTotpEnrolmentPage(tenantName, authSessionId, offer));
+  return send(renderTotpEnrolmentPage(tenantName, authSessionId, offer, undefined, locale));
 }

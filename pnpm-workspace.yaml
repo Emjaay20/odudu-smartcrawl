@@ -9,6 +9,8 @@ packages:
 # before we install it.
 minimumReleaseAge: 1440
 allowBuilds:
+  '@swc/core': false
+  core-js: false
   cpu-features: true
   esbuild: true
   protobufjs: true

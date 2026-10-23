@@ -208,6 +208,7 @@ beforeAll(async () => {
   await http.register(formbody);
   await http.register(
     oidcRoutes({
+      tls: false,
       database: app,
       ownerDatabase: owner,
       kek: KEK,
@@ -226,6 +227,7 @@ beforeAll(async () => {
   await httpLive.register(formbody);
   await httpLive.register(
     oidcRoutes({
+      tls: false,
       database: app,
       ownerDatabase: owner,
       kek: KEK,
@@ -741,7 +743,7 @@ describe('a required action is not satisfiable before the login that owes it is 
       password: PASSWORD,
     });
     expect(owed.statusCode).toBe(200);
-    expect(owed.body).toContain("Can't sign in yet");
+    expect(owed.body).toContain('Can&#39;t sign in yet');
 
     const bypass = await consentPost(tenantName, {
       auth_session_id: authSessionId,
@@ -750,7 +752,7 @@ describe('a required action is not satisfiable before the login that owes it is 
 
     expect(bypass.statusCode).toBe(200);
     expect(bypass.headers['set-cookie']).toBeUndefined();
-    expect(bypass.body).toContain("Can't sign in yet");
+    expect(bypass.body).toContain('Can&#39;t sign in yet');
     expect(await sessionCount(tenantId)).toBe(0);
 
     // And the parked login is exactly where it was: still asking for the
@@ -762,7 +764,7 @@ describe('a required action is not satisfiable before the login that owes it is 
     });
     expect(stillOwed.statusCode).toBe(200);
     expect(stillOwed.headers['set-cookie']).toBeUndefined();
-    expect(stillOwed.body).toContain("Can't sign in yet");
+    expect(stillOwed.body).toContain('Can&#39;t sign in yet');
   });
 
   // A live SSO cookie won by password alone, for a subject who then enrols

@@ -197,9 +197,11 @@ it('turns on every role in a token, on its own save', async () => {
   );
   await open();
   const section = screen.getByRole('region', { name: 'Roles in tokens' });
-  await user.click(
-    within(section).getByRole('switch', { name: 'Carry every role the subject holds' }),
+  const toggle = within(section).getByRole('switch', { name: 'Include all roles in tokens' });
+  expect(toggle).toHaveAccessibleDescription(
+    "On: the roles scope carries all of a person's roles. Off: only roles mapped to the granted scopes.",
   );
+  await user.click(toggle);
   await user.click(within(section).getByRole('button', { name: 'Save Roles in tokens' }));
   await waitFor(() => {
     expect(sent.find((s) => s.method === 'PATCH')?.body).toEqual({ full_scope_allowed: true });

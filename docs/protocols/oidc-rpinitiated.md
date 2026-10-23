@@ -114,6 +114,26 @@ That is why a hintless logout still redirects once the value matches
 (`logout.int.test.ts`'s no-session redirect case) and why a mismatching
 value is refused whether a hint accompanied it or not.
 
+### A hint with no `client_id` names its client by its audience
+
+§2 makes `client_id` optional and the hint recommended whenever a redirect is
+requested, so an RP that sends only `id_token_hint` and
+`post_logout_redirect_uri` is following the text. §3's registration match
+needs a client to match against, and a hint that verified already names the
+one it was issued to. `handleLogoutRequest` takes that client from the hint's
+`aud` when `client_id` is absent and the hint has exactly one audience; a hint
+with several says nowhere which of them is asking, so none is used and the
+redirect is refused with the session still ended. An audience that is no client
+of this tenant resolves to no registered address, the same refusal. When
+`client_id` is present nothing changes: the pair must agree, as above.
+
+The resolved client, not the parameter, goes into the confirmation form, so
+the form's own POST finds the same registered list. `exp` is judged no more
+here than with a `client_id`: the hint only identifies the client and the
+session. Covered by `[ODUDU-LOGOUT-HINT-CLIENT-01]` in `logout.int.test.ts`.
+The OIDF plans in `infra/conformance` (basic, config, dynamic OP) include no
+RP-initiated logout test, so no plan variant exercises this path.
+
 ### The scheme in the advertised endpoint
 
 `end_session_endpoint` is built by the same `tenantIssuerFor` the issuer

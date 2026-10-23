@@ -1,0 +1,598 @@
+/*
+ * The page shell and the components the server-rendered pages use. Tokens
+ * only, logical properties only; a page without this file is still usable
+ * markup.
+ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--surface-page);
+  color: var(--ink-primary);
+  font-family: var(--font-sans);
+  font-size: var(--type-15);
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-block-size: 100vb;
+  display: grid;
+  /* One width for every page and every state: a long sentence wraps inside it. */
+  grid-template-columns: minmax(0, 28rem);
+  justify-content: center;
+  align-content: center;
+  padding: var(--space-6) var(--space-4);
+  background-color: var(--surface-page);
+  background-image:
+    linear-gradient(var(--surface-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--surface-grid) 1px, transparent 1px);
+  background-size: var(--space-8) var(--space-8);
+}
+
+body > * {
+  min-inline-size: 0;
+  margin-block: 0;
+  overflow-wrap: anywhere;
+}
+
+main,
+body > form,
+body > div,
+body > section {
+  padding: var(--space-6);
+  background: var(--surface-panel);
+  border: var(--hairline);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-overlay);
+}
+
+main > :nth-last-child(1 of :not(iframe, script, noscript, [hidden])),
+form > :last-child {
+  margin-block-end: 0;
+}
+
+h1 {
+  margin: 0 0 var(--space-4);
+  font-size: var(--type-20);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+h2 {
+  margin: var(--space-6) 0 var(--space-2);
+  font-size: var(--type-15);
+  font-weight: 600;
+}
+
+p,
+ul,
+ol {
+  margin: 0 0 var(--space-4);
+}
+
+ul,
+ol {
+  padding-inline-start: var(--space-6);
+}
+
+li + li {
+  margin-block-start: var(--space-1);
+}
+
+small {
+  color: var(--ink-muted);
+  font-size: var(--type-13);
+}
+
+strong {
+  font-weight: 600;
+}
+
+code {
+  padding: 0 var(--space-1);
+  background: var(--surface-sunken);
+  border: var(--hairline);
+  border-radius: var(--radius-s);
+  font-family: var(--font-mono);
+  font-size: var(--type-13);
+  overflow-wrap: anywhere;
+}
+
+a {
+  color: var(--signal-active-ink);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+form {
+  margin: 0;
+}
+
+form > * + *,
+.stack > * + * {
+  margin-block-start: var(--space-4);
+}
+
+label {
+  display: grid;
+  gap: var(--space-2);
+  font-size: var(--type-13);
+  font-weight: 500;
+  line-height: var(--label-line);
+}
+
+label:has(> input[type='checkbox'], > input[type='radio']) {
+  display: block;
+  position: relative;
+  padding-inline-start: calc(var(--space-4) + var(--space-2));
+}
+
+label:has(> input[type='checkbox'], > input[type='radio']) > input {
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: calc((var(--label-line) - var(--space-4)) / 2);
+}
+
+input {
+  display: block;
+  inline-size: 100%;
+  min-block-size: var(--control-height);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-m);
+  color: inherit;
+  font: inherit;
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  inline-size: var(--space-4);
+  min-block-size: 0;
+  block-size: var(--space-4);
+  margin: 0;
+  accent-color: var(--signal-active-ink);
+}
+
+input::placeholder {
+  color: var(--ink-muted);
+}
+
+button {
+  min-block-size: var(--control-height);
+  min-inline-size: var(--target-min);
+  padding: var(--space-2) var(--space-4);
+  background: var(--ink-primary);
+  border: 1px solid var(--ink-primary);
+  border-radius: var(--radius-m);
+  color: var(--surface-panel);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  transition: background-color var(--motion-fast) var(--ease);
+}
+
+button:hover {
+  background: var(--ink-muted);
+  border-color: var(--ink-muted);
+}
+
+button[type='submit'] {
+  inline-size: 100%;
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--ink-primary);
+  border-color: var(--border-strong);
+}
+
+button.secondary:hover {
+  background: var(--surface-sunken);
+  border-color: var(--ink-muted);
+}
+
+button.quiet {
+  background: transparent;
+  border-color: transparent;
+  color: var(--signal-active-ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+button.quiet:hover {
+  background: var(--surface-sunken);
+  border-color: transparent;
+}
+
+button.choice {
+  text-align: start;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--signal-danger);
+  border: 1px solid var(--signal-danger-ink);
+  border-radius: var(--radius-m);
+  color: var(--signal-danger-ink);
+  font-weight: 500;
+}
+
+/* A marker that is not a colour: a ring holding a mark, drawn by the stylesheet. */
+.alert::before {
+  content: '!';
+  content: '!' / '';
+  flex: none;
+  display: grid;
+  place-items: center;
+  inline-size: var(--space-6);
+  block-size: var(--space-6);
+  margin-block-start: -1px;
+  background: var(--signal-danger-ink);
+  border-radius: 50%;
+  color: var(--signal-danger);
+  font-size: var(--type-13);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.alert ul {
+  margin: 0;
+  padding-inline-start: 0;
+  list-style: none;
+}
+
+.alert.notice {
+  background: var(--signal-active);
+  border-color: var(--signal-active-ink);
+  color: var(--signal-active-ink);
+}
+
+.alert.notice::before {
+  content: 'i';
+  content: 'i' / '';
+  background: var(--signal-active-ink);
+  color: var(--signal-active);
+}
+
+.alert[hidden] {
+  display: none;
+}
+
+input[aria-invalid='true'] {
+  border-color: var(--signal-danger-ink);
+}
+
+/* The ways on from a form, set apart from its button; a link in the flow of a
+   sentence keeps its own height, so these take one to stay a target. */
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-4);
+  margin: var(--space-4) 0 0;
+  font-size: var(--type-13);
+}
+
+.links a {
+  display: inline-block;
+  padding-block: var(--space-2);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-6);
+}
+
+.mark {
+  flex: none;
+  display: block;
+  inline-size: var(--space-6);
+  block-size: var(--space-6);
+}
+
+.wordmark {
+  font-family: var(--font-mono);
+  font-size: var(--type-15);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.intro {
+  margin-block-end: var(--space-6);
+}
+
+.intro h1 {
+  margin: 0;
+}
+
+.intro p {
+  margin: var(--space-1) 0 0;
+  color: var(--ink-muted);
+}
+
+.intro .tenant {
+  font-family: var(--font-mono);
+  font-size: var(--type-12);
+}
+
+.intro .context + .tenant {
+  margin-block-start: var(--space-2);
+}
+
+main > svg:not(.mark, .lost) {
+  display: block;
+  inline-size: min(100%, 14rem);
+  block-size: auto;
+  margin: 0 auto var(--space-4);
+  background: #fff;
+  border-radius: var(--radius-m);
+}
+
+.hint {
+  color: var(--ink-muted);
+  font-size: var(--type-13);
+}
+
+/* The list of what a password needs sits in `.hint`. Its first row is as tall as
+   the toggle a script reveals, so nothing moves when it does. */
+.rules-head {
+  min-block-size: var(--control-height);
+}
+
+.rules li[data-met='true']::marker {
+  content: '\2713  ';
+}
+
+.rules li[data-met='false']::marker {
+  content: '\25CB  ';
+}
+
+iframe {
+  position: absolute;
+  inset-inline-start: 0;
+  inline-size: 1px;
+  block-size: 1px;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* The not-found drawing plays twice (4.8 s) and rests on its last frame; the 500 page
+   shows it still. Only transform, opacity and stroke-dashoffset move. */
+.lost {
+  display: block;
+  inline-size: min(100%, 20rem);
+  block-size: auto;
+  margin-block-end: var(--space-4);
+  color: var(--ink-primary);
+}
+
+.lost-route,
+.lost-bridge {
+  opacity: 0.55;
+}
+
+.lost-route {
+  stroke-dasharray: 1;
+}
+
+.lost-bridge {
+  display: none;
+}
+
+.lost-staff {
+  transform-box: view-box;
+  transform-origin: 214px 84px;
+  transform: rotate(-7deg);
+}
+
+@keyframes lost-draw-a {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  1% {
+    opacity: 0.55;
+  }
+  40%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.55;
+  }
+}
+
+@keyframes lost-draw-a-again {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  1% {
+    opacity: 0.55;
+  }
+  40%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.55;
+  }
+}
+
+@keyframes lost-draw-b {
+  0%,
+  35% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  36% {
+    opacity: 0.55;
+  }
+  55%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.55;
+  }
+}
+
+@keyframes lost-draw-b-again {
+  0%,
+  35% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  36% {
+    opacity: 0.55;
+  }
+  55%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.55;
+  }
+}
+
+@keyframes lost-settle {
+  0%,
+  55% {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(2px);
+  }
+  78%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lost-settle-again {
+  0%,
+  55% {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(2px);
+  }
+  78%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lost-lean {
+  0%,
+  75% {
+    transform: rotate(0);
+  }
+  100% {
+    transform: rotate(-7deg);
+  }
+}
+
+@keyframes lost-lean-again {
+  0%,
+  75% {
+    transform: rotate(0);
+  }
+  100% {
+    transform: rotate(-7deg);
+  }
+}
+
+.lost-route-a {
+  animation: lost-draw-a 2.4s ease-out 2 both;
+}
+
+.lost-route-b {
+  animation: lost-draw-b 2.4s ease-out 2 both;
+}
+
+.lost-badge {
+  animation: lost-settle 2.4s ease-out 2 both;
+}
+
+.lost-staff {
+  animation: lost-lean 2.4s ease-out 2 both;
+}
+
+/* A pointer over the drawing replays it. There is no keyboard replay: the
+   drawing is decorative and takes no focus. */
+.lost:hover .lost-route-a {
+  animation-name: lost-draw-a-again;
+}
+
+.lost:hover .lost-route-b {
+  animation-name: lost-draw-b-again;
+}
+
+.lost:hover .lost-badge {
+  animation-name: lost-settle-again;
+}
+
+.lost:hover .lost-staff {
+  animation-name: lost-lean-again;
+}
+
+.lost-calm .lost-route-a,
+.lost-calm .lost-route-b,
+.lost-calm .lost-badge,
+.lost-calm .lost-staff,
+.lost-calm:hover .lost-route-a,
+.lost-calm:hover .lost-route-b,
+.lost-calm:hover .lost-badge,
+.lost-calm:hover .lost-staff {
+  animation: none;
+}
+
+.lost-calm .lost-badge {
+  display: none;
+}
+
+.lost-calm .lost-bridge {
+  display: inline;
+}
+
+.lost-calm .lost-staff {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button {
+    transition: none;
+  }
+
+  .lost .lost-route-a,
+  .lost:hover .lost-route-a,
+  .lost .lost-route-b,
+  .lost:hover .lost-route-b,
+  .lost .lost-badge,
+  .lost:hover .lost-badge,
+  .lost .lost-staff,
+  .lost:hover .lost-staff {
+    animation: none;
+  }
+}

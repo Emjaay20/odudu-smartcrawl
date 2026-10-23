@@ -54,7 +54,7 @@ session read it sits beside.
 
 ### What re-running every transcript found, 2026-09-17
 
-`docs/request-paths.md` promises that every command in it was executed and
+`apps/docs/content/en/reference/transcripts/request-paths/` promises that every command in it was executed and
 every response is real output, and the phase-close pass re-ran all of it —
 not only the sections P2b added. Thirteen transcripts were stale or
 unreproducible, in four shapes worth naming because three of them look
@@ -246,7 +246,7 @@ single address. ADR 0023 holds the reasoning and the rejected alternative
 (both halves in Postgres, at the cost of a write on every request to a
 throttled route, exactly when the database can least absorb it).
 
-**Two transcripts in `docs/request-paths.md` were re-run rather than
+**Two transcripts in `apps/docs/content/en/reference/transcripts/request-paths/` were re-run rather than
 re-worded.** The lockout's bursts are fifteen submissions in a minute from
 one address, which the new default refuses, so that section now says it was
 captured with `ODUDU_THROTTLE_LIMIT=1000` and the stack passes the variable
@@ -300,7 +300,7 @@ the absence of `location` and `set-cookie`. Against the container, where
 `apps/server` stamps an `x-request-id` and the login page mints a CSP script
 nonce for its passkey button, those two are normalised out as well: both
 differ between two identical wrong passwords, so neither can distinguish
-anything. Eight submissions hash identically in `docs/request-paths.md`.
+anything. Eight submissions hash identically in `apps/docs/content/en/reference/transcripts/request-paths/`.
 **An attempt during a lockout still counts**, which is what keeps a locked
 account the same statements as an unlocked one; the cost is that retrying
 extends the wait, which the transcript states.
@@ -394,7 +394,7 @@ Both are injected at the composition root beside `setPassword`, for the
 reason that one is. **What this leaves open: reset redemption still
 consults no history**, so a password retired more than one change ago can
 be restored through a reset and its age starts again — README.md and
-`docs/request-paths.md` both say so rather than stating the guarantee
+`apps/docs/content/en/reference/transcripts/request-paths/` both say so rather than stating the guarantee
 unqualified. And expiry compares a `created_at` the database wrote with an
 instant the application's clock reports, so the two clocks must agree to
 within far less than a day — which they do, but nothing asserts it.
@@ -519,7 +519,7 @@ through the required-action route's existing authorization check
 base URL a relying party id can be derived from; outside production the
 action reports itself unsupported rather than binding a credential to a
 guessed domain. The enrolment page calls `navigator.credentials.create()`
-— which is why `docs/request-paths.md`'s passkey section states its flow
+— which is why `apps/docs/content/en/reference/transcripts/request-paths/`'s passkey section states its flow
 and its refusals instead of showing output nobody produced, and points at
 `packages/authn-flows/tests/passkey-enrolment.int.test.ts`, which drives
 the whole ceremony against real PostgreSQL with a software authenticator
@@ -552,7 +552,7 @@ the credential is written only by a submission that verifies a code.
 `id_token_hint` naming a different subject now also clears the attempt's
 `satisfied` and `subject_id` (`resetAuthenticationProgress`), without which
 the binding would have stranded that refusal's documented retry path.
-`docs/request-paths.md` gained a live TOTP walkthrough — real enrolment,
+`apps/docs/content/en/reference/transcripts/request-paths/` gained a live TOTP walkthrough — real enrolment,
 real replay refusal, real `amr: ["otp","pwd"]` / `acr: "2"`.
 
 **Task 15 is RFC 6238 TOTP, built rather than installed.**
@@ -758,7 +758,7 @@ an empty array — for an authenticator list with nothing in it, rather than
 asserting `'1'` about a login the record does not describe; a session
 recorded before migration 0033 existed, or one somehow established with no
 authenticators, no longer reports a single factor it cannot back up.
-`amr`/`acr`'s presence in `docs/request-paths.md`'s four decoded-ID-token
+`amr`/`acr`'s presence in `apps/docs/content/en/reference/transcripts/request-paths/`'s four decoded-ID-token
 transcripts was re-run against the compose stack rather than hand-edited
 in, and `tests/docs/id-token-claims.test.ts` now fails the build if a
 transcript carrying `auth_time` ever again lacks either claim. A dedicated
@@ -941,7 +941,7 @@ remembering: an access token carries roles and groups unless told not to,
 and carries no profile claims unless told to. `include_in_id_token` gates
 `roles`/`groups` off the ID token the same way, unconditionally — a full
 role list has no place going to a browser. `/userinfo` reads the access
-token's gate, not the ID token's. See [docs/request-paths.md](../request-paths.md#roles-once-a-scope-reaches-it)
+token's gate, not the ID token's. See [the request paths](../../apps/docs/content/en/reference/transcripts/request-paths/path-a-authorization-code-with-pkce.md#roles-once-a-scope-reaches-it)
 for the walkthrough — its "I created a role and it is not in my token"
 paragraph, and [README.md](../../README.md)'s "Give ada a role" section, are
 the two places this order-of-checks is written down for a reader.

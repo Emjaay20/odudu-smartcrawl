@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parsePrompt } from '#/service/prompt';
+import { parsePrompt, promptValuesSupported } from '#/service/prompt';
 
 function valuesOf(raw: string | undefined): string[] {
   const parsed = parsePrompt(raw);
@@ -16,8 +16,25 @@ describe('parsePrompt', () => {
     expect(valuesOf(raw)).toEqual([]);
   });
 
-  it.each(['none', 'login', 'consent', 'select_account'])('accepts %s on its own', (value) => {
-    expect(valuesOf(value)).toEqual([value]);
+  it.each(['none', 'login', 'consent', 'select_account', 'create'])(
+    'accepts %s on its own',
+    (value) => {
+      expect(valuesOf(value)).toEqual([value]);
+    },
+  );
+
+  // Initiating User Registration §4 recommends `create` travel alone, since
+  // the other values can contradict it; a request combining them is refused
+  // rather than answered by guessing which half the client meant.
+  it.each(['create login', 'consent create', 'create select_account', 'none create'])(
+    'refuses %s, which combines create with another value',
+    (raw) => {
+      expect(parsePrompt(raw).kind).toBe('invalid');
+    },
+  );
+
+  it('collapses a repeated create to one value', () => {
+    expect(valuesOf('create create')).toEqual(['create']);
   });
 
   it('accepts a space-delimited list of defined values', () => {
@@ -50,7 +67,28 @@ describe('parsePrompt', () => {
   // Case-sensitive: `Login` is not `login`, and guessing at the client's
   // intent is how a request asking for reauthentication gets silently
   // answered without it.
-  it.each(['NONE', 'Login'])('refuses %s rather than case-folding it', (raw) => {
+  it.each(['NONE', 'Login', 'Create'])('refuses %s rather than case-folding it', (raw) => {
     expect(parsePrompt(raw).kind).toBe('invalid');
+  });
+});
+
+describe('promptValuesSupported', () => {
+  it('names the four Core values for a tenant with registration off', () => {
+    expect(promptValuesSupported({ registrationAllowed: false })).toEqual([
+      'none',
+      'login',
+      'consent',
+      'select_account',
+    ]);
+  });
+
+  it('adds create only for a tenant that lets people register', () => {
+    expect(promptValuesSupported({ registrationAllowed: true })).toEqual([
+      'none',
+      'login',
+      'consent',
+      'select_account',
+      'create',
+    ]);
   });
 });

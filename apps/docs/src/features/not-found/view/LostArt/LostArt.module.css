@@ -1,0 +1,194 @@
+/* The drawing plays twice, about five seconds in all, and rests on its last
+   frame; a pointer over it replays it. Only transform, opacity
+   and stroke-dashoffset move. */
+.lost {
+  display: block;
+  inline-size: min(100%, 20rem);
+  block-size: auto;
+  margin-block-end: var(--space-4);
+  color: var(--ink-primary);
+}
+
+.route,
+.bridge {
+  opacity: 0.55;
+}
+
+.route {
+  stroke-dasharray: 1;
+}
+
+.bridge {
+  display: none;
+}
+
+.staff {
+  transform-box: view-box;
+  transform-origin: 214px 84px;
+  transform: rotate(-7deg);
+}
+
+@keyframes draw-a {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  1% {
+    opacity: 0.55;
+  }
+  40%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.55;
+  }
+}
+
+@keyframes draw-a-again {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  1% {
+    opacity: 0.55;
+  }
+  40%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.55;
+  }
+}
+
+@keyframes draw-b {
+  0%,
+  35% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  36% {
+    opacity: 0.55;
+  }
+  55%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.55;
+  }
+}
+
+@keyframes draw-b-again {
+  0%,
+  35% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  36% {
+    opacity: 0.55;
+  }
+  55%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.55;
+  }
+}
+
+@keyframes settle {
+  0%,
+  55% {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(2px);
+  }
+  78%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes settle-again {
+  0%,
+  55% {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(2px);
+  }
+  78%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lean {
+  0%,
+  75% {
+    transform: rotate(0);
+  }
+  100% {
+    transform: rotate(-7deg);
+  }
+}
+
+@keyframes lean-again {
+  0%,
+  75% {
+    transform: rotate(0);
+  }
+  100% {
+    transform: rotate(-7deg);
+  }
+}
+
+.routeA {
+  composes: route;
+  animation: draw-a 2.4s ease-out 2 both;
+}
+
+.routeB {
+  composes: route;
+  animation: draw-b 2.4s ease-out 2 both;
+}
+
+.badge {
+  animation: settle 2.4s ease-out 2 both;
+}
+
+.staff {
+  animation: lean 2.4s ease-out 2 both;
+}
+
+/* A pointer over the drawing replays it. There is no keyboard replay: the
+   drawing is decorative and takes no focus. */
+.lost:hover .routeA {
+  animation-name: draw-a-again;
+}
+
+.lost:hover .routeB {
+  animation-name: draw-b-again;
+}
+
+.lost:hover .badge {
+  animation-name: settle-again;
+}
+
+.lost:hover .staff {
+  animation-name: lean-again;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lost .routeA,
+  .lost:hover .routeA,
+  .lost .routeB,
+  .lost:hover .routeB,
+  .lost .badge,
+  .lost:hover .badge,
+  .lost .staff,
+  .lost:hover .staff {
+    animation: none;
+  }
+}

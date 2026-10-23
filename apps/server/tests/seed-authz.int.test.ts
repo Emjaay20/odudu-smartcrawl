@@ -51,6 +51,7 @@ beforeAll(async () => {
 
   const config = loadConfig({ ...process.env, ODUDU_LOG_LEVEL: 'silent' });
   http = buildApp({
+    tls: false,
     database: appDb,
     ownerDatabase: owner,
     kek: KEK,
@@ -565,6 +566,45 @@ describe('the seed CLI, provisioning the identity model it now has', () => {
       .where(eq(clientScopes.name, 'reports:read'));
     const [row] = rows;
     expect(row?.includeInIdToken).toBe(false);
+  });
+
+  // The rule refuses on creation and rename; an account made before it
+  // existed keeps working, and nothing rewrites its name.
+  it('lets a username that already holds a bidirectional control sign in', async () => {
+    const tenantName = `demo-${newId()}`;
+    const tenant = await seed(['tenant', '--name', tenantName]);
+    await seed([
+      'client',
+      '--tenant',
+      tenantName,
+      '--client-id',
+      'app',
+      '--public',
+      '--redirect-uri',
+      REDIRECT_URI,
+    ]);
+    await seed([
+      'user',
+      '--tenant',
+      tenantName,
+      '--username',
+      'ada',
+      '--password',
+      'correct horse battery',
+    ]);
+    const legacy = `ada${String.fromCodePoint(0x202e)}`;
+    await owner.db
+      .update(users)
+      .set({ username: legacy })
+      .where(and(eq(users.tenantId, tenant.tenantId), eq(users.username, 'ada')));
+
+    const tokens = await completeCodeFlow({
+      clientId: 'app',
+      scope: 'openid',
+      tenantName,
+      username: legacy,
+    });
+    expect(tokens.access_token).toBeDefined();
   });
 
   it('updates a claim column through seed profile', async () => {

@@ -1,0 +1,237 @@
+name: release
+
+# Publishes a version of Odudu when a tag like v0.1.0 or v0.1.0-rc.1 is
+# pushed: a multi-architecture image on ghcr.io with its SBOM and build
+# provenance, a keyless signature, and a GitHub Release carrying the version's
+# compose.yaml. A stable tag then publishes the documentation site through
+# pages.yml. RELEASING.md says how to cut one.
+#
+# Run by hand from a branch, it does everything except publish: the image is
+# built for both architectures and the release notes and compose file are
+# checked, and nothing is pushed or created.
+#
+# Every job gets only the permissions it uses. The workflow's own token is the
+# only credential, and no step runs code from a pull request.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to build without publishing, such as 0.1.0-rc.1. CHANGELOG.md must have a section for it.
+        required: true
+        default: 0.1.0-rc.1
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  # Everything that can refuse a release does so here, before an image exists.
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      checks: read
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      prerelease: ${{ steps.release.outputs.prerelease }}
+      tags: ${{ steps.release.outputs.tags }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+
+      # The tag, or the version typed for a dry run, is checked against the
+      # shape of a release before anything else reads it.
+      - name: Work out the version and the image tags
+        id: release
+        env:
+          TAG: ${{ github.event_name == 'push' && github.ref_name || format('v{0}', inputs.version) }}
+        run: node tools/release/src/index.ts tags "$TAG" "$IMAGE"
+
+      - name: Require release notes for this version
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: node tools/release/src/index.ts notes CHANGELOG.md "$VERSION" > /dev/null
+
+      - name: Require a compose file that can be stamped
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: node tools/release/src/index.ts stamp-compose quickstart/compose.yaml "$VERSION" > /dev/null
+
+      # The check `verify` ends in. A tag pushed before CI finished fails here:
+      # run the workflow again once `gate` is green.
+      - name: Require that CI passed on this commit
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          passed="$(gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100" \
+            --jq '.check_runs[] | select(.name == "gate" and .conclusion == "success") | .id' | wc -l)"
+          if [ "$passed" -lt 1 ]; then
+            echo "::error::The gate check has not passed on $GITHUB_SHA. Tag a commit CI has passed on, or run this workflow again when it has."
+            exit 1
+          fi
+
+  image:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # One build for both architectures, so the SBOM and the provenance
+      # attach to the image index that is signed.
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          platforms: arm64
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Log in to ghcr.io
+        if: github.event_name == 'push'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: 'false'
+        with:
+          context: .
+          file: infra/docker/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ needs.prepare.outputs.tags }}
+          build-args: |
+            ODUDU_VERSION=${{ needs.prepare.outputs.version }}
+            ODUDU_REVISION=${{ github.sha }}
+          labels: |
+            org.opencontainers.image.title=odudu
+            org.opencontainers.image.description=An identity provider you run yourself
+          sbom: true
+          provenance: mode=max
+          cache-from: type=gha,scope=odudu-release
+          cache-to: type=gha,scope=odudu-release,mode=max,ignore-error=true
+
+      - name: Require both architectures in the pushed image
+        if: github.event_name == 'push'
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          docker buildx imagetools inspect "$IMAGE@$DIGEST" > manifest.txt
+          cat manifest.txt
+          grep -q 'Platform:.*linux/amd64' manifest.txt
+          grep -q 'Platform:.*linux/arm64' manifest.txt
+
+      - name: Write the SBOM of each architecture to a file
+        if: github.event_name == 'push'
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          docker buildx imagetools inspect "$IMAGE@$DIGEST" --format '{{ json .SBOM }}' > odudu-sbom.json
+          jq -e 'keys | contains(["linux/amd64", "linux/arm64"])' odudu-sbom.json
+
+      - name: Install cosign
+        if: github.event_name == 'push'
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      # By digest, never by tag: a tag can move, the digest names these bytes.
+      - name: Sign the image
+        if: github.event_name == 'push'
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: cosign sign --yes "$IMAGE@$DIGEST"
+
+      # The release fails here if the signature does not verify against this
+      # workflow's own identity.
+      - name: Verify the signature
+        if: github.event_name == 'push'
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          cosign verify "$IMAGE@$DIGEST" \
+            --certificate-identity-regexp "^https://github.com/$GITHUB_REPOSITORY/\.github/workflows/release\.yml@refs/tags/v" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com
+
+      - name: Keep the SBOM for the release
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sbom
+          path: odudu-sbom.json
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    needs: [prepare, image]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: sbom
+          path: assets
+
+      - name: Make the release's files
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          node tools/release/src/index.ts stamp-compose quickstart/compose.yaml "$VERSION" > assets/compose.yaml
+          node tools/release/src/index.ts notes CHANGELOG.md "$VERSION" > notes.md
+          (cd assets && sha256sum compose.yaml odudu-sbom.json > SHA256SUMS)
+
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+        run: |
+          kind=(--latest)
+          if [ "$PRERELEASE" = "true" ]; then kind=(--prerelease); fi
+          gh release create "$TAG" assets/compose.yaml assets/odudu-sbom.json assets/SHA256SUMS \
+            --verify-tag --title "$TAG" --notes-file notes.md "${kind[@]}"
+
+  # Only after the release exists, and never for a release candidate, so a
+  # failed release leaves the live site as it was. pages.yml does the work.
+  site:
+    needs: [prepare, release]
+    if: needs.prepare.outputs.prerelease == 'false'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages.yml

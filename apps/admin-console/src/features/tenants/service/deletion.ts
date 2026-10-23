@@ -39,7 +39,7 @@ export function deleteState({
 }
 
 // Every table holding a tenant's rows references `tenants` ON DELETE
-// CASCADE, directly or through a subject or a client (docs/admin-paths.md).
+// CASCADE, directly or through a subject or a client (apps/docs/content/en/reference/transcripts/admin-paths/delete-admintenantstenant.md).
 export function deleteConsequence(name: string): string {
   return `Deleting ${name} removes it and everything in it, permanently: its subjects with their credentials, sessions and grants; its clients and their secrets; its groups, roles and scopes; its signing keys, so no token it issued can be verified again; its settings, mail relay and registration tokens; and its audit trail. The deletion itself is recorded in the system tenant's audit trail. This cannot be undone. An export taken first can create a new tenant with the same configuration.`;
 }

@@ -1,3 +1,5 @@
+export { type FindHeldSignIn, type HeldSignIn } from '#/service/sign-in-resume';
+export { type MailGate, type MailKind } from '#/service/mail-gate';
 export { actionTokens, type ActionTokenRecord, type ActionTokenType } from '#/schema/action-tokens';
 export { actionTokenRepository, type IssueActionToken } from '#/repository/action-tokens';
 export { tenantSettingsRepository, type TenantSettings } from '#/repository/tenant-settings';
@@ -38,7 +40,6 @@ export {
 export {
   renderResetPasswordForm,
   renderResetPasswordSucceededPage,
-  renderResetPasswordRequiredPage,
   renderResetLinkFailedPage,
   renderResetRequestForm,
   renderResetRequestedPage,
@@ -55,7 +56,14 @@ export {
   type NewAccountInput,
   type RegisterDeps,
   type RegisterOutcome,
+  type TakenIdentifiers,
 } from '#/usecase/register';
+export {
+  completeRegistration,
+  type CompleteRegistrationDeps,
+  type CompleteRegistrationResult,
+  type VerifiedAccountInput,
+} from '#/usecase/complete-registration';
 export {
   registerRegistrationRoute,
   type RegistrationTenantLookup,

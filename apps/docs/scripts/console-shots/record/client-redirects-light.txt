@@ -1,0 +1,78 @@
+@layer {
+  [data-react-aria-pressable] {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+}
+Odudu console
+Skip to content
+odudu · demo
+Overview
+Identity
+Subjects
+Groups
+Roles
+Applications
+Clients
+Scopes
+Registration tokens
+Security
+Sign-in flow
+Signing keys
+Sessions
+Tenant
+Settings
+Email
+Export
+Observe
+Audit trail
+Signed in as 
+admin@odudu.local
+ from 
+system
+Theme
+System
+Light
+Dark
+Switch tenant
+Sign out
+Collapse menu
+or press 
+[
+odudu · demo
+Menu
+System
+Acting in 
+demo
+ with system authority
+Back to system
+Applications
+›
+Clients
+›
+my-app
+‹
+Clients
+my-app
+enabled
+my-app
+General
+Redirects & origins
+Tokens
+Scopes
+Logout
+Advanced
+Roles
+Service account
+Sessions
+Activity
+Redirect URIs
+Redirect URIs
+Remove
+Add redirect URI
+Where sign-in may send the browser back: an https address, an http address on this machine, or an application scheme such as com.example.app:/cb. A request must name one exactly; no other is followed. 1 of 200 redirect URIs.
+Web origins
+Web origins
+Add web origin
+The origins a browser may call this client's endpoints from. An origin is a scheme and host with no path, such as https://app.example. Use + to allow the origin of every redirect URI above. 0 of 200 web origins.
+Where a sign-out may send the browser back is set apart from these, under Logout. 
+Open Logout

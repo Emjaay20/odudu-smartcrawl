@@ -29,9 +29,20 @@ it('lists the roles the scope maps, and offers the tenant roles to choose from',
   ).toBeVisible();
 });
 
-it('says a scope that maps no role carries none', async () => {
+it('says where the switch for including all roles lives', async () => {
   renderConsoleAt('/console/acme/scopes/s-rep?tab=roles', scopeRoutes());
-  expect(await screen.findByText('reports:read carries no role.')).toBeVisible();
+  expect(
+    await screen.findByText("'Include all roles in tokens' is set on each client, under Tokens."),
+  ).toBeVisible();
+});
+
+it('says a scope that maps no role gives clients none unless they include all roles', async () => {
+  renderConsoleAt('/console/acme/scopes/s-rep?tab=roles', scopeRoutes());
+  expect(
+    await screen.findByText(
+      'No roles mapped. Unless a client includes all roles, it gets none from this scope.',
+    ),
+  ).toBeVisible();
 });
 
 it('searches the roles on the server, and saves the set on the ETag it was read with', async () => {
@@ -107,7 +118,7 @@ it('takes the new ETag from the answer, so a second save does not 412', async ()
   const option = await within(section).findByRole('option', { name: /^auditor, a tenant role/u });
   await user.click(option);
   await user.click(within(section).getByRole('button', { name: 'Save Roles' }));
-  await within(section).findByText('billing carries no role.');
+  await within(section).findByText(/^No roles mapped\./u);
   await user.click(
     await within(section).findByRole('option', { name: /^auditor, a tenant role/u }),
   );

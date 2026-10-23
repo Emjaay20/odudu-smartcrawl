@@ -1,5 +1,5 @@
 import { useGatewaySessionEnd } from '#/features/session/repository/useGatewaySessionEnd';
-import { CONSOLE_ROOT } from '#/features/session/service';
+import { CONSOLE_ROOT } from '#/shared/service/address';
 import { useDrafts } from '#/shared/repository/useDrafts';
 import { useLeaveConsole } from '#/features/session/repository/useLeaveConsole';
 

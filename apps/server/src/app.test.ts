@@ -30,6 +30,7 @@ const noSuchTenantDatabase: DatabaseHandle = {
 
 function appWithIpProbe(trustProxy?: boolean) {
   const app = buildApp({
+    tls: false,
     database,
     ownerDatabase: database,
     kek: config.ODUDU_KEK,
@@ -82,6 +83,7 @@ describe('the per-origin throttle keys an address by its network', () => {
 
   function throttledApp(trustProxy = false) {
     return buildApp({
+      tls: false,
       database: noSuchTenantDatabase,
       ownerDatabase: noSuchTenantDatabase,
       kek: config.ODUDU_KEK,
@@ -176,6 +178,7 @@ describe('the sign-in budget per address and username', () => {
 
   function loginApp(database: DatabaseHandle, loginLimit = 3, trustProxy = false) {
     return buildApp({
+      tls: false,
       database,
       ownerDatabase: database,
       kek: config.ODUDU_KEK,
@@ -228,6 +231,7 @@ describe('the sign-in budget per address and username', () => {
 
   it('refuses a throttled origin before the body is parsed', async () => {
     const app = buildApp({
+      tls: false,
       database: noSuchTenantDatabase,
       ownerDatabase: noSuchTenantDatabase,
       kek: config.ODUDU_KEK,
@@ -249,6 +253,7 @@ describe('the sign-in budget per address and username', () => {
 
   it('keeps the machine routes on a bare 429', async () => {
     const app = buildApp({
+      tls: false,
       database: noSuchTenantDatabase,
       ownerDatabase: noSuchTenantDatabase,
       kek: config.ODUDU_KEK,
@@ -300,6 +305,7 @@ describe('the sign-in budget per address and username', () => {
     const composite = await submit(app, { username: 'ada', password: 'x' });
 
     const addressApp = buildApp({
+      tls: false,
       database: noSuchTenantDatabase,
       ownerDatabase: noSuchTenantDatabase,
       kek: config.ODUDU_KEK,
@@ -427,6 +433,7 @@ describe('the console', () => {
   it('refuses to build with a base URL and no client key, naming the variable', () => {
     expect(() =>
       buildApp({
+        tls: false,
         database,
         ownerDatabase: database,
         kek: config.ODUDU_KEK,
@@ -440,6 +447,7 @@ describe('the console', () => {
 describe('admin routes', () => {
   it('serves the admin API and leaves the OIDC routes alone', async () => {
     const app = buildApp({
+      tls: false,
       database: noSuchTenantDatabase,
       ownerDatabase: noSuchTenantDatabase,
       kek: config.ODUDU_KEK,
@@ -494,6 +502,7 @@ describe('an unexpected failure', () => {
       close: () => Promise.resolve(),
     } as unknown as DatabaseHandle;
     return buildApp({
+      tls: false,
       database,
       ownerDatabase: database,
       kek: config.ODUDU_KEK,

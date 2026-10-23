@@ -1,0 +1,97 @@
+@layer {
+  [data-react-aria-pressable] {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+}
+Odudu console
+Skip to content
+odudu · demo
+Overview
+Identity
+Subjects
+Groups
+Roles
+Applications
+Clients
+Scopes
+Registration tokens
+Security
+Sign-in flow
+Signing keys
+Sessions
+Tenant
+Settings
+Email
+Export
+Observe
+Audit trail
+Signed in as 
+admin@odudu.local
+ from 
+system
+Theme
+System
+Light
+Dark
+Switch tenant
+Sign out
+Collapse menu
+or press 
+[
+odudu · demo
+Menu
+System
+Acting in 
+demo
+ with system authority
+Back to system
+demo
+Subjects
+The people, services and agents that sign in to this tenant. Open one to change its profile or its credentials.
+Create a subject
+Username
+▾
+Username
+Email
+Clear
+Search
+or press 
+↩ 
+Return
+Status
+Any status
+▾
+Any status
+Enabled
+Disabled
+Capability
+Holding anything or nothing
+▾
+Held directly, through a group or nested in another role.
+Holding anything or nothing
+view-users
+manage-users
+manage-clients
+manage-tenant
+manage-keys
+manage-sessions
+view-audit
+manage-tenants
+tenant-admin
+Any capability
+1 subject
+Username
+Email
+Status
+Created
+Username
+ada
+Email
+—
+Status
+enabled
+Created
+recently
+Previous
+Page 1
+Next

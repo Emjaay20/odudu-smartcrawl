@@ -27,6 +27,21 @@ export function subjectRepository(tx: TenantScopedDatabase) {
       return row === undefined ? null : toRecord(row);
     },
 
+    // The lock every mutation of one subject serialises on; false when there
+    // is none. `no key update` conflicts with itself, so two mutations queue,
+    // but not with the key-share lock every insert referencing the subject
+    // takes: `FOR UPDATE` here deadlocks against a login that touched a
+    // session, or cleared its failures, and then inserts a row naming the
+    // subject. A delete of the subject itself still takes the full lock.
+    async lock(id: string): Promise<boolean> {
+      const rows = await tx
+        .select({ id: subjects.id })
+        .from(subjects)
+        .where(eq(subjects.id, id))
+        .for('no key update');
+      return rows.length > 0;
+    },
+
     // Used when provisioning a confidential client's service subject, and by
     // the user repository's registration path.
     async create(input: NewSubject): Promise<SubjectRecord> {

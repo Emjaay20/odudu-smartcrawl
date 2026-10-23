@@ -144,6 +144,7 @@ describe('odudu console provision', () => {
       {
         ODUDU_PUBLIC_BASE_URL: NEW_BASE,
         ODUDU_TRUST_PROXY: 'true',
+        ODUDU_TLS: 'true',
         ODUDU_CONSOLE_CLIENT_KEY: KEY_A,
       },
       () => consoleCommand(['provision']),
@@ -164,8 +165,9 @@ describe('odudu console provision', () => {
 
   it('refuses with no client key, naming the variable and the switch', async () => {
     await expect(
-      withEnv({ ODUDU_PUBLIC_BASE_URL: NEW_BASE, ODUDU_TRUST_PROXY: 'true' }, () =>
-        consoleCommand(['provision']),
+      withEnv(
+        { ODUDU_PUBLIC_BASE_URL: NEW_BASE, ODUDU_TRUST_PROXY: 'true', ODUDU_TLS: 'true' },
+        () => consoleCommand(['provision']),
       ),
     ).rejects.toThrow(/ODUDU_CONSOLE_CLIENT_KEY.*ODUDU_CONSOLE=false/su);
   });
@@ -219,6 +221,7 @@ describe('odudu console provision: the console key', () => {
   const env = (extra: Record<string, string> = {}): Record<string, string> => ({
     ODUDU_PUBLIC_BASE_URL: NEW_BASE,
     ODUDU_TRUST_PROXY: 'true',
+    ODUDU_TLS: 'true',
     ...extra,
   });
 
@@ -272,15 +275,16 @@ describe('odudu console keygen', () => {
 describe('seeding under a console base', () => {
   it('refuses with no client key, naming the variable, rather than leave the client public', async () => {
     await expect(
-      withEnv({ ODUDU_PUBLIC_BASE_URL: NEW_BASE, ODUDU_TRUST_PROXY: 'true' }, () =>
-        seed(['tenant', '--name', `refused-${newId()}`]),
+      withEnv(
+        { ODUDU_PUBLIC_BASE_URL: NEW_BASE, ODUDU_TRUST_PROXY: 'true', ODUDU_TLS: 'true' },
+        () => seed(['tenant', '--name', `refused-${newId()}`]),
       ),
     ).rejects.toThrow(/ODUDU_CONSOLE_CLIENT_KEY/u);
   });
 });
 
 describe('odudu console assertion', () => {
-  const env = { ODUDU_PUBLIC_BASE_URL: NEW_BASE, ODUDU_TRUST_PROXY: 'true' };
+  const env = { ODUDU_PUBLIC_BASE_URL: NEW_BASE, ODUDU_TRUST_PROXY: 'true', ODUDU_TLS: 'true' };
 
   async function tenantNamed(): Promise<{ name: string; id: string }> {
     const name = `assert-${newId().slice(-12)}`;

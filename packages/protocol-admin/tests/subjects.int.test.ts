@@ -1169,7 +1169,7 @@ describe('PATCH /admin/tenants/{t}/subjects/{id} — renaming a username', () =>
 });
 
 describe('DELETE /admin/tenants/{t}/subjects/{id}', () => {
-  it('removes the subject and detaches a client that named it as its service account', async () => {
+  it('refuses a subject a client names as its service account, and leaves both', async () => {
     const t = await fixture.createTenant(`acme-${newId()}`);
     const client = await fixture.createConfidentialClient(t.name, {});
     const serviceSubjectId = await withTenant(fixture.app.db, t.id, async (tx) => {
@@ -1186,12 +1186,12 @@ describe('DELETE /admin/tenants/{t}/subjects/{id}', () => {
       url: `/admin/tenants/${t.name}/subjects/${serviceSubjectId}`,
       headers: { authorization: `Bearer ${token}` },
     });
-    expect(res.statusCode).toBe(204);
+    expect(res.statusCode).toBe(409);
 
     const survived = await withTenant(fixture.app.db, t.id, (tx) =>
       clientRepository(tx).byId(client.id),
     );
-    expect(survived?.serviceSubjectId).toBeNull();
+    expect(survived?.serviceSubjectId).toBe(serviceSubjectId);
     expect(survived?.tenantId).toBe(t.id);
   });
 
@@ -1432,6 +1432,14 @@ describe('DELETE /admin/tenants/{t}/subjects/{id}/credentials/{credentialId}', (
           type: 'totp',
           secret: { kind: 'totp', secret, digits: 6, lastStep: 0 },
         });
+        // A subject enrolled in the ordinary way holds a saved set; without one the
+        // sign-in would be asked for it, which is another test's subject.
+        await credentialRepository(tx).insert({
+          tenantId: t.id,
+          subjectId: subject.id,
+          type: 'recovery-code',
+          secret: { kind: 'recovery-code', hash: await hashPassword('saved-code') },
+        });
         const [row] = await credentialRepository(tx).listFor(subject.id, 'totp');
         if (row === undefined) throw new Error('fixture: no totp credential row after insert');
         return { subjectId: subject.id, credentialId: row.id, totpSecret: secret };
@@ -1656,6 +1664,8 @@ describe('audit', () => {
         tx,
         { audit: ok.audit },
         {
+          now: new Date(),
+          tenantId: t.id,
           callerCapabilities: new Set<string>(),
           subjectId: id,
           credentialId,
@@ -1674,6 +1684,8 @@ describe('audit', () => {
         tx,
         { audit: refused.audit },
         {
+          now: new Date(),
+          tenantId: t.id,
           callerCapabilities: new Set<string>(),
           subjectId: id,
           credentialId: newId(),

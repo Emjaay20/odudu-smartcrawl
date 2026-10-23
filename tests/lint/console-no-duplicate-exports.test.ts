@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest';
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..');
 const CONSOLE = 'apps/admin-console';
+const DOCS = 'apps/docs';
 const FIXTURES = 'tests/lint/fixtures/console-no-duplicate-exports';
 const MINIMUM_BODY = 30;
 const ADVICE =
@@ -182,6 +183,14 @@ describe('declarations in the console', { timeout: 60_000 }, () => {
     expect(names.filter((file) => file.startsWith('src/features/roles/'))).not.toEqual([]);
     expect(names.filter((file) => file.startsWith('src/features/clients/'))).not.toEqual([]);
     expect(names).toContain('e2e/stack.ts');
+    expect(violations(files)).toEqual([]);
+  });
+
+  it('are not copied between the docs features or shared either', async () => {
+    const files = await read(DOCS, ['src/**/*.{ts,tsx,mts,cts}']);
+    const names = [...files.keys()];
+    expect(names.filter((file) => file.startsWith('src/features/landing/'))).not.toEqual([]);
+    expect(names.filter((file) => file.startsWith('src/shared/'))).not.toEqual([]);
     expect(violations(files)).toEqual([]);
   });
 

@@ -1,4 +1,5 @@
 import { type PromptValue } from '#/service/prompt';
+import { type AuthorizationErrorCode } from '#/service/oauth-errors';
 
 export interface ResolvedSession {
   readonly id: string;
@@ -22,7 +23,7 @@ export type ReuseDecision =
     }
   | { readonly kind: 'select'; readonly candidates: readonly ResolvedSession[] }
   | { readonly kind: 'authenticate' }
-  | { readonly kind: 'refuse'; readonly error: string };
+  | { readonly kind: 'refuse'; readonly error: AuthorizationErrorCode };
 
 // Exported for #/usecase/authorization-request.ts's chooser POST, which
 // re-applies this same predicate to a posted selection — a session

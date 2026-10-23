@@ -11,7 +11,8 @@ networks:
 
 services:
   postgres:
-    image: postgres:17-alpine
+    # digest of the multi-arch index; Dependabot moves it
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
     environment:
       POSTGRES_USER: odudu
       POSTGRES_PASSWORD: odudu
@@ -43,13 +44,15 @@ services:
       # README.md's answer to whether a Config OP plan accepts http://.
       ODUDU_TLS: 'true'
       ODUDU_TRUST_PROXY: 'true'
-      # The origin the suite actually reaches this server on: proxy's
-      # `server_name odudu` on 443, so no port. Required because this stack
+      # The origin the suite actually reaches this server on: the proxy
+      # container, by its service name `proxy`, on 443, so no port. It is
+      # also the issuer every tenant states, so it must be the host the plan
+      # files fetch discovery from (config-op.json and its siblings). Required because this stack
       # runs the image's NODE_ENV=production, where the boot guard in
       # apps/server/src/config-guard.ts refuses to serve without a WebAuthn
       # relying party id to derive. Change proxy/nginx.conf's server_name
-      # and this has to change with it — they name the same host.
-      ODUDU_PUBLIC_BASE_URL: https://odudu
+      # and the plan files with it — they name the same host.
+      ODUDU_PUBLIC_BASE_URL: https://proxy
       # The whole suite arrives from one address — proxy's — so the default
       # per-origin budget of ten login submissions a minute would refuse
       # test modules rather than protect anything. Generous rather than

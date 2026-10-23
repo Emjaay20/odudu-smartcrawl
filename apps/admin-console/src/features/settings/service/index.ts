@@ -3,6 +3,7 @@ export { fieldDescription, rangeRule } from '#/features/settings/service/notes';
 export {
   GENERAL_SECTION,
   LOCKOUT_SECTION,
+  PASSWORD_SECTION,
   PLACED_ELSEWHERE,
   sectionHeadingId,
   SETTINGS_SECTIONS,
@@ -10,6 +11,7 @@ export {
   type SettingOption,
   type SettingsSection,
 } from '#/features/settings/service/sections';
+export { passwordNote, type PasswordNote } from '#/features/settings/service/passwordNote';
 export {
   booleanOf,
   describeSetting,

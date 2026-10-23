@@ -1,0 +1,15 @@
+.lost {
+  display: grid;
+  gap: var(--space-4);
+  max-inline-size: 720px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-4);
+  outline: none;
+}
+
+.brand {
+  font-family: var(--font-mono);
+  font-size: var(--type-13);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}

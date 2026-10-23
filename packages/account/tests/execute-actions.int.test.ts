@@ -20,12 +20,23 @@ import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/test
 import formbody from '@fastify/formbody';
 import { eq } from 'drizzle-orm';
 import Fastify, { type FastifyInstance } from 'fastify';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { accountTestDeps } from '#/testing/support';
 import { tenantSettingsRepository } from '#/repository/tenant-settings';
 import { actionTokens } from '#/schema/action-tokens';
 import { enqueueActionsLink } from '#/usecase/execute-actions';
 import { enqueueResetLink } from '#/usecase/reset-password';
 import { registerActionTokenRoute } from '#/view/routes/action-token';
+
+vi.mock('#/view/messages', async (importOriginal) => {
+  const { withFrench } = await import('@odudu/testkit/i18n');
+  return withFrench(await importOriginal(), {
+    'password.rule.minLength':
+      'Le mot de passe doit comporter au moins {min, number, ::group-off} caractères.',
+    'password.rule.maxLength':
+      'Le mot de passe ne doit pas dépasser {max, number, ::group-off} caractères.',
+  });
+});
 
 let containerHandle: TestDatabase | undefined;
 let ownerHandle: DatabaseHandle | undefined;
@@ -49,6 +60,8 @@ beforeAll(async () => {
   http = Fastify();
   http.register(formbody);
   registerActionTokenRoute(http, {
+    ...accountTestDeps,
+    findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
     getCurrentEmail: async (tx, subjectId) =>
@@ -71,6 +84,7 @@ beforeAll(async () => {
       owed.push({ subjectId, actions });
       return Promise.resolve();
     },
+    pageLocales: ['en', 'fr'],
   });
   await http.ready();
 }, 120_000);
@@ -118,6 +132,7 @@ async function mail(seeded: Seeded, actions: readonly string[]): Promise<string>
       tenantName: seeded.tenantName,
       tenantDisplayName: seeded.tenantName,
       issuerBase: 'https://idp.example.test',
+      now: () => new Date(),
     };
     const user = { subjectId: seeded.subjectId, email: 'ada@example.test' };
     await enqueueActionsLink(tx, tenant, user, { actions });
@@ -137,7 +152,7 @@ function open(link: string) {
   return http.inject({ method: 'GET', url: `${url.pathname}${url.search}` });
 }
 
-function submit(seeded: Seeded, key: string, password?: string) {
+function submit(seeded: Seeded, key: string, password?: string, language?: string) {
   return http.inject({
     method: 'POST',
     url: `/tenants/${seeded.tenantName}/login-actions/action-token`,
@@ -145,7 +160,10 @@ function submit(seeded: Seeded, key: string, password?: string) {
       key,
       ...(password === undefined ? {} : { password }),
     }).toString(),
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    headers: {
+      'content-type': 'application/x-www-form-urlencoded',
+      ...(language === undefined ? {} : { 'accept-language': language }),
+    },
   });
 }
 
@@ -167,6 +185,7 @@ describe('a link that takes its subject through required actions', () => {
           tenantName: seeded.tenantName,
           tenantDisplayName: 'x',
           issuerBase: 'https://idp.example.test',
+          now: () => new Date(),
         },
         { subjectId: seeded.subjectId, email: 'ada@example.test' },
       );
@@ -185,7 +204,7 @@ describe('a link that takes its subject through required actions', () => {
     const done = await submit(seeded, keyOf(link), NEW_PASSWORD);
     expect(done.statusCode).toBe(200);
     expect(done.body).toContain('<li>Set up an authenticator app</li>');
-    expect(done.body).not.toContain('href');
+    expect(done.body).not.toMatch(/<a[\s>]/u);
     expect(done.headers['content-security-policy']).toContain("default-src 'none'");
     expect(await passwordIs(seeded, NEW_PASSWORD)).toBe(true);
     expect(owed.filter((entry) => entry.subjectId === seeded.subjectId)).toEqual([
@@ -197,6 +216,61 @@ describe('a link that takes its subject through required actions', () => {
       tx.select().from(actionTokens).where(eq(actionTokens.subjectId, seeded.subjectId)),
     );
     expect(outstanding.every((row) => row.consumedAt !== null)).toBe(true);
+  });
+
+  it('mails each action as the catalogue words it, whatever locale the subject holds', async () => {
+    const seeded = await seed(true);
+    const rows = await withTenant(app.db, seeded.tenantId, async (tx) => {
+      const tenant = {
+        tenantId: seeded.tenantId,
+        tenantName: seeded.tenantName,
+        tenantDisplayName: 'Acme <Co>',
+        issuerBase: 'https://idp.example.test',
+        now: () => new Date(),
+      };
+      for (const locale of [null, 'de-CH', 'not a tag']) {
+        const user = { subjectId: seeded.subjectId, email: 'ada@example.test', locale };
+        await enqueueActionsLink(tx, tenant, user, {
+          actions: ['configure-totp', 'update-password'],
+        });
+      }
+      return tx.select().from(emailOutbox);
+    });
+    expect(rows).toHaveLength(3);
+    for (const row of rows) {
+      expect(row.subject).toBe('Update your Acme <Co> account');
+      expect(row.bodyText).toContain('- Choose a new password\n- Set up an authenticator app\n');
+      expect(row.bodyHtml).toMatch(
+        /<li[^>]*>Choose a new password<\/li><li[^>]*>Set up an authenticator app<\/li>/u,
+      );
+      expect(row.bodyHtml).toContain('<bdi>Acme &lt;Co&gt;</bdi>');
+    }
+  });
+
+  it.each([
+    ['2026-12-31T23:59:59Z', '2026'],
+    ['2027-01-01T00:00:00Z', '2027'],
+    ['2031-06-01T12:00:00Z', '2031'],
+  ])('stamps the mail with the year of the clock it was given: %s', async (instant, year) => {
+    const seeded = await seed(true);
+    const rows = await withTenant(app.db, seeded.tenantId, async (tx) => {
+      await enqueueActionsLink(
+        tx,
+        {
+          tenantId: seeded.tenantId,
+          tenantName: seeded.tenantName,
+          tenantDisplayName: 'Acme',
+          issuerBase: 'https://idp.example.test',
+          now: () => new Date(instant),
+        },
+        { subjectId: seeded.subjectId, email: 'ada@example.test' },
+        { actions: ['configure-totp'] },
+      );
+      return tx.select().from(emailOutbox);
+    });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.bodyHtml).toContain(`\u00a9 ${year} Odudu`);
+    expect(rows[0]?.bodyText).toContain(`\u00a9 ${year} Odudu`);
   });
 
   it('asks for no password when the link names none, and leaves it unchanged', async () => {
@@ -224,6 +298,68 @@ describe('a link that takes its subject through required actions', () => {
     const weak = await submit(seeded, keyOf(link), 'short');
     expect(weak.statusCode).toBe(400);
     expect((await submit(seeded, keyOf(link), NEW_PASSWORD)).statusCode).toBe(200);
+  });
+
+  it('puts the actions form back in place, with the list, the key and the reasons', async () => {
+    const seeded = await seed(true);
+    const link = await mail(seeded, ['update-password', 'configure-totp']);
+    const key = keyOf(link);
+
+    for (const [password, reason] of [
+      [undefined, 'A new password is required.'],
+      ['zq9xv', 'Password must be at least 15 characters long.'],
+    ] as const) {
+      const refused = await submit(seeded, key, password);
+      expect(refused.statusCode).toBe(400);
+      expect(refused.body).toContain('<form method="post"');
+      expect(refused.body).toContain(`name="key" value="${key}"`);
+      expect(refused.body).toContain('<li>Choose a new password</li>');
+      expect(refused.body).toContain('<li>Set up an authenticator app</li>');
+      expect(refused.body).toContain(reason);
+      expect(refused.body).toContain('aria-invalid="true" aria-describedby="form-error-0');
+      expect(refused.body).not.toContain('zq9xv');
+    }
+  });
+
+  it('refuses a common password on an actions link, without spending the link', async () => {
+    const seeded = await seed(true);
+    const link = await mail(seeded, ['update-password']);
+
+    const refused = await submit(seeded, keyOf(link), '1qaz2wsx3edc4rfv');
+    expect(refused.statusCode).toBe(400);
+    expect(refused.body).toContain(
+      '>That password is too easy to guess. Choose a different one.</li>',
+    );
+    expect((await submit(seeded, keyOf(link), NEW_PASSWORD)).statusCode).toBe(200);
+  });
+
+  it('words a weak password from the catalogue with the tenant minimum, in the page language', async () => {
+    const seeded = await seed(true);
+    const link = await mail(seeded, ['update-password']);
+
+    const english = await submit(seeded, keyOf(link), 'short');
+    expect(english.statusCode).toBe(400);
+    expect(english.body).toContain('>Password must be at least 15 characters long.</li>');
+    expect(english.body).not.toMatch(/<li[^>]*><bdi>/u);
+
+    const french = await submit(seeded, keyOf(link), 'short', 'fr');
+    expect(french.headers['content-language']).toBe('fr');
+    expect(french.body).toContain('>Le mot de passe doit comporter au moins 15 caractères.</li>');
+    expect(french.body).not.toMatch(/<li[^>]*><bdi>/u);
+  });
+
+  it('refuses a too-long password on an actions link and on a reset link, with the limit', async () => {
+    const seeded = await seed(true);
+    const long = 'x'.repeat(300);
+    const actions = await mail(seeded, ['update-password']);
+    const reset = await mailReset(seeded);
+    for (const link of [actions, reset]) {
+      const refused = await submit(seeded, keyOf(link), long, 'fr');
+      expect(refused.statusCode).toBe(400);
+      expect(refused.body).toContain('>Le mot de passe ne doit pas dépasser 256 caractères.</li>');
+      expect(refused.body).not.toMatch(/<li[^>]*><bdi>/u);
+    }
+    expect((await submit(seeded, keyOf(actions), NEW_PASSWORD)).statusCode).toBe(200);
   });
 
   it('is stopped by the reset kill switch when it sets a password', async () => {
@@ -272,6 +408,7 @@ async function mailReset(seeded: Seeded): Promise<string> {
         tenantName: seeded.tenantName,
         tenantDisplayName: seeded.tenantName,
         issuerBase: 'https://idp.example.test',
+        now: () => new Date(),
       },
       { subjectId: seeded.subjectId, email: 'ada@example.test' },
     );

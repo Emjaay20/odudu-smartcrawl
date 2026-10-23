@@ -1,0 +1,55 @@
+@layer {
+  [data-react-aria-pressable] {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+}
+Odudu console
+Skip to content
+odudu · demo
+Overview
+Identity
+Subjects
+Groups
+Roles
+Applications
+Clients
+Scopes
+Registration tokens
+Security
+Sign-in flow
+Signing keys
+Sessions
+Tenant
+Settings
+Email
+Export
+Observe
+Audit trail
+Signed in as 
+admin@odudu.local
+ from 
+system
+Theme
+System
+Light
+Dark
+Switch tenant
+Sign out
+Collapse menu
+or press 
+[
+odudu · demo
+Menu
+System
+Acting in 
+demo
+ with system authority
+Back to system
+demo
+Export
+Export demo
+A file of demo's configuration: settings, the sign-in flow, clients, roles, groups, scopes, the registration policy and the mail relay. No secret is in it; the file lists each one it left out. Importing it creates a new tenant.
+Include subjects
+Off
+Their profiles, roles, groups and required actions, up to 10,000; never a credential.
+Export to a file

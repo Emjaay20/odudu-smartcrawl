@@ -67,9 +67,13 @@ export {
 export { clientScopeMappers } from '#/schema/client-scope-mappers';
 export { clientScopeMapperRepository } from '#/repository/client-scope-mappers';
 export {
+  isBuiltinScopeName,
+  missingBuiltinScopeNames,
   provisionClientDefaults,
   provisionTenantDefaults,
+  restoreBuiltinScopes,
   TENANT_DEFAULT_SCOPE_NAMES,
+  type RestoreBuiltinScopesOutcome,
 } from '#/usecase/provision-defaults';
 export {
   consents,

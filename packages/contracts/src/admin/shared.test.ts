@@ -37,8 +37,14 @@ describe('problemDetailsSchema', () => {
     expect(problemDetailsSchema.parse(body)).toEqual(body);
   });
 
-  it('refuses a field error with anything beside its path and message', () => {
-    const errors = [{ path: 'port', message: 'too big', code: 'x' }];
+  it('carries the code of a refusal that has a stable name', () => {
+    const errors = [{ path: 'username', message: 'refused', code: 'bidi_control_refused' }];
+    const body = { type: 'about:blank', title: 'Bad Request', status: 400, instance: 'r', errors };
+    expect(problemDetailsSchema.parse(body)).toEqual(body);
+  });
+
+  it('refuses a field error with anything beside its path, message and code', () => {
+    const errors = [{ path: 'port', message: 'too big', extra: 'x' }];
     const body = { type: 'about:blank', title: 'Bad Request', status: 400, instance: 'r', errors };
     expect(problemDetailsSchema.safeParse(body).success).toBe(false);
   });

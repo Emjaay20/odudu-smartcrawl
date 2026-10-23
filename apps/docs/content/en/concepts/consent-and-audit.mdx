@@ -1,0 +1,77 @@
+---
+title: Consent and audit
+description: Consent is what a person agreed to share with an app. The audit trail is the record of what happened, kept per tenant and bounded.
+sidebar_position: 7
+---
+
+import { Diagram } from '@site/src/shared/view/Diagram';
+
+# Consent and audit
+
+Two questions come up after the fact. A person asks: what did I let that app see? An administrator asks: what happened on Tuesday, and who did it? Consent answers the first. The audit trail answers the second.
+
+<Diagram
+  name="consent-and-audit"
+  title="Consent and the audit trail"
+  desc="A client asks, the person decides and a grant is recorded, so the person is asked again only when a client wants more. Separately, the audit trail records sign-ins and refusals, sessions, tokens and administrator changes. Both are kept for each tenant, and audit events are kept 90 days by default."
+/>
+
+_In words: A client asks, the person decides and a grant is recorded, so the person is asked again only when a client wants more. Separately, the audit trail records sign-ins and refusals, sessions, tokens and administrator changes. Both are kept for each tenant, and audit events are kept 90 days by default._
+
+## Consent
+
+When a client asks for scopes, Odudu can stop and show the person a **consent screen**. It lists what the client wants, in the words you wrote for each scope. The person allows or denies. Denying sends them back with `access_denied`.
+
+An allow is **recorded**: one grant for this person and this client, holding the scopes they ticked. The next time the same client asks for the same things, there is no screen. It appears again only if the client asks for more than was recorded.
+
+### When the screen appears
+
+Odudu decides in this order:
+
+1. If the request says `prompt=consent`, ask, whatever the client is set to. The app is entitled to ask for a fresh decision.
+2. If the client does not require consent, carry on without the screen.
+3. If everything it asks for is already recorded, carry on.
+4. If something is missing and the request says `prompt=none`, refuse with `consent_required`, because `none` means the person must not be shown anything.
+5. Otherwise, ask.
+
+`consent_required` is a setting on each client. An administrator's clients leave it off by default. A client that registered itself with no token has it on. From the command line, `odudu seed client --consent-required` creates one that asks.
+
+### Looking at and removing grants
+
+An administrator can list what a person has allowed with `GET /admin/tenants/{tenant}/subjects/{id}/consents`, and remove one with `DELETE /admin/tenants/{tenant}/subjects/{id}/consents/{clientId}`. The person is asked again next time.
+
+## Audit
+
+Every tenant keeps an **audit trail**. Each entry says what kind of event it was, what happened, who or what did it, to what, the outcome, when, and from where. It never holds a secret.
+
+It records:
+
+- **sign-ins**, including failures and lockouts;
+- **sessions** that were started or ended;
+- **tokens** that were issued, refreshed or revoked, and families revoked for reuse;
+- **credentials** that were created or changed, and recovery codes issued or revoked;
+- **changes an administrator made**, through the admin API or the console.
+
+Read it with `GET /admin/tenants/{tenant}/audit`. Filter by what you are chasing, or export it. The [audit events reference](../reference/generated/events.md) lists every event, action and reason.
+
+### Refusals are bounded
+
+Recording every refusal sounds right and has a catch: anybody can cause a refusal, as often as they like, and each one is a row. So a refusal is recorded only where something limits how many a caller can cause. A refused request from a client that is registered gets a row, up to 20 refusals per client per minute. The last row of the minute says the budget ran out, and later refusals in that minute are written to the server's log instead. A failed client login that names a client nobody registered writes no row at all. A sign-up with an email address that already has an account writes one row naming that account. The request budget the sign-up form has for each address it comes from limits those.
+
+### How long it is kept
+
+Nothing in the server or the admin API edits or deletes an event, apart from the retention pass below. Events are not signed or chained, though, so somebody who holds the database owner's login could change them. Export the events you must keep to a place that person cannot reach.
+
+Events are kept 90 days by default, set per tenant with `audit_retention_days`. The `odudu reap` command removes older ones, and the server runs it on a schedule. The [configuration reference](../reference/generated/configuration.md) lists the schedule's settings and the [command reference](../reference/generated/cli.md) describes `odudu reap`.
+
+## Working with consent and audit
+
+1. Write a clear `consent_text` for every scope a person might be asked about.
+2. Turn `consent_required` on for any client you do not run yourself.
+3. Choose a retention that matches your rules, and export what you must keep longer.
+4. When something odd happens, find it in the audit trail by who, what and when.
+
+## Where to go next
+
+- [Scopes](./scopes.mdx) is where the words on the screen come from.
+- [Read a refusal](../guides/read-a-refusal.md) shows seven refusals and what they look like to each party.

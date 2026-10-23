@@ -1,8 +1,9 @@
-import { sessionRepository } from '@odudu/authn-flows';
+import { sessionRepository, sessions } from '@odudu/authn-flows';
 import { signingKeyRepository, signJwt } from '@odudu/crypto';
 import { type TenantScopedDatabase } from '@odudu/db';
 import { auditRepository } from '@odudu/domain-audit';
 import { newId } from '@odudu/kernel';
+import { and, eq, gt } from 'drizzle-orm';
 import { tokenGrantRepository, type ClientLogoutTarget } from '#/repository/grants';
 import { logoutDeliveryRepository } from '#/repository/logout-deliveries';
 import { logoutTokenClaims, LOGOUT_TOKEN_TYP } from '#/service/logout-token';
@@ -82,4 +83,37 @@ export async function endSession(
     }),
   );
   await logoutDeliveryRepository(tx).enqueue(deliveries);
+}
+
+export interface EndAllAccessInput {
+  readonly tenantId: string;
+  readonly subjectId: string;
+  readonly now: Date;
+  readonly issuer: string;
+}
+
+// What recovering an account owes whoever else is signed in to it: every session
+// of the subject ended the way a logout ends one (grants revoked, back-channel
+// deliveries queued), then every grant left, offline ones included, revoked.
+// One transaction with the password change that asks for it.
+export async function endAllAccess(
+  tx: TenantScopedDatabase,
+  deps: EndSessionDeps,
+  input: EndAllAccessInput,
+): Promise<void> {
+  const live = await tx
+    .select({ id: sessions.id })
+    .from(sessions)
+    .where(and(eq(sessions.subjectId, input.subjectId), gt(sessions.expiresAt, input.now)));
+  for (const { id } of live) {
+    await endSession(tx, deps, {
+      tenantId: input.tenantId,
+      sessionId: id,
+      subjectId: input.subjectId,
+      now: input.now,
+      issuer: input.issuer,
+      via: 'logout',
+    });
+  }
+  await tokenGrantRepository(tx).revokeForSubject(input.subjectId, input.now);
 }

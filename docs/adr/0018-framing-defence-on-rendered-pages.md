@@ -184,6 +184,16 @@ Rejected along the way:
   authorization response every client sees, and the onward step needs a
   script or `<meta refresh>`, which this policy exists to keep out.
 
+## Amendment: "markup only" is no longer true of every page
+
+The Decision above describes most pages as markup only, with
+`default-src 'none'` stating exactly that. Since 2026-10-19 every page also
+links one same-origin stylesheet, so its policy carries `style-src 'self'`,
+`font-src 'self'` and `img-src 'self'` beside it (ADR 0029's amendment).
+Nothing about framing changed: `frame-ancestors 'none'`,
+`X-Frame-Options: DENY`, `form-action` and `base-uri` read as before, and a
+script is still licensed only by the nonce the page reports.
+
 ## Alternatives rejected
 
 - **`frame-ancestors` alone.** Correct for every agent that implements CSP,

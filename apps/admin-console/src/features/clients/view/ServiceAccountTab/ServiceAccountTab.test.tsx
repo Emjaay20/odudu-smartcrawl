@@ -165,9 +165,47 @@ it('needs manage-users, and says so in place of the roles', async () => {
   expect(sent.some((s) => s.path === SERVICE_ROLES)).toBe(false);
 });
 
-it('says a public client has no service account to give roles to', async () => {
+it('says a public client has no service account', async () => {
   renderConsoleAt('/console/acme/clients/c-portal?tab=service', clientRoutes());
-  expect(await screen.findByText(/This client has no service account/u)).toBeVisible();
+  expect(await screen.findByText('A public client has no service account.')).toBeVisible();
+});
+
+it('says a confidential client that lost its account has none, without saying why', async () => {
+  renderConsoleAt(
+    AT,
+    serviceRoutes([], {
+      [`GET ${C}/c-bill`]: json({ ...BILLING, service_subject_id: null }, 200, {
+        etag: '"c-bill-1"',
+      }),
+    }),
+  );
+  expect(await screen.findByText('This client has no service account.')).toBeVisible();
+});
+
+it('says the built-in admin client has no service account, by what the record says', async () => {
+  renderConsoleAt('/console/acme/clients/c-admin?tab=service', clientRoutes());
+  expect(
+    await screen.findByText(
+      "No service account. This client signs people in; it doesn't sign in as itself.",
+    ),
+  ).toBeVisible();
+});
+
+it('says the account is idle while the client credentials grant is off', async () => {
+  renderConsoleAt(
+    AT,
+    serviceRoutes([], {
+      [`GET ${C}/c-bill`]: json({ ...BILLING, grant_types: ['authorization_code'] }, 200, {
+        etag: '"c-bill-1"',
+      }),
+    }),
+  );
+  await open();
+  expect(
+    screen.getByText(
+      'Not in use: the client credentials grant is off. The account keeps its roles.',
+    ),
+  ).toBeVisible();
 });
 
 it('shows the roles as text, and no picker, while the account holds what the caller does not', async () => {

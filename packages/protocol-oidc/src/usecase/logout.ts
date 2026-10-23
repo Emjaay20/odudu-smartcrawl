@@ -112,10 +112,10 @@ export interface LogoutUsecaseDeps {
   // Shared with /authorize's own hint validation — this tenant's own keys,
   // this tenant's issuer.
   listPublishableKeys(tenantId: string): Promise<SigningKeyRecord[]>;
-  // Resolved from an OAuth `client_id` to that client's registered
-  // post_logout_redirect_uris; an unknown or unspecified client yields an
-  // empty list, refusing any redirect rather than resolving one with no
-  // client to trust it against (§3).
+  // Resolved from a client (the request's `client_id`, else its hint's one
+  // audience) to that client's registered post_logout_redirect_uris; an
+  // unknown or unspecified client yields an empty list, refusing any redirect
+  // rather than resolving one with no client to trust it against (§3).
   postLogoutRedirectUris(tenantId: string, oauthClientId: string): Promise<readonly string[]>;
   // The browser's session cookies, resolved to their live rows exactly the
   // way /authorize resolves them — never trusted for anything but that
@@ -137,8 +137,8 @@ export interface LogoutUsecaseDeps {
   // and registered a back-channel URI (§2.5). A failure anywhere — minting
   // or queuing a delivery included — rolls the whole transaction back, so a
   // session cannot end with a delivery lost: nothing would ever retry a row
-  // that was never written. Access tokens are not touched — see README.md's
-  // logout section for why not.
+  // that was never written. Access tokens are not touched: the RP-initiated
+  // logout request path explains why not.
   endSession(
     tenantId: string,
     sessionId: string,
@@ -181,6 +181,18 @@ async function frontChannelLogoutUrls(
       ),
     );
   return urls.filter((url): url is string => url !== null);
+}
+
+// §2 makes `client_id` optional. Without one, a hint that verified names the
+// client it was issued to, but only when it names exactly one: a hint with
+// several audiences says which of them is asking nowhere, so none is taken.
+function clientOfRequest(
+  clientId: string | null,
+  hint: { audiences: readonly string[] } | null,
+): string | null {
+  if (clientId !== null) return clientId;
+  const [only, ...rest] = hint?.audiences ?? [];
+  return only !== undefined && rest.length === 0 ? only : null;
 }
 
 async function registeredUris(
@@ -254,7 +266,8 @@ export async function handleLogoutRequest(
     params.idTokenHint === null
       ? null
       : await subjectOfLogoutHint(deps, tenant.id, issuer, params.idTokenHint);
-  const registered = await registeredUris(deps, tenant.id, params.clientId);
+  const clientId = clientOfRequest(params.clientId, hint);
+  const registered = await registeredUris(deps, tenant.id, clientId);
 
   // §2: "When both `client_id` and `id_token_hint` are present, the OP MUST
   // verify that the Client Identifier matches the one used when issuing the
@@ -281,7 +294,7 @@ export async function handleLogoutRequest(
       kind: 'confirm',
       sessionId: session?.id ?? null,
       csrf: selected?.entry.proof(LOGOUT_CONFIRMATION) ?? null,
-      clientId: params.clientId,
+      clientId,
       postLogoutRedirectUri: requested,
       registeredRedirect: requested !== null && registered.includes(requested) ? requested : null,
       state: params.state,

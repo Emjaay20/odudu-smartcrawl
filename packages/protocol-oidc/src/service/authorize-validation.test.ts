@@ -143,6 +143,36 @@ describe('[RFC6749-4.1.2.1-02] failures after redirect_uri is trusted redirect w
   });
 });
 
+describe('a redirected failure says in a few plain words what was wrong', () => {
+  it.each([
+    ['missing code_challenge', omit(params, 'code_challenge'), 'code_challenge is required'],
+    [
+      'malformed code_challenge',
+      { ...params, code_challenge: 'short' },
+      'code_challenge is not valid',
+    ],
+    [
+      'plain challenge method',
+      { ...params, code_challenge_method: 'plain' },
+      'code_challenge_method must be S256',
+    ],
+    [
+      'missing challenge method',
+      omit(params, 'code_challenge_method'),
+      'code_challenge_method must be S256',
+    ],
+    ['prompt', { ...params, prompt: 'none login' }, 'prompt is not valid'],
+    ['max_age', { ...params, max_age: '-1' }, 'max_age is not valid'],
+  ])('%s', (_label, p, description) => {
+    expect(validate(p, client, config)).toMatchObject({ kind: 'redirect', description });
+  });
+
+  it('never echoes what the request sent', () => {
+    const outcome = validate({ ...params, code_challenge: 'SENTINEL<script>' }, client, config);
+    expect(JSON.stringify(outcome)).not.toContain('SENTINEL');
+  });
+});
+
 describe('an unsupported response mode is refused, not silently changed', () => {
   it.each(['fragment', 'form_post', 'web_message', 'QUERY', 'query fragment'])(
     'renders rather than answering in the mode it does support: %s',
@@ -168,6 +198,7 @@ describe('an unsupported response mode is refused, not silently changed', () => 
       issuer: 'https://idp.example',
       claimsSupported: [],
       scopesSupported: TENANT_SCOPES,
+      uiLocalesSupported: ['en'],
       userinfoSigningAlgSupported: ['none'],
       userinfoEncryptionAlgSupported: [],
       userinfoEncryptionEncSupported: [],
@@ -246,6 +277,7 @@ describe('scope acceptance', () => {
       issuer: 'https://idp.example',
       claimsSupported: [],
       scopesSupported: tenantScopes,
+      uiLocalesSupported: ['en'],
       userinfoSigningAlgSupported: ['none'],
       userinfoEncryptionAlgSupported: [],
       userinfoEncryptionEncSupported: [],
@@ -349,7 +381,13 @@ describe('prompt and id_token_hint reach the usecase through the validated outco
     expect(outcome.idTokenHint).toBe('not.a.jwt');
   });
 
-  it.each(['none login', 'unheard_of', 'NONE'])(
+  it('carries prompt=create out, for the usecase to answer against the tenant', () => {
+    const outcome = validate({ ...params, prompt: 'create' }, client, config);
+    if (outcome.kind !== 'ok') throw new Error('expected the request to validate');
+    expect([...outcome.prompts]).toEqual(['create']);
+  });
+
+  it.each(['none login', 'unheard_of', 'NONE', 'create login', 'create consent'])(
     'redirects with invalid_request for prompt=%o rather than parking the request',
     (prompt) => {
       expect(validate({ ...params, prompt }, client, config)).toMatchObject({

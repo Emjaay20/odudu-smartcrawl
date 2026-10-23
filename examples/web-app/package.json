@@ -1,0 +1,25 @@
+{
+  "name": "odudu-example-web-app",
+  "version": "0.0.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node app.ts",
+    "test": "node --test test.ts",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "openid-client": "6.8.8"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.1",
+    "typescript": "6.0.3"
+  },
+  "overrides": {
+    "jose": "6.2.12"
+  }
+}

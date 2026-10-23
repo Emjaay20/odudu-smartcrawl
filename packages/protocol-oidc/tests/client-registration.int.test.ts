@@ -83,6 +83,7 @@ beforeAll(async () => {
   httpApp = http;
   await http.register(
     oidcRoutes({
+      tls: false,
       database: app,
       ownerDatabase: owner,
       kek: KEK,
@@ -148,6 +149,32 @@ describe('[ODUDU-CLIENT-REGISTRATION-OPEN-01] the open policy', () => {
     const body = res.json<{ client_id: string; client_id_issued_at: number }>();
     expect(body.client_id).toBeTruthy();
     expect(body.client_id_issued_at).toBeGreaterThan(0);
+  });
+
+  it('refuses a client_name holding a bidirectional control as invalid_client_metadata, registering nothing', async () => {
+    const tenantName = `open-bidi-${newId()}`;
+    const tenantId = newId();
+    await withTenant(app.db, tenantId, (tx) =>
+      seedTenant(tx, tenantId, { name: tenantName, policy: 'open' }),
+    );
+
+    const res = await http.inject({
+      method: 'POST',
+      url: URL_FOR(tenantName),
+      payload: { ...MINIMAL, client_name: `Bank${String.fromCodePoint(0x202e)}` },
+    });
+    expect(res.statusCode).toBe(400);
+    const refusal = res.json<{ error: string; error_description: string }>();
+    expect(refusal.error).toBe('invalid_client_metadata');
+    expect(refusal.error_description).toContain('bidirectional control');
+
+    const ok = await http.inject({
+      method: 'POST',
+      url: URL_FOR(tenantName),
+      payload: { ...MINIMAL, client_name: 'مصرف' },
+    });
+    expect(ok.statusCode).toBe(201);
+    expect(ok.json<{ client_name: string }>().client_name).toBe('مصرف');
   });
 
   // Discriminates from a version that only refuses a proposed client_id at

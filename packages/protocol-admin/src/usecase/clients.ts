@@ -1,3 +1,4 @@
+import { BIDI_REFUSED_MESSAGE, refusesBidi } from '@odudu/contracts';
 import {
   type ADMIN_CAPABILITIES,
   CLIENT_LIST_LIMIT,
@@ -8,7 +9,7 @@ import {
 } from '@odudu/contracts/admin';
 import { type TenantScopedDatabase } from '@odudu/db';
 import { roles } from '@odudu/domain-authz';
-import { subjectRepository } from '@odudu/domain-identity';
+import { subjectRepository, subjects } from '@odudu/domain-identity';
 import {
   ADMIN_CLIENT_ID,
   clientRepository,
@@ -892,8 +893,8 @@ function checkedStringArray(field: string, value: unknown): string[] | FieldErro
     : value;
 }
 
-function checkedDescription(value: unknown): string | null | FieldError {
-  const checked = checkDescription(value);
+function checkedDescription(value: unknown, current?: string | null): string | null | FieldError {
+  const checked = checkDescription(value, current);
   return checked.kind === 'ok'
     ? checked.value
     : { field: 'description', description: checked.message };
@@ -956,6 +957,7 @@ const TOKEN_TTL_FIELDS = [
 
 function checkedAdminFields(
   values: Readonly<Record<string, unknown>>,
+  stored?: { readonly name: string; readonly description: string | null },
 ): AdminFieldPatches | FieldError {
   const client: AdminFieldPatches['client'] = {};
   const config: AdminFieldPatches['config'] = {};
@@ -963,10 +965,13 @@ function checkedAdminFields(
   if ('name' in values) {
     const checked = checkedString('name', values.name);
     if (isFieldError(checked)) return checked;
+    if (refusesBidi(checked, stored?.name)) {
+      return { field: 'name', description: BIDI_REFUSED_MESSAGE };
+    }
     client.name = checked;
   }
   if ('description' in values) {
-    const checked = checkedDescription(values.description);
+    const checked = checkedDescription(values.description, stored?.description);
     if (isFieldError(checked)) return checked;
     client.description = checked;
   }
@@ -1127,7 +1132,7 @@ export async function amendClient(
     throw new Error(`client ${input.clientDbId} has no client_oidc_config row`);
   }
 
-  const admin = checkedAdminFields(input.values);
+  const admin = checkedAdminFields(input.values, clientRow);
   if (isFieldError(admin)) return { kind: 'invalid_value', ...admin };
   const clientPatch = admin.client;
   const configPatch: Partial<Omit<typeof clientOidcConfig.$inferInsert, 'clientId' | 'tenantId'>> =
@@ -1482,6 +1487,10 @@ async function deleteClientUnguarded(
   }
 
   await clientRepository(tx).delete(input.clientDbId);
+  // The account exists for the client alone, so it goes with it.
+  if (clientRow.serviceSubjectId !== null) {
+    await tx.delete(subjects).where(eq(subjects.id, clientRow.serviceSubjectId));
+  }
 
   await deps.audit(tx, {
     action: 'client.delete',

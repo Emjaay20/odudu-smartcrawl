@@ -1,3 +1,4 @@
+import { type AdminMutationAction } from '#/service/admin-mutation-actions';
 // The fixed vocabulary of audit actions this server writes, grouped by the
 // event type they belong under. `admin_mutation` is not here: admin
 // mutations' action strings are free-form, one per resource mutation, and
@@ -25,6 +26,7 @@ export const AUDIT_ACTIONS = {
   ],
   credential: [
     'account.registered',
+    'account.registration_duplicate',
     'email.verified',
     'password.reset',
     'password.changed',
@@ -48,7 +50,7 @@ export const AUDIT_EVENT_TYPES: readonly AuditEventType[] = [
   'credential',
 ];
 
-const AUDIT_REASONS = [
+export const AUDIT_REASONS = [
   'unknown_subject',
   'bad_credential',
   'locked_out',
@@ -63,11 +65,13 @@ const AUDIT_REASONS = [
   'rate_limited',
   'foreign_issuer',
   'missing_capability',
+  'already_registered',
 ] as const;
 
 export type AuditReason = (typeof AUDIT_REASONS)[number];
 
-export type AuditOutcome = 'allowed' | 'refused' | 'failed';
+export const AUDIT_OUTCOMES = ['allowed', 'refused', 'failed'] as const;
+export type AuditOutcome = (typeof AUDIT_OUTCOMES)[number];
 
 interface EventCommon {
   readonly outcome: AuditOutcome;
@@ -90,7 +94,7 @@ type ReasonOnly = Readonly<{ reason?: AuditReason }>;
 
 export interface AdminMutationInput extends EventCommon {
   readonly eventType: 'admin_mutation';
-  readonly action: string;
+  readonly action: AdminMutationAction;
   readonly detail?: Record<string, unknown> | undefined;
 }
 
@@ -174,6 +178,7 @@ type CredentialInput = EventCommon & {
   readonly eventType: 'credential';
   readonly action:
     | 'account.registered'
+    | 'account.registration_duplicate'
     | 'email.verified'
     | 'password.reset'
     | 'password.changed'

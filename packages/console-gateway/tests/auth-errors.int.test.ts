@@ -106,13 +106,14 @@ async function callback(
   odudu: OduduPort,
   state: string,
   logs: string[] = [],
+  otherCookies = '',
 ): Promise<LightMyRequestResponse> {
   const server = await authServer(odudu, logs);
   try {
     const query = new URLSearchParams({ code: 'c', state, iss: ISSUER });
     return await server.inject({
       url: `/console/auth/callback?${query.toString()}`,
-      headers: { cookie: `odudu-console-login=${state}` },
+      headers: { cookie: `odudu-console-login=${state}${otherCookies}` },
     });
   } finally {
     await server.close();
@@ -192,6 +193,23 @@ describe('a sign-in that fails inside the gateway', () => {
     expect(String(res.headers['set-cookie'])).toContain('odudu-console-login=; ');
     expect(logs.join('\n')).toContain('console sign-in failed');
     expect(logs.join('\n')).not.toContain(SENTINEL);
+  });
+
+  it('shows the refusal in the light or dark choice the cookie holds, and only that', async () => {
+    const dark = await callback(throwingPort, await seedLogin(), [], '; odudu-theme=dark');
+    expect(dark.body).toContain('data-theme="dark"');
+
+    const none = await callback(throwingPort, await seedLogin());
+    expect(none.body).not.toContain('data-theme');
+
+    const hostile = await callback(
+      throwingPort,
+      await seedLogin(),
+      [],
+      '; odudu-theme=x"><script>alert(1)</script>',
+    );
+    expect(hostile.body).not.toContain('data-theme');
+    expect(hostile.body).not.toContain('alert(1)');
   });
 
   it('revokes the exchanged grant when fetching the signing keys fails', async () => {

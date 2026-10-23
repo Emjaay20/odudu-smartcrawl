@@ -6,7 +6,8 @@
 # are publishing Postgres and the app server to the network.
 services:
   postgres:
-    image: postgres:17-alpine
+    # digest of the multi-arch index; Dependabot moves it
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?see infra/docker/.env.example}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?see infra/docker/.env.example}
@@ -30,6 +31,8 @@ services:
     build:
       context: ../..
       dockerfile: infra/docker/Dockerfile
+      args:
+        ODUDU_REVISION: ${ODUDU_REVISION:-unknown}
     environment:
       # The image sets NODE_ENV=production; this stack serves plain HTTP on
       # loopback, so it says otherwise rather than setting ODUDU_TLS=true and
@@ -56,7 +59,7 @@ services:
       # The per-origin request budget on the sign-in, registration and
       # reset-request submissions (ADR 0023). Passed through so a session
       # driving more of them than a person would — a burst captured for
-      # docs/request-paths.md, say — can raise it without editing this file.
+      # apps/docs/content/en/reference/transcripts/request-paths/brute-force-lockout.md, say — can raise it without editing this file.
       ODUDU_THROTTLE_LIMIT: ${ODUDU_THROTTLE_LIMIT:-10}
       # And the per-username budget on the sign-in submission, raised for
       # the same bursts: a script signing in as one user hits it first.
@@ -99,7 +102,7 @@ services:
   # `docker compose --profile swagger up`. It loads the document live from
   # the server above, so a restarted server shows its new routes on reload.
   swagger:
-    image: swaggerapi/swagger-ui:v5.33.0
+    image: swaggerapi/swagger-ui:v5.33.0@sha256:f9b8432be04e320406157e26c3ff52a7e9a4bea7eabe5477e9636791737eb119
     profiles: ['swagger']
     environment:
       URL: http://localhost:${ODUDU_HOST_PORT:-3000}/admin/openapi.json

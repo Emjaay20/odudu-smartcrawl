@@ -1,6 +1,6 @@
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
-import { pageHeaders, reloadOnRestore } from '#/page';
+import { INSTRUMENT_STYLESHEET, pageHeaders, reloadOnRestore } from '#/page';
 
 const headerMap = (page: Parameters<typeof pageHeaders>[0]): Record<string, string> =>
   Object.fromEntries(pageHeaders(page).map(([name, value]) => [name, value]));
@@ -11,6 +11,7 @@ const MARKUP_ONLY_PAGE = {
   title: 'Untitled',
   script: null,
   frames: [],
+  locale: { tag: 'en', dir: 'ltr' as const },
 };
 
 describe('the headers every rendered page carries', () => {
@@ -18,6 +19,55 @@ describe('the headers every rendered page carries', () => {
     const csp = headerMap(MARKUP_ONLY_PAGE)['content-security-policy'];
     expect(csp).toContain("default-src 'none'");
     expect(csp).not.toContain('script-src');
+  });
+
+  it('licenses a same-origin stylesheet, font and image on every page', () => {
+    const csp = headerMap(MARKUP_ONLY_PAGE)['content-security-policy'] ?? '';
+    const directives = csp.split('; ');
+    expect(directives).toContain("style-src 'self'");
+    expect(directives).toContain("font-src 'self'");
+    expect(directives).toContain("img-src 'self'");
+    expect(directives).toContain("default-src 'none'");
+    expect(csp).not.toContain('unsafe-inline');
+    expect(csp).not.toContain('unsafe-eval');
+  });
+
+  it('names the stylesheet the pages link', () => {
+    expect(INSTRUMENT_STYLESHEET).toBe('/instrument/instrument.css');
+  });
+
+  it('sends exactly six headers, one of them forbidding a sniffed content type', () => {
+    const headers = headerMap(MARKUP_ONLY_PAGE);
+    expect(headers['content-security-policy']).toBe(
+      [
+        "default-src 'none'",
+        "style-src 'self'",
+        "font-src 'self'",
+        "img-src 'self'",
+        "frame-ancestors 'none'",
+        "form-action 'self'",
+        "base-uri 'none'",
+      ].join('; '),
+    );
+    expect(Object.keys(headers).sort()).toEqual([
+      'cache-control',
+      'content-language',
+      'content-security-policy',
+      'referrer-policy',
+      'x-content-type-options',
+      'x-frame-options',
+    ]);
+    expect(headers['x-content-type-options']).toBe('nosniff');
+    expect(headers['x-frame-options']).toBe('DENY');
+    expect(headers['referrer-policy']).toBe('no-referrer');
+    expect(headers['cache-control']).toBe('no-store');
+  });
+
+  it('sends Content-Language from the negotiated locale', () => {
+    expect(headerMap(MARKUP_ONLY_PAGE)['content-language']).toBe('en');
+    expect(
+      headerMap({ ...MARKUP_ONLY_PAGE, locale: { tag: 'ar-EG', dir: 'rtl' } })['content-language'],
+    ).toBe('ar-EG');
   });
 
   it('carries the framing defence and the referrer policy on every page', () => {
@@ -45,6 +95,7 @@ describe('the headers every rendered page carries', () => {
       title: 'Untitled',
       script: { nonce: 'abc', fetchesSameOrigin: false },
       frames: [],
+      locale: { tag: 'en', dir: 'ltr' as const },
     })['content-security-policy'];
     expect(csp).toContain("script-src 'nonce-abc'");
     expect(csp).not.toContain('connect-src');
@@ -57,6 +108,7 @@ describe('the headers every rendered page carries', () => {
       title: 'Untitled',
       script: { nonce: 'abc', fetchesSameOrigin: true },
       frames: [],
+      locale: { tag: 'en', dir: 'ltr' as const },
     })['content-security-policy'];
     expect(csp).toContain("connect-src 'self'");
   });
@@ -164,6 +216,7 @@ describe('reloading a form restored from the back/forward cache', () => {
     title: 'Sign in',
     script: null,
     frames: [],
+    locale: { tag: 'en', dir: 'ltr' as const },
   };
   const SCRIPT_ELEMENT =
     /<script nonce="([^"]+)">[^<]*pageshow[^<]*persisted[^<]*reload\(\)[^<]*<\/script>/u;
@@ -219,6 +272,7 @@ describe('what the reload script does when run', () => {
     title: 'Sign in',
     script: null,
     frames: [],
+    locale: { tag: 'en', dir: 'ltr' as const },
   };
 
   function run(): { fire(persisted: boolean): void; reloads: () => number } {
@@ -251,5 +305,18 @@ describe('what the reload script does when run', () => {
     expect(page.reloads()).toBe(0);
     page.fire(true);
     expect(page.reloads()).toBe(1);
+  });
+});
+
+describe('the locale a page is sent under', () => {
+  it('refuses a direction that is neither ltr nor rtl', () => {
+    const page = { ...MARKUP_ONLY_PAGE, locale: { tag: 'en', dir: 'up' as never } };
+    expect(() => pageHeaders(page)).toThrow();
+  });
+
+  it('refuses a tag that could break out of the header', () => {
+    for (const tag of ['en\r\nX: y', 'en"><script>', '', 'x'.repeat(36)]) {
+      expect(() => pageHeaders({ ...MARKUP_ONLY_PAGE, locale: { tag, dir: 'ltr' } })).toThrow();
+    }
   });
 });

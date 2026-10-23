@@ -2,12 +2,14 @@
   "name": "@odudu/protocol-oidc",
   "version": "0.0.0",
   "private": true,
+  "license": "AGPL-3.0-only",
   "type": "module",
   "imports": {
     "#/*": "./src/*.ts"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./docs": "./src/docs.ts"
   },
   "main": "./src/index.ts",
   "scripts": {
@@ -24,6 +26,7 @@
     "@odudu/domain-authz": "workspace:*",
     "@odudu/domain-identity": "workspace:*",
     "@odudu/domain-tenant": "workspace:*",
+    "@odudu/i18n": "workspace:*",
     "@odudu/kernel": "workspace:*",
     "drizzle-orm": "0.45.3",
     "fastify": "5.12.5",

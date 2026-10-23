@@ -5,9 +5,14 @@ import {
   useCredentialChanges,
   useCredentials,
   useIssuePassword,
+  useRefreshCredentials,
   useLockout,
 } from '#/features/subjects/repository/useCredentials';
 import {
+  askingAgainst,
+  CHOICE_DEFAULTS,
+  choiceControl,
+  type ChoiceControl,
   credentialChangeOf,
   credentialDialogOf,
   credentialDoneText,
@@ -29,6 +34,8 @@ export interface SubjectCredentials {
   credentials: Read<ListCredentialsResponse>;
   lockout: Read<Lockout>;
   asking: Asking | null;
+  // The choice the confirmation offers, when it offers one.
+  choice: ChoiceControl | null;
   // What the confirmation says for the change being asked.
   dialog: NamedDialog | null;
   busy: boolean;
@@ -53,7 +60,10 @@ export function useSubjectCredentials(
   const credentials = useCredentials(tenant, subject.id, !itself);
   const lockout = useLockout(tenant, subject.id, !itself);
   const changes = useCredentialChanges(tenant, subject.id);
-  const [asking, setAsking] = useState<Asking | null>(null);
+  const [asked, setAsking] = useState<Asking | null>(null);
+  const refreshCredentials = useRefreshCredentials(tenant, subject.id);
+  const asking = askingAgainst(asked, credentials);
+  const [choices, setChoices] = useState(CHOICE_DEFAULTS);
   const [problem, setProblem] = useState<string | null>(null);
   // The issue's failure is said in the dialog that asked for it; its
   // success closes that dialog, and the secret has its own.
@@ -73,11 +83,14 @@ export function useSubjectCredentials(
     credentials,
     lockout,
     asking,
+    choice: choiceControl(asking, choices, setChoices),
     dialog: credentialDialogOf(asking, name, self),
     busy: changes.busy || issue.busy,
     problem,
     ask: (next) => {
       setProblem(null);
+      setChoices(CHOICE_DEFAULTS);
+      refreshCredentials();
       setAsking(next);
     },
     cancel: () => {
@@ -91,7 +104,7 @@ export function useSubjectCredentials(
         issue.start();
         return;
       }
-      const change = credentialChangeOf(asking);
+      const change = credentialChangeOf(asking, choices);
       if (change === null) return;
       changes
         .run(change)

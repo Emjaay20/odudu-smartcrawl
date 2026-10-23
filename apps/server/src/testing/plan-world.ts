@@ -91,6 +91,7 @@ export async function startPlanWorld(connections: WorldConnections): Promise<Pla
 
   const config = loadConfig({ ...process.env, ODUDU_LOG_LEVEL: 'silent' });
   const http = buildApp({
+    tls: false,
     database: app,
     ownerDatabase: owner,
     kek: KEK,

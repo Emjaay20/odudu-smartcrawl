@@ -112,6 +112,123 @@ it('counts the recovery codes, and revokes them all at once', async () => {
   expect(await screen.findByText(/No recovery codes/u)).toBeVisible();
 });
 
+it('asks for a new set by default when the codes are revoked, and says so in the request', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    subjectRoutes(undefined, {
+      [`GET ${C}/credentials`]: json(HELD),
+      [`DELETE ${C}/recovery-codes`]: noContent(),
+    }),
+  );
+  await user.click(await screen.findByRole('button', { name: 'Revoke every recovery code' }));
+  const dialog = await screen.findByRole('alertdialog', { name: 'Revoke ada’s recovery codes?' });
+  expect(
+    within(dialog).getByRole('checkbox', { name: 'Ask for a new set at next sign-in' }),
+  ).toBeChecked();
+  await user.click(within(dialog).getByRole('button', { name: 'Revoke recovery codes' }));
+  await waitFor(() => {
+    expect(sent.find((s) => s.path === `${C}/recovery-codes`)?.search.toString()).toBe(
+      'require_new_set=true',
+    );
+  });
+});
+
+it('sends no request for a new set when the box is unticked', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    subjectRoutes(undefined, {
+      [`GET ${C}/credentials`]: json(HELD),
+      [`DELETE ${C}/recovery-codes`]: noContent(),
+    }),
+  );
+  await user.click(await screen.findByRole('button', { name: 'Revoke every recovery code' }));
+  const dialog = await screen.findByRole('alertdialog', { name: 'Revoke ada’s recovery codes?' });
+  await user.click(
+    within(dialog).getByRole('checkbox', { name: 'Ask for a new set at next sign-in' }),
+  );
+  await user.click(within(dialog).getByRole('button', { name: 'Revoke recovery codes' }));
+  await waitFor(() => {
+    expect(sent.find((s) => s.path === `${C}/recovery-codes`)?.search.toString()).toBe(
+      'require_new_set=false',
+    );
+  });
+});
+
+it('offers no new set when no second factor is left to ask it for', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(
+    AT,
+    subjectRoutes(undefined, {
+      [`GET ${C}/credentials`]: json({ items: [HELD.items[0], HELD.items[3]] }),
+    }),
+  );
+  await user.click(await screen.findByRole('button', { name: 'Revoke every recovery code' }));
+  const dialog = await screen.findByRole('alertdialog', { name: 'Revoke ada’s recovery codes?' });
+  expect(within(dialog).queryByRole('checkbox')).toBeNull();
+});
+
+it('offers to end the sessions only when the last factor goes, unticked, and ends them when ticked', async () => {
+  const user = userEvent.setup();
+  const only = { items: [HELD.items[0], HELD.items[1], HELD.items[3]] };
+  const { sent } = renderConsoleAt(
+    AT,
+    subjectRoutes(undefined, {
+      [`GET ${C}/credentials`]: json(only),
+      [`DELETE ${C}/credentials/c-totp`]: noContent(),
+    }),
+  );
+  await user.click(
+    await screen.findByRole('button', { name: /^Remove Authenticator app \(TOTP\) enrolled/u }),
+  );
+  const dialog = await screen.findByRole('alertdialog', {
+    name: 'Remove ada’s authenticator app (TOTP)?',
+  });
+  expect(dialog).toHaveTextContent(/last second factor/u);
+  const box = within(dialog).getByRole('checkbox', { name: 'Also end ada’s sessions' });
+  expect(box).not.toBeChecked();
+  await user.click(box);
+  await user.click(within(dialog).getByRole('button', { name: 'Remove' }));
+  await waitFor(() => {
+    expect(sent.find((s) => s.path === `${C}/credentials/c-totp`)?.search.toString()).toBe(
+      'end_sessions=true',
+    );
+  });
+  expect(sent.some((s) => s.path === `${C}/sessions`)).toBe(false);
+});
+
+it('says the dialog against the list as the server holds it when it is asked, not as the tab loaded it', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(
+    AT,
+    subjectRoutes(undefined, {
+      [`GET ${C}/credentials`]: inTurn(
+        json(HELD),
+        json({ items: [HELD.items[0], HELD.items[1], HELD.items[3]] }),
+      ),
+    }),
+  );
+  await user.click(
+    await screen.findByRole('button', { name: /^Remove Authenticator app \(TOTP\) enrolled/u }),
+  );
+  const dialog = await screen.findByRole('alertdialog');
+  await waitFor(() => {
+    expect(dialog).toHaveTextContent(/last second factor/u);
+  });
+});
+
+it('offers no session choice while another second factor remains', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, subjectRoutes(undefined, { [`GET ${C}/credentials`]: json(HELD) }));
+  await user.click(
+    await screen.findByRole('button', { name: /^Remove Authenticator app \(TOTP\) enrolled/u }),
+  );
+  const dialog = await screen.findByRole('alertdialog');
+  expect(within(dialog).queryByRole('checkbox')).toBeNull();
+  expect(dialog).not.toHaveTextContent(/last second factor/u);
+});
+
 it('shows a lockout, and clears it after a confirmation', async () => {
   const user = userEvent.setup();
   const { sent } = renderConsoleAt(

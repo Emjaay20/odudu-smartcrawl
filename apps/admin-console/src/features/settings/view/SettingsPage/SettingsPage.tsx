@@ -8,12 +8,14 @@ import {
   listOf,
   LOCKOUT_SECTION,
   numberOf,
+  PASSWORD_SECTION,
   sectionHeadingId,
   SETTINGS_SECTIONS,
   textOf,
   type SettingField,
   type SettingsSection,
 } from '#/features/settings/service';
+import { usePasswordNote } from '#/features/settings/usecase/usePasswordNote';
 import {
   useGeneralSection,
   useSettingsSection,
@@ -28,6 +30,7 @@ import { NumberWithUnitField, SelectField, TextField, ToggleField } from '#/shar
 import { useTenantSettingsRead } from '#/shared/usecase/useTenantSettingsRead';
 import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
 import { PageHeader } from '#/shared/view/PageHeader';
+import { Note } from '#/shared/view/Note';
 import { ReadGate } from '#/shared/view/ReadGate';
 import { SaveSection } from '#/shared/view/SaveSection';
 import { ClearLockouts } from '#/features/settings/view/ClearLockouts';
@@ -157,6 +160,11 @@ interface Props {
   gone: boolean;
 }
 
+function PasswordHint({ save, data }: { save: SettingsSave; data: Settings }) {
+  const note = usePasswordNote(save, data);
+  return note === null ? null : <Note tone={note.tone}>{note.text}</Note>;
+}
+
 function Plain({ tenant, data, etag, gone, section }: Props & { section: SettingsSection }) {
   const save = useSettingsSection({ tenant, section, data, etag, gone });
   return (
@@ -167,6 +175,7 @@ function Plain({ tenant, data, etag, gone, section }: Props & { section: Setting
       save={save}
     >
       <Fields section={section} save={save} />
+      {section.id === PASSWORD_SECTION ? <PasswordHint save={save} data={data} /> : null}
     </SaveSection>
   );
 }

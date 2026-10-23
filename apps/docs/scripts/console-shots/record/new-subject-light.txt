@@ -1,0 +1,62 @@
+@layer {
+  [data-react-aria-pressable] {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+}
+Odudu console
+Skip to content
+odudu · demo
+Overview
+Identity
+Subjects
+Groups
+Roles
+Applications
+Clients
+Scopes
+Registration tokens
+Security
+Sign-in flow
+Signing keys
+Sessions
+Tenant
+Settings
+Email
+Export
+Observe
+Audit trail
+Signed in as 
+admin@odudu.local
+ from 
+system
+Theme
+System
+Light
+Dark
+Switch tenant
+Sign out
+Collapse menu
+or press 
+[
+odudu · demo
+Menu
+System
+Acting in 
+demo
+ with system authority
+Back to system
+Identity
+›
+Subjects
+›
+Create a subject
+‹
+Subjects
+Create a subject
+A subject created here has no password: it owes a password change, and you issue it a one-time password from its Credentials tab.
+Username
+A username must be at least one character, hold no bidirectional control character, and no other subject in the tenant may hold it: case counts, so Ada and ada are different usernames.
+Email
+Optional. Unverified until the subject proves it or you mark it verified on the Profile tab.
+Create subject
+Cancel

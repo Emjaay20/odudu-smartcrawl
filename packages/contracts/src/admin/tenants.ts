@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { noBidiControls } from '#/bidi';
 import {
   createdAtSchema,
   cursorQuerySchema,
@@ -9,7 +10,7 @@ import {
 
 export const createTenantRequestSchema = z.object({
   name: z.string().min(1),
-  display_name: z.string().min(1).optional(),
+  display_name: noBidiControls(z.string().min(1)).optional(),
 });
 export type CreateTenantRequest = z.infer<typeof createTenantRequestSchema>;
 

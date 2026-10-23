@@ -59,6 +59,7 @@ beforeAll(async () => {
 
   const config = loadConfig({ ...process.env, ODUDU_LOG_LEVEL: 'silent' });
   http = buildApp({
+    tls: false,
     database: appDb,
     ownerDatabase: owner,
     kek: KEK,

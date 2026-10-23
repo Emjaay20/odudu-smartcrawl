@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { loadDocument, REPO_ROOT } from './markdown.js';
+import { loadSource, PROTOCOL_PAGES, REPO_ROOT } from './markdown.js';
 
 // Both documents now state the two windows a session lives inside, as
 // numbers a reader will configure against. Until 2026-09-17 they stated a
@@ -9,7 +9,7 @@ import { loadDocument, REPO_ROOT } from './markdown.js';
 // and nothing failed, because a stale sentence and a checked one read
 // identically. The defaults live in one migration, which is not where
 // anybody looks after rewording a paragraph.
-const DOCUMENTS = ['README.md', 'docs/request-paths.md'] as const;
+const DOCUMENTS = [PROTOCOL_PAGES] as const;
 
 const COLUMNS = ['sso_session_idle_seconds', 'sso_session_max_seconds'] as const;
 
@@ -36,7 +36,7 @@ function declaredDefaults(): Map<string, string> {
 describe('the session lifespans the documents state are the ones the schema declares', () => {
   it.each(DOCUMENTS)('%s states both defaults, and states them right', (name) => {
     const declared = declaredDefaults();
-    const text = loadDocument(name).lines.join('\n');
+    const text = loadSource(name).lines.join('\n');
 
     for (const column of COLUMNS) {
       // Across the whole file rather than line by line: prose wraps, so a
@@ -54,7 +54,7 @@ describe('the session lifespans the documents state are the ones the schema decl
   it('does not still describe the session as the fixed window it replaced', () => {
     for (const name of DOCUMENTS) {
       expect(
-        loadDocument(name).lines.join('\n'),
+        loadSource(name).lines.join('\n'),
         `${name} still calls the SSO session 12 hours, which is the constant ` +
           `migration ${MIGRATION} replaced with two per-tenant windows`,
       ).not.toMatch(/SSO session, 12 hours/u);

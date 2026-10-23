@@ -1,10 +1,11 @@
-import { sessionCookies } from '@odudu/authn-flows';
+import { clearedSignInHandleCookie, sessionCookies } from '@odudu/authn-flows';
 import { requestContextFrom } from '@odudu/domain-audit';
 import { type FastifyInstance } from 'fastify';
 import { handleConsentSubmission, type ConsentSubmissionDeps } from '#/usecase/consent-submission';
 import { renderEmailUnverifiedPage } from '#/view/authorize-html';
 import { sendSignInExpired } from '#/view/routes/expired-sign-in';
 import { sendHtml } from '#/view/html-response';
+import { continuation } from '#/view/routes/continuation';
 import { issuerBaseFor } from '#/view/issuer';
 import {
   sendRequiredActionPage,
@@ -76,7 +77,13 @@ export function registerConsentRoute(app: FastifyInstance, deps: ConsentRouteDep
     // ConsentSubmissionOutcome for why a decision=allow has to clear these
     // too.
     if (outcome.kind === 'unverified') {
-      return sendHtml(reply, 200, renderEmailUnverifiedPage(outcome.hasEmail));
+      const { locale, signInPath } = await continuation(
+        deps,
+        request.params.tenant,
+        outcome.authSessionId,
+        reply,
+      );
+      return sendHtml(reply, 200, renderEmailUnverifiedPage(outcome.hasEmail, signInPath, locale));
     }
 
     if (outcome.kind === 'required_action') {
@@ -100,6 +107,8 @@ export function registerConsentRoute(app: FastifyInstance, deps: ConsentRouteDep
 
     const reply302 = reply.code(302);
     for (const cookie of written) reply302.header('set-cookie', cookie);
+    // The sign-in is finished: its handle has nothing left to name.
+    reply302.header('set-cookie', clearedSignInHandleCookie(request.params.tenant, deps.tls));
     return reply302.header('location', outcome.location).send();
   });
 }

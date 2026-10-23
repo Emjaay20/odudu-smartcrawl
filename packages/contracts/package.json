@@ -2,13 +2,15 @@
   "name": "@odudu/contracts",
   "version": "0.0.0",
   "private": true,
+  "license": "AGPL-3.0-only",
   "type": "module",
   "imports": {
     "#/*": "./src/*.ts"
   },
   "exports": {
     ".": "./src/index.ts",
-    "./admin": "./src/admin/index.ts"
+    "./admin": "./src/admin/index.ts",
+    "./admin/docs": "./src/admin/docs.ts"
   },
   "main": "./src/index.ts",
   "scripts": {

@@ -26,7 +26,23 @@ BASE="http://localhost:$ODUDU_HOST_PORT"
 cleanup() { docker compose down -v --remove-orphans || true; }
 trap cleanup EXIT
 
-docker compose up -d --build
+# CI builds the image against a layer cache and tags it odudu-smoke-odudu, the
+# name compose gives it; ODUDU_PREBUILT=1 starts that instead of rebuilding it.
+# If it is missing compose builds it, so the flag cannot leave a stack unbuilt.
+build_flag=(--build)
+if [ "${ODUDU_PREBUILT:-}" = "1" ]; then
+  build_flag=()
+  expected_revision="${ODUDU_REVISION:-$(git -C .. rev-parse HEAD)}"
+  actual_revision="$(docker image inspect "$COMPOSE_PROJECT_NAME-odudu" \
+    --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' 2>/dev/null || true)"
+  if [ -n "$actual_revision" ] && [ "$actual_revision" != "$expected_revision" ]; then
+    echo "$COMPOSE_PROJECT_NAME-odudu was built from '$actual_revision', not '$expected_revision'." >&2
+    echo "Build it from this commit (ODUDU_REVISION=$expected_revision), or run without ODUDU_PREBUILT." >&2
+    exit 1
+  fi
+fi
+
+docker compose up -d ${build_flag[@]+"${build_flag[@]}"}
 
 ready=0
 for _ in $(seq 1 60); do
@@ -195,5 +211,103 @@ printf '%s' "$ASSET_HEADERS" | grep -i '^cache-control:.*immutable' > /dev/null 
 }
 
 echo "smoke: the console shell and $ASSET are served from the image"
+
+# Every rendered page links the same-origin stylesheet, and the stylesheet
+# names the fonts it needs: the sheet revalidates, a font never does.
+SHEET_HEADERS="$(mktemp)"
+SHEET=$(curl -sS -D "$SHEET_HEADERS" "$BASE/instrument/instrument.css")
+SHEET_STATUS=$(sed -n '1s/^HTTP\/[0-9.]* \([0-9]*\).*/\1/p' "$SHEET_HEADERS")
+test "$SHEET_STATUS" = "200" || { echo "smoke: GET /instrument/instrument.css answered $SHEET_STATUS, expected 200" >&2; exit 1; }
+grep -i '^content-type: *text/css' "$SHEET_HEADERS" > /dev/null || {
+  echo "smoke: /instrument/instrument.css was not served as text/css" >&2
+  exit 1
+}
+grep -i '^x-content-type-options: *nosniff' "$SHEET_HEADERS" > /dev/null || {
+  echo "smoke: /instrument/instrument.css did not carry nosniff" >&2
+  exit 1
+}
+rm -f "$SHEET_HEADERS"
+FONT=$(printf '%s' "$SHEET" | sed -n "s/.*url('\(\/instrument\/fonts\/[^']*\)').*/\1/p" | sed -n 1p)
+test -n "$FONT" || { echo "smoke: the stylesheet names no /instrument/fonts/ font" >&2; exit 1; }
+FONT_HEADERS=$(curl -sS -D - -o /dev/null "$BASE$FONT")
+printf '%s' "$FONT_HEADERS" | grep -i '^cache-control:.*immutable' > /dev/null || {
+  echo "smoke: $FONT is not cached as immutable" >&2
+  exit 1
+}
+echo "smoke: the instrument stylesheet and $FONT are served from the image"
+
+MARK_HEADERS=$(curl -sS -D - -o /dev/null "$BASE/instrument/mark.svg")
+printf '%s' "$MARK_HEADERS" | grep -i '^content-type: *image/svg+xml' > /dev/null || {
+  echo "smoke: /instrument/mark.svg was not served as image/svg+xml" >&2
+  exit 1
+}
+for ICON in "/instrument/favicon.svg:image/svg+xml" "/instrument/favicon.ico:image/x-icon" "/favicon.ico:image/x-icon"; do
+  ICON_HEADERS=$(curl -sS -D - -o /dev/null "$BASE${ICON%%:*}")
+  printf '%s' "$ICON_HEADERS" | grep -i "^content-type: *${ICON#*:}" > /dev/null || {
+    echo "smoke: ${ICON%%:*} was not served as ${ICON#*:}" >&2
+    exit 1
+  }
+done
+SHELL_HEADERS=$(curl -sS -D - -o /dev/null "$BASE/console/")
+printf '%s' "$SHELL_HEADERS" | grep -i '^x-content-type-options: *nosniff' > /dev/null || {
+  echo "smoke: the console shell did not carry nosniff" >&2
+  exit 1
+}
+echo "smoke: the mark is served and the console shell forbids a sniffed type"
+
+# The documentation is built into the image and answers from the server's own
+# origin, under a policy computed from the build, and says noindex everywhere.
+DOCS_HEADERS="$(mktemp)"
+DOCS_BODY=$(curl -sS -D "$DOCS_HEADERS" "$BASE/docs/")
+DOCS_STATUS=$(sed -n '1s/^HTTP\/[0-9.]* \([0-9]*\).*/\1/p' "$DOCS_HEADERS")
+test "$DOCS_STATUS" = "200" || { echo "smoke: GET /docs/ answered $DOCS_STATUS, expected 200" >&2; exit 1; }
+grep -i "^content-security-policy: default-src 'self'; script-src 'self' 'sha256-" "$DOCS_HEADERS" > /dev/null || {
+  echo "smoke: /docs/ did not carry its hashed policy" >&2
+  exit 1
+}
+grep -i '^x-robots-tag: noindex, nofollow' "$DOCS_HEADERS" > /dev/null || {
+  echo "smoke: /docs/ did not say noindex, nofollow" >&2
+  exit 1
+}
+rm -f "$DOCS_HEADERS"
+# The build's minifier drops the quotes, so both spellings count; a page says it once.
+NOINDEX_METAS=$(printf '%s' "$DOCS_BODY" | grep -Eo 'name="?robots"? content="?noindex' | wc -l | tr -d ' ')
+test "$NOINDEX_METAS" = "1" || { echo "smoke: /docs/ names noindex in $NOINDEX_METAS robots metas, expected 1" >&2; exit 1; }
+
+DOCS_ASSET=$(printf '%s' "$DOCS_BODY" | sed -n 's/.*src="\{0,1\}\(\/docs\/assets\/js\/[^" >]*\).*/\1/p' | sed -n 1p)
+test -n "$DOCS_ASSET" || { echo "smoke: /docs/ names no /docs/assets/js/ script" >&2; exit 1; }
+DOCS_ASSET_HEADERS=$(curl -sS -D - -o /dev/null "$BASE$DOCS_ASSET")
+printf '%s' "$DOCS_ASSET_HEADERS" | grep -i '^cache-control:.*immutable' > /dev/null || {
+  echo "smoke: $DOCS_ASSET is not cached as immutable" >&2
+  exit 1
+}
+
+LLMS_HEADERS=$(curl -sS -D - -o /dev/null "$BASE/docs/llms.txt")
+printf '%s' "$LLMS_HEADERS" | sed -n '1s/^HTTP\/[0-9.]* \([0-9]*\).*/\1/p' | grep -qx 200 || {
+  echo "smoke: GET /docs/llms.txt did not answer 200" >&2
+  exit 1
+}
+printf '%s' "$LLMS_HEADERS" | grep -i '^x-robots-tag: noindex, nofollow' > /dev/null || {
+  echo "smoke: /docs/llms.txt did not say noindex, nofollow" >&2
+  exit 1
+}
+echo "smoke: the documentation, $DOCS_ASSET and llms.txt are served from the image under noindex"
+
+# `odudu` is the image's command, so an operator runs `docker compose exec
+# odudu odudu reap` rather than naming the bundle. It prints one JSON report.
+REAP_REPORT=$(docker compose exec -T odudu odudu reap) || { echo "smoke: odudu reap failed inside the image" >&2; exit 1; }
+printf '%s' "$REAP_REPORT" | grep -q '^{' || { echo "smoke: odudu reap printed no JSON report: $REAP_REPORT" >&2; exit 1; }
+echo "smoke: odudu reap ran as a command and printed a report"
+
+# The revision label is the commit the image was built from, which CI passes
+# as ODUDU_REVISION; a local build without it is labelled "unknown".
+EXPECTED_REVISION="${ODUDU_REVISION:-unknown}"
+ACTUAL_REVISION=$(docker inspect "$(docker compose ps -q odudu)" \
+  --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')
+test "$ACTUAL_REVISION" = "$EXPECTED_REVISION" || {
+  echo "smoke: the revision label was '$ACTUAL_REVISION', expected '$EXPECTED_REVISION'" >&2
+  exit 1
+}
+echo "smoke: the image carries the revision label $ACTUAL_REVISION"
 
 exit 0

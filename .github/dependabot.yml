@@ -16,7 +16,48 @@ updates:
     ignore:
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
+  - package-ecosystem: npm
+    directory: /examples/web-app
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /examples/single-page-app
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /examples/api
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /examples/machine-to-machine
+    schedule:
+      interval: weekly
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+  # Base images are pinned by digest (tests/lint/base-images-pinned.test.ts);
+  # Dependabot moves the tag and the digest together.
+  - package-ecosystem: docker
+    directories:
+      - /infra/docker
+      - /infra/conformance/proxy
+    schedule:
+      interval: weekly
+    groups:
+      base-images:
+        patterns: ['*']
+  - package-ecosystem: docker-compose
+    directories:
+      - /infra/docker
+      - /infra/conformance
+      - /quickstart
+    schedule:
+      interval: weekly
+    # A new Postgres major cannot open the previous one's data directory.
+    ignore:
+      - dependency-name: postgres
+        update-types: ['version-update:semver-major']
+    groups:
+      base-images:
+        patterns: ['*']

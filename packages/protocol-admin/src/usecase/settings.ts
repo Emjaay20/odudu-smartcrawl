@@ -1,3 +1,4 @@
+import { BIDI_REFUSED_MESSAGE, refusesBidi } from '@odudu/contracts';
 import { type TenantScopedDatabase } from '@odudu/db';
 import {
   isSystemTenantId,
@@ -177,6 +178,23 @@ export async function amendSettings(
   );
   if (matches(input.ifMatch, current.etag) === 'mismatch') {
     return { kind: 'precondition_failed' };
+  }
+
+  const storedName = current.settings.display_name;
+  const bidi = coerced.settings.some(
+    ({ column, value }) =>
+      column === 'displayName' &&
+      refusesBidi(
+        typeof value === 'string' ? value : null,
+        typeof storedName === 'string' ? storedName : null,
+      ),
+  );
+  if (bidi) {
+    return {
+      kind: 'out_of_range',
+      problems: [{ name: 'display_name', message: BIDI_REFUSED_MESSAGE }],
+      ranged: false,
+    };
   }
 
   // The request schema admits `{}` and Drizzle refuses an empty `set`, so a

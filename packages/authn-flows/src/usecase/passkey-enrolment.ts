@@ -3,7 +3,6 @@ import { auditRepository } from '@odudu/domain-audit';
 import { credentialRepository, userRepository } from '@odudu/domain-identity';
 import { authenticationSessionRepository } from '#/repository/authentication-sessions';
 import { requiredActionRepository } from '#/repository/required-actions';
-import { oweRecoveryCodesIfNoneUnspent } from '#/usecase/recovery-codes';
 import {
   parseRegistrationResponse,
   passkeyRegistrationOptions,
@@ -130,6 +129,5 @@ export async function completePasskeyEnrolment(
     resourceType: 'subject',
     resourceId: input.subjectId,
   });
-  await oweRecoveryCodesIfNoneUnspent(tx, input.tenantId, input.subjectId);
   return { kind: 'enrolled', credentialId: verified.credentialId };
 }

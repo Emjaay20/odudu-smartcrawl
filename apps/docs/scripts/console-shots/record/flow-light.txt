@@ -1,0 +1,110 @@
+@layer {
+  [data-react-aria-pressable] {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+}
+Odudu console
+Skip to content
+odudu · demo
+Overview
+Identity
+Subjects
+Groups
+Roles
+Applications
+Clients
+Scopes
+Registration tokens
+Security
+Sign-in flow
+Signing keys
+Sessions
+Tenant
+Settings
+Email
+Export
+Observe
+Audit trail
+Signed in as 
+admin@odudu.local
+ from 
+system
+Theme
+System
+Light
+Dark
+Switch tenant
+Sign out
+Collapse menu
+or press 
+[
+odudu · demo
+Menu
+System
+Acting in 
+demo
+ with system authority
+Back to system
+demo
+Sign-in flow
+What a subject is asked, in what order, to sign in to this tenant.
+Steps
+The steps run in this order at every sign-in. Alternatives that sit next to each other are one run: passing any of them is enough. The whole list is replaced when you save.
+1
+passkey
+A passkey registered to the subject.
+Any one of a run of alternatives is enough.
+Requirement for passkey
+Alternative
+▾
+Required
+Alternative
+Conditional
+Disabled
+Up
+Down
+2
+password
+The subject's password.
+Any one of a run of alternatives is enough.
+Requirement for password
+Alternative
+▾
+Required
+Alternative
+Conditional
+Disabled
+Up
+Down
+3
+otp
+A one-time password from an authenticator app.
+Asked only of a subject it applies to; skipped for the rest.
+Asked only of subjects who set up an authenticator app.
+Requirement for otp
+Conditional
+▾
+Required
+Alternative
+Conditional
+Disabled
+Up
+Down
+4
+recovery-code
+One of the single-use recovery codes issued with a one-time password.
+Asked only of a subject it applies to; skipped for the rest.
+Requirement for recovery-code
+Conditional
+▾
+Required
+Alternative
+Conditional
+Disabled
+Up
+Down
+Every authenticator the server has is already a step.
+One-time password
+The one-time password step is asked of a subject who has set up an authenticator app. Turn this on to ask it of every subject, those who have not set one up included. A sign-in with a passkey is never asked again.
+Ask every subject for a one-time password
+Off

@@ -62,7 +62,11 @@ import {
   listRolesResponseSchema,
   listScopesResponseSchema,
   listScopeClientsQuerySchema,
+  listBuiltinScopesResponseSchema,
   listScopeClientsResponseSchema,
+  deleteScopeQuerySchema,
+  restoreBuiltinScopesResponseSchema,
+  scopeImpactSchema,
   listSessionsResponseSchema,
   endSessionsResponseSchema,
   listGrantsResponseSchema,
@@ -87,6 +91,8 @@ import {
   countTenantsQuerySchema,
   listTenantsResponseSchema,
   deleteTenantQuerySchema,
+  removeCredentialQuerySchema,
+  revokeRecoveryCodesQuerySchema,
   roleSchema,
   rotateClientSecretQuerySchema,
   rotateClientSecretResponseSchema,
@@ -289,7 +295,10 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     capability: 'manage-users',
     responseSchema: z.void(),
     successStatus: 204,
-    description: TARGET_CEILING.trimStart() + LAST_ADMINISTRATOR,
+    description:
+      TARGET_CEILING.trimStart() +
+      LAST_ADMINISTRATOR +
+      ' Refused with `409` (`about:blank#service-account`) for the service account of a client; delete the client instead.',
   },
   {
     method: 'GET',
@@ -326,7 +335,16 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     capability: 'manage-users',
     responseSchema: z.void(),
     successStatus: 204,
-    description: TARGET_CEILING.trimStart(),
+    querystringSchema: removeCredentialQuerySchema,
+    description:
+      'Removes one credential; a `password` is refused with `409`. When the credential is the ' +
+      'TOTP the subject holds, their whole set of recovery codes is revoked with it, and an ' +
+      'owed set is dropped, since a code only stands in for a TOTP code (a passkey is not one); ' +
+      'a later enrolment issues a fresh set. The subject is told by mail at their address on file, verified or not, if they ' +
+      'have one. With `end_sessions=true` every live session of the subject ends in the same ' +
+      'transaction, as `DELETE …/sessions` ends them, and also needs `manage-sessions`; the ' +
+      'removal and the ending succeed or fail together.' +
+      TARGET_CEILING,
   },
   {
     method: 'GET',
@@ -435,12 +453,17 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     capability: 'manage-users',
     responseSchema: z.void(),
     successStatus: 204,
+    querystringSchema: revokeRecoveryCodesQuerySchema,
     description:
       'Revokes every recovery code the subject holds, spent or not, so none signs in again. ' +
       'Recovery codes carry no id of their own, so this is the only way to remove them. ' +
       '`204` whether or not any were held; `404` for a subject with no `users` row. ' +
-      'Owes nothing: `PUT .../required-actions` with `generate-recovery-codes` asks for a ' +
-      'fresh set at the next sign-in.' +
+      'While the subject still holds a TOTP, the `generate-recovery-codes` required ' +
+      'action is added so their next sign-in asks for a fresh set, unless `require_new_set` is ' +
+      '`false`; with no TOTP left a set would serve nothing, and none is asked for. ' +
+      'The subject is told by mail at their address on file, if they have one. Removing the ' +
+      'last TOTP through `DELETE …/credentials/{credentialId}` revokes the set the ' +
+      'same way, without being asked.' +
       TARGET_CEILING,
   },
   {
@@ -1103,12 +1126,50 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     capability: 'manage-tenant',
     responseSchema: z.void(),
     successStatus: 204,
+    querystringSchema: deleteScopeQuerySchema,
     description:
-      'Cascades to every client’s assignment and role mapping naming the scope. ' +
-      'Refused with 409 for the scope named `openid`, which every client’s ' +
-      'assignment of it — the tenant’s built-in admin client included — would ' +
-      'otherwise be stripped of in the same stroke. ' +
+      'Cascades to every client’s assignment and role mapping naming the scope; ' +
+      '`GET …/impact` counts them first. A built-in scope — one every tenant is ' +
+      'given, decided by its name alone — is deleted only when `confirm` names it again, refused with `422` ' +
+      '`builtin-scope-confirmation` otherwise, the detail naming the scope and what ' +
+      'would go with it; `POST …/scopes/restore-builtins` creates it again, without ' +
+      'what the cascade took. Refused with 409 for the scope named `openid`, which ' +
+      'every client’s assignment of it — the tenant’s built-in admin client included — ' +
+      'would otherwise be stripped of in the same stroke, whatever `confirm` says. ' +
+      'The audit row carries `builtin` and both counts. ' +
       REMOVAL_CEILING,
+  },
+  {
+    method: 'GET',
+    pattern: '/admin/tenants/:tenant/scopes/:id/impact',
+    capability: 'manage-tenant',
+    responseSchema: scopeImpactSchema,
+    description:
+      'What deleting the scope would take with it: how many clients carry it and how many ' +
+      'roles are mapped to it, each counted up to the same ceiling the list counts stop at, ' +
+      'and whether it is a built-in scope, which its name alone decides. Two bounded index reads, whatever the tenant holds.',
+  },
+  {
+    method: 'GET',
+    pattern: '/admin/tenants/:tenant/scopes/builtins',
+    capability: 'manage-tenant',
+    responseSchema: listBuiltinScopesResponseSchema,
+    description:
+      'Every built-in scope, in the order a new tenant is given them, and whether this tenant ' +
+      'has it. One read over the name index.',
+  },
+  {
+    method: 'POST',
+    pattern: '/admin/tenants/:tenant/scopes/restore-builtins',
+    capability: 'manage-tenant',
+    responseSchema: restoreBuiltinScopesResponseSchema,
+    description:
+      'Creates each built-in scope the tenant is missing with the settings a new tenant is ' +
+      'given, and answers the names it created, none when none was missing: repeating it is ' +
+      'harmless. A name that exists is not recreated, whatever scope holds it, and that scope is not read or changed, edited or not, and the client ' +
+      'assignments and role mappings a deletion took are not recreated. Refused with `409`, ' +
+      'creating nothing, when the missing ones would pass the tenant’s scope limit or the ' +
+      'limit on scopes marked for every new client.',
   },
   {
     method: 'GET',

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { noBidiControls } from '#/bidi';
 import {
   ASSIGNMENT_LIMIT,
   createdAtSchema,
@@ -116,10 +117,14 @@ export type UsernamePolicy = z.infer<typeof usernamePolicySchema>;
 // The one rule a username is held to, on creation and on a rename alike.
 // Uniqueness is the `users_username_unique` constraint, which compares
 // exactly; the console shows the rule in these words before it asks.
-export const usernameSchema = z.string().min(1);
+export const usernameSchema = noBidiControls(z.string().min(1));
+
+// What a rename is read as before the rule is applied: it is checked against
+// the stored username, so one a row already holds is not refused.
+export const usernameShapeSchema = z.string().min(1);
 export const USERNAME_RULE =
-  'a username must be at least one character, and no other subject in the tenant may hold it: ' +
-  'case counts, so Ada and ada are different usernames';
+  'a username must be at least one character, hold no bidirectional control character, and no ' +
+  'other subject in the tenant may hold it: case counts, so Ada and ada are different usernames';
 
 // No `password` field, deliberately: creating a subject through this door
 // writes an `update-password` required action instead, so no operator ever
@@ -133,9 +138,9 @@ export const createSubjectRequestSchema = z.object({
 export type CreateSubjectRequest = z.infer<typeof createSubjectRequestSchema>;
 
 // `username` is accepted only where the tenant's `username_editable` is on,
-// and then only under `If-Match` (docs/admin-paths.md).
+// and then only under `If-Match` (apps/docs/content/en/reference/transcripts/admin-paths/patch-subjectsid.md).
 export const amendSubjectRequestSchema = z.object({
-  username: usernameSchema.optional(),
+  username: usernameShapeSchema.optional(),
   email: z.string().min(1).nullable().optional(),
   enabled: z.boolean().optional(),
 });

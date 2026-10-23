@@ -1,11 +1,21 @@
 export { type EmailMessage, type EmailSender } from '#/service/sender';
 export {
   renderVerifyEmail,
+  renderFinishRegistration,
+  type FinishRegistrationInput,
   renderResetPassword,
   renderRequiredActions,
+  renderRegistrationDuplicate,
+  type RegistrationDuplicateInput,
+  renderSecondFactorRemoved,
+  renderRecoveryCodesRevoked,
+  type SecondFactorRemovedInput,
+  type RecoveryCodesRevokedInput,
+  renderSmtpTest,
   type VerifyEmailInput,
   type ResetPasswordInput,
   type RequiredActionsInput,
+  type SmtpTestInput,
 } from '#/service/templates';
 export { smtpSender, type SmtpConfig } from '#/adapter/smtp';
 export { capturingSender } from '#/adapter/capturing';

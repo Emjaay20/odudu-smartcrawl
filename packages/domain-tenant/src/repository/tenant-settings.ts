@@ -1,4 +1,5 @@
 import { isCheckViolation, tenants, type TenantScopedDatabase } from '@odudu/db';
+import { refuseBidiControls } from '@odudu/kernel';
 import { eq } from 'drizzle-orm';
 import {
   TENANT_SETTING_COLUMNS,
@@ -83,6 +84,14 @@ export function tenantSettingsRepository(tx: TenantScopedDatabase) {
       tenantId: string,
       columns: Readonly<Record<string, TenantSettingValue | null>>,
     ): Promise<TenantSettingsRecord> {
+      const displayName = columns.displayName;
+      if (typeof displayName === 'string') {
+        const held = await tx
+          .select({ displayName: tenants.displayName })
+          .from(tenants)
+          .where(eq(tenants.id, tenantId));
+        refuseBidiControls('display_name', displayName, held[0]?.displayName);
+      }
       let rows: (typeof tenants.$inferSelect)[];
       try {
         rows = await tx.update(tenants).set(columns).where(eq(tenants.id, tenantId)).returning();

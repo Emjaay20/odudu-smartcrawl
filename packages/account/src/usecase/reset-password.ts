@@ -1,8 +1,11 @@
+import { actionLink } from '#/service/action-link';
 import { withTenant, type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { auditRepository, type RequestContext } from '@odudu/domain-audit';
 import { outboxRepository, renderResetPassword } from '@odudu/email';
 import { actionTokenRepository } from '#/repository/action-tokens';
 import { type PasswordPolicy, type PolicyViolation } from '#/repository/tenant-settings';
+import { type MailGate } from '#/service/mail-gate';
+import { withMinimum } from '#/service/password-violations';
 
 // Re-exported so the view layer can reach these without importing the
 // repository directly (no-view-to-repository, .dependency-cruiser.cjs):
@@ -19,6 +22,11 @@ export interface RequestPasswordResetDeps {
   // #/view/routes/registration.ts for why a request header cannot be
   // trusted with the contents of a mail sent to a third party.
   readonly issuerBase: string | undefined;
+  // The send time of the mail, from the caller's clock.
+  readonly now: () => Date;
+  // The sign-in the person asked from, when this browser holds it
+  // (referenceToResume): kept beside the token, never in the mailed link.
+  readonly authenticationSessionId?: string | null;
   // Injected for the reason completePasswordReset's setPassword is:
   // @odudu/account depends on neither @odudu/domain-identity nor
   // @odudu/domain-authz, so the composition root wires the actual lookup.
@@ -30,7 +38,10 @@ export interface RequestPasswordResetDeps {
   readonly findByEmail: (
     tx: TenantScopedDatabase,
     email: string,
-  ) => Promise<{ subjectId: string; email: string } | null>;
+  ) => Promise<{ subjectId: string; email: string; locale?: string | null | undefined } | null>;
+  // Whether a mail may go to this address now. It decides only whether the
+  // mail is queued, never the answer.
+  readonly mailGate: MailGate;
 }
 
 export type RequestPasswordResetOutcome = { kind: 'requested' } | { kind: 'misconfigured' };
@@ -53,7 +64,7 @@ export async function requestPasswordReset(
 
   await withTenant(deps.database.db, deps.tenantId, async (tx) => {
     const user = await deps.findByEmail(tx, email);
-    if (user === null) return;
+    if (user === null || !deps.mailGate('reset', deps.tenantId, user.email)) return;
     await enqueueResetLink(tx, { ...deps, issuerBase }, user);
   });
 
@@ -66,6 +77,11 @@ export interface ActionLinkTenant {
   readonly tenantName: string;
   readonly tenantDisplayName: string;
   readonly issuerBase: string;
+  // The send time of the mail, from the caller's clock.
+  readonly now: () => Date;
+  // The sign-in the link came out of, so its page can lead the same browser
+  // back to it; an administrator's link has none.
+  readonly authenticationSessionId?: string | null;
 }
 
 /**
@@ -76,7 +92,11 @@ export interface ActionLinkTenant {
 export async function enqueueResetLink(
   tx: TenantScopedDatabase,
   tenant: ActionLinkTenant,
-  user: { readonly subjectId: string; readonly email: string },
+  user: {
+    readonly subjectId: string;
+    readonly email: string;
+    readonly locale?: string | null | undefined;
+  },
 ): Promise<void> {
   const tokens = actionTokenRepository(tx);
   const { token } = await tokens.issue({
@@ -84,16 +104,28 @@ export async function enqueueResetLink(
     subjectId: user.subjectId,
     type: 'reset_password',
     email: user.email,
+    ...(tenant.authenticationSessionId === undefined
+      ? {}
+      : { authenticationSessionId: tenant.authenticationSessionId }),
     ttlSeconds: await tokens.lifetimeOf(tenant.tenantId, 'reset_password'),
   });
-  const link = `${tenant.issuerBase}/tenants/${tenant.tenantName}/login-actions/action-token?key=${encodeURIComponent(token)}`;
+  const link = actionLink(tenant.issuerBase, tenant.tenantName, token);
   await outboxRepository(tx).enqueue({
     tenantId: tenant.tenantId,
-    ...renderResetPassword({ to: user.email, link, tenantDisplayName: tenant.tenantDisplayName }),
+    ...renderResetPassword({
+      to: user.email,
+      link,
+      tenantDisplayName: tenant.tenantDisplayName,
+      now: tenant.now(),
+      locale: user.locale,
+    }),
   });
 }
 
 export interface CompletePasswordResetDeps {
+  // Ends every session and revokes every grant the subject holds. A reset is how
+  // an account is recovered, and whoever held it before must not keep it.
+  readonly endAccess: (tx: TenantScopedDatabase, subjectId: string) => Promise<void>;
   readonly database: DatabaseHandle;
   readonly tenantId: string;
   readonly request: RequestContext;
@@ -165,7 +197,12 @@ export async function completePasswordReset(
         username,
         email: peeked.email,
       });
-      if (violations.length > 0) return { kind: 'invalid_password', violations };
+      if (violations.length > 0) {
+        return {
+          kind: 'invalid_password',
+          violations: withMinimum(violations, deps.passwordPolicy.minLength),
+        };
+      }
 
       // Before the link is spent, for the same reason the rules above are:
       // setting the password already in force restarts the tenant's
@@ -178,6 +215,7 @@ export async function completePasswordReset(
       if (record === null) return { kind: 'invalid' };
 
       await deps.setPassword(tx, record.subjectId, newPassword);
+      await deps.endAccess(tx, record.subjectId);
       await deps.clearPasswordUpdateAction(tx, record.subjectId);
       await actionTokenRepository(tx).invalidateOutstandingPasswordLinks(record.subjectId);
       await auditRepository(tx).record({

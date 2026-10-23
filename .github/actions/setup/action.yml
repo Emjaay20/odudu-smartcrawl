@@ -1,0 +1,32 @@
+name: Set up the workspace
+description: Node, pnpm with its store cached, the dependencies, and the Turborepo cache for one job.
+
+inputs:
+  turbo-cache-key:
+    description: Names this job's Turborepo cache; empty skips the cache.
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Enable corepack
+      shell: bash
+      run: corepack enable
+
+    - uses: actions/setup-node@v7
+      with:
+        node-version: '24'
+        cache: pnpm
+
+    - shell: bash
+      run: pnpm install --frozen-lockfile
+
+    # Keyed per commit so each run saves its own; the prefix restores the
+    # newest earlier one, so an unchanged package replays its results.
+    - name: Restore the Turborepo cache
+      if: inputs.turbo-cache-key != ''
+      uses: actions/cache/restore@v6
+      with:
+        path: .turbo/cache
+        key: turbo-${{ runner.os }}-${{ inputs.turbo-cache-key }}-${{ github.sha }}
+        restore-keys: turbo-${{ runner.os }}-${{ inputs.turbo-cache-key }}-

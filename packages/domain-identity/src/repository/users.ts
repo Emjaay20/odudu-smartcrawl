@@ -1,5 +1,5 @@
 import { type TenantScopedDatabase } from '@odudu/db';
-import { OduduError } from '@odudu/kernel';
+import { OduduError, refuseBidiControls } from '@odudu/kernel';
 import { and, eq, sql } from 'drizzle-orm';
 import { subjects, type SubjectRecord } from '#/schema/subjects';
 import { isEmailAddress } from '#/service/email';
@@ -85,6 +85,27 @@ export interface UserWithSubject {
   user: UserRecord;
 }
 
+// The profile claims that name a person: a value that would reorder the text
+// around it is refused when it is written, wherever the write comes from. A
+// value a row already holds is left alone, so an old row is never rewritten.
+const NAME_FIELDS = [
+  'name',
+  'givenName',
+  'familyName',
+  'middleName',
+  'nickname',
+  'preferredUsername',
+] as const;
+
+const NAME_FIELD_WIRE = {
+  name: 'name',
+  givenName: 'given_name',
+  familyName: 'family_name',
+  middleName: 'middle_name',
+  nickname: 'nickname',
+  preferredUsername: 'preferred_username',
+} as const;
+
 export interface NewUser {
   subjectId: string;
   tenantId: string;
@@ -128,6 +149,19 @@ export function userRepository(tx: TenantScopedDatabase) {
       return { subject: toSubject(row.subject), user: toUser(row.user) };
     },
 
+    // The subject holding an address, whatever its case: users_email_unique
+    // compares bytes, so `Ada@x` and `ada@x` are two rows, and registration
+    // treats the second as taken. Served by users_email_search.
+    async holderOfEmail(email: string): Promise<string | null> {
+      const rows = await tx
+        .select({ subjectId: users.subjectId })
+        .from(users)
+        .where(eq(users.emailSearch, sql`lower(${email}) COLLATE "C"`))
+        .orderBy(users.subjectId)
+        .limit(1);
+      return rows[0]?.subjectId ?? null;
+    },
+
     // The claim mapper registry's lookup: an access token carries `sub`,
     // never a username, and a service or agent_instance subject has no
     // users row at all — that's a null result here, not an error.
@@ -150,6 +184,7 @@ export function userRepository(tx: TenantScopedDatabase) {
     // The bootstrap seed command is the only caller today: a user profile
     // is created once its subject exists, never before.
     async create(input: NewUser): Promise<UserRecord> {
+      refuseBidiControls('username', input.username);
       const email = input.email ?? null;
       // An earlier, friendlier refusal than the users_email_addr_spec CHECK
       // that actually constrains the column (OIDC Core §5.1; see
@@ -198,6 +233,9 @@ export function userRepository(tx: TenantScopedDatabase) {
       const changed = patchedKeys.some((key) => patch[key] !== current[key]);
       if (!changed) {
         return toUser(current);
+      }
+      for (const key of NAME_FIELDS) {
+        if (patch[key] !== current[key]) refuseBidiControls(NAME_FIELD_WIRE[key], patch[key]);
       }
 
       const rows = await tx
@@ -290,6 +328,11 @@ export function userRepository(tx: TenantScopedDatabase) {
     // holds, as a raw driver error the caller maps: it has already aborted
     // the transaction, so there is no outcome left to return from here.
     async updateUsername(subjectId: string, username: string): Promise<UserRecord> {
+      const held = await tx
+        .select({ username: users.username })
+        .from(users)
+        .where(eq(users.subjectId, subjectId));
+      refuseBidiControls('username', username, held[0]?.username);
       const rows = await tx
         .update(users)
         .set({ username })

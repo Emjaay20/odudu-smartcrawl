@@ -1,0 +1,65 @@
+---
+title: Tenants
+description: A tenant is one organisation's own space in Odudu, with its own people, apps, keys and sessions, kept apart from every other tenant's.
+sidebar_position: 1
+---
+
+import { Diagram } from '@site/src/shared/view/Diagram';
+
+# Tenants
+
+Suppose a company called Acme wants its staff to sign in to its apps, and a school down the road wants the same for its students. Both can use one Odudu server. Neither should ever see the other's people, and a slip in one must not leak into the other. The thing that keeps them apart is the tenant. This is multi-tenancy: one installation, many tenants.
+
+<Diagram
+  name="tenants"
+  title="Two tenants kept apart"
+  desc="Two tenants, demo and acme, stacked on one server. Each holds its own users, clients, signing keys and sessions, a dashed wall between them shows that neither reads the other, and each has its own address under /tenants."
+/>
+
+_In words: Two tenants, demo and acme, stacked on one server. Each holds its own users, clients, signing keys and sessions, a dashed wall between them shows that neither reads the other, and each has its own address under /tenants._
+
+## What a tenant holds
+
+A tenant is a complete space of its own. It holds:
+
+- its **users**, who sign in with credentials only that tenant knows;
+- its **clients**, the apps that are allowed to ask those users to sign in;
+- its **signing keys**, so a token from one tenant can never be passed off as another's;
+- its **sessions**, the record that somebody is signed in;
+- its **settings**: how long sessions last, how long tokens live, how long the audit trail is kept, whether people may register themselves.
+
+The same email address can belong to a person in two tenants, and the two will not know about each other.
+
+## How a request finds its tenant
+
+The tenant is part of every address. Everything an app needs lives under `/tenants/{tenant}/`, so the tenant `demo` answers at `/tenants/demo/`. An app that wants to know what a tenant offers asks for `GET /tenants/{tenant}/.well-known/openid-configuration`, and the answer lists the other addresses, all under the same tenant.
+
+Because the tenant is in the address, a request can never be mistaken for another tenant's. There is no header to forget and no default to fall back on. If you register a client in `demo`, it signs people in at `demo`'s addresses and nowhere else.
+
+## What keeps tenants apart
+
+Tenants share one database, so Odudu does not rely on remembering to filter. Two defences work independently:
+
+1. The code cannot build a query without saying which tenant it is for.
+2. The database itself refuses to show a row to a request that belongs to another tenant. If the first defence ever had a bug, the second would return nothing instead of someone else's data.
+
+You do not have to configure either. A token also names its tenant: one tenant's access tokens carry that tenant's address as their issuer and are signed with its keys, so another tenant's API turns them away.
+
+## The tenant that holds the administrators
+
+When you run `odudu init` for the first time it creates one tenant, `system`. It holds the first administrator, and it is the tenant you name when the admin console asks which tenant you administer. Your own tenants, such as `demo`, are created from there. Administrators sign in to `system`, and from there they reach your other tenants.
+
+## Working with tenants
+
+1. Create a tenant from the console's **Tenants** page or with the command line. It exists as soon as it is created, with default settings.
+2. Create its first administrator, so somebody can manage it.
+3. Register a client for each app that will sign people in.
+4. Adjust the tenant's settings to suit: session lengths, token lifetimes, how long audit events are kept.
+
+The [quick start](../quick-start/index.mdx) does steps one to three for a tenant called `demo`. Every setting is listed in the [tenant operations of the admin API](../reference/generated/admin-api/tenants.md).
+
+## Where to go next
+
+- [Clients](./clients.mdx) explains the apps a tenant signs people in to.
+- [Sessions](./sessions.mdx) explains the lengths a tenant controls.
+- [Sign a user in](../guides/sign-a-user-in.md) walks through the tenant's addresses with real requests.

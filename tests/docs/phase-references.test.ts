@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { loadDocument, scanFences, tableWithHeadings, type Document } from './markdown.js';
+import {
+  type Document,
+  loadSource,
+  PROTOCOL_PAGES,
+  scanFences,
+  tableWithHeadings,
+} from './markdown.js';
 
-// The roadmap table is the only place a phase is defined. `docs/request-paths.md`
+// The roadmap table is the only place a phase is defined. The protocol pages
 // and `README.md` cite phases in prose, and prose drifts silently: P2 became
 // P2a and P2b on 2026-09-13 and both documents went on naming a phase that had
 // stopped existing, for a day, with every test green.
@@ -12,17 +18,16 @@ import { loadDocument, scanFences, tableWithHeadings, type Document } from './ma
 const ROADMAP = 'docs/superpowers/specs/2026-09-10-odudu-design.md';
 
 const CITING_DOCUMENTS: readonly (readonly [name: string, atLeast: number])[] = [
-  ['README.md', 6],
-  ['docs/request-paths.md', 20],
+  // The front door cites no phase; the roadmap page is where phases are named.
+  ['README.md', 0],
+  [PROTOCOL_PAGES, 4],
+  // The roadmap carries most of the citations: the transcripts hold the
+  // request paths without the list of what is not implemented.
+  ['apps/docs/content/en/roadmap.md', 30],
 ];
 
 function roadmapPhases(): Set<string> {
-  const table = tableWithHeadings(loadDocument(ROADMAP), [
-    '#',
-    'Phase',
-    'Effort',
-    'Exit criterion',
-  ]);
+  const table = tableWithHeadings(loadSource(ROADMAP), ['#', 'Phase', 'Effort', 'Exit criterion']);
   const phases = table.rows.map((row) => row[0] ?? '').filter((cell) => /^P\d+[a-z]?$/u.test(cell));
 
   if (phases.length < 12) {
@@ -65,7 +70,7 @@ describe('every phase these documents name is a phase the roadmap has', () => {
 
   for (const [name, atLeast] of CITING_DOCUMENTS) {
     it(`every phase ${name} cites exists`, () => {
-      const citations = phaseCitations(loadDocument(name));
+      const citations = phaseCitations(loadSource(name));
 
       expect(
         citations.length,

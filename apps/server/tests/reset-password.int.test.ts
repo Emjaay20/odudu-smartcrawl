@@ -101,6 +101,7 @@ async function drainOutbox(into: EmailSender): Promise<void> {
 function buildTestApp(): FastifyInstance {
   const config = loadConfig({ ...process.env, ODUDU_LOG_LEVEL: 'silent' });
   return buildApp({
+    tls: false,
     database: appDb,
     ownerDatabase: owner,
     kek: KEK,
@@ -466,6 +467,7 @@ describe('a required-actions link, through the real composition root', () => {
           tenantName,
           tenantDisplayName: tenantName,
           issuerBase: PUBLIC_BASE_URL,
+          now: () => new Date(),
         },
         { subjectId, email: EMAIL },
         { actions: ['update-password', 'configure-totp'] },
@@ -518,6 +520,7 @@ describe('a required-actions link, through the real composition root', () => {
           tenantName,
           tenantDisplayName: tenantName,
           issuerBase: PUBLIC_BASE_URL,
+          now: () => new Date(),
         },
         { subjectId, email: EMAIL },
         { actions: ['update-password'] },

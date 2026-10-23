@@ -1,0 +1,22 @@
+{
+  "name": "odudu-example-api",
+  "version": "0.0.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node server.ts",
+    "test": "node --test verifier.test.ts test.ts",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "jose": "6.2.12"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.1",
+    "typescript": "6.0.3"
+  }
+}

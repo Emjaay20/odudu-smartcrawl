@@ -18,7 +18,8 @@
     "test": {
       "dependsOn": ["^typecheck"],
       "inputs": ["src/**", "tests/**", "drizzle/**", "package.json", "tsconfig.json"],
-      "outputs": ["trace-report.json"]
+      "outputs": ["trace-report.json"],
+      "env": ["ODUDU_TEST_SHARD"]
     },
     "@odudu/db#test": {
       "dependsOn": ["^typecheck"],
@@ -30,7 +31,8 @@
         "tsconfig.json",
         "$TURBO_ROOT$/packages/*/src/schema/**"
       ],
-      "outputs": ["trace-report.json"]
+      "outputs": ["trace-report.json"],
+      "env": ["ODUDU_TEST_SHARD"]
     },
     "@odudu/protocol-oidc#test": {
       "dependsOn": ["^typecheck"],
@@ -41,9 +43,11 @@
         "package.json",
         "tsconfig.json",
         "$TURBO_ROOT$/packages/*/src/view/**",
-        "$TURBO_ROOT$/apps/*/src/**"
+        "$TURBO_ROOT$/apps/*/src/**",
+        "$TURBO_ROOT$/tests/lint/fixtures/renderer-without-shell/**"
       ],
-      "outputs": ["trace-report.json"]
+      "outputs": ["trace-report.json"],
+      "env": ["ODUDU_TEST_SHARD"]
     },
     "@odudu/server#test": {
       "dependsOn": ["^typecheck"],
@@ -55,7 +59,8 @@
         "tsconfig.json",
         "$TURBO_ROOT$/packages/console-gateway/tests/fixtures/**"
       ],
-      "outputs": ["trace-report.json"]
+      "outputs": ["trace-report.json"],
+      "env": ["ODUDU_TEST_SHARD"]
     },
     "@odudu/console-gateway#test": {
       "dependsOn": ["^typecheck"],
@@ -67,11 +72,116 @@
         "tsconfig.json",
         "$TURBO_ROOT$/apps/admin-console/package.json"
       ],
-      "outputs": ["trace-report.json"]
+      "outputs": ["trace-report.json"],
+      "env": ["ODUDU_TEST_SHARD"]
+    },
+    "@odudu/instrument#test": {
+      "dependsOn": ["^typecheck"],
+      "inputs": [
+        "src/**",
+        "tests/**",
+        "drizzle/**",
+        "package.json",
+        "tsconfig.json",
+        "$TURBO_ROOT$/apps/admin-console/src/shared/view/*.css"
+      ],
+      "outputs": ["trace-report.json"],
+      "env": ["ODUDU_TEST_SHARD"]
+    },
+    "@odudu/email#test": {
+      "dependsOn": ["^typecheck"],
+      "inputs": [
+        "src/**",
+        "tests/**",
+        "scripts/**",
+        "drizzle/**",
+        "package.json",
+        "tsconfig.json",
+        "$TURBO_ROOT$/apps/admin-console/src/shared/view/tokens.css",
+        "$TURBO_ROOT$/packages/instrument/src/mark.svg"
+      ],
+      "outputs": ["trace-report.json"],
+      "env": ["ODUDU_TEST_SHARD"]
+    },
+    "@odudu/instrument#build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "$TURBO_ROOT$/apps/admin-console/src/shared/view/*.css"
+      ],
+      "outputs": ["dist/**"]
+    },
+    "@odudu/docs#build": {
+      "dependsOn": [],
+      "inputs": [
+        "content/**",
+        "!content/en/reference/generated/**",
+        "src/**",
+        "static/**",
+        "!static/openapi/**",
+        "plugins/**",
+        "scripts/**",
+        "$TURBO_ROOT$/packages/*/src/**",
+        "!$TURBO_ROOT$/packages/*/src/**/*.test.ts",
+        "$TURBO_ROOT$/packages/*/package.json",
+        "$TURBO_ROOT$/apps/server/src/**",
+        "!$TURBO_ROOT$/apps/server/src/**/*.test.ts",
+        "$TURBO_ROOT$/apps/server/package.json",
+        "nav.ts",
+        "sidebars.ts",
+        "seo.ts",
+        "site.config.ts",
+        "docusaurus.config.ts",
+        "package.json",
+        "tsconfig.json",
+        "$TURBO_ROOT$/apps/admin-console/src/shared/view/*.css"
+      ],
+      "env": ["DOCS_SITE_ORIGIN", "DOCS_BASE", "DOCS_CONTENT", "ODUDU_COMMIT"],
+      "outputs": ["dist/**", "content/en/reference/generated/**", "static/openapi/**"]
+    },
+    "@odudu/docs#test": {
+      "dependsOn": ["^typecheck", "@odudu/docs#build"],
+      "inputs": [
+        "content/**",
+        "!content/en/reference/generated/**",
+        "src/**",
+        "static/**",
+        "!static/openapi/**",
+        "plugins/**",
+        "nav.ts",
+        "sidebars.ts",
+        "seo.ts",
+        "site.config.ts",
+        "docusaurus.config.ts",
+        "package.json",
+        "tsconfig.json",
+        "$TURBO_ROOT$/apps/admin-console/src/**",
+        "!$TURBO_ROOT$/apps/admin-console/src/**/*.test.ts",
+        "!$TURBO_ROOT$/apps/admin-console/src/**/*.test.tsx",
+        "$TURBO_ROOT$/packages/*/src/**",
+        "!$TURBO_ROOT$/packages/*/src/**/*.test.ts",
+        "$TURBO_ROOT$/packages/*/package.json",
+        "$TURBO_ROOT$/examples/README.md",
+        "$TURBO_ROOT$/examples/_shared/**",
+        "$TURBO_ROOT$/examples/*/README.md",
+        "$TURBO_ROOT$/examples/*/package.json",
+        "$TURBO_ROOT$/examples/*/test.ts",
+        "$TURBO_ROOT$/apps/server/src/**",
+        "!$TURBO_ROOT$/apps/server/src/**/*.test.ts",
+        "$TURBO_ROOT$/apps/server/package.json",
+        "$TURBO_ROOT$/docs/phases/p4g.md",
+        "scripts/**",
+        "tests/**"
+      ],
+      "outputs": ["trace-report.json"],
+      "env": ["ODUDU_TEST_SHARD"]
     },
     "@odudu/repo-checks#test": {
       "cache": false,
-      "dependsOn": ["^typecheck", "@odudu/admin-console#build"]
+      "dependsOn": ["^typecheck", "@odudu/admin-console#build"],
+      "env": ["ODUDU_TEST_SHARD"]
     }
   }
 }

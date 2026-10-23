@@ -160,7 +160,7 @@ refused while it is parsed, before any client is known, and writes nothing.
 
 A caller sets `request_id` with `x-request-id` whatever `ODUDU_TRUST_PROXY`
 says, because a proxy in front and every transcript in
-`docs/request-paths.md` rely on naming their own.
+`apps/docs/content/en/reference/transcripts/request-paths/` rely on naming their own.
 `ip` is the evidence, and only a trusted proxy can change it. So a
 `request_id` join between rows is reliable only for requests an operator
 made or that came through a proxy it trusts; for anyone else's it shows
@@ -213,3 +213,42 @@ A name is resolved only for `tenant` rows, and only for a caller who holds
 console marks `system` and `other-tenant` as "from elsewhere" and does not
 compute the comparison itself, since the row carries no id for the tenant it
 is read under.
+
+## Amendment, 2026-10-23 — a registration for an address that has an account
+
+When `verify_email` is on, registering an address that already has an account is answered as a
+registration of a free one is: the same page ("Check your email"), status 201. A free address is kept
+as a pending registration, with the hash of the password the person typed, and mailed a link. The
+account is created only when the link's button is pressed, so neither request reserves a username and
+no later request can tell them apart. A held address writes one `credential` row,
+`account.registration_duplicate`, `refused`, reason `already_registered`, and one mail to its holder.
+
+The row names the account the attempt ran into (`resource_id`), never the username or address asked
+for. The first amendment above says a refused registration names no principal. This one does. So it is
+bounded as a login failure is, by the per-origin throttle on the registration form.
+
+**Mail.** Mail to one address is bounded at three an hour for each kind (the registration link, the
+notice to a held address, a password reset), per tenant and address, by an in-process limiter that
+suppresses the queueing and never changes the answer. A refused registration mail also leaves an
+earlier pending request, and its link, as it was, so flooding an address cannot kill a person's own
+link. To evict one address from the limiter an attacker needs about 100,000 accepted requests, and
+gains one more budget of three mails. The limiter is per process: a restart clears it and N replicas
+allow N times as much (P11).
+
+**What stays enumerable.** Usernames, on purpose. Addresses only with `verify_email` off, where
+nothing can be mailed. An administrator, who is authenticated, still gets a `409` for a taken address.
+Addresses match by ASCII case (`ADA@x` is `ada@x`, `É` and `é` are not); an account an administrator made
+can still hold a case variant of another, because the unique index compares bytes and a migration that
+fails on data already there is worse than the gap. Every creator of an account for an address takes an
+advisory lock keyed on the tenant and the lower-cased address, so the check that follows it sees what
+the one before committed.
+
+**Pre-registration takeover.** Anybody can register an address that is not theirs with a password they
+chose. If its owner confirms the unexpected mail, the account has the registrant's password. Three
+things limit it: a later registration for the same address replaces the pending request (the owner who
+registers himself overrides an attacker's), the link is single use and short lived, and the mail and
+the confirm page say what the link does and name the account. A password reset ends every session and
+every grant of the account, so the registrant's access dies when the owner recovers it with "Forgot
+password". The risk that remains is a person who confirms a mail they did not expect and never resets.
+With `verify_email` off nothing is mailed, the form says the address is registered as before, and no
+row is written.

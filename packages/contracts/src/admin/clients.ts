@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { noBidiControls } from '#/bidi';
 import { adminReachSchema } from '#/admin/roles';
 import { clientScopeAssignmentViewSchema } from '#/admin/scopes';
 import {
@@ -86,7 +87,7 @@ export type CreateClientResponse = z.infer<typeof createClientResponseSchema>;
 // usecase, not this shape, the way `amendClientRequestSchema` leaves it —
 // so ajv only checks the body is a JSON object naming a `client_id`.
 export const createClientRequestSchema = z
-  .object({ client_id: z.string().min(1) })
+  .object({ client_id: noBidiControls(z.string().min(1)) })
   .catchall(z.unknown())
   .describe(
     'RFC 7591 client metadata, plus any field PATCH /clients/{id} amends ' +

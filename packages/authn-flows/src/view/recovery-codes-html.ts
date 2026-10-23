@@ -1,4 +1,9 @@
-import { type RenderedPage } from '@odudu/kernel';
+import { type PageLocale, type RenderedPage } from '@odudu/kernel';
+import { type EnrolmentRefusal } from '#/schema/enrolment-refusal';
+import { escapeHtml, intro, page } from '#/view/document';
+import { t, tHtml, token } from '#/view/messages';
+import { problemSummary } from '#/view/form-error';
+import { refusalProblems } from '#/view/refusal';
 
 // What the page has to show: the codes in plaintext, and whether they
 // displace a set the subject was issued earlier — a page that silently
@@ -6,18 +11,6 @@ import { type RenderedPage } from '@odudu/kernel';
 export interface RecoveryCodesOffer {
   codes: readonly string[];
   replaced: boolean;
-}
-
-// Minimal, dependency-free HTML, the same choice #/view/totp-enrolment-html.ts
-// makes: every interpolated value passes through escapeHtml so neither the
-// tenant name nor a code opens a reflected-XSS hole.
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 // The one render of these codes there will ever be. They are hashed in the
@@ -28,37 +21,23 @@ export function renderRecoveryCodesPage(
   tenant: string,
   authSessionId: string,
   offer: RecoveryCodesOffer,
-  error?: string,
+  error: EnrolmentRefusal | undefined,
+  locale: PageLocale,
 ): RenderedPage {
-  const target = `/tenants/${escapeHtml(tenant)}/login-actions/required-action?action=generate-recovery-codes`;
-  const message = error === undefined ? '' : `<p><strong>${escapeHtml(error)}</strong></p>\n`;
-  const replaced = offer.replaced
-    ? '<p>These replace the codes issued to this account before now, which no longer work.</p>\n'
-    : '';
-  const items = offer.codes.map((code) => `  <li><code>${escapeHtml(code)}</code></li>`).join('\n');
-  const title = 'Save your recovery codes';
-  const body = `<h1>Save your recovery codes</h1>
-${message}<p>Each of these signs you in once, in place of your second factor, if you lose it. <strong>This is the only time they are shown.</strong> Print them or put them in a password manager before you continue — nobody, including an administrator, can show them to you again.</p>
+  const target = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/login-actions/required-action?action=generate-recovery-codes`;
+  const replaced = offer.replaced ? `<p>${tHtml(locale, 'recoveryCodes.replaced')}</p>\n` : '';
+  const items = offer.codes.map((code) => `  <li>${token(code)}</li>`).join('\n');
+  const title = t(locale, 'recoveryCodes.title');
+  const body = `${intro(tHtml(locale, 'recoveryCodes.title'), tenant)}
+${problemSummary(refusalProblems(locale, error, null))}<p>${tHtml(locale, 'recoveryCodes.use')} <strong>${tHtml(locale, 'recoveryCodes.onlyTime')}</strong> ${tHtml(locale, 'recoveryCodes.keep')}</p>
 ${replaced}<ol>
 ${items}
 </ol>
 <form method="post" action="${target}">
   <input type="hidden" name="auth_session_id" value="${escapeHtml(authSessionId)}">
-  <button type="submit">I have saved these codes</button>
+  <button type="submit">${tHtml(locale, 'recoveryCodes.acknowledge')}</button>
 </form>`;
   // No script: nothing on this page talks to an authenticator or fetches
   // anything, so the base content-security policy describes it exactly.
-  return {
-    script: null,
-    frames: [],
-    title,
-    body,
-    html: `<!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>${escapeHtml(title)}</title></head>
-<body>
-${body}
-</body>
-</html>`,
-  };
+  return page(title, body, null, [], locale);
 }

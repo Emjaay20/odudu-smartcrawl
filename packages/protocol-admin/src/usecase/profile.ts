@@ -1,3 +1,4 @@
+import { BIDI_REFUSED_MESSAGE, refusesBidi } from '@odudu/contracts';
 import { type Profile } from '@odudu/contracts/admin';
 import { type TenantScopedDatabase } from '@odudu/db';
 import {
@@ -136,6 +137,17 @@ export const CLAIM_KEY: Readonly<Record<string, StringClaimKey>> = {
 
 const URL_FIELDS = new Set(['profile', 'picture', 'website']);
 
+// The claims that name a person: refused when a write would add a bidirectional
+// control to them, tolerated where the value is the one already stored.
+const NAME_CLAIMS = new Set([
+  'name',
+  'given_name',
+  'family_name',
+  'middle_name',
+  'nickname',
+  'preferred_username',
+]);
+
 // Mirrors the same shape check `updateProfile`'s domain path applies
 // (packages/domain-identity/src/service/profile.ts) — a friendly 400
 // instead of a caller learning of `users_birthdate_shape` from a 500.
@@ -210,6 +222,9 @@ export async function amendProfile(
     }
     if (raw !== null && typeof raw !== 'string') {
       return { kind: 'invalid_value', field, description: `${field} must be a string or null` };
+    }
+    if (NAME_CLAIMS.has(field) && refusesBidi(raw, current[claimKey])) {
+      return { kind: 'invalid_value', field, description: BIDI_REFUSED_MESSAGE };
     }
     if (raw !== null) {
       const invalidity = shapeInvalidityFor(field, raw);

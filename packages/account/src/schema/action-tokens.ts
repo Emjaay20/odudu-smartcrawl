@@ -20,6 +20,11 @@ export const actionTokens = pgTable('action_tokens', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   consumedAt: timestamp('consumed_at', { withTimezone: true }),
+  // The sign-in a self-service request was made from, so the page the link
+  // opens can offer that sign-in back to the browser that parked it
+  // (packages/db/drizzle/0101_sign_in_resume.sql). Never in the link itself,
+  // and not a foreign key: a sign-in is reaped long before its token.
+  authenticationSessionId: uuid('authentication_session_id'),
 }).enableRLS();
 
 export type ActionTokenType = 'verify_email' | 'reset_password' | 'execute_actions';
@@ -35,4 +40,5 @@ export interface ActionTokenRecord {
   createdAt: Date;
   expiresAt: Date;
   consumedAt: Date | null;
+  authenticationSessionId: string | null;
 }

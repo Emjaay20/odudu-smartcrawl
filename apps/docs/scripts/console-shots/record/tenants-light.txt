@@ -1,0 +1,92 @@
+@layer {
+  [data-react-aria-pressable] {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+}
+Odudu console
+Skip to content
+odudu · system
+System
+Tenants
+System administrators
+Overview
+Identity
+Subjects
+Groups
+Roles
+Applications
+Clients
+Scopes
+Registration tokens
+Security
+Sign-in flow
+Signing keys
+Sessions
+Tenant
+Settings
+Email
+Export
+Observe
+Audit trail
+Signed in as 
+admin@odudu.local
+Theme
+System
+Light
+Dark
+Switch tenant
+Sign out
+Collapse menu
+or press 
+[
+odudu · system
+Menu
+System
+Tenants
+Every tenant of this deployment. Open one to see its administrators, change it or export it.
+Import a tenant
+Create a tenant
+Name
+▾
+Name
+Display name
+Clear
+Search
+or press 
+↩ 
+Return
+Status
+Any status
+▾
+Any status
+Enabled
+Disabled
+2 tenants
+Name
+Display name
+Status
+Created
+Console
+Name
+system
+Display name
+System
+Status
+enabled
+Created
+recently
+Console
+Enter system
+Name
+demo
+Display name
+—
+Status
+enabled
+Created
+recently
+Console
+Enter demo
+Previous
+Page 1
+Next

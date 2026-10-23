@@ -182,6 +182,7 @@ beforeAll(async () => {
   await http.register(formbody);
   await http.register(
     oidcRoutes({
+      tls: false,
       database: app,
       ownerDatabase: owner,
       kek: KEK,
@@ -306,7 +307,7 @@ describe('enrolling the second factor a tenant asked for', () => {
     expect(sameStep.statusCode).toBe(200);
     expect(sameStep.headers.location).toBeUndefined();
     expect(sameStep.body).toContain(
-      '<p role="alert"><strong>That code did not work. Check it and try again.</strong></p>',
+      '<li id="form-error-0">That code did not work. Check it and try again.</li>',
     );
     expect(sameStep.body).toMatch(/name="code"[^>]*autofocus/u);
 

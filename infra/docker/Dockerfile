@@ -2,7 +2,8 @@
 # `packageManager` rather than on every edit to the root package.json. The
 # version is never written down twice: package.json is the only place it
 # appears.
-FROM node:24-alpine AS pnpm-version
+# digest of the multi-arch index; Dependabot moves it
+FROM node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f AS pnpm-version
 WORKDIR /pin
 COPY package.json ./
 RUN node -p "require('./package.json').packageManager" > /pnpm-version
@@ -22,7 +23,7 @@ RUN node -p "require('./package.json').packageManager" > /pnpm-version
 # which is half the problem unfixed. COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 # answers the confirmation corepack would otherwise put to a tty that is not
 # there.
-FROM node:24-alpine AS pnpm
+FROM node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f AS pnpm
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable
 COPY --from=pnpm-version /pnpm-version /pnpm-version
@@ -40,35 +41,62 @@ RUN set -eu; \
     done; \
     exit 1
 
-FROM pnpm AS build
-WORKDIR /app
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json .npmrc ./
-COPY packages packages
-COPY apps apps
-RUN pnpm install --frozen-lockfile --ignore-scripts
-RUN pnpm --filter @odudu/server build
-RUN pnpm --filter @odudu/admin-console build
-
-FROM pnpm AS prod-deps
+# Every package is downloaded here, so the layer is rebuilt when the lockfile,
+# the workspace settings or the root package.json change, and not on an edit
+# to a package's source. The stages below install from this store offline.
+FROM pnpm AS store
 WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
+RUN pnpm fetch
+
+FROM store AS build
+COPY tsconfig.base.json ./
+COPY packages packages
+COPY apps apps
+RUN pnpm install --frozen-lockfile --offline --ignore-scripts
+RUN pnpm --filter @odudu/server build
+RUN pnpm --filter @odudu/admin-console build
+RUN pnpm --filter @odudu/instrument build
+
+# The documentation that ships with the server: the image build of the docs app
+# (base /docs/, noindex, no landing page) and the csp.json the server's policy
+# is read from. It starts from `build` so the install above is shared, and
+# nothing in the runtime image reads it but the copy below. The commit goes in
+# last, so a new commit rebuilds only this step.
+FROM build AS docs
+ARG ODUDU_REVISION=unknown
+RUN ODUDU_COMMIT="$(printf '%.7s' "$ODUDU_REVISION")" pnpm --filter @odudu/docs build:image
+
+FROM store AS prod-deps
 COPY packages packages
 COPY apps apps
 # --ignore-scripts is safe here: @node-rs/argon2 ships prebuilt platform
 # binaries as optionalDependencies (verified against its package.json — no
 # install/postinstall script selects or compiles anything), so skipping
 # lifecycle scripts does not leave it half-installed.
-RUN pnpm install --frozen-lockfile --prod --ignore-scripts
+# `pnpm fetch` leaves the whole virtual store in node_modules, devDependencies
+# included, and a --prod install over it only unlinks them from the top level.
+# Removing it first is what keeps the runtime image to what runs.
+RUN rm -rf node_modules && pnpm install --frozen-lockfile --offline --prod --ignore-scripts
 
-FROM node:24-alpine AS runtime
+FROM node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f AS runtime
 RUN addgroup -S odudu && adduser -S -G odudu odudu
+# A named volume mounted here takes this directory's owner and mode, so
+# odudu init, which runs as the odudu user, can write quickstart.env into it.
+RUN mkdir -m 0700 /var/lib/odudu && chown odudu:odudu /var/lib/odudu
 WORKDIR /app
+COPY --chmod=0755 infra/docker/odudu /usr/local/bin/odudu
 COPY --from=build --chown=odudu:odudu /app/apps/server/dist ./dist
 COPY --from=build --chown=odudu:odudu /app/packages/db/drizzle ./drizzle
 # The console is a static build the gateway reads once at boot. Every
 # package it is built from is a devDependency of @odudu/admin-console, so
 # the prod-deps stage carries none of them.
 COPY --from=build --chown=odudu:odudu /app/apps/admin-console/dist ./console
+# The stylesheet and fonts every rendered page links, read once at boot.
+COPY --from=build --chown=odudu:odudu /app/packages/instrument/dist ./instrument
+# The built documentation, served under /docs and read once at boot, with the
+# csp.json its policy comes from. ODUDU_DOCS=false turns the route off.
+COPY --from=docs --chown=odudu:odudu /app/apps/docs/dist/image ./docs
 # @node-rs/argon2 is marked external to the tsup bundle (a native .node
 # binary cannot be inlined into an ESM bundle), so its resolved package has
 # to ride along explicitly. It's a dependency of packages/domain-identity,
@@ -86,9 +114,20 @@ COPY --from=build --chown=odudu:odudu /app/apps/admin-console/dist ./console
 # devDependencies (tsup, vitest, eslint, typescript, turbo,
 # dependency-cruiser, stryker, ...).
 COPY --from=prod-deps --chown=odudu:odudu /app/node_modules ./node_modules
-ENV NODE_ENV=production \
+# Declared after the last COPY: a build argument that differs between builds
+# invalidates the layers that follow it, and these two change on every release.
+ARG ODUDU_VERSION=dev
+ARG ODUDU_REVISION=unknown
+LABEL org.opencontainers.image.source="https://github.com/wizzywit/odudu" \
+      org.opencontainers.image.licenses="AGPL-3.0-only" \
+      org.opencontainers.image.version=$ODUDU_VERSION \
+      org.opencontainers.image.revision=$ODUDU_REVISION
+ENV ODUDU_VERSION=$ODUDU_VERSION \
+    NODE_ENV=production \
     ODUDU_MIGRATIONS_DIR=/app/drizzle \
     ODUDU_CONSOLE_DIR=/app/console \
+    ODUDU_INSTRUMENT_DIR=/app/instrument \
+    ODUDU_DOCS_DIR=/app/docs \
     ODUDU_HTTP_HOST=0.0.0.0 \
     ODUDU_HTTP_PORT=3000
 USER odudu

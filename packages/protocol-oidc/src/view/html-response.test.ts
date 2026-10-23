@@ -11,16 +11,51 @@ const REPO_ROOT = join(VIEW_DIR, '..', '..', '..', '..');
 const PACKAGES_DIR = join(REPO_ROOT, 'packages');
 const APPS_DIR = join(REPO_ROOT, 'apps');
 const HEADER_NAMES = ['content-security-policy', 'x-frame-options', 'referrer-policy'];
+// Every directive name in CSP Level 3 and its extensions, so a second
+// policy cannot use one this scan has never heard of.
+const CSP_DIRECTIVES = [
+  'default-src',
+  'script-src',
+  'script-src-elem',
+  'script-src-attr',
+  'style-src',
+  'style-src-elem',
+  'style-src-attr',
+  'img-src',
+  'font-src',
+  'connect-src',
+  'media-src',
+  'object-src',
+  'manifest-src',
+  'prefetch-src',
+  'child-src',
+  'frame-src',
+  'worker-src',
+  'base-uri',
+  'sandbox',
+  'form-action',
+  'frame-ancestors',
+  'navigate-to',
+  'report-uri',
+  'report-to',
+  'require-trusted-types-for',
+  'trusted-types',
+  'upgrade-insecure-requests',
+  'block-all-mixed-content',
+  'plugin-types',
+];
 // The files that legitimately name a page header: `html-response.ts` and
 // `verification-html.ts`, which spread `pageHeaders` (`@odudu/kernel`), and
-// `console-gateway`'s `spa.ts`, the static shell with its own fixed policy
-// (ADR 0029's amendment). Any other wrapper — `console-gateway`'s
+// `console-gateway`'s `spa.ts`, the static shell with its own fixed policy,
+// and `web-assets`'s `docs-routes.ts`, the built documentation under a policy
+// computed from the build (both ADR 0029 amendments). Any other wrapper — `console-gateway`'s
 // `send-page.ts` among them — gets these headers only by spreading
 // `pageHeaders`, and names none of them itself.
 const EXEMPT_FILES = [
   'packages/protocol-oidc/src/view/html-response.ts',
   'packages/account/src/view/verification-html.ts',
   'packages/console-gateway/src/view/spa.ts',
+  'packages/web-assets/src/view/docs-routes.ts',
 ];
 
 // `cache-control` is set by plenty of non-page responses (tokens, JSON, a
@@ -54,6 +89,7 @@ async function headersOf(
       title: 'Test page',
       script: script ?? null,
       frames: [],
+      locale: { tag: 'en', dir: 'ltr' },
     }),
   );
   const res = await app.inject({ url: '/page' });
@@ -186,6 +222,23 @@ describe('[ODUDU-VIEW-HTML-01] an HTML response cannot leave without its framing
       .map((f) => ({ ...f, path: f.path.slice(REPO_ROOT.length + 1) }))
       .filter((f) => !EXEMPT_FILES.includes(f.path))
       .filter((f) => HEADER_NAMES.some((name) => f.text.includes(name)))
+      .map((f) => f.path);
+    expect(offenders).toEqual([]);
+  });
+
+  // The policy is assembled in one place. A package that names a directive
+  // in code, comments aside, is building a second policy beside pageHeaders
+  // that can disagree with it, silently, in a real browser only.
+  it('names no Content-Security-Policy directive outside pageHeaders and the console shell', async () => {
+    const directive = new RegExp(`\\b(?:${CSP_DIRECTIVES.join('|')})\\b`, 'u');
+    const offenders = (await viewSources())
+      .map((f) => ({ ...f, path: f.path.slice(REPO_ROOT.length + 1) }))
+      .filter((f) => f.path !== 'packages/console-gateway/src/view/spa.ts')
+      .filter((f) =>
+        f.text
+          .split('\n')
+          .some((line) => !/^\s*(?:\/\/|\*|\/\*)/u.test(line) && directive.test(line)),
+      )
       .map((f) => f.path);
     expect(offenders).toEqual([]);
   });

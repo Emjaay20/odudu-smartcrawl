@@ -2,6 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { registerClient, type ClientRegistrationDeps } from '#/usecase/client-registration';
 import { type TenantLookup } from '#/repository/tenant-lookup';
 
+const PASSWORD_RULES = {
+  minLength: 15,
+  requireDigit: false,
+  requireUppercase: false,
+  requireLowercase: false,
+  requireSpecial: false,
+};
+
 const TENANT: TenantLookup = {
   id: 'r1',
   enabled: true,
@@ -12,8 +20,11 @@ const TENANT: TenantLookup = {
   rememberMeMaxSeconds: 2_592_000,
   rememberMeAllowed: false,
   loginWithEmail: false,
+  registrationAllowed: false,
+  resetPasswordAllowed: false,
   maxSessionsPerBrowser: 25,
   clientRegistrationPolicy: 'open',
+  passwordRules: PASSWORD_RULES,
 };
 
 const MINIMAL_METADATA = { redirect_uris: ['https://rp.example/cb'] };

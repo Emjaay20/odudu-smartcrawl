@@ -1,5 +1,7 @@
 import { Link } from 'react-aria-components';
 import {
+  askToRemove,
+  askToRevoke,
   credentialsOf,
   factorLabel,
   lockoutSummary,
@@ -152,7 +154,7 @@ function Factors({
           variant="quiet"
           aria-label={removeFactorLabel(credential)}
           onPress={() => {
-            page.ask({ kind: 'factor', credential });
+            page.ask(askToRemove(factors, credential));
           }}
         >
           Remove
@@ -170,8 +172,9 @@ function Factors({
         empty={`${page.name} has no authenticator app or passkey enrolled.`}
       />
       <p className={recordTab.rule}>
-        Removing a factor means the next sign-in no longer offers or asks for it. To have one
-        enrolled again, require it among the subject&apos;s required actions.
+        Removing a factor means the next sign-in no longer offers or asks for it. Removing the last
+        one also revokes the subject&apos;s recovery codes. To have one enrolled again, require it
+        among the subject&apos;s required actions.
       </p>
     </Panel>
   );
@@ -179,10 +182,12 @@ function Factors({
 
 function RecoveryCodes({
   count,
+  factors,
   page,
   canManage,
 }: {
   count: number | null;
+  factors: readonly Credential[];
   page: SubjectCredentials;
   canManage: boolean;
 }) {
@@ -198,7 +203,7 @@ function RecoveryCodes({
           <Button
             variant="danger"
             onPress={() => {
-              page.ask({ kind: 'recovery-codes' });
+              page.ask(askToRevoke(factors));
             }}
           >
             Revoke every recovery code
@@ -337,7 +342,12 @@ function Held({
             <>
               <Password password={held.password} page={page} mail={mail} canManage={canManage} />
               <Factors factors={held.factors} page={page} canManage={canManage} />
-              <RecoveryCodes count={held.recoveryCodes} page={page} canManage={canManage} />
+              <RecoveryCodes
+                count={held.recoveryCodes}
+                factors={held.factors}
+                page={page}
+                canManage={canManage}
+              />
             </>
           );
         })()
@@ -371,6 +381,7 @@ export function CredentialsTab({ tenant, subject, canManage, self }: TabProps) {
         asked={dialog}
         busy={page.busy}
         problem={page.problem}
+        choice={page.choice}
         onConfirm={page.confirm}
         onCancel={page.cancel}
       />

@@ -1,0 +1,151 @@
+@layer {
+  [data-react-aria-pressable] {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+}
+Odudu console
+Skip to content
+odudu · demo
+Overview
+Identity
+Subjects
+Groups
+Roles
+Applications
+Clients
+Scopes
+Registration tokens
+Security
+Sign-in flow
+Signing keys
+Sessions
+Tenant
+Settings
+Email
+Export
+Observe
+Audit trail
+Signed in as 
+admin@odudu.local
+ from 
+system
+Theme
+System
+Light
+Dark
+Switch tenant
+Sign out
+Collapse menu
+or press 
+[
+odudu · demo
+Menu
+System
+Acting in 
+demo
+ with system authority
+Back to system
+demo
+Roles
+A tenant role is carried in tokens by its name; a client's role by its client's name and its own. The admin capabilities are the built-in admin client's roles.
+Create a role
+Name
+Clear
+Search
+or press 
+↩ 
+Return
+Belongs to
+Tenant or client
+▾
+Tenant or client
+Tenant roles
+8 roles
+Role
+Belongs to
+Description
+New subjects
+Created
+Role
+tenant-admin
+Belongs to
+admin capability
+Description
+—
+New subjects
+—
+Created
+recently
+Role
+view-users
+Belongs to
+admin capability
+Description
+—
+New subjects
+—
+Created
+recently
+Role
+manage-users
+Belongs to
+admin capability
+Description
+—
+New subjects
+—
+Created
+recently
+Role
+manage-clients
+Belongs to
+admin capability
+Description
+—
+New subjects
+—
+Created
+recently
+Role
+manage-tenant
+Belongs to
+admin capability
+Description
+—
+New subjects
+—
+Created
+recently
+Role
+manage-keys
+Belongs to
+admin capability
+Description
+—
+New subjects
+—
+Created
+recently
+Role
+manage-sessions
+Belongs to
+admin capability
+Description
+—
+New subjects
+—
+Created
+recently
+Role
+view-audit
+Belongs to
+admin capability
+Description
+—
+New subjects
+—
+Created
+recently
+Previous
+Page 1
+Next

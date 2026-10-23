@@ -14,6 +14,7 @@ import { describe, expect, it } from 'vitest';
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..');
 const CONSOLE = 'apps/admin-console';
+const DOCS = 'apps/docs';
 const FIXTURES = 'tests/lint/fixtures/console-no-module-state';
 const MUTATORS = new Set([
   'push',
@@ -880,6 +881,14 @@ describe('console source', { timeout: 60_000 }, () => {
     expect(names).toContain('src/shared/repository/useDrafts.ts');
     expect(names).toContain('src/app/lazyFeatureRoute/lazyFeatureRoute.tsx');
     expect(names).toContain('src/shared/transport/gateway.ts');
+    expect(violations(files)).toEqual([]);
+  });
+
+  it('holds the docs app to the same rule, tests excepted', async () => {
+    const files = await read(DOCS);
+    const names = [...files.keys()];
+    expect(names).toContain('src/features/landing/usecase/useSignInFlow.ts');
+    expect(names).toContain('src/shared/view/Diagram/diagrams.tsx');
     expect(violations(files)).toEqual([]);
   });
 

@@ -1,5 +1,8 @@
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { type FastifyInstance } from 'fastify';
+import { signInPath } from '#/service/sign-in-path';
+import { referenceToResume, type FindHeldSignIn } from '#/service/sign-in-resume';
+import { type MailGate } from '#/service/mail-gate';
 import { requestPasswordReset } from '#/usecase/reset-password';
 import {
   renderResetRequestedPage,
@@ -7,6 +10,7 @@ import {
   renderResetRequestForm,
   sendResetHtml,
 } from '#/view/reset-html';
+import { requestLocale } from '#/view/request-locale';
 
 export interface ResetPasswordTenantLookup {
   readonly id: string;
@@ -17,6 +21,8 @@ export interface ResetPasswordTenantLookup {
 }
 
 export interface ResetPasswordRouteDeps {
+  // The tags a page can be shown in; defaults to what the server ships.
+  pageLocales?: readonly string[];
   readonly database: DatabaseHandle;
   readonly findTenant: (name: string) => Promise<ResetPasswordTenantLookup | null>;
   // Operator configuration (ODUDU_PUBLIC_BASE_URL), never anything read off
@@ -24,10 +30,16 @@ export interface ResetPasswordRouteDeps {
   // when unset; requestPasswordReset then refuses to send for any tenant
   // rather than building a link some other way.
   readonly publicBaseUrl: string | undefined;
+  // The sign-in this browser parked and can still finish, if any. A link
+  // mailed from a page names it only when the page carried that request too.
+  readonly findHeldSignIn: FindHeldSignIn;
+  // The clock a mail's send time comes from.
+  readonly now: () => Date;
   readonly findByEmail: (
     tx: TenantScopedDatabase,
     email: string,
   ) => Promise<{ subjectId: string; email: string } | null>;
+  readonly mailGate: MailGate;
 }
 
 // @fastify/formbody parses a repeated field into an array; a repeat is
@@ -53,31 +65,54 @@ export function registerResetPasswordRoute(
   app: FastifyInstance,
   deps: ResetPasswordRouteDeps,
 ): void {
-  app.get<{ Params: { tenant: string } }>(
-    '/tenants/:tenant/login-actions/reset-password',
-    async (request, reply) => {
-      const tenant = await deps.findTenant(request.params.tenant);
-      if (!tenantIsOpenForReset(tenant)) {
-        return reply.code(404).send();
-      }
-      return sendResetHtml(reply, 200, renderResetRequestForm(request.params.tenant));
-    },
-  );
+  app.get<{
+    Params: { tenant: string };
+    Querystring: Record<string, string | string[] | undefined>;
+  }>('/tenants/:tenant/login-actions/reset-password', async (request, reply) => {
+    const locale = requestLocale(request, deps);
+    const tenant = await deps.findTenant(request.params.tenant);
+    if (!tenantIsOpenForReset(tenant)) {
+      return reply.code(404).send();
+    }
+    return sendResetHtml(
+      reply,
+      200,
+      renderResetRequestForm(
+        request.params.tenant,
+        { signInPath: signInPath(request.params.tenant, request.query.return_to) },
+        locale,
+      ),
+    );
+  });
 
   app.post<{
     Params: { tenant: string };
     Body: Record<string, string | string[] | undefined>;
   }>('/tenants/:tenant/login-actions/reset-password', async (request, reply) => {
+    const locale = requestLocale(request, deps);
     const tenant = await deps.findTenant(request.params.tenant);
     if (!tenantIsOpenForReset(tenant)) {
       return reply.code(404).send();
     }
 
     const email = firstNonEmptyString(request.body.email);
+    const returnTo = signInPath(request.params.tenant, request.body.return_to);
     if (email === undefined) {
-      return sendResetHtml(reply, 400, renderResetRequestFailedPage('Email is required.'));
+      return sendResetHtml(
+        reply,
+        400,
+        renderResetRequestForm(
+          request.params.tenant,
+          { signInPath: returnTo, emailRequired: true },
+          locale,
+        ),
+      );
     }
 
+    // Read before the address is looked up and whatever it names, so the one
+    // read is no part of what tells a known address from an unknown one.
+    const held =
+      returnTo === null ? null : await deps.findHeldSignIn(tenant, request.headers.cookie);
     // Composed before the lookup happens, and reached whether or not the
     // address matches an account — see requestPasswordReset for why: the
     // property this whole flow exists for is that these two paths cannot
@@ -89,7 +124,10 @@ export function registerResetPasswordRoute(
         tenantName: tenant.name,
         tenantDisplayName: tenant.displayName ?? tenant.name,
         issuerBase: deps.publicBaseUrl,
+        now: deps.now,
+        authenticationSessionId: referenceToResume(held, returnTo),
         findByEmail: deps.findByEmail,
+        mailGate: deps.mailGate,
       },
       email,
     );
@@ -102,10 +140,10 @@ export function registerResetPasswordRoute(
       return sendResetHtml(
         reply,
         500,
-        renderResetRequestFailedPage('Password reset is temporarily unavailable. Try again later.'),
+        renderResetRequestFailedPage(request.params.tenant, returnTo, locale),
       );
     }
 
-    return sendResetHtml(reply, 200, renderResetRequestedPage());
+    return sendResetHtml(reply, 200, renderResetRequestedPage(returnTo, locale));
   });
 }

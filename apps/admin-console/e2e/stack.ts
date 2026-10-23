@@ -124,6 +124,10 @@ const seededSchema = z.object({
     issued: account,
     // Deleted by a test.
     doomed: z.string(),
+    // Each holds a second factor and recovery codes: one has its codes revoked,
+    // the other its only factor removed.
+    revoker: z.string(),
+    remover: z.string(),
     // A tenant administrator who deletes their own subject.
     departing: account,
     // An administrator of a second tenant, where a test turns renaming on.

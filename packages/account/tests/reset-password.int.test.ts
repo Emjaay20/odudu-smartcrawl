@@ -29,11 +29,15 @@ import formbody from '@fastify/formbody';
 import { eq } from 'drizzle-orm';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { accountTestDeps } from '#/testing/support';
 import { registerActionTokenRoute } from '#/view/routes/action-token';
 import { actionTokenRepository } from '#/repository/action-tokens';
 import { tenantSettingsRepository } from '#/repository/tenant-settings';
 import { registerResetPasswordRoute } from '#/view/routes/reset-password';
 import { actionTokens } from '#/schema/action-tokens';
+
+// Set by a test that reads the year a mail carries; the system clock otherwise.
+let mailNow: Date | null = null;
 
 let containerHandle: TestDatabase | undefined;
 let ownerHandle: DatabaseHandle | undefined;
@@ -205,17 +209,24 @@ async function drainOutbox(into: EmailSender = sender): Promise<void> {
 
 let sender: ReturnType<typeof fakeSender>;
 let httpApp: FastifyInstance;
+let resetGate: (tenantId: string, address: string) => boolean = () => true;
 
 function buildHttpApp(): FastifyInstance {
   const instance = Fastify();
   instance.register(formbody);
   registerResetPasswordRoute(instance, {
+    ...accountTestDeps,
+    mailGate: (_kind, tenantId, address) => resetGate(tenantId, address),
+    findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
     publicBaseUrl: 'https://idp.example.test',
+    now: () => mailNow ?? new Date(),
     findByEmail,
   });
   registerActionTokenRoute(instance, {
+    ...accountTestDeps,
+    findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
     getCurrentEmail: async (tx, subjectId) =>
@@ -293,6 +304,7 @@ async function submitNewPassword(
 // delivered, so each starts with the queue empty rather than with whatever
 // an earlier test left in it.
 beforeEach(async () => {
+  resetGate = () => true;
   await owner.db.delete(emailOutbox);
 });
 
@@ -311,6 +323,70 @@ describe('password reset', () => {
     expect(known.statusCode).toBe(200);
   });
 
+  it('answers a known and an unknown address identically in every page locale, headers included', async () => {
+    const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {
+      resetPasswordAllowed: true,
+    });
+    await seedAda(tenantId);
+    const instance = Fastify();
+    await instance.register(formbody);
+    registerResetPasswordRoute(instance, {
+      ...accountTestDeps,
+      findHeldSignIn: () => Promise.resolve(null),
+      database: app,
+      findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
+      publicBaseUrl: 'https://idp.example.test',
+      now: () => mailNow ?? new Date(),
+      findByEmail,
+      pageLocales: ['en', 'fr'],
+    });
+    await instance.ready();
+
+    async function submit(email: string, language: string) {
+      const res = await instance.inject({
+        method: 'POST',
+        url: `/tenants/${tenantName}/login-actions/reset-password`,
+        payload: new URLSearchParams({ email }).toString(),
+        headers: {
+          'content-type': 'application/x-www-form-urlencoded',
+          'accept-language': language,
+        },
+      });
+      return { statusCode: res.statusCode, body: res.body, headers: res.headers };
+    }
+
+    for (const language of ['en', 'fr', 'ar;q=0.1, fr']) {
+      const known = await submit('ada@example.test', language);
+      const unknown = await submit('nobody@example.test', language);
+      expect(unknown.statusCode, language).toBe(known.statusCode);
+      expect(unknown.body, language).toBe(known.body);
+      expect(unknown.headers['content-language'], language).toBe(known.headers['content-language']);
+      expect(unknown.headers['content-length'], language).toBe(known.headers['content-length']);
+    }
+    await instance.close();
+  });
+
+  it.each([
+    ['2026-12-31T23:59:59Z', '2026'],
+    ['2027-01-01T00:00:00Z', '2027'],
+    ['2031-06-01T12:00:00Z', '2031'],
+  ])('stamps the reset mail with the year of the clock it was given: %s', async (instant, year) => {
+    const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {
+      resetPasswordAllowed: true,
+    });
+    await seedAda(tenantId);
+    mailNow = new Date(instant);
+    try {
+      await requestReset(tenantName, 'ada@example.test');
+    } finally {
+      mailNow = null;
+    }
+
+    const [queued] = await outboxRows(tenantId);
+    expect(queued?.bodyHtml).toContain(`\u00a9 ${year} Odudu`);
+    expect(queued?.bodyText).toContain(`\u00a9 ${year} Odudu`);
+  });
+
   it('sends mail only for the address that exists', async () => {
     const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {
       resetPasswordAllowed: true,
@@ -324,6 +400,24 @@ describe('password reset', () => {
     await requestReset(tenantName, 'ada@example.test');
     expect(sender.sent).toHaveLength(1);
     expect(await outboxRows(tenantId)).toHaveLength(1);
+  });
+
+  it('queues no mail once the address has had its share, and answers the same', async () => {
+    const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {
+      resetPasswordAllowed: true,
+    });
+    await seedAda(tenantId);
+    let allowed = 2;
+    resetGate = () => allowed-- > 0;
+
+    const answers = [];
+    for (let i = 0; i < 4; i += 1) answers.push(await requestReset(tenantName, 'ada@example.test'));
+
+    expect(await outboxRows(tenantId)).toHaveLength(2);
+    for (const answer of answers) {
+      expect(answer.statusCode).toBe(200);
+      expect(answer.body).toBe(answers[0]?.body);
+    }
   });
 
   it('renders a set-password form for an unconsumed reset link, without consuming it', async () => {
@@ -342,7 +436,7 @@ describe('password reset', () => {
     expect(form.body).toContain('New password');
 
     // Still redeemable: rendering the form must not have consumed it.
-    const submitted = await submitNewPassword(link, 'a new password');
+    const submitted = await submitNewPassword(link, 'a brand new password');
     expect(submitted.statusCode).toBe(200);
   });
 
@@ -357,10 +451,10 @@ describe('password reset', () => {
     if (message === undefined) throw new Error('no mail sent');
     const link = extractLink(message);
 
-    const submitted = await submitNewPassword(link, 'a new password');
+    const submitted = await submitNewPassword(link, 'a brand new password');
     expect(submitted.statusCode).toBe(200);
 
-    expect(await passwordWorksFor(tenantId, 'ada', 'a new password')).toBe(true);
+    expect(await passwordWorksFor(tenantId, 'ada', 'a brand new password')).toBe(true);
   });
 
   it('refuses a password that fails the tenant policy, without spending the link', async () => {
@@ -376,7 +470,7 @@ describe('password reset', () => {
 
     const rejected = await submitNewPassword(link, 'short');
     expect(rejected.statusCode).toBe(400);
-    expect(rejected.body).toContain('at least');
+    expect(rejected.body).toContain('>Password must be at least 15 characters long.</li>');
     expect(await passwordWorksFor(tenantId, 'ada', 'correct horse battery')).toBe(true);
 
     // The link is still the same unconsumed token: a compliant password on
@@ -384,6 +478,29 @@ describe('password reset', () => {
     const retried = await submitNewPassword(link, 'a compliant password');
     expect(retried.statusCode).toBe(200);
     expect(await passwordWorksFor(tenantId, 'ada', 'a compliant password')).toBe(true);
+  });
+
+  it('refuses a common password or the tenant name, without spending the link', async () => {
+    const tenantName = `tenant-${newId()}`;
+    const { tenantId } = await seedTenant(tenantName, { resetPasswordAllowed: true });
+    await seedAda(tenantId);
+
+    await requestReset(tenantName, 'ada@example.test');
+    const message = sender.sent[0];
+    if (message === undefined) throw new Error('no mail sent');
+    const link = extractLink(message);
+
+    for (const candidate of ['1qaz2wsx3edc4rfv', tenantName]) {
+      const rejected = await submitNewPassword(link, candidate);
+      expect(rejected.statusCode, candidate).toBe(400);
+      expect(rejected.body, candidate).toContain(
+        '>That password is too easy to guess. Choose a different one.</li>',
+      );
+    }
+    expect(await passwordWorksFor(tenantId, 'ada', 'correct horse battery')).toBe(true);
+
+    const retried = await submitNewPassword(link, 'a compliant password');
+    expect(retried.statusCode).toBe(200);
   });
 
   it('stops the old password working', async () => {
@@ -395,10 +512,10 @@ describe('password reset', () => {
     await requestReset(tenantName, 'ada@example.test');
     const message = sender.sent[0];
     if (message === undefined) throw new Error('no mail sent');
-    await submitNewPassword(extractLink(message), 'a new password');
+    await submitNewPassword(extractLink(message), 'a brand new password');
 
     expect(await passwordWorksFor(tenantId, 'ada', 'correct horse battery')).toBe(false);
-    expect(await passwordWorksFor(tenantId, 'ada', 'a new password')).toBe(true);
+    expect(await passwordWorksFor(tenantId, 'ada', 'a brand new password')).toBe(true);
   });
 
   it('refuses a reset link a second time', async () => {
@@ -412,14 +529,14 @@ describe('password reset', () => {
     if (message === undefined) throw new Error('no mail sent');
     const link = extractLink(message);
 
-    const first = await submitNewPassword(link, 'first password');
+    const first = await submitNewPassword(link, 'my first password');
     expect(first.statusCode).toBe(200);
 
-    const second = await submitNewPassword(link, 'second password');
+    const second = await submitNewPassword(link, 'my second password');
     expect(second.statusCode).toBe(400);
 
-    expect(await passwordWorksFor(tenantId, 'ada', 'second password')).toBe(false);
-    expect(await passwordWorksFor(tenantId, 'ada', 'first password')).toBe(true);
+    expect(await passwordWorksFor(tenantId, 'ada', 'my second password')).toBe(false);
+    expect(await passwordWorksFor(tenantId, 'ada', 'my first password')).toBe(true);
   });
 
   it('kills a sibling reset link for the same subject once one is completed', async () => {
@@ -439,13 +556,13 @@ describe('password reset', () => {
     const secondLink = extractLink(secondMessage);
     expect(firstLink).not.toBe(secondLink);
 
-    const completedFirst = await submitNewPassword(firstLink, 'first password');
+    const completedFirst = await submitNewPassword(firstLink, 'my first password');
     expect(completedFirst.statusCode).toBe(200);
 
-    const attemptSecond = await submitNewPassword(secondLink, 'second password');
+    const attemptSecond = await submitNewPassword(secondLink, 'my second password');
     expect(attemptSecond.statusCode).toBe(400);
-    expect(await passwordWorksFor(tenantId, 'ada', 'second password')).toBe(false);
-    expect(await passwordWorksFor(tenantId, 'ada', 'first password')).toBe(true);
+    expect(await passwordWorksFor(tenantId, 'ada', 'my second password')).toBe(false);
+    expect(await passwordWorksFor(tenantId, 'ada', 'my first password')).toBe(true);
   });
 
   it('refuses a verify_email token presented to the reset-password submission', async () => {
@@ -548,9 +665,9 @@ describe('password reset', () => {
     const form = await getResetForm(link);
     expect(form.statusCode).toBe(400);
 
-    const submitted = await submitNewPassword(link, 'a new password');
+    const submitted = await submitNewPassword(link, 'a brand new password');
     expect(submitted.statusCode).toBe(400);
-    expect(await passwordWorksFor(tenantId, 'ada', 'a new password')).toBe(false);
+    expect(await passwordWorksFor(tenantId, 'ada', 'a brand new password')).toBe(false);
   });
 
   it('a verify_email link still redeems while reset_password_allowed is off', async () => {
@@ -596,7 +713,7 @@ describe('password reset', () => {
     expect(missingPassword.body).not.toContain("can't be used");
 
     // The link itself is still perfectly good.
-    const retried = await submitNewPassword(link, 'a new password');
+    const retried = await submitNewPassword(link, 'a brand new password');
     expect(retried.statusCode).toBe(200);
   });
 
@@ -639,9 +756,12 @@ describe('password reset', () => {
     const instance = Fastify();
     await instance.register(formbody);
     registerResetPasswordRoute(instance, {
+      ...accountTestDeps,
+      findHeldSignIn: () => Promise.resolve(null),
       database: app,
       findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
       publicBaseUrl: undefined,
+      now: () => mailNow ?? new Date(),
       findByEmail,
     });
     await instance.ready();
@@ -676,5 +796,141 @@ describe('password reset', () => {
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
     });
     expect(res.statusCode).toBe(400);
+  });
+});
+
+describe('password reset, refused in place and with ways on', () => {
+  const way = (tenantName: string): string =>
+    `/tenants/${tenantName}/protocol/openid-connect/auth?response_type=code&client_id=portal&state=a%20b`;
+  const escaped = (value: string): string => value.replaceAll('&', '&amp;');
+
+  async function mailedLink(tenantName: string): Promise<string> {
+    await requestReset(tenantName, 'ada@example.test');
+    const message = sender.sent[0];
+    if (message === undefined) throw new Error('no mail sent');
+    return extractLink(message);
+  }
+
+  async function post(url: string, fields: Record<string, string>) {
+    const res = await httpApp.inject({
+      method: 'POST',
+      url,
+      payload: new URLSearchParams(fields).toString(),
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    });
+    return { statusCode: res.statusCode, body: res.body };
+  }
+
+  it('carries the way back through the request form, a refusal and the sent page', async () => {
+    const { tenantName } = await seedTenant(`tenant-${newId()}`, { resetPasswordAllowed: true });
+    const path = way(tenantName);
+    const url = `/tenants/${tenantName}/login-actions/reset-password`;
+
+    const form = await httpApp.inject({ url: `${url}?return_to=${encodeURIComponent(path)}` });
+    expect(form.body).toContain(`<a href="${escaped(path)}">Back to sign in</a>`);
+    expect(form.body).toContain(`name="return_to" value="${escaped(path)}"`);
+    const direct = await httpApp.inject({ url });
+    expect(direct.body).not.toContain('Back to sign in');
+
+    const empty = await post(url, { email: '', return_to: path });
+    expect(empty.statusCode).toBe(400);
+    expect(empty.body).toContain('<form method="post"');
+    expect(empty.body).toContain('Email is required.');
+    expect(empty.body).toContain('aria-invalid="true" aria-describedby="form-error-0" autofocus');
+    expect(empty.body).toContain(`<a href="${escaped(path)}">Back to sign in</a>`);
+
+    const sent = await post(url, { email: 'ada@example.test', return_to: path });
+    expect(sent.statusCode).toBe(200);
+    expect(sent.body).toContain(`<a href="${escaped(path)}">Back to sign in</a>`);
+  });
+
+  it('keeps the sent page identical for a known and an unknown address, link included', async () => {
+    const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {
+      resetPasswordAllowed: true,
+    });
+    await seedAda(tenantId);
+    const url = `/tenants/${tenantName}/login-actions/reset-password`;
+    const known = await post(url, { email: 'ada@example.test', return_to: way(tenantName) });
+    const unknown = await post(url, { email: 'nobody@example.test', return_to: way(tenantName) });
+    expect(unknown.statusCode).toBe(known.statusCode);
+    expect(unknown.body).toBe(known.body);
+  });
+
+  it('drops a way back that is not this tenant authorize path', async () => {
+    const { tenantName } = await seedTenant(`tenant-${newId()}`, { resetPasswordAllowed: true });
+    const url = `/tenants/${tenantName}/login-actions/reset-password`;
+    for (const bad of [
+      'https://evil.example/x',
+      '//evil.example',
+      '/tenants/other/protocol/openid-connect/auth?a=b',
+    ]) {
+      const res = await post(url, { email: 'ada@example.test', return_to: bad });
+      expect(res.body, bad).not.toContain('Back to sign in');
+      expect(res.body, bad).not.toContain('evil.example');
+    }
+  });
+
+  it('puts the new-password form back in place with the key, the rules and no password', async () => {
+    const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {
+      resetPasswordAllowed: true,
+    });
+    await seedAda(tenantId);
+    const link = await mailedLink(tenantName);
+    const key = keyFromLink(link);
+
+    const weak = await submitNewPassword(link, 'zq9xv');
+    expect(weak.statusCode).toBe(400);
+    expect(weak.body).toContain('<form method="post"');
+    expect(weak.body).toContain(`name="key" value="${key}"`);
+    expect(weak.body).toContain('aria-invalid="true" aria-describedby="form-error-0');
+    expect(weak.body).not.toContain('zq9xv');
+
+    const missing = await submitNewPassword(link, undefined);
+    expect(missing.statusCode).toBe(400);
+    expect(missing.body).toContain('<form method="post"');
+    expect(missing.body).toContain('A new password is required.');
+  });
+
+  it('offers a new link when a reset link is used or expired and resets are still allowed', async () => {
+    const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {
+      resetPasswordAllowed: true,
+    });
+    await seedAda(tenantId);
+    const link = await mailedLink(tenantName);
+    expect((await submitNewPassword(link, 'my first password')).statusCode).toBe(200);
+    const request = `<a href="/tenants/${tenantName}/login-actions/reset-password">Request a new link</a>`;
+
+    const again = await getResetForm(link);
+    expect(again.statusCode).toBe(400);
+    expect(again.body).toContain(request);
+    const submitted = await submitNewPassword(link, 'my second password');
+    expect(submitted.statusCode).toBe(400);
+    expect(submitted.body).toContain(request);
+
+    await owner.db
+      .update(tenants)
+      .set({ resetPasswordAllowed: false })
+      .where(eq(tenants.id, tenantId));
+    const closed = await getResetForm(link);
+    expect(closed.body).not.toContain('Request a new link');
+  });
+
+  it('offers nothing for a key no row holds, and nothing across tenants', async () => {
+    const a = await seedTenant(`tenant-${newId()}`, { resetPasswordAllowed: true });
+    const b = await seedTenant(`tenant-${newId()}`, { resetPasswordAllowed: true });
+    await seedAda(a.tenantId);
+    const link = await mailedLink(a.tenantName);
+
+    const junk = await httpApp.inject({
+      url: `/tenants/${a.tenantName}/login-actions/action-token?key=${'x'.repeat(43)}`,
+    });
+    expect(junk.statusCode).toBe(400);
+    expect(junk.body).not.toContain('Request a new link');
+
+    const across = await httpApp.inject({
+      url: `/tenants/${b.tenantName}/login-actions/action-token?key=${keyFromLink(link)}`,
+    });
+    expect(across.statusCode).toBe(400);
+    expect(across.body).not.toContain('Request a new link');
   });
 });

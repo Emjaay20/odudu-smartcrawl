@@ -69,7 +69,8 @@ const publicBaseUrl = z
       });
       return z.NEVER;
     }
-    return `${parsed.protocol}//${parsed.host}`;
+    // A root dot names the same host; the issuer is spelled without it.
+    return `${parsed.protocol}//${parsed.host.replace(/\.(?=:\d+$|$)/u, '')}`;
   });
 
 // The container image's own layout for the built console; shared with
@@ -78,6 +79,10 @@ const publicBaseUrl = z
 export const DEFAULT_OUTBOX_MAX_ATTEMPTS = 5;
 
 export const DEFAULT_CONSOLE_DIR = '/app/console';
+
+export const DEFAULT_INSTRUMENT_DIR = '/app/instrument';
+
+export const DEFAULT_DOCS_DIR = '/app/docs';
 
 // Ten thousand a window is two hundred Argon2id verifications a second from
 // one origin, past what a process can run, so a larger budget protects
@@ -109,7 +114,7 @@ function throttleWindowSeconds(fallback: number) {
     .default(fallback);
 }
 
-const schema = z.object({
+export const configSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   ODUDU_HTTP_HOST: z.string().min(1).default('0.0.0.0'),
   ODUDU_HTTP_PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
@@ -316,6 +321,13 @@ const schema = z.object({
   ODUDU_CONSOLE_CLIENT_KEY_PREVIOUS: z.string().min(1).optional(),
   // The built console's static files, as the container image lays them out.
   ODUDU_CONSOLE_DIR: z.string().min(1).default(DEFAULT_CONSOLE_DIR),
+  // The built stylesheet and fonts every rendered page links.
+  ODUDU_INSTRUMENT_DIR: z.string().min(1).default(DEFAULT_INSTRUMENT_DIR),
+  // The documentation under /docs. On unless turned off; a private install
+  // that does not want it served says `false`.
+  ODUDU_DOCS: enabledEnvVar,
+  // The built documentation, as the container image lays it out.
+  ODUDU_DOCS_DIR: z.string().min(1).default(DEFAULT_DOCS_DIR),
   // Lets a bounded address-checked fetch — the JWKS fetcher
   // (@odudu/protocol-oidc's client-keys repository) or the back-channel
   // logout transport (apps/server/src/logout-delivery-transport.ts) —
@@ -333,7 +345,7 @@ const schema = z.object({
   ODUDU_ALLOW_PRIVATE_SMTP_HOSTS: booleanEnvVar,
 });
 
-export type Config = Readonly<z.infer<typeof schema>>;
+export type Config = Readonly<z.infer<typeof configSchema>>;
 
 /**
  * The base the console's redirect and post-logout URIs are registered
@@ -345,7 +357,7 @@ export function consoleBaseUrl(config: Config): string | undefined {
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
-  const parsed = schema
+  const parsed = configSchema
     .check((ctx) => {
       // A host with nowhere to say mail came from would fail every send at
       // the SMTP server rather than at boot — catch it here, where every

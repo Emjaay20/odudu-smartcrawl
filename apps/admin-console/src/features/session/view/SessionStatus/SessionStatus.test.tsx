@@ -14,6 +14,17 @@ it('is a main landmark with the title as its heading', () => {
   expect(screen.getByText('Taking you there…')).toBeVisible();
 });
 
+it('names the console beside the staff mark', () => {
+  render(
+    <SessionStatus title="Signing in">
+      <p>Taking you there…</p>
+    </SessionStatus>,
+  );
+  const main = screen.getByRole('main');
+  expect(main.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+  expect(screen.getByText('Odudu console')).toBeVisible();
+});
+
 it('passes axe in both themes', async () => {
   expect(
     await axeInBothThemes(() => (

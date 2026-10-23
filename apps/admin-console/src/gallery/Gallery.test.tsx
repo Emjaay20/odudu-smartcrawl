@@ -5,13 +5,16 @@ import { Gallery } from '#/gallery/Gallery';
 import gallerySource from '#/gallery/Gallery.tsx?raw';
 
 // Drawn by other components rather than used on their own: every dialog,
-// every picker, a section's save handed to its notice whole, and the text only
-// a screen reader gets.
+// every picker, a section's save handed to its notice whole, the text only a
+// screen reader gets, and the top-level screen that cannot sit inside the
+// gallery's own main landmark.
 const PARTS = new Set([
   'DialogFrame',
   'Picker',
   'SectionNoticeOf',
   'VisuallyHidden',
+  'LostFrame',
+  'LostArt',
   'DataTable/DataTableShape',
 ]);
 

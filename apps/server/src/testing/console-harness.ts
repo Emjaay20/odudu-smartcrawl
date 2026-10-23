@@ -1,7 +1,7 @@
 import { signClientAssertion, unwrapSecret } from '@odudu/crypto';
 import { type DatabaseHandle } from '@odudu/db';
 import { ADMIN_API_AUDIENCE, ADMIN_CLIENT_ID, SYSTEM_TENANT_NAME } from '@odudu/domain-tenant';
-import { FakeClock, loadConfig, newId } from '@odudu/kernel';
+import { type Config, FakeClock, loadConfig, newId } from '@odudu/kernel';
 import { type FastifyInstance, type LightMyRequestResponse } from 'fastify';
 import { sql } from 'drizzle-orm';
 import { createHash } from 'node:crypto';
@@ -9,6 +9,7 @@ import { type IncomingHttpHeaders } from 'node:http';
 import { Writable } from 'node:stream';
 import { expect } from 'vitest';
 import { buildApp, type ThrottleSettings } from '#/app';
+import { appDepsFromConfig } from '#/app-deps';
 import { seed, seedAdmin } from '#/cli/seed';
 import { createLogger } from '#/logger';
 import { CONSOLE_KEYS } from '#/testing/console-key';
@@ -49,6 +50,13 @@ export interface AdminRequestSeen {
 }
 
 export interface ConsoleAppOptions {
+  /** Trust of a proxy's forwarded headers; defaults to on for an https base. */
+  readonly trustProxy?: boolean;
+  /**
+   * Build the app from this configuration the way `serve.ts` does, so what
+   * the process's own settings decide (TLS, trust of a proxy) is what runs.
+   */
+  readonly config?: Config;
   /** Routes or hooks a test adds before the app is sealed. */
   readonly beforeReady?: (app: FastifyInstance) => void;
   /** For a test that signs in more administrators than the default budget admits. */
@@ -72,8 +80,21 @@ export async function startConsoleApp(
   const config = loadConfig({ ...process.env, ODUDU_LOG_LEVEL: 'trace' });
   const clock = new FakeClock(new Date());
   const baseUrl = new URL(base);
+  const fromConfig =
+    options.config === undefined
+      ? undefined
+      : appDepsFromConfig(options.config, {
+          runtime: databases.database,
+          owner: databases.ownerDatabase,
+          logger: createLogger(config, destination),
+          consoleKeys: CONSOLE_KEYS,
+          deploymentSmtp: false,
+        });
   const app = buildApp({
+    ...(fromConfig ?? {}),
     ...databases,
+    // Without a configuration, the scheme the browser is told it is on.
+    tls: fromConfig?.tls ?? baseUrl.protocol === 'https:',
     kek: KEK,
     logger: createLogger(config, destination),
     publicBaseUrl: base,
@@ -81,7 +102,7 @@ export async function startConsoleApp(
     consoleKeys: CONSOLE_KEYS,
     consoleNow: () => clock.now(),
     // An https base is served behind a proxy: boot refuses it otherwise.
-    trustProxy: baseUrl.protocol === 'https:',
+    trustProxy: options.trustProxy ?? baseUrl.protocol === 'https:',
     ...(options.throttle === undefined ? {} : { throttle: options.throttle }),
     consoleDir: options.consoleDir ?? NO_CONSOLE_BUILD,
   });

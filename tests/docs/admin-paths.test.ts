@@ -5,9 +5,10 @@ import {
   TENANT_CAPABILITIES,
 } from '../../packages/domain-tenant/src/index.js';
 import { ADMIN_ROUTES } from '../../packages/protocol-admin/src/index.js';
-import { backticked, loadDocument, sections, type Section } from './markdown.js';
+import { buildAdminOpenApiDocument } from '../../packages/protocol-admin/src/view/routes/openapi.js';
+import { ADMIN_PAGES, backticked, loadSource, type Section, sections } from './markdown.js';
 
-const GUIDE = 'docs/admin-paths.md';
+const GUIDE = ADMIN_PAGES;
 
 // `tests/docs/endpoints.test.ts` already holds this document's endpoint table
 // to Fastify's own route set, in both directions. What it cannot see is the
@@ -32,9 +33,11 @@ const EMITTABLE_PROBLEM_TYPES = new Set([
   'about:blank#unauthorized',
   'about:blank#forbidden',
   'about:blank#not-found',
+  'about:blank#builtin-scope-confirmation',
   'about:blank#export-too-large',
   'about:blank#audit-query-too-broad',
   'about:blank#last-administrator',
+  'about:blank#service-account',
   'about:blank#no-email',
   'about:blank#no-mail-relay',
   'about:blank#reset-password-off',
@@ -91,8 +94,8 @@ function sectionFor(
   return best?.section;
 }
 
-describe('docs/admin-paths.md says what the admin API actually requires', () => {
-  const document = loadDocument(GUIDE);
+describe('the admin API pages say what the admin API actually requires', () => {
+  const document = loadSource(GUIDE);
   // 34 headings when this was written; the floor guards against an extractor
   // that silently stops finding them. `tests/docs/structure.test.ts` is what
   // holds a heading to rendering as a heading.
@@ -166,6 +169,19 @@ describe('docs/admin-paths.md says what the admin API actually requires', () => 
     const patterns = new Set(ADMIN_ROUTES.map((route) => route.pattern));
     expect(stated?.groups?.count, `${GUIDE} no longer states the path count`).toBe(
       String(patterns.size),
+    );
+  });
+
+  // The size is the served body's, which is the generated document serialised,
+  // so it is derived here rather than trusted: a new route changes it.
+  it('quotes the OpenAPI response size the generated document has', () => {
+    const bytes = Buffer.byteLength(JSON.stringify(buildAdminOpenApiDocument()));
+    const text = document.lines.join('\n');
+    expect(text, `${GUIDE} no longer quotes the content-length`).toContain(
+      `content-length: ${String(bytes)}`,
+    );
+    expect(text, `${GUIDE} no longer states the size in KB`).toContain(
+      `${String(Math.round(bytes / 1024))} KB and`,
     );
   });
 });

@@ -96,6 +96,7 @@ describe('the console shell', () => {
     expect(res.headers['content-security-policy']).toBe(CSP);
     expect(res.headers['x-frame-options']).toBe('DENY');
     expect(res.headers['referrer-policy']).toBe('no-referrer');
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
     expect(res.headers['cache-control']).toBe('no-store');
     expect(res.headers['content-type']).toContain('text/html');
     expect(res.body).toContain('<div id="root">');
@@ -109,6 +110,7 @@ describe('the console shell', () => {
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toBe('text/javascript; charset=utf-8');
     expect(res.headers['cache-control']).toBe('public, max-age=31536000, immutable');
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
     expect(res.body).toContain("console.log('odudu console shell')");
   });
 
@@ -119,6 +121,7 @@ describe('the console shell', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toBe('text/css; charset=utf-8');
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
   });
 
   it('answers 404 for an asset path with no manifest entry', async () => {
@@ -127,6 +130,7 @@ describe('the console shell', () => {
     const res = await server.inject({ url: '/console/assets/does-not-exist.js' });
 
     expect(res.statusCode).toBe(404);
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
   });
 
   it.each([
@@ -209,6 +213,7 @@ describe('the console shell', () => {
     expect(big.statusCode).toBe(404);
     expect(ok.statusCode).toBe(200);
     expect(logs.join('')).toContain('big.js');
+    expect(logs.join('')).toContain('ODUDU_CONSOLE_DIR');
   });
 
   it(
@@ -252,6 +257,22 @@ describe('the console shell', () => {
 
     expect(res.statusCode).toBe(503);
     expect(logs.join('')).toContain('ODUDU_CONSOLE_DIR');
+  });
+
+  it('answers 503 and names the reason when assets/ holds more files than a build can', async () => {
+    const dir = await tempConsoleDir();
+    await writeFile(join(dir, 'index.html'), '<p>shell');
+    await mkdir(join(dir, 'assets'));
+    for (let i = 0; i < 1_001; i++) await writeFile(join(dir, 'assets', `f${String(i)}.js`), 'x');
+    const logs: string[] = [];
+    const server = await served(dir, logs);
+
+    const res = await server.inject({ url: '/console/tenants/x' });
+
+    expect(res.statusCode).toBe(503);
+    expect(res.body).toBe('console build unavailable');
+    expect(logs.join('')).toContain('ODUDU_CONSOLE_DIR');
+    expect(logs.join('')).toContain('static_tree_too_large');
   });
 
   it('serves a hashed asset name with an immutable cache header', async () => {

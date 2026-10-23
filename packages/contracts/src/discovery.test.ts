@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { discoveryDocument } from '#/discovery';
+import { discoveryDocument, promptValuesSupported } from '#/discovery';
 
 const CLAIMS_SUPPORTED = ['sub', 'name', 'email', 'email_verified'];
 // Stands in for a tenant's scope vocabulary, which is what the caller reads
@@ -18,12 +18,27 @@ const doc = discoveryDocument({
   issuer: 'https://idp.example/tenants/acme',
   claimsSupported: CLAIMS_SUPPORTED,
   scopesSupported: SCOPES_SUPPORTED,
+  uiLocalesSupported: ['en'],
   userinfoSigningAlgSupported: USERINFO_SIGNING_ALG_SUPPORTED,
   userinfoEncryptionAlgSupported: USERINFO_ENCRYPTION_ALG_SUPPORTED,
   userinfoEncryptionEncSupported: USERINFO_ENCRYPTION_ENC_SUPPORTED,
 });
 
 describe('[OIDC-DISCOVERY-3-01] the discovery document', () => {
+  it('lists ui_locales_supported and omits claims_locales_supported', () => {
+    const shipped = discoveryDocument({
+      issuer: 'https://idp.example/tenants/acme',
+      claimsSupported: CLAIMS_SUPPORTED,
+      scopesSupported: SCOPES_SUPPORTED,
+      uiLocalesSupported: ['en', 'fr'],
+      userinfoSigningAlgSupported: USERINFO_SIGNING_ALG_SUPPORTED,
+      userinfoEncryptionAlgSupported: USERINFO_ENCRYPTION_ALG_SUPPORTED,
+      userinfoEncryptionEncSupported: USERINFO_ENCRYPTION_ENC_SUPPORTED,
+    });
+    expect(shipped.ui_locales_supported).toEqual(['en', 'fr']);
+    expect(shipped).not.toHaveProperty('claims_locales_supported');
+  });
+
   it('advertises only the code response type', () => {
     expect(doc.response_types_supported).toEqual(['code']);
   });
@@ -74,6 +89,7 @@ describe('[OIDC-DISCOVERY-3-01] the discovery document', () => {
       issuer: 'https://idp.example/tenants/acme',
       claimsSupported: CLAIMS_SUPPORTED,
       scopesSupported: SCOPES_SUPPORTED,
+      uiLocalesSupported: ['en'],
       userinfoSigningAlgSupported: USERINFO_SIGNING_ALG_SUPPORTED,
       userinfoEncryptionAlgSupported: USERINFO_ENCRYPTION_ALG_SUPPORTED,
       userinfoEncryptionEncSupported: USERINFO_ENCRYPTION_ENC_SUPPORTED,
@@ -110,6 +126,7 @@ describe('[OIDC-DISCOVERY-3-01] the discovery document', () => {
       issuer: 'https://idp.example/tenants/acme/',
       claimsSupported: CLAIMS_SUPPORTED,
       scopesSupported: SCOPES_SUPPORTED,
+      uiLocalesSupported: ['en'],
       userinfoSigningAlgSupported: USERINFO_SIGNING_ALG_SUPPORTED,
       userinfoEncryptionAlgSupported: USERINFO_ENCRYPTION_ALG_SUPPORTED,
       userinfoEncryptionEncSupported: USERINFO_ENCRYPTION_ENC_SUPPORTED,
@@ -167,6 +184,7 @@ describe('[OIDC-DISCOVERY-3-01] the discovery document', () => {
       issuer: 'https://idp.example/tenants/acme',
       claimsSupported: CLAIMS_SUPPORTED,
       scopesSupported: SCOPES_SUPPORTED,
+      uiLocalesSupported: ['en'],
       userinfoSigningAlgSupported: USERINFO_SIGNING_ALG_SUPPORTED,
       userinfoEncryptionAlgSupported: USERINFO_ENCRYPTION_ALG_SUPPORTED,
       userinfoEncryptionEncSupported: USERINFO_ENCRYPTION_ENC_SUPPORTED,
@@ -174,6 +192,40 @@ describe('[OIDC-DISCOVERY-3-01] the discovery document', () => {
     });
     expect(withRegistration.registration_endpoint).toBe(
       'https://idp.example/tenants/acme/clients-registrations/openid-connect',
+    );
+  });
+});
+
+// Initiating User Registration via OpenID Connect 1.0 §4.2: an OP that
+// supports `create` lists it, and then every other prompt value it supports.
+describe('[OIDC-PROMPT-CREATE-4.2-01] prompt_values_supported', () => {
+  it('lists the four Core values for a tenant with registration off', () => {
+    expect(doc.prompt_values_supported).toEqual(['none', 'login', 'consent', 'select_account']);
+    expect(doc.prompt_values_supported).toEqual(
+      promptValuesSupported({ registrationAllowed: false }),
+    );
+  });
+
+  it('adds create, after the Core values, when userRegistrationEnabled is true', () => {
+    const withCreate = discoveryDocument({
+      issuer: 'https://idp.example/tenants/acme',
+      claimsSupported: CLAIMS_SUPPORTED,
+      scopesSupported: SCOPES_SUPPORTED,
+      uiLocalesSupported: ['en'],
+      userinfoSigningAlgSupported: USERINFO_SIGNING_ALG_SUPPORTED,
+      userinfoEncryptionAlgSupported: USERINFO_ENCRYPTION_ALG_SUPPORTED,
+      userinfoEncryptionEncSupported: USERINFO_ENCRYPTION_ENC_SUPPORTED,
+      userRegistrationEnabled: true,
+    });
+    expect(withCreate.prompt_values_supported).toEqual([
+      'none',
+      'login',
+      'consent',
+      'select_account',
+      'create',
+    ]);
+    expect(withCreate.prompt_values_supported).toEqual(
+      promptValuesSupported({ registrationAllowed: true }),
     );
   });
 });
@@ -196,6 +248,7 @@ describe('[OIDC-DISCOVERY-4.2-01] a metadata claim with zero elements', () => {
       issuer: 'https://idp.example/tenants/acme',
       claimsSupported: [],
       scopesSupported: [],
+      uiLocalesSupported: ['en'],
       userinfoSigningAlgSupported: USERINFO_SIGNING_ALG_SUPPORTED,
       userinfoEncryptionAlgSupported: USERINFO_ENCRYPTION_ALG_SUPPORTED,
       userinfoEncryptionEncSupported: USERINFO_ENCRYPTION_ENC_SUPPORTED,

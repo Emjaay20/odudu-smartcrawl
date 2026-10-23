@@ -1,48 +1,50 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   evaluatePassword,
   REUSED_PASSWORD,
 } from '../../packages/domain-identity/src/service/password-policy.js';
-import { loadDocument, REPO_ROOT } from './markdown.js';
+import { DEFAULT_PAGE_LOCALE, PASSWORD_TOO_LONG } from '../../packages/kernel/src/index.js';
+import {
+  renderRegistrationForm,
+  type RegistrationRefusal,
+} from '../../packages/account/src/view/registration-html.js';
+import { renderResetPasswordForm } from '../../packages/account/src/view/reset-html.js';
+import { at, loadSource, PROTOCOL_PAGES } from './markdown.js';
 
-const GUIDE = 'docs/request-paths.md';
+const GUIDE = PROTOCOL_PAGES;
 
-// The registration page renders every refusal as one list, so its own
-// non-policy reasons — a taken username, an address already registered —
-// arrive as <li> lines beside the policy's. They are read out of the route
-// that renders them rather than restated here, so a reworded one is still
-// compared against what the server would say.
-const REGISTRATION_ROUTE = 'packages/account/src/view/routes/registration.ts';
+const RULES = {
+  minLength: 15,
+  requireDigit: false,
+  requireUppercase: false,
+  requireLowercase: false,
+  requireSpecial: false,
+};
 
-function registrationRefusals(): Set<string> {
-  const source = readFileSync(path.join(REPO_ROOT, REGISTRATION_ROUTE), 'utf8');
-  const messages = new Set(
-    [...source.matchAll(/renderRegistrationFailedPage\(\['(?<message>[^']+)'\]\)/gu)].flatMap(
-      (match) => (match.groups?.message === undefined ? [] : [match.groups.message]),
-    ),
+const REFUSALS: readonly RegistrationRefusal[] = [
+  'email_taken',
+  'username_taken',
+  'invalid_email',
+  'invalid_username',
+];
+
+// The text of each entry in a form's alert, as served.
+function itemsOf(body: string): string[] {
+  return [...body.matchAll(/^<li id="form-error-\d+">(.*)<\/li>$/gmu)].map(
+    (match) => match[1] ?? '',
   );
-  if (messages.size === 0) {
-    throw new Error(
-      `${REGISTRATION_ROUTE} no longer renders a refusal as a literal message; ` +
-        'point this check at where those words went.',
-    );
-  }
-  return messages;
 }
 
-// Every violation message the password policy can actually produce, for
-// the policy shapes docs/request-paths.md's transcripts exercise: the
-// default tenant policy (min-length, not-username, not-email) and that same
-// policy with digit/uppercase also required. REUSED_PASSWORD joins them
-// because history is the one rule no candidate alone decides — it is
-// verified against stored hashes where a transaction is in hand. A reworded
-// message falls out of this set and fails the check below, rather than
-// silently downgrading the transcript to a claim nobody re-ran.
+// Every <li> sentence the pages that list a refusal can show, read from the
+// real renderers: each rule code the policy can report for the shapes the
+// transcripts exercise (REUSED_PASSWORD joins them, history being the one
+// rule no candidate alone decides) and each non-policy reason registration
+// gives. A renamed code or reworded sentence falls out and fails the check
+// below instead of downgrading the transcript to a claim nobody re-ran.
 function possibleMessages(): Set<string> {
   const base = {
-    minLength: 8,
+    tenantName: 'acme',
+    minLength: 15,
     requireDigit: false,
     requireUppercase: false,
     requireLowercase: false,
@@ -55,46 +57,55 @@ function possibleMessages(): Set<string> {
   const strict = { ...base, requireDigit: true, requireUppercase: true };
   const subject = { username: 'ada', email: 'ada@example.com' };
 
+  const reported = [
+    ...evaluatePassword('short', strict, subject),
+    ...evaluatePassword('myadapassword', base, subject),
+    ...evaluatePassword('password', base, subject),
+    REUSED_PASSWORD,
+    PASSWORD_TOO_LONG,
+  ].map(({ rule, message }) => ({
+    rule,
+    message,
+    ...(rule === 'min-length' ? { minLength: base.minLength } : {}),
+  }));
   const messages = new Set<string>();
-  for (const violation of evaluatePassword('short', strict, subject)) {
-    messages.add(violation.message);
+  for (const violation of reported) {
+    for (const item of itemsOf(
+      renderResetPasswordForm('acme', 'key', [violation], RULES, DEFAULT_PAGE_LOCALE).body,
+    )) {
+      expect(item, `no catalogue sentence for the rule ${violation.rule}`).not.toContain('<bdi>');
+      messages.add(item);
+    }
   }
-  for (const violation of evaluatePassword('myadapassword', base, subject)) {
-    messages.add(violation.message);
+  for (const failure of [
+    ...REFUSALS.map((refusal) => ({ refusal })),
+    { missing: ['username', 'email', 'password'] as const },
+  ]) {
+    for (const item of itemsOf(
+      renderRegistrationForm('acme', { rules: RULES, failure }, DEFAULT_PAGE_LOCALE).body,
+    )) {
+      messages.add(item);
+    }
   }
-  messages.add(REUSED_PASSWORD.message);
-  for (const refusal of registrationRefusals()) messages.add(refusal);
   return messages;
 }
 
-// The pages that render a violation list, read from the views that render
-// them: a `<li>` anywhere else in the document — a consent screen's scopes,
-// say — is not a policy message and is not this check's business.
-const VIOLATION_PAGE_VIEWS = [
-  'packages/account/src/view/registration-html.ts',
-  'packages/account/src/view/reset-html.ts',
-];
-
+// The headings of the forms that render a violation list, as served.
 function violationPageHeadings(): Set<string> {
   const headings = new Set<string>();
-  for (const view of VIOLATION_PAGE_VIEWS) {
-    const source = readFileSync(path.join(REPO_ROOT, view), 'utf8');
-    for (const match of source.matchAll(/<h1>(?<title>[^<]+)<\/h1>/gu)) {
-      if (match.groups?.title !== undefined) headings.add(match.groups.title);
-    }
-  }
-  if (headings.size === 0) {
-    throw new Error(
-      `${VIOLATION_PAGE_VIEWS.join(', ')} no longer render an <h1>; ` +
-        'point this check at where those pages went.',
-    );
+  for (const body of [
+    renderRegistrationForm('acme', { rules: RULES }, DEFAULT_PAGE_LOCALE).body,
+    renderResetPasswordForm('acme', 'key', undefined, RULES, DEFAULT_PAGE_LOCALE).body,
+  ]) {
+    const title = /<h1>(?<title>[^<]+)<\/h1>/u.exec(body)?.groups?.title;
+    if (title !== undefined) headings.add(title);
   }
   return headings;
 }
 
-describe('the password-policy violation messages in docs/request-paths.md are ones the policy actually produces', () => {
+describe('the password-policy violation messages in the protocol pages are ones the policy actually produces', () => {
   it('matches every <li> violation line to a real message', () => {
-    const document = loadDocument(GUIDE);
+    const document = loadSource(GUIDE);
     const possible = possibleMessages();
     // A policy violation is rendered as plain text in its <li>. The other
     // list this document shows inside a transcript is the recovery codes,
@@ -107,7 +118,9 @@ describe('the password-policy violation messages in docs/request-paths.md are on
       const heading = /^<h1>(?<title>.*)<\/h1>$/u.exec(text)?.groups?.title;
       if (heading !== undefined) underViolationHeading = headings.has(heading);
       if (!underViolationHeading) return [];
-      return /^<li>(?!<code>).*<\/li>$/u.test(text) ? [{ text, lineNumber: index + 1 }] : [];
+      return /^<li id="form-error-\d+">.*<\/li>$/u.test(text)
+        ? [{ text, lineNumber: index + 1 }]
+        : [];
     });
 
     if (shown.length === 0) {
@@ -118,10 +131,10 @@ describe('the password-policy violation messages in docs/request-paths.md are on
     }
 
     for (const { text, lineNumber } of shown) {
-      const message = text.replace(/^<li>/u, '').replace(/<\/li>$/u, '');
+      const message = text.replace(/^<li id="form-error-\d+">/u, '').replace(/<\/li>$/u, '');
       expect(
         possible.has(message),
-        `${GUIDE}:${String(lineNumber)} shows a violation message the password policy ` +
+        `${at(document, lineNumber)} shows a violation message the password policy ` +
           `does not produce: ${JSON.stringify(message)}`,
       ).toBe(true);
     }

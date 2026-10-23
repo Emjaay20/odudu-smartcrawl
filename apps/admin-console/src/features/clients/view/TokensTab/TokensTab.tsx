@@ -2,6 +2,7 @@ import {
   AUTH_TIME_LABEL,
   AUTH_TIME_RULE,
   CREDENTIALS_RULE,
+  FULL_SCOPE_LABEL,
   FULL_SCOPE_RULE,
   GRANTS_RULE,
   ID_TOKEN_ALG_LABEL,
@@ -91,7 +92,7 @@ export function TokensTab({ tenant, client, etag, gone, writable }: ClientTabPro
         </SaveSection>
         <SaveSection title={SECTIONS_TOKENS.fullScope} save={fullScope}>
           <ToggleField
-            label="Carry every role the subject holds"
+            label={FULL_SCOPE_LABEL}
             description={FULL_SCOPE_RULE}
             value={fullScope.values.full_scope_allowed}
             error={fullScope.fieldErrors.full_scope_allowed}

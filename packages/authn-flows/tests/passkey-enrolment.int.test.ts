@@ -248,14 +248,13 @@ describe('enrolling a passkey', () => {
       response: registrationResponse({ challenge: offer.options.challenge }),
     });
     expect(accepted.kind).toBe('enrolled');
-    // configure-passkey is gone, and a recovery path is owed in its place:
-    // a second factor nobody can produce any more is the lockout recovery
-    // codes exist to prevent.
+    // configure-passkey is gone and nothing replaces it: a recovery code can
+    // only stand in for a TOTP code, never for a passkey.
     expect(
       await withTenant(app.db, tenantId, (tx) =>
         requiredActionRepository(tx).pendingFor(subjectId),
       ),
-    ).toEqual(['generate-recovery-codes']);
+    ).toEqual([]);
   });
 
   it('enrols a second passkey alongside the first', async () => {

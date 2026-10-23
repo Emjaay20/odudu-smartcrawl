@@ -1,6 +1,9 @@
 import {
   nextRequiredAction,
+  SUPERSEDED_PASSWORD,
+  type EnrolmentRefusal,
   type PasskeyEnrolmentOutcome,
+  type PasswordViolation,
   type RecoveryCodesOutcome,
   type RequiredAction,
   type TotpEnrolmentOutcome,
@@ -9,6 +12,18 @@ import {
 import { type RequestContext } from '@odudu/domain-audit';
 import { isUuid } from '@odudu/kernel';
 import { type TenantLookup } from '#/repository/tenant-lookup';
+
+// The page an action goes back to, and the reason it says it is back; each
+// action has one reason, so one cannot carry another's.
+export type RejectedRequiredAction = {
+  kind: 'rejected';
+  authSessionId: string;
+  subjectId: string;
+} & (
+  | { action: 'configure-totp'; reason: Extract<EnrolmentRefusal, 'code_mismatch'> }
+  | { action: 'configure-passkey'; reason: Extract<EnrolmentRefusal, 'passkey_not_added'> }
+  | { action: 'generate-recovery-codes'; reason: Extract<EnrolmentRefusal, 'codes_not_saved'> }
+);
 
 export type RequiredActionOutcome =
   // No live authentication session, or one whose authentication has not
@@ -30,14 +45,8 @@ export type RequiredActionOutcome =
   // The candidate password did not satisfy the tenant's policy. Every rule
   // it broke is carried, not just the first, so the form it goes back to
   // can list them at once.
-  | { kind: 'password_rejected'; authSessionId: string; violations: readonly string[] }
-  | {
-      kind: 'rejected';
-      authSessionId: string;
-      subjectId: string;
-      action: RequiredAction;
-      reason: string;
-    };
+  | { kind: 'password_rejected'; authSessionId: string; violations: readonly PasswordViolation[] }
+  | RejectedRequiredAction;
 
 export interface RequiredActionSubmission {
   authSessionId: string | undefined;
@@ -177,10 +186,7 @@ export async function handleRequiredActionSubmission(
       return {
         kind: 'password_rejected',
         authSessionId,
-        violations: [
-          'Your password was changed somewhere else before this form was submitted. ' +
-            'Sign in again with the password you set there.',
-        ],
+        violations: [SUPERSEDED_PASSWORD],
       };
     }
     return { kind: 'password_rejected', authSessionId, violations: changed.violations };
@@ -211,7 +217,7 @@ export async function handleRequiredActionSubmission(
     authSessionId,
     subjectId,
     action: 'configure-totp',
-    reason: 'That code did not match. Try the next one your app shows.',
+    reason: 'code_mismatch',
   };
 }
 
@@ -232,7 +238,7 @@ async function acknowledgeRecoveryCodes(
     authSessionId,
     subjectId,
     action: 'generate-recovery-codes',
-    reason: 'Save these codes before continuing.',
+    reason: 'codes_not_saved',
   };
 }
 
@@ -266,6 +272,6 @@ async function completePasskey(
     authSessionId,
     subjectId,
     action: 'configure-passkey',
-    reason: 'That passkey could not be added. Try again.',
+    reason: 'passkey_not_added',
   };
 }

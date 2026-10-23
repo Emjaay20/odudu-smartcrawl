@@ -267,6 +267,7 @@ beforeAll(async () => {
   await http.register(formbody);
   await http.register(
     oidcRoutes({
+      tls: false,
       database: app,
       ownerDatabase: owner,
       kek: KEK,
@@ -369,6 +370,19 @@ describe('the consent gate on the form path', () => {
     const scope = redeemed.json<{ scope: string }>().scope;
     expect(scope.split(' ')).toContain('openid');
     expect(scope.split(' ')).not.toContain('offline_access');
+  });
+
+  it('clears the sign-in handle when consent completes the sign-in', async () => {
+    const tenantName = `consent-clear-${newId()}`;
+    await setupTenant(tenantName);
+    const consentPage = await loginExpectingConsent(tenantName, CONSENT_CLIENT_ID);
+
+    const res = await submitConsent(tenantName, extractAuthSessionId(consentPage.body), 'allow');
+    expect(res.statusCode).toBe(302);
+    const cleared = [res.headers['set-cookie']].flat();
+    expect(cleared).toContain(
+      `odudu-sign-in=; HttpOnly; SameSite=Lax; Path=/tenants/${tenantName}/; Max-Age=0`,
+    );
   });
 
   it('does not ask again on the next login once recorded', async () => {

@@ -10,9 +10,11 @@ import { auditRepository, type AuditEventRecord } from '@odudu/domain-audit';
 import {
   credentialRepository,
   hashPassword,
+  hashUserPassword,
   subjectRepository,
   userCredentials,
   users,
+  verifyPassword,
 } from '@odudu/domain-identity';
 import { newId } from '@odudu/kernel';
 import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/testkit';
@@ -69,6 +71,9 @@ interface TenantPolicy {
   maxAgeDays?: number;
   historyDepth?: number;
   minLength?: number;
+  // A password stored as typed, the way every hash was made before
+  // passwords were normalised.
+  storedAsTyped?: string;
 }
 
 interface Account {
@@ -94,7 +99,7 @@ async function seedAccount(policy: TenantPolicy = {}): Promise<Account> {
       tenantId,
       subjectId: subject.id,
       type: 'password',
-      secretData: { hash: await hashPassword(PASSWORD) },
+      secretData: { hash: await hashPassword(policy.storedAsTyped ?? PASSWORD) },
     });
     return subject.id;
   });
@@ -225,15 +230,21 @@ describe('the tenant password history refuses a password the subject has had', (
 
     expect(await change(account, 'third passphrase here')).toEqual({
       kind: 'rejected',
-      violations: ['Password must not be one you have used before.'],
+      violations: [
+        { rule: 'not-reused', message: 'Password must not be one you have used before.' },
+      ],
     });
     expect(await change(account, 'second passphrase here')).toEqual({
       kind: 'rejected',
-      violations: ['Password must not be one you have used before.'],
+      violations: [
+        { rule: 'not-reused', message: 'Password must not be one you have used before.' },
+      ],
     });
     expect(await change(account, PASSWORD)).toEqual({
       kind: 'rejected',
-      violations: ['Password must not be one you have used before.'],
+      violations: [
+        { rule: 'not-reused', message: 'Password must not be one you have used before.' },
+      ],
     });
   });
 
@@ -292,7 +303,13 @@ describe('the tenant password policy binds the change-password action', () => {
 
     expect(await change(account, 'short')).toEqual({
       kind: 'rejected',
-      violations: ['Password must be at least 12 characters long.'],
+      violations: [
+        {
+          rule: 'min-length',
+          message: 'Password must be at least 12 characters long.',
+          minLength: 12,
+        },
+      ],
     });
   });
 
@@ -301,7 +318,13 @@ describe('the tenant password policy binds the change-password action', () => {
 
     expect(await change(account, '')).toEqual({
       kind: 'rejected',
-      violations: ['Password must be at least 8 characters long.'],
+      violations: [
+        {
+          rule: 'min-length',
+          message: 'Password must be at least 8 characters long.',
+          minLength: 8,
+        },
+      ],
     });
   });
 
@@ -311,8 +334,16 @@ describe('the tenant password policy binds the change-password action', () => {
     expect(await change(account, 'ada')).toEqual({
       kind: 'rejected',
       violations: [
-        'Password must be at least 20 characters long.',
-        'Password must not contain the username.',
+        {
+          rule: 'min-length',
+          message: 'Password must be at least 20 characters long.',
+          minLength: 20,
+        },
+        { rule: 'not-username', message: 'Password must not contain the username.' },
+        {
+          rule: 'common-password',
+          message: 'That password is too easy to guess. Choose a different one.',
+        },
       ],
     });
   });
@@ -378,5 +409,170 @@ describe('the change-password action writes one password.changed row', () => {
 
     expect(await superseded).toEqual({ kind: 'superseded' });
     expect(await credentialRows(account)).toEqual([]);
+  });
+});
+
+describe('the change-password action refuses common and expected passwords', () => {
+  const COMMON = {
+    rule: 'common-password',
+    message: 'That password is too easy to guess. Choose a different one.',
+  };
+
+  it('refuses a listed password, however it is cased, and writes nothing', async () => {
+    const account = await seedAccount();
+
+    expect(await change(account, 'BaseBall')).toEqual({ kind: 'rejected', violations: [COMMON] });
+    expect(await pending(account)).toEqual([]);
+    expect((await signIn(account, PASSWORD)).kind).not.toBe('failure');
+  });
+
+  it('refuses the tenant name on its own', async () => {
+    const account = await seedAccount();
+    const tenantName = `tenant-${account.tenantId}`;
+
+    // The name is random hex, which may by chance hold the username `ada`,
+    // so the username rule may fire beside the one under test.
+    const outcome = await change(account, tenantName.toUpperCase());
+    expect(outcome.kind).toBe('rejected');
+    if (outcome.kind !== 'rejected') throw new Error('not rejected');
+    expect(outcome.violations).toContainEqual(COMMON);
+  });
+
+  it("does not take another tenant's name as a word to refuse", async () => {
+    const mine = await seedAccount({ minLength: 8 });
+    const other = await seedAccount({ minLength: 8 });
+
+    expect(await change(mine, `tenant-${other.tenantId}`)).toEqual({ kind: 'updated' });
+  });
+
+  it('accepts a password that only contains a listed one', async () => {
+    const account = await seedAccount();
+
+    expect(await change(account, 'baseball and a long walk home')).toEqual({ kind: 'updated' });
+  });
+});
+
+describe('passwords are stored NFC-normalised and verified either way', () => {
+  const composed = 'caf\u00e9 au lait, deux sucres';
+  const decomposed = 'cafe\u0301 au lait, deux sucres';
+
+  it('signs in with either form of a password set through the change', async () => {
+    const account = await seedAccount();
+
+    expect(await change(account, decomposed)).toEqual({ kind: 'updated' });
+    expect((await signIn(account, composed)).kind).toBe('success');
+    expect((await signIn(account, decomposed)).kind).toBe('success');
+  });
+
+  it('still signs in a person whose stored hash was made from the typed bytes', async () => {
+    const account = await seedAccount({ storedAsTyped: decomposed });
+
+    expect((await signIn(account, decomposed)).kind).toBe('success');
+    expect((await signIn(account, 'another password entirely')).kind).toBe('failure');
+  });
+
+  it('refuses the password in force when its hash was made from the typed bytes', async () => {
+    const account = await seedAccount({ historyDepth: 2, storedAsTyped: decomposed });
+
+    expect(await change(account, decomposed)).toEqual({
+      kind: 'rejected',
+      violations: [
+        { rule: 'not-reused', message: 'Password must not be one you have used before.' },
+      ],
+    });
+  });
+});
+
+describe('a hash made before passwords were normalised is upgraded at the next sign-in', () => {
+  const composed = 'café au lait, deux sucres';
+  const decomposed = 'café au lait, deux sucres';
+
+  function row(account: Account) {
+    return withTenant(app.db, account.tenantId, async (tx) => {
+      const [found] = await tx
+        .select()
+        .from(userCredentials)
+        .where(
+          and(
+            eq(userCredentials.subjectId, account.subjectId),
+            eq(userCredentials.type, 'password'),
+          ),
+        );
+      if (found === undefined) throw new Error('no password row');
+      return found;
+    });
+  }
+
+  it('signs in a decomposed legacy password, rehashes it from the normalised form and marks it', async () => {
+    const account = await seedAccount({ storedAsTyped: decomposed });
+    const before = await row(account);
+    expect(before.hashNfc).toBeNull();
+
+    expect((await signIn(account, decomposed)).kind).toBe('success');
+
+    const after = await row(account);
+    expect(after.hashNfc).toBe(true);
+    expect(after.secretData).not.toEqual(before.secretData);
+    expect(after.createdAt).toEqual(before.createdAt);
+    const hash = (after.secretData as { hash: string }).hash;
+    expect(await verifyPassword(hash, composed)).toBe(true);
+    expect((await signIn(account, composed)).kind).toBe('success');
+    expect((await signIn(account, decomposed)).kind).toBe('success');
+  });
+
+  it('marks a legacy hash that was already of the normalised form, without rewriting it', async () => {
+    const account = await seedAccount();
+    const before = await row(account);
+
+    expect((await signIn(account, PASSWORD)).kind).toBe('success');
+
+    const after = await row(account);
+    expect(after.hashNfc).toBe(true);
+    expect(after.secretData).toEqual(before.secretData);
+  });
+
+  it('leaves a legacy hash alone when the password was wrong', async () => {
+    const account = await seedAccount({ storedAsTyped: decomposed });
+
+    expect((await signIn(account, 'not the password')).kind).toBe('failure');
+
+    expect((await row(account)).hashNfc).toBeNull();
+  });
+
+  it('marks every password it writes', async () => {
+    const account = await seedAccount();
+    expect(await change(account, composed)).toEqual({ kind: 'updated' });
+    expect((await row(account)).hashNfc).toBe(true);
+  });
+
+  it('marks a password inserted through the repository, and a reset-style replacement', async () => {
+    const account = await seedAccount();
+    await withTenant(app.db, account.tenantId, async (tx) => {
+      await tx.delete(userCredentials).where(eq(userCredentials.subjectId, account.subjectId));
+      await credentialRepository(tx).insert({
+        tenantId: account.tenantId,
+        subjectId: account.subjectId,
+        type: 'password',
+        secret: { kind: 'password', hash: await hashUserPassword(decomposed) },
+      });
+    });
+    expect((await row(account)).hashNfc).toBe(true);
+    await withTenant(app.db, account.tenantId, async (tx) =>
+      credentialRepository(tx).setPassword(account.subjectId, await hashUserPassword(composed)),
+    );
+    expect((await row(account)).hashNfc).toBe(true);
+  });
+
+  it('does not upgrade a subject of another tenant', async () => {
+    const mine = await seedAccount({ storedAsTyped: decomposed });
+    const other = await seedAccount();
+    const stored = (await row(mine)).secretData as { hash: string };
+
+    const done = await withTenant(app.db, other.tenantId, (tx) =>
+      credentialRepository(tx).upgradePassword(mine.subjectId, stored.hash, null),
+    );
+
+    expect(done).toBe(false);
+    expect((await row(mine)).hashNfc).toBeNull();
   });
 });

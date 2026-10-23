@@ -2,12 +2,14 @@
   "name": "@odudu/testkit",
   "version": "0.0.0",
   "private": true,
+  "license": "AGPL-3.0-only",
   "type": "module",
   "imports": {
     "#/*": "./src/*.ts"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./i18n": "./src/i18n.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

@@ -1,4 +1,9 @@
-import { scriptNonce, type RenderedPage } from '@odudu/kernel';
+import { type PageLocale, scriptNonce, type RenderedPage } from '@odudu/kernel';
+import { type EnrolmentRefusal } from '#/schema/enrolment-refusal';
+import { escapeHtml, intro, page } from '#/view/document';
+import { t, tHtml } from '#/view/messages';
+import { problemSummary } from '#/view/form-error';
+import { refusalProblems } from '#/view/refusal';
 import { type PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/server';
 
 // Matches LABEL_MAX_LENGTH in #/usecase/passkey-enrolment.ts, which
@@ -7,23 +12,14 @@ import { type PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/ser
 // never rendered this page.
 const LABEL_MAX_LENGTH = 64;
 
+// Stands in for the browser's own reason in the sentence the page hands its
+// script; the script swaps it for the reason the browser reports.
+const REASON = '{reason}';
+
 // What an enrolment page has to hand the browser: the creation options the
 // server issued, which name the relying party and carry the challenge.
 export interface PasskeyEnrolmentOffer {
   options: PublicKeyCredentialCreationOptionsJSON;
-}
-
-// Minimal, dependency-free HTML, the same choice
-// #/view/totp-enrolment-html.ts makes: every interpolated value passes
-// through escapeHtml so neither the tenant name nor the auth session id
-// opens a reflected-XSS hole.
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 // HTML escaping is wrong inside a <script>, where the parser reads text
@@ -47,26 +43,26 @@ export function renderPasskeyEnrolmentPage(
   tenant: string,
   authSessionId: string,
   offer: PasskeyEnrolmentOffer,
-  error?: string,
+  error: EnrolmentRefusal | undefined,
+  locale: PageLocale,
 ): RenderedPage {
   // Minted here and handed back with the markup that carries it, so the
   // policy served with this page cannot name a different value — a refused
   // script is invisible in a response, so nothing else would notice.
   const nonce = scriptNonce();
-  const target = `/tenants/${escapeHtml(tenant)}/login-actions/required-action?action=configure-passkey`;
-  const message = error === undefined ? '' : `<p><strong>${escapeHtml(error)}</strong></p>\n`;
+  const target = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/login-actions/required-action?action=configure-passkey`;
   // The options are inline, so this script fetches nothing.
-  const title = 'Add a passkey';
-  const body = `<h1>Add a passkey</h1>
-${message}<p>Your device will ask you to confirm. Nothing is stored until it does.</p>
-<form method="post" action="${target}" id="passkey-form">
+  const title = t(locale, 'passkey.title');
+  const body = `${intro(tHtml(locale, 'passkey.title'), tenant)}
+${problemSummary(refusalProblems(locale, error, null))}<p>${tHtml(locale, 'passkey.intro')}</p>
+<form method="post" action="${target}" id="passkey-form" data-failed="${tHtml(locale, 'passkey.failed', { reason: REASON })}" data-cancelled="${tHtml(locale, 'passkey.cancelled')}">
   <input type="hidden" name="auth_session_id" value="${escapeHtml(authSessionId)}">
   <input type="hidden" name="credential" id="passkey-credential">
-  <label>Name this passkey <input type="text" name="label" placeholder="Passkey" maxlength="${String(LABEL_MAX_LENGTH)}"></label>
-  <button type="submit" id="passkey-submit">Add passkey</button>
+  <label>${tHtml(locale, 'passkey.nameLabel')} <input type="text" name="label" placeholder="${tHtml(locale, 'passkey.namePlaceholder')}" maxlength="${String(LABEL_MAX_LENGTH)}"></label>
+  <button type="submit" id="passkey-submit">${tHtml(locale, 'passkey.submit')}</button>
 </form>
-<p id="passkey-error" hidden></p>
-<noscript><p>Adding a passkey needs JavaScript, because only the browser can talk to your authenticator.</p></noscript>
+<p id="passkey-error" class="alert" role="alert" hidden></p>
+<noscript><p>${tHtml(locale, 'passkey.needsScript')}</p></noscript>
 <script nonce="${escapeHtml(nonce)}">
 const options = ${jsonForScript(offer.options)};
 const form = document.getElementById('passkey-form');
@@ -97,23 +93,11 @@ form.addEventListener('submit', async (event) => {
     // does an authenticator that will not meet what the options require.
     // Without this the page simply stops, looking broken rather than
     // waiting for another go.
-    failure.textContent =
-      'Your device did not finish adding the passkey — ' + (caught && caught.message ? caught.message : 'the request was cancelled') + '. You can try again.';
+    const reason = caught && caught.message ? caught.message : form.dataset.cancelled;
+    failure.textContent = form.dataset.failed.replace('${REASON}', () => reason);
     failure.hidden = false;
   }
 });
 </script>`;
-  return {
-    script: { nonce, fetchesSameOrigin: false },
-    frames: [],
-    title,
-    body,
-    html: `<!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>${escapeHtml(title)}</title></head>
-<body>
-${body}
-</body>
-</html>`,
-  };
+  return page(title, body, { nonce, fetchesSameOrigin: false }, [], locale);
 }

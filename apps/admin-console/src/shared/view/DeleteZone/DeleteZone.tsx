@@ -15,6 +15,8 @@ export function DeleteZone({
   label,
   lead,
   note,
+  held = false,
+  retry = null,
 }: {
   name: string;
   deletion: {
@@ -33,6 +35,10 @@ export function DeleteZone({
   label?: string;
   lead?: ReactNode;
   note?: ReactNode;
+  // Holds the confirmation while what the delete affects is not yet known.
+  held?: boolean;
+  // Offered in the dialog when that could not be read.
+  retry?: { text: string; label: string; run: () => void } | null;
 }) {
   return (
     <Panel title="Delete">
@@ -51,8 +57,19 @@ export function DeleteZone({
         confirmLabel={`Delete ${name}`}
         tone="danger"
         {...(typed === undefined ? {} : { typed })}
+        settled={held}
         busy={deletion.busy}
-        problem={deletion.problem}
+        problem={
+          deletion.problem ??
+          (retry === null ? null : (
+            <>
+              {retry.text}{' '}
+              <Button size="small" onPress={retry.run}>
+                {retry.label}
+              </Button>
+            </>
+          ))
+        }
         onConfirm={deletion.confirm}
         onCancel={deletion.cancel}
       />

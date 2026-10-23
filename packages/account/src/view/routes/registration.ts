@@ -1,20 +1,27 @@
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { requestContextFrom } from '@odudu/domain-audit';
 import { PASSWORD_TOO_LONG, readPasswordField } from '@odudu/kernel';
-import { type FastifyInstance } from 'fastify';
+import { type FastifyInstance, type FastifyReply } from 'fastify';
 import {
   register,
   type CreateAccountResult,
   type NewAccountInput,
   type PasswordPolicy,
   type PolicyViolation,
+  type TakenIdentifiers,
 } from '#/usecase/register';
+import { type MailGate } from '#/service/mail-gate';
+import { signInPath } from '#/service/sign-in-path';
+import { referenceToResume, type FindHeldSignIn } from '#/service/sign-in-resume';
 import {
   renderRegistrationFailedPage,
   renderRegistrationForm,
   renderRegistrationSucceededPage,
+  type RegistrationField,
+  type RegistrationFailure,
 } from '#/view/registration-html';
 import { sendVerificationHtml } from '#/view/verification-html';
+import { requestLocale } from '#/view/request-locale';
 
 export interface RegistrationTenantLookup {
   readonly id: string;
@@ -23,10 +30,14 @@ export interface RegistrationTenantLookup {
   readonly enabled: boolean;
   readonly registrationAllowed: boolean;
   readonly verifyEmail: boolean;
+  readonly resetPasswordAllowed: boolean;
+  readonly verifyEmailTtlSeconds: number;
   readonly passwordPolicy: PasswordPolicy;
 }
 
 export interface RegistrationRouteDeps {
+  // The tags a page can be shown in; defaults to what the server ships.
+  pageLocales?: readonly string[];
   readonly database: DatabaseHandle;
   readonly findTenant: (name: string) => Promise<RegistrationTenantLookup | null>;
   // Operator configuration (ODUDU_PUBLIC_BASE_URL), never anything read off
@@ -37,11 +48,24 @@ export interface RegistrationRouteDeps {
   // tenant with verify_email on then refuses to register rather than
   // building a link some other way.
   readonly publicBaseUrl: string | undefined;
+  // The sign-in this browser parked and can still finish, if any. A link
+  // mailed from a page names it only when the page carried that request too.
+  readonly findHeldSignIn: FindHeldSignIn;
+  // The clock a mail's send time comes from.
+  readonly now: () => Date;
   readonly createAccount: (
     tx: TenantScopedDatabase,
     tenantId: string,
     input: NewAccountInput,
   ) => Promise<CreateAccountResult>;
+  readonly findTaken: (
+    tx: TenantScopedDatabase,
+    tenantId: string,
+    who: { username: string; email: string },
+  ) => Promise<TakenIdentifiers>;
+  readonly hashPassword: (password: string) => Promise<string>;
+  readonly isEmailAddress: (value: string) => boolean;
+  readonly mailGate: MailGate;
   readonly evaluatePassword: (
     candidate: string,
     policy: PasswordPolicy,
@@ -73,21 +97,34 @@ function tenantIsOpenForRegistration(
 // at all — 404, not a page saying registration is closed, the same way a
 // disabled tenant's action-token route refuses rather than explaining.
 export function registerRegistrationRoute(app: FastifyInstance, deps: RegistrationRouteDeps): void {
-  app.get<{ Params: { tenant: string } }>(
-    '/tenants/:tenant/login-actions/registration',
-    async (request, reply) => {
-      const tenant = await deps.findTenant(request.params.tenant);
-      if (!tenantIsOpenForRegistration(tenant)) {
-        return reply.code(404).send();
-      }
-      return sendVerificationHtml(reply, 200, renderRegistrationForm(request.params.tenant));
-    },
-  );
+  app.get<{
+    Params: { tenant: string };
+    Querystring: Record<string, string | string[] | undefined>;
+  }>('/tenants/:tenant/login-actions/registration', async (request, reply) => {
+    const locale = requestLocale(request, deps);
+    const tenant = await deps.findTenant(request.params.tenant);
+    if (!tenantIsOpenForRegistration(tenant)) {
+      return reply.code(404).send();
+    }
+    return sendVerificationHtml(
+      reply,
+      200,
+      renderRegistrationForm(
+        request.params.tenant,
+        {
+          rules: tenant.passwordPolicy,
+          signInPath: signInPath(request.params.tenant, request.query.return_to),
+        },
+        locale,
+      ),
+    );
+  });
 
   app.post<{
     Params: { tenant: string };
     Body: Record<string, string | string[] | undefined>;
   }>('/tenants/:tenant/login-actions/registration', async (request, reply) => {
+    const locale = requestLocale(request, deps);
     const tenant = await deps.findTenant(request.params.tenant);
     if (!tenantIsOpenForRegistration(tenant)) {
       return reply.code(404).send();
@@ -97,25 +134,60 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
     const username = firstNonEmptyString(body.username);
     const email = firstNonEmptyString(body.email);
     const candidate = readPasswordField(body.password);
-    if (candidate.kind === 'too_long') {
-      return sendVerificationHtml(
+    const again = readPasswordField(body.password_confirm);
+    const returnTo = signInPath(request.params.tenant, body.return_to);
+    // The form comes back in place, keeping the two values that are safe to
+    // keep; a password is never put into a field again.
+    const refuse = (status: number, failure: RegistrationFailure): FastifyReply =>
+      sendVerificationHtml(
         reply,
-        400,
-        renderRegistrationFailedPage([PASSWORD_TOO_LONG.message]),
+        status,
+        renderRegistrationForm(
+          request.params.tenant,
+          {
+            rules: tenant.passwordPolicy,
+            signInPath: returnTo,
+            failure,
+            ...(username === undefined ? {} : { username }),
+            ...(email === undefined ? {} : { email }),
+          },
+          locale,
+        ),
       );
+    if (candidate.kind === 'too_long') {
+      return refuse(400, { violations: [PASSWORD_TOO_LONG] });
     }
     const password =
       candidate.kind === 'present' && candidate.password.length > 0
         ? candidate.password
         : undefined;
-    if (username === undefined || email === undefined || password === undefined) {
-      return sendVerificationHtml(
-        reply,
-        400,
-        renderRegistrationFailedPage(['Username, email and password are all required.']),
-      );
+    const confirmation =
+      again.kind === 'present' && again.password.length > 0 ? again.password : undefined;
+    if (
+      username === undefined ||
+      email === undefined ||
+      password === undefined ||
+      confirmation === undefined
+    ) {
+      const missing: RegistrationField[] = [
+        ...(username === undefined ? (['username'] as const) : []),
+        ...(email === undefined ? (['email'] as const) : []),
+        ...(password === undefined ? (['password'] as const) : []),
+        ...(confirmation === undefined && password !== undefined
+          ? (['passwordConfirm'] as const)
+          : []),
+      ];
+      return refuse(400, { missing });
+    }
+    if (password.normalize('NFC') !== confirmation.normalize('NFC')) {
+      return refuse(400, { mismatch: true });
     }
 
+    // Only a mail that will carry a link needs to know the sign-in it came out of.
+    const held =
+      tenant.verifyEmail && returnTo !== null
+        ? await deps.findHeldSignIn(tenant, request.headers.cookie)
+        : null;
     const outcome = await register(
       {
         database: deps.database,
@@ -125,7 +197,15 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
         request: requestContextFrom(request),
         issuerBase: deps.publicBaseUrl,
         verifyEmailEnabled: tenant.verifyEmail,
+        resetPasswordAllowed: tenant.resetPasswordAllowed,
+        authenticationSessionId: referenceToResume(held, returnTo),
+        now: deps.now,
         createAccount: deps.createAccount,
+        findTaken: deps.findTaken,
+        hashPassword: deps.hashPassword,
+        isEmailAddress: deps.isEmailAddress,
+        mailGate: deps.mailGate,
+        verifyEmailTtlSeconds: tenant.verifyEmailTtlSeconds,
         passwordPolicy: tenant.passwordPolicy,
         evaluatePassword: deps.evaluatePassword,
       },
@@ -133,32 +213,15 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
     );
 
     if (outcome.kind === 'invalid_password') {
-      return sendVerificationHtml(
-        reply,
-        400,
-        renderRegistrationFailedPage(outcome.violations.map((v) => v.message)),
-      );
+      return refuse(400, { violations: outcome.violations });
     }
-    if (outcome.kind === 'email_taken') {
-      return sendVerificationHtml(
-        reply,
-        400,
-        renderRegistrationFailedPage(['That email address is already registered.']),
-      );
-    }
-    if (outcome.kind === 'username_taken') {
-      return sendVerificationHtml(
-        reply,
-        400,
-        renderRegistrationFailedPage(['That username is already taken.']),
-      );
-    }
-    if (outcome.kind === 'invalid_email') {
-      return sendVerificationHtml(
-        reply,
-        400,
-        renderRegistrationFailedPage(['That is not an address the email claim may carry.']),
-      );
+    if (
+      outcome.kind === 'email_taken' ||
+      outcome.kind === 'username_taken' ||
+      outcome.kind === 'invalid_email' ||
+      outcome.kind === 'invalid_username'
+    ) {
+      return refuse(400, { refusal: outcome.kind });
     }
     if (outcome.kind === 'misconfigured') {
       request.log.error(
@@ -168,10 +231,17 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
       return sendVerificationHtml(
         reply,
         500,
-        renderRegistrationFailedPage(['Registration is temporarily unavailable. Try again later.']),
+        renderRegistrationFailedPage(request.params.tenant, returnTo, locale),
       );
     }
 
-    return sendVerificationHtml(reply, 201, renderRegistrationSucceededPage(tenant.verifyEmail));
+    // 'created' and 'verification_sent' leave here through the same call, and
+    // 'verification_sent' is one outcome for a free and a held address, so
+    // what the person is shown cannot tell them apart.
+    return sendVerificationHtml(
+      reply,
+      201,
+      renderRegistrationSucceededPage(tenant.verifyEmail, returnTo, locale),
+    );
   });
 }

@@ -1,10 +1,10 @@
 import { execFileSync } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..');
-const BUNDLE_PATH = path.join(REPO_ROOT, 'apps/server/dist/main.js');
+const DIST = path.join(REPO_ROOT, 'apps/server/dist');
 
 // `@node-rs/argon2` ships a platform-specific native binary per OS/arch;
 // bundling it (rather than leaving it as a runtime `require`) makes esbuild
@@ -21,7 +21,12 @@ describe('the server bundle keeps @node-rs/argon2 external', () => {
       stdio: 'pipe',
     });
 
-    const bundle = await readFile(BUNDLE_PATH, 'utf8');
+    // main.ts loads each command and the server lazily, so the code is
+    // split across chunks beside main.js.
+    const files = (await readdir(DIST)).filter((file) => file.endsWith('.js'));
+    const bundle = (await Promise.all(files.map((f) => readFile(path.join(DIST, f), 'utf8')))).join(
+      '\n',
+    );
 
     expect(bundle).toMatch(/from\s*["']@node-rs\/argon2["']/);
     expect(bundle).not.toMatch(/["'][^"']*\.node["']/);

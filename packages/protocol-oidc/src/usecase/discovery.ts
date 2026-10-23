@@ -21,6 +21,9 @@ export interface DiscoveryUsecaseDeps {
   // `ODUDU_TRUST_PROXY` is server config, not tenant data, so it is read once
   // per process rather than resolved per tenant.
   trustProxy: boolean;
+  // The tags the server's pages are written in, the same list negotiation
+  // matches a request against; see OidcRoutesDeps.pageLocales.
+  uiLocalesSupported: readonly string[];
 }
 
 // Null for an unknown tenant, which the view layer turns into 404. A disabled
@@ -41,11 +44,13 @@ export async function resolveDiscoveryDocument(
     issuer: tenantIssuer(issuerBase, tenantName),
     claimsSupported: await deps.claimNames(tenant.id),
     scopesSupported,
+    uiLocalesSupported: deps.uiLocalesSupported,
     // `none` always belongs: it needs no key (OIDC Discovery §3).
     userinfoSigningAlgSupported: [...algs, 'none'],
     userinfoEncryptionAlgSupported: deps.userinfoEncryptionAlgSupported,
     userinfoEncryptionEncSupported: deps.userinfoEncryptionEncSupported,
     clientRegistrationEnabled: tenant.enabled && tenant.clientRegistrationPolicy !== 'disabled',
+    userRegistrationEnabled: tenant.enabled && tenant.registrationAllowed,
     tlsClientAuthEnabled: deps.trustProxy,
   });
 }

@@ -12,6 +12,7 @@ import { AuditDetail } from '#/shared/view/AuditDetail';
 import { AuditTable } from '#/shared/view/AuditTable';
 import { AppShell } from '#/shared/view/AppShell';
 import { Breadcrumb } from '#/shared/view/Breadcrumb';
+import { BrandLine } from '#/shared/view/BrandLine';
 import { Button } from '#/shared/view/Button';
 import { CreationActions, CreationForm } from '#/shared/view/CreationForm';
 import { DeleteZone } from '#/shared/view/DeleteZone';
@@ -61,6 +62,7 @@ import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
 import { FilterBar } from '#/shared/view/FilterBar';
 import { GroupPicker } from '#/shared/view/GroupPicker';
 import { PageHeader } from '#/shared/view/PageHeader';
+import { FailurePanel } from '#/shared/view/FailurePanel';
 import { PageNotFound } from '#/shared/view/PageNotFound';
 import { Pager } from '#/shared/view/Pager';
 import { Panel } from '#/shared/view/Panel';
@@ -307,6 +309,9 @@ function Lists() {
     </>
   );
 }
+
+const FAILURE_DETAILS =
+  'Error ID: 7K3QX9MD\nPage: /$tenant/clients/$id\nTime: 2026-10-22T09:30:15.123Z';
 
 const NOTHING = (): void => undefined;
 
@@ -933,6 +938,9 @@ function RecordPieces() {
           <p>The page</p>
         </AccessGate>
       </Specimen>
+      <Specimen label="BrandLine: the staff mark beside the product name">
+        <BrandLine>odudu · acme</BrandLine>
+      </Specimen>
       <Specimen label="PageNotFound: an address that is no page">
         <PageNotFound />
       </Specimen>
@@ -1248,6 +1256,28 @@ export function Gallery({
             </EmptyState>
             <Skeleton label="Checking access to Clients" lines={4} />
             <ChunkFailed onReload={NOTHING} />
+          </div>
+          <div className={styles.grid}>
+            <Specimen label="FailurePanel: a page that could not be shown; the id, the route and the time are all it carries">
+              <FailurePanel
+                announced={false}
+                kicker="Unexpected error"
+                title="Something went wrong"
+                messageLabel="Message, shown in a development build only"
+                detailsHeading="Quote this when you report the problem"
+                detailsLabel="error details"
+                text="This page could not be shown. The rest of the console is still here, and anything you had not saved on another page is still held."
+                message={null}
+                details={FAILURE_DETAILS}
+                actions={
+                  <>
+                    <Button variant="primary">Try again</Button>
+                    <Button>Back to overview</Button>
+                    <Button>Reload the console</Button>
+                  </>
+                }
+              />
+            </Specimen>
           </div>
           <Specimen label="Skeleton: a table, its own header over placeholder rows">
             <TableSkeleton label="Loading clients" columns={COLUMNS} />

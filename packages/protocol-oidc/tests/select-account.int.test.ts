@@ -312,6 +312,7 @@ beforeAll(async () => {
   await http.register(formbody);
   await http.register(
     oidcRoutes({
+      tls: false,
       database: app,
       ownerDatabase: owner,
       kek: Buffer.alloc(32, 9),
@@ -328,6 +329,7 @@ beforeAll(async () => {
   await httpClocked.register(formbody);
   await httpClocked.register(
     oidcRoutes({
+      tls: false,
       database: app,
       ownerDatabase: owner,
       kek: Buffer.alloc(32, 9),
@@ -539,7 +541,7 @@ describe('the account chooser', () => {
     });
     expect(chooser.statusCode).toBe(200);
     const authSessionId = extractAuthSessionId(chooser.body);
-    const aliceSessionId = /value="([^"]*)">alice/.exec(chooser.body)?.[1];
+    const aliceSessionId = /value="([^"]*)"[^>]*><bdi>alice</u.exec(chooser.body)?.[1];
     if (aliceSessionId === undefined) throw new Error('expected alice on the chooser page');
 
     fakeClock.advance(31 * 60_000);

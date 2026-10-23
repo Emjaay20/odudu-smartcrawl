@@ -1,4 +1,5 @@
 import formbody from '@fastify/formbody';
+import { OAUTH_ERROR_DESCRIPTIONS } from '#/service/oauth-errors';
 import { provisionTenant } from '@odudu/authn-flows';
 import { generateSigningKey, signingKeys } from '@odudu/crypto';
 import {
@@ -115,6 +116,7 @@ async function buildServer(deps: {
   await http.register(formbody);
   await http.register(
     oidcRoutes({
+      tls: false,
       database: app,
       ownerDatabase: owner,
       kek: KEK,
@@ -293,7 +295,10 @@ async function token(input: {
   });
 }
 
-const REFUSAL = { error: 'invalid_client' };
+const REFUSAL = {
+  error: 'invalid_client',
+  error_description: OAUTH_ERROR_DESCRIPTIONS.invalid_client,
+};
 
 describe('tls_client_auth at /token', () => {
   it('[RFC8705-2-03] authenticates a client whose registered subject matches the header', async () => {
@@ -451,7 +456,12 @@ describe('tls_client_auth at /token', () => {
         });
       });
       expect(response).toContain(' 401 ');
-      expect(response).toContain('{"error":"invalid_client"}');
+      expect(response).toContain(
+        JSON.stringify({
+          error: 'invalid_client',
+          error_description: OAUTH_ERROR_DESCRIPTIONS.invalid_client,
+        }),
+      );
     } finally {
       await probe.close();
     }

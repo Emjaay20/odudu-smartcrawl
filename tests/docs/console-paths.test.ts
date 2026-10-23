@@ -4,9 +4,9 @@ import { createLogger } from '../../apps/server/src/logger.js';
 import { CONSOLE_KEYS } from '../../apps/server/src/testing/console-key.js';
 import { type DatabaseHandle } from '../../packages/db/src/index.js';
 import { loadConfig } from '../../packages/kernel/src/index.js';
-import { backticked, fencedBlocks, loadDocument, sections } from './markdown.js';
+import { backticked, CONSOLE_PAGES, fencedBlocks, loadSource, sections } from './markdown.js';
 
-const GUIDE = 'docs/console-paths.md';
+const GUIDE = CONSOLE_PAGES;
 const BASE = 'http://localhost:3000';
 
 // Nothing here reaches the database: the app is built only so its router can
@@ -42,6 +42,7 @@ async function consoleRoutes(): Promise<Route[]> {
     ODUDU_LOG_LEVEL: 'silent',
   });
   const app = buildApp({
+    tls: false,
     database,
     ownerDatabase: database,
     kek: config.ODUDU_KEK,
@@ -93,7 +94,7 @@ function concrete(path: string): string {
 }
 
 function requestLines(): Route[] {
-  const document = loadDocument(GUIDE);
+  const document = loadSource(GUIDE);
   const fromHeadings = sections(document, 8).flatMap((section) =>
     backticked(section.heading).flatMap((item) => {
       const match = ENDPOINT_IN_HEADING.exec(item.trim());
@@ -114,7 +115,7 @@ function requestLines(): Route[] {
   return [...fromHeadings, ...fromCommands];
 }
 
-describe('docs/console-paths.md names only console routes the server serves', () => {
+describe('the console pages name only console routes the server serves', () => {
   it('finds the request lines, so a broken extractor fails rather than checking nothing', () => {
     // 20 when this was written: 8 headings and 12 curl commands.
     expect(requestLines().length).toBeGreaterThanOrEqual(16);

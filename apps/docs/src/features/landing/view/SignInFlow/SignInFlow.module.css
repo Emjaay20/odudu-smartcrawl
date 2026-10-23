@@ -1,0 +1,99 @@
+.flow {
+  --shadow-soft: light-dark(rgb(17 21 20 / 10%), rgb(0 0 0 / 38%));
+  --shadow-deep: light-dark(rgb(17 21 20 / 16%), rgb(0 0 0 / 55%));
+  --sheen: light-dark(rgb(255 255 255 / 85%), rgb(255 255 255 / 8%));
+  --scene-ease: cubic-bezier(0.45, 0, 0.55, 1);
+  --scene-fade: 400ms;
+  --scene-draw: 700ms;
+  min-inline-size: 0;
+}
+
+.stage {
+  position: relative;
+}
+
+.below {
+  margin-block-start: var(--space-6);
+}
+
+/* Without script, or with reduced motion: the seven captions, in order. */
+.captions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3) var(--space-6);
+  margin: var(--space-6) 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: beat;
+}
+
+.captions > li {
+  counter-increment: beat;
+  padding-inline-start: var(--space-6);
+  position: relative;
+}
+
+.captions > li::before {
+  content: counter(beat);
+  position: absolute;
+  inset-inline-start: 0;
+  color: var(--signal-active-ink);
+  font-family: var(--font-mono);
+}
+
+.caption {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.methods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.methods li {
+  padding: 2px var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  font-size: var(--type-13);
+}
+
+@media (min-width: 900px) {
+  .captions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.more {
+  margin: var(--space-6) 0 0;
+  color: var(--ink-muted);
+}
+
+/* The controls are there from the first paint wherever script runs; where it
+   does not, the captions stand in. Reduced motion shows both. */
+.captions {
+  display: grid;
+}
+
+@media (scripting: enabled) {
+  .captions {
+    display: none;
+  }
+}
+
+@media (scripting: enabled) and (prefers-reduced-motion: reduce) {
+  .captions {
+    display: grid;
+  }
+}
+
+@media print {
+  .captions {
+    display: grid;
+  }
+}

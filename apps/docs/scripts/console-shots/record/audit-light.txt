@@ -1,0 +1,172 @@
+@layer {
+  [data-react-aria-pressable] {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+}
+Odudu console
+Skip to content
+odudu · demo
+Overview
+Identity
+Subjects
+Groups
+Roles
+Applications
+Clients
+Scopes
+Registration tokens
+Security
+Sign-in flow
+Signing keys
+Sessions
+Tenant
+Settings
+Email
+Export
+Observe
+Audit trail
+Signed in as 
+admin@odudu.local
+ from 
+system
+Theme
+System
+Light
+Dark
+Switch tenant
+Sign out
+Collapse menu
+or press 
+[
+odudu · demo
+Menu
+System
+Acting in 
+demo
+ with system authority
+Back to system
+demo
+Audit trail
+Every change made in this tenant, and every one refused, with who made it and from where.
+Export these events
+Event type
+Any event type
+▾
+Any event type
+Admin change
+Admin access
+Authentication
+Session
+Token
+Credential
+Outcome
+Any outcome
+▾
+Any outcome
+Allowed
+Refused
+Failed
+Action
+Exactly as logged, such as client.update.
+Resource type
+Such as client, subject, role, group or scope.
+Resource id
+Choose a resource type first.
+Actor (subject id)
+The subject that acted, by its id.
+From
+Events at or after this minute.
+In UTC (UTC+00:00).
+To
+Events up to the end of this minute.
+In UTC (UTC+00:00).
+The request id, the address a request came from, and the caller’s tenant and client are not filters: the server does not search by them.
+Apply filters
+The audit trail has no count: it is read a page at a time, newest first, and a total over a trail this long would be an estimate.
+ 3 events loaded, from 2026-03-02 09:41:00 UTC (UTC+00:00) back to 2026-03-02 09:40:00 UTC (UTC+00:00).
+Rows with the same request id were written for one request, and are labelled as such. The server cannot filter by request, so a label groups only the rows loaded here. The caller can set the id, so it is a correlation, not evidence.
+Exports the events the applied filters match, newest first, one JSON object per line, up to 10,000. Past that the export is refused rather than cut short. The export is itself recorded in the trail.
+When
+Action
+Outcome
+Actor
+Resource
+Correlation id
+Details
+When
+recently
+Action
+subject.create
+Outcome
+allowed
+Actor
+a system administrator
+from elsewhere
+0199aa00…
+0199aa00-0000-7000-8000-000000000001
+Copy
+Resource
+subject
+0199aa00…
+ subject 0199aa00-0000-7000-8000-000000000002
+0199aa00…
+0199aa00-0000-7000-8000-000000000002
+Copy
+Correlation id
+0199aa00…
+0199aa00-0000-7000-8000-000000000003
+Copy
+Details
+Details
+When
+recently
+Action
+client.create
+Outcome
+allowed
+Actor
+a system administrator
+from elsewhere
+0199aa00…
+0199aa00-0000-7000-8000-000000000001
+Copy
+Resource
+client
+0199aa00…
+ client 0199aa00-0000-7000-8000-000000000004
+0199aa00…
+0199aa00-0000-7000-8000-000000000004
+Copy
+Correlation id
+0199aa00…
+0199aa00-0000-7000-8000-000000000005
+Copy
+Details
+Details
+When
+recently
+Action
+tenant.create
+Outcome
+allowed
+Actor
+a system administrator
+from elsewhere
+0199aa00…
+0199aa00-0000-7000-8000-000000000001
+Copy
+Resource
+tenant
+0199aa00…
+0199aa00-0000-7000-8000-000000000006
+Copy
+Correlation id
+0199aa00…
+0199aa00-0000-7000-8000-000000000007
+Copy
+Details
+Details
+Marked from elsewhere: the caller’s tenant is not this one, so this tenant cannot name them. It is a system administrator acting across tenants, or a token another tenant issued and this one refused.
+Previous
+Page 1
+Next

@@ -1,5 +1,6 @@
-import { type RenderedPage } from '@odudu/kernel';
-import { escapeHtml, page } from '#/view/document';
+import { type PageLocale, type RenderedPage } from '@odudu/kernel';
+import { escapeHtml, intro, page } from '#/view/document';
+import { bdi, t, tHtml } from '#/view/messages';
 
 export interface ConsentPageInput {
   tenant: string;
@@ -25,8 +26,10 @@ function labelOf(scope: string, labels: ConsentPageInput['scopeLabels']): string
   return Object.hasOwn(labels, scope) ? (labels[scope] ?? scope) : scope;
 }
 
+// A label is an administrator's own wording and a bare scope name is a tenant's,
+// so each is isolated from the sentence around it.
 function renderDefaultScope(scope: string, labels: ConsentPageInput['scopeLabels']): string {
-  return `<li>${escapeHtml(labelOf(scope, labels))}</li>`;
+  return `<li>${bdi(labelOf(scope, labels))}</li>`;
 }
 
 // OIDC Core §16.18's SHOULD: "the authorization server clearly identifies
@@ -35,29 +38,35 @@ function renderDefaultScope(scope: string, labels: ConsentPageInput['scopeLabels
 // §1.5's refresh token, outliving the browser session that requested it) —
 // naming it, not merely listing it alongside every other optional scope, is
 // what the clause asks for.
-const LONG_TERM_GRANT_NOTE: ReadonlyMap<string, string> = new Map([
-  ['offline_access', ' — grants ongoing access, even while you are not present'],
-]);
+const LONG_TERM_GRANT_SCOPE = 'offline_access';
 
 function renderOptionalScope(
   scope: string,
   granted: ReadonlySet<string>,
   labels: ConsentPageInput['scopeLabels'],
+  locale: PageLocale,
 ): string {
   const checked = granted.has(scope) ? ' checked' : '';
-  const label = escapeHtml(labelOf(scope, labels));
-  const note = escapeHtml(LONG_TERM_GRANT_NOTE.get(scope) ?? '');
-  return `<label><input type="checkbox" name="scope" value="${escapeHtml(scope)}"${checked}> ${label}${note}</label>`;
+  const label = labelOf(scope, labels);
+  const text =
+    scope === LONG_TERM_GRANT_SCOPE
+      ? tHtml(locale, 'consent.scope.offlineAccess', {}, { label })
+      : bdi(label);
+  return `<label><input type="checkbox" name="scope" value="${escapeHtml(scope)}"${checked}> ${text}</label>`;
 }
 
-function renderPageLinks(pages: ConsentPageInput['clientPages'], clientName: string): string {
+function renderPageLinks(
+  pages: ConsentPageInput['clientPages'],
+  clientName: string,
+  locale: PageLocale,
+): string {
   const links = [
-    [pages.clientUri, `About ${clientName}`],
-    [pages.policyUri, 'Privacy policy'],
-    [pages.tosUri, 'Terms of service'],
+    [pages.clientUri, tHtml(locale, 'consent.link.about', {}, { client: clientName })],
+    [pages.policyUri, tHtml(locale, 'consent.link.privacy')],
+    [pages.tosUri, tHtml(locale, 'consent.link.terms')],
   ]
     .filter((link): link is [string, string] => link[0] !== null)
-    .map(([href, label]) => `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>`);
+    .map(([href, label]) => `<a href="${escapeHtml(href)}">${label}</a>`);
   return links.length === 0 ? '' : `\n<p>${links.join(' · ')}</p>`;
 }
 
@@ -67,26 +76,29 @@ function renderPageLinks(pages: ConsentPageInput['clientPages'], clientName: str
 // session is refused, and that protects the endpoint rather than any one
 // control. There is no script on this page, so `script` is null and
 // `default-src 'none'` describes it exactly.
-export function renderConsentPage(input: ConsentPageInput): RenderedPage {
-  const action = `/tenants/${escapeHtml(input.tenant)}/login-actions/consent`;
+export function renderConsentPage(input: ConsentPageInput, locale: PageLocale): RenderedPage {
+  const action = `/tenants/${escapeHtml(encodeURIComponent(input.tenant))}/login-actions/consent`;
   const granted = new Set(input.alreadyGranted);
   const defaultList = input.defaultScopes
     .map((scope) => renderDefaultScope(scope, input.scopeLabels))
     .join('\n  ');
   const optionalList = input.optionalScopes
-    .map((scope) => renderOptionalScope(scope, granted, input.scopeLabels))
+    .map((scope) => renderOptionalScope(scope, granted, input.scopeLabels, locale))
     .join('\n  ');
   return page(
-    'Allow access?',
-    `<h1>${escapeHtml(input.clientName)} is asking for access</h1>${renderPageLinks(input.clientPages, input.clientName)}
+    t(locale, 'consent.title'),
+    `${intro(tHtml(locale, 'consent.heading', {}, { client: input.clientName }), input.tenant)}${renderPageLinks(input.clientPages, input.clientName, locale)}
 <form method="post" action="${action}">
   <input type="hidden" name="auth_session_id" value="${escapeHtml(input.authSessionId)}">
   <ul>
   ${defaultList}
   </ul>
   ${optionalList}
-  <button type="submit" name="decision" value="allow">Allow</button>
-  <button type="submit" name="decision" value="deny">Deny</button>
+  <button type="submit" name="decision" value="allow">${tHtml(locale, 'consent.allow')}</button>
+  <button type="submit" name="decision" value="deny" class="secondary">${tHtml(locale, 'consent.deny')}</button>
 </form>`,
+    null,
+    [],
+    locale,
   );
 }

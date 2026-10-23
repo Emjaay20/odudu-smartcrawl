@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { consoleBaseUrl, DEFAULT_CONSOLE_DIR, loadConfig } from '#/config';
+import {
+  consoleBaseUrl,
+  DEFAULT_CONSOLE_DIR,
+  DEFAULT_DOCS_DIR,
+  DEFAULT_INSTRUMENT_DIR,
+  loadConfig,
+} from '#/config';
 import { OduduError } from '#/errors';
 
 const VALID_KEK = Buffer.alloc(32, 9).toString('base64');
@@ -372,6 +378,18 @@ describe('loadConfig', () => {
     );
   });
 
+  // The issuer spells a host without its root dot, so the base the gateway
+  // signs an audience from must too.
+  it.each([
+    ['https://idp.example.', 'https://idp.example'],
+    ['https://idp.example.:8443', 'https://idp.example:8443'],
+    ['https://IDP.example:443/', 'https://idp.example'],
+  ])('normalises the base %s to %s', (given, expected) => {
+    expect(loadConfig({ ...minimal, ODUDU_PUBLIC_BASE_URL: given }).ODUDU_PUBLIC_BASE_URL).toBe(
+      expected,
+    );
+  });
+
   it('leaves ODUDU_PUBLIC_BASE_URL unset by default', () => {
     expect('ODUDU_PUBLIC_BASE_URL' in loadConfig(minimal)).toBe(false);
   });
@@ -406,5 +424,30 @@ describe('loadConfig', () => {
     expect(() => loadConfig({ ...minimal, ODUDU_PUBLIC_BASE_URL: 'not a url' })).toThrow(
       OduduError,
     );
+  });
+
+  it('serves the pages stylesheet from DEFAULT_INSTRUMENT_DIR unless told otherwise', () => {
+    expect(DEFAULT_INSTRUMENT_DIR).toBe('/app/instrument');
+    expect(loadConfig(minimal).ODUDU_INSTRUMENT_DIR).toBe(DEFAULT_INSTRUMENT_DIR);
+    expect(
+      loadConfig({ ...minimal, ODUDU_INSTRUMENT_DIR: '/srv/instrument' }).ODUDU_INSTRUMENT_DIR,
+    ).toBe('/srv/instrument');
+    expect(() => loadConfig({ ...minimal, ODUDU_INSTRUMENT_DIR: '' })).toThrow(
+      /ODUDU_INSTRUMENT_DIR/u,
+    );
+  });
+
+  it('serves the documentation from DEFAULT_DOCS_DIR, on unless ODUDU_DOCS is false', () => {
+    expect(DEFAULT_DOCS_DIR).toBe('/app/docs');
+    const config = loadConfig(minimal);
+    expect(config.ODUDU_DOCS).toBe(true);
+    expect(config.ODUDU_DOCS_DIR).toBe(DEFAULT_DOCS_DIR);
+    expect(loadConfig({ ...minimal, ODUDU_DOCS: 'false' }).ODUDU_DOCS).toBe(false);
+    expect(loadConfig({ ...minimal, ODUDU_DOCS: 'true' }).ODUDU_DOCS).toBe(true);
+    expect(loadConfig({ ...minimal, ODUDU_DOCS_DIR: '/srv/docs' }).ODUDU_DOCS_DIR).toBe(
+      '/srv/docs',
+    );
+    expect(() => loadConfig({ ...minimal, ODUDU_DOCS: 'off' })).toThrow(/ODUDU_DOCS/u);
+    expect(() => loadConfig({ ...minimal, ODUDU_DOCS_DIR: '' })).toThrow(/ODUDU_DOCS_DIR/u);
   });
 });

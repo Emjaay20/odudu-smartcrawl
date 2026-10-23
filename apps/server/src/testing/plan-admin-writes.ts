@@ -60,6 +60,10 @@ export async function driveAdminWrites(
     sql`select id from groups where tenant_id = ${t} and name ~ '^group-4[0-9]+$' order by name limit 1`,
     'group',
   );
+  const builtinVictim = await pick(
+    sql`select id from client_scopes where tenant_id = ${t} and name = 'phone'`,
+    'built-in scope',
+  );
   const victimScope = await pick(
     sql`select id from client_scopes where tenant_id = ${t} and name ~ '^scope-9[0-9]+$' order by name limit 1`,
     'scope',
@@ -237,6 +241,15 @@ export async function driveAdminWrites(
       },
     ],
     ['delete a scope', { method: 'DELETE', url: `${T}/scopes/${victimScope}` }],
+    [
+      'delete a built-in scope, naming it',
+      { method: 'DELETE', url: `${T}/scopes/${builtinVictim}?confirm=phone` },
+    ],
+    ['restore the built-in scopes', { method: 'POST', url: `${T}/scopes/restore-builtins` }],
+    [
+      'restore them again, with none missing',
+      { method: 'POST', url: `${T}/scopes/restore-builtins` },
+    ],
     [
       'mint a registration token',
       { method: 'POST', url: `${T}/registration-tokens`, body: { uses: 1, ttl_seconds: 3600 } },

@@ -2,10 +2,11 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, globSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { loadDocument, REPO_ROOT, scanFences, type Document } from './markdown.js';
+import { plannedGenerated, underGenerated } from './generated-links.js';
+import { type Document, loadSource, PROTOCOL_PAGES, REPO_ROOT, scanFences } from './markdown.js';
 
 // How many of each kind of reference each document carried when these checks
-// were written — a floor, not a count to keep current. `docs/request-paths.md`
+// were written — a floor, not a count to keep current. The protocol pages
 // names no pnpm command; the check still runs over it so that the first one
 // added is covered. Links are not here: every document is held to those,
 // below, because a link is navigation and is broken whenever it was written.
@@ -15,8 +16,10 @@ interface Floors {
 }
 
 const DOCUMENTS: readonly (readonly [name: string, floors: Floors])[] = [
-  ['README.md', { pnpm: 4, paths: 6 }],
-  ['docs/request-paths.md', { pnpm: 0, paths: 5 }],
+  // The front door names no command and no path outside its links; the checks still run
+  // over it so that the first one added is covered.
+  ['README.md', { pnpm: 0, paths: 0 }],
+  [PROTOCOL_PAGES, { pnpm: 0, paths: 4 }],
 ];
 
 function scriptsOf(packageJson: string): Set<string> {
@@ -145,7 +148,7 @@ describe('what the documents tell a newcomer to run still exists', () => {
   });
 
   for (const [name, floors] of DOCUMENTS) {
-    const document = loadDocument(name);
+    const document = loadSource(name);
 
     it(`every pnpm script ${name} names is defined`, () => {
       const undefinedScripts = foundIn(
@@ -188,10 +191,21 @@ describe('what the documents tell a newcomer to run still exists', () => {
 // is exactly as current as whoever last remembered to extend it.
 const NOT_OURS = new Set(['node_modules', 'dist', 'coverage', '.git', '.superpowers', '.turbo']);
 
+// The docs build writes these from the code and git ignores them; the build
+// checks their links itself, and a checkout that has not built has none.
+const GENERATED = 'apps/docs/content/en/reference/generated';
+
+// A link into a generated directory has no file to find in a checkout that has not built; the
+// docs build checks it as a route, and here it must be a page the generator plans to write.
+export function linkResolves(absolute: string, planned: ReadonlySet<string>): boolean {
+  return underGenerated(absolute) ? planned.has(absolute) : existsSync(absolute);
+}
+
 function everyDocument(): string[] {
   return globSync('**/*.md', {
     cwd: REPO_ROOT,
-    exclude: (entry) => NOT_OURS.has(path.basename(entry)),
+    exclude: (entry) =>
+      NOT_OURS.has(path.basename(entry)) || entry.split(path.sep).join('/').endsWith(GENERATED),
   }).sort();
 }
 
@@ -202,20 +216,60 @@ describe('every link in every document resolves', () => {
     expect(documents.length).toBeGreaterThan(80);
   });
 
-  it('resolves each relative link against the file that makes it', () => {
+  it('covers the ADRs, NEXT, phase notes, specs, the archive, README, CLAUDE and the site source', () => {
+    const wanted = [
+      'README.md',
+      'CLAUDE.md',
+      'docs/NEXT.md',
+      'docs/README.md',
+      'docs/adr/0043-localization-is-a-catalogue-a-negotiation-and-a-set-of-owners.md',
+      'docs/phases/p4g.md',
+      'docs/superpowers/specs/2026-09-10-odudu-design.md',
+      'apps/docs/content/en/roadmap.md',
+      'apps/docs/content/en/guides/sign-a-user-in.md',
+    ];
+    expect(wanted.filter((file) => !documents.includes(file))).toEqual([]);
+    expect(documents.some((file) => file.startsWith('docs/archive/'))).toBe(true);
+  });
+
+  it('resolves each relative link against the file that makes it', async () => {
+    const planned = await plannedGenerated();
     let links = 0;
     const broken: string[] = [];
     for (const name of documents) {
-      const document = loadDocument(name);
+      const document = loadSource(name);
       const from = path.dirname(path.join(REPO_ROOT, name));
       for (const target of linkTargets(document)) {
         links += 1;
-        if (!existsSync(path.resolve(from, target))) broken.push(`${name} -> ${target}`);
+        if (!linkResolves(path.resolve(from, target), planned)) broken.push(`${name} -> ${target}`);
       }
     }
 
     expect(links, 'the link extractor has stopped recognising links').toBeGreaterThan(50);
     expect(broken, 'links to files that are not in this repository').toEqual([]);
+  });
+});
+
+describe('a link into the generated reference', () => {
+  const root = path.join(REPO_ROOT, 'apps/docs/content/en/reference/generated');
+
+  it('passes when it names a page the generator plans, on a tree that has not built', async () => {
+    const planned = await plannedGenerated();
+    expect(planned.has(path.join(root, 'configuration.md'))).toBe(true);
+    expect(linkResolves(path.join(root, 'configuration.md'), planned)).toBe(true);
+    expect(linkResolves(path.join(root, 'admin-api/subjects.md'), planned)).toBe(true);
+  });
+
+  it('fails when it names a generated page nothing plans', async () => {
+    const planned = await plannedGenerated();
+    expect(linkResolves(path.join(root, 'configuraton.md'), planned)).toBe(false);
+    expect(linkResolves(path.join(root, 'admin-api/nothing.md'), planned)).toBe(false);
+  });
+
+  it('leaves a link outside the generated directories to the file system', async () => {
+    const planned = await plannedGenerated();
+    expect(linkResolves(path.join(REPO_ROOT, 'README.md'), planned)).toBe(true);
+    expect(linkResolves(path.join(REPO_ROOT, 'no-such-file.md'), planned)).toBe(false);
   });
 });
 

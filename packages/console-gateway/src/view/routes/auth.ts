@@ -1,3 +1,5 @@
+import { negotiatePageLocale } from '@odudu/i18n';
+import { withPageTheme } from '@odudu/kernel';
 import { type FastifyInstance, type FastifyReply } from 'fastify';
 import {
   clearedLoginCookie,
@@ -36,7 +38,12 @@ function single(query: unknown, name: string): string | undefined {
 
 function refuse(reply: FastifyReply, status: number, cookies: readonly string[]): FastifyReply {
   if (cookies.length > 0) reply.header('set-cookie', [...cookies]);
-  return sendPage(reply, status, renderSignInRefused());
+  // Not signed in, so the browser's preference alone chooses the language.
+  const locale = withPageTheme(
+    negotiatePageLocale({ acceptLanguage: reply.request.headers['accept-language'] }),
+    reply.request.headers.cookie,
+  );
+  return sendPage(reply, status, renderSignInRefused(locale));
 }
 
 function redirect(reply: FastifyReply, location: string, cookies: readonly string[]): FastifyReply {

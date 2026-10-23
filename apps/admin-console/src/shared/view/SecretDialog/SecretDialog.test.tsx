@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
+import fixture from '#/shared/view/SecretDialog/secretDialogNodes.json';
 import { Button } from '#/shared/view/Button';
 import { SecretDialog } from '#/shared/view/SecretDialog/SecretDialog';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
@@ -176,4 +177,25 @@ it('asks afresh when a different secret replaces the one shown, without keying o
   const keys = reactKeysIn(screen.getByRole('checkbox'));
   expect(keys.length).toBeGreaterThan(0);
   expect(keys.filter((key) => key.includes(SECRET) || key.includes(other))).toEqual([]);
+});
+
+// The documentation's capture refuses a page that shows a secret once, by the
+// text nodes this dialog renders. The fixture is what the real component
+// renders; apps/docs/scripts/console-shots/fixtures/secret-dialog.json is its
+// copy, and tests/lint/secret-dialog-fixture.test.ts holds the two equal.
+it('renders the text nodes the capture guard recognises it by', () => {
+  render(
+    <SecretDialog
+      secret={SECRET}
+      title="New client secret"
+      label="client secret"
+      onClose={vi.fn()}
+    />,
+  );
+  const walker = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT);
+  const nodes: string[] = [];
+  for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+    nodes.push(node.nodeValue ?? '');
+  }
+  expect(nodes).toEqual(fixture);
 });

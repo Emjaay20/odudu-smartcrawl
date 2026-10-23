@@ -305,6 +305,7 @@ describe('handleRequiredActionSubmission — who is allowed to act', () => {
       kind: 'rejected',
       action: 'generate-recovery-codes',
       subjectId: 'subject-1',
+      reason: 'codes_not_saved',
     });
   });
 
@@ -368,6 +369,7 @@ describe('handleRequiredActionSubmission — enrolling the owed factor', () => {
       authSessionId: AUTH_SESSION_ID,
       subjectId: 'subject-1',
       action: 'configure-totp',
+      reason: 'code_mismatch',
     });
   });
 
@@ -416,8 +418,12 @@ describe('handleRequiredActionSubmission — changing an owed password', () => {
     completeUpdatePassword.mockResolvedValue({
       kind: 'rejected',
       violations: [
-        'Password must be at least 8 characters long.',
-        'Password must contain a digit.',
+        {
+          rule: 'min-length',
+          message: 'Password must be at least 8 characters long.',
+          minLength: 8,
+        },
+        { rule: 'require-digit', message: 'Password must contain a digit.' },
       ],
     });
 
@@ -436,8 +442,12 @@ describe('handleRequiredActionSubmission — changing an owed password', () => {
       kind: 'password_rejected',
       authSessionId: AUTH_SESSION_ID,
       violations: [
-        'Password must be at least 8 characters long.',
-        'Password must contain a digit.',
+        {
+          rule: 'min-length',
+          message: 'Password must be at least 8 characters long.',
+          minLength: 8,
+        },
+        { rule: 'require-digit', message: 'Password must contain a digit.' },
       ],
     });
   });
@@ -461,7 +471,11 @@ describe('handleRequiredActionSubmission — changing an owed password', () => {
       REQUEST,
     );
 
-    expect(outcome).toMatchObject({ kind: 'password_rejected', authSessionId: AUTH_SESSION_ID });
+    expect(outcome).toMatchObject({
+      kind: 'password_rejected',
+      authSessionId: AUTH_SESSION_ID,
+      violations: [{ rule: 'superseded' }],
+    });
     expect(outcome).not.toMatchObject({ kind: 'completed' });
   });
 
@@ -548,7 +562,11 @@ describe('handleRequiredActionSubmission — enrolling a passkey', () => {
       expect.objectContaining({ response: undefined }),
       REQUEST,
     );
-    expect(outcome).toMatchObject({ kind: 'rejected', action: 'configure-passkey' });
+    expect(outcome).toMatchObject({
+      kind: 'rejected',
+      action: 'configure-passkey',
+      reason: 'passkey_not_added',
+    });
   });
 
   it('reports a spent challenge back to the same attempt', async () => {

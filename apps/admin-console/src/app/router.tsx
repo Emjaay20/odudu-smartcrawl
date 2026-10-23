@@ -11,9 +11,12 @@ import {
 import { RouterProvider as AriaRouterProvider } from 'react-aria-components';
 import { lazyFeatureRoute } from '#/app/lazyFeatureRoute';
 import { NavigationGuard } from '#/app/NavigationGuard';
+import { RouteFailure, ShellFailure } from '#/features/failure';
 import { ConsoleHome, SessionGate } from '#/features/session';
 import { pendingPage, PendingFrame, TenantShell } from '#/features/shell';
+import { PRODUCT_NAME } from '#/shared/service/product';
 import { parseSearch, stringifySearch } from '#/shared/service/search';
+import { LostFrame } from '#/shared/view/LostFrame';
 import { PageNotFound } from '#/shared/view/PageNotFound';
 
 // React Aria's links navigate through the router, so a rail link is still a
@@ -37,13 +40,19 @@ function Root() {
 
 function Lost() {
   return (
-    <main id="main" tabIndex={-1}>
+    <LostFrame brand={PRODUCT_NAME}>
       <PageNotFound />
-    </main>
+    </LostFrame>
   );
 }
 
-const root = createRootRoute({ component: Root, notFoundComponent: Lost });
+// A failure inside a page leaves the shell standing; the root and tenant
+// routes are what draw the shell, so a failure in either has none to leave.
+const root = createRootRoute({
+  component: Root,
+  notFoundComponent: Lost,
+  errorComponent: ShellFailure,
+});
 
 const home = createRoute({ getParentRoute: () => root, path: '/', component: ConsoleHome });
 
@@ -59,6 +68,7 @@ const tenant = createRoute({
     );
   },
   notFoundComponent: PageNotFound,
+  errorComponent: ShellFailure,
 });
 
 const Overview = lazyFeatureRoute(
@@ -562,6 +572,10 @@ export function createConsoleRouter(history: RouterHistory = createBrowserHistor
     history,
     parseSearch,
     stringifySearch,
+    defaultErrorComponent: RouteFailure,
+    // The router's own boundary around the root match draws an unbranded
+    // panel; without it a failure there reaches the console's root fallback.
+    disableGlobalCatchBoundary: true,
   });
 }
 

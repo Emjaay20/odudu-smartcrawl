@@ -56,6 +56,7 @@ function buildTestApp(logLines?: string[]): FastifyInstance {
     ODUDU_LOG_LEVEL: logLines === undefined ? 'silent' : 'trace',
   });
   return buildApp({
+    tls: false,
     database: appDb,
     ownerDatabase: owner,
     kek: KEK,

@@ -1,0 +1,65 @@
+@layer {
+  [data-react-aria-pressable] {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+}
+Odudu console
+Skip to content
+odudu · system
+System
+Tenants
+System administrators
+Overview
+Identity
+Subjects
+Groups
+Roles
+Applications
+Clients
+Scopes
+Registration tokens
+Security
+Sign-in flow
+Signing keys
+Sessions
+Tenant
+Settings
+Email
+Export
+Observe
+Audit trail
+Signed in as 
+admin@odudu.local
+Theme
+System
+Light
+Dark
+Switch tenant
+Sign out
+Collapse menu
+or press 
+[
+odudu · system
+Menu
+System
+›
+Tenants
+›
+Create a tenant
+‹
+Tenants
+Create a tenant
+Where it has got to is kept in this tab, so a reload carries on from the last request that landed.
+1
+The tenant
+2
+Its first administrator
+3
+Done
+Name
+A tenant name must be 1-63 lowercase letters, digits or hyphens, and must not start or end with a hyphen.
+Issuer
+http://localhost:3000/tenants/demo
+Display name
+Optional. What the console and the tenant's pages call it.
+Create tenant

@@ -1,3 +1,4 @@
+import { revokeRecoveryCodesQuerySchema } from '@odudu/contracts/admin';
 import { type Database, type TenantScopedDatabase } from '@odudu/db';
 import {
   clearLockout,
@@ -142,6 +143,7 @@ export function revokeRecoveryCodesHandler(deps: AccountRecoveryRouteDeps): Admi
       throw new Error('protocol-admin: DELETE recovery-codes route received no :id');
     }
 
+    const query = revokeRecoveryCodesQuerySchema.parse(request.query);
     const callerCapabilities = await deps.callerCapabilities(
       principal.issuerTenantId,
       principal.subjectId,
@@ -154,6 +156,8 @@ export function revokeRecoveryCodesHandler(deps: AccountRecoveryRouteDeps): Admi
         {
           tenantId: targetTenantId,
           subjectId: id,
+          requireNewSet: query.require_new_set !== 'false',
+          now: deps.now(),
           callerCapabilities,
           actorSubjectId: principal.subjectId,
           actorTenantId: principal.issuerTenantId,

@@ -11,6 +11,7 @@ import { expectCrossTenantMethodProbe } from '@odudu/db/testing';
 import { newId } from '@odudu/kernel';
 import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/testkit';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { type AdminMutationAction } from '#/service/admin-mutation-actions';
 import { auditRepository } from '#/repository/audit';
 import { type AuditEventInput } from '#/service/vocabulary';
 
@@ -44,6 +45,10 @@ afterAll(async () => {
 async function seedTenant(tx: TenantScopedDatabase, tenantId: string): Promise<void> {
   await tx.insert(tenants).values({ id: tenantId, name: `tenant-${tenantId}` });
 }
+
+// The types refuse an action outside the admin list, so this is reachable only by
+// a caller that bypasses them; the repository still has to treat it as the row it is.
+const collidingAction = 'token.revoke' as unknown as AdminMutationAction;
 
 describe('record and list', () => {
   it('round-trips a token/token.issue row', async () => {
@@ -311,7 +316,7 @@ describe('record and list', () => {
       await seedTenant(tx, tenantId);
       await auditRepository(tx).record({
         eventType: 'admin_mutation',
-        action: 'token.revoke',
+        action: collidingAction,
         outcome: 'allowed',
         detail: { name: { before: 'old', after: 'new' } },
       });
@@ -364,7 +369,7 @@ describe('recordAll', () => {
       await auditRepository(tx).recordAll([
         {
           eventType: 'admin_mutation',
-          action: 'token.revoke',
+          action: collidingAction,
           outcome: 'allowed',
           detail: { name: { before: 'old', after: 'new' } },
         },

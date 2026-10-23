@@ -4,6 +4,7 @@ import { usePlaceholderDue } from '#/features/session/usecase/usePlaceholderDue'
 import { SignedInContext } from '#/features/session/usecase/useSignedIn';
 import { PrincipalChanged } from '#/features/session/view/PrincipalChanged';
 import { SessionStatus } from '#/features/session/view/SessionStatus';
+import { CONSOLE_TITLE } from '#/shared/service/product';
 import { Button } from '#/shared/view/Button';
 import { EmptyState } from '#/shared/view/EmptyState';
 import { QuietSkeletons, Skeleton } from '#/shared/view/Skeleton';
@@ -19,7 +20,7 @@ function Reading({ frame }: { frame: ReactNode }) {
       {due ? (
         <QuietSkeletons>
           {frame ?? (
-            <SessionStatus title="Odudu console">
+            <SessionStatus title={CONSOLE_TITLE}>
               <Skeleton label="Reading your session" lines={2} />
             </SessionStatus>
           )}
@@ -36,7 +37,7 @@ export function SessionGate({ pending, children }: { pending?: ReactNode; childr
   if (boot.kind === 'loading') return <Reading frame={pending} />;
   if (boot.kind === 'failed') {
     return (
-      <SessionStatus title="Odudu console">
+      <SessionStatus title={CONSOLE_TITLE}>
         <EmptyState
           variant="failed"
           title="The console could not reach the server"

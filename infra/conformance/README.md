@@ -82,6 +82,10 @@ one definition built on `request.host`, which keeps the port
 `issuer.test.ts`). A run on 443 still never exercises it, which is why
 that test drives Fastify directly rather than relying on this stack.
 
+The issuer is now the configured `ODUDU_PUBLIC_BASE_URL`, `https://proxy` in this stack's
+`compose.yaml`: the name the suite reaches the proxy by, and the host its plan files fetch discovery
+from. They must name one host, or the suite's check that the issuer matches the discovery URL fails.
+
 ## Spike 3: can Config OP be driven without a browser?
 
 **Yes — fully, through the suite's own HTTP API, and in dev mode it does
@@ -641,15 +645,15 @@ fired. Every occurrence was individually confirmed from its own log, not
 sampled; the full breakdown, including which modules share a condition,
 is in [ADR 0031](../../docs/adr/0031-the-dynamic-op-plan-cannot-pass-code-only.md).
 
-| Condition                                                              | Occurrences | Cause                                                                                      |
-| ---------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------ |
-| `EnsureServerConfigurationSupportsPrivateKeyJwt`                       | 15          | **P3b**: `private_key_jwt` client authentication not implemented (`docs/request-paths.md`) |
-| `CheckIfAuthorizationEndpointError` (`invalid_request`)                | 11          | Mandatory PKCE — ADR 0016                                                                  |
-| `CheckIfAuthorizationEndpointError` (`request_uri_not_supported`)      | 2           | **P13**: `request_uri` refused (`docs/request-paths.md`)                                   |
-| `OIDCCCheckDiscEndpointResponseTypesSupportedDynamic`                  | 1           | `response_types_supported` lacks `id_token`/`token id_token` — ADR 0031                    |
-| `OIDCCCheckDiscEndpointGrantTypesSupportedDynamic`                     | 1           | `grant_types_supported` lacks `implicit` — ADR 0031                                        |
-| `CheckDiscEndpointRequestObjectSigningAlgValuesSupportedContainsRS256` | 1           | **P13** corollary: no request-object support, so the alg list is never advertised          |
-| `CheckDiscEndpointUserinfoSigningAlgValuesSupportedContainsRS256`      | 1           | **P3b** corollary: `/userinfo` never signs a response yet                                  |
+| Condition                                                              | Occurrences | Cause                                                                                                |
+| ---------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------- |
+| `EnsureServerConfigurationSupportsPrivateKeyJwt`                       | 15          | **P3b**: `private_key_jwt` client authentication not implemented (`apps/docs/content/en/roadmap.md`) |
+| `CheckIfAuthorizationEndpointError` (`invalid_request`)                | 11          | Mandatory PKCE — ADR 0016                                                                            |
+| `CheckIfAuthorizationEndpointError` (`request_uri_not_supported`)      | 2           | **P13**: `request_uri` refused (`apps/docs/content/en/roadmap.md`)                                   |
+| `OIDCCCheckDiscEndpointResponseTypesSupportedDynamic`                  | 1           | `response_types_supported` lacks `id_token`/`token id_token` — ADR 0031                              |
+| `OIDCCCheckDiscEndpointGrantTypesSupportedDynamic`                     | 1           | `grant_types_supported` lacks `implicit` — ADR 0031                                                  |
+| `CheckDiscEndpointRequestObjectSigningAlgValuesSupportedContainsRS256` | 1           | **P13** corollary: no request-object support, so the alg list is never advertised                    |
+| `CheckDiscEndpointUserinfoSigningAlgValuesSupportedContainsRS256`      | 1           | **P3b** corollary: `/userinfo` never signs a response yet                                            |
 
 Plus 3 self-skips (2 `subject_types_supported` has no `pairwise`, ADR
 0031; 1 `id_token_signing_alg_values_supported` has no `none`,
@@ -685,7 +689,7 @@ result.
 
 **No defect was found in this phase's work.** Every failure and
 self-skip traces to a decision already on record — ADR 0016, ADR 0031, or
-`docs/request-paths.md`'s existing P3b/P13/P4 placements.
+`apps/docs/content/en/roadmap.md`'s existing P3b/P13/P4 placements.
 
 **The unit that makes a multi-module plan's run legible is the condition,
 not the module.** A module can fail several conditions at once, and every
@@ -702,7 +706,7 @@ is the only one behind real TLS with `ODUDU_TLS` and `ODUDU_TRUST_PROXY`
 on, and so the only place the console's `__Host-` cookies can be seen
 leaving the server. It brings up `compose.yaml` under its own project,
 `odudu-console-check`, without the suite. It seeds a tenant and an
-administrator, then plays the browser with curl against `https://odudu`,
+administrator, then plays the browser with curl against `https://proxy`,
 the stack's `ODUDU_PUBLIC_BASE_URL`, reached through the proxy's published
 port and trusting the proxy's own certificate. It covers the login, the
 tenant's sign-in form, the callback and `GET /console/api/session`, and
@@ -716,7 +720,7 @@ Config OP, and it gates the build. A local run printed, after its compose and se
 output:
 
 ```
-ok: set-cookie: __Host-odudu-console-login=…; HttpOnly; SameSite=Lax; Path=/; Max-Age=600; Secure
+ok: set-cookie: __Host-odudu-console-login=…; HttpOnly; SameSite=Lax; Path=/; Max-Age=1800; Secure
 ok: set-cookie: __Host-odudu-console=…; HttpOnly; SameSite=Strict; Path=/; Secure
 console check passed
 ```

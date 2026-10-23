@@ -1,9 +1,11 @@
+import { actionLink } from '#/service/action-link';
 import { withTenant, type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { auditRepository, type RequestContext } from '@odudu/domain-audit';
 import { outboxRepository, renderRequiredActions } from '@odudu/email';
 import { actionTokenRepository } from '#/repository/action-tokens';
 import { type PasswordPolicy, type PolicyViolation } from '#/repository/tenant-settings';
-import { actionLabel, orderedActions, type LinkedRequiredAction } from '#/service/required-actions';
+import { withMinimum } from '#/service/password-violations';
+import { orderedActions, type LinkedRequiredAction } from '#/service/required-actions';
 import { type ActionLinkTenant } from '#/usecase/reset-password';
 
 export interface ActionsLink {
@@ -18,7 +20,11 @@ export interface ActionsLink {
 export async function enqueueActionsLink(
   tx: TenantScopedDatabase,
   tenant: ActionLinkTenant,
-  user: { readonly subjectId: string; readonly email: string },
+  user: {
+    readonly subjectId: string;
+    readonly email: string;
+    readonly locale?: string | null | undefined;
+  },
   link: ActionsLink,
 ): Promise<void> {
   const actions = orderedActions(link.actions);
@@ -32,14 +38,16 @@ export async function enqueueActionsLink(
     actions,
     ttlSeconds: await tokens.lifetimeOf(tenant.tenantId, 'execute_actions'),
   });
-  const url = `${tenant.issuerBase}/tenants/${tenant.tenantName}/login-actions/action-token?key=${encodeURIComponent(token)}`;
+  const url = actionLink(tenant.issuerBase, tenant.tenantName, token);
   await outboxRepository(tx).enqueue({
     tenantId: tenant.tenantId,
     ...renderRequiredActions({
       to: user.email,
       link: url,
       tenantDisplayName: tenant.tenantDisplayName,
-      actions: actions.map(actionLabel),
+      now: tenant.now(),
+      actions,
+      locale: user.locale,
     }),
   });
 }
@@ -79,7 +87,7 @@ export interface CompleteRequiredActionsDeps {
 }
 
 export type CompleteRequiredActionsResult =
-  | { kind: 'done'; remaining: readonly string[] }
+  | { kind: 'done'; remaining: readonly LinkedRequiredAction[] }
   | { kind: 'invalid' }
   | { kind: 'password_required' }
   | { kind: 'invalid_password'; violations: PolicyViolation[] };
@@ -114,7 +122,12 @@ export async function completeRequiredActions(
           username,
           email: peeked.email,
         });
-        if (violations.length > 0) return { kind: 'invalid_password', violations };
+        if (violations.length > 0) {
+          return {
+            kind: 'invalid_password',
+            violations: withMinimum(violations, deps.passwordPolicy.minLength),
+          };
+        }
         const unchanged = await deps.unchangedPasswordViolations(tx, peeked.subjectId, newPassword);
         if (unchanged.length > 0) return { kind: 'invalid_password', violations: unchanged };
       }
@@ -138,7 +151,7 @@ export async function completeRequiredActions(
       const remaining = actions.filter((action) => action !== 'update-password');
       if (remaining.length > 0)
         await deps.addRequiredActions(tx, deps.tenantId, record.subjectId, remaining);
-      return { kind: 'done', remaining: remaining.map(actionLabel) };
+      return { kind: 'done', remaining };
     },
     deps.request,
   );

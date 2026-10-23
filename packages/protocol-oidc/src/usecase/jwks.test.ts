@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { resolveJwks } from '#/usecase/jwks';
 
+const PASSWORD_RULES = {
+  minLength: 15,
+  requireDigit: false,
+  requireUppercase: false,
+  requireLowercase: false,
+  requireSpecial: false,
+};
+
 const publicJwk = { kty: 'RSA', n: 'n-value', e: 'AQAB' };
 
 describe('resolveJwks', () => {
@@ -27,8 +35,11 @@ describe('resolveJwks', () => {
             rememberMeMaxSeconds: 2_592_000,
             rememberMeAllowed: false,
             loginWithEmail: false,
+            registrationAllowed: false,
+            resetPasswordAllowed: false,
             maxSessionsPerBrowser: 25,
             clientRegistrationPolicy: 'disabled',
+            passwordRules: PASSWORD_RULES,
           }),
         listPublishableKeys: () => {
           calledListKeys = true;
@@ -55,8 +66,11 @@ describe('resolveJwks', () => {
             rememberMeMaxSeconds: 2_592_000,
             rememberMeAllowed: false,
             loginWithEmail: false,
+            registrationAllowed: false,
+            resetPasswordAllowed: false,
             maxSessionsPerBrowser: 25,
             clientRegistrationPolicy: 'disabled',
+            passwordRules: PASSWORD_RULES,
           }),
         listPublishableKeys: () => Promise.resolve([{ kid: 'a', alg: 'RS256', publicJwk }]),
       },

@@ -11,40 +11,62 @@ import {
   registerResetPasswordRoute,
   type CreateAccountResult,
   type NewAccountInput,
+  type TakenIdentifiers,
+  type VerifiedAccountInput,
+  type MailGate,
 } from '@odudu/account';
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { requiredActionRepository } from '@odudu/authn-flows';
 import { consoleGateway } from '@odudu/console-gateway';
+import { instrumentRoutes } from '@odudu/instrument';
 import {
   credentialRepository,
   evaluatePassword,
-  hashPassword,
+  hashUserPassword,
+  isEmailAddress,
+  lockEmailForCreation,
   REUSED_PASSWORD,
   subjectRepository,
   userRepository,
-  verifyPassword,
+  verifyUserPassword,
 } from '@odudu/domain-identity';
-import { DEFAULT_CONSOLE_DIR, DEFAULT_OUTBOX_MAX_ATTEMPTS, newId } from '@odudu/kernel';
+import {
+  DEFAULT_CONSOLE_DIR,
+  DEFAULT_INSTRUMENT_DIR,
+  DEFAULT_OUTBOX_MAX_ATTEMPTS,
+  newId,
+  systemClock,
+} from '@odudu/kernel';
 import { adminRoutes, composeUserSubject } from '@odudu/protocol-admin';
 import {
   clientKeySet,
+  configureIssuerBase,
+  endAllAccess,
+  tenantIssuer,
   oidcRoutes,
+  answerNotFound,
+  answerServerError,
   sendThrottledPage,
+  type UnroutedDeps,
   standardClaimMappers,
   type AuditRefusalBudget,
 } from '@odudu/protocol-oidc';
+import { docsRoutes } from '@odudu/web-assets';
 import Fastify, {
   type FastifyError,
   type FastifyInstance,
   type FastifyReply,
+  type RouteOptions,
   type RawServerDefault,
 } from 'fastify';
 import { type IncomingMessage, type ServerResponse } from 'node:http';
 import { type Logger as PinoLogger } from 'pino';
+import { findHeldSignInIn } from '#/held-sign-in';
 import { createClientKeyRequest, defaultClientKeyLookup } from '#/client-key-transport';
 import { type ConsoleKeys, missingConsoleKey } from '#/console-key';
 import { registerHealth } from '#/health';
 import { type RateLimiter, slidingWindow } from '#/throttle';
+import { mailGate as createMailGate } from '#/mail-limiter';
 import { neutraliseRequestInput } from '#/input-hygiene';
 import { loginBudgetKey } from '#/login-throttle';
 import { throttleOrigin } from '#/throttle-origin';
@@ -97,8 +119,28 @@ export interface AppDeps {
    * caller with no reason to move it can leave it unset.
    */
   readonly consoleDir?: string;
+  /**
+   * `ODUDU_INSTRUMENT_DIR`: the built stylesheet and fonts every rendered
+   * page links, read once at registration.
+   */
+  readonly instrumentDir?: string;
+  /**
+   * `ODUDU_DOCS_DIR` while `ODUDU_DOCS` is on: the built documentation served
+   * under `/docs`. Unset registers nothing, so `/docs` is as unknown as any
+   * other path.
+   */
+  readonly docsDir?: string | undefined;
+  /**
+   * Whether the session and sign-in cookies take the `__Host-` / `__Secure-`
+   * prefix and `Secure`. One value for the cookie the login page sets and the
+   * pages that read it back, so the two cannot disagree.
+   * `ODUDU_TLS`; required, so a caller cannot lose it silently.
+   */
+  readonly tls: boolean;
   /** The console gateway's clock, so a test can age a pending sign-in. */
   readonly consoleNow?: () => Date;
+  /** Called with every route as it is registered, for a tool that lists what the app serves. */
+  readonly onRoute?: (route: RouteOptions) => void;
   /**
    * Whether to trust `X-Forwarded-*` headers when deriving `request.ip`.
    * Defaults to `false`: with no reverse proxy in front of the server,
@@ -119,6 +161,12 @@ export interface AppDeps {
    * `DEFAULT_THROTTLE`; `main.ts` passes what `ODUDU_THROTTLE_*` says.
    */
   readonly throttle?: ThrottleSettings;
+  /**
+   * Whether a mail may be queued for an address now (verification, reset,
+   * "you already have an account"). Defaults to `mailGate` in
+   * `#/mail-limiter`: three an hour per tenant and address, in process.
+   */
+  readonly mailGate?: MailGate;
   /**
    * ADR 0023's other half: the per-`client_id` budget on failed
    * `client_secret_basic`/`client_secret_post` attempts at `/token`. A
@@ -251,7 +299,40 @@ async function createAccount(
     tenantId,
     subjectId,
     type: 'password',
-    secret: { kind: 'password', hash: await hashPassword(input.password) },
+    secret: { kind: 'password', hash: await hashUserPassword(input.password) },
+  });
+  return { subjectId };
+}
+
+async function findTaken(
+  tx: TenantScopedDatabase,
+  _tenantId: string,
+  who: { username: string; email: string },
+): Promise<TakenIdentifiers> {
+  const users = userRepository(tx);
+  const byName = await users.byUsername(who.username);
+  return { username: byName !== null, emailOwner: await users.holderOfEmail(who.email) };
+}
+
+// A registration that waited for its mailed link: the hash register made, an
+// address the link has proved, and the same subject, roles and groups as any
+// other new account.
+async function createVerifiedAccount(
+  tx: TenantScopedDatabase,
+  tenantId: string,
+  input: VerifiedAccountInput,
+): Promise<CreateAccountResult> {
+  const { subjectId } = await composeUserSubject(tx, {
+    tenantId,
+    username: input.username,
+    email: input.email,
+  });
+  await userRepository(tx).markEmailVerified(subjectId);
+  await credentialRepository(tx).insert({
+    tenantId,
+    subjectId,
+    type: 'password',
+    secret: { kind: 'password', hash: input.passwordHash },
   });
   return { subjectId };
 }
@@ -269,25 +350,32 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     trustProxy: deps.trustProxy ?? false,
   });
 
+  const tls = deps.tls;
+  // The issuer is the configured public address wherever one is stated, for the
+  // OIDC routes and the admin API alike; never what a Host header says.
+  configureIssuerBase(app, deps.publicBaseUrl);
+
+  if (deps.onRoute !== undefined) app.addHook('onRoute', deps.onRoute);
+
   app.addHook('onRequest', async (request, reply) => {
     reply.header('x-request-id', request.id);
   });
 
-  // The root handler, for every route that has no scope of its own (the admin
-  // and console scopes keep theirs). A server error is a fixed document: the
-  // driver's message carries the query and its parameters, so it is logged by
-  // kind only and never sent. A client error keeps Fastify's own answer.
-  app.setErrorHandler<FastifyError>((error, request, reply) => {
-    const status = error.statusCode ?? 500;
-    if (status < 500) return reply.send(error);
-    request.log.error({ err: { type: error.name, code: error.code } }, 'request failed');
-    return reply.code(500).type('application/problem+json').send({
-      type: 'about:blank',
-      title: 'Internal Server Error',
-      status: 500,
-      instance: request.id,
-    });
-  });
+  // The root answers for every path nothing claims and every route with no
+  // error scope of its own (the admin and console scopes keep theirs). A
+  // browser navigation gets a page, anything else a problem document.
+  const unrouted: UnroutedDeps = {
+    links: {
+      ...(deps.consoleBaseUrl === undefined
+        ? {}
+        : { console: new URL('/console/', deps.consoleBaseUrl).href }),
+      ...(deps.docsDir === undefined ? {} : { docs: '/docs/' }),
+    },
+  };
+  app.setNotFoundHandler((request, reply) => answerNotFound(request, reply, unrouted));
+  app.setErrorHandler<FastifyError>((error, request, reply) =>
+    answerServerError(error, request, reply, unrouted),
+  );
 
   const throttle: RateLimiter = slidingWindow({
     ...(deps.throttle ?? DEFAULT_THROTTLE),
@@ -368,6 +456,8 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   app.register(cookie);
 
   registerHealth(app, deps);
+  app.register(instrumentRoutes(deps.instrumentDir ?? DEFAULT_INSTRUMENT_DIR));
+  if (deps.docsDir !== undefined) app.register(docsRoutes(deps.docsDir));
   if (deps.consoleBaseUrl !== undefined) {
     if (deps.consoleKeys === undefined) throw missingConsoleKey();
     app.register(
@@ -377,6 +467,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
         kek: deps.kek,
         publicBaseUrl: deps.consoleBaseUrl,
         clientKey: deps.consoleKeys.key,
+        tls,
         consoleDir: deps.consoleDir ?? DEFAULT_CONSOLE_DIR,
         ...(deps.consoleNow === undefined ? {} : { now: deps.consoleNow }),
       }),
@@ -400,7 +491,11 @@ export function buildApp(deps: AppDeps): FastifyInstance {
         actionTokenRepository(tx).invalidateOutstandingPasswordLinks(subjectId),
       sendAccountLink: async (tx, request) => {
         if (deps.publicBaseUrl === undefined) return 'unavailable';
-        const tenant = { ...request, issuerBase: deps.publicBaseUrl };
+        const tenant = {
+          ...request,
+          issuerBase: deps.publicBaseUrl,
+          now: () => systemClock.now(),
+        };
         if (request.kind === 'reset_password') await enqueueResetLink(tx, tenant, request);
         else if (request.kind === 'verify_email')
           await enqueueVerificationLink(tx, tenant, request);
@@ -418,6 +513,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       auditRefusalBudget: auditRefusalBudget(() => new Date()),
       clientKeySet: privateKeyJwtKeySet,
       claimMappers,
+      tls,
       ...(deps.publicBaseUrl === undefined ? {} : { publicBaseUrl: deps.publicBaseUrl }),
       trustProxy: deps.trustProxy ?? false,
       ...(deps.tlsClientCertHeader === undefined
@@ -431,8 +527,27 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   // tables — injected here, at the composition root, so @odudu/account
   // itself stays free of that dependency
   // (packages/account/src/usecase/verify-email.ts explains why).
+  const findHeldSignIn = findHeldSignInIn(deps.database, tls);
+  const mailGate = deps.mailGate ?? createMailGate(() => systemClock.now());
+
   registerActionTokenRoute(app, {
     database: deps.database,
+    findHeldSignIn,
+    now: () => systemClock.now(),
+    findTaken,
+    lockAddress: (tx, tenantId, email) => lockEmailForCreation(tx, tenantId, email),
+    endAccess: (tx, tenant, subjectId) =>
+      endAllAccess(
+        tx,
+        { kek: deps.kek },
+        {
+          tenantId: tenant.id,
+          subjectId,
+          now: systemClock.now(),
+          issuer: tenantIssuer(deps.publicBaseUrl ?? '', tenant.name),
+        },
+      ),
+    createVerifiedAccount,
     findTenant: (name) => tenantSettingsRepository(deps.ownerDatabase.db).byName(name),
     getCurrentEmail: async (tx, subjectId) =>
       (await userRepository(tx).bySubjectId(subjectId))?.email ?? null,
@@ -443,7 +558,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     // it its first, the way `POST …/subjects/:id/password` creates one.
     setPassword: async (tx, subjectId, password) => {
       const credentials = credentialRepository(tx);
-      const hash = await hashPassword(password);
+      const hash = await hashUserPassword(password);
       if ((await credentials.passwordFor(subjectId)) !== null) {
         await credentials.setPassword(subjectId, hash);
         return;
@@ -468,7 +583,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     unchangedPasswordViolations: async (tx, subjectId, candidate) => {
       const current = await credentialRepository(tx).passwordFor(subjectId);
       if (current === null) return [];
-      return (await verifyPassword(current, candidate)) ? [REUSED_PASSWORD] : [];
+      return (await verifyUserPassword(current, candidate)) ? [REUSED_PASSWORD] : [];
     },
     clearPasswordUpdateAction: (tx, subjectId) =>
       requiredActionRepository(tx).complete(subjectId, 'update-password'),
@@ -481,19 +596,30 @@ export function buildApp(deps: AppDeps): FastifyInstance {
 
   registerRegistrationRoute(app, {
     database: deps.database,
+    findHeldSignIn,
     findTenant: (name) => tenantSettingsRepository(deps.ownerDatabase.db).byName(name),
     publicBaseUrl: deps.publicBaseUrl,
+    now: () => systemClock.now(),
     createAccount,
+    findTaken,
+    hashPassword: hashUserPassword,
+    isEmailAddress,
+    mailGate,
     evaluatePassword,
   });
 
   registerResetPasswordRoute(app, {
     database: deps.database,
+    findHeldSignIn,
     findTenant: (name) => tenantSettingsRepository(deps.ownerDatabase.db).byName(name),
     publicBaseUrl: deps.publicBaseUrl,
+    now: () => systemClock.now(),
+    mailGate,
     findByEmail: async (tx, email) => {
       const user = await userRepository(tx).byEmail(email);
-      return user?.email == null ? null : { subjectId: user.subjectId, email: user.email };
+      return user?.email == null
+        ? null
+        : { subjectId: user.subjectId, email: user.email, locale: user.locale };
     },
   });
 

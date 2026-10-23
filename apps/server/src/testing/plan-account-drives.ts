@@ -47,6 +47,7 @@ export async function driveAccount(world: PlanWorld, capture: Capture): Promise<
         username: name,
         email: address,
         password: PASSWORD,
+        password_confirm: PASSWORD,
       }).toString(),
       headers: FORM,
     }),
@@ -54,11 +55,41 @@ export async function driveAccount(world: PlanWorld, capture: Capture): Promise<
   expectStatus(registered, 201, 'registration');
   const verifyKey = await latestMailKey(world, address);
   expectStatus(
-    await capture('account: verify email', 'account', () =>
+    await capture('account: open a registration link', 'account', () =>
       http.inject({ url: `${ACTIONS}/action-token?key=${verifyKey}` }),
     ),
     200,
+    'open registration link',
+  );
+  expectStatus(
+    await capture('account: verify email', 'account', () =>
+      http.inject({
+        method: 'POST',
+        url: `${ACTIONS}/action-token`,
+        payload: new URLSearchParams({ key: verifyKey }).toString(),
+        headers: FORM,
+      }),
+    ),
+    200,
     'verify email',
+  );
+
+  expectStatus(
+    await capture('account: self-registration, address already held', 'account', () =>
+      http.inject({
+        method: 'POST',
+        url: `${ACTIONS}/registration`,
+        payload: new URLSearchParams({
+          username: `${name}-again`,
+          email: address.toUpperCase(),
+          password: PASSWORD,
+          password_confirm: PASSWORD,
+        }).toString(),
+        headers: FORM,
+      }),
+    ),
+    201,
+    'registration of a held address',
   );
 
   expectStatus(
@@ -186,6 +217,7 @@ export async function driveRequiredActions(world: PlanWorld, capture: Capture): 
         auth_session_id: authSession,
         username: dave,
         password: PASSWORD,
+        password_confirm: PASSWORD,
       }).toString(),
       headers: FORM,
     }),

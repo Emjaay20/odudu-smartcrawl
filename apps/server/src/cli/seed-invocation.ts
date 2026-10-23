@@ -1,4 +1,5 @@
 import { parseArgs } from 'node:util';
+import { SEED_BOOTSTRAP_OPTIONS } from '#/cli/seed-options';
 import { SEED_COMMANDS, type SeedOptions } from '#/cli/seed';
 
 // --client-secret and --password land in process listings (ps) and shell
@@ -9,18 +10,7 @@ import { SEED_COMMANDS, type SeedOptions } from '#/cli/seed';
 export function parseSeedOptions(argv: string[]): SeedOptions {
   const { values } = parseArgs({
     args: argv,
-    options: {
-      tenant: { type: 'string' },
-      client: { type: 'string' },
-      'client-secret': { type: 'string' },
-      'token-endpoint-auth-method': { type: 'string' },
-      'redirect-uri': { type: 'string', multiple: true },
-      user: { type: 'string' },
-      password: { type: 'string' },
-      email: { type: 'string' },
-      'send-verification-email': { type: 'boolean' },
-      'issuer-base': { type: 'string' },
-    },
+    options: SEED_BOOTSTRAP_OPTIONS,
   });
 
   if (values.tenant === undefined || values.client === undefined) {

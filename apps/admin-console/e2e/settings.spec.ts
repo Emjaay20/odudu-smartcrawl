@@ -56,6 +56,8 @@ test('sessions, the password policy and the recorded events are saved, each on i
 
   const password = region(page, 'Password policy');
   await type(password.getByRole('textbox', { name: 'Minimum length' }), '12');
+  await expect(password.getByRole('note')).toContainText('A minimum under 15 is only safe');
+  await expectAccessible(page);
   await password.getByText('Require a digit', { exact: true }).click();
   await password.getByRole('button', { name: 'Save Password policy' }).click();
   await expect(password.getByRole('button', { name: 'Save Password policy' })).toBeHidden();

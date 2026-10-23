@@ -1,0 +1,318 @@
+---
+title: 'GET /roles, POST /roles, GET /roles/:id, PATCH /roles/:id…'
+description: 'All five require manage-tenant; the list, GET /roles, is also readable with view-users (below).'
+---
+
+## `GET /roles`, `POST /roles`, `GET /roles/:id`, `PATCH /roles/:id` and `DELETE /roles/:id`
+
+All five require `manage-tenant`; the list, `GET /roles`, is also readable with
+`view-users` (below). A role is either a tenant role (`client_id` is `null`) or
+scoped to one client, in which case a token's `roles` claim carries it qualified
+by that client's own name rather than plain. `PATCH` amends only `description` —
+at most 1000 characters, a CHECK holds it there, and `null` clears it; every
+other field, `name`, `client_id` and `default_for_new_subjects` included, is
+refused with a reason — the last naming `PUT /roles/:id/default`, which is where
+it is set — the same shape `PATCH /subjects/:id` refuses `id`, `type` and
+`username`. A duplicate name — per tenant for a tenant role, per client for a
+client-scoped one — answers `409`, and a `client_id` naming no client answers
+`400`. `DELETE` cascades: every `role_composites` edge, `subject_roles`
+assignment and `client_scope_roles` mapping naming the role goes with it.
+
+That cascade is why **a role belonging to the tenant's built-in admin
+client cannot be deleted at all** — `409`, naming the role and the client.
+The capability roles live on that client, and `subject_roles_role_fk` would
+strip a deleted one from every administrator holding it: a caller with
+`manage-tenant` and nothing else could delete `tenant-admin`, or
+`manage-tenant` itself, and lock the tenant out of its own admin API. It is
+the same guard `PATCH /clients/{id}` puts on that client's own lockout
+fields, on the roles the client owns. The check reads the `builtin_admin`
+column, so renaming the client in the database does not evade it. Any
+other role is deleted unless it reaches an admin capability the caller does
+not hold ([a removal is judged by what it removes](./get-groupsidroles-and-put-groupsidroles.md#a-removal-is-judged-by-what-it-removes)).
+
+A create, in its `showcase` tenant:
+
+```bash
+curl -sS -X POST \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "billing-viewer", "description": "read-only access to invoices"}' \
+  http://localhost:3082/admin/tenants/showcase/roles
+```
+
+```
+{"id":"01a10bd4-d376-748b-a43b-f40458d88100","name":"billing-viewer","description":"read-only access to invoices","client_id":null,"client_key":null,"default_for_new_subjects":false,"created_at":"2026-10-05T11:30:59.574Z","admin_reach":[]}
+```
+
+**Search and filters** follow `GET /subjects`: `?name=` is a prefix, matched
+case-insensitively as a range over the stored `name_search` column
+(`0075_list_indexes_roles_groups_scopes.sql`), and a searched listing is ordered
+by that folded name, then by `id`. **`?client=`** is the one exact filter,
+`AND`ed with it: `tenant` for the tenant roles alone, or a client's id for the
+roles scoped to that client. A cursor is bound to every filter it was minted
+under, and any other parameter is refused with `400` naming it. In a tenant
+`roles-demo` created there for it, which held no roles of its own but the
+built-in admin client's until these four were created, the last scoped to a
+public client `demo-spa` (`01a10bd4-d668-7670-afe0-844b224421c5`) made there
+with `seed client` first:
+
+```bash
+curl -sS -X POST \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "billing-viewer"}' \
+  http://localhost:3082/admin/tenants/roles-demo/roles
+curl -sS -X POST \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Billing-Admin"}' \
+  http://localhost:3082/admin/tenants/roles-demo/roles
+curl -sS -X POST \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "support"}' \
+  http://localhost:3082/admin/tenants/roles-demo/roles
+curl -sS -X POST \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "billing-spa", "client_id": "01a10bd4-d668-7670-afe0-844b224421c5"}' \
+  http://localhost:3082/admin/tenants/roles-demo/roles
+```
+
+```
+{"id":"01a10bd4-d6d8-73f1-b60b-11d57d6bb686","name":"billing-viewer","description":null,"client_id":null,"client_key":null,"default_for_new_subjects":false,"created_at":"2026-10-05T11:31:00.438Z","admin_reach":[]}
+{"id":"01a10bd4-d6f3-7ca9-ab57-830ede1e570b","name":"Billing-Admin","description":null,"client_id":null,"client_key":null,"default_for_new_subjects":false,"created_at":"2026-10-05T11:31:00.467Z","admin_reach":[]}
+{"id":"01a10bd4-d70c-70c1-9fc7-09b29cce97db","name":"support","description":null,"client_id":null,"client_key":null,"default_for_new_subjects":false,"created_at":"2026-10-05T11:31:00.492Z","admin_reach":[]}
+{"id":"01a10bd4-d727-7bbc-b05f-a238bd2d00d2","name":"billing-spa","description":null,"client_id":"01a10bd4-d668-7670-afe0-844b224421c5","client_key":"demo-spa","default_for_new_subjects":false,"created_at":"2026-10-05T11:31:00.518Z","admin_reach":[]}
+```
+
+`BILLING` finds all three `billing` roles in folded order, tenant and
+client alike; `?client=tenant` keeps the two tenant roles, and the client's
+id keeps its one:
+
+```bash
+curl -sS \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://localhost:3082/admin/tenants/roles-demo/roles?name=BILLING"
+curl -sS \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://localhost:3082/admin/tenants/roles-demo/roles?name=billing&client=tenant"
+curl -sS \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://localhost:3082/admin/tenants/roles-demo/roles?client=01a10bd4-d668-7670-afe0-844b224421c5"
+```
+
+```
+{"items":[{"id":"01a10bd4-d6f3-7ca9-ab57-830ede1e570b","name":"Billing-Admin","description":null,"client_id":null,"client_key":null,"default_for_new_subjects":false,"created_at":"2026-10-05T11:31:00.467Z","admin_reach":[]},{"id":"01a10bd4-d727-7bbc-b05f-a238bd2d00d2","name":"billing-spa","description":null,"client_id":"01a10bd4-d668-7670-afe0-844b224421c5","client_key":"demo-spa","default_for_new_subjects":false,"created_at":"2026-10-05T11:31:00.518Z","admin_reach":[]},{"id":"01a10bd4-d6d8-73f1-b60b-11d57d6bb686","name":"billing-viewer","description":null,"client_id":null,"client_key":null,"default_for_new_subjects":false,"created_at":"2026-10-05T11:31:00.438Z","admin_reach":[]}]}
+{"items":[{"id":"01a10bd4-d6f3-7ca9-ab57-830ede1e570b","name":"Billing-Admin","description":null,"client_id":null,"client_key":null,"default_for_new_subjects":false,"created_at":"2026-10-05T11:31:00.467Z","admin_reach":[]},{"id":"01a10bd4-d6d8-73f1-b60b-11d57d6bb686","name":"billing-viewer","description":null,"client_id":null,"client_key":null,"default_for_new_subjects":false,"created_at":"2026-10-05T11:31:00.438Z","admin_reach":[]}]}
+{"items":[{"id":"01a10bd4-d727-7bbc-b05f-a238bd2d00d2","name":"billing-spa","description":null,"client_id":"01a10bd4-d668-7670-afe0-844b224421c5","client_key":"demo-spa","default_for_new_subjects":false,"created_at":"2026-10-05T11:31:00.518Z","admin_reach":[]}]}
+```
+
+One at a time, the `Link` header carries the search forward:
+
+```bash
+curl -sS -D - \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://localhost:3082/admin/tenants/roles-demo/roles?name=billing&limit=1"
+```
+
+```
+HTTP/1.1 200 OK
+x-request-id: 01a10bd4-d783-7e2e-8d08-0e26bdc54a64
+cache-control: no-store
+link: </admin/tenants/roles-demo/roles?limit=1&name=billing&cursor=eyJhZnRlciI6IjAxYTEwYmQ0LWQ2ZjMtN2NhOS1hYjU3LTgzMGVkZTFlNTcwYiIsInNvcnQiOiJiaWxsaW5nLWFkbWluIiwiY29sbGVjdGlvbiI6InJvbGVzIiwidGVuYW50SWQiOiIwMWExMGJkNC1kNDg1LTc2NDItYmQxYS04YzY1MzBmYTk5NTgiLCJmaWx0ZXJzIjoiM0w4aEJkRGMyWVZnelVseHhtSlVYZGluWHJDMG10NHZMTXF1TlNTdEdOdyJ9.v_fTLZ_BVcFLmG1cpmnr-lJijG8KwzLcjOTkCAkdsM8>; rel="next"
+content-type: application/json; charset=utf-8
+content-length: 542
+Date: Mon, 05 Oct 2026 11:31:00 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+{"items":[{"id":"01a10bd4-d6f3-7ca9-ab57-830ede1e570b","name":"Billing-Admin","description":null,"client_id":null,"client_key":null,"default_for_new_subjects":false,"created_at":"2026-10-05T11:31:00.467Z","admin_reach":[]}],"next":"eyJhZnRlciI6IjAxYTEwYmQ0LWQ2ZjMtN2NhOS1hYjU3LTgzMGVkZTFlNTcwYiIsInNvcnQiOiJiaWxsaW5nLWFkbWluIiwiY29sbGVjdGlvbiI6InJvbGVzIiwidGVuYW50SWQiOiIwMWExMGJkNC1kNDg1LTc2NDItYmQxYS04YzY1MzBmYTk5NTgiLCJmaWx0ZXJzIjoiM0w4aEJkRGMyWVZnelVseHhtSlVYZGluWHJDMG10NHZMTXF1TlNTdEdOdyJ9.v_fTLZ_BVcFLmG1cpmnr-lJijG8KwzLcjOTkCAkdsM8"}
+```
+
+Following that link, then replaying its cursor with `?client=tenant` added:
+
+```bash
+CURSOR='eyJhZnRlciI6IjAxYTEwYmQ0LWQ2ZjMtN2NhOS1hYjU3LTgzMGVkZTFlNTcwYiIsInNvcnQiOiJiaWxsaW5nLWFkbWluIiwiY29sbGVjdGlvbiI6InJvbGVzIiwidGVuYW50SWQiOiIwMWExMGJkNC1kNDg1LTc2NDItYmQxYS04YzY1MzBmYTk5NTgiLCJmaWx0ZXJzIjoiM0w4aEJkRGMyWVZnelVseHhtSlVYZGluWHJDMG10NHZMTXF1TlNTdEdOdyJ9.v_fTLZ_BVcFLmG1cpmnr-lJijG8KwzLcjOTkCAkdsM8'
+curl -sS \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://localhost:3082/admin/tenants/roles-demo/roles?limit=1&name=billing&cursor=$CURSOR"
+curl -sS \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://localhost:3082/admin/tenants/roles-demo/roles?limit=1&name=billing&client=tenant&cursor=$CURSOR"
+```
+
+```
+{"items":[{"id":"01a10bd4-d727-7bbc-b05f-a238bd2d00d2","name":"billing-spa","description":null,"client_id":"01a10bd4-d668-7670-afe0-844b224421c5","client_key":"demo-spa","default_for_new_subjects":false,"created_at":"2026-10-05T11:31:00.518Z","admin_reach":[]}],"next":"eyJhZnRlciI6IjAxYTEwYmQ0LWQ3MjctN2JiYy1iMDVmLWEyMzhiZDJkMDBkMiIsInNvcnQiOiJiaWxsaW5nLXNwYSIsImNvbGxlY3Rpb24iOiJyb2xlcyIsInRlbmFudElkIjoiMDFhMTBiZDQtZDQ4NS03NjQyLWJkMWEtOGM2NTMwZmE5OTU4IiwiZmlsdGVycyI6IjNMOGhCZERjMllWZ3pVbHh4bUpVWGRpblhyQzBtdDR2TE1xdU5TU3RHTncifQ.ijOveSgDATnglqazyZg9Bg3YQ16FbkWdHCndAD36v6E"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"cursor is invalid or expired","errors":[{"path":"cursor","message":"is invalid or expired"}],"instance":"01a10bd4-d7b2-7276-af2a-0852ca741785"}
+```
+
+A `client` that is neither `tenant` nor an id, an unknown parameter, and
+the stored `name_search` column named in a create body and in an amendment
+— the first three refused by the generated schema, the last by the
+amendment allowlist, which knows only the fields a role's wire shape
+carries:
+
+```bash
+curl -sS \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://localhost:3082/admin/tenants/roles-demo/roles?client=spa"
+curl -sS \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://localhost:3082/admin/tenants/roles-demo/roles?search=billing"
+curl -sS -X POST \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "auditor", "name_search": "x"}' \
+  http://localhost:3082/admin/tenants/roles-demo/roles
+curl -sS -X PATCH \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name_search": "x"}' \
+  http://localhost:3082/admin/tenants/roles-demo/roles/01a10bd4-d70c-70c1-9fc7-09b29cce97db
+```
+
+```
+{"type":"about:blank","title":"Error","status":400,"detail":"querystring/client must be equal to constant, querystring/client must match pattern \"^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$\", querystring/client must match a schema in anyOf","errors":[{"path":"client","message":"must be equal to constant"},{"path":"client","message":"must match pattern \"^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$\""},{"path":"client","message":"must match a schema in anyOf"}],"instance":"01a10bd4-d7c8-74da-80b9-cf4ba4610516"}
+{"type":"about:blank","title":"Error","status":400,"detail":"querystring must NOT have additional properties: search","errors":[{"path":"search","message":"must NOT have additional properties"}],"instance":"01a10bd4-d7d3-7526-973e-335c0fc0a1d3"}
+{"type":"about:blank","title":"Error","status":400,"detail":"body must NOT have additional properties: name_search","errors":[{"path":"name_search","message":"must NOT have additional properties"}],"instance":"01a10bd4-d7e0-7c73-9077-69671a60f01e"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"name_search: name_search is not a role field","errors":[{"path":"name_search","message":"name_search is not a role field"}],"instance":"01a10bd4-d7ec-77d2-8e3f-858092080816"}
+```
+
+Every `409` that guards the built-in admin client's roles writes a `refused` row
+with the refusal's text under `detail.reason`, the way a `403` does (ADR 0037's
+amendment of 2026-09-28): deleting one of those roles here, and adding or
+removing a composite of one below. On `ceiling-removal`, from [a removal is
+judged by what it
+removes](./get-groupsidroles-and-put-groupsidroles.md#a-removal-is-judged-by-what-it-removes),
+as the system administrator, whose subject the row names:
+
+```bash
+RUN_START=$(date -u +%FT%T.000Z)
+T=http://localhost:3000/admin/tenants/ceiling-removal
+curl -sS -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "$T/roles/01a0e59a-b2d6-7148-a179-a3cff021a673"
+echo
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "$T/audit?resource_type=role&resource_id=01a0e59a-b2d6-7148-a179-a3cff021a673&from=$RUN_START" \
+  | jq -c '.items[] | {action, outcome, actor_subject_id, detail}'
+```
+
+```
+{"type":"about:blank","title":"Conflict","status":409,"detail":"tenant-admin is a capability of odudu-admin, this tenant's built-in admin client, and deleting it would strip it from every administrator holding it","instance":"01a0e5ae-3e45-778c-a2cd-cf0bc8367b4d"}
+{"action":"role.delete","outcome":"refused","actor_subject_id":"01a0e0a7-0ead-703a-ab34-22bcf5167d46","detail":{"reason":"tenant-admin is a capability of odudu-admin, this tenant's built-in admin client, and deleting it would strip it from every administrator holding it"}}
+```
+
+### The owning client, by name
+
+A role names its owning client twice: `client_id`, the client's row id, and
+`client_key`, that client's own `client_id` — the name a person tells it apart
+by, since a tenant role and a client's may share a name. Both are `null` for a
+tenant role. The same pair rides on every role list: a role's composites, and
+the `items` a subject's, a group's and a scope's roles answer beside `id` and
+`name`. `client_key` is refused by `PATCH` like `client_id`. In `etags-demo`,
+whose public client `etags-app` was made with `seed client` and whose subject
+`ines` with `POST /subjects`: a role `reader` created on the client, the
+tenant's roles filtered to it, and `ines` given `reader` and the tenant role
+`billing-viewer` from above under the `ETag` of her empty list:
+
+```bash
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
+  -d '{"name":"reader","client_id":"01a10bd4-903e-716d-b038-29c8d3ee53ec"}' \
+  http://localhost:3082/admin/tenants/etags-demo/roles
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
+  'http://localhost:3082/admin/tenants/etags-demo/roles?client=01a10bd4-903e-716d-b038-29c8d3ee53ec'
+curl -sS -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
+  -H 'If-Match: "eef46741adfc3a9f76294d3b78f37a45f113092ac9d44ee77c7a038a88ff09a1"' \
+  -d '{"role_ids":["01a10bd4-9120-7c99-a4b7-9b35a2219dc8","01a10bd4-90e5-79e8-92bd-8f9024ae8829"]}' \
+  http://localhost:3082/admin/tenants/etags-demo/subjects/01a10bd4-90a5-7793-971d-100cba5bc688/roles
+```
+
+```
+{"id":"01a10bd4-9120-7c99-a4b7-9b35a2219dc8","name":"reader","description":null,"client_id":"01a10bd4-903e-716d-b038-29c8d3ee53ec","client_key":"etags-app","default_for_new_subjects":false,"created_at":"2026-10-05T11:30:42.591Z","admin_reach":[]}
+{"items":[{"id":"01a10bd4-9120-7c99-a4b7-9b35a2219dc8","name":"reader","description":null,"client_id":"01a10bd4-903e-716d-b038-29c8d3ee53ec","client_key":"etags-app","default_for_new_subjects":false,"created_at":"2026-10-05T11:30:42.591Z","admin_reach":[]}]}
+{"items":[{"id":"01a10bd4-90e5-79e8-92bd-8f9024ae8829","name":"billing-viewer","client_id":null,"client_key":null},{"id":"01a10bd4-9120-7c99-a4b7-9b35a2219dc8","name":"reader","client_id":"01a10bd4-903e-716d-b038-29c8d3ee53ec","client_key":"etags-app"}]}
+```
+
+### What a role reaches: `admin_reach`
+
+Every role answer — the list, a role's own read and every write that answers it,
+and a role's composites — carries `admin_reach`: the admin capabilities the role
+hands out, expanded through `role_composites` however deep it nests them, by
+`capabilitiesReachableFrom`, the same computation every capability ceiling here
+judges a write by, and read for a whole page in one query. It names capabilities
+in the order `whoami` does, never `tenant-admin` itself, whose holding is the
+capabilities it nests. It is derived on each read and never stored: the `ETag`
+is taken over the stored fields alone, so a composite added somewhere below a
+role does not stale a write to its description, and `PATCH` refuses it with a
+reason.
+
+A tenant role `audit-lead` nesting `odudu-admin:view-audit`, and `audit-bundle`
+nesting `audit-lead`, each made there with `POST /roles` and `POST
+/roles/:id/composites` for it, `$P` the tenant's
+`http://localhost:3082/admin/tenants/reach-demo`. `audit-bundle` names no
+capability itself and reaches one two levels down — what its default is then
+refused for:
+
+```bash
+curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" $P/roles/01a10bd6-2cbc-706c-8d46-891aad99d5bb
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" $P/roles/01a10bd6-2cbc-706c-8d46-891aad99d5bb/composites; echo
+curl -sS -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
+  -d '{"default":true}' $P/roles/01a10bd6-2cbc-706c-8d46-891aad99d5bb/default; echo
+```
+
+Each response's status line and `etag` where it has one, then its body:
+
+```
+HTTP/1.1 200 OK
+etag: "7ecd0c326f94377e60c254866472c0d0b033d159f60df4629dc6ffd41ef7ecde"
+{"id":"01a10bd6-2cbc-706c-8d46-891aad99d5bb","name":"audit-bundle","description":null,"client_id":null,"client_key":null,"default_for_new_subjects":false,"created_at":"2026-10-05T11:32:27.964Z","admin_reach":["view-audit"]}
+{"items":[{"id":"01a10bd6-2ca5-763e-b394-ce919be96bc2","name":"audit-lead","description":null,"client_id":null,"client_key":null,"default_for_new_subjects":false,"created_at":"2026-10-05T11:32:27.940Z","admin_reach":["view-audit"]}]}
+{"type":"about:blank","title":"Forbidden","status":403,"detail":"a role handed to every new subject may reach no admin capability, and this one would reach: view-audit","instance":"01a10bd6-2e73-7649-a48f-c17b297dca44"}
+```
+
+### The list a user manager picks from
+
+`GET /roles` alone is also readable with `view-users`, and so with
+`manage-users`, which composes it: a user manager assigns roles to a subject and
+needs the list to pick from. `GET /groups` is widened the same way. Nothing else
+under either path is — a role's own read, its composites and both counts still
+require `manage-tenant` — and what a user manager may assign is still held to
+its own capabilities by the ceiling (ADR 0040). A caller refused one of these
+lists gets the usual `403`, and its `capability.refused` row names `view-users`
+under `detail.also_admits` beside the `manage-tenant` it names as `capability`,
+since either would have admitted it. In a tenant `admins-demo` created there for
+it, as `hana`, a subject seeded there with `seed user`, granted
+`odudu-admin:view-users` alone with `seed grant-role` and signed in through the
+tenant's own admin client, first `whoami`, then two lists and a count:
+
+```bash
+curl -sS -H "Authorization: Bearer $HANA_TOKEN" http://localhost:3082/admin/tenants/admins-demo/whoami
+curl -sS -H "Authorization: Bearer $HANA_TOKEN" 'http://localhost:3082/admin/tenants/admins-demo/roles?name=manage&limit=2'
+curl -sS -H "Authorization: Bearer $HANA_TOKEN" http://localhost:3082/admin/tenants/admins-demo/groups
+curl -sS -H "Authorization: Bearer $HANA_TOKEN" http://localhost:3082/admin/tenants/admins-demo/roles/count
+```
+
+```
+{"subjectId":"01a10bd4-f479-7550-825d-3c8550dce115","issuerTenantId":"01a10bd4-f16d-7850-b858-651e575d55f3","capabilities":["view-users"],"crossTenant":false}
+{"items":[{"id":"01a10bd4-f17f-7cf9-bb84-4ae17ae3e1a0","name":"manage-clients","description":null,"client_id":"01a10bd4-f176-7236-8562-d17d73d5ca00","client_key":"odudu-admin","default_for_new_subjects":false,"created_at":"2026-10-05T11:31:07.245Z","admin_reach":["manage-clients"]},{"id":"01a10bd4-f181-794a-a3be-a2e7aa703a1a","name":"manage-keys","description":null,"client_id":"01a10bd4-f176-7236-8562-d17d73d5ca00","client_key":"odudu-admin","default_for_new_subjects":false,"created_at":"2026-10-05T11:31:07.245Z","admin_reach":["manage-keys"]}],"next":"eyJhZnRlciI6IjAxYTEwYmQ0LWYxODEtNzk0YS1hM2JlLWEyZTdhYTcwM2ExYSIsInNvcnQiOiJtYW5hZ2Uta2V5cyIsImNvbGxlY3Rpb24iOiJyb2xlcyIsInRlbmFudElkIjoiMDFhMTBiZDQtZjE2ZC03ODUwLWI4NTgtNjUxZTU3NWQ1NWYzIiwiZmlsdGVycyI6IlJmN1o1Njk1VkFrc05UeHBDNUhuYnZuN1dYME5hV0d0MGdmVk9OblNpTmcifQ.hbcmmrbCixpSou6fDWJKHn8iiap4gM_BtpdZl_wJA_M"}
+{"items":[]}
+{"type":"about:blank","title":"Forbidden","status":403,"instance":"01a10bd4-f7ef-7b52-b934-b29dfb03b749"}
+```
+
+Then `kai`, created there the same way holding `manage-clients` alone,
+refused the list, and the row that refusal wrote:
+
+The same again, now that each row answers `actor_name` and `actor_origin`; the
+ids are a fresh run's, not those above:
+
+```bash
+curl -sS -H "Authorization: Bearer $KAI_TOKEN" http://localhost:3082/admin/tenants/admins-demo/roles; echo
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
+  'http://localhost:3082/admin/tenants/admins-demo/audit?action=capability.refused&limit=1'; echo
+```
+
+```
+{"type":"about:blank","title":"Forbidden","status":403,"instance":"01a0ee91-6bf2-708d-839a-f58481e120e8"}
+{"items":[{"id":"01a0ee91-6c24-7df3-aff4-f3b3cb39e5c3","occurred_at":"2026-09-29T19:08:22.941Z","event_type":"admin_access","action":"capability.refused","outcome":"refused","actor_tenant_id":"01a0ee91-5500-7587-bec8-ccd5ea0cfb56","actor_subject_id":"01a0ee91-621f-7416-9ebf-80d7244ddda7","actor_client_id":"01a0ee91-551f-76e0-b7f0-ff2a01e786b4","actor_name":"kai","actor_origin":"tenant","resource_type":null,"resource_id":null,"request_id":"01a0ee91-6bf2-708d-839a-f58481e120e8","ip":"172.22.0.1","detail":{"reason":"missing_capability","capability":"manage-tenant","also_admits":["view-users"]}}]}
+```

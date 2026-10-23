@@ -111,6 +111,65 @@ describe('subjectRepository', () => {
     });
   });
 
+  it('locks a subject that exists, and finds none to lock for an unknown id', async () => {
+    const tenantId = newId();
+    await withTenant(app.db, tenantId, async (tx) => {
+      await seedTenant(tx, tenantId);
+      const subject = await subjectRepository(tx).create({ tenantId, type: 'user' });
+      expect(await subjectRepository(tx).lock(subject.id)).toBe(true);
+      expect(await subjectRepository(tx).lock(newId())).toBe(false);
+    });
+  });
+
+  it('cannot lock a subject under a different tenant context', async () => {
+    await expectCrossTenantMethodProbe(app.db, {
+      seed: async (tx, tenantId) => {
+        await seedTenant(tx, tenantId);
+        return subjectRepository(tx).create({ tenantId, type: 'user' });
+      },
+      verifySeeded: async (tx, subject) => {
+        expect(await subjectRepository(tx).lock(subject.id)).toBe(true);
+      },
+      attempt: async (tx, subject) => subjectRepository(tx).lock(subject.id),
+      expectBlocked: (result) => {
+        expect(result).toBe(false);
+      },
+    });
+  });
+
+  it('makes a second lock on the same subject wait for the first transaction to end', async () => {
+    const tenantId = newId();
+    const subjectId = await withTenant(app.db, tenantId, async (tx) => {
+      await seedTenant(tx, tenantId);
+      return (await subjectRepository(tx).create({ tenantId, type: 'user' })).id;
+    });
+    const order: string[] = [];
+    let release: () => void = () => undefined;
+    const hold = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let locked: () => void = () => undefined;
+    const lockedFirst = new Promise<void>((resolve) => {
+      locked = resolve;
+    });
+    const first = withTenant(app.db, tenantId, async (tx) => {
+      await subjectRepository(tx).lock(subjectId);
+      locked();
+      await hold;
+      order.push('first ends');
+    });
+    await lockedFirst;
+    const second = withTenant(app.db, tenantId, async (tx) => {
+      await subjectRepository(tx).lock(subjectId);
+      order.push('second locks');
+    });
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(order).toEqual([]);
+    release();
+    await Promise.all([first, second]);
+    expect(order).toEqual(['first ends', 'second locks']);
+  });
+
   it('leaves disabled_at unchanged on a repeated disable', async () => {
     const tenantId = newId();
     await withTenant(app.db, tenantId, async (tx) => {
@@ -198,6 +257,41 @@ describe('userRepository', () => {
         expect(await userRepository(tx).byVerifiedEmail(email)).not.toBeNull();
       },
       attempt: async (tx, email) => userRepository(tx).byVerifiedEmail(email),
+      expectBlocked: (result) => {
+        expect(result).toBeNull();
+      },
+    });
+  });
+
+  it('finds the holder of an address in any case, verified or not, the same one every time', async () => {
+    const tenantId = newId();
+    await withTenant(app.db, tenantId, async (tx) => {
+      await seedTenant(tx, tenantId);
+      const first = await subjectRepository(tx).create({ tenantId, type: 'user' });
+      await insertUserRow(tx, first.id, tenantId, { email: 'Ada@Example.test' });
+      const second = await subjectRepository(tx).create({ tenantId, type: 'user' });
+      await insertUserRow(tx, second.id, tenantId, { email: 'ada@example.test' });
+
+      const holder = await userRepository(tx).holderOfEmail('ADA@example.TEST');
+      expect([first.id, second.id]).toContain(holder);
+      expect(await userRepository(tx).holderOfEmail('ADA@example.TEST')).toBe(holder);
+      expect(await userRepository(tx).holderOfEmail('bea@example.test')).toBeNull();
+    });
+  });
+
+  it('cannot find the holder of an address under a different tenant context', async () => {
+    await expectCrossTenantMethodProbe(app.db, {
+      seed: async (tx, tenantId) => {
+        await seedTenant(tx, tenantId);
+        const subject = await subjectRepository(tx).create({ tenantId, type: 'user' });
+        const email = `ada-${newId()}@example.test`;
+        await insertUserRow(tx, subject.id, tenantId, { email });
+        return email;
+      },
+      verifySeeded: async (tx, email) => {
+        expect(await userRepository(tx).holderOfEmail(email.toUpperCase())).not.toBeNull();
+      },
+      attempt: async (tx, email) => userRepository(tx).holderOfEmail(email),
       expectBlocked: (result) => {
         expect(result).toBeNull();
       },
@@ -852,6 +946,64 @@ describe('credentialRepository', () => {
       verifyTenantAUnaffected: async (tx, subjectId) => {
         expect(await credentialRepository(tx).passwordFor(subjectId)).toBe('$argon2id$fake-hash');
         expect(await credentialRepository(tx).passwordHistory(subjectId)).toEqual([]);
+      },
+    });
+  });
+});
+
+describe('credentialRepository.recoveryStanding', () => {
+  async function seedStanding(tx: TenantScopedDatabase, tenantId: string): Promise<string> {
+    await seedTenant(tx, tenantId);
+    const subject = await subjectRepository(tx).create({ tenantId, type: 'user' });
+    const credentials = credentialRepository(tx);
+    const base = { tenantId, subjectId: subject.id };
+    await credentials.insert({
+      ...base,
+      type: 'webauthn',
+      secret: { kind: 'webauthn', publicKey: 'AAAA', counter: 0, transports: [] },
+      lookupKey: `key-${newId()}`,
+    });
+    await credentials.insert({
+      ...base,
+      type: 'recovery-code',
+      secret: { kind: 'recovery-code', hash: 'h1' },
+    });
+    await credentials.insert({
+      ...base,
+      type: 'recovery-code',
+      secret: { kind: 'recovery-code', hash: 'h2', usedAt: '2031-01-01T00:00:00.000Z' },
+    });
+    return subject.id;
+  }
+
+  it('counts held and unspent codes, and counts a passkey as no TOTP', async () => {
+    const tenantId = newId();
+    await withTenant(app.db, tenantId, async (tx) => {
+      const subjectId = await seedStanding(tx, tenantId);
+      expect(await credentialRepository(tx).recoveryStanding(subjectId)).toEqual({
+        unspent: 1,
+        held: 2,
+        hasTotp: false,
+      });
+      await credentialRepository(tx).insert({
+        tenantId,
+        subjectId,
+        type: 'totp',
+        secret: { kind: 'totp', secret: 'GEZDGNBVGY3TQOJQ', digits: 6, lastStep: 0 },
+      });
+      expect((await credentialRepository(tx).recoveryStanding(subjectId)).hasTotp).toBe(true);
+    });
+  });
+
+  it('sees nothing of another tenant’s subject', async () => {
+    await expectCrossTenantMethodProbe(app.db, {
+      seed: async (tx, tenantId) => seedStanding(tx, tenantId),
+      verifySeeded: async (tx, subjectId) => {
+        expect((await credentialRepository(tx).recoveryStanding(subjectId)).held).toBe(2);
+      },
+      attempt: async (tx, subjectId) => credentialRepository(tx).recoveryStanding(subjectId),
+      expectBlocked: (result) => {
+        expect(result).toEqual({ unspent: 0, held: 0, hasTotp: false });
       },
     });
   });

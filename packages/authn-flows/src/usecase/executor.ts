@@ -6,6 +6,7 @@ import {
   userRepository,
   type LockoutPolicy,
 } from '@odudu/domain-identity';
+import { timingSafeEqual } from 'node:crypto';
 import { newId, systemClock, type Clock } from '@odudu/kernel';
 import { authenticationSessionRepository } from '#/repository/authentication-sessions';
 import { executionRepository } from '#/repository/executions';
@@ -13,7 +14,11 @@ import { tenantSettingsRepository } from '#/repository/tenant-settings';
 import { requiredActionRepository } from '#/repository/required-actions';
 import { sessionRepository } from '#/repository/sessions';
 import { SessionEntry } from '#/service/session-entry';
-import { oweRecoveryCodesIfNoneUnspent } from '#/usecase/recovery-codes';
+import { hashSignInSecret, newSignInSecret, readSignInHandle } from '#/service/sign-in-handle';
+import {
+  oweRecoveryCodesIfFactorWithoutCodes,
+  oweRecoveryCodesIfNoneUnspent,
+} from '#/usecase/recovery-codes';
 import { recordPasswordExpiryIfOwed } from '#/usecase/update-password';
 import { loginAuditFor, type AuditFailureLogger, type LoginAudit } from '#/usecase/login-audit';
 import {
@@ -78,10 +83,20 @@ async function passwordAttemptFor(
   const byEmail = loginWithEmail ? await accounts.byVerifiedEmail(login) : null;
   const found = login.includes('@') ? (byEmail ?? byUsername) : (byUsername ?? byEmail);
   const keyedOn = found === null ? DUMMY_SUBJECT_ID : found.subject.id;
-  const storedHash = await credentialRepository(tx).passwordFor(keyedOn);
+  const credential = await credentialRepository(tx).passwordCredentialFor(keyedOn);
   const onRecord = await loginFailureRepository(tx).forSubject(keyedOn);
+  const storedHash = credential?.hash ?? null;
   return {
-    verification: { subjectId: found === null ? null : found.subject.id, storedHash },
+    verification: {
+      subjectId: found === null ? null : found.subject.id,
+      storedHash,
+      normalised: credential?.normalised ?? true,
+      upgrade: async (hash) => {
+        if (storedHash !== null) {
+          await credentialRepository(tx).upgradePassword(keyedOn, storedHash, hash);
+        }
+      },
+    },
     keyedOn,
     onRecord,
   };
@@ -100,7 +115,7 @@ async function runPasswordStep(
   context: StepContext,
 ): Promise<AuthenticatorResult> {
   if (input.username === undefined || input.password === undefined) {
-    return passwordStep(input, { subjectId: null, storedHash: null });
+    return passwordStep(input, { subjectId: null, storedHash: null, normalised: true });
   }
   const attempt = await passwordAttemptFor(tx, input.username, context.loginWithEmail);
   const outcome = await passwordStep(input, attempt.verification);
@@ -500,7 +515,9 @@ function isApplicable(
     return recoveryApplicable(
       { hasRecoveryCodes: facts.hasRecoveryCodes },
       facts.recoveryCodeOffered,
-      otpApplies(facts),
+      // A code stands in for a TOTP code, so only a subject who holds a TOTP has a
+      // code step for it to take, whatever the tenant requires of others.
+      facts.hasTotp && otpApplies(facts),
       facts.satisfied,
     );
   }
@@ -603,21 +620,52 @@ export async function dispatchNext(
   return { kind: 'ran', authenticator: decision.authenticator, result: await run(input) };
 }
 
+// What the browser that parked a request is handed so that a link mailed out
+// of the sign-in can find its way back to it (service/sign-in-handle.ts).
+export interface SignInBrowser {
+  secret: string;
+  maxAgeSeconds: number;
+}
+
 export async function startAuthentication(
   tx: TenantScopedDatabase,
   tenantId: string,
   request: PendingRequest,
   clock: Clock = systemClock,
-): Promise<{ authSessionId: string }> {
+): Promise<{ authSessionId: string; browser: SignInBrowser }> {
   const id = newId();
   const ttlSeconds = await tenantSettingsRepository(tx).loginTtlSeconds(tenantId);
+  const secret = newSignInSecret();
   await authenticationSessionRepository(tx).create({
     id,
     tenantId,
     pendingRequest: request,
     expiresAt: new Date(clock.now().getTime() + ttlSeconds * 1000),
+    browserSecretHash: hashSignInSecret(secret),
   });
-  return { authSessionId: id };
+  return { authSessionId: id, browser: { secret, maxAgeSeconds: ttlSeconds } };
+}
+
+// The sign-in this browser parked and can still finish: its cookie names the
+// session and proves it with the secret it was handed, and the session is
+// live. One point read, in the tenant the caller scoped `tx` to, so a handle
+// from another tenant finds no row. A missing, malformed, foreign, wrong,
+// expired or consumed handle all answer null, so the caller cannot tell them
+// apart.
+export async function heldSignIn(
+  tx: TenantScopedDatabase,
+  header: string | undefined,
+  tls: boolean,
+  clock: Clock = systemClock,
+): Promise<{ sessionId: string; pendingRequest: PendingRequest } | null> {
+  const handle = readSignInHandle(header, tls);
+  if (handle === null) return null;
+  const record = await authenticationSessionRepository(tx).byId(handle.sessionId);
+  if (record?.browserSecretHash == null || !sessionIsLive(record, clock.now())) return null;
+  const presented = Buffer.from(hashSignInSecret(handle.secret), 'hex');
+  const stored = Buffer.from(record.browserSecretHash, 'hex');
+  if (presented.length !== stored.length || !timingSafeEqual(presented, stored)) return null;
+  return { sessionId: record.id, pendingRequest: record.pendingRequest };
 }
 
 export async function loadPendingRequest(
@@ -977,6 +1025,13 @@ export async function advance(
   // since every step refuses it.
   if (outcome.kind === 'success' && outcome.authenticators.includes(PASSWORD)) {
     await loginFailureRepository(tx).clear(subjectId);
+  }
+
+  // Only once every factor has passed: what is owed here is read by the
+  // gate that follows a completed sign-in, and a password alone has not
+  // earned a prompt about a factor it did not present.
+  if (outcome.kind === 'success') {
+    await oweRecoveryCodesIfFactorWithoutCodes(tx, record.tenantId, subjectId);
   }
 
   // What a required-action submission is judged against, since it carries no

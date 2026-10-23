@@ -14,6 +14,8 @@ const TENANT = {
   ssoSessionIdleSeconds: 1_800,
   rememberMeAllowed: true,
   loginWithEmail: false,
+  registrationAllowed: false,
+  resetPasswordAllowed: false,
   rememberMeIdleSeconds: 604_800,
   rememberMeMaxSeconds: 2_592_000,
   maxSessionsPerBrowser: 25,
@@ -106,7 +108,11 @@ describe('the login route, on a successful login', () => {
     expect(res.statusCode).toBe(302);
     const raw = res.headers['set-cookie'];
     const cookies = raw === undefined ? [] : Array.isArray(raw) ? raw : [raw];
-    expect(cookies).toHaveLength(2);
+    // The two session cookies, each its own header, and the sign-in handle's expiry.
+    expect(cookies).toHaveLength(3);
+    expect(cookies.at(-1)).toBe(
+      'odudu-sign-in=; HttpOnly; SameSite=Lax; Path=/tenants/acme/; Max-Age=0',
+    );
 
     const ephemeral = cookies.find(
       (cookie) => cookie.startsWith('acme-session=') && !cookie.includes('-persistent'),

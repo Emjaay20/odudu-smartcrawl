@@ -1,5 +1,8 @@
 import { type PendingRequest } from '@odudu/authn-flows';
-import { type RenderedPage } from '@odudu/kernel';
+import { negotiatePageLocale } from '@odudu/i18n';
+import { type PageLocale, type RenderedPage, withPageTheme } from '@odudu/kernel';
+import { type FastifyReply } from 'fastify';
+import { restartAuthorizeLocation } from '#/service/restart-request';
 
 export interface ContinuationDeps {
   findTenant(name: string): Promise<{ id: string } | null>;
@@ -16,19 +19,98 @@ export interface ContinuationDeps {
     oauthClientId: string,
     redirectUri: string,
   ): Promise<boolean>;
+  // The name of a client in its tenant, or null when there is none. Read only
+  // by a page that says whom the person is signing in to.
+  clientName?(tenantId: string, oauthClientId: string): Promise<string | null>;
+  // The tags a page can be shown in; defaults to what the server ships.
+  pageLocales?: readonly string[];
+  // The `locale` attribute of a subject, read only for a page shown after
+  // the first factor was verified (ADR 0043, step 2).
+  subjectLocale?(tenantId: string, subjectId: string): Promise<string | null>;
+  // Whom a finished authentication bound to this session, for pages shown
+  // once it is finished.
+  authenticatedSubject?(tenantId: string, authSessionId: string): Promise<string | null>;
 }
 
-// A page whose form continues a parked authorization request can be answered
-// with a 302 to that request's client, so it names the client's redirect_uri
-// for `pageHeaders` to license (ADR 0018). The value is the one /authorize
-// validated and parked, never anything the browser submitted.
-export async function continuing(
+// The language a page without a parked request is shown in: the browser's
+// preference alone, since nothing else about the request is known.
+export function requestLocale(
+  reply: FastifyReply,
+  deps: { pageLocales?: readonly string[] | undefined } = {},
+): PageLocale {
+  return withPageTheme(
+    negotiatePageLocale({
+      acceptLanguage: reply.request.headers['accept-language'],
+      ...(deps.pageLocales === undefined ? {} : { supported: deps.pageLocales }),
+    }),
+    reply.request.headers.cookie,
+  );
+}
+
+// Who is asking for the page, as far as the language may use it. `subject`
+// names a subject whose first factor is verified; `authenticated` asks the
+// session which one a finished authentication bound.
+export type PageSubject = { readonly subject: string } | 'authenticated';
+
+export interface PageContinuation {
+  // Negotiated before the renderer runs, so the text and the `lang` it is
+  // sent under come from one value (ADR 0043). It carries the person's
+  // light or dark choice too, read from the request's cookie.
+  readonly locale: PageLocale;
+  // A page whose form continues a parked authorization request can be
+  // answered with a 302 to that request's client, so it names the client's
+  // redirect_uri for `pageHeaders` to license (ADR 0018). The value is the
+  // one /authorize validated and parked, never anything the browser posted.
+  readonly continuing: (page: RenderedPage) => RenderedPage;
+  // The name of the client the parked request is for. One read, made when it
+  // is called and not before, so a page that never names a client costs none.
+  readonly clientName: () => Promise<string | undefined>;
+  // The authorize path that starts this sign-in again, built from the request
+  // already loaded; null when there is none or it cannot be rebuilt faithfully
+  // (one tied to a subject by a hint). No read of its own.
+  readonly signInPath: string | null;
+}
+
+// Loads the parked request once and answers both questions that need it: the
+// page's language (`ui_locales`, then the subject's own locale once they are
+// known, then Accept-Language) and the redirect its form may follow.
+export async function continuation(
   deps: ContinuationDeps,
   tenantName: string,
   authSessionId: string,
-  page: RenderedPage,
-): Promise<RenderedPage> {
+  reply: FastifyReply,
+  who?: PageSubject,
+): Promise<PageContinuation> {
   const tenant = await deps.findTenant(tenantName);
   const pending = tenant === null ? null : await deps.loadPendingRequest(tenant.id, authSessionId);
-  return pending === null ? page : { ...page, redirectsTo: pending.redirectUri };
+  let subjectId: string | null = null;
+  if (tenant !== null && who !== undefined) {
+    subjectId =
+      who === 'authenticated'
+        ? ((await deps.authenticatedSubject?.(tenant.id, authSessionId)) ?? null)
+        : who.subject;
+  }
+  const subjectLocale =
+    tenant !== null && subjectId !== null
+      ? ((await deps.subjectLocale?.(tenant.id, subjectId)) ?? null)
+      : null;
+  const locale = withPageTheme(
+    negotiatePageLocale({
+      uiLocales: pending?.uiLocales ?? [],
+      subjectLocale,
+      authenticated: subjectId !== null,
+      acceptLanguage: reply.request.headers['accept-language'],
+      ...(deps.pageLocales === undefined ? {} : { supported: deps.pageLocales }),
+    }),
+    reply.request.headers.cookie,
+  );
+  return {
+    locale,
+    continuing: (page) => (pending === null ? page : { ...page, redirectsTo: pending.redirectUri }),
+    signInPath: pending === null ? null : restartAuthorizeLocation(tenantName, pending),
+    clientName: async () =>
+      tenant === null || pending === null
+        ? undefined
+        : ((await deps.clientName?.(tenant.id, pending.clientId)) ?? undefined),
+  };
 }

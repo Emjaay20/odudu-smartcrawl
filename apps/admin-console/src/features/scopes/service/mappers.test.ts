@@ -1,7 +1,9 @@
 import { expect, it } from 'vitest';
 import {
+  DEFAULT_MAPPER_NOTE,
   NONE_TEXT,
-  mapperOptions,
+  boundAfter,
+  mapperChecklist,
   mappersFailure,
   mappersFailureText,
   mappersSummary,
@@ -9,22 +11,53 @@ import {
 } from '#/features/scopes/service';
 
 it('offers every available mapper, in the order the registry names them', () => {
-  expect(mapperOptions(['email', 'groups'])).toEqual([
+  expect(mapperChecklist(['email', 'groups'], [], ['groups'])).toEqual({
+    options: [
+      { id: 'email', label: 'email' },
+      { id: 'groups', label: 'groups' },
+    ],
+    value: ['groups'],
+  });
+});
+
+it('shows the declared mappers ticked and greyed while nothing is bound', () => {
+  expect(mapperChecklist(['email', 'groups'], ['email'], [])).toEqual({
+    options: [
+      { id: 'email', label: 'email', unavailable: DEFAULT_MAPPER_NOTE },
+      { id: 'groups', label: 'groups' },
+    ],
+    value: ['email'],
+  });
+  expect(DEFAULT_MAPPER_NOTE).toBe('Used because nothing is bound');
+});
+
+it('leaves the defaults out once a mapper is bound, and ignores a declared one the registry lacks', () => {
+  expect(mapperChecklist(['email', 'groups'], ['email'], ['groups']).value).toEqual(['groups']);
+  expect(mapperChecklist(['email'], ['gone'], []).value).toEqual([]);
+  expect(mapperChecklist(['email'], ['gone'], []).options).toEqual([
     { id: 'email', label: 'email' },
-    { id: 'groups', label: 'groups' },
   ]);
 });
 
-it('names the declared mappers a scope with no binding falls back to', () => {
+it('binds only what was ticked on top of the defaults shown, which then stop applying', () => {
+  expect(boundAfter(['email', 'groups'], ['email'], [], ['email', 'groups'])).toEqual(['groups']);
+  expect(boundAfter(['email', 'groups'], ['email'], ['groups'], ['email', 'groups'])).toEqual([
+    'email',
+    'groups',
+  ]);
+  expect(boundAfter(['email', 'groups'], ['email'], ['groups'], [])).toEqual([]);
+});
+
+it('says the declared mappers run when nothing is bound', () => {
   expect(mappersSummary([], ['email', 'groups'])).toBe(
-    'No mapper is bound, so this scope uses the mappers that declare it: email and groups.',
+    'Nothing bound. These mappers run by default.',
   );
   expect(mappersSummary(['email'], ['groups'])).toBe('Bound: email.');
 });
 
 it('says so when nothing is bound and nothing declares the scope', () => {
   expect(mappersSummary([], [])).toBe(NONE_TEXT);
-  expect(NONE_TEXT).toMatch(/none declares it/u);
+  expect(NONE_TEXT).toBe('Nothing bound. No mapper runs by default, so this scope adds no claims.');
 });
 
 it('names the registry in a 400 for an unknown mapper', () => {

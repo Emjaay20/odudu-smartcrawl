@@ -1,0 +1,98 @@
+# Odudu on one machine: Postgres, a one-time setup step, the server.
+#   ODUDU_ADMIN_EMAIL=you@example.com docker compose up -d
+#   docker compose logs setup        # the console address and first password
+# The server's port is bound to loopback and Postgres publishes no port. On
+# Linux any process on this machine can still reach a container's network
+# address, and the database password below is fixed and public, so do not
+# run this file on a shared host. For a public address, follow Deploying in
+# the Operating section of the documentation instead.
+services:
+  postgres:
+    # digest of the multi-arch index; Dependabot moves it
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    environment:
+      POSTGRES_USER: odudu
+      # Fixed, because a value generated at first run would need a file to
+      # carry it.
+      POSTGRES_PASSWORD: odudu-quickstart
+      POSTGRES_DB: odudu
+    restart: unless-stopped
+    volumes:
+      - odudu-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Creates the database roles, applies the migrations and the first
+  # administrator, and writes the server's secrets to the state volume. Exits
+  # non-zero, and so keeps the server from starting, when it cannot. It has no
+  # terminal under `up`, so it takes the password from the environment or
+  # generates one; `docker compose run --rm setup` from a terminal gives it
+  # one, and it asks for the password instead.
+  setup:
+    image: ${ODUDU_IMAGE:-ghcr.io/wizzywit/odudu:0.0.0}
+    command: ['odudu', 'init']
+    restart: 'no'
+    environment:
+      NODE_NO_WARNINGS: '1'
+      ODUDU_DATABASE_URL: postgres://odudu:odudu-quickstart@postgres:5432/odudu
+      ODUDU_ADMIN_EMAIL: ${ODUDU_ADMIN_EMAIL:-}
+      ODUDU_ADMIN_PASSWORD: ${ODUDU_ADMIN_PASSWORD:-}
+      ODUDU_PUBLIC_BASE_URL: http://localhost:${ODUDU_PORT:-3000}
+    volumes:
+      - odudu-state:/var/lib/odudu
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  odudu:
+    image: ${ODUDU_IMAGE:-ghcr.io/wizzywit/odudu:0.0.0}
+    command: ['node', '--env-file=/var/lib/odudu/quickstart.env', 'dist/main.js']
+    restart: unless-stopped
+    environment:
+      # The image sets NODE_ENV=production. That value only switches on the
+      # boot guards in apps/server/src/config-guard.ts, and the one this
+      # stack cannot meet is the TLS guard: it serves plain http on loopback,
+      # so no cookie carries Secure or __Host-. The other guards are
+      # met or irrelevant here. This is not a production deployment; see Deploying
+      # in the Operating section of the documentation for one.
+      - NODE_ENV=development
+      - ODUDU_LOG_LEVEL=info
+      # Not set here, so mail goes to the log until these are exported:
+      # a variable named without a value is passed only when it is set.
+      - ODUDU_SMTP_HOST
+      - ODUDU_SMTP_PORT
+      - ODUDU_SMTP_FROM
+      - ODUDU_SMTP_STARTTLS
+      - ODUDU_ALLOW_PRIVATE_SMTP_HOSTS
+    volumes:
+      - odudu-state:/var/lib/odudu
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/health/ready']
+      interval: 5s
+      timeout: 3s
+      start_period: 10s
+      retries: 5
+    ports:
+      - '127.0.0.1:${ODUDU_PORT:-3000}:3000'
+
+  # Catches every message the server sends. Start it with
+  # `docker compose --profile mail up -d` and export ODUDU_SMTP_HOST=mailpit,
+  # ODUDU_SMTP_PORT=1025, ODUDU_SMTP_FROM=odudu@localhost,
+  # ODUDU_SMTP_STARTTLS=false and ODUDU_ALLOW_PRIVATE_SMTP_HOSTS=true first;
+  # read the mail at http://localhost:8025.
+  mailpit:
+    profiles: ['mail']
+    # digest of the multi-arch index; Dependabot moves it
+    image: axllent/mailpit:v1.31.5@sha256:94f6b70c1436defae6799d9ac7ff0eeff9540465b842026d5cdb018f1c0234ea
+    ports:
+      - '127.0.0.1:${ODUDU_MAIL_PORT:-8025}:8025'
+
+volumes:
+  odudu-state:
+  odudu-data:

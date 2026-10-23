@@ -1,6 +1,6 @@
 import { assignScopeToClientResponseSchema } from '@odudu/contracts/admin';
+import { documentedJsonSchema } from '@odudu/contracts/admin/docs';
 import { describe, expect, it } from 'vitest';
-import { z } from 'zod';
 import { ADMIN_ROUTES } from '#/service/capability';
 import { buildAdminOpenApiDocument } from '#/view/routes/openapi';
 
@@ -54,7 +54,7 @@ describe('buildAdminOpenApiDocument', () => {
       buildAdminOpenApiDocument().paths['/admin/tenants/{tenant}/scopes/{id}/clients/{clientId}']
         ?.put?.responses['200'];
     expect(response?.content?.['application/json']?.schema).toEqual(
-      z.toJSONSchema(assignScopeToClientResponseSchema, { unrepresentable: 'any' }),
+      documentedJsonSchema(assignScopeToClientResponseSchema),
     );
   });
 });

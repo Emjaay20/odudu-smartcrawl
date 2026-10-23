@@ -1,0 +1,38 @@
+import type { ReactElement, ReactNode } from 'react';
+import { Wrap } from '@site/src/features/landing/view/Wrap/Wrap';
+import styles from '@site/src/features/landing/view/Section/Section.module.css';
+
+interface Props {
+  id: string;
+  kicker: string;
+  title: string;
+  section?: string;
+  tone?: 'plain' | 'sunken';
+  children: ReactNode;
+}
+
+const BANDS = { plain: styles.band, sunken: styles.bandSunken };
+
+// One band of the landing page: a kicker, a heading and its content.
+export function Section({
+  id,
+  kicker,
+  title,
+  section,
+  tone = 'plain',
+  children,
+}: Props): ReactElement {
+  return (
+    <section className={BANDS[tone]} aria-labelledby={id} data-section={section}>
+      <Wrap>
+        <div data-reveal="heading">
+          <p className={styles.kicker}>{kicker}</p>
+          <h2 id={id} className={styles.heading}>
+            {title}
+          </h2>
+        </div>
+        {children}
+      </Wrap>
+    </section>
+  );
+}

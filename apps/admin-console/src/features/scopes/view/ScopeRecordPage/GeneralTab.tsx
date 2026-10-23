@@ -143,6 +143,8 @@ function Danger({ name, deletion }: { name: string; deletion: Deletion }) {
       deletion={deletion}
       consequence={deletion.warning}
       typed={name}
+      held={deletion.held}
+      retry={deletion.retry}
       lead={
         deletion.fixed === null ? (
           <p className={recordTab.text}>{deletion.consequence}</p>

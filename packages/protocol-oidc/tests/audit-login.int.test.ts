@@ -109,16 +109,24 @@ function subjectOf(tenant: SeededTenant, username: string): string {
   return id;
 }
 
+// A subject enrolled in the ordinary way holds a saved set; with none, the sign-in would
+// be asked for one, which is another test's subject.
 async function enrolTotp(tenant: SeededTenant, username: string): Promise<string> {
   const secret = generateTotpSecret();
-  await withTenant(app.db, tenant.id, (tx) =>
-    credentialRepository(tx).insert({
+  await withTenant(app.db, tenant.id, async (tx) => {
+    await credentialRepository(tx).insert({
       tenantId: tenant.id,
       subjectId: subjectOf(tenant, username),
       type: 'totp',
       secret: { kind: 'totp', secret, digits: 6, lastStep: 0 },
-    }),
-  );
+    });
+    await credentialRepository(tx).insert({
+      tenantId: tenant.id,
+      subjectId: subjectOf(tenant, username),
+      type: 'recovery-code',
+      secret: { kind: 'recovery-code', hash: await hashPassword('saved-code') },
+    });
+  });
   return secret;
 }
 
@@ -271,6 +279,7 @@ beforeAll(async () => {
   await http.register(formbody);
   await http.register(
     oidcRoutes({
+      tls: false,
       database: app,
       ownerDatabase: ownerHandle,
       kek: Buffer.alloc(32, 13),
@@ -588,10 +597,11 @@ describe('second factors', () => {
   it('records a recovery code spent twice as already_used the second time', async () => {
     await enrolTotp(otpTenant, 'rita');
     const rita = subjectOf(otpTenant, 'rita');
-    const offer = await withTenant(app.db, otpTenant.id, (tx) =>
+    const outcome = await withTenant(app.db, otpTenant.id, (tx) =>
       beginRecoveryCodes(tx, { tenantId: otpTenant.id, subjectId: rita }),
     );
-    const recoveryCode = offer.codes[0] ?? '';
+    if (outcome.kind !== 'issued') throw new Error('expected a set to be issued');
+    const recoveryCode = outcome.offer.codes[0] ?? '';
 
     const first = await startAuthSession(otpTenant);
     await submit(otpTenant, { auth_session_id: first, username: 'rita', password: PASSWORD });

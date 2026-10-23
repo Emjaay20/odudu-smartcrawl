@@ -55,6 +55,7 @@ beforeAll(async () => {
   httpApp = http;
   await http.register(
     oidcRoutes({
+      tls: false,
       database: app,
       ownerDatabase: owner,
       kek: Buffer.alloc(32, 7),

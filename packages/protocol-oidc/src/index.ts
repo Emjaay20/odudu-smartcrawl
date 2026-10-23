@@ -6,6 +6,7 @@ import {
   beginPasskeyAuthentication,
   beginPasskeyEnrolment,
   beginRecoveryCodes,
+  pendingActionsFor,
   beginTotpEnrolment,
   completePasskeyEnrolment,
   completeRecoveryCodes,
@@ -20,7 +21,6 @@ import {
   pendingSession,
   readSessionEntries,
   recordRememberMe,
-  requiredActionRepository,
   resetAuthenticationProgress,
   sessionRepository,
   startAuthentication,
@@ -44,6 +44,7 @@ import {
   clientScopeRepository,
   consentRepository,
 } from '@odudu/domain-tenant';
+import { SHIPPED_LOCALES } from '@odudu/i18n';
 import { systemClock, type ClaimMapperRegistry, type Clock } from '@odudu/kernel';
 import { type FastifyPluginAsync } from 'fastify';
 import { type ClientKeySet } from '#/repository/client-keys';
@@ -62,6 +63,7 @@ import {
   USERINFO_ENCRYPTION_ENCS_PERMITTED,
 } from '#/service/client-metadata';
 import { DEFAULT_TLS_CLIENT_SUBJECT_HEADER } from '#/service/tls-client-auth';
+import { configureIssuerBase } from '#/view/issuer';
 import { expandWebOrigins } from '#/service/web-origin';
 import {
   issueAuthorizationCode,
@@ -93,10 +95,10 @@ export interface OidcRoutesDeps {
   // can sign access and ID tokens. Required, not defaulted: there is no
   // safe placeholder for a key-encryption key.
   kek: Uint8Array;
-  // Whether this process serves over TLS — picks the session cookie's
-  // __Host- prefix and Secure attribute. Defaults off, matching the compose
-  // stack's plain-HTTP local loop.
-  tls?: boolean;
+  // Whether this process serves over TLS (ODUDU_TLS): the __Host- prefix and
+  // Secure attribute of every cookie these routes write. No default, so a
+  // caller cannot lose it silently.
+  tls: boolean;
   // Injected so a test can advance time and have the authentication
   // session started by /authorize and the one read back by the login
   // handler agree on "now". Defaults to the real clock.
@@ -146,6 +148,11 @@ export interface OidcRoutesDeps {
   // name, so this is never a constant. Defaults to the same value the
   // kernel config schema does.
   tlsClientCertHeader?: string;
+  // The tags the server's pages can be shown in: what negotiation matches a
+  // request's preference against and what discovery advertises as
+  // `ui_locales_supported`, so the two cannot disagree. Defaults to the
+  // locales the server ships.
+  pageLocales?: readonly string[];
 }
 
 // The plugin apps/server registers. Discovery and JWKS both read the
@@ -154,9 +161,14 @@ export interface OidcRoutesDeps {
 // tenant id.
 export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
   return (app) => {
+    // A host that decorated the whole app already did; this covers a plugin
+    // registered on its own.
+    if (!app.hasRequestDecorator('configuredIssuerBase')) {
+      configureIssuerBase(app, deps.publicBaseUrl);
+    }
     const findTenant = (name: string) => tenantLookupRepository(deps.ownerDatabase.db).byName(name);
     const clock = deps.clock ?? systemClock;
-    const tls = deps.tls ?? false;
+    const tls = deps.tls;
     const clientSecretLimiter = deps.clientSecretLimiter;
     const clientKeySet = deps.clientKeySet;
     // One registry per process, shared by discovery (claimNames, for
@@ -309,6 +321,15 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
     // party id comes from ODUDU_PUBLIC_BASE_URL and nowhere else, so
     // without it there is nothing behind one.
     const passkeyLogin = { passkeyLogin: deps.publicBaseUrl !== undefined };
+    const pageLocales = deps.pageLocales ?? SHIPPED_LOCALES;
+    // Read only for a page shown after the first factor was verified, and
+    // through the tenant context like every other tenant row.
+    const subjectLocale = (tenantId: string, subjectId: string) =>
+      withTenant(
+        deps.database.db,
+        tenantId,
+        async (tx) => (await userRepository(tx).bySubjectId(subjectId))?.locale ?? null,
+      );
 
     // One definition for every door that can issue a code: the form path,
     // the consent POST, and (via completeAuthorizedLogin) whichever of the
@@ -463,6 +484,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       userinfoEncryptionAlgSupported: JWE_ALGS_PERMITTED,
       userinfoEncryptionEncSupported: USERINFO_ENCRYPTION_ENCS_PERMITTED,
       trustProxy: deps.trustProxy ?? false,
+      uiLocalesSupported: pageLocales,
     });
     registerJwksRoute(app, { findTenant, listPublishableKeys });
     // Introspection's two grant/session reads, resolved here rather than in
@@ -620,12 +642,16 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
     // action is owed, and the required-action route that will not act on
     // one that is not.
     const pendingActions = (tenantId: string, subjectId: string) =>
-      withTenant(deps.database.db, tenantId, (tx) =>
-        requiredActionRepository(tx).pendingFor(subjectId),
-      );
+      withTenant(deps.database.db, tenantId, (tx) => pendingActionsFor(tx, subjectId));
 
     const recoverPendingRequest = (tenantId: string, authSessionId: string) =>
       withTenant(deps.database.db, tenantId, (tx) => loadPendingRequest(tx, authSessionId));
+    const clientName = (tenantId: string, oauthClientId: string) =>
+      withTenant(
+        deps.database.db,
+        tenantId,
+        async (tx) => (await clientRepository(tx).byClientId(oauthClientId))?.name ?? null,
+      );
     const redirectStillRegistered = (
       tenantId: string,
       oauthClientId: string,
@@ -642,8 +668,11 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       findTenant,
       recoverPendingRequest,
       redirectStillRegistered,
+      clientName,
       tls,
       ...passkeyLogin,
+      pageLocales,
+      subjectLocale,
       listPublishableKeys,
       scopesNamed,
       resolveClient: (tenantId, oauthClientId) =>
@@ -748,6 +777,8 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       authenticatedSubject: authenticatedSubjectOf,
       tls,
       ...passkeyLogin,
+      pageLocales,
+      subjectLocale,
       beginTotpEnrolment: startTotpEnrolment,
       beginRecoveryCodes: startRecoveryCodes,
       ...passkeyEnrolment,
@@ -783,6 +814,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
         withTenant(deps.database.db, tenantId, (tx) => loadPendingRequest(tx, authSessionId)),
       recoverPendingRequest,
       redirectStillRegistered,
+      clientName,
       pendingChallenge: pendingChallengeFor,
       checkEmailVerification,
       pendingActions,
@@ -831,6 +863,8 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       beginTotpEnrolment: startTotpEnrolment,
       beginRecoveryCodes: startRecoveryCodes,
       ...passkeyEnrolment,
+      pageLocales,
+      subjectLocale,
       resolveClientId,
       consentContext,
       recordConsent: (tenantId, subjectId, clientId, scopeIds) =>
@@ -843,6 +877,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
     registerLogoutRoute(app, {
       findTenant,
       tls,
+      pageLocales,
       listPublishableKeys,
       now: () => clock.now(),
       // Resolved from the OAuth client_id to that client's own registered
@@ -940,8 +975,11 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
 // The admin API verifies a bearer token's `iss` the same way /userinfo
 // does (packages/protocol-admin/src/usecase/authenticate-admin.ts).
 export { tenantIssuer } from '#/service/issuer';
+export { restartAuthorizeLocation } from '#/service/restart-request';
 export { sendThrottledPage } from '#/view/routes/throttled';
-export { issuerBaseFor, tenantIssuerFor } from '#/view/issuer';
+export { answerNotFound, answerServerError, type UnroutedDeps } from '#/view/routes/unrouted';
+export { isApiPath, wantsHtmlPage } from '#/service/page-negotiation';
+export { configureIssuerBase, issuerBaseFor, tenantIssuerFor } from '#/view/issuer';
 export { assertionJtiRepository } from '#/repository/assertion-jti';
 export { isWellFormedWebOrigin } from '#/service/web-origin';
 export {
@@ -1014,7 +1052,13 @@ export { tokenGrantRepository, type TokenGrantRecord } from '#/repository/grants
 export { tokenGrants } from '#/schema/token-grants';
 export { refreshTokens } from '#/schema/refresh-tokens';
 export { backchannelLogoutDeliveries } from '#/schema/logout-deliveries';
-export { endSession, type EndSessionDeps, type EndSessionInput } from '#/usecase/end-session';
+export {
+  endAllAccess,
+  endSession,
+  type EndAllAccessInput,
+  type EndSessionDeps,
+  type EndSessionInput,
+} from '#/usecase/end-session';
 export {
   auditRefusalBudgetKey,
   UNLIMITED_AUDIT_REFUSAL_BUDGET,

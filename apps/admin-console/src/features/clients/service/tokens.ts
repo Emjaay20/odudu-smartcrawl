@@ -118,8 +118,9 @@ export const CREDENTIALS_RULE =
 
 export const CREDENTIALS_NOUN = 'scope names';
 
+export const FULL_SCOPE_LABEL = 'Include all roles in tokens';
 export const FULL_SCOPE_RULE =
-  'Off, a token carries only the roles a scope this client is assigned maps to. On, it carries every role the subject holds, whatever scope asked.';
+  "On: the roles scope carries all of a person's roles. Off: only roles mapped to the granted scopes.";
 
 export function idTokenAlgOptions(): Choice[] {
   return [
@@ -162,6 +163,6 @@ export const REQUIRE_AUTH_TIME_NOTE = 'Off, auth_time is included only when a re
 
 export const TOKEN_FIELD = {
   credentials: 'Client credentials scopes',
-  fullScope: 'Every role the subject holds',
+  fullScope: FULL_SCOPE_LABEL,
   grants: 'Grant types',
 } as const;

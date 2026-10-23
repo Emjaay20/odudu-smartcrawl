@@ -1,7 +1,11 @@
 export {
+  CORE_PROMPT_VALUES,
   discoveryDocument,
+  promptValuesSupported,
+  REGISTRATION_PROMPT_VALUE,
   type DiscoveryDocument,
   type DiscoveryDocumentOptions,
+  type PromptValue,
 } from '#/discovery';
 export { TOKEN_ENDPOINT_AUTH_METHODS_SUPPORTED, type TokenEndpointAuthMethod } from '#/token';
 export { isTenantName, TENANT_NAME_PATTERN, TENANT_NAME_RULE } from '#/tenant-name';
@@ -13,3 +17,12 @@ export {
   isValidProfileUrl,
   isValidZoneinfo,
 } from '#/profile-claims';
+export {
+  BIDI_FREE_PATTERN,
+  BIDI_REFUSED,
+  BIDI_REFUSED_MESSAGE,
+  containsBidiControl,
+  noBidiControls,
+  refusesBidi,
+  stripBidiControls,
+} from '#/bidi';

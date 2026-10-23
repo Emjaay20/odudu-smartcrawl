@@ -1,5 +1,24 @@
 import { parseArgs } from 'node:util';
-import { CLIENT_LIST_LIMIT, listLimitProblem } from '@odudu/contracts/admin';
+import {
+  ADMIN_OPTIONS,
+  ASSIGN_SCOPE_OPTIONS,
+  CLIENT_OPTIONS,
+  GRANT_ROLE_OPTIONS,
+  GROUP_OPTIONS,
+  JOIN_GROUP_OPTIONS,
+  MAP_GROUP_ROLE_OPTIONS,
+  MAP_ROLE_OPTIONS,
+  PROFILE_OPTIONS,
+  REGISTRATION_TOKEN_OPTIONS,
+  RESTORE_SCOPES_OPTIONS,
+  ROLE_OPTIONS,
+  SCOPE_OPTIONS,
+  SEED_COMMANDS,
+  TENANT_OPTIONS,
+  USER_OPTIONS,
+  type SeedCommand,
+} from '#/cli/seed-options';
+import { CLIENT_LIST_LIMIT, listLimitProblem, scopeLimitMessage } from '@odudu/contracts/admin';
 import { tenantSettingsRepository, sendVerificationEmail } from '@odudu/account';
 import { provisionTenant, requiredActionRepository } from '@odudu/authn-flows';
 import { grantNewSubjectDefaults, groupRepository, roleRepository } from '@odudu/domain-authz';
@@ -17,9 +36,11 @@ import {
   evaluatePassword,
   generateOneTimePassword,
   hashPassword,
+  hashUserPassword,
   subjectRepository,
   userRepository,
   verifyPassword,
+  verifyUserPassword,
   type PasswordPolicy,
   type ProfileUpdate,
 } from '@odudu/domain-identity';
@@ -33,6 +54,7 @@ import {
   isSystemTenantName,
   isValidTenantName,
   provisionClientDefaults,
+  restoreBuiltinScopes,
   verifyClientSecret,
   SYSTEM_TENANT_ID,
   SYSTEM_TENANT_NAME,
@@ -45,7 +67,7 @@ import {
   tenantSettingProblems,
   type TenantSettingValue,
 } from '@odudu/domain-tenant';
-import { loadConfig, newId, OduduError } from '@odudu/kernel';
+import { loadConfig, newId, OduduError, refuseBidiControls, systemClock } from '@odudu/kernel';
 import {
   clientOidcConfigRepository,
   GRANT_TYPES_PERMITTED,
@@ -273,7 +295,7 @@ async function assertMatchesExisting(
 
     const storedHash = await credentialRepository(tx).passwordFor(existingUser.subject.id);
     const passwordMatches =
-      storedHash !== null && (await verifyPassword(storedHash, opts.password));
+      storedHash !== null && (await verifyUserPassword(storedHash, opts.password));
     if (!passwordMatches) {
       throw new OduduError(
         'seed_conflict',
@@ -295,9 +317,13 @@ interface ResolvedTenant {
 // it here would force a password policy onto fakes that have nothing to do
 // with one. The seed CLI is the one caller in this file that writes a
 // password, so it is the one that needs this column set.
-async function passwordPolicyFor(ownerDb: Database, tenantId: string): Promise<PasswordPolicy> {
+async function passwordPolicyFor(
+  ownerDb: Database | TenantScopedDatabase,
+  tenantId: string,
+): Promise<PasswordPolicy> {
   const rows = await ownerDb
     .select({
+      tenantName: tenants.name,
       passwordMinLength: tenants.passwordMinLength,
       passwordRequireDigit: tenants.passwordRequireDigit,
       passwordRequireUppercase: tenants.passwordRequireUppercase,
@@ -315,6 +341,7 @@ async function passwordPolicyFor(ownerDb: Database, tenantId: string): Promise<P
     throw new OduduError('seed_not_found', `no tenant with id ${JSON.stringify(tenantId)}`);
   }
   return {
+    tenantName: row.tenantName,
     minLength: row.passwordMinLength,
     requireDigit: row.passwordRequireDigit,
     requireUppercase: row.passwordRequireUppercase,
@@ -485,7 +512,7 @@ async function performSeed(
         tenantId,
         subjectId: userSubject.id,
         type: 'password',
-        secret: { kind: 'password', hash: await hashPassword(opts.password) },
+        secret: { kind: 'password', hash: await hashUserPassword(opts.password) },
       });
     }
 
@@ -561,6 +588,7 @@ async function seedClientBootstrap(opts: SeedOptions): Promise<SeedResult> {
           tenantName: result.tenant,
           tenantDisplayName: tenant?.displayName ?? result.tenant,
           issuerBase: opts.issuerBase ?? `http://localhost:${String(config.ODUDU_HTTP_PORT)}`,
+          now: () => systemClock.now(),
         },
         { subjectId: userSubjectId, email: opts.email },
       );
@@ -596,12 +624,17 @@ async function ensureSigningKey(
 
 export interface SeedAdminOptions {
   readonly username: string;
+  readonly email?: string;
+  // A chosen password is bound by the system tenant's policy and owes no
+  // change at first sign-in. Left out, one is generated and must be changed.
+  readonly password?: string;
 }
 
 export interface SeededAdmin {
   readonly tenantId: string;
   readonly subjectId: string;
-  readonly password: string;
+  // Present only when it was generated here; a chosen password is never echoed.
+  readonly password: string | undefined;
 }
 
 // Keyed on the id throughout, because a lookup by name and an insert by id
@@ -643,6 +676,10 @@ async function insertSystemTenant(tx: TenantScopedDatabase): Promise<boolean> {
 // which is what a FORCE-RLS insert needs (see SYSTEM_TENANT_ID). Idempotent
 // throughout: a re-run with a different username reuses the same tenant,
 // client and roles, and only adds the new subject.
+export async function seedAdmin(
+  options: SeedAdminOptions & { readonly password?: undefined },
+): Promise<SeededAdmin & { readonly password: string }>;
+export async function seedAdmin(options: SeedAdminOptions): Promise<SeededAdmin>;
 export async function seedAdmin(options: SeedAdminOptions): Promise<SeededAdmin> {
   const config = loadConfig();
   const consoleOptions = await consoleProvisioning(config);
@@ -673,19 +710,29 @@ export async function seedAdmin(options: SeedAdminOptions): Promise<SeededAdmin>
         );
       }
 
-      const password = generateOneTimePassword();
+      const generated = options.password === undefined;
+      const password = options.password ?? generateOneTimePassword();
+      if (options.password !== undefined) {
+        assertPasswordSatisfiesPolicy(
+          await passwordPolicyFor(tx, tenantId),
+          options.username,
+          options.email,
+          options.password,
+        );
+      }
       const subject = await subjectRepository(tx).create({ tenantId, type: 'user' });
       await userRepository(tx).create({
         subjectId: subject.id,
         tenantId,
         username: options.username,
+        ...(options.email !== undefined ? { email: options.email } : {}),
       });
       await grantNewSubjectDefaults(tx, subject.id);
       await credentialRepository(tx).insert({
         tenantId,
         subjectId: subject.id,
         type: 'password',
-        secret: { kind: 'password', hash: await hashPassword(password) },
+        secret: { kind: 'password', hash: await hashUserPassword(password) },
       });
 
       const admin = await roleRepository(tx).byName(TENANT_ADMIN, clientDbId);
@@ -693,9 +740,11 @@ export async function seedAdmin(options: SeedAdminOptions): Promise<SeededAdmin>
         throw new OduduError('role_not_found', 'tenant-admin was not provisioned');
       }
       await roleRepository(tx).assignToSubject(subject.id, admin.id);
-      await requiredActionRepository(tx).add(tenantId, subject.id, 'update-password');
+      if (generated) {
+        await requiredActionRepository(tx).add(tenantId, subject.id, 'update-password');
+      }
 
-      return { tenantId, subjectId: subject.id, password };
+      return { tenantId, subjectId: subject.id, password: generated ? password : undefined };
     });
   } finally {
     if (runtime !== owner) await runtime.close();
@@ -768,6 +817,13 @@ export interface AssignScopeCommandResult {
   assignment: ClientScopeAssignment;
 }
 
+export interface RestoreScopesCommandResult {
+  command: 'restore-scopes';
+  tenant: string;
+  tenantId: string;
+  created: readonly string[];
+}
+
 export interface MapRoleCommandResult {
   command: 'map-role';
   tenant: string;
@@ -832,6 +888,7 @@ export type SeedCommandResult =
   | GroupCommandResult
   | ScopeCommandResult
   | AssignScopeCommandResult
+  | RestoreScopesCommandResult
   | MapRoleCommandResult
   | GrantRoleCommandResult
   | MapGroupRoleCommandResult
@@ -959,7 +1016,7 @@ async function runTenantCommand(
 ): Promise<TenantCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: { name: { type: 'string' }, set: { type: 'string', multiple: true } },
+    options: TENANT_OPTIONS,
   });
   if (values.name === undefined) {
     throw new OduduError('seed_invalid_options', 'seed tenant requires --name');
@@ -972,6 +1029,11 @@ async function runTenantCommand(
   // Parsed before the tenant is touched, so a typo in the third --set does
   // not leave the first two applied.
   const settings = parseSettings(values.set ?? []);
+  for (const { column, value } of settings) {
+    if (column === 'displayName' && typeof value === 'string') {
+      refuseBidiControls('display_name', value);
+    }
+  }
   await refuseOutOfRangeSettings(ownerDb, tenantName, settings);
 
   const { tenantId, created } = await resolveTenantId(ownerDb, tenantName);
@@ -1059,7 +1121,8 @@ interface ParsedSetting {
 }
 
 // `--set name=value`, repeatable. The name is a column name, which is what a
-// reader of the schema or of docs/request-paths.md already has in hand.
+// reader of the schema or of
+// apps/docs/content/en/reference/transcripts/request-paths/bootstrap.md already has in hand.
 function parseSettings(assignments: readonly string[]): ParsedSetting[] {
   return assignments.map((assignment) => {
     const separator = assignment.indexOf('=');
@@ -1106,17 +1169,7 @@ async function runClientCommand(
 ): Promise<ClientCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      'client-id': { type: 'string' },
-      public: { type: 'boolean' },
-      'client-secret': { type: 'string' },
-      'token-endpoint-auth-method': { type: 'string' },
-      'redirect-uri': { type: 'string', multiple: true },
-      'post-logout-redirect-uri': { type: 'string', multiple: true },
-      'web-origin': { type: 'string', multiple: true },
-      'grant-type': { type: 'string', multiple: true },
-    },
+    options: CLIENT_OPTIONS,
   });
 
   if (values.tenant === undefined || values['client-id'] === undefined) {
@@ -1154,10 +1207,12 @@ async function runClientCommand(
   const redirectUris = values['redirect-uri'] ?? [];
   const postLogoutRedirectUris = values['post-logout-redirect-uri'] ?? [];
   const webOrigins = values['web-origin'] ?? [];
+  const clientCredentialsScopes = [...new Set(values['client-credentials-scope'] ?? [])];
   for (const [field, entries] of [
     ['redirect_uris', redirectUris],
     ['post_logout_redirect_uris', postLogoutRedirectUris],
     ['web_origins', webOrigins],
+    ['client_credentials_scopes', clientCredentialsScopes],
   ] as const) {
     if (entries.length > CLIENT_LIST_LIMIT) {
       throw new OduduError('seed_invalid_options', listLimitProblem(field, entries.length));
@@ -1176,6 +1231,17 @@ async function runClientCommand(
     );
   }
 
+  const badScopes = clientCredentialsScopes.filter(
+    (name) => !/^[\x21\x23-\x5b\x5d-\x7e]+$/u.test(name),
+  );
+  if (badScopes.length > 0) {
+    throw new OduduError(
+      'seed_invalid_options',
+      `--client-credentials-scope names ${JSON.stringify(badScopes)}, which is not a scope name: ` +
+        'a scope is one token of printable characters with no space, quote or backslash (RFC 6749 3.3)',
+    );
+  }
+
   const type: ClientRecord['type'] = values.public === true ? 'public' : 'confidential';
   const requestedGrantTypes = values['grant-type'];
   const grantTypes = requestedGrantTypes ?? defaultGrantsFor(type);
@@ -1184,6 +1250,27 @@ async function runClientCommand(
     throw new OduduError(
       'seed_unknown_grant_type',
       `--grant-type names ${unknownGrantTypes.join(', ')}, which this server does not implement`,
+    );
+  }
+
+  if (
+    clientCredentialsScopes.length > 0 &&
+    (type === 'public' || !grantTypes.includes('client_credentials'))
+  ) {
+    throw new OduduError(
+      'seed_invalid_options',
+      '--client-credentials-scope needs a confidential client that may use the client_credentials grant',
+    );
+  }
+
+  // client_oidc_config_redirect_uris_present: only a client whose grants are
+  // exactly client_credentials may have none.
+  const serviceOnly = grantTypes.length === 1 && grantTypes[0] === 'client_credentials';
+  if (redirectUris.length === 0 && !serviceOnly) {
+    throw new OduduError(
+      'seed_invalid_options',
+      'seed client requires --redirect-uri for a client that signs people in; ' +
+        'a service client with no redirect URI names --grant-type client_credentials alone',
     );
   }
 
@@ -1227,10 +1314,11 @@ async function runClientCommand(
       tokenEndpointAuthMethod:
         type === 'confidential' ? (authMethod ?? 'client_secret_basic') : 'none',
       audiences: [],
+      consentRequired: values['consent-required'] === true,
       // Null takes the tenant's lifetimes, as every other door's client does.
       accessTokenTtlSeconds: null,
       refreshTokenTtlSeconds: null,
-      clientCredentialsScopes: [],
+      clientCredentialsScopes,
       webOrigins,
       postLogoutRedirectUris,
     });
@@ -1253,13 +1341,7 @@ async function runUserCommand(
 ): Promise<UserCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      username: { type: 'string' },
-      password: { type: 'string' },
-      email: { type: 'string' },
-      'require-password-change': { type: 'boolean' },
-    },
+    options: USER_OPTIONS,
   });
 
   if (
@@ -1277,6 +1359,9 @@ async function runUserCommand(
   const username = values.username;
   const password = values.password;
   const email = values.email;
+  if (values['email-verified'] === true && email === undefined) {
+    throw new OduduError('seed_invalid_options', 'seed user --email-verified requires --email');
+  }
 
   const tenantId = await requireTenantId(ownerDb, tenantName);
   assertPasswordSatisfiesPolicy(
@@ -1302,12 +1387,15 @@ async function runUserCommand(
       username,
       ...(email !== undefined ? { email } : {}),
     });
+    if (values['email-verified'] === true) {
+      await userRepository(tx).setVerification(subject.id, { emailVerified: true });
+    }
     await grantNewSubjectDefaults(tx, subject.id);
     await credentialRepository(tx).insert({
       tenantId,
       subjectId: subject.id,
       type: 'password',
-      secret: { kind: 'password', hash: await hashPassword(password) },
+      secret: { kind: 'password', hash: await hashUserPassword(password) },
     });
     if (values['require-password-change'] === true) {
       await requiredActionRepository(tx).add(tenantId, subject.id, 'update-password');
@@ -1325,11 +1413,7 @@ async function runRoleCommand(
 ): Promise<RoleCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      name: { type: 'string' },
-      'client-id': { type: 'string' },
-    },
+    options: ROLE_OPTIONS,
   });
 
   if (values.tenant === undefined || values.name === undefined) {
@@ -1368,11 +1452,7 @@ async function runGroupCommand(
 ): Promise<GroupCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      name: { type: 'string' },
-      parent: { type: 'string' },
-    },
+    options: GROUP_OPTIONS,
   });
 
   if (values.tenant === undefined || values.name === undefined) {
@@ -1392,11 +1472,11 @@ async function runGroupCommand(
   });
 }
 
-function parseIncludeFlag(value: string | undefined, flag: string): boolean | undefined {
+function parseIncludeFlag(value: string | undefined, option: string): boolean | undefined {
   if (value === undefined) return undefined;
   if (value === 'true') return true;
   if (value === 'false') return false;
-  throw new OduduError('seed_invalid_options', `${flag} must be true or false, got ${value}`);
+  throw new OduduError('seed_invalid_options', `${option} must be true or false, got ${value}`);
 }
 
 async function runScopeCommand(
@@ -1406,13 +1486,7 @@ async function runScopeCommand(
 ): Promise<ScopeCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      name: { type: 'string' },
-      description: { type: 'string' },
-      'include-in-id-token': { type: 'string' },
-      'include-in-access-token': { type: 'string' },
-    },
+    options: SCOPE_OPTIONS,
   });
 
   if (values.tenant === undefined || values.name === undefined) {
@@ -1451,6 +1525,30 @@ async function runScopeCommand(
   });
 }
 
+async function runRestoreScopesCommand(
+  ownerDb: Database,
+  runtimeDb: Database,
+  argv: readonly string[],
+): Promise<RestoreScopesCommandResult> {
+  const { values } = parseArgs({ args: [...argv], options: RESTORE_SCOPES_OPTIONS });
+  if (values.tenant === undefined) {
+    throw new OduduError('seed_invalid_options', 'seed restore-scopes requires --tenant');
+  }
+  const tenantName = values.tenant;
+  const tenantId = await requireTenantId(ownerDb, tenantName);
+
+  return withTenant(runtimeDb, tenantId, async (tx) => {
+    const outcome = await restoreBuiltinScopes(tx, tenantId);
+    if (outcome.kind === 'scope_limit') {
+      throw new OduduError('seed_invalid_options', `${scopeLimitMessage()}: delete one first`);
+    }
+    if (outcome.kind === 'default_scope_limit') {
+      throw new OduduError('seed_invalid_options', outcome.message);
+    }
+    return { command: 'restore-scopes', tenant: tenantName, tenantId, created: outcome.created };
+  });
+}
+
 async function runAssignScopeCommand(
   ownerDb: Database,
   runtimeDb: Database,
@@ -1458,12 +1556,7 @@ async function runAssignScopeCommand(
 ): Promise<AssignScopeCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      'client-id': { type: 'string' },
-      scope: { type: 'string' },
-      assignment: { type: 'string' },
-    },
+    options: ASSIGN_SCOPE_OPTIONS,
   });
 
   if (
@@ -1517,11 +1610,7 @@ async function runMapRoleCommand(
 ): Promise<MapRoleCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      scope: { type: 'string' },
-      role: { type: 'string' },
-    },
+    options: MAP_ROLE_OPTIONS,
   });
 
   if (values.tenant === undefined || values.scope === undefined || values.role === undefined) {
@@ -1552,11 +1641,7 @@ async function runGrantRoleCommand(
 ): Promise<GrantRoleCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      username: { type: 'string' },
-      role: { type: 'string' },
-    },
+    options: GRANT_ROLE_OPTIONS,
   });
 
   if (values.tenant === undefined || values.username === undefined || values.role === undefined) {
@@ -1595,11 +1680,7 @@ async function runMapGroupRoleCommand(
 ): Promise<MapGroupRoleCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      group: { type: 'string' },
-      role: { type: 'string' },
-    },
+    options: MAP_GROUP_ROLE_OPTIONS,
   });
 
   if (values.tenant === undefined || values.group === undefined || values.role === undefined) {
@@ -1636,11 +1717,7 @@ async function runJoinGroupCommand(
 ): Promise<JoinGroupCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      username: { type: 'string' },
-      group: { type: 'string' },
-    },
+    options: JOIN_GROUP_OPTIONS,
   });
 
   if (values.tenant === undefined || values.username === undefined || values.group === undefined) {
@@ -1671,31 +1748,7 @@ async function runProfileCommand(
 ): Promise<ProfileCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      username: { type: 'string' },
-      name: { type: 'string' },
-      'given-name': { type: 'string' },
-      'family-name': { type: 'string' },
-      'middle-name': { type: 'string' },
-      nickname: { type: 'string' },
-      'preferred-username': { type: 'string' },
-      profile: { type: 'string' },
-      picture: { type: 'string' },
-      website: { type: 'string' },
-      gender: { type: 'string' },
-      birthdate: { type: 'string' },
-      zoneinfo: { type: 'string' },
-      locale: { type: 'string' },
-      'phone-number': { type: 'string' },
-      'phone-number-verified': { type: 'boolean' },
-      'address-formatted': { type: 'string' },
-      'address-street': { type: 'string' },
-      'address-locality': { type: 'string' },
-      'address-region': { type: 'string' },
-      'address-postal-code': { type: 'string' },
-      'address-country': { type: 'string' },
-    },
+    options: PROFILE_OPTIONS,
   });
 
   if (values.tenant === undefined || values.username === undefined) {
@@ -1745,16 +1798,28 @@ async function runProfileCommand(
 
   await withTenant(runtimeDb, tenantId, async (tx) => {
     const subjectId = await requireUserSubjectId(tx, username);
+    if (values['email-verified'] === true) {
+      const user = await userRepository(tx).bySubjectId(subjectId);
+      if (user?.email == null) {
+        throw new OduduError(
+          'seed_invalid_options',
+          `seed profile --email-verified: user ${JSON.stringify(username)} has no email address`,
+        );
+      }
+    }
     await userRepository(tx).updateProfile(subjectId, patch);
+    if (values['email-verified'] === true) {
+      await userRepository(tx).setVerification(subjectId, { emailVerified: true });
+    }
   });
 
   return { command: 'profile', tenant: tenantName, tenantId, username };
 }
 
-function parsePositiveInteger(raw: string, flag: string): number {
+function parsePositiveInteger(raw: string, option: string): number {
   const value = Number.parseInt(raw, 10);
   if (!Number.isInteger(value) || value < 1 || String(value) !== raw) {
-    throw new OduduError('seed_invalid_options', `${flag} must be a positive integer`);
+    throw new OduduError('seed_invalid_options', `${option} must be a positive integer`);
   }
   return value;
 }
@@ -1766,11 +1831,7 @@ async function runRegistrationTokenCommand(
 ): Promise<RegistrationTokenCommandResult> {
   const { values } = parseArgs({
     args: [...argv],
-    options: {
-      tenant: { type: 'string' },
-      uses: { type: 'string' },
-      ttl: { type: 'string' },
-    },
+    options: REGISTRATION_TOKEN_OPTIONS,
   });
 
   if (values.tenant === undefined || values.uses === undefined || values.ttl === undefined) {
@@ -1799,7 +1860,7 @@ async function runRegistrationTokenCommand(
 // Printed directly rather than folded into main.ts's JSON report: this is
 // the one subcommand whose result is a credential nobody can retrieve again.
 async function runAdminCommand(argv: readonly string[]): Promise<AdminCommandResult> {
-  const { values } = parseArgs({ args: [...argv], options: { username: { type: 'string' } } });
+  const { values } = parseArgs({ args: [...argv], options: ADMIN_OPTIONS });
   if (values.username === undefined) {
     throw new OduduError('seed_invalid_options', 'seed admin requires --username');
   }
@@ -1814,29 +1875,6 @@ async function runAdminCommand(argv: readonly string[]): Promise<AdminCommandRes
     subjectId: admin.subjectId,
   };
 }
-
-// Exported so main.ts can tell, before parsing anything, whether an
-// invocation names one of these subcommands or is the older
-// seedClientBootstrap form (`seed --tenant ... --client ...`) — the two
-// argv shapes are otherwise indistinguishable from the outside.
-export const SEED_COMMANDS = [
-  'tenant',
-  'client',
-  'user',
-  'role',
-  'group',
-  'scope',
-  'assign-scope',
-  'map-role',
-  'grant-role',
-  'map-group-role',
-  'join-group',
-  'profile',
-  'registration-token',
-  'admin',
-] as const;
-
-type SeedCommand = (typeof SEED_COMMANDS)[number];
 
 function isSeedCommand(value: string): value is SeedCommand {
   return (SEED_COMMANDS as readonly string[]).includes(value);
@@ -1885,6 +1923,8 @@ async function runSeedCommand(argv: readonly string[]): Promise<SeedCommandResul
         return await runScopeCommand(owner.db, runtime.db, rest);
       case 'assign-scope':
         return await runAssignScopeCommand(owner.db, runtime.db, rest);
+      case 'restore-scopes':
+        return await runRestoreScopesCommand(owner.db, runtime.db, rest);
       case 'map-role':
         return await runMapRoleCommand(owner.db, runtime.db, rest);
       case 'grant-role':
@@ -1929,3 +1969,5 @@ export function seed(
   }
   return seedClientBootstrap(input);
 }
+
+export { SEED_COMMANDS };

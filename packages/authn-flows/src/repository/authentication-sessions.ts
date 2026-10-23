@@ -20,6 +20,7 @@ function toRecord(row: typeof authenticationSessions.$inferSelect): Authenticati
     subjectId: row.subjectId,
     authenticatedAt: row.authenticatedAt,
     webauthnChallenge: row.webauthnChallenge,
+    browserSecretHash: row.browserSecretHash,
   };
 }
 
@@ -33,6 +34,7 @@ export interface NewAuthenticationSession {
   tenantId: string;
   pendingRequest: PendingRequest;
   expiresAt: Date;
+  browserSecretHash?: string;
 }
 
 // All persistence for the parked-request row, both for the executor's own

@@ -1,7 +1,8 @@
 import { problemDetailsSchema } from '@odudu/contracts/admin';
+import { documentedJsonSchema } from '@odudu/contracts/admin/docs';
 import { ADMIN_API_AUDIENCE } from '@odudu/domain-tenant';
 import { type FastifyInstance } from 'fastify';
-import { z } from 'zod';
+import type { z } from 'zod';
 import { ADMIN_ROUTES, type AdminRoute } from '#/service/capability';
 import { pathParameterNames, rowIdSchema } from '#/service/path-params';
 
@@ -46,7 +47,7 @@ export interface OpenApiDocument {
 }
 
 function jsonSchemaFor(schema: z.ZodType): JsonSchema {
-  return z.toJSONSchema(schema, { unrepresentable: 'any' });
+  return documentedJsonSchema(schema);
 }
 
 const TENANT_PARAMETER = {

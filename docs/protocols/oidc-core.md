@@ -295,15 +295,17 @@ comparison already covers the case where one is present. Both callers pass
 their choice to `verifyJwt` explicitly (`ExpectedAudience`), so a reader
 sees the asymmetry in the type rather than having to know it.
 
-**Discovery advertises none of this, deliberately.** OIDC Discovery 1.0 §3
-defines no metadata for `prompt`: `prompt_values_supported` comes from
-Initiating User Registration via OpenID Connect, the extension that adds
-`prompt=create`, and is not part of the document this server publishes.
-§15.1 makes `none` and `login` mandatory for every OP, so there is nothing
-optional for a client to discover — and a list naming the four values this
-server _parses_ would claim the `consent` and `select_account` behaviour it
-does not yet have. `packages/contracts/src/discovery.ts` is therefore
-unchanged, and no clause row is added for a claim that is not served.
+**Discovery advertises the four values, and `create` where it is served.**
+OIDC Discovery 1.0 §3 defines no metadata for `prompt`:
+`prompt_values_supported` comes from Initiating User Registration via
+OpenID Connect 1.0, the extension that adds `prompt=create`, and an OP
+that supports that value has to publish the member and name every other
+value it supports (`docs/protocols/oidc-prompt-create.md`). The list is
+built once, in `packages/contracts/src/discovery.ts`, and `parsePrompt`
+reads the same constants, so the document cannot name a value the
+endpoint refuses or omit one it answers. `create` appears only for a
+tenant with `registration_allowed` on; the other four are the ones every
+tenant answers under this note.
 
 ### Response Mode: `query` and nothing else
 
@@ -526,8 +528,11 @@ is what this row can be held to.
 ### §15.1's "at minimum", and what an accepting test has to be run against
 
 `display`, `ui_locales`, `claims_locales` and `acr_values` are mandatory to
-implement "at minimum" by not erroring, and Odudu implements exactly that
-minimum: the parameters are parsed like any other and then ignored. The
+implement "at minimum" by not erroring. Odudu implements exactly that minimum
+for `display`, `claims_locales` and `acr_values`: the parameters are parsed
+like any other and then ignored. `ui_locales` is parked with the request and
+chooses the language of the sign-in pages from the tags the server ships
+(ADR 0043); a tag it does not ship changes nothing and refuses nothing. The
 trap in testing an obligation shaped this way is that "did not error" is
 satisfied by a request that was going to be refused for some other reason,
 and by a request that was going to be refused for this one. Each of
@@ -985,7 +990,7 @@ Odudu never uses one, so nothing in `acrFor`'s output can violate it.
 | 3.1.2.1 | MUST   | `prompt` containing `none` together with any other value results in an error                                                                                                                                                                                                                   | `OIDC-CORE-3.1.2.1-07` | covered                                                                                                                                                                                                                                                                                                                               |
 | 3.1.2.1 | MAY    | an unrecognized `prompt` value results in an error, or is ignored                                                                                                                                                                                                                              | `OIDC-CORE-3.1.2.1-08` | covered                                                                                                                                                                                                                                                                                                                               |
 | 3.1.2.1 | MUST   | when `max_age` is exceeded, the OP attempts to actively re-authenticate the end-user                                                                                                                                                                                                           | `OIDC-CORE-3.1.2.1-10` | covered                                                                                                                                                                                                                                                                                                                               |
-| 3.1.2.1 | SHOULD | an error does not result from a `ui_locales` value the OP does not support                                                                                                                                                                                                                     | —                      | gap                                                                                                                                                                                                                                                                                                                                   |
+| 3.1.2.1 | SHOULD | an error does not result from a `ui_locales` value the OP does not support                                                                                                                                                                                                                     | `OIDC-CORE-15.1-02`    | covered                                                                                                                                                                                                                                                                                                                               |
 | 3.1.2.1 | MUST   | when `id_token_hint` is present, the OP returns a positive response if the identified end-user is logged in or becomes logged in as a result of the request, otherwise an error such as `login_required`                                                                                       | `OIDC-CORE-3.1.2.1-09` | covered                                                                                                                                                                                                                                                                                                                               |
 | 3.1.2.1 | MAY    | an `invalid_request` error is returned when `id_token_hint` is absent alongside `prompt=none`                                                                                                                                                                                                  | —                      | gap                                                                                                                                                                                                                                                                                                                                   |
 | 3.1.2.1 | SHOULD | the server responds successfully when possible even when `id_token_hint` is absent                                                                                                                                                                                                             | —                      | gap                                                                                                                                                                                                                                                                                                                                   |

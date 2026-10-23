@@ -1,4 +1,4 @@
-import type { Role, SetRolesResponse } from '@odudu/contracts/admin';
+import type { Client, Role, SetRolesResponse } from '@odudu/contracts/admin';
 import { lacking } from '#/shared/service/access';
 import { beyondCaller, isAdminRole } from '#/shared/service/capabilities';
 import { andList, counted } from '#/shared/service/format';
@@ -23,8 +23,10 @@ export function serviceRolesRecordOf(
 export const SERVICE_RULE =
   'The roles the client holds when it signs in as itself with the client credentials grant. A token it is given carries these, mapped through the scopes it asks for.';
 
-export const NO_ACCOUNT =
-  'This client has no service account: only a confidential client is given one, and a public client signs nobody in as itself.';
+export const MISSING_ACCOUNT = 'This client has no service account.';
+export const PUBLIC_NO_ACCOUNT = 'A public client has no service account.';
+export const SIGN_IN_NO_ACCOUNT =
+  "No service account. This client signs people in; it doesn't sign in as itself.";
 
 export const ROLES_LABEL = 'Roles';
 
@@ -73,16 +75,34 @@ export function assignedRoles(
   return byNameThenClient(assignmentsOf(ids, known));
 }
 
+export const IDLE_ACCOUNT =
+  'Not in use: the client credentials grant is off. The account keeps its roles.';
+
+// An account outlives the grant that uses it, so turning the grant off leaves it idle.
+export function accountIdleNote(
+  client: Pick<Client, 'service_subject_id' | 'grant_types'>,
+): string | null {
+  if (client.service_subject_id === null) return null;
+  return client.grant_types.includes('client_credentials') ? null : IDLE_ACCOUNT;
+}
+
+// The built-in admin client signs people in whatever its type, and a public
+// client has none by kind. Any other client lost its account, which nothing restores.
+function noAccountNote(client: Pick<Client, 'type' | 'builtin_admin'>): string {
+  if (client.builtin_admin) return SIGN_IN_NO_ACCOUNT;
+  return client.type === 'public' ? PUBLIC_NO_ACCOUNT : MISSING_ACCOUNT;
+}
+
 // Whether the tab can say anything of the account: there is one, and the
 // caller may read and set its roles. Until whoami answers nothing is ruled out.
 export type ServiceAccess =
-  { status: 'none' } | { status: 'denied' } | { status: 'ready'; subjectId: string };
+  { status: 'none'; note: string } | { status: 'denied' } | { status: 'ready'; subjectId: string };
 
 export function serviceAccess(
-  client: { service_subject_id: string | null },
+  client: Pick<Client, 'service_subject_id' | 'type' | 'builtin_admin'>,
   authority: Authority | undefined,
 ): ServiceAccess {
-  if (client.service_subject_id === null) return { status: 'none' };
+  if (client.service_subject_id === null) return { status: 'none', note: noAccountNote(client) };
   if (lacking(authority, [SERVICE_CAPABILITY]).length > 0) return { status: 'denied' };
   return { status: 'ready', subjectId: client.service_subject_id };
 }

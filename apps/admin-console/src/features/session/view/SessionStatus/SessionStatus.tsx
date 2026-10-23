@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { CONSOLE_TITLE } from '#/shared/service/product';
+import { BrandLine } from '#/shared/view/BrandLine';
 import styles from '#/features/session/view/SessionStatus/SessionStatus.module.css';
 
 // The page shown while the session is read, or while the window leaves for a
@@ -7,7 +9,9 @@ export function SessionStatus({ title, children }: { title: string; children: Re
   return (
     <main id="main" tabIndex={-1} className={styles.page}>
       <div className={styles.panel}>
-        <p className={styles.brand}>Odudu console</p>
+        <p className={styles.brand}>
+          <BrandLine>{CONSOLE_TITLE}</BrandLine>
+        </p>
         <h1 className={styles.title}>{title}</h1>
         {children}
       </div>

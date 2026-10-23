@@ -87,12 +87,31 @@ describe('GET /console/*', () => {
   });
 });
 
+describe('a /console/* path the client router does not know', () => {
+  // The route table lives in the client, under a tenant segment the server
+  // cannot enumerate, so the gateway answers every GET under /console/ with the
+  // shell and the client's own not-found screen says so.
+  it('is the shell with status 200, as any known screen is', async () => {
+    const stack = await startConsoleApp({ database: appDb, ownerDatabase: owner }, BASE, {
+      consoleDir: CONSOLE_DIR,
+    });
+    const res = await stack.app.inject({
+      url: '/console/no/such/screen',
+      headers: { host: 'console.example.test' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toContain('<div id="root">');
+    await stack.app.close();
+  });
+});
+
 describe('ODUDU_CONSOLE=false', () => {
   it.each(['/console/auth/login?tenant=system', '/console/api/session', '/console/'])(
     'registers no console route, so %s is the root not-found answer',
     async (url) => {
       const config = loadConfig({ ...process.env, ODUDU_CONSOLE: 'false' });
       const app = buildApp({
+        tls: false,
         database: appDb,
         ownerDatabase: owner,
         kek: KEK,
@@ -107,7 +126,7 @@ describe('ODUDU_CONSOLE=false', () => {
         expect(res.headers['set-cookie']).toBeUndefined();
         const problem = res.json<{ status: number; detail: string }>();
         expect(problem.status).toBe(404);
-        expect(problem.detail).toContain(url);
+        expect(problem.detail).toBe('No resource at this path');
       } finally {
         await app.close();
       }

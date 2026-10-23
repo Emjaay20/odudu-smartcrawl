@@ -4,6 +4,12 @@
 #   ODUDU_HOST_PORT / POSTGRES_HOST_PORT  host ports (default 3080 / 5462)
 #   E2E_KEEP_STACK=1                      leave the stack up afterwards
 #   E2E_COMPOSE_PROJECT                   the stack's project name (default odudu-e2e)
+#   E2E_PREBUILT=1                        do not rebuild the image: compose starts the
+#                                         one tagged <project>-odudu if it exists (CI
+#                                         builds it against a layer cache), and builds
+#                                         only if it does not. It must carry the revision
+#                                         label of ODUDU_REVISION, or of HEAD if unset
+#   E2E_SHARD=<n>/<total>                 run one slice of the specs (playwright --shard)
 #   E2E_PLAYWRIGHT                        a playwright binary to run, in place of
 #                                         `pnpm exec playwright`; the browser install is skipped
 #   E2E_TRACE=<file>                      record the requests each test makes (see docs/phases/p4d.md)
@@ -34,6 +40,22 @@ export ODUDU_HOST_PORT="$host_port"
 export POSTGRES_HOST_PORT="$postgres_port"
 export COMPOSE_PROJECT_NAME="${E2E_COMPOSE_PROJECT:-odudu-e2e}"
 export COMPOSE_FILE="$DOCKER_DIR/compose.yaml"
+build_flag=(--build)
+if [ "${E2E_PREBUILT:-}" = "1" ]; then
+  build_flag=()
+  expected_revision="${ODUDU_REVISION:-$(git -C "$REPO" rev-parse HEAD)}"
+  actual_revision="$(docker image inspect "$COMPOSE_PROJECT_NAME-odudu" \
+    --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' 2>/dev/null || true)"
+  if [ -n "$actual_revision" ] && [ "$actual_revision" != "$expected_revision" ]; then
+    echo "$COMPOSE_PROJECT_NAME-odudu was built from '$actual_revision', not '$expected_revision'." >&2
+    echo "Build it from this commit (ODUDU_REVISION=$expected_revision), or run without E2E_PREBUILT." >&2
+    exit 1
+  fi
+fi
+shard_flag=()
+if [ -n "${E2E_SHARD:-}" ]; then
+  shard_flag=(--shard "$E2E_SHARD")
+fi
 # Every test signs in, from one origin, more often than a person would.
 export ODUDU_THROTTLE_LIMIT=10000
 export ODUDU_LOGIN_THROTTLE_LIMIT=10000
@@ -50,13 +72,13 @@ cleanup() {
 }
 trap cleanup EXIT
 
-compose up -d --build --wait --wait-timeout 180 postgres odudu
+compose up -d ${build_flag[@]+"${build_flag[@]}"} --wait --wait-timeout 180 postgres odudu
 
 cd "$REPO/apps/admin-console"
 if [ -n "${E2E_PLAYWRIGHT:-}" ]; then
-  "$E2E_PLAYWRIGHT" test --config e2e/playwright.config.ts "$@"
+  "$E2E_PLAYWRIGHT" test --config e2e/playwright.config.ts ${shard_flag[@]+"${shard_flag[@]}"} "$@"
 else
   # For a developer's own machine; CI installs Chromium with its OS deps first.
   pnpm exec playwright install chromium
-  pnpm exec playwright test --config e2e/playwright.config.ts "$@"
+  pnpm exec playwright test --config e2e/playwright.config.ts ${shard_flag[@]+"${shard_flag[@]}"} "$@"
 fi

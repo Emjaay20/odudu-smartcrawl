@@ -20,6 +20,7 @@ import { FakeClock, newId } from '@odudu/kernel';
 import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/testkit';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { type RecoveryCodesOffer } from '#/view/recovery-codes-html';
 import { requiredActionRepository } from '#/repository/required-actions';
 import { type PendingRequest } from '#/schema/authentication-sessions';
 import { authenticationExecutions } from '#/schema/execution';
@@ -115,6 +116,33 @@ async function enrolTotp(
   expect(outcome).toEqual({ kind: 'enrolled' });
 }
 
+// The offer of a set the subject was entitled to, or a failure naming why not.
+async function issued(
+  tx: TenantScopedDatabase,
+  input: { tenantId: string; subjectId: string },
+): Promise<RecoveryCodesOffer> {
+  const outcome = await beginRecoveryCodes(tx, input);
+  if (outcome.kind !== 'issued') throw new Error('expected a set to be issued');
+  return outcome.offer;
+}
+
+// A set written as rows, for a subject that has no second factor: what the
+// issuing function would now refuse, and what a repository probe still needs.
+async function holdCodes(
+  tx: TenantScopedDatabase,
+  tenantId: string,
+  subjectId: string,
+): Promise<void> {
+  for (let n = 0; n < RECOVERY_CODE_COUNT; n += 1) {
+    await credentialRepository(tx).insert({
+      tenantId,
+      subjectId,
+      type: 'recovery-code',
+      secret: { kind: 'recovery-code', hash: await hashPassword(`held-${String(n)}`) },
+    });
+  }
+}
+
 async function seedUser(
   tx: TenantScopedDatabase,
   tenantId: string,
@@ -149,9 +177,7 @@ async function seedAccountWithCodes(clock: FakeClock, username = 'ada'): Promise
     await enrolTotp(tx, tenantId, subject, clock);
     return subject;
   });
-  const offer = await withTenant(app.db, tenantId, (tx) =>
-    beginRecoveryCodes(tx, { tenantId, subjectId }),
-  );
+  const offer = await withTenant(app.db, tenantId, (tx) => issued(tx, { tenantId, subjectId }));
   return { tenantId, subjectId, codes: offer.codes };
 }
 
@@ -327,7 +353,7 @@ describe('a recovery code stands in for the second factor, once', () => {
     const account = await seedAccountWithCodes(clock);
 
     const reissued = await withTenant(app.db, account.tenantId, (tx) =>
-      beginRecoveryCodes(tx, { tenantId: account.tenantId, subjectId: account.subjectId }),
+      issued(tx, { tenantId: account.tenantId, subjectId: account.subjectId }),
     );
     expect(reissued.replaced).toBe(true);
     expect(await storedCodes(account)).toHaveLength(RECOVERY_CODE_COUNT);
@@ -352,9 +378,13 @@ describe('a recovery code stands in for the second factor, once', () => {
   it("does not authenticate one subject with another's code from the same tenant", async () => {
     const clock = clockAt();
     const ada = await seedAccountWithCodes(clock, 'ada');
-    const bob = await withTenant(app.db, ada.tenantId, (tx) => seedUser(tx, ada.tenantId, 'bob'));
+    const bob = await withTenant(app.db, ada.tenantId, async (tx) => {
+      const subject = await seedUser(tx, ada.tenantId, 'bob');
+      await enrolTotp(tx, ada.tenantId, subject, clock);
+      return subject;
+    });
     const bobsCodes = await withTenant(app.db, ada.tenantId, (tx) =>
-      beginRecoveryCodes(tx, { tenantId: ada.tenantId, subjectId: bob }),
+      issued(tx, { tenantId: ada.tenantId, subjectId: bob }),
     );
 
     // ada's attempt, bob's own valid code: the codes are read for the
@@ -446,9 +476,7 @@ describe('the second-factor form offers both, and the recovery code wins the ste
 
     // Fresh codes: the enrolment above owed a set, and asking for them is
     // what a subject who has just lost the authenticator would have done.
-    const offer = await withTenant(app.db, tenantId, (tx) =>
-      beginRecoveryCodes(tx, { tenantId, subjectId }),
-    );
+    const offer = await withTenant(app.db, tenantId, (tx) => issued(tx, { tenantId, subjectId }));
     const outcome = await withTenant(app.db, tenantId, (tx) =>
       advance(tx, authSessionId, { recoveryCode: offer.codes[0] ?? '' }, clock, {
         logger: SILENT_LOGGER,
@@ -537,7 +565,7 @@ describe('enrolling a second factor asks for a recovery path', () => {
     const subjectId = await withTenant(app.db, tenantId, async (tx) => {
       await seedTenant(tx, tenantId);
       const subject = await seedUser(tx, tenantId, 'ada');
-      await beginRecoveryCodes(tx, { tenantId, subjectId: subject });
+      await holdCodes(tx, tenantId, subject);
       return subject;
     });
 
@@ -633,7 +661,7 @@ describe('credentialRepository — the recovery-code writes', () => {
       seed: async (tx, tenantId) => {
         await seedTenant(tx, tenantId);
         const subjectId = await seedUser(tx, tenantId, 'ada');
-        await beginRecoveryCodes(tx, { tenantId, subjectId });
+        await holdCodes(tx, tenantId, subjectId);
         const [stored] = await credentialRepository(tx).listFor(subjectId, 'recovery-code');
         if (stored === undefined) throw new Error('expected the seeded codes back');
         return { subjectId, id: stored.id };
@@ -665,7 +693,7 @@ describe('credentialRepository — the recovery-code writes', () => {
       seed: async (tx, tenantId) => {
         await seedTenant(tx, tenantId);
         const subjectId = await seedUser(tx, tenantId, 'ada');
-        await beginRecoveryCodes(tx, { tenantId, subjectId });
+        await holdCodes(tx, tenantId, subjectId);
         return { subjectId };
       },
       verifySeeded: async (tx, seeded) => {
@@ -694,7 +722,7 @@ describe('credentialRepository — the recovery-code writes', () => {
       seed: async (tx, tenantId) => {
         await seedTenant(tx, tenantId);
         const subjectId = await seedUser(tx, tenantId, 'ada');
-        await beginRecoveryCodes(tx, { tenantId, subjectId });
+        await holdCodes(tx, tenantId, subjectId);
         return { subjectId };
       },
       verifySeeded: async (tx, seeded) => {

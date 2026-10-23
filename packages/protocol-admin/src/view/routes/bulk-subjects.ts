@@ -7,7 +7,13 @@ import { bulkSubjects, type BulkSubjectOutcome } from '#/usecase/bulk-subjects';
 import { clearLockouts, type LockoutsAuditEvent } from '#/usecase/lockouts';
 import { type Audit as SessionAudit } from '#/usecase/sessions';
 import { type Audit as SubjectAudit } from '#/usecase/subjects';
-import { lastAdministratorProblem, problem, sendProblem, type Problem } from '#/view/problem';
+import {
+  lastAdministratorProblem,
+  problem,
+  sendProblem,
+  serviceAccountProblem,
+  type Problem,
+} from '#/view/problem';
 import { adminTx } from '#/view/routes/admin-tx';
 import { recordRefusal, type AdminRouteHandler } from '#/view/routes/router';
 import { targetCeilingDetail } from '#/view/routes/subjects';
@@ -56,6 +62,8 @@ function resultOf(outcome: BulkSubjectOutcome): BulkSubjectResult {
       );
     case 'last_administrator':
       return refusal(outcome.id, lastAdministratorProblem(outcome.reason));
+    case 'service_account':
+      return refusal(outcome.id, serviceAccountProblem(outcome.clientId));
   }
 }
 

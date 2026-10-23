@@ -208,3 +208,9 @@ export async function sessionTenant(page: Page): Promise<string | null> {
   const body: unknown = await response.json();
   return typeof body === 'object' && body !== null && 'tenant' in body ? String(body.tenant) : null;
 }
+
+// React Aria keeps the radio input itself out of reach of the pointer.
+export async function chooseTheme(page: Page, name: string): Promise<void> {
+  await page.getByRole('radiogroup', { name: 'Theme' }).getByText(name, { exact: true }).click();
+  await expect(page.getByRole('radio', { name })).toBeChecked();
+}

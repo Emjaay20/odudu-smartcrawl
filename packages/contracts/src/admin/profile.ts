@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { noBidiControls } from '#/bidi';
 
 // PostgreSQL's `text` cannot hold a NUL byte (see `searchPrefixSchema`,
 // #/admin/shared.ts): every claim column is `text`, so the same guard
@@ -8,6 +9,21 @@ const claim = z
   .string()
   .regex(/^[^\u0000]*$/)
   .nullable();
+
+// A claim that names a person, as an imported document carries it: a creation,
+// so it holds no bidirectional control, which would reorder the text around it
+// wherever it is shown. The PATCH body takes the plain claim instead, because
+// an amendment is judged against the stored value (usecase/profile.ts).
+const nameClaim = noBidiControls(z.string().regex(/^[^\u0000]*$/)).nullable();
+
+export const nameClaims = {
+  name: nameClaim,
+  given_name: nameClaim,
+  family_name: nameClaim,
+  middle_name: nameClaim,
+  nickname: nameClaim,
+  preferred_username: nameClaim,
+};
 
 // Every OIDC Core §5.1 claim column on `users`, in the snake_case a wire
 // shape carries — `username_search`/`email_search` (packages/db/drizzle/

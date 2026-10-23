@@ -1,7 +1,7 @@
 import { sessionRepository } from '@odudu/authn-flows';
 import { signingKeyRepository } from '@odudu/crypto';
 import { type DatabaseHandle, type TenantScopedDatabase, withTenant } from '@odudu/db';
-import { auditRepository } from '@odudu/domain-audit';
+import { auditRepository, type AdminMutationAction } from '@odudu/domain-audit';
 import { effectiveRoles } from '@odudu/domain-authz';
 import { hashPassword, subjectIsEnabled, subjectRepository } from '@odudu/domain-identity';
 import { ADMIN_CLIENT_ID, clientRepository } from '@odudu/domain-tenant';
@@ -130,6 +130,9 @@ import {
   assignScopeToClientHandler,
   createScopeHandler,
   deleteScopeHandler,
+  listBuiltinScopesHandler,
+  readScopeImpactHandler,
+  restoreBuiltinScopesHandler,
   listScopeClientsHandler,
   listScopesHandler,
   readScopeHandler,
@@ -320,7 +323,7 @@ function buildAdminRoutes(
     async function recordAudit(
       tx: TenantScopedDatabase,
       event: {
-        readonly action: string;
+        readonly action: AdminMutationAction;
         readonly resourceType: string;
         readonly resourceId: string | null;
         readonly actorSubjectId: string;
@@ -430,6 +433,7 @@ function buildAdminRoutes(
         resolve: resolveHostAddresses,
       },
       deploymentSmtp: deps.deploymentSmtp ?? false,
+      now: () => clock.now(),
     };
     const tenantsDeps: TenantsRouteDeps = {
       database: deps.database.db,
@@ -574,7 +578,7 @@ function buildAdminRoutes(
       'PATCH /admin/tenants/:tenant/subjects/:id/profile': amendProfileHandler(subjectsDeps),
       'GET /admin/tenants/:tenant/subjects/:id/credentials': listCredentialsHandler(subjectsDeps),
       'DELETE /admin/tenants/:tenant/subjects/:id/credentials/:credentialId':
-        deleteCredentialHandler(subjectsDeps),
+        deleteCredentialHandler(subjectsDeps, sessionsDeps),
       'GET /admin/tenants/:tenant/subjects/:id/consents': listConsentsHandler(consentsDeps),
       'DELETE /admin/tenants/:tenant/subjects/:id/consents/:clientId':
         deleteConsentHandler(consentsDeps),
@@ -662,9 +666,13 @@ function buildAdminRoutes(
       'GET /admin/tenants/:tenant/scopes': listScopesHandler(scopesDeps),
       'GET /admin/tenants/:tenant/scopes/count': countScopesHandler(countsDeps),
       'POST /admin/tenants/:tenant/scopes': createScopeHandler(scopesDeps),
+      'GET /admin/tenants/:tenant/scopes/builtins': listBuiltinScopesHandler(scopesDeps),
+      'POST /admin/tenants/:tenant/scopes/restore-builtins':
+        restoreBuiltinScopesHandler(scopesDeps),
       'GET /admin/tenants/:tenant/scopes/:id': readScopeHandler(scopesDeps),
       'PATCH /admin/tenants/:tenant/scopes/:id': amendScopeHandler(scopesDeps),
       'DELETE /admin/tenants/:tenant/scopes/:id': deleteScopeHandler(scopesDeps),
+      'GET /admin/tenants/:tenant/scopes/:id/impact': readScopeImpactHandler(scopesDeps),
       'GET /admin/tenants/:tenant/scopes/:id/roles': readScopeRolesHandler(scopesDeps),
       'PUT /admin/tenants/:tenant/scopes/:id/roles': setScopeRolesHandler(scopesDeps),
       'GET /admin/tenants/:tenant/scopes/:id/clients': listScopeClientsHandler(scopesDeps),

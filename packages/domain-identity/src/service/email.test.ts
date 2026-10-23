@@ -58,4 +58,14 @@ describe('[ODUDU-EMAIL-01] a stored email address is one an `email` claim may ca
     const domain = `${'a'.repeat(60)}.${'b'.repeat(60)}.${'c'.repeat(60)}.example.com`;
     expect(isEmailAddress(`${'a'.repeat(64)}@${domain}`)).toBe(false);
   });
+
+  // The addr-spec subset is ASCII, so an address cannot carry a bidirectional
+  // control: the email field needs no rule of its own beside this one.
+  it.each(['\u202E', '\u2066', '\u2069', '\u200F'])(
+    'rejects the control U+%s anywhere',
+    (control) => {
+      expect(isEmailAddress(`ada${control}@example.com`)).toBe(false);
+      expect(isEmailAddress(`ada@exam${control}ple.com`)).toBe(false);
+    },
+  );
 });

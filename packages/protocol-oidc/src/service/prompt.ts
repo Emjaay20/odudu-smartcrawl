@@ -1,9 +1,18 @@
+import {
+  CORE_PROMPT_VALUES,
+  promptValuesSupported,
+  REGISTRATION_PROMPT_VALUE,
+  type PromptValue,
+} from '@odudu/contracts';
+
 // OIDC Core §3.1.2.1's `prompt`: a space-delimited, case-sensitive list of
 // ASCII values naming whether the authorization server may interact with the
-// End-User at all.
-export type PromptValue = 'none' | 'login' | 'consent' | 'select_account';
+// End-User at all. `create` is Initiating User Registration via OpenID
+// Connect 1.0 §4: show the account creation page instead of the login. The
+// values are the discovery document's, so what is parsed is what is listed.
+export { promptValuesSupported, type PromptValue };
 
-const DEFINED = new Set<string>(['none', 'login', 'consent', 'select_account']);
+const DEFINED = new Set<string>([...CORE_PROMPT_VALUES, REGISTRATION_PROMPT_VALUE]);
 
 function isPromptValue(token: string): token is PromptValue {
   return DEFINED.has(token);
@@ -11,8 +20,8 @@ function isPromptValue(token: string): token is PromptValue {
 
 export type PromptParse =
   | { kind: 'ok'; values: ReadonlySet<PromptValue> }
-  // `none` combined with anything else, or a value this server does not
-  // define. §3.1.2.1 requires the first and permits the second.
+  // `none` or `create` combined with anything else, or a value this server
+  // does not define. §3.1.2.1 requires the first and permits the third.
   | { kind: 'invalid' };
 
 // Absent, empty, and all-whitespace all parse to no values: an empty
@@ -32,6 +41,10 @@ export function parsePrompt(raw: string | undefined): PromptParse {
   // returned" — the two demands contradict each other, and a server that
   // picked one of them would be guessing which one the client meant.
   if (values.has('none') && values.size > 1) return { kind: 'invalid' };
+  // Initiating User Registration §4 recommends `create` not be combined
+  // with any other value, since "mutually exclusive conditions can arise";
+  // refused for the same reason as `none`, rather than silently resolved.
+  if (values.has('create') && values.size > 1) return { kind: 'invalid' };
 
   return { kind: 'ok', values };
 }

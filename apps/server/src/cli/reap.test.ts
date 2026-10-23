@@ -37,6 +37,7 @@ describe('the order the retention pass runs in', () => {
         'authorization_codes',
         'authentication_sessions',
         'action_tokens',
+        'pending_registrations',
         'client_registration_tokens',
         'login_failures',
         'email_outbox',

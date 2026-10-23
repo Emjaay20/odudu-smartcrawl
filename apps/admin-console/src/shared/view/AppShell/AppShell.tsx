@@ -9,6 +9,8 @@ import {
   type RefObject,
 } from 'react';
 import { Dialog, DialogTrigger, Modal, ModalOverlay } from 'react-aria-components';
+import { PRODUCT_NAME } from '#/shared/service/product';
+import { BrandLine } from '#/shared/view/BrandLine';
 import { Button } from '#/shared/view/Button';
 import { KeyHint } from '#/shared/view/KeyHint';
 import styles from '#/shared/view/AppShell/AppShell.module.css';
@@ -84,7 +86,7 @@ function Toggle({
 export function AppShell({
   rail,
   contextBar,
-  brand = 'Odudu',
+  brand = PRODUCT_NAME,
   collapsed = false,
   onCollapsedChange,
   shortcutsPaused = false,
@@ -152,7 +154,9 @@ export function AppShell({
         ) : null}
         <div className={styles.column}>
           <header className={styles.topBar}>
-            <span className={styles.brand}>{brand}</span>
+            <span className={styles.brand}>
+              <BrandLine>{brand}</BrandLine>
+            </span>
             <span className={styles.topActions}>
               {railShown ? null : (
                 <span className={styles.expand}>

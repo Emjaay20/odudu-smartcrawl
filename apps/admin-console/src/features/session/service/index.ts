@@ -4,7 +4,6 @@ export {
   type AdminCapability,
   type Authority,
   type Principal,
-  CONSOLE_ROOT,
   returnPath,
   loginUrl,
   CHOOSE_TENANT,

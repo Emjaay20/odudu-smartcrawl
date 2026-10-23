@@ -25,6 +25,7 @@ export interface AdminIds {
   readonly role: string;
   readonly group: string;
   readonly scope: string;
+  readonly builtinScope: string;
   readonly registrationToken: string;
   readonly key: string;
   readonly session: string;
@@ -55,6 +56,10 @@ export async function adminIds(world: PlanWorld): Promise<AdminIds> {
     scope: await one(
       sql`select id from client_scopes where tenant_id = ${t} and name = 'scope-1'`,
       'scope',
+    ),
+    builtinScope: await one(
+      sql`select id from client_scopes where tenant_id = ${t} and name = 'profile'`,
+      'built-in scope',
     ),
     registrationToken: await one(
       sql`select id from client_registration_tokens where tenant_id = ${t} limit 1`,
@@ -346,6 +351,9 @@ export function adminPaths(ids: AdminIds): {
     { path: `${T}/roles/${ids.role}` },
     { path: `${T}/groups/${ids.group}` },
     { path: `${T}/scopes/${ids.scope}` },
+    { path: `${T}/scopes/${ids.scope}/impact` },
+    { path: `${T}/scopes/${ids.builtinScope}/impact` },
+    { path: `${T}/scopes/builtins` },
   ];
   return { lists, reads };
 }

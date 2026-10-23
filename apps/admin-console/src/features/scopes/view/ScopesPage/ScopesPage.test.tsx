@@ -59,3 +59,8 @@ it('passes axe in both themes, listed and refused', async () => {
     ),
   ).toEqual({ light: [], dark: [] });
 });
+
+it('offers to restore the built-in scopes beside creating a scope', async () => {
+  renderConsoleAt(AT, scopeRoutes());
+  expect(await screen.findByRole('button', { name: 'Restore built-in scopes' })).toBeVisible();
+});
