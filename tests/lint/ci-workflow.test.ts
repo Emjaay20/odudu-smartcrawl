@@ -385,6 +385,40 @@ describe('the CI workflow', () => {
     });
   });
 
+  describe('the Playwright action', () => {
+    it('makes apt fail fast, off the slow mirror, and retries a stalled install', async () => {
+      const action = await read('.github/actions/playwright/action.yml');
+      for (const setting of [
+        'Acquire::Retries "5";',
+        'Acquire::http::Timeout "20";',
+        'Acquire::https::Timeout "20";',
+        'Acquire::ForceIPv4 "true";',
+        '/etc/apt/apt.conf.d/80-odudu-retries',
+        's|http://azure.archive.ubuntu.com|http://archive.ubuntu.com|g',
+      ]) {
+        expect(action, setting).toContain(setting);
+      }
+      expect(action.match(/for attempt in 1 2 3; do/gu)).toHaveLength(2);
+      expect(action.match(/timeout 8m pnpm /gu)).toHaveLength(2);
+      expect(action).toContain('playwright install --with-deps chromium');
+      expect(action).toContain('playwright install-deps chromium');
+      expect(action).toContain('key: playwright-${{ runner.os }}-chromium-');
+    });
+
+    it('is the only place the workflows install browsers or call apt', async () => {
+      const files = [
+        '.github/workflows/verify.yml',
+        '.github/workflows/docs-commands.yml',
+        '.github/workflows/release.yml',
+        '.github/actions/setup/action.yml',
+        '.github/actions/image/action.yml',
+      ];
+      for (const file of files) {
+        expect(await read(file), file).not.toMatch(/apt-get|playwright install/u);
+      }
+    });
+  });
+
   it("runs the guides' commands in a workflow of its own, on pull requests, and always tears down", async () => {
     const workflow = await read('.github/workflows/docs-commands.yml');
     expect(workflow).toMatch(/^on:\n {2}pull_request:\s*$/mu);

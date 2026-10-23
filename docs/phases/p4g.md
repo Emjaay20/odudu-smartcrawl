@@ -3487,3 +3487,7 @@ GitHub's runners, GHCR and cosign is an assumption until `v0.1.0-rc.1` runs.
   `gate` is a check run on that head commit.
 - `assumption:` `releases/latest/download/compose.yaml` skips pre-releases.
 - The examples against the published digest (the plan's Task 6c) wait for the rc.
+
+**The Playwright action retries.** On 2026-10-23 the `docs` job was cancelled twice: apt fetched 25.9 MB in
+10 minutes from the Azure mirror, then a second run made no progress until the job limit. The action now
+configures apt retries and timeouts, uses the main mirror, and kills and retries an install after 8 minutes, up to three times.
