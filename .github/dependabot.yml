@@ -12,6 +12,10 @@ updates:
     groups:
       fastify:
         patterns: ['fastify', '@fastify/*']
+      # Everything else that moves by a minor or patch lands in one weekly PR.
+      npm-minor-patch:
+        patterns: ['*']
+        update-types: ['minor', 'patch']
     # The types follow the Node major the server runs on (ADR 0001).
     ignore:
       - dependency-name: '@types/node'
@@ -20,6 +24,10 @@ updates:
     directory: /examples/web-app
     schedule:
       interval: weekly
+    groups:
+      example-minor-patch:
+        patterns: ['*']
+        update-types: ['minor', 'patch']
     # The examples follow the repository's Node and TypeScript majors.
     ignore:
       - dependency-name: '@types/node'
@@ -30,6 +38,10 @@ updates:
     directory: /examples/single-page-app
     schedule:
       interval: weekly
+    groups:
+      example-minor-patch:
+        patterns: ['*']
+        update-types: ['minor', 'patch']
     # The examples follow the repository's Node and TypeScript majors.
     ignore:
       - dependency-name: '@types/node'
@@ -40,6 +52,10 @@ updates:
     directory: /examples/api
     schedule:
       interval: weekly
+    groups:
+      example-minor-patch:
+        patterns: ['*']
+        update-types: ['minor', 'patch']
     # The examples follow the repository's Node and TypeScript majors.
     ignore:
       - dependency-name: '@types/node'
@@ -50,6 +66,10 @@ updates:
     directory: /examples/machine-to-machine
     schedule:
       interval: weekly
+    groups:
+      example-minor-patch:
+        patterns: ['*']
+        update-types: ['minor', 'patch']
     # The examples follow the repository's Node and TypeScript majors.
     ignore:
       - dependency-name: '@types/node'
@@ -60,6 +80,10 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    groups:
+      actions-minor-patch:
+        patterns: ['*']
+        update-types: ['minor', 'patch']
   # Base images are pinned by digest (tests/lint/base-images-pinned.test.ts);
   # Dependabot moves the tag and the digest together.
   - package-ecosystem: docker
