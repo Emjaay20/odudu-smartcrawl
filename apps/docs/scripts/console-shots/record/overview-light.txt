@@ -183,6 +183,13 @@ ui_
 locales_
 supported
 en
+prompt_
+values_
+supported
+none
+login
+consent
+select_account
 scopes_
 supported
 address
@@ -351,6 +358,12 @@ Raw discovery document
   "claims_parameter_supported": true,
   "ui_locales_supported": [
     "en"
+  ],
+  "prompt_values_supported": [
+    "none",
+    "login",
+    "consent",
+    "select_account"
   ],
   "backchannel_logout_supported": true,
   "backchannel_logout_session_supported": true,
