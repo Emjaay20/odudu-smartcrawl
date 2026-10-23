@@ -85,8 +85,8 @@ describe('the release workflow', () => {
       WORKFLOW.match(
         /uses: actions\/checkout@\S+[^\n]*\n {8}with:\n {10}persist-credentials: false\n/gu,
       ) ?? [];
-    expect(checkouts).toHaveLength(3);
-    expect(careful).toHaveLength(3);
+    expect(checkouts).toHaveLength(4);
+    expect(careful).toHaveLength(4);
   });
 
   it('never puts an expression inside a script, where a tag name could become a command', () => {

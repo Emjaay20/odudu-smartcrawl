@@ -3495,3 +3495,20 @@ wrapper, because apt runs as root and the runner user cannot signal it. The orph
 and the retries died at once. The script rewrites the mirror list, sets `DPkg::Lock::Timeout`, and between attempts
 kills apt, dpkg and clears the locks. verified: a fake apt-get hung in an `ubuntu:24.04` container reproduces the lock
 failure without that step (three attempts, exit 1) and installs on the second attempt with it.
+
+**The site from the release workflow, and the weekly link check.** The `pages` job needs `prepare` and `image` (the
+image job also signs), runs for a stable tag or for a run by hand with `deploy_site`, and builds with the package
+script alone; the address stays in `apps/docs/site.config.ts`. Action commits resolved with
+`gh api repos/<owner>/<repo>/git/ref/tags/<tag>`: configure-pages v6.0.0 `45bfe019`, upload-pages-artifact v5.0.0
+`fc324d35`, deploy-pages v5.0.1 `368f8252`, lychee-action v2.9.0 `e7477775`, cache v5.0.5 `27d5ce7f` (all lightweight
+tags, full SHAs in the workflows). The SBOM is not on the site: the release job has only `odudu-sbom.json`, a map of
+both architectures' SBOMs published as a release asset, not an SPDX file, so `/sbom/odudu.spdx.json` is left out.
+`links.yml` checks `https` links in the Markdown sources, not the built site, so the `--offline` question for the
+`/odudu/` prefix (assumption 14) is not settled and not needed. `apps/docs/site.config.ts` stays the one place that
+defines the address; README, CONTRIBUTING and the issue templates link to it and `tests/docs/site-address.test.ts`
+lists them.
+
+Not observable without a real run: that GitHub accepts the workflow and the `github-pages` environment, that Pages is
+enabled (owner step 4), that the artifact deploys and `page_url` is the address in the config, that lychee resolves
+the Markdown sources with these arguments and its cache, that the old address redirects after a domain swap, and that
+`releases/latest/download/compose.yaml` skips a release candidate. `.lycheeignore` skips the site until it answers.

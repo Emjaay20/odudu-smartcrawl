@@ -38,8 +38,9 @@ Release marked as a pre-release, and nothing that follows `latest` moves.
 
 To run everything except the publishing, start the `release` workflow by hand
 from the Actions tab and give it a version. It builds both architectures and
-checks the notes and the compose file, and pushes nothing. The workflow file has
-to be on `main` for the tab to offer it.
+checks the notes and the compose file, and pushes nothing. Tick `deploy_site` and
+it also publishes the site (owner step 4). The workflow file has to be on `main`
+for the tab to offer it.
 
 ## What the workflow does
 
@@ -50,6 +51,8 @@ to be on `main` for the tab to offer it.
   it by digest without a key, and verifies the signature it just made.
 - **release** attaches `compose.yaml` with this version's image in it, the SBOM
   and `SHA256SUMS` to a GitHub Release.
+- **pages** publishes the documentation site after the image, for a stable tag
+  only. A release candidate never replaces the live site.
 
 A stable tag gets the tags `X.Y.Z`, `X.Y` and `latest`. A release candidate gets
 only `X.Y.Z-rc.N`. Each job holds only the permissions it uses, and the one
@@ -112,8 +115,12 @@ something public.
    `commit-messages`. Do it once each has passed once.
 3. **Turn on private vulnerability reporting.** Settings, Code security,
    Private vulnerability reporting. `SECURITY.md` links to it.
-4. **Confirm GitHub Pages.** Settings, Pages, Source: GitHub Actions, before the
-   site's first deploy.
+4. **Turn on GitHub Pages and publish the site once.** Settings, Pages,
+   Source: GitHub Actions. Then open Actions, release, Run workflow, from
+   `main`, give any version that has a `CHANGELOG.md` section, and tick
+   `deploy_site`. The README and the landing page link to the site, so do this
+   before the first tag. It also builds the image without pushing it, so it
+   takes as long as a dry run. After that, each stable tag redeploys the site.
 5. **Tag the first release candidate.** From the commit CI has passed on:
 
    ```text
@@ -134,7 +141,8 @@ something public.
 ## Moving the site to a domain
 
 Until there is a domain the site is at `https://wizzywit.github.io/odudu/`.
-The address is written in one file. These steps follow GitHub's documentation
+The address is written in one file, `apps/docs/site.config.ts`, and the
+workflow never names it. These steps follow GitHub's documentation
 on custom domains for Pages, read on 2026-10-16.
 
 1. Verify the domain in your account's Pages settings. GitHub recommends doing
@@ -155,3 +163,14 @@ on custom domains for Pages, read on 2026-10-16.
    sitemap in place until the old addresses stop being served.
 7. GitHub should redirect the old `github.io` address. That is our reading, not
    GitHub's statement, so check it with `curl -sI` on the old address.
+
+Cloudflare Pages or Vercel could serve the same built site. Neither is set up,
+and only the `pages` job would change. Vercel's free tier limits commercial
+use, so read its current terms first if Odudu may be offered commercially.
+
+## Link check
+
+`links.yml` checks the external links in the Markdown sources every Monday and
+when run by hand. It is not a pull request check. A failed run means a page
+moved or went away: fix the link. `.lycheeignore` lists addresses to skip, and
+the site's own address is on it until the first deploy. Remove that line then.

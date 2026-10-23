@@ -109,6 +109,12 @@ describe('lintCommand', () => {
     expect(finding).toContain('U+2018');
   });
 
+  it('allows && on one line', () => {
+    expect(
+      lintCommand(block('curl -fsSLO https://example.test/compose.yaml && docker compose up -d')),
+    ).toEqual([]);
+  });
+
   it('does not flag a leading dollar that is a variable', () => {
     expect(lintCommand(block('$HOME/bin/tool'))).toEqual([]);
   });
