@@ -1,6 +1,8 @@
 export { type EmailMessage, type EmailSender } from '#/service/sender';
 export {
   renderVerifyEmail,
+  renderFinishRegistration,
+  type FinishRegistrationInput,
   renderResetPassword,
   renderRequiredActions,
   renderRegistrationDuplicate,

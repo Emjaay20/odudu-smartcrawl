@@ -134,6 +134,7 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
     const username = firstNonEmptyString(body.username);
     const email = firstNonEmptyString(body.email);
     const candidate = readPasswordField(body.password);
+    const again = readPasswordField(body.password_confirm);
     const returnTo = signInPath(request.params.tenant, body.return_to);
     // The form comes back in place, keeping the two values that are safe to
     // keep; a password is never put into a field again.
@@ -160,13 +161,26 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
       candidate.kind === 'present' && candidate.password.length > 0
         ? candidate.password
         : undefined;
-    if (username === undefined || email === undefined || password === undefined) {
+    const confirmation =
+      again.kind === 'present' && again.password.length > 0 ? again.password : undefined;
+    if (
+      username === undefined ||
+      email === undefined ||
+      password === undefined ||
+      confirmation === undefined
+    ) {
       const missing: RegistrationField[] = [
         ...(username === undefined ? (['username'] as const) : []),
         ...(email === undefined ? (['email'] as const) : []),
         ...(password === undefined ? (['password'] as const) : []),
+        ...(confirmation === undefined && password !== undefined
+          ? (['passwordConfirm'] as const)
+          : []),
       ];
       return refuse(400, { missing });
+    }
+    if (password.normalize('NFC') !== confirmation.normalize('NFC')) {
+      return refuse(400, { mismatch: true });
     }
 
     // Only a mail that will carry a link needs to know the sign-in it came out of.

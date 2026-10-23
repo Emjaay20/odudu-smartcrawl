@@ -1052,7 +1052,13 @@ export { tokenGrantRepository, type TokenGrantRecord } from '#/repository/grants
 export { tokenGrants } from '#/schema/token-grants';
 export { refreshTokens } from '#/schema/refresh-tokens';
 export { backchannelLogoutDeliveries } from '#/schema/logout-deliveries';
-export { endSession, type EndSessionDeps, type EndSessionInput } from '#/usecase/end-session';
+export {
+  endAllAccess,
+  endSession,
+  type EndAllAccessInput,
+  type EndSessionDeps,
+  type EndSessionInput,
+} from '#/usecase/end-session';
 export {
   auditRefusalBudgetKey,
   UNLIMITED_AUDIT_REFUSAL_BUDGET,

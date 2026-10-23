@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { MAIL_PALETTE } from '#/service/palette.generated';
 import { renderShell } from '#/service/shell';
 import {
+  renderFinishRegistration,
   renderRecoveryCodesRevoked,
   renderRegistrationDuplicate,
   renderRequiredActions,
@@ -28,6 +29,11 @@ const kinds: Record<string, Kind> = {
     render: (tenantDisplayName, now = NOW) =>
       renderVerifyEmail({ ...base, tenantDisplayName, now }),
     button: 'Verify email',
+  },
+  'finish registration': {
+    render: (tenantDisplayName, now = NOW) =>
+      renderFinishRegistration({ ...base, tenantDisplayName, now }),
+    button: 'Finish sign-up',
   },
   'password reset': {
     render: (tenantDisplayName, now = NOW) =>

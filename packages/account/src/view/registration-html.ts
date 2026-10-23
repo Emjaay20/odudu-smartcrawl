@@ -1,4 +1,9 @@
-import { type PageLocale, type PasswordRules, type RenderedPage } from '@odudu/kernel';
+import {
+  type PageLocale,
+  type PageScript,
+  type PasswordRules,
+  type RenderedPage,
+} from '@odudu/kernel';
 import { escapeHtml, intro, page } from '#/view/document';
 import { links, type WayOn } from '#/view/links';
 import {
@@ -13,7 +18,7 @@ import { t, tHtml, type MessageId } from '#/view/messages';
 import { passwordField } from '#/view/password-field';
 import { ruleHtml, type PasswordViolation } from '#/view/password-rules';
 
-export type RegistrationField = 'username' | 'email' | 'password';
+export type RegistrationField = 'username' | 'email' | 'password' | 'passwordConfirm';
 
 export type RegistrationRefusal =
   'email_taken' | 'username_taken' | 'invalid_email' | 'invalid_username';
@@ -25,6 +30,7 @@ export type RegistrationRefusal =
 export type RegistrationFailure =
   | { readonly missing: readonly RegistrationField[] }
   | { readonly refusal: RegistrationRefusal }
+  | { readonly mismatch: true }
   | { readonly violations: readonly PasswordViolation[] };
 
 const REFUSAL_FIELD: Readonly<Record<RegistrationRefusal, RegistrationField>> = {
@@ -45,9 +51,15 @@ const REQUIRED_MESSAGE: Readonly<Record<RegistrationField, MessageId>> = {
   username: 'registration.refusal.usernameRequired',
   email: 'registration.refusal.emailRequired',
   password: 'registration.refusal.passwordRequired',
+  passwordConfirm: 'registration.refusal.confirmRequired',
 };
 
-const FIELD_ORDER: readonly RegistrationField[] = ['username', 'email', 'password'];
+const FIELD_ORDER: readonly RegistrationField[] = [
+  'username',
+  'email',
+  'password',
+  'passwordConfirm',
+];
 
 function problemsOf(failure: RegistrationFailure | undefined, locale: PageLocale): Problem[] {
   if (failure === undefined) return [];
@@ -56,6 +68,14 @@ function problemsOf(failure: RegistrationFailure | undefined, locale: PageLocale
       fields: [field],
       html: tHtml(locale, REQUIRED_MESSAGE[field]),
     }));
+  }
+  if ('mismatch' in failure) {
+    return [
+      {
+        fields: ['passwordConfirm'],
+        html: tHtml(locale, 'registration.refusal.passwordMismatch'),
+      },
+    ];
   }
   if ('refusal' in failure) {
     return [
@@ -88,6 +108,20 @@ function backToSignIn(signInPath: string | null | undefined, locale: PageLocale)
     : { href: signInPath, text: tHtml(locale, 'link.backToSignIn') };
 }
 
+const PASSWORD_CONFIRM_ID = 'password-confirm';
+
+// Showing the password shows its confirmation too: a second script element
+// under the nonce the hints script already holds, so the policy names one.
+function confirmToggle(script: PageScript): string {
+  return `\n  <script nonce="${script.nonce}">(function () {
+  var first = document.getElementById('password');
+  var again = document.getElementById('${PASSWORD_CONFIRM_ID}');
+  var toggle = document.querySelector('#password-rules button');
+  if (!first || !again || !toggle) return;
+  toggle.addEventListener('click', function () { again.type = first.type; });
+})();</script>`;
+}
+
 export function renderRegistrationForm(
   tenant: string,
   form: RegistrationForm,
@@ -116,6 +150,7 @@ ${problemSummary(problems)}<form method="post" action="${action}">${returnToFiel
   <label>${tHtml(locale, 'registration.username')} <input type="text" name="username" autocomplete="username"${value(form.username)}${attributes('username')}></label>
   <label>${tHtml(locale, 'registration.email')} <input type="email" name="email" autocomplete="email"${value(form.email)}${attributes('email')}></label>
   ${password.html}
+  <label>${tHtml(locale, 'registration.passwordConfirm')} <input type="password" name="password_confirm" id="${PASSWORD_CONFIRM_ID}" autocomplete="new-password" spellcheck="false" autocapitalize="off" autocorrect="off"${attributes('passwordConfirm')}></label>${confirmToggle(password.script)}
   <button type="submit">${tHtml(locale, 'registration.submit')}</button>
 </form>${links([backToSignIn(form.signInPath, locale)])}`,
     password.script,
@@ -160,13 +195,14 @@ export function renderRegistrationSucceededPage(
   signInPath: string | null,
   locale: PageLocale,
 ): RenderedPage {
+  const prefix = verifyEmailRequired ? 'registration.check' : 'registration.succeeded';
   const next = tHtml(
     locale,
-    verifyEmailRequired ? 'registration.succeeded.verify' : 'registration.succeeded.signIn',
+    verifyEmailRequired ? 'registration.check.next' : 'registration.succeeded.signIn',
   );
   return page(
-    t(locale, 'registration.succeeded.title'),
-    `<h1>${tHtml(locale, 'registration.succeeded.title')}</h1>
+    t(locale, `${prefix}.title`),
+    `<h1>${tHtml(locale, `${prefix}.title`)}</h1>
 <p>${next}</p>${links([backToSignIn(signInPath, locale)])}`,
     null,
     [],
@@ -187,6 +223,25 @@ export function renderRegistrationUsernameGonePage(
 <p>${tHtml(locale, 'registration.usernameGone.next')}</p>${links([
       { href: form, text: tHtml(locale, 'link.registerAgain') },
     ])}`,
+    null,
+    [],
+    locale,
+  );
+}
+
+// Said once the account exists: with the way back when the browser that opened
+// the link holds the sign-in it came from, in words when it does not.
+export function renderRegistrationReadyPage(
+  signInPath: string | null,
+  locale: PageLocale,
+): RenderedPage {
+  const next =
+    signInPath === null
+      ? `\n<p>${tHtml(locale, 'registration.ready.next')}</p>`
+      : links([{ href: signInPath, text: tHtml(locale, 'link.continueToSignIn') }]);
+  return page(
+    t(locale, 'registration.ready.title'),
+    `<h1>${tHtml(locale, 'registration.ready.title')}</h1>${next}`,
     null,
     [],
     locale,

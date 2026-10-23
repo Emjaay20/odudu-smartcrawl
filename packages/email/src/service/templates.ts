@@ -17,6 +17,7 @@ interface MailInput {
 }
 
 export type VerifyEmailInput = MailInput;
+export type FinishRegistrationInput = MailInput;
 export type ResetPasswordInput = MailInput;
 
 export interface RequiredActionsInput extends MailInput {
@@ -121,7 +122,7 @@ function page(
 }
 
 interface Linked {
-  readonly kind: 'verify' | 'reset';
+  readonly kind: 'verify' | 'reset' | 'finish';
   readonly input: MailInput;
 }
 
@@ -151,6 +152,12 @@ function renderLinked({ kind, input }: Linked): EmailMessage {
 
 export function renderVerifyEmail(input: VerifyEmailInput): EmailMessage {
   return renderLinked({ kind: 'verify', input });
+}
+
+// The link of a registration that is waiting: it creates nothing by itself,
+// and says so, because the person it reaches may never have asked.
+export function renderFinishRegistration(input: FinishRegistrationInput): EmailMessage {
+  return renderLinked({ kind: 'finish', input });
 }
 
 export function renderResetPassword(input: ResetPasswordInput): EmailMessage {

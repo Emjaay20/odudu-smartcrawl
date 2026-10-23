@@ -327,7 +327,9 @@ test('the password hints are a plain list, and a script ticks them and shows the
     'At least 15 characters',
     'Not a common password',
   ]);
-  const field = page.getByLabel('Password');
+  const field = page.getByLabel('Password', { exact: true });
+  const again = page.getByLabel('Confirm password');
+  await expect(again).toHaveAttribute('autocomplete', 'new-password');
   await expect(field).toHaveAttribute('autocomplete', 'new-password');
   await expect(field).toHaveAttribute('minlength', '15');
   const length = rules.locator('li[data-rule="length"]');
@@ -343,11 +345,13 @@ test('the password hints are a plain list, and a script ticks them and shows the
   await expect(rules.getByRole('status')).toHaveText('1 of 1 rules met');
   await toggle.click();
   await expect(field).toHaveAttribute('type', 'text');
+  await expect(again).toHaveAttribute('type', 'text');
   await expect(toggle).toHaveAttribute('aria-pressed', 'true');
   await expect(toggle).toHaveText('Show password');
   await inspect(page, 'registration-hints-met-shown');
   await toggle.click();
   await expect(field).toHaveAttribute('type', 'password');
+  await expect(again).toHaveAttribute('type', 'password');
   const withScript = await rules.boundingBox();
   expect(problems).toEqual([]);
 
@@ -390,30 +394,44 @@ test('registration, the unverified account, password reset and their links', asy
 
   await page.getByLabel('Username').fill('newcomer');
   await page.getByLabel('Email').fill(`newcomer-${run}@example.test`);
-  await page.getByLabel('Password').fill(COMMON_PASSWORD);
+  await page.getByLabel('Password', { exact: true }).fill(COMMON_PASSWORD);
+  await page.getByLabel('Confirm password').fill(COMMON_PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
   await expect(page.getByRole('alert')).toContainText('That password is too easy to guess.');
   await expect(page.getByLabel('Username')).toHaveValue('newcomer');
-  await expect(page.getByLabel('Password')).toHaveValue('');
-  await expect(page.getByLabel('Password')).toBeFocused();
+  await expect(page.getByLabel('Password', { exact: true })).toHaveValue('');
+  await expect(page.getByLabel('Confirm password')).toHaveValue('');
+  await expect(page.getByLabel('Password', { exact: true })).toBeFocused();
   await expect(page.getByRole('link', { name: 'Back to sign in' })).toBeVisible();
   await inspect(page, 'registration-weak');
 
-  await page.getByLabel('Password').fill(PASSWORD);
+  await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
+  await page.getByLabel('Confirm password').fill('another one');
   await page.getByRole('button', { name: 'Create account' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Account created' })).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText("The passwords don't match.");
+  await expect(page.getByLabel('Confirm password')).toBeFocused();
+  await inspect(page, 'registration-mismatch');
+  await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
+  await page.getByLabel('Confirm password').fill(PASSWORD);
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Check your email' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Back to sign in' })).toBeVisible();
   await inspect(page, 'registration-succeeded');
 
   const key = mailKey(open, `newcomer-${run}@example.test`);
   // Opening the link only asks; the button is what creates the account.
   await page.goto(`/tenants/${open}/login-actions/action-token?key=${key}`);
-  await expect(page.getByRole('heading', { level: 1, name: 'Create your account' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Confirm your email address' }),
+  ).toBeVisible();
+  await expect(page.getByText('Account name: newcomer')).toBeVisible();
   await inspect(page, 'confirm-register');
-  await page.getByRole('button', { name: 'Create my account' }).click();
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('verified');
+  await page.getByRole('button', { name: 'Confirm my email' }).click();
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Your account is ready' }),
+  ).toBeVisible();
   await expect(page.getByRole('link', { name: 'Continue to sign in' })).toBeVisible();
-  await inspect(page, 'verification-ok');
+  await inspect(page, 'registration-ready');
   await page.goto(`/tenants/${open}/login-actions/action-token?key=${key}`);
   await expect(page.getByRole('heading', { level: 1 })).toContainText("can't be used");
   // A registration link is gone once opened, so it names no sign-in to go back to.
@@ -424,7 +442,8 @@ test('registration, the unverified account, password reset and their links', asy
   await page.goto(`/tenants/${open}/login-actions/registration`);
   await page.getByLabel('Username').fill('newcomer');
   await page.getByLabel('Email').fill(`other-${run}@example.test`);
-  await page.getByLabel('Password').fill(PASSWORD);
+  await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
+  await page.getByLabel('Confirm password').fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
   await expect(page.getByRole('alert')).toContainText('That username is already taken.');
   await expect(page.getByLabel('Email')).toHaveValue(`other-${run}@example.test`);
@@ -485,12 +504,13 @@ test('registration, the unverified account, password reset and their links', asy
   await page.goto(`/tenants/${open}/login-actions/registration`);
   await page.getByLabel('Username').fill('direct');
   await page.getByLabel('Email').fill(`direct-${run}@example.test`);
-  await page.getByLabel('Password').fill(PASSWORD);
+  await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
+  await page.getByLabel('Confirm password').fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
   const direct = mailKey(open, `direct-${run}@example.test`);
   await page.goto(`/tenants/${open}/login-actions/action-token?key=${direct}`);
-  await page.getByRole('button', { name: 'Create my account' }).click();
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('verified');
+  await page.getByRole('button', { name: 'Confirm my email' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('account is ready');
   await expect(page.getByText('Return to the application you were signing in to')).toBeVisible();
   await expect(page.getByRole('link')).toHaveCount(0);
   await inspect(page, 'verification-ok-direct');

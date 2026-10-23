@@ -165,7 +165,7 @@ async function registerAccount(
   input: { username: string; email: string; password: string },
   extraHeaders: Record<string, string> = {},
 ): Promise<number> {
-  const form = new URLSearchParams(input);
+  const form = new URLSearchParams({ ...input, password_confirm: input.password });
   const res = await instance.inject({
     method: 'POST',
     url: `/tenants/${tenantName}/login-actions/registration`,

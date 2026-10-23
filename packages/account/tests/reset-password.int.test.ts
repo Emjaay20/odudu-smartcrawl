@@ -30,7 +30,6 @@ import { eq } from 'drizzle-orm';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { accountTestDeps } from '#/testing/support';
-import { type MailGate } from '#/service/mail-gate';
 import { registerActionTokenRoute } from '#/view/routes/action-token';
 import { actionTokenRepository } from '#/repository/action-tokens';
 import { tenantSettingsRepository } from '#/repository/tenant-settings';
@@ -210,14 +209,14 @@ async function drainOutbox(into: EmailSender = sender): Promise<void> {
 
 let sender: ReturnType<typeof fakeSender>;
 let httpApp: FastifyInstance;
-let resetGate: MailGate = () => true;
+let resetGate: (tenantId: string, address: string) => boolean = () => true;
 
 function buildHttpApp(): FastifyInstance {
   const instance = Fastify();
   instance.register(formbody);
   registerResetPasswordRoute(instance, {
     ...accountTestDeps,
-    mailGate: (tenantId, address) => resetGate(tenantId, address),
+    mailGate: (_kind, tenantId, address) => resetGate(tenantId, address),
     findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),

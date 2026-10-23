@@ -236,6 +236,7 @@ async function submitRegistration(
     username: input.username,
     email: input.email,
     password: input.password,
+    password_confirm: input.password,
     ...extra,
   });
   const res = await httpApp.inject({
@@ -364,6 +365,7 @@ describe('self-registration', () => {
         username: 'ada',
         email: 'ada@example.test',
         password: 'x',
+        password_confirm: 'x',
       }).toString(),
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
     });
@@ -697,6 +699,7 @@ describe('self-registration', () => {
         username: 'ada',
         email: 'ada@example.test',
         password: 'correct horse battery',
+        password_confirm: 'correct horse battery',
       }).toString(),
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
     });
@@ -1025,11 +1028,22 @@ describe('a registration that waits for its mailed link', () => {
     });
   }
 
-  function post(tenantName: string, username: string, email: string, password = PASSWORD) {
+  function post(
+    tenantName: string,
+    username: string,
+    email: string,
+    password = PASSWORD,
+    confirmation = password,
+  ) {
     return httpApp.inject({
       method: 'POST',
       url: `/tenants/${tenantName}/login-actions/registration`,
-      payload: new URLSearchParams({ username, email, password }).toString(),
+      payload: new URLSearchParams({
+        username,
+        email,
+        password,
+        password_confirm: confirmation,
+      }).toString(),
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
     });
   }
@@ -1037,9 +1051,9 @@ describe('a registration that waits for its mailed link', () => {
   // The key in the newest verification mail queued for an address.
   async function keyFor(tenantId: string, email: string): Promise<string> {
     const rows = (await outboxRows(tenantId)).filter(
-      (row) => row.toAddress === email && row.subject.startsWith('Verify'),
+      (row) => row.toAddress === email && row.subject.startsWith('Finish'),
     );
-    const link = /visiting this link:\n\n(\S+)/u.exec(rows.at(-1)?.bodyText ?? '')?.[1];
+    const link = /finish:\n\n(\S+)/u.exec(rows.at(-1)?.bodyText ?? '')?.[1];
     const key = link === undefined ? null : new URL(link).searchParams.get('key');
     if (key === null) throw new Error('no verification link was queued');
     return key;
@@ -1117,7 +1131,8 @@ describe('a registration that waits for its mailed link', () => {
 
     for (const res of [first, second]) {
       expect(res.statusCode).toBe(200);
-      expect(res.body).toContain('Create my account');
+      expect(res.body).toContain('Confirm my email');
+      expect(res.body).toContain('Account name: <bdi>ada</bdi>');
       expect(res.headers['cache-control']).toBe('no-store');
       expect(res.headers['referrer-policy']).toBe('no-referrer');
       expect(res.body).not.toMatch(/(src|href)="https?:/u);
@@ -1169,7 +1184,7 @@ describe('a registration that waits for its mailed link', () => {
     expect(held.body).toBe(free.body);
     expect({ ...held.headers, date: '' }).toEqual({ ...free.headers, date: '' });
     const mails = await outboxRows(tenant.tenantId);
-    expect(mails.map((m) => [m.toAddress, m.subject.startsWith('Verify')])).toEqual([
+    expect(mails.map((m) => [m.toAddress, m.subject.startsWith('Finish')])).toEqual([
       ['grace@example.test', true],
       ['ada@example.test', false],
     ]);
@@ -1342,7 +1357,12 @@ describe('a registration that waits for its mailed link', () => {
       counting.inject({
         method: 'POST',
         url: `/tenants/${tenant.tenantName}/login-actions/registration`,
-        payload: new URLSearchParams({ username, email, password }).toString(),
+        payload: new URLSearchParams({
+          username,
+          email,
+          password,
+          password_confirm: password,
+        }).toString(),
         headers: { 'content-type': 'application/x-www-form-urlencoded' },
       });
 
@@ -1353,22 +1373,110 @@ describe('a registration that waits for its mailed link', () => {
     expect(hashed).toBe(2);
   });
 
-  it('queues no mail past the per-address bound, and answers the same', async () => {
+  it('queues no mail past the address budget, answers the same, and leaves an earlier request alone', async () => {
     const tenant = await open();
-    await register(tenant, 'ada', 'ada@example.test');
+    await post(tenant.tenantName, 'ada', 'ada@example.test');
+    const earlier = await keyFor(tenant.tenantId, 'ada@example.test');
+    await register(tenant, 'bea', 'bea@example.test');
     await owner.db.delete(emailOutbox);
     mailAllowed = false;
     httpApp = buildHttpApp();
     await httpApp.ready();
 
+    const again = await post(tenant.tenantName, 'ada3', 'ada@example.test');
     const free = await post(tenant.tenantName, 'grace', 'grace@example.test');
-    const held = await post(tenant.tenantName, 'hedy', 'ada@example.test');
+    const held = await post(tenant.tenantName, 'hedy', 'bea@example.test');
 
+    expect(again.body).toBe(free.body);
     expect(held.body).toBe(free.body);
-    expect(held.statusCode).toBe(201);
     expect(await outboxRows(tenant.tenantId)).toEqual([]);
+    // Nothing was kept for the refused ones, and the earlier link still works.
     expect(await pendingCount(tenant.tenantId)).toBe(1);
+    expect((await follow(tenant.tenantName, earlier)).statusCode).toBe(200);
+    expect(await holder(tenant.tenantId, 'ada')).not.toBeNull();
     expect(await auditActions(tenant.tenantId)).toContain('account.registration_duplicate');
+  });
+
+  it('draws each kind of mail on a budget of its own', async () => {
+    const tenant = await open();
+    await register(tenant, 'ada', 'ada@example.test');
+    const kinds: string[] = [];
+    const recording = Fastify();
+    recording.register(formbody);
+    registerRegistrationRoute(recording, {
+      ...accountTestDeps,
+      mailGate: (kind) => {
+        kinds.push(kind);
+        return true;
+      },
+      findHeldSignIn: () => Promise.resolve(null),
+      database: app,
+      findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
+      publicBaseUrl,
+      now: () => new Date(),
+      createAccount,
+      evaluatePassword,
+    });
+    const send = (username: string, email: string) =>
+      recording.inject({
+        method: 'POST',
+        url: `/tenants/${tenant.tenantName}/login-actions/registration`,
+        payload: new URLSearchParams({
+          username,
+          email,
+          password: PASSWORD,
+          password_confirm: PASSWORD,
+        }).toString(),
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      });
+
+    await send('hedy', 'ada@example.test');
+    await send('grace', 'grace@example.test');
+
+    expect(kinds).toEqual(['held', 'registration']);
+  });
+
+  it('refuses a confirmation that differs, naming the field and giving neither value back', async () => {
+    const tenant = await open();
+
+    const res = await post(
+      tenant.tenantName,
+      'ada',
+      'ada@example.test',
+      PASSWORD,
+      'another-one-here',
+    );
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toContain('The passwords don&#39;t match.');
+    expect(res.body).toMatch(/name="password_confirm"[^>]*aria-invalid="true"/u);
+    expect(res.body).not.toContain(PASSWORD);
+    expect(res.body).not.toContain('another-one-here');
+    expect(await pendingCount(tenant.tenantId)).toBe(0);
+    expect(await outboxRows(tenant.tenantId)).toEqual([]);
+  });
+
+  it('asks for the confirmation, with the toggle covering both fields', async () => {
+    const tenant = await open();
+
+    const form = await httpApp.inject({
+      url: `/tenants/${tenant.tenantName}/login-actions/registration`,
+    });
+    const missing = await httpApp.inject({
+      method: 'POST',
+      url: `/tenants/${tenant.tenantName}/login-actions/registration`,
+      payload: new URLSearchParams({
+        username: 'ada',
+        email: 'ada@example.test',
+        password: PASSWORD,
+      }).toString(),
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    });
+
+    expect(form.body).toMatch(/name="password_confirm"[^>]*autocomplete="new-password"/u);
+    expect(form.body).toContain('again.type = first.type');
+    expect(missing.statusCode).toBe(400);
+    expect(missing.body).toContain('Enter the password again.');
   });
 
   it('records a held address as one refused row naming the account, and nothing else', async () => {
@@ -1402,7 +1510,7 @@ describe('a registration that waits for its mailed link', () => {
     expect(res.statusCode).toBe(201);
     expect(await pendingCount(other.tenantId)).toBe(1);
     const [mail] = await outboxRows(other.tenantId);
-    expect(mail?.subject.startsWith('Verify')).toBe(true);
+    expect(mail?.subject.startsWith('Finish')).toBe(true);
     expect(
       (await auditActions(other.tenantId)).filter((a) => a === 'account.registration_duplicate'),
     ).toEqual([]);

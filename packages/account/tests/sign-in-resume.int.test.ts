@@ -221,7 +221,7 @@ async function mailedKey(tenantId: string): Promise<string> {
     { batchSize: 10, maxAttempts: 3, retryBackoffSeconds: 60 },
   );
   const message = sender.sent.at(-1);
-  const link = /visiting this link:\n\n(\S+)/u.exec(message?.text ?? '')?.[1];
+  const link = /(?:visiting this link|to finish):\n\n(\S+)/u.exec(message?.text ?? '')?.[1];
   if (link === undefined) throw new Error('no link in the mail');
   expect(new URL(link).searchParams.get('return_to')).toBeNull();
   expect([...new URL(link).searchParams.keys()]).toEqual(['key']);
@@ -429,6 +429,7 @@ describe('a verification link mailed from a registration', () => {
         username,
         email: `${username}@example.test`,
         password: PASSWORD,
+        password_confirm: PASSWORD,
         return_to: authorizePath(tenant.name),
       },
       cookie,
@@ -457,7 +458,7 @@ describe('a verification link mailed from a registration', () => {
     const other = await form(`/tenants/${tenant.name}/login-actions/action-token`, { key });
     expect(other.statusCode).toBe(200);
     expect(other.body).not.toContain('Continue to sign in');
-    expect(other.body).toContain(NO_LINK);
+    expect(other.body).toContain('Return to the application you were signing in to and sign in.');
   });
 
   it('names no sign-in when the browser holds none', async () => {

@@ -1,5 +1,5 @@
 export { type FindHeldSignIn, type HeldSignIn } from '#/service/sign-in-resume';
-export { type MailGate } from '#/service/mail-gate';
+export { type MailGate, type MailKind } from '#/service/mail-gate';
 export { actionTokens, type ActionTokenRecord, type ActionTokenType } from '#/schema/action-tokens';
 export { actionTokenRepository, type IssueActionToken } from '#/repository/action-tokens';
 export { tenantSettingsRepository, type TenantSettings } from '#/repository/tenant-settings';

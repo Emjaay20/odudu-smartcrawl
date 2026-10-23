@@ -26,6 +26,10 @@ export interface PendingRegistrationInput {
   readonly now: Date;
 }
 
+export interface WaitingRegistration {
+  readonly username: string;
+}
+
 export interface PendingRegistration {
   readonly username: string;
   readonly email: string;
@@ -69,11 +73,11 @@ export function pendingRegistrationRepository(tx: TenantScopedDatabase) {
       return { key };
     },
 
-    // A read for the page a link opens: whether a request is waiting under
-    // this key. Changes nothing, so a mail scanner's visit leaves it be.
-    async waiting(key: string, now: Date): Promise<boolean> {
+    // A read for the page a link opens: who is waiting under this key, if
+    // anybody. Changes nothing, so a mail scanner's visit leaves it be.
+    async waiting(key: string, now: Date): Promise<WaitingRegistration | null> {
       const rows = await tx
-        .select({ id: pendingRegistrations.id })
+        .select({ username: pendingRegistrations.username })
         .from(pendingRegistrations)
         .where(
           and(
@@ -82,7 +86,7 @@ export function pendingRegistrationRepository(tx: TenantScopedDatabase) {
           ),
         )
         .limit(1);
-      return rows.length > 0;
+      return rows[0] ?? null;
     },
 
     // One statement, so two clicks on a link cannot both create the account.

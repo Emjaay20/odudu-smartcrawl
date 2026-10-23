@@ -57,25 +57,27 @@ export function renderVerificationFailedPage(
   );
 }
 
-export type ConfirmedLink = 'verify' | 'register';
-
-// What a mailed link shows on a visit. Opening it changes nothing: a mail
+// What a mailed link shows on a visit, for an address to confirm and for a
+// registration that waits on it. Opening the link changes nothing: a mail
 // scanner or a link preview reads the page and the key is still good. One
-// button posts the key back, and that is what verifies or creates.
-export function renderLinkConfirmPage(
+// button posts the key back, and that confirms the address (and, for a
+// registration, creates the account named on the page).
+export function renderEmailConfirmPage(
   tenant: string,
   key: string,
-  kind: ConfirmedLink,
+  username: string | null,
   locale: PageLocale,
 ): RenderedPage {
   const action = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/login-actions/action-token`;
+  const account =
+    username === null ? '' : `\n<p>${tHtml(locale, 'confirm.account', {}, { username })}</p>`;
   return page(
-    t(locale, `confirm.${kind}.title`),
-    `<h1>${tHtml(locale, `confirm.${kind}.title`)}</h1>
-<p>${tHtml(locale, `confirm.${kind}.next`)}</p>
+    t(locale, 'confirm.title'),
+    `<h1>${tHtml(locale, 'confirm.title')}</h1>${account}
+<p>${tHtml(locale, 'confirm.next')}</p>
 <form method="post" action="${action}">
   <input type="hidden" name="key" value="${escapeHtml(key)}">
-  <button type="submit">${tHtml(locale, `confirm.${kind}.button`)}</button>
+  <button type="submit">${tHtml(locale, 'confirm.button')}</button>
 </form>`,
     null,
     [],

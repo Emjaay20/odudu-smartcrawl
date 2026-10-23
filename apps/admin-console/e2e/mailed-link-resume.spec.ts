@@ -116,13 +116,14 @@ test('a verification mailed from the console registration, opened in the same br
   await page.getByRole('link', { name: 'Create an account' }).click();
   await page.getByLabel('Username').fill(username);
   await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password').fill(password);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByLabel('Confirm password').fill(password);
   await page.getByRole('button', { name: 'Create account' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Account created' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Check your email' })).toBeVisible();
   await page.goto(linkFor(tenant, mailedKey(tenant, email)));
-  await page.getByRole('button', { name: 'Create my account' }).click();
+  await page.getByRole('button', { name: 'Confirm my email' }).click();
   await expect(
-    page.getByRole('heading', { level: 1, name: 'Your email address is verified' }),
+    page.getByRole('heading', { level: 1, name: 'Your account is ready' }),
   ).toBeVisible();
   // The account exists only now, so it is granted the console's role now.
   seed([

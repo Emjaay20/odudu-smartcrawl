@@ -3,6 +3,7 @@ import { auditRepository, type RequestContext } from '@odudu/domain-audit';
 import {
   isRegistrationKey,
   pendingRegistrationRepository,
+  type WaitingRegistration,
 } from '#/repository/pending-registrations';
 
 // Re-exported so the view layer can tell a registration link from another
@@ -29,6 +30,14 @@ export interface CompleteRegistrationDeps {
     tenantId: string,
     input: VerifiedAccountInput,
   ) => Promise<{ subjectId: string }>;
+  // Held for the rest of the transaction, so everything that creates an account
+  // for an address (this link, an administrator, the seed command) takes its
+  // turn, and the check below sees what the one before it committed.
+  readonly lockAddress: (
+    tx: TenantScopedDatabase,
+    tenantId: string,
+    email: string,
+  ) => Promise<void>;
   readonly findTaken: (
     tx: TenantScopedDatabase,
     tenantId: string,
@@ -41,8 +50,8 @@ export type CompleteRegistrationResult =
   | { kind: 'username_taken' }
   | { kind: 'invalid' };
 
-// One transaction: the pending row is taken, uniqueness is checked again
-// against the accounts that exist now, and the account is made. A key that is
+// One transaction: the pending row is taken, the address is locked, uniqueness
+// is checked again against the accounts that exist now, and the account is made. A key that is
 // unknown, spent, expired or another tenant's gives the same answer.
 export async function completeRegistration(
   deps: CompleteRegistrationDeps,
@@ -55,6 +64,7 @@ export async function completeRegistration(
       async (tx): Promise<CompleteRegistrationResult> => {
         const pending = await pendingRegistrationRepository(tx).take(key, deps.now());
         if (pending === null) return { kind: 'invalid' };
+        await deps.lockAddress(tx, deps.tenantId, pending.email);
         const taken = await deps.findTaken(tx, deps.tenantId, pending);
         if (taken.username) return { kind: 'username_taken' };
         if (taken.emailOwner !== null) return { kind: 'invalid' };
@@ -79,11 +89,11 @@ export async function completeRegistration(
   }
 }
 
-// Whether a link would create an account, asked without creating it.
+// Who a link would create an account for, asked without creating it.
 export async function registrationWaiting(
   deps: Pick<CompleteRegistrationDeps, 'database' | 'tenantId' | 'now'>,
   key: string,
-): Promise<boolean> {
+): Promise<WaitingRegistration | null> {
   return withTenant(deps.database.db, deps.tenantId, (tx) =>
     pendingRegistrationRepository(tx).waiting(key, deps.now()),
   );

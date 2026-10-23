@@ -4,7 +4,7 @@ import Fastify from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
 import { en } from '#/view/messages';
 import {
-  renderLinkConfirmPage,
+  renderEmailConfirmPage,
   renderVerificationFailedPage,
   renderVerificationSucceededPage,
   sendVerificationHtml,
@@ -29,14 +29,14 @@ function expectFragment(page: { html: string; body: string }): void {
 describe('renderVerificationSucceededPage', () => {
   it('returns a body fragment and a title beside the document', () => {
     const page = renderVerificationSucceededPage(null, DEFAULT_PAGE_LOCALE);
-    expect(page.title).toBe('Email verified');
-    expect(page.body).toContain('is verified');
+    expect(page.title).toBe('Email confirmed');
+    expect(page.body).toContain('is confirmed');
     expectFragment(page);
   });
 
   it('keeps the English markup exactly', () => {
     expect(renderVerificationSucceededPage(null, DEFAULT_PAGE_LOCALE).body)
-      .toBe(`<h1>Your email address is verified</h1>
+      .toBe(`<h1>Your email address is confirmed</h1>
 <p>Return to the application you were signing in to and sign in again.</p>`);
   });
 
@@ -46,7 +46,7 @@ describe('renderVerificationSucceededPage', () => {
         '/tenants/acme/protocol/openid-connect/auth?client_id=c',
         DEFAULT_PAGE_LOCALE,
       ).body,
-    ).toBe(`<h1>Your email address is verified</h1>
+    ).toBe(`<h1>Your email address is confirmed</h1>
 <p class="links">
 <a href="/tenants/acme/protocol/openid-connect/auth?client_id=c">Continue to sign in</a>
 </p>`);
@@ -132,23 +132,25 @@ describe('the pages a mailed link opens, with the way back it carried', () => {
   });
 });
 
-describe('renderLinkConfirmPage', () => {
-  it.each([
-    ['register', 'Create my account'],
-    ['verify', 'Confirm email'],
-  ] as const)(
-    'asks for one click on a %s link, and carries the key only in the form',
-    (kind, label) => {
-      const page = renderLinkConfirmPage('acme', 'reg_k"ey', kind, DEFAULT_PAGE_LOCALE);
+describe('renderEmailConfirmPage', () => {
+  it('asks for one click, and carries the key only in the form', () => {
+    const page = renderEmailConfirmPage('acme', 'k"ey', null, DEFAULT_PAGE_LOCALE);
 
-      expectFragment(page);
-      expect(page.body).toContain(`<button type="submit">${label}</button>`);
-      expect(page.body).toContain(
-        '<form method="post" action="/tenants/acme/login-actions/action-token">',
-      );
-      expect(page.body).toContain('<input type="hidden" name="key" value="reg_k&quot;ey">');
-      expect(page.body.match(/<a /gu)).toBeNull();
-      expect(page.script).toBeNull();
-    },
-  );
+    expectFragment(page);
+    expect(page.body).toContain('<h1>Confirm your email address</h1>');
+    expect(page.body).toContain('<button type="submit">Confirm my email</button>');
+    expect(page.body).toContain(
+      '<form method="post" action="/tenants/acme/login-actions/action-token">',
+    );
+    expect(page.body).toContain('<input type="hidden" name="key" value="k&quot;ey">');
+    expect(page.body).not.toContain('Account name');
+    expect(page.body.match(/<a /gu)).toBeNull();
+    expect(page.script).toBeNull();
+  });
+
+  it('names the account a registration link will create, isolated', () => {
+    const page = renderEmailConfirmPage('acme', 'k', '<ada>', DEFAULT_PAGE_LOCALE);
+
+    expect(page.body).toContain('Account name: <bdi>&lt;ada&gt;</bdi>');
+  });
 });

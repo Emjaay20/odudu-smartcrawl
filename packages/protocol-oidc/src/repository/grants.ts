@@ -160,6 +160,18 @@ export function tokenGrantRepository(tx: TenantScopedDatabase) {
       return rows.length;
     },
 
+    // What a recovered account does to every grant it holds, offline ones
+    // included: whoever held a token before the password was reset holds
+    // nothing after. An already-revoked grant keeps its first timestamp.
+    async revokeForSubject(subjectId: string, revokedAt: Date): Promise<number> {
+      const rows = await tx
+        .update(tokenGrants)
+        .set({ revokedAt })
+        .where(and(eq(tokenGrants.subjectId, subjectId), isNull(tokenGrants.revokedAt)))
+        .returning({ id: tokenGrants.id });
+      return rows.length;
+    },
+
     async bySession(sessionId: string): Promise<TokenGrantRecord[]> {
       const rows = await tx.select().from(tokenGrants).where(eq(tokenGrants.sessionId, sessionId));
       return rows.map(toRecord);

@@ -26,6 +26,7 @@ import {
 import {
   credentialRepository,
   isEmailAddress,
+  lockEmailForCreation,
   loginFailures,
   passwordExpired,
   subjectRepository,
@@ -412,6 +413,7 @@ export async function composeUserSubject(
   tx: TenantScopedDatabase,
   input: ComposeUserSubjectInput,
 ): Promise<{ subjectId: string }> {
+  if (input.email !== null) await lockEmailForCreation(tx, input.tenantId, input.email);
   const subject = await subjectRepository(tx).create({ tenantId: input.tenantId, type: 'user' });
   await userRepository(tx).create({
     subjectId: subject.id,

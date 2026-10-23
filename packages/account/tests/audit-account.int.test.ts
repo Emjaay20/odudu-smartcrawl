@@ -124,7 +124,7 @@ function postForm(
 function register(tenantName: string, requestId: string, username = 'ada') {
   return postForm(
     `/tenants/${tenantName}/login-actions/registration`,
-    { username, email: `${username}@example.test`, password: PASSWORD },
+    { username, email: `${username}@example.test`, password: PASSWORD, password_confirm: PASSWORD },
     requestId,
   );
 }
@@ -169,7 +169,7 @@ function expectSubjectRow(
 
 async function mailedVerificationKey(tenantId: string): Promise<string> {
   const [message] = await withTenant(app.db, tenantId, (tx) => tx.select().from(emailOutbox));
-  const link = /visiting this link:\n\n(\S+)/.exec(message?.bodyText ?? '')?.[1];
+  const link = /finish:\n\n(\S+)/.exec(message?.bodyText ?? '')?.[1];
   const key = link === undefined ? null : new URL(link).searchParams.get('key');
   if (key === null) throw new Error('no verification link was queued');
   return key;
@@ -278,7 +278,7 @@ describe('registration writes one account.registered row', () => {
     const weak = `weak-${newId()}`;
     const refused = await postForm(
       `/tenants/${tenant.name}/login-actions/registration`,
-      { username: 'bea', email: 'bea@example.test', password: 'short' },
+      { username: 'bea', email: 'bea@example.test', password: 'short', password_confirm: 'short' },
       weak,
     );
     expect(refused.statusCode).toBe(400);
@@ -295,7 +295,12 @@ describe('registration writes one account.registered row', () => {
     const requestId = `again-${newId()}`;
     const again = await postForm(
       `/tenants/${tenant.name}/login-actions/registration`,
-      { username: 'bea', email: 'ada@example.test', password: PASSWORD },
+      {
+        username: 'bea',
+        email: 'ada@example.test',
+        password: PASSWORD,
+        password_confirm: PASSWORD,
+      },
       requestId,
     );
 

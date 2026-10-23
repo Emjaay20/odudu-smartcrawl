@@ -32,12 +32,15 @@ import {
   renderRequiredActionsSucceededPage,
 } from '#/view/required-actions-html';
 import {
-  renderLinkConfirmPage,
+  renderEmailConfirmPage,
   renderVerificationFailedPage,
   renderVerificationSucceededPage,
   sendVerificationHtml,
 } from '#/view/verification-html';
-import { renderRegistrationUsernameGonePage } from '#/view/registration-html';
+import {
+  renderRegistrationReadyPage,
+  renderRegistrationUsernameGonePage,
+} from '#/view/registration-html';
 import { requestLocale } from '#/view/request-locale';
 
 export interface ActionTokenTenantLookup {
@@ -101,6 +104,17 @@ export interface ActionTokenRouteDeps {
     tenantId: string,
     who: { username: string; email: string },
   ) => Promise<TakenIdentifiers>;
+  // Ends every session and revokes every grant of the subject, for a recovered account.
+  readonly endAccess: (
+    tx: TenantScopedDatabase,
+    tenant: { id: string; name: string },
+    subjectId: string,
+  ) => Promise<void>;
+  readonly lockAddress: (
+    tx: TenantScopedDatabase,
+    tenantId: string,
+    email: string,
+  ) => Promise<void>;
   readonly createVerifiedAccount: (
     tx: TenantScopedDatabase,
     tenantId: string,
@@ -248,6 +262,7 @@ async function finishRegistration(
           tenantId: tenant.id,
           request: requestContextFrom(request),
           now: deps.now,
+          lockAddress: deps.lockAddress,
           createVerifiedAccount: deps.createVerifiedAccount,
           findTaken: deps.findTaken,
         },
@@ -267,7 +282,7 @@ async function finishRegistration(
   return sendVerificationHtml(
     reply,
     200,
-    renderVerificationSucceededPage(
+    renderRegistrationReadyPage(
       await resumeAt(deps, request, tenant, result.authenticationSessionId),
       locale,
     ),
@@ -296,19 +311,19 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
     // A visit changes nothing: mail scanners and link previews open mailed
     // links before the person does. One button posts the key back.
     if (isRegistrationKey(key)) {
-      const waiting =
-        tenant.registrationAllowed &&
-        (await registrationWaiting(
-          { database: deps.database, tenantId: tenant.id, now: deps.now },
-          key,
-        ));
-      return waiting
-        ? sendVerificationHtml(
+      const waiting = tenant.registrationAllowed
+        ? await registrationWaiting(
+            { database: deps.database, tenantId: tenant.id, now: deps.now },
+            key,
+          )
+        : null;
+      return waiting === null
+        ? sendVerificationHtml(reply, 400, renderVerificationFailedPage(null, locale))
+        : sendVerificationHtml(
             reply,
             200,
-            renderLinkConfirmPage(request.params.tenant, key, 'register', locale),
-          )
-        : sendVerificationHtml(reply, 400, renderVerificationFailedPage(null, locale));
+            renderEmailConfirmPage(request.params.tenant, key, waiting.username, locale),
+          );
     }
 
     // A read, never a redemption: what each kind of link shows is decided from
@@ -382,7 +397,7 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
     return sendVerificationHtml(
       reply,
       200,
-      renderLinkConfirmPage(request.params.tenant, key, 'verify', locale),
+      renderEmailConfirmPage(request.params.tenant, key, null, locale),
     );
   });
 
@@ -477,6 +492,8 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
         tenantId: tenant.id,
         request: requestContextFrom(request),
         setPassword: deps.setPassword,
+        endAccess: (tx, subjectId) =>
+          deps.endAccess(tx, { id: tenant.id, name: request.params.tenant }, subjectId),
         passwordPolicy: tenant.passwordPolicy,
         evaluatePassword: deps.evaluatePassword,
         getUsername: deps.getUsername,

@@ -31,7 +31,7 @@ function expectFragment(page: { html: string; body: string }): void {
 
 // The page's script carries a nonce fresh for each response.
 const withoutScript = (body: string): string =>
-  body.replace(/<script nonce="[^"]*">[\s\S]*?<\/script>/u, '<script nonce="N">…</script>');
+  body.replace(/<script nonce="[^"]*">[\s\S]*?<\/script>/gu, '<script nonce="N">…</script>');
 
 const RULES = {
   minLength: 15,
@@ -70,6 +70,8 @@ describe('renderRegistrationForm', () => {
       <li>Not a common password</li>
     </ul>
   </div>
+  <script nonce="N">…</script>
+  <label>Confirm password <input type="password" name="password_confirm" id="password-confirm" autocomplete="new-password" spellcheck="false" autocapitalize="off" autocorrect="off"></label>
   <script nonce="N">…</script>
   <button type="submit">Create account</button>
 </form>`);
@@ -248,8 +250,8 @@ describe('renderRegistrationSucceededPage', () => {
       .toBe(`<h1>Account created</h1>
 <p>You can now sign in.</p>`);
     expect(renderRegistrationSucceededPage(true, null, DEFAULT_PAGE_LOCALE).body)
-      .toBe(`<h1>Account created</h1>
-<p>Check your email for a link to verify your address before you can sign in.</p>`);
+      .toBe(`<h1>Check your email</h1>
+<p>If this address can be registered, we sent a link to finish.</p>`);
   });
 
   it('links on to sign-in when the way was carried', () => {

@@ -113,14 +113,16 @@ test('registering, after a refused first attempt, and coming back to the applica
   // The refusal comes back as the same form, and the way back is still on it.
   await page.getByLabel('Username').fill(`new-${tag}`);
   await page.getByLabel('Email').fill(`new-${tag}@example.test`);
-  await page.getByLabel('Password').fill(COMMON_PASSWORD);
+  await page.getByLabel('Password', { exact: true }).fill(COMMON_PASSWORD);
+  await page.getByLabel('Confirm password').fill(COMMON_PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
   await expect(page.getByRole('alert')).toContainText('That password is too easy to guess.');
   await expect(page.getByRole('link', { name: 'Back to sign in' })).toBeVisible();
 
-  await page.getByLabel('Password').fill(PASSWORD);
+  await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
+  await page.getByLabel('Confirm password').fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Account created' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Check your email' })).toBeVisible();
   await page.getByRole('link', { name: 'Back to sign in' }).click();
 
   await signIn(page, `new-${tag}`, PASSWORD);

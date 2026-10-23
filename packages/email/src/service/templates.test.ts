@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { en } from '#/service/messages';
 import {
+  renderFinishRegistration,
   renderRecoveryCodesRevoked,
   renderRegistrationDuplicate,
   renderRequiredActions,
@@ -399,5 +400,20 @@ describe('renderRegistrationDuplicate', () => {
     });
     expect(msg.subject).not.toMatch(/[\r\n]/u);
     expect(msg.html).not.toContain('<script>');
+  });
+});
+
+describe('renderFinishRegistration', () => {
+  const input = { to: 'ada@example.test', link: LINK, tenantDisplayName: 'Demo', now: NOW };
+
+  it('says someone asked, and that opening the link is how to choose a password', () => {
+    const msg = renderFinishRegistration(input);
+    expect(msg.subject).toBe('Finish creating your Demo account');
+    expect(msg.text).toBe(
+      `${fill(en['finish.text'], { tenant: `${FSI}Demo${PDI}` })}\n\n${LINK}\n\n${en['mail.notRequested']}\n\n${footerText(en['finish.reason'], 'Demo')}`,
+    );
+    expect(msg.html).toContain(en['finish.heading']);
+    expect(msg.html).toContain(en['finish.button']);
+    expect(msg.html).toContain(en['mail.notRequested']);
   });
 });

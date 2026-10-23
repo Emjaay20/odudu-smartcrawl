@@ -24,6 +24,7 @@ import {
   evaluatePassword,
   hashUserPassword,
   isEmailAddress,
+  lockEmailForCreation,
   REUSED_PASSWORD,
   subjectRepository,
   userRepository,
@@ -40,6 +41,8 @@ import { adminRoutes, composeUserSubject } from '@odudu/protocol-admin';
 import {
   clientKeySet,
   configureIssuerBase,
+  endAllAccess,
+  tenantIssuer,
   oidcRoutes,
   answerNotFound,
   answerServerError,
@@ -532,6 +535,18 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     findHeldSignIn,
     now: () => systemClock.now(),
     findTaken,
+    lockAddress: (tx, tenantId, email) => lockEmailForCreation(tx, tenantId, email),
+    endAccess: (tx, tenant, subjectId) =>
+      endAllAccess(
+        tx,
+        { kek: deps.kek },
+        {
+          tenantId: tenant.id,
+          subjectId,
+          now: systemClock.now(),
+          issuer: tenantIssuer(deps.publicBaseUrl ?? '', tenant.name),
+        },
+      ),
     createVerifiedAccount,
     findTenant: (name) => tenantSettingsRepository(deps.ownerDatabase.db).byName(name),
     getCurrentEmail: async (tx, subjectId) =>

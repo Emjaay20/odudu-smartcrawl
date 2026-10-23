@@ -275,7 +275,13 @@ describe('forgot password from a sign-in, in the browser that started it', () =>
     const registered = await request(
       'POST',
       `/tenants/${t.name}/login-actions/registration`,
-      { username, email, password: PASSWORD, return_to: parked.carried },
+      {
+        username,
+        email,
+        password: PASSWORD,
+        password_confirm: PASSWORD,
+        return_to: parked.carried,
+      },
       parked.cookie,
     );
     expect(registered.statusCode).toBe(201);
@@ -303,7 +309,13 @@ describe('the same link, anywhere the sign-in is not held', () => {
     await request(
       'POST',
       `/tenants/${t.name}/login-actions/registration`,
-      { username, email, password: PASSWORD, return_to: parked.carried },
+      {
+        username,
+        email,
+        password: PASSWORD,
+        password_confirm: PASSWORD,
+        return_to: parked.carried,
+      },
       parked.cookie,
     );
     const link = await mailedLink(email);
@@ -312,7 +324,9 @@ describe('the same link, anywhere the sign-in is not held', () => {
     expect(elsewhere.statusCode).toBe(200);
     expect(elsewhere.body).not.toContain('Continue to sign in');
     expect(elsewhere.body).not.toContain('/protocol/openid-connect/auth');
-    expect(elsewhere.body).toContain(NO_LINK);
+    expect(elsewhere.body).toContain(
+      'Return to the application you were signing in to and sign in.',
+    );
   });
 
   it('shows a browser holding another sign-in of the same tenant no link', async () => {

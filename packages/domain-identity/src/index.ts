@@ -9,6 +9,7 @@ export {
 } from '#/service/password';
 export { generateOneTimePassword } from '#/service/one-time-password';
 export { isEmailAddress } from '#/service/email';
+export { lockEmailForCreation } from '#/repository/email-lock';
 export { subjects, type SubjectRecord } from '#/schema/subjects';
 export { users, type UserRecord } from '#/schema/users';
 export {

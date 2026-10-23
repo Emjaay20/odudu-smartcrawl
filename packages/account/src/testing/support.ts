@@ -2,8 +2,10 @@ import { type TenantScopedDatabase } from '@odudu/db';
 import { type FastifyInstance, type LightMyRequestResponse } from 'fastify';
 import {
   credentialRepository,
+  evaluatePassword,
   hashUserPassword,
   isEmailAddress,
+  lockEmailForCreation,
   subjectRepository,
   userRepository,
 } from '@odudu/domain-identity';
@@ -49,11 +51,21 @@ export async function createVerifiedAccount(
   return { subjectId: subject.id };
 }
 
+export async function lockAddress(
+  tx: TenantScopedDatabase,
+  tenantId: string,
+  email: string,
+): Promise<void> {
+  await lockEmailForCreation(tx, tenantId, email);
+}
+
 export const openMailGate: MailGate = () => true;
 
 export const accountTestDeps = {
+  endAccess: () => Promise.resolve(),
   findTaken,
   createVerifiedAccount,
+  lockAddress,
   hashPassword: hashUserPassword,
   isEmailAddress,
   mailGate: openMailGate,
@@ -77,7 +89,7 @@ export function linkRouteDeps() {
       if (user === null) throw new Error(`no user found for subject ${subjectId}`);
       return user.username;
     },
-    evaluatePassword: () => [],
+    evaluatePassword,
     unchangedPasswordViolations: () => Promise.resolve([]),
     clearPasswordUpdateAction: () => Promise.resolve(),
     addRequiredActions: () => Promise.resolve(),
@@ -85,12 +97,13 @@ export function linkRouteDeps() {
 }
 
 // What a person does with a mailed link: open it, then press the button its
-// page shows. A page with no button (a refused link) is the answer itself.
+// page shows, choosing a password where the page asks for one. A page with no button (a refused link) is the answer itself.
 export async function openAndPress(
   http: FastifyInstance,
   tenant: string,
   key: string,
   headers: Record<string, string> = {},
+  password = 'correct horse battery',
 ): Promise<LightMyRequestResponse> {
   const url = `/tenants/${tenant}/login-actions/action-token?key=${encodeURIComponent(key)}`;
   const opened = await http.inject({ url, headers });
@@ -101,7 +114,10 @@ export async function openAndPress(
   return http.inject({
     method: 'POST',
     url: `/tenants/${tenant}/login-actions/action-token`,
-    payload: new URLSearchParams({ key: hidden }).toString(),
+    payload: new URLSearchParams({
+      key: hidden,
+      ...(opened.body.includes('name="password"') ? { password } : {}),
+    }).toString(),
     headers: { 'content-type': 'application/x-www-form-urlencoded', ...headers },
   });
 }

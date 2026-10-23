@@ -2,7 +2,11 @@ import { actionLink, resetPasswordLink } from '#/service/action-link';
 import { type MailGate } from '#/service/mail-gate';
 import { withTenant, type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { auditRepository, type RequestContext } from '@odudu/domain-audit';
-import { outboxRepository, renderRegistrationDuplicate, renderVerifyEmail } from '@odudu/email';
+import {
+  outboxRepository,
+  renderFinishRegistration,
+  renderRegistrationDuplicate,
+} from '@odudu/email';
 import { BidiControlError, containsBidiControl, OduduError } from '@odudu/kernel';
 import { pendingRegistrationRepository } from '#/repository/pending-registrations';
 import { type PasswordPolicy, type PolicyViolation } from '#/repository/tenant-settings';
@@ -196,10 +200,12 @@ export async function register(
 }
 
 // Two reads and two writes on both paths: who holds the username and the
-// address; then, for a free address, the pending row and the verification
-// mail, and for a held one, the audit row and the mail to the holder. The
-// username is answered first and in the open, so a held address never
-// changes what a held username is told. The password is hashed first on both.
+// address; then, for a free address, the pending row and the mail with its
+// link, and for a held one, the audit row and the mail to the holder. The
+// username is answered first and in the open, so a held address never changes
+// what a held username is told. The password is hashed first on both. A mail
+// the address's budget refuses leaves the person's earlier request and link as
+// they were, and the answer is the same.
 async function requestVerification(
   deps: RegisterDeps,
   input: NewAccountInput,
@@ -213,7 +219,6 @@ async function requestVerification(
     async (tx): Promise<RegisterOutcome> => {
       const taken = await deps.findTaken(tx, deps.tenantId, input);
       if (taken.username) return { kind: 'username_taken' };
-      const sendMail = deps.mailGate(deps.tenantId, input.email);
       if (taken.emailOwner !== null) {
         await auditRepository(tx).record({
           eventType: 'credential',
@@ -223,7 +228,7 @@ async function requestVerification(
           resourceId: taken.emailOwner,
           detail: { reason: 'already_registered' },
         });
-        if (sendMail) {
+        if (deps.mailGate('held', deps.tenantId, input.email)) {
           await outboxRepository(tx).enqueue({
             tenantId: deps.tenantId,
             ...renderRegistrationDuplicate({
@@ -238,6 +243,9 @@ async function requestVerification(
         }
         return { kind: 'verification_sent' };
       }
+      if (!deps.mailGate('registration', deps.tenantId, input.email)) {
+        return { kind: 'verification_sent' };
+      }
       const { key } = await pendingRegistrationRepository(tx).replace({
         tenantId: deps.tenantId,
         username: input.username,
@@ -247,17 +255,15 @@ async function requestVerification(
         ttlSeconds: deps.verifyEmailTtlSeconds,
         now: deps.now(),
       });
-      if (sendMail) {
-        await outboxRepository(tx).enqueue({
-          tenantId: deps.tenantId,
-          ...renderVerifyEmail({
-            to: input.email,
-            link: actionLink(issuerBase, deps.tenantName, key),
-            tenantDisplayName: deps.tenantDisplayName,
-            now: deps.now(),
-          }),
-        });
-      }
+      await outboxRepository(tx).enqueue({
+        tenantId: deps.tenantId,
+        ...renderFinishRegistration({
+          to: input.email,
+          link: actionLink(issuerBase, deps.tenantName, key),
+          tenantDisplayName: deps.tenantDisplayName,
+          now: deps.now(),
+        }),
+      });
       return { kind: 'verification_sent' };
     },
     deps.request,

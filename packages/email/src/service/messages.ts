@@ -18,6 +18,16 @@ export const en = {
   'verify.button': 'Verify email',
   'verify.reason':
     'You received this because this email address was used to create or update an account at {tenant}.',
+  'finish.subject': 'Finish creating your {tenant} account',
+  'finish.preheader': 'Open the link to finish creating your account.',
+  'finish.heading': 'Finish creating your account',
+  'finish.text':
+    'Someone asked to create a {tenant} account with this address. If it was you, open this link to finish:',
+  'finish.body':
+    'Someone asked to create a {tenant} account with this address. If it was you, open the link to finish.',
+  'finish.button': 'Finish sign-up',
+  'finish.reason':
+    'You received this because this email address was used to start an account at {tenant}.',
   'duplicate.subject': 'You already have a {tenant} account',
   'duplicate.preheader': 'Someone tried to register this email address. You can sign in.',
   'duplicate.heading': 'You already have an account',

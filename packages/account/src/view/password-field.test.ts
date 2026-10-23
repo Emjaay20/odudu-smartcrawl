@@ -41,7 +41,7 @@ const pages = {
     ),
 };
 
-describe.each(Object.entries(pages))('the password hints on the %s page', (_name, render) => {
+describe.each(Object.entries(pages))('the password hints on the %s page', (name, render) => {
   it('lists the tenant length and every rule it enables, as plain markup', () => {
     expect(hintLines(render(ALL).body).slice(-6)).toEqual([
       'At least 20 characters',
@@ -60,12 +60,16 @@ describe.each(Object.entries(pages))('the password hints on the %s page', (_name
     );
   });
 
-  it('declares the one script it carries and no request', () => {
+  it('declares the scripts it carries under one nonce, and no request', () => {
     const page = render(NONE);
     const nonce = page.script?.nonce ?? '';
     const policy = pageHeaders(page).find(([name]) => name === 'content-security-policy')?.[1];
     expect(policy).toContain(`script-src 'nonce-${nonce}'`);
     expect(policy).not.toContain('connect-src');
-    expect(page.html.match(/<script/gu)).toHaveLength(1);
+    // The hints script, and on the registration page the one that shows the
+    // confirmation with the password.
+    expect(page.html.match(/<script nonce="[^"]*"/gu)).toEqual(
+      Array.from({ length: name === 'registration' ? 2 : 1 }, () => `<script nonce="${nonce}"`),
+    );
   });
 });

@@ -64,7 +64,7 @@ export async function requestPasswordReset(
 
   await withTenant(deps.database.db, deps.tenantId, async (tx) => {
     const user = await deps.findByEmail(tx, email);
-    if (user === null || !deps.mailGate(deps.tenantId, user.email)) return;
+    if (user === null || !deps.mailGate('reset', deps.tenantId, user.email)) return;
     await enqueueResetLink(tx, { ...deps, issuerBase }, user);
   });
 
@@ -123,6 +123,9 @@ export async function enqueueResetLink(
 }
 
 export interface CompletePasswordResetDeps {
+  // Ends every session and revokes every grant the subject holds. A reset is how
+  // an account is recovered, and whoever held it before must not keep it.
+  readonly endAccess: (tx: TenantScopedDatabase, subjectId: string) => Promise<void>;
   readonly database: DatabaseHandle;
   readonly tenantId: string;
   readonly request: RequestContext;
@@ -212,6 +215,7 @@ export async function completePasswordReset(
       if (record === null) return { kind: 'invalid' };
 
       await deps.setPassword(tx, record.subjectId, newPassword);
+      await deps.endAccess(tx, record.subjectId);
       await deps.clearPasswordUpdateAction(tx, record.subjectId);
       await actionTokenRepository(tx).invalidateOutstandingPasswordLinks(record.subjectId);
       await auditRepository(tx).record({
