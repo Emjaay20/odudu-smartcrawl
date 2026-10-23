@@ -5,7 +5,7 @@
   <img src="brand/lockup.svg" alt="Odudu: a staff with a ring and a collar, beside the word odudu" width="220">
 </picture>
 
-**An identity provider you run yourself.**
+**The sign-in you own: multi-tenant, brandable, and built for apps, MCP servers and AI agents.**
 OpenID Connect and OAuth 2.0, many tenants, one container and PostgreSQL.
 
 [![verify](https://github.com/wizzywit/odudu/actions/workflows/verify.yml/badge.svg)](https://github.com/wizzywit/odudu/actions/workflows/verify.yml)
@@ -25,27 +25,31 @@ Odudu signs people in to your apps. It is for teams that want to run their own
 sign-in, with single sign-on, passkeys and an admin API, and keep their users'
 data on their own servers.
 
-<img src="docs/media/console.gif" alt="The admin console, in dark mode: an administrator signs in, opens Clients, creates a client named my-app and sees it listed." width="800">
+## Why Odudu
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="apps/docs/static/console/clients-dark.webp">
-  <img src="apps/docs/static/console/clients-light.webp" alt="The Clients page of a tenant, listing the built-in administration client and my-app." width="800">
-</picture>
+- Many tenants in one container, each kept apart by the database itself.
+- Passkeys, recovery codes and single sign-on, built in.
+- An admin API and console that cover everything, and access for agents: token exchange, client credentials and an MCP server.
+
+<p align="center">
+  <img src="docs/media/console.gif" alt="The admin console, in dark mode: an administrator signs in, opens Clients, creates a client named my-app and sees it listed." width="800">
+</p>
 
 ## What it does
 
 - Authorization code flow with PKCE, always required, plus discovery, signing keys, user info, introspection and revocation.
 - Refresh tokens that rotate, with a stolen one caught on reuse.
-- Client credentials and token exchange, for machines and for acting on someone's behalf.
+- Client credentials and token exchange, for machines, for agents and for acting on someone's behalf.
 - Single sign-on across a tenant's apps, with back-channel logout.
 - Many tenants on one server, kept apart by the database itself.
 - Passwords with a policy and lockouts, passkeys, authenticator codes and recovery codes.
-- An admin API with more than a hundred operations.
-- An admin console with a page for every area.
+- Every page in a tenant's theme and a client's branding.
+- An MCP server that hands an AI agent the admin API as tools, held to the same capabilities as everyone else.
+- An admin API with more than a hundred operations, and a console with a page for every area.
 - An audit trail of every change, sign-in and refusal, filterable and exportable.
 - One container plus PostgreSQL, started with Docker Compose.
 
-<p>
+<p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="apps/docs/static/console/overview-dark.webp">
     <img src="apps/docs/static/console/overview-light.webp" alt="A tenant's overview page." width="260">
@@ -71,8 +75,8 @@ docker compose logs setup
 
 The second command prints the console address, the administrator's email and a
 one-time password. [The quick start](https://wizzywit.github.io/odudu/docs/quick-start/)
-takes you from there to a signed-in app. Arrives with the first release. Until
-then, [run it from a checkout](https://wizzywit.github.io/odudu/docs/contributing/run-from-a-checkout/).
+takes you from there to a signed-in app. The release is coming; until then,
+[run it from a checkout](https://wizzywit.github.io/odudu/docs/contributing/run-from-a-checkout/).
 
 ## Documentation
 
@@ -83,10 +87,10 @@ then, [run it from a checkout](https://wizzywit.github.io/odudu/docs/contributin
 
 ## Status
 
-Odudu is before 1.0. Sign-in and tokens, tenants, second factors, the admin API
-and the console work today. Theming, self-service, an MCP server and agent
-access come next: see the [roadmap](https://wizzywit.github.io/odudu/docs/roadmap/).
-A hosted service is in the works. Nothing about it is for sale or scheduled yet.
+Odudu is before 1.0 and not production ready. Some of what is described here is
+still being built. [The roadmap](https://wizzywit.github.io/odudu/docs/roadmap/)
+shows what is ready. A hosted service is in the works. Nothing about it is for
+sale or scheduled yet.
 
 ## Contributing and security
 
@@ -99,5 +103,4 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) before you send a change, and the
 The server, console and tools are AGPL-3.0-only. The guides and the examples are
 Apache-2.0. [LICENSING.md](LICENSING.md) says which directory is which.
 
-Odudu and the staff mark are the property of Wisdom Praise. The software is licensed under the AGPL; the name and the mark are used under the trademark policy.
-See the [trademark policy](TRADEMARK.md).
+Odudu and the staff mark are the property of Wisdom Praise. The software is licensed under the AGPL; the name and the mark are used under the trademark policy. The policy is [TRADEMARK.md](TRADEMARK.md).

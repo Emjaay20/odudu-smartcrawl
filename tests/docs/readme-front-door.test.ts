@@ -12,6 +12,10 @@ const { OWNER_NOTICE, PAGES_BASE, PAGES_DOCS_BASE, REPOSITORY_URL, SITE_ORIGIN }
 // two to each other, so the front door cannot say something the site denies.
 const README = readFileSync(path.join(REPO_ROOT, 'README.md'), 'utf8');
 const LINES = README.split('\n');
+const TAGLINE =
+  'The sign-in you own: multi-tenant, brandable, and built for apps, MCP servers and AI agents.';
+const STATUS_SENTENCE =
+  'Some of what is described here is still being built. The roadmap shows what is ready.';
 const CONTENT = path.join(REPO_ROOT, 'apps/docs/content/en');
 const SITE_DOCS = `${SITE_ORIGIN}${PAGES_DOCS_BASE}`;
 const released = existsSync(path.join(REPO_ROOT, '.github/workflows/release.yml'));
@@ -71,6 +75,10 @@ describe('the README is a front door, not a manual', () => {
     expect(LINES.length).toBeLessThan(150);
   });
 
+  it('carries the tagline, bold, under the logo', () => {
+    expect(LINES.slice(0, 12)).toContain(`**${TAGLINE}**`);
+  });
+
   it('opens with the logo, with alt text, and a dark variant of it', () => {
     const [first] = images();
     expect(first?.src).toBe('brand/lockup.svg');
@@ -95,6 +103,14 @@ describe('the README is a front door, not a manual', () => {
   it('names no ownership, name origin or trademark claim beyond the notice', () => {
     expect(README).not.toMatch(/Ibibio|Akwa Ibom|coined|®/u);
     expect(README).toContain(OWNER_NOTICE);
+  });
+
+  it('closes with the notice and the policy link in one paragraph, each said once', () => {
+    const last = README.trimEnd().split('\n\n').at(-1) ?? '';
+    expect(last).not.toContain('\n');
+    expect(last).toContain(OWNER_NOTICE);
+    expect(README.match(/\(TRADEMARK\.md\)/gu)).toHaveLength(1);
+    expect(README.match(/property of/gu)).toHaveLength(1);
   });
 });
 
@@ -131,45 +147,58 @@ describe('the badges are the ones that can be checked', () => {
 
 describe('what it says about the product matches the roadmap', () => {
   const roadmap = readFileSync(path.join(CONTENT, 'roadmap.md'), 'utf8');
-  const shipped = roadmap.slice(roadmap.indexOf('## Shipped'), roadmap.indexOf('## Next'));
-  const features = section('What it does')
-    .split('\n')
-    .filter((line) => line.startsWith('- '));
+  // Shipped or planned: the README reads as the whole product, and the Status
+  // section says so, but nothing it names may be placed later or decided against.
+  const placed = roadmap.slice(roadmap.indexOf('## Shipped'), roadmap.indexOf('## Later'));
+  const bullets = (heading: string): string[] =>
+    section(heading)
+      .split('\n')
+      .filter((line) => line.startsWith('- '));
+  const features = bullets('What it does');
+  const reasons = bullets('Why Odudu');
 
-  // What each README feature line is held to: a line of the roadmap's Shipped section.
-  const EVIDENCE: readonly (readonly [readme: RegExp, shipped: RegExp])[] = [
+  // What each README capability is held to: a line of the roadmap's Shipped or Next section.
+  const EVIDENCE: readonly (readonly [readme: RegExp, roadmap: RegExp])[] = [
     [/authorization code flow with PKCE/iu, /authorization code flow with PKCE, always required/iu],
     [/refresh tokens/iu, /Refresh tokens that rotate/u],
     [/client credentials and token exchange/iu, /Client credentials, and token exchange/u],
+    [/token exchange, client credentials/iu, /Client credentials, and token exchange/u],
     [/single sign-on/iu, /Single sign-on across the apps of one tenant/u],
     [/back-channel logout/iu, /back-channel logout delivered/u],
     [/many tenants/iu, /Any number of tenants on one server/u],
     [/passkeys/iu, /passkeys/u],
     [/recovery codes/iu, /Recovery codes: ten per person/u],
+    [/theme and a client's branding/u, /render in a tenant's theme and a client's branding/u],
+    [/MCP server/u, /The admin API as tools for an AI agent/u],
     [/admin API/u, /An admin API of more than a hundred operations/u],
-    [/admin console/u, /An admin console with a page for every area/u],
+    [/console with a page for every area/u, /An admin console with a page for every area/u],
     [/audit/iu, /Every administrative change, sign-in, refusal/u],
     [/one container/iu, /The container image and the Docker Compose quick start/u],
   ];
 
-  it('lists features, and each one is on the roadmap as shipped', () => {
+  it('lists capabilities, and each one is on the roadmap, shipped or planned', () => {
+    expect(reasons.length).toBe(3);
     expect(features.length).toBeGreaterThanOrEqual(8);
-    for (const feature of features) {
-      const rule = EVIDENCE.find(([readme]) => readme.test(feature));
-      expect(rule, `no roadmap evidence is named for: ${feature}`).toBeDefined();
-      expect(shipped, feature).toMatch(rule?.[1] ?? /$^/u);
+    for (const capability of [...reasons, ...features]) {
+      const rules = EVIDENCE.filter(([readme]) => readme.test(capability));
+      expect(rules.length, `no roadmap evidence is named for: ${capability}`).toBeGreaterThan(0);
+      for (const [, evidence] of rules) expect(placed, capability).toMatch(evidence);
     }
   });
 
   it('names no feature the roadmap places later or decides against', () => {
-    const text = features.join('\n');
-    expect(text).not.toMatch(/SAML|LDAP|SCIM|FAPI|implicit|device authorization|CIBA|MCP/u);
+    const text = [...reasons, ...features].join('\n');
+    expect(text).not.toMatch(/SAML|LDAP|SCIM|FAPI|implicit|device authorization|CIBA/u);
   });
 
   it('says plainly where it stands, links the roadmap, and promises no hosted date or price', () => {
     const status = section('Status');
     expect(status).toMatch(/before 1\.0|pre-1\.0/iu);
+    expect(status).toMatch(/not production ready/u);
     expect(status).toContain(`${SITE_DOCS}roadmap/`);
+    expect(status.replaceAll(/\[([^\]]*)\]\([^)\s]+\)/gu, '$1').replaceAll(/\s+/gu, ' ')).toContain(
+      STATUS_SENTENCE,
+    );
     expect(status).toMatch(/hosted/iu);
     expect(status).toMatch(/in the works/iu);
     expect(status).not.toMatch(/[$€£]\s?\d|\bpric(e|es|ing)\b|\b20\d\d\b/iu);
@@ -190,12 +219,21 @@ describe('the console is on show', () => {
     expect(animation?.alt).toMatch(/client/iu);
   });
 
-  it('shows a still of the same screen directly under it, then a small gallery', () => {
+  it('follows it with a gallery of three stills, none of them the recording again', () => {
     const shown = images().map((image) => image.src);
-    const at = shown.indexOf('docs/media/console.gif');
-    expect(shown[at + 1]).toMatch(/^apps\/docs\/static\/console\/clients-(light|dark)\.webp$/u);
     const gallery = shown.filter((src) => src.startsWith('apps/docs/static/console/'));
-    expect(gallery.length).toBeGreaterThanOrEqual(4);
+    expect(gallery).toHaveLength(3);
+    expect(gallery).not.toContainEqual(expect.stringMatching(/clients-(light|dark)\.webp$/u));
+    expect(new Set(shown).size).toBe(shown.length);
+  });
+
+  it('centres the recording and the gallery', () => {
+    const centred = [...README.matchAll(/<p align="center">([\s\S]*?)<\/p>/gu)].map(
+      (match) => match[1] ?? '',
+    );
+    expect(centred.some((block) => block.includes('docs/media/console.gif'))).toBe(true);
+    const gallery = centred.find((block) => block.includes('apps/docs/static/console/'));
+    expect(gallery?.match(/<picture>/gu)).toHaveLength(3);
   });
 
   it('only names images that exist, within a size budget', () => {
@@ -243,8 +281,10 @@ describe('the quick start in the README is the quick start page', () => {
     expect(README.match(/ODUDU_[A-Z_]+/gu) ?? []).toEqual([]);
   });
 
-  it('says the download arrives with the first release until a stable one is published', () => {
-    expect(section('Quick start').includes('Arrives with the first release.')).toBe(!stable);
+  it('says the release is coming, and names the checkout route, until a stable one is published', () => {
+    const quick = section('Quick start');
+    expect(quick.includes('The release is coming; until then,')).toBe(!stable);
+    expect(quick.includes('contributing/run-from-a-checkout/')).toBe(!stable);
   });
 });
 
