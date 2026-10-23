@@ -1,0 +1,35 @@
+name: Bug report
+description: Something in Odudu does not work as the documentation says.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a security problem, do not open an issue. Use the private report link on the issue chooser.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The output of `odudu --version`.
+      placeholder: 0.1.0-rc.1
+    validations:
+      required: true
+  - type: input
+    id: digest
+    attributes:
+      label: Image digest
+      description: If you run the container image, its digest. `docker image inspect` shows it.
+      placeholder: sha256:...
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected and what you saw instead.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Server log
+      description: The tail of `docker compose logs odudu`. Redact passwords, tokens, keys and the database URL first.
+      render: text

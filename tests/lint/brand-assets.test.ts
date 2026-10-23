@@ -341,6 +341,14 @@ describe('brand assets: every SVG', () => {
     expect(read('mark-paper.svg')).toContain(tokenPair('ink-primary').dark);
   });
 
+  it('draws lockup-paper.svg as lockup.svg in the Instrument paper colour', () => {
+    const body = (svg: string): string => svg.slice(svg.indexOf('<g '));
+    const paper = tokenPair('ink-primary').dark;
+    expect(body(read('lockup-paper.svg'))).toBe(
+      body(read('lockup.svg')).replaceAll('currentColor', paper),
+    );
+  });
+
   it('keeps the mark, wordmark and lockup to one colour so they theme', () => {
     for (const file of ['mark.svg', 'wordmark.svg', 'lockup.svg']) {
       expect(read(file), file).not.toMatch(/#[0-9a-f]{6}/iu);
@@ -500,15 +508,19 @@ describe('brand assets: derivatives', () => {
 describe('brand assets: every copy of the mark is the mark', () => {
   const source = parseMark(read('mark.svg'));
 
-  it.each(['lockup.svg', 'favicon.svg', 'social.svg', 'mark-ink.svg', 'mark-paper.svg'])(
-    'draws the ring, the shaft and the collar of mark.svg in %s',
-    (file) => {
-      const svg = read(file);
-      expect(svg.match(/<circle /gu), `${file} circles`).toHaveLength(1);
-      expect(svg.match(/<path d="M\d+ \d+[HV]\d+"\/>/gu), `${file} strokes`).toHaveLength(2);
-      expect(parseMark(svg), file).toEqual(source);
-    },
-  );
+  it.each([
+    'lockup.svg',
+    'lockup-paper.svg',
+    'favicon.svg',
+    'social.svg',
+    'mark-ink.svg',
+    'mark-paper.svg',
+  ])('draws the ring, the shaft and the collar of mark.svg in %s', (file) => {
+    const svg = read(file);
+    expect(svg.match(/<circle /gu), `${file} circles`).toHaveLength(1);
+    expect(svg.match(/<path d="M\d+ \d+[HV]\d+"\/>/gu), `${file} strokes`).toHaveLength(2);
+    expect(parseMark(svg), file).toEqual(source);
+  });
 
   it('places the mark in the favicon and the touch icons inside their tiles', () => {
     expect(read('favicon.svg')).toContain(insetTransform(FAVICON_INSET));
@@ -612,8 +624,11 @@ describe('brand assets: the derivatives come from the SVGs', () => {
 });
 
 describe('brand assets: the README', () => {
-  it('says the name and mark are not licensed', () => {
-    expect(read('README.md')).toContain('The name Odudu and the staff mark are not licensed');
+  it('sends a reader to the owner notice and the trademark policy', () => {
+    const readme = read('README.md');
+    expect(readme).toContain('(NOTICE.md)');
+    expect(readme).toContain('(../TRADEMARK.md)');
+    expect(existsSync(path.join(BRAND, 'NOTICE.md'))).toBe(true);
   });
 
   it('records the owner approving the collar crossbar on 2026-10-21', () => {

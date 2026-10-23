@@ -205,7 +205,7 @@ describe('the security section', () => {
 
   it('says plainly that no outside review has been done, as SECURITY.md does', () => {
     expect(page('security/threat-model.md')).toMatch(/not been (security )?reviewed/u);
-    expect(repoFile('SECURITY.md')).toMatch(/not been security reviewed/u);
+    expect(repoFile('SECURITY.md')).toMatch(/not had a security review/u);
   });
 
   it('gives the fallback email and the scope SECURITY.md gives', () => {
@@ -217,6 +217,8 @@ describe('the security section', () => {
     for (const heading of ['Reporting a vulnerability', 'What to expect', 'Scope']) {
       expect(policy, heading).toContain(`## ${heading}`);
     }
+    expect(text).toMatch(/only the latest release is supported/iu);
+    expect(policy).toMatch(/only the latest release is supported/iu);
     for (const area of ['token issuance', 'tenant isolation', 'signing key handling']) {
       expect(policy.toLowerCase(), area).toContain(area);
       expect(text.toLowerCase(), area).toContain(area);

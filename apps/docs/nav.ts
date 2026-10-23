@@ -6,6 +6,12 @@ export interface Section {
 }
 
 export const REPOSITORY_URL = 'https://github.com/wizzywit/odudu';
+export const TRADEMARK_URL = `${REPOSITORY_URL}/blob/main/TRADEMARK.md`;
+
+// The one place the owner is named. The README, TRADEMARK.md and brand/NOTICE.md
+// carry the same sentence, and tests/lint/community-files.test.ts holds them to it.
+export const OWNER_NOTICE_NAME = 'Wisdom Praise';
+export const OWNER_NOTICE = `Odudu and the staff mark are the property of ${OWNER_NOTICE_NAME}. The software is licensed under the AGPL; the name and the mark are used under the trademark policy.`;
 
 export const SECTIONS: readonly Section[] = [
   {

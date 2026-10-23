@@ -84,10 +84,12 @@ describe('the footer in a browser', () => {
       const heights = await page
         .locator('footer a')
         .evaluateAll((links) => links.map((link) => link.getBoundingClientRect().height));
-      expect(heights).toHaveLength(5);
+      expect(heights).toHaveLength(6);
       for (const height of heights) expect(height).toBeGreaterThanOrEqual(24);
       const footer = await page.locator('footer').boundingBox();
-      expect(footer?.height ?? 0).toBeLessThan(viewport.name === 'phone' ? 260 : 120);
+      // The ownership notice is one more sentence, which wraps on a narrow screen.
+      const ceilings = { phone: 310, tablet: 170, desktop: 120 };
+      expect(footer?.height ?? 0).toBeLessThan(ceilings[viewport.name]);
       await context.close();
     });
   }

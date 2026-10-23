@@ -108,3 +108,14 @@ account, to that server; Odudu stores no AI provider key and hosts no chat
 surface. A basic bring-your-own-key panel is not planned, and is reopened only
 if users ask for it. The paid layer is the managed assistant, the proactive
 work that needs an always-on service, and the hosted service around them.
+
+## Amendment 2026-10-23: the licences cover code, not names or marks
+
+The AGPL and Apache-2.0 grants in the table above cover the code and the
+prose. They do not cover the name Odudu or the staff mark, which belong to the
+owner and are used under [`TRADEMARK.md`](../../TRADEMARK.md): accurate
+references, "works with Odudu" and unmodified use in documentation are free,
+and a fork, a logo or a hosted service under the name needs permission. The
+symbol is TM, never the registered one, until a registration exists. The
+owner approved the mark on 2026-10-21 and directs its use. A fork under the
+AGPL is still allowed; it carries its own name.

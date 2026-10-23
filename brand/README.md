@@ -15,6 +15,8 @@ with a short crossbar.
 | `wordmark.svg`                             | `odudu` as five outlines, one colour                                                                                                        |
 | `mark-ink.svg`, `mark-paper.svg`           | The mark in the Instrument ink for a light and for a dark surface, for places that cannot take `currentColor` (an image tag, the docs logo) |
 | `lockup.svg`                               | Mark left, wordmark right, one baseline                                                                                                     |
+| `lockup-paper.svg`                         | The lockup in the Instrument paper colour, for a dark surface where `currentColor` cannot be set (the README on a dark theme)               |
+| `NOTICE.md`                                | Who owns the name and the mark, and where the policy is                                                                                     |
 | `favicon.svg`, `favicon.ico`               | Mark on the Instrument rail surface, amber ring; the icon holds 16, 32 and 48                                                               |
 | `apple-touch-icon.png`, `icon-192/512.png` | The same tile, the mark inset to 75%, square corners                                                                                        |
 | `social.svg`, `social.png`                 | 1200 x 630 share image: lockup and tagline on the rail surface                                                                              |
@@ -84,8 +86,9 @@ committed.
 
 ## Trademark
 
-The name Odudu and the staff mark are not licensed by the repository's
-licences; see `LICENSING.md`. An informal web search on 2026-10-15 found no
+The name Odudu and the staff mark belong to their owner; [`NOTICE.md`](NOTICE.md)
+says whose, and [`../TRADEMARK.md`](../TRADEMARK.md) says what anyone may do
+with them. An informal web search on 2026-10-15 found no
 product, company or trademark filing named Odudu in identity or software. It
 cannot compare logos by eye and is not a clearance; a formal trademark and
 design search stays an optional step before any commercial use.

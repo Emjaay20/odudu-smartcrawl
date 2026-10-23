@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { FOOTER_ROUTES, REPOSITORY_URL } from '#docs/nav.ts';
+import { FOOTER_ROUTES, OWNER_NOTICE, REPOSITORY_URL, TRADEMARK_URL } from '#docs/nav.ts';
 import { PAGES_BASE } from '#docs/site.config.ts';
 import {
   distDir,
@@ -29,9 +29,9 @@ for (const target of ['pages', 'image'] as const) {
       expect(missing).toEqual([]);
     });
 
-    it('states the licence and the year the site was built', () => {
+    it('states the licence, the year the site was built and who owns the name and the mark', () => {
       expect(home('footer .footer__copyright').text()).toBe(
-        `© ${String(new Date().getUTCFullYear())} Odudu · AGPL-3.0`,
+        `© ${String(new Date().getUTCFullYear())} Odudu · AGPL-3.0${OWNER_NOTICE}`,
       );
     });
 
@@ -41,6 +41,7 @@ for (const target of ['pages', 'image'] as const) {
       expect(hrefs).toEqual([
         ...FOOTER_ROUTES.map((route) => `${docsBase(target)}${route}`),
         REPOSITORY_URL,
+        TRADEMARK_URL,
       ]);
       for (const route of FOOTER_ROUTES) {
         const file = fileOf(dir, base, `${docsBase(target)}${route}`);
@@ -72,6 +73,7 @@ for (const target of ['pages', 'image'] as const) {
 describe('the footer of the image build', () => {
   it('names no address of the hosted site', () => {
     const $ = load(path.join(distDir('image'), 'index.html'));
-    expect($('footer').html() ?? '').not.toContain('/odudu/');
+    // The repository's own address has /odudu/ in it, and is not the hosted site's.
+    expect(($('footer').html() ?? '').replaceAll(REPOSITORY_URL, '')).not.toContain('/odudu/');
   });
 });

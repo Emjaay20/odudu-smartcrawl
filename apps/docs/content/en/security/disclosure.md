@@ -21,6 +21,8 @@ Include what is needed to make the problem happen again: the endpoint or part of
 
 Odudu is a personal project maintained in bursts, so replies are best effort, not a contract. You can expect an acknowledgement, an assessment of how serious it is, and credit in the fix unless you would rather not be named.
 
+Odudu is before 1.0, so only the latest release is supported. A fix goes into the next release.
+
 ## What is in scope
 
 Anything in the repository: the server, the admin API and console, the container and compose files, and the build configuration. The parts most likely to be subtly wrong, and so the most welcome reports, are token issuance and refresh rotation, tenant isolation (any path that reaches the database without a tenant), and signing key handling.

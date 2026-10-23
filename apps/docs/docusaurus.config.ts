@@ -8,7 +8,14 @@ import { requireDescriptions } from './plugins/descriptions';
 import imageStrip from './plugins/image-strip';
 import notFound from './plugins/not-found';
 import robots from './plugins/robots';
-import { FOOTER_ROUTES, NAVBAR_ROUTES, REPOSITORY_URL, SECTIONS } from './nav';
+import {
+  FOOTER_ROUTES,
+  NAVBAR_ROUTES,
+  OWNER_NOTICE,
+  REPOSITORY_URL,
+  SECTIONS,
+  TRADEMARK_URL,
+} from './nav';
 import { iconTags, siteHeadTags } from './seo';
 import { IMAGE_BASE, PAGES_BASE, SITE_ORIGIN, docsRoute } from './site.config';
 
@@ -85,9 +92,12 @@ const themeConfig: Preset.ThemeConfig = {
       {
         html: `<a class="footer__link-item" href="${REPOSITORY_URL}" target="_blank" rel="noopener noreferrer">GitHub<span class="visually-hidden"> (opens in a new tab)</span></a>`,
       },
+      {
+        html: `<a class="footer__link-item" href="${TRADEMARK_URL}" target="_blank" rel="noopener noreferrer">Trademark<span class="visually-hidden"> (opens in a new tab)</span></a>`,
+      },
     ],
     // Read when the site is built: a build after New Year changes the year.
-    copyright: `© ${String(new Date().getUTCFullYear())} Odudu · AGPL-3.0`,
+    copyright: `© ${String(new Date().getUTCFullYear())} Odudu · AGPL-3.0<br>${OWNER_NOTICE}`,
   },
   // The block's own background is a variable, so the scroll hint in custom.css
   // can fade into exactly the colour the theme paints.
