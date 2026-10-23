@@ -79,7 +79,11 @@ function configFor(tls: boolean, base: string) {
   });
 }
 
-async function withApp(tls: boolean, run: (stack: ConsoleStack) => Promise<void>): Promise<void> {
+async function withApp(
+  tls: boolean,
+  run: (stack: ConsoleStack) => Promise<void>,
+  trustProxy?: boolean,
+): Promise<void> {
   const base = tls ? TLS_BASE : PLAIN_BASE;
   const databases = { database: appDb, ownerDatabase: owner };
   if (tls) {
@@ -96,7 +100,10 @@ async function withApp(tls: boolean, run: (stack: ConsoleStack) => Promise<void>
       consoleClientJwks: CONSOLE_KEYS.jwks,
     });
   }
-  const stack = await startConsoleApp(databases, base, { config: configFor(tls, base) });
+  const stack = await startConsoleApp(databases, base, {
+    config: configFor(tls, base),
+    ...(trustProxy === undefined ? {} : { trustProxy }),
+  });
   try {
     await run(stack);
   } finally {
@@ -254,5 +261,21 @@ describe.each([
         `${prefix}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${SECURE(tls)}`,
       );
     });
+  });
+});
+
+describe('an https base with ODUDU_TRUST_PROXY off', () => {
+  // The issuer is the configured base, so the console signs in without any
+  // forwarded header: trusting a proxy is about client addresses alone.
+  it('signs the console in, and its cookies are still the TLS ones', async () => {
+    await withApp(
+      true,
+      async (stack) => {
+        const { response } = await signIn(stack, new Jar());
+        expect(response.statusCode).toBe(302);
+        expect(setCookies(response).some((c) => c.startsWith('__Host-odudu-console='))).toBe(true);
+      },
+      false,
+    );
   });
 });

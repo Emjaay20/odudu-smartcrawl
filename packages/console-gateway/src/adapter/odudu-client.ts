@@ -41,11 +41,10 @@ function json(res: LightMyRequestResponse): unknown {
   }
 }
 
-// The issuer is derived from each request's own authority, so every call
-// carries the public base's and never the browser's: that is what keeps the
-// callback's iss, the ID token's iss and the admin API's issuer check on
-// one string. The forwarded pair is read only while ODUDU_TRUST_PROXY is
-// on, which boot requires for an https base.
+// Every call carries the public base's host and never the browser's. The
+// issuer is the configured base whatever a request says, which is what keeps
+// the callback's iss, the ID token's iss and the admin API's issuer check on
+// one string, so no forwarded scheme is needed.
 export interface ClientAuthentication {
   /** The key every tenant's admin client is registered with. */
   readonly key: ClientKey;
@@ -62,11 +61,7 @@ export function oduduClient(
   base: URL,
   authentication: ClientAuthentication,
 ): OduduPort {
-  const authority = {
-    host: base.host,
-    'x-forwarded-host': base.host,
-    'x-forwarded-proto': base.protocol.slice(0, -1),
-  };
+  const authority = { host: base.host };
   // The browser's request id, so the server's audit rows and problem
   // instances name the id the browser was answered with.
   const headersFor = (from: Caller): Record<string, string> => ({

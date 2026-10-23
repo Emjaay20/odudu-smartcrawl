@@ -437,8 +437,6 @@ describe('what the proxy passes on', () => {
             'if-match',
             'if-none-match',
             'user-agent',
-            'x-forwarded-host',
-            'x-forwarded-proto',
             'x-request-id',
           ].sort(),
         );

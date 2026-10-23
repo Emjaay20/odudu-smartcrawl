@@ -90,8 +90,9 @@ export const CONFIG_DOCS: Record<ConfigKey, ConfigDoc> = {
     group: 'Server',
     summary:
       'Whether to trust what a reverse proxy in front of the server reports about the client: ' +
-      'its address, which is recorded in audit events, and the protocol it used. Turn it on ' +
-      'only behind a proxy that sets them.',
+      'its address, which is recorded in audit events and keys the rate limits. It does not ' +
+      'decide the issuer or any cookie. Turn it on only behind a proxy that overwrites ' +
+      '`X-Forwarded-*`.',
     secret: false,
   },
   ODUDU_TLS_CLIENT_CERT_HEADER: {

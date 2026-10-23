@@ -129,7 +129,7 @@ describe('assertProductionPasskeyRelyingParty', () => {
     const config = loadConfig({ ...base, NODE_ENV: 'production' });
     expect(() => {
       assertProductionPasskeyRelyingParty(config);
-    }).toThrow(/ODUDU_PUBLIC_BASE_URL/);
+    }).toThrow(/ODUDU_PUBLIC_BASE_URL.*issuer.*relying party id/su);
   });
 
   it('does not throw when a relying party id can be derived', () => {
@@ -197,16 +197,18 @@ describe('assertConsoleConfigured', () => {
     }).not.toThrow();
   });
 
-  // The issuer is built from the request's scheme, and a request the
-  // gateway injects in-process never arrives over TLS: only a trusted
-  // x-forwarded-proto lets it see the https issuer the browser sees.
-  it('refuses an https base URL while ODUDU_TRUST_PROXY is off, naming both', () => {
-    const config = loadConfig({ ...base, ODUDU_PUBLIC_BASE_URL: 'https://idp.example.test' });
+  // The issuer is the configured base whatever a request says, so an https base
+  // needs nothing of ODUDU_TRUST_PROXY: that setting is about client addresses.
+  it('passes an https base URL with ODUDU_TRUST_PROXY off', () => {
+    const config = loadConfig({
+      ...base,
+      ODUDU_PUBLIC_BASE_URL: 'https://idp.example.test',
+      ODUDU_TLS: 'true',
+      ODUDU_CONSOLE_CLIENT_KEY: KEY,
+    });
     expect(() => {
       assertConsoleConfigured(config);
-    }).toThrow(
-      /ODUDU_TRUST_PROXY.*ODUDU_PUBLIC_BASE_URL|ODUDU_PUBLIC_BASE_URL.*ODUDU_TRUST_PROXY/su,
-    );
+    }).not.toThrow();
   });
 
   it('passes with an https base URL behind a trusted proxy', () => {

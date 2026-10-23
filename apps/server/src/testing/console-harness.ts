@@ -50,6 +50,8 @@ export interface AdminRequestSeen {
 }
 
 export interface ConsoleAppOptions {
+  /** Trust of a proxy's forwarded headers; defaults to on for an https base. */
+  readonly trustProxy?: boolean;
   /**
    * Build the app from this configuration the way `serve.ts` does, so what
    * the process's own settings decide (TLS, trust of a proxy) is what runs.
@@ -100,7 +102,7 @@ export async function startConsoleApp(
     consoleKeys: CONSOLE_KEYS,
     consoleNow: () => clock.now(),
     // An https base is served behind a proxy: boot refuses it otherwise.
-    trustProxy: baseUrl.protocol === 'https:',
+    trustProxy: options.trustProxy ?? baseUrl.protocol === 'https:',
     ...(options.throttle === undefined ? {} : { throttle: options.throttle }),
     consoleDir: options.consoleDir ?? NO_CONSOLE_BUILD,
   });
