@@ -18,6 +18,12 @@ export const en = {
   'verification.failed.heading': "This link can't be used",
   'verification.failed.reason':
     'It may have already been used, expired, or no longer matches your email address. Request a new verification email and try again.',
+  'confirm.verify.title': 'Confirm your email address',
+  'confirm.verify.next': 'Press the button to confirm this address.',
+  'confirm.verify.button': 'Confirm email',
+  'confirm.register.title': 'Create your account',
+  'confirm.register.next': 'Press the button to create your account.',
+  'confirm.register.button': 'Create my account',
   'registration.title': 'Create account',
   'registration.username': 'Username',
   'registration.email': 'Email',

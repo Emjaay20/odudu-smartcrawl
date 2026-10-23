@@ -1,4 +1,5 @@
 import { type TenantScopedDatabase } from '@odudu/db';
+import { type FastifyInstance, type LightMyRequestResponse } from 'fastify';
 import {
   credentialRepository,
   hashUserPassword,
@@ -81,4 +82,26 @@ export function linkRouteDeps() {
     clearPasswordUpdateAction: () => Promise.resolve(),
     addRequiredActions: () => Promise.resolve(),
   };
+}
+
+// What a person does with a mailed link: open it, then press the button its
+// page shows. A page with no button (a refused link) is the answer itself.
+export async function openAndPress(
+  http: FastifyInstance,
+  tenant: string,
+  key: string,
+  headers: Record<string, string> = {},
+): Promise<LightMyRequestResponse> {
+  const url = `/tenants/${tenant}/login-actions/action-token?key=${encodeURIComponent(key)}`;
+  const opened = await http.inject({ url, headers });
+  const hidden = /<input type="hidden" name="key" value="([^"]*)">/u.exec(opened.body)?.[1];
+  if (opened.statusCode !== 200 || hidden === undefined || !opened.body.includes('<button')) {
+    return opened;
+  }
+  return http.inject({
+    method: 'POST',
+    url: `/tenants/${tenant}/login-actions/action-token`,
+    payload: new URLSearchParams({ key: hidden }).toString(),
+    headers: { 'content-type': 'application/x-www-form-urlencoded', ...headers },
+  });
 }

@@ -442,7 +442,11 @@ describe('a verification link mailed from a registration', () => {
     const key = await register(tenant, 'grace', `held=${SESSION}`);
     expect((await latestPending(tenant.id))?.authenticationSessionId).toBe(SESSION);
 
-    const held = await get(tokenUrl(tenant.name, key), `held=${SESSION}`);
+    const held = await form(
+      `/tenants/${tenant.name}/login-actions/action-token`,
+      { key },
+      `held=${SESSION}`,
+    );
     expect(held.statusCode).toBe(200);
     expect(held.body).toContain(continueLink(tenant.name));
   });
@@ -450,7 +454,7 @@ describe('a verification link mailed from a registration', () => {
   it('shows the others the no-link text, with the link still spent', async () => {
     const tenant = await seedTenant();
     const key = await register(tenant, 'hopper', `held=${SESSION}`);
-    const other = await get(tokenUrl(tenant.name, key));
+    const other = await form(`/tenants/${tenant.name}/login-actions/action-token`, { key });
     expect(other.statusCode).toBe(200);
     expect(other.body).not.toContain('Continue to sign in');
     expect(other.body).toContain(NO_LINK);

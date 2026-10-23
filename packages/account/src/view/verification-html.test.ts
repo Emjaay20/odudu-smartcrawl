@@ -4,6 +4,7 @@ import Fastify from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
 import { en } from '#/view/messages';
 import {
+  renderLinkConfirmPage,
   renderVerificationFailedPage,
   renderVerificationSucceededPage,
   sendVerificationHtml,
@@ -129,4 +130,25 @@ describe('the pages a mailed link opens, with the way back it carried', () => {
     expect(renderVerificationSucceededPage(null, DEFAULT_PAGE_LOCALE).body).not.toContain('links');
     expect(renderVerificationFailedPage(null, DEFAULT_PAGE_LOCALE).body).not.toContain('links');
   });
+});
+
+describe('renderLinkConfirmPage', () => {
+  it.each([
+    ['register', 'Create my account'],
+    ['verify', 'Confirm email'],
+  ] as const)(
+    'asks for one click on a %s link, and carries the key only in the form',
+    (kind, label) => {
+      const page = renderLinkConfirmPage('acme', 'reg_k"ey', kind, DEFAULT_PAGE_LOCALE);
+
+      expectFragment(page);
+      expect(page.body).toContain(`<button type="submit">${label}</button>`);
+      expect(page.body).toContain(
+        '<form method="post" action="/tenants/acme/login-actions/action-token">',
+      );
+      expect(page.body).toContain('<input type="hidden" name="key" value="reg_k&quot;ey">');
+      expect(page.body.match(/<a /gu)).toBeNull();
+      expect(page.script).toBeNull();
+    },
+  );
 });

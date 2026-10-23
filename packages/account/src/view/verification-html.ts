@@ -1,6 +1,6 @@
 import { type PageLocale, pageHeaders, type RenderedPage } from '@odudu/kernel';
 import { type FastifyReply } from 'fastify';
-import { page } from '#/view/document';
+import { escapeHtml, page } from '#/view/document';
 import { links } from '#/view/links';
 import { t, tHtml } from '#/view/messages';
 
@@ -51,6 +51,32 @@ export function renderVerificationFailedPage(
     t(locale, 'verification.failed.title'),
     `<h1>${tHtml(locale, 'verification.failed.heading')}</h1>
 <p>${tHtml(locale, 'verification.failed.reason')}</p>${backToSignIn(signInPath, locale)}`,
+    null,
+    [],
+    locale,
+  );
+}
+
+export type ConfirmedLink = 'verify' | 'register';
+
+// What a mailed link shows on a visit. Opening it changes nothing: a mail
+// scanner or a link preview reads the page and the key is still good. One
+// button posts the key back, and that is what verifies or creates.
+export function renderLinkConfirmPage(
+  tenant: string,
+  key: string,
+  kind: ConfirmedLink,
+  locale: PageLocale,
+): RenderedPage {
+  const action = `/tenants/${escapeHtml(encodeURIComponent(tenant))}/login-actions/action-token`;
+  return page(
+    t(locale, `confirm.${kind}.title`),
+    `<h1>${tHtml(locale, `confirm.${kind}.title`)}</h1>
+<p>${tHtml(locale, `confirm.${kind}.next`)}</p>
+<form method="post" action="${action}">
+  <input type="hidden" name="key" value="${escapeHtml(key)}">
+  <button type="submit">${tHtml(locale, `confirm.${kind}.button`)}</button>
+</form>`,
     null,
     [],
     locale,

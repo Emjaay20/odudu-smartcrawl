@@ -78,3 +78,13 @@ export async function completeRegistration(
     throw err;
   }
 }
+
+// Whether a link would create an account, asked without creating it.
+export async function registrationWaiting(
+  deps: Pick<CompleteRegistrationDeps, 'database' | 'tenantId' | 'now'>,
+  key: string,
+): Promise<boolean> {
+  return withTenant(deps.database.db, deps.tenantId, (tx) =>
+    pendingRegistrationRepository(tx).waiting(key, deps.now()),
+  );
+}

@@ -69,6 +69,22 @@ export function pendingRegistrationRepository(tx: TenantScopedDatabase) {
       return { key };
     },
 
+    // A read for the page a link opens: whether a request is waiting under
+    // this key. Changes nothing, so a mail scanner's visit leaves it be.
+    async waiting(key: string, now: Date): Promise<boolean> {
+      const rows = await tx
+        .select({ id: pendingRegistrations.id })
+        .from(pendingRegistrations)
+        .where(
+          and(
+            eq(pendingRegistrations.tokenHash, sha256Hex(key)),
+            gt(pendingRegistrations.expiresAt, now),
+          ),
+        )
+        .limit(1);
+      return rows.length > 0;
+    },
+
     // One statement, so two clicks on a link cannot both create the account.
     async take(key: string, now: Date): Promise<PendingRegistration | null> {
       const rows = await tx

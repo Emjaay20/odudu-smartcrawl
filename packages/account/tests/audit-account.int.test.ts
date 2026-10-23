@@ -23,7 +23,7 @@ import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/test
 import formbody from '@fastify/formbody';
 import Fastify, { type FastifyInstance, type LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { accountTestDeps } from '#/testing/support';
+import { accountTestDeps, openAndPress } from '#/testing/support';
 import { actionTokenRepository } from '#/repository/action-tokens';
 import { tenantSettingsRepository } from '#/repository/tenant-settings';
 import { type NewAccountInput } from '#/usecase/register';
@@ -259,11 +259,8 @@ describe('registration writes one account.registered row', () => {
     expect((await register(tenant.name, requestId)).statusCode).toBe(201);
     expect(await rowsFor(tenant.id, requestId)).toEqual([]);
     const opened = `open-${newId()}`;
-    const res = await http.inject({
-      url: `/tenants/${tenant.name}/login-actions/action-token?key=${encodeURIComponent(
-        await mailedVerificationKey(tenant.id),
-      )}`,
-      headers: { 'x-request-id': opened },
+    const res = await openAndPress(http, tenant.name, await mailedVerificationKey(tenant.id), {
+      'x-request-id': opened,
     });
 
     expect(res.statusCode).toBe(200);
@@ -333,10 +330,7 @@ describe('verifying an address writes one email.verified row', () => {
     );
     const requestId = `verify-${newId()}`;
 
-    const res = await http.inject({
-      url: `/tenants/${tenant.name}/login-actions/action-token?key=${encodeURIComponent(key)}`,
-      headers: { 'x-request-id': requestId },
-    });
+    const res = await openAndPress(http, tenant.name, key, { 'x-request-id': requestId });
 
     expect(res.statusCode).toBe(200);
     const rows = await rowsFor(tenant.id, requestId);
@@ -347,13 +341,11 @@ describe('verifying an address writes one email.verified row', () => {
   it('writes nothing for a link that has already been spent', async () => {
     const tenant = await seedTenant({ verifyEmail: true });
     expect((await register(tenant.name, `register-${newId()}`)).statusCode).toBe(201);
-    const url = `/tenants/${tenant.name}/login-actions/action-token?key=${encodeURIComponent(
-      await mailedVerificationKey(tenant.id),
-    )}`;
-    expect((await http.inject({ url })).statusCode).toBe(200);
+    const key = await mailedVerificationKey(tenant.id);
+    expect((await openAndPress(http, tenant.name, key)).statusCode).toBe(200);
     const replay = `verify-replay-${newId()}`;
 
-    const res = await http.inject({ url, headers: { 'x-request-id': replay } });
+    const res = await openAndPress(http, tenant.name, key, { 'x-request-id': replay });
 
     expect(res.statusCode).toBe(400);
     expect(await rowsFor(tenant.id, replay)).toEqual([]);

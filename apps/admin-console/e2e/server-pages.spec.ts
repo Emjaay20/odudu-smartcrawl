@@ -406,7 +406,11 @@ test('registration, the unverified account, password reset and their links', asy
   await inspect(page, 'registration-succeeded');
 
   const key = mailKey(open, `newcomer-${run}@example.test`);
+  // Opening the link only asks; the button is what creates the account.
   await page.goto(`/tenants/${open}/login-actions/action-token?key=${key}`);
+  await expect(page.getByRole('heading', { level: 1, name: 'Create your account' })).toBeVisible();
+  await inspect(page, 'confirm-register');
+  await page.getByRole('button', { name: 'Create my account' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toContainText('verified');
   await expect(page.getByRole('link', { name: 'Continue to sign in' })).toBeVisible();
   await inspect(page, 'verification-ok');
@@ -485,6 +489,7 @@ test('registration, the unverified account, password reset and their links', asy
   await page.getByRole('button', { name: 'Create account' }).click();
   const direct = mailKey(open, `direct-${run}@example.test`);
   await page.goto(`/tenants/${open}/login-actions/action-token?key=${direct}`);
+  await page.getByRole('button', { name: 'Create my account' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toContainText('verified');
   await expect(page.getByText('Return to the application you were signing in to')).toBeVisible();
   await expect(page.getByRole('link')).toHaveCount(0);

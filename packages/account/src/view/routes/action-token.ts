@@ -1,6 +1,6 @@
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { requestContextFrom } from '@odudu/domain-audit';
-import { PASSWORD_TOO_LONG, readPasswordField } from '@odudu/kernel';
+import { PASSWORD_TOO_LONG, readPasswordField, type PageLocale } from '@odudu/kernel';
 import { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import { resumablePath, type FindHeldSignIn } from '#/service/sign-in-resume';
 import { peekActionToken, type LinkedRequiredAction } from '#/usecase/action-token';
@@ -18,6 +18,7 @@ import { completeEmailVerification } from '#/usecase/verify-email';
 import {
   completeRegistration,
   isRegistrationKey,
+  registrationWaiting,
   type VerifiedAccountInput,
 } from '#/usecase/complete-registration';
 import { type TakenIdentifiers } from '#/usecase/register';
@@ -31,6 +32,7 @@ import {
   renderRequiredActionsSucceededPage,
 } from '#/view/required-actions-html';
 import {
+  renderLinkConfirmPage,
   renderVerificationFailedPage,
   renderVerificationSucceededPage,
   sendVerificationHtml,
@@ -228,6 +230,50 @@ async function completeActionsLink(
   }
 }
 
+// The button on a registration link's page: creates the account, in one
+// transaction, and says how it went. A key nothing holds gets the page any
+// refused link gets, whether it was read or posted.
+async function finishRegistration(
+  request: FastifyRequest<{ Params: { tenant: string } }>,
+  reply: FastifyReply,
+  deps: ActionTokenRouteDeps,
+  tenant: ActionTokenTenantLookup,
+  key: string,
+  locale: PageLocale,
+): Promise<FastifyReply> {
+  const result = tenant.registrationAllowed
+    ? await completeRegistration(
+        {
+          database: deps.database,
+          tenantId: tenant.id,
+          request: requestContextFrom(request),
+          now: deps.now,
+          createVerifiedAccount: deps.createVerifiedAccount,
+          findTaken: deps.findTaken,
+        },
+        key,
+      )
+    : ({ kind: 'invalid' } as const);
+  if (result.kind === 'username_taken') {
+    return sendVerificationHtml(
+      reply,
+      409,
+      renderRegistrationUsernameGonePage(request.params.tenant, locale),
+    );
+  }
+  if (result.kind === 'invalid') {
+    return sendVerificationHtml(reply, 400, renderVerificationFailedPage(null, locale));
+  }
+  return sendVerificationHtml(
+    reply,
+    200,
+    renderVerificationSucceededPage(
+      await resumeAt(deps, request, tenant, result.authenticationSessionId),
+      locale,
+    ),
+  );
+}
+
 // Not under /protocol/openid-connect/: this is Odudu's own account UI, the
 // same namespace choice login.ts documents for /login-actions/authenticate.
 export function registerActionTokenRoute(app: FastifyInstance, deps: ActionTokenRouteDeps): void {
@@ -247,45 +293,26 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
       return sendVerificationHtml(reply, 400, renderVerificationFailedPage(null, locale));
     }
 
+    // A visit changes nothing: mail scanners and link previews open mailed
+    // links before the person does. One button posts the key back.
     if (isRegistrationKey(key)) {
-      const result = tenant.registrationAllowed
-        ? await completeRegistration(
-            {
-              database: deps.database,
-              tenantId: tenant.id,
-              request: requestContextFrom(request),
-              now: deps.now,
-              createVerifiedAccount: deps.createVerifiedAccount,
-              findTaken: deps.findTaken,
-            },
-            key,
+      const waiting =
+        tenant.registrationAllowed &&
+        (await registrationWaiting(
+          { database: deps.database, tenantId: tenant.id, now: deps.now },
+          key,
+        ));
+      return waiting
+        ? sendVerificationHtml(
+            reply,
+            200,
+            renderLinkConfirmPage(request.params.tenant, key, 'register', locale),
           )
-        : ({ kind: 'invalid' } as const);
-      if (result.kind === 'username_taken') {
-        return sendVerificationHtml(
-          reply,
-          409,
-          renderRegistrationUsernameGonePage(request.params.tenant, locale),
-        );
-      }
-      if (result.kind === 'invalid') {
-        return sendVerificationHtml(reply, 400, renderVerificationFailedPage(null, locale));
-      }
-      return sendVerificationHtml(
-        reply,
-        200,
-        renderVerificationSucceededPage(
-          await resumeAt(deps, request, tenant, result.authenticationSessionId),
-          locale,
-        ),
-      );
+        : sendVerificationHtml(reply, 400, renderVerificationFailedPage(null, locale));
     }
 
-    // A read, not a redemption: a reset-password link needs a page shown
-    // before anything is consumed, so its type has to be known ahead of
-    // that decision. A verify-email link consumes on this same GET, the
-    // way it always has — peeking first only tells the two branches apart,
-    // it never changes the verify-email one's behaviour.
+    // A read, never a redemption: what each kind of link shows is decided from
+    // its type, and nothing is consumed until the page's own form is posted.
     const peeked = await peekActionToken({ database: deps.database, tenantId: tenant.id }, key);
     const resume = (): Promise<string | null> =>
       resumeAt(deps, request, tenant, peeked.authenticationSessionId);
@@ -352,24 +379,10 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
       );
     }
 
-    const result = await completeEmailVerification(
-      {
-        database: deps.database,
-        tenantId: tenant.id,
-        request: requestContextFrom(request),
-        getCurrentEmail: deps.getCurrentEmail,
-        markVerified: deps.markVerified,
-      },
-      key,
-    );
-
-    if (result.kind === 'invalid') {
-      return sendVerificationHtml(reply, 400, renderVerificationFailedPage(await resume(), locale));
-    }
     return sendVerificationHtml(
       reply,
       200,
-      renderVerificationSucceededPage(await resume(), locale),
+      renderLinkConfirmPage(request.params.tenant, key, 'verify', locale),
     );
   });
 
@@ -387,9 +400,27 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
       return sendVerificationHtml(reply, 400, renderResetLinkFailedPage(null, null, locale));
     }
 
+    if (isRegistrationKey(key))
+      return finishRegistration(request, reply, deps, tenant, key, locale);
+
     const peeked = await peekActionToken({ database: deps.database, tenantId: tenant.id }, key);
     const resume = (): Promise<string | null> =>
       resumeAt(deps, request, tenant, peeked.authenticationSessionId);
+    if (peeked.kind === 'usable' && peeked.type === 'verify_email') {
+      const result = await completeEmailVerification(
+        {
+          database: deps.database,
+          tenantId: tenant.id,
+          request: requestContextFrom(request),
+          getCurrentEmail: deps.getCurrentEmail,
+          markVerified: deps.markVerified,
+        },
+        key,
+      );
+      return result.kind === 'invalid'
+        ? sendVerificationHtml(reply, 400, renderVerificationFailedPage(await resume(), locale))
+        : sendVerificationHtml(reply, 200, renderVerificationSucceededPage(await resume(), locale));
+    }
     if (peeked.kind === 'usable' && peeked.type === 'execute_actions') {
       return completeActionsLink(request, reply, deps, tenant, key, peeked);
     }

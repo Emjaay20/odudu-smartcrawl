@@ -238,9 +238,20 @@ describe('self-registration, through the real composition root', () => {
       const message = sender.sent[0];
       if (message === undefined) throw new Error('no verification mail sent');
       const key = extractVerificationKey(message);
-      const redeemRes = await app.inject({
+      // Opening the link creates nothing; pressing its button does.
+      const visited = await app.inject({
         method: 'GET',
         url: `/tenants/${tenantName}/login-actions/action-token?key=${key}`,
+      });
+      expect(visited.statusCode).toBe(200);
+      expect(
+        await withTenant(appDb.db, seeded.tenantId, (tx) => userRepository(tx).byUsername('ada')),
+      ).toBeNull();
+      const redeemRes = await app.inject({
+        method: 'POST',
+        url: `/tenants/${tenantName}/login-actions/action-token`,
+        payload: new URLSearchParams({ key }).toString(),
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
       });
       expect(redeemRes.statusCode).toBe(200);
 
@@ -365,7 +376,10 @@ describe('self-registration, through the real composition root', () => {
       const first = sender.sent[0];
       if (first === undefined) throw new Error('no verification mail sent');
       const opened = await app.inject({
-        url: `/tenants/${tenantName}/login-actions/action-token?key=${extractVerificationKey(first)}`,
+        method: 'POST',
+        url: `/tenants/${tenantName}/login-actions/action-token`,
+        payload: new URLSearchParams({ key: extractVerificationKey(first) }).toString(),
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
       });
       expect(opened.statusCode).toBe(200);
 

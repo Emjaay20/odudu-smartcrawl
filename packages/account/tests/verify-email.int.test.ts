@@ -17,9 +17,11 @@ import {
 import { newId } from '@odudu/kernel';
 import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/testkit';
 import { eq, sql } from 'drizzle-orm';
+import formbody from '@fastify/formbody';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { accountTestDeps } from '#/testing/support';
+import { openAndPress } from '#/testing/support';
 import { actionTokens } from '#/schema/action-tokens';
 import { tenantSettingsRepository } from '#/repository/tenant-settings';
 import { sendVerificationEmail, type SendVerificationEmailDeps } from '#/usecase/verify-email';
@@ -154,6 +156,7 @@ let httpApp: FastifyInstance;
 
 async function buildHttpApp(): Promise<FastifyInstance> {
   const instance = Fastify();
+  instance.register(formbody);
   registerActionTokenRoute(instance, {
     ...accountTestDeps,
     findHeldSignIn: () => Promise.resolve(null),
@@ -198,7 +201,39 @@ beforeEach(async () => {
   await owner.db.delete(emailOutbox);
 });
 
+function pressLink(link: string) {
+  const url = new URL(link, 'http://localhost');
+  const tenant = /\/tenants\/([^/]+)\//u.exec(url.pathname)?.[1] ?? '';
+  return openAndPress(httpApp, tenant, url.searchParams.get('key') ?? '');
+}
+
 describe('address verification', () => {
+  it('changes nothing when the link is only opened, however often a mail scanner does', async () => {
+    await sendVerificationEmail(deps, { subjectId: subject, email: 'ada@example.test' });
+    await drainOutbox();
+    const message = sender.sent[0];
+    if (message === undefined) throw new Error('no mail sent');
+    const link = extractLink(message);
+
+    const first = await httpApp.inject({ method: 'GET', url: link });
+    const second = await httpApp.inject({ method: 'GET', url: link });
+
+    for (const res of [first, second]) {
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toContain('Confirm your email address');
+      expect(res.body).toContain('<form method="post"');
+    }
+    expect(first.body).toBe(second.body);
+    expect(store.users.get(subject)?.verified).toBe(false);
+    expect(first.headers['cache-control']).toBe('no-store');
+    expect(first.headers['referrer-policy']).toBe('no-referrer');
+    expect(first.body).not.toMatch(/(src|href)="https?:/u);
+
+    expect((await pressLink(link)).statusCode).toBe(200);
+    expect(store.users.get(subject)?.verified).toBe(true);
+    expect((await pressLink(link)).statusCode).toBe(400);
+  });
+
   it('sends a link the user can follow, and flips email_verified when they do', async () => {
     await sendVerificationEmail(deps, { subjectId: subject, email: 'ada@example.test' });
     await drainOutbox();
@@ -207,7 +242,7 @@ describe('address verification', () => {
     if (message === undefined) throw new Error('no mail sent');
     const link = extractLink(message);
 
-    const res = await httpApp.inject({ method: 'GET', url: link });
+    const res = await pressLink(link);
 
     expect(res.statusCode).toBe(200);
     expect(store.users.get(subject)?.verified).toBe(true);
@@ -257,10 +292,10 @@ describe('address verification', () => {
     if (message === undefined) throw new Error('no mail sent');
     const link = extractLink(message);
 
-    const first = await httpApp.inject({ method: 'GET', url: link });
+    const first = await pressLink(link);
     expect(first.statusCode).toBe(200);
 
-    const second = await httpApp.inject({ method: 'GET', url: link });
+    const second = await pressLink(link);
     expect(second.statusCode).toBe(400);
   });
 
@@ -275,7 +310,7 @@ describe('address verification', () => {
     if (user === undefined) throw new Error('fixture missing');
     user.email = 'ada+new@example.test';
 
-    const res = await httpApp.inject({ method: 'GET', url: link });
+    const res = await pressLink(link);
     expect(res.statusCode).toBe(400);
     expect(store.users.get(subject)?.verified).toBe(false);
   });
@@ -307,7 +342,7 @@ describe('address verification', () => {
       `/tenants/${tenantName}/`,
     );
 
-    const res = await httpApp.inject({ method: 'GET', url: link });
+    const res = await pressLink(link);
     expect(res.statusCode).toBe(400);
   });
 
@@ -321,7 +356,7 @@ describe('address verification', () => {
       '/tenants/does-not-exist/',
     );
 
-    const res = await httpApp.inject({ method: 'GET', url: link });
+    const res = await pressLink(link);
     expect(res.statusCode).toBe(400);
   });
 
@@ -334,7 +369,7 @@ describe('address verification', () => {
 
     await owner.db.update(tenants).set({ enabled: false }).where(eq(tenants.id, tenantId));
 
-    const res = await httpApp.inject({ method: 'GET', url: link });
+    const res = await pressLink(link);
     expect(res.statusCode).toBe(400);
     expect(store.users.get(subject)?.verified).toBe(false);
   });

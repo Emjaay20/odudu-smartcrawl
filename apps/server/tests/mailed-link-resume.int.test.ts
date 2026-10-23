@@ -200,6 +200,15 @@ async function askForReset(t: Tenant, parked: Parked, cookie: string | undefined
   return mailedLink(t.email);
 }
 
+// Opening a registration or verification link asks; this is the button on its page.
+async function pressButton(link: string, cookie: string | undefined) {
+  const page = await request('GET', link, undefined, cookie);
+  expect(page.statusCode).toBe(200);
+  const key = /name="key" value="([^"]*)"/u.exec(page.body)?.[1] ?? '';
+  const tenant = /\/tenants\/([^/]+)\//u.exec(link)?.[1] ?? '';
+  return request('POST', `/tenants/${tenant}/login-actions/action-token`, { key }, cookie);
+}
+
 async function resetPassword(t: Tenant, link: string, cookie: string | undefined) {
   const form = await request('GET', link, undefined, cookie);
   expect(form.statusCode).toBe(200);
@@ -272,7 +281,7 @@ describe('forgot password from a sign-in, in the browser that started it', () =>
     expect(registered.statusCode).toBe(201);
     const link = await mailedLink(email);
 
-    const verified = await request('GET', link, undefined, parked.cookie);
+    const verified = await pressButton(link, parked.cookie);
     expect(verified.statusCode).toBe(200);
     expect(hrefLabelled(verified, 'Continue to sign in')).toBe(parked.carried);
     expect(verified.body).not.toContain(NO_LINK);
@@ -299,7 +308,7 @@ describe('the same link, anywhere the sign-in is not held', () => {
     );
     const link = await mailedLink(email);
 
-    const elsewhere = await request('GET', link);
+    const elsewhere = await pressButton(link, undefined);
     expect(elsewhere.statusCode).toBe(200);
     expect(elsewhere.body).not.toContain('Continue to sign in');
     expect(elsewhere.body).not.toContain('/protocol/openid-connect/auth');

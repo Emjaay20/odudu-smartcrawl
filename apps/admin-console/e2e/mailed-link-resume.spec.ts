@@ -120,6 +120,7 @@ test('a verification mailed from the console registration, opened in the same br
   await page.getByRole('button', { name: 'Create account' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Account created' })).toBeVisible();
   await page.goto(linkFor(tenant, mailedKey(tenant, email)));
+  await page.getByRole('button', { name: 'Create my account' }).click();
   await expect(
     page.getByRole('heading', { level: 1, name: 'Your email address is verified' }),
   ).toBeVisible();

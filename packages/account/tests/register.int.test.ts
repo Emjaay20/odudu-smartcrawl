@@ -31,7 +31,7 @@ import formbody from '@fastify/formbody';
 import { eq, sql } from 'drizzle-orm';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { accountTestDeps, linkRouteDeps } from '#/testing/support';
+import { accountTestDeps, linkRouteDeps, openAndPress } from '#/testing/support';
 import { tenantSettingsRepository } from '#/repository/tenant-settings';
 import { en } from '#/view/messages';
 import { actionTokens } from '#/schema/action-tokens';
@@ -1046,8 +1046,21 @@ describe('a registration that waits for its mailed link', () => {
   }
 
   function follow(tenantName: string, key: string) {
+    return openAndPress(httpApp, tenantName, key);
+  }
+
+  function visit(tenantName: string, key: string) {
     return httpApp.inject({
       url: `/tenants/${tenantName}/login-actions/action-token?key=${encodeURIComponent(key)}`,
+    });
+  }
+
+  function press(tenantName: string, key: string) {
+    return httpApp.inject({
+      method: 'POST',
+      url: `/tenants/${tenantName}/login-actions/action-token`,
+      payload: new URLSearchParams({ key }).toString(),
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
     });
   }
 
@@ -1093,7 +1106,39 @@ describe('a registration that waits for its mailed link', () => {
     return (await rawSelectAllActionTokens(tenantId)).length;
   }
 
-  it('creates the account, verified, with the password hash made at registration, when the link is opened', async () => {
+  it('creates nothing when the link is only opened, and exactly one account when its button is pressed', async () => {
+    const { tenantId, tenantName } = await open();
+    await post(tenantName, 'ada', 'ada@example.test');
+    const key = await keyFor(tenantId, 'ada@example.test');
+
+    // What a mail scanner does, twice.
+    const first = await visit(tenantName, key);
+    const second = await visit(tenantName, key);
+
+    for (const res of [first, second]) {
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toContain('Create my account');
+      expect(res.headers['cache-control']).toBe('no-store');
+      expect(res.headers['referrer-policy']).toBe('no-referrer');
+      expect(res.body).not.toMatch(/(src|href)="https?:/u);
+    }
+    expect(first.body).toBe(second.body);
+    expect(await holder(tenantId, 'ada')).toBeNull();
+    expect(await pendingCount(tenantId)).toBe(1);
+    expect(await auditActions(tenantId)).toEqual([]);
+
+    const created = await press(tenantName, key);
+    const again = await press(tenantName, key);
+
+    expect(created.statusCode).toBe(200);
+    expect(await holder(tenantId, 'ada')).not.toBeNull();
+    expect(await auditActions(tenantId)).toEqual(['account.registered']);
+    expect(again.statusCode).toBe(400);
+    expect(again.body).toBe((await visit(tenantName, 'reg_never-issued')).body);
+    expect((await visit(tenantName, key)).statusCode).toBe(400);
+  });
+
+  it('creates the account, verified, with the password hash made at registration, when its button is pressed', async () => {
     const { tenantId, tenantName } = await open();
     await createDefaultRole(tenantId, 'offline_access');
 
