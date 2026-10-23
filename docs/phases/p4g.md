@@ -3488,6 +3488,10 @@ GitHub's runners, GHCR and cosign is an assumption until `v0.1.0-rc.1` runs.
 - `assumption:` `releases/latest/download/compose.yaml` skips pre-releases.
 - The examples against the published digest (the plan's Task 6c) wait for the rc.
 
-**The Playwright action retries.** On 2026-10-23 the `docs` job was cancelled twice: apt fetched 25.9 MB in
-10 minutes from the Azure mirror, then a second run made no progress until the job limit. The action now
-configures apt retries and timeouts, uses the main mirror, and kills and retries an install after 8 minutes, up to three times.
+**The Playwright action retries, through `install.sh`.** On 2026-10-23 the `docs` job was cancelled twice on a
+stalled apt fetch from the Azure mirror. The first fix failed on the runner for three reasons. The runner image names
+its mirrors in `/etc/apt/apt-mirrors.txt`, not in the sources, so the sed changed nothing. `timeout` killed only the
+wrapper, because apt runs as root and the runner user cannot signal it. The orphaned apt-get then held the dpkg lock
+and the retries died at once. The script rewrites the mirror list, sets `DPkg::Lock::Timeout`, and between attempts
+kills apt, dpkg and clears the locks. verified: a fake apt-get hung in an `ubuntu:24.04` container reproduces the lock
+failure without that step (three attempts, exit 1) and installs on the second attempt with it.

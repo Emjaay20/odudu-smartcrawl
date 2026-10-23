@@ -386,23 +386,48 @@ describe('the CI workflow', () => {
   });
 
   describe('the Playwright action', () => {
-    it('makes apt fail fast, off the slow mirror, and retries a stalled install', async () => {
+    it('hands both installs to a script that retries, and keeps the browser cache', async () => {
       const action = await read('.github/actions/playwright/action.yml');
+      expect(action.match(/\$\{\{ github\.action_path \}\}\/install\.sh/gu)).toHaveLength(2);
+      expect(action).toContain('install.sh "${{ inputs.package }}" install\n');
+      expect(action).toContain('install.sh "${{ inputs.package }}" install-deps\n');
+      expect(action).toContain('key: playwright-${{ runner.os }}-chromium-');
+    });
+
+    it('makes apt fail fast, waits for a lock, and uses the main mirror in both source formats', async () => {
+      const script = await read('.github/actions/playwright/install.sh');
       for (const setting of [
         'Acquire::Retries "5";',
         'Acquire::http::Timeout "20";',
         'Acquire::https::Timeout "20";',
         'Acquire::ForceIPv4 "true";',
+        'DPkg::Lock::Timeout "300";',
         '/etc/apt/apt.conf.d/80-odudu-retries',
+        // the runner image names its mirrors in a list, not in the sources
+        'if [ -f /etc/apt/apt-mirrors.txt ]; then',
+        "printf 'http://archive.ubuntu.com/ubuntu/\\tpriority:1\\nhttp://security.ubuntu.com/ubuntu/\\tpriority:2\\n'",
         's|http://azure.archive.ubuntu.com|http://archive.ubuntu.com|g',
       ]) {
-        expect(action, setting).toContain(setting);
+        expect(script, setting).toContain(setting);
       }
-      expect(action.match(/for attempt in 1 2 3; do/gu)).toHaveLength(2);
-      expect(action.match(/timeout 8m pnpm /gu)).toHaveLength(2);
-      expect(action).toContain('playwright install --with-deps chromium');
-      expect(action).toContain('playwright install-deps chromium');
-      expect(action).toContain('key: playwright-${{ runner.os }}-chromium-');
+    });
+
+    it('kills a stalled attempt with the apt it started, and tries again, three times', async () => {
+      const script = await read('.github/actions/playwright/install.sh');
+      expect(script).toContain('attempts=3');
+      expect(script).toContain('setsid --wait timeout -s TERM -k 15 "$limit"');
+      expect(script).toContain('limit="${ODUDU_INSTALL_TIMEOUT:-8m}"');
+      expect(script).toContain('echo "attempt $attempt of $attempts"');
+      // the retry must not start while the last attempt's apt holds the lock
+      const loop = script.slice(script.indexOf('for attempt in'));
+      expect(loop.indexOf('clear_apt')).toBeGreaterThan(loop.indexOf('exit 0'));
+      expect(script).toContain('for name in apt-get apt dpkg; do $sudo_cmd pkill -KILL -x "$name"');
+      expect(script).toContain(
+        '/var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/cache/apt/archives/lock',
+      );
+      expect(script).toContain('dpkg --configure -a');
+      expect(script).toContain('::error::');
+      expect(script).toMatch(/^exit 1$/mu);
     });
 
     it('is the only place the workflows install browsers or call apt', async () => {

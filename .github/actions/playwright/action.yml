@@ -21,37 +21,14 @@ runs:
         path: ~/.cache/ms-playwright
         key: playwright-${{ runner.os }}-chromium-${{ steps.version.outputs.version }}
 
-    # The runner's default mirror has stalled at tens of kB/s and then hung, and
-    # one hung apt-get used to consume the whole job's time limit.
-    - name: Make apt fail fast and use the main mirror
-      shell: bash
-      run: |
-        printf '%s\n' 'Acquire::Retries "5";' 'Acquire::http::Timeout "20";' \
-          'Acquire::https::Timeout "20";' 'Acquire::ForceIPv4 "true";' \
-          | sudo tee /etc/apt/apt.conf.d/80-odudu-retries > /dev/null
-        sudo sed -i 's|http://azure.archive.ubuntu.com|http://archive.ubuntu.com|g' \
-          /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
-
+    # apt on the runner has stalled and held the dpkg lock; install.sh makes it
+    # fail fast, uses the main mirror and retries a stalled install.
     - name: Download Chromium and install its system libraries
       if: steps.browsers.outputs.cache-hit != 'true'
       shell: bash
-      env:
-        PACKAGE: ${{ inputs.package }}
-      run: |
-        for attempt in 1 2 3; do
-          echo "attempt $attempt of 3"
-          if timeout 8m pnpm --filter "$PACKAGE" exec playwright install --with-deps chromium; then exit 0; fi
-        done
-        exit 1
+      run: ${{ github.action_path }}/install.sh "${{ inputs.package }}" install
 
     - name: Install the system libraries only
       if: steps.browsers.outputs.cache-hit == 'true'
       shell: bash
-      env:
-        PACKAGE: ${{ inputs.package }}
-      run: |
-        for attempt in 1 2 3; do
-          echo "attempt $attempt of 3"
-          if timeout 8m pnpm --filter "$PACKAGE" exec playwright install-deps chromium; then exit 0; fi
-        done
-        exit 1
+      run: ${{ github.action_path }}/install.sh "${{ inputs.package }}" install-deps
