@@ -93,6 +93,7 @@ Every directory of the workspace, grouped by what it is for.
 - `tools/ci` works out which CI jobs a change needs.
 - `tools/commit-message` checks commit messages.
 - `tools/docs-run` runs the commands in the guides against a live stack.
+- `tools/release` works out a release's version and image tags, and writes its notes and its compose file.
 - `tools/trace` checks every requirement in a protocol note has a test.
 - `tools/turbo-cache` prunes the build cache.
 
