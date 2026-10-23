@@ -3430,3 +3430,60 @@ signs in after the shot would otherwise post an address the server did not issue
   already gives, which is the owner's commit address.
 - **The CLA** is named in `CONTRIBUTING.md` as accepted under ADR 0042 with its text not
   yet published; the link arrives with the agreement.
+
+## Increments 6 and 10: the release workflow and the quickstart job
+
+`.github/workflows/release.yml` publishes from a pushed `v*` tag, and
+`quickstart/prove.sh` is the ten-minute proof the `quickstart` job in `verify.yml`
+runs. No tag has been pushed and nothing was published, so every claim below about
+GitHub's runners, GHCR and cosign is an assumption until `v0.1.0-rc.1` runs.
+
+**Plan changes.** These override the plan's Increment 5 and Task 6.
+
+- **One QEMU build, not a native-runner matrix.** A single `docker/build-push-action`
+  job builds `linux/amd64,linux/arm64`, so the SBOM and provenance buildx attaches are
+  on the one index that is signed. The plan's `imagetools create` merge of two
+  by-digest pushes would drop them. `docker/metadata-action` is not used: a tested
+  script (`tools/release`) computes the tags, so "a release candidate is never `latest`"
+  is a unit test and not a workflow expression.
+- **No standalone SBOM action.** The SBOM is buildx's own (`sbom: true`), written to
+  `odudu-sbom.json` by `docker buildx imagetools inspect --format '{{ json .SBOM }}'`
+  and attached to the release; the signature covers the index that holds it.
+- **No `release-dry-run` job in `verify.yml`.** A multi-arch QEMU build on every pull
+  request costs more than it proves. The dry run is the workflow's `workflow_dispatch`,
+  which GitHub offers only once `release.yml` is on `main`.
+- **The proof is a job in `verify.yml`**, behind `changes` and in `gate`, not a
+  `quickstart.yml`, so a skipped job passes and the gate stays the one check to require.
+  It tags the image the `image` action builds as `ghcr.io/wizzywit/odudu:0.0.0`, the
+  name `quickstart/compose.yaml` gives it, so the file under test is the unedited one.
+- **Not built here, and the owner's call:** the `quickstart-arm` job, the compose
+  validity job on macOS and Windows runners, and the plan's port-in-use step. arm64 and
+  Docker Desktop on a Mac and on Windows are confirmed by hand (`RELEASING.md`, Owner
+  steps); CI proves linux/amd64 only.
+- **The release caveat** ("Arrives with the first release.") now waits for a dated
+  stable section in `CHANGELOG.md`, not for `release.yml` to exist: `latest/download`
+  skips pre-releases, so the address answers only after a stable tag.
+
+**Verified.**
+
+- `verified: quickstart/prove.sh 3262` against an image built from this commit and tagged
+  `ghcr.io/wizzywit/odudu:0.0.0` printed `PASS elapsed 14s`: bare `docker compose up -d`,
+  healthy, the banner, a console sign-in as the generated administrator (with the forced
+  password change), `/docs/` served, then a second stack with an email and a password
+  holding a quote and `$(id)` signed in with that exact password.
+- `verified: docker compose logs --help` on Compose v5.6.0 has no `--no-log-stream`
+  (the plan used it); `--no-log-prefix` is what strips the container name.
+
+**Assumptions the first rc settles.**
+
+- `assumption:` QEMU builds the arm64 half within the job's 90 minutes.
+- `assumption:` with `sbom: true` and `provenance: mode=max` on a multi-platform push the
+  index carries both, and `imagetools inspect --format '{{ json .SBOM }}'` prints an
+  object keyed `linux/amd64` and `linux/arm64`; the workflow fails the release if not.
+- `assumption:` the keyless identity of this workflow on a tag is
+  `https://github.com/<repo>/.github/workflows/release.yml@refs/tags/<tag>`; the same
+  job verifies it, so a wrong regexp fails the release rather than shipping.
+- `assumption:` a tag pushed from a pull request's head triggers the workflow, and
+  `gate` is a check run on that head commit.
+- `assumption:` `releases/latest/download/compose.yaml` skips pre-releases.
+- The examples against the published digest (the plan's Task 6c) wait for the rc.
