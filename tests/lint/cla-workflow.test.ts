@@ -79,8 +79,8 @@ describe('the CLA workflow', () => {
 });
 
 describe('the CLA text and where it is linked', () => {
-  it('marks itself a draft until it is approved', () => {
-    expect(CLA).toMatch(/> DRAFT: not legal advice/u);
+  it('is approved: it carries no draft notice', () => {
+    expect(CLA).not.toMatch(/DRAFT/u);
   });
 
   it('grants a copyright licence and a patent licence', () => {

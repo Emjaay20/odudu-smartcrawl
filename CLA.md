@@ -1,9 +1,5 @@
 # Odudu contributor licence agreement
 
-> DRAFT: not legal advice, awaiting the owner's approval or a lawyer's review.
-> The wording below is a starting point built on the structure of the Apache
-> Individual Contributor Licence Agreement. It is not in force until approved.
-
 This agreement is between you and the owner of Odudu: Wisdom Praise (the
 "Owner"). The Owner's name here is the one on the project's
 [ownership notice](TRADEMARK.md); the exact legal name or entity is still to be
