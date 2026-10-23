@@ -36,7 +36,10 @@ export const TENANT_OPTIONS = {
 
 export const CLIENT_OPTIONS = {
   tenant: TENANT,
-  'client-id': text('The client_id to create or update.', true),
+  'client-id': text(
+    'The client_id to create. The command fails if that client exists; change an existing client in the console or the admin API.',
+    true,
+  ),
   public: flag('Register a public client; accepts --public or --client-secret, not both.'),
   'client-secret': text('Register a confidential client with this secret instead.'),
   'token-endpoint-auth-method': text(
@@ -56,6 +59,7 @@ export const USER_OPTIONS = {
   username: text('Username of the user to create.', true),
   password: text('The initial password; it must satisfy the tenant policy.', true),
   email: text('The email address of the user.'),
+  'email-verified': flag('Record the email address as verified; needs --email.'),
   'require-password-change': flag('Make the user choose a new password at first login.'),
 } as const;
 
@@ -73,7 +77,7 @@ export const GROUP_OPTIONS = {
 
 export const SCOPE_OPTIONS = {
   tenant: TENANT,
-  name: text('Name of the client scope to create or update.', true),
+  name: text('Name of the client scope to create. The command fails if it exists.', true),
   description: text('A description of the scope.'),
   'include-in-id-token': text('true or false: put the scope claims in the ID token.'),
   'include-in-access-token': text('true or false: put the scope claims in the access token.'),
@@ -125,6 +129,7 @@ export const PROFILE_OPTIONS = {
   zoneinfo: text('Time zone of the user, such as Europe/Berlin.'),
   locale: text('Locale of the user, such as de-DE.'),
   'phone-number': text('Phone number of the user.'),
+  'email-verified': flag('Record the email address as verified; the user needs one.'),
   'phone-number-verified': flag('Record the phone number as verified.'),
   'address-formatted': text('The whole postal address as one string.'),
   'address-street': text('Street part of the postal address.'),

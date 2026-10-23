@@ -208,3 +208,32 @@ describe('main.ts before it dispatches', () => {
     expect([...packages].sort()).toEqual(['@odudu/kernel']);
   });
 });
+
+describe('what the seed help promises', () => {
+  const options = (name: string) =>
+    CLI_COMMANDS.find((command) => command.name === 'seed')?.subcommands.find(
+      (command) => command.name === name,
+    )?.options ?? [];
+  const summary = (command: string, option: string) =>
+    options(command).find((candidate) => candidate.name === option)?.summary ?? '';
+
+  // A second `seed client` for the same client fails with seed_conflict, so the
+  // help must not say it updates.
+  it('says seed client creates, fails on an existing client and where to change one', () => {
+    const text = summary('client', 'client-id');
+    expect(text).not.toMatch(/update/iu);
+    expect(text).toMatch(/fails if that client exists/iu);
+    expect(text).toMatch(/console or the admin API/iu);
+  });
+
+  it('says seed scope creates and fails on an existing scope', () => {
+    const text = summary('scope', 'name');
+    expect(text).not.toMatch(/update/iu);
+    expect(text).toMatch(/fails if it exists/iu);
+  });
+
+  it('documents --email-verified on seed user and seed profile', () => {
+    expect(summary('user', 'email-verified')).toMatch(/--email/u);
+    expect(summary('profile', 'email-verified')).toMatch(/verified/iu);
+  });
+});

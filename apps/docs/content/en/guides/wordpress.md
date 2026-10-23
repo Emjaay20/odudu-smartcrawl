@@ -22,10 +22,10 @@ export ODUDU_BASE="${ODUDU_BASE:-http://localhost:3000}" && export TENANT="$ODUD
 
 ## 2. Register WordPress in Odudu
 
-First make a person to sign in. WordPress needs an email address for every user, so this one has one.
+First make a person to sign in. WordPress needs an email address for every user, so this one has one, marked verified for the check in step 6.
 
 ```sh {run expect="userSubjectId"}
-docker compose exec odudu odudu seed user --tenant demo --username wendy --email wendy@example.com --password 'a long and unremarkable passphrase'
+docker compose exec odudu odudu seed user --tenant demo --username wendy --email wendy@example.com --email-verified --password 'a long and unremarkable passphrase'
 ```
 
 WordPress keeps a secret on its server, so it is a confidential client. Make a secret and keep it for step 4.
@@ -136,7 +136,7 @@ Open `/wp-login.php`. Under the form is a link, _Login with OpenID Connect_. Cho
 
 The plugin never looks at `email_verified`. With **Link Existing Users** on, anyone whose Odudu account carries an administrator's email address signs in as that administrator, verified or not. We tried it.
 
-Turn the setting on only when every person in the tenant either was created by you with their address checked, or had to verify it. In the console, a person's **Profile** has an **Email verified** switch, and **Verify email addresses** under **Registration and recovery** makes registration require it.
+Turn the setting on only when every person in the tenant either was created by you with their address checked, or had to verify it. In the console, a person's **Profile** has an **Email verified** switch, and **Verify email addresses** under **Registration and recovery** makes registration require it. On the command line, `odudu seed user --email-verified` creates a person with a verified address, and `odudu seed profile --email-verified` marks an existing one.
 
 To make WordPress refuse a person whose address is not verified, save this as `wp-content/mu-plugins/odudu-verified.php`.
 

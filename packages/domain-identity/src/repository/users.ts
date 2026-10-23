@@ -334,8 +334,9 @@ export function userRepository(tx: TenantScopedDatabase) {
 
     // Deliberately not folded into updateProfile: emailVerified is a claim
     // about the current value of email, set only by consuming a matching
-    // verify_email action token (packages/account/src/usecase/verify-email.ts),
-    // never by a caller patching arbitrary profile fields.
+    // verify_email action token (packages/account/src/usecase/verify-email.ts)
+    // or by an operator's `seed` command, never by a caller patching
+    // arbitrary profile fields.
     async markEmailVerified(subjectId: string): Promise<UserRecord> {
       const rows = await tx
         .update(users)

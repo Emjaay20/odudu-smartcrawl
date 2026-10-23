@@ -1358,6 +1358,9 @@ async function runUserCommand(
   const username = values.username;
   const password = values.password;
   const email = values.email;
+  if (values['email-verified'] === true && email === undefined) {
+    throw new OduduError('seed_invalid_options', 'seed user --email-verified requires --email');
+  }
 
   const tenantId = await requireTenantId(ownerDb, tenantName);
   assertPasswordSatisfiesPolicy(
@@ -1383,6 +1386,9 @@ async function runUserCommand(
       username,
       ...(email !== undefined ? { email } : {}),
     });
+    if (values['email-verified'] === true) {
+      await userRepository(tx).markEmailVerified(subject.id);
+    }
     await grantNewSubjectDefaults(tx, subject.id);
     await credentialRepository(tx).insert({
       tenantId,
@@ -1791,7 +1797,19 @@ async function runProfileCommand(
 
   await withTenant(runtimeDb, tenantId, async (tx) => {
     const subjectId = await requireUserSubjectId(tx, username);
+    if (values['email-verified'] === true) {
+      const user = await userRepository(tx).bySubjectId(subjectId);
+      if (user?.email == null) {
+        throw new OduduError(
+          'seed_invalid_options',
+          `seed profile --email-verified: user ${JSON.stringify(username)} has no email address`,
+        );
+      }
+    }
     await userRepository(tx).updateProfile(subjectId, patch);
+    if (values['email-verified'] === true) {
+      await userRepository(tx).markEmailVerified(subjectId);
+    }
   });
 
   return { command: 'profile', tenant: tenantName, tenantId, username };
