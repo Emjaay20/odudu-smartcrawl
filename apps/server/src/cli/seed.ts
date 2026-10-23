@@ -1314,6 +1314,7 @@ async function runClientCommand(
       tokenEndpointAuthMethod:
         type === 'confidential' ? (authMethod ?? 'client_secret_basic') : 'none',
       audiences: [],
+      consentRequired: values['consent-required'] === true,
       // Null takes the tenant's lifetimes, as every other door's client does.
       accessTokenTtlSeconds: null,
       refreshTokenTtlSeconds: null,

@@ -1003,6 +1003,63 @@ describe('seed client --post-logout-redirect-uri', () => {
   });
 });
 
+describe('seed client --consent-required', () => {
+  async function storedConsentRequired(
+    tenantName: string,
+    oauthClientId: string,
+  ): Promise<boolean> {
+    const tenantId = (await owner.db.select().from(tenants).where(eq(tenants.name, tenantName)))[0]
+      ?.id;
+    if (tenantId === undefined) throw new Error('expected the seeded tenant');
+    return withTenant(owner.db, tenantId, async (tx) => {
+      const rows = await tx
+        .select()
+        .from(clients)
+        .where(and(eq(clients.tenantId, tenantId), eq(clients.clientId, oauthClientId)));
+      const client = rows[0];
+      if (client === undefined) throw new Error('expected the seeded client');
+      const config = await clientOidcConfigRepository(tx).byClientId(client.id);
+      if (config === null) throw new Error('expected the client to have a config');
+      return config.consentRequired;
+    });
+  }
+
+  const base = (tenant: string, clientId: string): string[] => [
+    'client',
+    '--tenant',
+    tenant,
+    '--client-id',
+    clientId,
+    '--public',
+    '--redirect-uri',
+    'https://app.example/callback',
+  ];
+
+  it('creates a client that asks for consent, and one without the flag does not', async () => {
+    const options = uniqueOptions();
+    await seed(options);
+
+    await seed([...base(options.tenant, 'asks'), '--consent-required']);
+    await seed(base(options.tenant, 'does-not-ask'));
+
+    expect(await storedConsentRequired(options.tenant, 'asks')).toBe(true);
+    expect(await storedConsentRequired(options.tenant, 'does-not-ask')).toBe(false);
+  });
+
+  it('leaves another tenant\u2019s client of the same id without consent', async () => {
+    const mine = uniqueOptions();
+    const other = uniqueOptions();
+    await seed(mine);
+    await seed(other);
+
+    await seed([...base(mine.tenant, 'shared-id'), '--consent-required']);
+    await seed(base(other.tenant, 'shared-id'));
+
+    expect(await storedConsentRequired(mine.tenant, 'shared-id')).toBe(true);
+    expect(await storedConsentRequired(other.tenant, 'shared-id')).toBe(false);
+  });
+});
+
 async function clientCredentialsScopesOf(
   tenantName: string,
   oauthClientId: string,
