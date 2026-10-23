@@ -33,12 +33,13 @@ Everything here works in the version you can run today.
 
 - Any number of tenants on one server, each with its own people, clients, keys, settings, sign-in flow and mail relay, kept apart by the database itself.
 - Gap-free signing key rotation, and export of a tenant to a file and import as a new tenant.
+- Built-in scopes, like any other, can be deleted after typing their name, and restored.
 
 ### Credentials and second factors
 
 - Passwords with a policy and lockouts, a list of common passwords that may not be chosen, passkeys, and a one-time password from an authenticator app.
 - Recovery codes: ten per person, shown once, offered again when the last is spent, revoked as a set when the last authenticator goes.
-- Self-registration, email verification and password reset, each switched on per tenant, and required actions you set on a person. An app can send a person straight to the registration page with `prompt=create`.
+- Self-registration, email verification and password reset, each switched on per tenant, and required actions you set on a person. An app can send a person straight to the registration page with `prompt=create`. Registering with an address that is taken does not say so when verification is on, and a reset ends every session and token the person had.
 
 ### Admin API and console
 
@@ -51,7 +52,7 @@ Everything here works in the version you can run today.
 
 ### Running it
 
-- Postgres with migrations applied at boot, health endpoints, one instance with TLS ended in front.
+- Postgres with migrations applied at boot, health endpoints, one instance with TLS ended in front, with the issuer and every cookie taken from your configuration.
 - The container image and the Docker Compose quick start are built from source today; the first release, P4g (this release), publishes them.
 
 ## Next
@@ -77,13 +78,15 @@ Placed on a phase, in order, and not started. Each line names the phase that wil
 - **P8, SAML 2.0.** Odudu as a SAML identity provider.
 - **P9, authorization services.** Policy evaluation and UMA 2.0, and a resource server as a first-class thing.
 - **P10, extensibility.** Third-party providers loaded without a rebuild. A tenant can choose which claim mappers a scope carries but cannot add a new mapper, and an `EventListener` delivering audit events to a SIEM or a webhook belongs here: today only the admin API and the console read the trail.
-- **P11, many instances and performance.** One instance only today, because migrations run at boot with no lock and the throttle and the per-address mail limit live in one process. Also a deadline for the two outbound lookups on `/token` and `/userinfo`, and a metrics endpoint. Audit events are partitioned by month so retention drops a partition, and deleting a tenant becomes chunked and resumable. A Helm chart or Kubernetes manifests come with it.
+- **P11, many instances and performance.** One instance only today, because migrations run at boot with no lock and the throttle, the per-address mail limit and the limits on registration and reset links live in one process. Also a deadline for the two outbound lookups on `/token` and `/userinfo`, and a metrics endpoint. Audit events are partitioned by month so retention drops a partition, and deleting a tenant becomes chunked and resumable. A Helm chart or Kubernetes manifests come with it.
 - **P12, operational readiness.** Secrets read from somewhere other than the process environment, written backup and restore guidance proven by a restore, and a start-up check that the serving role is neither a superuser nor able to bypass row-level security.
 - **P13, FAPI 2.0 and the deferred grants.** Pushed authorization requests (PAR), so request objects are refused until then; DPoP and mTLS-bound tokens; the device authorization grant; `client_secret_jwt` and `self_signed_tls_client_auth` client authentication; and a requested `acr_values` that forces re-authentication, which is accepted and ignored today.
 
 **Smaller capabilities, each placed on a phase**
 
 - **more required actions (verify email, update profile, accept terms)**: P4f.
+- **ending a person's other sessions after a mailed required-action link sets a password**: P4f.
+- **a tenant-wide switch that asks everyone to enrol a passkey**: P4f.
 - **several sign-in flows with a per-client override**: P4f.
 - **per-step authenticator configuration**: P4f.
 - **a breached-password check**: P4f.
@@ -94,6 +97,7 @@ Placed on a phase, in order, and not started. Each line names the phase that wil
 - **per-client dedicated mappers**: P10.
 - **a metrics endpoint**: P11.
 - **key import, encryption keys and scheduled key rotation**: P12.
+- **an audit trail the serving role cannot rewrite, signed or chained**: P12.
 - **client registration policies and client policies**: P13.
 - **admin impersonation**: P13, with its own threat model.
 - **create a client's service account when its client credentials grant is switched on, not for every confidential client**: P5a, because machine clients and agents are the ones that use `client_credentials`, following Keycloak's model. Today every confidential client gets one.

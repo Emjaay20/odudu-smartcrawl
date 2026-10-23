@@ -8,18 +8,17 @@ ways.** Phases are section 11 of
 [the umbrella spec](superpowers/specs/2026-09-10-odudu-design.md), whose
 "P4 became four phases, then five" subsection has the reasoning.
 
-**P4g, the public release, is in progress on `p4g-public-release`** (draft
-pull request #64). Built and reviewed: the release workflow and process, the
-CLI help registry, `odudu init` and the one-file quickstart, every server
-page under Instrument with a catalogue, the documentation site and its
-generated reference, the three path documents moved into it and retired, the
-guides, concepts, console tour and operating pages, the four examples and the
-job that runs them, and the staff mark across the console, the docs and the
-server pages. **What remains** is the landing page and its Core Web Vitals
-gate, the README, the community files, the CLA, the Pages deployment with the
-domain procedure, and the closing pass. Its notes are in
-[`docs/phases/p4g.md`](phases/p4g.md), the licences in `LICENSING.md`, and the
-work it placed on later phases is on
+**P4g, the public release, is shipping as release candidate 0.1.0-rc.1 from
+`p4g-public-release`** (draft pull request #64). Built and reviewed: the
+release workflow and process, `odudu init` and the one-file quickstart, every
+server page under Instrument with a catalogue, the documentation site and
+landing page, the guides, concepts, console tour and operating pages, the four
+examples and a WordPress guide, the README and community files, the CLA, the
+Pages deployment, and `prompt=create`, neutral registration, password rules,
+cookies under TLS and an issuer taken from configuration. **Three increments
+stay in P4g and are not built:** see "What P4g, P4b and P4f inherit". Its notes
+are in [`docs/phases/p4g.md`](phases/p4g.md), the licences in `LICENSING.md`,
+and the work it placed on later phases is on
 [the roadmap page](../apps/docs/content/en/roadmap.md).
 
 The order is **P4a → P4c → P4e → P4d → P4g → P4b → P5a → P4f → P4h**, so P4b
@@ -154,13 +153,31 @@ the CSP nonce, the framing defence and the `auth_session_id` — ADR 0030 has
 the reasoning, and the `frames` member ADR 0034 added is part of the same
 contract.
 
-**Deployment is still unpublished.** There is no published image or release
-process (**P4g**, which waits on nothing and is the prerequisite for anybody
-deploying this at all), secrets are environment variables and nothing more,
-and there is no backup or restore guidance (**P12**). Multi-replica
-deployment is blocked on migration locking and on the in-process bounds
-(throttles, the client-secret limiter), both **P11**, which also owes the
-Helm chart or manifests.
+**The image is published by a tag, and the rest of deployment is later.**
+`release.yml` publishes a signed image with its contents listed from a `v*`
+tag, and the base images are pinned by digest. Secrets are still environment
+variables, and there is no backup or restore guidance (**P12**).
+Multi-replica deployment is blocked on migration locking and on the
+in-process bounds (throttles, the client-secret limiter, the registration and
+reset limiters), all **P11**, which also owes the Helm chart or manifests.
+
+**Three increments and one wording fix are P4g's and are not built.** The
+release candidate ships without them, and P4g is the phase that owes them.
+
+- **31c, front-channel logout.** A logout that names a matched
+  `post_logout_redirect_uri` should show the front-channel frames, then
+  redirect. The roadmap places that gap on P4b (below), which stands until
+  31c ships; 31c then moves that one clause to P4g, and the confirmation
+  form's anti-forgery binding and the leaked-ID-token logout stay on P4b.
+- **31b, Core Web Vitals and Lighthouse budgets** enforced in CI on a
+  throttled mobile profile, for the landing page and a sample of docs pages.
+- **The landing additions:** a "pages your users see" strip, "Planned"
+  sections for agents and for theming (labelled "Planned" only, linking the
+  roadmap), and a line under "Four small apps that work" for the WordPress
+  guide.
+- **A console wording fix:** the `max_clients` description says it limits
+  registration, but the cap holds however a client is created. Change it
+  with the next `pnpm docs:screenshots` run; the screenshot record carries it.
 
 ## What P5 inherits
 
@@ -227,25 +244,12 @@ that should hold it, which is usually false.
 | Migrations are hard cutovers: Drizzle runs every pending migration in one transaction, so no index is built `CONCURRENTLY`, `0073`–`0075` add stored generated columns that rewrite their tables under lock, `0076` rebuilds an `audit_events` index without `CONCURRENTLY`, `0079` adds three more such columns to `users`, `0080`, `0081` and `0097` build indexes plain, and `0095` builds twenty-odd, four of them on `audit_events`, as `0099` builds a fifth, and `0100` three on `email_outbox`, whose `failed` mail read still sorts a tenant's unsent rows (about 100 ms at 1,000,000 unsent, an incident-sized backlog) | the umbrella spec's §5, "Migrations", and §11's P11 row                               | **P11**, with rolling upgrades across replicas                            |
 | `audit_events` at 100,000,000 rows is one table with seven secondary indexes and per-tenant unbatched retention deletes; the query-plan check ran at a fifth of the subjects and a hundredth of the events, on one node                                                                                                                                                                                                                                                                                                                                                                                                           | `docs/phases/p4d.md`, "Server query plans", and §11's P11 row                         | **P11**, partitioning by month and batched deletes                        |
 | Tenant delete is one transaction cascading through every tenant table, `audit_events` included, so it holds locks as long as the tenant's audit trail is deep; no bound or timeout (`apps/docs/content/en/reference/transcripts/admin-paths/`, "Delete a tenant")                                                                                                                                                                                                                                                                                                                                                                 | the umbrella spec's §11, P11 row                                                      | **P11**, a chunked, resumable delete                                      |
-| Base images are mutable tags (`node:24-alpine`, `postgres:17-alpine`, `mailpit`, `swagger-ui`); only the logout sink is pinned by digest                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | the umbrella spec's §11, P4g row                                                      | **P4g**, with the published image                                         |
 | Localization has its catalogue mechanism and the server pages' and mail's English catalogues; the tenant default locale and per-tenant mail theming (**P4b**) and the console's extraction (**P4h**) remain, and the new-code rule is unenforced in the console until its lint lands                                                                                                                                                                                                                                                                                                                                              | [ADR 0043](adr/0043-localization-is-a-catalogue-a-negotiation-and-a-set-of-owners.md) | **P4b** and **P4h**                                                       |
 | No composite index serves the two-filter audit reads (actor and type, type and action); a 5 s timeout bounds them                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [p4d.md](phases/p4d.md), "Server query plans"                                         | **P11**, whose plan check at scale is the evidence                        |
 | Two console dom tests (`gateway.test.ts`, `useWrite.test.tsx`) once failed alone under the root project; not reproduced on 2026-10-19 under `--project dom`, with and without the other file, or with every project                                                                                                                                                                                                                                                                                                                                                                                                               | [p4g.md](phases/p4g.md), "The console's theme choice reaches the server pages"        | if it recurs: [p4g.md](phases/p4g.md), "CI runs what a change can affect" |
 | Committed development credentials                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [ADR 0014](adr/0014-committed-development-credentials.md)                             | the conditions that ADR names                                             |
 
 ### Argued here, because there is nowhere else
-
-**One configured issuer base for the whole deployment.** The admin API
-derives a token's expected `iss` from the request, the same way `/token`
-mints it, because there is nothing configured to compare against — which
-also forced the admin audience to a fixed URN rather than `${iss}/admin`
-([p4c.md](phases/p4c.md) has that decision). `ODUDU_PUBLIC_BASE_URL` exists
-already for mail links and the WebAuthn relying-party id, so the value is
-half present. Replacing request-derived issuers everywhere changes how
-`iss` is minted on every token, ID token and Logout Token, on the RFC 9207
-parameter and in discovery, which is why P4c did not do it in passing.
-
-- Trigger: **P12**, whose criterion now names it.
 
 **Neither of the server's two outbound DNS lookups carries a deadline.**
 `createLogoutDeliveryTransport`'s `defaultLookup`
@@ -359,6 +363,16 @@ a phase note.
   whoever reads it next. **P12**, whose criterion sources secrets from
   somewhere other than the process environment and so reworks the boot
   sequence in `apps/server/src/main.ts` that the test pins by offset.
+
+- **The audit trail can be rewritten by the serving role and nothing signs
+  or chains it.** `audit_events` has no `REVOKE` or trigger making it
+  append-only, so a compromised server could change a row. **P12**, whose
+  hardening criterion owns a role that cannot, and a signed or chained trail.
+- **Self-service credential gaps found in P4g.** A required-action link that
+  sets a password does not end the person's other sessions (only a reset
+  does), and a tenant cannot ask everyone to enrol a passkey. **P4f**, whose
+  criterion owns ending other sessions after a password change and the
+  per-tenant sign-in settings.
 
 ### Recorded judgements, where the code stands and nothing is owed
 

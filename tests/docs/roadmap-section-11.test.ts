@@ -278,7 +278,8 @@ describe('the roadmap and section 11 of the design spec agree', () => {
     ['Migrations are hard cutovers', ['P11'], ['migrations run at boot with no lock']],
     ['`audit_events` at 100,000,000 rows', ['P11'], ['partitioned by month']],
     ['Tenant delete is one transaction', ['P11'], ['chunked and resumable']],
-    ['Base images are mutable tags', ['P4g'], ['base images pinned']],
+    ['The audit trail can be rewritten', ['P12'], ['audit trail']],
+    ['Self-service credential gaps', ['P4f'], ['other sessions', 'passkey']],
     ['No composite index serves', ['P11'], 'an index decision that waits on the measurement'],
   ];
 
