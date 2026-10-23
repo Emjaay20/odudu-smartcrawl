@@ -21,6 +21,7 @@ import formbody from '@fastify/formbody';
 import { eq } from 'drizzle-orm';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { accountTestDeps } from '#/testing/support';
 import { tenantSettingsRepository } from '#/repository/tenant-settings';
 import { actionTokens } from '#/schema/action-tokens';
 import { enqueueActionsLink } from '#/usecase/execute-actions';
@@ -59,6 +60,7 @@ beforeAll(async () => {
   http = Fastify();
   http.register(formbody);
   registerActionTokenRoute(http, {
+    ...accountTestDeps,
     findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),

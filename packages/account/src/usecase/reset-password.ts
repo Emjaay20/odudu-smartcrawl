@@ -4,6 +4,7 @@ import { auditRepository, type RequestContext } from '@odudu/domain-audit';
 import { outboxRepository, renderResetPassword } from '@odudu/email';
 import { actionTokenRepository } from '#/repository/action-tokens';
 import { type PasswordPolicy, type PolicyViolation } from '#/repository/tenant-settings';
+import { type MailGate } from '#/service/mail-gate';
 import { withMinimum } from '#/service/password-violations';
 
 // Re-exported so the view layer can reach these without importing the
@@ -38,6 +39,9 @@ export interface RequestPasswordResetDeps {
     tx: TenantScopedDatabase,
     email: string,
   ) => Promise<{ subjectId: string; email: string; locale?: string | null | undefined } | null>;
+  // Whether a mail may go to this address now. It decides only whether the
+  // mail is queued, never the answer.
+  readonly mailGate: MailGate;
 }
 
 export type RequestPasswordResetOutcome = { kind: 'requested' } | { kind: 'misconfigured' };
@@ -60,7 +64,7 @@ export async function requestPasswordReset(
 
   await withTenant(deps.database.db, deps.tenantId, async (tx) => {
     const user = await deps.findByEmail(tx, email);
-    if (user === null) return;
+    if (user === null || !deps.mailGate(deps.tenantId, user.email)) return;
     await enqueueResetLink(tx, { ...deps, issuerBase }, user);
   });
 

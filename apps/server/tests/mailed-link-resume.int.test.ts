@@ -277,9 +277,11 @@ describe('forgot password from a sign-in, in the browser that started it', () =>
     expect(hrefLabelled(verified, 'Continue to sign in')).toBe(parked.carried);
     expect(verified.body).not.toContain(NO_LINK);
 
+    // A registration link is gone once opened, and a spent one names no
+    // sign-in: it reads like any link nothing holds.
     const spentHere = await request('GET', link, undefined, parked.cookie);
     expect(spentHere.statusCode).toBe(400);
-    expect(hrefLabelled(spentHere, 'Back to sign in')).toBe(parked.carried);
+    expect(spentHere.body).not.toContain('Back to sign in');
   });
 });
 

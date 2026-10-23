@@ -149,6 +149,19 @@ export function userRepository(tx: TenantScopedDatabase) {
       return { subject: toSubject(row.subject), user: toUser(row.user) };
     },
 
+    // The subject holding an address, whatever its case: users_email_unique
+    // compares bytes, so `Ada@x` and `ada@x` are two rows, and registration
+    // treats the second as taken. Served by users_email_search.
+    async holderOfEmail(email: string): Promise<string | null> {
+      const rows = await tx
+        .select({ subjectId: users.subjectId })
+        .from(users)
+        .where(eq(users.emailSearch, sql`lower(${email}) COLLATE "C"`))
+        .orderBy(users.subjectId)
+        .limit(1);
+      return rows[0]?.subjectId ?? null;
+    },
+
     // The claim mapper registry's lookup: an access token carries `sub`,
     // never a username, and a service or agent_instance subject has no
     // users row at all — that's a null result here, not an error.

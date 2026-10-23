@@ -1,0 +1,84 @@
+import { type TenantScopedDatabase } from '@odudu/db';
+import {
+  credentialRepository,
+  hashUserPassword,
+  isEmailAddress,
+  subjectRepository,
+  userRepository,
+} from '@odudu/domain-identity';
+import { roleRepository } from '@odudu/domain-authz';
+import { type MailGate } from '#/service/mail-gate';
+import { type VerifiedAccountInput } from '#/usecase/complete-registration';
+import { type TakenIdentifiers } from '#/usecase/register';
+
+// What the composition root hands the usecases that touch identity tables
+// (apps/server/src/app.ts), the same wiring over the same repositories.
+export async function findTaken(
+  tx: TenantScopedDatabase,
+  _tenantId: string,
+  who: { username: string; email: string },
+): Promise<TakenIdentifiers> {
+  const users = userRepository(tx);
+  const byName = await users.byUsername(who.username);
+  return { username: byName !== null, emailOwner: await users.holderOfEmail(who.email) };
+}
+
+export async function createVerifiedAccount(
+  tx: TenantScopedDatabase,
+  tenantId: string,
+  input: VerifiedAccountInput,
+): Promise<{ subjectId: string }> {
+  const subject = await subjectRepository(tx).create({ tenantId, type: 'user' });
+  await userRepository(tx).create({
+    subjectId: subject.id,
+    tenantId,
+    username: input.username,
+    email: input.email,
+  });
+  await userRepository(tx).markEmailVerified(subject.id);
+  await credentialRepository(tx).insert({
+    tenantId,
+    subjectId: subject.id,
+    type: 'password',
+    secret: { kind: 'password', hash: input.passwordHash },
+  });
+  for (const role of await roleRepository(tx).defaultsForTenant()) {
+    await roleRepository(tx).assignToSubject(subject.id, role.id);
+  }
+  return { subjectId: subject.id };
+}
+
+export const openMailGate: MailGate = () => true;
+
+export const accountTestDeps = {
+  findTaken,
+  createVerifiedAccount,
+  hashPassword: hashUserPassword,
+  isEmailAddress,
+  mailGate: openMailGate,
+  now: () => new Date(),
+};
+
+// The rest of what the action-token route is handed. A registration link
+// needs none of it, but the route takes it whole.
+export function linkRouteDeps() {
+  return {
+    getCurrentEmail: async (tx: TenantScopedDatabase, subjectId: string) =>
+      (await userRepository(tx).bySubjectId(subjectId))?.email ?? null,
+    markVerified: async (tx: TenantScopedDatabase, subjectId: string) => {
+      await userRepository(tx).markEmailVerified(subjectId);
+    },
+    setPassword: async (tx: TenantScopedDatabase, subjectId: string, password: string) => {
+      await credentialRepository(tx).setPassword(subjectId, await hashUserPassword(password));
+    },
+    getUsername: async (tx: TenantScopedDatabase, subjectId: string) => {
+      const user = await userRepository(tx).bySubjectId(subjectId);
+      if (user === null) throw new Error(`no user found for subject ${subjectId}`);
+      return user.username;
+    },
+    evaluatePassword: () => [],
+    unchangedPasswordViolations: () => Promise.resolve([]),
+    clearPasswordUpdateAction: () => Promise.resolve(),
+    addRequiredActions: () => Promise.resolve(),
+  };
+}

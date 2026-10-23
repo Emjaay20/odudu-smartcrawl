@@ -16,6 +16,12 @@ import {
 } from '#/usecase/execute-actions';
 import { completeEmailVerification } from '#/usecase/verify-email';
 import {
+  completeRegistration,
+  isRegistrationKey,
+  type VerifiedAccountInput,
+} from '#/usecase/complete-registration';
+import { type TakenIdentifiers } from '#/usecase/register';
+import {
   renderResetLinkFailedPage,
   renderResetPasswordForm,
   renderResetPasswordSucceededPage,
@@ -29,6 +35,7 @@ import {
   renderVerificationSucceededPage,
   sendVerificationHtml,
 } from '#/view/verification-html';
+import { renderRegistrationUsernameGonePage } from '#/view/registration-html';
 import { requestLocale } from '#/view/request-locale';
 
 export interface ActionTokenTenantLookup {
@@ -40,6 +47,8 @@ export interface ActionTokenTenantLookup {
   // one is gated on tenant.enabled alone, the same as before this flag
   // existed.
   readonly resetPasswordAllowed: boolean;
+  // A pending registration is made only while the tenant still takes them.
+  readonly registrationAllowed: boolean;
   readonly passwordPolicy: PasswordPolicy;
 }
 
@@ -82,6 +91,19 @@ export interface ActionTokenRouteDeps {
   // The sign-in this browser parked and can still finish, if any: the one
   // place a link's page learns whether to offer a way back to it.
   readonly findHeldSignIn: FindHeldSignIn;
+  // What opening a registration link needs, injected like register's:
+  // the identity tables belong to @odudu/domain-identity.
+  readonly now: () => Date;
+  readonly findTaken: (
+    tx: TenantScopedDatabase,
+    tenantId: string,
+    who: { username: string; email: string },
+  ) => Promise<TakenIdentifiers>;
+  readonly createVerifiedAccount: (
+    tx: TenantScopedDatabase,
+    tenantId: string,
+    input: VerifiedAccountInput,
+  ) => Promise<{ subjectId: string }>;
 }
 
 // @fastify/formbody parses a repeated query or body field into an array; a
@@ -223,6 +245,40 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
     // of those, not just the ones a client can see.
     if (key === undefined || !tenant?.enabled) {
       return sendVerificationHtml(reply, 400, renderVerificationFailedPage(null, locale));
+    }
+
+    if (isRegistrationKey(key)) {
+      const result = tenant.registrationAllowed
+        ? await completeRegistration(
+            {
+              database: deps.database,
+              tenantId: tenant.id,
+              request: requestContextFrom(request),
+              now: deps.now,
+              createVerifiedAccount: deps.createVerifiedAccount,
+              findTaken: deps.findTaken,
+            },
+            key,
+          )
+        : ({ kind: 'invalid' } as const);
+      if (result.kind === 'username_taken') {
+        return sendVerificationHtml(
+          reply,
+          409,
+          renderRegistrationUsernameGonePage(request.params.tenant, locale),
+        );
+      }
+      if (result.kind === 'invalid') {
+        return sendVerificationHtml(reply, 400, renderVerificationFailedPage(null, locale));
+      }
+      return sendVerificationHtml(
+        reply,
+        200,
+        renderVerificationSucceededPage(
+          await resumeAt(deps, request, tenant, result.authenticationSessionId),
+          locale,
+        ),
+      );
     }
 
     // A read, not a redemption: a reset-password link needs a page shown

@@ -1,4 +1,5 @@
 export { type FindHeldSignIn, type HeldSignIn } from '#/service/sign-in-resume';
+export { type MailGate } from '#/service/mail-gate';
 export { actionTokens, type ActionTokenRecord, type ActionTokenType } from '#/schema/action-tokens';
 export { actionTokenRepository, type IssueActionToken } from '#/repository/action-tokens';
 export { tenantSettingsRepository, type TenantSettings } from '#/repository/tenant-settings';
@@ -57,6 +58,12 @@ export {
   type RegisterOutcome,
   type TakenIdentifiers,
 } from '#/usecase/register';
+export {
+  completeRegistration,
+  type CompleteRegistrationDeps,
+  type CompleteRegistrationResult,
+  type VerifiedAccountInput,
+} from '#/usecase/complete-registration';
 export {
   registerRegistrationRoute,
   type RegistrationTenantLookup,

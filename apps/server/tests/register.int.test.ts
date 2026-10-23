@@ -190,7 +190,7 @@ beforeEach(async () => {
 });
 
 describe('self-registration, through the real composition root', () => {
-  it('refuses to complete a login until the address is verified, and lets it through once it is', async () => {
+  it('makes no account until the link is opened, and lets a login through once it is', async () => {
     const tenantName = `register-${newId()}`;
     const seeded = await seed({
       tenant: tenantName,
@@ -220,19 +220,8 @@ describe('self-registration, through the real composition root', () => {
       await drainOutbox(sender);
       expect(sender.sent).toHaveLength(1);
 
-      // The only assertion that would fail if apps/server/src/app.ts's own
-      // default-role-assignment loop were deleted: packages/account's tests
-      // exercise a copy of that loop against a fake createAccount, not the
-      // real composition root this file builds.
-      const registeredSubject = await withTenant(appDb.db, seeded.tenantId, (tx) =>
-        userRepository(tx).byUsername('ada'),
-      );
-      if (registeredSubject === null) throw new Error('registered user not found');
-      const roles = await withTenant(appDb.db, seeded.tenantId, (tx) =>
-        effectiveRoles(tx, registeredSubject.subject.id),
-      );
-      expect(roles.map((role) => role.name)).toEqual(['offline_access']);
-
+      // No account exists until the link is opened, so a sign-in with the
+      // password just registered is refused like any unknown account.
       const beforeVerification = await attemptLogin(
         app,
         tenantName,
@@ -240,11 +229,12 @@ describe('self-registration, through the real composition root', () => {
         'correct horse battery staple',
       );
       expect(beforeVerification.statusCode).toBe(200);
-      expect(beforeVerification.body).toContain('verify');
       expect(beforeVerification.headers.location).toBeUndefined();
       expect(beforeVerification.headers['set-cookie']).toBeUndefined();
+      expect(
+        await withTenant(appDb.db, seeded.tenantId, (tx) => userRepository(tx).byUsername('ada')),
+      ).toBeNull();
 
-      await drainOutbox(sender);
       const message = sender.sent[0];
       if (message === undefined) throw new Error('no verification mail sent');
       const key = extractVerificationKey(message);
@@ -253,6 +243,18 @@ describe('self-registration, through the real composition root', () => {
         url: `/tenants/${tenantName}/login-actions/action-token?key=${key}`,
       });
       expect(redeemRes.statusCode).toBe(200);
+
+      // The only assertion that would fail if apps/server/src/app.ts's own
+      // default-role assignment were dropped from the account the link makes.
+      const registeredSubject = await withTenant(appDb.db, seeded.tenantId, (tx) =>
+        userRepository(tx).byUsername('ada'),
+      );
+      if (registeredSubject === null) throw new Error('registered user not found');
+      expect(registeredSubject.user.emailVerified).toBe(true);
+      const roles = await withTenant(appDb.db, seeded.tenantId, (tx) =>
+        effectiveRoles(tx, registeredSubject.subject.id),
+      );
+      expect(roles.map((role) => role.name)).toEqual(['offline_access']);
 
       const afterVerification = await attemptLogin(
         app,
@@ -334,7 +336,7 @@ describe('self-registration, through the real composition root', () => {
       await app.close();
     }
   });
-  it('answers a taken address as it answers a free one, and mails its holder a link on the configured base', async () => {
+  it('answers a held address as it answers a free one, and mails its holder a link on the configured base', async () => {
     const tenantName = `register-${newId()}`;
     const seeded = await seed({
       tenant: tenantName,
@@ -352,24 +354,33 @@ describe('self-registration, through the real composition root', () => {
 
     try {
       const password = 'correct horse battery staple';
-      const first = await registerAccount(
-        app,
-        tenantName,
-        { username: 'ada', email: 'ada@example.test', password },
-        { host: 'evil.example' },
-      );
+      expect(
+        await registerAccount(app, tenantName, {
+          username: 'ada',
+          email: 'ada@example.test',
+          password,
+        }),
+      ).toBe(201);
+      await drainOutbox(sender);
+      const first = sender.sent[0];
+      if (first === undefined) throw new Error('no verification mail sent');
+      const opened = await app.inject({
+        url: `/tenants/${tenantName}/login-actions/action-token?key=${extractVerificationKey(first)}`,
+      });
+      expect(opened.statusCode).toBe(200);
+
       const again = await registerAccount(
         app,
         tenantName,
-        { username: 'grace', email: 'ada@example.test', password },
+        { username: 'grace', email: 'ADA@example.test', password },
         { host: 'evil.example' },
       );
-      expect([first, again]).toEqual([201, 201]);
-
+      expect(again).toBe(201);
       await drainOutbox(sender);
+
       expect(sender.sent).toHaveLength(2);
       const duplicate = sender.sent[1];
-      expect(duplicate?.to).toBe('ada@example.test');
+      expect(duplicate?.to).toBe('ADA@example.test');
       expect(duplicate?.text).toContain(
         `${PUBLIC_BASE_URL}/tenants/${tenantName}/login-actions/reset-password`,
       );

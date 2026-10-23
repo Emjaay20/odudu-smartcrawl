@@ -10,6 +10,7 @@ import {
   type PolicyViolation,
   type TakenIdentifiers,
 } from '#/usecase/register';
+import { type MailGate } from '#/service/mail-gate';
 import { signInPath } from '#/service/sign-in-path';
 import { referenceToResume, type FindHeldSignIn } from '#/service/sign-in-resume';
 import {
@@ -30,6 +31,7 @@ export interface RegistrationTenantLookup {
   readonly registrationAllowed: boolean;
   readonly verifyEmail: boolean;
   readonly resetPasswordAllowed: boolean;
+  readonly verifyEmailTtlSeconds: number;
   readonly passwordPolicy: PasswordPolicy;
 }
 
@@ -61,7 +63,9 @@ export interface RegistrationRouteDeps {
     tenantId: string,
     who: { username: string; email: string },
   ) => Promise<TakenIdentifiers>;
-  readonly spendPasswordWork: (password: string) => Promise<void>;
+  readonly hashPassword: (password: string) => Promise<string>;
+  readonly isEmailAddress: (value: string) => boolean;
+  readonly mailGate: MailGate;
   readonly evaluatePassword: (
     candidate: string,
     policy: PasswordPolicy,
@@ -184,7 +188,10 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
         now: deps.now,
         createAccount: deps.createAccount,
         findTaken: deps.findTaken,
-        spendPasswordWork: deps.spendPasswordWork,
+        hashPassword: deps.hashPassword,
+        isEmailAddress: deps.isEmailAddress,
+        mailGate: deps.mailGate,
+        verifyEmailTtlSeconds: tenant.verifyEmailTtlSeconds,
         passwordPolicy: tenant.passwordPolicy,
         evaluatePassword: deps.evaluatePassword,
       },
@@ -214,8 +221,9 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
       );
     }
 
-    // 'created' and 'address_in_use' leave here through the same call, so what
-    // the person is shown cannot tell them apart.
+    // 'created' and 'verification_sent' leave here through the same call, and
+    // 'verification_sent' is one outcome for a free and a held address, so
+    // what the person is shown cannot tell them apart.
     return sendVerificationHtml(
       reply,
       201,

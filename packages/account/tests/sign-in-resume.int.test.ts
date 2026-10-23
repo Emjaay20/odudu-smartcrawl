@@ -23,11 +23,12 @@ import formbody from '@fastify/formbody';
 import { desc, eq } from 'drizzle-orm';
 import Fastify, { type FastifyInstance, type LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { accountTestDeps } from '#/testing/support';
 import { actionTokenRepository, enqueueResetLink } from '#/index';
 import { actionTokens } from '#/schema/action-tokens';
+import { pendingRegistrations } from '#/schema/pending-registrations';
 import { tenantSettingsRepository } from '#/repository/tenant-settings';
 import { type FindHeldSignIn } from '#/service/sign-in-resume';
-import { type TakenIdentifiers } from '#/usecase/register';
 import { registerActionTokenRoute } from '#/view/routes/action-token';
 import { registerRegistrationRoute } from '#/view/routes/registration';
 import { registerResetPasswordRoute } from '#/view/routes/reset-password';
@@ -98,20 +99,6 @@ async function createAccount(
   return { subjectId: subject.id };
 }
 
-async function findTaken(
-  tx: TenantScopedDatabase,
-  _tenantId: string,
-  who: { username: string; email: string },
-): Promise<TakenIdentifiers> {
-  const byName = await userRepository(tx).byUsername(who.username);
-  const byMail = await userRepository(tx).byEmail(who.email);
-  return { username: byName !== null, emailOwner: byMail?.subjectId ?? null };
-}
-
-async function spendPasswordWork(password: string): Promise<void> {
-  await hashPassword(password);
-}
-
 async function seedTenant(): Promise<{ id: string; name: string }> {
   const id = newId();
   const name = `resume-${id}`;
@@ -142,6 +129,7 @@ beforeEach(async () => {
   await http.register(formbody);
   const findTenant = (name: string) => tenantSettingsRepository(owner.db).byName(name);
   registerResetPasswordRoute(http, {
+    ...accountTestDeps,
     findHeldSignIn,
     database: app,
     findTenant,
@@ -153,17 +141,17 @@ beforeEach(async () => {
     },
   });
   registerRegistrationRoute(http, {
+    ...accountTestDeps,
     findHeldSignIn,
     database: app,
     findTenant,
     publicBaseUrl: 'https://idp.example.test',
     now: () => new Date(),
     createAccount,
-    findTaken,
-    spendPasswordWork,
     evaluatePassword,
   });
   registerActionTokenRoute(http, {
+    ...accountTestDeps,
     findHeldSignIn,
     database: app,
     findTenant,
@@ -215,6 +203,13 @@ function get(url: string, cookie?: string): Promise<LightMyRequestResponse> {
 async function latestToken(tenantId: string) {
   const rows = await withTenant(app.db, tenantId, (tx) =>
     tx.select().from(actionTokens).orderBy(desc(actionTokens.createdAt)).limit(1),
+  );
+  return rows[0];
+}
+
+async function latestPending(tenantId: string) {
+  const rows = await withTenant(app.db, tenantId, (tx) =>
+    tx.select().from(pendingRegistrations).orderBy(desc(pendingRegistrations.createdAt)).limit(1),
   );
   return rows[0];
 }
@@ -445,7 +440,7 @@ describe('a verification link mailed from a registration', () => {
   it('is verified in any browser, and offers Continue to sign in to the one that holds the sign-in', async () => {
     const tenant = await seedTenant();
     const key = await register(tenant, 'grace', `held=${SESSION}`);
-    expect((await latestToken(tenant.id))?.authenticationSessionId).toBe(SESSION);
+    expect((await latestPending(tenant.id))?.authenticationSessionId).toBe(SESSION);
 
     const held = await get(tokenUrl(tenant.name, key), `held=${SESSION}`);
     expect(held.statusCode).toBe(200);
@@ -464,7 +459,7 @@ describe('a verification link mailed from a registration', () => {
   it('names no sign-in when the browser holds none', async () => {
     const tenant = await seedTenant();
     await register(tenant, 'curie');
-    expect((await latestToken(tenant.id))?.authenticationSessionId).toBeNull();
+    expect((await latestPending(tenant.id))?.authenticationSessionId).toBeNull();
   });
 });
 

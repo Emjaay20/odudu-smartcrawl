@@ -62,6 +62,23 @@ export async function driveAccount(world: PlanWorld, capture: Capture): Promise<
   );
 
   expectStatus(
+    await capture('account: self-registration, address already held', 'account', () =>
+      http.inject({
+        method: 'POST',
+        url: `${ACTIONS}/registration`,
+        payload: new URLSearchParams({
+          username: `${name}-again`,
+          email: address.toUpperCase(),
+          password: PASSWORD,
+        }).toString(),
+        headers: FORM,
+      }),
+    ),
+    201,
+    'registration of a held address',
+  );
+
+  expectStatus(
     await capture('account: request a password reset', 'account', () =>
       http.inject({
         method: 'POST',

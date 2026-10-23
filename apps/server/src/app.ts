@@ -12,6 +12,8 @@ import {
   type CreateAccountResult,
   type NewAccountInput,
   type TakenIdentifiers,
+  type VerifiedAccountInput,
+  type MailGate,
 } from '@odudu/account';
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { requiredActionRepository } from '@odudu/authn-flows';
@@ -21,6 +23,7 @@ import {
   credentialRepository,
   evaluatePassword,
   hashUserPassword,
+  isEmailAddress,
   REUSED_PASSWORD,
   subjectRepository,
   userRepository,
@@ -60,6 +63,7 @@ import { createClientKeyRequest, defaultClientKeyLookup } from '#/client-key-tra
 import { type ConsoleKeys, missingConsoleKey } from '#/console-key';
 import { registerHealth } from '#/health';
 import { type RateLimiter, slidingWindow } from '#/throttle';
+import { mailGate as createMailGate } from '#/mail-limiter';
 import { neutraliseRequestInput } from '#/input-hygiene';
 import { loginBudgetKey } from '#/login-throttle';
 import { throttleOrigin } from '#/throttle-origin';
@@ -154,6 +158,12 @@ export interface AppDeps {
    * `DEFAULT_THROTTLE`; `main.ts` passes what `ODUDU_THROTTLE_*` says.
    */
   readonly throttle?: ThrottleSettings;
+  /**
+   * Whether a mail may be queued for an address now (verification, reset,
+   * "you already have an account"). Defaults to `mailGate` in
+   * `#/mail-limiter`: three an hour per tenant and address, in process.
+   */
+  readonly mailGate?: MailGate;
   /**
    * ADR 0023's other half: the per-`client_id` budget on failed
    * `client_secret_basic`/`client_secret_post` attempts at `/token`. A
@@ -298,12 +308,30 @@ async function findTaken(
 ): Promise<TakenIdentifiers> {
   const users = userRepository(tx);
   const byName = await users.byUsername(who.username);
-  const byEmail = await users.byEmail(who.email);
-  return { username: byName !== null, emailOwner: byEmail?.subjectId ?? null };
+  return { username: byName !== null, emailOwner: await users.holderOfEmail(who.email) };
 }
 
-async function spendPasswordWork(password: string): Promise<void> {
-  await hashUserPassword(password);
+// A registration that waited for its mailed link: the hash register made, an
+// address the link has proved, and the same subject, roles and groups as any
+// other new account.
+async function createVerifiedAccount(
+  tx: TenantScopedDatabase,
+  tenantId: string,
+  input: VerifiedAccountInput,
+): Promise<CreateAccountResult> {
+  const { subjectId } = await composeUserSubject(tx, {
+    tenantId,
+    username: input.username,
+    email: input.email,
+  });
+  await userRepository(tx).markEmailVerified(subjectId);
+  await credentialRepository(tx).insert({
+    tenantId,
+    subjectId,
+    type: 'password',
+    secret: { kind: 'password', hash: input.passwordHash },
+  });
+  return { subjectId };
 }
 
 function refuse(reply: FastifyReply, route: string, retryAfterSeconds: number): FastifyReply {
@@ -497,10 +525,14 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   // itself stays free of that dependency
   // (packages/account/src/usecase/verify-email.ts explains why).
   const findHeldSignIn = findHeldSignInIn(deps.database, tls);
+  const mailGate = deps.mailGate ?? createMailGate(() => systemClock.now());
 
   registerActionTokenRoute(app, {
     database: deps.database,
     findHeldSignIn,
+    now: () => systemClock.now(),
+    findTaken,
+    createVerifiedAccount,
     findTenant: (name) => tenantSettingsRepository(deps.ownerDatabase.db).byName(name),
     getCurrentEmail: async (tx, subjectId) =>
       (await userRepository(tx).bySubjectId(subjectId))?.email ?? null,
@@ -555,7 +587,9 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     now: () => systemClock.now(),
     createAccount,
     findTaken,
-    spendPasswordWork,
+    hashPassword: hashUserPassword,
+    isEmailAddress,
+    mailGate,
     evaluatePassword,
   });
 
@@ -565,6 +599,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     findTenant: (name) => tenantSettingsRepository(deps.ownerDatabase.db).byName(name),
     publicBaseUrl: deps.publicBaseUrl,
     now: () => systemClock.now(),
+    mailGate,
     findByEmail: async (tx, email) => {
       const user = await userRepository(tx).byEmail(email);
       return user?.email == null

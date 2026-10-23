@@ -1,9 +1,10 @@
 import { actionLink, resetPasswordLink } from '#/service/action-link';
+import { type MailGate } from '#/service/mail-gate';
 import { withTenant, type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { auditRepository, type RequestContext } from '@odudu/domain-audit';
 import { outboxRepository, renderRegistrationDuplicate, renderVerifyEmail } from '@odudu/email';
 import { BidiControlError, containsBidiControl, OduduError } from '@odudu/kernel';
-import { actionTokenRepository } from '#/repository/action-tokens';
+import { pendingRegistrationRepository } from '#/repository/pending-registrations';
 import { type PasswordPolicy, type PolicyViolation } from '#/repository/tenant-settings';
 import { withMinimum } from '#/service/password-violations';
 
@@ -72,9 +73,16 @@ export interface RegisterDeps {
     tenantId: string,
     who: { username: string; email: string },
   ) => Promise<TakenIdentifiers>;
-  // Does what createAccount does with a password, for a registration that
-  // creates no account, so both answer in the same time. The result is discarded.
-  readonly spendPasswordWork: (password: string) => Promise<void>;
+  // The Argon2id hash of a password, made before the transaction opens on
+  // every path of a tenant that verifies addresses, so both answer in the
+  // same time and no connection waits on it.
+  readonly hashPassword: (password: string) => Promise<string>;
+  readonly verifyEmailTtlSeconds: number;
+  // The shape of address the email claim may carry; createAccount's own
+  // check cannot run for a registration that creates nothing yet.
+  readonly isEmailAddress: (value: string) => boolean;
+  // Whether a mail may go to this address now; see #/service/mail-gate.ts.
+  readonly mailGate: MailGate;
   // The tenant's own configured policy, and the leaf function that checks a
   // candidate against it (packages/domain-identity/src/service/password-policy.ts).
   // Injected for the same reason createAccount is: @odudu/account never
@@ -89,10 +97,9 @@ export interface RegisterDeps {
 
 export type RegisterOutcome =
   | { kind: 'created'; subjectId: string }
-  // The address already has an account and the tenant verifies addresses, so
-  // the person is answered as if the account had been made and the holder is
-  // told by mail what happened. Nothing is created.
-  | { kind: 'address_in_use' }
+  // The tenant verifies addresses: nothing is created yet, and whether the
+  // address was free or held, the person is told to check their email.
+  | { kind: 'verification_sent' }
   | { kind: 'email_taken' }
   | { kind: 'username_taken' }
   | { kind: 'invalid_email' }
@@ -108,7 +115,7 @@ export type RegisterOutcome =
   // creating an account nothing can ever verify.
   | { kind: 'misconfigured' };
 
-type AccountCreationFailure =
+export type AccountCreationFailure =
   'email_taken' | 'username_taken' | 'invalid_email' | 'invalid_username';
 
 // `users_email_unique` (0023) and `users_username_unique` (0005) are what
@@ -119,7 +126,7 @@ type AccountCreationFailure =
 // `userRepository.create`'s own pre-flight (packages/domain-identity/src/repository/users.ts)
 // throws OduduError('invalid_email', …) before the row-level CHECK is even
 // reached, for the same malformed-address case.
-function classifyAccountCreationError(err: unknown): AccountCreationFailure | null {
+export function classifyAccountCreationError(err: unknown): AccountCreationFailure | null {
   if (err instanceof BidiControlError && err.field === 'username') return 'invalid_username';
   if (err instanceof OduduError && err.code === 'invalid_email') return 'invalid_email';
   if (!(err instanceof Error)) return null;
@@ -130,13 +137,12 @@ function classifyAccountCreationError(err: unknown): AccountCreationFailure | nu
   return null;
 }
 
-// Creates the subject, the user row, the password credential and the
-// default roles in one transaction, and — only when the tenant requires
-// verification — issues the verify_email token and queues the mail that
-// carries it inside that same transaction, exactly as sendVerificationEmail
-// (#/usecase/verify-email.ts) establishes: an account that rolls back
-// leaves no link in anybody's inbox, and a link that reaches an inbox names
-// a token the database durably stored.
+// Without verification, creates the subject, the user row, the password
+// credential and the default roles in one transaction. With it, creates
+// nothing: the request is kept as a pending registration and its link mailed,
+// and the account is made when the link is used (#/usecase/complete-registration.ts).
+// A free address and a held one then leave the same trace, and a username is
+// reserved by neither, so no later request can tell them apart.
 export async function register(
   deps: RegisterDeps,
   input: NewAccountInput,
@@ -157,20 +163,18 @@ export async function register(
     };
   }
 
+  if (!deps.isEmailAddress(input.email)) return { kind: 'invalid_email' };
+
+  if (deps.verifyEmailEnabled) return requestVerification(deps, input);
+
   try {
     return await withTenant(
       deps.database.db,
       deps.tenantId,
       async (tx): Promise<RegisterOutcome> => {
         const taken = await deps.findTaken(tx, deps.tenantId, input);
-        // The username is answered first and in the open, so a taken address
-        // never changes what a taken username is told.
         if (taken.username) return { kind: 'username_taken' };
-        if (taken.emailOwner !== null) {
-          if (!deps.verifyEmailEnabled) return { kind: 'email_taken' };
-          await recordAddressInUse(tx, deps, input, taken.emailOwner);
-          return { kind: 'address_in_use' };
-        }
+        if (taken.emailOwner !== null) return { kind: 'email_taken' };
         const account = await deps.createAccount(tx, deps.tenantId, input);
         await auditRepository(tx).record({
           eventType: 'credential',
@@ -180,34 +184,6 @@ export async function register(
           resourceType: 'subject',
           resourceId: account.subjectId,
         });
-        // The earlier misconfigured check already guarantees issuerBase is
-        // defined whenever verification is on; re-checking it here (rather
-        // than asserting past the type) is what lets that stay true by
-        // construction instead of by convention.
-        if (!deps.verifyEmailEnabled || deps.issuerBase === undefined) {
-          return { kind: 'created', subjectId: account.subjectId };
-        }
-        const tokens = actionTokenRepository(tx);
-        const { token } = await tokens.issue({
-          tenantId: deps.tenantId,
-          subjectId: account.subjectId,
-          type: 'verify_email',
-          email: input.email,
-          ...(deps.authenticationSessionId === undefined
-            ? {}
-            : { authenticationSessionId: deps.authenticationSessionId }),
-          ttlSeconds: await tokens.lifetimeOf(deps.tenantId, 'verify_email'),
-        });
-        const link = actionLink(deps.issuerBase, deps.tenantName, token);
-        await outboxRepository(tx).enqueue({
-          tenantId: deps.tenantId,
-          ...renderVerifyEmail({
-            to: input.email,
-            link,
-            tenantDisplayName: deps.tenantDisplayName,
-            now: deps.now(),
-          }),
-        });
         return { kind: 'created', subjectId: account.subjectId };
       },
       deps.request,
@@ -215,59 +191,75 @@ export async function register(
   } catch (err) {
     const failure = classifyAccountCreationError(err);
     if (failure === null) throw err;
-    // Another registration took the address between the check and the write.
-    if (failure === 'email_taken' && deps.verifyEmailEnabled) return answerLostRace(deps, input);
     return { kind: failure };
   }
 }
 
-// The mail to the holder and the row that records the attempt: one of each,
-// as the free path writes one mail and one audit row. The attempt names the
-// account it ran into, never the username it asked for. Rows are bounded by
-// the per-origin throttle on the registration route (ADR 0037's amendment).
-async function recordAddressInUse(
-  tx: TenantScopedDatabase,
-  deps: RegisterDeps,
-  input: NewAccountInput,
-  ownerSubjectId: string | null,
-): Promise<void> {
-  await deps.spendPasswordWork(input.password);
-  await auditRepository(tx).record({
-    eventType: 'credential',
-    action: 'account.registration_duplicate',
-    outcome: 'refused',
-    resourceType: 'subject',
-    resourceId: ownerSubjectId,
-    detail: { reason: 'already_registered' },
-  });
-  await outboxRepository(tx).enqueue({
-    tenantId: deps.tenantId,
-    ...renderRegistrationDuplicate({
-      to: input.email,
-      resetLink:
-        deps.resetPasswordAllowed && deps.issuerBase !== undefined
-          ? resetPasswordLink(deps.issuerBase, deps.tenantName)
-          : null,
-      tenantDisplayName: deps.tenantDisplayName,
-      now: deps.now(),
-    }),
-  });
-}
-
-// The failed write rolled its transaction back, so the answer is recorded in
-// a new one that reads who holds the address now.
-async function answerLostRace(
+// Two reads and two writes on both paths: who holds the username and the
+// address; then, for a free address, the pending row and the verification
+// mail, and for a held one, the audit row and the mail to the holder. The
+// username is answered first and in the open, so a held address never
+// changes what a held username is told. The password is hashed first on both.
+async function requestVerification(
   deps: RegisterDeps,
   input: NewAccountInput,
 ): Promise<RegisterOutcome> {
-  await withTenant(
+  const issuerBase = deps.issuerBase;
+  if (issuerBase === undefined) return { kind: 'misconfigured' };
+  const passwordHash = await deps.hashPassword(input.password);
+  return withTenant(
     deps.database.db,
     deps.tenantId,
-    async (tx) => {
+    async (tx): Promise<RegisterOutcome> => {
       const taken = await deps.findTaken(tx, deps.tenantId, input);
-      await recordAddressInUse(tx, deps, input, taken.emailOwner);
+      if (taken.username) return { kind: 'username_taken' };
+      const sendMail = deps.mailGate(deps.tenantId, input.email);
+      if (taken.emailOwner !== null) {
+        await auditRepository(tx).record({
+          eventType: 'credential',
+          action: 'account.registration_duplicate',
+          outcome: 'refused',
+          resourceType: 'subject',
+          resourceId: taken.emailOwner,
+          detail: { reason: 'already_registered' },
+        });
+        if (sendMail) {
+          await outboxRepository(tx).enqueue({
+            tenantId: deps.tenantId,
+            ...renderRegistrationDuplicate({
+              to: input.email,
+              resetLink: deps.resetPasswordAllowed
+                ? resetPasswordLink(issuerBase, deps.tenantName)
+                : null,
+              tenantDisplayName: deps.tenantDisplayName,
+              now: deps.now(),
+            }),
+          });
+        }
+        return { kind: 'verification_sent' };
+      }
+      const { key } = await pendingRegistrationRepository(tx).replace({
+        tenantId: deps.tenantId,
+        username: input.username,
+        email: input.email,
+        passwordHash,
+        authenticationSessionId: deps.authenticationSessionId ?? null,
+        ttlSeconds: deps.verifyEmailTtlSeconds,
+        now: deps.now(),
+      });
+      if (sendMail) {
+        await outboxRepository(tx).enqueue({
+          tenantId: deps.tenantId,
+          ...renderVerifyEmail({
+            to: input.email,
+            link: actionLink(issuerBase, deps.tenantName, key),
+            tenantDisplayName: deps.tenantDisplayName,
+            now: deps.now(),
+          }),
+        });
+      }
+      return { kind: 'verification_sent' };
     },
     deps.request,
   );
-  return { kind: 'address_in_use' };
 }

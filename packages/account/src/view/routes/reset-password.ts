@@ -2,6 +2,7 @@ import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { type FastifyInstance } from 'fastify';
 import { signInPath } from '#/service/sign-in-path';
 import { referenceToResume, type FindHeldSignIn } from '#/service/sign-in-resume';
+import { type MailGate } from '#/service/mail-gate';
 import { requestPasswordReset } from '#/usecase/reset-password';
 import {
   renderResetRequestedPage,
@@ -38,6 +39,7 @@ export interface ResetPasswordRouteDeps {
     tx: TenantScopedDatabase,
     email: string,
   ) => Promise<{ subjectId: string; email: string } | null>;
+  readonly mailGate: MailGate;
 }
 
 // @fastify/formbody parses a repeated field into an array; a repeat is
@@ -125,6 +127,7 @@ export function registerResetPasswordRoute(
         now: deps.now,
         authenticationSessionId: referenceToResume(held, returnTo),
         findByEmail: deps.findByEmail,
+        mailGate: deps.mailGate,
       },
       email,
     );

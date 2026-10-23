@@ -25,6 +25,7 @@ export type TableName =
   | 'token_grants'
   | 'authentication_sessions'
   | 'action_tokens'
+  | 'pending_registrations'
   | 'client_registration_tokens'
   | 'login_failures'
   | 'email_outbox'
@@ -243,6 +244,18 @@ export const RETENTION_RULES: Record<TableName, RetentionRule> = {
     `,
   },
 
+  // A registration waiting for its link is deleted when it is taken, so only
+  // the ones never opened remain. The same window as an action token, from
+  // expiry; served by pending_registrations_by_expiry (tenant_id, expires_at).
+  pending_registrations: {
+    after: [],
+    statement: (now, policy) => sql`
+      DELETE FROM pending_registrations p
+       WHERE p.expires_at < ${now.toISOString()}::timestamptz
+             - make_interval(secs => ${policy.actionTokenSeconds}::integer)
+    `,
+  },
+
   // Copied from action_tokens, but with no spent_at to measure a spent
   // token's window from — only created_at and the ttl-bound expires_at —
   // so a token spent (remaining_uses = 0) well inside its ttl waits on
@@ -405,6 +418,7 @@ export const REAP_ORDER: readonly TableName[] = [
   'token_grants',
   'authentication_sessions',
   'action_tokens',
+  'pending_registrations',
   'client_registration_tokens',
   'login_failures',
   'email_outbox',

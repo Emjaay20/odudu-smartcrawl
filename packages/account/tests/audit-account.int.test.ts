@@ -23,9 +23,10 @@ import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/test
 import formbody from '@fastify/formbody';
 import Fastify, { type FastifyInstance, type LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { accountTestDeps } from '#/testing/support';
 import { actionTokenRepository } from '#/repository/action-tokens';
 import { tenantSettingsRepository } from '#/repository/tenant-settings';
-import { type NewAccountInput, type TakenIdentifiers } from '#/usecase/register';
+import { type NewAccountInput } from '#/usecase/register';
 import { registerActionTokenRoute } from '#/view/routes/action-token';
 import { registerRegistrationRoute } from '#/view/routes/registration';
 
@@ -59,20 +60,6 @@ async function createAccount(
     secret: { kind: 'password', hash: await hashPassword(input.password) },
   });
   return { subjectId: subject.id };
-}
-
-async function findTaken(
-  tx: TenantScopedDatabase,
-  _tenantId: string,
-  who: { username: string; email: string },
-): Promise<TakenIdentifiers> {
-  const byName = await userRepository(tx).byUsername(who.username);
-  const byMail = await userRepository(tx).byEmail(who.email);
-  return { username: byName !== null, emailOwner: byMail?.subjectId ?? null };
-}
-
-async function spendPasswordWork(password: string): Promise<void> {
-  await hashPassword(password);
 }
 
 async function seedTenant(settings: { verifyEmail?: boolean } = {}): Promise<{
@@ -201,17 +188,17 @@ beforeAll(async () => {
   await http.register(formbody);
   const findTenant = (name: string) => tenantSettingsRepository(owner.db).byName(name);
   registerRegistrationRoute(http, {
+    ...accountTestDeps,
     findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant,
     publicBaseUrl: 'https://idp.example.test',
     now: () => new Date(),
     createAccount,
-    findTaken,
-    spendPasswordWork,
     evaluatePassword,
   });
   registerActionTokenRoute(http, {
+    ...accountTestDeps,
     findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant,
@@ -265,15 +252,24 @@ describe('registration writes one account.registered row', () => {
     expect(await credentialRows(tenant.id)).toHaveLength(1);
   });
 
-  it('writes the row where verification is required too, and never the password', async () => {
+  it('writes the row where verification is required when the link is opened, not before', async () => {
     const tenant = await seedTenant({ verifyEmail: true });
     const requestId = `register-verify-${newId()}`;
 
     expect((await register(tenant.name, requestId)).statusCode).toBe(201);
+    expect(await rowsFor(tenant.id, requestId)).toEqual([]);
+    const opened = `open-${newId()}`;
+    const res = await http.inject({
+      url: `/tenants/${tenant.name}/login-actions/action-token?key=${encodeURIComponent(
+        await mailedVerificationKey(tenant.id),
+      )}`,
+      headers: { 'x-request-id': opened },
+    });
 
-    const rows = await rowsFor(tenant.id, requestId);
-    expectSubjectRow(rows, 'account.registered', await subjectIdFor(tenant.id, 'ada'), requestId);
-    expect(JSON.stringify(rows)).not.toContain(PASSWORD);
+    expect(res.statusCode).toBe(200);
+    const rows = await rowsFor(tenant.id, opened);
+    expectSubjectRow(rows, 'account.registered', await subjectIdFor(tenant.id, 'ada'), opened);
+    expect(JSON.stringify(await credentialRows(tenant.id))).not.toContain(PASSWORD);
   });
 
   it('writes nothing for a refused registration', async () => {
@@ -297,8 +293,7 @@ describe('registration writes one account.registered row', () => {
 
   it('writes one refused row, bound to the request, for a taken address under verification', async () => {
     const tenant = await seedTenant({ verifyEmail: true });
-    expect((await register(tenant.name, `first-${newId()}`)).statusCode).toBe(201);
-    const owner = await subjectIdFor(tenant.id, 'ada');
+    const subjectOfAda = await seedAda(tenant.id);
 
     const requestId = `again-${newId()}`;
     const again = await postForm(
@@ -315,7 +310,7 @@ describe('registration writes one account.registered row', () => {
       outcome: 'refused',
       actorSubjectId: null,
       resourceType: 'subject',
-      resourceId: owner,
+      resourceId: subjectOfAda,
       requestId,
       ip: '127.0.0.1',
       detail: { reason: 'already_registered' },
@@ -326,8 +321,16 @@ describe('registration writes one account.registered row', () => {
 describe('verifying an address writes one email.verified row', () => {
   it('names the subject the link was minted for', async () => {
     const tenant = await seedTenant({ verifyEmail: true });
-    expect((await register(tenant.name, `register-${newId()}`)).statusCode).toBe(201);
-    const key = await mailedVerificationKey(tenant.id);
+    const subjectId = await seedAda(tenant.id);
+    const { token: key } = await withTenant(app.db, tenant.id, (tx) =>
+      actionTokenRepository(tx).issue({
+        tenantId: tenant.id,
+        subjectId,
+        type: 'verify_email',
+        email: 'ada@example.test',
+        ttlSeconds: 300,
+      }),
+    );
     const requestId = `verify-${newId()}`;
 
     const res = await http.inject({

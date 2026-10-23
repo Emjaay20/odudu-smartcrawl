@@ -19,6 +19,7 @@ import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/test
 import { eq, sql } from 'drizzle-orm';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { accountTestDeps } from '#/testing/support';
 import { actionTokens } from '#/schema/action-tokens';
 import { tenantSettingsRepository } from '#/repository/tenant-settings';
 import { sendVerificationEmail, type SendVerificationEmailDeps } from '#/usecase/verify-email';
@@ -154,6 +155,7 @@ let httpApp: FastifyInstance;
 async function buildHttpApp(): Promise<FastifyInstance> {
   const instance = Fastify();
   registerActionTokenRoute(instance, {
+    ...accountTestDeps,
     findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),

@@ -34,6 +34,7 @@ export interface TenantSettings {
   displayName: string | null;
   enabled: boolean;
   verifyEmail: boolean;
+  verifyEmailTtlSeconds: number;
   registrationAllowed: boolean;
   resetPasswordAllowed: boolean;
   passwordPolicy: PasswordPolicy;
@@ -58,6 +59,7 @@ export function tenantSettingsRepository(db: Database) {
             displayName: row.displayName,
             enabled: row.enabled,
             verifyEmail: row.verifyEmail,
+            verifyEmailTtlSeconds: row.verifyEmailTtlSeconds,
             registrationAllowed: row.registrationAllowed,
             resetPasswordAllowed: row.resetPasswordAllowed,
             passwordPolicy: {

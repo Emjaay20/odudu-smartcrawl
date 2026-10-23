@@ -173,3 +173,22 @@ export function renderRegistrationSucceededPage(
     locale,
   );
 }
+
+// The link was good, but the username it asked for went to somebody else in
+// the meantime. Nothing was created; the way on is the form again.
+export function renderRegistrationUsernameGonePage(
+  tenant: string,
+  locale: PageLocale,
+): RenderedPage {
+  const form = `/tenants/${encodeURIComponent(tenant)}/login-actions/registration`;
+  return page(
+    t(locale, 'registration.usernameGone.title'),
+    `<h1>${tHtml(locale, 'registration.usernameGone.title')}</h1>
+<p>${tHtml(locale, 'registration.usernameGone.next')}</p>${links([
+      { href: form, text: tHtml(locale, 'link.registerAgain') },
+    ])}`,
+    null,
+    [],
+    locale,
+  );
+}

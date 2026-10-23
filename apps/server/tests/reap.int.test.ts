@@ -195,6 +195,16 @@ async function seedFixture(brute?: BruteForce): Promise<Fixture> {
   `);
 
   await owner.db.execute(sql`
+    INSERT INTO pending_registrations
+      (id, tenant_id, token_hash, username, email, password_hash, expires_at)
+    VALUES
+      (${newId()}, ${tenantId}, ${`pr-stale-${tenantId}`}, 'stale', 'stale@example.test', 'h',
+       ${at(-8 * DAY)}::timestamptz),
+      (${newId()}, ${tenantId}, ${`pr-live-${tenantId}`}, 'live', 'live@example.test', 'h',
+       ${at(1 * HOUR)}::timestamptz)
+  `);
+
+  await owner.db.execute(sql`
     INSERT INTO client_registration_tokens (id, tenant_id, token_hash, remaining_uses, expires_at)
     VALUES
       (${newId()}, ${tenantId}, ${`crt-stale-${tenantId}`}, 1, ${at(-8 * DAY)}::timestamptz),
@@ -334,6 +344,7 @@ const RELATIONS: Record<TableName, SQL> = {
   token_grants: sql.raw('token_grants'),
   authentication_sessions: sql.raw('authentication_sessions'),
   action_tokens: sql.raw('action_tokens'),
+  pending_registrations: sql.raw('pending_registrations'),
   client_registration_tokens: sql.raw('client_registration_tokens'),
   login_failures: sql.raw('login_failures'),
   email_outbox: sql.raw('email_outbox'),
@@ -499,6 +510,7 @@ describe('odudu reap', () => {
       token_grants: 1,
       authentication_sessions: 1,
       action_tokens: 1,
+      pending_registrations: 1,
       client_registration_tokens: 1,
       login_failures: 1,
       email_outbox: 2,
@@ -519,6 +531,7 @@ describe('odudu reap', () => {
       token_grants: 1,
       authentication_sessions: 1,
       action_tokens: 1,
+      pending_registrations: 1,
       client_registration_tokens: 1,
       login_failures: 1,
       email_outbox: 4,
@@ -536,6 +549,7 @@ describe('odudu reap', () => {
       token_grants: 0,
       authentication_sessions: 0,
       action_tokens: 0,
+      pending_registrations: 0,
       client_registration_tokens: 0,
       login_failures: 0,
       email_outbox: 0,

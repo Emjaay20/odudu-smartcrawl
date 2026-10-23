@@ -263,6 +263,41 @@ describe('userRepository', () => {
     });
   });
 
+  it('finds the holder of an address in any case, verified or not, the same one every time', async () => {
+    const tenantId = newId();
+    await withTenant(app.db, tenantId, async (tx) => {
+      await seedTenant(tx, tenantId);
+      const first = await subjectRepository(tx).create({ tenantId, type: 'user' });
+      await insertUserRow(tx, first.id, tenantId, { email: 'Ada@Example.test' });
+      const second = await subjectRepository(tx).create({ tenantId, type: 'user' });
+      await insertUserRow(tx, second.id, tenantId, { email: 'ada@example.test' });
+
+      const holder = await userRepository(tx).holderOfEmail('ADA@example.TEST');
+      expect([first.id, second.id]).toContain(holder);
+      expect(await userRepository(tx).holderOfEmail('ADA@example.TEST')).toBe(holder);
+      expect(await userRepository(tx).holderOfEmail('bea@example.test')).toBeNull();
+    });
+  });
+
+  it('cannot find the holder of an address under a different tenant context', async () => {
+    await expectCrossTenantMethodProbe(app.db, {
+      seed: async (tx, tenantId) => {
+        await seedTenant(tx, tenantId);
+        const subject = await subjectRepository(tx).create({ tenantId, type: 'user' });
+        const email = `ada-${newId()}@example.test`;
+        await insertUserRow(tx, subject.id, tenantId, { email });
+        return email;
+      },
+      verifySeeded: async (tx, email) => {
+        expect(await userRepository(tx).holderOfEmail(email.toUpperCase())).not.toBeNull();
+      },
+      attempt: async (tx, email) => userRepository(tx).holderOfEmail(email),
+      expectBlocked: (result) => {
+        expect(result).toBeNull();
+      },
+    });
+  });
+
   it('finds a user with its subject by username', async () => {
     const tenantId = newId();
     const username = `alice-${newId()}`;

@@ -25,6 +25,7 @@ import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/test
 import formbody from '@fastify/formbody';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { accountTestDeps } from '#/testing/support';
 import { tenantSettingsRepository } from '#/repository/tenant-settings';
 import { registerResetPasswordRoute } from '#/view/routes/reset-password';
 
@@ -115,6 +116,7 @@ beforeEach(async () => {
   httpApp = Fastify();
   await httpApp.register(formbody);
   registerResetPasswordRoute(httpApp, {
+    ...accountTestDeps,
     findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),

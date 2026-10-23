@@ -28,17 +28,16 @@ import {
 import { BidiControlError, newId } from '@odudu/kernel';
 import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/testkit';
 import formbody from '@fastify/formbody';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { accountTestDeps, linkRouteDeps } from '#/testing/support';
 import { tenantSettingsRepository } from '#/repository/tenant-settings';
 import { en } from '#/view/messages';
 import { actionTokens } from '#/schema/action-tokens';
-import {
-  type CreateAccountResult,
-  type NewAccountInput,
-  type TakenIdentifiers,
-} from '#/usecase/register';
+import { pendingRegistrations } from '#/schema/pending-registrations';
+import { type CreateAccountResult, type NewAccountInput } from '#/usecase/register';
+import { registerActionTokenRoute } from '#/view/routes/action-token';
 import { registerRegistrationRoute } from '#/view/routes/registration';
 
 // Set by a test that reads the year a mail carries; the system clock otherwise.
@@ -112,24 +111,6 @@ async function createAccount(
   return { subjectId: subject.id };
 }
 
-// What the composition root hands the usecase to see who holds a name or an
-// address, and to spend the work a password costs where no account is made.
-async function findTaken(
-  tx: TenantScopedDatabase,
-  _tenantId: string,
-  who: { username: string; email: string },
-): Promise<TakenIdentifiers> {
-  const byName = await userRepository(tx).byUsername(who.username);
-  const byMail = await userRepository(tx).byEmail(who.email);
-  return { username: byName !== null, emailOwner: byMail?.subjectId ?? null };
-}
-
-async function spendPasswordWork(password: string): Promise<void> {
-  await hashUserPassword(password);
-}
-
-const identityDeps = { findTaken, spendPasswordWork };
-
 interface SeededTenant {
   tenantId: string;
   tenantName: string;
@@ -177,6 +158,10 @@ async function rawSelectAllActionTokens(tenantId: string) {
   return withTenant(app.db, tenantId, (tx) => tx.select().from(actionTokens));
 }
 
+async function rawSelectAllPending(tenantId: string) {
+  return withTenant(app.db, tenantId, (tx) => tx.select().from(pendingRegistrations));
+}
+
 async function outboxRows(tenantId: string) {
   return withTenant(app.db, tenantId, (tx) => tx.select().from(emailOutbox));
 }
@@ -204,12 +189,14 @@ let sender: ReturnType<typeof fakeSender>;
 // Defaults to a configured base so most tests exercise the ordinary path;
 // the one test for the fail-closed case overrides it to undefined.
 let publicBaseUrl: string | undefined;
+let mailAllowed = true;
 
 function buildHttpApp(): FastifyInstance {
   const instance = Fastify();
   instance.register(formbody);
   registerRegistrationRoute(instance, {
-    ...identityDeps,
+    ...accountTestDeps,
+    mailGate: () => mailAllowed,
     findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
@@ -217,6 +204,14 @@ function buildHttpApp(): FastifyInstance {
     now: () => mailNow ?? new Date(),
     createAccount,
     evaluatePassword,
+    pageLocales: ['en', 'fr'],
+  });
+  registerActionTokenRoute(instance, {
+    ...accountTestDeps,
+    ...linkRouteDeps(),
+    database: app,
+    findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
+    findHeldSignIn: () => Promise.resolve(null),
     pageLocales: ['en', 'fr'],
   });
   return instance;
@@ -227,6 +222,7 @@ let httpApp: FastifyInstance;
 beforeEach(async () => {
   sender = fakeSender();
   publicBaseUrl = 'https://idp.example.test';
+  mailAllowed = true;
   httpApp = buildHttpApp();
   await httpApp.ready();
 });
@@ -349,7 +345,7 @@ describe('self-registration', () => {
     const instance = Fastify();
     instance.register(formbody);
     registerRegistrationRoute(instance, {
-      ...identityDeps,
+      ...accountTestDeps,
       findHeldSignIn: () => Promise.resolve(null),
       database: app,
       findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
@@ -651,7 +647,7 @@ describe('self-registration', () => {
     const counting = Fastify();
     counting.register(formbody);
     registerRegistrationRoute(counting, {
-      ...identityDeps,
+      ...accountTestDeps,
       findHeldSignIn: () => Promise.resolve(null),
       database: app,
       findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
@@ -685,7 +681,7 @@ describe('self-registration', () => {
     const refusing = Fastify();
     refusing.register(formbody);
     registerRegistrationRoute(refusing, {
-      ...identityDeps,
+      ...accountTestDeps,
       findHeldSignIn: () => Promise.resolve(null),
       database: app,
       findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
@@ -787,7 +783,7 @@ describe('self-registration', () => {
     },
   );
 
-  it('registers the account whatever the transport later does with the mail', async () => {
+  it('keeps the request whatever the transport later does with the mail', async () => {
     const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {
       registrationAllowed: true,
       verifyEmail: true,
@@ -803,10 +799,10 @@ describe('self-registration', () => {
     });
 
     // The transport is not on this path at all, so its failures cannot
-    // reach the caller: the account is created, the token is stored, and
-    // the message waits for a pass that can retry it.
+    // reach the caller: the request is kept, and the message waits for a
+    // pass that can retry it.
     expect(res.statusCode).toBe(201);
-    expect(await rawSelectAllActionTokens(tenantId)).toHaveLength(1);
+    expect(await rawSelectAllPending(tenantId)).toHaveLength(1);
 
     await drainOutbox(throwingSender);
 
@@ -817,7 +813,7 @@ describe('self-registration', () => {
     const created = await withTenant(app.db, tenantId, (tx) =>
       userRepository(tx).byUsername('ada'),
     );
-    expect(created).not.toBeNull();
+    expect(created).toBeNull();
   });
 
   it('refuses to register when verify_email is on but no public base url is configured', async () => {
@@ -1017,250 +1013,374 @@ describe('self-registration', () => {
   });
 });
 
-describe('registering an address that already has an account', () => {
+describe('a registration that waits for its mailed link', () => {
   const PASSWORD = 'correct horse battery';
 
-  async function verifying(
-    settings: { resetPasswordAllowed?: boolean; verifyEmail?: boolean } = {},
-  ): Promise<SeededTenant> {
-    const tenant = await seedTenant(`tenant-${newId()}`, {
+  async function open(settings: { resetPasswordAllowed?: boolean } = {}): Promise<SeededTenant> {
+    return seedTenant(`tenant-${newId()}`, {
       registrationAllowed: true,
-      verifyEmail: settings.verifyEmail ?? true,
+      verifyEmail: true,
       resetPasswordAllowed: settings.resetPasswordAllowed ?? true,
       displayName: 'Acme Portal',
     });
-    const first = await submitRegistration(tenant.tenantName, {
-      username: 'ada',
-      email: 'ada@example.test',
-      password: PASSWORD,
-    });
-    expect(first.statusCode).toBe(201);
-    await owner.db.delete(emailOutbox);
-    return tenant;
   }
 
-  async function duplicateRows(tenantId: string) {
-    return withTenant(app.db, tenantId, (tx) =>
-      auditRepository(tx).list({ eventType: 'credential', limit: 50 }),
-    );
-  }
-
-  async function tokenCount(tenantId: string): Promise<number> {
-    return (await rawSelectAllActionTokens(tenantId)).length;
-  }
-
-  async function submit(tenantName: string, username: string, email: string) {
-    const form = new URLSearchParams({ username, email, password: PASSWORD });
+  function post(tenantName: string, username: string, email: string, password = PASSWORD) {
     return httpApp.inject({
       method: 'POST',
       url: `/tenants/${tenantName}/login-actions/registration`,
-      payload: form.toString(),
+      payload: new URLSearchParams({ username, email, password }).toString(),
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
     });
   }
 
-  it('answers a taken address exactly as it answers a free one when verification is on', async () => {
-    const { tenantName } = await verifying();
+  // The key in the newest verification mail queued for an address.
+  async function keyFor(tenantId: string, email: string): Promise<string> {
+    const rows = (await outboxRows(tenantId)).filter(
+      (row) => row.toAddress === email && row.subject.startsWith('Verify'),
+    );
+    const link = /visiting this link:\n\n(\S+)/u.exec(rows.at(-1)?.bodyText ?? '')?.[1];
+    const key = link === undefined ? null : new URL(link).searchParams.get('key');
+    if (key === null) throw new Error('no verification link was queued');
+    return key;
+  }
 
-    const free = await submit(tenantName, 'grace', 'grace@example.test');
-    const taken = await submit(tenantName, 'hedy', 'ada@example.test');
+  function follow(tenantName: string, key: string) {
+    return httpApp.inject({
+      url: `/tenants/${tenantName}/login-actions/action-token?key=${encodeURIComponent(key)}`,
+    });
+  }
 
-    expect(taken.statusCode).toBe(201);
-    expect(taken.statusCode).toBe(free.statusCode);
-    expect(taken.body).toBe(free.body);
-    expect(taken.headers).toEqual(free.headers);
-    expect(taken.body).toContain(en['registration.succeeded.verify']);
-  });
+  async function register(tenant: SeededTenant, username: string, email: string) {
+    expect((await post(tenant.tenantName, username, email)).statusCode).toBe(201);
+    return follow(tenant.tenantName, await keyFor(tenant.tenantId, email));
+  }
 
-  it('creates no second account and issues no verification token for a taken address', async () => {
-    const { tenantId, tenantName } = await verifying();
-    const tokensBefore = await tokenCount(tenantId);
+  async function pendingCount(tenantId: string): Promise<number> {
+    const rows = await withTenant(app.db, tenantId, (tx) => tx.select().from(pendingRegistrations));
+    return rows.length;
+  }
 
-    await submit(tenantName, 'hedy', 'ada@example.test');
+  async function auditActions(tenantId: string): Promise<string[]> {
+    const rows = await withTenant(app.db, tenantId, (tx) =>
+      auditRepository(tx).list({ eventType: 'credential', limit: 50 }),
+    );
+    return rows.map((row) => row.action);
+  }
 
-    const hedy = await withTenant(app.db, tenantId, (tx) => userRepository(tx).byUsername('hedy'));
-    expect(hedy).toBeNull();
-    expect(await tokenCount(tenantId)).toBe(tokensBefore);
-  });
+  async function holder(tenantId: string, username: string) {
+    return withTenant(app.db, tenantId, (tx) => userRepository(tx).byUsername(username));
+  }
 
-  it('queues exactly one mail on each path, and the taken one holds no link to verify', async () => {
-    const { tenantId, tenantName } = await verifying();
+  it('creates nothing for a free address, keeps the request and mails a link', async () => {
+    const { tenantId, tenantName } = await open();
 
-    await submit(tenantName, 'grace', 'grace@example.test');
-    const freeRows = await outboxRows(tenantId);
-    await owner.db.delete(emailOutbox);
-    await submit(tenantName, 'hedy', 'ada@example.test');
-    const takenRows = await outboxRows(tenantId);
+    const res = await post(tenantName, 'ada', 'ada@example.test');
 
-    expect(freeRows).toHaveLength(1);
-    expect(takenRows).toHaveLength(1);
-    const mail = takenRows[0];
-    expect(mail?.toAddress).toBe('ada@example.test');
-    expect(mail?.subject).toContain('Acme Portal');
-    const base = `https://idp.example.test/tenants/${tenantName}/login-actions`;
-    expect(mail?.bodyText).toContain(`${base}/reset-password`);
-    expect(mail?.bodyHtml).toContain(`href="${base}/reset-password"`);
-    expect(mail?.bodyText).not.toContain('action-token');
-    expect(mail?.bodyText).not.toContain('hedy');
-    expect(mail?.bodyText).not.toContain('key=');
-  });
-
-  it('says to sign in, with no reset link, where the tenant has no password reset', async () => {
-    const { tenantId, tenantName } = await verifying({ resetPasswordAllowed: false });
-
-    await submit(tenantName, 'hedy', 'ada@example.test');
-
+    expect(res.statusCode).toBe(201);
+    expect(await holder(tenantId, 'ada')).toBeNull();
+    expect(await pendingCount(tenantId)).toBe(1);
+    expect(await tokenCountOf(tenantId)).toBe(0);
     const [mail] = await outboxRows(tenantId);
-    expect(mail?.bodyText).not.toContain('reset-password');
-    expect(mail?.bodyText).not.toContain('http');
-    expect(mail?.bodyText).toContain('sign in');
+    expect(mail?.toAddress).toBe('ada@example.test');
+    expect(mail?.bodyText).toContain(
+      `https://idp.example.test/tenants/${tenantName}/login-actions/action-token?key=reg_`,
+    );
+    expect(await auditActions(tenantId)).toEqual([]);
   });
 
-  it('hashes the password on both paths, and attempts no account for a taken address', async () => {
-    const { tenantName } = await verifying();
-    let spent = 0;
-    let attempted = 0;
+  async function tokenCountOf(tenantId: string): Promise<number> {
+    return (await rawSelectAllActionTokens(tenantId)).length;
+  }
+
+  it('creates the account, verified, with the password hash made at registration, when the link is opened', async () => {
+    const { tenantId, tenantName } = await open();
+    await createDefaultRole(tenantId, 'offline_access');
+
+    const res = await register({ tenantId, tenantName }, 'ada', 'ada@example.test');
+
+    expect(res.statusCode).toBe(200);
+    const found = await holder(tenantId, 'ada');
+    expect(found?.user.email).toBe('ada@example.test');
+    expect(found?.user.emailVerified).toBe(true);
+    const stored = await withTenant(app.db, tenantId, (tx) =>
+      credentialRepository(tx).passwordFor(found?.subject.id ?? ''),
+    );
+    expect(await verifyUserPassword(stored ?? '', PASSWORD)).toBe(true);
+    expect(await roleNamesFor(tenantId, found?.subject.id ?? '')).toEqual(['offline_access']);
+    expect(await pendingCount(tenantId)).toBe(0);
+    expect(await auditActions(tenantId)).toEqual(['account.registered']);
+  });
+
+  it('answers a held address exactly as a free one, and queues the holder a different mail', async () => {
+    const tenant = await open();
+    await register(tenant, 'ada', 'ada@example.test');
+    await owner.db.delete(emailOutbox);
+
+    const free = await post(tenant.tenantName, 'grace', 'grace@example.test');
+    const held = await post(tenant.tenantName, 'hedy', 'ada@example.test');
+
+    expect(held.statusCode).toBe(free.statusCode);
+    expect(held.body).toBe(free.body);
+    expect({ ...held.headers, date: '' }).toEqual({ ...free.headers, date: '' });
+    const mails = await outboxRows(tenant.tenantId);
+    expect(mails.map((m) => [m.toAddress, m.subject.startsWith('Verify')])).toEqual([
+      ['grace@example.test', true],
+      ['ada@example.test', false],
+    ]);
+    expect(mails[1]?.bodyText).toContain(`${tenant.tenantName}/login-actions/reset-password`);
+    expect(mails[1]?.bodyText).not.toContain('key=');
+    expect(mails[1]?.bodyText).not.toContain('hedy');
+    expect(await holder(tenant.tenantId, 'hedy')).toBeNull();
+    expect(await pendingCount(tenant.tenantId)).toBe(1);
+  });
+
+  it('cannot be told apart by asking for the same username twice', async () => {
+    const tenant = await open();
+    await register(tenant, 'ada', 'ada@example.test');
+
+    // The address held, then a free one, for a username nobody has.
+    await post(tenant.tenantName, 'probe1', 'ada@example.test');
+    const afterHeld = await post(tenant.tenantName, 'probe1', 'other1@example.test');
+    // The address free, then another free one.
+    await post(tenant.tenantName, 'probe2', 'free2@example.test');
+    const afterFree = await post(tenant.tenantName, 'probe2', 'other2@example.test');
+
+    expect(afterHeld.statusCode).toBe(201);
+    expect(afterFree.statusCode).toBe(201);
+    expect(afterHeld.body).toBe(afterFree.body);
+  });
+
+  it('treats an address as held whatever its case', async () => {
+    const tenant = await open();
+    await register(tenant, 'ada', 'ada@example.test');
+    await owner.db.delete(emailOutbox);
+
+    const res = await post(tenant.tenantName, 'hedy', 'ADA@Example.test');
+
+    expect(res.statusCode).toBe(201);
+    expect(await pendingCount(tenant.tenantId)).toBe(0);
+    const [mail] = await outboxRows(tenant.tenantId);
+    expect(mail?.subject).toBe('You already have a Acme Portal account');
+  });
+
+  it('keeps one pending request per address, case aside, and only the latest link works', async () => {
+    const tenant = await open();
+
+    await post(tenant.tenantName, 'ada', 'ada@example.test');
+    const first = await keyFor(tenant.tenantId, 'ada@example.test');
+    await post(tenant.tenantName, 'ada2', 'ADA@example.test');
+    const second = await keyFor(tenant.tenantId, 'ADA@example.test');
+
+    expect(await pendingCount(tenant.tenantId)).toBe(1);
+    expect((await follow(tenant.tenantName, first)).statusCode).toBe(400);
+    expect((await follow(tenant.tenantName, second)).statusCode).toBe(200);
+    expect(await holder(tenant.tenantId, 'ada2')).not.toBeNull();
+    expect(await holder(tenant.tenantId, 'ada')).toBeNull();
+  });
+
+  it('refuses a spent, expired, unknown or foreign link with one page', async () => {
+    const tenant = await open();
+    const other = await open();
+    await post(tenant.tenantName, 'ada', 'ada@example.test');
+    const key = await keyFor(tenant.tenantId, 'ada@example.test');
+    await post(tenant.tenantName, 'bea', 'bea@example.test');
+    const stale = await keyFor(tenant.tenantId, 'bea@example.test');
+    await owner.db.execute(
+      sql`update pending_registrations set expires_at = now() - interval '1 second' where tenant_id = ${tenant.tenantId} and email = 'bea@example.test'`,
+    );
+
+    const foreign = await follow(other.tenantName, key);
+    expect((await follow(tenant.tenantName, key)).statusCode).toBe(200);
+    const spent = await follow(tenant.tenantName, key);
+    const expired = await follow(tenant.tenantName, stale);
+    const unknown = await follow(tenant.tenantName, 'reg_nothing-holds-this');
+    const plain = await follow(tenant.tenantName, 'not-a-registration-key');
+
+    for (const res of [foreign, spent, expired, unknown, plain]) {
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toBe(plain.body);
+    }
+    expect(await holder(other.tenantId, 'ada')).toBeNull();
+  });
+
+  it('says the username is gone, and creates nothing, when somebody took it meanwhile', async () => {
+    const tenant = await open();
+    await post(tenant.tenantName, 'ada', 'ada@example.test');
+    const key = await keyFor(tenant.tenantId, 'ada@example.test');
+    await register(tenant, 'grace', 'grace@example.test');
+    await owner.db.execute(
+      sql`update pending_registrations set username = 'grace' where tenant_id = ${tenant.tenantId}`,
+    );
+
+    const res = await follow(tenant.tenantName, key);
+
+    expect(res.statusCode).toBe(409);
+    expect(res.body).toContain('That username is no longer available.');
+    expect(res.body).toContain(`/tenants/${tenant.tenantName}/login-actions/registration`);
+    expect(await holder(tenant.tenantId, 'ada')).toBeNull();
+    expect(await pendingCount(tenant.tenantId)).toBe(0);
+  });
+
+  it('refuses the link, as any bad one, when the address got an account meanwhile', async () => {
+    const tenant = await open();
+    await post(tenant.tenantName, 'ada', 'ada@example.test');
+    const key = await keyFor(tenant.tenantId, 'ada@example.test');
+    await withTenant(app.db, tenant.tenantId, (tx) =>
+      createAccount(tx, tenant.tenantId, {
+        username: 'someone',
+        email: 'ADA@example.test',
+        password: PASSWORD,
+      }),
+    );
+
+    const res = await follow(tenant.tenantName, key);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toBe((await follow(tenant.tenantName, 'not-a-registration-key')).body);
+    expect(await holder(tenant.tenantId, 'ada')).toBeNull();
+  });
+
+  it('refuses a link once the tenant no longer takes registrations', async () => {
+    const tenant = await open();
+    await post(tenant.tenantName, 'ada', 'ada@example.test');
+    const key = await keyFor(tenant.tenantId, 'ada@example.test');
+    await owner.db
+      .update(tenants)
+      .set({ registrationAllowed: false })
+      .where(eq(tenants.id, tenant.tenantId));
+
+    expect((await follow(tenant.tenantName, key)).statusCode).toBe(400);
+    expect(await holder(tenant.tenantId, 'ada')).toBeNull();
+  });
+
+  it('keeps naming a taken username, and a weak password reads the same for either address', async () => {
+    const tenant = await open();
+    await register(tenant, 'ada', 'ada@example.test');
+
+    for (const email of ['new@example.test', 'ada@example.test']) {
+      const res = await post(tenant.tenantName, 'ada', email);
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toContain(en['registration.refusal.usernameTaken']);
+    }
+    const weakHeld = await post(tenant.tenantName, 'x1', 'ada@example.test', 'short');
+    const weakFree = await post(tenant.tenantName, 'x1', 'free@example.test', 'short');
+    expect(weakHeld.statusCode).toBe(400);
+    const withoutNonce = (html: string): string =>
+      html
+        .replace(/nonce="[^"]*"/gu, 'nonce=""')
+        .replaceAll('ada@example.test', 'free@example.test');
+    expect(withoutNonce(weakHeld.body)).toBe(withoutNonce(weakFree.body));
+  });
+
+  it('hashes the password once per request on both paths, and not before the policy refuses', async () => {
+    const tenant = await open();
+    await register(tenant, 'ada', 'ada@example.test');
+    let hashed = 0;
     const counting = Fastify();
     counting.register(formbody);
     registerRegistrationRoute(counting, {
+      ...accountTestDeps,
+      hashPassword: (password) => {
+        hashed += 1;
+        return hashUserPassword(password);
+      },
       findHeldSignIn: () => Promise.resolve(null),
       database: app,
       findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
       publicBaseUrl,
-      now: () => mailNow ?? new Date(),
-      findTaken,
-      spendPasswordWork: async (password) => {
-        spent += 1;
-        await spendPasswordWork(password);
-      },
-      createAccount: (tx, tenantId, input) => {
-        attempted += 1;
-        return createAccount(tx, tenantId, input);
-      },
-      evaluatePassword,
-    });
-    const post = (username: string, email: string) =>
-      counting.inject({
-        method: 'POST',
-        url: `/tenants/${tenantName}/login-actions/registration`,
-        payload: new URLSearchParams({ username, email, password: PASSWORD }).toString(),
-        headers: { 'content-type': 'application/x-www-form-urlencoded' },
-      });
-
-    await post('hedy', 'ada@example.test');
-    expect({ spent, attempted }).toEqual({ spent: 1, attempted: 0 });
-
-    await post('grace', 'grace@example.test');
-    expect({ spent, attempted }).toEqual({ spent: 1, attempted: 1 });
-  });
-
-  it('keeps naming a taken username, whether or not the address is also taken', async () => {
-    const { tenantName } = await verifying();
-
-    const freeAddress = await submit(tenantName, 'ada', 'new@example.test');
-    const takenAddress = await submit(tenantName, 'ada', 'ada@example.test');
-
-    for (const res of [freeAddress, takenAddress]) {
-      expect(res.statusCode).toBe(400);
-      expect(res.body).toContain(en['registration.refusal.usernameTaken']);
-      expect(res.body).not.toContain(en['registration.refusal.emailTaken']);
-    }
-  });
-
-  it('treats an address taken between the check and the write as taken', async () => {
-    const { tenantId, tenantName } = await verifying();
-    const stale = Fastify();
-    stale.register(formbody);
-    registerRegistrationRoute(stale, {
-      findHeldSignIn: () => Promise.resolve(null),
-      database: app,
-      findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
-      publicBaseUrl,
-      now: () => mailNow ?? new Date(),
-      findTaken: () => Promise.resolve({ username: false, emailOwner: null }),
-      spendPasswordWork,
+      now: () => new Date(),
       createAccount,
       evaluatePassword,
     });
+    const send = (username: string, email: string, password: string) =>
+      counting.inject({
+        method: 'POST',
+        url: `/tenants/${tenant.tenantName}/login-actions/registration`,
+        payload: new URLSearchParams({ username, email, password }).toString(),
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      });
 
-    const res = await stale.inject({
-      method: 'POST',
-      url: `/tenants/${tenantName}/login-actions/registration`,
-      payload: new URLSearchParams({
-        username: 'hedy',
-        email: 'ada@example.test',
-        password: PASSWORD,
-      }).toString(),
-      headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    });
+    await send('hedy', 'ada@example.test', PASSWORD);
+    await send('grace', 'grace@example.test', PASSWORD);
+    await send('weak', 'weak@example.test', 'short');
 
-    expect(res.statusCode).toBe(201);
-    expect(await outboxRows(tenantId)).toHaveLength(1);
-    expect(
-      await withTenant(app.db, tenantId, (tx) => userRepository(tx).byUsername('hedy')),
-    ).toBeNull();
+    expect(hashed).toBe(2);
   });
 
-  it('still says the address is registered when verification is off, and mails nothing', async () => {
-    const { tenantId, tenantName } = await verifying({ verifyEmail: false });
+  it('queues no mail past the per-address bound, and answers the same', async () => {
+    const tenant = await open();
+    await register(tenant, 'ada', 'ada@example.test');
+    await owner.db.delete(emailOutbox);
+    mailAllowed = false;
+    httpApp = buildHttpApp();
+    await httpApp.ready();
 
-    const res = await submit(tenantName, 'hedy', 'ada@example.test');
+    const free = await post(tenant.tenantName, 'grace', 'grace@example.test');
+    const held = await post(tenant.tenantName, 'hedy', 'ada@example.test');
 
-    expect(res.statusCode).toBe(400);
-    expect(res.body).toContain(en['registration.refusal.emailTaken']);
-    expect(await outboxRows(tenantId)).toEqual([]);
-    const actions = (await duplicateRows(tenantId)).map((row) => row.action);
-    expect(actions).not.toContain('account.registration_duplicate');
+    expect(held.body).toBe(free.body);
+    expect(held.statusCode).toBe(201);
+    expect(await outboxRows(tenant.tenantId)).toEqual([]);
+    expect(await pendingCount(tenant.tenantId)).toBe(1);
+    expect(await auditActions(tenant.tenantId)).toContain('account.registration_duplicate');
   });
 
-  it('records a taken address as one refused row naming the account, and a free one as none', async () => {
-    const { tenantId, tenantName } = await verifying();
-    const owned = await subjectIdForUsername(tenantId, 'ada');
+  it('records a held address as one refused row naming the account, and nothing else', async () => {
+    const tenant = await open();
+    await register(tenant, 'ada', 'ada@example.test');
+    const owned = await subjectIdForUsername(tenant.tenantId, 'ada');
 
-    await submit(tenantName, 'grace', 'grace@example.test');
-    expect(
-      (await duplicateRows(tenantId)).filter((r) => r.action === 'account.registration_duplicate'),
-    ).toEqual([]);
-    await submit(tenantName, 'hedy', 'ada@example.test');
+    await post(tenant.tenantName, 'hedy', 'ada@example.test');
 
-    const rows = (await duplicateRows(tenantId)).filter(
-      (r) => r.action === 'account.registration_duplicate',
+    const rows = await withTenant(app.db, tenant.tenantId, (tx) =>
+      auditRepository(tx).list({ eventType: 'credential', limit: 50 }),
     );
-    expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({
-      eventType: 'credential',
+    const duplicate = rows.filter((r) => r.action === 'account.registration_duplicate');
+    expect(duplicate).toHaveLength(1);
+    expect(duplicate[0]).toMatchObject({
       outcome: 'refused',
       actorSubjectId: null,
-      resourceType: 'subject',
       resourceId: owned,
       detail: { reason: 'already_registered' },
     });
-    expect(JSON.stringify(rows)).not.toContain('ada@example.test');
-    expect(JSON.stringify(rows)).not.toContain('hedy');
+    expect(JSON.stringify(duplicate)).not.toContain('hedy');
   });
 
-  it('does not see an address held in another tenant, and writes nothing there', async () => {
-    const mine = await verifying();
-    const other = await seedTenant(`tenant-${newId()}`, {
-      registrationAllowed: true,
-      verifyEmail: true,
-    });
+  it('does not see an address held in another tenant', async () => {
+    const mine = await open();
+    const other = await open();
+    await register(mine, 'ada', 'ada@example.test');
 
-    const res = await submit(other.tenantName, 'ada2', 'ada@example.test');
+    const res = await post(other.tenantName, 'ada2', 'ada@example.test');
 
     expect(res.statusCode).toBe(201);
-    const created = await withTenant(app.db, other.tenantId, (tx) =>
-      userRepository(tx).byUsername('ada2'),
-    );
-    expect(created?.user.email).toBe('ada@example.test');
-    const mail = await outboxRows(other.tenantId);
-    expect(mail).toHaveLength(1);
-    expect(mail[0]?.bodyText).toContain('action-token');
+    expect(await pendingCount(other.tenantId)).toBe(1);
+    const [mail] = await outboxRows(other.tenantId);
+    expect(mail?.subject.startsWith('Verify')).toBe(true);
     expect(
-      (await duplicateRows(other.tenantId)).filter(
-        (row) => row.action === 'account.registration_duplicate',
-      ),
+      (await auditActions(other.tenantId)).filter((a) => a === 'account.registration_duplicate'),
     ).toEqual([]);
-    expect(await outboxRows(mine.tenantId)).toEqual([]);
+  });
+
+  it('refuses a malformed address before keeping anything', async () => {
+    const tenant = await open();
+
+    const res = await post(tenant.tenantName, 'ada', 'not-an-address');
+
+    expect(res.statusCode).toBe(400);
+    expect(await pendingCount(tenant.tenantId)).toBe(0);
+    expect(await outboxRows(tenant.tenantId)).toEqual([]);
+  });
+
+  it('says the address is registered where verification is off, whatever its case', async () => {
+    const tenant = await seedTenant(`tenant-${newId()}`, { registrationAllowed: true });
+    expect((await post(tenant.tenantName, 'ada', 'ada@example.test')).statusCode).toBe(201);
+
+    const res = await post(tenant.tenantName, 'hedy', 'ADA@example.test');
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toContain(en['registration.refusal.emailTaken']);
+    expect(await pendingCount(tenant.tenantId)).toBe(0);
   });
 });

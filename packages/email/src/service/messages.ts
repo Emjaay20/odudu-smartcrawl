@@ -23,8 +23,8 @@ export const en = {
   'duplicate.heading': 'You already have an account',
   'duplicate.text':
     'Someone tried to create a {tenant} account with this email address. You already have one.',
-  'duplicate.next': 'If it was you, sign in, or reset your password if you forgot it.',
-  'duplicate.nextSignIn': 'If it was you, sign in.',
+  'duplicate.next': 'If it was you, sign in. Forgot your password? Reset it.',
+  'duplicate.nextSignIn': 'If it was you, sign in. Forgot your password? Ask your administrator.',
   'duplicate.button': 'Reset password',
   'duplicate.reason':
     'You received this because this email address was used to register at {tenant}.',

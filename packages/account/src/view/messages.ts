@@ -8,6 +8,7 @@ export const en = {
   'link.backToSignIn': 'Back to sign in',
   'link.continueToSignIn': 'Continue to sign in',
   'link.tryAgain': 'Try again',
+  'link.registerAgain': 'Register again',
   'link.requestNewResetLink': 'Request a new link',
   'verification.succeeded.title': 'Email verified',
   'verification.succeeded.heading': 'Your email address is verified',
@@ -23,6 +24,9 @@ export const en = {
   'registration.password': 'Password',
   'registration.submit': 'Create account',
   'registration.failed.title': "Can't create this account",
+  'registration.usernameGone.title': "Can't finish registering",
+  'registration.usernameGone.next':
+    'That username is no longer available. Register again with another one.',
   'registration.refusal.usernameRequired': 'Enter a username.',
   'registration.refusal.emailRequired': 'Enter an email address.',
   'registration.refusal.passwordRequired': 'Enter a password.',

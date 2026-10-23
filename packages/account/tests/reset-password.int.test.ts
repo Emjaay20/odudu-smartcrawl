@@ -29,6 +29,8 @@ import formbody from '@fastify/formbody';
 import { eq } from 'drizzle-orm';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { accountTestDeps } from '#/testing/support';
+import { type MailGate } from '#/service/mail-gate';
 import { registerActionTokenRoute } from '#/view/routes/action-token';
 import { actionTokenRepository } from '#/repository/action-tokens';
 import { tenantSettingsRepository } from '#/repository/tenant-settings';
@@ -208,11 +210,14 @@ async function drainOutbox(into: EmailSender = sender): Promise<void> {
 
 let sender: ReturnType<typeof fakeSender>;
 let httpApp: FastifyInstance;
+let resetGate: MailGate = () => true;
 
 function buildHttpApp(): FastifyInstance {
   const instance = Fastify();
   instance.register(formbody);
   registerResetPasswordRoute(instance, {
+    ...accountTestDeps,
+    mailGate: (tenantId, address) => resetGate(tenantId, address),
     findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
@@ -221,6 +226,7 @@ function buildHttpApp(): FastifyInstance {
     findByEmail,
   });
   registerActionTokenRoute(instance, {
+    ...accountTestDeps,
     findHeldSignIn: () => Promise.resolve(null),
     database: app,
     findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
@@ -299,6 +305,7 @@ async function submitNewPassword(
 // delivered, so each starts with the queue empty rather than with whatever
 // an earlier test left in it.
 beforeEach(async () => {
+  resetGate = () => true;
   await owner.db.delete(emailOutbox);
 });
 
@@ -325,6 +332,7 @@ describe('password reset', () => {
     const instance = Fastify();
     await instance.register(formbody);
     registerResetPasswordRoute(instance, {
+      ...accountTestDeps,
       findHeldSignIn: () => Promise.resolve(null),
       database: app,
       findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
@@ -393,6 +401,24 @@ describe('password reset', () => {
     await requestReset(tenantName, 'ada@example.test');
     expect(sender.sent).toHaveLength(1);
     expect(await outboxRows(tenantId)).toHaveLength(1);
+  });
+
+  it('queues no mail once the address has had its share, and answers the same', async () => {
+    const { tenantId, tenantName } = await seedTenant(`tenant-${newId()}`, {
+      resetPasswordAllowed: true,
+    });
+    await seedAda(tenantId);
+    let allowed = 2;
+    resetGate = () => allowed-- > 0;
+
+    const answers = [];
+    for (let i = 0; i < 4; i += 1) answers.push(await requestReset(tenantName, 'ada@example.test'));
+
+    expect(await outboxRows(tenantId)).toHaveLength(2);
+    for (const answer of answers) {
+      expect(answer.statusCode).toBe(200);
+      expect(answer.body).toBe(answers[0]?.body);
+    }
   });
 
   it('renders a set-password form for an unconsumed reset link, without consuming it', async () => {
@@ -731,6 +757,7 @@ describe('password reset', () => {
     const instance = Fastify();
     await instance.register(formbody);
     registerResetPasswordRoute(instance, {
+      ...accountTestDeps,
       findHeldSignIn: () => Promise.resolve(null),
       database: app,
       findTenant: (name) => tenantSettingsRepository(owner.db).byName(name),
