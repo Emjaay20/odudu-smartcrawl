@@ -194,7 +194,7 @@ describe('what it says about the product matches the roadmap', () => {
   it('says plainly where it stands, links the roadmap, and promises no hosted date or price', () => {
     const status = section('Status');
     expect(status).toMatch(/before 1\.0|pre-1\.0/iu);
-    expect(status).toMatch(/not production ready/u);
+    expect(status).toMatch(/release candidate/u);
     expect(status).toContain(`${SITE_DOCS}roadmap/`);
     expect(status.replaceAll(/\[([^\]]*)\]\([^)\s]+\)/gu, '$1').replaceAll(/\s+/gu, ' ')).toContain(
       STATUS_SENTENCE,
@@ -206,7 +206,7 @@ describe('what it says about the product matches the roadmap', () => {
 
   it('keeps the not-production-ready notice at the top', () => {
     const top = LINES.slice(0, 40).join('\n');
-    expect(top).toMatch(/Not production ready/u);
+    expect(top).toMatch(/A release candidate/u);
     expect(top).toMatch(/security review/iu);
   });
 });

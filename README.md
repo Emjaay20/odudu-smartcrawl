@@ -18,8 +18,8 @@ OpenID Connect and OAuth 2.0, many tenants, one container and PostgreSQL.
 
 </div>
 
-> **Not production ready.** Odudu has not had a security review. Try it, test
-> against it and tell us what you find. Do not put it in front of real users yet.
+> **A release candidate.** Odudu has not had an independent security review yet.
+> Use it with your own apps and real sign-ins, start small, and tell us what you find.
 
 Odudu signs people in to your apps. It is for teams that want to run their own
 sign-in, with single sign-on, passkeys and an admin API, and keep their users'
@@ -88,7 +88,7 @@ tell us what breaks. You can also
 
 ## Status
 
-Odudu is before 1.0 and not production ready. Some of what is described here is
+Odudu is before 1.0, a release candidate. Some of what is described here is
 still being built. [The roadmap](https://wizzywit.github.io/odudu/docs/roadmap/)
 shows what is ready. A hosted service is in the works. Nothing about it is for
 sale or scheduled yet.
