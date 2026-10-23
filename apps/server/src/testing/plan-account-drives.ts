@@ -54,8 +54,20 @@ export async function driveAccount(world: PlanWorld, capture: Capture): Promise<
   expectStatus(registered, 201, 'registration');
   const verifyKey = await latestMailKey(world, address);
   expectStatus(
-    await capture('account: verify email', 'account', () =>
+    await capture('account: open a registration link', 'account', () =>
       http.inject({ url: `${ACTIONS}/action-token?key=${verifyKey}` }),
+    ),
+    200,
+    'open registration link',
+  );
+  expectStatus(
+    await capture('account: verify email', 'account', () =>
+      http.inject({
+        method: 'POST',
+        url: `${ACTIONS}/action-token`,
+        payload: new URLSearchParams({ key: verifyKey }).toString(),
+        headers: FORM,
+      }),
     ),
     200,
     'verify email',
