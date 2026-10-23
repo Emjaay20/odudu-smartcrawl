@@ -20,18 +20,42 @@ updates:
     directory: /examples/web-app
     schedule:
       interval: weekly
+    # The examples follow the repository's Node and TypeScript majors.
+    ignore:
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
   - package-ecosystem: npm
     directory: /examples/single-page-app
     schedule:
       interval: weekly
+    # The examples follow the repository's Node and TypeScript majors.
+    ignore:
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
   - package-ecosystem: npm
     directory: /examples/api
     schedule:
       interval: weekly
+    # The examples follow the repository's Node and TypeScript majors.
+    ignore:
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
   - package-ecosystem: npm
     directory: /examples/machine-to-machine
     schedule:
       interval: weekly
+    # The examples follow the repository's Node and TypeScript majors.
+    ignore:
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule:
@@ -47,6 +71,12 @@ updates:
     groups:
       base-images:
         patterns: ['*']
+    # Odudu runs on an even-numbered Node LTS (ADR 0001). A release becomes LTS
+    # months after it ships, and Dependabot cannot tell, so the Node major moves
+    # by hand each October. Patch and minor updates still come.
+    ignore:
+      - dependency-name: node
+        update-types: ['version-update:semver-major']
   - package-ecosystem: docker-compose
     directories:
       - /infra/docker
@@ -57,6 +87,9 @@ updates:
     # A new Postgres major cannot open the previous one's data directory.
     ignore:
       - dependency-name: postgres
+        update-types: ['version-update:semver-major']
+      # The conformance suite's database: a major needs its own check.
+      - dependency-name: mongo
         update-types: ['version-update:semver-major']
     groups:
       base-images:
