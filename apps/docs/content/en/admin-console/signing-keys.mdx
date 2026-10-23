@@ -20,7 +20,9 @@ A tenant's keys sit in three lanes: **Rotating** for keys published but not sign
 
 ## 1. Stage a new key
 
-At the top, under **Stage a key**, choose an **Algorithm**, ES256 or RS256, and choose **Stage key**. The new key joins the published key set at once but signs nothing, and it waits in **Rotating**.
+At the top, under **Stage a key**, choose an **Algorithm**, **ES256 (elliptic curve)** or **RS256 (RSA)**, and choose **Stage key**. The new key joins the published key set at once but signs nothing, and it waits in **Rotating**.
+
+RS256 is the most widely supported algorithm. ES256 gives smaller keys and signatures. A client may name the algorithm it wants for its ID tokens, and the tenant must hold an active key of that algorithm.
 
 ## 2. Wait while applications fetch it
 

@@ -35,6 +35,10 @@ To require a password every time, change **Requirement for password** to **Requi
 
 Use **Up** and **Down** on a row to move a step. Two alternatives that end up apart are no longer one run, so check the order you leave behind.
 
+## Add a step
+
+A step that is not in the list can be added. Choose it under **Add a step**, choose its requirement under **Requirement of the new step**, then add it. It joins the end of the list.
+
 ## 4. Save the whole list
 
 Choose **Save Steps**. The whole list is replaced at once, so nothing is half-changed. People already signed in are not asked again; the new flow applies to the next sign-in.
@@ -42,6 +46,10 @@ Choose **Save Steps**. The whole list is replaced at once, so nothing is half-ch
 ## 5. Ask everyone for a one-time password
 
 The one-time password step is asked only of people who set up an authenticator app. To ask it of every person, including those who have not, turn on **Ask every subject for a one-time password** under **One-time password** and save. A person without an authenticator is then taken to set one up, and their sign-in does not finish until they have. A sign-in with a passkey is never asked again. With this on, a [password minimum](./settings.mdx#4-choose-a-password-policy) of 8 characters is enough.
+
+## Passkeys
+
+A passkey step does nothing for a person until they have registered a passkey. There is no tenant switch that asks everyone for one. Tick **Register a passkey** under **Required actions** on a person's record, or email them the link, and they register one in their browser at their next sign-in. A passkey is tied to the host name in the server's public address, `ODUDU_PUBLIC_BASE_URL`. If that host changes, passkeys made under the old one stop working. Browsers offer passkeys only on an https address, or on `localhost`.
 
 ## Things that cannot be undone, or that lock people out
 

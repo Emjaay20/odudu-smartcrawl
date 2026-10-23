@@ -397,11 +397,8 @@ export const DEFINED: Readonly<Record<string, Defined>> = {
   'Evaluate claims': feature('clients/service/evaluate.ts', "'Evaluate claims'"),
 
   // Scopes.
-  Default: shared('service/assignment.ts', "'Default'"),
-  Optional: shared('service/assignment.ts', "'Optional'"),
   'In the ID token': feature(SCOPE_VALUES, "'In the ID token'"),
   'In the access token': feature(SCOPE_VALUES, "'In the access token'"),
-  'For a client made from now on': feature(SCOPE_VALUES, "'For a client made from now on'"),
   'Consent text': feature(SCOPE_GENERAL, 'label="Consent text"'),
   'Display order': feature(SCOPE_GENERAL, 'label="Display order"'),
   'Client to assign': feature(
@@ -597,4 +594,231 @@ export const DEFINED: Readonly<Record<string, Defined>> = {
     'Change ${holder.name}’s capabilities',
     { 'holder.name': 'admin@odudu.local' },
   ),
+  Availability: feature('clients/service/labels.ts', "'Availability'"),
+  'Consent required': feature('clients/view/GeneralTab/GeneralTab.tsx', 'label="Consent required"'),
+  'Consent screen links': feature('clients/service/labels.ts', "'Consent screen links'"),
+  'Home page': feature('clients/view/GeneralTab/GeneralTab.tsx', 'label="Home page"'),
+  'Privacy policy': feature('clients/view/GeneralTab/GeneralTab.tsx', 'label="Privacy policy"'),
+  'Terms of service': feature('clients/view/GeneralTab/GeneralTab.tsx', 'label="Terms of service"'),
+  'Client credentials scopes': feature(
+    'clients/view/TokensTab/TokensTab.tsx',
+    'label="Client credentials scopes"',
+  ),
+  'ID token claims': feature('clients/service/evaluate.ts', "label: 'ID token claims'"),
+  'Access token claims': feature('clients/service/evaluate.ts', "label: 'Access token claims'"),
+  'UserInfo claims': feature('clients/service/evaluate.ts', "label: 'UserInfo claims'"),
+  'Back-channel logout address': feature(
+    'clients/view/LogoutTab/LogoutTab.tsx',
+    'label="Back-channel logout address"',
+  ),
+  'Front-channel logout address': feature(
+    'clients/view/LogoutTab/LogoutTab.tsx',
+    'label="Front-channel logout address"',
+  ),
+  Installation: feature('clients/service/installation.ts', "'Installation'"),
+  'Discovery URL': feature('clients/service/installation.ts', "label: 'Discovery URL'"),
+  'Client type': feature('clients/service/installation.ts', "label: 'Client type'"),
+  'Authentication method': feature(
+    'clients/view/AdvancedTab/AdvancedTab.tsx',
+    'label="Authentication method"',
+  ),
+  'Certificate subject': feature(
+    'clients/view/AdvancedTab/AdvancedTab.tsx',
+    'label="Certificate subject"',
+  ),
+  'Key source': feature('clients/view/AdvancedTab/AdvancedTab.tsx', 'label="Key source"'),
+  'None published': feature('clients/service/advanced.ts', "label: 'None published'"),
+  'A JWKS URI': feature('clients/service/advanced.ts', "label: 'A JWKS URI'"),
+  'A key set pasted here': feature('clients/service/advanced.ts', "label: 'A key set pasted here'"),
+  'Signing algorithm': feature(
+    'clients/view/AdvancedTab/AdvancedTab.tsx',
+    'label="Signing algorithm"',
+  ),
+  'Plain JSON, not signed': feature(
+    'clients/service/advanced.ts',
+    "label: 'Plain JSON, not signed'",
+  ),
+  'Encryption algorithm': feature(
+    'clients/view/AdvancedTab/AdvancedTab.tsx',
+    'label="Encryption algorithm"',
+  ),
+  'Not encrypted': feature('clients/service/advanced.ts', "label: 'Not encrypted'"),
+  'Content encryption': feature(
+    'clients/view/AdvancedTab/AdvancedTab.tsx',
+    'label="Content encryption"',
+  ),
+  'Response type': feature('clients/service/advanced.ts', "label: 'Response type'"),
+  Audiences: feature('clients/view/AdvancedTab/AdvancedTab.tsx', 'label="Audiences"'),
+  'Allow impersonation in token exchange': feature(
+    'clients/service/advanced.ts',
+    "'Allow impersonation in token exchange'",
+  ),
+  'New subjects': feature('roles/usecase/useRoleGeneral.ts', "label: 'New subjects'"),
+  'Tenant or client': feature('roles/view/RolesPage/RolesPage.tsx', "label: 'Tenant or client'"),
+  'New clients': feature('scopes/usecase/useScopeGeneral.ts', "label: 'New clients'"),
+  'Assigned as default': feature('scopes/service/general.ts', "label: 'Assigned as default'"),
+  'Assigned as optional': feature('scopes/service/general.ts', "label: 'Assigned as optional'"),
+  'Not assigned': feature('scopes/service/general.ts', "label: 'Not assigned'"),
+  'Sessions per browser': feature(
+    'settings/service/accessSections.ts',
+    "label: 'Sessions per browser'",
+  ),
+  'Time to finish a sign-in': feature(
+    'settings/service/accessSections.ts',
+    "label: 'Time to finish a sign-in'",
+  ),
+  'Offer remember me': feature('settings/service/accessSections.ts', "label: 'Offer remember me'"),
+  'Verification link lifetime': feature(
+    'settings/service/accessSections.ts',
+    "label: 'Verification link lifetime'",
+  ),
+  'Password reset by mail': feature(
+    'settings/service/accessSections.ts',
+    "label: 'Password reset by mail'",
+  ),
+  'Reset link lifetime': feature(
+    'settings/service/accessSections.ts',
+    "label: 'Reset link lifetime'",
+  ),
+  'Usernames can be renamed': feature(
+    'settings/service/accessSections.ts',
+    "label: 'Usernames can be renamed'",
+  ),
+  'Sign in with a verified email address': feature(
+    'settings/service/accessSections.ts',
+    "label: 'Sign in with a verified email address'",
+  ),
+  'Require a digit': feature('settings/service/accessSections.ts', "label: 'Require a digit'"),
+  'Require an uppercase letter': feature(
+    'settings/service/accessSections.ts',
+    "label: 'Require an uppercase letter'",
+  ),
+  'Require a lowercase letter': feature(
+    'settings/service/accessSections.ts',
+    "label: 'Require a lowercase letter'",
+  ),
+  'Require a special character': feature(
+    'settings/service/accessSections.ts',
+    "label: 'Require a special character'",
+  ),
+  'Refuse the username': feature(
+    'settings/service/accessSections.ts',
+    "label: 'Refuse the username'",
+  ),
+  'Refuse the email address': feature(
+    'settings/service/accessSections.ts',
+    "label: 'Refuse the email address'",
+  ),
+  'Passwords remembered': feature(
+    'settings/service/accessSections.ts',
+    "label: 'Passwords remembered'",
+  ),
+  'First lockout': feature('settings/service/accessSections.ts', "label: 'First lockout'"),
+  'Longest lockout': feature('settings/service/accessSections.ts', "label: 'Longest lockout'"),
+  'Failures forgotten after': feature(
+    'settings/service/accessSections.ts',
+    "label: 'Failures forgotten after'",
+  ),
+  'Access token': feature('settings/service/platformSections.ts', "label: 'Access token'"),
+  'ID token': feature('settings/service/platformSections.ts', "label: 'ID token'"),
+  'Refresh token': feature('settings/service/platformSections.ts', "label: 'Refresh token'"),
+  'Authorization code': feature(
+    'settings/service/platformSections.ts',
+    "label: 'Authorization code'",
+  ),
+  'Open: any application may register': feature(
+    'settings/service/platformSections.ts',
+    "label: 'Open: any application may register'",
+  ),
+  'Most clients': feature('settings/service/platformSections.ts', "label: 'Most clients'"),
+  'Events recorded': feature('settings/service/platformSections.ts', "label: 'Events recorded'"),
+  'Changes by administrators': feature(
+    'settings/service/platformSections.ts',
+    "label: 'Changes by administrators'",
+  ),
+  'Reads by administrators': feature(
+    'settings/service/platformSections.ts',
+    "label: 'Reads by administrators'",
+  ),
+  'Sign-ins and refused sign-ins': feature(
+    'settings/service/platformSections.ts',
+    "label: 'Sign-ins and refused sign-ins'",
+  ),
+  'Sessions starting and ending': feature(
+    'settings/service/platformSections.ts',
+    "label: 'Sessions starting and ending'",
+  ),
+  'Tokens issued and revoked': feature(
+    'settings/service/platformSections.ts',
+    "label: 'Tokens issued and revoked'",
+  ),
+  'Passwords, keys and codes set or changed': feature(
+    'settings/service/platformSections.ts',
+    "label: 'Passwords, keys and codes set or changed'",
+  ),
+  'Add a step': feature('flow/view/FlowPage/FlowPage.tsx', 'label="Add a step"'),
+  'Requirement of the new step': feature(
+    'flow/view/FlowPage/FlowPage.tsx',
+    'label="Requirement of the new step"',
+  ),
+  'ES256 (elliptic curve)': feature(
+    'signing-keys/service/stage.ts',
+    "label: 'ES256 (elliptic curve)'",
+  ),
+  'RS256 (RSA)': feature('signing-keys/service/stage.ts', "label: 'RS256 (RSA)'"),
+  'Holding anything or nothing': feature(
+    'subjects/view/SubjectsPage/SubjectsPage.tsx',
+    "label: 'Holding anything or nothing'",
+  ),
+  'Given name': feature('subjects/service/claims.ts', "label: 'Given name'"),
+  'Family name': feature('subjects/service/claims.ts', "label: 'Family name'"),
+  'Middle name': feature('subjects/service/claims.ts', "label: 'Middle name'"),
+  'Preferred username': feature('subjects/service/claims.ts', "label: 'Preferred username'"),
+  'Phone number verified': feature(
+    'subjects/view/SubjectRecordPage/ProfileTab.tsx',
+    'label="Phone number verified"',
+  ),
+  Locality: feature('subjects/service/claims.ts', "label: 'Locality'"),
+  Region: feature('subjects/service/claims.ts', "label: 'Region'"),
+  'Postal code': feature('subjects/service/claims.ts', "label: 'Postal code'"),
+  'Ask for a new set at next sign-in': feature(
+    'subjects/service/credentials.ts',
+    "label: 'Ask for a new set at next sign-in'",
+  ),
+  'Choose a new password': feature('subjects/service/actions.ts', "label: 'Choose a new password'"),
+  'Set up an authenticator app': feature(
+    'subjects/service/actions.ts',
+    "label: 'Set up an authenticator app'",
+  ),
+  'Register a passkey': feature('subjects/service/actions.ts', "label: 'Register a passkey'"),
+  'Generate recovery codes': feature(
+    'subjects/service/actions.ts',
+    "label: 'Generate recovery codes'",
+  ),
+  'Required actions to email': feature(
+    'subjects/view/SubjectRecordPage/CredentialsTab.tsx',
+    'label="Required actions to email"',
+  ),
+  'Filter administrators': feature(
+    'subjects/view/CapabilityHolders/CapabilityHolders.tsx',
+    'label="Filter administrators"',
+  ),
+  'Which tenant do you administer?': feature(
+    'session/view/SignIn/SignIn.tsx',
+    'label="Which tenant do you administer?"',
+  ),
+  Consent: feature('clients/service/labels.ts', "consent: 'Consent'"),
+  'Full name': feature('subjects/service/claims.ts', "label: 'Full name'"),
+  Nickname: feature('subjects/service/claims.ts', "label: 'Nickname'"),
+  Gender: feature('subjects/service/claims.ts', "label: 'Gender'"),
+  Birthdate: feature('subjects/service/claims.ts', "label: 'Birthdate'"),
+  'Time zone': feature('subjects/service/claims.ts', "label: 'Time zone'"),
+  Locale: feature('subjects/service/claims.ts', "label: 'Locale'"),
+  'Profile page': feature('subjects/service/claims.ts', "label: 'Profile page'"),
+  Website: feature('subjects/service/claims.ts', "label: 'Website'"),
+  Picture: feature('subjects/service/claims.ts', "label: 'Picture'"),
+  'Phone number': feature('subjects/service/claims.ts', "label: 'Phone number'"),
+  'Formatted address': feature('subjects/service/claims.ts', "label: 'Formatted address'"),
+  Street: feature('subjects/service/claims.ts', "label: 'Street'"),
+  Country: feature('subjects/service/claims.ts', "label: 'Country'"),
 };

@@ -20,7 +20,7 @@ A role is a name that a token carries, such as `editor` or `reader`. An applicat
 
 Every tenant starts with eight roles that belong to the built-in administration client. They are marked **admin capability**, and they are what lets an administrator use the console and the admin API. They are not assigned here. You give them to a person from the **Roles** tab of their record, under **Admin capabilities**, on the [Subjects](./subjects.mdx) page.
 
-The roles you make yourself are tenant roles. A client can also have roles of its own, made from that client's page; a token carries one as the client's ID, a colon and the role's name, so two clients can each have a role of the same name. Use **Belongs to** to show the roles of one client or the tenant's own.
+The roles you make yourself are tenant roles. A client can also have roles of its own, made from that client's page; a token carries one as the client's ID, a colon and the role's name, so two clients can each have a role of the same name. Use **Belongs to** to show the roles of one client, the tenant's own, or **Tenant or client** for all of them.
 
 ## 1. Create a role
 
@@ -32,7 +32,7 @@ Open the role and choose its **Composites** tab. Pick a role under **Add a compo
 
 ## 3. Give a role to people
 
-A role is held three ways: assigned to a person directly on their **Roles** tab, carried by a group, or nested in another role. The role's **Members** tab lists only the people it is assigned to directly, and links to [Subjects](./subjects.mdx) for the rest. To give a role to everyone who joins from now on, turn on **Given to every new subject** on the **General** tab. It changes nobody who already exists.
+A role is held three ways: assigned to a person directly on their **Roles** tab, carried by a group, or nested in another role. The role's **Members** tab lists only the people it is assigned to directly, and links to [Subjects](./subjects.mdx) for the rest. To give a role to everyone who joins from now on, turn on **Given to every new subject** under **New subjects** on the **General** tab. It changes nobody who already exists.
 
 The **Activity** tab lists every change to the role.
 

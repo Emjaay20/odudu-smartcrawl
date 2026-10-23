@@ -48,6 +48,76 @@ A long password protects better than a complicated one, and the console's defaul
 
 A person with a passkey signs in without a password, so none of this applies to that sign-in.
 
+## Every setting
+
+Each line gives the label, then the name the admin API and `odudu seed tenant --set` use. A tenant's current values are in [the settings transcript](../reference/transcripts/admin-paths/get-settings-and-patch-settings.md).
+
+### General
+
+- **Display name** (`display_name`): what the tenant's own pages call it. Empty uses the tenant name.
+- **Enabled** (`enabled`): off disables the whole tenant.
+
+### Sessions
+
+- **Idle timeout** (`sso_session_idle_seconds`): a session ends after this long without activity. At most the maximum.
+- **Maximum lifetime** (`sso_session_max_seconds`): a session ends this long after sign-in, however active. Both run from 1 minute to 30 days.
+- **Sessions per browser** (`max_sessions_per_browser`): how many people one browser may be signed in as at once, 1 to 32.
+- **Time to finish a sign-in** (`login_ttl_seconds`): an unfinished sign-in must be started again after this, 1 minute to 24 hours.
+
+### Remember me
+
+- **Offer remember me** (`remember_me_allowed`): the sign-in page shows the choice only while this is on. A person who ticks it stays signed in for the longer times below.
+- **Idle timeout** (`remember_me_idle_seconds`) and **Maximum lifetime** (`remember_me_max_seconds`): the same two limits for a remembered session, up to a year.
+
+### Registration and recovery
+
+- **Self-registration** (`registration_allowed`): anybody may create an account on the sign-in page.
+- **Verify email addresses** (`verify_email`): the account is created when the person confirms a mailed link.
+- **Verification link lifetime** (`verify_email_ttl_seconds`): how long that link works, up to 7 days.
+- **Password reset by mail** (`reset_password_allowed`): a person who forgot their password may ask for a reset link.
+- **Reset link lifetime** (`reset_password_ttl_seconds`): how long a reset link works, up to 24 hours.
+
+When somebody sets a new password from a reset link, every session they hold ends and every token grant they gave is revoked, offline ones too. Anyone else signed in to that account is signed out. The link stops working once it is used, and it asks for one click first, so a mail scanner that opens it cannot spend it.
+
+### Usernames
+
+- **Usernames can be renamed** (`username_editable`): an administrator may change a username.
+- **Sign in with a verified email address** (`login_with_email`): the sign-in form takes a verified address in place of a username.
+
+### Password policy
+
+- **Minimum length** (`password_min_length`), 8 to 256 characters.
+- **Require a digit**, **Require an uppercase letter**, **Require a lowercase letter** and **Require a special character** (`password_require_digit`, `password_require_uppercase`, `password_require_lowercase`, `password_require_special`).
+- **Refuse the username** (`password_not_username`) and **Refuse the email address** (`password_not_email`): a password may not be only that.
+- **Passwords remembered** (`password_history_depth`): a new password may not repeat one of this many before it. 0 remembers none, 24 is the most.
+- **Password lifetime** (`password_max_age_days`): a password older than this must be changed. 0 never expires one.
+- `otp_required` is the **Ask every subject for a one-time password** switch of [Sign-in flow](./sign-in-flow.mdx).
+
+### Brute force
+
+- **Failures before a lockout** (`brute_force_max_failures`), 1 to 100.
+- **First lockout** (`brute_force_lockout_seconds`): how long the first lockout lasts, up to a day.
+- **Longest lockout** (`brute_force_max_lockout_seconds`): each repeat lasts longer, up to this.
+- **Failures forgotten after** (`brute_force_failure_reset_seconds`): failures this old stop counting, 1 minute to 30 days.
+
+### Token lifetimes
+
+- **Access token** (`access_token_ttl_seconds`), **ID token** (`id_token_ttl_seconds`): up to an hour each.
+- **Refresh token** (`refresh_token_ttl_seconds`): how long a refresh token lives.
+- **Authorization code** (`authorization_code_ttl_seconds`): a client has this long to trade a code for tokens, up to 10 minutes.
+
+A client can carry lifetimes of its own, which win over these.
+
+### Dynamic client registration
+
+- **Policy** (`client_registration_policy`): **Closed: only an administrator creates clients**, **With a registration token** or **Open: any application may register**.
+- **Most clients** (`max_clients`): a tenant at this many refuses further registration. 0 allows none.
+
+### Audit retention
+
+- **Keep events for** (`audit_retention_days`): 1 to 3650 days.
+- **Events recorded** (`audit_event_types`): **Changes by administrators** and **Reads by administrators** are always recorded. You choose **Sign-ins and refused sign-ins**, **Sessions starting and ending**, **Tokens issued and revoked**, and **Passwords, keys and codes set or changed**.
+
 ## Things that cannot be undone, or that end somebody's work
 
 - Turning **Enabled** off under **General** disables the whole tenant. You type the tenant's name to confirm, every session ends and nobody can sign in until you turn it on again.

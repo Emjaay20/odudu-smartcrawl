@@ -32,7 +32,7 @@ Still on the **General** tab, **Consent text** is what the consent screen says i
 
 A scope does nothing until a client is assigned it. There are two ways.
 
-1. For clients made from now on, set **For a client made from now on** on the **General** tab to **Default** or **Optional**. Clients that already exist are not changed.
+1. For clients made from now on, set **New clients** on the **General** tab to **Assigned as default** or **Assigned as optional**. **Not assigned** leaves the scope out. Clients that already exist are not changed.
 2. For a client that exists, open the scope's **Clients** tab, pick the client under **Client to assign** and choose **Assign to a client**. Or open the client and use its **Scopes** tab, which is the same assignment seen from the other side.
 
 A default scope goes to a request that names no scope. An optional scope goes only to a request that names it.
@@ -42,6 +42,8 @@ A default scope goes to a request that names no scope. An optional scope goes on
 The **Roles** tab lists the roles a token carries when it is granted this scope. With none mapped, a client that has **Include all roles in tokens** off gets no roles from this scope. That switch is set on each client, under **Tokens**.
 
 The **Claim mappers** tab chooses which mappers build the scope's claims, under **Bound mappers**. While none is bound, the console says "Nothing bound. These mappers run by default." and lists them ticked and greyed, each marked **Used because nothing is bound**. Tick another mapper and only that one runs. Clear every tick to go back to the defaults.
+
+Mappers are built in. You choose among them and cannot add your own, and a person has no custom attributes to put in a token yet. Both are on the [roadmap](../roadmap.md).
 
 The **Activity** tab lists every change made to the scope.
 

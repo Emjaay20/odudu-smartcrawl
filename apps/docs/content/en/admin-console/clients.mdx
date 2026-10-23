@@ -50,13 +50,23 @@ Where a sign-out may send the browser is set on the **Logout** tab, as **Post-lo
 
 The other tabs set how the client behaves.
 
-- **General** names the client, switches it on or off and says whether people must consent.
-- **Tokens** sets how long its tokens last and which grant types it may use. **Include all roles in tokens** decides whether the `roles` scope carries all of a person's roles or only those mapped to the granted scopes. The client must still ask for the `roles` scope. It is off by default. The [Scopes concept](../concepts/scopes.mdx) has the rule.
-- **Scopes** assigns the [scopes](./scopes.mdx) it may ask for. **Evaluate claims** shows what one person's sign-in would get in the ID token, the access token and UserInfo, without issuing anything.
-- **Logout** holds the back-channel and front-channel logout addresses.
-- **Advanced** shows what an application is configured with, such as the issuer and discovery address, and holds keys, audiences and token exchange.
+- **General** names the client and holds its **Availability** and **Consent** settings. **Enabled** switches the client on or off. **Consent required** makes each person approve what the client asks for, on a consent screen, before it gets tokens. **Consent screen links** are the **Home page**, **Privacy policy** and **Terms of service** the consent screen links to. Leave one empty to show none.
+- **Tokens** sets how long its tokens last and which grant types it may use. **Client credentials scopes** are the scope names a service may ask for when it signs in as itself, such as `reports:read`. They are the names a resource server checks, not the OpenID scopes under **Scopes**. **Include all roles in tokens** decides whether the `roles` scope carries all of a person's roles or only those mapped to the granted scopes. The client must still ask for the `roles` scope. It is off by default. The [Scopes concept](../concepts/scopes.mdx) has the rule.
+- **Scopes** assigns the [scopes](./scopes.mdx) it may ask for. **Evaluate claims** shows what one person's sign-in would get, without issuing anything. It lists the **ID token claims**, the **Access token claims** and the **UserInfo claims**.
+- **Logout** holds the **Back-channel logout address**, where the server posts a logout token when a session ends, and the **Front-channel logout address**, a page of the client that the browser loads to tell it the person signed out. Use the back channel when you can: it needs no browser.
+- **Advanced** is described below.
 - **Roles** lists the client's own [roles](./roles.mdx); **Service account** holds the roles a service acts with.
 - **Sessions** shows who is signed in through the client, and **Activity** every change to it.
+
+### The Advanced tab
+
+It starts with the **Installation** block: the **Issuer** and **Discovery URL** an application is configured with, the **Client ID**, the **Client type**, the **Authentication method** and the addresses and grants set elsewhere.
+
+- **Authentication method** is how a confidential client proves itself at the token endpoint: a secret in a Basic header, a secret in the request body, a signed assertion (`private_key_jwt`) or a client certificate (`tls_client_auth`). A public client uses none, and a client cannot change between public and confidential once it exists. For a certificate, **Certificate subject** is the name the certificate must carry.
+- **Key source** says where the server finds the client's public keys. The keys check a signed assertion and encrypt UserInfo to the client. Choose **None published**, **A JWKS URI** (an https address the server fetches the keys from) or **A key set pasted here**. A key set with a private key in it is refused.
+- Under UserInfo, **Signing algorithm** defaults to **Plain JSON, not signed**. **Encryption algorithm** defaults to **Not encrypted**, and **Content encryption** applies only once you choose an encryption algorithm. Encrypting needs a published key to encrypt to.
+- **Response type** and PKCE are shown as fixed: every client signs people in with the authorization code flow and a `S256` code challenge, so no token travels through the browser.
+- **Audiences** are the resource servers its access tokens are meant for. **Allow impersonation in token exchange** lets the client exchange a token for one that stands for the person, with no actor named.
 
 Every confidential client has a service account, except the built-in admin client. A public client has none, and the **Service account** tab says so. Turning the `client_credentials` grant off keeps the account and its roles, and the tab marks it as not in use.
 

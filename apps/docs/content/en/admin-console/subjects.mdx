@@ -18,7 +18,7 @@ A subject is anything that signs in to a tenant: a person, a service or an agent
 
 ## 1. Find a subject
 
-Open **Subjects**. The list shows the **Username**, **Email**, status and creation time of each subject, a page at a time. Search by the start of a **Username** or an **Email**, or narrow the list by **Status** and by the **Capability** a subject holds. Opening a row opens the subject's record.
+Open **Subjects**. The list shows the **Username**, **Email**, status and creation time of each subject, a page at a time. Search by the start of a **Username** or an **Email**, or narrow the list by **Status** and by the **Capability** a subject holds. The default, **Holding anything or nothing**, shows everyone. Opening a row opens the subject's record.
 
 ## 2. Create a subject
 
@@ -58,10 +58,11 @@ A subject's record has a tab for each part of an account.
 />
 
 - **Profile** holds the account, the name, the details, the address and whether the email and phone number are verified. A section saves on its own with its own **Save** button.
-- **Credentials** holds the password, the second factors the person enrolled, their recovery codes and any lockout.
+  The name fields are **Full name**, **Given name**, **Family name**, **Middle name**, **Nickname** and **Preferred username**, which is what the person likes to be called and is not the sign-in username. The details are **Gender**, **Birthdate**, **Time zone**, **Locale**, **Profile page**, **Website**, **Picture** and **Phone number**, with **Phone number verified** beside it. The address is **Formatted address**, **Street**, **Locality**, **Region**, **Postal code** and **Country**. An application receives the ones its scopes carry: `profile`, `email`, `phone` and `address`.
+- **Credentials** holds the password, the second factors the person enrolled, their recovery codes and any lockout. When you revoke recovery codes, tick **Ask for a new set at next sign-in** to have the person given new ones.
 - **Groups** lists the groups the person belongs to; the groups' roles come with them.
 - **Roles** assigns roles to the person directly, and sets what they may do in the admin console under **Admin capabilities**.
-- **Required actions** is what the next sign-in asks for first, such as a new password or an authenticator app.
+- **Required actions** is what the next sign-in asks for first: **Choose a new password**, **Set up an authenticator app**, **Register a passkey** or **Generate recovery codes**. **Required actions to email** sends the person a link that takes them through the ones you tick, in order. The password is set from the link itself; a second factor is enrolled only after they sign in.
 - **Sessions** lists the person's live sign-ins.
 - **Consents** lists what the person agreed to share with each client.
 - **Grants** lists the tokens that are still in force, never the tokens themselves.
