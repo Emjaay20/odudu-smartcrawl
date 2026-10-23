@@ -3546,7 +3546,12 @@ carries. The sign-in cookie travels on the redirect, so the mailed verification 
 the request exactly as the link flow does. `restartAuthorizeLocation` rebuilds `create` as
 `login`: the way back after registering is a sign-in that asks for credentials, so the new
 account signs in rather than whichever session the browser already held. A browser holding a
-live session is shown the registration page all the same, and no code is issued from it.
+live session is shown the registration page all the same, and no code is issued from it. A
+`create` beside an `id_token_hint` or a `claims` `sub` is refused (`invalid_request`, static
+`prompt=create cannot be sent with id_token_hint or a claims sub`): either names one existing
+End-User the response must be for, which a new account cannot be, and the hint is not parked, so
+`restartAuthorizeLocation` could give the registration page no way back (the reason the sign-in
+form's own link carries none for a hinted request).
 
 **Performance.** The `create` branch runs before the session resolution and the initial
 challenge: one `startAuthentication` insert and the `continuation` read of the parked request,

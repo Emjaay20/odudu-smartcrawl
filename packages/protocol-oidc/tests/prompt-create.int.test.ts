@@ -1,3 +1,4 @@
+import { generateSigningKey, signingKeys, signJwt, type SigningKeyRecord } from '@odudu/crypto';
 import { hashPassword, subjectRepository, userCredentials, users } from '@odudu/domain-identity';
 import {
   createDatabase,
@@ -45,6 +46,9 @@ const PASSWORD = 'correct horse battery staple';
 const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
 const STATE = 'app-state-1';
 const NONCE = 'app-nonce-1';
+const KEK = Buffer.alloc(32, 9);
+
+const signingKeyOf = new Map<string, SigningKeyRecord>();
 
 async function setupTenant(
   name: string,
@@ -86,8 +90,47 @@ async function setupTenant(
       type: 'password',
       secretData: { hash: await hashPassword(PASSWORD) },
     });
+    // A signing key, so an id_token_hint minted for this tenant verifies the
+    // way one /token issued would.
+    const generated = await generateSigningKey('ES256', KEK);
+    const key: SigningKeyRecord = {
+      id: newId(),
+      tenantId,
+      kid: generated.kid,
+      alg: generated.alg,
+      status: 'active',
+      publicJwk: generated.publicJwk,
+      privateJwkEncrypted: generated.privateJwkEncrypted,
+      createdAt: new Date(),
+      notAfter: null,
+    };
+    signingKeyOf.set(name, key);
+    await tx.insert(signingKeys).values({
+      id: key.id,
+      tenantId,
+      kid: key.kid,
+      alg: key.alg,
+      status: 'active',
+      publicJwk: key.publicJwk,
+      privateJwkEncrypted: key.privateJwkEncrypted,
+    });
   });
   return { tenantId };
+}
+
+async function issuerOf(tenantName: string): Promise<string> {
+  const res = await http.inject({ url: `/tenants/${tenantName}/.well-known/openid-configuration` });
+  return res.json<{ issuer: string }>().issuer;
+}
+
+async function mintIdToken(tenantName: string, sub: string): Promise<string> {
+  const key = signingKeyOf.get(tenantName);
+  if (key === undefined) throw new Error(`no signing key for ${tenantName}`);
+  const now = Math.floor(Date.now() / 1000);
+  return signJwt(
+    { iss: await issuerOf(tenantName), aud: CLIENT_ID, sub, iat: now, exp: now + 300 },
+    { key, kek: KEK },
+  );
 }
 
 function authorizeUrl(
@@ -355,6 +398,47 @@ describe('[OIDC-PROMPT-CREATE-4.1-02] a tenant with registration off refuses pro
 
     expect(res.statusCode).toBe(200);
     expect(res.body).toContain('name="auth_session_id"');
+  });
+});
+
+// A hint or a `claims` `sub` names an existing End-User the response must
+// be for (OIDC Core §3.1.2.2); a new account can never be that person, and
+// the hint is not parked, so a way back could not carry it. Refused rather
+// than sending someone to a page they could not return from.
+describe('[OIDC-PROMPT-CREATE-4-01] create is refused beside a hint or a claims sub', () => {
+  it('refuses prompt=create with an id_token_hint this tenant issued', async () => {
+    const tenantName = `create-hinted-${newId()}`;
+    const { tenantId } = await setupTenant(tenantName, { registrationAllowed: true });
+    const before = await parkedSessionCount(tenantId);
+    const hint = await mintIdToken(tenantName, newId());
+
+    const res = await http.inject({
+      url: authorizeUrl(tenantName, { prompt: 'create', id_token_hint: hint }),
+    });
+
+    expect(redirectedError(res)).toMatchObject({
+      error: 'invalid_request',
+      error_description: 'prompt=create cannot be sent with id_token_hint or a claims sub',
+      state: STATE,
+    });
+    expect(await parkedSessionCount(tenantId)).toBe(before);
+  });
+
+  it('refuses prompt=create with a claims parameter naming a sub', async () => {
+    const tenantName = `create-claims-sub-${newId()}`;
+    await setupTenant(tenantName, { registrationAllowed: true });
+
+    const res = await http.inject({
+      url: authorizeUrl(tenantName, {
+        prompt: 'create',
+        claims: JSON.stringify({ id_token: { sub: { value: newId() } } }),
+      }),
+    });
+
+    expect(redirectedError(res)).toMatchObject({
+      error: 'invalid_request',
+      error_description: 'prompt=create cannot be sent with id_token_hint or a claims sub',
+    });
   });
 });
 

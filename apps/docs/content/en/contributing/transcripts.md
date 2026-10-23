@@ -274,6 +274,18 @@ change. The retention transcript and the reap report were run again for the new
 two pending rows. The password pages' shared script is unchanged; the registration form carries a second,
 short one that shows the confirmation with the password.
 
+`prompt=create` then began to answer with the registration page, and the discovery document gained
+`prompt_values_supported`. The new Self-registration section, "Starting at the registration page", ran
+on the project `odudu-p4g-31l` on port `3331`, commit `0f573be5` plus this increment's code and
+documentation, a freshly built stack with throttles at `10000`, on `register-demo` seeded as that page's
+first block does with its three settings on, and on `closed-demo` seeded with the same client and
+nothing set; its commands name the port. Path A's section 1 was run again on that stack too, and its
+recorded output differs from the live one in exactly two ways: the new member, which was added, and the
+host port, which the recorded block keeps at `3000`. That block is an exception to the convention above
+on purpose: `tests/docs/discovery.test.ts` compares the recorded document, member for member, with the
+one the server builds for `http://localhost:3000`, and a block showing `3331` in its issuer would fail
+it. Every other line of that document was confirmed identical.
+
 ## Admin path transcripts
 
 The admin API: the endpoints under `/admin/tenants/{tenant}/` that let an

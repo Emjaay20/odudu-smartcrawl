@@ -450,10 +450,16 @@ export async function handleAuthorizationRequest(
   // Initiating User Registration §4.1: the person wants an account, not a
   // sign-in, so no session is consulted or reused. A tenant whose discovery
   // document does not list `create` refuses it as a value it does not
-  // support, with the description §4.1 recommends.
+  // support, with the description §4.1 recommends. A hint or a `claims`
+  // `sub` binds the request to one existing End-User (OIDC Core §3.1.2.2),
+  // which a new account can never be, and the hint itself is not parked, so
+  // no way back could carry it: refused as the contradiction §4 warns of.
   if (outcome.prompts.has('create')) {
     if (!tenant.registrationAllowed) {
       return reject('invalid_request', AUTHORIZE_REQUEST_DESCRIPTIONS.promptCreateUnsupported);
+    }
+    if (hintSubject !== null || claimsSubject !== null) {
+      return reject('invalid_request', AUTHORIZE_REQUEST_DESCRIPTIONS.promptCreateHinted);
     }
     const { authSessionId, browser } = await deps.startAuthentication(tenant.id, {
       ...parked,

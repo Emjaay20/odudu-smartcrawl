@@ -1245,9 +1245,9 @@ set-cookie: odudu-sign-in=01a16990-78a9-7085-a2a8-bbaf1ec6130e.jonCj76UnfEjGF1Ky
 location: /tenants/register-demo/login-actions/registration?return_to=%2Ftenants%2Fregister-demo%2Fprotocol%2Fopenid-connect%2Fauth%3Fresponse_type%3Dcode%26client_id%3Dregister-spa%26redirect_uri%3Dhttp%253A%252F%252Flocalhost%253A8080%252Fcallback%26scope%3Dopenid%2Bemail%26code_challenge%3DE9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM%26code_challenge_method%3DS256%26state%3Dxyz123%26nonce%3Dabc123%26prompt%3Dlogin
 ```
 
-The `return_to` is this request with `prompt=login` in place of `create`: once the person
-has an account, the way back is a sign-in that asks for their new credentials, not a session
-the browser already held. The page it leads to is the one shown above, with the same
+The `return_to` is this request with `prompt=login` in place of `create`. After registering,
+the person signs in with the new account rather than a session the browser already held. The
+page it leads to is the one shown above, with the same
 **Back to sign in** link. `create` goes alone; beside another value it is refused, as `none`
 is, and a tenant with `registration_allowed` off refuses the value as one it does not
 support. Both are reported at the application's own `redirect_uri`, with its `state`. The
