@@ -88,7 +88,7 @@ jobs:
       # fix, and a cache that only a green run may write starts that rerun cold.
       - name: Save the Turborepo cache
         if: always() && !cancelled()
-        uses: actions/cache/save@v6
+        uses: actions/cache/save@v6.1.0
         with:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-static-${{ github.sha }}
@@ -166,7 +166,7 @@ jobs:
       # fix, and a cache that only a green run may write starts that rerun cold.
       - name: Save the Turborepo cache
         if: always() && !cancelled()
-        uses: actions/cache/save@v6
+        uses: actions/cache/save@v6.1.0
         with:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-test-${{ matrix.name }}-${{ github.sha }}
@@ -221,7 +221,7 @@ jobs:
       # fix, and a cache that only a green run may write starts that rerun cold.
       - name: Save the Turborepo cache
         if: always() && !cancelled()
-        uses: actions/cache/save@v6
+        uses: actions/cache/save@v6.1.0
         with:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-test-rest-${{ github.sha }}
@@ -321,7 +321,7 @@ jobs:
       # fix, and a cache that only a green run may write starts that rerun cold.
       - name: Save the Turborepo cache
         if: always() && !cancelled()
-        uses: actions/cache/save@v6
+        uses: actions/cache/save@v6.1.0
         with:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-docs-${{ github.sha }}
@@ -613,7 +613,7 @@ jobs:
           persist-credentials: false
 
       - name: Cache the conformance suite's Maven repository
-        uses: actions/cache@v6
+        uses: actions/cache@v6.1.0
         with:
           path: /tmp/conformance-m2
           key: conformance-suite-m2-release-v5.1.36
