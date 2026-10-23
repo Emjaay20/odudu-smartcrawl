@@ -69,7 +69,8 @@ const publicBaseUrl = z
       });
       return z.NEVER;
     }
-    return `${parsed.protocol}//${parsed.host}`;
+    // A root dot names the same host; the issuer is spelled without it.
+    return `${parsed.protocol}//${parsed.host.replace(/\.(?=:\d+$|$)/u, '')}`;
   });
 
 // The container image's own layout for the built console; shared with

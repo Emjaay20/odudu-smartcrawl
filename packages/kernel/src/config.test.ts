@@ -378,6 +378,18 @@ describe('loadConfig', () => {
     );
   });
 
+  // The issuer spells a host without its root dot, so the base the gateway
+  // signs an audience from must too.
+  it.each([
+    ['https://idp.example.', 'https://idp.example'],
+    ['https://idp.example.:8443', 'https://idp.example:8443'],
+    ['https://IDP.example:443/', 'https://idp.example'],
+  ])('normalises the base %s to %s', (given, expected) => {
+    expect(loadConfig({ ...minimal, ODUDU_PUBLIC_BASE_URL: given }).ODUDU_PUBLIC_BASE_URL).toBe(
+      expected,
+    );
+  });
+
   it('leaves ODUDU_PUBLIC_BASE_URL unset by default', () => {
     expect('ODUDU_PUBLIC_BASE_URL' in loadConfig(minimal)).toBe(false);
   });
