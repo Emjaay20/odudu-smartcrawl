@@ -5,6 +5,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Writable } from 'node:stream';
 import { afterEach, describe, expect, it } from 'vitest';
+import { type StaticTreeLimits } from '@odudu/kernel';
+import { DOCS_LIMITS } from '#/service/docs-files';
 import { docsPolicy } from '#/service/docs-policy';
 import { docsRoutes } from '#/view/docs-routes';
 
@@ -55,7 +57,11 @@ async function builtDir(): Promise<string> {
   return dir;
 }
 
-async function served(dir: string, logs: string[] = []): Promise<FastifyInstance> {
+async function served(
+  dir: string,
+  logs: string[] = [],
+  limits?: StaticTreeLimits,
+): Promise<FastifyInstance> {
   const stream = new Writable({
     write(chunk: Buffer, _encoding, done) {
       logs.push(chunk.toString('utf8'));
@@ -63,7 +69,7 @@ async function served(dir: string, logs: string[] = []): Promise<FastifyInstance
     },
   });
   const instance = Fastify({ logger: { level: 'warn', stream } });
-  await instance.register(docsRoutes(dir));
+  await instance.register(docsRoutes(dir, limits));
   await instance.ready();
   app = instance;
   return instance;
@@ -393,18 +399,24 @@ describe('docsRoutes when the build cannot be served', () => {
     expect(logs).toContain('index.html');
   });
 
-  it('answers 503 for a tree of 5,001 files, without throwing', async () => {
+  // The route is given a limit of 20 and a tree of 21 files: the refusal is the
+  // same code path as at 5,000, without writing five thousand files, which took
+  // longer than a loaded runner's five seconds. The real number is pinned in
+  // docs-files.test.ts.
+  it('answers 503 for a tree over the file limit, without throwing', async () => {
     const dir = await builtDir();
     await mkdir(join(dir, 'many'));
     await Promise.all(
-      Array.from({ length: 5_000 }, (_, index) =>
+      Array.from({ length: 20 }, (_, index) =>
         writeFile(join(dir, 'many', `${String(index)}.txt`), 'x'),
       ),
     );
-    const { response, logs } = await unavailable(dir);
+    const logs: string[] = [];
+    const server = await served(dir, logs, { ...DOCS_LIMITS, maxFiles: 20 });
+    const response = await server.inject('/docs/');
     expect(response.statusCode).toBe(503);
-    expect(logs).toContain('ODUDU_DOCS_DIR');
-    expect(logs).toContain('5000 files');
+    expect(logs.join('')).toContain('ODUDU_DOCS_DIR');
+    expect(logs.join('')).toContain('20 files');
   });
 
   it('still redirects /docs, so a bare address does not look different from a built one', async () => {

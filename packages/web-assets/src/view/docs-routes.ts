@@ -5,6 +5,7 @@ import {
   readStaticTree,
   staticEtag,
   type StaticFile,
+  type StaticTreeLimits,
 } from '@odudu/kernel';
 import { cacheControlFor, DOCS_LIMITS, DOCS_TYPES } from '#/service/docs-files';
 import { docsPolicy, parseDocsCsp, UNAVAILABLE_POLICY } from '#/service/docs-policy';
@@ -26,8 +27,12 @@ interface Site {
 // server starts and `/docs/*` says why it cannot answer.
 class NotTheBuild extends Error {}
 
-async function readSite(dir: string, warn: (message: string) => void): Promise<Site> {
-  const tree = await readStaticTree(dir, DOCS_TYPES, DOCS_LIMITS, warn);
+async function readSite(
+  dir: string,
+  limits: StaticTreeLimits,
+  warn: (message: string) => void,
+): Promise<Site> {
+  const tree = await readStaticTree(dir, DOCS_TYPES, limits, warn);
   const cspFile = tree.get('csp.json');
   if (cspFile === undefined) throw new NotTheBuild('it has no csp.json');
   if (!tree.has('index.html')) throw new NotTheBuild('it has no index.html');
@@ -86,13 +91,18 @@ function registerUnavailable(fastify: FastifyInstance, dir: string, reason: stri
 // 404: traversal, encoded separators, NUL and links all end at the same lookup.
 // The policy is not derived here: the build computed it from the hashes of the
 // inline script and style attributes it emitted, and wrote it as csp.json.
-export function docsRoutes(dir: string): FastifyPluginAsync {
+// `limits` is the build's own bound; a test passes a small one to reach the
+// refusal without writing five thousand files.
+export function docsRoutes(
+  dir: string,
+  limits: StaticTreeLimits = DOCS_LIMITS,
+): FastifyPluginAsync {
   return async (fastify) => {
     fastify.get('/docs', QUIET, (_request, reply) => redirect(reply, '/docs/'));
 
     let site: Site;
     try {
-      site = await readSite(dir, (message) => {
+      site = await readSite(dir, limits, (message) => {
         fastify.log.warn(`ODUDU_DOCS_DIR: ${message}`);
       });
     } catch (err) {
