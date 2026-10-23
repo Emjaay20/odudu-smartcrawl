@@ -1,4 +1,5 @@
 import { type SessionLifespans } from '@odudu/authn-flows';
+import { OAUTH_ERROR_DESCRIPTIONS } from '#/service/oauth-errors';
 import { withTenant, type DatabaseHandle } from '@odudu/db';
 import { requestContextFrom } from '@odudu/domain-audit';
 import { type ClaimMapperRegistry, type Clock } from '@odudu/kernel';
@@ -155,7 +156,7 @@ export function registerTokenRoute(app: FastifyInstance, deps: TokenRouteDeps): 
           .headers(corsHeaders)
           .header('cache-control', 'no-store')
           .header('pragma', 'no-cache')
-          .send({ error: err.error });
+          .send({ error: err.error, error_description: OAUTH_ERROR_DESCRIPTIONS[err.error] });
       }
       throw err;
     }

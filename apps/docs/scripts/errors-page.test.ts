@@ -1,6 +1,11 @@
 import { ERROR_CODES } from '@odudu/kernel';
 import { ADMIN_PROBLEM_TYPES, problemTypeUri } from '@odudu/protocol-admin/docs';
-import { OAUTH_ERROR_DOCS, surfacesOf, type OAuthErrorCode } from '@odudu/protocol-oidc/docs';
+import {
+  OAUTH_ERROR_DESCRIPTIONS,
+  OAUTH_ERROR_DOCS,
+  surfacesOf,
+  type OAuthErrorCode,
+} from '@odudu/protocol-oidc/docs';
 import { describe, expect, it } from 'vitest';
 import { renderErrorsPage } from './errors-page.ts';
 
@@ -52,5 +57,13 @@ describe('the error code reference', () => {
 
   it('links its problem details explanation to a heading that exists', () => {
     expect(text).toContain('(./admin-api/index.md#problem-details)');
+  });
+
+  it('lists the error_description sentence of every code that has one', () => {
+    const page = renderErrorsPage();
+    for (const sentence of Object.values(OAUTH_ERROR_DESCRIPTIONS)) {
+      expect(page).toContain(sentence);
+    }
+    expect(page).toContain('code_challenge is required');
   });
 });

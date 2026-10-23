@@ -1,4 +1,5 @@
 import { generateSigningKey, signingKeys } from '@odudu/crypto';
+import { OAUTH_ERROR_DESCRIPTIONS } from '#/service/oauth-errors';
 import { hashPassword, subjectRepository, userCredentials, users } from '@odudu/domain-identity';
 import {
   createDatabase,
@@ -418,7 +419,10 @@ describe('a disabled subject at /token', () => {
 
     const refused = await redeem(tenantName, aliceCode);
     expect(refused.statusCode).toBe(400);
-    expect(refused.json()).toEqual({ error: 'invalid_grant' });
+    expect(refused.json()).toEqual({
+      error: 'invalid_grant',
+      error_description: OAUTH_ERROR_DESCRIPTIONS.invalid_grant,
+    });
     expect(refused.body).toBe(unknown.body);
     expect((await redeem(tenantName, bobCode)).statusCode).toBe(200);
   });

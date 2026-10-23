@@ -45,7 +45,13 @@ import { type AuthorizationErrorCode } from '#/service/oauth-errors';
 
 export type AuthorizationRequestOutcome =
   | { kind: 'render'; error: AuthorizationErrorCode; description: string }
-  | { kind: 'redirect'; redirectUri: string; error: AuthorizationErrorCode; state: string | null }
+  | {
+      kind: 'redirect';
+      redirectUri: string;
+      error: AuthorizationErrorCode;
+      state: string | null;
+      description?: string;
+    }
   // `form` names what the rendered login page should ask for first —
   // whatever the tenant's flow would offer nobody has submitted anything
   // yet (authn-flows' initialChallenge).
@@ -349,11 +355,15 @@ export async function handleAuthorizationRequest(
   // client's registrations, so everything from here reports by redirecting
   // (OIDC Core §3.1.2.6).
   const { request } = outcome;
-  const reject = (error: AuthorizationErrorCode): AuthorizationRequestOutcome => ({
+  const reject = (
+    error: AuthorizationErrorCode,
+    description?: string,
+  ): AuthorizationRequestOutcome => ({
     kind: 'redirect',
     redirectUri: request.redirectUri,
     error,
     state: request.state,
+    ...(description === undefined ? {} : { description }),
   });
 
   // RFC 8707 §2: resolved against the client's registered audience list
@@ -377,7 +387,7 @@ export async function handleAuthorizationRequest(
   // above: a malformed parameter is reported at the client's own
   // redirect_uri, not rendered.
   const claimsOutcome = parseClaimsRequest(params.claims);
-  if (claimsOutcome.kind === 'invalid') return reject('invalid_request');
+  if (claimsOutcome.kind === 'invalid') return reject('invalid_request', 'claims is not valid');
   // §2 and §15.1 both require `auth_time` when `max_age` was used, not only
   // when requested as an Essential Claim — folded in here so token issuance
   // asks one question (`token-issuance.ts` excludes `auth_time` from what
@@ -411,7 +421,7 @@ export async function handleAuthorizationRequest(
       outcome.idTokenHint,
       request.clientId,
     );
-    if (hint === null) return reject('invalid_request');
+    if (hint === null) return reject('invalid_request', 'id_token_hint is not valid');
     hintSubject = hint.subject;
   }
 

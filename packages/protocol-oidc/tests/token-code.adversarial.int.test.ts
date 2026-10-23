@@ -1068,7 +1068,7 @@ describe('[RFC6749-5.1-02] the members of a successful token response', () => {
 });
 
 describe('[RFC6749-5.2-03] the members of a token error response', () => {
-  it('carries error and nothing else, on every distinct failure', async () => {
+  it('carries error and its description and nothing else, on every distinct failure', async () => {
     const unknownCode = await postForm(redemptionParams('nonexistent'), basicHeader(webApp));
     const badSecret = await postForm(redemptionParams((await issueCode()).code), {
       authorization: `Basic ${Buffer.from(`${webApp.clientId}:wrong`).toString('base64')}`,
@@ -1081,7 +1081,10 @@ describe('[RFC6749-5.2-03] the members of a token error response', () => {
 
     for (const res of [unknownCode, badSecret, malformed, unsupported]) {
       expect(res.statusCode).toBeGreaterThanOrEqual(400);
-      expect(Object.keys(res.json<Record<string, unknown>>())).toEqual(['error']);
+      expect(Object.keys(res.json<Record<string, unknown>>())).toEqual([
+        'error',
+        'error_description',
+      ]);
     }
   });
 });

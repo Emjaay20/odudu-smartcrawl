@@ -1,4 +1,5 @@
 import { type SessionLifespans } from '@odudu/authn-flows';
+import { OAUTH_ERROR_DESCRIPTIONS } from '#/service/oauth-errors';
 import { type SigningKeyRecord } from '@odudu/crypto';
 import { withTenant, type DatabaseHandle } from '@odudu/db';
 import { requestContextFrom } from '@odudu/domain-audit';
@@ -139,7 +140,7 @@ export function registerIntrospectRoute(app: FastifyInstance, deps: IntrospectRo
         return reply
           .code(err.status)
           .header('cache-control', 'no-store')
-          .send({ error: err.error });
+          .send({ error: err.error, error_description: OAUTH_ERROR_DESCRIPTIONS[err.error] });
       }
       throw err;
     }

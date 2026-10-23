@@ -3,6 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   AUTHORIZATION_ERRORS,
+  OAUTH_ERROR_DESCRIPTIONS,
   OAUTH_ERROR_DOCS,
   REGISTRATION_ERRORS,
   surfacesOf,
@@ -84,5 +85,23 @@ describe('the OAuth error codes', () => {
       expect(docs.summary, code).toMatch(/^\S.*\.$/u);
       expect(docs.summary, code).not.toContain('\n');
     }
+  });
+});
+
+// RFC 6749 §4.1.2.1 and §5.2 limit error_description to printable ASCII without
+// a double quote or a backslash; a sentence per code, fixed, so it can never
+// echo a request or tell a caller which check failed.
+describe('the error_description of every code the authorization and token endpoints answer', () => {
+  const codes = [...new Set([...AUTHORIZATION_ERRORS, ...TOKEN_ERRORS])];
+
+  it.each(codes)('%s has a short sentence in the permitted characters', (code) => {
+    const text = OAUTH_ERROR_DESCRIPTIONS[code];
+    expect(text.length).toBeGreaterThan(10);
+    expect(text.length).toBeLessThanOrEqual(80);
+    expect(text).toMatch(/^[\x20\x21\x23-\x5b\x5d-\x7e]+$/u);
+  });
+
+  it('does not say which check an invalid_grant failed', () => {
+    expect(OAUTH_ERROR_DESCRIPTIONS.invalid_grant).not.toMatch(/expired|used|verifier|redirect/iu);
   });
 });

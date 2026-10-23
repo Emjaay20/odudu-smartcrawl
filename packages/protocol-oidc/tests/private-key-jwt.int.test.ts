@@ -1,4 +1,5 @@
 import formbody from '@fastify/formbody';
+import { OAUTH_ERROR_DESCRIPTIONS } from '#/service/oauth-errors';
 import { provisionTenant } from '@odudu/authn-flows';
 import { generateSigningKey, signingKeys, type SigningKeyRecord } from '@odudu/crypto';
 import {
@@ -70,7 +71,10 @@ let TENANT_B_ID: string;
 // failed, of the eight branches `authenticatePrivateKeyJwt` has — see
 // docs/protocols/rfc7523.md's "One refusal, not several" for the list,
 // re-derived from the code rather than copied stale.
-const REFUSAL = { error: 'invalid_client' };
+const REFUSAL = {
+  error: 'invalid_client',
+  error_description: OAUTH_ERROR_DESCRIPTIONS.invalid_client,
+};
 
 let logLines: unknown[] = [];
 

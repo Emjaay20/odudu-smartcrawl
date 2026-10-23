@@ -19,7 +19,7 @@ import { EMPTY_CLAIMS_REQUEST, type ClaimsRequest } from '#/service/claims-reque
 import { decideConsent } from '#/service/consent';
 import { tenantIssuer } from '#/service/issuer';
 import { type PromptValue } from '#/service/prompt';
-import { type AuthorizationErrorCode } from '#/service/oauth-errors';
+import { OAUTH_ERROR_DESCRIPTIONS, type AuthorizationErrorCode } from '#/service/oauth-errors';
 
 // A code lives for the tenant's authorization_code_ttl_seconds, 60 by
 // default and never above 600: it is redeemed by a backend within a second
@@ -397,6 +397,7 @@ export function errorRedirect(
 ): string {
   const location = new URL(pending.redirectUri);
   location.searchParams.set('error', error);
+  location.searchParams.set('error_description', OAUTH_ERROR_DESCRIPTIONS[error]);
   if (pending.state !== null) location.searchParams.set('state', pending.state);
   location.searchParams.set('iss', tenantIssuer(issuerBase, tenantName));
   return location.toString();

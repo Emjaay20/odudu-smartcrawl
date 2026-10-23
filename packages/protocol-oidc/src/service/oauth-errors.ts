@@ -132,3 +132,26 @@ export const OAUTH_ERROR_DOCS: Readonly<Record<OAuthErrorCode, { readonly summar
     summary: 'The `response_type` is not one this server supports.',
   },
 };
+
+// The `error_description` each code carries on the authorization and token
+// endpoints (RFC 6749 §4.1.2.1, §5.2): one fixed plain sentence per code, in
+// the characters those sections allow. Fixed, so it never echoes a request and
+// never says which check failed: `invalid_grant` names no cause by design.
+export const OAUTH_ERROR_DESCRIPTIONS: Readonly<
+  Record<AuthorizationErrorCode | TokenErrorCode, string>
+> = {
+  access_denied: 'The user did not allow the request.',
+  account_selection_required: 'The user must choose an account first.',
+  consent_required: 'The user has not agreed to this request yet.',
+  invalid_client: 'Client authentication failed.',
+  invalid_grant: 'The code or token is not valid.',
+  invalid_request: 'The request is missing a parameter or has a wrong one.',
+  invalid_scope: 'A requested scope is not available to this client.',
+  invalid_target: 'A requested resource is not available to this client.',
+  login_required: 'The user is not signed in.',
+  request_not_supported: 'The request parameter is not supported.',
+  request_uri_not_supported: 'The request_uri parameter is not supported.',
+  unauthorized_client: 'This client may not use this grant type.',
+  unsupported_grant_type: 'This grant type is not supported.',
+  unsupported_response_type: 'Only response_type=code is supported.',
+};

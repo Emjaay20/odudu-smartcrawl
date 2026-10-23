@@ -2,6 +2,7 @@ import { signInHandleCookie, type SignInBrowser } from '@odudu/authn-flows';
 import { reloadOnRestore, type RenderedPage } from '@odudu/kernel';
 import { type FastifyInstance, type FastifyReply } from 'fastify';
 import { FORM_MEDIA_TYPE } from '#/service/media-type';
+import { OAUTH_ERROR_DESCRIPTIONS } from '#/service/oauth-errors';
 import {
   handleAuthorizationRequest,
   handleSelectAccountSubmission,
@@ -85,6 +86,10 @@ async function renderAuthorizationOutcome(
   if (outcome.kind === 'redirect') {
     const target = new URL(outcome.redirectUri);
     target.searchParams.set('error', outcome.error);
+    target.searchParams.set(
+      'error_description',
+      outcome.description ?? OAUTH_ERROR_DESCRIPTIONS[outcome.error],
+    );
     if (outcome.state !== null) target.searchParams.set('state', outcome.state);
     // RFC 9207 §2: every authorization response names the issuer, error
     // responses included — a client that cannot tell which server failed

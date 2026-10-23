@@ -24,7 +24,15 @@ export type AuthorizeOutcome =
       maxAge: number | null;
     }
   | { kind: 'render'; error: AuthorizationErrorCode; description: string }
-  | { kind: 'redirect'; redirectUri: string; error: AuthorizationErrorCode; state: string | null };
+  | {
+      kind: 'redirect';
+      redirectUri: string;
+      error: AuthorizationErrorCode;
+      state: string | null;
+      // A plain sentence for `error_description` where the code alone is vague;
+      // absent, the code's own fixed sentence is used.
+      description?: string;
+    };
 
 // The only Response Mode Odudu answers in, and the default one for
 // `response_type=code` (OIDC Core §3.1.2.1). `fragment` and `form_post`
@@ -130,14 +138,15 @@ export function validateAuthorizationRequest(
 
   // Below the boundary: redirect_uri is trusted, so errors go back to it.
   const state = params.state ?? null;
-  const reject = (error: AuthorizationErrorCode): AuthorizeOutcome => ({
+  const reject = (error: AuthorizationErrorCode, description?: string): AuthorizeOutcome => ({
     kind: 'redirect',
     redirectUri,
     error,
     state,
+    ...(description === undefined ? {} : { description }),
   });
 
-  if (repeatedKey !== null) return reject('invalid_request');
+  if (repeatedKey !== null) return reject('invalid_request', 'A parameter was sent more than once');
 
   // OIDC Core §3.1.2.6: request objects (§6) are not implemented, and the
   // specification requires saying so. Silently dropping the parameter would
@@ -149,10 +158,13 @@ export function validateAuthorizationRequest(
   if (params.response_type !== 'code') return reject('unsupported_response_type');
 
   const codeChallenge = params.code_challenge;
-  if (codeChallenge === undefined || !isWellFormedPkceString(codeChallenge)) {
-    return reject('invalid_request');
+  if (codeChallenge === undefined) return reject('invalid_request', 'code_challenge is required');
+  if (!isWellFormedPkceString(codeChallenge)) {
+    return reject('invalid_request', 'code_challenge is not valid');
   }
-  if (params.code_challenge_method !== 'S256') return reject('invalid_request');
+  if (params.code_challenge_method !== 'S256') {
+    return reject('invalid_request', 'code_challenge_method must be S256');
+  }
   if (!scopesAreGrantable(params.scope, knownScopes, clientScopes)) return reject('invalid_scope');
 
   // `prompt` is a request parameter like any other, so a malformed one is
@@ -162,10 +174,10 @@ export function validateAuthorizationRequest(
   // for something this server has never heard of is better told so than
   // answered as if it had asked for nothing.
   const prompt = parsePrompt(params.prompt);
-  if (prompt.kind === 'invalid') return reject('invalid_request');
+  if (prompt.kind === 'invalid') return reject('invalid_request', 'prompt is not valid');
 
   const maxAge = parseMaxAge(params.max_age);
-  if (maxAge.kind === 'invalid') return reject('invalid_request');
+  if (maxAge.kind === 'invalid') return reject('invalid_request', 'max_age is not valid');
 
   return {
     kind: 'ok',

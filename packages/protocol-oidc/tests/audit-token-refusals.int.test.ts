@@ -5,6 +5,7 @@ import {
   signJwt,
   type SigningKeyRecord,
 } from '@odudu/crypto';
+import { OAUTH_ERROR_DESCRIPTIONS } from '#/service/oauth-errors';
 import { auditRepository, type AuditEventRecord } from '@odudu/domain-audit';
 import { hashPassword, subjectRepository, userCredentials, users } from '@odudu/domain-identity';
 import {
@@ -510,7 +511,10 @@ describe('client authentication refusals', () => {
     const unaudited = await wrongSecret(tenant, `${FAILING_AUDIT_PREFIX}${newId()}`);
 
     expect(audited.statusCode).toBe(401);
-    expect(audited.json()).toEqual({ error: 'invalid_client' });
+    expect(audited.json()).toEqual({
+      error: 'invalid_client',
+      error_description: OAUTH_ERROR_DESCRIPTIONS.invalid_client,
+    });
     expect(comparable(audited)).toEqual(comparable(unaudited));
     expect(await onlyRowFor(tenant, requestId)).toMatchObject({
       eventType: 'authentication',
@@ -827,7 +831,10 @@ describe('refusals after the client authenticated', () => {
     );
 
     expect(res.statusCode).toBe(400);
-    expect(res.json()).toEqual({ error: 'invalid_target' });
+    expect(res.json()).toEqual({
+      error: 'invalid_target',
+      error_description: OAUTH_ERROR_DESCRIPTIONS.invalid_target,
+    });
     const rows = await rowsFor(tenant, requestId);
     expect(rows.map((row) => `${row.action}:${row.outcome}`).sort()).toEqual([
       'token.refresh:allowed',
@@ -932,7 +939,10 @@ describe('refused token exchanges', () => {
     );
 
     expect(res.statusCode).toBe(400);
-    expect(res.json()).toEqual({ error: 'invalid_request' });
+    expect(res.json()).toEqual({
+      error: 'invalid_request',
+      error_description: OAUTH_ERROR_DESCRIPTIONS.invalid_request,
+    });
     expect(await onlyRowFor(tenant, requestId)).toMatchObject({
       eventType: 'token',
       action: 'token.exchange',
@@ -995,7 +1005,10 @@ describe('refused token exchanges', () => {
     );
 
     expect(res.statusCode).toBe(400);
-    expect(res.json()).toEqual({ error: 'invalid_request' });
+    expect(res.json()).toEqual({
+      error: 'invalid_request',
+      error_description: OAUTH_ERROR_DESCRIPTIONS.invalid_request,
+    });
     expect(await onlyRowFor(tenant, requestId)).toMatchObject({
       action: 'token.exchange',
       outcome: 'refused',
@@ -1022,7 +1035,10 @@ describe('refused token exchanges', () => {
     );
 
     expect(res.statusCode).toBe(400);
-    expect(res.json()).toEqual({ error: 'invalid_request' });
+    expect(res.json()).toEqual({
+      error: 'invalid_request',
+      error_description: OAUTH_ERROR_DESCRIPTIONS.invalid_request,
+    });
     expect(await onlyRowFor(tenant, requestId)).toMatchObject({
       action: 'token.exchange',
       outcome: 'refused',
@@ -1048,7 +1064,10 @@ describe('refused token exchanges', () => {
     );
 
     expect(res.statusCode).toBe(400);
-    expect(res.json()).toEqual({ error: 'invalid_request' });
+    expect(res.json()).toEqual({
+      error: 'invalid_request',
+      error_description: OAUTH_ERROR_DESCRIPTIONS.invalid_request,
+    });
     expect(await onlyRowFor(tenant, requestId)).toMatchObject({
       action: 'token.exchange',
       outcome: 'refused',
@@ -1067,7 +1086,10 @@ describe('refused token exchanges', () => {
     );
 
     expect(res.statusCode).toBe(400);
-    expect(res.json()).toEqual({ error: 'unauthorized_client' });
+    expect(res.json()).toEqual({
+      error: 'unauthorized_client',
+      error_description: OAUTH_ERROR_DESCRIPTIONS.unauthorized_client,
+    });
     expect(await onlyRowFor(tenant, requestId)).toMatchObject({
       action: 'token.exchange',
       outcome: 'refused',
@@ -1082,7 +1104,10 @@ describe('refused token exchanges', () => {
     const res = await exchange(tenant, { subject_token_type: ACCESS_TOKEN_TYPE }, requestId);
 
     expect(res.statusCode).toBe(400);
-    expect(res.json()).toEqual({ error: 'invalid_request' });
+    expect(res.json()).toEqual({
+      error: 'invalid_request',
+      error_description: OAUTH_ERROR_DESCRIPTIONS.invalid_request,
+    });
     expect(await rowsFor(tenant, requestId)).toEqual([]);
   });
 

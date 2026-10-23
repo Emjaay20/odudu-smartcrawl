@@ -1,6 +1,7 @@
 import { ERROR_DOCS, ERROR_GROUPS } from '@odudu/kernel/docs';
 import type { ErrorCode } from '@odudu/kernel';
 import {
+  OAUTH_ERROR_DESCRIPTIONS,
   OAUTH_ERROR_DOCS,
   surfacesOf,
   type OAuthErrorCode,
@@ -67,14 +68,19 @@ function oauthSection(): string {
           .join(', '),
       ),
       cell(docs.summary),
+      code in OAUTH_ERROR_DESCRIPTIONS
+        ? codeCell(OAUTH_ERROR_DESCRIPTIONS[code as keyof typeof OAUTH_ERROR_DESCRIPTIONS])
+        : '',
     ]);
   return [
     '## OAuth and OpenID Connect errors',
     'The protocol endpoints answer with the `error` values RFC 6749, RFC 6750, RFC 7591, RFC 8707 ' +
       'and OpenID Connect Core define. At the authorization endpoint a refusal that can be reported ' +
       'to the client is a redirect carrying `error`; one that cannot is a page. The token endpoint ' +
-      'answers a JSON body.',
-    table(['Code', 'Answered by', 'Meaning'], rows),
+      'answers a JSON body. The authorization and token endpoints add an `error_description`, one ' +
+      'plain sentence that is never built from the request. Most are fixed per code, and ' +
+      '`invalid_grant` names no cause. A missing PKCE challenge says `code_challenge is required`.',
+    table(['Code', 'Answered by', 'Meaning', '`error_description`'], rows),
   ].join('\n\n');
 }
 
