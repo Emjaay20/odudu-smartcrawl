@@ -6,6 +6,19 @@ All notable changes to Odudu are written here, newest first. The format follows
 
 ## [Unreleased]
 
+## [0.1.0-rc.3] - 2026-10-24
+
+The third release candidate. Odudu is not production ready: it has had no security review.
+
+### Changed
+
+- Dependencies are updated across the server, the console, the examples and the base images, including nginx and tsup.
+- Dependabot opens grouped pull requests and leaves Node major versions to a manual yearly move.
+
+### Fixed
+
+- A flaky registration test and two lint findings that newer tooling raised.
+
 ## [0.1.0-rc.2] - 2026-10-23
 
 The second release candidate. Odudu is not production ready: it has had no security review.
