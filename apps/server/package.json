@@ -35,12 +35,12 @@
     "@odudu/web-assets": "workspace:*",
     "close-with-grace": "2.5.0",
     "fastify": "5.12.7",
-    "pino": "10.3.1"
+    "pino": "10.4.0"
   },
   "devDependencies": {
     "@odudu/testkit": "workspace:*",
     "drizzle-orm": "0.45.4",
     "tsup": "9.0.0",
-    "vitest": "5.0.0"
+    "vitest": "5.0.5"
   }
 }
