@@ -104,13 +104,13 @@ export const MAX_DELEGATION_DEPTH = 8;
 function narrowAct(value: unknown, budget: number): ActClaim | 'malformed' | 'too_deep' {
   if (budget <= 0) return 'too_deep';
   if (typeof value !== 'object' || value === null) return 'malformed';
-  const sub = (value as { sub?: unknown }).sub;
-  if (typeof sub !== 'string' || sub === '') return 'malformed';
+  const subject = (value as { sub?: unknown }).sub;
+  if (typeof subject !== 'string' || subject === '') return 'malformed';
   const nested = (value as { act?: unknown }).act;
-  if (nested === undefined) return { sub };
+  if (nested === undefined) return { sub: subject };
   const inner = narrowAct(nested, budget - 1);
   if (inner === 'malformed' || inner === 'too_deep') return inner;
-  return { sub, act: inner };
+  return { sub: subject, act: inner };
 }
 
 export function buildActChain(

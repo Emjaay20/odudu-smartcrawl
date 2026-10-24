@@ -418,9 +418,11 @@ describe('self-registration', () => {
     const mine = await seedTenant(`tenant-${newId()}`, { registrationAllowed: true });
     const other = await seedTenant(`tenant-${newId()}`, { registrationAllowed: true });
 
+    // The password is another tenant's name, which ends in hexadecimal digits:
+    // a username made of letters outside a-f cannot occur inside it by chance.
     const res = await submitRegistration(mine.tenantName, {
-      username: 'ada',
-      email: 'ada@example.test',
+      username: 'zed',
+      email: 'zed@example.test',
       password: other.tenantName,
     });
 
