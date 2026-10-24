@@ -107,10 +107,11 @@ function narrowAct(value: unknown, budget: number): ActClaim | 'malformed' | 'to
   const subject = (value as { sub?: unknown }).sub;
   if (typeof subject !== 'string' || subject === '') return 'malformed';
   const nested = (value as { act?: unknown }).act;
-  if (nested === undefined) return { sub: subject };
+  const claim: ActClaim = { sub: subject };
+  if (nested === undefined) return claim;
   const inner = narrowAct(nested, budget - 1);
   if (inner === 'malformed' || inner === 'too_deep') return inner;
-  return { sub: subject, act: inner };
+  return { ...claim, act: inner };
 }
 
 export function buildActChain(
