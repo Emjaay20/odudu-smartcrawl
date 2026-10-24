@@ -8,6 +8,6 @@
     "test": "vitest run --config ../vitest.config.ts --reporter=default --reporter=json --outputFile=trace-report.json"
   },
   "devDependencies": {
-    "yaml": "2.9.0"
+    "yaml": "2.9.1"
   }
 }
