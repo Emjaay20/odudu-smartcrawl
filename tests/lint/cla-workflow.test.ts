@@ -83,6 +83,11 @@ describe('the CLA text and where it is linked', () => {
     expect(CLA).not.toMatch(/DRAFT/u);
   });
 
+  it('names its counterparty and leaves nothing to be confirmed', () => {
+    expect(CLA).toContain('Wisdom Praise');
+    expect(CLA).not.toMatch(/to be confirmed|still to be/iu);
+  });
+
   it('grants a copyright licence and a patent licence', () => {
     expect(CLA).toMatch(/## Copyright licence/u);
     expect(CLA).toMatch(/## Patent licence/u);
