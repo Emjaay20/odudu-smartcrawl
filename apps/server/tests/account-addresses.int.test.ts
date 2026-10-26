@@ -187,3 +187,38 @@ describe('two registrations for one address in two cases', () => {
     }
   });
 });
+
+describe('where an account came from', () => {
+  it('marks the account its own registration form made, and no other', async () => {
+    const { tenant, tenantId } = await tenantWith({
+      email: 'seeded@example.test',
+      registrationAllowed: true,
+    });
+    const app = buildTestApp();
+    await app.ready();
+    try {
+      const registered = await app.inject({
+        method: 'POST',
+        url: `/tenants/${tenant}/login-actions/registration`,
+        payload: new URLSearchParams({
+          username: 'grace',
+          email: 'grace@example.test',
+          password: PASSWORD,
+          password_confirm: PASSWORD,
+        }).toString(),
+        headers: FORM,
+      });
+      expect(registered.statusCode).toBe(201);
+      const rows = await owner.db
+        .select({ username: users.username, selfRegistered: users.selfRegistered })
+        .from(users)
+        .where(eq(users.tenantId, tenantId));
+      expect(rows.sort((a, b) => a.username.localeCompare(b.username))).toEqual([
+        { username: 'ada', selfRegistered: false },
+        { username: 'grace', selfRegistered: true },
+      ]);
+    } finally {
+      await app.close();
+    }
+  });
+});

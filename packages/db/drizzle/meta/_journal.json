@@ -736,6 +736,13 @@
       "when": 1789740881736,
       "tag": "0104_pending_registrations",
       "breakpoints": true
+    },
+    {
+      "idx": 105,
+      "version": "7",
+      "when": 1789827281736,
+      "tag": "0105_users_self_registered",
+      "breakpoints": true
     }
   ]
 }

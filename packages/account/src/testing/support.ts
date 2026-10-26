@@ -39,6 +39,7 @@ export async function createVerifiedAccount(
     email: input.email,
   });
   await userRepository(tx).markEmailVerified(subject.id);
+  await userRepository(tx).markSelfRegistered(subject.id);
   await credentialRepository(tx).insert({
     tenantId,
     subjectId: subject.id,

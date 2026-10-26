@@ -345,6 +345,31 @@ export function userRepository(tx: TenantScopedDatabase) {
       return toUser(row);
     },
 
+    // The account's own registration form made it.
+    async markSelfRegistered(subjectId: string): Promise<void> {
+      await tx.update(users).set({ selfRegistered: true }).where(eq(users.subjectId, subjectId));
+    },
+
+    // A mailed link has proved the mailbox of an account that registered
+    // itself and never verified the address: the address becomes verified and
+    // the account stops being one this can happen to again. True only for
+    // the call that did it, and only while `mailedTo` is still the address.
+    async claimSelfRegistered(subjectId: string, mailedTo: string): Promise<boolean> {
+      const rows = await tx
+        .update(users)
+        .set({ emailVerified: true, selfRegistered: false })
+        .where(
+          and(
+            eq(users.subjectId, subjectId),
+            eq(users.selfRegistered, true),
+            eq(users.emailVerified, false),
+            eq(users.email, mailedTo),
+          ),
+        )
+        .returning({ subjectId: users.subjectId });
+      return rows.length > 0;
+    },
+
     // Deliberately not folded into updateProfile: emailVerified is a claim
     // about the current value of email, set only by consuming a matching
     // verify_email action token (packages/account/src/usecase/verify-email.ts),

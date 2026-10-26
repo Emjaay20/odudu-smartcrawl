@@ -952,6 +952,55 @@ describe('credentialRepository', () => {
   });
 });
 
+describe('userRepository.claimSelfRegistered', () => {
+  async function seedUser(tx: TenantScopedDatabase, tenantId: string, selfRegistered: boolean) {
+    await seedTenant(tx, tenantId);
+    const subjectId = await insertSubject(tx, tenantId);
+    await insertUserRow(tx, subjectId, tenantId, { email: 'ada@example.test', selfRegistered });
+    return subjectId;
+  }
+
+  it('verifies the address once, for a self-registered account, and only for the mailed address', async () => {
+    const tenantId = newId();
+    const result = await withTenant(app.db, tenantId, async (tx) => {
+      const subjectId = await seedUser(tx, tenantId, true);
+      const users = userRepository(tx);
+      const other = await users.claimSelfRegistered(subjectId, 'else@example.test');
+      const first = await users.claimSelfRegistered(subjectId, 'ada@example.test');
+      const second = await users.claimSelfRegistered(subjectId, 'ada@example.test');
+      return { other, first, second, user: await users.bySubjectId(subjectId) };
+    });
+    expect([result.other, result.first, result.second]).toEqual([false, true, false]);
+    expect(result.user?.emailVerified).toBe(true);
+  });
+
+  it('does nothing for an account that did not register itself', async () => {
+    const tenantId = newId();
+    const claimed = await withTenant(app.db, tenantId, async (tx) => {
+      const subjectId = await seedUser(tx, tenantId, false);
+      return userRepository(tx).claimSelfRegistered(subjectId, 'ada@example.test');
+    });
+    expect(claimed).toBe(false);
+  });
+
+  it("cannot claim a foreign tenant's account", async () => {
+    await expectCrossTenantMethodProbe(app.db, {
+      seed: (tx, tenantId) => seedUser(tx, tenantId, true),
+      verifySeeded: async (tx, subjectId) => {
+        expect((await userRepository(tx).bySubjectId(subjectId))?.emailVerified).toBe(false);
+      },
+      attempt: async (tx, subjectId) =>
+        userRepository(tx).claimSelfRegistered(subjectId, 'ada@example.test'),
+      expectBlocked: (result) => {
+        expect(result).toBe(false);
+      },
+      verifyTenantAUnaffected: async (tx, subjectId) => {
+        expect((await userRepository(tx).bySubjectId(subjectId))?.emailVerified).toBe(false);
+      },
+    });
+  });
+});
+
 describe('credentialRepository.deleteSecondFactors', () => {
   async function seedFactors(tx: TenantScopedDatabase, tenantId: string): Promise<string> {
     await seedTenant(tx, tenantId);

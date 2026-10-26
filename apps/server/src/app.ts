@@ -301,6 +301,7 @@ async function createAccount(
     type: 'password',
     secret: { kind: 'password', hash: await hashUserPassword(input.password) },
   });
+  await userRepository(tx).markSelfRegistered(subjectId);
   return { subjectId };
 }
 
@@ -328,6 +329,7 @@ async function createVerifiedAccount(
     email: input.email,
   });
   await userRepository(tx).markEmailVerified(subjectId);
+  await userRepository(tx).markSelfRegistered(subjectId);
   await credentialRepository(tx).insert({
     tenantId,
     subjectId,
@@ -548,13 +550,9 @@ export function buildApp(deps: AppDeps): FastifyInstance {
         },
       ),
     proveAddress: async (tx, subjectId, mailedTo) => {
-      const user = await userRepository(tx).bySubjectId(subjectId);
-      if (user === null || user.emailVerified || user.email === null || user.email !== mailedTo) {
-        return null;
-      }
-      const removed = await credentialRepository(tx).deleteSecondFactors(subjectId);
-      await userRepository(tx).markEmailVerified(subjectId);
-      return removed;
+      if (mailedTo === null) return null;
+      if (!(await userRepository(tx).claimSelfRegistered(subjectId, mailedTo))) return null;
+      return credentialRepository(tx).deleteSecondFactors(subjectId);
     },
     createVerifiedAccount,
     findTenant: (name) => tenantSettingsRepository(deps.ownerDatabase.db).byName(name),

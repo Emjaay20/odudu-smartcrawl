@@ -137,10 +137,28 @@ export function renderResetPasswordSucceededPage(
   signInPath: string | null,
   locale: PageLocale,
 ): RenderedPage {
+  return resetSucceeded(signInPath, locale, false);
+}
+
+// The same page for a reset that also removed the account's factors.
+export function renderResetPasswordFactorsRemovedPage(
+  signInPath: string | null,
+  locale: PageLocale,
+): RenderedPage {
+  return resetSucceeded(signInPath, locale, true);
+}
+
+function resetSucceeded(
+  signInPath: string | null,
+  locale: PageLocale,
+  factorsRemoved: boolean,
+): RenderedPage {
   return page(
     t(locale, 'reset.succeeded.title'),
     `<h1>${tHtml(locale, 'reset.succeeded.heading')}</h1>
 <p>${tHtml(locale, signInPath === null ? 'reset.succeeded.next' : 'reset.succeeded.nextWithLink')}</p>${
+      factorsRemoved ? `\n<p>${tHtml(locale, 'reset.succeeded.factorsRemoved')}</p>` : ''
+    }${
       signInPath === null
         ? ''
         : links([{ href: signInPath, text: tHtml(locale, 'link.continueToSignIn') }])

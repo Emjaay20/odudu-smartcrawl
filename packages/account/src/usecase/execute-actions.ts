@@ -91,7 +91,7 @@ export interface CompleteRequiredActionsDeps extends AccountRecoveryDeps {
 }
 
 export type CompleteRequiredActionsResult =
-  | { kind: 'done'; remaining: readonly LinkedRequiredAction[] }
+  | { kind: 'done'; remaining: readonly LinkedRequiredAction[]; factorsRemoved: boolean }
   | { kind: 'invalid' }
   | { kind: 'password_required' }
   | { kind: 'invalid_password'; violations: PolicyViolation[] };
@@ -139,9 +139,10 @@ export async function completeRequiredActions(
       const record = await tokens.consume(key, 'execute_actions');
       if (record === null) return { kind: 'invalid' };
 
+      let factorsRemoved = false;
       if (setsPassword && newPassword !== undefined) {
         await deps.setPassword(tx, record.subjectId, newPassword);
-        await recoverAccount(tx, deps, record.subjectId, record.email);
+        factorsRemoved = await recoverAccount(tx, deps, record.subjectId, record.email);
         await deps.clearPasswordUpdateAction(tx, record.subjectId);
         await tokens.invalidateOutstandingPasswordLinks(record.subjectId);
         await auditRepository(tx).record({
@@ -156,7 +157,7 @@ export async function completeRequiredActions(
       const remaining = actions.filter((action) => action !== 'update-password');
       if (remaining.length > 0)
         await deps.addRequiredActions(tx, deps.tenantId, record.subjectId, remaining);
-      return { kind: 'done', remaining };
+      return { kind: 'done', remaining, factorsRemoved };
     },
     deps.request,
   );

@@ -236,7 +236,7 @@ interface Account {
   readonly subjectId: string;
 }
 
-async function account(emailVerified: boolean): Promise<Account> {
+async function account(emailVerified: boolean, selfRegistered = false): Promise<Account> {
   const tenant = `reset-${newId()}`;
   const seeded = await seed({
     tenant,
@@ -254,6 +254,7 @@ async function account(emailVerified: boolean): Promise<Account> {
     const user = await userRepository(tx).byUsername('ada');
     if (user === null) throw new Error('no ada');
     if (emailVerified) await userRepository(tx).markEmailVerified(user.subject.id);
+    if (selfRegistered) await userRepository(tx).markSelfRegistered(user.subject.id);
     return user.subject.id;
   });
   await owner.db.delete(emailOutbox);
@@ -382,66 +383,75 @@ async function addressVerified(who: Account): Promise<boolean | undefined> {
   return rows[0]?.verified;
 }
 
-describe('a reset for an address nobody verified', () => {
+describe('a reset', () => {
   const linkKinds = [
     ['reset link', undefined],
     ['actions link', ['update-password']],
   ] as const;
 
-  it.each(linkKinds)(
-    'removes the factors an earlier holder enrolled and verifies the address: %s',
-    async (_kind, actions) => {
-      const who = await account(false);
-      await enrolFactors(who);
-      expect(await credentialTypes(who)).toEqual(['password', 'recovery-code', 'totp', 'webauthn']);
-      const app = buildTestApp();
-      await app.ready();
-      try {
-        if (actions === undefined) {
-          await app.inject({
-            method: 'POST',
-            url: `/tenants/${who.tenant}/login-actions/reset-password`,
-            payload: new URLSearchParams({ email: 'ada@example.test' }).toString(),
-            headers: FORM,
-          });
-        }
-        const done = await redeem(app, who, await mailedKey(who, actions));
-        expect(done.statusCode).toBe(200);
-
-        expect(await credentialTypes(who)).toEqual(['password']);
-        expect(await addressVerified(who)).toBe(true);
-        const rows = await owner.db
-          .select({ resourceId: auditEvents.resourceId })
-          .from(auditEvents)
-          .where(
-            and(
-              eq(auditEvents.tenantId, who.tenantId),
-              eq(auditEvents.action, 'account.address_proved'),
-            ),
-          );
-        expect(rows).toEqual([{ resourceId: who.subjectId }]);
-      } finally {
-        await app.close();
-      }
-    },
-  );
-
-  it('leaves the factors of an address that was already verified', async () => {
-    const who = await account(true);
-    await enrolFactors(who);
+  async function redeemFor(who: Account, actions: readonly string[] | undefined) {
     const app = buildTestApp();
     await app.ready();
     try {
-      await app.inject({
-        method: 'POST',
-        url: `/tenants/${who.tenant}/login-actions/reset-password`,
-        payload: new URLSearchParams({ email: 'ada@example.test' }).toString(),
-        headers: FORM,
-      });
-      expect((await redeem(app, who, await mailedKey(who))).statusCode).toBe(200);
-      expect(await credentialTypes(who)).toEqual(['password', 'recovery-code', 'totp', 'webauthn']);
+      if (actions === undefined) {
+        await app.inject({
+          method: 'POST',
+          url: `/tenants/${who.tenant}/login-actions/reset-password`,
+          payload: new URLSearchParams({ email: 'ada@example.test' }).toString(),
+          headers: FORM,
+        });
+      }
+      return await redeem(app, who, await mailedKey(who, actions));
     } finally {
       await app.close();
     }
+  }
+
+  const ALL = ['password', 'recovery-code', 'totp', 'webauthn'];
+
+  it.each(linkKinds)(
+    'removes the factors of a self-registered account nobody verified, and says so: %s',
+    async (_kind, actions) => {
+      const who = await account(false, true);
+      await enrolFactors(who);
+      expect(await credentialTypes(who)).toEqual(ALL);
+
+      const done = await redeemFor(who, actions);
+      expect(done.statusCode).toBe(200);
+      expect(done.body).toContain('We removed the authenticator app, passkeys and recovery codes');
+
+      expect(await credentialTypes(who)).toEqual(['password']);
+      expect(await addressVerified(who)).toBe(true);
+      const rows = await owner.db
+        .select({ resourceId: auditEvents.resourceId })
+        .from(auditEvents)
+        .where(
+          and(
+            eq(auditEvents.tenantId, who.tenantId),
+            eq(auditEvents.action, 'account.address_proved'),
+          ),
+        );
+      expect(rows).toEqual([{ resourceId: who.subjectId }]);
+    },
+  );
+
+  it.each(linkKinds)(
+    'leaves the factors of an account an administrator or the seed made: %s',
+    async (_kind, actions) => {
+      const who = await account(false, false);
+      await enrolFactors(who);
+      const done = await redeemFor(who, actions);
+      expect(done.statusCode).toBe(200);
+      expect(done.body).not.toContain('We removed');
+      expect(await credentialTypes(who)).toEqual(ALL);
+      expect(await addressVerified(who)).toBe(false);
+    },
+  );
+
+  it('leaves the factors of a self-registered account whose address was verified', async () => {
+    const who = await account(true, true);
+    await enrolFactors(who);
+    expect((await redeemFor(who, undefined)).statusCode).toBe(200);
+    expect(await credentialTypes(who)).toEqual(ALL);
   });
 });

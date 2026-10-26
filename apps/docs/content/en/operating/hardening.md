@@ -32,6 +32,7 @@ These the server does not check when it starts, so only you can.
 - [ ] **Administrators are named people.** Sign in as the first administrator, change its password, and make an account for each person who administers. A person's password is never chosen in the console, so nobody else handles it.
 - [ ] **Mail goes through a relay with STARTTLS**, so reset and verification links reach people.
 - [ ] **The schedules are on**, or you schedule the commands yourself ([Deploying](./deploying.md), step 7).
+- [ ] **Logs are read only by operators.** Request logs carry paths without query strings and never a credential. A failed request (500) logs the error's message and stack. A database error logs only its kind and code, since its message can hold values.
 - [ ] **Backups exist, and you have restored one** into a scratch database ([Backups](./backups.md)).
 - [ ] **You read [the threat model](../security/threat-model.md)** and know what is not covered.
 

@@ -13,6 +13,8 @@ export const users = pgTable('users', {
   username: text('username').notNull(),
   email: text('email'),
   emailVerified: boolean('email_verified').notNull().default(false),
+  // Made by the account's own registration form (migration 0105).
+  selfRegistered: boolean('self_registered').notNull().default(false),
   // OIDC Core §5.1 standard claims. Each shape-constrained column carries
   // its CHECK in packages/db/drizzle/0020_user_profile.sql, on the column
   // the claim is emitted from (packages/domain-identity/src/service/profile.ts

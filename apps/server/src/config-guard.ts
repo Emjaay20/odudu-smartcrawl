@@ -63,10 +63,8 @@ export function assertProductionTls(config: Config): void {
   if (baseUrl !== undefined && new URL(baseUrl).protocol === 'http:') {
     throw new OduduError(
       'config_invalid',
-      `ODUDU_TLS is true, but ODUDU_PUBLIC_BASE_URL is ${baseUrl}. Every cookie would be ` +
-        'issued with Secure and every token would name an http issuer, which a browser that ' +
-        'reached this server over https would not accept. Give the base the https scheme ' +
-        'it is served on.',
+      `ODUDU_TLS is true but ODUDU_PUBLIC_BASE_URL is ${baseUrl}. Set the base URL to the ` +
+        'https address people use, or unset ODUDU_TLS if there is no TLS.',
     );
   }
 }

@@ -26,10 +26,12 @@ import { type TakenIdentifiers } from '#/usecase/register';
 import {
   renderResetLinkFailedPage,
   renderResetPasswordForm,
+  renderResetPasswordFactorsRemovedPage,
   renderResetPasswordSucceededPage,
 } from '#/view/reset-html';
 import {
   renderRequiredActionsForm,
+  renderRequiredActionsFactorsRemovedPage,
   renderRequiredActionsSucceededPage,
 } from '#/view/required-actions-html';
 import {
@@ -252,7 +254,9 @@ async function completeActionsLink(
       return sendVerificationHtml(
         reply,
         200,
-        renderRequiredActionsSucceededPage(result.remaining, await returnTo(), locale),
+        (result.factorsRemoved
+          ? renderRequiredActionsFactorsRemovedPage
+          : renderRequiredActionsSucceededPage)(result.remaining, await returnTo(), locale),
       );
   }
 }
@@ -538,7 +542,9 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
     return sendVerificationHtml(
       reply,
       200,
-      renderResetPasswordSucceededPage(await resume(), locale),
+      (result.factorsRemoved
+        ? renderResetPasswordFactorsRemovedPage
+        : renderResetPasswordSucceededPage)(await resume(), locale),
     );
   });
 }
