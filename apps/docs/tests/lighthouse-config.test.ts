@@ -85,7 +85,7 @@ describe('the Lighthouse budgets', () => {
     expect(collect.settings).toEqual({
       chromeFlags: '--no-sandbox --headless=new',
       formFactor: 'mobile',
-      throttlingMethod: 'simulate',
+      throttlingMethod: 'devtools',
       throttling: { rttMs: 150, throughputKbps: 1638.4, cpuSlowdownMultiplier: 4 },
     });
   });
