@@ -7,6 +7,7 @@ import { peekActionToken, type LinkedRequiredAction } from '#/usecase/action-tok
 import { type PasswordFailure } from '#/view/password-rules';
 import {
   completePasswordReset,
+  type AccountRecoveryDeps,
   type PasswordPolicy,
   type PolicyViolation,
 } from '#/usecase/reset-password';
@@ -57,6 +58,12 @@ export interface ActionTokenTenantLookup {
   readonly passwordPolicy: PasswordPolicy;
 }
 
+// What the issuer is read from: the request itself, which carries the
+// configured public address when there is one.
+export type IssuerSource = Pick<FastifyRequest, 'protocol' | 'host'> & {
+  readonly configuredIssuerBase?: string | undefined;
+};
+
 export interface ActionTokenRouteDeps {
   // The tags a page can be shown in; defaults to what the server ships.
   pageLocales?: readonly string[];
@@ -104,12 +111,15 @@ export interface ActionTokenRouteDeps {
     tenantId: string,
     who: { username: string; email: string },
   ) => Promise<TakenIdentifiers>;
-  // Ends every session and revokes every grant of the subject, for a recovered account.
+  // Ends every session and revokes every grant of the subject, for a recovered
+  // account. The request names the issuer the back-channel logout tokens carry.
   readonly endAccess: (
     tx: TenantScopedDatabase,
     tenant: { id: string; name: string },
     subjectId: string,
+    request: IssuerSource,
   ) => Promise<void>;
+  readonly proveAddress: AccountRecoveryDeps['proveAddress'];
   readonly lockAddress: (
     tx: TenantScopedDatabase,
     tenantId: string,
@@ -220,6 +230,9 @@ async function completeActionsLink(
       unchangedPasswordViolations: deps.unchangedPasswordViolations,
       clearPasswordUpdateAction: deps.clearPasswordUpdateAction,
       addRequiredActions: deps.addRequiredActions,
+      endAccess: (tx, subjectId) =>
+        deps.endAccess(tx, { id: tenant.id, name: request.params.tenant }, subjectId, request),
+      proveAddress: deps.proveAddress,
     },
     key,
     password,
@@ -436,6 +449,9 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
         ? sendVerificationHtml(reply, 400, renderVerificationFailedPage(await resume(), locale))
         : sendVerificationHtml(reply, 200, renderVerificationSucceededPage(await resume(), locale));
     }
+    if (peeked.kind === 'invalid' && peeked.type === 'verify_email') {
+      return sendVerificationHtml(reply, 400, renderVerificationFailedPage(await resume(), locale));
+    }
     if (peeked.kind === 'usable' && peeked.type === 'execute_actions') {
       return completeActionsLink(request, reply, deps, tenant, key, peeked);
     }
@@ -493,7 +509,8 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
         request: requestContextFrom(request),
         setPassword: deps.setPassword,
         endAccess: (tx, subjectId) =>
-          deps.endAccess(tx, { id: tenant.id, name: request.params.tenant }, subjectId),
+          deps.endAccess(tx, { id: tenant.id, name: request.params.tenant }, subjectId, request),
+        proveAddress: deps.proveAddress,
         passwordPolicy: tenant.passwordPolicy,
         evaluatePassword: deps.evaluatePassword,
         getUsername: deps.getUsername,

@@ -62,10 +62,20 @@ export function answerNotFound(
   });
 }
 
+// A database driver's error, or one wrapping it: the message carries the query
+// and its parameters, and the stack begins with that message.
+function involvesDriver(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false;
+  if ('severity' in error || 'routine' in error) return true;
+  if ('name' in error && (error.name === 'PostgresError' || error.name === 'DrizzleQueryError')) {
+    return true;
+  }
+  return 'cause' in error && involvesDriver(error.cause);
+}
+
 // The root error handler. Every failure of status 500 or above answers 500,
-// whatever status it carried. A server error is a fixed document: the driver's
-// message carries the query and its parameters, so it is logged by kind only
-// and never sent. A client error keeps the framework's own answer.
+// whatever status it carried. A server error is a fixed document and never
+// sends the message. A client error keeps the framework's own answer.
 export function answerServerError(
   error: FastifyError,
   request: FastifyRequest,
@@ -74,7 +84,10 @@ export function answerServerError(
 ): FastifyReply {
   const status = error.statusCode ?? 500;
   if (status < 500) return reply.send(error);
-  request.log.error({ err: { type: error.name, code: error.code } }, 'request failed');
+  // The logger's error serializer writes the kind, message and stack frames.
+  // A driver's error is cut down to kind and code by hand first.
+  const err = involvesDriver(error) ? { type: error.name, code: error.code } : error;
+  request.log.error({ err }, 'request failed');
   if (wantsHtmlPage(request.method, request.url, request.headers.accept)) {
     const id = SHOWABLE_ID.test(request.id) ? request.id : null;
     try {

@@ -203,3 +203,46 @@ describe('an unhandled error', () => {
     await hostile.close();
   });
 });
+
+describe('an unhandled error, as the operator reads it', () => {
+  interface Logged {
+    err?: { type?: string; code?: string; message?: string; stack?: string };
+  }
+
+  async function logOf(failure: () => never): Promise<{ line: string; entry: Logged }> {
+    const lines: string[] = [];
+    const logged = Fastify({
+      logger: { level: 'error', stream: { write: (line: string) => lines.push(line) } },
+    });
+    logged.setErrorHandler<FastifyError>((error, request, reply) =>
+      answerServerError(error, request, reply, DEPS),
+    );
+    logged.get('/boom', failure);
+    await logged.inject({ url: '/boom' });
+    await logged.close();
+    const line = lines.find((candidate) => candidate.includes('request failed')) ?? '';
+    return { line, entry: JSON.parse(line) as Logged };
+  }
+
+  it('logs the message and the stack frames of an error from the code', async () => {
+    const { entry } = await logOf(() => {
+      throw new TypeError('cannot read the thing');
+    });
+    expect(entry.err?.type).toBe('TypeError');
+    expect(entry.err?.message).toBe('cannot read the thing');
+    expect(entry.err?.stack).toContain('unrouted.test');
+  });
+
+  it('logs a driver error by kind and code only, since it can embed parameters', async () => {
+    const { line, entry } = await logOf(() => {
+      const driver = Object.assign(new Error('duplicate key value (secret@example.test)'), {
+        name: 'PostgresError',
+        code: '23505',
+      });
+      throw new Error('Failed query: insert into users params: hunter2', { cause: driver });
+    });
+    expect(entry.err).toEqual({ type: 'Error', code: undefined });
+    expect(line).not.toMatch(/hunter2|secret@example|Failed query/u);
+    expect(entry.err?.stack).toBeUndefined();
+  });
+});

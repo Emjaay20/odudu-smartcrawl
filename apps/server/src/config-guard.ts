@@ -49,13 +49,24 @@ export function assertProductionKekNotExample(config: Config): void {
  * `docs/protocols/rfc6749.md`, "TLS: what a boot guard settles".
  */
 export function assertProductionTls(config: Config): void {
-  if (config.NODE_ENV === 'production' && !config.ODUDU_TLS) {
+  if (config.NODE_ENV !== 'production') return;
+  if (!config.ODUDU_TLS) {
     throw new OduduError(
       'config_invalid',
       'ODUDU_TLS must be true when NODE_ENV=production. Every credential this server issues ' +
         'travels as plaintext over the connection, and TLS is the only thing protecting it — ' +
         'terminate TLS here or at a reverse proxy in front of this process, then set ' +
         'ODUDU_TLS=true (with ODUDU_TRUST_PROXY=true behind a proxy) to say so.',
+    );
+  }
+  const baseUrl = config.ODUDU_PUBLIC_BASE_URL;
+  if (baseUrl !== undefined && new URL(baseUrl).protocol === 'http:') {
+    throw new OduduError(
+      'config_invalid',
+      `ODUDU_TLS is true, but ODUDU_PUBLIC_BASE_URL is ${baseUrl}. Every cookie would be ` +
+        'issued with Secure and every token would name an http issuer, which a browser that ' +
+        'reached this server over https would not accept. Give the base the https scheme ' +
+        'it is served on.',
     );
   }
 }
