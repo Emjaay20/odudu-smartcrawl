@@ -20,9 +20,12 @@ updates:
       npm-minor-patch:
         patterns: ['*']
         update-types: ['minor', 'patch']
-    # The types follow the Node major the server runs on (ADR 0001).
+    # The types follow the Node major the server runs on (ADR 0001). Babel 8
+    # breaks the React Compiler plugin the console builds with.
     ignore:
       - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@babel/core'
         update-types: ['version-update:semver-major']
   - package-ecosystem: npm
     directory: /examples/web-app
