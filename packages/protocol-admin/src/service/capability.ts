@@ -479,7 +479,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     responseSchema: setRequiredActionsResponseSchema,
     bodySchema: setRequiredActionsRequestSchema,
     description:
-      'Replaces the whole list. `If-Match` is mandatory: the matching `GET` answers an `ETag`, an absent header is refused with `428`, and a stale one with `412` — a last-write-wins here would silently reinstate what another administrator has just removed.' +
+      'Replaces the whole list. `If-Match` is mandatory: the matching `GET` answers an `ETag`, an absent header, or `*`, is refused with `428`, and a stale one with `412` — a last-write-wins here would silently reinstate what another administrator has just removed.' +
       TARGET_CEILING,
   },
   // The capability ceiling this route enforces — a caller may never assign
@@ -501,7 +501,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     bodySchema: setRolesRequestSchema,
     description:
       'More than 200 entries is refused with `400`. ' +
-      'Replaces the whole list. `If-Match` is mandatory: the matching `GET` answers an `ETag`, an absent header is refused with `428`, and a stale one with `412` — a last-write-wins here would silently reinstate what another administrator has just removed.' +
+      'Replaces the whole list. `If-Match` is mandatory: the matching `GET` answers an `ETag`, an absent header, or `*`, is refused with `428`, and a stale one with `412` — a last-write-wins here would silently reinstate what another administrator has just removed.' +
       TARGET_CEILING +
       LAST_ADMINISTRATOR,
   },
@@ -549,7 +549,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     bodySchema: setSubjectGroupsRequestSchema,
     description:
       'More than 200 entries is refused with `400`. ' +
-      'Replaces the subject\u2019s direct memberships. `If-Match` is mandatory (`428` absent, `412` stale). Refused with `403` when the groups, their ancestors or the composites their roles nest reach an admin capability the caller does not hold.' +
+      'Replaces the subject\u2019s direct memberships. `If-Match` is mandatory (`428` absent or `*`, `412` stale). Refused with `403` when the groups, their ancestors or the composites their roles nest reach an admin capability the caller does not hold.' +
       TARGET_CEILING +
       LAST_ADMINISTRATOR,
   },
@@ -1066,7 +1066,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     bodySchema: setGroupRolesRequestSchema,
     description:
       'More than 200 entries is refused with `400`. ' +
-      'Replaces the whole list. `If-Match` is mandatory: the matching `GET` answers an `ETag`, an absent header is refused with `428`, and a stale one with `412` — a last-write-wins here would silently reinstate what another administrator has just removed.' +
+      'Replaces the whole list. `If-Match` is mandatory: the matching `GET` answers an `ETag`, an absent header, or `*`, is refused with `428`, and a stale one with `412` — a last-write-wins here would silently reinstate what another administrator has just removed.' +
       DELTA_CEILING +
       LAST_ADMINISTRATOR,
   },
@@ -1188,7 +1188,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     description:
       'More than 200 entries is refused with `400`. ' +
       'The answer carries each role’s `admin_reach`, as the `GET` does. ' +
-      'Replaces the whole list. `If-Match` is mandatory: the matching `GET` answers an `ETag`, an absent header is refused with `428`, and a stale one with `412` — a last-write-wins here would silently reinstate what another administrator has just removed.' +
+      'Replaces the whole list. `If-Match` is mandatory: the matching `GET` answers an `ETag`, an absent header, or `*`, is refused with `428`, and a stale one with `412` — a last-write-wins here would silently reinstate what another administrator has just removed.' +
       DELTA_CEILING,
   },
   // The registry names come from the same ClaimMapperRegistry the issuance
@@ -1211,7 +1211,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
       'Replaces the whole binding set for the scope. Binding an unregistered mapper name is ' +
       'refused with 400, listing the registry’s own known names. ' +
       'The answer carries `declared` as the `GET` does. ' +
-      'Replaces the whole list. `If-Match` is mandatory: the matching `GET` answers an `ETag`, an absent header is refused with `428`, and a stale one with `412` — a last-write-wins here would silently reinstate what another administrator has just removed.',
+      'Replaces the whole list. `If-Match` is mandatory: the matching `GET` answers an `ETag`, an absent header, or `*`, is refused with `428`, and a stale one with `412` — a last-write-wins here would silently reinstate what another administrator has just removed.',
   },
   {
     method: 'GET',
@@ -1398,7 +1398,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
       'login (`#flow-no-first-challenge`), an authenticator name the registry does not resolve ' +
       '(`#flow-unknown-authenticator`), or the same authenticator named twice ' +
       '(`#flow-duplicate-authenticator`); the last two carry `errors[]` naming the step. ' +
-      'Replaces the whole list. `If-Match` is mandatory: the matching `GET` answers an `ETag`, an absent header is refused with `428`, and a stale one with `412` — a last-write-wins here would silently reinstate what another administrator has just removed.',
+      'Replaces the whole list. `If-Match` is mandatory: the matching `GET` answers an `ETag`, an absent header, or `*`, is refused with `428`, and a stale one with `412` — a last-write-wins here would silently reinstate what another administrator has just removed.',
   },
   // Read-only: view-audit carries no manage- counterpart, since nothing
   // ever amends a row here — reap is the only other writer, and it deletes

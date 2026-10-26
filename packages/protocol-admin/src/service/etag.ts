@@ -25,28 +25,40 @@ export function etagOf(record: unknown): string {
   return `"${digest}"`;
 }
 
+function members(ifMatch: string): string[] {
+  return ifMatch.split(',').map((member) => member.trim());
+}
+
+// A header that is, or lists, the wildcard names no version, so it cannot
+// stand for one that was read.
+export function hasPrecondition(ifMatch: string | undefined): boolean {
+  return ifMatch !== undefined && !members(ifMatch).includes('*');
+}
+
 /**
  * The precondition the design spec makes mandatory on a write that
  * replaces an authorization-bearing list whole: an absent `If-Match` is
  * `428`, not a silent last-write-wins that reinstates exactly what another
- * administrator has just removed.
+ * administrator has just removed. `*` matches whatever is stored, so it
+ * counts as absent.
  */
 export function requiredPrecondition(
   ifMatch: string | undefined,
   current: string,
 ): 'required' | 'failed' | 'ok' {
-  const result = matches(ifMatch, current);
-  if (result === 'absent') return 'required';
-  return result === 'mismatch' ? 'failed' : 'ok';
+  if (!hasPrecondition(ifMatch)) return 'required';
+  return matches(ifMatch, current) === 'match' ? 'ok' : 'failed';
 }
 
+// RFC 9110 §13.1.1: a comma-separated list of strong validators, or `*`
+// for "if the resource exists", which already holds by the time `current`
+// is in hand. A weak validator never matches.
 export function matches(
   ifMatch: string | undefined,
   current: string,
 ): 'absent' | 'match' | 'mismatch' {
   if (ifMatch === undefined) return 'absent';
-  // RFC 9110 §13.1.1: `*` means "if the resource exists". `current` is
-  // only ever reached after loading the resource, so that precondition is
-  // already satisfied by the time this runs.
-  return ifMatch === current || ifMatch === '*' ? 'match' : 'mismatch';
+  return members(ifMatch).some((member) => member === '*' || member === current)
+    ? 'match'
+    : 'mismatch';
 }

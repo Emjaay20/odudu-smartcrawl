@@ -232,13 +232,14 @@ describe('the roles mapped to a group', () => {
     await nest(t.id, bundle, await capabilityRoleId(t.id, 'view-audit'));
     const plain = await role(t.name, 'plain');
 
+    const current = await call(t.name, 'GET', `/groups/${g}/roles`);
     const put = await call(
       t.name,
       'PUT',
       `/groups/${g}/roles`,
       { role_ids: [bundle, plain] },
       undefined,
-      { 'if-match': '*' },
+      { 'if-match': String(current.headers.etag) },
     );
     expect(put.statusCode, put.body).toBe(200);
     const expected: unknown = expect.arrayContaining([

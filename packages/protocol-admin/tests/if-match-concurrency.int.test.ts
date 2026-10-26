@@ -11,7 +11,12 @@ import { amendClient, clientWireShape, readClient } from '#/usecase/clients';
 import { listFlow, replaceFlow } from '#/usecase/flow';
 import { amendProfile, readProfile } from '#/usecase/profile';
 import { amendSettings, readSettings } from '#/usecase/settings';
-import { setRequiredActions, setRoles } from '#/usecase/subjects';
+import {
+  readRequiredActions,
+  readSubjectRoles,
+  setRequiredActions,
+  setRoles,
+} from '#/usecase/subjects';
 
 let fixtureHandle: AdminFixture | undefined;
 let fixture: AdminFixture;
@@ -237,19 +242,19 @@ async function capabilityRoleId(tenantId: string, name: string): Promise<string>
   });
 }
 
-// `*` rather than a captured tag, so what these two prove is the lock
-// alone: without it, two concurrent replacements under READ COMMITTED each
-// delete a snapshot the other's insert is invisible to, and both commit,
+// Both callers hold the tag they read before either wrote. Without the
+// lock, two concurrent replacements under READ COMMITTED each delete a
+// snapshot the other's insert is invisible to and both pass the tag check,
 // leaving the union of the two requests rather than either one alone.
-// `list-preconditions.int.test.ts` is where a real tag is spent and
-// replayed.
-describe('two concurrent replacements whose If-Match matches whatever it finds', () => {
+describe('two concurrent replacements that hold the same tag', () => {
   it('serialises two concurrent role replacements instead of unioning them', async () => {
     const t = await fixture.createTenant(`acme-${newId()}`);
     const { id: subjectId } = await fixture.createSubject(t.name, `target-${newId()}`);
     const viewUsersId = await capabilityRoleId(t.id, 'view-users');
     const manageClientsId = await capabilityRoleId(t.id, 'manage-clients');
     const callerCapabilities = new Set(['view-users', 'manage-clients']);
+    const read = await withTenant(fixture.app.db, t.id, (tx) => readSubjectRoles(tx, subjectId));
+    const ifMatch = read.kind === 'ok' ? read.etag : undefined;
     const held = gate();
 
     const first = withTenant(fixture.app.db, t.id, async (tx) => {
@@ -260,7 +265,7 @@ describe('two concurrent replacements whose If-Match matches whatever it finds',
           subjectId,
           roleIds: [viewUsersId],
           callerCapabilities,
-          ifMatch: '*',
+          ifMatch,
           actorSubjectId: 'first',
           actorTenantId: 'test-tenant',
           actorClientId: 'test-client',
@@ -280,7 +285,7 @@ describe('two concurrent replacements whose If-Match matches whatever it finds',
           subjectId,
           roleIds: [manageClientsId],
           callerCapabilities,
-          ifMatch: '*',
+          ifMatch,
           actorSubjectId: 'second',
           actorTenantId: 'test-tenant',
           actorClientId: 'test-client',
@@ -292,12 +297,11 @@ describe('two concurrent replacements whose If-Match matches whatever it finds',
     held.release();
 
     expect((await first).kind).toBe('ok');
-    expect((await second).kind).toBe('ok');
+    expect((await second).kind).toBe('precondition_failed');
 
     // The union an unlocked pair would leave behind is exactly what this
-    // rules out: `second` ran after `first` committed, so its replacement
-    // is the only one left standing — `view-users` gone, `manage-clients`
-    // alone.
+    // rules out: `second` ran after `first` committed and found its tag
+    // stale, so `first`'s replacement is the only one there.
     const names = await withTenant(fixture.app.db, t.id, (tx) =>
       tx
         .select({ name: rolesTable.name })
@@ -305,12 +309,14 @@ describe('two concurrent replacements whose If-Match matches whatever it finds',
         .innerJoin(rolesTable, eq(rolesTable.id, subjectRoles.roleId))
         .where(eq(subjectRoles.subjectId, subjectId)),
     );
-    expect(names.map((row) => row.name)).toEqual(['manage-clients']);
+    expect(names.map((row) => row.name)).toEqual(['view-users']);
   });
 
   it('serialises two concurrent required-action replacements instead of unioning them', async () => {
     const t = await fixture.createTenant(`acme-${newId()}`);
     const { id: subjectId } = await fixture.createSubject(t.name, `target-${newId()}`);
+    const read = await withTenant(fixture.app.db, t.id, (tx) => readRequiredActions(tx, subjectId));
+    const ifMatch = read.kind === 'ok' ? read.etag : undefined;
     const held = gate();
 
     const first = withTenant(fixture.app.db, t.id, async (tx) => {
@@ -322,7 +328,7 @@ describe('two concurrent replacements whose If-Match matches whatever it finds',
           subjectId,
           actions: ['configure-totp'],
           callerCapabilities: new Set<string>(),
-          ifMatch: '*',
+          ifMatch,
           actorSubjectId: 'first',
           actorTenantId: 'test-tenant',
           actorClientId: 'test-client',
@@ -345,7 +351,7 @@ describe('two concurrent replacements whose If-Match matches whatever it finds',
           subjectId,
           actions: ['generate-recovery-codes'],
           callerCapabilities: new Set<string>(),
-          ifMatch: '*',
+          ifMatch,
           actorSubjectId: 'second',
           actorTenantId: 'test-tenant',
           actorClientId: 'test-client',
@@ -357,14 +363,13 @@ describe('two concurrent replacements whose If-Match matches whatever it finds',
     held.release();
 
     expect((await first).kind).toBe('ok');
-    const secondOutcome = await second;
-    expect(secondOutcome.kind).toBe('ok');
+    expect((await second).kind).toBe('precondition_failed');
+    const after = await withTenant(fixture.app.db, t.id, (tx) =>
+      readRequiredActions(tx, subjectId),
+    );
     // The union `first` and `second` would leave behind if unlocked is
-    // exactly what this proves absent: `second` ran after `first`
-    // committed, so its replacement is the only one left standing.
-    expect(secondOutcome.kind === 'ok' ? secondOutcome.actions : null).toEqual([
-      'generate-recovery-codes',
-    ]);
+    // exactly what this proves absent: `second` found its tag stale.
+    expect(after.kind === 'ok' ? after.actions : null).toEqual(['configure-totp']);
   });
 });
 

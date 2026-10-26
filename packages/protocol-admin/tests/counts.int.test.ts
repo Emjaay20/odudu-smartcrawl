@@ -2,7 +2,7 @@ import { withTenant } from '@odudu/db';
 import { MANAGE_TENANTS } from '@odudu/domain-tenant';
 import { newId } from '@odudu/kernel';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { startAdminFixture, type AdminFixture } from '#/testing/admin-fixture';
+import { startAdminFixture, type AdminFixture, etagAt } from '#/testing/admin-fixture';
 import { COUNT_CAP, countSubjects } from '#/usecase/counts';
 
 let fixtureHandle: AdminFixture | undefined;
@@ -158,13 +158,14 @@ describe('GET /admin/tenants/{tenant}/{collection}/count', () => {
     const listed = await get(`/admin/tenants/${t.name}/subjects?username=a`, token);
     const [first] = listed.json<{ items: { id: string }[] }>().items;
     if (first === undefined) throw new Error('no subject matched ?username=a');
+    const rolesUrl = `/admin/tenants/${t.name}/subjects/${first.id}/roles`;
     const assigned = await fixture.http.inject({
       method: 'PUT',
-      url: `/admin/tenants/${t.name}/subjects/${first.id}/roles`,
+      url: rolesUrl,
       headers: {
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
-        'if-match': '*',
+        'if-match': await etagAt(fixture.http, rolesUrl, token),
       },
       payload: { role_ids: [roleId] },
     });

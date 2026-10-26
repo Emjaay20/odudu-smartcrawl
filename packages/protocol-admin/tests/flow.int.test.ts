@@ -13,8 +13,8 @@ import { subjectRepository, users } from '@odudu/domain-identity';
 import { newId } from '@odudu/kernel';
 import { softwareAuthenticator, type SoftwareAuthenticator } from '@odudu/testkit';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { startAdminFixture, type AdminFixture } from '#/testing/admin-fixture';
-import { replaceFlow, type FlowAuditEvent } from '#/usecase/flow';
+import { startAdminFixture, type AdminFixture, etagAt } from '#/testing/admin-fixture';
+import { listFlow, replaceFlow, type FlowAuditEvent } from '#/usecase/flow';
 
 const PUBLIC_BASE_URL = 'http://localhost:3000';
 const RP_ID = 'localhost';
@@ -37,7 +37,7 @@ function getFlow(token: string, tenantName: string) {
   });
 }
 
-function putFlow(
+async function putFlow(
   token: string,
   tenantName: string,
   steps: { authenticator: string; requirement: string }[],
@@ -46,7 +46,7 @@ function putFlow(
     method: 'PUT',
     url: `/admin/tenants/${tenantName}/flow/executions`,
     headers: {
-      'if-match': '*',
+      'if-match': await etagAt(fixture.http, `/admin/tenants/${tenantName}/flow/executions`, token),
       authorization: `Bearer ${token}`,
       'content-type': 'application/json',
     },
@@ -358,6 +358,7 @@ describe('audit', () => {
     const t = await fixture.createTenant(`acme-${newId()}`);
 
     const ok = collector();
+    const ifMatch = (await withTenant(fixture.app.db, t.id, (tx) => listFlow(tx, t.id))).etag;
     const replaced = await withTenant(fixture.app.db, t.id, (tx) =>
       replaceFlow(
         tx,
@@ -365,7 +366,7 @@ describe('audit', () => {
         {
           tenantId: t.id,
           steps: [{ authenticator: 'password', requirement: 'required' }],
-          ifMatch: '*',
+          ifMatch,
           actorSubjectId: 'test',
           actorTenantId: 'test-tenant',
           actorClientId: 'test-client',
@@ -377,6 +378,7 @@ describe('audit', () => {
     expect(ok.events[0]?.action).toBe('flow.replace');
 
     const refused = collector();
+    const current = (await withTenant(fixture.app.db, t.id, (tx) => listFlow(tx, t.id))).etag;
     const outcome = await withTenant(fixture.app.db, t.id, (tx) =>
       replaceFlow(
         tx,
@@ -384,7 +386,7 @@ describe('audit', () => {
         {
           tenantId: t.id,
           steps: [],
-          ifMatch: '*',
+          ifMatch: current,
           actorSubjectId: 'test',
           actorTenantId: 'test-tenant',
           actorClientId: 'test-client',

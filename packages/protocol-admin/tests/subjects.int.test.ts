@@ -23,7 +23,7 @@ import { sql } from 'drizzle-orm';
 import { type LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { etagOf } from '#/service/etag';
-import { startAdminFixture, type AdminFixture } from '#/testing/admin-fixture';
+import { startAdminFixture, type AdminFixture, etagAt } from '#/testing/admin-fixture';
 import {
   createPasswordSubject,
   createSignInClient,
@@ -37,6 +37,9 @@ import {
   createSubject,
   deleteCredential,
   deleteSubject,
+  readRequiredActions,
+  readSubjectGroups,
+  readSubjectRoles,
   setRequiredActions,
   setRoles,
   setSubjectGroups,
@@ -688,7 +691,7 @@ async function roleNestingTenantAdmin(tenantId: string): Promise<string> {
   });
 }
 
-function putRoles(
+async function putRoles(
   tenantName: string,
   subjectId: string,
   token: string,
@@ -698,7 +701,11 @@ function putRoles(
     method: 'PUT',
     url: `/admin/tenants/${tenantName}/subjects/${subjectId}/roles`,
     headers: {
-      'if-match': '*',
+      'if-match': await etagAt(
+        fixture.http,
+        `/admin/tenants/${tenantName}/subjects/${subjectId}/roles`,
+        token,
+      ),
       authorization: `Bearer ${token}`,
       'content-type': 'application/json',
     },
@@ -1170,7 +1177,8 @@ describe('PATCH /admin/tenants/{t}/subjects/{id} — renaming a username', () =>
     const { id } = await fixture.createSubject(t.name, `mine-${newId()}`);
     const token = await fixture.adminToken(t.name, ['manage-users']);
 
-    const res = await patchSubject(t.name, id, token, { username: taken.toUpperCase() }, '*');
+    const { etag } = await readSubjectBody(t.name, id);
+    const res = await patchSubject(t.name, id, token, { username: taken.toUpperCase() }, etag);
     expect(res.statusCode).toBe(200);
     expect(res.json<{ username: string }>().username).toBe(taken.toUpperCase());
   });
@@ -1287,7 +1295,11 @@ describe('PUT /admin/tenants/{t}/subjects/{id}/required-actions', () => {
       method: 'PUT',
       url: `/admin/tenants/${t.name}/subjects/${id}/required-actions`,
       headers: {
-        'if-match': '*',
+        'if-match': await etagAt(
+          fixture.http,
+          `/admin/tenants/${t.name}/subjects/${id}/required-actions`,
+          token,
+        ),
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
       },
@@ -1303,7 +1315,11 @@ describe('PUT /admin/tenants/{t}/subjects/{id}/required-actions', () => {
       method: 'PUT',
       url: `/admin/tenants/${t.name}/subjects/${id}/required-actions`,
       headers: {
-        'if-match': '*',
+        'if-match': await etagAt(
+          fixture.http,
+          `/admin/tenants/${t.name}/subjects/${id}/required-actions`,
+          token,
+        ),
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
       },
@@ -1322,7 +1338,11 @@ describe('PUT /admin/tenants/{t}/subjects/{id}/required-actions', () => {
       method: 'PUT',
       url: `/admin/tenants/${t.name}/subjects/${id}/required-actions`,
       headers: {
-        'if-match': '*',
+        'if-match': await etagAt(
+          fixture.http,
+          `/admin/tenants/${t.name}/subjects/${id}/required-actions`,
+          token,
+        ),
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
       },
@@ -1761,6 +1781,7 @@ describe('audit', () => {
     const { id } = await fixture.createSubject(t.name, `ra-${newId()}`);
 
     const ok = collector();
+    const actionsTag = await subjectTag(t.id, id, readRequiredActions);
     const set = await withTenant(fixture.app.db, t.id, (tx) =>
       setRequiredActions(
         tx,
@@ -1770,7 +1791,7 @@ describe('audit', () => {
           subjectId: id,
           actions: ['configure-totp'],
           callerCapabilities: new Set<string>(),
-          ifMatch: '*',
+          ifMatch: actionsTag,
           actorSubjectId: 'test',
           actorTenantId: 'test-tenant',
           actorClientId: 'test-client',
@@ -1808,6 +1829,7 @@ describe('audit', () => {
     const tenantAdminId = await capabilityRoleId(t.id, TENANT_ADMIN);
 
     const ok = collector();
+    const firstTag = await subjectTag(t.id, id, readSubjectRoles);
     const set = await withTenant(fixture.app.db, t.id, (tx) =>
       setRoles(
         tx,
@@ -1816,7 +1838,7 @@ describe('audit', () => {
           subjectId: id,
           roleIds: [viewUsersId],
           callerCapabilities: new Set(['manage-users', 'view-users']),
-          ifMatch: '*',
+          ifMatch: firstTag,
           actorSubjectId: 'test',
           actorTenantId: 'test-tenant',
           actorClientId: 'test-client',
@@ -1827,6 +1849,7 @@ describe('audit', () => {
     expect(ok.events).toHaveLength(1);
 
     const refused = collector();
+    const secondTag = await subjectTag(t.id, id, readSubjectRoles);
     const outcome = await withTenant(fixture.app.db, t.id, (tx) =>
       setRoles(
         tx,
@@ -1835,7 +1858,7 @@ describe('audit', () => {
           subjectId: id,
           roleIds: [tenantAdminId],
           callerCapabilities: new Set(['manage-users', 'view-users']),
-          ifMatch: '*',
+          ifMatch: secondTag,
           actorSubjectId: 'test',
           actorTenantId: 'test-tenant',
           actorClientId: 'test-client',
@@ -1848,6 +1871,19 @@ describe('audit', () => {
     expect(refused.events.map((event) => event.outcome)).toEqual(['refused']);
   });
 });
+
+async function subjectTag(
+  tenantId: string,
+  subjectId: string,
+  read: (
+    tx: TenantScopedDatabase,
+    subjectId: string,
+  ) => Promise<{ kind: 'not_found' } | { kind: 'ok'; etag: string }>,
+): Promise<string> {
+  const answer = await withTenant(fixture.app.db, tenantId, (tx) => read(tx, subjectId));
+  if (answer.kind !== 'ok') throw new Error('fixture: the subject has no such list');
+  return answer.etag;
+}
 
 async function createGroupMapped(
   tenantId: string,
@@ -1873,18 +1909,20 @@ function getGroups(
   });
 }
 
-function putGroups(
+async function putGroups(
   tenantName: string,
   subjectId: string,
   token: string,
   groupIds: string[],
-  ifMatch: string | null = '*',
+  ifMatch?: string | null,
 ): Promise<LightMyRequestResponse> {
+  const url = `/admin/tenants/${tenantName}/subjects/${subjectId}/groups`;
+  const precondition = ifMatch === undefined ? await etagAt(fixture.http, url, token) : ifMatch;
   return fixture.http.inject({
     method: 'PUT',
-    url: `/admin/tenants/${tenantName}/subjects/${subjectId}/groups`,
+    url,
     headers: {
-      ...(ifMatch === null ? {} : { 'if-match': ifMatch }),
+      ...(precondition === null ? {} : { 'if-match': precondition }),
       authorization: `Bearer ${token}`,
       'content-type': 'application/json',
     },
@@ -2036,13 +2074,15 @@ describe('GET|PUT /admin/tenants/{t}/subjects/{id}/groups', () => {
       return record?.serviceSubjectId ?? null;
     });
     if (serviceSubjectId === null) throw new Error('fixture: client has no service subject');
+    const clientUrl = `/admin/tenants/${t.name}/clients/${client.id}`;
+    const clientsToken = await fixture.adminToken(t.name, ['manage-clients']);
     const patched = await fixture.http.inject({
       method: 'PATCH',
-      url: `/admin/tenants/${t.name}/clients/${client.id}`,
+      url: clientUrl,
       headers: {
-        authorization: `Bearer ${await fixture.adminToken(t.name, ['manage-clients'])}`,
+        authorization: `Bearer ${clientsToken}`,
         'content-type': 'application/json',
-        'if-match': '*',
+        'if-match': await etagAt(fixture.http, clientUrl, clientsToken),
       },
       payload: { client_credentials_scopes: ['groups'] },
     });
@@ -2165,7 +2205,6 @@ describe('setSubjectGroups audit', () => {
     const plain = await createGroupMapped(t.id, []);
     const adminGroup = await createGroupMapped(t.id, [await capabilityRoleId(t.id, TENANT_ADMIN)]);
     const actor = {
-      ifMatch: '*',
       actorSubjectId: 'test',
       actorTenantId: 'test-tenant',
       actorClientId: 'test-client',
@@ -2173,11 +2212,17 @@ describe('setSubjectGroups audit', () => {
     };
 
     const ok: SubjectAuditEvent[] = [];
+    const firstGroupsTag = await subjectTag(t.id, id, readSubjectGroups);
     const set = await withTenant(fixture.app.db, t.id, (tx) =>
       setSubjectGroups(
         tx,
         { audit: (_tx, event) => Promise.resolve(ok.push(event)).then(() => undefined) },
-        { ...actor, subjectId: id, groupIds: [plain] },
+        {
+          ...actor,
+          ifMatch: firstGroupsTag,
+          subjectId: id,
+          groupIds: [plain],
+        },
       ),
     );
     expect(set.kind).toBe('ok');
@@ -2187,11 +2232,17 @@ describe('setSubjectGroups audit', () => {
     expect(ok[0]?.detail).toEqual({ group_ids: { before: [], after: [plain] } });
 
     const refused: SubjectAuditEvent[] = [];
+    const secondGroupsTag = await subjectTag(t.id, id, readSubjectGroups);
     const outcome = await withTenant(fixture.app.db, t.id, (tx) =>
       setSubjectGroups(
         tx,
         { audit: (_tx, event) => Promise.resolve(refused.push(event)).then(() => undefined) },
-        { ...actor, subjectId: id, groupIds: [adminGroup] },
+        {
+          ...actor,
+          ifMatch: secondGroupsTag,
+          subjectId: id,
+          groupIds: [adminGroup],
+        },
       ),
     );
     expect(outcome.kind).toBe('capability_ceiling');

@@ -912,6 +912,40 @@ describe('PATCH /admin/tenants/{t}/clients/{id}', () => {
     expect(res.statusCode, field).toBe(428);
   });
 
+  it('428s amending a list field under If-Match: *, which names no version', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-clients']);
+    const created = await fixture.createConfidentialClient(t.name, {});
+    const res = await fixture.http.inject({
+      method: 'PATCH',
+      url: `/admin/tenants/${t.name}/clients/${created.id}`,
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+        'if-match': '*',
+      },
+      payload: { web_origins: ['https://app.example'] },
+    });
+    expect(res.statusCode).toBe(428);
+  });
+
+  it('still takes If-Match: * on an amendment that replaces no list', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-clients']);
+    const created = await fixture.createConfidentialClient(t.name, {});
+    const res = await fixture.http.inject({
+      method: 'PATCH',
+      url: `/admin/tenants/${t.name}/clients/${created.id}`,
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+        'if-match': '*',
+      },
+      payload: { name: 'Renamed' },
+    });
+    expect(res.statusCode).toBe(200);
+  });
+
   it('calls audit exactly once on a successful amendment', async () => {
     const t = await fixture.createTenant(`acme-${newId()}`);
     const created = await fixture.createConfidentialClient(t.name, {});
