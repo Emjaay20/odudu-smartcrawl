@@ -21,7 +21,7 @@ are in [`docs/phases/p4g.md`](phases/p4g.md), the licences in `LICENSING.md`,
 and the work it placed on later phases is on
 [the roadmap page](../apps/docs/content/en/roadmap.md).
 
-The order is **P4a → P4c → P4e → P4d → P4g → P4b → P5a → P4f → P4h**, so P4b
+The order is **P4a → P4c → P4e → P4d → P4g → P4b → P5a → P4f → P4h → P4i**, so P4b
 (theming and client branding) is the next phase after P4g, and the letters deliberately
 do not read in execution order, because `P4b` was spent on theming before P4
 split and an accepted ADR cites it. P4a was token exchange
