@@ -720,7 +720,7 @@ jobs:
           done
           exit $status
 
-  # The check to require. A job that was skipped, because `changes` found
+  # The check `main` requires. A job that was skipped, because `changes` found
   # nothing it could affect, passes; one that failed or was cancelled does not.
   gate:
     needs:

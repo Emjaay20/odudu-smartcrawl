@@ -134,12 +134,10 @@ amendment), and a refresh whose rotation committed before a refusal leaves
 both an `allowed` and a `refused` row under one request id
 ([p4e.md](phases/p4e.md)).
 
-**For the repository owner:** require `gate` on `main`, beside `verify`,
-`container`, `commit-messages` and `query-plans`. `gate` covers every job,
-`e2e` and `conformance` included, and passes a job skipped for a prose-only
-change. A job-level skip reports success to a required check by GitHub's
-documentation; confirm that on the validation run in [p4g.md](phases/p4g.md)
-before dropping any required name ([ADR 0044](adr/0044-ci-runs-what-a-change-can-affect.md)).
+**`gate` is required on `main`**, beside `verify`, `container`,
+`commit-messages` and `query-plans`. It covers every job, `e2e` and
+`conformance` included, and passes a job skipped for a prose-only change
+([ADR 0044](adr/0044-ci-runs-what-a-change-can-affect.md)).
 
 **Two recovery-code gaps that need self-service.** A subject cannot
 ask for a fresh set before running out, and nothing warns as the list gets

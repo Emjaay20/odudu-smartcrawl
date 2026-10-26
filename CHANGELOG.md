@@ -16,6 +16,8 @@ All notable changes to Odudu are written here, newest first. The format follows
 - Logout shows every front-channel logout frame before it redirects to a matched post-logout address.
 - Code blocks in the documentation are coloured when the site is built, and read well in both themes.
 - Dependencies are updated again.
+- A stable tag must point at a commit on `main`, and `latest` moves only to the newest stable release.
+- Every GitHub Action in the workflows is pinned to a commit, and Dependabot waits two days before it proposes a version.
 
 ### Fixed
 
