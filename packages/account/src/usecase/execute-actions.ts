@@ -6,7 +6,11 @@ import { actionTokenRepository } from '#/repository/action-tokens';
 import { type PasswordPolicy, type PolicyViolation } from '#/repository/tenant-settings';
 import { withMinimum } from '#/service/password-violations';
 import { orderedActions, type LinkedRequiredAction } from '#/service/required-actions';
-import { type ActionLinkTenant } from '#/usecase/reset-password';
+import {
+  recoverAccount,
+  type AccountRecoveryDeps,
+  type ActionLinkTenant,
+} from '#/usecase/reset-password';
 
 export interface ActionsLink {
   readonly actions: readonly string[];
@@ -52,7 +56,7 @@ export async function enqueueActionsLink(
   });
 }
 
-export interface CompleteRequiredActionsDeps {
+export interface CompleteRequiredActionsDeps extends AccountRecoveryDeps {
   readonly database: DatabaseHandle;
   readonly tenantId: string;
   readonly request: RequestContext;
@@ -137,6 +141,7 @@ export async function completeRequiredActions(
 
       if (setsPassword && newPassword !== undefined) {
         await deps.setPassword(tx, record.subjectId, newPassword);
+        await recoverAccount(tx, deps, record.subjectId, record.email);
         await deps.clearPasswordUpdateAction(tx, record.subjectId);
         await tokens.invalidateOutstandingPasswordLinks(record.subjectId);
         await auditRepository(tx).record({

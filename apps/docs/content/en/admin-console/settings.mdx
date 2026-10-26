@@ -77,7 +77,11 @@ Each line gives the label, then the name the admin API and `odudu seed tenant --
 - **Password reset by mail** (`reset_password_allowed`): a person who forgot their password may ask for a reset link.
 - **Reset link lifetime** (`reset_password_ttl_seconds`): how long a reset link works, up to 24 hours.
 
-When somebody sets a new password from a reset link, every session they hold ends and every token grant they gave is revoked, offline ones too. Anyone else signed in to that account is signed out. The link stops working once it is used, and it asks for one click first, so a mail scanner that opens it cannot spend it.
+When somebody sets a new password from a mailed link, whether a reset link or an administrator's link that asks for one, every session they hold ends and every token grant they gave is revoked, offline ones too. Anyone else signed in to that account is signed out.
+
+If nobody had verified the account's address, the link also removes any authenticator app, passkey and recovery codes on the account, and marks the address verified. Whoever registered the address first may have added them, and the link proves the mailbox is the new holder's.
+
+The link stops working once it is used, and it asks for one click first, so a mail scanner that opens it cannot spend it.
 
 ### Usernames
 

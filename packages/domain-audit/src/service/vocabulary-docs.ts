@@ -53,6 +53,8 @@ export const AUDIT_ACTION_DOCS: Record<VocabularyAction, string> = {
   'account.registered': 'A user registered their own account.',
   'account.registration_duplicate':
     'Someone tried to register an email address that already has an account. `resource_id` names that account.',
+  'account.address_proved':
+    "A reset link proved an unverified address. The account's second factors, passkeys and recovery codes were removed.",
   'email.verified': 'A user verified their email address through the mailed link.',
   'password.reset': 'A password was set through a reset link.',
   'password.changed': 'A user changed their password.',

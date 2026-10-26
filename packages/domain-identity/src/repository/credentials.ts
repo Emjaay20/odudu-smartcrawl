@@ -310,6 +310,23 @@ export function credentialRepository(tx: TenantScopedDatabase) {
       return rows.length;
     },
 
+    // What a reset clears from an account whose address nobody had verified:
+    // whatever else could sign in, or stand in for the password, that the
+    // person who is not the mailbox's owner may have enrolled. The password
+    // and its history stay. Returns how many rows went.
+    async deleteSecondFactors(subjectId: string): Promise<number> {
+      const rows = await tx
+        .delete(userCredentials)
+        .where(
+          and(
+            eq(userCredentials.subjectId, subjectId),
+            inArray(userCredentials.type, ['totp', 'webauthn', 'recovery-code']),
+          ),
+        )
+        .returning({ id: userCredentials.id });
+      return rows.length;
+    },
+
     async deleteOne(id: string): Promise<void> {
       const rows = await tx.delete(userCredentials).where(eq(userCredentials.id, id)).returning();
       const row = rows[0];
