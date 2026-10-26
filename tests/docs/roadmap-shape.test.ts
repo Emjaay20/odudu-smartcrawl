@@ -63,12 +63,16 @@ describe('the roadmap page', () => {
 
   it('says front-channel logout as the logout code does', () => {
     const logout = loadDocument('packages/protocol-oidc/src/usecase/logout.ts').lines.join('\n');
-    expect(logout).toMatch(/decision\.redirectTo === null\s*\?\s*await frontChannelLogoutUrls/u);
-    const roadmap = prose();
-    expect(roadmap).toMatch(/shown unless the request names a matched post-logout redirect/u);
-    expect(roadmap).toMatch(
-      /names a matched post-logout redirect ends the session and redirects without rendering the front-channel frames/u,
+    expect(logout).not.toMatch(
+      /decision\.redirectTo === null\s*\?\s*await frontChannelLogoutUrls/u,
     );
+    expect(logout).toMatch(
+      /await frontChannelLogoutUrls\(deps, tenant\.id, issuer, session\.id\)/u,
+    );
+    const roadmap = prose();
+    expect(roadmap).toMatch(/frames are shown on every logout/u);
+    expect(roadmap).toMatch(/sent there once the frames have loaded/u);
+    expect(roadmap).not.toMatch(/redirects without rendering the front-channel frames/u);
   });
 
   it('puts every phase after Next in Later, and none in both', () => {
@@ -117,7 +121,6 @@ describe('the roadmap page', () => {
     ['recovery codes', 'P4f'],
     ['other sessions', 'P4f'],
     ['plain built-in HTML', 'P4b'],
-    ['front-channel logout', 'P4b'],
     ['CIBA', 'P5'],
     ['device authorization grant', 'P13'],
     ['password credentials grant', 'decision'],

@@ -1,6 +1,6 @@
 import { type TenantScopedDatabase } from '@odudu/db';
 import { clients } from '@odudu/domain-tenant';
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { clientOidcConfig } from '#/schema/client-oidc-config';
 import { tokenGrants, type TokenGrantRecord } from '#/schema/token-grants';
 
@@ -198,6 +198,37 @@ export function tokenGrantRepository(tx: TenantScopedDatabase) {
         .innerJoin(clients, eq(clients.id, tokenGrants.clientId))
         .where(and(eq(tokenGrants.sessionId, sessionId), eq(clients.enabled, true)));
       return rows;
+    },
+
+    // The clients of `clientsForSession` that registered a front-channel
+    // logout URI, in a stable order and at most `limit` of them: the page
+    // that frames them is served from one request, so how many it carries
+    // is a bound rather than whatever a tenant's session accumulated.
+    async frontChannelClientsForSession(
+      sessionId: string,
+      limit: number,
+    ): Promise<ClientLogoutTarget[]> {
+      return tx
+        .selectDistinct({
+          clientId: clientOidcConfig.clientId,
+          oauthClientId: clients.clientId,
+          frontchannelLogoutUri: clientOidcConfig.frontchannelLogoutUri,
+          frontchannelLogoutSessionRequired: clientOidcConfig.frontchannelLogoutSessionRequired,
+          backchannelLogoutUri: clientOidcConfig.backchannelLogoutUri,
+          backchannelLogoutSessionRequired: clientOidcConfig.backchannelLogoutSessionRequired,
+        })
+        .from(tokenGrants)
+        .innerJoin(clientOidcConfig, eq(clientOidcConfig.clientId, tokenGrants.clientId))
+        .innerJoin(clients, eq(clients.id, tokenGrants.clientId))
+        .where(
+          and(
+            eq(tokenGrants.sessionId, sessionId),
+            eq(clients.enabled, true),
+            isNotNull(clientOidcConfig.frontchannelLogoutUri),
+          ),
+        )
+        .orderBy(asc(clients.clientId))
+        .limit(limit);
     },
 
     // The batched form of `clientsForSession`, one round trip for a whole

@@ -1,4 +1,4 @@
-import { type PageLocale, type RenderedPage } from '@odudu/kernel';
+import { scriptNonce, type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { escapeHtml, page } from '#/view/document';
 import { t, tHtml } from '#/view/messages';
 
@@ -78,6 +78,55 @@ export function renderLoggedOutPage(
 <p>${tHtml(locale, 'logout.done.body')}</p>
 ${iframes}`,
     null,
+    frontChannelLogoutUrls.map((url) => new URL(url).origin),
+    locale,
+  );
+}
+
+// How long the frames get before the browser moves on, and how long a
+// browser without script waits. The script is the quick path, the meta
+// refresh the one a policy or a setting cannot take away.
+const FRAME_WAIT_MS = 2000;
+const NO_SCRIPT_WAIT_SECONDS = 5;
+
+// The session ended and the request named a matched post_logout_redirect_uri
+// (RP-Initiated Logout 1.0 §3), but relying parties registered front-channel
+// logout URIs, and a redirect now would leave before any frame loaded
+// (Front-Channel Logout 1.0 §3). `redirectTo` is the address the route
+// already matched. The script reads it from the page's own link, so nothing
+// is spliced into script; it leaves when every frame has loaded or the wait
+// is up.
+export function renderLoggedOutRedirectPage(
+  frontChannelLogoutUrls: readonly string[],
+  redirectTo: string,
+  locale: PageLocale,
+): RenderedPage {
+  const iframes = frontChannelLogoutUrls
+    .map((url) => `<iframe src="${escapeHtml(url)}"></iframe>`)
+    .join('\n');
+  const target = escapeHtml(redirectTo);
+  const nonce = scriptNonce();
+  return page(
+    t(locale, 'logout.done.title'),
+    `<meta http-equiv="refresh" content="${String(NO_SCRIPT_WAIT_SECONDS)};url=${target}">
+<h1>${tHtml(locale, 'logout.done.title')}</h1>
+<p>${tHtml(locale, 'logout.redirecting.body')}</p>
+<p><a id="continue" href="${target}">${tHtml(locale, 'logout.redirecting.continue')}</a></p>
+${iframes}
+<script nonce="${nonce}">
+(function () {
+  var next = document.getElementById('continue').href;
+  var frames = document.querySelectorAll('iframe');
+  var pending = frames.length;
+  var left = false;
+  function leave() { if (!left) { left = true; location.replace(next); } }
+  frames.forEach(function (frame) {
+    frame.addEventListener('load', function () { pending -= 1; if (pending === 0) leave(); });
+  });
+  setTimeout(leave, ${String(FRAME_WAIT_MS)});
+})();
+</script>`,
+    { nonce, fetchesSameOrigin: false },
     frontChannelLogoutUrls.map((url) => new URL(url).origin),
     locale,
   );

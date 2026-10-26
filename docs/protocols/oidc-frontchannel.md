@@ -10,7 +10,7 @@ a registered redirect URI. `frontchannel_logout_session_required` is also
 registration metadata now, stored and echoed the same way its back-channel
 twin already was. P3b builds everything downstream of registration: reading
 the session's own set of relying parties (`tokenGrantRepository(tx)
-.clientsForSession`, `packages/protocol-oidc/src/repository/grants.ts`),
+.frontChannelClientsForSession`, `packages/protocol-oidc/src/repository/grants.ts`),
 building each one's logout URL (`frontChannelLogoutUrl`,
 `packages/protocol-oidc/src/service/frontchannel-logout.ts`), and rendering
 the logout page's iframes (`renderLoggedOutPage`,
@@ -62,6 +62,7 @@ closed obligation rather than name a second one.
 | 2      | SHOULD | `frontchannel_logout_session_required` is also registered                                                                       | `OIDC-FRONTCHANNEL-2-SESSION-REQUIRED-01` | covered                                                                                                                                                                                          |
 | 3      | SHOULD | the OP keeps track of the set of logged-in RPs for a session, so it knows which to contact at their logout URIs                 | `OIDC-FRONTCHANNEL-3-TRACKING-01`         | covered                                                                                                                                                                                          |
 | 3      | MAY    | the OP contacts logged-in RPs in parallel, using a dynamically constructed page of `<iframe>` tags                              | `OIDC-FRONTCHANNEL-3-IFRAME-01`           | covered                                                                                                                                                                                          |
+| 3      | MAY    | the OP shows the iframes before a matched post-logout redirect, rather than redirecting past them                               | `OIDC-FRONTCHANNEL-3-REDIRECT-01`         | covered                                                                                                                                                                                          |
 | 3      | MAY    | the OP advertises `frontchannel_logout_supported` as `true`                                                                     | `OIDC-FRONTCHANNEL-3-01`                  | covered                                                                                                                                                                                          |
 | 3      | SHOULD | the OP also registers `frontchannel_logout_session_supported`                                                                   | `OIDC-FRONTCHANNEL-3-01`                  | covered                                                                                                                                                                                          |
 | 5      | SHOULD | Session ID values carry sufficient entropy that collisions and guessing are impractical                                         | —                                         | gap                                                                                                                                                                                              |
@@ -83,7 +84,7 @@ anything for the risk `http` reopens.
 
 ### What "covered" reads through, for the rows P3b closed
 
-`tokenGrantRepository(tx).clientsForSession` (§3's tracking row) reads
+`tokenGrantRepository(tx).frontChannelClientsForSession` (§3's tracking row) reads
 `token_grants`' own `(tenant_id, session_id)` index; nothing separate is
 kept, because the grants already are the record. `frontChannelLogoutUrl`
 (§2's `iss`/`sid` rows, `packages/protocol-oidc/src/service/frontchannel-logout.ts`)

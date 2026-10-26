@@ -3,7 +3,7 @@ import { type SigningKeyRecord } from '@odudu/crypto';
 import { type RequestContext } from '@odudu/domain-audit';
 import { type ClientLogoutTarget } from '#/repository/grants';
 import { type TenantLookup } from '#/repository/tenant-lookup';
-import { frontChannelLogoutUrl } from '#/service/frontchannel-logout';
+import { frontChannelLogoutUrl, MAX_FRONT_CHANNEL_FRAMES } from '#/service/frontchannel-logout';
 import { mostRecentlyActive } from '#/service/session-selection';
 import { subjectOfLogoutHint } from '#/usecase/authorization-request';
 
@@ -86,10 +86,9 @@ export type LogoutOutcome =
     }
   // A session was ended, or there was none to end and the redirect alone
   // was honoured (see decideLogout). `sessionEnded` tells the route whether
-  // there is a cookie to clear. `frontChannelLogoutUrls` is non-empty only
-  // when `redirectTo` is null — a redirect leaves the page, and with it any
-  // chance an iframe on it could load, so building the list would serve
-  // nothing there (Front-Channel Logout 1.0 §3).
+  // there is a cookie to clear. `frontChannelLogoutUrls` is empty when no
+  // session ended; with a `redirectTo` it is the frames to show before the
+  // redirect (Front-Channel Logout 1.0 §3).
   | {
       kind: 'end';
       redirectTo: string | null;
@@ -148,9 +147,13 @@ export interface LogoutUsecaseDeps {
     request: RequestContext,
   ): Promise<void>;
   // Front-Channel Logout 1.0 §3's "set of logged-in RPs": the distinct
-  // clients holding a grant issued under this session, with enough of each
-  // one's logout metadata to build a front-channel logout URL for it.
-  clientsForSession(tenantId: string, sessionId: string): Promise<ClientLogoutTarget[]>;
+  // clients holding a grant issued under this session that registered a
+  // front-channel logout URI, at most `limit` of them.
+  frontChannelClientsForSession(
+    tenantId: string,
+    sessionId: string,
+    limit: number,
+  ): Promise<ClientLogoutTarget[]>;
   now(): Date;
 }
 
@@ -160,16 +163,20 @@ function hasFrontChannelLogoutUri(
   return target.frontchannelLogoutUri !== null;
 }
 
-// Built for either branch that is about to render a page rather than
-// redirect — a redirect leaves the browser before any iframe on it could
-// load, so there is nothing here for that branch to use.
+// Built for every branch that ends a session and renders a page, a
+// redirecting one included: the frames load first and the page then sends
+// the browser on (Front-Channel Logout 1.0 §3).
 async function frontChannelLogoutUrls(
   deps: LogoutUsecaseDeps,
   tenantId: string,
   issuer: string,
   sessionId: string,
 ): Promise<readonly string[]> {
-  const targets = await deps.clientsForSession(tenantId, sessionId);
+  const targets = await deps.frontChannelClientsForSession(
+    tenantId,
+    sessionId,
+    MAX_FRONT_CHANNEL_FRAMES,
+  );
   const urls = targets
     .filter(hasFrontChannelLogoutUri)
     .map((target) =>
@@ -310,9 +317,7 @@ export async function handleLogoutRequest(
 
   if (decision.kind === 'end') {
     const frontChannel =
-      session !== null && decision.redirectTo === null
-        ? await frontChannelLogoutUrls(deps, tenant.id, issuer, session.id)
-        : [];
+      session !== null ? await frontChannelLogoutUrls(deps, tenant.id, issuer, session.id) : [];
     return {
       kind: 'end',
       redirectTo: decision.redirectTo,
@@ -397,10 +402,7 @@ export async function handleLogoutConfirmation(
   await deps.endSession(tenant.id, session.id, session.subjectId, deps.now(), issuer, request);
 
   if (decision.kind === 'end') {
-    const frontChannel =
-      decision.redirectTo === null
-        ? await frontChannelLogoutUrls(deps, tenant.id, issuer, session.id)
-        : [];
+    const frontChannel = await frontChannelLogoutUrls(deps, tenant.id, issuer, session.id);
     return {
       kind: 'end',
       redirectTo: decision.redirectTo,

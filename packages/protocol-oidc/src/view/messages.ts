@@ -79,6 +79,8 @@ export const en = {
   'logout.noSession.body': 'There is no active session to end.',
   'logout.done.title': 'Signed out',
   'logout.done.body': 'You have been signed out.',
+  'logout.redirecting.body': 'You have been signed out. Taking you back to the app.',
+  'logout.redirecting.continue': 'Continue',
   'logout.redirectRefused.body':
     'You have been signed out, but the address given to return to afterward is not one this client has registered, so it has not been used.',
   'logout.unauthenticated.title': "Can't sign out",

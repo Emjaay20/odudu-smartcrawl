@@ -161,14 +161,9 @@ Multi-replica deployment is blocked on migration locking and on the
 in-process bounds (throttles, the client-secret limiter, the registration and
 reset limiters), all **P11**, which also owes the Helm chart or manifests.
 
-**Three increments and one wording fix are P4g's and are not built.** The
+**Two increments and one wording fix are P4g's and are not built.** The
 release candidate ships without them, and P4g is the phase that owes them.
 
-- **31c, front-channel logout.** A logout that names a matched
-  `post_logout_redirect_uri` should show the front-channel frames, then
-  redirect. The roadmap places that gap on P4b (below), which stands until
-  31c ships; 31c then moves that one clause to P4g, and the confirmation
-  form's anti-forgery binding and the leaked-ID-token logout stay on P4b.
 - **31b, Core Web Vitals and Lighthouse budgets** enforced in CI on a
   throttled mobile profile, for the landing page and a sample of docs pages.
 - **The landing additions:** a "pages your users see" strip, "Planned"
@@ -331,18 +326,6 @@ a phase note.
   Each phase's §11 criterion names its items, and
   [the roadmap page](../apps/docs/content/en/roadmap.md) lists
   them under a test that holds the two together.
-- `/logout` delivers no front-channel frames on either branch that redirects:
-  `packages/protocol-oidc/src/usecase/logout.ts` computes the list only where
-  `decision.redirectTo === null`, so a session ended with a matched
-  `post_logout_redirect_uri` — the ordinary case — leaves a relying party
-  that registered a `frontchannel_logout_uri` and no `backchannel_logout_uri`
-  signed in. Nothing records the gating as a choice: not ADR 0034, which
-  governs how a page declares its frames rather than when one is rendered.
-  It is the defect [docs/phases/p3b.md](phases/p3b.md) names as this
-  repository's recurring one — a rule applied at one door out of several.
-  **P4b**, whose criterion names it: the remedy is to render the frames and
-  navigate afterwards, which gives the redirecting branch the page it lacks,
-  and P4b is the phase that owes every page the server renders a theme.
 - `/logout` has two hardening gaps that predate P4g's change to it. The
   confirmation form's `client_id` and `post_logout_redirect_uri` fields are
   not covered by the anti-forgery HMAC (reaching nothing new today, since only a
