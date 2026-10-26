@@ -121,7 +121,12 @@ ${iframes}
   var left = false;
   function leave() { if (!left) { left = true; location.replace(next); } }
   frames.forEach(function (frame) {
-    frame.addEventListener('load', function () { pending -= 1; if (pending === 0) leave(); });
+    frame.addEventListener('load', function () {
+      if (frame.dataset.seen) return;
+      frame.dataset.seen = '1';
+      pending -= 1;
+      if (pending === 0) leave();
+    });
   });
   setTimeout(leave, ${String(FRAME_WAIT_MS)});
 })();

@@ -113,12 +113,17 @@ to frame, and a `302` straight away when there is none.
 
 The page leaves by script when every frame has loaded or after two seconds,
 whichever comes first. The script reads the target from the page's own link,
-so nothing is spliced into it, and the policy takes its `script-src` from the
-nonce the renderer returns (ADR 0018's amendment). A browser that does not run
+so nothing is spliced into it. The policy takes its `script-src` from the nonce
+the renderer returns (ADR 0018's amendment). A browser that does not run
 script is moved on by a `<meta http-equiv="refresh">` after five seconds; a
 meta refresh is not a script or a form, so the policy that blocks everything
 inline does not stop it. The target is the one `decideLogout` already matched,
 with `state` added, so no unregistered address is reachable this way.
+
+Two limits. The two seconds are a ceiling: leaving cancels a frame still in
+flight, so a slow relying party may not finish clearing its session. And the
+`refresh` element sits in the page body, which HTML does not allow; browsers
+honour it there (observed in Chromium), and the script path does not depend on it.
 
 The session ends before the page renders, so a replay of the same request finds
 no session and, the redirect still matching, answers `302`: nothing is ended

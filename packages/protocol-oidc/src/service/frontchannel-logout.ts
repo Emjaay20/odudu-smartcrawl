@@ -10,8 +10,8 @@ export const MAX_FRONT_CHANNEL_FRAMES = 25;
 // replaced — `URLSearchParams.set` adds to what a parsed URL already
 // carries, it does not start the query string over. `null` on a value
 // `URL` cannot parse or that is not http(s): registration validates this
-// (`isValidLogoutUri`), but a row written around that check must not take logout down for the
-// rest of the tenant.
+// (`isValidLogoutUri`), but a row written around that check must not take
+// logout down for the rest of the tenant.
 export function frontChannelLogoutUrl(
   registered: string,
   issuer: string,

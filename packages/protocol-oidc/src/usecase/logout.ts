@@ -1,7 +1,7 @@
 import { type PresentedSession } from '@odudu/authn-flows';
 import { type SigningKeyRecord } from '@odudu/crypto';
 import { type RequestContext } from '@odudu/domain-audit';
-import { type ClientLogoutTarget } from '#/repository/grants';
+import { type FrontChannelTarget } from '#/repository/grants';
 import { type TenantLookup } from '#/repository/tenant-lookup';
 import { frontChannelLogoutUrl, MAX_FRONT_CHANNEL_FRAMES } from '#/service/frontchannel-logout';
 import { mostRecentlyActive } from '#/service/session-selection';
@@ -153,21 +153,15 @@ export interface LogoutUsecaseDeps {
     tenantId: string,
     sessionId: string,
     limit: number,
-  ): Promise<ClientLogoutTarget[]>;
+  ): Promise<FrontChannelTarget[]>;
   now(): Date;
-}
-
-function hasFrontChannelLogoutUri(
-  target: ClientLogoutTarget,
-): target is ClientLogoutTarget & { frontchannelLogoutUri: string } {
-  return target.frontchannelLogoutUri !== null;
 }
 
 // Built for every branch that ends a session and renders a page, a
 // redirecting one included: the frames load first and the page then sends
 // the browser on (Front-Channel Logout 1.0 §3).
-async function frontChannelLogoutUrls(
-  deps: LogoutUsecaseDeps,
+export async function frontChannelLogoutUrls(
+  deps: Pick<LogoutUsecaseDeps, 'frontChannelClientsForSession'>,
   tenantId: string,
   issuer: string,
   sessionId: string,
@@ -177,16 +171,14 @@ async function frontChannelLogoutUrls(
     sessionId,
     MAX_FRONT_CHANNEL_FRAMES,
   );
-  const urls = targets
-    .filter(hasFrontChannelLogoutUri)
-    .map((target) =>
-      frontChannelLogoutUrl(
-        target.frontchannelLogoutUri,
-        issuer,
-        sessionId,
-        target.frontchannelLogoutSessionRequired,
-      ),
-    );
+  const urls = targets.map((target) =>
+    frontChannelLogoutUrl(
+      target.frontchannelLogoutUri,
+      issuer,
+      sessionId,
+      target.frontchannelLogoutSessionRequired,
+    ),
+  );
   return urls.filter((url): url is string => url !== null);
 }
 

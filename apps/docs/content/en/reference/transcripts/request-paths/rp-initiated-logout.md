@@ -1184,13 +1184,13 @@ HTTP/1.1 200 OK
 set-cookie: demo-session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 set-cookie: demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 content-type: text/html
-content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'; script-src 'nonce-I4biQK9Mh7gMjysKsYeriQ=='; frame-src http://localhost:9100
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'; script-src 'nonce-tW40DdCrVfzNY1Xy6D9Wow=='; frame-src http://localhost:9100
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 1654
+content-length: 1740
 
 <!doctype html>
 <html lang="en" dir="ltr">
@@ -1210,8 +1210,8 @@ content-length: 1654
 <h1>Signed out</h1>
 <p>You have been signed out. Taking you back to the app.</p>
 <p><a id="continue" href="http://localhost:8080/logged-out?state=xyz-bye">Continue</a></p>
-<iframe src="http://localhost:9100/logout?iss=http%3A%2F%2Flocalhost%3A3180%2Ftenants%2Fdemo&amp;sid=01a177c7-a092-…"></iframe>
-<script nonce="I4biQK9Mh7gMjysKsYeriQ==">
+<iframe src="http://localhost:9100/logout?iss=http%3A%2F%2Flocalhost%3A3180%2Ftenants%2Fdemo&amp;sid=01a177ef-bcdd-791d…"></iframe>
+<script nonce="tW40DdCrVfzNY1Xy6D9Wow==">
 (function () {
   var next = document.getElementById('continue').href;
   var frames = document.querySelectorAll('iframe');
@@ -1219,7 +1219,12 @@ content-length: 1654
   var left = false;
   function leave() { if (!left) { left = true; location.replace(next); } }
   frames.forEach(function (frame) {
-    frame.addEventListener('load', function () { pending -= 1; if (pending === 0) leave(); });
+    frame.addEventListener('load', function () {
+      if (frame.dataset.seen) return;
+      frame.dataset.seen = '1';
+      pending -= 1;
+      if (pending === 0) leave();
+    });
   });
   setTimeout(leave, 2000);
 })();

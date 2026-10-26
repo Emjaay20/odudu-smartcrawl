@@ -196,4 +196,9 @@ describe('renderLoggedOutRedirectPage', () => {
     expect(script).not.toContain('app.example');
     expect(page.body).not.toContain('<script>alert(1)');
   });
+
+  it('counts a frame once however often it fires load', () => {
+    const page = renderLoggedOutRedirectPage(frames, target, DEFAULT_PAGE_LOCALE);
+    expect(page.body).toContain('frame.dataset.seen');
+  });
 });
